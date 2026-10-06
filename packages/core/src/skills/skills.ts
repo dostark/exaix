@@ -1,47 +1,73 @@
 /**
  * @module SkillsService
  * @path packages/core/src/skills/skills.ts
- * @related-files []
+ * @related-files [packages/core/src/skills/skill_folder_loader.ts, packages/core/src/skills/skill_folder_publisher.ts]
  * @architectural-layer Core
- * @description Manages procedural memory (skills).
- *
- * Skills encode domain expertise, procedures, and best practices as reusable
- * instruction modules that agents apply to tasks.
+ * @description Manages procedural memory (skills). Reads Agent Skills folders through
+ *   SkillFolderLoader over ordered roots, matches them against a request, and publishes
+ *   machine-authored skills as draft folders under the guarded publication protocol.
+ *   Skills encode domain expertise as reusable instruction modules that agents apply.
+ * @visible
  */
 
 import { join } from "@std/path";
 import { exists } from "@std/fs";
+import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
+import { z } from "zod";
+import { createPathSecurity } from "@exaix/tool-runtime";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import {
-  DEFAULT_SKILL_CONTEXT_CHAR_BUDGET,
-  DEFAULT_SKILL_INDEX_VERSION,
-  DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION,
+  type ISkillAuthoring,
+  type ISkillSidecar,
+  SkillAuthoringSchema,
+  SkillAuthoringUpdateSchema,
+  SkillFrontmatterSchema,
+  SkillSidecarSchema,
+} from "@exaix/schemas/skill_folder.ts";
+import type { ISkill, ISkillMatch, ISkillTriggers, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
+import { DEFAULT_SKILL_CONTEXT_CHAR_BUDGET, DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION } from "../types/constants.ts";
+import {
   type MemoryBankSource,
-  MemoryScope,
-  SKILL_EVENT_MATCH_COMPLETED,
+  type MemoryScope,
+  SkillInitOutcome,
+  SkillMutationErrorCode,
+  SkillMutationOperation,
+  SkillRootKind,
   SkillStatus,
-} from "../../mod.ts";
+} from "../types/enums.ts";
+import { DomainEventType, type TDomainEventType } from "../events/domain_event_types.ts";
+import { EventRegistry, type IEventRegistry } from "../events/event_registry.ts";
+import { createNoopEventLogger } from "../logger/noop_event_logger.ts";
+import type { IEventLogger } from "../logger/event_logger.ts";
+import type { ISkillMatchRequest, ISkillsService } from "../types/mod.ts";
+import type { LogMetadata } from "../types/json.ts";
+import type { Opt, Reason } from "../types/optional_marker.ts";
+import { SKILL_EXAMPLES_HEADING, splitInstructionsAndExamples, stripExamplesSection } from "../func/skill_body.ts";
 import { extractKeywords } from "./text_utils.ts";
-import type {
-  ISkill,
-  ISkillIndex,
-  ISkillIndexEntry,
-  ISkillMatch,
-  ISkillTriggers,
-  SkillDefinition,
-  SkillIndexSchema as _SkillIndexSchema,
-  SkillUpdates,
-} from "@exaix/schemas/memory_bank.ts";
-import type { ISkillsService } from "../types/mod.ts";
-import type { ISkillMatchRequest } from "../types/mod.ts";
-import type { IEventLogger } from "@exaix/core/logger";
-import type { Opt, Reason } from "@exaix/core/types";
+import { SkillFolderLoader } from "./skill_folder_loader.ts";
+import { SkillFolderPublisher } from "./skill_folder_publisher.ts";
+import { buildRootContext, canonicalizeSkillText, parseSkillSnapshot } from "./skill_snapshot.ts";
+import {
+  type ILoadedSkill,
+  type IResolvedSkillRoot,
+  type ISkillDiagnostic,
+  type ISkillOperationContext,
+  type ISkillRevisionSnapshot,
+  SkillMutationError,
+} from "./skill_types.ts";
 
 export interface ISkillsConfig {
   autoMatch: boolean;
   maxSkillsPerRequest: number;
   skillContextBudget: number;
   matchThreshold: number;
+}
+
+/** Filesystem layout the service reads. Roots are ordered by precedence at each resolution. */
+export interface ISkillsServiceConfig {
+  memoryDir: string;
+  /** Read-only Blueprint skills root, `<Blueprints>/Skills`. */
+  blueprintSkillsDir?: Opt<string, Reason.OptionalInput>;
 }
 
 const DEFAULT_CONFIG: ISkillsConfig = {
@@ -51,79 +77,81 @@ const DEFAULT_CONFIG: ISkillsConfig = {
   matchThreshold: 0.3,
 };
 
-/** Directory checked ahead of the shipped catalog for a skill's content (process lifetime).
- * Lets a `skill-version` arm A/B-compare a skill without editing `Blueprints/Skills/` — the
- * caller must validate this dir via `PathResolver`; `SkillsService` trusts it as-is. */
+/** Directory checked ahead of the shipped catalog for a skill's folder (process lifetime).
+ * Lets a `skill-version` arm A/B-compare a skill without editing `Blueprints/Skills/`. The
+ * caller must validate this dir via `PathResolver`. `SkillsService` trusts it as-is. */
 export const EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR = "EXA_EVAL_SKILL_OVERLAY_DIR";
 
+/** Event source id registered by the service. */
+export const SKILLS_SERVICE_SOURCE_ID = "skills-service";
+
+const SKILLS_SUBDIR = "Skills";
+const LEARNED_SUBDIR = "learned";
+const PROJECT_SUBDIR = "project";
+const STATE_DIR = ".exa-skill-state";
+const LOCK_FILE = "lock";
+const STATIC_CONFIG_GENERATION = "static";
+const SYSTEM_AGENT_ROLE = "system";
+const PORTAL_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const SERVICE_EVENTS: readonly TDomainEventType[] = [
+  DomainEventType.SkillsInitialized,
+  DomainEventType.SkillsCreated,
+  DomainEventType.SkillsUpdated,
+  DomainEventType.SkillsDerived,
+  DomainEventType.SkillsApproved,
+  DomainEventType.SkillsDeprecated,
+  DomainEventType.SkillsDeleted,
+  DomainEventType.SkillsMutationFailed,
+  DomainEventType.SkillsMatchCompleted,
+];
+
 export class SkillsService implements ISkillsService {
-  private skillsConfig: ISkillsConfig;
-  private skillsDir: string | null = null;
-  private projectSkillsDir: string | null = null;
+  private readonly skillsConfig: ISkillsConfig;
+  private readonly registry: IEventRegistry;
+  private readonly publisher = new SkillFolderPublisher(createPathSecurity());
+  private readonly loaders = new Map<string, SkillFolderLoader>();
+  private readonly loggerForLoaders: IEventLogger;
 
   constructor(
-    private config: { memoryDir: string; portal?: string },
-    private db: IDatabaseService,
+    private readonly config: ISkillsServiceConfig,
+    _db: IDatabaseService,
     skillsConfig?: Opt<Partial<ISkillsConfig>, Reason.OptionalInput>,
-    private logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     this.skillsConfig = { ...DEFAULT_CONFIG, ...skillsConfig };
+    this.loggerForLoaders = logger ?? createNoopEventLogger();
+    this.registry = new EventRegistry(this.loggerForLoaders);
+    this.registry.registerPublisher(SKILLS_SERVICE_SOURCE_ID, SERVICE_EVENTS);
   }
 
+  /** Creates the learned root, recovers interrupted publications and journals readiness. */
   async initialize(): Promise<void> {
-    this.skillsDir = join(this.config.memoryDir, "Skills");
-    const globalDir = join(this.skillsDir, MemoryScope.GLOBAL);
-    const coreDir = join(this.skillsDir, "core");
-    const learnedDir = join(this.skillsDir, "learned");
-    const projectDir = join(this.skillsDir, "project");
-
-    for (const dir of [globalDir, coreDir, learnedDir, projectDir]) {
-      if (!(await exists(dir))) {
-        await Deno.mkdir(dir, { recursive: true });
-      }
-    }
-
-    if (this.config.portal) {
-      this.projectSkillsDir = join(projectDir, this.config.portal);
-      if (!(await exists(this.projectSkillsDir))) {
-        await Deno.mkdir(this.projectSkillsDir, { recursive: true });
-      }
-    }
-
-    await this.loadIndex();
-  }
-
-  async getSkill(skillId: string): Promise<ISkill | null> {
-    const overlaid = await this.getOverlaidSkill(skillId);
-    if (overlaid) return overlaid;
-
-    const skillPath = await this.findSkillPath(skillId);
-    if (!skillPath) return null;
-
+    const ctx = this.defaultContext();
+    const writable = this.writableRoots(null);
     try {
-      const content = await Deno.readTextFile(skillPath);
-      const parsed = JSON.parse(content);
-      return parsed as ISkill;
+      let recovered = 0;
+      for (const root of writable) {
+        await this.publisher.ensureState(root.path);
+        recovered += await this.publisher.withLocks([root.path], "exclusive", () => this.publisher.recover(root.path));
+      }
+      await this.emit(DomainEventType.SkillsInitialized, ctx, {
+        writable_roots: writable.length,
+        recovered_operations: recovered,
+        outcome: SkillInitOutcome.READY,
+      });
     } catch (error) {
-      console.error(`Failed to load skill ${skillId}:`, error);
-      return null;
+      await this.emit(DomainEventType.SkillsInitialized, ctx, {
+        writable_roots: writable.length,
+        recovered_operations: 0,
+        outcome: SkillInitOutcome.FAILED,
+      });
+      throw error;
     }
   }
 
-  private async getOverlaidSkill(skillId: string): Promise<ISkill | null> {
-    const overlayDir = Deno.env.get(EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR);
-    if (!overlayDir) return null;
-
-    const overlayPath = join(overlayDir, `${skillId}.json`);
-    if (!(await exists(overlayPath))) return null;
-
-    try {
-      const content = await Deno.readTextFile(overlayPath);
-      return JSON.parse(content) as ISkill;
-    } catch (error) {
-      console.error(`Failed to load overlay skill ${skillId} from ${overlayPath}:`, error);
-      return null;
-    }
+  async getSkill(name: string, ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>): Promise<ISkill | null> {
+    const operation = ctx ?? this.defaultContext();
+    return (await this.loaderFor(operation.portal).get(name, operation))?.skill ?? null;
   }
 
   async listSkills(
@@ -132,214 +160,215 @@ export class SkillsService implements ISkillsService {
       scope?: MemoryScope;
       source?: MemoryBankSource;
     }, Reason.QueryFilter>,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
   ): Promise<ISkill[]> {
-    const index = await this.loadIndex();
-    let filtered = index.skills;
-
-    if (filter?.status) {
-      filtered = filtered.filter((s: ISkillIndexEntry) => s.status === filter.status);
-    }
-    if (filter?.scope) {
-      filtered = filtered.filter((s: ISkillIndexEntry) => s.scope === filter.scope);
-    }
-
-    const skills = await Promise.all(
-      filtered.map((entry: ISkillIndexEntry) => this.getSkill(entry.skill_id)),
+    const operation = ctx ?? this.defaultContext();
+    const all = (await this.loaderFor(operation.portal).listAll(operation)).map((loaded) => loaded.skill);
+    return all.filter((skill) =>
+      (!filter?.status || skill.status === filter.status) &&
+      (!filter?.scope || skill.scope === filter.scope) &&
+      (!filter?.source || skill.source === filter.source)
     );
-
-    const validSkills = skills.filter((s): s is ISkill => s !== null);
-
-    if (filter?.source) {
-      return validSkills.filter((s: ISkill) => s.source === filter.source);
-    }
-
-    return validSkills;
   }
 
-  async deleteSkill(skillId: string): Promise<boolean> {
-    const skillPath = await this.findSkillPath(skillId);
-    if (!skillPath) return false;
-
-    try {
-      await Deno.remove(skillPath);
-      await this.rebuildIndex();
-      return true;
-    } catch {
-      return false;
-    }
+  async listDiagnostics(ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>): Promise<ISkillDiagnostic[]> {
+    const operation = ctx ?? this.defaultContext();
+    return await this.loaderFor(operation.portal).diagnostics(operation);
   }
 
-  async createSkill(
-    skill: SkillDefinition,
-  ): Promise<ISkill> {
-    if (!this.skillsDir) await this.initialize();
-
-    const id = crypto.randomUUID();
-    const created_at = new Date().toISOString();
-
-    const newSkill: ISkill = {
-      ...skill,
-      id,
-      created_at,
-      usage_count: 0,
-    };
-
-    const fileName = `${newSkill.skill_id}.json`;
-    const skillPath = newSkill.scope === MemoryScope.GLOBAL
-      ? join(this.skillsDir!, MemoryScope.GLOBAL, fileName)
-      : join(this.projectSkillsDir!, fileName);
-
-    await this.writeSkillToFile(newSkill, skillPath);
-
-    const index = await this.loadIndex();
-    index.skills.push({
-      skill_id: newSkill.skill_id,
-      name: newSkill.name,
-      version: newSkill.version,
-      status: newSkill.status,
-      scope: newSkill.scope,
-      project: newSkill.project,
-      triggers: newSkill.triggers,
-      path: this.getRelativePath(skillPath),
+  async createSkill(skillDef: SkillDefinition, ctx: ISkillOperationContext): Promise<ISkill> {
+    return await this.guarded(skillDef.name, SkillMutationOperation.CREATE, ctx, async () => {
+      const loaded = await this.publishDraft(skillDef, ctx, undefined);
+      await this.emit(DomainEventType.SkillsCreated, ctx, {
+        name: loaded.skill.name,
+        revision_id: loaded.revisionId,
+        status: SkillStatus.DRAFT,
+      });
+      return loaded.skill;
     });
-    index.updated_at = new Date().toISOString();
-    await this.saveIndex(index);
-
-    this.logger?.info(
-      "skill.created",
-      newSkill.skill_id,
-      { id: newSkill.id, name: newSkill.name, scope: newSkill.scope },
-    );
-
-    return newSkill;
   }
 
-  async updateSkill(
-    skillId: string,
-    updates: SkillUpdates,
-  ): Promise<ISkill | null> {
-    const skill = await this.getSkill(skillId);
-    if (!skill) return null;
-
-    const updatedSkill: ISkill = {
-      ...skill,
-      ...updates,
-    };
-
-    const skillPath = await this.findSkillPath(skillId);
-    if (!skillPath) return null;
-
-    await this.writeSkillToFile(updatedSkill, skillPath);
-
-    const index = await this.loadIndex();
-    const entryIdx = index.skills.findIndex((s: ISkillIndexEntry) => s.skill_id === skillId);
-    if (entryIdx !== -1) {
-      index.skills[entryIdx] = {
-        ...index.skills[entryIdx],
-        name: updatedSkill.name,
-        version: updatedSkill.version,
-        status: updatedSkill.status,
-        triggers: updatedSkill.triggers,
-      };
-      index.updated_at = new Date().toISOString();
-      await this.saveIndex(index);
-    }
-
-    this.logger?.info(
-      "skill.updated",
-      skillId,
-      { updates: Object.keys(updates) },
-    );
-
-    return updatedSkill;
+  async deriveSkillFromLearnings(
+    learningIds: string[],
+    skillDef: SkillDefinition,
+    ctx: ISkillOperationContext,
+  ): Promise<ISkill> {
+    return await this.guarded(skillDef.name, SkillMutationOperation.DERIVE, ctx, async () => {
+      const loaded = await this.publishDraft(skillDef, ctx, learningIds);
+      await this.emit(DomainEventType.SkillsDerived, ctx, {
+        name: loaded.skill.name,
+        revision_id: loaded.revisionId,
+        learning_ids: learningIds,
+        status: SkillStatus.DRAFT,
+      });
+      return loaded.skill;
+    });
   }
 
-  async activateSkill(skillId: string): Promise<boolean> {
-    const updated = await this.updateSkill(skillId, { status: SkillStatus.ACTIVE });
-    return updated !== null;
+  async updateSkill(name: string, updates: SkillUpdates, ctx: ISkillOperationContext): Promise<ISkill | null> {
+    return await this.guarded(name, SkillMutationOperation.UPDATE, ctx, async () => {
+      const parsed = this.parseInput(SkillAuthoringUpdateSchema, updates);
+      return await this.withWritableOwner(name, ctx, async (current, root) => {
+        const snapshot = this.composeUpdate(current, parsed);
+        const status = current.skill.status === SkillStatus.DEPRECATED ? SkillStatus.DEPRECATED : SkillStatus.DRAFT;
+        const next = await this.replaceFolder(root, current, withStatus(snapshot, status), ctx);
+        await this.emit(DomainEventType.SkillsUpdated, ctx, {
+          name,
+          previous_revision_id: current.revisionId,
+          revision_id: next.revisionId,
+          status,
+        });
+        return next.skill;
+      });
+    }, true);
   }
 
-  async deprecateSkill(skillId: string): Promise<boolean> {
-    const updated = await this.updateSkill(skillId, { status: SkillStatus.DEPRECATED });
-    return updated !== null;
+  async approveSkill(name: string, expectedRevisionId: string, ctx: ISkillOperationContext): Promise<ISkill> {
+    return await this.guarded(name, SkillMutationOperation.APPROVE, ctx, async () => {
+      const approved = await this.withWritableOwner(name, ctx, async (current, root) => {
+        if (current.revisionId !== expectedRevisionId) {
+          throw new SkillMutationError(
+            SkillMutationErrorCode.REVISION_MISMATCH,
+            `skill "${name}" changed since revision ${expectedRevisionId} was reviewed`,
+          );
+        }
+        if (current.skill.status === SkillStatus.ACTIVE) {
+          throw new SkillMutationError(SkillMutationErrorCode.INVALID_TRANSITION, `skill "${name}" is already active`);
+        }
+        const next = await this.replaceFolder(root, current, withStatus(current.snapshot, SkillStatus.ACTIVE), ctx);
+        await this.emit(DomainEventType.SkillsApproved, ctx, {
+          name,
+          reviewed_revision_id: expectedRevisionId,
+          active_revision_id: next.revisionId,
+          actor: ctx.agentRole,
+        });
+        return next.skill;
+      });
+      if (approved === null) {
+        throw new SkillMutationError(SkillMutationErrorCode.NOT_FOUND, `skill "${name}" not found`);
+      }
+      return approved;
+    });
   }
 
-  async matchSkills(request: ISkillMatchRequest): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
-    if (!this.skillsDir) await this.initialize();
+  /** The guarded approve alias. */
+  async activateSkill(name: string, expectedRevisionId: string, ctx: ISkillOperationContext): Promise<ISkill> {
+    return await this.approveSkill(name, expectedRevisionId, ctx);
+  }
+
+  async deprecateSkill(name: string, ctx: ISkillOperationContext): Promise<ISkill> {
+    return await this.guarded(name, SkillMutationOperation.DEPRECATE, ctx, async () => {
+      const result = await this.withWritableOwner(name, ctx, async (current, root) => {
+        if (current.skill.status === SkillStatus.DEPRECATED) return current.skill;
+        const next = await this.replaceFolder(root, current, withStatus(current.snapshot, SkillStatus.DEPRECATED), ctx);
+        await this.emit(DomainEventType.SkillsDeprecated, ctx, {
+          name,
+          revision_id: next.revisionId,
+          previous_status: current.skill.status,
+        });
+        return next.skill;
+      });
+      if (result === null) throw new SkillMutationError(SkillMutationErrorCode.NOT_FOUND, `skill "${name}" not found`);
+      return result;
+    });
+  }
+
+  async deleteSkill(name: string, ctx: ISkillOperationContext): Promise<boolean> {
+    return await this.guarded(name, SkillMutationOperation.DELETE, ctx, async () => {
+      const removed = await this.withWritableOwner(name, ctx, async (current, root) => {
+        await this.publisher.remove(root.path, name);
+        await this.emit(DomainEventType.SkillsDeleted, ctx, {
+          name,
+          revision_id: current.revisionId,
+          root_kind: root.kind,
+        });
+        return true;
+      });
+      return removed ?? false;
+    });
+  }
+
+  async matchSkills(
+    request: ISkillMatchRequest,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
+    const operation = ctx ?? this.defaultContext();
     if (!this.skillsConfig.autoMatch) return { matches: [], totalAvailable: 0 };
 
-    const index = await this.loadIndex();
-    const activeSkills = index.skills.filter((s: ISkillIndexEntry) => s.status === SkillStatus.ACTIVE);
-
-    const matches: ISkillMatch[] = [];
-
-    for (const entry of activeSkills) {
-      const { confidence, matchedTriggers } = this.calculateTriggerMatch(entry.triggers, request);
-
+    const active = await this.loaderFor(operation.portal).list(operation);
+    const matches: Array<ISkillMatch & { skill: ISkill }> = [];
+    for (const { skill } of active) {
+      const { confidence, matchedTriggers } = this.calculateTriggerMatch(skill.triggers, request);
       if (confidence >= this.skillsConfig.matchThreshold) {
-        matches.push({
-          skillId: entry.skill_id,
-          confidence,
-          matchedTriggers,
-        });
+        matches.push({ skillId: skill.name, revisionId: skill.id, confidence, matchedTriggers, skill });
       }
     }
-
     matches.sort((a, b) => b.confidence - a.confidence);
 
     const totalAvailable = matches.length;
-    const limitedMatches = matches.slice(0, this.skillsConfig.maxSkillsPerRequest);
+    const limited = matches.slice(0, this.skillsConfig.maxSkillsPerRequest);
+    const strip = ({ skill: _skill, ...match }: ISkillMatch & { skill: ISkill }): ISkillMatch => match;
     const contextBudgetChars = request.contextBudgetChars;
 
     if (contextBudgetChars === undefined) {
-      this.logMatchCompleted(limitedMatches, totalAvailable, false);
-      return { matches: limitedMatches, totalAvailable };
+      await this.logMatchCompleted(operation, limited.map(strip), totalAvailable, false);
+      return { matches: limited.map(strip), totalAvailable };
     }
 
-    const budgetedMatches: ISkillMatch[] = [];
+    const budgeted: ISkillMatch[] = [];
     let remainingBudget = contextBudgetChars;
-
-    for (const match of limitedMatches) {
-      const skill = await this.getSkill(match.skillId);
-      if (!skill) {
-        continue;
-      }
-
-      const skillBlockLength = this.formatSkillForPrompt(skill).length;
-      if (skillBlockLength > remainingBudget) {
-        // Skip this match and try the next. Matches are confidence-sorted. A single
-        // over-budget top match must not discard smaller matches. Smaller matches can
-        // still fit the remaining budget.
-        continue;
-      }
-
-      budgetedMatches.push(match);
-      remainingBudget -= skillBlockLength;
+    for (const match of limited) {
+      const blockLength = this.formatSkillForPrompt(match.skill).length;
+      // Skip an over-budget match and try the next. Matches are confidence-sorted, so a single
+      // over-budget top match must not discard smaller matches that still fit.
+      if (blockLength > remainingBudget) continue;
+      budgeted.push(strip(match));
+      remainingBudget -= blockLength;
     }
-
-    this.logMatchCompleted(budgetedMatches, totalAvailable, budgetedMatches.length < limitedMatches.length);
-    return { matches: budgetedMatches, totalAvailable };
+    await this.logMatchCompleted(operation, budgeted, totalAvailable, budgeted.length < limited.length);
+    return { matches: budgeted, totalAvailable };
   }
 
-  /** Journals the outcome of a skill match — which skills were selected, how many were
-   *  dropped by the per-request cap, and whether the context budget truncated the set.
-   *  A zero-match outcome is journalled too, since "no skill applied" is itself a result. */
-  private logMatchCompleted(
+  async buildSkillContext(
+    skillIds: string[],
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<string> {
+    if (skillIds.length === 0) return "";
+    const skills = await Promise.all(skillIds.map((id) => this.getSkill(id, ctx)));
+    const validSkills = skills.filter((s): s is ISkill => s !== null);
+    if (validSkills.length === 0) return "";
+
+    let context = "\n### APPLICABLE SKILLS & PROCEDURES\n";
+    context += "The following specialized procedures should be applied to this task:\n\n";
+    let currentBudget = this.skillsConfig.skillContextBudget;
+    for (const skill of validSkills) {
+      const skillBlock = this.formatSkillForPrompt(skill);
+      if (skillBlock.length <= currentBudget) {
+        context += skillBlock + "\n";
+        currentBudget -= skillBlock.length;
+      } else {
+        context += "*(Other compatible skills matched but excluded due to context budget)*\n";
+        break;
+      }
+    }
+    return context;
+  }
+
+  /** Journals the outcome of a skill match. A zero-match outcome is journaled too, since
+   *  "no skill applied" is itself a result. */
+  private async logMatchCompleted(
+    ctx: ISkillOperationContext,
     matches: ISkillMatch[],
     totalAvailable: number,
     budgetTruncated: boolean,
-  ): void {
-    this.logger?.info(
-      SKILL_EVENT_MATCH_COMPLETED,
-      this.config.portal ?? null,
-      {
-        matched_skill_ids: matches.map((match) => match.skillId),
-        matched_count: matches.length,
-        total_available: totalAvailable,
-        max_per_request: this.skillsConfig.maxSkillsPerRequest,
-        budget_truncated: budgetTruncated,
-      },
-    );
+  ): Promise<void> {
+    await this.emit(DomainEventType.SkillsMatchCompleted, ctx, {
+      matched_skill_ids: matches.map((match) => match.skillId),
+      matched_count: matches.length,
+      total_available: totalAvailable,
+      max_per_request: this.skillsConfig.maxSkillsPerRequest,
+      budget_truncated: budgetTruncated,
+    });
   }
 
   private calculateTriggerMatch(
@@ -378,7 +407,6 @@ export class SkillsService implements ISkillsService {
     }
 
     const confidence = maxPossibleScore > 0 ? totalScore / maxPossibleScore : 0;
-
     return { confidence, matchedTriggers: matched };
   }
 
@@ -391,12 +419,11 @@ export class SkillsService implements ISkillsService {
     if (!requestKeywords || requestKeywords.length === 0) return { max, score: 0 };
 
     const matches = triggerKeywords.filter((k) => requestKeywords.some((rk) => rk.toLowerCase() === k.toLowerCase()));
-
     if (matches.length === 0) return { max, score: 0 };
 
     // Score by matched-keyword count against a saturation cap, not by dividing over the
-    // trigger's total keyword count — a skill with a long trigger list (covering many
-    // possible phrasings) must not be penalized for the keywords a given request doesn't use.
+    // trigger's total keyword count: a skill with a long trigger list must not be penalized
+    // for the keywords a given request doesn't use.
     const score = Math.min(matches.length / DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION, 1.0) * max;
     return { max, score, matched: matches };
   }
@@ -427,7 +454,6 @@ export class SkillsService implements ISkillsService {
         return f === p;
       })
     );
-
     return { max, score: matches.length > 0 ? max : 0, matched: matches.length > 0 ? matches : undefined };
   }
 
@@ -443,36 +469,8 @@ export class SkillsService implements ISkillsService {
     return { max, score: matches.length > 0 ? max : 0, matched: matches.length > 0 ? matches : undefined };
   }
 
-  async buildSkillContext(skillIds: string[]): Promise<string> {
-    if (skillIds.length === 0) return "";
-
-    const skills = await Promise.all(skillIds.map((id) => this.getSkill(id)));
-    const validSkills = skills.filter((s): s is ISkill => s !== null);
-
-    if (validSkills.length === 0) return "";
-
-    let context = "\n### APPLICABLE SKILLS & PROCEDURES\n";
-    context += "The following specialized procedures should be applied to this task:\n\n";
-
-    let currentBudget = this.skillsConfig.skillContextBudget;
-
-    for (const skill of validSkills) {
-      const skillBlock = this.formatSkillForPrompt(skill);
-
-      if (skillBlock.length <= currentBudget) {
-        context += skillBlock + "\n";
-        currentBudget -= skillBlock.length;
-      } else {
-        context += "*(Other compatible skills matched but excluded due to context budget)*\n";
-        break;
-      }
-    }
-
-    return context;
-  }
-
   private formatSkillForPrompt(skill: ISkill): string {
-    let block = `#### ${skill.name} (v${skill.version})\n`;
+    let block = `#### ${skill.title}\n`;
     block += `${skill.description}\n\n`;
     block += `**Instructions:**\n${skill.instructions}\n`;
 
@@ -480,140 +478,325 @@ export class SkillsService implements ISkillsService {
       block += `\n**Constraints:**\n`;
       block += skill.constraints.map((c) => `- ${c}`).join("\n") + "\n";
     }
-
     if (skill.output_requirements && skill.output_requirements.length > 0) {
       block += `\n**Output Requirements:**\n`;
       block += skill.output_requirements.map((r) => `- ${r}`).join("\n") + "\n";
     }
-
     return block;
   }
 
-  async recordSkillUsage(skillId: string): Promise<void> {
-    const skillPath = await this.findSkillPath(skillId);
-    if (!skillPath) return;
+  // Roots, context and events
 
-    try {
-      const skill = await this.getSkill(skillId);
-      if (skill) {
-        skill.usage_count = (skill.usage_count || 0) + 1;
-        await this.writeSkillToFile(skill, skillPath);
-        this.logger?.info(
-          "skill.used",
-          skillId,
-          { usage_count: skill.usage_count },
-        );
-      }
-    } catch (error) {
-      console.error(`Failed to record usage for skill ${skillId}:`, error);
-    }
-  }
-
-  async deriveSkillFromLearnings(
-    learningIds: string[],
-    skillDef: SkillDefinition,
-  ): Promise<ISkill> {
-    const skill: ISkill = await this.createSkill({
-      ...skillDef,
-      derived_from: learningIds,
-    });
-
-    this.logger?.info(
-      "skill.derived",
-      skill.skill_id,
-      { learning_ids: learningIds },
-    );
-
-    return skill;
-  }
-
-  async rebuildIndex(): Promise<void> {
-    const index = await this.buildIndex();
-    await this.saveIndex(index);
-  }
-
-  private async findSkillPath(skillId: string): Promise<string | null> {
-    if (!this.skillsDir) await this.initialize();
-
-    if (this.projectSkillsDir) {
-      const projectPath = join(this.projectSkillsDir, `${skillId}.json`);
-      if (await exists(projectPath)) return projectPath;
-    }
-
-    const globalPath = join(this.skillsDir!, MemoryScope.GLOBAL, `${skillId}.json`);
-    if (await exists(globalPath)) return globalPath;
-
-    return null;
-  }
-
-  private async findSkillFiles(dir: string): Promise<string[]> {
-    const files: string[] = [];
-    for await (const entry of Deno.readDir(dir)) {
-      if (entry.isDirectory) {
-        files.push(...(await this.findSkillFiles(join(dir, entry.name))));
-      } else if (entry.name.endsWith(".json") && entry.name !== "index.json") {
-        files.push(join(dir, entry.name));
-      }
-    }
-    return files;
-  }
-
-  private getRelativePath(fullPath: string): string {
-    return fullPath.replace(this.skillsDir! + "/", "");
-  }
-
-  private async buildIndex(): Promise<ISkillIndex> {
-    const skills: ISkillIndexEntry[] = [];
-    const files = await this.findSkillFiles(this.skillsDir!);
-
-    for (const file of files) {
-      try {
-        const content = await Deno.readTextFile(file);
-        const skill = JSON.parse(content) as ISkill;
-
-        skills.push({
-          skill_id: skill.skill_id,
-          name: skill.name,
-          version: skill.version,
-          status: skill.status,
-          scope: skill.scope,
-          project: skill.project,
-          triggers: skill.triggers,
-          path: this.getRelativePath(file),
-        });
-      } catch (error) {
-        console.error(`Failed to index skill file ${file}:`, error);
-      }
-    }
-
+  private defaultContext(): ISkillOperationContext {
     return {
-      version: DEFAULT_SKILL_INDEX_VERSION,
-      updated_at: new Date().toISOString(),
-      skills,
+      portal: null,
+      traceId: crypto.randomUUID(),
+      requestId: null,
+      flowId: null,
+      flowStepId: null,
+      agentRole: SYSTEM_AGENT_ROLE,
+      configGeneration: STATIC_CONFIG_GENERATION,
     };
   }
 
-  private async loadIndex(): Promise<ISkillIndex> {
-    if (!this.skillsDir) await this.initialize();
-    const indexPath = join(this.skillsDir!, "index.json");
+  /** Roots for one operation, highest precedence first. Without a portal no project root is admitted. */
+  private rootsFor(portal: string | null): IResolvedSkillRoot[] {
+    const roots: IResolvedSkillRoot[] = [];
+    const overlay = Deno.env.get(EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR);
+    if (overlay) roots.push({ path: overlay, kind: SkillRootKind.EVAL_OVERLAY, writable: false, project: null });
+    roots.push(...this.writableRoots(portal));
+    if (this.config.blueprintSkillsDir) {
+      roots.push({
+        path: this.config.blueprintSkillsDir,
+        kind: SkillRootKind.BLUEPRINT,
+        writable: false,
+        project: null,
+      });
+    }
+    return roots;
+  }
 
+  /** Project root for a validated portal, then the learned root. */
+  private writableRoots(portal: string | null): IResolvedSkillRoot[] {
+    const skillsDir = join(this.config.memoryDir, SKILLS_SUBDIR);
+    const roots: IResolvedSkillRoot[] = [];
+    if (portal !== null) {
+      if (!PORTAL_NAME_PATTERN.test(portal)) {
+        throw new SkillMutationError(SkillMutationErrorCode.INVALID_INPUT, "invalid portal name for skill resolution");
+      }
+      roots.push({
+        path: join(skillsDir, PROJECT_SUBDIR, portal),
+        kind: SkillRootKind.PROJECT,
+        writable: true,
+        project: portal,
+      });
+    }
+    roots.push({ path: join(skillsDir, LEARNED_SUBDIR), kind: SkillRootKind.LEARNED, writable: true, project: null });
+    return roots;
+  }
+
+  /** A loader for one portal's roots. `underLock` is for callers that already hold the root locks. */
+  private loaderFor(portal: string | null, underLock = false): SkillFolderLoader {
+    const roots = this.rootsFor(portal);
+    const key = `${underLock ? "locked" : "open"}|${roots.map((root) => `${root.kind}:${root.path}`).join("|")}`;
+    const cached = this.loaders.get(key);
+    if (cached) return cached;
+    const loader = new SkillFolderLoader({
+      roots,
+      pathSecurity: createPathSecurity(),
+      logger: this.loggerForLoaders,
+      eventRegistry: this.registry,
+      readLock: underLock ? undefined : (root, scan) => this.readUnderSharedLock(root, scan),
+    });
+    this.loaders.set(key, loader);
+    return loader;
+  }
+
+  private async readUnderSharedLock<T>(root: IResolvedSkillRoot, scan: () => Promise<T>): Promise<T> {
+    if (!root.writable || !(await exists(join(root.path, STATE_DIR, LOCK_FILE)))) return await scan();
+    return await this.publisher.withLocks([root.path], "shared", scan);
+  }
+
+  private async emit(type: TDomainEventType, ctx: ISkillOperationContext, payload: LogMetadata): Promise<void> {
+    await this.registry.emit(SKILLS_SERVICE_SOURCE_ID, type, {
+      request_id: ctx.requestId,
+      flow_id: ctx.flowId,
+      flow_step_id: ctx.flowStepId,
+      agent_role: ctx.agentRole,
+      config_generation: ctx.configGeneration,
+      ...payload,
+    }, ctx.traceId);
+  }
+
+  // Guarded mutations
+
+  /** Journals skills.mutation_failed for every refused or failed mutation, then rethrows. */
+  private async guarded<T>(
+    name: string,
+    operation: SkillMutationOperation,
+    ctx: ISkillOperationContext,
+    run: () => Promise<T>,
+    missingIsNull = false,
+  ): Promise<T> {
     try {
-      const content = await Deno.readTextFile(indexPath);
-      return JSON.parse(content) as ISkillIndex;
-    } catch {
-      const index = await this.buildIndex();
-      await this.saveIndex(index);
-      return index;
+      return await run();
+    } catch (error) {
+      if (missingIsNull && error instanceof SkillMutationError && error.code === SkillMutationErrorCode.NOT_FOUND) {
+        return null as T;
+      }
+      await this.emit(DomainEventType.SkillsMutationFailed, ctx, {
+        name,
+        operation,
+        reason: error instanceof SkillMutationError ? error.code : SkillMutationErrorCode.PUBLICATION_UNAVAILABLE,
+      });
+      throw error;
     }
   }
 
-  private async saveIndex(index: ISkillIndex): Promise<void> {
-    if (!this.skillsDir) return;
-    const indexPath = join(this.skillsDir!, "index.json");
-    await Deno.writeTextFile(indexPath, JSON.stringify(index, null, 2));
+  private parseInput<T>(
+    schema: { safeParse(value: object): { success: true; data: T } | { success: false; error: { message: string } } },
+    value: object,
+  ): T {
+    const result = schema.safeParse(value);
+    if (!result.success) throw new SkillMutationError(SkillMutationErrorCode.INVALID_INPUT, result.error.message);
+    return result.data;
   }
 
-  private async writeSkillToFile(skill: ISkill, path: string): Promise<void> {
-    await Deno.writeTextFile(path, JSON.stringify(skill, null, 2));
+  /** The root that mutations of a new skill target: the portal's project root, else the learned root. */
+  private targetRoot(ctx: ISkillOperationContext): IResolvedSkillRoot {
+    const target = this.writableRoots(ctx.portal)[0];
+    if (!target) throw new SkillMutationError(SkillMutationErrorCode.ROOT_UNAVAILABLE, "no writable skill root");
+    return target;
   }
+
+  private async publishDraft(
+    skillDef: SkillDefinition,
+    ctx: ISkillOperationContext,
+    derivedFrom: Opt<string[], Reason.OptionalInput>,
+  ): Promise<ILoadedSkill> {
+    const input = this.parseInput(SkillAuthoringSchema, skillDef);
+    const target = this.targetRoot(ctx);
+    const writable = this.writableRoots(ctx.portal);
+    const allRoots = this.rootsFor(ctx.portal);
+    for (const root of writable) await this.publisher.ensureState(root.path);
+    return await this.publisher.withLocks(writable.map((root) => root.path), "exclusive", async () => {
+      for (const root of allRoots) {
+        if (await this.hasEntry(root.path, input.name)) {
+          throw new SkillMutationError(SkillMutationErrorCode.NAME_CONFLICT, `skill "${input.name}" already exists`);
+        }
+      }
+      const snapshot = composeNewSnapshot(input, derivedFrom);
+      await this.validateSnapshot(snapshot, target, input.name);
+      await this.publisher.create(target.path, input.name, snapshot);
+      return await this.requireLoaded(input.name, ctx);
+    });
+  }
+
+  private async hasEntry(rootPath: string, name: string): Promise<boolean> {
+    try {
+      await Deno.lstat(join(rootPath, name));
+      return true;
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound) return false;
+      throw error;
+    }
+  }
+
+  /** Runs `run` under exclusive locks with the skill's current value and the writable root that owns it. */
+  private async withWritableOwner<T>(
+    name: string,
+    ctx: ISkillOperationContext,
+    run: (current: ILoadedSkill, root: IResolvedSkillRoot) => Promise<T>,
+  ): Promise<T | null> {
+    const writable = this.writableRoots(ctx.portal);
+    for (const root of writable) await this.publisher.ensureState(root.path);
+    return await this.publisher.withLocks(writable.map((root) => root.path), "exclusive", async () => {
+      const current = await this.loaderFor(ctx.portal, true).getAny(name, ctx);
+      if (current === null) return null;
+      const root = writable.find((candidate) => candidate.kind === current.rootKind);
+      if (!root) {
+        throw new SkillMutationError(SkillMutationErrorCode.ROOT_UNAVAILABLE, `skill "${name}" is in a read-only root`);
+      }
+      return await run(current, root);
+    });
+  }
+
+  private async replaceFolder(
+    root: IResolvedSkillRoot,
+    current: ILoadedSkill,
+    snapshot: ISkillRevisionSnapshot,
+    ctx: ISkillOperationContext,
+  ): Promise<ILoadedSkill> {
+    await this.validateSnapshot(snapshot, root, current.skill.name);
+    await this.publisher.replace(root.path, current.skill.name, snapshot);
+    return await this.requireLoaded(current.skill.name, ctx);
+  }
+
+  private async requireLoaded(name: string, ctx: ISkillOperationContext): Promise<ILoadedSkill> {
+    const loaded = await this.loaderFor(ctx.portal, true).getAny(name, ctx);
+    if (loaded === null) {
+      throw new SkillMutationError(
+        SkillMutationErrorCode.PUBLICATION_UNAVAILABLE,
+        `published skill "${name}" did not load`,
+      );
+    }
+    return loaded;
+  }
+
+  /** Parses the staged snapshot exactly as the loader would, so an invalid folder is never published. */
+  private async validateSnapshot(
+    snapshot: ISkillRevisionSnapshot,
+    root: IResolvedSkillRoot,
+    name: string,
+  ): Promise<void> {
+    try {
+      await parseSkillSnapshot(snapshot, buildRootContext(root, name));
+    } catch (error) {
+      throw new SkillMutationError(
+        SkillMutationErrorCode.INVALID_INPUT,
+        error instanceof Error ? error.message : "invalid skill content",
+      );
+    }
+  }
+
+  /** Recomposes one SKILL.md body and sidecar from the current folder plus the authored update. */
+  private composeUpdate(
+    current: ILoadedSkill,
+    updates: ReturnType<typeof SkillAuthoringUpdateSchema.parse>,
+  ): ISkillRevisionSnapshot {
+    const { frontmatter, body: currentBody } = splitSnapshot(current.snapshot.skill_md);
+    const instructions = updates.instructions ?? currentBody;
+    const examples = "examples" in updates ? updates.examples : splitInstructionsAndExamples(currentBody).examples;
+    const body = assembleBody(instructions, examples, updates.instructions !== undefined || "examples" in updates);
+    const nextFrontmatter = { ...frontmatter, ...(updates.description ? { description: updates.description } : {}) };
+    const sidecar = mergeSidecar(readSidecar(current.snapshot.exaix_yaml), updates);
+    return {
+      skill_md: composeSkillMd(nextFrontmatter, body),
+      exaix_yaml: encodeSidecar(sidecar),
+      references: current.snapshot.references,
+    };
+  }
+}
+
+// Pure composition helpers
+
+function splitSnapshot(skillMd: string): { frontmatter: Record<string, string | string[]>; body: string } {
+  const canonical = canonicalizeSkillText(skillMd);
+  const end = canonical.indexOf("\n---\n", 4);
+  const frontmatter = SkillFrontmatterSchema.partial().parse(parseYaml(canonical.slice(4, end))) as Record<
+    string,
+    string | string[]
+  >;
+  return { frontmatter, body: canonical.slice(end + 5).trim() };
+}
+
+function composeSkillMd(frontmatter: Record<string, string | string[]>, body: string): string {
+  return `---\n${stringifyYaml(frontmatter, { lineWidth: 120 }).trimEnd()}\n---\n${body}\n`;
+}
+
+/** One body from instructions plus examples, so an update never leaves a stale Examples section. */
+function assembleBody(
+  instructions: string,
+  examples: Opt<string, Reason.OptionalInput>,
+  examplesAuthored: boolean,
+): string {
+  if (!examplesAuthored) return instructions;
+  const base = stripExamplesSection(instructions).trimEnd();
+  return examples === undefined || examples === "" ? base : `${base}\n\n${SKILL_EXAMPLES_HEADING}\n\n${examples}`;
+}
+
+function readSidecar(raw: string | null): ISkillSidecar {
+  return raw === null ? {} : (parseYaml(canonicalizeSkillText(raw)) as ISkillSidecar) ?? {};
+}
+
+function encodeSidecar(sidecar: ISkillSidecar): string | null {
+  return Object.keys(sidecar).length === 0 ? null : stringifyYaml(sidecar, { lineWidth: 120 });
+}
+
+/** The sidecar fields a person authors. Lifecycle status and learning provenance are managed, never authored. */
+const AuthoredSidecarFieldsSchema = z.object(
+  SkillSidecarSchema.pick({
+    title: true,
+    triggers: true,
+    constraints: true,
+    output_requirements: true,
+    quality_criteria: true,
+    critical: true,
+    effort: true,
+    thinking: true,
+    tools: true,
+    applies_to: true,
+    related_skills: true,
+  }).shape,
+);
+
+/** The base sidecar with the authored fields of `updates` laid over it. Other input keys are ignored. */
+function mergeSidecar(base: ISkillSidecar, updates: Partial<ISkillAuthoring>): ISkillSidecar {
+  const authored = AuthoredSidecarFieldsSchema.parse(updates);
+  const merged: ISkillSidecar = { ...base };
+  for (const key of Object.keys(authored) as Array<keyof typeof authored>) {
+    const value = authored[key];
+    if (value !== undefined) Object.assign(merged, { [key]: value });
+  }
+  return merged;
+}
+
+function composeNewSnapshot(
+  input: ISkillAuthoring,
+  derivedFrom: Opt<string[], Reason.OptionalInput>,
+): ISkillRevisionSnapshot {
+  const body = assembleBody(input.instructions, input.examples, input.examples !== undefined);
+  const sidecar = mergeSidecar({ status: SkillStatus.DRAFT }, input);
+  if (derivedFrom !== undefined) sidecar.derived_from = derivedFrom;
+  return {
+    skill_md: composeSkillMd({ name: input.name, description: input.description }, body),
+    exaix_yaml: encodeSidecar(sidecar),
+    references: [],
+  };
+}
+
+/** The snapshot with its sidecar status set. Status lives only in the sidecar. */
+function withStatus(snapshot: ISkillRevisionSnapshot, status: SkillStatus): ISkillRevisionSnapshot {
+  const sidecar = readSidecar(snapshot.exaix_yaml);
+  return { ...snapshot, exaix_yaml: encodeSidecar({ ...sidecar, status }) };
 }

@@ -11,7 +11,8 @@
 
 import { assertEquals } from "@std/assert";
 import { SkillEnvelopeSchema } from "@exaix/schemas/skill_envelope.ts";
-import { SkillQualityCriterionSchema, SkillSchema, SkillTriggersSchema } from "@exaix/schemas/memory_bank.ts";
+import { SkillQualityCriterionSchema, SkillTriggersSchema } from "@exaix/schemas/memory_bank.ts";
+import { LegacySkillSchema as SkillSchema } from "../../../scripts/legacy_skill_schema.ts";
 
 Deno.test("[skill_envelope] parses valid SKILL.md frontmatter + exaix block", () => {
   const input = {

@@ -18,8 +18,6 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { walk } from "@std/fs";
-import { MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 import { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "@exaix/core/skills";
 import { initTestDbService } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing";
@@ -59,24 +57,22 @@ Deno.test("[CatalogImmutability] Memory/Skills/ and Blueprints/Agents/ are byte-
   const agentRolesRoot = await Deno.makeTempDir({ prefix: "immutability-agent-roles-" });
   const agentRolesDir = join(agentRolesRoot, "Agents");
   const skillOverlayDir = await Deno.makeTempDir({ prefix: "immutability-skill-overlay-" });
+  const shippedSkillsDir = await Deno.makeTempDir({ prefix: "immutability-shipped-skills-" });
   const agentRoleOverlayRoot = await Deno.makeTempDir({ prefix: "immutability-agent-role-overlay-" });
   const agentRoleOverlayDir = join(agentRoleOverlayRoot, "Agents");
   const mockLogger = createMockEventLogger();
 
   try {
-    const service = new SkillsService({ memoryDir: join(config.system.root, config.paths.memory) }, db);
+    await Deno.mkdir(join(shippedSkillsDir, "tdd-methodology"), { recursive: true });
+    await Deno.writeTextFile(
+      join(shippedSkillsDir, "tdd-methodology", "SKILL.md"),
+      "---\nname: tdd-methodology\ndescription: shipped\n---\nshipped instructions\n",
+    );
+    const service = new SkillsService({
+      memoryDir: join(config.system.root, config.paths.memory),
+      blueprintSkillsDir: shippedSkillsDir,
+    }, db);
     await service.initialize();
-    await service.createSkill({
-      skill_id: "tdd-methodology",
-      name: "TDD Methodology",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "shipped",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: { keywords: ["tdd"], task_types: ["testing"] },
-      instructions: "shipped instructions",
-    });
 
     await Deno.mkdir(agentRolesDir, { recursive: true });
     await Deno.mkdir(agentRoleOverlayDir, { recursive: true });
@@ -86,22 +82,10 @@ Deno.test("[CatalogImmutability] Memory/Skills/ and Blueprints/Agents/ are byte-
     await Deno.writeTextFile(join(agentRolesDir, "test-agent.md"), shippedBlueprint);
     const resolver = new BlueprintResolver({ blueprintsPath: agentRolesDir });
 
+    await Deno.mkdir(join(skillOverlayDir, "tdd-methodology"), { recursive: true });
     await Deno.writeTextFile(
-      join(skillOverlayDir, "tdd-methodology.json"),
-      JSON.stringify({
-        id: "overlay-id",
-        skill_id: "tdd-methodology",
-        name: "overlay",
-        version: "2.0.0",
-        description: "overlay",
-        scope: MemoryScope.GLOBAL,
-        status: SkillStatus.ACTIVE,
-        source: MemoryBankSource.USER,
-        triggers: { keywords: ["tdd"], task_types: ["testing"] },
-        instructions: "overlay instructions",
-        created_at: new Date().toISOString(),
-        usage_count: 0,
-      }),
+      join(skillOverlayDir, "tdd-methodology", "SKILL.md"),
+      "---\nname: tdd-methodology\ndescription: overlay\n---\noverlay instructions\n",
     );
     await Deno.writeTextFile(
       join(agentRoleOverlayDir, "test-agent.md"),
@@ -109,6 +93,7 @@ Deno.test("[CatalogImmutability] Memory/Skills/ and Blueprints/Agents/ are byte-
     );
 
     const skillsBefore = await snapshotTree(skillsDir);
+    const shippedBefore = await snapshotTree(shippedSkillsDir);
     const agentRolesBefore = await snapshotTree(agentRolesDir);
 
     // Exercise both mechanisms that touch a catalog tree, asserting each actually returned
@@ -131,13 +116,16 @@ Deno.test("[CatalogImmutability] Memory/Skills/ and Blueprints/Agents/ are byte-
     assertEquals(overlaidAgentRole.name, "Test Agent (overlay)");
 
     const skillsAfter = await snapshotTree(skillsDir);
+    const shippedAfter = await snapshotTree(shippedSkillsDir);
     const agentRolesAfter = await snapshotTree(agentRolesDir);
 
     assertTreesEqual(skillsBefore, skillsAfter, "Memory/Skills/");
+    assertTreesEqual(shippedBefore, shippedAfter, "Blueprints/Skills/");
     assertTreesEqual(agentRolesBefore, agentRolesAfter, "Blueprints/Agents/");
   } finally {
     await Deno.remove(agentRolesRoot, { recursive: true });
     await Deno.remove(skillOverlayDir, { recursive: true });
+    await Deno.remove(shippedSkillsDir, { recursive: true });
     await Deno.remove(agentRoleOverlayRoot, { recursive: true });
     await cleanup();
   }

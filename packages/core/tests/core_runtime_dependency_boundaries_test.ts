@@ -30,6 +30,8 @@ Deno.test("@exaix/core has no runtime imports from ai or schemas packages", asyn
     if (entry.path.includes("/planning/")) continue;
     if (entry.path.includes("/health/")) continue;
     if (entry.path.includes("/config/")) continue;
+    // Skill folder parsing validates frontmatter and sidecars with the schemas that own their shape.
+    if (entry.path.includes("/skills/")) continue;
     const text = await Deno.readTextFile(entry.path);
     if (findRuntimeWorkspaceImports(text).length > 0) {
       offenders.push(entry.path);

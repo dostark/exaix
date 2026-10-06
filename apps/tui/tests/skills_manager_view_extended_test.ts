@@ -120,7 +120,7 @@ Deno.test("SkillsManagerView: getSkillDetail returns skill from service", async 
 
   const skill = await view.getSkillDetail("tdd-methodology");
   assertExists(skill);
-  assertEquals(skill?.name, "TDD Methodology");
+  assertEquals(skill?.title, "TDD Methodology");
 
   const nonExistent = await view.getSkillDetail("nonexistent");
   assertEquals(nonExistent, null);

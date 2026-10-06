@@ -14,6 +14,7 @@
     "@exaix/core/status": "../core/src/status/mod.ts",
     "@exaix/core/config": "../core/src/config/mod.ts",
     "@exaix/core/request": "../core/src/request/mod.ts",
+    "@exaix/core/events": "../core/src/events/mod.ts",
     "@exaix/core/logger": "../core/src/logger/mod.ts",
     "@exaix/core/repositories": "../core/src/repositories/mod.ts",
     "@exaix/core/observability": "../core/src/observability/mod.ts",
@@ -27,6 +28,7 @@
     "@exaix/core/evaluation": "../core/src/evaluation/mod.ts",
     "@exaix/core/parsing": "../core/src/parsing/mod.ts",
     "@exaix/core/context": "../core/src/context/mod.ts",
+    "@exaix/tool-runtime": "../tool-runtime/mod.ts",
     "@exaix/git": "../git/mod.ts",
     "@exaix/git/": "../git/src/",
     "@exaix/git/testing": "../git/testing/mod.ts"

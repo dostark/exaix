@@ -1,0 +1,48 @@
+title: Test-Driven Development Methodology
+triggers:
+  keywords:
+    - implement
+    - feature
+    - add
+    - create
+    - build
+    - fix
+    - bugfix
+    - develop
+  task_types:
+    - feature
+    - bugfix
+    - refactor
+    - implementation
+  file_patterns:
+    - '*.ts'
+    - '*.js'
+    - '*.py'
+    - '*.go'
+    - '*.rs'
+  tags:
+    - development
+    - testing
+    - tdd
+constraints:
+  - Never write implementation code before tests
+  - Run tests after each change
+  - 'Keep tests focused on behavior, not implementation'
+  - One logical assertion per test
+output_requirements:
+  - Test file must exist before implementation
+  - All tests must pass before completion
+  - Test names describe expected behavior
+quality_criteria:
+  - name: Test Coverage
+    description: New code has corresponding test coverage
+    weight: 40
+  - name: Test-First Evidence
+    description: Tests were written before implementation
+    weight: 30
+  - name: Refactor Quality
+    description: Code is clean and well-structured
+    weight: 30
+applies_to:
+  agents:
+    - '*'

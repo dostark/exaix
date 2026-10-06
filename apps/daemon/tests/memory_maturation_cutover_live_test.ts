@@ -18,7 +18,7 @@ import { join } from "@std/path";
 import { ExecutionContextService, OutputParser, ReActLoopAdapter, ReActLoopStrategy } from "@exaix/execution";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { SecurityMode, ToolName } from "@exaix/core";
-import { createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
+import { createStubConfig, createStubDisplay, createStubGit, loadRepoSkillCatalog } from "@exaix/testing";
 import { OllamaProvider } from "@exaix/ai-ollama";
 import { AnthropicProvider } from "@exaix/ai-anthropic";
 import { OpenAIProvider } from "@exaix/ai-openai";
@@ -107,19 +107,9 @@ function buildTestProvider(provider: string, model: string): IModelProvider {
   }
 }
 
-function loadPolicyInstructions(): string {
-  const skillPath = join(
-    import.meta.dirname ?? ".",
-    "..",
-    "..",
-    "..",
-    "Memory",
-    "Skills",
-    "global",
-    "memory-extraction-content-policy.json",
-  );
-  const skill = JSON.parse(Deno.readTextFileSync(skillPath)) as { instructions?: string };
-  assertExists(skill.instructions, "the shipped content-curation skill must carry instructions");
+async function loadPolicyInstructions(): Promise<string> {
+  const skill = (await loadRepoSkillCatalog()).get("memory-extraction-content-policy")?.skill;
+  assertExists(skill?.instructions, "the shipped content-curation skill must carry instructions");
   return skill.instructions;
 }
 
@@ -163,7 +153,7 @@ Deno.test({
         isRemoteAllowed: () => Promise.resolve(true),
         recordOperation: () => Promise.resolve(),
       });
-      const realInstructions = loadPolicyInstructions();
+      const realInstructions = await loadPolicyInstructions();
       const skillsService = castAny<ISkillsService>({
         getSkill: (skillId: string) =>
           Promise.resolve(skillId === POLICY_SKILL_ID ? { skill_id: skillId, instructions: realInstructions } : null),

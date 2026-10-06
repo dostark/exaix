@@ -23,7 +23,13 @@ import type { EffortDeclaration, EffortTier, ModelSize, ThinkingDeclaration } fr
 import { toSafeJson } from "@exaix/core/types";
 import type { IToolRegistryFactory } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
-import { PlanningToolLoopStopReason, PlanningToolsSkipReason, PortalOperation, TaskComplexity } from "@exaix/core";
+import {
+  PlanningToolLoopStopReason,
+  PlanningToolsSkipReason,
+  PortalOperation,
+  SkillMatchSource,
+  TaskComplexity,
+} from "@exaix/core";
 import type { ProviderType } from "@exaix/core";
 import { PortalPermissionsService } from "@exaix/portal";
 import { readOnlyEditorTools } from "@exaix/tool-runtime";
@@ -654,15 +660,18 @@ export class AgentRunner implements IAgentRunner {
       // no branch-specific merge rules, so it's always predictable why a skill was or
       // wasn't injected. Prompt bloat is controlled by keeping default_skills short.
       const matchScores = new Map<string, number>();
+      const sources = new Map<string, SkillMatchSource>();
+      const matchedTriggers = new Map<string, ISkillMatch["matchedTriggers"]>();
       const skillIds: string[] = [];
-      const add = (id: string, score: number) => {
+      const add = (id: string, score: number, source: SkillMatchSource) => {
         if (skillIds.includes(id)) return;
         skillIds.push(id);
         matchScores.set(id, score);
+        sources.set(id, source);
       };
 
       const pinned = request.skills ?? [];
-      for (const id of pinned) add(id, 1.0);
+      for (const id of pinned) add(id, 1.0, SkillMatchSource.PINNED);
 
       // Dynamic matching is skipped when the request pinned skills explicitly — the pin is
       // the caller stating what they want, and matching would only add noise to it.
@@ -672,7 +681,8 @@ export class AgentRunner implements IAgentRunner {
           const result = await this.performDynamicSkillMatching(request, agentRole);
           for (const match of result.matches) {
             matched.push(match.skillId);
-            add(match.skillId, match.confidence);
+            matchedTriggers.set(match.skillId, match.matchedTriggers);
+            add(match.skillId, match.confidence, SkillMatchSource.MATCHED);
           }
         } catch (error: unknown) {
           this.logSkillRetrievalFailure(error instanceof Error ? error.message : String(error), agentRole);
@@ -680,7 +690,7 @@ export class AgentRunner implements IAgentRunner {
       }
 
       const defaults = blueprint.defaultSkills ?? [];
-      for (const id of defaults) add(id, 0.5);
+      for (const id of defaults) add(id, 0.5, SkillMatchSource.DEFAULT);
 
       // A skill-ablation arm's control side suppresses a skill from the FINAL resolved
       // set — after pinned/matched/defaults are unioned, not only from the dynamic-match
@@ -699,15 +709,10 @@ export class AgentRunner implements IAgentRunner {
       // 5. Hydration
       const skillsContext = await this.hydrateSkills(
         skillIds,
-        matchScores,
+        { matchScores, sources, matchedTriggers },
         totalAvailable,
         matchingStartTime,
       );
-
-      // 6. Persistence
-      for (const skillId of skillIds) {
-        await this.skillsService.recordSkillUsage(skillId).catch(() => {});
-      }
 
       return { skillIds, skillsContext };
     } catch (error) {
@@ -752,7 +757,11 @@ export class AgentRunner implements IAgentRunner {
    */
   private async hydrateSkills(
     skillIds: string[],
-    matchScores: Map<string, number>,
+    resolution: {
+      matchScores: Map<string, number>;
+      sources: Map<string, SkillMatchSource>;
+      matchedTriggers: Map<string, ISkillMatch["matchedTriggers"]>;
+    },
     totalAvailable: number,
     startTime: number,
   ): Promise<ISkillsContext | null> {
@@ -766,11 +775,18 @@ export class AgentRunner implements IAgentRunner {
 
     return {
       matched: validSkills.map((s) => ({
-        skillId: s.id,
-        title: s.name,
+        skillId: s.skill_id,
+        revisionId: s.id,
+        contentSha256: s.content_sha256,
+        rootKind: s.root_kind,
+        sourcePath: s.path,
+        name: s.title,
         description: s.description,
         content: s.instructions,
-        matchScore: matchScores.get(s.id) ?? 0.5,
+        confidence: resolution.matchScores.get(s.skill_id) ?? 0.5,
+        matchedTriggers: resolution.matchedTriggers.get(s.skill_id) ?? {},
+        source: resolution.sources.get(s.skill_id) ?? SkillMatchSource.MATCHED,
+        references: s.references,
         tags: s.triggers.tags || [],
         critical: s.critical ?? false,
         effort: s.effort,

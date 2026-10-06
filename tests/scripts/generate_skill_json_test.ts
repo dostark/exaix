@@ -13,7 +13,7 @@
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { SkillSchema } from "@exaix/schemas/memory_bank.ts";
+import { LegacySkillSchema as SkillSchema } from "../../scripts/legacy_skill_schema.ts";
 import { generateSkillJson, type IGenerateSkillJsonResult, parseCliArgs } from "../../scripts/generate_skill_json.ts";
 
 function createFixtureSkill(dir: string, overrides?: Record<string, string>): string {

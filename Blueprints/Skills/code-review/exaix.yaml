@@ -1,0 +1,42 @@
+title: Code Review Checklist
+triggers:
+  keywords:
+    - review
+    - code-review
+    - pr
+    - pull-request
+    - merge
+    - feedback
+    - critique
+    - evaluate
+  task_types:
+    - review
+    - code-review
+    - pull-request
+  file_patterns:
+    - '*'
+  tags:
+    - review
+    - quality
+constraints:
+  - Be constructive and specific in feedback
+  - 'Suggest improvements, not just identify problems'
+  - Consider the context and constraints
+  - 'Focus on important issues, not style nitpicks'
+output_requirements:
+  - Clear summary of findings
+  - 'Categorized issues (critical, major, minor)'
+  - Specific suggestions for improvement
+quality_criteria:
+  - name: Thoroughness
+    description: All aspects of the code are reviewed
+    weight: 30
+  - name: Actionability
+    description: Feedback is specific and actionable
+    weight: 40
+  - name: Constructiveness
+    description: Feedback is helpful and respectful
+    weight: 30
+applies_to:
+  agents:
+    - '*'

@@ -1,26 +1,22 @@
 /**
  * @module SkillEvalParityTest
  * @path tests/eval/skill_eval_parity_test.ts
- * @description Parity test asserting every Blueprints/Skills/*.skill.md has at
+ * @description Parity test asserting every skill folder in the catalog has at
  *   least one eval scenario tagged entity:<skill-id>, minus exclusions.
  */
 import { assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { assertCatalogCovered } from "./catalog_parity.ts";
+import { readRuntimeSkillIds } from "./runtime_skill_scopes.ts";
 import { loadScenarioCatalog } from "../scenario_framework/runner/scenario_catalog.ts";
 import parityExclusions from "./parity_exclusions.json" with { type: "json" };
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
-const SEEDS_DIR = join(REPO_ROOT, "Blueprints", "Skills");
 const FRAMEWORK_HOME = join(REPO_ROOT, "tests", "scenario_framework");
 
-/** Every skill id that actually ships, read from the seed catalog rather than restated here. */
+/** Every skill id that actually ships, read from the skill folder catalog rather than restated here. */
 async function readShippedSkillIds(): Promise<string[]> {
-  const ids: string[] = [];
-  for await (const entry of Deno.readDir(SEEDS_DIR)) {
-    if (entry.isFile && entry.name.endsWith(".skill.md")) ids.push(entry.name.replace(/\.skill\.md$/, ""));
-  }
-  return ids.sort();
+  return [...await readRuntimeSkillIds()].sort();
 }
 
 const BATCH_SKILLS_1 = ["tdd-methodology", "security-first", "code-review", "portal-grounding"];

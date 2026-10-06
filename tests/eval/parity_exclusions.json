@@ -25,6 +25,5 @@
       "id": "dogfood-meta-workflow.flow",
       "reason": "dogfood meta-workflow (Phase 150) — exercised by the live session_delegate_outcome scenario"
     }
-  ],
-  "skills_without_runtime_json": []
+  ]
 }

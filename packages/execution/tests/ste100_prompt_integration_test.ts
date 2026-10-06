@@ -2,9 +2,9 @@
  * @module Ste100PromptIntegrationTest
  * @path packages/execution/tests/ste100_prompt_integration_test.ts
  * @description Phase 195 Step 1 + Step 4 — RED-first integration tests proving the
- *   compiled STE contract reaches the provider prompt through the real production runner
- *   chain: `scripts/build_skills_index.ts` compiles the review-written fixture and real
- *   Blueprint skills to real skill JSON, `SkillsService.getSkill` loads them,
+ *   authored STE contract reaches the provider prompt through the real production runner
+ *   chain: `SkillsService.getSkill` loads the review-written fixture and real Blueprint
+ *   skill folders directly,
  *   `AgentRunner.run` hydrates through
  *   `renderSkillsSection`/`renderCriticalSkillsSection` (the production formatter), and a
  *   capturing provider records the assembled prompt. Asserts the canonical rule, the five
@@ -18,8 +18,7 @@
  *   "packages/execution/src/agent_runner.ts",
  *   "packages/execution/src/blueprint_service.ts",
  *   "packages/core/src/func/prompt_formatter.ts",
- *   "packages/core/src/skills/skills.ts",
- *   "scripts/build_skills_index.ts"
+ *   "packages/core/src/skills/skills.ts"
  * ]
  */
 
@@ -39,7 +38,6 @@ import type { ISkill } from "@exaix/schemas/memory_bank.ts";
 import { PromptBudgetAllocator } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { createMockConfig, createMockLogger, initTestDbService, REPO_ROOT } from "@exaix/testing";
-import { buildSkillsIndex } from "../../../scripts/build_skills_index.ts";
 
 const WELL_FORMED_RESPONSE = "<thought>ok</thought><content>done</content>";
 const FIXTURE_SKILLS_DIR = join(import.meta.dirname!, "../../../tests/scenario_framework/fixtures/ste100/skills");
@@ -71,24 +69,16 @@ function makeCapturingProvider(responses: string[]): {
   return { provider, prompts };
 }
 
-/** Compiles the real fixture skills into a fresh temp skill store via the production
- *  generator, then drives `AgentRunner.run` with a capturing provider, returning the
- *  assembled provider prompt. */
+/** Loads the fixture skill folders through a real SkillsService. Returns the prompt `AgentRunner.run` sends. */
 async function captureContractPrompt(userPrompt: string, pinnedSkillIds: string[]): Promise<string> {
   const root = await Deno.makeTempDir({ prefix: "ste100-prompt-" });
   const memoryDir = join(root, "Memory");
-  const targetSkillsDir = join(memoryDir, "Skills");
   try {
-    const generated = await buildSkillsIndex(FIXTURE_SKILLS_DIR, targetSkillsDir, root);
-    if (!generated.success) {
-      throw new Error(`buildSkillsIndex failed: ${generated.errors.join("; ")}`);
-    }
-    assertEquals(generated.generated.length, 2, "both contract fixtures must compile");
-
     const { db, cleanup } = await initTestDbService();
     try {
-      const skillsService = new SkillsService({ memoryDir }, db);
+      const skillsService = new SkillsService({ memoryDir, blueprintSkillsDir: FIXTURE_SKILLS_DIR }, db);
       await skillsService.initialize();
+      assertEquals((await skillsService.listSkills()).length, 2, "both contract fixtures must load");
 
       const { provider, prompts } = makeCapturingProvider([WELL_FORMED_RESPONSE]);
       const runner = new AgentRunner(undefined, provider, { skillsService, disableSkills: false });
@@ -106,7 +96,7 @@ async function captureContractPrompt(userPrompt: string, pinnedSkillIds: string[
   }
 }
 
-Deno.test("STE runtime contract reaches AgentRunner from compiled skill", async () => {
+Deno.test("STE runtime contract reaches AgentRunner from the skill folder", async () => {
   const prompt = await captureContractPrompt("Explain the login flow.", ["ste-contract"]);
   assertStringIncludes(prompt, "# STE Contract for Agent Prose");
   assertStringIncludes(prompt, "**Instructions:**");
@@ -141,7 +131,7 @@ Deno.test("Documentation content is exempt while status prose is covered", async
   assertStringIncludes(explanation, "Cover status prose and normal explanations");
 });
 
-Deno.test("Compiled contract carries all five Exaix extension rules", async () => {
+Deno.test("Contract carries all five Exaix extension rules", async () => {
   const prompt = await captureContractPrompt("Do the thing.", ["ste-contract"]);
   for (const ruleId of ["EXAIX-01", "EXAIX-02", "EXAIX-03", "EXAIX-04", "EXAIX-05"]) {
     assertStringIncludes(prompt, ruleId);
@@ -163,34 +153,19 @@ Deno.test("Metadata-only obligation survives through the unchanged production fo
   assertEquals(prompt.includes('"output_requirements"'), false);
 });
 
-/** Compiles a skills directory into a fresh temp Memory/Skills store via the production
- *  generator, then returns the temp root. Used by the tests that load the real Blueprint
- *  skill catalog (the same sources the daemon compiles). */
-async function compileSkillsToTempStore(skillsDir: string): Promise<string> {
-  const root = await Deno.makeTempDir({ prefix: "ste100-corpus-" });
-  const memoryDir = join(root, "Memory");
-  const targetSkillsDir = join(memoryDir, "Skills");
-  const generated = await buildSkillsIndex(skillsDir, targetSkillsDir, root);
-  if (!generated.success) {
-    await Deno.remove(root, { recursive: true }).catch(() => {});
-    throw new Error(`buildSkillsIndex failed: ${generated.errors.join("; ")}`);
-  }
-  return root;
-}
-
-/** Runs a real Blueprint skill through the full chain — compile → SkillsService →
+/** Runs a real Blueprint skill through the full chain — SkillsService →
  *  AgentRunner.run with a real ContextBudgetManager → capturing provider — and returns
  *  the assembled provider prompt. `pinSkillIds` mirrors a request's explicit skills. */
 async function captureRealSkillPrompt(
   pinSkillIds: string[],
   options?: { costTargetTokens?: number; render_mode?: "full" | "trimmed"; requestText?: string },
 ): Promise<{ prompt: string; skill: ISkill | null }> {
-  const root = await compileSkillsToTempStore(REAL_SKILLS_DIR);
+  const root = await Deno.makeTempDir({ prefix: "ste100-corpus-" });
   const memoryDir = join(root, "Memory");
   try {
     const { db, cleanup } = await initTestDbService();
     try {
-      const skillsService = new SkillsService({ memoryDir }, db);
+      const skillsService = new SkillsService({ memoryDir, blueprintSkillsDir: REAL_SKILLS_DIR }, db);
       await skillsService.initialize();
 
       const skill = pinSkillIds.length > 0 && pinSkillIds[0] ? await skillsService.getSkill(pinSkillIds[0]) : null;
@@ -291,17 +266,17 @@ Deno.test("Judge and specialist contracts preserve their exact JSON shapes", asy
   assertStringIncludes(specialist.skill!.instructions, '"severity"');
 });
 
-Deno.test("Compiled skills preserve identity metadata and instruction semantics", async () => {
+Deno.test("Loaded skills preserve identity metadata and instruction semantics", async () => {
   const { skill } = await captureRealSkillPrompt(["response-contract"]);
   assertEquals(skill?.skill_id, "response-contract");
-  assertEquals(skill?.name, "Response Output Contract");
+  assertEquals(skill?.title, "Response Output Contract");
   assertEquals(skill?.critical, true);
   assertStringIncludes(skill!.instructions, "## Executable-plan JSON schema");
   assertStringIncludes(skill!.instructions, "## Agent Thought Standardization");
 });
 
-Deno.test("Blueprint skill compression preserves obligations through compilation and loading", async () => {
-  // A real converted Blueprint skill, compiled + loaded, still carries its required
+Deno.test("Blueprint skill compression preserves obligations through loading", async () => {
+  // A real converted Blueprint skill, loaded, still carries its required
   // obligations (not just generic STE labels).
   const { prompt } = await captureRealSkillPrompt(["response-contract"]);
   assertStringIncludes(prompt, "MUST be a single valid JSON object");
@@ -320,12 +295,12 @@ Deno.test("Runtime obligation mapping forbids deduplication into unrendered meta
   // The metadata-only fixture proves obligations survive in the body; the mapped skill
   // must not be delivered via `constraints`/`output_requirements` (unrendered by the real
   // fort matter). The Body instructions must carry the obligation text.
-  const root = await compileSkillsToTempStore(FIXTURE_SKILLS_DIR);
+  const root = await Deno.makeTempDir({ prefix: "ste100-metadata-only-" });
   const memoryDir = join(root, "Memory");
   try {
     const { db, cleanup } = await initTestDbService();
     try {
-      const skillsService = new SkillsService({ memoryDir }, db);
+      const skillsService = new SkillsService({ memoryDir, blueprintSkillsDir: FIXTURE_SKILLS_DIR }, db);
       await skillsService.initialize();
       const { provider, prompts } = makeCapturingProvider([WELL_FORMED_RESPONSE]);
       const runner = new AgentRunner(undefined, provider, { skillsService, disableSkills: false });

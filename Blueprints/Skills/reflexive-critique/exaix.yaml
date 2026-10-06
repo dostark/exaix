@@ -1,0 +1,28 @@
+title: Reflexive Self-Critique
+triggers:
+  tags:
+    - reflexion
+    - self-critique
+    - quality
+    - refinement
+constraints:
+  - Always critique the draft before emitting it; never return an unreviewed first draft
+  - Stop refining once the confidence threshold is met or improvements stop being material
+  - Surface residual low-confidence areas explicitly rather than hiding them
+output_requirements:
+  - A refined response that has passed at least one critique pass
+  - A confidence assessment (0-100) with the reasoning behind it
+  - Any unresolved concerns the critique surfaced but could not fix
+quality_criteria:
+  - name: Critique Rigor
+    description: 'The self-critique checks accuracy, completeness, quality, and safety, not just surface polish'
+    weight: 40
+  - name: Material Improvement
+    description: Each refinement pass measurably improves the draft against a named criterion
+    weight: 35
+  - name: Honest Confidence
+    description: 'The final confidence score reflects the actual residual risk, with caveats stated'
+    weight: 25
+applies_to:
+  agents:
+    - '*'

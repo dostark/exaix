@@ -14,6 +14,7 @@ import {
   MemoryBankSource,
   MemoryScope,
   MemoryType,
+  SkillStatus,
 } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
 import { assertEquals, assertStringIncludes } from "@std/assert";
@@ -40,6 +41,7 @@ import {
   TEST_SKILL_NAME,
   TEST_SKILL_REQUEST_TEXT,
   TEST_SKILL_TASK_TYPE,
+  testSkillContext,
 } from "@exaix/testing";
 import { join } from "@std/path";
 
@@ -666,7 +668,8 @@ Deno.test("MemoryCommands: skillMatch returns matches for active skill", async (
 
     const skills = new SkillsService({ memoryDir: join(config.system.root, config.paths.memory) }, db);
     await skills.initialize();
-    await skills.activateSkill(TEST_SKILL_ID);
+    const [draft] = await skills.listSkills({ status: SkillStatus.DRAFT });
+    await skills.activateSkill(TEST_SKILL_ID, draft.id, testSkillContext());
 
     const result = await commands.skillMatch(TEST_SKILL_REQUEST_TEXT, {
       taskType: TEST_SKILL_TASK_TYPE,

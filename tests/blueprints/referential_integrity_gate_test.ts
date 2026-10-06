@@ -3,7 +3,7 @@
  * @path tests/blueprints/referential_integrity_gate_test.ts
  * @description Phase 131 Step 9 — referential-integrity + agent-role
  *   conformance gate. Validates that every agent role's default_skills resolve
- *   to loadable .skill.md files, its capabilities/permitted_tools match its
+ *   to loadable skill folders, its capabilities/permitted_tools match its
  *   role, and the gate FAILS CLOSED on a dangling skill reference, wrong
  *   skills, or over-privileged tools.
  * @architectural-layer Integration
@@ -54,7 +54,7 @@ function loadActiveAgentRoles(): Array<{ id: string; fm: IAgentRoleFrontmatter }
 // 1. Referential-integrity: every default_skills resolves
 
 Deno.test({
-  name: "[step9/integrity-gate] all default_skills references resolve to existent .skill.md files — FAILS CLOSED",
+  name: "[step9/integrity-gate] all default_skills references resolve to existent skill folders — FAILS CLOSED",
   fn() {
     const agentRoles = loadActiveAgentRoles();
     const dangling: Array<{ id: string; skill: string }> = [];
@@ -62,7 +62,7 @@ Deno.test({
     for (const { id, fm } of agentRoles) {
       const skills = fm.default_skills ?? [];
       for (const s of skills) {
-        const skillPath = join(SKILLS_DIR, `${s}.skill.md`);
+        const skillPath = join(SKILLS_DIR, s, "SKILL.md");
         try {
           Deno.statSync(skillPath);
         } catch {
@@ -77,7 +77,7 @@ Deno.test({
         ? `Dangling skill references (${dangling.length}):\n${
           dangling.map((d) => `  ${d.id}: → "${d.skill}"`).join("\n")
         }`
-        : "All default_skills resolve to existent .skill.md files",
+        : "All default_skills resolve to existent skill folders",
     );
   },
 });
@@ -88,21 +88,21 @@ Deno.test({
   name: "[step9/integrity-gate] a dangling skill reference is detected — FAILS CLOSED",
   fn() {
     const dangling = "non-existent-skill-that-should-not-exist";
-    const skillPath = join(SKILLS_DIR, `${dangling}.skill.md`);
+    const skillPath = join(SKILLS_DIR, dangling, "SKILL.md");
     let fileExists = true;
     try {
       Deno.statSync(skillPath);
     } catch {
       fileExists = false;
     }
-    assertEquals(fileExists, false, `Precondition: "${dangling}" must not have a .skill.md file`);
+    assertEquals(fileExists, false, `Precondition: "${dangling}" must not have a skill folder`);
 
     // Simulate the gate check
     const badAgentRole = { id: "__test_dangling_ref", fm: { default_skills: [dangling] } };
     const skills = badAgentRole.fm.default_skills ?? [];
     const missing = skills.filter((s: string) => {
       try {
-        Deno.statSync(join(SKILLS_DIR, `${s}.skill.md`));
+        Deno.statSync(join(SKILLS_DIR, s, "SKILL.md"));
         return false;
       } catch {
         return true;

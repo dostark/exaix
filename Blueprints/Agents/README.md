@@ -156,9 +156,8 @@ Skills whose content must survive context compaction carry `critical: true`; tha
 flag is a **retention** marker, not a selection one, and the whole
 `response-contract*` family plus `verdict-rubric` carry it.
 
-Skills are loaded at runtime by the skill service from `Memory/Skills/`, which is
-generated from these authored `.skill.md` files (`deno task check:skill-index`
-keeps the two in sync).
+Skills are loaded at runtime by the skill service directly from the authored skill
+folders in `Blueprints/Skills/<name>/` (`deno task check:skill-index` validates them).
 
 ## Plan output
 

@@ -2,7 +2,7 @@
  * @module SkillsMatchEventTest
  * @path packages/core/tests/skills/skills_match_event_test.ts
  * @description Phase 142 Step 12 — verifies SkillsService.matchSkills journals
- *   SKILL_EVENT_MATCH_COMPLETED. The constant was declared in constants.ts but had ZERO
+ *   DomainEventType.SkillsMatchCompleted. The constant was declared in constants.ts but had ZERO
  *   production emitters, so every skill match was invisible to the Activity Journal and
  *   the entire skills evaluation pack asserted a `skills.match_completed` event that could
  *   never arrive.
@@ -13,11 +13,9 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { copy } from "@std/fs";
+import { DomainEventType } from "@exaix/core/events";
 import { SkillsService } from "@exaix/core/skills";
-import { MemoryBankSource, MemoryScope, SKILL_EVENT_MATCH_COMPLETED, SkillStatus } from "@exaix/core";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
-import { initTestDbService } from "@exaix/testing";
+import { initTestDbService, REPO_ROOT } from "@exaix/testing";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
 
@@ -45,20 +43,17 @@ function createCapturingLogger(captured: ICapturedEvent[]): IEventLogger {
   return logger;
 }
 
-const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..", "..");
+const REPO_BLUEPRINT_SKILLS = join(REPO_ROOT, "Blueprints", "Skills");
 
 async function withSkillsService(
   fn: (service: SkillsService, captured: ICapturedEvent[]) => Promise<void>,
 ): Promise<void> {
   const { db, cleanup } = await initTestDbService();
   const captured: ICapturedEvent[] = [];
-  // Copy the shipped skill catalog into a temp dir rather than pointing at the repo's own:
-  // SkillsService.initialize() rebuilds Skills/index.json, which the repo tree deliberately omits.
   const memoryDir = await Deno.makeTempDir({ prefix: "skills-match-event-" });
   try {
-    await copy(join(REPO_ROOT, "Memory", "Skills"), join(memoryDir, "Skills"), { overwrite: true });
     const service = new SkillsService(
-      { memoryDir },
+      { memoryDir, blueprintSkillsDir: REPO_BLUEPRINT_SKILLS },
       db,
       undefined,
       createCapturingLogger(captured),
@@ -78,7 +73,7 @@ Deno.test("[skills] matchSkills journals skills.match_completed with the matched
       requestText: "write tests first then implement the feature",
     });
 
-    const events = captured.filter((e) => e.action === SKILL_EVENT_MATCH_COMPLETED);
+    const events = captured.filter((e) => e.action === DomainEventType.SkillsMatchCompleted);
     assertEquals(events.length, 1, "exactly one match_completed event per matchSkills call");
 
     const payload = events[0].payload as { matched_skill_ids?: string[]; matched_count?: number } | undefined;
@@ -95,12 +90,32 @@ Deno.test("[skills] matchSkills journals the event even when nothing matches", a
     });
 
     assertEquals(matches.length, 0);
-    const events = captured.filter((e) => e.action === SKILL_EVENT_MATCH_COMPLETED);
+    const events = captured.filter((e) => e.action === DomainEventType.SkillsMatchCompleted);
     assertEquals(events.length, 1, "a zero-match outcome is still an observable match result");
     const payload = events[0].payload as { matched_count?: number } | undefined;
     assertEquals(payload?.matched_count, 0);
   });
 });
+
+async function writeActiveSkill(
+  root: string,
+  name: string,
+  description: string,
+  body: string,
+  triggers: Record<string, string[]>,
+): Promise<void> {
+  await Deno.mkdir(join(root, name), { recursive: true });
+  await Deno.writeTextFile(
+    join(root, name, "SKILL.md"),
+    `---\nname: ${name}\ndescription: ${description}\n---\n${body}\n`,
+  );
+  await Deno.writeTextFile(
+    join(root, name, "exaix.yaml"),
+    `triggers:\n${
+      Object.entries(triggers).map(([k, v]) => `  ${k}: [${v.map((x) => JSON.stringify(x)).join(", ")}]`).join("\n")
+    }\n`,
+  );
+}
 
 /** A block longer than the default skill context budget, so `formatSkillForPrompt` cannot
  *  fit it. 2500 > DEFAULT_SKILL_CONTEXT_CHAR_BUDGET (2000). */
@@ -110,40 +125,34 @@ Deno.test("[skills] matchSkills keeps a fitting lower-confidence match when a hi
   const { db, cleanup } = await initTestDbService();
   const captured: ICapturedEvent[] = [];
   const memoryDir = await Deno.makeTempDir({ prefix: "skills-budget-" });
+  const blueprintDir = join(memoryDir, "Blueprints", "Skills");
   try {
+    // Confidence is score divided by max over declared dimensions. `oversized-first` declares
+    // only the tag, so it scores 1.0. `small-second` adds an unmatched file pattern, so its
+    // denominator grows and it ranks below the oversized block.
+    await writeActiveSkill(
+      blueprintDir,
+      "oversized-first",
+      "Ranks first but cannot fit the budget",
+      OVERSIZED_INSTRUCTIONS,
+      {
+        tags: ["budget-probe"],
+      },
+    );
+    await writeActiveSkill(
+      blueprintDir,
+      "small-second",
+      "Ranks lower but fits the budget",
+      "A short instruction block that fits comfortably.",
+      { tags: ["budget-probe"], file_patterns: ["*.no-such-extension"] },
+    );
     const service = new SkillsService(
-      { memoryDir },
+      { memoryDir, blueprintSkillsDir: blueprintDir },
       db,
       undefined,
       createCapturingLogger(captured),
     );
     await service.initialize();
-
-    // Confidence is score divided by max over declared dimensions. `oversized-first` declares
-    // only the tag, so it scores 1.0. `small-second` adds an unmatched file pattern, so its
-    // denominator grows and it ranks below the oversized block.
-    await service.createSkill({
-      skill_id: "oversized-first",
-      name: "Oversized First",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "Ranks first but cannot fit the budget",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: { tags: ["budget-probe"] },
-      instructions: OVERSIZED_INSTRUCTIONS,
-    });
-    await service.createSkill({
-      skill_id: "small-second",
-      name: "Small Second",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "Ranks lower but fits the budget",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: { tags: ["budget-probe"], file_patterns: ["*.no-such-extension"] },
-      instructions: "A short instruction block that fits comfortably.",
-    });
 
     const { matches } = await service.matchSkills({
       tags: ["budget-probe"],

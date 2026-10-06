@@ -7,10 +7,11 @@
  * @related-files ["packages/core/src/types/i_skills_service.ts", "packages/core/src/skills/skills.ts"] */
 
 import type { ISkillsService } from "@exaix/core/types";
-import type { SkillsService } from "@exaix/core/skills";
-import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
+import type { ISkillDiagnostic, ISkillOperationContext, SkillsService } from "@exaix/core/skills";
+import type { ISkill, ISkillMatch, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
 import type { ISkillMatchRequest } from "@exaix/core/types";
-import { MemoryBankSource, SkillStatus } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
+import { MemoryBankSource, type MemoryScope, SkillStatus } from "@exaix/core";
 
 export class SkillsAdapter implements ISkillsService {
   constructor(private inner: SkillsService) {}
@@ -19,37 +20,56 @@ export class SkillsAdapter implements ISkillsService {
     return await this.inner.initialize();
   }
 
-  async matchSkills(request: ISkillMatchRequest): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
-    return await this.inner.matchSkills(request);
+  async matchSkills(
+    request: ISkillMatchRequest,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
+    return await this.inner.matchSkills(request, ctx);
   }
 
-  async buildSkillContext(skillIds: string[]): Promise<string> {
-    return await this.inner.buildSkillContext(skillIds);
-  }
-
-  async recordSkillUsage(skillId: string): Promise<void> {
-    return await this.inner.recordSkillUsage(skillId);
+  async buildSkillContext(
+    skillIds: string[],
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<string> {
+    return await this.inner.buildSkillContext(skillIds, ctx);
   }
 
   async deriveSkillFromLearnings(
     learningIds: string[],
     skillDef: SkillDefinition,
+    ctx: ISkillOperationContext,
   ): Promise<ISkill> {
-    return await this.inner.deriveSkillFromLearnings(learningIds, skillDef);
+    return await this.inner.deriveSkillFromLearnings(learningIds, skillDef, ctx);
   }
 
-  async createSkill(skillDef: SkillDefinition): Promise<ISkill> {
-    return await this.inner.createSkill(skillDef);
+  async createSkill(skillDef: SkillDefinition, ctx: ISkillOperationContext): Promise<ISkill> {
+    return await this.inner.createSkill(skillDef, ctx);
   }
 
-  async rebuildIndex(): Promise<void> {
-    return await this.inner.rebuildIndex();
+  async updateSkill(skillId: string, updates: SkillUpdates, ctx: ISkillOperationContext): Promise<ISkill | null> {
+    return await this.inner.updateSkill(skillId, updates, ctx);
   }
 
-  async listSkills(filter?: { source?: MemoryBankSource; status?: SkillStatus }): Promise<ISkill[]> {
+  async approveSkill(skillId: string, expectedRevisionId: string, ctx: ISkillOperationContext): Promise<ISkill> {
+    return await this.inner.approveSkill(skillId, expectedRevisionId, ctx);
+  }
+
+  async activateSkill(skillId: string, expectedRevisionId: string, ctx: ISkillOperationContext): Promise<ISkill> {
+    return await this.inner.activateSkill(skillId, expectedRevisionId, ctx);
+  }
+
+  async deprecateSkill(skillId: string, ctx: ISkillOperationContext): Promise<ISkill> {
+    return await this.inner.deprecateSkill(skillId, ctx);
+  }
+
+  async listSkills(
+    filter?: Opt<{ source?: MemoryBankSource; status?: SkillStatus; scope?: MemoryScope }, Reason.QueryFilter>,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkill[]> {
     const normalized: {
       status?: SkillStatus;
       source?: MemoryBankSource;
+      scope?: MemoryScope;
     } = {};
 
     if (filter?.status && Object.values(SkillStatus).includes(filter.status as SkillStatus)) {
@@ -60,14 +80,20 @@ export class SkillsAdapter implements ISkillsService {
       normalized.source = filter.source as MemoryBankSource;
     }
 
-    return await this.inner.listSkills(normalized);
+    if (filter?.scope) normalized.scope = filter.scope;
+
+    return await this.inner.listSkills(normalized, ctx);
   }
 
-  async getSkill(skillId: string): Promise<ISkill | null> {
-    return await this.inner.getSkill(skillId);
+  async listDiagnostics(ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>): Promise<ISkillDiagnostic[]> {
+    return await this.inner.listDiagnostics(ctx);
   }
 
-  async deleteSkill(skillId: string): Promise<boolean> {
-    return await this.inner.deleteSkill(skillId);
+  async getSkill(skillId: string, ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>): Promise<ISkill | null> {
+    return await this.inner.getSkill(skillId, ctx);
+  }
+
+  async deleteSkill(skillId: string, ctx: ISkillOperationContext): Promise<boolean> {
+    return await this.inner.deleteSkill(skillId, ctx);
   }
 }

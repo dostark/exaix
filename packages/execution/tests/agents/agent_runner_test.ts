@@ -10,12 +10,12 @@
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
-import { MEMORY_CONTEXT_KEY, MemoryBankSource, MemoryScope, PORTAL_CONTEXT_KEY, SkillStatus } from "@exaix/core";
+import { MEMORY_CONTEXT_KEY, MemoryBankSource, PORTAL_CONTEXT_KEY } from "@exaix/core";
 import type { ILogEvent } from "@exaix/core";
 import { buildPortalContextBlock } from "@exaix/core/func";
-import type { ISkillsService } from "@exaix/core/types";
 import type { ISkillMatchRequest } from "@exaix/core/types";
-import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
+import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
+import { runtimeSkillFixture, StubSkillsService } from "@exaix/testing";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
@@ -787,13 +787,14 @@ Deno.test("IAgentRunner handles very long user prompt", async () => {
 
 // Skills Integration Tests
 
+const SKILL_TEST_REVISION_ID = "123e4567-e89b-52d3-a456-426614174000";
+
 /**
  * Mock SkillsService for testing
  */
-class MockSkillsService implements ISkillsService {
+class MockSkillsService extends StubSkillsService {
   matchedSkills: ISkillMatch[] = [];
   skillContext = "";
-  usageRecorded: string[] = [];
   matchCallCount = 0;
   contextBuiltForSkills: string[] = [];
   criticalSkillIds = new Set<string>();
@@ -806,20 +807,7 @@ class MockSkillsService implements ISkillsService {
     this.skillContext = context;
   }
 
-  private createSkillRecord(skillDef: SkillDefinition, skillId: string): ISkill {
-    return {
-      ...skillDef,
-      id: crypto.randomUUID(),
-      created_at: new Date().toISOString(),
-      usage_count: 0,
-      skill_id: skillId,
-      source: MemoryBankSource.CORE,
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-    };
-  }
-
-  matchSkills(
+  override matchSkills(
     _request: ISkillMatchRequest,
   ): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
     this.matchCallCount++;
@@ -829,18 +817,13 @@ class MockSkillsService implements ISkillsService {
     });
   }
 
-  buildSkillContext(skillIds: string[]): Promise<string> {
+  override buildSkillContext(skillIds: string[]): Promise<string> {
     this.contextBuiltForSkills = skillIds;
     if (skillIds.length === 0) return Promise.resolve("");
     return Promise.resolve(this.skillContext);
   }
 
-  recordSkillUsage(skillId: string): Promise<void> {
-    this.usageRecorded.push(skillId);
-    return Promise.resolve();
-  }
-
-  getSkill(id: string): Promise<ISkill | null> {
+  override getSkill(id: string): Promise<ISkill | null> {
     this.contextBuiltForSkills.push(id);
     // Return a dummy skill if it's in our matched list or if it's a known default skill
     const isKnown = id.startsWith("default-skill") ||
@@ -849,57 +832,18 @@ class MockSkillsService implements ISkillsService {
 
     if (!isKnown) return Promise.resolve(null);
 
-    return Promise.resolve({
-      id,
+    return Promise.resolve(runtimeSkillFixture({
       skill_id: id,
-      name: id === "security-first"
+      title: id === "security-first"
         ? "Security First"
         : id === "tdd-methodology"
         ? "TDD Methodology"
         : `Mock Skill ${id}`,
       description: "Mock skill description",
       instructions: "Mock skill instructions",
-      version: "1.0.0",
-      created_at: new Date().toISOString(),
       source: MemoryBankSource.CORE,
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      triggers: {
-        keywords: [],
-        task_types: [],
-        file_patterns: [],
-        tags: [],
-      },
-      usage_count: 0,
       critical: this.criticalSkillIds.has(id),
-    });
-  }
-
-  listSkills(): Promise<ISkill[]> {
-    return Promise.resolve([]);
-  }
-
-  initialize(): Promise<void> {
-    return Promise.resolve();
-  }
-
-  createSkill(skillDef: SkillDefinition): Promise<ISkill> {
-    return Promise.resolve(this.createSkillRecord(skillDef, "created"));
-  }
-
-  deleteSkill(_id: string): Promise<boolean> {
-    return Promise.resolve(true);
-  }
-
-  rebuildIndex(): Promise<void> {
-    return Promise.resolve();
-  }
-
-  deriveSkillFromLearnings(
-    _learningIds: string[],
-    skillDef: SkillDefinition,
-  ): Promise<ISkill> {
-    return Promise.resolve(this.createSkillRecord(skillDef, "derived"));
+    }));
   }
 }
 
@@ -907,7 +851,12 @@ Deno.test("IAgentRunner: matches skills when skillsService provided", async () =
   const mockProvider = new MockProvider(wellFormedResponse);
   const mockSkills = new MockSkillsService();
   mockSkills.setMatchedSkills([
-    { skillId: "tdd-methodology", confidence: 0.85, matchedTriggers: { keywords: ["create"] } },
+    {
+      skillId: "tdd-methodology",
+      revisionId: SKILL_TEST_REVISION_ID,
+      confidence: 0.85,
+      matchedTriggers: { keywords: ["create"] },
+    },
   ]);
   mockSkills.setSkillContext("## Skill: TDD Methodology\n\nAlways write tests first.");
 
@@ -933,7 +882,7 @@ Deno.test("IAgentRunner: injects skill context into prompt", async () => {
 
   const mockSkills = new MockSkillsService();
   mockSkills.setMatchedSkills([
-    { skillId: "security-first", confidence: 0.9, matchedTriggers: {} },
+    { skillId: "security-first", revisionId: SKILL_TEST_REVISION_ID, confidence: 0.9, matchedTriggers: {} },
   ]);
   mockSkills.setSkillContext("## Skill: Security First\n\nAlways validate input.");
 
@@ -960,8 +909,8 @@ Deno.test("IAgentRunner: assembled prompt orders system, critical skills, ordina
   const mockSkills = new MockSkillsService();
   mockSkills.criticalSkillIds.add("security-first");
   mockSkills.setMatchedSkills([
-    { skillId: "security-first", confidence: 0.9, matchedTriggers: {} },
-    { skillId: "tdd-methodology", confidence: 0.8, matchedTriggers: {} },
+    { skillId: "security-first", revisionId: SKILL_TEST_REVISION_ID, confidence: 0.9, matchedTriggers: {} },
+    { skillId: "tdd-methodology", revisionId: SKILL_TEST_REVISION_ID, confidence: 0.8, matchedTriggers: {} },
   ]);
 
   const runner = new AgentRunner(mockProvider, { skillsService: mockSkills });
@@ -1022,31 +971,11 @@ Deno.test("IAgentRunner: warns when the provider reports stop_reason max_tokens 
   assertEquals(truncationWarn.payload?.stop_reason, "max_tokens");
 });
 
-Deno.test("IAgentRunner: records skill usage after execution", async () => {
-  const mockProvider = new MockProvider(wellFormedResponse);
-  const mockSkills = new MockSkillsService();
-  mockSkills.setMatchedSkills([
-    { skillId: "tdd-methodology", confidence: 0.8, matchedTriggers: {} },
-    { skillId: "error-handling", confidence: 0.7, matchedTriggers: {} },
-  ]);
-  mockSkills.setSkillContext("Skills context");
-
-  const runner = new AgentRunner(mockProvider, {
-    skillsService: mockSkills,
-  });
-
-  await runner.run(sampleBlueprint, sampleRequest, undefined);
-
-  assertEquals(mockSkills.usageRecorded.length, 2);
-  assertEquals(mockSkills.usageRecorded.includes("tdd-methodology"), true);
-  assertEquals(mockSkills.usageRecorded.includes("error-handling"), true);
-});
-
 Deno.test("IAgentRunner: skips skill matching when disableSkills is true", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const mockSkills = new MockSkillsService();
   mockSkills.setMatchedSkills([
-    { skillId: "tdd-methodology", confidence: 0.8, matchedTriggers: {} },
+    { skillId: "tdd-methodology", revisionId: SKILL_TEST_REVISION_ID, confidence: 0.8, matchedTriggers: {} },
   ]);
 
   const runner = new AgentRunner(mockProvider, {
@@ -1075,14 +1004,14 @@ Deno.test("IAgentRunner: handles skill matching error gracefully", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
 
   // Create a skill service that throws
-  const errorSkills = {
-    matchSkills() {
+  class ThrowingSkillsService extends StubSkillsService {
+    override matchSkills(): never {
       throw new Error("Skill matching failed");
-    },
-  };
+    }
+  }
 
   const runner = new AgentRunner(mockProvider, {
-    skillsService: errorSkills as Partial<ISkillsService> as ISkillsService,
+    skillsService: new ThrowingSkillsService(),
   });
 
   // Should not throw, should continue without skills
@@ -1125,7 +1054,12 @@ Deno.test("IAgentRunner: trigger matches are concatenated with blueprint default
 
   // Trigger match found
   mockSkills.setMatchedSkills([
-    { skillId: "matched-skill", confidence: 0.9, matchedTriggers: { keywords: ["test"] } },
+    {
+      skillId: "matched-skill",
+      revisionId: SKILL_TEST_REVISION_ID,
+      confidence: 0.9,
+      matchedTriggers: { keywords: ["test"] },
+    },
   ]);
   mockSkills.setSkillContext("## Matched Skill\nMatched instructions");
 
@@ -1153,7 +1087,12 @@ Deno.test("IAgentRunner: request-level skills override trigger matches", async (
 
   // Trigger match would return these
   mockSkills.setMatchedSkills([
-    { skillId: "matched-skill", confidence: 0.9, matchedTriggers: { keywords: ["test"] } },
+    {
+      skillId: "matched-skill",
+      revisionId: SKILL_TEST_REVISION_ID,
+      confidence: 0.9,
+      matchedTriggers: { keywords: ["test"] },
+    },
   ]);
   mockSkills.setSkillContext("## Request Skill\nRequest instructions");
 

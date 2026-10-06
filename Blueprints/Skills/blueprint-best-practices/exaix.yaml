@@ -1,0 +1,33 @@
+title: Blueprint Best Practices
+triggers:
+  tags:
+    - best-practices
+    - plan-quality
+    - blueprint
+constraints:
+  - Never overwrite unrelated changes — use patch_file for targeted edits to large files
+  - Only cite files and symbols that exist in the provided portal context; verify before acting
+  - Every plan step must have concrete successCriteria and explicit tools/actions
+  - Solve the task with the fewest edits that satisfy the requirements
+output_requirements:
+  - 'Precision: use patch_file for targeted edits, write_file only for new or small files'
+  - 'Ground references: verify file/symbol existence before acting'
+  - 'Executable steps: each step has concrete successCriteria and explicit tools/actions'
+  - 'Minimal change: solve with the fewest edits that satisfy requirements'
+  - 'Assumptions and risks: surface ambiguity and destructive actions explicitly'
+quality_criteria:
+  - name: Grounding
+    description: Every referenced file and symbol is verified to exist
+    weight: 30
+  - name: Executability
+    description: Each step is independently verifiable and runnable
+    weight: 30
+  - name: Scope Discipline
+    description: The plan solves the task without speculative refactors or unrequested scope
+    weight: 20
+  - name: Risk Transparency
+    description: Ambiguities and destructive actions are surfaced explicitly
+    weight: 20
+applies_to:
+  agents:
+    - '*'

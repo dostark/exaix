@@ -23,7 +23,8 @@ import { parse } from "@std/toml";
 import { fromFileUrl } from "@std/path";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { EventLogger } from "@exaix/core/logger";
-import { QualityGateMode, SKILL_EVENT_MATCH_COMPLETED } from "@exaix/core";
+import { QualityGateMode } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
 import { SkillsService } from "@exaix/core/skills";
 import { AgentRunner } from "@exaix/execution";
 import { buildRequestQualityGateFromConfig } from "@exaix/quality-gate";
@@ -67,7 +68,7 @@ Deno.test("[AblationDisableProof] skills preset: skills.inject_in_prompt=false â
   try {
     const logger = new EventLogger({ db });
     const memoryDir = join(tempDir, "Memory");
-    const skillsService = new SkillsService({ memoryDir, portal: undefined }, db, undefined, logger);
+    const skillsService = new SkillsService({ memoryDir }, db, undefined, logger);
     await skillsService.initialize();
 
     const provider: IModelProvider = makeMockProvider();
@@ -79,7 +80,7 @@ Deno.test("[AblationDisableProof] skills preset: skills.inject_in_prompt=false â
 
     const actions = await journalActions(db);
     assertEquals(
-      actions.includes(SKILL_EVENT_MATCH_COMPLETED),
+      actions.includes(DomainEventType.SkillsMatchCompleted),
       false,
       "skills ablation must leave no skills.match_completed in the journal",
     );
@@ -93,7 +94,7 @@ Deno.test("[AblationDisableProof] skills control: inject_in_prompt=true â†’ skil
   try {
     const logger = new EventLogger({ db });
     const memoryDir = join(tempDir, "Memory");
-    const skillsService = new SkillsService({ memoryDir, portal: undefined }, db, undefined, logger);
+    const skillsService = new SkillsService({ memoryDir }, db, undefined, logger);
     await skillsService.initialize();
 
     const provider: IModelProvider = makeMockProvider();
@@ -105,7 +106,7 @@ Deno.test("[AblationDisableProof] skills control: inject_in_prompt=true â†’ skil
 
     const actions = await journalActions(db);
     assertEquals(
-      actions.includes(SKILL_EVENT_MATCH_COMPLETED),
+      actions.includes(DomainEventType.SkillsMatchCompleted),
       true,
       "with skills enabled the journal must contain skills.match_completed",
     );

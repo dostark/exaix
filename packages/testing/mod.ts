@@ -19,6 +19,18 @@ export { getFixturePath, readFixtureTextSync } from "./src/helpers/fixtures.ts";
 export { initActivityTableSchema, initTestDbService, REGISTRY_TABLES_SQL } from "./src/helpers/init_db.ts";
 export { isCi, withEnv } from "./src/helpers/env.ts";
 export { REPO_ROOT, withRepoRoot } from "./src/helpers/repo_root.ts";
+export { StubSkillsService } from "./src/helpers/stub_skills_service.ts";
+export {
+  createSkillLoaderFor,
+  type ISkillFolderSeed,
+  loadRepoSkillCatalog,
+  REPO_SKILL_PROJECT,
+  repoSkillRoots,
+  runtimeSkillFixture,
+  skillMatchFixture,
+  testSkillContext,
+  writeSkillFolder,
+} from "./src/helpers/skill_catalog.ts";
 export { setupPortalWorkspaceTestDirs } from "./src/helpers/services/portal_workspace_test_helper.ts";
 export {
   castAny,

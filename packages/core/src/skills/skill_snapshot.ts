@@ -14,10 +14,10 @@
 import { parse as parseYaml } from "@std/yaml";
 import { DOGFOOD_FRONTMATTER_KEYS, SkillFrontmatterSchema, SkillSidecarSchema } from "@exaix/schemas/skill_folder.ts";
 import { splitInstructionsAndExamples } from "../func/skill_body.ts";
-import { MemoryScope, SkillRootKind, SkillStatus } from "../types/enums.ts";
+import { MemoryBankSource, MemoryScope, SkillRootKind, SkillStatus } from "../types/enums.ts";
 import { SkillTriggersSourceSchema } from "@exaix/schemas/runtime_skill.ts";
 import type { IRuntimeSkill } from "@exaix/schemas/runtime_skill.ts";
-import type { ISkillRevisionSnapshot, ISkillRootContext, ISkillYamlMap } from "./skill_types.ts";
+import type { IResolvedSkillRoot, ISkillRevisionSnapshot, ISkillRootContext, ISkillYamlMap } from "./skill_types.ts";
 
 /** Fixed UUIDv5 namespace for Exaix skill revision ids. */
 export const SKILL_REVISION_NAMESPACE = "7ca2dd7f-933c-51d6-bb14-728efc21406f";
@@ -219,5 +219,17 @@ export async function parseSkillSnapshot(
       content: canonicalizeSkillText(reference.content),
       linked: linked.has(reference.path),
     })),
+  };
+}
+
+/** The parse context for a skill folder in one admitted root. Root policy decides source and scope. */
+export function buildRootContext(root: IResolvedSkillRoot, name: string): ISkillRootContext {
+  return {
+    rootKind: root.kind,
+    name,
+    path: name,
+    project: root.project,
+    source: root.kind === SkillRootKind.LEARNED ? MemoryBankSource.LEARNED : MemoryBankSource.USER,
+    scope: root.kind === SkillRootKind.PROJECT && root.project !== null ? MemoryScope.PROJECT : MemoryScope.GLOBAL,
   };
 }

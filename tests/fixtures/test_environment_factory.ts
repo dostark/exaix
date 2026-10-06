@@ -83,7 +83,6 @@ export class TestEnvironmentFactory {
     const embedding = new MemoryEmbeddingService(config);
     const skills = new SkillsService({
       memoryDir: getMemoryDir(tempDir),
-      portal: config.paths.workspace,
     }, db);
     const extractor = new MemoryExtractorService(config, db, memoryBank);
 

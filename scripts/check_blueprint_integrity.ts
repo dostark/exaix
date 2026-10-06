@@ -12,7 +12,7 @@
  *   facets across Blueprints/{Agents,Skills,Flows}, all fail-closed:
  *     1. dangling-agent-role — every flow `agent_role:` resolves to an agent role file.
  *     2. dangling-skill      — every agent role `default_skills` entry resolves to a
- *        `Blueprints/Skills/<id>.skill.md` file.
+ *        `Blueprints/Skills/<id>/SKILL.md` folder.
  *     3. orphan-agent-role   — every agent role is referenced by >=1 flow. System
  *        agent roles (`default`, `dogfood-developer`, or any with a `mock:` model) are
  *        exempt: they are invoked directly (global fallback / CI fixture / CLI
@@ -21,7 +21,7 @@
  *        default_skills, trigger-matched, or explicitly programmatic.
  * @architectural-layer Script
  * @dependencies [@std/path, @std/yaml]
- * @related-files [scripts/build_skills_index.ts, tests/blueprints/flow_agent_resolution_test.ts]
+ * @related-files [scripts/check_skills.ts, tests/blueprints/flow_agent_resolution_test.ts]
  */
 
 import { join } from "@std/path";
@@ -92,11 +92,16 @@ function loadAgentRoles(agentRolesDir: string): IAgentRoleRecord[] {
   return out;
 }
 
-/** Skill ids that exist on disk (`<id>.skill.md`). */
+/** Skill ids that exist on disk (`<id>/SKILL.md`). */
 function loadSkillIds(skillsDir: string): Set<string> {
   const ids = new Set<string>();
   for (const e of Deno.readDirSync(skillsDir)) {
-    if (e.isFile && e.name.endsWith(".skill.md")) ids.add(e.name.replace(/\.skill\.md$/, ""));
+    if (!e.isDirectory) continue;
+    try {
+      if (Deno.statSync(join(skillsDir, e.name, "SKILL.md")).isFile) ids.add(e.name);
+    } catch {
+      // A directory without SKILL.md is not a skill folder.
+    }
   }
   return ids;
 }
@@ -165,7 +170,7 @@ export function checkBlueprintIntegrity(blueprintsDir: string): IIntegrityResult
       if (!skillIds.has(s)) {
         violations.push({
           kind: "dangling-skill",
-          detail: `agent role "${rec.id}" references skill "${s}" which has no .skill.md file`,
+          detail: `agent role "${rec.id}" references skill "${s}" which has no skill folder`,
         });
       }
     }

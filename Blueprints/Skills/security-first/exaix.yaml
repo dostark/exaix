@@ -1,0 +1,159 @@
+title: Security-First Development
+triggers:
+  keywords:
+    - auth
+    - authentication
+    - authorization
+    - login
+    - logout
+    - session
+    - token
+    - jwt
+    - oauth
+    - saml
+    - permission
+    - role
+    - access
+    - password
+    - secret
+    - api-key
+    - apikey
+    - credential
+    - encryption
+    - decrypt
+    - certificate
+    - private-key
+    - database
+    - query
+    - sql
+    - nosql
+    - redis
+    - migration
+    - sensitive
+    - pii
+    - file
+    - path
+    - upload
+    - download
+    - directory
+    - subprocess
+    - command
+    - exec
+    - spawn
+    - http
+    - api
+    - endpoint
+    - webhook
+    - cors
+    - header
+    - cookie
+    - request
+    - url
+    - security
+    - vulnerability
+    - audit
+    - sanitize
+    - validate
+    - injection
+  task_types:
+    - feature
+    - bugfix
+    - security
+    - security-review
+    - audit
+    - authentication
+    - implementation
+    - refactor
+  file_patterns:
+    - '**/auth/**'
+    - '**/security/**'
+    - '**/login/**'
+    - '**/session/**'
+    - '**/handlers/**'
+    - '**/routes/**'
+    - '**/api/**'
+    - '**/middleware/**'
+    - '**/db/**'
+    - '**/database/**'
+    - '**/models/**'
+    - '**/upload/**'
+    - '**/*auth*.ts'
+    - '**/*security*.ts'
+    - '**/*handler*.ts'
+    - '**/*route*.ts'
+    - '**/*middleware*.ts'
+    - '**/*query*.ts'
+    - '**/*command*.ts'
+    - '**/*exec*.ts'
+    - '**/*.env*'
+    - '**/Dockerfile*'
+    - '**/docker-compose*.yml'
+  tags:
+    - security
+    - authentication
+    - authorization
+    - injection
+    - validation
+constraints:
+  - >-
+    Validate all external input (HTTP body, query params, CLI args, env vars, file content) at the entry boundary with a
+    schema validator — never deep in business logic
+  - Use allowlists over denylists; reject unknown fields
+  - >-
+    Resolve all filesystem paths to their real absolute path before any permission or boundary check; never compare with
+    string startsWith or indexOf alone
+  - Reject any path that escapes the intended root after resolution
+  - Use parameterized queries or an ORM for all database operations — never build SQL by string concatenation
+  - >-
+    Use argument arrays (never shell strings) for subprocess commands; never pass user input as part of a shell command
+    string
+  - 'Never call eval, new Function(), exec(string), or dynamically import a specifier derived from user input'
+  - 'Escape output for the target context (HTML, JSON, SQL, shell) before rendering'
+  - 'Fail closed: deny by default; a missing or invalid permission check must block, not allow'
+  - 'Perform the authorization check AFTER path/resource resolution, not before'
+  - Verify authentication on every request to a protected resource — never rely on route ordering alone
+  - >-
+    Never log, print, include in error messages, or serialize secrets (API keys, passwords, tokens) to disk in readable
+    form
+  - Load secrets from environment variables or a dedicated secret manager — never hardcode them
+  - Keep secret values alive in memory for the shortest possible lifetime
+  - Return generic error messages to callers; log detailed diagnostics server-side only
+  - 'Never expose stack traces, internal paths, database schema, or user enumeration hints in responses'
+  - 'Emit an audit-trail event for every authentication decision, permission denial, and sensitive data access'
+  - Pin every dependency to an exact version; do not use @latest or floating ranges in production
+  - 'Audit new dependencies for native/FFI code, excessive permissions, or known CVEs before adding them'
+  - Enforce TLS for all network communication; never fall back to plain HTTP for sensitive data
+  - 'Set security-relevant HTTP response headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)'
+output_requirements:
+  - 'All user-controlled inputs validated with a schema (Zod, Joi, pydantic, etc.) at the entry point'
+  - 'No hardcoded secrets, credentials, or API keys anywhere in source or config files'
+  - SQL / NoSQL queries use parameterized form; no string-interpolated identifiers from input
+  - Subprocess invocations use argument arrays; no shell=true with user-derived strings
+  - Access-denied error messages are generic; details go to server-side logs only
+  - 'At least one security test per control, asserting rejection-by-validation (not rejection-by-runtime-failure)'
+  - All new dependencies pinned to exact versions
+quality_criteria:
+  - name: OWASP 2021 Coverage
+    description: 'Code addresses all relevant OWASP Top 10:2021 items for the feature''s surface'
+    weight: 25
+  - name: Input Validation
+    description: All external inputs schema-validated at the boundary; allowlist-based
+    weight: 20
+  - name: Injection Prevention
+    description: 'SQL, command, template, and expression injection vectors closed'
+    weight: 20
+  - name: Path & Filesystem Safety
+    description: realPath-resolved boundary checks; no string-only traversal guards
+    weight: 10
+  - name: Auth Boundary
+    description: Every side-effect checks permissions after resolution; fail-closed
+    weight: 10
+  - name: Secret Management
+    description: 'Secrets never in source, logs, errors, or plain-text serialization'
+    weight: 10
+  - name: Security Tests
+    description: 'Controls are verified by tests asserting validation rejection, not runtime error'
+    weight: 5
+applies_to:
+  agents:
+    - '*'

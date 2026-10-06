@@ -1,0 +1,30 @@
+title: Performance Analysis & Optimization
+triggers:
+  tags:
+    - performance
+    - optimization
+    - profiling
+    - bottleneck
+    - scalability
+constraints:
+  - Always profile before optimizing — never guess at bottlenecks
+  - Recommend regression benchmarks alongside every optimisation
+  - Prefer algorithmic improvements over micro-optimisations
+output_requirements:
+  - Bottleneck identification with impact severity (HIGH/MEDIUM/LOW)
+  - Current-behaviour vs expected-improvement for each finding
+  - Prioritised recommendation list with estimated effort
+quality_criteria:
+  - name: Evidence-Based
+    description: 'Every bottleneck claim is supported by profiler data, benchmarks, or code analysis'
+    weight: 40
+  - name: Actionability
+    description: Each recommendation includes a concrete code- or config-level change
+    weight: 30
+  - name: Regression Safety
+    description: Optimisations are paired with regression benchmarks to prevent silent regressions
+    weight: 30
+applies_to:
+  agents:
+    - performance-engineer
+    - '*'

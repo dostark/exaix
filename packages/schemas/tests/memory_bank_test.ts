@@ -8,16 +8,15 @@
  */
 
 import { assertEquals, assertFalse } from "@std/assert";
-import type { z } from "zod";
-import { ExecutionStatus, MemoryBankSource, MemoryReferenceType, MemoryScope, SkillStatus } from "@exaix/core";
+import { ExecutionStatus, MemoryReferenceType } from "@exaix/core";
 
 import {
   ExecutionMemorySchema,
   type IExecutionMemory as IExecutionMemory,
   type IProjectMemory as IProjectMemory,
   ProjectMemorySchema,
-  SkillSchema,
 } from "@exaix/schemas";
+import { SkillSidecarSchema } from "@exaix/schemas/skill_folder.ts";
 
 Deno.test("ProjectMemorySchema: validates valid project memory", () => {
   const validProject: IProjectMemory = {
@@ -320,46 +319,33 @@ Deno.test("ProjectMemorySchema: allows decisions without optional fields", () =>
   assertEquals(result.success, true);
 });
 
-function skillWithTools(tools: string[]): z.input<typeof SkillSchema> {
-  return {
-    id: "12345678-1234-4123-8123-123456789012",
-    created_at: "2026-09-26T00:00:00.000Z",
-    source: MemoryBankSource.USER,
-    scope: MemoryScope.GLOBAL,
-    status: SkillStatus.ACTIVE,
-    skill_id: "alias-skill",
-    name: "Alias skill",
-    description: "test",
-    version: "1.0.0",
-    triggers: { keywords: ["test"] },
-    instructions: "Read a file.",
-    tools,
-  };
+function skillWithTools(tools: string[]): { tools: string[] } {
+  return { tools };
 }
 
-Deno.test("[schemas] SkillSchema accepts a supported general-purpose alias and stores the canonical name", () => {
-  const parsed = SkillSchema.safeParse(skillWithTools(["read"]));
+Deno.test("[schemas] SkillSidecarSchema accepts a supported general-purpose alias and stores the canonical name", () => {
+  const parsed = SkillSidecarSchema.safeParse(skillWithTools(["read"]));
   assertEquals(parsed.success, true);
   if (parsed.success) assertEquals(parsed.data.tools, ["read_file"]);
 });
 
-Deno.test("[schemas] SkillSchema rejects an unknown/non-canonical tool name", () => {
-  const parsed = SkillSchema.safeParse(skillWithTools(["not_a_real_tool"]));
+Deno.test("[schemas] SkillSidecarSchema rejects an unknown/non-canonical tool name", () => {
+  const parsed = SkillSidecarSchema.safeParse(skillWithTools(["not_a_real_tool"]));
   assertFalse(parsed.success);
 });
 
-Deno.test("[schemas] SkillSchema rejects a retired native alias", () => {
-  const parsed = SkillSchema.safeParse(skillWithTools(["list_symbols"]));
+Deno.test("[schemas] SkillSidecarSchema rejects a retired native alias", () => {
+  const parsed = SkillSidecarSchema.safeParse(skillWithTools(["list_symbols"]));
   assertFalse(parsed.success);
 });
 
-Deno.test("[naming] SkillSchema tools entry of grep_search parses to search_text", () => {
-  const parsed = SkillSchema.safeParse(skillWithTools(["grep_search"]));
+Deno.test("[naming] SkillSidecarSchema tools entry of grep_search parses to search_text", () => {
+  const parsed = SkillSidecarSchema.safeParse(skillWithTools(["grep_search"]));
   assertEquals(parsed.success, true);
   if (parsed.success) assertEquals(parsed.data.tools, ["search_text"]);
 });
 
-Deno.test("[naming] SkillSchema rejects the retired who_depends_on/deno_task names", () => {
-  assertFalse(SkillSchema.safeParse(skillWithTools(["who_depends_on"])).success);
-  assertFalse(SkillSchema.safeParse(skillWithTools(["deno_task"])).success);
+Deno.test("[naming] SkillSidecarSchema rejects the retired who_depends_on/deno_task names", () => {
+  assertFalse(SkillSidecarSchema.safeParse(skillWithTools(["who_depends_on"])).success);
+  assertFalse(SkillSidecarSchema.safeParse(skillWithTools(["deno_task"])).success);
 });

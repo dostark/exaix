@@ -20,6 +20,7 @@ import {
   MockStructuredLoggerService,
 } from "../src/tui_dashboard_mocks.ts";
 import { RequestStatus } from "@exaix/core/status";
+import { testSkillContext } from "@exaix/testing";
 import { RequestPriority } from "@exaix/core";
 import type { IStructuredLogEntry } from "@exaix/core/types";
 import {
@@ -184,10 +185,10 @@ Deno.test("MockSkillsService: filters and deletes skills", async () => {
   const learnedSkill = await service.getSkill(TEST_SKILL_ID_LEARNED);
   if (!learnedSkill) throw new Error("getSkill learned failed");
 
-  const userDelete = await service.deleteSkill(TEST_SKILL_ID_USER);
+  const userDelete = await service.deleteSkill(TEST_SKILL_ID_USER, testSkillContext());
   if (userDelete !== false) throw new Error("deleteSkill user should be false");
 
-  const learnedDelete = await service.deleteSkill(TEST_SKILL_ID_LEARNED);
+  const learnedDelete = await service.deleteSkill(TEST_SKILL_ID_LEARNED, testSkillContext());
   if (learnedDelete !== true) throw new Error("deleteSkill learned should be true");
 });
 

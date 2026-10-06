@@ -1,0 +1,16 @@
+title: STE Metadata-Only Fixture
+triggers:
+  keywords:
+    - metadata
+    - obligation
+  task_types:
+    - communication
+  tags:
+    - ste
+    - metadata
+constraints:
+  - Response must keep the required action first.
+  - Confirm unresolved requirements remain pending.
+output_requirements:
+  - A complete answer with an explicit next action.
+critical: false

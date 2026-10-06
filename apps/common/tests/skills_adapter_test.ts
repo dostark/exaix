@@ -12,7 +12,10 @@ import { spy } from "@std/testing/mock";
 import { SkillsAdapter } from "../../../apps/common/adapters/skills_adapter.ts";
 import type { SkillsService } from "@exaix/core/skills";
 import { MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core";
-import type { ISkill, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
+import type { SkillDefinition } from "@exaix/schemas/memory_bank.ts";
+import { runtimeSkillFixture, testSkillContext } from "@exaix/testing";
+
+const CTX = testSkillContext();
 
 interface SpyLike {
   calls: { readonly length: number };
@@ -30,8 +33,7 @@ Deno.test("SkillsAdapter: delegates simple methods to SkillsService", async () =
   mockInner.initialize = spy(() => Promise.resolve());
   mockInner.matchSkills = spy(() => Promise.resolve({ matches: [], totalAvailable: 0 }));
   mockInner.buildSkillContext = spy(() => Promise.resolve("context"));
-  mockInner.recordSkillUsage = spy(() => Promise.resolve());
-  mockInner.rebuildIndex = spy(() => Promise.resolve());
+  mockInner.listDiagnostics = spy(() => Promise.resolve([]));
   mockInner.getSkill = spy(() => Promise.resolve(null));
   mockInner.deleteSkill = spy(() => Promise.resolve(true));
 
@@ -46,16 +48,13 @@ Deno.test("SkillsAdapter: delegates simple methods to SkillsService", async () =
   await adapter.buildSkillContext(["s1"]);
   assertEquals(getSpyCallCount(mockInner.buildSkillContext), 1);
 
-  await adapter.recordSkillUsage("s1");
-  assertEquals(getSpyCallCount(mockInner.recordSkillUsage), 1);
-
-  await adapter.rebuildIndex();
-  assertEquals(getSpyCallCount(mockInner.rebuildIndex), 1);
+  await adapter.listDiagnostics();
+  assertEquals(getSpyCallCount(mockInner.listDiagnostics), 1);
 
   await adapter.getSkill("s1");
   assertEquals(getSpyCallCount(mockInner.getSkill), 1);
 
-  await adapter.deleteSkill("s1");
+  await adapter.deleteSkill("s1", CTX);
   assertEquals(getSpyCallCount(mockInner.deleteSkill), 1);
 });
 
@@ -92,42 +91,34 @@ Deno.test("SkillsAdapter: listSkills normalizes filters", async () => {
 Deno.test("SkillsAdapter: complex methods delegation", async () => {
   const mockInner = {} as SkillsService;
 
-  const skill: ISkill = {
-    id: "s1",
+  const skill = runtimeSkillFixture({
+    id: "123e4567-e89b-52d3-a456-426614174001",
     skill_id: "skill-1",
-    name: "Skill 1",
+    title: "Skill 1",
     description: "Desc",
     instructions: "Do things",
     source: MemoryBankSource.PROJECT,
     scope: MemoryScope.PROJECT,
-    status: SkillStatus.ACTIVE,
-    usage_count: 0,
-    version: "1.0.0",
-    created_at: new Date().toISOString(),
     triggers: { keywords: ["test"] },
-  };
+  });
 
   mockInner.deriveSkillFromLearnings = spy(() => Promise.resolve(skill));
   mockInner.createSkill = spy(() => Promise.resolve(skill));
 
   const adapter = new SkillsAdapter(mockInner);
   const skillDef: SkillDefinition = {
-    skill_id: "skill-1",
-    name: "Skill 1",
+    name: "skill-1",
+    title: "Skill 1",
     description: "Desc",
     instructions: "Do things",
-    version: "1.0.0",
-    source: MemoryBankSource.PROJECT,
-    scope: MemoryScope.PROJECT,
-    status: SkillStatus.ACTIVE,
     triggers: { keywords: ["test"] },
   };
 
-  const derived = await adapter.deriveSkillFromLearnings(["l1"], skillDef);
+  const derived = await adapter.deriveSkillFromLearnings(["l1"], skillDef, CTX);
   assertEquals(derived, skill);
   assertEquals(getSpyCallCount(mockInner.deriveSkillFromLearnings), 1);
 
-  const created = await adapter.createSkill(skillDef);
+  const created = await adapter.createSkill(skillDef, CTX);
   assertEquals(created, skill);
   assertEquals(getSpyCallCount(mockInner.createSkill), 1);
 });

@@ -207,7 +207,7 @@ Refine the goal into a formal planning document at `exaix-dev-docs/planning/phas
    a skill id compiled into the dogfood workspace from `.copilot/skills/*/SKILL.md`
    (`generate_skill_json.ts` — e.g. `exaix-development`, `tdd-workflow` → `tdd-methodology`,
    `commit`, `review-code`, `fix-bug`, `plan`). Do NOT list Blueprint skills
-   (`Blueprints/Skills/*.skill.md`, e.g. `portal-grounding`, `security-first`,
+   (`Blueprints/Skills/<name>/SKILL.md`, e.g. `portal-grounding`, `security-first`,
    `response-contract`): during Exaix development only the `.copilot` runtime skills are
    compiled for daemon resolution, so a Blueprint id in `skills:` silently resolves to zero
    skills and loses its guidance. When in doubt, use the canonical `exaix-development` +

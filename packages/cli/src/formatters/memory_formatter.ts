@@ -30,9 +30,9 @@ import {
   CLI_LAYOUT_PADDING_STANDARD,
   CLI_LAYOUT_SKILL_ID_WIDTH,
   CLI_LAYOUT_SKILL_NAME_WIDTH,
+  CLI_LAYOUT_SKILL_REVISION_WIDTH,
   CLI_LAYOUT_SKILL_SOURCE_WIDTH,
   CLI_LAYOUT_SKILL_STATUS_WIDTH,
-  CLI_LAYOUT_SKILL_VERSION_WIDTH,
   CLI_PREVIEW_LENGTH_LONG,
   CLI_PREVIEW_LENGTH_SHORT,
   CLI_SEPARATOR_LENGTH,
@@ -750,20 +750,20 @@ export class MemoryFormatter {
 
   formatSkillListTable(skills: ISkill[]): string {
     const lines: string[] = [];
-    lines.push("┌──────────────────────┬─────────────────────────┬──────────┬─────────┬────────────┐");
-    lines.push("│ ISkill ID             │ Name                    │ Source   │ Version │ Status     │");
-    lines.push("├──────────────────────┼─────────────────────────┼──────────┼─────────┼────────────┤");
+    lines.push("┌──────────────────────┬─────────────────────────┬──────────┬──────────┬────────────┐");
+    lines.push("│ ISkill ID             │ Name                    │ Source   │ Revision │ Status     │");
+    lines.push("├──────────────────────┼─────────────────────────┼──────────┼──────────┼────────────┤");
 
     for (const skill of skills) {
       const id = skill.skill_id.padEnd(CLI_LAYOUT_SKILL_ID_WIDTH).slice(0, CLI_LAYOUT_SKILL_ID_WIDTH);
-      const name = skill.name.padEnd(CLI_LAYOUT_SKILL_NAME_WIDTH).slice(0, CLI_LAYOUT_SKILL_NAME_WIDTH);
+      const name = skill.title.padEnd(CLI_LAYOUT_SKILL_NAME_WIDTH).slice(0, CLI_LAYOUT_SKILL_NAME_WIDTH);
       const source = skill.source.padEnd(CLI_LAYOUT_SKILL_SOURCE_WIDTH).slice(0, CLI_LAYOUT_SKILL_SOURCE_WIDTH);
-      const version = skill.version.padEnd(CLI_LAYOUT_SKILL_VERSION_WIDTH).slice(0, CLI_LAYOUT_SKILL_VERSION_WIDTH);
+      const revision = skill.id.padEnd(CLI_LAYOUT_SKILL_REVISION_WIDTH).slice(0, CLI_LAYOUT_SKILL_REVISION_WIDTH);
       const status = skill.status.padEnd(CLI_LAYOUT_SKILL_STATUS_WIDTH).slice(0, CLI_LAYOUT_SKILL_STATUS_WIDTH);
-      lines.push(`│ ${id} │ ${name} │ ${source} │ ${version} │ ${status} │`);
+      lines.push(`│ ${id} │ ${name} │ ${source} │ ${revision} │ ${status} │`);
     }
 
-    lines.push("└──────────────────────┴─────────────────────────┴──────────┴─────────┴────────────┘");
+    lines.push("└──────────────────────┴─────────────────────────┴──────────┴──────────┴────────────┘");
     lines.push(`\nTotal: ${skills.length} skill(s)`);
     return lines.join("\n");
   }
@@ -771,11 +771,15 @@ export class MemoryFormatter {
   formatSkillListMarkdown(skills: ISkill[]): string {
     const lines: string[] = [];
     lines.push("# ISkills\n");
-    lines.push("| ISkill ID | Name | Source | Version | Status |");
+    lines.push("| ISkill ID | Name | Source | Revision | Status |");
     lines.push("|---|---|---|---|---|");
 
     for (const skill of skills) {
-      lines.push(`| ${skill.skill_id} | ${skill.name} | ${skill.source} | ${skill.version} | ${skill.status} |`);
+      lines.push(
+        `| ${skill.skill_id} | ${skill.title} | ${skill.source} | ${
+          skill.id.slice(0, CLI_LAYOUT_SKILL_REVISION_WIDTH)
+        } | ${skill.status} |`,
+      );
     }
 
     lines.push(`\n**Total:** ${skills.length} skill(s)`);
@@ -785,12 +789,14 @@ export class MemoryFormatter {
   formatSkillShowTable(skill: ISkill): string {
     const lines: string[] = [];
     lines.push("┌─────────────────────────────────────────────────────────────┐");
-    lines.push(`│ ISkill: ${skill.name.padEnd(CLI_LAYOUT_BOX_LABEL_WIDTH - 4)} │`);
+    lines.push(`│ ISkill: ${skill.title.padEnd(CLI_LAYOUT_BOX_LABEL_WIDTH - 4)} │`);
     lines.push(CLI_BOX_SEPARATOR);
     lines.push(`│ ISkill ID:   ${skill.skill_id.padEnd(CLI_LAYOUT_BOX_WIDTH_STANDARD)} │`);
     lines.push(`│ Source:     ${skill.source.padEnd(CLI_LAYOUT_BOX_WIDTH_STANDARD)} │`);
     lines.push(`│ Scope:      ${skill.scope.padEnd(CLI_LAYOUT_BOX_WIDTH_STANDARD)} │`);
-    lines.push(`│ Version:    ${skill.version.padEnd(CLI_LAYOUT_BOX_WIDTH_STANDARD)} │`);
+    lines.push(
+      `│ Revision:   ${skill.id.slice(0, CLI_LAYOUT_SKILL_REVISION_WIDTH).padEnd(CLI_LAYOUT_BOX_WIDTH_STANDARD)} │`,
+    );
     lines.push(`│ Status:     ${skill.status.padEnd(CLI_LAYOUT_BOX_WIDTH_STANDARD)} │`);
     lines.push(CLI_BOX_SEPARATOR);
     lines.push(`│ Description:                                                │`);
@@ -852,11 +858,11 @@ export class MemoryFormatter {
 
   formatSkillShowMarkdown(skill: ISkill): string {
     const lines: string[] = [];
-    lines.push(`# ${skill.name}\n`);
+    lines.push(`# ${skill.title}\n`);
     lines.push(`**ISkill ID:** ${skill.skill_id}`);
     lines.push(`**Source:** ${skill.source}`);
     lines.push(`**Scope:** ${skill.scope}`);
-    lines.push(`**Version:** ${skill.version}`);
+    lines.push(`**Revision:** ${skill.id}`);
     lines.push(`**Status:** ${skill.status}\n`);
     lines.push(`## Description\n`);
     lines.push(skill.description + "\n");

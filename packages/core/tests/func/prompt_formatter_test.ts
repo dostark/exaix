@@ -13,20 +13,19 @@
 import { assert, assertEquals } from "@std/assert";
 import { renderCriticalSkillsSection, renderSkillsSection } from "@exaix/core/func";
 import type { ISkillsContext } from "@exaix/core/types";
+import { skillMatchFixture } from "@exaix/testing";
 
 function makeContext(overrides: Partial<ISkillsContext["matched"][number]> = {}): ISkillsContext {
   return {
     matched: [
-      {
-        skillId: crypto.randomUUID(),
-        title: "Test Skill",
+      skillMatchFixture({
+        skillId: "test-skill",
+        name: "Test Skill",
         description: "A test skill.",
         content: "Do the thing.\n\n## Examples\n\nExample content here.\n\n## Later\n\nKept in order.",
-        matchScore: 0.9,
-        tags: [],
-        critical: false,
+        confidence: 0.9,
         ...overrides,
-      },
+      }),
     ],
     totalAvailable: 1,
     retrievalLatencyMs: 0,

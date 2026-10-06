@@ -92,7 +92,7 @@ const STATIC_CHECK_TASKS: Array<{ cmd: string[]; desc: string }> = [
   { cmd: ["deno", "task", "check:config-keys"], desc: "Config Key Uniqueness Gate" },
   { cmd: ["deno", "task", "check:skill-duplication"], desc: "Skill Instruction Duplication Gate" },
   { cmd: ["deno", "task", "check:skill-envelopes"], desc: "Skill Envelope Validity" },
-  { cmd: ["deno", "task", "check:skill-index"], desc: "Runtime Skill Index Sync" },
+  { cmd: ["deno", "task", "check:skill-index"], desc: "Skill Folder Validity" },
   { cmd: ["deno", "task", "check:blueprint-integrity"], desc: "Blueprint Catalog Integrity" },
   { cmd: ["deno", "task", "check:manifests"], desc: "Step Manifest Validity" },
   { cmd: ["deno", "task", "check:hardcoded-models"], desc: "Hardcoded Model CI Gate" },

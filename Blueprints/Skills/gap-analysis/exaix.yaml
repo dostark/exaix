@@ -1,0 +1,25 @@
+title: Pre-Gap Analysis Methodology
+triggers:
+  tags:
+    - pre-gap
+    - plan-review
+constraints:
+  - 'Validate every behavioural claim against the codebase (grep for symbols, check file existence)'
+  - Check Reachability Ledger for missing production consumers
+  - 'Flag underspecified fields (enums without per-component values, prose without test names)'
+  - Do not modify any files — report gaps only
+output_requirements:
+  - Append gap findings to the plan document under a 'Gap Resolution' section
+quality_criteria:
+  - name: Completeness — every step checked
+    description: Every plan step was verified against the codebase
+    weight: 40
+  - name: Specificity — gaps reference specific lines/symbols
+    description: 'Each gap cites a concrete file:line or symbol'
+    weight: 30
+  - name: Actionability — each gap includes a proposed fix
+    description: Each gap states a concrete resolution
+    weight: 30
+applies_to:
+  agents:
+    - '*'

@@ -1,0 +1,59 @@
+title: LLM-as-Judge — Evaluation Method & Contract
+triggers:
+  keywords:
+    - evaluate
+    - judge
+    - verdict
+    - score
+    - assess
+    - assessment
+    - rubric
+    - grade
+  task_types:
+    - evaluation
+    - judge
+    - review
+  tags:
+    - response-contract
+    - judge
+    - evaluation
+constraints:
+  - >-
+    Score each rubric criterion independently; do not let a strong or weak first impression bleed across criteria
+    (halo/horn effect)
+  - >-
+    Ground every score in specific evidence — quote or cite the exact part of the content, or state that the expected
+    thing is absent
+  - 'Reason first, score second: derive the score from the evidence, never pick a number and rationalize it'
+  - >-
+    Judge correctness and rubric-fit, not length or eloquence — a longer or more confident answer is not a better one
+    (verbosity bias)
+  - 'Do not reward or penalize based on style, tone, or resemblance to your own writing (self-preference bias)'
+  - >-
+    The entire response is one JSON object matching the requested schema; reasoning lives INSIDE its reasoning/feedback
+    fields, never outside the object
+output_requirements:
+  - >-
+    A single JSON object matching the evaluation prompt's schema — no <thought>/<content> tags, no markdown fences, no
+    prose outside the object
+  - 'Every criterion carries a 0.0-1.0 score, a one- to two-sentence evidence-grounded reasoning, and a passed boolean'
+  - 'issues lists concrete, specific problems (empty when none) — not vague remarks'
+quality_criteria:
+  - name: Evidence Grounding
+    description: >-
+      Each score cites specific evidence from the content (a quote, a named function, or an explicit note of absence),
+      not a general impression
+    weight: 35
+  - name: Rubric Fidelity
+    description: Scores follow the criterion definitions and anchors; criteria are judged independently
+    weight: 30
+  - name: Bias Control
+    description: 'The verdict reflects correctness and rubric-fit, not verbosity, confidence, or style'
+    weight: 20
+  - name: Contract Compliance
+    description: The whole response is one valid JSON object with reasoning in-field; it parses directly
+    weight: 15
+critical: true
+applies_to:
+  agents:
+    - '*'

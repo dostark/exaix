@@ -6,7 +6,7 @@
  * @related-files ["packages/core/src/skills/skills.ts", apps/tui/src/tui_dashboard.ts]
  */
 
-import { DialogStatus, MemoryBankSource, MemoryScope, MessageType, SkillStatus } from "@exaix/core";
+import { DialogStatus, MemoryBankSource, MessageType, SkillStatus } from "@exaix/core";
 import { GroupingField, SkillGroupingMode, TuiNodeType } from "@exaix/tui";
 import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
 import type { ISkillsService } from "@exaix/core/types";
@@ -26,7 +26,9 @@ import {
   TUI_SOURCE_ICONS,
   TUI_STATUS_ICONS,
 } from "@exaix/tui/helpers/constants.ts";
-import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
+import type { ISkill, ISkillMatch, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
+import type { ISkillDiagnostic, ISkillOperationContext } from "@exaix/core/skills";
+import { runtimeSkillFixture } from "@exaix/testing";
 import type { ISkillMatchRequest } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -49,6 +51,22 @@ export interface ISkillsViewExtensions {
   filterStatus: "all" | SkillStatus;
   /** Current grouping mode */
   groupBy: SkillGroupingMode;
+}
+
+const TUI_AGENT_ROLE = "tui";
+const TUI_CONFIG_GENERATION = "tui";
+
+/** Operation context for TUI skill mutations. The TUI is global-only until a portal is selected. */
+function tuiSkillContext(): ISkillOperationContext {
+  return {
+    portal: null,
+    traceId: crypto.randomUUID(),
+    requestId: null,
+    flowId: null,
+    flowStepId: null,
+    agentRole: TUI_AGENT_ROLE,
+    configGeneration: TUI_CONFIG_GENERATION,
+  };
 }
 
 // Icons and Visual Constants
@@ -230,7 +248,7 @@ export class SkillsManagerView {
   }
 
   async deleteSkill(skillId: string): Promise<boolean> {
-    return await this.skillsService.deleteSkill(skillId);
+    return await this.skillsService.deleteSkill(skillId, tuiSkillContext());
   }
 
   selectSkill(skillId: string): void {
@@ -272,7 +290,7 @@ export class MinimalSkillsServiceMock implements ISkillsService {
     return Promise.resolve(this.skills.find((s) => s.id === skillId) || null);
   }
 
-  deleteSkill(skillId: string): Promise<boolean> {
+  deleteSkill(skillId: string, _ctx: ISkillOperationContext): Promise<boolean> {
     const idx = this.skills.findIndex((s) => s.id === skillId);
     if (idx >= 0) {
       this.skills.splice(idx, 1);
@@ -293,46 +311,55 @@ export class MinimalSkillsServiceMock implements ISkillsService {
     return Promise.resolve("");
   }
 
-  recordSkillUsage(_skillId: string): Promise<void> {
-    return Promise.resolve();
-  }
-
   deriveSkillFromLearnings(
     _learningIds: string[],
     _skillDef: SkillDefinition,
+    _ctx: ISkillOperationContext,
   ): Promise<ISkill> {
-    return Promise.resolve({
-      id: "new-skill-id",
-      skill_id: "new-skill-id",
-      name: "Derived Skill",
-      description: "Successfully derived skill",
-      created_at: new Date().toISOString(),
-      usage_count: 0,
-      status: SkillStatus.ACTIVE,
-      version: "1.0.0",
-      source: MemoryBankSource.LEARNED,
-      scope: MemoryScope.GLOBAL,
-      triggers: { keywords: [] },
-      instructions: "Do things.",
-    } as ISkill);
+    return Promise.resolve(
+      runtimeSkillFixture({
+        id: "new-skill-id",
+        skill_id: "new-skill-id",
+        title: "Derived Skill",
+        description: "Successfully derived skill",
+        source: MemoryBankSource.LEARNED,
+        status: SkillStatus.DRAFT,
+      }),
+    );
   }
 
-  rebuildIndex(): Promise<void> {
-    return Promise.resolve();
+  updateSkill(skillId: string, _updates: SkillUpdates, _ctx: ISkillOperationContext): Promise<ISkill | null> {
+    return Promise.resolve(this.skills.find((s) => s.skill_id === skillId) ?? null);
+  }
+
+  approveSkill(skillId: string, _expectedRevisionId: string, _ctx: ISkillOperationContext): Promise<ISkill> {
+    return Promise.resolve(runtimeSkillFixture({ skill_id: skillId }));
+  }
+
+  activateSkill(skillId: string, expectedRevisionId: string, ctx: ISkillOperationContext): Promise<ISkill> {
+    return this.approveSkill(skillId, expectedRevisionId, ctx);
+  }
+
+  deprecateSkill(skillId: string, _ctx: ISkillOperationContext): Promise<ISkill> {
+    return Promise.resolve(runtimeSkillFixture({ skill_id: skillId, status: SkillStatus.DEPRECATED }));
+  }
+
+  listDiagnostics(): Promise<ISkillDiagnostic[]> {
+    return Promise.resolve([]);
   }
 
   initialize(): Promise<void> {
     return Promise.resolve();
   }
 
-  createSkill(skillDef: SkillDefinition): Promise<ISkill> {
-    const newSkill: ISkill = {
-      ...skillDef,
+  createSkill(skillDef: SkillDefinition, _ctx: ISkillOperationContext): Promise<ISkill> {
+    const newSkill = runtimeSkillFixture({
       id: `skill-${Date.now()}`,
-      skill_id: `skill-${Date.now()}`,
-      created_at: new Date().toISOString(),
-      usage_count: 0,
-    };
+      skill_id: skillDef.name,
+      title: skillDef.title ?? skillDef.name,
+      description: skillDef.description,
+      instructions: skillDef.instructions,
+    });
     this.skills.push(newSkill);
     return Promise.resolve(newSkill);
   }
@@ -402,7 +429,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
       filteredSkills = filteredSkills.filter(
         (s) =>
           s.id.toLowerCase().includes(query) ||
-          s.name.toLowerCase().includes(query) ||
+          s.title.toLowerCase().includes(query) ||
           s.triggers?.keywords?.some((k) => k.toLowerCase().includes(query)),
       );
     }
@@ -455,7 +482,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
 
   private createSkillNode(skill: ISkillSummary): ITreeNode<ISkillSummary> {
     const statusIcon = STATUS_ICONS[skill.status] || "⚪";
-    return createNode<ISkillSummary>(`skill-${skill.id}`, `${SKILL_ICON} ${skill.name} ${statusIcon}`, "skill", {
+    return createNode<ISkillSummary>(`skill-${skill.id}`, `${SKILL_ICON} ${skill.title} ${statusIcon}`, "skill", {
       data: skill,
     });
   }
@@ -493,9 +520,9 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
 
   private formatDetailContent(skill: ISkillSummary): string {
     const lines: string[] = [];
-    lines.push(`Skill: ${skill.name}`);
+    lines.push(`Skill: ${skill.title}`);
     lines.push(`ID: ${skill.id}`);
-    lines.push(`Version: ${skill.version}`);
+    lines.push(`Revision: ${skill.id}`);
     lines.push(`Status: ${STATUS_ICONS[skill.status]} ${skill.status.toUpperCase()}`);
     lines.push(`Source: ${SOURCE_ICONS[skill.source]} ${skill.source}`);
 
@@ -590,7 +617,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
 
     this.showConfirmDialog({
       title: "Delete Skill",
-      message: `Are you sure you want to delete skill "${skill.name}"?`,
+      message: `Are you sure you want to delete skill "${skill.title}"?`,
       confirmText: "Delete",
       cancelText: TUI_LABEL_CANCEL,
     });

@@ -26,15 +26,9 @@ import {
   DEFAULT_SKILL_SIDECAR_MAX_BYTES,
   DEFAULT_SKILL_SNAPSHOT_MAX_BYTES,
 } from "../types/constants.ts";
+import { SkillDiagnosticReason, SkillDiagnosticSeverity, SkillRootKind, SkillStatus } from "../types/enums.ts";
 import {
-  MemoryBankSource,
-  MemoryScope,
-  SkillDiagnosticReason,
-  SkillDiagnosticSeverity,
-  SkillRootKind,
-  SkillStatus,
-} from "../types/enums.ts";
-import {
+  buildRootContext,
   canonicalizeSkillText,
   computeSkillContentSha256,
   findLinkedReferencePaths,
@@ -89,7 +83,10 @@ interface IFileIdentity {
 }
 
 interface IEntryOutcome {
+  /** Set only for an active, valid entry. */
   loaded: ILoadedSkill | null;
+  /** Set for any valid entry regardless of lifecycle status, for review and lifecycle reads. */
+  parsed: ILoadedSkill | null;
   diagnostic: ISkillDiagnostic | null;
 }
 
@@ -127,6 +124,20 @@ export class SkillFolderLoader {
       .sort((a, b) => a.skill.name.localeCompare(b.skill.name));
   }
 
+  /** Every valid skill whatever its status, first-root-wins, ordered by name. For review and lifecycle reads. */
+  async listAll(ctx: ISkillOperationContext): Promise<ILoadedSkill[]> {
+    const collection = await this.collect(ctx, null);
+    return [...collection.winners.values()]
+      .flatMap((outcome) => outcome.parsed ? [outcome.parsed] : [])
+      .sort((a, b) => a.skill.name.localeCompare(b.skill.name));
+  }
+
+  /** One valid skill by name whatever its status, or null. */
+  async getAny(name: string, ctx: ISkillOperationContext): Promise<ILoadedSkill | null> {
+    const collection = await this.collect(ctx, name);
+    return collection.winners.get(name)?.parsed ?? null;
+  }
+
   /** One active, valid skill by name, or null. A masking invalid or inactive entry yields null. */
   async get(name: string, ctx: ISkillOperationContext): Promise<ILoadedSkill | null> {
     const collection = await this.collect(ctx, name);
@@ -144,7 +155,8 @@ export class SkillFolderLoader {
     const shadowedPaths = new Map<string, string[]>();
     const diagnostics: ISkillDiagnostic[] = [];
     for (const root of this.roots) {
-      await this.scanRoot(root, onlyName, winners, shadowedPaths, diagnostics);
+      const scan = () => this.scanRoot(root, onlyName, winners, shadowedPaths, diagnostics);
+      await (this.deps.readLock ? this.deps.readLock(root, scan) : scan());
     }
     for (const outcome of winners.values()) {
       if (outcome.diagnostic) diagnostics.push(outcome.diagnostic);
@@ -218,6 +230,7 @@ export class SkillFolderLoader {
       if (loaded.skill.status !== SkillStatus.ACTIVE) {
         return {
           loaded: null,
+          parsed: loaded,
           diagnostic: this.diagnostic(
             name,
             root.kind,
@@ -227,10 +240,10 @@ export class SkillFolderLoader {
           ),
         };
       }
-      return { loaded, diagnostic: null };
+      return { loaded, parsed: loaded, diagnostic: null };
     } catch (error) {
       const reason = error instanceof SkillLoadError ? error.reason : SkillDiagnosticReason.UNAVAILABLE;
-      return { loaded: null, diagnostic: this.diagnostic(name, root.kind, name, reason) };
+      return { loaded: null, parsed: null, diagnostic: this.diagnostic(name, root.kind, name, reason) };
     }
   }
 
@@ -414,14 +427,7 @@ export class SkillFolderLoader {
     const cached = this.parseCache.get(key);
     if (cached) return cached;
     try {
-      const skill = await parseSkillSnapshot(snapshot, {
-        rootKind: root.kind,
-        name,
-        path: name,
-        project: root.project,
-        source: root.kind === SkillRootKind.LEARNED ? MemoryBankSource.LEARNED : MemoryBankSource.USER,
-        scope: root.kind === SkillRootKind.PROJECT && root.project !== null ? MemoryScope.PROJECT : MemoryScope.GLOBAL,
-      });
+      const skill = await parseSkillSnapshot(snapshot, buildRootContext(root, name));
       this.parseCache.set(key, skill);
       return skill;
     } catch {
@@ -451,6 +457,7 @@ export class SkillFolderLoader {
   }
 
   private async reportFailure(ctx: ISkillOperationContext, d: ISkillDiagnostic): Promise<void> {
+    if (d.reason === SkillDiagnosticReason.INACTIVE) return;
     const key = `${d.root_kind}|${d.safe_path}|${d.reason}`;
     if (this.reportedFailures.has(key)) return;
     this.reportedFailures.add(key);

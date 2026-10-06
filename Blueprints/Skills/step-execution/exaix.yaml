@@ -1,0 +1,28 @@
+title: Step Execution Methodology (TDD)
+triggers:
+  tags:
+    - step-execution
+    - next-steps
+constraints:
+  - Write tests first (RED) before implementation (GREEN)
+  - Run the relevant test file — new tests must fail before implementation
+  - Implement the minimal code to make tests pass
+  - Refactor only after all tests pass (GREEN)
+  - Run deno task check clean before committing
+  - Commit each step independently with a structured message
+output_requirements:
+  - Each step has its own commit
+  - 'Commit message includes what, rationale, tests, CI results'
+quality_criteria:
+  - name: TDD Compliance
+    description: Tests were written before implementation for every behaviour change
+    weight: 40
+  - name: CI Gate Compliance
+    description: 'All CI gates pass before each commit (lint, type-check, style, arch, magic)'
+    weight: 30
+  - name: Commit Structure
+    description: 'Each commit message follows the structured format with what, rationale, tests, CI gates'
+    weight: 30
+applies_to:
+  agents:
+    - '*'

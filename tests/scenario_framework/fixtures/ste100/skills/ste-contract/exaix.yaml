@@ -1,0 +1,19 @@
+title: STE Contract for Agent Prose
+triggers:
+  keywords:
+    - ste
+    - communication
+    - prose
+  task_types:
+    - communication
+    - documentation
+    - explanation
+  tags:
+    - communication
+    - style
+    - precision
+critical: true
+tools: []
+applies_to:
+  agents:
+    - '*'

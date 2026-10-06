@@ -96,7 +96,7 @@ SQL queries, subprocesses, HTTP handlers, auth, secrets)
     silently downgrade a boundary — e.g. inlining a path check as a string comparison
     instead of keeping PathResolver.
   - Error messages changed? Keep access-denied messages generic (no host paths echoed).
-  - Full checklist: Blueprints/Skills/security-first.skill.md when scope covers input,
+  - Full checklist: Blueprints/Skills/security-first/SKILL.md when scope covers input,
     path, injection, or auth surfaces.
 
 Magic-value & duplication pass (check:magic)
@@ -179,7 +179,7 @@ Related
 - #clean-codebase — full CI-green sweep
 - #tdd-workflow — when the refactor needs tests first
 - #audit-security — full audit when refactor exposes 3+ control gaps
-- Blueprints/Skills/security-first.skill.md — portal code checklist (input/path/injection/auth)
+- Blueprints/Skills/security-first/SKILL.md — portal code checklist (input/path/injection/auth)
 - AGENTS.md#behavioral-guidelines — think before coding, simplicity, surgical changes
 - CODE_STYLE.md — naming, type, import, constants rules
 ```

@@ -9,7 +9,7 @@
  *   every entry must resolve — a dangling id is a silently-missing skill, and an over-long
  *   list is prompt weight paid on every request for no return.
  * @architectural-layer Test
- * @dependencies [Blueprints/Agents/, Memory/Skills/]
+ * @dependencies [Blueprints/Agents/, Blueprints/Skills/]
  * @related-files [packages/execution/src/agent_runner.ts]
  */
 import { assert, assertEquals } from "@std/assert";
@@ -19,7 +19,6 @@ import { readRuntimeSkillIds } from "./runtime_skill_scopes.ts";
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const AGENTS_DIR = join(REPO_ROOT, "Blueprints", "Agents");
-const MEMORY_SKILLS = join(REPO_ROOT, "Memory", "Skills");
 
 // Upper bound on an agent role's `default_skills`. Matches `DEFAULT_CONFIG.maxSkillsPerRequest`
 // in `packages/core/src/skills/skills.ts`: that cap governs dynamically matched skills, and
@@ -51,7 +50,7 @@ interface IAgentRoleDefaults {
 // test and `skill_seed_runtime_integrity_test.ts` previously disagreed about where the runtime
 // catalog lives, and the disagreement is what produced two exclusions for skills that were present.
 function readCatalogSkillIds(): Promise<Set<string>> {
-  return readRuntimeSkillIds(MEMORY_SKILLS);
+  return readRuntimeSkillIds();
 }
 
 async function readAgentRoleDefaults(): Promise<IAgentRoleDefaults[]> {

@@ -22,6 +22,8 @@ import {
   RequestSource,
   SkillStatus,
 } from "@exaix/core";
+import type { ISkillDiagnostic, ISkillOperationContext } from "@exaix/core/skills";
+import { runtimeSkillFixture } from "@exaix/testing";
 import {
   type Opt,
   type PortalAnalysisMode,
@@ -51,8 +53,8 @@ import type {
   IProjectMemory,
   ISkill,
   ISkillMatch,
-  SkillImmutableFields as _SkillImmutableFields,
-  SkillManagedFields,
+  SkillDefinition,
+  SkillUpdates,
 } from "@exaix/schemas/memory_bank.ts";
 import type {
   IAgentService,
@@ -906,13 +908,10 @@ export class MockSkillsService implements ISkillsService {
     return Promise.resolve();
   }
 
-  createSkill(skillDef: Omit<ISkill, SkillManagedFields>): Promise<ISkill> {
-    return Promise.resolve({
-      ...skillDef,
-      id: "mock-id",
-      created_at: new Date().toISOString(),
-      usage_count: 0,
-    } as ISkill);
+  createSkill(skillDef: SkillDefinition, _ctx: ISkillOperationContext): Promise<ISkill> {
+    return Promise.resolve(
+      runtimeSkillFixture({ skill_id: skillDef.name, name: skillDef.name, title: skillDef.title ?? skillDef.name }),
+    );
   }
 
   matchSkills(
@@ -925,71 +924,59 @@ export class MockSkillsService implements ISkillsService {
     return Promise.resolve("Mock skill context");
   }
 
-  recordSkillUsage(_skillId: string): Promise<void> {
-    return Promise.resolve();
-  }
-
   deriveSkillFromLearnings(
     _learningIds: string[],
-    _skillDef: Omit<ISkill, SkillManagedFields>,
+    _skillDef: SkillDefinition,
+    _ctx: ISkillOperationContext,
   ): Promise<ISkill> {
-    return Promise.resolve({
-      id: "123e4567-e89b-12d3-a456-426614174000",
-      skill_id: "new-skill-id",
-      name: "Derived Skill",
-      description: "Successfully derived skill",
-      created_at: new Date().toISOString(),
-      usage_count: 0,
-      status: SkillStatus.ACTIVE,
-      version: "1.0.0",
-      source: MemoryBankSource.LEARNED,
-      scope: MemoryScope.GLOBAL,
-      triggers: { keywords: [] },
-      instructions: "Do things.",
-    } as ISkill);
+    return Promise.resolve(
+      runtimeSkillFixture({
+        skill_id: "new-skill-id",
+        title: "Derived Skill",
+        description: "Successfully derived skill",
+        source: MemoryBankSource.LEARNED,
+        status: SkillStatus.DRAFT,
+      }),
+    );
   }
 
-  rebuildIndex(): Promise<void> {
-    return Promise.resolve();
+  updateSkill(skillId: string, _updates: SkillUpdates, _ctx: ISkillOperationContext): Promise<ISkill | null> {
+    return Promise.resolve(runtimeSkillFixture({ skill_id: skillId, status: SkillStatus.DRAFT }));
+  }
+
+  approveSkill(skillId: string, _expectedRevisionId: string, _ctx: ISkillOperationContext): Promise<ISkill> {
+    return Promise.resolve(runtimeSkillFixture({ skill_id: skillId }));
+  }
+
+  activateSkill(skillId: string, expectedRevisionId: string, ctx: ISkillOperationContext): Promise<ISkill> {
+    return this.approveSkill(skillId, expectedRevisionId, ctx);
+  }
+
+  deprecateSkill(skillId: string, _ctx: ISkillOperationContext): Promise<ISkill> {
+    return Promise.resolve(runtimeSkillFixture({ skill_id: skillId, status: SkillStatus.DEPRECATED }));
+  }
+
+  listDiagnostics(): Promise<ISkillDiagnostic[]> {
+    return Promise.resolve([]);
   }
 
   listSkills(_filter?: Opt<{ source?: string; status?: string }, Reason.TestStub>): Promise<ISkill[]> {
     return Promise.resolve([
-      {
+      runtimeSkillFixture({
         id: "user-skill-id",
         skill_id: "user-skill",
-        name: "User Skill",
+        title: "User Skill",
         description: "A user skill",
-        version: "1.0.0",
-        created_at: new Date().toISOString(),
-        usage_count: 0,
-        status: SkillStatus.ACTIVE,
-        source: MemoryBankSource.USER,
-        scope: MemoryScope.GLOBAL,
-        triggers: { keywords: [] },
         instructions: "Do it.",
-      } as ISkill,
+      }),
     ]);
   }
 
   getSkill(skillId: string): Promise<ISkill | null> {
-    return Promise.resolve({
-      id: skillId,
-      skill_id: skillId,
-      name: "Mock Skill",
-      description: "A mock skill",
-      version: "1.0.0",
-      created_at: new Date().toISOString(),
-      usage_count: 0,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.LEARNED,
-      scope: MemoryScope.GLOBAL,
-      triggers: { keywords: [] },
-      instructions: "Do things.",
-    } as ISkill);
+    return Promise.resolve(runtimeSkillFixture({ id: skillId, skill_id: skillId, source: MemoryBankSource.LEARNED }));
   }
 
-  deleteSkill(skillId: string): Promise<boolean> {
+  deleteSkill(skillId: string, _ctx: ISkillOperationContext): Promise<boolean> {
     // protect user skills from deletion in tests
     if (skillId === "tdd-methodology") return Promise.resolve(false);
     return Promise.resolve(true);

@@ -30,7 +30,6 @@ import { RequestProcessor } from "@exaix/request";
 import { PlanExecutor } from "@exaix/core/planning";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { SkillsService } from "@exaix/core/skills";
-import { buildSkillsIndex } from "../../scripts/build_skills_index.ts";
 import { createStubConfig, createStubDisplay, createStubGit, REPO_ROOT } from "@exaix/testing";
 
 const PLAN_RESPONSE = '<thought>ok</thought><content>{"subject":"Test","description":"A plan.",' +
@@ -201,10 +200,8 @@ Deno.test("[integration] a pinned floor-bearing skill resolves medium on both pl
   const root = await Deno.makeTempDir({ prefix: "effort-pinned-skill-" });
   try {
     const memoryDir = join(root, "Memory");
-    const targetSkillsDir = join(memoryDir, "Skills");
-    const generated = await buildSkillsIndex(join(REPO_ROOT, "Blueprints", "Skills"), targetSkillsDir, root);
-    if (!generated.success) throw new Error(`buildSkillsIndex failed: ${generated.errors.join("; ")}`);
-    const skillsService = new SkillsService({ memoryDir }, env.db);
+    const blueprintSkillsDir = join(REPO_ROOT, "Blueprints", "Skills");
+    const skillsService = new SkillsService({ memoryDir, blueprintSkillsDir }, env.db);
     await skillsService.initialize();
     const getSkillCalls: string[] = [];
     const originalGetSkill = skillsService.getSkill.bind(skillsService);

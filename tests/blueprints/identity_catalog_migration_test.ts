@@ -143,16 +143,16 @@ Deno.test({
     "[step7] new domain skills exist (verdict-rubric, architecture-review, performance-analysis, requirements-analysis, research-methodology, blueprint-best-practices)",
   fn() {
     const expected = [
-      "verdict-rubric.skill.md",
-      "architecture-review.skill.md",
-      "performance-analysis.skill.md",
-      "requirements-analysis.skill.md",
-      "research-methodology.skill.md",
-      "blueprint-best-practices.skill.md",
+      "verdict-rubric",
+      "architecture-review",
+      "performance-analysis",
+      "requirements-analysis",
+      "research-methodology",
+      "blueprint-best-practices",
     ];
     const missing: string[] = [];
     for (const name of expected) {
-      const fp = join(SKILLS_DIR, name);
+      const fp = join(SKILLS_DIR, name, "SKILL.md");
       try {
         Deno.statSync(fp);
       } catch {

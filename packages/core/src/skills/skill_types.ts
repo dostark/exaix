@@ -21,6 +21,7 @@ import type {
   SkillDiagnosticReason,
   SkillDiagnosticSeverity,
   SkillMatchSource,
+  SkillMutationErrorCode,
   SkillRenderOutcome,
   SkillRootKind,
 } from "../types/enums.ts";
@@ -109,6 +110,8 @@ export interface ISkillFolderLoaderDeps {
   pathSecurity: IPathSecurityOps;
   logger: IEventLogger;
   eventRegistry: IEventRegistry;
+  /** Wraps one root's scan, so writable roots can be read under a shared lock. */
+  readLock?: <T>(root: IResolvedSkillRoot, scan: () => Promise<T>) => Promise<T>;
 }
 
 /** Per-file and aggregate byte caps applied before any parse, hash or store. */
@@ -151,5 +154,13 @@ export class SkillAuditUnavailableError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "SkillAuditUnavailableError";
+  }
+}
+
+/** A refused or failed skill mutation, carrying its machine-readable code. */
+export class SkillMutationError extends Error {
+  constructor(readonly code: SkillMutationErrorCode, message: string) {
+    super(message);
+    this.name = "SkillMutationError";
   }
 }

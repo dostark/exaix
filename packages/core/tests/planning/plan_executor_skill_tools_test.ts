@@ -12,7 +12,14 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { createMockConfig, createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
+import {
+  createMockConfig,
+  createStubConfig,
+  createStubDisplay,
+  createStubGit,
+  runtimeSkillFixture,
+  StubSkillsService,
+} from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
 import { DefaultRoutingStrategy, ModelResolver, ProviderRegistry } from "@exaix/ai";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
@@ -20,7 +27,7 @@ import { createStubCostTracker, createStubHealthChecker } from "../../../ai/test
 import { PricingTier, ProviderCostTier } from "@exaix/core";
 import type { IApplicationContext, ISkillsService } from "@exaix/core/types";
 import type { ISkill, ISkillMatch } from "@exaix/schemas";
-import { McpToolName, MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core";
+import { McpToolName } from "@exaix/core";
 import { PlanExecutor } from "../../src/planning/mod.ts";
 
 const stubDb = {
@@ -43,44 +50,30 @@ function registerLocalProvider(name: string): void {
 }
 
 function makeSkill(skillId: string, tools: McpToolName[]): ISkill {
-  return {
-    id: crypto.randomUUID(),
-    created_at: new Date().toISOString(),
-    source: MemoryBankSource.USER,
-    scope: MemoryScope.GLOBAL,
-    status: SkillStatus.ACTIVE,
+  return runtimeSkillFixture({
     skill_id: skillId,
-    name: skillId,
-    version: "1.0.0",
+    title: skillId,
     description: skillId,
     triggers: {},
     instructions: "Test instructions for this skill.",
     tools,
-    usage_count: 0,
-  };
+  });
 }
 
-/** Stub SkillsService: returns two fixed matches, and resolves each match's full skill by id. */
+/** Stub SkillsService: returns fixed matches, and resolves each match's full skill by id. */
 function createMultiMatchSkillsService(
   matches: ISkillMatch[],
   skillsById: Record<string, ISkill>,
 ): ISkillsService {
-  return {
-    matchSkills: () => Promise.resolve({ matches, totalAvailable: matches.length }),
-    buildSkillContext: () => Promise.resolve(""),
-    recordSkillUsage: () => Promise.resolve(),
-    deriveSkillFromLearnings: () => {
-      throw new Error("not implemented in stub");
-    },
-    rebuildIndex: () => Promise.resolve(),
-    listSkills: () => Promise.resolve([]),
-    initialize: () => Promise.resolve(),
-    createSkill: () => {
-      throw new Error("not implemented in stub");
-    },
-    getSkill: (skillId: string) => Promise.resolve(skillsById[skillId] ?? null),
-    deleteSkill: () => Promise.resolve(false),
-  };
+  class MultiMatchSkillsService extends StubSkillsService {
+    override matchSkills(): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
+      return Promise.resolve({ matches, totalAvailable: matches.length });
+    }
+    override getSkill(skillId: string): Promise<ISkill | null> {
+      return Promise.resolve(skillsById[skillId] ?? null);
+    }
+  }
+  return new MultiMatchSkillsService();
 }
 
 Deno.test({
@@ -117,8 +110,18 @@ Deno.test({
       const gitWorkflowSkill = makeSkill("git-workflow", [McpToolName.WRITE_FILE, McpToolName.DELETE_FILE]);
       const skills = createMultiMatchSkillsService(
         [
-          { skillId: "fix-bug", confidence: 0.9, matchedTriggers: {} },
-          { skillId: "git-workflow", confidence: 0.6, matchedTriggers: {} },
+          {
+            skillId: "fix-bug",
+            revisionId: "123e4567-e89b-52d3-a456-426614174000",
+            confidence: 0.9,
+            matchedTriggers: {},
+          },
+          {
+            skillId: "git-workflow",
+            revisionId: "123e4567-e89b-52d3-a456-426614174001",
+            confidence: 0.6,
+            matchedTriggers: {},
+          },
         ],
         { "fix-bug": fixBugSkill, "git-workflow": gitWorkflowSkill },
       );

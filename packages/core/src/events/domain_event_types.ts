@@ -30,6 +30,8 @@ import type {
   ProviderType,
   SkillAuditStage,
   SkillInitOutcome,
+  SkillMutationOperation,
+  SkillStatus,
   TaskComplexity,
   TaskType,
   ToolCallEntryPoint,
@@ -517,6 +519,67 @@ export interface ISkillsAuditFailedPayload extends ISkillEventIdentityPayload {
   stage: SkillAuditStage;
   call_id: string | null;
   reason: string;
+}
+
+/** Typed payload for skill.created — a draft folder published into a writable root. */
+export interface ISkillsCreatedPayload extends ISkillEventIdentityPayload {
+  name: string;
+  revision_id: string;
+  status: SkillStatus;
+}
+
+/** Typed payload for skill.updated — an edit that returned the skill to draft. */
+export interface ISkillsUpdatedPayload extends ISkillEventIdentityPayload {
+  name: string;
+  previous_revision_id: string;
+  revision_id: string;
+  status: SkillStatus;
+}
+
+/** Typed payload for skill.derived — a draft derived from learnings. */
+export interface ISkillsDerivedPayload extends ISkillEventIdentityPayload {
+  name: string;
+  revision_id: string;
+  learning_ids: string[];
+  status: SkillStatus;
+}
+
+/** Typed payload for skills.approved — a reviewed draft activated. */
+export interface ISkillsApprovedPayload extends ISkillEventIdentityPayload {
+  name: string;
+  reviewed_revision_id: string;
+  active_revision_id: string;
+  actor: string;
+}
+
+/** Typed payload for skill.deprecated. */
+export interface ISkillsDeprecatedPayload extends ISkillEventIdentityPayload {
+  name: string;
+  revision_id: string;
+  previous_status: SkillStatus;
+}
+
+/** Typed payload for skill.deleted. */
+export interface ISkillsDeletedPayload extends ISkillEventIdentityPayload {
+  name: string;
+  revision_id: string;
+  root_kind: string;
+}
+
+/** Typed payload for skills.mutation_failed — every refused or failed mutation. */
+export interface ISkillsMutationFailedPayload extends ISkillEventIdentityPayload {
+  name: string;
+  operation: SkillMutationOperation;
+  reason: string;
+}
+
+/** Typed payload for skills.match_completed — the dynamic-matching stage outcome. */
+export interface ISkillsMatchCompletedPayload extends ISkillEventIdentityPayload {
+  matched_skill_ids: string[];
+  matched_count: number;
+  total_available: number;
+  max_per_request: number;
+  budget_truncated: boolean;
 }
 
 /** Typed payload for skills.initialized — skill service readiness. */
@@ -1118,6 +1181,14 @@ export const DomainEventType = {
   SkillsShadowed: "skills.shadowed",
   SkillsAuditFailed: "skills.audit_failed",
   SkillsInitialized: "skills.initialized",
+  SkillsCreated: "skill.created",
+  SkillsUpdated: "skill.updated",
+  SkillsDerived: "skill.derived",
+  SkillsApproved: "skills.approved",
+  SkillsDeprecated: "skill.deprecated",
+  SkillsDeleted: "skill.deleted",
+  SkillsMutationFailed: "skills.mutation_failed",
+  SkillsMatchCompleted: "skills.match_completed",
 } as const;
 
 export type TDomainEventType = typeof DomainEventType[keyof typeof DomainEventType];

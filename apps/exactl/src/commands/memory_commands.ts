@@ -6,12 +6,13 @@
  * @related-files ["packages/memory/src/bank/memory_bank.ts", "apps/daemon/main.ts"]
  */
 
-import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/core";
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH, ENV_PORTAL_ALIAS } from "@exaix/core";
+import type { ISkillOperationContext } from "@exaix/core/skills";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { MemoryAutoApprovalAdapter } from "../../../../apps/common/adapters/memory_auto_approval_adapter.ts";
-import { MemoryBankSource, MemoryScope, MemoryType, SkillStatus } from "@exaix/core";
+import { type MemoryBankSource, MemoryScope, MemoryType } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
 import type { SkillDefinition } from "@exaix/schemas/memory_bank.ts";
 import type { ISkillMatchRequest, Opt, Reason } from "@exaix/core/types";
@@ -21,6 +22,9 @@ import { MemoryFormatter } from "@exaix/cli/formatters/memory_formatter.ts";
 import type { IMemoryBankSummary, OutputFormat } from "@exaix/cli/types/memory_types.ts";
 
 export interface IMemoryCommandsContext extends ICommandContext {}
+
+const CLI_AGENT_ROLE = "cli";
+const CLI_CONFIG_GENERATION = "cli";
 
 export class MemoryCommands extends BaseCommand {
   private formatter: MemoryFormatter;
@@ -515,12 +519,11 @@ export class MemoryCommands extends BaseCommand {
           return JSON.stringify(
             skills.map((s) => ({
               skill_id: s.skill_id,
-              name: s.name,
+              name: s.title,
               source: s.source,
               scope: s.scope,
-              version: s.version,
+              revision_id: s.id,
               status: s.status,
-              effectiveness_score: s.effectiveness_score,
             })),
             null,
             2,
@@ -541,7 +544,9 @@ export class MemoryCommands extends BaseCommand {
   async skillShow(skillId: string, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     try {
       await this.skills.initialize();
-      const skill = await this.skills.getSkill(skillId);
+      // `getSkill` resolves active skills only. A draft awaiting review must still be shown.
+      const skill = await this.skills.getSkill(skillId) ??
+        (await this.skills.listSkills()).find((candidate) => candidate.skill_id === skillId) ?? null;
 
       if (!skill) {
         return `Skill not found: ${skillId}`;
@@ -633,8 +638,7 @@ export class MemoryCommands extends BaseCommand {
         return "Error: Skill name is required. Use --name <name>";
       }
 
-      const skillId = options.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-      // Ensure required fields for type safety
+      const skillId = toSkillSlug(options.name);
       const skillDef = this.buildDerivedSkillDefinition({
         name: options.name,
         description: options.description,
@@ -644,6 +648,7 @@ export class MemoryCommands extends BaseCommand {
       const derivedSkill = await this.skills.deriveSkillFromLearnings(
         options.learningIds,
         skillDef,
+        cliSkillContext(),
       );
 
       switch (format) {
@@ -671,19 +676,10 @@ export class MemoryCommands extends BaseCommand {
     },
     skillId: string,
   ): SkillDefinition {
-    // Determine scope based on portal availability.
-    // In CLI context, we check for EXA_PORTAL environment variable.
-    const activePortal = Deno.env.get("EXA_PORTAL");
-    const scope = activePortal ? MemoryScope.PROJECT : MemoryScope.GLOBAL;
-
     return {
-      skill_id: skillId,
-      name: options.name,
-      version: "1.0.0",
-      source: MemoryBankSource.LEARNED,
-      status: SkillStatus.DRAFT,
+      name: skillId,
+      title: options.name,
       description: options.description || `Skill derived from ${options.learningIds.length} learnings`,
-      scope,
       triggers: {
         keywords: [],
         task_types: [],
@@ -710,11 +706,9 @@ export class MemoryCommands extends BaseCommand {
     try {
       await this.skills.initialize();
 
-      const skillId = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-      const location = options.category || MemoryBankSource.PROJECT;
-
-      const skillDef = this.buildSkillDefinition(name, skillId, location, options);
-      const skill = await this.skills.createSkill(skillDef);
+      const skillId = toSkillSlug(name);
+      const skillDef = this.buildSkillDefinition(name, skillId, options);
+      const skill = await this.skills.createSkill(skillDef, cliSkillContext());
 
       switch (format) {
         case UIOutputFormat.JSON:
@@ -723,7 +717,7 @@ export class MemoryCommands extends BaseCommand {
         case UIOutputFormat.MARKDOWN:
         case UIOutputFormat.TABLE:
         default:
-          return `Created skill: ${skill.skill_id} (${skill.name}) in ${location}/`;
+          return `Created draft skill: ${skill.skill_id} (${skill.title}), review it and approve it to activate`;
       }
     } catch (error) {
       return `Error creating skill: ${(error as Error).message}`;
@@ -734,7 +728,6 @@ export class MemoryCommands extends BaseCommand {
   private buildSkillDefinition(
     name: string,
     skillId: string,
-    location: MemoryBankSource,
     options: {
       description?: string;
       instructions?: string;
@@ -742,22 +735,10 @@ export class MemoryCommands extends BaseCommand {
       triggersTaskTypes?: string[];
     },
   ): SkillDefinition {
-    // Determine scope based on category and portal availability.
-    // Core and Learned (Global) always use GLOBAL scope.
-    // User/Project use PROJECT scope if a portal is active, otherwise fall back to GLOBAL.
-    const activePortal = Deno.env.get("EXA_PORTAL");
-    const scope = (location === MemoryBankSource.CORE || location === MemoryBankSource.LEARNED)
-      ? MemoryScope.GLOBAL
-      : (activePortal ? MemoryScope.PROJECT : MemoryScope.GLOBAL);
-
     return {
-      skill_id: skillId,
-      name,
-      version: "1.0.0",
+      name: skillId,
+      title: name,
       description: options.description || `${name} skill`,
-      source: location === MemoryBankSource.LEARNED ? MemoryBankSource.LEARNED : MemoryBankSource.USER,
-      scope,
-      status: SkillStatus.DRAFT,
       instructions: options.instructions || "No instructions provided.",
       triggers: {
         keywords: options.triggersKeywords || [],
@@ -767,4 +748,22 @@ export class MemoryCommands extends BaseCommand {
       },
     };
   }
+}
+
+/** Slug of a free-form skill name: lowercase ASCII words joined by single hyphens. */
+function toSkillSlug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+/** Operation context for CLI skill mutations. The portal comes from `EXA_PORTAL`, otherwise the skill is global. */
+function cliSkillContext(): ISkillOperationContext {
+  return {
+    portal: Deno.env.get(ENV_PORTAL_ALIAS) ?? null,
+    traceId: crypto.randomUUID(),
+    requestId: null,
+    flowId: null,
+    flowStepId: null,
+    agentRole: CLI_AGENT_ROLE,
+    configGeneration: CLI_CONFIG_GENERATION,
+  };
 }

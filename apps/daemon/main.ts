@@ -566,7 +566,10 @@ if (import.meta.main) {
     // Extraction loads the content policy by explicit skill_id, so the shared skills
     // service must be ready before memory services are composed.
     const skillsService = new SkillsService(
-      { memoryDir: join(config.system.root, config.paths.memory), portal: config.paths.workspace },
+      {
+        memoryDir: join(config.system.root, config.paths.memory),
+        blueprintSkillsDir: join(config.system.root, config.paths.blueprints, "Skills"),
+      },
       dbService,
       undefined,
       logger,

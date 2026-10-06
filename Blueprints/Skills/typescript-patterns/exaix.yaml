@@ -1,0 +1,48 @@
+title: TypeScript Best Practices
+triggers:
+  keywords:
+    - typescript
+    - types
+    - interface
+    - type
+    - generic
+    - strict
+    - typing
+  task_types:
+    - feature
+    - refactor
+    - typescript
+  file_patterns:
+    - '*.ts'
+    - '*.tsx'
+  tags:
+    - typescript
+    - types
+    - patterns
+constraints:
+  - Enable strict mode in tsconfig
+  - Never use `any` — not even implicitly through missing annotations
+  - 'Never use `unknown` as a parameter type, return type, or field type — define a named interface or type alias instead'
+  - 'Every variable, parameter, return value, and data structure must have an explicit type annotation'
+  - Never use double casting (`... as unknown as ...`) to bypass the compiler
+  - Prefer interfaces for object shapes
+  - Use type guards for narrowing
+output_requirements:
+  - No implicit any
+  - No explicit any
+  - No unknown as a stored/parameter/return type
+  - Proper null/undefined handling
+  - Type-safe function signatures
+quality_criteria:
+  - name: Type Safety
+    description: 'Code is properly typed — all vars, params, and return values have explicit annotations'
+    weight: 40
+  - name: Type Clarity
+    description: 'Types are clear, named, and documented'
+    weight: 30
+  - name: No Any / No Unknown fallback
+    description: Avoids any and unknown as lazy fallbacks; uses named types instead
+    weight: 30
+applies_to:
+  agents:
+    - '*'

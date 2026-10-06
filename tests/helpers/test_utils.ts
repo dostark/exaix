@@ -9,6 +9,8 @@ import { MemoryBankSource, RequestSource, SkillStatus } from "@exaix/core";
 import { PlanStatus, type PlanStatusType } from "@exaix/core/status";
 import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
 import type { Opt, Reason } from "@exaix/core/types";
+import type { ISkill } from "@exaix/schemas/memory_bank.ts";
+import { runtimeSkillFixture } from "@exaix/testing";
 
 // Test Data Factories
 
@@ -31,15 +33,6 @@ export interface ITestPlanFixture {
   subject: string;
   status: PlanStatusType;
   rejectionReason?: string;
-}
-
-export interface ITestSkillFixture {
-  id: string;
-  name: string;
-  version: string;
-  status: SkillStatus;
-  source: MemoryBankSource;
-  description: string;
 }
 
 /** Generic test data factory that creates objects with default values and overrides. */
@@ -80,14 +73,17 @@ export const planFactory = new TestDataFactory<ITestPlanFixture>(() => ({
 }));
 
 // Skill factory
-export const skillFactory = new TestDataFactory<ITestSkillFixture>(() => ({
-  id: `skill-${Math.floor(Math.random() * 1e6)}`,
-  name: "Skill",
-  version: "1.0.0",
-  status: SkillStatus.ACTIVE,
-  source: MemoryBankSource.CORE,
-  description: "Test skill",
-}));
+export const skillFactory = new TestDataFactory<ISkill>(() => {
+  const suffix = Math.floor(Math.random() * 1e6);
+  return runtimeSkillFixture({
+    id: `skill-${suffix}`,
+    skill_id: `skill-${suffix}`,
+    title: "Skill",
+    status: SkillStatus.ACTIVE,
+    source: MemoryBankSource.CORE,
+    description: "Test skill",
+  });
+});
 
 // Mock Service Base Classes
 

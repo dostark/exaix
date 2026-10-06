@@ -2,11 +2,11 @@
  * @module SkillFloorEffortTest
  * @path packages/execution/tests/agents/skill_floor_effort_test.ts
  * @description Phase-197 Step 3 integration proof: the real
- *   response-contract-security-analysis skill's `effort: medium` floor is hydrated through
+ *   response-contract-security-analysis skill's `effort: medium` floor is hydrated from its skill folder through
  *   AgentRunner and raises a role whose `effort: auto` would otherwise resolve to `low`
  *   (SIMPLE complexity on the heuristic) up to `medium` at the provider's generate() call.
  * @architectural-layer Test
- * @related-files [packages/execution/src/agent_runner.ts, packages/schemas/src/memory_bank.ts, scripts/build_skills_index.ts]
+ * @related-files [packages/execution/src/agent_runner.ts, packages/schemas/src/memory_bank.ts]
  */
 
 import { assertEquals } from "@std/assert";
@@ -19,7 +19,6 @@ import type { IBlueprint, IParsedRequest } from "@exaix/execution";
 import { SkillsService } from "@exaix/core/skills";
 import { TaskComplexity } from "@exaix/core";
 import { initTestDbService, REPO_ROOT } from "@exaix/testing";
-import { buildSkillsIndex } from "../../../../scripts/build_skills_index.ts";
 
 const WELL_FORMED_RESPONSE = "<thought>ok</thought><content>done</content>";
 
@@ -45,18 +44,12 @@ Deno.test("[AgentRunner] response-contract-security-analysis effort medium floor
   const { db, cleanup } = await initTestDbService();
   const root = await Deno.makeTempDir({ prefix: "skill-floor-effort-" });
   const memoryDir = join(root, "Memory");
-  const targetSkillsDir = join(memoryDir, "Skills");
   try {
-    const realSkillsDir = join(REPO_ROOT, "Blueprints", "Skills");
-    const generated = await buildSkillsIndex(realSkillsDir, targetSkillsDir, root);
-    if (!generated.success) {
-      throw new Error(`buildSkillsIndex failed: ${generated.errors.join("; ")}`);
-    }
-
-    const skillsService = new SkillsService({ memoryDir }, db);
+    const blueprintSkillsDir = join(REPO_ROOT, "Blueprints", "Skills");
+    const skillsService = new SkillsService({ memoryDir, blueprintSkillsDir }, db);
     await skillsService.initialize();
     const floor = await skillsService.getSkill("response-contract-security-analysis");
-    assertEquals(floor?.effort, "medium", "the compiled skill JSON must carry the floor");
+    assertEquals(floor?.effort, "medium", "the skill folder's sidecar must carry the floor");
 
     const { provider, options } = makeCapturingProvider();
     const runner = new AgentRunner(provider, {

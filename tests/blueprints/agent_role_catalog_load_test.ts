@@ -70,10 +70,10 @@ Deno.test({
   },
 });
 
-// default_skills resolve to loadable .skill.md files
+// default_skills resolve to loadable skill folders
 
 Deno.test({
-  name: "[step9/catalog-load] all agent role default_skills resolve to existing .skill.md files",
+  name: "[step9/catalog-load] all agent role default_skills resolve to existing skill folders",
   fn() {
     const activeIds = listActiveAgentRoles();
     const missingSkills: Array<{ agent_role: string; skill: string }> = [];
@@ -83,7 +83,7 @@ Deno.test({
       if (!fm) continue;
       const skills = (fm.default_skills ?? []) as string[];
       for (const s of skills) {
-        const skillPath = join(SKILLS_DIR, `${s}.skill.md`);
+        const skillPath = join(SKILLS_DIR, s, "SKILL.md");
         try {
           Deno.statSync(skillPath);
         } catch {
@@ -93,7 +93,7 @@ Deno.test({
     }
 
     if (missingSkills.length > 0) {
-      console.log("\nDefault skills that do not resolve to a .skill.md file:");
+      console.log("\nDefault skills that do not resolve to a skill folder:");
       for (const m of missingSkills) {
         console.log(`  ${m.agent_role}: → ${m.skill}`);
       }
@@ -102,7 +102,7 @@ Deno.test({
     assertEquals(
       missingSkills.length,
       0,
-      `${missingSkills.length} default_skills references do not resolve to a .skill.md file`,
+      `${missingSkills.length} default_skills references do not resolve to a skill folder`,
     );
   },
 });

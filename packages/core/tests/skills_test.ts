@@ -1,246 +1,65 @@
 /**
  * @module SkillsServiceTest
  * @path packages/core/tests/skills_test.ts
- * @description Verifies the SkillsService, ensuring correct discovery, indexing, and
- * lifecycle management of dynamic agent capabilities from the Skills directory.
+ * @description Verifies SkillsService trigger matching and prompt-context building over skill
+ *   folders: keyword, task type, file pattern and tag scoring, ranking, status filtering, the
+ *   per-request cap and context assembly. The draft lifecycle is covered in
+ *   tests/skills/skills_service_test.ts.
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { EvaluationCategory, MemoryBankSource, MemoryOperation, MemoryScope, SkillStatus } from "@exaix/core";
+import { EvaluationCategory, SkillStatus } from "@exaix/core";
 import { join } from "@std/path";
-import { exists } from "@std/fs";
-import { SkillsService } from "@exaix/core/skills";
-import { initTestDbService } from "@exaix/testing";
-import { getMemorySkillsDir } from "@exaix/testing";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
+import { type ISkillsConfig, SkillsService } from "@exaix/core/skills";
+import type { ISkillSidecar } from "@exaix/schemas/skill_folder.ts";
+import { initTestDbService, type ISkillFolderSeed, writeSkillFolder } from "@exaix/testing";
 
-type TestDbContext = Awaited<ReturnType<typeof initTestDbService>>;
+interface ISkillSeedInput {
+  name: string;
+  description?: string;
+  instructions?: string;
+  triggers?: Record<string, string[]>;
+  extra?: ISkillSidecar;
+}
 
-async function withInitializedSkillsService(
-  testFn: (context: { service: SkillsService; config: TestDbContext["config"] }) => Promise<void>,
+async function withSeededSkillsService(
+  seeds: ISkillSeedInput[],
+  testFn: (service: SkillsService) => Promise<void>,
+  skillsConfig?: Partial<ISkillsConfig>,
 ): Promise<void> {
   const { db, config, cleanup } = await initTestDbService();
-
+  const blueprintSkillsDir = await Deno.makeTempDir({ prefix: "skills-test-" });
   try {
-    const service = new SkillsService({ memoryDir: join(config.system.root, config.paths.memory) }, db);
+    for (const seed of seeds) {
+      const folder: ISkillFolderSeed = {
+        name: seed.name,
+        description: seed.description ?? `${seed.name} skill`,
+        instructions: seed.instructions ?? `Instructions for ${seed.name}`,
+        sidecar: { ...(seed.triggers ? { triggers: seed.triggers } : {}), ...seed.extra },
+      };
+      await writeSkillFolder(blueprintSkillsDir, folder);
+    }
+    const service = new SkillsService(
+      { memoryDir: join(config.system.root, config.paths.memory), blueprintSkillsDir },
+      db,
+      skillsConfig,
+    );
     await service.initialize();
-    await testFn({ service, config });
+    await testFn(service);
   } finally {
+    await Deno.remove(blueprintSkillsDir, { recursive: true });
     await cleanup();
   }
 }
 
-// Directory Structure Tests
-
-Deno.test("SkillsService: initialize creates directory structure", async () => {
-  await withInitializedSkillsService(async ({ config }) => {
-    const skillsDir = getMemorySkillsDir(config.system.root);
-    assertEquals(await exists(skillsDir), true);
-    assertEquals(await exists(join(skillsDir, MemoryBankSource.CORE)), true);
-    assertEquals(await exists(join(skillsDir, MemoryBankSource.LEARNED)), true);
-    assertEquals(await exists(join(skillsDir, MemoryScope.PROJECT)), true);
-    assertEquals(await exists(join(skillsDir, "index.json")), true);
-  });
-});
-
-// CRUD Operations Tests
-
-Deno.test("SkillsService: createSkill creates and indexes skill", async () => {
-  await withInitializedSkillsService(async ({ service, config }) => {
-    const skill = await service.createSkill({
-      skill_id: "test-skill",
-      name: "Test Skill",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "A test skill",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: {
-        keywords: ["test", "example"],
-        task_types: ["testing"],
-      },
-      instructions: "Test instructions here",
-    });
-
-    assertExists(skill.id);
-    assertEquals(skill.skill_id, "test-skill");
-    assertEquals(skill.name, "Test Skill");
-    assertEquals(skill.usage_count, 0);
-
-    // Verify file was created
-    const skillPath = join(getMemorySkillsDir(config.system.root), "global", "test-skill.json");
-    assertEquals(await exists(skillPath), true);
-  });
-});
-
-Deno.test("SkillsService: getSkill retrieves created skill", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    // Create a skill first
-    await service.createSkill({
-      skill_id: "get-test-skill",
-      name: "Get Test Skill",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "Test get operation",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: {
-        keywords: ["get", "test"],
-      },
-      instructions: "Get test instructions",
-    });
-
-    const skill = await service.getSkill("get-test-skill");
-    assertExists(skill);
-    assertEquals(skill?.name, "Get Test Skill");
-    assertEquals(skill?.instructions, "Get test instructions");
-  });
-});
-
-Deno.test("SkillsService: getSkill returns null for missing skill", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    const skill = await service.getSkill("nonexistent-skill");
-    assertEquals(skill, null);
-  });
-});
-
-Deno.test("SkillsService: listSkills returns all active skills", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    // Create multiple skills
-    await service.createSkill({
-      skill_id: "list-skill-1",
-      name: "List Skill 1",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "First skill",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: { keywords: ["one"] },
-      instructions: "Instructions 1",
-    });
-
-    await service.createSkill({
-      skill_id: "list-skill-2",
-      name: "List Skill 2",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "Second skill",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.DRAFT,
-      source: MemoryBankSource.USER,
-      triggers: { keywords: ["two"] },
-      instructions: "Instructions 2",
-    });
-
-    const allSkills = await service.listSkills();
-    const activeSkills = await service.listSkills({ status: SkillStatus.ACTIVE });
-    const draftSkills = await service.listSkills({ status: SkillStatus.DRAFT });
-
-    // Should have at least the skills we created
-    const listSkills = allSkills.filter((s) => s.skill_id.startsWith("list-skill"));
-    assertEquals(listSkills.length >= 2, true);
-
-    const activeList = activeSkills.filter((s) => s.skill_id.startsWith("list-skill"));
-    assertEquals(activeList.length >= 1, true);
-
-    const draftList = draftSkills.filter((s) => s.skill_id.startsWith("list-skill"));
-    assertEquals(draftList.length >= 1, true);
-  });
-});
-
-Deno.test("SkillsService: updateSkill modifies skill", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    await service.createSkill({
-      skill_id: "update-test",
-      name: "Update Test",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "Before update",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.DRAFT,
-      source: MemoryBankSource.USER,
-      triggers: { keywords: [MemoryOperation.UPDATE] },
-      instructions: "Original instructions",
-    });
-
-    const updated = await service.updateSkill("update-test", {
-      name: "Updated Name",
-      version: "1.1.0",
-      instructions: "Updated instructions",
-    });
-
-    assertExists(updated);
-    assertEquals(updated?.name, "Updated Name");
-    assertEquals(updated?.version, "1.1.0");
-    assertEquals(updated?.instructions, "Updated instructions");
-    assertEquals(updated?.skill_id, "update-test"); // ID unchanged
-  });
-});
-
-Deno.test("SkillsService: activateSkill changes draft to active", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    await service.createSkill({
-      skill_id: "activate-test",
-      name: "Activate Test",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "To be activated",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.DRAFT,
-      source: MemoryBankSource.USER,
-      triggers: { keywords: ["activate"] },
-      instructions: "Activation test",
-    });
-
-    const result = await service.activateSkill("activate-test");
-    assertEquals(result, true);
-
-    const skill = await service.getSkill("activate-test");
-    assertEquals(skill?.status, SkillStatus.ACTIVE);
-  });
-});
-
-Deno.test("SkillsService: deprecateSkill marks skill as deprecated", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    await service.createSkill({
-      skill_id: "deprecate-test",
-      name: "Deprecate Test",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "To be deprecated",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: { keywords: ["deprecate"] },
-      instructions: "Deprecation test",
-    });
-
-    const result = await service.deprecateSkill("deprecate-test");
-    assertEquals(result, true);
-
-    const skill = await service.getSkill("deprecate-test");
-    assertEquals(skill?.status, SkillStatus.DEPRECATED);
-  });
-});
-
-// Trigger Matching Tests
+const BUGFIX_REQUEST_TEXT =
+  "Fix the null-safety bugs in src/utils.ts: formatAssignee crashes when a task has no assignee. Add null checks so the function returns an empty string instead of crashing.";
 
 Deno.test("SkillsService: matchSkills returns skills matching keywords", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    await service.createSkill({
-      skill_id: "keyword-match",
-      name: "Keyword Match",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "Matches keywords",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: {
-        keywords: ["implement", "feature", "create"],
-      },
-      instructions: "Keyword matching test",
-    });
-
-    const { matches } = await service.matchSkills({
-      keywords: ["implement", "new", "feature"],
-    });
-
+  await withSeededSkillsService([
+    { name: "keyword-match", triggers: { keywords: ["implement", "feature", "create"] } },
+  ], async (service) => {
+    const { matches } = await service.matchSkills({ keywords: ["implement", "new", "feature"] });
     const matched = matches.find((m) => m.skillId === "keyword-match");
     assertExists(matched);
     assertEquals(matched.confidence > 0, true);
@@ -249,48 +68,31 @@ Deno.test("SkillsService: matchSkills returns skills matching keywords", async (
 });
 
 Deno.test("fix(skills): matchSkills does not penalize a partial match against a long trigger keyword list below the match threshold", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    // Mirrors tdd-methodology: 8 keywords, only 2 relevant. Confidence divides by total keyword
-    // count, so a broad-but-relevant skill can score below the 0.3 default matchThreshold and
-    // be silently excluded from dynamic matching.
-    await service.createSkill({
-      skill_id: "broad-trigger-list",
-      name: "Broad Trigger List",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "Has a long keyword trigger list, like tdd-methodology",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: {
-        keywords: ["implement", "feature", "add", "create", "build", "fix", "bugfix", "develop"],
-      },
-      instructions: "Broad trigger list matching test",
-    });
-
+  // Mirrors tdd-methodology: 8 keywords, only 2 relevant. Confidence must not divide by the total
+  // keyword count, or a broad-but-relevant skill scores below the 0.3 default matchThreshold.
+  await withSeededSkillsService([
+    {
+      name: "broad-trigger-list",
+      triggers: { keywords: ["implement", "feature", "add", "create", "build", "fix", "bugfix", "develop"] },
+    },
+  ], async (service) => {
     const { matches } = await service.matchSkills({
-      requestText:
-        "Fix the null-safety bugs in src/utils.ts: formatAssignee crashes when a task has no assignee. Add null checks so the function returns an empty string instead of crashing.",
+      requestText: BUGFIX_REQUEST_TEXT,
       keywords: ["fix", "null", "safety", "bugs", "crashes", "assignee", "add", "checks", "crashing"],
     });
-
-    const matched = matches.find((m) => m.skillId === "broad-trigger-list");
-    assertExists(matched, "expected a partial keyword match against a long trigger list to clear matchThreshold");
+    assertExists(
+      matches.find((m) => m.skillId === "broad-trigger-list"),
+      "expected a partial keyword match against a long trigger list to clear matchThreshold",
+    );
   });
 });
 
 Deno.test("fix-bug skill outranks tdd-methodology for a bugfix request", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    // Mirrors two real global skills: fix-bug has tight bug-focused triggers; tdd-methodology
-    // has broad implement/feature/... keywords plus bugfix in task_types. For a genuine bug-fix
-    // request the specialized skill must rank first, not the generic TDD methodology.
-    await service.createSkill({
-      skill_id: "fix-bug",
-      name: "Bug Fix",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "Reproduce, isolate root cause, smallest fix, verify",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
+  // Mirrors two real global skills: fix-bug has tight bug-focused triggers, tdd-methodology has broad
+  // implement/feature keywords plus bugfix in task_types. The specialized skill must rank first.
+  await withSeededSkillsService([
+    {
+      name: "fix-bug",
       triggers: {
         keywords: [
           "fix",
@@ -311,27 +113,18 @@ Deno.test("fix-bug skill outranks tdd-methodology for a bugfix request", async (
         task_types: ["bugfix"],
         tags: ["bugfix", "debugging"],
       },
-      instructions: "Bug fix skill instructions",
-    });
-    await service.createSkill({
-      skill_id: "tdd-methodology",
-      name: "Test-Driven Development Methodology",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "Red-Green-Refactor",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
+    },
+    {
+      name: "tdd-methodology",
       triggers: {
         keywords: ["implement", "feature", "add", "create", "build", "fix", "bugfix", "develop"],
         task_types: ["feature", "bugfix", "refactor", "implementation"],
         tags: ["development", "testing", "tdd"],
       },
-      instructions: "TDD methodology instructions",
-    });
-
+    },
+  ], async (service) => {
     const { matches } = await service.matchSkills({
-      requestText:
-        "Fix the null-safety bugs in src/utils.ts: formatAssignee crashes when a task has no assignee. Add null checks so the function returns an empty string instead of crashing.",
+      requestText: BUGFIX_REQUEST_TEXT,
       keywords: ["fix", "null", "safety", "bugs", "crashes", "assignee", "add", "checks", "crashing"],
       taskType: "bugfix",
       tags: ["bugfix"],
@@ -348,51 +141,24 @@ Deno.test("fix-bug skill outranks tdd-methodology for a bugfix request", async (
         matches.map((m) => `${m.skillId}(${m.confidence.toFixed(2)})`).join(", ")
       }`,
     );
-    assertEquals(
-      fixBug.confidence > tdd.confidence,
-      true,
-      `fix-bug confidence (${fixBug.confidence.toFixed(2)}) should exceed tdd (${tdd.confidence.toFixed(2)})`,
-    );
+    assertEquals(fixBug.confidence > tdd.confidence, true);
 
-    // Analysis-phase realistic match: AgentRunner.performDynamicSkillMatching passes keywords +
-    // taskType + filePaths + tags (not requestText alone) — fix-bug must clear the threshold and
-    // rank first here too, since this is the selection that injects context into the plan.
+    // AgentRunner passes keywords, task type, file paths and tags. Fix-bug must rank first for that signal too.
     const { matches: analysisMatches } = await service.matchSkills({
       keywords: ["fix", "null", "safety", "bugs", "crashes", "add", "checks"],
       taskType: "bugfix",
       filePaths: ["src/utils.ts"],
       tags: ["bugfix"],
     });
-    assertEquals(
-      analysisMatches[0]?.skillId,
-      "fix-bug",
-      `analysis-signal match should rank fix-bug first, got: ${
-        analysisMatches.map((m) => `${m.skillId}(${m.confidence.toFixed(2)})`).join(", ")
-      }`,
-    );
+    assertEquals(analysisMatches[0]?.skillId, "fix-bug");
   });
 });
 
 Deno.test("SkillsService: matchSkills returns skills matching task types", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    await service.createSkill({
-      skill_id: "tasktype-match",
-      name: "Task Type Match",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "Matches task types",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: {
-        task_types: ["bugfix", EvaluationCategory.SECURITY],
-      },
-      instructions: "Task type matching test",
-    });
-
-    const { matches } = await service.matchSkills({
-      taskType: "bugfix",
-    });
-
+  await withSeededSkillsService([
+    { name: "tasktype-match", triggers: { task_types: ["bugfix", EvaluationCategory.SECURITY] } },
+  ], async (service) => {
+    const { matches } = await service.matchSkills({ taskType: "bugfix" });
     const matched = matches.find((m) => m.skillId === "tasktype-match");
     assertExists(matched);
     assertEquals(matched.matchedTriggers.task_types, ["bugfix"]);
@@ -400,25 +166,10 @@ Deno.test("SkillsService: matchSkills returns skills matching task types", async
 });
 
 Deno.test("SkillsService: matchSkills returns skills matching file patterns", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    await service.createSkill({
-      skill_id: "filepattern-match",
-      name: "File IPattern Match",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "Matches file patterns",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: {
-        file_patterns: ["*.ts", "src/**/*.js"],
-      },
-      instructions: "File pattern matching test",
-    });
-
-    const { matches } = await service.matchSkills({
-      filePaths: ["test.ts", "other.py"],
-    });
-
+  await withSeededSkillsService([
+    { name: "filepattern-match", triggers: { file_patterns: ["*.ts", "src/**/*.js"] } },
+  ], async (service) => {
+    const { matches } = await service.matchSkills({ filePaths: ["test.ts", "other.py"] });
     const matched = matches.find((m) => m.skillId === "filepattern-match");
     assertExists(matched);
     assertExists(matched.matchedTriggers.file_patterns);
@@ -426,200 +177,93 @@ Deno.test("SkillsService: matchSkills returns skills matching file patterns", as
 });
 
 Deno.test("SkillsService: matchSkills excludes non-active skills", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    await service.createSkill({
-      skill_id: "draft-skill",
-      name: "Draft Skill",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "A draft skill",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.DRAFT,
-      source: MemoryBankSource.USER,
-      triggers: {
-        keywords: [SkillStatus.DRAFT, "exclusive", "unique-keyword-xyz"],
-      },
-      instructions: "Should not match",
-    });
-
+  await withSeededSkillsService([
+    {
+      name: "draft-skill",
+      triggers: { keywords: [SkillStatus.DRAFT, "exclusive", "unique-keyword-xyz"] },
+      extra: { status: SkillStatus.DRAFT },
+    },
+  ], async (service) => {
     const { matches } = await service.matchSkills({
       keywords: [SkillStatus.DRAFT, "exclusive", "unique-keyword-xyz"],
     });
-
-    const matched = matches.find((m) => m.skillId === "draft-skill");
-    assertEquals(matched, undefined);
+    assertEquals(matches.find((m) => m.skillId === "draft-skill"), undefined);
   });
 });
 
 Deno.test("SkillsService: matchSkills extracts keywords from request text", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    await service.createSkill({
-      skill_id: "text-extract",
-      name: "Text Extract",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "Test keyword extraction",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: {
-        keywords: ["authentication", "login"],
-      },
-      instructions: "Text extraction test",
-    });
-
+  await withSeededSkillsService([
+    { name: "text-extract", triggers: { keywords: ["authentication", "login"] } },
+  ], async (service) => {
     const { matches } = await service.matchSkills({
       requestText: "Please implement authentication for the login page",
     });
-
-    const matched = matches.find((m) => m.skillId === "text-extract");
-    assertExists(matched);
+    assertExists(matches.find((m) => m.skillId === "text-extract"));
   });
 });
 
 Deno.test("SkillsService: matchSkills respects maxSkillsPerRequest limit", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    // Create many skills with the same trigger
-    for (let i = 0; i < 10; i++) {
-      await service.createSkill({
-        skill_id: `limit-test-${i}`,
-        name: `Limit Test ${i}`,
-        version: DEFAULT_GLOBAL_MEMORY_VERSION,
-        description: "Limit test",
-        scope: MemoryScope.GLOBAL,
-        status: SkillStatus.ACTIVE,
-        source: MemoryBankSource.USER,
-        triggers: {
-          keywords: ["limitspecial", "testspecial"],
-        },
-        instructions: `Limit test ${i}`,
-      });
-    }
-
-    const { matches } = await service.matchSkills({
-      keywords: ["limitspecial", "testspecial"],
-    });
-
-    // Default maxSkillsPerRequest is 5
-    assertEquals(matches.length <= 5, true);
+  const seeds = Array.from({ length: 10 }, (_, i) => ({
+    name: `limit-test-${i}`,
+    triggers: { keywords: ["limitspecial", "testspecial"] },
+  }));
+  await withSeededSkillsService(seeds, async (service) => {
+    const { matches, totalAvailable } = await service.matchSkills({ keywords: ["limitspecial", "testspecial"] });
+    assertEquals(matches.length, 5, "the default cap is 5");
+    assertEquals(totalAvailable, 10);
   });
+  await withSeededSkillsService(seeds, async (service) => {
+    const { matches } = await service.matchSkills({ keywords: ["limitspecial", "testspecial"] });
+    assertEquals(matches.length, 2, "an explicit cap overrides the default");
+  }, { maxSkillsPerRequest: 2 });
 });
 
-// Skill Context Building Tests
-
 Deno.test("SkillsService: buildSkillContext generates markdown context", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    await service.createSkill({
-      skill_id: "context-test",
-      name: "Context Test Skill",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
+  await withSeededSkillsService([
+    {
+      name: "context-test",
       description: "For context building",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: { keywords: ["context"] },
       instructions: "Do the context thing step by step",
-      constraints: ["Must follow rule 1", "Must follow rule 2"],
-      quality_criteria: [
-        { name: "Quality", weight: 50 },
-        { name: "Speed", weight: 50 },
-      ],
-    });
-
+      triggers: { keywords: ["context"] },
+      extra: {
+        title: "Context Test Skill",
+        constraints: ["Must follow rule 1", "Must follow rule 2"],
+        quality_criteria: [{ name: "Quality", weight: 50 }, { name: "Speed", weight: 50 }],
+      },
+    },
+  ], async (service) => {
     const context = await service.buildSkillContext(["context-test"]);
-
     assertStringIncludes(context, "APPLICABLE SKILLS");
     assertStringIncludes(context, "Context Test Skill");
     assertStringIncludes(context, "Do the context thing");
+    assertStringIncludes(context, "Must follow rule 1");
   });
 });
 
 Deno.test("SkillsService: buildSkillContext handles missing skills", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    const context = await service.buildSkillContext(["nonexistent-1", "nonexistent-2"]);
-    assertEquals(context, "");
+  await withSeededSkillsService([], async (service) => {
+    assertEquals(await service.buildSkillContext(["nonexistent-1", "nonexistent-2"]), "");
   });
 });
 
 Deno.test("SkillsService: buildSkillContext combines multiple skills", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    await service.createSkill({
-      skill_id: "multi-1",
-      name: "Multi Skill 1",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "First skill",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: { keywords: ["multi"] },
-      instructions: "Instructions for skill 1",
-    });
-
-    await service.createSkill({
-      skill_id: "multi-2",
-      name: "Multi Skill 2",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "Second skill",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: { keywords: ["multi"] },
-      instructions: "Instructions for skill 2",
-    });
-
+  await withSeededSkillsService([
+    { name: "multi-1", instructions: "Instructions for skill 1", extra: { title: "Multi Skill 1" } },
+    { name: "multi-2", instructions: "Instructions for skill 2", extra: { title: "Multi Skill 2" } },
+  ], async (service) => {
     const context = await service.buildSkillContext(["multi-1", "multi-2"]);
-
-    assertEquals(context.includes("Multi Skill 1"), true);
-    assertEquals(context.includes("Multi Skill 2"), true);
-    assertEquals(context.includes("Instructions for skill 1"), true);
-    assertEquals(context.includes("Instructions for skill 2"), true);
+    for (const expected of ["Multi Skill 1", "Multi Skill 2", "Instructions for skill 1", "Instructions for skill 2"]) {
+      assertStringIncludes(context, expected);
+    }
   });
 });
 
-// Skill Derivation Tests
-
-Deno.test("SkillsService: deriveSkillFromLearnings creates skill with derived_from", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    const learningIds = ["learning-1", "learning-2", "learning-3"];
-
-    const skill = await service.deriveSkillFromLearnings(learningIds, {
-      skill_id: "derived-skill",
-      name: "Derived Skill",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      source: MemoryBankSource.LEARNED,
-      description: "Derived from learnings",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.DRAFT,
-      triggers: { keywords: ["derived"] },
-      instructions: "Derived instructions",
-    });
-
-    assertEquals(skill.source, MemoryBankSource.LEARNED);
-    assertEquals(skill.derived_from, learningIds);
-    assertEquals(skill.status, SkillStatus.DRAFT); // Always starts as draft
-  });
-});
-
-// Skill Index Management Tests
-
-Deno.test("SkillsService: rebuildIndex scans all skill directories", async () => {
-  await withInitializedSkillsService(async ({ service }) => {
-    // Create skills in different locations
-    await service.createSkill({
-      skill_id: "index-learned",
-      name: "Learned Index Test",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "In learned dir",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.LEARNED,
-      triggers: { keywords: ["index"] },
-      instructions: "Index test",
-    });
-
-    // Rebuild index
-    await service.rebuildIndex();
-
-    const skills = await service.listSkills();
-    const found = skills.find((s) => s.skill_id === "index-learned");
-    assertExists(found);
+Deno.test("SkillsService: buildSkillContext drops a skill that overflows the context budget", async () => {
+  await withSeededSkillsService([
+    { name: "big-skill", instructions: "x".repeat(5_000), extra: { title: "Big Skill" } },
+  ], async (service) => {
+    const context = await service.buildSkillContext(["big-skill"]);
+    assertStringIncludes(context, "excluded due to context budget");
+    assertEquals(context.includes("Big Skill"), false);
   });
 });

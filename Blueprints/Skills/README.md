@@ -5,37 +5,42 @@ procedural knowledge ("how to work") that agent roles reference via
 `default_skills`. A skill describes _how_ to do something; an agent role (under
 `Blueprints/Agents/`) describes _who_ the agent is.
 
-## Source of truth vs. runtime store
+## Folder format
 
-- **`Blueprints/Skills/*.skill.md`** (this directory) — the **source of truth**.
-  Human-authored skill definitions: YAML frontmatter (id, triggers, constraints,
-  quality criteria, `critical` flag) plus markdown instructions.
-- **`Memory/Skills/`** — the **runtime store** the skill service actually reads.
-  It holds the generated JSON form of these skills (under `global/` and
-  `project/<project>/`) **plus** learned/adapted skills derived from real usage.
+A skill is a folder in the Agent Skills format. The folder is the single source: the skill
+service reads it directly, and nothing is compiled.
 
-The `.skill.md` files here are **not** loaded directly at runtime. They are
-compiled into `Memory/Skills/**.json` by `scripts/build_skills_index.ts`; the
-`check:skill-index` gate (run in pre-commit and CI) fails if the two drift, so
-editing a `.skill.md` requires regenerating the index:
-
-```bash
-deno run -A scripts/build_skills_index.ts Memory/Skills .
+```text
+Blueprints/Skills/<name>/
+  SKILL.md       # required: spec frontmatter (name, description) + the markdown body
+  exaix.yaml     # optional: Exaix-only fields (title, triggers, constraints, critical, ...)
+  references/    # optional: read-only markdown files the body links to
 ```
+
+- `SKILL.md` frontmatter holds only Agent Skills spec fields. `name` equals the folder name.
+- `exaix.yaml` holds what the spec cannot carry: `title`, `status`, `triggers`, `constraints`,
+  `output_requirements`, `quality_criteria`, `critical`, `effort`, `thinking`, `tools`,
+  `applies_to`, `derived_from` and `related_skills`.
+- `scripts/` and `assets/` directories make a skill invalid. Flat `*.skill.md` and `*.json`
+  files in a skill root are load errors.
+- A skill's revision id derives from the hash of its files, so an edit is a new revision.
+  `deno task check:skill-index` validates every folder through the production loader.
+
+Project-scoped skills live under `Memory/Skills/project/<portal>/<name>/`. Skills written by
+the learning system are draft folders under `Memory/Skills/learned/` until a person approves them.
 
 ## Structure
 
-- `*.skill.md` — a skill definition: YAML frontmatter + markdown instructions.
 - Each skill declares `triggers` (tags), `constraints`, `quality_criteria`, and an
   optional `critical` flag (critical skills render into a protected, non-droppable
   prompt segment).
 
 ## Usage
 
-Agent roles reference skills by `skill_id` in their `default_skills` list, e.g.
+Agent roles reference skills by name in their `default_skills` list, e.g.
 `default_skills: ["response-contract", "code-review", "portal-grounding"]`. At
-request time the skill service loads the matching runtime JSON from
-`Memory/Skills/` and injects each skill's instructions into the agent's prompt.
+request time the skill service loads the matching skill folder and injects each skill's
+instructions into the agent's prompt.
 
 ## Contributor rule: value evidence
 
@@ -50,8 +55,8 @@ that distinction matters.
 
 Skill and agent-body instruction prose follows **ASD-STE100** and the **Exaix STE
 Extension v1** (result-first, omit needless detail and self-reflection, prefer
-bullets). The runtime compiles these files to the `Memory/Skills/` JSON the agent
-prompt actually renders, so authoring prose is model-facing and must be concise.
+bullets). The runtime renders these folders into the agent prompt, so authoring prose is
+model-facing and must be concise.
 Useful rationale stays; repeated facts and narration of process drop out.
 Documentation deliverables embedded in skill examples remain exempt as spans, but the
 surrounding instruction prose stays eligible. `deno task check:agent-prose` reviews
@@ -60,7 +65,7 @@ instruction prose against the same shared rules.
 ## Effort/thinking floors
 
 A skill may declare an optional `effort` (a concrete tier: `low`/`medium`/`high`) and
-`thinking` (a boolean) floor in its frontmatter. When the skill is matched onto a
+`thinking` (a boolean) floor in its `exaix.yaml` sidecar. When the skill is matched onto a
 request, the resolved reasoning depth is raised to at least the floor — a floor never
 lowers a value, never changes an explicit request-level concrete value, and `auto` is
 not a valid floor. Example:

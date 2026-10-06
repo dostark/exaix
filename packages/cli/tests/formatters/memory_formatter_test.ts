@@ -9,6 +9,7 @@
 
 import { assertStringIncludes } from "@std/assert";
 import { MemoryFormatter } from "@exaix/cli/formatters/memory_formatter.ts";
+import { runtimeSkillFixture } from "@exaix/testing";
 import {
   ConfidenceAssessmentLevel,
   ExecutionStatus,
@@ -62,7 +63,6 @@ import {
   TEST_SKILL_NAME,
   TEST_SKILL_TAG,
   TEST_SKILL_TASK_TYPE,
-  TEST_SKILL_VERSION,
   TEST_STARTED_AT,
   TEST_SUMMARY_TEXT,
   TEST_TRACE_ID,
@@ -187,31 +187,31 @@ function createPendingProposal(): IMemoryUpdateProposal {
   };
 }
 
+const TEST_SKILL_REVISION_ID = "123e4567-e89b-52d3-a456-426614174000";
+
 function createSkill(): ISkill {
-  return {
-    id: TEST_TRACE_ID,
+  return runtimeSkillFixture({
+    id: TEST_SKILL_REVISION_ID,
     skill_id: TEST_SKILL_ID,
-    name: TEST_SKILL_NAME,
+    title: TEST_SKILL_NAME,
     source: MemoryBankSource.USER,
     scope: MemoryScope.PROJECT,
-    version: TEST_SKILL_VERSION,
     status: SkillStatus.ACTIVE,
     description: TEST_SKILL_DESCRIPTION,
     instructions: TEST_SKILL_INSTRUCTIONS,
-    created_at: TEST_STARTED_AT,
-    usage_count: 0,
     triggers: {
       keywords: [TEST_SKILL_KEYWORD],
       task_types: [TEST_SKILL_TASK_TYPE],
       file_patterns: [],
       tags: [TEST_SKILL_TAG],
     },
-  };
+  });
 }
 
 function createSkillMatch(): ISkillMatch {
   return {
     skillId: TEST_SKILL_ID,
+    revisionId: TEST_SKILL_REVISION_ID,
     confidence: 0.92,
     matchedTriggers: {
       keywords: [TEST_SKILL_KEYWORD],

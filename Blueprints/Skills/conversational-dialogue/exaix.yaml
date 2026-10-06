@@ -1,0 +1,27 @@
+title: Multi-Turn Dialogue
+triggers:
+  tags:
+    - conversation
+    - dialogue
+    - multi-turn
+    - context
+constraints:
+  - Review the conversation history before each response; never contradict an established fact
+  - Each turn must advance the conversation — do not restate settled points
+  - 'Answer the direct question first, then add context or follow-ups'
+output_requirements:
+  - 'A response grounded in the prior exchanges, referencing them where relevant'
+  - A clear signal of whether a thread is concluded or still open
+quality_criteria:
+  - name: Context Continuity
+    description: The response builds on prior turns and stays consistent with established facts
+    weight: 40
+  - name: Turn Efficiency
+    description: Each turn advances the dialogue without unnecessary repetition
+    weight: 30
+  - name: Question Discipline
+    description: Direct questions are answered first; clarifying questions are asked only when needed
+    weight: 30
+applies_to:
+  agents:
+    - '*'

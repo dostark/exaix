@@ -32,7 +32,11 @@ async function writeFixtureBlueprints(root: string): Promise<void> {
   await Deno.writeTextFile(join(agentRolesDir, "default.md"), "---\nmodel: x\n---\nbody");
 
   await Deno.writeTextFile(join(skillsDir, "README.md"), "# not a skill");
-  await Deno.writeTextFile(join(skillsDir, "response-contract.skill.md"), "---\nid: response-contract\n---\nbody");
+  await Deno.mkdir(join(skillsDir, "response-contract"), { recursive: true });
+  await Deno.writeTextFile(
+    join(skillsDir, "response-contract", "SKILL.md"),
+    "---\nname: response-contract\ndescription: d\n---\nbody",
+  );
 
   await Deno.writeTextFile(join(flowsDir, "README.md"), "# not a flow");
   await Deno.writeTextFile(

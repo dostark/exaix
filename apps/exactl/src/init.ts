@@ -204,7 +204,7 @@ export async function initializeServices(
     const skills = new SkillsService(
       {
         memoryDir: join(cfg.system.root!, cfg.paths.memory!),
-        portal: cfg.paths.workspace,
+        blueprintSkillsDir: join(cfg.system.root!, cfg.paths.blueprints!, "Skills"),
         // Mirrors apps/daemon/main.ts: without a logger every skills event is dropped by
         // `this.logger?.`, leaving skill selection absent from the Activity Journal.
       },

@@ -188,10 +188,10 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# 14b. Runtime skill index in sync (Memory/Skills generated from Blueprints/Skills)
+# 14b. Skill folders valid (Blueprints/Skills and Memory/Skills/project load through the production loader)
 deno task check:skill-index
 if [ $? -ne 0 ]; then
-  echo "❌ Error: Memory/Skills is out of sync with Blueprints/Skills (run: deno task check:skill-index without --check, or regenerate)."
+  echo "❌ Error: A skill folder is invalid (run: deno task check:skill-index for the typed reasons)."
   exit 1
 fi
 

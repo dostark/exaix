@@ -112,7 +112,7 @@ Key facts about the Exaix system:
 - **MCP tools**: all agent-accessible tools are listed in [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md#agent-tools) and implemented under `packages/mcp/server/` (e.g. `tool_handler.ts`, `domain_tools.ts`)
 - **AI providers**: selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`, registered at bootstrap (see ARCHITECTURE.md § AI Provider Architecture for the full provider list and registration paths)
 - **Security modes**: Sandboxed (default — no network, no file access) or Hybrid (read-only Portal paths). All production code and test helpers that construct or accept `Workspace/` paths MUST validate them through `PathResolver`; standalone utilities under `scripts/` are exempt only when they never touch workspace paths.
-- **Portal code changes**: when writing or modifying code _inside_ a portal (a user project under `Portals/`), apply the secure-by-default checklist in [Blueprints/Skills/security-first.skill.md](Blueprints/Skills/security-first.skill.md) — input validation, path traversal, injection prevention, auth boundaries, secret handling, OWASP 2021.
+- **Portal code changes**: when writing or modifying code _inside_ a portal (a user project under `Portals/`), apply the secure-by-default checklist in [Blueprints/Skills/security-first/SKILL.md](Blueprints/Skills/security-first/SKILL.md) — input validation, path traversal, injection prevention, auth boundaries, secret handling, OWASP 2021.
 
 ### Runtime & Tooling
 

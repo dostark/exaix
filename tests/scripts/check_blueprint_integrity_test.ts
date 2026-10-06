@@ -56,7 +56,8 @@ async function buildCatalog(opts: {
     await Deno.writeTextFile(join(idDir, `${it.id}.md`), `---\n${fm}\n---\n\n# ${it.id}\n`);
   }
   for (const s of opts.skills) {
-    await Deno.writeTextFile(join(skillDir, `${s}.skill.md`), `---\nskill_id: "${s}"\n---\n\n# ${s}\n`);
+    await ensureDir(join(skillDir, s));
+    await Deno.writeTextFile(join(skillDir, s, "SKILL.md"), `---\nname: ${s}\ndescription: ${s}\n---\n\n# ${s}\n`);
   }
   for (const f of opts.flows) {
     const steps = f.agentRoles

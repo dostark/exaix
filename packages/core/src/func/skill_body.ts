@@ -10,7 +10,7 @@
  * @architectural-layer Core
  * @related-files [
  *   "packages/core/src/func/prompt_formatter.ts",
- *   "scripts/build_skills_index.ts",
+ *   "packages/core/src/skills/skills.ts",
  *   "packages/core/src/types/constants.ts"
  * ]
  */

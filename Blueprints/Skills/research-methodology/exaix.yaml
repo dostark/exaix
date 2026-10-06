@@ -1,0 +1,31 @@
+title: Research Methodology & Synthesis
+triggers:
+  tags:
+    - research
+    - synthesis
+    - analysis
+    - investigation
+    - citation
+constraints:
+  - Every claim must be attributed to a source — no unsubstantiated statements
+  - Prefer local/codebase sources before external documentation
+  - Flag uncertainty and gaps explicitly rather than inferring
+output_requirements:
+  - 'Research findings organised by theme, not by source'
+  - Consensus and conflicts identified across sources
+  - Gaps and uncertainties documented
+  - Numbered references with clear source types and locations
+quality_criteria:
+  - name: Attribution
+    description: Every substantive claim has a numbered reference to a specific source
+    weight: 40
+  - name: Source Quality
+    description: 'Sources are evaluated for reliability, recency, and relevance'
+    weight: 30
+  - name: Synthesis Coherence
+    description: 'Findings are organised thematically, not as a source-by-source dump'
+    weight: 30
+applies_to:
+  agents:
+    - research-synthesizer
+    - '*'

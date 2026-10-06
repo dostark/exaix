@@ -1,0 +1,32 @@
+title: Verdict & Rubric Evaluation
+triggers:
+  tags:
+    - judge
+    - evaluation
+    - rubric
+    - verdict
+    - scoring
+constraints:
+  - Score each criterion on a defined scale with explicit evidence
+  - Map overall score to a verdict (PASS/CONDITIONAL/REJECT) at hard thresholds
+  - Flag blocking issues when any criterion falls below the minimum
+output_requirements:
+  - 'Per-criterion score with reasoning, issues, and suggestions'
+  - Overall score and verdict
+  - 'Critical issues list with severity, location, and recommendation'
+quality_criteria:
+  - name: Objectivity
+    description: 'Scores and verdicts are grounded in explicit evidence, not intuition'
+    weight: 40
+  - name: Specificity
+    description: 'Issues reference exact lines, functions, or sections with concrete examples'
+    weight: 30
+  - name: Actionability
+    description: 'Each finding includes a specific, implementable recommendation'
+    weight: 30
+critical: true
+applies_to:
+  agents:
+    - quality-judge
+    - voting-judge
+    - '*'

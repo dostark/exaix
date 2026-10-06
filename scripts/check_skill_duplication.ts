@@ -9,7 +9,7 @@
  *   deno run -A scripts/check_skill_duplication.ts --policy <path> --skills-dir <dir>
  *
  * @description Authoring gate for duplicated instruction prose across the skill corpora
- *   (`Blueprints/Skills` and `.copilot/skills`). A canonical rule block repeated verbatim
+ *   (`Blueprints/Skills`, `Memory/Skills/project/*` and `.copilot/skills`). A canonical rule block repeated verbatim
  *   into N skills is loaded as N copies of the same text whenever those skills co-render in
  *   one prompt (EXAIX-04: do not repeat information already delivered), and it inflates every
  *   request's loaded skill context. The checker extracts frontmatter-stripped, fence-removed
@@ -91,29 +91,12 @@ export function normalizeProseLine(line: string): string {
     .trim();
 }
 
-/** Discovers skill files in both corpora, returning repo-root-relative slash paths.
- *  Blueprints skills live flat in `Blueprints/Skills`; `.copilot` skills live one level
- *  deeper (`./copilot/skills/<skill>/SKILL.md`), so the walker recurses those subdirs. */
-export function discoverSkillFiles(repoRoot: string): string[] {
-  const result: string[] = [];
-  const add = (abs: string): void => {
-    result.push(relative(repoRoot, abs).split("\\").join("/"));
-  };
-
-  const blueprintsDir = join(repoRoot, "Blueprints", "Skills");
+/** Collects `<dir>/<skill>/SKILL.md` files one level below `dir`. An absent dir is skipped. */
+function collectSkillFolderFiles(dir: string, add: (abs: string) => void): void {
   try {
-    for (const entry of Deno.readDirSync(blueprintsDir)) {
-      if (entry.isFile && entry.name.endsWith(".skill.md")) add(join(blueprintsDir, entry.name));
-    }
-  } catch {
-    // Absent in some checkouts; not a failure.
-  }
-
-  const copilotDir = join(repoRoot, ".copilot", "skills");
-  try {
-    for (const entry of Deno.readDirSync(copilotDir)) {
+    for (const entry of Deno.readDirSync(dir)) {
       if (!entry.isDirectory) continue;
-      const skillFile = join(copilotDir, entry.name, "SKILL.md");
+      const skillFile = join(dir, entry.name, "SKILL.md");
       try {
         if (Deno.statSync(skillFile).isFile) add(skillFile);
       } catch {
@@ -123,6 +106,29 @@ export function discoverSkillFiles(repoRoot: string): string[] {
   } catch {
     // Absent corpus is skipped, not an error.
   }
+}
+
+/** Discovers skill files in every authored corpus, returning repo-root-relative slash paths.
+ *  Every corpus uses the Agent Skills layout: `<root>/<skill>/SKILL.md`. The corpora are
+ *  `Blueprints/Skills`, each `Memory/Skills/project/<portal>` and `.copilot/skills`. */
+export function discoverSkillFiles(repoRoot: string): string[] {
+  const result: string[] = [];
+  const add = (abs: string): void => {
+    result.push(relative(repoRoot, abs).split("\\").join("/"));
+  };
+
+  collectSkillFolderFiles(join(repoRoot, "Blueprints", "Skills"), add);
+
+  const projectRoot = join(repoRoot, "Memory", "Skills", "project");
+  try {
+    for (const portal of Deno.readDirSync(projectRoot)) {
+      if (portal.isDirectory) collectSkillFolderFiles(join(projectRoot, portal.name), add);
+    }
+  } catch {
+    // No project-scoped skills in this checkout.
+  }
+
+  collectSkillFolderFiles(join(repoRoot, ".copilot", "skills"), add);
   return result.sort();
 }
 
@@ -134,9 +140,9 @@ export function runSkillDuplicationCheck(
   const allowlisted = new Set(policy.allowlist.map((e) => e.text));
 
   const byLine = new Map<string, string[]>();
-  for (const entry of Deno.readDirSync(options.skillsDir)) {
-    if (!entry.isFile || !entry.name.endsWith(".skill.md")) continue;
-    const path = join(options.skillsDir, entry.name);
+  const skillFiles: string[] = [];
+  collectSkillFolderFiles(options.skillsDir, (abs) => skillFiles.push(abs));
+  for (const path of skillFiles) {
     const content = Deno.readTextFileSync(path);
     for (const line of extractProseLines(content)) {
       const normalized = normalizeProseLine(line);

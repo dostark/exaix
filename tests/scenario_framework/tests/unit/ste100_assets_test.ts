@@ -9,7 +9,7 @@
  *   target is created exclusively. Proves the two Step 1 assets obligations without
  *   touching the real conversion corpus.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/runner/ste100_assets.ts, scripts/build_skills_index.ts, scripts/generate_skill_json.ts]
+ * @related-files [tests/scenario_framework/runner/ste100_assets.ts, scripts/skill_catalog_loader.ts, scripts/generate_skill_json.ts]
  */
 
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
@@ -20,6 +20,7 @@ import {
   createExclusiveIsolatedDir,
   freezeSte100Baseline,
   reconstructSte100Baseline,
+  runIsolatedGenerator,
   Ste100PathError,
 } from "../../runner/ste100_assets.ts";
 
@@ -145,5 +146,77 @@ Deno.test("[security] ste100 isolated output: rejects escaped and sibling-prefix
     const created = await createExclusiveIsolatedDir(join(root, "isolated"), root);
     assertEquals(created, resolve(join(root, "isolated")));
     assertEquals(await exists(join(root, "isolated")), true);
+  });
+});
+
+async function writeSkillFolder(sourceDir: string, name: string, extra: Record<string, string> = {}): Promise<void> {
+  await writeFile(
+    join(sourceDir, name, "SKILL.md"),
+    `---\nname: ${name}\ndescription: ${name} skill\n---\nBody of ${name}.\n`,
+  );
+  for (const [file, content] of Object.entries(extra)) await writeFile(join(sourceDir, name, file), content);
+}
+
+Deno.test("ste100 isolated skills: copies validated skill folders byte for byte into the arm root", async () => {
+  await withTempRoot(async (root) => {
+    const source = join(root, "source");
+    await writeSkillFolder(source, "alpha-skill", { "exaix.yaml": "title: Alpha\n" });
+    await writeSkillFolder(source, "beta-skill", { "references/notes.md": "Reference notes.\n" });
+    const result = await runIsolatedGenerator({
+      kind: "skills",
+      root,
+      sourceDir: source,
+      targetDir: join(root, "arm-skills"),
+    });
+    assertEquals(result.errors, []);
+    assertEquals(result.success, true);
+    assertEquals(result.generated.length, 2);
+    for (
+      const rel of [
+        "alpha-skill/SKILL.md",
+        "alpha-skill/exaix.yaml",
+        "beta-skill/SKILL.md",
+        "beta-skill/references/notes.md",
+      ]
+    ) {
+      assertEquals(
+        await Deno.readTextFile(join(root, "arm-skills", rel)),
+        await Deno.readTextFile(join(source, rel)),
+        rel,
+      );
+    }
+  });
+});
+
+Deno.test("ste100 isolated skills: an invalid folder copies nothing and reports its reason", async () => {
+  await withTempRoot(async (root) => {
+    const source = join(root, "source");
+    await writeSkillFolder(source, "good-skill");
+    await writeFile(join(source, "broken-skill", "SKILL.md"), "no frontmatter");
+    const result = await runIsolatedGenerator({
+      kind: "skills",
+      root,
+      sourceDir: source,
+      targetDir: join(root, "arm-skills"),
+    });
+    assertEquals(result.success, false);
+    assertEquals(result.errors, ["broken-skill: invalid_frontmatter"]);
+    assertEquals(await exists(join(root, "arm-skills", "good-skill")), false);
+  });
+});
+
+Deno.test("ste100 isolated skills: check mode validates without writing any folder", async () => {
+  await withTempRoot(async (root) => {
+    const source = join(root, "source");
+    await writeSkillFolder(source, "alpha-skill");
+    const result = await runIsolatedGenerator({
+      kind: "skills",
+      root,
+      sourceDir: source,
+      targetDir: join(root, "arm-skills"),
+    }, { check: true });
+    assertEquals(result.success, true);
+    assertEquals(result.generated.length, 1);
+    assertEquals(await exists(join(root, "arm-skills", "alpha-skill")), false);
   });
 });

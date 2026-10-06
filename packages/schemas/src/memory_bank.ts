@@ -7,26 +7,21 @@
  */
 
 import { z } from "zod";
-import { DEFAULT_QUERY_LIMIT, DEFAULT_SKILL_INDEX_VERSION } from "@exaix/core";
+import { DEFAULT_QUERY_LIMIT } from "@exaix/core";
+import type { IRuntimeSkill } from "./runtime_skill.ts";
+import type { ISkillAuthoring, ISkillAuthoringUpdate } from "./skill_folder.ts";
 import { MEMORY_STATUS_VALUES } from "@exaix/core/status";
-import { EffortTierSchema } from "./model_intent.ts";
 import {
   type ActivityType,
-  canonicalizeToolName,
   ConfidenceAssessmentLevel,
   ExecutionStatus,
   LearningCategory,
-  McpToolName,
   MemoryBankSource,
   MemoryOperation,
   MemoryReferenceType,
   MemoryScope,
   type MemoryType,
   ReviewSource,
-  type SkillImmutableField,
-  type SkillManagedField,
-  SkillStatus,
-  ToolName,
 } from "@exaix/core";
 
 // Project Memory Schemas
@@ -47,6 +42,7 @@ export interface IMemorySearchResult {
  */
 export interface ISkillMatch {
   skillId: string;
+  revisionId: string;
   confidence: number;
   matchedTriggers: {
     keywords?: string[];
@@ -347,132 +343,18 @@ export const SkillCompatibilitySchema = z.object({
   flows: z.array(z.string()).optional(),
 });
 
-/** Skill - Procedural memory for how to accomplish tasks. Unlike Learnings
- *  (observations) or Patterns (structures), Skills are actionable instructions that
- *  encode domain expertise, procedures, and best practices as reusable modules. */
-export const SkillSchema = z.object({
-  // Memory Bank Standard Fields
-  id: z.string().uuid(),
-  created_at: z.string().datetime(),
-  source: z.nativeEnum(MemoryBankSource).describe("Origin of the skill"),
-  source_id: z.string().optional().describe("Learning IDs if derived"),
-
-  scope: z.nativeEnum(MemoryScope).describe("Applicability scope"),
-  project: z.string().optional().describe("Portal name if project-scoped"),
-
-  status: z.nativeEnum(SkillStatus).describe("Skill lifecycle status"),
-
-  // Skill Identity
-  skill_id: z.string().regex(/^[a-z0-9-]+$/).describe("Unique skill identifier (kebab-case)"),
-  name: z.string().min(1).max(100).describe("Human-readable skill name"),
-  version: z.string().regex(/^\d+\.\d+\.\d+$/).describe("Semantic version"),
-  description: z.string().describe("Brief description of what the skill does"),
-
-  // Trigger Conditions
-  triggers: SkillTriggersSchema.describe("Conditions for automatic activation"),
-
-  // Procedural Knowledge
-  instructions: z.string().min(10).describe("The procedural instructions (markdown)"),
-  /** Illustrative content split from `instructions` at generation time — managed like
-   *  `instructions` itself, never authored directly. */
-  examples: z.string().optional().describe(
-    "Illustrative content split from instructions at a canonical heading; dropped from the prompt in trimmed render mode",
-  ),
-
-  // Constraints and Quality
-  constraints: z.array(z.string()).optional().describe("Rules that must be followed"),
-  output_requirements: z.array(z.string()).optional().describe("Expected output format/content"),
-  quality_criteria: z.array(SkillQualityCriterionSchema).optional().describe("Evaluation criteria"),
-
-  /** Criticality. When true, the skill is rendered as a PROTECTED, non-compactable prompt segment that survives
-   *  context-budget pressure (the same `isProtected` guarantee the system prompt gets). Reserve for the output
-   *  contract and a few hard constraints; ordinary methodology stays droppable. */
-  critical: z.boolean().optional().describe(
-    "Render as a protected, non-droppable prompt segment (treated as false when absent)",
-  ),
-
-  /** Minimum reasoning effort this skill's deliverable requires. A floor, never a
-   *  downgrade — a matched call's resolved effort is raised to meet it. "auto" is not a
-   *  valid floor. Absent means no floor. */
-  effort: EffortTierSchema.optional().describe(
-    "Minimum reasoning effort this skill's deliverable requires (floor, not an override)",
-  ),
-  /** Minimum thinking requirement, same floor semantics as effort. */
-  thinking: z.boolean().optional().describe(
-    "Whether this skill's deliverable requires extended thinking (floor, not an override)",
-  ),
-
-  /** Tools this skill's procedure calls for (e.g. a git-workflow skill needs git_commit, git_create_branch). When
-   *  matched onto a request, unioned with every other matched skill's tools, then intersected with the agent role's
-   *  permitted_tools — a skill can never grant a tool the agent role doesn't already permit. */
-  tools: z.array(
-    z.preprocess(
-      (value) => typeof value === "string" ? canonicalizeToolName(value) : value,
-      z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)]),
-    ),
-  ).optional().describe(
-    "Tools this skill's procedure calls for; unioned across matched skills, then intersected with the agent role's permitted_tools. Supported general-purpose aliases (e.g. grep) resolve to their canonical name; excluded/retired native names fail validation.",
-  ),
-
-  // Compatibility
-  compatible_with: SkillCompatibilitySchema.optional().describe("Compatibility constraints"),
-
-  // Evolution Tracking
-  derived_from: z.array(z.string()).optional().describe("Learning IDs this skill was derived from"),
-  effectiveness_score: z.number().min(0).max(100).optional().describe("Measured effectiveness"),
-  usage_count: z.number().default(0).describe("Number of times skill has been used"),
-});
-
 export type ISkillTriggers = z.infer<typeof SkillTriggersSchema>;
 export type ISkillQualityCriterion = z.infer<typeof SkillQualityCriterionSchema>;
 export type ISkillCompatibility = z.infer<typeof SkillCompatibilitySchema>;
-export type ISkill = z.infer<typeof SkillSchema>;
 
-/**
- * Skill fields that are automatically managed by the system.
- */
-export type SkillManagedFields = `${SkillManagedField}`;
+/** The runtime view of a loaded skill folder. `id` is the content-addressed revision. */
+export type ISkill = IRuntimeSkill;
 
-/**
- * Skill fields that cannot be changed after creation.
- */
-export type SkillImmutableFields = `${SkillImmutableField}`;
+/** Authorable skill fields. Identity, path, source, status and approval are managed by the service. */
+export type SkillDefinition = ISkillAuthoring;
 
-/**
- * Skill interface without system-managed fields.
- */
-export type SkillDefinition = Omit<ISkill, SkillManagedFields>;
-
-/**
- * Skill updates interface.
- */
-export type SkillUpdates = Partial<Omit<ISkill, SkillImmutableFields>>;
-
-/**
- * Skill index entry for fast lookup
- */
-export const SkillIndexEntrySchema = z.object({
-  skill_id: z.string(),
-  name: z.string(),
-  version: z.string(),
-  status: z.nativeEnum(SkillStatus),
-  scope: z.nativeEnum(MemoryScope),
-  project: z.string().optional(),
-  triggers: SkillTriggersSchema,
-  path: z.string().describe("Relative path to skill file"),
-});
-
-/**
- * Skill index for the Memory/Skills/ directory
- */
-export const SkillIndexSchema = z.object({
-  version: z.string().default(DEFAULT_SKILL_INDEX_VERSION),
-  updated_at: z.string().datetime(),
-  skills: z.array(SkillIndexEntrySchema),
-});
-
-export type ISkillIndexEntry = z.infer<typeof SkillIndexEntrySchema>;
-export type ISkillIndex = z.infer<typeof SkillIndexSchema>;
+/** Authorable update fields: the create fields minus the name. */
+export type SkillUpdates = ISkillAuthoringUpdate;
 
 // Helper Types
 

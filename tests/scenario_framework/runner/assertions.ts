@@ -11,6 +11,8 @@
 
 import { dirname, globToRegExp, isAbsolute, relative, resolve } from "@std/path";
 import { levenshteinDistance } from "@std/text";
+import { SkillRootKind } from "@exaix/core";
+import { createSkillLoaderFor, testSkillContext } from "@exaix/testing";
 import { parse as parseYaml } from "@std/yaml";
 import {
   CriterionKind,
@@ -1748,21 +1750,22 @@ export async function resolveEvalJudgeContext(
   return options.rubric;
 }
 
-// Reads judge-methodology skill files directly from Memory/Skills/global/ rather than through
-// SkillsService/AgentRunner, since that would need a DB and risks EXA_EVAL_SUPPRESS_SKILLS (set
-// for the arm under test) leaking into the judge's own skill resolution in the same process.
+const JUDGE_METHODOLOGY_SKILL_IDS: readonly string[] = ["verdict-rubric", "response-contract-judge"];
+
+// Reads the judge skills through the folder loader, not SkillsService. That path needs no DB.
+// It also keeps EXA_EVAL_SUPPRESS_SKILLS of the arm under test out of the judge.
 export async function loadJudgeMethodologyInstructions(workspaceRoot: string): Promise<string> {
-  const skillIds = ["verdict-rubric", "response-contract-judge"];
+  const loader = createSkillLoaderFor([{
+    path: resolve(workspaceRoot, "Blueprints", "Skills"),
+    kind: SkillRootKind.BLUEPRINT,
+    writable: false,
+    project: null,
+  }]);
   const parts: string[] = [];
-  for (const skillId of skillIds) {
-    const path = resolve(workspaceRoot, "Memory", "Skills", "global", `${skillId}.json`);
-    try {
-      const raw = await Deno.readTextFile(path);
-      const parsed = JSON.parse(raw) as { instructions?: string };
-      if (parsed.instructions) parts.push(parsed.instructions);
-    } catch {
-      // Missing/unreadable/malformed — skip this skill's contribution, don't fail the judge.
-    }
+  for (const skillId of JUDGE_METHODOLOGY_SKILL_IDS) {
+    // A missing, invalid or inactive skill contributes nothing and never fails the judge.
+    const loaded = await loader.get(skillId, testSkillContext());
+    if (loaded?.skill.instructions) parts.push(loaded.skill.instructions);
   }
   return parts.join("\n\n---\n\n");
 }

@@ -1,0 +1,42 @@
+title: Conventional Commit Messages
+triggers:
+  keywords:
+    - commit
+    - message
+    - git
+    - changelog
+    - version
+    - release
+  task_types:
+    - commit
+    - version
+  tags:
+    - git
+    - commits
+    - versioning
+constraints:
+  - Follow conventional commit format
+  - Keep subject line under 72 characters
+  - 'Use imperative mood (Add, Fix, not Added, Fixed)'
+  - Reference issues when applicable
+  - 'For non-trivial commits, use structured body sections: Context, Changes, Validation, References'
+  - Do not chain multiple -m flags; use one multiline commit message
+  - NEVER use --no-verify; all pre-commit hooks must pass before committing
+output_requirements:
+  - 'Type prefix (feat, fix, docs, etc.)'
+  - 'Clear, concise subject line'
+  - Body for complex changes
+  - Structured body with Context/Changes/Validation (and optional References)
+quality_criteria:
+  - name: Format Compliance
+    description: Follows conventional commit format
+    weight: 40
+  - name: Clarity
+    description: Message clearly describes the change
+    weight: 40
+  - name: Completeness
+    description: Includes necessary context
+    weight: 20
+applies_to:
+  agents:
+    - '*'

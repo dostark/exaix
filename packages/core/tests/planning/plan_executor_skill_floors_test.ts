@@ -11,12 +11,19 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { createMockConfig, createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
+import {
+  createMockConfig,
+  createStubConfig,
+  createStubDisplay,
+  createStubGit,
+  runtimeSkillFixture,
+  StubSkillsService,
+} from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
 import { DefaultRoutingStrategy, ModelResolver, ProviderRegistry } from "@exaix/ai";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import { createStubCostTracker, createStubHealthChecker } from "../../../ai/tests/helpers/service_stubs.ts";
-import { MemoryBankSource, MemoryScope, PricingTier, ProviderCostTier, SkillStatus } from "@exaix/core";
+import { MemoryBankSource, PricingTier, ProviderCostTier } from "@exaix/core";
 import type { IApplicationContext, ISkillsService } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core/types";
 import type { ISkill } from "@exaix/schemas";
@@ -55,48 +62,28 @@ function registerLocalProvider(name: string): void {
 }
 
 function floorSkill(skillId: string): ISkill {
-  return {
-    id: crypto.randomUUID(),
+  return runtimeSkillFixture({
     skill_id: skillId,
-    name: "Response Contract Security Analysis",
-    version: "1.0.0",
+    title: "Response Contract Security Analysis",
     description: "Security review of the agent response contract.",
     instructions: "Review response contracts for injection and channeling risks.",
-    created_at: new Date().toISOString(),
     source: MemoryBankSource.CORE,
-    scope: MemoryScope.GLOBAL,
-    status: SkillStatus.ACTIVE,
-    usage_count: 0,
     effort: "medium",
     critical: true,
     triggers: { keywords: [], task_types: [], tags: [] },
-  };
+  });
 }
 
 /** Stub SkillsService: declares one floor-bearing skill, no dynamic matches. */
 function createFloorSkillsService(): { service: ISkillsService; getSkillCalls: string[] } {
   const getSkillCalls: string[] = [];
-  const service: ISkillsService = {
-    matchSkills: () => Promise.resolve({ matches: [], totalAvailable: 0 }),
-    buildSkillContext: () => Promise.resolve(""),
-    recordSkillUsage: () => Promise.resolve(),
-    deriveSkillFromLearnings: () => {
-      throw new Error("not implemented in stub");
-    },
-    rebuildIndex: () => Promise.resolve(),
-    listSkills: () => Promise.resolve([]),
-    initialize: () => Promise.resolve(),
-    createSkill: () => {
-      throw new Error("not implemented in stub");
-    },
-    getSkill: (skillId: string) => {
+  class FloorSkillsService extends StubSkillsService {
+    override getSkill(skillId: string): Promise<ISkill | null> {
       getSkillCalls.push(skillId);
-      if (skillId === FLOOR_SKILL_ID) return Promise.resolve(floorSkill(skillId));
-      return Promise.resolve(null);
-    },
-    deleteSkill: () => Promise.resolve(false),
-  };
-  return { service, getSkillCalls };
+      return Promise.resolve(skillId === FLOOR_SKILL_ID ? floorSkill(skillId) : null);
+    }
+  }
+  return { service: new FloorSkillsService(), getSkillCalls };
 }
 
 Deno.test("PlanExecutor: a pinned floor-bearing skill raises the execution-path resolution", async () => {

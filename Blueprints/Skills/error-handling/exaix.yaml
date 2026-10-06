@@ -1,0 +1,48 @@
+title: Robust Error Handling
+triggers:
+  keywords:
+    - error
+    - exception
+    - catch
+    - throw
+    - handle
+    - fail
+    - crash
+    - recover
+    - retry
+    - fallback
+  task_types:
+    - bugfix
+    - error-handling
+    - reliability
+  file_patterns:
+    - '*.ts'
+    - '*.js'
+    - '*.py'
+    - '*.go'
+  tags:
+    - error-handling
+    - reliability
+    - robustness
+constraints:
+  - Never swallow errors silently
+  - Always log errors with sufficient context
+  - Provide meaningful error messages to users
+  - Don't expose internal details in production errors
+output_requirements:
+  - Errors are caught at appropriate boundaries
+  - Error messages are actionable
+  - Logging includes context for debugging
+quality_criteria:
+  - name: Error Coverage
+    description: All error paths are handled
+    weight: 35
+  - name: User Experience
+    description: Errors don't crash the application
+    weight: 35
+  - name: Debuggability
+    description: Errors are logged with context
+    weight: 30
+applies_to:
+  agents:
+    - '*'

@@ -6,9 +6,9 @@
  * 10-trial noise-floor test on identical evidence produced scores from
  * 0.19 to 0.98 (stdev 0.32), including outright hallucinated claims ("no null check at
  * all" on code that demonstrably has one) — the judge prompt never referenced these two
- * `critical: true`, `usage_count: 0` skills that exist specifically to fix this
- * (evidence-grounded, reason-before-score methodology). Reads the skill JSON files
- * directly rather than going through SkillsService/AgentRunner — the judge path is
+ * `critical: true` skills that exist specifically to fix this
+ * (evidence-grounded, reason-before-score methodology). Reads the skill folders
+ * directly through the folder loader rather than going through SkillsService/AgentRunner — the judge path is
  * deliberately DB-less and daemon-less (assertions.ts's own callLlmEndpoint comment),
  * and routing it through AgentRunner risks EXA_EVAL_SUPPRESS_SKILLS leaking from the
  * arm under test into the judge's own skill resolution in the same process.
@@ -20,17 +20,17 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { loadJudgeMethodologyInstructions, prependMethodologyInstructions } from "../../runner/assertions.ts";
 
 async function writeSkillFixture(dir: string, skillId: string, instructions: string): Promise<void> {
-  await Deno.mkdir(dir, { recursive: true });
+  await Deno.mkdir(`${dir}/${skillId}`, { recursive: true });
   await Deno.writeTextFile(
-    `${dir}/${skillId}.json`,
-    JSON.stringify({ skill_id: skillId, instructions }),
+    `${dir}/${skillId}/SKILL.md`,
+    `---\nname: ${skillId}\ndescription: ${skillId}\n---\n${instructions}\n`,
   );
 }
 
 Deno.test("[JudgeMethodologyInjection] loads and concatenates both methodology skills' instructions", async () => {
   const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-methodology-" });
   try {
-    const skillsDir = `${workspaceRoot}/Memory/Skills/global`;
+    const skillsDir = `${workspaceRoot}/Blueprints/Skills`;
     await writeSkillFixture(skillsDir, "verdict-rubric", "RUBRIC INSTRUCTIONS TEXT");
     await writeSkillFixture(skillsDir, "response-contract-judge", "CONTRACT INSTRUCTIONS TEXT");
 
@@ -45,9 +45,9 @@ Deno.test("[JudgeMethodologyInjection] loads and concatenates both methodology s
 Deno.test("[JudgeMethodologyInjection] a missing skill file degrades gracefully (empty contribution), matching resolveEvalJudgeContext's fallback convention", async () => {
   const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-methodology-missing-" });
   try {
-    const skillsDir = `${workspaceRoot}/Memory/Skills/global`;
+    const skillsDir = `${workspaceRoot}/Blueprints/Skills`;
     await writeSkillFixture(skillsDir, "verdict-rubric", "RUBRIC ONLY");
-    // response-contract-judge.json intentionally absent.
+    // response-contract-judge folder intentionally absent.
 
     const methodology = await loadJudgeMethodologyInstructions(workspaceRoot);
     assertStringIncludes(methodology, "RUBRIC ONLY");

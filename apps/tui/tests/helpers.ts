@@ -19,7 +19,7 @@ import { PortalManagerView } from "../src/portal_manager_view.ts";
 import { type ILogEntry, MonitorView } from "../src/monitor_view.ts";
 import { type IPlan, MinimalPlanServiceMock, PlanReviewerTuiSession } from "../src/plan_reviewer_view.ts";
 import { commonTestData, requestFactory } from "../../../tests/helpers/test_utils.ts";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
+import { runtimeSkillFixture } from "@exaix/testing";
 import type {
   IRequestEntry as IRequest,
   IRequestMetadata as _IRequestMetadata,
@@ -893,23 +893,17 @@ export interface ISkillSummaryOverrides {
 }
 
 export function sampleSkill(overrides: ISkillSummaryOverrides = {}): ISkillSummary {
-  return {
+  const { name, version: _version, usage_count: _usageCount, created_at: _createdAt, ...rest } = overrides;
+  return runtimeSkillFixture({
     id: crypto.randomUUID(),
-    created_at: new Date().toISOString(),
     source: MemoryBankSource.CORE,
-    scope: MemoryScope.GLOBAL,
-    status: SkillStatus.ACTIVE,
     skill_id: `skill-${Math.floor(Math.random() * 1e6)}`,
-    name: "Test Skill",
-    version: DEFAULT_GLOBAL_MEMORY_VERSION,
+    title: name ?? "Test Skill",
     description: "Test skill description",
-    triggers: {
-      keywords: ["test"],
-    },
+    triggers: { keywords: ["test"] },
     instructions: "Test instructions",
-    usage_count: 0,
-    ...overrides,
-  } as ISkillSummary;
+    ...rest,
+  } as Partial<ISkillSummary>);
 }
 
 export function sampleSkills(arr: ISkillSummaryOverrides[]): ISkillSummary[] {
@@ -921,7 +915,6 @@ export function sampleTestSkills(): ISkillSummary[] {
     {
       id: "tdd-methodology",
       name: "TDD Methodology",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
       status: SkillStatus.ACTIVE,
       source: MemoryBankSource.CORE,
       description: "Test-Driven Development methodology",
@@ -935,7 +928,6 @@ export function sampleTestSkills(): ISkillSummary[] {
     {
       id: "security-first",
       name: "Security First",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
       status: SkillStatus.ACTIVE,
       source: MemoryBankSource.CORE,
       description: "Security-focused development",
@@ -946,21 +938,18 @@ export function sampleTestSkills(): ISkillSummary[] {
     {
       id: "project-conventions",
       name: "Project Conventions",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
       status: SkillStatus.ACTIVE,
       source: MemoryBankSource.PROJECT,
     },
     {
       id: "learned-pattern",
       name: "Learned Pattern",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
       status: SkillStatus.DRAFT,
       source: MemoryBankSource.LEARNED,
     },
     {
       id: "deprecated-skill",
       name: "Deprecated Skill",
-      version: "0.5.0",
       status: SkillStatus.DEPRECATED,
       source: MemoryBankSource.PROJECT,
     },

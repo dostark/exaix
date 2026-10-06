@@ -1,0 +1,46 @@
+title: Documentation-Driven Development
+triggers:
+  keywords:
+    - document
+    - docs
+    - readme
+    - explain
+    - describe
+    - api
+    - specification
+    - design
+  task_types:
+    - documentation
+    - design
+    - api-design
+  file_patterns:
+    - '*.md'
+    - README*
+    - docs/**
+    - '**/*.md'
+  tags:
+    - documentation
+    - design
+    - api
+constraints:
+  - Documentation should precede or accompany implementation
+  - Keep documentation close to code
+  - Update docs when code changes
+  - Write for your audience (users vs developers)
+output_requirements:
+  - Clear purpose and overview
+  - Usage examples that work
+  - API documentation for public interfaces
+quality_criteria:
+  - name: Completeness
+    description: All features documented
+    weight: 30
+  - name: Clarity
+    description: Easy to understand
+    weight: 35
+  - name: Accuracy
+    description: Matches actual behavior
+    weight: 35
+applies_to:
+  agents:
+    - '*'

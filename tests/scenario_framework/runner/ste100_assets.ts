@@ -9,13 +9,13 @@
  *   and tampered blobs. `assertIsolatedTarget`/`createExclusiveIsolatedDir`/
  *   `revalidateIsolatedTarget` preflight arm output paths (rejecting escaped, symlinked,
  *   sibling-prefix, and overlapping targets) before the existing generators run, and
- *   `runIsolatedGenerator` drives `buildSkillsIndex`/`generateSkillJson` against an
- *   isolated arm root. `withSte100Arm` guarantees cleanup in `finally`. Step 1 asset
+ *   `runIsolatedGenerator` copies validated skill folders, or drives `generateSkillJson`
+ *   for the dogfood corpus, into an isolated arm root. `withSte100Arm` guarantees cleanup in `finally`. Step 1 asset
  *   module; Steps 3-6 build on it.
  * @architectural-layer Test
  * @related-files [
  *   "tests/scenario_framework/tests/unit/ste100_assets_test.ts",
- *   "scripts/build_skills_index.ts",
+ *   "scripts/skill_catalog_loader.ts",
  *   "scripts/generate_skill_json.ts"
  * ]
  */
@@ -23,7 +23,8 @@
 import { exists } from "@std/fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, SEPARATOR } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
-import { buildSkillsIndex } from "../../../scripts/build_skills_index.ts";
+import { SkillDiagnosticSeverity } from "@exaix/core";
+import { CATALOG_CONTEXT, createCatalogLoader } from "../../../scripts/skill_catalog_loader.ts";
 import { generateSkillJson } from "../../../scripts/generate_skill_json.ts";
 
 export type Ste100BaselineKind = "source" | "generated" | "configuration";
@@ -340,6 +341,46 @@ export function revalidateIsolatedTarget(target: string, root: string): void {
   }
 }
 
+const SKILL_FILE_NAME = "SKILL.md";
+const SKILL_SIDECAR_FILE_NAME = "exaix.yaml";
+const SKILL_REFERENCES_DIR_NAME = "references";
+
+/** Copies each skill folder the loader accepts into `target`, byte for byte. An invalid folder is
+ *  an error and copies nothing. `check` validates without writing. */
+async function copyValidatedSkillFolders(
+  sourceDir: string,
+  target: string,
+  check: boolean,
+): Promise<{ success: boolean; generated: string[]; errors: string[]; warnings: string[] }> {
+  const result = { success: true, generated: [] as string[], errors: [] as string[], warnings: [] as string[] };
+  const loader = createCatalogLoader(sourceDir);
+  for (const diagnostic of await loader.diagnostics(CATALOG_CONTEXT)) {
+    if (diagnostic.severity === SkillDiagnosticSeverity.ERROR) {
+      result.errors.push(`${diagnostic.safe_path}: ${diagnostic.reason}`);
+      result.success = false;
+    }
+  }
+  if (!result.success) return result;
+  for (const { skill } of await loader.listAll(CATALOG_CONTEXT)) {
+    const from = join(sourceDir, skill.name);
+    const to = join(target, skill.name);
+    result.generated.push(to);
+    if (check) continue;
+    await Deno.mkdir(to);
+    await Deno.copyFile(join(from, SKILL_FILE_NAME), join(to, SKILL_FILE_NAME));
+    if (await exists(join(from, SKILL_SIDECAR_FILE_NAME))) {
+      await Deno.copyFile(join(from, SKILL_SIDECAR_FILE_NAME), join(to, SKILL_SIDECAR_FILE_NAME));
+    }
+    if (skill.references.length > 0) {
+      await Deno.mkdir(join(to, SKILL_REFERENCES_DIR_NAME));
+      for (const reference of skill.references) {
+        await Deno.copyFile(join(from, reference.path), join(to, reference.path));
+      }
+    }
+  }
+  return result;
+}
+
 /** Preflights and creates an isolated arm output, then runs the named production
  *  generator with explicit arm sources; output is revalidated afterwards. */
 export async function runIsolatedGenerator(
@@ -348,7 +389,7 @@ export async function runIsolatedGenerator(
 ): Promise<{ success: boolean; generated: string[]; errors: string[]; warnings: string[] }> {
   const absoluteTarget = await createExclusiveIsolatedDir(input.targetDir, input.root, input.existingTrees);
   if (input.kind === "skills") {
-    const result = await buildSkillsIndex(input.sourceDir, absoluteTarget, input.root, options);
+    const result = await copyValidatedSkillFolders(input.sourceDir, absoluteTarget, options?.check === true);
     await revalidateIsolatedTarget(absoluteTarget, input.root);
     return result;
   }

@@ -12,7 +12,7 @@
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
-import { SkillSchema } from "@exaix/schemas/memory_bank.ts";
+import { LegacySkillSchema as SkillSchema } from "../../scripts/legacy_skill_schema.ts";
 import {
   generateSkillJson,
   type IGenerateSkillJsonResult,

@@ -25,7 +25,7 @@ function renderSkillBlock(
 
   let output = `### ${heading}\n${intro}\n\n`;
   for (const skill of skills) {
-    output += `#### ${skill.title}\n`;
+    output += `#### ${skill.name}\n`;
     output += `${skill.description}\n\n`;
     const instructions = includeExamples ? skill.content : stripExamplesSection(skill.content);
     output += `**Instructions:**\n${instructions}\n\n`;

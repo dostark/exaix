@@ -16,10 +16,8 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import { MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 import { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "@exaix/core/skills";
-import { initTestDbService } from "@exaix/testing";
+import { initTestDbService, writeSkillFolder } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing";
 import { BlueprintResolver, EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR } from "@exaix/request";
 import { AgentRunner, EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR } from "@exaix/execution";
@@ -78,38 +76,16 @@ Deno.test("[ArmIsolation] two sequential skill overlays each see only their own 
   const overlayA = await Deno.makeTempDir({ prefix: "isolation-skill-overlay-a-" });
   const overlayB = await Deno.makeTempDir({ prefix: "isolation-skill-overlay-b-" });
   try {
-    const service = new SkillsService({ memoryDir: join(config.system.root, config.paths.memory) }, db);
+    const shipped = await Deno.makeTempDir({ prefix: "isolation-skill-shipped-" });
+    await writeSkillFolder(shipped, { name: "tdd-methodology", instructions: "shipped" });
+    const service = new SkillsService({
+      memoryDir: join(config.system.root, config.paths.memory),
+      blueprintSkillsDir: shipped,
+    }, db);
     await service.initialize();
-    await service.createSkill({
-      skill_id: "tdd-methodology",
-      name: "TDD",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "shipped",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: { keywords: ["tdd"], task_types: [] },
-      instructions: "shipped",
-    });
 
     for (const [dir, marker] of [[overlayA, "content-A"], [overlayB, "content-B"]] as const) {
-      await Deno.writeTextFile(
-        join(dir, "tdd-methodology.json"),
-        JSON.stringify({
-          id: marker,
-          skill_id: "tdd-methodology",
-          name: marker,
-          version: "2.0.0",
-          description: marker,
-          scope: MemoryScope.GLOBAL,
-          status: SkillStatus.ACTIVE,
-          source: MemoryBankSource.USER,
-          triggers: { keywords: ["tdd"], task_types: [] },
-          instructions: marker,
-          created_at: new Date().toISOString(),
-          usage_count: 0,
-        }),
-      );
+      await writeSkillFolder(dir, { name: "tdd-methodology", instructions: marker });
     }
 
     const armA = await withEnv(EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, overlayA, () => service.getSkill("tdd-methodology"));

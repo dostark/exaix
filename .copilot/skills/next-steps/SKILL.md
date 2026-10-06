@@ -134,7 +134,7 @@ VERIFY phase — value correctness, wiring, consumers, conventions
 
 SECURITY gate (portal code or input parsing, file paths, DB queries, subprocesses,
   HTTP handlers, auth, secrets)
-  13a. Consult Blueprints/Skills/security-first.skill.md; address all applicable sections.
+  13a. Consult Blueprints/Skills/security-first/SKILL.md; address all applicable sections.
   13b. New input path/query/subprocess/HTTP handler? Confirm a [security] rejection-by-
        validation test exists.
   13c. Security-relevant file touched? Run `deno task test:security`.
@@ -304,7 +304,7 @@ Related skills
 - #refactor — its check:magic & duplication pass covers non-trivial counts
 - #fix-bug — for bugs found during implementation
 - #audit-security — when 3+ security findings
-- Blueprints/Skills/security-first.skill.md — secure portal-code practices (step 13a)
+- Blueprints/Skills/security-first/SKILL.md — secure portal-code practices (step 13a)
 
 Workflow chain (typical):
   #plan → #review-phase-plan → **#next-steps** → #review-phase-code → #commit

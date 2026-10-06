@@ -11,14 +11,10 @@ import type { ISkillsService } from "@exaix/core/types";
 import { LearningCategory } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import { MemoryBankService, MemoryExtractorService, MemoryReflectionService } from "@exaix/memory";
-import { castAny, createSampleLearning, initTestDbService } from "@exaix/testing";
+import { castAny, createSampleLearning, initTestDbService, loadRepoSkillCatalog } from "@exaix/testing";
 
-const SKILL_JSON_URL = new URL(
-  "../../../../Memory/Skills/global/memory-extraction-content-policy.json",
-  import.meta.url,
-);
-const SKILL_INSTRUCTIONS: string =
-  (JSON.parse(Deno.readTextFileSync(SKILL_JSON_URL)) as { instructions: string }).instructions;
+const SKILL_INSTRUCTIONS: string = (await loadRepoSkillCatalog()).get("memory-extraction-content-policy")!.skill
+  .instructions;
 
 class CapturingProvider implements IModelProvider {
   id = "reflection-policy-test";

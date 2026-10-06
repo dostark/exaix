@@ -1,0 +1,35 @@
+title: Architecture Review & Design
+triggers:
+  tags:
+    - architecture
+    - design
+    - system-design
+    - review
+    - architecture-review
+constraints:
+  - Evaluate against SOLID principles and quality attributes
+  - Map current state and target state with a migration plan
+  - Consider backward compatibility in every design change
+output_requirements:
+  - Current-state assessment with pain points and technical debt
+  - Target architecture with required changes
+  - Migration path with backward compatibility considerations
+  - 'Quality-attribute trade-off analysis (scalability, maintainability, testability, security, performance, reliability)'
+quality_criteria:
+  - name: SOLID Compliance
+    description: >-
+      Design follows Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency
+      Inversion
+    weight: 30
+  - name: Quality Attribute Coverage
+    description: >-
+      All relevant quality attributes (scalability, maintainability, testability, security, performance, reliability)
+      are addressed
+    weight: 30
+  - name: Migration Realism
+    description: 'The migration path is practical, incremental, and considers backward compatibility'
+    weight: 40
+applies_to:
+  agents:
+    - software-architect
+    - '*'

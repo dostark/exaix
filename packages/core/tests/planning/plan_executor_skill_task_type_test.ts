@@ -13,7 +13,13 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { createMockConfig, createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
+import {
+  createMockConfig,
+  createStubConfig,
+  createStubDisplay,
+  createStubGit,
+  StubSkillsService,
+} from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
 import { DefaultRoutingStrategy, ModelResolver, ProviderRegistry } from "@exaix/ai";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
@@ -59,25 +65,13 @@ function createRecordingSkillsService(
   match: ISkillMatch,
 ): { service: ISkillsService; calls: ISkillMatchRequest[] } {
   const calls: ISkillMatchRequest[] = [];
-  const service: ISkillsService = {
-    matchSkills: (request: ISkillMatchRequest) => {
+  class RecordingSkillsService extends StubSkillsService {
+    override matchSkills(request: ISkillMatchRequest): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
       calls.push(request);
       return Promise.resolve({ matches: [match], totalAvailable: 1 });
-    },
-    buildSkillContext: () => Promise.resolve(""),
-    recordSkillUsage: () => Promise.resolve(),
-    deriveSkillFromLearnings: () => {
-      throw new Error("not implemented in stub");
-    },
-    rebuildIndex: () => Promise.resolve(),
-    listSkills: () => Promise.resolve([]),
-    initialize: () => Promise.resolve(),
-    createSkill: () => {
-      throw new Error("not implemented in stub");
-    },
-    getSkill: () => Promise.resolve(null),
-    deleteSkill: () => Promise.resolve(false),
-  };
+    }
+  }
+  const service: ISkillsService = new RecordingSkillsService();
   return { service, calls };
 }
 
@@ -108,6 +102,7 @@ Deno.test({
 
       const { service: skills, calls } = createRecordingSkillsService({
         skillId: "security-review",
+        revisionId: "123e4567-e89b-52d3-a456-426614174000",
         confidence: 0.9,
         matchedTriggers: { task_types: ["security"] },
       });

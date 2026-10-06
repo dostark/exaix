@@ -12,8 +12,8 @@ import { join } from "@std/path";
 import { SessionMemoryService } from "@exaix/memory";
 import { SkillsService } from "@exaix/core/skills";
 import type { IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
-import { DEFAULT_GLOBAL_MEMORY_VERSION, MemoryBankSource, MemoryScope, MemoryType, SkillStatus } from "@exaix/core";
-import { initTestDbService } from "@exaix/testing";
+import { MemoryType } from "@exaix/core";
+import { initTestDbService, writeSkillFolder } from "@exaix/testing";
 import { NullEmbeddingStub, NullMemoryBankStub } from "@exaix/testing";
 
 class BudgetMemoryBankMock extends NullMemoryBankStub {
@@ -67,27 +67,22 @@ Deno.test("[Step62.3] SessionMemoryService.lookupMemories accepts token cap", as
 
 Deno.test("[Step62.3] SkillsService.matchSkills respects provided context budget", async () => {
   const { db, config, cleanup } = await initTestDbService();
+  const blueprintSkillsDir = await Deno.makeTempDir({ prefix: "budget-skills-" });
 
   try {
+    for (const suffix of ["one", "two"]) {
+      await writeSkillFolder(blueprintSkillsDir, {
+        name: `budget-${suffix}`,
+        description: "Budget-aware skill description ".repeat(2),
+        instructions: "Follow the budget-constrained workflow carefully. ".repeat(3),
+        sidecar: { title: `Budget ${suffix}`, triggers: { keywords: ["budget"] } },
+      });
+    }
     const service = new SkillsService(
-      { memoryDir: join(config.system.root, config.paths.memory) },
+      { memoryDir: join(config.system.root, config.paths.memory), blueprintSkillsDir },
       db,
     );
     await service.initialize();
-
-    for (const suffix of ["one", "two"]) {
-      await service.createSkill({
-        skill_id: `budget-${suffix}`,
-        name: `Budget ${suffix}`,
-        version: DEFAULT_GLOBAL_MEMORY_VERSION,
-        description: "Budget-aware skill description ".repeat(2),
-        scope: MemoryScope.GLOBAL,
-        status: SkillStatus.ACTIVE,
-        source: MemoryBankSource.USER,
-        triggers: { keywords: ["budget"] },
-        instructions: "Follow the budget-constrained workflow carefully. ".repeat(3),
-      });
-    }
 
     const capped = await service.matchSkills({
       keywords: ["budget"],
@@ -100,6 +95,7 @@ Deno.test("[Step62.3] SkillsService.matchSkills respects provided context budget
     assertEquals(capped.matches.length, 1);
     assertEquals(uncapped.matches.length, 2);
   } finally {
+    await Deno.remove(blueprintSkillsDir, { recursive: true });
     await cleanup();
   }
 });

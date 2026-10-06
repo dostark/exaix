@@ -31,13 +31,32 @@ async function loadAgentRoleRefs(agentRolesDir: string): Promise<IArtefactRef[]>
   return refs;
 }
 
-async function loadSkillRefs(skillsDir: string): Promise<IArtefactRef[]> {
-  const refs: IArtefactRef[] = [];
-  for await (const entry of Deno.readDir(skillsDir)) {
-    if (!entry.isFile || !entry.name.endsWith(".skill.md")) continue;
-    refs.push({ kind: ArtefactKind.SKILL, artefactId: entry.name.replace(/\.skill\.md$/, "") });
+/** Skill folder names (`<dir>/<name>/SKILL.md`) one level below `dir`. An absent dir yields none. */
+async function readSkillFolderNames(dir: string): Promise<string[]> {
+  const names: string[] = [];
+  try {
+    for await (const entry of Deno.readDir(dir)) {
+      if (!entry.isDirectory) continue;
+      const skillFile = await Deno.stat(join(dir, entry.name, "SKILL.md")).catch(() => null);
+      if (skillFile?.isFile) names.push(entry.name);
+    }
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
   }
-  return refs;
+  return names;
+}
+
+async function loadSkillRefs(skillsDir: string, projectSkillsDir: string): Promise<IArtefactRef[]> {
+  const names = new Set(await readSkillFolderNames(skillsDir));
+  try {
+    for await (const portal of Deno.readDir(projectSkillsDir)) {
+      if (!portal.isDirectory) continue;
+      for (const name of await readSkillFolderNames(join(projectSkillsDir, portal.name))) names.add(name);
+    }
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+  }
+  return [...names].sort().map((artefactId) => ({ kind: ArtefactKind.SKILL, artefactId }));
 }
 
 async function loadFlowRefs(flowsDir: string): Promise<IArtefactRef[]> {
@@ -50,11 +69,14 @@ async function loadFlowRefs(flowsDir: string): Promise<IArtefactRef[]> {
   return refs;
 }
 
-/** Reads the real `Blueprints/` catalog (agent roles, skills, flows) into the flat `IArtefactRef[]` shape `assertArtefactDecisionCoverage` compares against. `blueprintsDir` is `Blueprints/` itself, not its parent. */
-export async function loadArtefactCatalog(blueprintsDir: string): Promise<IArtefactRef[]> {
+/** Reads the real catalog into the flat `IArtefactRef[]` shape that `assertArtefactDecisionCoverage` compares. `blueprintsDir` is `Blueprints/` itself. Project-scoped skills come from `projectSkillsDir`. */
+export async function loadArtefactCatalog(
+  blueprintsDir: string,
+  projectSkillsDir: string = join(blueprintsDir, "..", "Memory", "Skills", "project"),
+): Promise<IArtefactRef[]> {
   const [agentRoles, skills, flows] = await Promise.all([
     loadAgentRoleRefs(join(blueprintsDir, "Agents")),
-    loadSkillRefs(join(blueprintsDir, "Skills")),
+    loadSkillRefs(join(blueprintsDir, "Skills"), projectSkillsDir),
     loadFlowRefs(join(blueprintsDir, "Flows")),
   ]);
   return [...agentRoles, ...skills, ...flows];

@@ -3,9 +3,8 @@
  * @path tests/scenario_framework/tests/unit/catalog_overlay_test.ts
  * @description Tests for the catalog overlay mechanism (Phase 158 Step 2, closes GAP-1):
  * a `skill-version` or `agent-role-config` arm shadows one shipped catalog entry for the
- * run without editing `Blueprints/`. Skills are resolved against `Memory/Skills/` (the
- * tree `SkillsService` actually reads, generated from `Blueprints/Skills/*.skill.md` by
- * `scripts/build_skills_index.ts`), not `Blueprints/Skills/` itself. Agent roles are
+ * run without editing `Blueprints/`. Skills are resolved as folders: the overlay
+ * directory is a prepended `SkillsService` root of `<name>/SKILL.md` folders. Agent roles are
  * resolved directly against `Blueprints/Agents/`, since `BlueprintResolver` reads
  * that tree without an intermediate build step.
  * @architectural-layer Test
@@ -14,8 +13,6 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import { MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 import { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "@exaix/core/skills";
 import { initTestDbService } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing";
@@ -34,41 +31,27 @@ async function withEnv<T>(name: string, value: string | undefined, fn: () => Pro
   }
 }
 
+/** Writes a skill folder with a body and optional sidecar into `root`. */
+async function writeSkillFolder(root: string, name: string, description: string, body: string): Promise<void> {
+  await Deno.mkdir(join(root, name), { recursive: true });
+  await Deno.writeTextFile(
+    join(root, name, "SKILL.md"),
+    `---\nname: ${name}\ndescription: ${description}\n---\n${body}\n`,
+  );
+}
+
 Deno.test("[CatalogOverlay] a skill overlay shadows the shipped skill's content for getSkill", async () => {
   const { db, config, cleanup } = await initTestDbService();
   const overlayDir = await Deno.makeTempDir({ prefix: "skill-overlay-" });
+  const shippedDir = await Deno.makeTempDir({ prefix: "skill-shipped-" });
   try {
-    const service = new SkillsService({ memoryDir: join(config.system.root, config.paths.memory) }, db);
+    await writeSkillFolder(shippedDir, "tdd-methodology", "shipped version", "shipped instructions");
+    const service = new SkillsService({
+      memoryDir: join(config.system.root, config.paths.memory),
+      blueprintSkillsDir: shippedDir,
+    }, db);
     await service.initialize();
-    await service.createSkill({
-      skill_id: "tdd-methodology",
-      name: "TDD Methodology",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "shipped version",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: { keywords: ["tdd"], task_types: ["testing"] },
-      instructions: "shipped instructions",
-    });
-
-    await Deno.writeTextFile(
-      join(overlayDir, "tdd-methodology.json"),
-      JSON.stringify({
-        id: "overlay-id",
-        skill_id: "tdd-methodology",
-        name: "TDD Methodology (overlay)",
-        version: "2.0.0",
-        description: "overlay version",
-        scope: MemoryScope.GLOBAL,
-        status: SkillStatus.ACTIVE,
-        source: MemoryBankSource.USER,
-        triggers: { keywords: ["tdd"], task_types: ["testing"] },
-        instructions: "overlay instructions",
-        created_at: new Date().toISOString(),
-        usage_count: 0,
-      }),
-    );
+    await writeSkillFolder(overlayDir, "tdd-methodology", "overlay version", "overlay instructions");
 
     await withEnv(EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, overlayDir, async () => {
       const overlaid = await service.getSkill("tdd-methodology");
@@ -82,27 +65,22 @@ Deno.test("[CatalogOverlay] a skill overlay shadows the shipped skill's content 
     assertEquals(shipped.instructions, "shipped instructions");
   } finally {
     await Deno.remove(overlayDir, { recursive: true });
+    await Deno.remove(shippedDir, { recursive: true });
     await cleanup();
   }
 });
 
-Deno.test("[CatalogOverlay] a skill with no overlay file falls back to the shipped catalog", async () => {
+Deno.test("[CatalogOverlay] a skill with no overlay folder falls back to the shipped catalog", async () => {
   const { db, config, cleanup } = await initTestDbService();
   const overlayDir = await Deno.makeTempDir({ prefix: "skill-overlay-empty-" });
+  const shippedDir = await Deno.makeTempDir({ prefix: "skill-shipped-" });
   try {
-    const service = new SkillsService({ memoryDir: join(config.system.root, config.paths.memory) }, db);
+    await writeSkillFolder(shippedDir, "error-handling", "shipped", "shipped instructions");
+    const service = new SkillsService({
+      memoryDir: join(config.system.root, config.paths.memory),
+      blueprintSkillsDir: shippedDir,
+    }, db);
     await service.initialize();
-    await service.createSkill({
-      skill_id: "error-handling",
-      name: "Error Handling",
-      version: DEFAULT_GLOBAL_MEMORY_VERSION,
-      description: "shipped",
-      scope: MemoryScope.GLOBAL,
-      status: SkillStatus.ACTIVE,
-      source: MemoryBankSource.USER,
-      triggers: { keywords: ["error"], task_types: ["testing"] },
-      instructions: "shipped instructions",
-    });
 
     await withEnv(EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, overlayDir, async () => {
       const result = await service.getSkill("error-handling");
@@ -111,6 +89,7 @@ Deno.test("[CatalogOverlay] a skill with no overlay file falls back to the shipp
     });
   } finally {
     await Deno.remove(overlayDir, { recursive: true });
+    await Deno.remove(shippedDir, { recursive: true });
     await cleanup();
   }
 });

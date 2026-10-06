@@ -45,6 +45,7 @@ import {
   getTestLlmModel,
   getTestLlmProvider,
   initTestDbService,
+  loadRepoSkillCatalog,
 } from "@exaix/testing";
 import { EvaluationCategory, ProviderType } from "@exaix/core";
 import type { IMemoryCostRouter, ISkillsService } from "@exaix/core/types";
@@ -114,20 +115,9 @@ interface IExtractionJudgeInput {
   scratchpad_notes: string[];
 }
 
-function loadPolicyInstructions(): string {
-  const skillPath = join(
-    import.meta.dirname ?? ".",
-    "..",
-    "..",
-    "..",
-    "..",
-    "Memory",
-    "Skills",
-    "global",
-    "memory-extraction-content-policy.json",
-  );
-  const skill = JSON.parse(Deno.readTextFileSync(skillPath)) as { instructions?: string };
-  assertExists(skill.instructions, "the shipped content-curation skill must carry instructions");
+async function loadPolicyInstructions(): Promise<string> {
+  const skill = (await loadRepoSkillCatalog()).get("memory-extraction-content-policy")?.skill;
+  assertExists(skill?.instructions, "the shipped content-curation skill must carry instructions");
   return skill.instructions;
 }
 
@@ -217,7 +207,7 @@ Deno.test({
         isRemoteAllowed: () => Promise.resolve(true),
         recordOperation: () => Promise.resolve(),
       });
-      const realInstructions = loadPolicyInstructions();
+      const realInstructions = await loadPolicyInstructions();
       const skillsService = castAny<ISkillsService>({
         getSkill: (skillId: string) =>
           Promise.resolve(skillId === POLICY_SKILL_ID ? { skill_id: skillId, instructions: realInstructions } : null),

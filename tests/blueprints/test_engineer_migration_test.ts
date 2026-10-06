@@ -11,13 +11,13 @@
  *   prompt segment.
  * @architectural-layer Blueprint/Skill (test)
  * @dependencies [@std/assert, @std/path]
- * @related-files [packages/schemas/src/memory_bank.ts, packages/core/src/func/prompt_formatter.ts, scripts/build_skills_index.ts]
+ * @related-files [packages/schemas/src/memory_bank.ts, packages/core/src/func/prompt_formatter.ts, packages/schemas/src/skill_folder.ts]
  */
 
 import { assert, assertExists } from "@std/assert";
 import { join, resolve } from "@std/path";
-import { SkillSchema } from "@exaix/schemas/memory_bank.ts";
 import { renderCriticalSkillsSection } from "@exaix/core/func";
+import { loadRepoSkillCatalog, skillMatchFixture } from "@exaix/testing";
 
 const REPO_ROOT = resolve(new URL("../../", import.meta.url).pathname);
 const AGENTS = join(REPO_ROOT, "Blueprints", "Agents");
@@ -57,52 +57,37 @@ Deno.test("[step4] test-engineer persona is slimmed: methodology lives in skills
 });
 
 Deno.test("[step4] tdd-methodology skill absorbed the test-engineer methodology", async () => {
-  const md = await Deno.readTextFile(join(SKILLS, "tdd-methodology.skill.md"));
+  const md = await Deno.readTextFile(join(SKILLS, "tdd-methodology", "SKILL.md"));
   assert(md.includes("Test Pyramid"), "tdd-methodology must now carry the Test Pyramid");
   assert(md.includes("FIRST"), "tdd-methodology must now carry the FIRST principles");
   assert(md.includes("Arrange-Act-Assert") || md.includes("Arrange"), "tdd-methodology must carry the AAA pattern");
 });
 
 Deno.test("[step4] response-contract is a valid `critical` skill defining the output contract", async () => {
-  const md = await Deno.readTextFile(join(SKILLS, "response-contract.skill.md"));
-  const { fm, body } = parseFrontmatter(md);
-  assert(fm.includes("critical: true"), "response-contract must be marked critical: true");
-  assert(body.includes("<thought>"), "contract must define <thought>");
-  assert(body.includes("<content>"), "contract must define <content>");
-
-  // Its generated JSON must validate and be critical.
-  const json = JSON.parse(
-    await Deno.readTextFile(join(REPO_ROOT, "Memory", "Skills", "global", "response-contract.json")),
-  );
-  const parsed = SkillSchema.safeParse(json);
-  assert(
-    parsed.success,
-    `generated response-contract JSON must satisfy SkillSchema: ${parsed.success ? "" : parsed.error.message}`,
-  );
-  assert(parsed.data!.critical === true, "generated response-contract must carry critical: true");
+  const loaded = (await loadRepoSkillCatalog()).get("response-contract");
+  assertExists(loaded, "response-contract must load as a valid skill folder");
+  assert(loaded.skill.critical === true, "response-contract must be marked critical: true");
+  assert(loaded.skill.instructions.includes("<thought>"), "contract must define <thought>");
+  assert(loaded.skill.instructions.includes("<content>"), "contract must define <content>");
 });
 
 Deno.test("[step4] a critical response-contract match renders into the PROTECTED section", () => {
   const ctx = {
     matched: [
-      {
-        skillId: "1",
-        title: "Response Contract",
+      skillMatchFixture({
+        skillId: "response-contract",
+        name: "Response Contract",
         description: "the contract",
         content: "CONTRACT",
-        matchScore: 1,
-        tags: [],
         critical: true,
-      },
-      {
-        skillId: "2",
-        title: "TDD",
+      }),
+      skillMatchFixture({
+        skillId: "tdd-methodology",
+        name: "TDD",
         description: "tdd",
         content: "METHODOLOGY",
-        matchScore: 1,
-        tags: [],
         critical: false,
-      },
+      }),
     ],
     totalAvailable: 2,
     retrievalLatencyMs: 0,

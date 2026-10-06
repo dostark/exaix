@@ -1,0 +1,35 @@
+title: Portal Context Grounding
+status: active
+triggers:
+  keywords:
+    - portal
+    - context
+    - grounding
+    - file list
+    - hallucination
+  task_types:
+    - planning
+    - analysis
+    - implementation
+  file_patterns:
+    - '**/*'
+constraints:
+  - Only reference files that exist in the provided File List
+  - Verify file existence using tools if unsure
+  - Do not invent directory structures or modules
+output_requirements:
+  - Reasoning must explicitly mention items from the File List when applicable
+  - Proposed actions must target existing paths or clearly defined new paths
+quality_criteria:
+  - name: Path Reality
+    description: Every referenced path exists in the File List or is an explicitly-justified new path
+    weight: 50
+  - name: Evidence Citation
+    description: Claims about existing logic cite the specific file they come from
+    weight: 30
+  - name: Uncertainty Honesty
+    description: 'Missing/unknown files are flagged in <thought>, not assumed present'
+    weight: 20
+applies_to:
+  agents:
+    - '*'

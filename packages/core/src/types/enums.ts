@@ -413,24 +413,6 @@ export enum RequestOperation {
 }
 
 /**
- * Skill fields that are automatically managed by the system.
- */
-export enum SkillManagedField {
-  ID = "id",
-  CREATED_AT = "created_at",
-  USAGE_COUNT = "usage_count",
-}
-
-/**
- * Fields that cannot be changed after creation.
- */
-export enum SkillImmutableField {
-  ID = "id",
-  SKILL_ID = "skill_id",
-  CREATED_AT = "created_at",
-}
-
-/**
  * Severity levels for linting.
  */
 export enum Severity {
@@ -1590,6 +1572,34 @@ export enum SkillDiagnosticReason {
   INACTIVE = "inactive",
   SUPPRESSED = "suppressed",
   UNAVAILABLE = "unavailable",
+}
+
+/** Machine-readable reason a skill mutation was refused or could not be published. */
+export enum SkillMutationErrorCode {
+  ROOT_UNAVAILABLE = "skill_root_unavailable",
+  PUBLICATION_UNAVAILABLE = "skill_publication_unavailable",
+  NAME_CONFLICT = "skill_name_conflict",
+  NOT_FOUND = "skill_not_found",
+  REVISION_MISMATCH = "skill_revision_mismatch",
+  INVALID_TRANSITION = "skill_invalid_transition",
+  INVALID_INPUT = "skill_invalid_input",
+}
+
+/** Kind of guarded folder publication recorded in a durable intent file. */
+export enum SkillPublicationOperation {
+  CREATE = "create",
+  UPDATE = "update",
+  DELETE = "delete",
+}
+
+/** Operation a guarded skill mutation attempted, journaled on every mutation failure. */
+export enum SkillMutationOperation {
+  CREATE = "create",
+  UPDATE = "update",
+  DELETE = "delete",
+  APPROVE = "approve",
+  DEPRECATE = "deprecate",
+  DERIVE = "derive",
 }
 
 /** Which durable skill-audit write failed. */

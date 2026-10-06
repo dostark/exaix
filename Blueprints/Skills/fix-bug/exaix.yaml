@@ -1,0 +1,58 @@
+title: Bug Fix
+triggers:
+  keywords:
+    - fix
+    - bug
+    - bugs
+    - bugfix
+    - defect
+    - crash
+    - crashes
+    - crashing
+    - error
+    - fails
+    - failing
+    - regression
+    - broken
+    - reproduce
+  task_types:
+    - bugfix
+  tags:
+    - bugfix
+    - debugging
+constraints:
+  - Confirm the defect is real and reproduced (or clearly reasoned) before editing any code
+  - 'State the specific root cause before making a change — name the file, symbol, and why it fails'
+  - 'Fix the root cause, not the symptom'
+  - Make the smallest safe change; every edited line must relate to this bug
+  - Prefer patch_file for the targeted change; use write_file only when a full-file rewrite is genuinely required
+  - 'Do not refactor, rename, or reformat code unrelated to the bug'
+  - Add or update a test that fails before the fix and passes after it (guard against recurrence)
+  - Verify with the most relevant checks available before declaring the fix done
+output_requirements:
+  - 'Root cause: the specific reason the bug occurs (file, symbol, condition)'
+  - 'Changed: the files and the minimal edit made'
+  - 'Verified: which checks/tests were run and their result'
+  - 'Not verified / risk: anything left unchecked and residual risk'
+quality_criteria:
+  - name: Root Cause Identified
+    description: 'The specific cause is named before editing, not guessed after'
+    weight: 30
+  - name: Minimal Fix
+    description: Only the code required to fix the bug changed; no unrelated edits
+    weight: 30
+  - name: Regression Guard
+    description: A test now covers the fixed behavior and would catch the bug again
+    weight: 25
+  - name: Verified
+    description: The fix was checked with the most relevant available tests/checks
+    weight: 15
+tools:
+  - read_file
+  - search_files
+  - list_directory
+  - patch_file
+  - write_file
+applies_to:
+  agents:
+    - '*'

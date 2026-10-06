@@ -16,13 +16,11 @@ import { join } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { SkillsService } from "@exaix/core/skills";
 import { RequestSchema } from "@exaix/schemas/request.ts";
-import { SkillSchema } from "@exaix/schemas/memory_bank.ts";
 import { initTestDbService } from "@exaix/testing";
-import { MemoryScope } from "@exaix/core";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
 const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
-const MEMORY_SKILLS_GLOBAL = join(REPO_ROOT, "Memory", "Skills", "global");
+const BLUEPRINT_SKILLS = join(REPO_ROOT, "Blueprints", "Skills");
 const SCRIPTS_PATH = join(REPO_ROOT, "scripts", "plan_to_requests.ts");
 const PHASE_120_PLAN = join(REPO_ROOT, "exaix-dev-docs", "planning", "phase-120-dogfooding-a-c.md");
 
@@ -45,17 +43,7 @@ Deno.test("[dogfood-e2e] gap-analysis and step-execution load through SkillsServ
   const { db, config, cleanup } = await initTestDbService();
   try {
     const memoryDir = join(config.system.root, config.paths.memory);
-    const skillsDir = join(memoryDir, "Skills");
-    const globalDir = join(skillsDir, MemoryScope.GLOBAL);
-    await Deno.mkdir(globalDir, { recursive: true });
-
-    for (const slug of ["gap-analysis", "step-execution"]) {
-      const src = join(MEMORY_SKILLS_GLOBAL, `${slug}.json`);
-      const dst = join(globalDir, `${slug}.json`);
-      await Deno.writeTextFile(dst, await Deno.readTextFile(src));
-    }
-
-    const service = new SkillsService({ memoryDir }, db);
+    const service = new SkillsService({ memoryDir, blueprintSkillsDir: BLUEPRINT_SKILLS }, db);
     await service.initialize();
 
     for (const slug of ["gap-analysis", "step-execution"]) {
@@ -63,10 +51,7 @@ Deno.test("[dogfood-e2e] gap-analysis and step-execution load through SkillsServ
       assertExists(skill, `${slug} must hydrate through getSkill`);
       assertEquals(skill.skill_id, slug);
       assertEquals(skill.instructions.length >= 10, true);
-
-      // Secondary SkillSchema validation on the hydrated ISkill object
-      const schemaResult = SkillSchema.safeParse(skill);
-      assertEquals(schemaResult.success, true, `${slug} hydrated ISkill must match SkillSchema`);
+      assertEquals(skill.status, "active", `${slug} must be an active skill`);
     }
   } finally {
     await cleanup();

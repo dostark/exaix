@@ -15,11 +15,9 @@ import { join } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { initTestDbService } from "@exaix/testing";
 import { SkillsService } from "@exaix/core/skills";
-import { MemoryScope } from "@exaix/core";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
 const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
-const MEMORY_SKILLS_GLOBAL = join(REPO_ROOT, "Memory", "Skills", "global");
 
 const ACTIVE_IDENTITY_IDS = [
   "code-analyst",
@@ -189,7 +187,7 @@ async function collectReferencedSkills(): Promise<Set<string>> {
 }
 
 Deno.test({
-  name: "[step7] referenced skills in default_skills (from loadable identities) have .skill.md files on disk",
+  name: "[step7] referenced skills in default_skills (from loadable identities) have skill folders on disk",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -198,64 +196,31 @@ Deno.test({
     assertExists(referencedSlugs.length > 0, "must reference at least one skill");
 
     for (const slug of referencedSlugs) {
-      const mdPath = join(SKILL_MD_DIR, `${slug}.skill.md`);
+      const mdPath = join(SKILL_MD_DIR, slug, "SKILL.md");
       const fileInfo = await Deno.stat(mdPath).catch(() => null);
       assertExists(
         fileInfo?.isFile,
-        `${slug}: .skill.md file must exist at Blueprints/Skills/${slug}.skill.md`,
+        `${slug}: SKILL.md must exist at Blueprints/Skills/${slug}/SKILL.md`,
       );
     }
   },
 });
 
-const SKILL_IDS_WITH_MEMORY_JSON = new Set([
-  "code-review",
-  "commit-message",
-  "documentation-driven",
-  "error-handling",
-  "fix-bug",
-  "gap-analysis",
-  "response-contract",
-  "response-contract-judge",
-  "security-first",
-  "step-execution",
-  "tdd-methodology",
-  "typescript-patterns",
-  "verdict-rubric",
-  "architecture-review",
-  "blueprint-best-practices",
-  "performance-analysis",
-  "requirements-analysis",
-  "research-methodology",
-]);
-
 Deno.test({
-  name: "[step7] referenced skills with Memory/Skills/global/ JSON hydrate through SkillsService",
+  name: "[step7] every referenced skill hydrates through SkillsService from the Blueprint skill folders",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
     const { db, config, cleanup } = await initTestDbService();
     try {
       const memoryDir = join(config.system.root, config.paths.memory);
-      const globalDir = join(memoryDir, "Skills", MemoryScope.GLOBAL);
-      await Deno.mkdir(globalDir, { recursive: true });
+      const allReferenced = [...await collectReferencedSkills()].sort();
+      assertExists(allReferenced.length > 0, "must reference at least one skill");
 
-      const allReferenced = await collectReferencedSkills();
-      const withJson = [...allReferenced]
-        .filter((s) => SKILL_IDS_WITH_MEMORY_JSON.has(s))
-        .sort();
-      assertExists(withJson.length > 0, "must have at least one skill with Memory JSON");
-
-      for (const slug of withJson) {
-        const src = join(MEMORY_SKILLS_GLOBAL, `${slug}.json`);
-        const dst = join(globalDir, `${slug}.json`);
-        await Deno.writeTextFile(dst, await Deno.readTextFile(src));
-      }
-
-      const service = new SkillsService({ memoryDir }, db);
+      const service = new SkillsService({ memoryDir, blueprintSkillsDir: SKILL_MD_DIR }, db);
       await service.initialize();
 
-      for (const slug of withJson) {
+      for (const slug of allReferenced) {
         const skill = await service.getSkill(slug);
         assertExists(skill, `${slug} must hydrate through SkillsService`);
         assertEquals(skill.skill_id, slug, `${slug}: skill_id mismatch`);

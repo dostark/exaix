@@ -1,0 +1,113 @@
+---
+name: response-contract
+description: "The mandatory <thought>/<content> response format and executable-plan JSON contract every agent must emit."
+---
+# Response Output Contract
+
+Respond with exactly two sections, each wrapped in XML-like tags. The runtime ignores any text outside these tags.
+
+1. `<thought>` — Your analysis: reasoning, plan breakdown, architectural decisions, and tool-selection logic. Not parsed as structured data.
+2. `<content>` — Your deliverable. For a plan this MUST be a single valid JSON object matching the executable-plan schema; for an analysis or evaluation, the structured object the task asks for. The runtime extracts and parses the `<content>` block, so it must be valid, self-contained, and free of commentary.
+
+**Never wrap the JSON in a markdown code fence.** The runtime takes the exact text between `<content>` and `</content>` and passes it directly to a JSON parser. A leading/trailing `` ```json `` or `` ``` `` line is not JSON and fails parsing immediately, even though the JSON itself may be correct. Wrong: `<content>` followed by a fenced `` ```json `` block. Right: `<content>` followed immediately by the raw `{ ... }` object, nothing else.
+
+## Agent Thought Standardization
+
+The `<thought>` block must follow this structured format — not free-form prose:
+
+```xml
+<thought>
+## Problem Analysis
+[Brief summary of the user's request and core problem to solve]
+
+## Context Assessment
+[Relevant context from codebase, requirements, constraints]
+
+## Solution Approach
+[High-level strategy and methodology to address the problem]
+
+## Key Considerations
+[Important factors: technical constraints, edge cases, dependencies]
+
+## Implementation Strategy
+[Step-by-step reasoning for how to execute the solution]
+
+## Risk Assessment
+[Potential issues, failure modes, mitigation strategies]
+</thought>
+```
+
+### Section details
+
+| Section                 | Purpose                   | Content                                        |
+| ----------------------- | ------------------------- | ---------------------------------------------- |
+| Problem Analysis        | Confirm understanding     | 1-3 sentences summarizing the core problem     |
+| Context Assessment      | Identify relevant context | Reference existing code, patterns, constraints |
+| Solution Approach       | Outline strategy          | Methodology, frameworks, patterns              |
+| Key Considerations      | Highlight factors         | Security, performance, compatibility           |
+| Implementation Strategy | Detail execution          | Specific steps, tools, order                   |
+| Risk Assessment         | Identify issues           | Failure scenarios, mitigation                  |
+
+## Executable-plan JSON schema
+
+```json
+{
+  "title": "Short descriptive title (required)",
+  "description": "What this plan accomplishes (required)",
+  "steps": [
+    {
+      "step": 1,
+      "title": "Step name (required)",
+      "description": "What this step performs (required)",
+      "tools": ["read_file", "write_file"],
+      "actions": [
+        { "tool": "write_file", "params": { "path": "src/...", "content": "..." } }
+      ],
+      "successCriteria": ["A verifiable check"],
+      "dependencies": [],
+      "rollback": "How to undo this step"
+    }
+  ],
+  "estimatedDuration": "e.g. 2-3 hours",
+  "risks": ["Potential issue"]
+}
+```
+
+Analysis, security, QA, and performance deliverables use their own dedicated
+response-contract skills (response-contract-code-analysis,
+response-contract-security-analysis, response-contract-qa,
+response-contract-performance) — each carries only the JSON template for its
+own response type, so a request only pays for the template it actually needs
+instead of every request receiving templates for four other response types.
+This is a catalog note, not an instruction to you: it applies only when one of
+those specific skills is actually present in your own skill context for this
+call. If it is not — even if your role's name or specialty is "security,"
+"QA," or "performance," or the deliverable happens to touch that domain — use
+the executable-plan schema above. Producing a fix, a test, or an
+implementation is still an executable plan; never substitute a narrative
+report for it just because the task has a security/QA/performance flavor.
+
+## Examples
+
+```xml
+<thought>
+The request asks to add input validation. I will add a boundary schema check and
+a rejection test.
+</thought>
+
+<content>
+{
+  "title": "Add input validation to the request handler",
+  "description": "Validate the request body with a schema at the entry point.",
+  "steps": [
+    {
+      "step": 1,
+      "title": "Add boundary validation",
+      "description": "Parse and reject malformed input before business logic.",
+      "tools": ["read_file", "write_file"],
+      "successCriteria": ["Invalid input is rejected", "A rejection test passes"]
+    }
+  ]
+}
+</content>
+```

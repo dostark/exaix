@@ -26,7 +26,7 @@ import { dirname, join, resolve } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { type ISkillEnvelope, SkillEnvelopeSchema } from "@exaix/schemas/skill_envelope.ts";
-import { type ISkill, SkillSchema } from "@exaix/schemas/memory_bank.ts";
+import { type ILegacySkill as ISkill, LegacySkillSchema as SkillSchema } from "./legacy_skill_schema.ts";
 import { MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 

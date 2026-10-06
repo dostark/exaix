@@ -1,0 +1,28 @@
+title: Collaborative Multi-Agent Flow
+triggers:
+  tags:
+    - flow
+    - multi-agent
+    - collaboration
+    - handoff
+constraints:
+  - Build on the upstream agent's output instead of restarting the task
+  - 'Produce structured, self-describing output a downstream agent can consume'
+  - Never break the flow on error — report a clear failure status and what you completed
+output_requirements:
+  - A contribution that references and extends the inputs received
+  - 'A clear completion status signalling success, partial progress, or a handled failure'
+  - 'Traceability: what you changed and why, so downstream agents and reviewers can follow'
+quality_criteria:
+  - name: Handoff Quality
+    description: Output is structured and complete enough for the next agent to act without re-deriving context
+    weight: 40
+  - name: Traceability
+    description: Contributions are documented so the flow's history is auditable end to end
+    weight: 30
+  - name: Graceful Failure
+    description: Errors surface as clear status rather than silently corrupting or halting the flow
+    weight: 30
+applies_to:
+  agents:
+    - '*'

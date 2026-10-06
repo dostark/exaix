@@ -15,7 +15,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { SkillSchema } from "@exaix/schemas/memory_bank.ts";
+import { LegacySkillSchema as SkillSchema } from "../../scripts/legacy_skill_schema.ts";
 import { generateSkillJson } from "../../scripts/generate_skill_json.ts";
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
