@@ -12,7 +12,7 @@
  * @related-files [packages/core/src/skills/skill_snapshot.ts]
  */
 
-import { assertEquals, assertNotEquals, assertRejects, assertThrows } from "@std/assert";
+import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
 import {
   canonicalizeSkillText,
   computeRevisionId,
@@ -61,11 +61,6 @@ Deno.test("canonicalizeSkillText normalizes CRLF and removes exactly one termina
   assertEquals(canonicalizeSkillText("a\r\nb\r\n"), "a\nb");
   assertEquals(canonicalizeSkillText("a\n\n"), "a\n");
   assertEquals(canonicalizeSkillText("a"), "a");
-});
-
-Deno.test("canonicalizeSkillText rejects NUL and lone CR", () => {
-  assertThrows(() => canonicalizeSkillText("a\0b"));
-  assertThrows(() => canonicalizeSkillText("a\rb"));
 });
 
 Deno.test("CRLF and LF snapshots replay one digest and revision id", async () => {

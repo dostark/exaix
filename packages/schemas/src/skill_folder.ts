@@ -102,3 +102,31 @@ export const SkillSidecarSchema = z.object({
 }).strict();
 
 export type ISkillSidecar = z.infer<typeof SkillSidecarSchema>;
+
+/**
+ * Authorable create input. Selects only fields a person may author. Strict, so an
+ * injected managed identity, path, source, status or approval field is rejected.
+ */
+export const SkillAuthoringSchema = z.object({
+  name: z.string().min(1).max(SKILL_NAME_MAX_LENGTH).regex(SKILL_NAME_PATTERN),
+  title: z.string().min(1).optional(),
+  description: z.string().min(1).max(SKILL_DESCRIPTION_MAX_LENGTH),
+  instructions: z.string().min(1),
+  examples: z.string().optional(),
+  triggers: SkillTriggersSchema.optional(),
+  constraints: z.array(z.string()).optional(),
+  output_requirements: z.array(z.string()).optional(),
+  quality_criteria: z.array(SkillQualityCriterionSchema).optional(),
+  critical: z.boolean().optional(),
+  effort: EffortTierSchema.optional(),
+  thinking: z.boolean().optional(),
+  tools: SkillToolListSchema.optional(),
+  applies_to: SkillAppliesToSchema.optional(),
+  related_skills: z.array(z.string().regex(SKILL_NAME_PATTERN)).optional(),
+}).strict();
+
+export type ISkillAuthoring = z.infer<typeof SkillAuthoringSchema>;
+
+/** Authorable update input: the create fields minus `name`, all optional and strict. */
+export const SkillAuthoringUpdateSchema = SkillAuthoringSchema.omit({ name: true }).partial().strict();
+export type ISkillAuthoringUpdate = z.infer<typeof SkillAuthoringUpdateSchema>;
