@@ -44,7 +44,9 @@ async function main() {
 
   // Collect all docs-visible MCP tools from the manifest (source of truth)
   const docsVisibleTools = TOOL_MANIFEST.filter(
-    (e) => e.docs_visible && (e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN),
+    (e) =>
+      e.docs_visible &&
+      (e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN),
   ).sort((a, b) => a.name.localeCompare(b.name));
 
   console.log(
@@ -62,7 +64,9 @@ async function main() {
   for (const tool of docsVisibleTools) {
     const sourcePath = tool.source_ref;
     if (!sourcePath) {
-      throw new Error(`Docs-visible tool '${tool.name}' is missing source_ref in TOOL_MANIFEST`);
+      throw new Error(
+        `Docs-visible tool '${tool.name}' is missing source_ref in TOOL_MANIFEST`,
+      );
     }
     const cat = categoryLabel(tool.category);
     const dynamicMark = tool.dynamic_mode_allowed && !tool.requires_human_approval ? "✓" : "—";
@@ -81,7 +85,9 @@ async function main() {
       const type = desc.type ?? "string";
       const req = required.has(name) ? "required" : "optional";
       const summary = (desc.description ?? "").replace(/\s+/g, " ").trim();
-      propLines += `  ${name}: { type: ${type}, ${req}${summary ? `, description: ${JSON.stringify(summary)}` : ""} }\n`;
+      propLines += `  ${name}: { type: ${type}, ${req}${
+        summary ? `, description: ${JSON.stringify(summary)}` : ""
+      } }\n`;
     }
     if (propLines === "") propLines = "  {}\n";
     schemaBlocks += `\`\`\`yaml tool-schema: ${tool.name}
@@ -132,12 +138,14 @@ ${schemaBlocks}`;
     const parts = toolsMdContent.split(SYNC_START);
     const before = parts[0];
     const after = parts[1].split(SYNC_END)[1] ?? "";
-    toolsMdContent = before.trimEnd() + "\n\n" + newSection + "\n\n" + after.trimStart();
+    toolsMdContent = before.trimEnd() + "\n\n" + newSection + "\n\n" +
+      after.trimStart();
   } else {
     const footerMarker = "**Footer — Agent Knowledge Base**";
     if (toolsMdContent.includes(footerMarker)) {
       const parts = toolsMdContent.split(footerMarker);
-      toolsMdContent = parts[0].trimEnd() + "\n\n" + newSection + "\n\n" + footerMarker + parts[1];
+      toolsMdContent = parts[0].trimEnd() + "\n\n" + newSection + "\n\n" +
+        footerMarker + parts[1];
     } else {
       toolsMdContent = toolsMdContent.trimEnd() + "\n\n" + newSection + "\n";
     }
@@ -147,7 +155,9 @@ ${schemaBlocks}`;
   toolsMdContent = toolsMdContent.replace(/---\n---/g, "---");
 
   await Deno.writeTextFile(toolsMdPath, toolsMdContent);
-  console.log(`✅ Successfully synced ${docsVisibleTools.length} tools to ${TOOLS_MD}.`);
+  console.log(
+    `✅ Successfully synced ${docsVisibleTools.length} tools to ${TOOLS_MD}.`,
+  );
   console.log(`   Tools: ${docsVisibleTools.map((t) => t.name).join(", ")}`);
 }
 

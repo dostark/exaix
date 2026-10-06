@@ -1918,7 +1918,7 @@ CI proves the wire contract against an in-process receiver
 (`exaix-team/packages/otel-export/tests/export_cli_integration_test.ts`); it does not prove
 delivery to a real OTel-native tool. The live cutover run used the compiled Team CLI against a
 real `otel/opentelemetry-collector-contrib` instance and confirmed the root/child spans and eval
-attributes it received; the Phase 177 record in
+attributes it received; the OTel trace-export planning record in
 `exaix-dev-docs/planning/phase-177-otel-trace-export.md` documents the redacted invocation, collector
 config, and receiver output. Typed `otel.export.started`/`completed`/`failed` audit events (written
 only after the immutable input snapshot is taken) record destination scheme/host/port, record/span
