@@ -13,6 +13,7 @@ import type {
   EffortResolutionBasis,
   EffortTier,
   IRouteReason,
+  IVerificationCheckFailure,
   ModelResolutionReason,
   TaskTypeSource,
 } from "@exaix/schemas";
@@ -538,6 +539,48 @@ export interface IJournalIntegrityPayload {
   actual_hash: string | null;
 }
 
+/** Payload of `execution.verification.started` — one per verification run. */
+export interface IExecutionVerificationStartedEventPayload {
+  request_id: string;
+  attempt: number;
+  checks: string[];
+}
+
+/** Payload of `execution.verification.passed`. */
+export interface IExecutionVerificationPassedEventPayload {
+  request_id: string;
+  attempt: number;
+}
+
+/** Payload of `execution.verification.failed`. */
+export interface IExecutionVerificationFailedEventPayload {
+  request_id: string;
+  attempt: number;
+  failed_checks: Array<{ task: IVerificationCheckFailure["task"]; exit_code: number | null }>;
+}
+
+/** Payload of `execution.repair.started`. */
+export interface IExecutionRepairStartedEventPayload {
+  request_id: string;
+  attempt: number;
+}
+
+/** Payload of `execution.repair.completed`. `changed_files` lists repo-relative paths
+ *  only. `error_class` is a categorical label, never message text. */
+export interface IExecutionRepairCompletedEventPayload {
+  request_id: string;
+  attempt: number;
+  commit_sha: string | null;
+  changed_files: string[];
+  error_class: string | null;
+}
+
+/** Payload of `execution.verification.exhausted`. */
+export interface IExecutionVerificationExhaustedEventPayload {
+  request_id: string;
+  attempts: number;
+}
+
 export const DomainEventType = {
   // Flow step events
   FlowStepExecuted: "flow.step.executed",
@@ -638,6 +681,13 @@ export const DomainEventType = {
   ExecutionFailed: "execution.failed",
   ExecutionAmendmentPending: "execution.amendment_pending",
   ExecutionNoChanges: "execution.no_changes",
+  // Post-execution verification and repair events (verification_runner.ts, execution_loop.ts)
+  ExecutionVerificationStarted: "execution.verification.started",
+  ExecutionVerificationPassed: "execution.verification.passed",
+  ExecutionVerificationFailed: "execution.verification.failed",
+  ExecutionRepairStarted: "execution.repair.started",
+  ExecutionRepairCompleted: "execution.repair.completed",
+  ExecutionVerificationExhausted: "execution.verification.exhausted",
 
   // Report events (execution_loop.ts, mission_reporter.ts)
   ReportGenerated: "report.generated",

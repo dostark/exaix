@@ -26,6 +26,7 @@ export * from "./mcp.ts";
 export * from "./memory_bank.ts";
 export * from "./plan_schema.ts";
 export * from "./portal_knowledge.ts";
+export * from "./portal_verification.ts";
 export * from "./prompt_budget.ts";
 export * from "./routing_policy.ts";
 export * from "./request.ts";

@@ -15,6 +15,7 @@ import {
   SecurityMode,
 } from "@exaix/core";
 import { SessionDelegateConfigSchema } from "./session_delegate.ts";
+import { PortalVerificationSchema } from "./portal_verification.ts";
 
 // Permission Check Interfaces
 
@@ -152,6 +153,9 @@ export const PortalPermissionsSchema = z.object({
 
   // Session delegation configuration
   session_delegate: SessionDelegateConfigSchema.optional(),
+
+  // Post-execution verification checks (opt-in)
+  verification: PortalVerificationSchema.optional(),
 });
 
 export type IPortalPermissions = z.output<typeof PortalPermissionsSchema>;

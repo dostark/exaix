@@ -197,6 +197,55 @@ export const DEFAULT_AMENDMENT_ON_TIMEOUT: AmendmentTimeoutAction = configurable
   swap: SwapClass.RESTART,
 });
 
+// Post-execution verification constants
+/** Hard cap on post-execution repair attempts, independent of the configurable default. */
+export const VERIFICATION_MAX_REPAIR_ATTEMPTS_LIMIT = 5;
+export const DEFAULT_VERIFICATION_MAX_REPAIR_ATTEMPTS: number = configurable({
+  key: "verification.max_repair_attempts",
+  default: 2,
+  type: ConfigValueType.NUMBER,
+  description: "Default number of post-execution verification repair attempts before the loop stops",
+  min: 0,
+  max: VERIFICATION_MAX_REPAIR_ATTEMPTS_LIMIT,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_VERIFICATION_CHECK_TIMEOUT_MS: number = configurable({
+  key: "verification.check_timeout_ms",
+  default: 300_000,
+  type: ConfigValueType.NUMBER,
+  description: "Default timeout in milliseconds for one post-execution verification check",
+  min: 1_000,
+  max: 86_400_000,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_VERIFICATION_OUTPUT_MAX_CHARS: number = configurable({
+  key: "verification.output_max_chars",
+  default: 4_000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum characters of a failed verification check's output kept for the repair prompt",
+  min: 100,
+  max: 1_000_000,
+  swap: SwapClass.RESTART,
+});
+/** Timeout for one `run_deno_task` agent tool invocation. It was previously unbounded. */
+export const DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS: number = configurable({
+  key: "tool_runtime.deno_task_timeout_ms",
+  default: 300_000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for one run_deno_task agent tool invocation",
+  min: 1_000,
+  max: 86_400_000,
+  swap: SwapClass.RESTART,
+});
+/** Daemon env keys overlaid onto the allowlist child env for a verification check. */
+export const VERIFICATION_DENO_ENV_KEYS: readonly string[] = ["DENO_DIR", "DENO_NO_UPDATE_CHECK", "XDG_CACHE_HOME"];
+/** Whole-host or in-place-mutation flags rejected in a verification check's args. */
+export const VERIFICATION_FORBIDDEN_ARGS: readonly string[] = ["-A", "--allow-all", "--fix"];
+/** Bare permission flags rejected in a verification check's args (scoped `--flag=value` forms stay allowed). */
+export const VERIFICATION_FORBIDDEN_BARE_ALLOW_FLAGS: readonly string[] = ["--allow-env", "--allow-run", "--allow-net"];
+/** Flag prepended to a `fmt` check so it never rewrites the worktree. */
+export const VERIFICATION_FMT_CHECK_FLAG = "--check";
+
 // Live execution streaming constants
 export const STREAMING_EVENT_HEARTBEAT = "agent.heartbeat";
 export const STREAMING_EVENT_TOOL_START = "tool.start";
