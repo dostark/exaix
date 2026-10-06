@@ -33,6 +33,7 @@ const EXPECTED_SW_TASKS_IDS = [
   "swe-explain-request-flow-codeanalyst",
   "swe-extract-sort-utility",
   "swe-fix-bug-null-guard",
+  "swe-fix-bug-null-guard-verification",
   "swe-injection-sanitisation",
   "swe-injection-sanitisation-seniorcoder",
   "swe-map-dependencies",

@@ -4842,6 +4842,7 @@ keys or tool contents:
 | `net_permission_denied`   | The daemon may not reach the profile host                                 |
 | `profile_mismatch`        | The endpoint, model or key does not match the profile                     |
 | `registration_missing`    | The `openai-chat` provider is not registered                              |
+| `paid_provider_blocked`   | A test/CI daemon boot selected a billable provider without opt-in         |
 | `capture_unsupported`     | Fixture capture is enabled for this provider                              |
 | `unsupported_call_option` | A call asked for an effort or thinking option the profile cannot honor    |
 | `pricing_unavailable`     | A finite cost budget is set and the returned model has no registered rate |
