@@ -63,10 +63,13 @@ export function daemonConfigSections(root: string, allowNetLine = "allow_net = [
   ];
 }
 
-/** Bootstrap TOML config with a mock (non-networked) AI provider, for daemon-boot tests that don't need real network calls. */
+/** Bootstrap TOML config with a mock (non-networked) AI provider, for daemon-boot tests that don't need real network calls. The `[models.mock]` entry and `agents.default_model` pin the boot provider to mock so it cannot silently resolve to a billable provider. */
 export function writeDaemonConfigWithMockAi(configPath: string, root: string): void {
   const cfg = [
     ...daemonConfigSections(root, ""),
+    "",
+    "[agents]",
+    'default_model = "mock"',
     "",
     "[ai]",
     'provider = "mock"',
@@ -74,6 +77,10 @@ export function writeDaemonConfigWithMockAi(configPath: string, root: string): v
     "",
     "[ai.mock]",
     "timeout_ms = 30000",
+    "",
+    "[models.mock]",
+    'provider = "mock"',
+    'model = "test"',
     "",
   ].join("\n");
   Deno.writeTextFileSync(configPath, cfg);

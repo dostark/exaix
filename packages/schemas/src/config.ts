@@ -7,7 +7,14 @@
  */
 
 import { z } from "zod";
-import { AiConfigSchema, CompatibleChatOverrideSchema, MODEL_CONFIG_FIELD, ProviderTypeSchema } from "./ai_config.ts";
+import {
+  type AiConfig,
+  AiConfigSchema,
+  CompatibleChatOverrideSchema,
+  getDefaultModels,
+  MODEL_CONFIG_FIELD,
+  ProviderTypeSchema,
+} from "./ai_config.ts";
 import { BindingCatalogSchema, BindingsTableSchema } from "./model_binding.ts";
 import { MCPConfigSchema } from "./mcp.ts";
 import * as DEFAULTS from "@exaix/core";
@@ -253,7 +260,7 @@ export const OtelExportConfigSchema = z.object({
   headers_env: z.string().regex(/^[A-Z_][A-Z0-9_]*$/).default(DEFAULTS.DEFAULT_OTEL_EXPORT_HEADERS_ENV),
 });
 
-export const ConfigSchema = z.object({
+const ConfigObjectSchema = z.object({
   tools: ToolsConfigSchema.optional().prefault({}),
   otel_export: OtelExportConfigSchema.optional().prefault({}),
   system: z.object({
@@ -421,23 +428,7 @@ export const ConfigSchema = z.object({
       message: "Model is required for this provider",
       path: [MODEL_CONFIG_FIELD],
     }),
-  ).default({
-    [DEFAULTS.DEFAULT_AGENT_MODEL]: {
-      provider: PROVIDER_GOOGLE,
-      model: DEFAULT_FAST_MODEL_NAME,
-      timeout_ms: DEFAULT_AI_TIMEOUT_MS,
-    },
-    fast: {
-      provider: PROVIDER_GOOGLE,
-      model: DEFAULT_FAST_MODEL_NAME,
-      timeout_ms: DEFAULT_AI_TIMEOUT_MS,
-    },
-    local: {
-      provider: PROVIDER_OLLAMA,
-      model: DEFAULT_LOCAL_MODEL_NAME,
-      timeout_ms: 120000,
-    },
-  }),
+  ).optional(),
   /** Capability presets keyed by model_size (S/M/L/XL). */
   model_presets: z.record(z.string(), ModelPresetSchema).default(DEFAULT_MODEL_PRESETS),
   /** AI provider endpoints configuration */
@@ -1051,3 +1042,70 @@ export const ConfigSchema = z.object({
     }
   }
 });
+
+/** A named-model entry derived from `[ai]` when `[models]` is omitted. `model` may be absent
+ *  for `openai-chat`, whose profile supplies it. */
+interface IDerivedModelEntry {
+  provider: string;
+  model?: string;
+  timeout_ms?: number;
+  max_tokens?: number;
+  temperature?: number;
+  base_url?: string;
+  compatible?: AiConfig["compatible"];
+}
+
+/** Historical default when neither `[ai]` nor `[models]` is configured. */
+const DEFAULT_MODEL_ENTRIES: Record<string, IDerivedModelEntry> = {
+  [DEFAULTS.DEFAULT_AGENT_MODEL]: {
+    provider: PROVIDER_GOOGLE,
+    model: DEFAULT_FAST_MODEL_NAME,
+    timeout_ms: DEFAULT_AI_TIMEOUT_MS,
+  },
+  fast: {
+    provider: PROVIDER_GOOGLE,
+    model: DEFAULT_FAST_MODEL_NAME,
+    timeout_ms: DEFAULT_AI_TIMEOUT_MS,
+  },
+  local: {
+    provider: PROVIDER_OLLAMA,
+    model: DEFAULT_LOCAL_MODEL_NAME,
+    timeout_ms: 120000,
+  },
+};
+
+/** Builds the `models` entries from an explicit `[ai]` section.
+ *  The old hard-coded Google default outranked `[ai]` and dispatched to Gemini.
+ *  When `[ai]` is present it is now authoritative. */
+function deriveModelEntriesFromAi(ai: AiConfig): Record<string, IDerivedModelEntry> {
+  const model = ai.model ??
+    (ai.provider === ProviderType.OPENAI_CHAT
+      ? undefined
+      : getDefaultModels()[ai.provider] ?? DEFAULTS.DEFAULT_AI_MODEL);
+  const entry: IDerivedModelEntry = {
+    provider: ai.provider,
+    ...(model !== undefined ? { model } : {}),
+    ...(ai.timeout_ms !== undefined ? { timeout_ms: ai.timeout_ms } : {}),
+    ...(ai.max_tokens !== undefined ? { max_tokens: ai.max_tokens } : {}),
+    ...(ai.temperature !== undefined ? { temperature: ai.temperature } : {}),
+    ...(ai.base_url ? { base_url: ai.base_url } : {}),
+    ...(ai.compatible !== undefined ? { compatible: ai.compatible } : {}),
+  };
+  return {
+    [DEFAULTS.DEFAULT_AGENT_MODEL]: { ...entry },
+    fast: { ...entry },
+    local: {
+      provider: PROVIDER_OLLAMA,
+      model: DEFAULT_LOCAL_MODEL_NAME,
+      timeout_ms: 120000,
+    },
+  };
+}
+
+/** An absent `[models]` derives from `[ai]`.
+ *  When both are absent the historical Google default applies.
+ *  An explicit `[models]` table always wins. */
+export const ConfigSchema = ConfigObjectSchema.transform((config) => ({
+  ...config,
+  models: config.models ?? (config.ai ? deriveModelEntriesFromAi(config.ai) : DEFAULT_MODEL_ENTRIES),
+}));

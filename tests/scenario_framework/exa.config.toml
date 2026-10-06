@@ -30,6 +30,20 @@ bin_overrides = []
 [portal_knowledge]
 quick_scan_limit = 10000
 
+# Phase 206 follow-up: pin the shared sandbox's boot provider to the mock explicitly. Without
+# an explicit [models] table the boot model otherwise depends on `[ai]`-derived defaults, and a
+# test/CI daemon could silently dispatch to a billable provider. Live-provider packs set
+# EXA_LLM_PROVIDER per cell, which still wins over this declaration.
+[agents]
+default_model = "mock"
+
+[ai]
+provider = "mock"
+
+[models.mock]
+provider = "mock"
+model = "test"
+
 [ai.mock]
 strategy = "recorded"
 fixtures_dir = "$FRAMEWORK_HOME/fixtures/mock_recordings/flow_blueprints"

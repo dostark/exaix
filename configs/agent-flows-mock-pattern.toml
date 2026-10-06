@@ -27,7 +27,9 @@ bin_overrides = []
 # Phase 203 Step 8: the provider is declared so a matrix cell selects the pattern mock through
 # its own EXA_CONFIG_PATH. A step's `env` cannot be scoped to one cell of a two-cell matrix,
 # so the mock cell cannot set EXA_LLM_PROVIDER for itself. An existing EXA_LLM_PROVIDER value
-# still wins over this declaration.
+# still wins over this declaration. Phase 206 follow-up: this declaration is authoritative only
+# because the file has no [models] table; ConfigSchema now derives the boot model from [ai]
+# instead of the old hard-coded Google default that used to outrank it.
 [ai]
 provider = "mock"
 

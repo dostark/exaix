@@ -255,6 +255,9 @@ if (import.meta.main) {
         "❌ Test mode: Configuration file not found. Set EXA_CONFIG_PATH to the ephemeral config.",
       );
     }
+    // Register provider factories and default models before ConfigSchema.parse.
+    // A derived `[ai]` model entry needs the provider default model.
+    bootstrapProviderRegistry();
     const configService = new ConfigService(configPath);
     const config = configService.get();
     const checksum = configService.getChecksum();
@@ -452,7 +455,6 @@ if (import.meta.main) {
     }
 
     // Initialize LLM Provider
-    bootstrapProviderRegistry();
     // Edition-aware composer — Team edition additionally registers Team-only
     // capability modules and bootstraps Team-only providers (Vertex AI).
     const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
@@ -474,6 +476,15 @@ if (import.meta.main) {
       config,
       defaultModelName,
     );
+    // Fail closed if a test/CI daemon boot would dispatch to a billable provider.
+    // The fixed boot provider bypasses the DefaultRoutingStrategy guard.
+    // Fallback chains are explicit operator config, so they are skipped here.
+    const usesFallbackChain = Boolean(
+      config.provider_strategy?.fallback_enabled && config.provider_strategy.fallback_chains?.[defaultModelName],
+    );
+    if (!usesFallbackChain) {
+      ProviderFactory.assertPaidProviderAllowedInTestMode(providerInfo.type);
+    }
     const costTracker = new CostTracker(dbService, config, logger);
     // Pass the logger so provider-level diagnostics (token usage at info, outbound request
     // debug dumps) reach the journal — without it every provider call is a logging black hole.

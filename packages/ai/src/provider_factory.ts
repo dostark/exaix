@@ -29,8 +29,9 @@ import {
   ProviderType,
 } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
+import { isCIMode, isTestMode } from "@exaix/core/config";
 import { createAPIRetryPolicy, RetryPolicy } from "@exaix/core/request";
-import { type IProviderMetadata, ProviderRegistry } from "./provider_registry.ts";
+import { type IProviderMetadata, isPaidProviderMetadata, ProviderRegistry } from "./provider_registry.ts";
 import { MockProviderFactory } from "./factories/mock_factory.ts";
 import { AbstractKeyBasedProviderFactory } from "./factories/abstract_provider_factory.ts";
 import { RateLimitedProvider } from "./rate_limited_provider.ts";
@@ -299,6 +300,25 @@ export class ProviderFactory {
   static getProviderInfoByName(config: Config, name: string): IProviderInfo {
     const options = this.resolveOptionsByName(config, name);
     return this.buildProviderInfo(options);
+  }
+
+  /** Fails closed when test/CI would dispatch to a billable provider without opt-in.
+   *  The daemon boot provider bypasses the DefaultRoutingStrategy guard.
+   *  Set EXA_TEST_ENABLE_PAID_LLM=1 to allow a paid provider under test/CI. */
+  static assertPaidProviderAllowedInTestMode(providerType: string): void {
+    if (!isTestMode() && !isCIMode()) return;
+    if (this.safeEnvGet("EXA_TEST_ENABLE_PAID_LLM") === "1") return;
+    // Compatible providers are never a silent default. They require an explicit profile and endpoint.
+    // The local-test profile is a loopback test seam.
+    // The routing guard still covers an openai-chat provider selected via EXA_LLM_PROVIDER.
+    if (providerType === ProviderType.OPENAI_CHAT) return;
+    ensureProviderRegistryInitialized();
+    const metadata = ProviderRegistry.getProviderMetadata(providerType);
+    if (!metadata || !isPaidProviderMetadata(metadata)) return;
+    throw new ProviderFactoryError(
+      `Paid provider '${providerType}' blocked in test/CI mode; set EXA_TEST_ENABLE_PAID_LLM=1 to allow`,
+      "paid_provider_blocked",
+    );
   }
 
   /** Merges env vars, modelConfig, and global config into IResolvedProviderOptions; guarantees timeoutMs is populated. */

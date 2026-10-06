@@ -11,6 +11,7 @@
  */
 
 import type { IProviderMetadata, ProviderRegistry } from "../provider_registry.ts";
+import { isPaidProviderMetadata } from "../provider_registry.ts";
 import type { IProviderFactory } from "../factories/abstract_provider_factory.ts";
 import type { ICostTracker } from "@exaix/core";
 import type { Config } from "@exaix/schemas";
@@ -132,11 +133,7 @@ export class DefaultRoutingStrategy implements IProviderRoutingStrategy {
   }
 
   private isPaidProvider(metadata: { costTier?: ProviderCostTier; pricingTier?: PricingTier }): boolean {
-    const paidCostTiers = new Set<ProviderCostTier>([ProviderCostTier.PAID, ProviderCostTier.FREEMIUM]);
-    const paidPricingTiers = new Set<PricingTier>([PricingTier.HIGH, PricingTier.MEDIUM, PricingTier.LOW]);
-    if (metadata.costTier && paidCostTiers.has(metadata.costTier)) return true;
-    if (metadata.pricingTier && paidPricingTiers.has(metadata.pricingTier)) return true;
-    return false;
+    return isPaidProviderMetadata(metadata);
   }
 
   private isTestOrCI(): boolean {

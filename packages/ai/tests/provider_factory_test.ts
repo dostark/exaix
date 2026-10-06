@@ -7,13 +7,13 @@
  * provider-specific configuration and stable initialization of model instances.
  */
 
-import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
 import { ANTHROPIC_PROVIDER_METADATA, AnthropicProviderFactory, PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
 import { GOOGLE_PROVIDER_METADATA, GoogleProviderFactory, PROVIDER_GOOGLE } from "@exaix/ai-google";
 import { OLLAMA_PROVIDER_METADATA, OllamaProviderFactory, PROVIDER_OLLAMA } from "@exaix/ai-ollama";
 import { OPENAI_PROVIDER_METADATA, OpenAIProviderFactory, PROVIDER_OPENAI } from "@exaix/ai-openai";
 import { ProviderFactory } from "../src/provider_factory.ts";
-import { TEST_MODEL_ANTHROPIC, TEST_MODEL_OPENAI } from "@exaix/testing";
+import { TEST_MODEL_ANTHROPIC, TEST_MODEL_OPENAI, withEnv } from "@exaix/testing";
 import { ProviderFactoryError } from "../src/errors.ts";
 import type { IGenerateResult } from "../src/providers/common.ts";
 import type { IModelProvider } from "../src/types.ts";
@@ -828,6 +828,38 @@ Deno.test("ProviderFactory: a mock with no fixtures is reported as pattern, not 
   const info = ProviderFactory.getProviderInfoByName(config, "unrecorded");
 
   assertEquals(info.id, "mock-pattern-test-model", "an unconfigured mock must not claim to replay");
+});
+
+Deno.test("[provider-factory] a paid boot provider is blocked in test mode unless opted in", async () => {
+  await withConcreteProviders(async () => {
+    await withEnv({ EXA_TEST_MODE: "1" }, () => {
+      ProviderFactory.assertPaidProviderAllowedInTestMode("mock");
+      ProviderFactory.assertPaidProviderAllowedInTestMode("ollama");
+      // Explicit compatible providers (loopback local-test seam) are never a silent default.
+      ProviderFactory.assertPaidProviderAllowedInTestMode("openai-chat");
+      assertThrows(
+        () => ProviderFactory.assertPaidProviderAllowedInTestMode("google"),
+        ProviderFactoryError,
+        "blocked in test/CI mode",
+      );
+    });
+  });
+});
+
+Deno.test("[provider-factory] EXA_TEST_ENABLE_PAID_LLM=1 allows a paid boot provider in test mode", async () => {
+  await withConcreteProviders(async () => {
+    await withEnv({ EXA_TEST_MODE: "1", EXA_TEST_ENABLE_PAID_LLM: "1" }, () => {
+      ProviderFactory.assertPaidProviderAllowedInTestMode("google");
+    });
+  });
+});
+
+Deno.test("[provider-factory] a paid boot provider is allowed outside test/CI mode", async () => {
+  await withConcreteProviders(async () => {
+    await withEnv({ EXA_TEST_MODE: null, EXA_TEST_CLI_MODE: null, EXA_CI_MODE: null, CI: null }, () => {
+      ProviderFactory.assertPaidProviderAllowedInTestMode("google");
+    });
+  });
 });
 
 // The counterpart — a fixture-backed provider does NOT report pattern fallback — is asserted

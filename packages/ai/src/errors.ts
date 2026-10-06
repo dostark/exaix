@@ -14,6 +14,7 @@ export type ProviderFactoryReasonCode =
   | "net_permission_denied"
   | "profile_mismatch"
   | "registration_missing"
+  | "paid_provider_blocked"
   | "capture_unsupported";
 
 export const PROVIDER_REASON_PROFILE_MISMATCH: ProviderFactoryReasonCode = "profile_mismatch";
@@ -63,6 +64,7 @@ export function getProviderFailureReason(
     case "net_permission_denied":
     case "profile_mismatch":
     case "registration_missing":
+    case "paid_provider_blocked":
     case "capture_unsupported":
       return error.reasonCode;
     default:

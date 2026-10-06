@@ -5,7 +5,7 @@
  * @architectural-layer AI
  * @related-files [packages/ai/src/providers.ts, "packages/execution/src/agent_runner.ts"]
  */
-import { type ChatFormat, PricingTier, PriorityLevel, type ProviderCostTier } from "@exaix/core";
+import { type ChatFormat, PricingTier, PriorityLevel, ProviderCostTier } from "@exaix/core";
 import type { IProviderFactory } from "./factories/abstract_provider_factory.ts";
 import type { IModelOptions } from "./types.ts";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -50,6 +50,19 @@ export interface IProviderMetadata {
   chatFormat?: ChatFormat;
   /** True only when this provider accepts an invocation-local complete native conversation. */
   supportsNativeConversation?: boolean;
+}
+
+/** True when a provider's metadata marks it as potentially billable: a paid/freemium cost tier,
+ *  or a metered (low/medium/high) pricing tier. Shared by DefaultRoutingStrategy's env-provider
+ *  guard and the daemon boot guard so both use one classification. */
+export function isPaidProviderMetadata(
+  metadata: { costTier?: ProviderCostTier; pricingTier?: PricingTier },
+): boolean {
+  const paidCostTiers = new Set<ProviderCostTier>([ProviderCostTier.PAID, ProviderCostTier.FREEMIUM]);
+  const paidPricingTiers = new Set<PricingTier>([PricingTier.HIGH, PricingTier.MEDIUM, PricingTier.LOW]);
+  if (metadata.costTier && paidCostTiers.has(metadata.costTier)) return true;
+  if (metadata.pricingTier && paidPricingTiers.has(metadata.pricingTier)) return true;
+  return false;
 }
 
 /** Returns an exact candidate or the longest `candidate-` prefix. */

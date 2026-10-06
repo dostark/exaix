@@ -515,6 +515,9 @@ Deno.test({
       const requestsDir = join(tempDir, "Workspace", "Requests");
 
       await bootRealDaemon(configPath, 3000, {
+        // This operator-run test boots a real Anthropic provider under EXA_TEST_MODE.
+        // It must opt in to paid dispatch explicitly.
+        extraEnv: { EXA_TEST_ENABLE_PAID_LLM: "1" },
         midFlight: () => writeCycleRequest(requestsDir, traceId, planContextRef),
         afterInjectMs: 180000,
       });

@@ -149,7 +149,6 @@ export const AiConfigSchema = z.object({
 }).transform((config) =>
   config.provider === ProviderType.OPENAI_CHAT ? config : ({
     ...config,
-    model: config.model ?? DEFAULT_AI_MODEL,
     timeout_ms: config.timeout_ms ?? DEFAULT_AI_TIMEOUT_MS,
   })
 );

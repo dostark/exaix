@@ -135,6 +135,9 @@ export async function initializeServices(
       const tempDir = await Deno.makeTempDir({ prefix: "exactl-test-" });
       configPath = `${tempDir}/exa.config.toml`;
     }
+    // Register provider factories and default models before ConfigSchema.parse.
+    // A derived `[ai]` model entry needs the provider default model.
+    bootstrapProviderRegistry();
     const cfgService = new ConfigService(configPath);
     const cfg = cfgService.get();
 
@@ -161,7 +164,6 @@ export async function initializeServices(
     const gitLocal = new GitService({ config: cfg });
     // For provider, ensure we have a valid model name or fallback
     const model = cfg.agents?.default_model || "mock:test";
-    bootstrapProviderRegistry();
     // Edition-aware composer — Team edition additionally registers Team-only
     // capability modules and bootstraps Team-only providers (Vertex AI).
     const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
