@@ -260,7 +260,7 @@ function completedUsage(activities: readonly IActivityRecord[]): ILlmUsagePayloa
 
 /** Writes only named metadata fields. Raw journal payloads and config text never enter the output. */
 export async function writeProviderLiveEvidence(input: IProviderLiveEvidenceInput): Promise<string> {
-  if (!/^[a-z0-9-]+$/.test(input.scenarioId)) throw new Error("Invalid scenario ID for live evidence");
+  if (!/^[a-z0-9_-]+$/.test(input.scenarioId)) throw new Error("Invalid scenario ID for live evidence");
   // A run refused before the daemon started may have no config yet.
   const configBytes = await Deno.readFile(input.configPath).catch(() => undefined);
   const configRevisionSha256 = configBytes

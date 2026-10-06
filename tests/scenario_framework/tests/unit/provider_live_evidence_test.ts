@@ -31,6 +31,50 @@ function activity(action_type: string, payload: Record<string, JSONValue>, trace
   };
 }
 
+Deno.test("binding evidence accepts shipped scenario IDs with underscores", async () => {
+  const outputDir = await Deno.makeTempDir();
+  try {
+    const path = await writeProviderLiveEvidence({
+      scenarioId: "dogfood_loop",
+      outputDir,
+      configPath: `${outputDir}/exa.config.toml`,
+      activities: [],
+      outcome: "success",
+      suiteScore: 1,
+      exitCode: 0,
+    });
+    assertEquals(path, `${outputDir}/provider-live-evidence/dogfood_loop.json`);
+    assertEquals(JSON.parse(await Deno.readTextFile(path)).scenarioId, "dogfood_loop");
+  } finally {
+    await Deno.remove(outputDir, { recursive: true });
+  }
+});
+
+Deno.test("[security] binding evidence rejects scenario path traversal before writing", async () => {
+  const outputDir = await Deno.makeTempDir();
+  try {
+    for (const scenarioId of ["../escape", "nested/scenario", "scenario\\escape"]) {
+      await assertRejects(
+        () =>
+          writeProviderLiveEvidence({
+            scenarioId,
+            outputDir,
+            configPath: `${outputDir}/exa.config.toml`,
+            activities: [],
+            outcome: "success",
+            suiteScore: 1,
+            exitCode: 0,
+          }),
+        Error,
+        "Invalid scenario ID",
+      );
+    }
+    assertEquals(Array.from(Deno.readDirSync(outputDir)), []);
+  } finally {
+    await Deno.remove(outputDir, { recursive: true });
+  }
+});
+
 Deno.test("provider live evidence retains a redacted trace and normalized usage after sandbox cleanup", async () => {
   const sandbox = await Deno.makeTempDir();
   const outputDir = await Deno.makeTempDir();
