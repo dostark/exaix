@@ -176,6 +176,36 @@ Deno.test("[findClassAuditField] finds a logger nested in a same-file deps-bag p
   assertEquals(findClassAuditField(cls, sf), "#eventLogger");
 });
 
+Deno.test("[event-coverage] detects visible flow loggers and their emitted events", () => {
+  const sf = parse(`
+    interface IDeps { eventLogger: IFlowEventLogger }
+    /** @visible */
+    export class Gate {
+      readonly #eventLogger: IFlowEventLogger;
+      constructor(deps: IDeps) { this.#eventLogger = deps.eventLogger; }
+      evaluate(): void { this.count = 1; this.#eventLogger.log(DomainEventType.FlowGateEvaluated, {}); }
+    }
+  `);
+  assertEquals(findClassAuditField(firstClass(sf), sf), "#eventLogger");
+  const result = analyzeClass(firstClass(sf), sf);
+  assertEquals(result.findings, []);
+  assertEquals(result.wiredUnused, null);
+});
+
+Deno.test("[event-coverage] rejects silent visible flow logger methods", () => {
+  const sf = parse(`
+    interface IDeps { eventLogger: IFlowEventLogger }
+    /** @visible */
+    export class Gate {
+      readonly #eventLogger: IFlowEventLogger;
+      constructor(deps: IDeps) { this.#eventLogger = deps.eventLogger; }
+      evaluate(): void { this.count = 1; }
+    }
+  `);
+  const result = analyzeClass(firstClass(sf), sf);
+  assertEquals(result.wiredUnused?.tagged, true);
+});
+
 Deno.test("[findClassAuditField] does not resolve a deps-bag logger when no SourceFile is provided", () => {
   const sf = parse(`
     interface ISvcDeps {

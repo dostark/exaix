@@ -108,9 +108,15 @@ export interface IAnalyzeSourceFileResult {
 
 // ── Type-name classification ──
 
-const AUDIT_LOGGER_TYPE_NAMES = new Set(["IEventLogger", "EventLogger", "IEventRegistry", "EventRegistry"]);
+const AUDIT_LOGGER_TYPE_NAMES = new Set([
+  "IEventLogger",
+  "EventLogger",
+  "IEventRegistry",
+  "EventRegistry",
+  "IFlowEventLogger",
+]);
 
-/** True when `name` is one of the four audit-logger binding type names. */
+/** True when the type names a supported audit-logger contract. */
 export function isAuditLoggerTypeName(name: string): boolean {
   return AUDIT_LOGGER_TYPE_NAMES.has(name);
 }
