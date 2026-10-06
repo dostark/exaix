@@ -21,6 +21,7 @@ steps:
     args: ["start"]
     env:
       EXAIX_EDITION: "team"
+      EXA_LLM_PROVIDER: "mock"
     output_criteria:
       - id: "daemon-started"
         kind: "command-output-contains"
@@ -41,6 +42,7 @@ steps:
     args: ["restart"]
     env:
       EXAIX_EDITION: "team"
+      EXA_LLM_PROVIDER: "mock"
     output_criteria:
       - id: "daemon-restarted"
         kind: "command-output-contains"

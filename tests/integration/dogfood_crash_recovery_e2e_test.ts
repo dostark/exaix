@@ -22,7 +22,7 @@ import { ConfigService } from "@exaix/core/config";
 import { EventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import { initActivityTableSchema } from "@exaix/testing";
-import { migrateDaemonWorkspace, writeDaemonConfig as writeConfig } from "./helpers/daemon_config.ts";
+import { migrateDaemonWorkspace, writeDaemonConfigWithMockAi } from "./helpers/daemon_config.ts";
 
 /** Poll cadence while waiting for the booted daemon to satisfy a condition. */
 const BOOT_POLL_INTERVAL_MS = 500;
@@ -30,7 +30,7 @@ const BOOT_POLL_INTERVAL_MS = 500;
 const BOOT_RECOVER_CEILING_MS = 30_000;
 
 function writeDaemonConfig(configPath: string, root: string): void {
-  writeConfig(configPath, root, "");
+  writeDaemonConfigWithMockAi(configPath, root);
 }
 
 /** Boots the daemon and polls `until()` (or just waits `ceilingMs`) before SIGTERM — polling avoids the cold-CI race a fixed sleep would hit. */

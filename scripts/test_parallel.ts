@@ -84,6 +84,8 @@ const SEQUENTIAL_FILES: string[] = [
   // Integrity daemon boot — boots a real daemon and writes mid-flight config DB
   // overrides; races on Deno module cache and SQLite busy-timeout under parallel.
   "tests/integration/config_integrity_daemon_boot_test.ts",
+  // Boots real daemons and waits for execution and verification events on their request traces.
+  "tests/integration/execution_verification_cutover_test.ts",
   // Parallel daemon startup can exceed the review-plan approval deadline.
   "tests/integration/openai_compatible_daemon_cutover_test.ts",
   // Runs real scenarios and sets process-wide capture and key environment. Parallel files would read it.
@@ -109,6 +111,11 @@ const SEQUENTIAL_FILES: string[] = [
   // parallel workers are snapshotting parent env for subprocess spawns, which
   // surfaced as transient "Failed to spawn 'deno'" errors in unrelated test files.
   "packages/core/tests/child_env_test.ts",
+  // Changes Git repository variables while other tests spawn Git against their own temporary repositories.
+  "tests/scripts/check_commit_msg_test.ts",
+  // Both change the process-wide model preset override while other tests resolve providers.
+  "packages/ai/tests/model_resolver_determinism_test.ts",
+  "packages/ai/tests/model_resolver_registry_test.ts",
   // Test-mode schema test — uses withEnv() to delete EXA_TEST_MODE from the
   // global Deno.env; this leaks across tests under DENO_JOBS parallelism.
   "packages/storage-sqlite/tests/test_mode_schema_test.ts",
@@ -160,6 +167,8 @@ const SEQUENTIAL_FILES: string[] = [
   // Spawns the scenario runner, which boots a daemon. Under Batch 1 the runner times out
   // before it writes the evidence file the test then reads.
   "tests/scenario_framework/tests/integration/binding_evidence_cli_test.ts",
+  // Scenario subprocesses can load incomplete module exports during parallel cache contention.
+  "tests/scenario_framework/tests/integration/memory_pipeline_test.ts",
 ];
 
 /** An explicit `--ignore` on the CLI overrides deno.json's config `exclude` for the walk, so fixtures excluded there (e.g. broken-on-purpose portal sources) must be re-listed here or they leak back into type-checking. */
