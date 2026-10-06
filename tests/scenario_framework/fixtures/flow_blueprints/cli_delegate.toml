@@ -1,0 +1,28 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+
+[ai]
+provider = "mock"
+model = "test"
+
+[models.mock]
+provider = "mock"
+model = "test"
+
+[agents]
+default_model = "mock"
+
+[ai.mock]
+strategy = "recorded"
+strict = true
+fixtures_dir = "__WORKTREE_PATH__/tests/scenario_framework/fixtures/mock_recordings/flow_blueprints"
+
+[cli_delegate]
+tool = "claude-code"
+bin_overrides = ["claude"]
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = false

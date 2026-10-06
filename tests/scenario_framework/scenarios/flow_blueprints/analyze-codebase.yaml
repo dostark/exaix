@@ -45,6 +45,33 @@ steps:
         path_pattern: "**/Plans/*_plan.md"
         score_weight: 0.5
 
+  - id: "assert-completed-steps"
+    type: "journal-assert"
+    action_type: "flow.step.completed"
+    trace_scoped: true
+    expect_count: 2
+    output_criteria:
+      - id: "steps-completed"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.5
+
+  - id: "assert-dynamic-exploration"
+    type: "journal-assert"
+    action_type: "dynamic_step_completed"
+    trace_scoped: true
+    expect_count: 1
+    payload_equals:
+      - path: iterations
+        value: 1
+      - path: toolCallCount
+        value: 0
+    output_criteria:
+      - id: "dynamic-exploration-completed"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.5
+
   - id: "stop-daemon"
     type: "exactl"
     command: "daemon"

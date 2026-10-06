@@ -5,14 +5,53 @@ pack: "flow_blueprints"
 tags: ["subsystem:flows", "entity:feature-development.flow"]
 request_fixture: "fixtures/requests/flow_blueprints/feature_development.md"
 mode_support: ["auto"]
-portals: []
+portals:
+  - alias: blueprint-project
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/simple_repo"
+    target_path: "$WORKSPACE_ROOT/blueprint-project"
+    git_init: true
+bindings:
+  "flow:feature-development/step:analyze-requirements":
+    service: claude-code
+    service_model_id: feature_development__submit-flow-request__analyze-requirements__0
+  "flow:feature-development/step:design-architecture":
+    service: claude-code
+    service_model_id: feature_development__submit-flow-request__design-architecture__0
+  "flow:feature-development/step:implement-feature":
+    service: claude-code
+    service_model_id: feature_development__submit-flow-request__implement-feature__0
+  "flow:feature-development/step:write-tests":
+    service: claude-code
+    service_model_id: feature_development__submit-flow-request__write-tests__0
+  "flow:feature-development/step:code-review":
+    service: claude-code
+    service_model_id: feature_development__submit-flow-request__code-review__0
+  "flow:feature-development/step:integration-test":
+    service: claude-code
+    service_model_id: feature_development__submit-flow-request__integration-test__0
 
 steps:
+  - id: "prepare-delegate"
+    type: "run-script"
+    command: "deno"
+    args:
+      - eval
+      - |
+          await Deno.mkdir(".mock-cli", { recursive: true });
+          await Deno.remove(".mock-cli/claude").catch(() => {});
+          await Deno.symlink("$FRAMEWORK_HOME/fixtures/cli/flow_blueprint_delegate.ts", ".mock-cli/claude");
+    output_criteria:
+      - id: "delegate-prepared"
+        kind: "command-exit-code"
+        equals: 0
+
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
     args: ["start"]
     env:
+      PATH: "$WORKSPACE_ROOT/.mock-cli:$PATH"
+      EXA_CONFIG_PATH: "$FRAMEWORK_HOME/fixtures/flow_blueprints/cli_delegate.toml"
       EXA_LLM_PROVIDER: "mock"
       MOCK_STRICT: "1"
       EXA_CI_MODE: "1"
@@ -25,7 +64,7 @@ steps:
   - id: "submit-flow-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE"]
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "blueprint-project"]
     env:
       EXA_LLM_PROVIDER: "mock"
     output_criteria:
@@ -42,6 +81,20 @@ steps:
       - id: "plan-produced"
         kind: "file-found"
         path_pattern: "**/Plans/*_plan.md"
+        score_weight: 0.5
+
+  - id: "assert-delegate-steps"
+    type: "journal-assert"
+    action_type: "flow.step.completed"
+    trace_scoped: true
+    expect_count: 6
+    payload_equals:
+      - path: strategy
+        value: cli_delegate
+    output_criteria:
+      - id: "delegates-completed"
+        kind: "command-exit-code"
+        equals: 0
         score_weight: 0.5
 
   - id: "stop-daemon"
