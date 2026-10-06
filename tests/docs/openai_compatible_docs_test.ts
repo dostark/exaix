@@ -88,7 +88,7 @@ Deno.test("User Guide lists every provider factory reason code from source", asy
   const codes = [...union.matchAll(/"([a-z_]+)"/g)].map((match) => match[1]);
   assert(codes.length > 0, "No reason codes parsed from source");
   for (const code of [...codes, "unsupported_call_option", "pricing_unavailable", "protocol_invalid"]) {
-    assertStringIncludes(guide, code);
+    assert(guide.includes(code), `User Guide is missing provider reason code: ${code}`);
   }
 });
 
