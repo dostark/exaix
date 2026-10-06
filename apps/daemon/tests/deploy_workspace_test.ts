@@ -76,6 +76,12 @@ parallelSafeTest("deploy_workspace.ts --no-run creates deploy files", async () =
       "provider_costs_schema.ts not copied to deployed workspace/scripts",
     );
 
+    const skillJournalSchema = join(tmp, "scripts", "skill_journal_schema.ts");
+    assert(
+      await exists(skillJournalSchema),
+      "skill_journal_schema.ts not copied to deployed workspace/scripts",
+    );
+
     // Verify migrations folder was copied
     const migrationsDir = join(tmp, "migrations");
     assert(

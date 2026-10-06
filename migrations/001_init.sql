@@ -304,7 +304,26 @@ CREATE TABLE IF NOT EXISTS model_benchmark (
 );
 CREATE INDEX IF NOT EXISTS idx_benchmark_rank ON model_benchmark (benchmark, score DESC);
 
+-- ============================================================================
+-- Skill Revisions
+-- ============================================================================
+
+-- Content-addressed skill snapshots, written the first time a revision is injected or
+-- pinned. Root and path provenance belong to each use and pin, never to this row.
+CREATE TABLE IF NOT EXISTS skill_revisions (
+  revision_id    TEXT PRIMARY KEY,
+  content_sha256 TEXT NOT NULL,
+  skill_name     TEXT NOT NULL,
+  skill_md       TEXT NOT NULL,
+  exaix_yaml     TEXT,                -- NULL when the skill has no sidecar
+  "references"   TEXT NOT NULL,       -- JSON array of { path, content }
+  first_seen_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_skill_revisions_name ON skill_revisions (skill_name);
+
 -- down
+DROP INDEX IF EXISTS idx_skill_revisions_name;
+DROP TABLE IF EXISTS skill_revisions;
 DROP INDEX IF EXISTS idx_benchmark_rank;
 DROP TABLE IF EXISTS model_benchmark;
 DROP TABLE IF EXISTS registry_refresh_audit;

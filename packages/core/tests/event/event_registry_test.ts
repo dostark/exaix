@@ -137,3 +137,24 @@ Deno.test("[EventRegistry] multiple publishers work independently", async () => 
   assertEquals(calls[0].target, "source_a");
   assertEquals(calls[1].target, "source_b");
 });
+
+Deno.test("[EventRegistry] emit forwards the optional trace id as the logger's fourth argument", async () => {
+  const traceIds: Array<string | undefined> = [];
+  const logger: IEventLogger = {
+    log: () => Promise.resolve(),
+    info: (_action: string, _target: string | null, _payload?: LogMetadata, traceId?: string) => {
+      traceIds.push(traceId);
+      return Promise.resolve();
+    },
+    warn: () => Promise.resolve(),
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    child: () => logger,
+  };
+  const registry = new EventRegistry(logger);
+  registry.registerPublisher("trace_source", [DomainEventType.SkillsRevisionRecorded]);
+  await registry.emit("trace_source", DomainEventType.SkillsRevisionRecorded, {}, "trace-123");
+  await registry.emit("trace_source", DomainEventType.SkillsRevisionRecorded, {});
+  assertEquals(traceIds, ["trace-123", undefined]);
+});

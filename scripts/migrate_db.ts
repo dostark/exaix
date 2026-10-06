@@ -14,6 +14,7 @@ import { MigrationDirection } from "@exaix/core";
 import { upgradeActivityCacheColumns } from "./activity_cache_schema.ts";
 import { upgradeActivityChainColumns } from "./journal_integrity_schema.ts";
 import { upgradeProviderCostsIdentityColumns } from "./provider_costs_schema.ts";
+import { upgradeSkillJournalSchema } from "./skill_journal_schema.ts";
 
 import { ConfigService } from "@exaix/core/config";
 
@@ -95,6 +96,7 @@ async function main() {
       upgradeActivityCacheColumns(db);
       upgradeActivityChainColumns(db);
       upgradeProviderCostsIdentityColumns(db);
+      upgradeSkillJournalSchema(db);
       console.log("All migrations up to date.");
     } else if (command === MigrationDirection.DOWN) {
       const lastApplied = Array.from(applied).pop();
@@ -168,6 +170,7 @@ function validateMigration(migrationFile: string, db: Database): IValidationResu
         "provider_rate_limit",
         "registry_refresh_audit",
         "model_benchmark",
+        "skill_revisions",
       ];
       for (const table of tables) {
         const result = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table);
@@ -194,6 +197,7 @@ function validateMigration(migrationFile: string, db: Database): IValidationResu
         "idx_artifacts_agent_role",
         "idx_latency_lookup",
         "idx_benchmark_rank",
+        "idx_skill_revisions_name",
       ];
       for (const index of indexes) {
         const indexExists = db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name=?").get(index);

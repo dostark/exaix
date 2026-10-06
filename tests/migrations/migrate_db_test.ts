@@ -445,3 +445,67 @@ DROP TABLE IF EXISTS good_table;
     await Deno.remove(tmp, { recursive: true }).catch(() => {});
   }
 });
+
+const SKILL_REVISION_COLUMNS = [
+  "revision_id",
+  "content_sha256",
+  "skill_name",
+  "skill_md",
+  "exaix_yaml",
+  "references",
+  "first_seen_at",
+];
+
+Deno.test("[phase206] migrate_db.ts up installs skill_revisions on a fresh database and is idempotent", async () => {
+  const tmp = await setupTestWorkspace();
+  try {
+    assertEquals((await runMigrate(tmp, ["up"])).code, 0);
+    assertEquals((await runMigrate(tmp, ["up"])).code, 0);
+    const dbPath = join(getRuntimeDir(tmp), "journal.db");
+    const cols = await queryDb(dbPath, "SELECT name FROM pragma_table_info('skill_revisions');");
+    for (const column of SKILL_REVISION_COLUMNS) assertStringIncludes(cols, column);
+    const indexes = await queryDb(dbPath, "SELECT name FROM sqlite_master WHERE type='index';");
+    assertStringIncludes(indexes, "idx_skill_revisions_name");
+  } finally {
+    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("[phase206] migrate_db.ts up adds skill_revisions to an applied-001 journal and keeps prior activity", async () => {
+  const tmp = await setupTestWorkspace();
+  try {
+    assertEquals((await runMigrate(tmp, ["up"])).code, 0);
+    const dbPath = join(getRuntimeDir(tmp), "journal.db");
+    const db = new Database(dbPath);
+    try {
+      db.exec("DROP INDEX IF EXISTS idx_skill_revisions_name; DROP TABLE skill_revisions;");
+      db.prepare(
+        "INSERT INTO activity (id, trace_id, actor, action_type, payload, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+      ).run("prior-1", "trace-prior", "system", "prior.event", "{}", new Date().toISOString());
+    } finally {
+      await db.close();
+    }
+    const result = await runMigrate(tmp, ["up"]);
+    assertEquals(result.code, 0, `migrate up failed: ${result.stderr}`);
+    const cols = await queryDb(dbPath, "SELECT name FROM pragma_table_info('skill_revisions');");
+    for (const column of SKILL_REVISION_COLUMNS) assertStringIncludes(cols, column);
+    assertEquals(await queryDb(dbPath, "SELECT id FROM activity WHERE id = 'prior-1';"), "prior-1");
+  } finally {
+    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("[phase206] migrate_db.ts down drops skill_revisions before activity", async () => {
+  const tmp = await setupTestWorkspace();
+  try {
+    assertEquals((await runMigrate(tmp, ["up"])).code, 0);
+    const dbPath = join(getRuntimeDir(tmp), "journal.db");
+    const lookup = "SELECT name FROM sqlite_master WHERE type='table' AND name='skill_revisions';";
+    assertEquals(await queryDb(dbPath, lookup), "skill_revisions");
+    const down = await runMigrate(tmp, ["down"]);
+    assertEquals(down.code, 0, `migrate down failed: ${down.stderr}`);
+    assertEquals(await queryDb(dbPath, lookup), "");
+  } finally {
+    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+  }
+});

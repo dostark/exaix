@@ -295,6 +295,19 @@ export const REGISTRY_TABLES_SQL = `
   CREATE INDEX IF NOT EXISTS idx_benchmark_rank ON model_benchmark (benchmark, score DESC);
 `;
 
+export const SKILL_REVISIONS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS skill_revisions (
+    revision_id    TEXT PRIMARY KEY,
+    content_sha256 TEXT NOT NULL,
+    skill_name     TEXT NOT NULL,
+    skill_md       TEXT NOT NULL,
+    exaix_yaml     TEXT,
+    "references"   TEXT NOT NULL,
+    first_seen_at  TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_skill_revisions_name ON skill_revisions (skill_name);
+`;
+
 /**
  * Initialize full database schema for integration tests
  */
@@ -307,6 +320,7 @@ export function initFullSchema(db: DatabaseService): void {
   db.instance.exec(PROVIDER_COSTS_TABLE_SQL);
   db.instance.exec(ARTIFACTS_TABLE_SQL);
   db.instance.exec(SESSION_DELEGATE_CYCLE_CLAIMS_TABLE_SQL);
+  db.instance.exec(SKILL_REVISIONS_TABLE_SQL);
 }
 
 function resolveSqliteLibraryPath(): string | null {

@@ -1287,6 +1287,66 @@ export const DEFAULT_SKILL_SIZE_WARNING_CHARS: number = configurable({
   max: 100_000,
   swap: SwapClass.RESTART,
 });
+/** Maximum bytes of a skill's SKILL.md read by the folder loader. */
+export const DEFAULT_SKILL_MAIN_MAX_BYTES: number = configurable({
+  key: "skills.main_max_bytes",
+  default: 262_144,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum bytes of a skill's SKILL.md read by the folder loader",
+  min: 1_024,
+  max: 4_194_304,
+  swap: SwapClass.RESTART,
+});
+/** Maximum bytes of a skill's exaix.yaml sidecar read by the folder loader. */
+export const DEFAULT_SKILL_SIDECAR_MAX_BYTES: number = configurable({
+  key: "skills.sidecar_max_bytes",
+  default: 65_536,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum bytes of a skill's exaix.yaml sidecar read by the folder loader",
+  min: 256,
+  max: 1_048_576,
+  swap: SwapClass.RESTART,
+});
+/** Maximum bytes of one skill reference file read by the folder loader. */
+export const DEFAULT_SKILL_REFERENCE_MAX_BYTES: number = configurable({
+  key: "skills.reference_max_bytes",
+  default: 65_536,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum bytes of one skill reference file read by the folder loader",
+  min: 256,
+  max: 1_048_576,
+  swap: SwapClass.RESTART,
+});
+/** Maximum number of reference files in one skill folder. */
+export const DEFAULT_SKILL_REFERENCE_MAX_COUNT: number = configurable({
+  key: "skills.reference_max_count",
+  default: 16,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum number of reference files in one skill folder",
+  min: 0,
+  max: 256,
+  swap: SwapClass.RESTART,
+});
+/** Maximum combined bytes of all reference files in one skill folder. */
+export const DEFAULT_SKILL_REFERENCE_TOTAL_MAX_BYTES: number = configurable({
+  key: "skills.reference_total_max_bytes",
+  default: 262_144,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum combined bytes of all reference files in one skill folder",
+  min: 256,
+  max: 4_194_304,
+  swap: SwapClass.RESTART,
+});
+/** Maximum combined bytes of one skill revision snapshot stored in the journal. */
+export const DEFAULT_SKILL_SNAPSHOT_MAX_BYTES: number = configurable({
+  key: "skills.snapshot_max_bytes",
+  default: 524_288,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum combined bytes of one skill revision snapshot stored in the journal",
+  min: 1_024,
+  max: 8_388_608,
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_SKILLS_MAX_PER_REQUEST: number = configurable({
   key: "skills.max_per_request",
   default: 5,

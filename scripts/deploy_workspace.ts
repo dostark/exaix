@@ -138,6 +138,7 @@ async function main() {
     "activity_cache_schema.ts",
     "journal_integrity_schema.ts",
     "provider_costs_schema.ts",
+    "skill_journal_schema.ts",
   ];
   await ensureDir(join(dest, "scripts"));
   for (const f of scriptFiles) {

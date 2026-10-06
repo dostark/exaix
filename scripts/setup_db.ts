@@ -16,6 +16,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 import { upgradeActivityCacheColumns } from "./activity_cache_schema.ts";
 import { upgradeActivityChainColumns } from "./journal_integrity_schema.ts";
 import { upgradeProviderCostsIdentityColumns } from "./provider_costs_schema.ts";
+import { upgradeSkillJournalSchema } from "./skill_journal_schema.ts";
 
 /** Env override letting a caller point migrations at the repo while CWD stays the workspace. */
 const ENV_MIGRATIONS_DIR = "EXA_MIGRATIONS_DIR";
@@ -87,6 +88,7 @@ async function runMigrations() {
     upgradeActivityCacheColumns(db);
     upgradeActivityChainColumns(db);
     upgradeProviderCostsIdentityColumns(db);
+    upgradeSkillJournalSchema(db);
     console.log("All migrations up to date.");
   } finally {
     await db.close();

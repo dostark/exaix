@@ -28,6 +28,8 @@ import type {
   PlanningToolLoopStopReason,
   PlanningToolsSkipReason,
   ProviderType,
+  SkillAuditStage,
+  SkillInitOutcome,
   TaskComplexity,
   TaskType,
   ToolCallEntryPoint,
@@ -477,6 +479,51 @@ export interface IContextInspectionFailedPayload {
   trace_id: string;
   record_id?: string;
   reason: string;
+}
+
+/** Shared operation identity for skill-folder events. Events never carry raw skill bodies. */
+export interface ISkillEventIdentityPayload {
+  request_id: string | null;
+  flow_id: string | null;
+  flow_step_id: string | null;
+  agent_role: string;
+  config_generation: string;
+}
+
+/** Typed payload for skills.revision_recorded — emitted only on a new revision insert. */
+export interface ISkillsRevisionRecordedPayload extends ISkillEventIdentityPayload {
+  name: string;
+  revision_id: string;
+  content_sha256: string;
+}
+
+/** Typed payload for skills.load_failed — one invalid or unavailable skill entry. */
+export interface ISkillsLoadFailedPayload extends ISkillEventIdentityPayload {
+  name: string | null;
+  root_kind: string;
+  safe_path: string;
+  reason: string;
+}
+
+/** Typed payload for skills.shadowed — a name defined by several roots. */
+export interface ISkillsShadowedPayload extends ISkillEventIdentityPayload {
+  name: string;
+  winner_path: string;
+  shadowed_paths: string[];
+}
+
+/** Typed payload for skills.audit_failed — a terminal snapshot or usage write failure. */
+export interface ISkillsAuditFailedPayload extends ISkillEventIdentityPayload {
+  stage: SkillAuditStage;
+  call_id: string | null;
+  reason: string;
+}
+
+/** Typed payload for skills.initialized — skill service readiness. */
+export interface ISkillsInitializedPayload extends ISkillEventIdentityPayload {
+  writable_roots: number;
+  recovered_operations: number;
+  outcome: SkillInitOutcome;
 }
 
 /** Privacy-safe destination metadata shared by OTel export lifecycle events. */
@@ -1064,6 +1111,13 @@ export const DomainEventType = {
   ContextRecordsPruned: "dogfood.context.records_pruned",
   ContextInspected: "dogfood.context.inspected",
   ContextInspectionFailed: "dogfood.context.inspection_failed",
+
+  // Skill folder payloads never carry skill bodies, raw YAML or host paths.
+  SkillsRevisionRecorded: "skills.revision_recorded",
+  SkillsLoadFailed: "skills.load_failed",
+  SkillsShadowed: "skills.shadowed",
+  SkillsAuditFailed: "skills.audit_failed",
+  SkillsInitialized: "skills.initialized",
 } as const;
 
 export type TDomainEventType = typeof DomainEventType[keyof typeof DomainEventType];

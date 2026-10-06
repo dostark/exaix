@@ -1592,6 +1592,18 @@ export enum SkillDiagnosticReason {
   UNAVAILABLE = "unavailable",
 }
 
+/** Which durable skill-audit write failed. */
+export enum SkillAuditStage {
+  REVISION = "revision",
+  USAGE = "usage",
+}
+
+/** Outcome of skill service initialization. */
+export enum SkillInitOutcome {
+  READY = "ready",
+  FAILED = "failed",
+}
+
 /** Diagnostic severity for a skill discovery outcome. */
 export enum SkillDiagnosticSeverity {
   ERROR = "error",

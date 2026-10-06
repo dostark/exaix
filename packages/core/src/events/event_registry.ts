@@ -12,10 +12,16 @@
 import type { IEventLogger } from "../logger/event_logger.ts";
 import type { TDomainEventType } from "./domain_event_types.ts";
 import type { LogMetadata } from "../types/json.ts";
+import type { Opt, Reason } from "../types/optional_marker.ts";
 
 export interface IEventRegistry {
   registerPublisher(sourceId: string, eventTypes: readonly TDomainEventType[]): void;
-  emit(sourceId: string, eventType: TDomainEventType, payload?: LogMetadata): Promise<void>;
+  emit(
+    sourceId: string,
+    eventType: TDomainEventType,
+    payload?: Opt<LogMetadata, Reason.OptionalContext>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<void>;
   registeredPublishers(): ReadonlyMap<string, ReadonlySet<TDomainEventType>>;
 }
 
@@ -32,7 +38,12 @@ export class EventRegistry implements IEventRegistry {
     this.publishers.set(sourceId, set);
   }
 
-  async emit(sourceId: string, eventType: TDomainEventType, payload?: LogMetadata): Promise<void> {
+  async emit(
+    sourceId: string,
+    eventType: TDomainEventType,
+    payload?: Opt<LogMetadata, Reason.OptionalContext>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<void> {
     const allowed = this.publishers.get(sourceId);
     if (!allowed) {
       throw new Error(`Event source "${sourceId}" is not registered`);
@@ -42,7 +53,7 @@ export class EventRegistry implements IEventRegistry {
         `Event type "${eventType}" is not registered for source "${sourceId}"`,
       );
     }
-    await this.logger.info(eventType, sourceId, payload);
+    await this.logger.info(eventType, sourceId, payload, traceId);
   }
 
   registeredPublishers(): ReadonlyMap<string, ReadonlySet<TDomainEventType>> {

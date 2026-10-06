@@ -14,6 +14,7 @@ import type { Opt, Reason } from "../types/optional_marker.ts";
 import type { IEventLogger } from "../logger/mod.ts";
 import type { IEventRegistry } from "../events/event_registry.ts";
 import type { IDatabaseService } from "../types/i_database_service.ts";
+import type { IPathSecurityOps } from "@exaix/tool-runtime";
 import type {
   MemoryBankSource,
   MemoryScope,
@@ -102,10 +103,37 @@ export interface ISkillDiagnostic {
   severity: SkillDiagnosticSeverity;
 }
 
+/** Dependencies of the skill folder loader. Roots are already resolved and admitted. */
+export interface ISkillFolderLoaderDeps {
+  roots: readonly IResolvedSkillRoot[];
+  pathSecurity: IPathSecurityOps;
+  logger: IEventLogger;
+  eventRegistry: IEventRegistry;
+}
+
+/** Per-file and aggregate byte caps applied before any parse, hash or store. */
+export interface ISkillFolderLimits {
+  mainMaxBytes: number;
+  sidecarMaxBytes: number;
+  referenceMaxBytes: number;
+  referenceMaxCount: number;
+  referenceTotalMaxBytes: number;
+  snapshotMaxBytes: number;
+}
+
 export interface ISkillStoreDeps {
   db: IDatabaseService;
   logger: IEventLogger;
   eventRegistry: IEventRegistry;
+}
+
+/** A stored, verified revision row. */
+export interface ISkillRevisionRecord {
+  revisionId: string;
+  contentSha256: string;
+  skillName: string;
+  snapshot: ISkillRevisionSnapshot;
+  firstSeenAt: string;
 }
 
 /** Fail-closed error for a required skill that could not be loaded. */
@@ -114,5 +142,14 @@ export class SkillUnavailableError extends Error {
   constructor(readonly skillName: string, message: Opt<string, Reason.OptionalContext> = undefined) {
     super(message ?? `Required skill "${skillName}" is unavailable`);
     this.name = "SkillUnavailableError";
+  }
+}
+
+/** Fail-closed error when a skill snapshot or usage write cannot be made durable. */
+export class SkillAuditUnavailableError extends Error {
+  readonly code = "skill_audit_unavailable";
+  constructor(message: string) {
+    super(message);
+    this.name = "SkillAuditUnavailableError";
   }
 }
