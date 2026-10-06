@@ -82,8 +82,8 @@ export type IPortalVerification = z.infer<typeof PortalVerificationSchema>;
 /** Outcome of the post-execution verification stage for one execution. */
 export const VerificationStatus = {
   NOT_CONFIGURED: "not_configured",
-  SKIPPED: "skipped",
-  PASSED: "passed",
+  SKIPPED: GeneralStatus.SKIPPED,
+  PASSED: GeneralStatus.PASSED,
   REPAIRED: "repaired",
   FAILED: GeneralStatus.FAILED,
   ERROR: GeneralStatus.ERROR,

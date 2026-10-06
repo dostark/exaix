@@ -112,6 +112,15 @@ export interface IPlanExecutorOptions {
     worktreePath: string,
     agentRole: string,
   ) => Promise<string>;
+  /** Repair-run controls. All default to today's behavior. */
+  /** The repair executor never calls handleAmendmentTrigger, so it cannot throw PlanAmendmentPendingError. */
+  disableAmendments?: boolean;
+  /** Skip git.createBranch, so a repair reuses the current execution branch. */
+  reuseCurrentBranch?: boolean;
+  /** Skip commitPlanCompletion, so a repair does not add a completion commit. */
+  commitCompletion?: boolean;
+  /** Extra phase label added to plan.execution_* payloads to mark a repair run. */
+  runPhase?: string;
 }
 
 export interface IPlanActionReport {
@@ -207,11 +216,13 @@ export class PlanExecutor {
     const traceId = context.trace_id;
     const requestId = context.request_id;
     const actionReports: IPlanActionReport[] = [];
+    const phaseFields = this.options.runPhase ? { phase: this.options.runPhase } : {};
 
     await this.logger.info(DomainEventType.PlanExecutionStarted, planPath, {
       trace_id: traceId,
       request_id: requestId,
       step_count: context.steps.length,
+      ...phaseFields,
     });
 
     try {
@@ -227,7 +238,9 @@ export class PlanExecutor {
       if (git) {
         await git.ensureRepository();
         await git.ensureIdentity();
-        await git.createBranch({ requestId, traceId });
+        if (!this.options.reuseCurrentBranch) {
+          await git.createBranch({ requestId, traceId });
+        }
       }
 
       const initialHeadSha = git ? await this.getPortalHeadSha(this.repoPath) : null;
@@ -243,7 +256,7 @@ export class PlanExecutor {
           actionReports,
         );
 
-        if (git) {
+        if (git && this.options.commitCompletion !== false) {
           await this.commitPlanCompletion(
             git,
             requestId,
@@ -259,6 +272,7 @@ export class PlanExecutor {
             trace_id: traceId,
             status: ExecutionStatus.COMPLETED,
             last_commit: lastCommitSha === initialHeadSha ? null : lastCommitSha,
+            ...phaseFields,
           },
         );
 
@@ -520,26 +534,7 @@ export class PlanExecutor {
           );
         }
 
-        if (this.options.confidenceScorer && this.config.amendment?.enabled) {
-          const assessment = this.options.confidenceScorer.assessQuick(
-            result.description,
-          );
-          const threshold = this.config.amendment.threshold ??
-            DEFAULT_AMENDMENT_THRESHOLD;
-
-          if (assessment.score < threshold) {
-            await this.handleAmendmentTrigger(
-              {
-                source: "low_confidence",
-                stepId: String(step.number),
-                reason: assessment.reasoning || "Low confidence score",
-                confidenceScore: assessment.score,
-              },
-              context,
-              step,
-            );
-          }
-        }
+        await this.maybeTriggerLowConfidenceAmendment(result, context, step);
 
         if (git) {
           await this.commitStepChanges(git, step, result, traceId, requestId);
@@ -555,26 +550,66 @@ export class PlanExecutor {
           output: result.description,
         });
       } catch (error) {
-        if (
-          this.config.amendment?.enabled &&
-          !(error instanceof PlanAmendmentPendingError)
-        ) {
-          const source = error instanceof GuardrailBlockedError ? "guardrail_violation" : "tool_error";
-          await this.handleAmendmentTrigger(
-            {
-              source,
-              stepId: String(step.number),
-              reason: error instanceof Error ? error.message : String(error),
-            },
-            context,
-            step,
-          );
-        }
+        await this.maybeTriggerErrorAmendment(
+          error as Error | PlanAmendmentPendingError | GuardrailBlockedError,
+          context,
+          step,
+        );
         throw error;
       }
     }
 
     return lastCommitSha;
+  }
+
+  /** Trigger a low-confidence amendment when configured and not disabled. */
+  private async maybeTriggerLowConfidenceAmendment(
+    result: { description: string },
+    context: IPlanContext,
+    step: IPlanStep,
+  ): Promise<void> {
+    if (!this.options.confidenceScorer || !this.config.amendment?.enabled || this.options.disableAmendments) {
+      return;
+    }
+    const assessment = this.options.confidenceScorer.assessQuick(result.description);
+    const threshold = this.config.amendment.threshold ?? DEFAULT_AMENDMENT_THRESHOLD;
+    if (assessment.score >= threshold) return;
+
+    await this.handleAmendmentTrigger(
+      {
+        source: "low_confidence",
+        stepId: String(step.number),
+        reason: assessment.reasoning || "Low confidence score",
+        confidenceScore: assessment.score,
+      },
+      context,
+      step,
+    );
+  }
+
+  /** Trigger an error amendment when configured and not disabled. */
+  private async maybeTriggerErrorAmendment(
+    error: Error | PlanAmendmentPendingError | GuardrailBlockedError,
+    context: IPlanContext,
+    step: IPlanStep,
+  ): Promise<void> {
+    if (
+      !this.config.amendment?.enabled ||
+      this.options.disableAmendments ||
+      error instanceof PlanAmendmentPendingError
+    ) {
+      return;
+    }
+    const source = error instanceof GuardrailBlockedError ? "guardrail_violation" : "tool_error";
+    await this.handleAmendmentTrigger(
+      {
+        source,
+        stepId: String(step.number),
+        reason: error instanceof Error ? error.message : String(error),
+      },
+      context,
+      step,
+    );
   }
 
   private async _tryDelegateStep(

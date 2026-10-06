@@ -21,7 +21,9 @@ export enum GeneralStatus {
   CANCELLED = "cancelled",
   DRAFT = "draft",
   DEPRECATED = "deprecated",
+  PASSED = "passed",
   RUNNING = "running",
+  SKIPPED = "skipped",
   STOPPED = "stopped",
 
   // Plan states

@@ -59,6 +59,9 @@ export const DEFAULT_GIT_REV_PARSE_TIMEOUT_MS: number = configurable({
 
 /** Git subcommand constants */
 export const GIT_CMD_REV_PARSE = "rev-parse";
+export const GIT_CMD_DIFF = "diff";
+/** Print only the changed paths, not the patch body. */
+export const GIT_FLAG_NAME_ONLY = "--name-only";
 export const GIT_CMD_WORKTREE = "worktree";
 export const GIT_CMD_CONFIG = "config";
 export const GIT_CMD_BRANCH = "branch";

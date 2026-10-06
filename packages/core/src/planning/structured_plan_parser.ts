@@ -20,6 +20,8 @@ export interface IStructuredPlanStep {
   number: number;
   title: string;
   content: string;
+  /** Success criteria for the step, used as acceptance criteria in the delegate brief. */
+  successCriteria?: string[];
 }
 
 export interface IStructuredPlan {

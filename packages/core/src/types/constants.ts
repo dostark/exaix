@@ -245,6 +245,11 @@ export const VERIFICATION_FORBIDDEN_ARGS: readonly string[] = ["-A", "--allow-al
 export const VERIFICATION_FORBIDDEN_BARE_ALLOW_FLAGS: readonly string[] = ["--allow-env", "--allow-run", "--allow-net"];
 /** Flag prepended to a `fmt` check so it never rewrites the worktree. */
 export const VERIFICATION_FMT_CHECK_FLAG = "--check";
+/** Fixed instruction prepended to a post-execution verification repair step. */
+export const VERIFICATION_REPAIR_INSTRUCTION =
+  "Fix the failing verification checks below. Do not edit test files or deno.json/deno.jsonc to make a check pass. Change source code only.";
+/** Phase label on a repair run's plan.execution_* events, so counters can filter it. */
+export const VERIFICATION_REPAIR_PHASE = "repair";
 
 // Live execution streaming constants
 export const STREAMING_EVENT_HEARTBEAT = "agent.heartbeat";
