@@ -1799,6 +1799,56 @@ For worktree executions, Exaix also writes a discoverability pointer at `Memory/
 - Deno has necessary permissions
 - Context card exists
 
+**Post-execution verification (`portals[].verification`):**
+
+A portal may declare a `verification` block. After a plan's work is committed, Exaix runs the
+configured `deno_task` checks in the execution worktree. When a check fails and repair attempts
+remain, the truncated, redacted failure output is fed back to the model as a one-step repair plan;
+the daemon then re-verifies. This is opt-in: a portal without `verification` behaves exactly as
+before.
+
+> `portals[].verification` (post-execution checks) is unrelated to `exactl portal verify`, which is
+> a read-only health check of a portal's symlink, target and permissions. It is also distinct from
+> `ConfigService.updatePortalVerification`, which records a `last_verified` timestamp.
+
+```toml
+[[portals]]
+alias = "MyWebsite"
+target_path = "~/Dev/MyWebsite"
+
+[portals.verification]
+max_repair_attempts = 2      # default 2; hard cap 5
+check_timeout_ms = 300000    # default 300000 (5 min)
+output_max_chars = 4000      # default 4000
+
+[[portals.verification.checks]]
+kind = "deno_task"           # only deno_task in this phase
+task = "test"                # test | lint | check | fmt
+path = "."                   # relative to the worktree, default "."
+args = ["--allow-read=."]    # operator flags; -A/--allow-all/--fix are rejected
+```
+
+`verification_status` is written on `execution.completed`:
+
+| Value            | Meaning                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------ |
+| `not_configured` | The plan has no portal, or the portal has no `verification` block.                         |
+| `skipped`        | Configured, but nothing to verify (read-only plan, or no commit).                          |
+| `passed`         | The first verification run passed.                                                         |
+| `repaired`       | A run after at least one repair attempt passed.                                            |
+| `failed`         | Checks still fail after `max_repair_attempts`, or a repair step threw.                     |
+| `error`          | A check could not run (timeout, spawn failure, path outside the worktree). No repair runs. |
+
+Security: verification executes model-written code without a human in the loop, with a cleared
+environment (the `ChildEnvPolicy` allowlist plus `DENO_DIR`, `DENO_NO_UPDATE_CHECK` and
+`XDG_CACHE_HOME`). Proxy variables are not forwarded, so dependencies must be pre-cached in
+`DENO_DIR` (for example with `deno install`). `fmt` always runs with `--check`. Failure output is
+redacted against the daemon's known secret values and framed as untrusted data. The worst-case wall
+clock is `(1 + max_repair_attempts) × N_checks × check_timeout_ms`.
+
+The agent `run_deno_task` tool also stops after `DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS` (300 s) where it
+previously had no timeout.
+
 **Safety features:**
 
 - Portal removal moves context cards to `_archived/` instead of deleting

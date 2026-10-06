@@ -83,11 +83,22 @@ portals:
     source_path: "$FRAMEWORK_HOME/fixtures/portals/todo_app"
     target_path: "$WORKSPACE_ROOT/todo-app" # clean-staged copy (never shared state)
     git_init: true # init a repo with an initial commit
+    verification: # optional: post-execution checks written into the sandbox config
+      checks:
+        - kind: "deno_task"
+          task: "test" # test | lint | check | fmt
+          path: "src/" # relative to the worktree, default "."
+      max_repair_attempts: 2 # default 2; hard cap 5
 ```
 
 With `target_path`, the runner **clean-stages** the fixture (removes any prior target, stale
 worktrees, stale symlinks) and copies — so an evaluated repo can never leak a previous
 scenario's/cell's changes. `source_path` alone mounts the path directly.
+
+A mount's `verification` block is appended to the sandbox config after that portal's
+`portal add` succeeds, so the daemon runs those checks after execution and journals
+`verification_status` on `execution.completed`. A verification-bearing mount that fails to
+mount fails the setup step.
 
 ### 2.2 Matrix Cells
 

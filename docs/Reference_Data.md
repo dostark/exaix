@@ -510,6 +510,12 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 | `ExecutionFailed`                        | `execution.failed`                            | Execution                       |
 | `ExecutionAmendmentPending`              | `execution.amendment_pending`                 | Execution                       |
 | `ExecutionNoChanges`                     | `execution.no_changes`                        | Execution                       |
+| `ExecutionVerificationStarted`           | `execution.verification.started`              | Execution                       |
+| `ExecutionVerificationPassed`            | `execution.verification.passed`               | Execution                       |
+| `ExecutionVerificationFailed`            | `execution.verification.failed`               | Execution                       |
+| `ExecutionVerificationExhausted`         | `execution.verification.exhausted`            | Execution                       |
+| `ExecutionRepairStarted`                 | `execution.repair.started`                    | Execution                       |
+| `ExecutionRepairCompleted`               | `execution.repair.completed`                  | Execution                       |
 | `ExecutionContextCompacted`              | `execution.context.compacted`                 | Execution                       |
 | `ReportGenerated`                        | `report.generated`                            | Execution                       |
 | `ReportError`                            | `report.error`                                | Execution                       |

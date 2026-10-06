@@ -497,6 +497,7 @@ For analysis mode details, data flow steps, and hardening additions, see `packag
     "PlanWriter materializes Plan to Workspace/Plans",
     "FlowRunner pauses on failing quality gates, creating durable wait states for operator resolution",
     "Operator approves, rejects, or amends wait states via `exactl wait` CLI commands",
+    "ExecutionLoop commits plan work, runs the portal's post-execution verification, then registers the review",
     "Activity Journal records lifecycle events (including wait-state events)"
   ]
 } -->
@@ -530,6 +531,19 @@ its reason. At most `planning.max_tool_calls_per_round` calls run per round, an
 empty final round falls back to a single call, and a loop that throws emits
 `planning.tools.aborted`. Tools are read-only by construction, so planning can
 inspect but never mutate the portal.
+
+After a plan's work is committed and before the review is registered, the `ExecutionLoop`
+runs the portal's optional post-execution verification (`portals[].verification`). A
+`VerificationRunner` runs the configured `deno_task` checks in the execution worktree
+through the middleware-free `runDenoTask` (so check output never enters the registry
+journal), confines each path to the worktree, and redacts the daemon's known secrets. When a
+check fails and `max_repair_attempts` remain, the loop builds a one-step structured repair
+plan from the truncated failures, runs it through the same `PlanExecutor` path, and
+re-verifies; it stops when the checks pass, an error occurs, or the attempts run out. The
+outcome is journaled as `execution.verification.*` and `execution.repair.*` events on the
+request trace and written as `verification_status` on `execution.completed`; the review is
+always registered on the last commit. See the `execution` package (`VerificationRunner`,
+`ExecutionLoop`).
 
 ---
 
