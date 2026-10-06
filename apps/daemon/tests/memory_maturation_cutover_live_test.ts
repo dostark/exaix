@@ -155,6 +155,7 @@ Deno.test({
       });
       const realInstructions = await loadPolicyInstructions();
       const skillsService = castAny<ISkillsService>({
+        ensureRevisions: () => Promise.resolve(),
         getSkill: (skillId: string) =>
           Promise.resolve(skillId === POLICY_SKILL_ID ? { skill_id: skillId, instructions: realInstructions } : null),
       });

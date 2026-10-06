@@ -34,6 +34,7 @@ class StubProvider implements IModelProvider {
 
 function skillsService(): ISkillsService {
   return castAny<ISkillsService>({
+    ensureRevisions: () => Promise.resolve(),
     getSkill: (skillId: string) =>
       Promise.resolve(
         skillId === "memory-extraction-content-policy"

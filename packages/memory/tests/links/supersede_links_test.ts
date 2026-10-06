@@ -6,7 +6,7 @@
  */
 import { assertEquals } from "@std/assert";
 import type { ILearningContradictionResolver, IMemoryBankService, IMemoryEmbeddingService } from "@exaix/core/types";
-import type { ISkillsService } from "@exaix/core/types";
+import type { IReflectionSkills } from "@exaix/memory/reflection/memory_reflection_service.ts";
 import { MemoryOperation } from "@exaix/core";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
 import { MemoryStatus } from "@exaix/core/status";
@@ -178,7 +178,8 @@ Deno.test("the reflection merge path produces the same supersession links on all
     const extractor = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
     const reflection = new MemoryReflectionService({
       provider: new StubProvider(JSON.stringify({ actions: [] })),
-      skillsService: castAny<Pick<ISkillsService, "getSkill">>({
+      skillsService: castAny<IReflectionSkills>({
+        ensureRevisions: () => Promise.resolve(),
         getSkill: (skillId: string) => Promise.resolve({ skill_id: skillId, instructions: "policy" }),
       }),
       memoryBank: bank,

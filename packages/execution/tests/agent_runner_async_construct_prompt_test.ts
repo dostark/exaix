@@ -319,7 +319,10 @@ Deno.test("[IAgentRunner] allocation hints preserve present memory and ordinary 
   const runner = new AgentRunner(new MockProvider(WELL_FORMED_RESPONSE), {
     selectedModel: { provider: "openai", model: "gpt-4o-mini" },
     skillsService: {
-      recordSkillUsage: () => Promise.resolve(),
+      forContext() {
+        return this;
+      },
+      ensureRevisions: () => Promise.resolve(),
       matchSkills: () =>
         Promise.resolve({
           matches: [{ skillId: "ordinary", confidence: 1, matchedTriggers: {} }],

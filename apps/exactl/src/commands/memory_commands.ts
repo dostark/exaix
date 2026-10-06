@@ -7,7 +7,7 @@
  */
 
 import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH, ENV_PORTAL_ALIAS } from "@exaix/core";
-import type { ISkillOperationContext } from "@exaix/core/skills";
+import { createSkillOperationContext, type ISkillOperationContext } from "@exaix/core/skills";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
@@ -24,7 +24,6 @@ import type { IMemoryBankSummary, OutputFormat } from "@exaix/cli/types/memory_t
 export interface IMemoryCommandsContext extends ICommandContext {}
 
 const CLI_AGENT_ROLE = "cli";
-const CLI_CONFIG_GENERATION = "cli";
 
 export class MemoryCommands extends BaseCommand {
   private formatter: MemoryFormatter;
@@ -755,15 +754,7 @@ function toSkillSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
-/** Operation context for CLI skill mutations. The portal comes from `EXA_PORTAL`, otherwise the skill is global. */
+/** Operation context for CLI skill operations. The portal comes from `EXA_PORTAL`, otherwise the skill is global. */
 function cliSkillContext(): ISkillOperationContext {
-  return {
-    portal: Deno.env.get(ENV_PORTAL_ALIAS) ?? null,
-    traceId: crypto.randomUUID(),
-    requestId: null,
-    flowId: null,
-    flowStepId: null,
-    agentRole: CLI_AGENT_ROLE,
-    configGeneration: CLI_CONFIG_GENERATION,
-  };
+  return createSkillOperationContext({ agentRole: CLI_AGENT_ROLE, portal: Deno.env.get(ENV_PORTAL_ALIAS) });
 }

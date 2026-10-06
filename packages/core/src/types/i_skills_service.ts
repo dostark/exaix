@@ -22,6 +22,20 @@ export interface ISkillsService {
   initialize(): Promise<void>;
 
   /**
+   * A view bound to one operation context. Reads default to it and no singleton state changes.
+   */
+  forContext(ctx: ISkillOperationContext): ISkillsService;
+
+  /**
+   * Durably snapshot the canonical content of revisions this service returned. Throws
+   * `skill_audit_unavailable` when a snapshot cannot be made durable, so no model call follows.
+   */
+  ensureRevisions(
+    revisionIds: readonly string[],
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<void>;
+
+  /**
    * Match skills based on request context.
    */
   matchSkills(

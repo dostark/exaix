@@ -20,6 +20,17 @@ export class SkillsAdapter implements ISkillsService {
     return await this.inner.initialize();
   }
 
+  forContext(ctx: ISkillOperationContext): ISkillsService {
+    return this.inner.forContext(ctx);
+  }
+
+  async ensureRevisions(
+    revisionIds: readonly string[],
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<void> {
+    return await this.inner.ensureRevisions(revisionIds, ctx);
+  }
+
   async matchSkills(
     request: ISkillMatchRequest,
     ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,

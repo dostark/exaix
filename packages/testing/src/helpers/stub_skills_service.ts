@@ -19,6 +19,14 @@ export class StubSkillsService implements ISkillsService {
     return Promise.resolve();
   }
 
+  forContext(_ctx: ISkillOperationContext): ISkillsService {
+    return this;
+  }
+
+  ensureRevisions(_revisionIds: readonly string[]): Promise<void> {
+    return Promise.resolve();
+  }
+
   matchSkills(_request: ISkillMatchRequest): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
     return Promise.resolve({ matches: [], totalAvailable: 0 });
   }
@@ -78,4 +86,9 @@ export class StubSkillsService implements ISkillsService {
   deleteSkill(_skillId: string, _ctx: ISkillOperationContext): Promise<boolean> {
     return Promise.resolve(false);
   }
+}
+
+/** A stub service whose listed methods are replaced, so a test overrides only what it asserts on. */
+export function stubSkillsServiceWith(overrides: Partial<ISkillsService>): ISkillsService {
+  return Object.assign(new StubSkillsService(), overrides);
 }

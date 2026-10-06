@@ -908,6 +908,14 @@ export class MockSkillsService implements ISkillsService {
     return Promise.resolve();
   }
 
+  forContext(_ctx: ISkillOperationContext): ISkillsService {
+    return this;
+  }
+
+  ensureRevisions(_revisionIds: readonly string[]): Promise<void> {
+    return Promise.resolve();
+  }
+
   createSkill(skillDef: SkillDefinition, _ctx: ISkillOperationContext): Promise<ISkill> {
     return Promise.resolve(
       runtimeSkillFixture({ skill_id: skillDef.name, name: skillDef.name, title: skillDef.title ?? skillDef.name }),

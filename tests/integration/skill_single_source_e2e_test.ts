@@ -22,8 +22,9 @@ const SKILL_NAME = "e2e-folder-skill";
 const SKILL_MARKER = "E2E_FOLDER_SKILL_MARKER";
 const SKILLS_INITIALIZED_EVENT = "skills.initialized";
 const PROMPT_ASSEMBLED_EVENT = "agent.prompt_assembled";
-const DAEMON_SETTLE_MS = 5000;
-const REQUEST_WAIT_MS = 20000;
+const REVISION_RECORDED_EVENT = "skills.revision_recorded";
+const DAEMON_SETTLE_MS = 20000;
+const REQUEST_WAIT_MS = 60000;
 
 interface IActivityRow {
   action_type: string;
@@ -62,6 +63,24 @@ async function readActivity(configPath: string): Promise<IActivityRow[]> {
     return await db.preparedAll<IActivityRow>(
       "SELECT action_type, trace_id, payload FROM activity ORDER BY rowid ASC",
     );
+  } finally {
+    await db.close();
+  }
+}
+
+interface IRevisionRow {
+  skill_name: string;
+  skill_md: string;
+  exaix_yaml: string | null;
+}
+
+async function readRevision(configPath: string): Promise<IRevisionRow | undefined> {
+  const db = new DatabaseService(new ConfigService(configPath).getAll());
+  try {
+    return await db.preparedGet<IRevisionRow>(
+      "SELECT skill_name, skill_md, exaix_yaml FROM skill_revisions WHERE skill_name = ?",
+      [SKILL_NAME],
+    ) ?? undefined;
   } finally {
     await db.close();
   }
@@ -167,6 +186,16 @@ Add a hello world function.
         assert(!content.includes("usage_count"), `no usage_count may be written: ${path}`);
       }
       assertEquals(memorySkills.has("/index.json"), false, "no skill index is written");
+
+      const snapshot = await readRevision(configPath);
+      assert(snapshot, "the injected skill revision must be durably snapshotted in the journal");
+      assertEquals(snapshot.skill_name, SKILL_NAME);
+      assert(snapshot.skill_md.includes(SKILL_MARKER), "the snapshot holds the canonical skill body");
+      assertEquals(snapshot.exaix_yaml, "title: E2E Folder Skill");
+      assert(
+        activity.some((row) => row.trace_id === traceId && row.action_type === REVISION_RECORDED_EVENT),
+        "the snapshot journals skills.revision_recorded on the request trace",
+      );
     } finally {
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});
     }

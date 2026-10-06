@@ -9,6 +9,12 @@
 export { CriteriaGenerator } from "./criteria_generator.ts";
 export { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "./skills.ts";
 export type { ISkillsConfig } from "./skills.ts";
+export {
+  createSkillOperationContext,
+  type ISkillOperationInput,
+  isValidSkillPortalName,
+  SKILL_CONFIG_GENERATION_STATIC,
+} from "./skill_context.ts";
 export { SkillFolderLoader } from "./skill_folder_loader.ts";
 export { SkillFolderPublisher, type SkillLockMode } from "./skill_folder_publisher.ts";
 export { SKILL_REVISION_STORE_SOURCE_ID, SkillRevisionStore } from "./skill_revision_store.ts";

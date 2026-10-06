@@ -44,6 +44,7 @@ import { buildAdaptivePortalKnowledge } from "@exaix/core/func";
 import type { IPortalKnowledgeRequestSignals } from "@exaix/core/func";
 import type { IApplicationContext, ISkillsContext, ISkillsService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
+import { createSkillOperationContext, type ISkillOperationContext } from "@exaix/core/skills";
 import type { IExecutionMilestone } from "@exaix/schemas";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
@@ -201,6 +202,8 @@ export interface IParsedRequest {
   /** Step id from request frontmatter, for fixture replay call-site addressing.
    *  Absent outside the scenario framework. */
   stepId?: string;
+  /** Flow id the request runs under, carried into the skill operation context. Absent for non-flow calls. */
+  flowId?: string;
   /** Flow-internal step id, assigned by FlowRunner from IFlowStep.id for calls it drives —
    *  scopes call-index assignment per flow step so concurrent steps in the same parallel
    *  wave cannot collide on the same index. Absent for non-flow calls. */
@@ -433,7 +436,8 @@ export class AgentRunner implements IAgentRunner {
     const requestId = request.requestId;
 
     // Match skills based on request context
-    const { skillIds, skillsContext } = await this.matchAndApplySkills(blueprint, request, agentRole);
+    const skillOperation = this.buildSkillOperation(request, agentRole);
+    const { skillIds, skillsContext } = await this.matchAndApplySkills(blueprint, request, agentRole, skillOperation);
 
     // Log agent execution start
     this.logExecutionStart(request, agentRole, traceId, requestId, skillIds);
@@ -450,6 +454,9 @@ export class AgentRunner implements IAgentRunner {
       skillContextString,
       criticalSkillContext,
     );
+
+    // Durable snapshots precede any provider dispatch. A failed write throws, so no model call follows.
+    await this.ensureSkillRevisions(skillsContext, skillOperation);
 
     // Log prompt assembled event for observability
     this.logActivity(
@@ -649,10 +656,12 @@ export class AgentRunner implements IAgentRunner {
     blueprint: IBlueprint,
     request: IParsedRequest,
     agentRole: string,
+    operation: ISkillOperationContext = this.buildSkillOperation(request, agentRole),
   ): Promise<{ skillIds: string[]; skillsContext: ISkillsContext | null }> {
     if (!this.skillsService || this.disableSkills) {
       return { skillIds: [], skillsContext: null };
     }
+    const skills = this.skillsService.forContext(operation);
 
     const matchingStartTime = Date.now();
     try {
@@ -678,7 +687,7 @@ export class AgentRunner implements IAgentRunner {
       const matched: string[] = [];
       if (!pinned.length) {
         try {
-          const result = await this.performDynamicSkillMatching(request, agentRole);
+          const result = await this.performDynamicSkillMatching(request, agentRole, skills);
           for (const match of result.matches) {
             matched.push(match.skillId);
             matchedTriggers.set(match.skillId, match.matchedTriggers);
@@ -708,6 +717,7 @@ export class AgentRunner implements IAgentRunner {
 
       // 5. Hydration
       const skillsContext = await this.hydrateSkills(
+        skills,
         skillIds,
         { matchScores, sources, matchedTriggers },
         totalAvailable,
@@ -721,14 +731,36 @@ export class AgentRunner implements IAgentRunner {
     }
   }
 
+  /** One immutable skill operation context per run, shared by matching, hydration and snapshots. */
+  private buildSkillOperation(request: IParsedRequest, agentRole: string): ISkillOperationContext {
+    return createSkillOperationContext({
+      agentRole,
+      portal: request.portal,
+      traceId: request.traceId,
+      requestId: request.requestId,
+      flowId: request.flowId,
+      flowStepId: request.flowStepId,
+    });
+  }
+
+  /** Snapshots the exact revisions injected into this prompt. No-op without skills. */
+  private async ensureSkillRevisions(
+    skillsContext: ISkillsContext | null,
+    operation: ISkillOperationContext,
+  ): Promise<void> {
+    if (!this.skillsService || !skillsContext || skillsContext.matched.length === 0) return;
+    await this.skillsService.ensureRevisions(skillsContext.matched.map((match) => match.revisionId), operation);
+  }
+
   /** Performs dynamic skill matching with a 500ms timeout guard. */
   private async performDynamicSkillMatching(
     request: IParsedRequest,
     agentRole: string,
+    skills: ISkillsService,
   ): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
     const skillsConfig = this.config?.context?.config.get().skills;
 
-    const matchingPromise = this.skillsService!.matchSkills({
+    const matchingPromise = skills.matchSkills({
       requestText: request.userPrompt,
       keywords: this.extractKeywords(request.userPrompt),
       taskType: request.taskType,
@@ -756,6 +788,7 @@ export class AgentRunner implements IAgentRunner {
    * Hydrate skill IDs into full ISkillsContext for prompt injection
    */
   private async hydrateSkills(
+    skills: ISkillsService,
     skillIds: string[],
     resolution: {
       matchScores: Map<string, number>;
@@ -768,7 +801,7 @@ export class AgentRunner implements IAgentRunner {
     if (skillIds.length === 0) return null;
 
     const skillsFound = await Promise.all(
-      skillIds.map((id) => this.skillsService!.getSkill(id)),
+      skillIds.map((id) => skills.getSkill(id)),
     );
 
     const validSkills = skillsFound.filter((s): s is ISkill => s !== null);

@@ -7,7 +7,7 @@
 import { assertEquals } from "@std/assert";
 import type { IModelProvider } from "@exaix/ai";
 import type { IMemoryBankService, IMemoryEmbeddingService } from "@exaix/core/types";
-import type { ISkillsService } from "@exaix/core/types";
+import type { IReflectionSkills } from "@exaix/memory/reflection/memory_reflection_service.ts";
 import { MemoryStatus } from "@exaix/core/status";
 import { LearningCategory } from "@exaix/core";
 import { MemoryBankService, MemoryExtractorService, MemoryReflectionService } from "@exaix/memory";
@@ -32,8 +32,9 @@ class StubProvider implements IModelProvider {
   }
 }
 
-function skillsService(): Pick<ISkillsService, "getSkill"> {
-  return castAny<Pick<ISkillsService, "getSkill">>({
+function skillsService(): IReflectionSkills {
+  return castAny<IReflectionSkills>({
+    ensureRevisions: () => Promise.resolve(),
     getSkill: (skillId: string) =>
       Promise.resolve(
         skillId === "memory-extraction-content-policy"

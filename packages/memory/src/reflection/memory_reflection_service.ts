@@ -36,6 +36,7 @@ import {
 } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
+import { createSkillOperationContext } from "@exaix/core/skills";
 import { MemoryStatus } from "@exaix/core/status";
 import { mergeLearnings } from "../dedup/semantic_dedup.ts";
 import type { ILearning, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
@@ -52,9 +53,15 @@ export interface IReflectionCycleResult {
 export type IReflectionProposalStore = Pick<MemoryExtractorService, "createProposal" | "listPending">;
 
 /** Constructor dependencies for the reflection service. */
+/** The skill reads the reflection pass needs: the policy skill and its durable revision snapshot. */
+export interface IReflectionSkills {
+  getSkill: ISkillsService["getSkill"];
+  ensureRevisions: ISkillsService["ensureRevisions"];
+}
+
 export interface IMemoryReflectionServiceDeps {
   provider: IModelProvider;
-  skillsService: Pick<ISkillsService, "getSkill">;
+  skillsService: IReflectionSkills;
   memoryBank: IMemoryBankService;
   embeddingService: IMemoryEmbeddingService;
   proposalWriter: IReflectionProposalStore;
@@ -63,6 +70,7 @@ export interface IMemoryReflectionServiceDeps {
 }
 
 const REFLECTION_SKILL_ID = "memory-extraction-content-policy";
+const REFLECTOR_AGENT_ROLE = "memory-reflector";
 const REFLECTION_AGENT_ROLE_ID = "memory-reflection";
 const REFLECTION_PORTAL = "exaix-self";
 const DEFAULT_REFLECTION_COST_USD = 0;
@@ -107,10 +115,13 @@ export class MemoryReflectionService {
     let pruned = 0;
     const synthesisSourceIds = new Set<string>();
     if (await this.llmAllowed()) {
-      const skill = await this.deps.skillsService.getSkill(REFLECTION_SKILL_ID);
+      const operation = createSkillOperationContext({ agentRole: REFLECTOR_AGENT_ROLE });
+      const skill = await this.deps.skillsService.getSkill(REFLECTION_SKILL_ID, operation);
       if (!skill) {
         throw new Error(`Required content policy skill not found: ${REFLECTION_SKILL_ID}`);
       }
+      // The policy revision is durable before the provider sees it. A failed write throws before the call.
+      await this.deps.skillsService.ensureRevisions([skill.id], operation);
       const proposals = await this.proposeActions(approved, skill.instructions);
       const applied = await this.applyActions(proposals.actions, approved, runAt, synthesisSourceIds);
       synthesised = applied.synthesised;

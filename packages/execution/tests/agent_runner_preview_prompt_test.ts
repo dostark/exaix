@@ -177,7 +177,10 @@ Deno.test("[AgentRunner.previewPrompt] compactionTriggered is false and all segm
 
 Deno.test("[AgentRunner.previewPrompt] matchedSkillIds reflects the real skill-matching result for a fixture", async () => {
   const skillsSvc = {
-    recordSkillUsage: () => Promise.resolve(),
+    forContext() {
+      return this;
+    },
+    ensureRevisions: () => Promise.resolve(),
     matchSkills: () =>
       Promise.resolve({
         matches: [{ skillId: "matched-skill-id", confidence: 1.0, matchedTriggers: {} }],

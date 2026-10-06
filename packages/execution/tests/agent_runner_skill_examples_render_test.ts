@@ -20,7 +20,10 @@ const WELL_FORMED_RESPONSE = "<thought>ok</thought><content>done</content>";
 
 function makeSkillsService(skill: { id: string; critical: boolean; examples?: string }) {
   return {
-    recordSkillUsage: () => Promise.resolve(),
+    forContext() {
+      return this;
+    },
+    ensureRevisions: () => Promise.resolve(),
     matchSkills: () =>
       Promise.resolve({
         matches: [{ skillId: skill.id, confidence: 1.0, matchedTriggers: {} }],

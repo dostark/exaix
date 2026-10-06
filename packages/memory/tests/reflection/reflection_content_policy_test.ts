@@ -7,7 +7,7 @@
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import type { IModelProvider } from "@exaix/ai";
 import type { IMemoryBankService, IMemoryEmbeddingService } from "@exaix/core/types";
-import type { ISkillsService } from "@exaix/core/types";
+import type { IReflectionSkills } from "@exaix/memory/reflection/memory_reflection_service.ts";
 import { LearningCategory } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import { MemoryBankService, MemoryExtractorService, MemoryReflectionService } from "@exaix/memory";
@@ -64,8 +64,9 @@ Deno.test("offline reflection skips the LLM and completes its deterministic pass
   }
 });
 
-function skillsService(): Pick<ISkillsService, "getSkill"> {
-  return castAny<Pick<ISkillsService, "getSkill">>({
+function skillsService(): IReflectionSkills {
+  return castAny<IReflectionSkills>({
+    ensureRevisions: () => Promise.resolve(),
     getSkill: (skillId: string) =>
       Promise.resolve(
         skillId === "memory-extraction-content-policy" ? { skill_id: skillId, instructions: SKILL_INSTRUCTIONS } : null,
@@ -174,7 +175,10 @@ Deno.test("missing content-policy skill fails the cycle loudly", async () => {
     const bank = new MemoryBankService(config);
     await bank.initGlobalMemory();
     const extractor = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
-    const missingSkill = castAny<Pick<ISkillsService, "getSkill">>({ getSkill: () => Promise.resolve(null) });
+    const missingSkill = castAny<IReflectionSkills>({
+      ensureRevisions: () => Promise.resolve(),
+      getSkill: () => Promise.resolve(null),
+    });
     const reflection = new MemoryReflectionService({
       provider: new CapturingProvider(JSON.stringify({ actions: [] })),
       skillsService: missingSkill,

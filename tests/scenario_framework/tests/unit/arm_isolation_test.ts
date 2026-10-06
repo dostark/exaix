@@ -40,7 +40,10 @@ async function withEnv<T>(name: string, value: string | undefined, fn: () => Pro
 Deno.test("[ArmIsolation] suppressing skill X for one arm does not suppress it for the next arm's call", async () => {
   function makeSkillsService() {
     return {
-      recordSkillUsage: () => Promise.resolve(),
+      forContext() {
+        return this;
+      },
+      ensureRevisions: () => Promise.resolve(),
       matchSkills: () => Promise.resolve({ matches: [], totalAvailable: 0 }),
       buildSkillContext: () => Promise.resolve(""),
       getSkill: (id: string) =>

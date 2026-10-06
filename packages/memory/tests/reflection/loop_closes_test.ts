@@ -14,6 +14,7 @@ import {
   MemoryExtractorService,
 } from "@exaix/memory";
 import type { IMemoryBankService, IMemoryCostRouter, ISkillsService } from "@exaix/core/types";
+import type { IReflectionSkills } from "@exaix/memory/reflection/memory_reflection_service.ts";
 import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import { castAny, createMinimalExecutionMemory, initTestDbService } from "@exaix/testing";
 
@@ -33,8 +34,9 @@ class StubProvider implements IModelProvider {
   }
 }
 
-function skillsService(): Pick<ISkillsService, "getSkill"> {
-  return castAny<Pick<ISkillsService, "getSkill">>({
+function skillsService(): IReflectionSkills {
+  return castAny<IReflectionSkills>({
+    ensureRevisions: () => Promise.resolve(),
     getSkill: (skillId: string) =>
       Promise.resolve(
         skillId === "memory-extraction-content-policy"

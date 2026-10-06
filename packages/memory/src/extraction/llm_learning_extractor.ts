@@ -24,10 +24,12 @@ import {
   MemoryScope,
 } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
+import { createSkillOperationContext } from "@exaix/core/skills";
 import type { IExecutionMemory, IProposalLearning, IScratchpadEntry } from "@exaix/schemas/memory_bank.ts";
 import { ProposalLearningSchema } from "@exaix/schemas/memory_bank.ts";
 
 const EXTRACTION_POLICY_SKILL_ID = "memory-extraction-content-policy";
+const EXTRACTOR_AGENT_ROLE = "memory-extractor";
 const DEFAULT_EXTRACTION_COST_USD = 0;
 const UNSCORED_QUALITY_FALLBACK = 0.5;
 /** Real local models often emit null, omitted, string-quoted, or percent-scale scores;
@@ -65,12 +67,15 @@ export class LlmLearningExtractor implements IExtractionStrategy {
   ) {}
 
   async extract(execution: IExecutionMemory): Promise<IProposalLearning[]> {
-    const policy = await this.skillsService.getSkill(EXTRACTION_POLICY_SKILL_ID);
+    const operation = createSkillOperationContext({ agentRole: EXTRACTOR_AGENT_ROLE, traceId: execution.trace_id });
+    const policy = await this.skillsService.getSkill(EXTRACTION_POLICY_SKILL_ID, operation);
     if (!policy) throw new Error(`Required extraction policy skill not found: ${EXTRACTION_POLICY_SKILL_ID}`);
 
     const scratchpadEntries = this.executionMemoryStore
       ? await this.executionMemoryStore.readNotes(execution.trace_id)
       : [];
+    // The policy revision is durable before the provider sees it. A failed write throws before the call.
+    await this.skillsService.ensureRevisions([policy.id], operation);
     const result = await this.provider.generate(
       this.buildPrompt(execution, policy.instructions, scratchpadEntries),
       {

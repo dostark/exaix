@@ -7,7 +7,7 @@
 import { assert, assertEquals } from "@std/assert";
 import type { IModelProvider } from "@exaix/ai";
 import type { IMemoryBankService, IMemoryEmbeddingService, INotificationService } from "@exaix/core/types";
-import type { ISkillsService } from "@exaix/core/types";
+import type { IReflectionSkills } from "@exaix/memory/reflection/memory_reflection_service.ts";
 import { DomainEventType } from "@exaix/core/events";
 import { MemoryStatus } from "@exaix/core/status";
 import { EventLogger } from "@exaix/core/logger";
@@ -84,7 +84,8 @@ Deno.test("the real maintenance loop invokes reflection; a synthesized learning 
           quality_score: 0.85,
         }],
       })),
-      skillsService: castAny<Pick<ISkillsService, "getSkill">>({
+      skillsService: castAny<IReflectionSkills>({
+        ensureRevisions: () => Promise.resolve(),
         getSkill: (skillId: string) => Promise.resolve({ skill_id: skillId, instructions: POLICY_INSTRUCTIONS }),
       }),
       memoryBank: bank,

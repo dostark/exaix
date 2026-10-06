@@ -46,6 +46,8 @@ import { SKILL_EXAMPLES_HEADING, splitInstructionsAndExamples, stripExamplesSect
 import { extractKeywords } from "./text_utils.ts";
 import { SkillFolderLoader } from "./skill_folder_loader.ts";
 import { SkillFolderPublisher } from "./skill_folder_publisher.ts";
+import { SkillRevisionStore } from "./skill_revision_store.ts";
+import { ScopedSkillsService } from "./skill_scoped_view.ts";
 import { buildRootContext, canonicalizeSkillText, parseSkillSnapshot } from "./skill_snapshot.ts";
 import {
   type ILoadedSkill,
@@ -53,6 +55,7 @@ import {
   type ISkillDiagnostic,
   type ISkillOperationContext,
   type ISkillRevisionSnapshot,
+  SkillAuditUnavailableError,
   SkillMutationError,
 } from "./skill_types.ts";
 
@@ -85,6 +88,8 @@ export const EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR = "EXA_EVAL_SKILL_OVERLAY_DIR";
 /** Event source id registered by the service. */
 export const SKILLS_SERVICE_SOURCE_ID = "skills-service";
 
+/** Revisions kept for `ensureRevisions`. A caller records right after reading, so a small window suffices. */
+const MAX_REMEMBERED_REVISIONS = 256;
 const SKILLS_SUBDIR = "Skills";
 const LEARNED_SUBDIR = "learned";
 const PROJECT_SUBDIR = "project";
@@ -111,10 +116,13 @@ export class SkillsService implements ISkillsService {
   private readonly publisher = new SkillFolderPublisher(createPathSecurity());
   private readonly loaders = new Map<string, SkillFolderLoader>();
   private readonly loggerForLoaders: IEventLogger;
+  private readonly revisions: SkillRevisionStore;
+  /** Immutable snapshots of skills this service returned, so a recorded revision is exactly what a caller saw. */
+  private readonly loadedByRevision = new Map<string, ILoadedSkill>();
 
   constructor(
     private readonly config: ISkillsServiceConfig,
-    _db: IDatabaseService,
+    db: IDatabaseService,
     skillsConfig?: Opt<Partial<ISkillsConfig>, Reason.OptionalInput>,
     logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
@@ -122,6 +130,38 @@ export class SkillsService implements ISkillsService {
     this.loggerForLoaders = logger ?? createNoopEventLogger();
     this.registry = new EventRegistry(this.loggerForLoaders);
     this.registry.registerPublisher(SKILLS_SERVICE_SOURCE_ID, SERVICE_EVENTS);
+    this.revisions = new SkillRevisionStore({ db, logger: this.loggerForLoaders, eventRegistry: this.registry });
+  }
+
+  /** A view that binds one operation context. The singleton and every other view stay untouched. */
+  forContext(ctx: ISkillOperationContext): ISkillsService {
+    return new ScopedSkillsService(this, ctx);
+  }
+
+  /** Durably snapshots the canonical content of each revision this service returned. Fails closed. */
+  async ensureRevisions(
+    revisionIds: readonly string[],
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<void> {
+    const operation = ctx ?? this.defaultContext();
+    for (const revisionId of revisionIds) {
+      const loaded = this.loadedByRevision.get(revisionId);
+      if (!loaded) {
+        throw new SkillAuditUnavailableError(`No loaded snapshot is available for skill revision ${revisionId}`);
+      }
+      await this.revisions.record(loaded, operation);
+    }
+  }
+
+  private remember(loaded: ILoadedSkill): ILoadedSkill {
+    this.loadedByRevision.delete(loaded.revisionId);
+    this.loadedByRevision.set(loaded.revisionId, loaded);
+    while (this.loadedByRevision.size > MAX_REMEMBERED_REVISIONS) {
+      const oldest = this.loadedByRevision.keys().next().value;
+      if (oldest === undefined) break;
+      this.loadedByRevision.delete(oldest);
+    }
+    return loaded;
   }
 
   /** Creates the learned root, recovers interrupted publications and journals readiness. */
@@ -151,7 +191,8 @@ export class SkillsService implements ISkillsService {
 
   async getSkill(name: string, ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>): Promise<ISkill | null> {
     const operation = ctx ?? this.defaultContext();
-    return (await this.loaderFor(operation.portal).get(name, operation))?.skill ?? null;
+    const loaded = await this.loaderFor(operation.portal).get(name, operation);
+    return loaded ? this.remember(loaded).skill : null;
   }
 
   async listSkills(
@@ -163,7 +204,9 @@ export class SkillsService implements ISkillsService {
     ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
   ): Promise<ISkill[]> {
     const operation = ctx ?? this.defaultContext();
-    const all = (await this.loaderFor(operation.portal).listAll(operation)).map((loaded) => loaded.skill);
+    const all = (await this.loaderFor(operation.portal).listAll(operation)).map((loaded) =>
+      this.remember(loaded).skill
+    );
     return all.filter((skill) =>
       (!filter?.status || skill.status === filter.status) &&
       (!filter?.scope || skill.scope === filter.scope) &&
@@ -297,7 +340,8 @@ export class SkillsService implements ISkillsService {
 
     const active = await this.loaderFor(operation.portal).list(operation);
     const matches: Array<ISkillMatch & { skill: ISkill }> = [];
-    for (const { skill } of active) {
+    for (const loaded of active) {
+      const { skill } = this.remember(loaded);
       const { confidence, matchedTriggers } = this.calculateTriggerMatch(skill.triggers, request);
       if (confidence >= this.skillsConfig.matchThreshold) {
         matches.push({ skillId: skill.name, revisionId: skill.id, confidence, matchedTriggers, skill });

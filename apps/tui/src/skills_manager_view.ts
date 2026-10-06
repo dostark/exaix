@@ -352,6 +352,14 @@ export class MinimalSkillsServiceMock implements ISkillsService {
     return Promise.resolve();
   }
 
+  forContext(_ctx: ISkillOperationContext): ISkillsService {
+    return this;
+  }
+
+  ensureRevisions(_revisionIds: readonly string[]): Promise<void> {
+    return Promise.resolve();
+  }
+
   createSkill(skillDef: SkillDefinition, _ctx: ISkillOperationContext): Promise<ISkill> {
     const newSkill = runtimeSkillFixture({
       id: `skill-${Date.now()}`,
