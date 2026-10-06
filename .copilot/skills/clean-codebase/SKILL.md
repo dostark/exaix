@@ -47,7 +47,7 @@ Workflow
 Phase 1 — Baseline
   1. `deno task check` — type errors, module resolution, compilation. Fix all before proceeding.
   2. Run each check and record failures:
-     deno lint; deno fmt --check; deno task check:style; check:test-placement;
+     deno lint; deno task fmt:check; deno task check:style; check:test-placement;
      check:magic; check:no-edition-conditionals; check:arch; check:complexity;
      check:unused-exports:strict; check:duplication; check:tool-result-parity;
      check:skill-envelopes; check:manifests; check:hardcoded-models; check:event-strings;
@@ -73,9 +73,11 @@ Phase 1 — Baseline
   conditional elsewhere fails the style check.
 
 Phase 2 — Type errors (highest priority)
-  5. Fix every `deno task check` error: no `any` (use specific interfaces/`unknown`); fix
-     TS2307 with stubs or imports; never `as any`. (`deno check packages/ apps/ tests/`
-     for Solo-only scope.)
+  5. Fix every `deno task check` error: no `any` (use a specific interface); fix TS2307
+     with stubs or imports; never `as any`. The `check:style` `explicit-unknown` and
+     `record-unknown` rules reject a stored `unknown` type and `Record<string, unknown>`
+     (CODE_STYLE.md §30, §75); do not reach for either to satisfy the checker. (`deno check
+     packages/ apps/ tests/` for Solo-only scope.)
   6. Re-run `deno task check` — 0 errors.
 
 Phase 3 — Lint
@@ -84,7 +86,9 @@ Phase 3 — Lint
   8. Re-run `deno lint` — 0 errors, 0 warnings.
 
 Phase 4 — Formatting
-  9. `deno fmt`; then `deno fmt --check` — no diffs.
+  9. `deno fmt`; then `deno task fmt:check` — no diffs. Trust the task, not bare
+     `deno fmt --check`: a nested package with its own `deno.json` (for example
+     `exaix-team/packages/hitl/`) can make the two disagree.
 
 Phase 5 — Style
  11. Fix `deno task check:style`: interface naming (class Foo → IFoo); no raw literal type
@@ -180,7 +184,11 @@ Phase 23 — Final full-suite validation
      b. Extras ci.ts misses: `check:duplication`, `check:god-objects`,
         `check:leak-guard`, `check:no-edition-conditionals`, `check:version --dry-run`.
      c. Tests: `deno task test_parallel` (all editions) / `deno task test:solo &&
-        deno task test:security` (Solo) / `deno task test:team` (Team). Shortcut:
+        deno task test:security` (Solo) / `deno task test:team` (Team). A `test_parallel`
+        failure is not automatically a regression: reproduce it in isolation, check the
+        test's `ignore:` (some are `ignore: CI === "true"`, for example
+        `self_hosted_split_bindings_test.ts`) and whether it is load-flaky. Attribute it by
+        re-running at `HEAD~1` in a `git worktree add --detach <tmp> HEAD~1`. Shortcut:
         `deno task ci:solo --skip-tests` / `ci:team --skip-tests` (= `scripts/ci.ts all
         --edition X --skip-tests`) runs (a) + build without Testing/Coverage. Drop
         `--skip-tests` only when a full pipeline/coverage validation was requested.
