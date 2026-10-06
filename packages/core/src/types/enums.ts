@@ -1542,3 +1542,58 @@ export enum ConsoleStream {
   STDOUT = "stdout",
   STDERR = "stderr",
 }
+
+/** Physical or logical origin of a loaded skill folder. Root order in config sets precedence, not this enum. */
+export enum SkillRootKind {
+  BLUEPRINT = "blueprint",
+  LEARNED = "learned",
+  PROJECT = "project",
+  DOGFOOD = "dogfood",
+  EVAL_OVERLAY = "eval-overlay",
+}
+
+/** Why a skill entered a resolved set. Priority is plan_pinned over pinned over default over matched. */
+export enum SkillMatchSource {
+  MATCHED = "matched",
+  DEFAULT = "default",
+  PINNED = "pinned",
+  PLAN_PINNED = "plan_pinned",
+}
+
+/** Actual render outcome for one injected skill in one submission. */
+export enum SkillRenderOutcome {
+  FULL = "full",
+  TRIMMED = "trimmed",
+  CRITICAL = "critical",
+}
+
+/** The kind of observable submission a usage row counts. */
+export enum SkillSubmissionKind {
+  PROVIDER = "provider",
+  CLI_DELEGATE = "cli_delegate",
+}
+
+/** Named diagnostic outcomes for skill discovery and validation. */
+export enum SkillDiagnosticReason {
+  ROOT_MISSING = "root_missing",
+  INVALID_NAME = "invalid_name",
+  INVALID_FRONTMATTER = "invalid_frontmatter",
+  INVALID_SIDECAR = "invalid_sidecar",
+  LEGACY_LAYOUT = "legacy_layout",
+  SYMLINK = "symlink",
+  PATH_ESCAPE = "path_escape",
+  FILESYSTEM_CHANGED = "filesystem_changed",
+  EXECUTABLE_CONTENT = "executable_content",
+  SIZE_LIMIT = "size_limit",
+  REFERENCE_INVALID = "reference_invalid",
+  REFERENCE_MISSING = "reference_missing",
+  INACTIVE = "inactive",
+  SUPPRESSED = "suppressed",
+  UNAVAILABLE = "unavailable",
+}
+
+/** Diagnostic severity for a skill discovery outcome. */
+export enum SkillDiagnosticSeverity {
+  ERROR = "error",
+  WARNING = "warning",
+}
