@@ -9,7 +9,7 @@
  */
 
 import { z } from "zod";
-import { BindingsTableSchema } from "@exaix/schemas";
+import { BindingsTableSchema, PortalVerificationSchema } from "@exaix/schemas";
 import { VERSION_PATTERN } from "./version.ts";
 
 const NON_EMPTY_STRING = z.string().min(1);
@@ -112,6 +112,8 @@ export const PortalMountSchema = z.object({
   target_path: z.string().min(1).optional(),
   /** Initialize a git repo (with an initial commit) in `target_path` after the fixture copy. */
   git_init: z.boolean().optional(),
+  /** Optional post-execution verification block written into the sandbox config for this portal. */
+  verification: PortalVerificationSchema.optional(),
 }).strict();
 
 export type IPortalMount = z.infer<typeof PortalMountSchema>;

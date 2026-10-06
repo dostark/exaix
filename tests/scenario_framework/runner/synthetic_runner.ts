@@ -65,6 +65,7 @@ import {
 } from "./matrix_expander.ts";
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import type { IResolvedBinding, IRunBindingsFile } from "@exaix/schemas";
+import { ConfigSchema, type IPortalVerification } from "@exaix/schemas";
 import { CAPTURE_FIXTURES_ENV_VAR, sandboxCaptureFixturesDir } from "./capture_fixtures_flag.ts";
 import {
   CriterionPhase,
@@ -712,7 +713,12 @@ async function prepareDeclaredPortals(
     if (isFixturePortal(portal)) {
       await resetAndStageFixturePortal(portal, source, target, options.workspaceRoot);
     }
-    await mountPortal(target, portal.alias, options, env);
+    const mounted = await mountPortal(target, portal.alias, options, env, portal.verification);
+    if (!mounted && portal.verification) {
+      throw new Error(
+        `declared portal '${portal.alias}' could not be mounted, so its verification block cannot be applied`,
+      );
+    }
   }
 }
 
@@ -775,6 +781,37 @@ async function gitInitFixtureRepo(repoPath: string): Promise<void> {
   ]);
 }
 
+/** Serialize a portal's verification block into TOML appended after its `[[portals]]` entry. */
+export function verificationToml(verification: IPortalVerification): string {
+  const lines: string[] = [
+    "",
+    "[portals.verification]",
+    `max_repair_attempts = ${verification.max_repair_attempts}`,
+    `check_timeout_ms = ${verification.check_timeout_ms}`,
+    `output_max_chars = ${verification.output_max_chars}`,
+  ];
+  for (const check of verification.checks) {
+    lines.push(
+      "",
+      "[[portals.verification.checks]]",
+      `kind = ${JSON.stringify(check.kind)}`,
+      `task = ${JSON.stringify(check.task)}`,
+      `path = ${JSON.stringify(check.path)}`,
+      `args = ${JSON.stringify(check.args)}`,
+    );
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+/** Append a portal's verification block to the sandbox config, failing the setup step on invalid TOML. */
+async function appendPortalVerification(workspaceRoot: string, verification: IPortalVerification): Promise<void> {
+  const configPath = join(workspaceRoot, WORKSPACE_CONFIG_FILE);
+  const existing = await Deno.readTextFile(configPath);
+  const updated = existing + verificationToml(verification);
+  ConfigSchema.parse(parseToml(updated));
+  await Deno.writeTextFile(configPath, updated);
+}
+
 /** Register a portal via `portal add` (idempotent for an identical target). Best-effort: a
  *  failed mount is surfaced as a warning and the scenario's own portal assertions report it. */
 async function mountPortal(
@@ -782,7 +819,9 @@ async function mountPortal(
   alias: string,
   options: IRunSyntheticScenarioOptions,
   env: { [key: string]: string },
-): Promise<void> {
+  verification?: Opt<IPortalVerification, Reason.OptionalContext>,
+): Promise<boolean> {
+  let mounted = false;
   try {
     const result = await new Deno.Command(options.exactlExecutable ?? "exactl", {
       args: ["portal", "add", targetPath, alias],
@@ -797,10 +836,18 @@ async function mountPortal(
         `%c ⚠ declared portal '${alias}' could not be mounted from ${targetPath}`,
         "color: orange;",
       );
+      return false;
     }
+    mounted = true;
   } catch {
     // Spawning the CLI failed; the scenario's own portal assertions will report it.
+    return false;
   }
+
+  if (verification) {
+    await appendPortalVerification(options.workspaceRoot, verification);
+  }
+  return mounted;
 }
 
 /** Swallows all errors: this is a leak guard, not a scored scenario step, and `daemon stop`
