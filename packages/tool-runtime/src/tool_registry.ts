@@ -13,6 +13,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import {
   BYTES_PER_KB,
   DEFAULT_AI_MODEL,
+  DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS,
   LogLevel,
   MAX_GRAPH_TOOL_DEPTH,
   MAX_GRAPH_TOOL_DOC_TOKENS,
@@ -63,6 +64,7 @@ import { type IValidationReportContext, logValidationResult } from "./tool_valid
 import type { Opt, Reason } from "@exaix/core/types";
 import { acceptedParamsFor, canonicalizeForRegistry } from "./tool_call_canonicalizer.ts";
 import { createCoreToolSchemas } from "./tool_schemas.ts";
+import { runDenoTask } from "./deno_task_runner.ts";
 
 type RemediationPolicyResolver = (
   toolName: string,
@@ -1766,50 +1768,39 @@ export class ToolRegistry implements IToolRegistry {
 
       const resolvedPath = path ? await this.resolvePath(path) : this.baseDir;
 
-      // Validate extra args for security?
-      // args like "--allow-all" might be dangerous?
-      // Ideally we should adhere to whitelist or safe flags, but for dev tasks it's usually less critical
-      // as long as we don't allow arbitary shell injection (which Deno.Command prevents).
-      // However, we should prevent command chaining or redirection if Deno.Command allows it via args? No, it doesn't.
-
-      const cmdArgs = [task];
-
-      // Some tasks like lint/fmt/test take path as argument, usually at the end
-      // We pass it explicitly.
-
-      // Add user args first (flags)
-      if (args && args.length > 0) {
-        cmdArgs.push(...args);
-      }
-
-      // Add path
-      cmdArgs.push(resolvedPath);
-
-      const cmd = new Deno.Command(SystemCommand.DENO, { args: cmdArgs });
-
-      const { code, stdout, stderr } = await cmd.output();
-      const output = new TextDecoder().decode(stdout);
-      const errorOutput = new TextDecoder().decode(stderr);
-
-      if (code !== 0) {
-        // for lint/test, non-zero exit code usually means violations/failures, which is "success" in terms of running the tool,
-        // but might be considered error. However, providing the output is useful.
-        // We'll return success: true (or false?) but with data containing the output.
-        // Standard convention: if tool failed to run, error. If tool ran but found issues, success: true + data.
-        // But let's follow return structure. If code!=0, typically `run_command` returns error.
-        // But for test/lint, we want to see the failures.
-        return {
-          success: false, // Mark as false so agent knows something is wrong
-          error: `Task '${task}' failed with exit code ${code}:\n${output}\n${errorOutput}`,
-          data: { output, errorOutput, exitCode: code },
-        };
-      }
-
-      return this.formatSuccess({
-        output,
-        errorOutput,
-        exitCode: code,
+      const outcome = await runDenoTask({
+        task,
+        args,
+        absPath: resolvedPath,
+        cwd: this.baseDir,
+        timeoutMs: DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS,
       });
+
+      switch (outcome.kind) {
+        case "exited":
+          if (outcome.code !== 0) {
+            return {
+              success: false,
+              error: `Task '${task}' failed with exit code ${outcome.code}:\n${outcome.output}`,
+              data: { output: outcome.output, exitCode: outcome.code },
+            };
+          }
+
+          return this.formatSuccess({
+            output: outcome.output,
+            exitCode: outcome.code,
+          });
+        case "timed_out":
+          return {
+            success: false,
+            error: `Task '${task}' timed out after ${DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS}ms`,
+          };
+        case "spawn_failed":
+          return {
+            success: false,
+            error: `Task '${task}' failed to start: ${outcome.error_class}`,
+          };
+      }
     } catch (error) {
       return this.formatError(error);
     }
