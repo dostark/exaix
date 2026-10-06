@@ -15,6 +15,7 @@ import {
   DEFAULT_VERIFICATION_CHECK_TIMEOUT_MS,
   DEFAULT_VERIFICATION_MAX_REPAIR_ATTEMPTS,
   DEFAULT_VERIFICATION_OUTPUT_MAX_CHARS,
+  GeneralStatus,
   VERIFICATION_FORBIDDEN_ARGS,
   VERIFICATION_FORBIDDEN_BARE_ALLOW_FLAGS,
   VERIFICATION_MAX_REPAIR_ATTEMPTS_LIMIT,
@@ -79,10 +80,13 @@ export const PortalVerificationSchema = z.object({
 export type IPortalVerification = z.infer<typeof PortalVerificationSchema>;
 
 /** Outcome of the post-execution verification stage for one execution. */
-export type VerificationStatus =
-  | "not_configured"
-  | "skipped"
-  | "passed"
-  | "repaired"
-  | "failed"
-  | "error";
+export const VerificationStatus = {
+  NOT_CONFIGURED: "not_configured",
+  SKIPPED: "skipped",
+  PASSED: "passed",
+  REPAIRED: "repaired",
+  FAILED: GeneralStatus.FAILED,
+  ERROR: GeneralStatus.ERROR,
+} as const;
+
+export type VerificationStatus = `${typeof VerificationStatus[keyof typeof VerificationStatus]}`;

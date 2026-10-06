@@ -42,6 +42,7 @@ import { isReadOnlyAgentCapabilities } from "@exaix/core/func";
 import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { PlanAmendmentPendingError } from "@exaix/core/planning";
 import type { IFixedModelClient, IModelIntent } from "@exaix/schemas";
+import { type IPortalVerification, VerificationStatus } from "@exaix/schemas";
 import { EFFORT_AUTO, EffortTierSchema } from "@exaix/schemas";
 import {
   DECLARATION_FIELD_EFFORT,
@@ -52,6 +53,7 @@ import {
 import type { IEffortDeclarationPair, IEffortResolver } from "@exaix/ai";
 import { ConfidenceScorer } from "./confidence_scorer.ts";
 import { GitExecutionSetupService } from "./git_execution_setup_service.ts";
+import { type IVerificationRunner, VerificationRunner } from "./verification_runner.ts";
 import {
   DEFAULT_AMENDMENT_EXPIRY_MS,
   DEFAULT_AMENDMENT_ON_TIMEOUT,
@@ -120,6 +122,10 @@ export interface IExecutionLoopConfig {
   toolRegistryFactory?: IToolRegistryFactory;
   /** Pre-configured IMemoryBankService. Falls back to context.memoryBank. Required if mission reports are used. */
   memoryBank?: IMemoryBankService;
+  /** Daemon secret values redacted from a verification check's failure output before the repair prompt. */
+  knownSecrets?: readonly string[];
+  /** Builds the per-execution verification runner. Defaults to the real VerificationRunner. */
+  verificationRunnerFactory?: (logger: IEventLogger, knownSecrets: readonly string[]) => IVerificationRunner;
 }
 
 export interface IExecutionResult {
@@ -145,6 +151,7 @@ export interface ISuccessArtifactContext {
   planAgentId?: string;
   portal?: string;
   targetBranch?: string;
+  verificationStatus: VerificationStatus;
 }
 
 /** Options for internal execution */
@@ -168,6 +175,17 @@ interface IRegisterReviewOptions {
   baseBranch: string;
   worktreePath?: string;
 }
+
+/** Fallback logger when no IEventLogger is configured, so verification can still run. */
+const NOOP_EVENT_LOGGER: IEventLogger = {
+  log: () => Promise.resolve(),
+  info: () => Promise.resolve(),
+  warn: () => Promise.resolve(),
+  error: () => Promise.resolve(),
+  fatal: () => Promise.resolve(),
+  debug: () => Promise.resolve(),
+  child: () => NOOP_EVENT_LOGGER,
+};
 
 /** @visible */
 export class ExecutionLoop {
@@ -202,6 +220,8 @@ export class ExecutionLoop {
   private gitServiceFactory?: IGitServiceFactory;
   private toolRegistryFactory?: IToolRegistryFactory;
   private memoryBank?: IMemoryBankService;
+  private knownSecrets: readonly string[];
+  private verificationRunnerFactory: (logger: IEventLogger, knownSecrets: readonly string[]) => IVerificationRunner;
   private gitExecutionSetupService: GitExecutionSetupService;
 
   constructor(
@@ -230,6 +250,9 @@ export class ExecutionLoop {
     this.gitServiceFactory = config.gitServiceFactory;
     this.toolRegistryFactory = config.toolRegistryFactory;
     this.memoryBank = config.memoryBank ?? ctx?.memoryBank;
+    this.knownSecrets = config.knownSecrets ?? [];
+    this.verificationRunnerFactory = config.verificationRunnerFactory ??
+      ((logger, secrets) => new VerificationRunner(logger, secrets));
     this.gitExecutionSetupService = new GitExecutionSetupService(this.config, this.gitServiceFactory);
     this.plansDir = join(this.config.system.root, this.config.paths.workspace, this.config.paths.active);
     this.blueprintLoader = new IBlueprintLoader({
@@ -371,6 +394,14 @@ export class ExecutionLoop {
           )
           : null);
 
+      const verificationStatus = await this.runVerification(frontmatter, {
+        isReadOnly: prepared.isReadOnly,
+        commitSha: commitSha ?? null,
+        executionRoot: gitSetup.executionRoot,
+        requestId: requestId!,
+        traceId: traceId!,
+      });
+
       // Register review
       if (commitSha) {
         const baseBranch = gitSetup.baseBranch ??
@@ -389,12 +420,20 @@ export class ExecutionLoop {
       }
 
       // Handle success
-      await this.handleSuccess(planPath, traceId!, requestId!, frontmatter, {
-        isReadOnly: prepared.isReadOnly,
-        planAgentId: prepared.planAgentId,
-        portal: frontmatter.portal,
-        targetBranch: frontmatter.target_branch,
-      }, workResult.completionSummary);
+      await this.handleSuccess(
+        planPath,
+        traceId!,
+        requestId!,
+        frontmatter,
+        {
+          isReadOnly: prepared.isReadOnly,
+          planAgentId: prepared.planAgentId,
+          portal: frontmatter.portal,
+          targetBranch: frontmatter.target_branch,
+          verificationStatus,
+        },
+        workResult.completionSummary,
+      );
 
       return { success: true, traceId };
     } catch (error) {
@@ -417,6 +456,43 @@ export class ExecutionLoop {
     } finally {
       this.releaseLease(planPath);
     }
+  }
+
+  /**
+   * Run the portal's post-execution verification.
+   * Returns not_configured without a block, skipped when nothing is verifiable,
+   * and otherwise the runner's pass, fail or error outcome. No repair runs here.
+   */
+  private async runVerification(
+    frontmatter: PlanFrontmatter,
+    context: {
+      isReadOnly: boolean;
+      commitSha: string | null;
+      executionRoot: string;
+      requestId: string;
+      traceId: string;
+    },
+  ): Promise<VerificationStatus> {
+    const verification = this.resolvePortalVerification(frontmatter);
+    if (!verification) return VerificationStatus.NOT_CONFIGURED;
+    if (context.isReadOnly || context.commitSha === null) return VerificationStatus.SKIPPED;
+
+    const runner = this.verificationRunnerFactory(this.logger ?? NOOP_EVENT_LOGGER, this.knownSecrets);
+    const result = await runner.run(verification, {
+      requestId: context.requestId,
+      traceId: context.traceId,
+      attempt: 0,
+      executionRoot: context.executionRoot,
+    });
+
+    if (result.error) return VerificationStatus.ERROR;
+    return result.passed ? VerificationStatus.PASSED : VerificationStatus.FAILED;
+  }
+
+  /** The portal's optional verification block, matched by the plan's portal alias. */
+  private resolvePortalVerification(frontmatter: PlanFrontmatter): IPortalVerification | undefined {
+    if (!frontmatter.portal) return undefined;
+    return this.config.portals.find((portal) => portal.alias === frontmatter.portal)?.verification;
   }
 
   private async readPlanContent(planPath: string): Promise<string> {
@@ -1062,6 +1138,7 @@ export class ExecutionLoop {
     this.logActivity(DomainEventType.ExecutionCompleted, traceId, {
       request_id: requestId,
       archived_to: archivePath,
+      verification_status: artifactContext?.verificationStatus ?? VerificationStatus.NOT_CONFIGURED,
     });
   }
 
