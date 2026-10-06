@@ -18,6 +18,24 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 208 (Post-Execution Verification Feedback)
+
+### Added
+
+- A portal can declare a `verification` block whose `deno_task` checks run in the execution worktree after a plan commits, and a failing check is fed back as a one-step repair plan up to `max_repair_attempts` times (see the User Guide's post-execution verification section).
+- `execution.completed` carries `verification_status` (`not_configured`, `skipped`, `passed`, `repaired`, `failed`, `error`).
+- `execution.verification.started/passed/failed/exhausted` and `execution.repair.started/completed` events journal each run and repair attempt.
+- `exactl review show` prints the review's `verification_status` and warns when it is `failed` or `error`.
+
+### Changed
+
+- `run_deno_task` now stops after 300 s instead of running without a timeout.
+
+### Security
+
+- Verification check `args` reject unscoped or permission-loading flags at config load, so a check cannot widen its own permissions.
+- Check output is bounded by its tail, redacted against known secrets, and stripped of ANSI and control characters before it enters the repair prompt.
+
 ## Unreleased — Phase 110 (Security Hardening Follow-ups)
 
 ### Added
