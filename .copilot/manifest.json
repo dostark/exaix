@@ -177,8 +177,8 @@
       "agent": "senior-coder",
       "scope": "dev",
       "title": "Pre-Gap Analysis Skill (#review-phase-plan)",
-      "short_summary": "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against.",
-      "version": "1.10.1",
+      "short_summary": "Review a phase plan against source, security, tests, reachability, and step workload; identify overloaded steps and specify bounded splits.",
+      "version": "1.11.0",
       "topics": [
         "planning",
         "gap-analysis",
@@ -338,8 +338,8 @@
       "agent": "senior-coder",
       "scope": "dev",
       "title": "Plan Skill (#plan)",
-      "short_summary": "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy.",
-      "version": "1.12.1",
+      "short_summary": "Draft grounded Exaix phase plans with balanced, testable steps, explicit acceptance criteria, production reachability, and dogfood manifests.",
+      "version": "1.13.0",
       "topics": [
         "planning",
         "architecture",

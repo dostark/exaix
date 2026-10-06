@@ -9,8 +9,8 @@ tools:
 scope: dev
 title: "Plan Skill (#plan)"
 description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability. Produces plans that are machine-convertible to dogfood requests (step-manifests for automated request extraction). Grounds any third-party service/provider integration in deep web research of the provider's real, current capability surface so integrations are first-class, not hacks.
-short_summary: "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy."
-version: "1.12.1"
+short_summary: "Draft grounded Exaix phase plans with balanced, testable steps, explicit acceptance criteria, production reachability, and dogfood manifests."
+version: "1.13.0"
 topics: [
   "planning",
   "architecture",
@@ -42,6 +42,9 @@ Key points
 - §3D: every interface/schema change REQUIRES a matching documentation step.
 - Name the doc `exaix-dev-docs/planning/phase-NN-<kebab-slug>.md` (NN = next free number).
 - Keep 8–10 implementation steps max; split larger features into two sequential phases.
+- Balance step workload (§2I) during drafting. Split overloaded steps into bounded
+  checkpoints with separate Success Criteria and Planned Tests. Do not combine excessive
+  work into one step to meet the step limit.
 - Assess `tests/scenario_framework/` coverage (§3E) when the feature touches
   request → plan → execution → review → memory → update.
 - **Specify exact values**: for each enum/union/variant, state the concrete value each
@@ -59,7 +62,7 @@ Key points
 - **Ground every code-facing claim in real source (§2G)**: grep the symbol and read the call
   site before drafting any step referencing existing code.
 - **Map prose claims to named tests**: every behavioral claim gets a named Planned Test.
-- **Reachability over layering (§E)**: sequence a VERTICAL end-to-end slice before breadth;
+- **Reachability over layering (§E)**: sequence the smallest end-to-end slice before breadth;
   reject a horizontal "all schemas, then all services, then wire it" order.
 - **Integration anchor per runtime-claiming step**: name (a) the exact production call-site
   (`file:Symbol`) and (b) a named integration/scenario test driving it. Package-unit-only is
@@ -98,6 +101,8 @@ Do / Don't
 - ✅ Anchor every runtime-claiming step to a call-site AND an integration/scenario test.
 - ✅ End the phase with a non-deferrable cutover step proving real-run reachability.
 - ✅ Order steps: no step consumes a later step's output; vertical slice first.
+- ✅ Include a workload assessment for all steps and divide disproportionate workloads
+  before handing the plan to review.
 - ✅ Name the doc `phase-NN-<kebab-slug>.md`.
 - ✅ Keep phases to 8–10 steps.
 - ✅ Give EVERY step-manifest the SAME `target_branch: feat/phase-NN` — never
@@ -125,6 +130,7 @@ Do / Don't
   Current State Analysis, Technical Architecture, Security Constraints.
 - ❌ Use `any` or vague types — use Zod schemas and TS interfaces.
 - ❌ Skip Planned Tests on any step.
+- ❌ Leave several independent capabilities under one step's acceptance gate.
 - ❌ Let a runtime criterion be satisfiable by a package-unit test alone.
 - ❌ Structure as horizontal layers ("all cores, then wire").
 - ❌ Design a third-party integration from memory or accept a hack when an official path
@@ -165,7 +171,8 @@ Refine the goal into a formal planning document at `exaix-dev-docs/planning/phas
 1. **Current State Analysis**: Key Files table, Constraints, Affected Interfaces.
 1. **Technical Architecture**: Schemas (Zod), Interfaces (TS), Logic Flows (Mermaid).
 1. **Implementation Plan**: numbered TDD-first steps (Actions, Architecture Notes,
-   Planned Tests, Success Criteria), sequenced as a vertical slice first.
+   Planned Tests, Success Criteria), sequenced as a small vertical slice first.
+   Include a Step Workload Assessment table (§2I) to justify the scope of each step.
 1. **Integration & Cutover (§E)**: a mandatory, non-deferrable penultimate step proving
    real-run reachability.
 1. **Reachability Ledger (§E)**: seeded empty table (#next-steps maintains; phase cannot
@@ -242,7 +249,9 @@ test exercising the complete chain.
 TDD/coverage/grounding all pass on production-dead code — a test-only consumer keeps it
 "alive". Guard in the plan:
 
-- **Vertical slice first.** First deliverable = one complete end-to-end path, then breadth.
+- **Vertical slice first.** Deliver the smallest complete end-to-end path before adding
+  breadth. Bound its implementation workload under §2I. Necessary prerequisite steps
+  must have independent tests and explicit wiring owners in the Reachability Ledger.
 - **Integration anchor.** Every runtime-claiming step names the call-site (`file:Symbol`)
   and an integration/scenario test driving it.
 - **No forward-deferral.** "Wired in Step M" requires the concrete wiring in Step M.
@@ -305,6 +314,39 @@ runtime firing (one component's events never fired because the logger was never 
 See `tests/scenario_framework/scenarios/framework_test/smoke-validation.yaml`'s
 `check-journal` step and `packages/core/tests/cost_tracker_test.ts` for the pattern.
 
+#### I. Step scope & workload balance (§2I)
+
+Design steps as separate implementation and validation checkpoints. Keep their workloads
+reasonably even; compare actual complexity and testing effort, not just the number of files.
+
+1. **Assess the draft** — add a Step Workload Assessment table within the Implementation
+   Plan. For every step, record deliverables, affected layers, dependencies, relative
+   effort, testing burden, and a balance verdict with reasons. Consider new algorithms,
+   migration and compatibility work, security boundaries, production wiring, and design
+   uncertainty. Explain smaller documentation or final validation steps.
+1. **Find overloaded steps** — compare each step with its peers, including Step 1 and
+   final cutover. Several independent behaviors, broad changes across the entire stack,
+   or many unrelated test suites can indicate excessive scope. A small path through
+   several layers is acceptable when its workload remains bounded.
+1. **Split before handoff** — turn an overloaded step into separately numbered steps,
+   each with a title, bounded deliverables, exclusions, and explicit dependencies.
+   Each needs its own Actions, Architecture Notes, Planned Tests, measurable Success
+   Criteria, and step-manifest. Preserve every original deliverable and map its criteria
+   and tests to the resulting steps. Do not replace a split with sub-bullets or defer
+   the scope decision to implementation.
+1. **Make each checkpoint testable** — specify test files and cases that prove the
+   step's criteria, including relevant failure paths. Its focused tests and applicable
+   gates must pass without unfinished later work. If contracts need a prerequisite
+   step, keep it small, independently testable, and tracked under §2E.
+1. **Preserve integration and scope** — retain early production reachability and the
+   final cutover evidence. Add capabilities incrementally after the first small path;
+   do not collect all wiring at the end. If bounded steps exceed the phase limit,
+   divide the feature into sequential phases under §2E instead of merging overloaded
+   steps. State which deliverables belong to each phase.
+1. **Recheck the result** — reassess workloads after splitting. Synchronize numbering,
+   dependencies, manifests, and ledger wiring references. Confirm that all deliverables,
+   criteria, and planned tests remain covered before recommending `#review-phase-plan`.
+
 ### 3. Documentation update protocol (§3D)
 
 Final step covering: `ARCHITECTURE.md` (new components/flows); `docs/Exaix_User_Guide.md`
@@ -341,6 +383,7 @@ invariants).
 1. Brief chat summary of the approach + key risks.
 1. Path to the new/updated planning document.
 1. Each step includes a fenced step-manifest.
+1. Step Workload Assessment table showing balanced scope and justified effort differences.
 1. Markdown lint on the doc — **check-only**:
    `deno run --allow-read --allow-write scripts/markdown_lint.ts exaix-dev-docs/planning/<doc>`.
    Prefer check-only. `--fix` on a doc that carries step-manifests can reflow a fence and
@@ -371,10 +414,10 @@ criterion or planned-test line, or the manifest fence line itself.
 - ✅ Verify structure after every edit: the `step:` count must equal the number of
   `### Step N` headings, and the top-level fence count must stay even.
 
-  ```bash
+  ````bash
   grep -c '^step: ' <doc>                 # == number of '### Step N' headings
   grep -c '^```' <doc>                    # must be even
-  ```
+  ````
 
 - **Recovery when it goes wrong**: do not hand-repair the fences. Restore the doc from the
   last good commit (`git -C exaix-dev-docs checkout <commit> -- <doc>`), re-apply the whole
@@ -404,9 +447,11 @@ exaix:
     - "Ground third-party integrations in deep web research"
     - "Include a Reachability Ledger section"
     - "Vertical end-to-end slice before breadth"
+    - "Balance implementation workload and split overloaded steps before plan handoff"
     - "Documentation update step as final step"
   output_requirements:
     - "Phase planning document with numbered steps"
+    - "Step Workload Assessment with independently testable steps and bounded acceptance criteria"
     - "Step-manifest blocks for dogfood compatibility"
     - "Reachability Ledger table"
     - "Pre-Gap Analysis recommended"

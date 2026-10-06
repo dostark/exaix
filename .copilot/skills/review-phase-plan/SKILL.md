@@ -9,8 +9,8 @@ tools:
 scope: dev
 title: "Pre-Gap Analysis Skill (#review-phase-plan)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
-short_summary: "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against."
-version: "1.10.1"
+short_summary: "Review a phase plan against source, security, tests, reachability, and step workload; identify overloaded steps and specify bounded splits."
+version: "1.11.0"
 topics: [
   "planning",
   "gap-analysis",
@@ -51,6 +51,9 @@ Key points
   test per runtime-claiming step, no forward-deferral chains, a non-deferrable cutover
   step, opt-in proof, and a seeded Reachability Ledger. A runtime criterion with no wiring
   path is 🔴 Critical (internally contradictory).
+- Phase 4A step workload balance is MANDATORY: compare implementation effort across
+  steps. Flag overloaded steps and propose smaller steps with their own criteria and
+  planned tests. Keep the first complete production path small.
 - Reviewing > ~20 files: batches of 5–10.
 - **Trivial gaps (typos, wrong paths, formatting, clarifying sentences) are fixed
   IN-PLACE — no gap entry.** Only non-trivial gaps (underspecified algorithms, missing
@@ -84,6 +87,9 @@ Do / Don't
 - ✅ Verify value-specification depth — which value each component emits, not just the set.
 - ✅ Survey module conventions before accepting pattern choices.
 - ✅ Trace every prose behavioral claim to a named test.
+- ✅ Compare every step's workload under Phase 4A and specify concrete splits for
+  overloaded steps before implementation.
+- ❌ Treat sub-bullets inside one large step as separate acceptance checkpoints.
 - ✅ Look for magic numbers/strings that belong in constants.
 - ✅ Classify gaps 🔴/🔒/🟡/🟠/🔵 and include a numbered gap summary table.
 - ✅ Run Phase 6 security on input/auth/path/secrets/external steps.
@@ -233,6 +239,42 @@ Technical Architecture / Security Constraints; write content, don't remove sub-s
 Test coverage specified: named unit + integration, edge cases, error paths. §3D doc step
 per interface/schema/CLI change. Interface export paths named. Missing constants flagged.
 
+### Phase 4A — Step Scope & Workload Balance
+
+Compare all steps before implementation. Distribute implementation work reasonably
+evenly across steps so each has a bounded review and validation checkpoint.
+
+1. **Workload inventory** — write a Step Workload Assessment table into the review.
+   Include each step's deliverables, affected layers, dependencies, relative effort,
+   testing burden, and balance verdict with reasons. Assess algorithm complexity,
+   migrations, compatibility, security, wiring, and unresolved decisions. File counts,
+   action counts, or prose length alone do not measure effort. Documentation and final
+   validation steps can be smaller; explain justified differences.
+1. **Overload detection** — flag a step that carries substantially more implementation
+   or validation work than its peers. Check for several independent capabilities,
+   broad schema-to-storage-to-service-to-CLI/TUI changes, or criteria that require many
+   unrelated test suites. Check Step 1 and cutover steps explicitly. A vertical path can
+   be small; spanning layers alone does not prove overload.
+1. **Concrete split** — register overload as a non-trivial 🟡 Feasibility gap. Its
+   Resolution must propose replacement steps with titles, bounded deliverables,
+   dependencies, and explicit exclusions. Give each replacement its own Actions,
+   Architecture Notes, Planned Tests, and measurable Success Criteria. Map every
+   original action, criterion, and test to a replacement so nothing is lost or added.
+   Sub-bullets or a promise to split during implementation do not resolve the gap.
+1. **Independent checkpoints** — each replacement must pass its focused tests and
+   applicable gates without an unimplemented later dependency. Name test files, cases,
+   and the criteria they prove. Separate independently testable contracts or adapters
+   when needed; record temporary production-dead components in the Reachability Ledger
+   with a concrete wiring step. Missing replacement tests are 🟠 Testing gaps.
+1. **Reachability and scope** — preserve Phase 8 with the smallest complete production
+   path, then add breadth in later steps. Do not pack the whole feature stack into one
+   step to satisfy vertical-slice ordering. Do not move all wiring to final cutover.
+   Keep the original phase scope and required end-to-end cutover evidence.
+1. **Closure verification** — require the split before `✅ READY TO IMPLEMENT`.
+   Re-read the revised steps, dependency references, step manifests, and Reachability
+   Ledger. Reassess their workload and verify full criteria/test coverage. Until the
+   concrete split is applied, keep the verdict `⚠️ GAPS FOUND`.
+
 ### Phase 5 — Scenario Framework Coverage
 
 For every step affecting the request → plan → execution → review → memory → update flow:
@@ -284,7 +326,8 @@ have no wiring path anywhere** (internally contradictory). Caught here is cheape
 1. **Opt-in proof** — every `enabled` flag has "with flag=true, behavior B" + a test flipping
    the REAL config.
 1. **Vertical-slice ordering** — reject horizontal layers ("all cores, then wire last");
-   require one complete path first, then breadth.
+   require the smallest complete path first, then breadth. Apply Phase 4A so this does
+   not force the whole feature stack into one overloaded step.
 1. **Reachability Ledger seeded** — the (possibly empty) `## Reachability Ledger` section
    exists; absence = 🔵 Conceptual, seed it.
 
@@ -316,6 +359,7 @@ Build the gap summary table before detailed entries.
    - Fixed field name on `IReviewMetadata` for type clarity.
    - Inline clarifying sentences added to Architecture Notes.
    ```
+
 1. Register non-trivial gaps. Required format:
 
 ```markdown
@@ -368,6 +412,7 @@ edits = not closed.
 
 1. Chat summary: gaps by severity, in-place fixes, implementable verdict.
 1. Gap summary table.
+1. Step Workload Assessment table, with concrete split proposals for overloaded steps.
 1. Confirmation the doc was updated (fixes + gap sections + actions list).
 1. Version bump confirmation.
 1. Blocking issues.
@@ -383,11 +428,13 @@ exaix:
   constraints:
     - "Validate every behavioural claim against the codebase"
     - "Check Reachability Ledger for missing production consumers"
+    - "Assess step workload balance; require concrete splits for overloaded steps before readiness"
     - "Flag underspecified fields"
     - "Do not modify source files — report gaps only"
     - "Fix trivial gaps in-place in plan, register non-trivial as gap entries"
   output_requirements:
     - "Gap summary table sorted by severity"
+    - "Step Workload Assessment with justified effort differences and bounded split proposals"
     - "Detailed gap entries with Finding, Impact, Resolution"
     - "Pre-Implementation Actions list with grep verification"
     - "In-Place fixes subsection listing trivial corrections"
