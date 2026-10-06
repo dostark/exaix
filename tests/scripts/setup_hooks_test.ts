@@ -6,7 +6,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { join } from "@std/path";
+import { fromFileUrl, join } from "@std/path";
 import { defaultSandboxRoot } from "../../scripts/prune_scenario_sandboxes.ts";
 import { installHooks } from "../../scripts/setup_hooks.ts";
 
@@ -22,6 +22,52 @@ describe("scripts/setup_hooks.ts", () => {
 
   afterEach(async () => {
     await Deno.remove(tmpDir, { recursive: true });
+  });
+
+  it("[security] rejects hook installation outside a Git repository", async () => {
+    const result = await new Deno.Command(Deno.execPath(), {
+      args: ["run", "--allow-all", fromFileUrl(new URL("../../scripts/setup_hooks.ts", import.meta.url))],
+      cwd: tmpDir,
+    }).output();
+    assertEquals(result.success, false);
+    assert(new TextDecoder().decode(result.stderr).includes("Cannot resolve Git hooks"));
+    assertEquals([...Deno.readDirSync(tmpDir)], []);
+  });
+
+  it("fix(hooks): installs executable hooks from a linked worktree", async () => {
+    const repoDir = join(tmpDir, "repo");
+    const worktreeDir = join(tmpDir, "worktree");
+    const gitEnv = Deno.env.toObject();
+    gitEnv.LD_LIBRARY_PATH = "";
+    for (const key of ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR"]) {
+      delete gitEnv[key];
+    }
+    await Deno.mkdir(repoDir);
+    for (
+      const args of [
+        ["init"],
+        ["-c", "user.name=Test User", "-c", "user.email=test@exaix.local", "commit", "--allow-empty", "-m", "fixture"],
+        ["worktree", "add", "--detach", worktreeDir],
+      ]
+    ) {
+      const result = await new Deno.Command("git", { args, cwd: repoDir, env: gitEnv, clearEnv: true }).output();
+      assert(result.success, new TextDecoder().decode(result.stderr));
+    }
+    assert((await Deno.stat(join(worktreeDir, ".git"))).isFile);
+    const result = await new Deno.Command(Deno.execPath(), {
+      args: ["run", "--allow-all", fromFileUrl(new URL("../../scripts/setup_hooks.ts", import.meta.url))],
+      cwd: worktreeDir,
+      env: gitEnv,
+      clearEnv: true,
+    }).output();
+    assert(result.success, new TextDecoder().decode(result.stderr));
+    for (const hook of ["pre-commit", "pre-push", "commit-msg", "pre-merge-commit", "pre-rebase"]) {
+      const hookPath = join(repoDir, ".git", "hooks", hook);
+      assert((await Deno.readTextFile(hookPath)).startsWith("#!/bin/sh\n"));
+      if (Deno.build.os !== "windows") {
+        assertEquals((await Deno.stat(hookPath)).mode! & 0o111, 0o111);
+      }
+    }
   });
 
   it("installs pre-commit, pre-push, and commit-msg hooks", async () => {

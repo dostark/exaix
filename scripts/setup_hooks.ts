@@ -11,26 +11,6 @@ import { join } from "@std/path";
 
 const REPO_ROOT = Deno.cwd();
 
-/** Resolve the git hooks directory. In a linked worktree `.git` is a file. Ask git for the
- *  path, and fall back to the classic location when git is unavailable. */
-async function resolveHooksDir(): Promise<string> {
-  try {
-    const out = await new Deno.Command("git", {
-      args: ["rev-parse", "--git-path", "hooks"],
-      cwd: REPO_ROOT,
-      stdout: "piped",
-      stderr: "null",
-    }).output();
-    if (out.success) {
-      const dir = new TextDecoder().decode(out.stdout).trim();
-      if (dir.length > 0) return dir;
-    }
-  } catch {
-    // git unavailable — use the classic path
-  }
-  return join(REPO_ROOT, ".git", "hooks");
-}
-
 const PRE_COMMIT_CONTENT = `#!/bin/sh
 # ============================================
 # Exaix Pre-commit Hook
@@ -550,7 +530,14 @@ fi
 export async function installHooks() {
   console.log("🛠️ Installing Exaix Git Hooks...");
 
-  const hooksDir = await resolveHooksDir();
+  const gitResult = await new Deno.Command("git", {
+    args: ["rev-parse", "--path-format=absolute", "--git-path", "hooks"],
+    cwd: REPO_ROOT,
+  }).output();
+  if (!gitResult.success) {
+    throw new Error(`Cannot resolve Git hooks: ${new TextDecoder().decode(gitResult.stderr).trim()}`);
+  }
+  const hooksDir = new TextDecoder().decode(gitResult.stdout).trim();
   try {
     const stats = await Deno.stat(hooksDir);
     if (!stats.isDirectory) {
@@ -583,7 +570,7 @@ export async function installHooks() {
     await Deno.chmod(preRebasePath, 0o755);
   }
 
-  console.log("✅ Hooks installed successfully in .git/hooks/");
+  console.log(`✅ Hooks installed successfully in ${hooksDir}`);
   console.log(
     "   - pre-commit: Gate 0 (main branch guard) + fmt, lint, style/boundary, test placement, magic values, docs drift, markdown lint (staged .md only), complexity, architecture, scenario declarative-purity, skill duplication",
   );
