@@ -41,7 +41,7 @@ import type {
 } from "@exaix/core/types";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import type { IEventLogger } from "@exaix/core/logger";
+import { createNoopEventLogger, type IEventLogger } from "@exaix/core/logger";
 import type { IFlowRunner } from "@exaix/flow";
 import { DomainEventType } from "@exaix/core/events";
 import type { IFlowLoaderService, IFlowValidatorService } from "@exaix/core/types";
@@ -214,7 +214,7 @@ export class RequestProcessor {
     // Initialize services
     this.logger = processorConfig.logger ??
       wrapLogger(ctx?.display as IEventLogger | undefined) ??
-      createNoopLogger();
+      createNoopEventLogger();
     this.costTracker = processorConfig.costTracker ??
       new CostTracker(this.db, this.config, this.logger);
     const healthChecker = processorConfig.healthChecker ?? { checkProvider: () => Promise.resolve(true) };
@@ -1069,21 +1069,6 @@ function wrapLogger(
     child: (nested) => makeChild({ ...overrides, ...nested }),
   });
   return makeChild({});
-}
-
-/** No-op IEventLogger used as fallback when no logger is provided. */
-function createNoopLogger(): IEventLogger {
-  const noop = async () => {};
-  const logger: IEventLogger = {
-    log: noop,
-    info: noop,
-    warn: noop,
-    error: noop,
-    fatal: noop,
-    debug: noop,
-    child: () => logger,
-  };
-  return logger;
 }
 
 /** SHA-256 hex digest of UTF-8 text bytes. */

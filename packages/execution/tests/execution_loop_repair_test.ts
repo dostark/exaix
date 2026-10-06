@@ -11,6 +11,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
+import { exists } from "@std/fs/exists";
 import { stub } from "@std/testing/mock";
 import { ExecutionLoop, type IVerificationRunContext, type IVerificationRunner } from "@exaix/execution";
 import { GitService } from "@exaix/git";
@@ -19,7 +20,7 @@ import { MemoryBankService } from "@exaix/memory";
 import { castAny, createMockConfig, initTestDbService } from "@exaix/testing";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger } from "@exaix/core/logger";
-import { PortalOperation } from "@exaix/core";
+import { PortalOperation, USER_REQUEST_MAX_LENGTH } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
 import type { IGitService } from "@exaix/core/types";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
@@ -28,6 +29,7 @@ import {
   type IPortalVerification,
   type IVerificationResult,
   PortalVerificationSchema,
+  UserRequestSchema,
   type VerificationStatus,
 } from "@exaix/schemas";
 
@@ -60,15 +62,48 @@ interface IExecutionLoopInternals {
 class ScriptedVerificationRunner implements IVerificationRunner {
   calls = 0;
   readonly attempts: number[] = [];
-  constructor(private readonly results: IVerificationResult[]) {}
+  constructor(
+    private readonly results: IVerificationResult[],
+    private readonly onRun: () => void = () => {},
+  ) {}
 
   run(_config: IPortalVerification, context: IVerificationRunContext): Promise<IVerificationResult> {
     this.attempts.push(context.attempt);
     const result = this.results[this.calls] ?? this.results[this.results.length - 1];
     this.calls++;
+    this.onRun();
     return Promise.resolve(result);
   }
 }
+
+/** Which git call fails once the first verification run has finished. */
+type GitFailure = "head" | "diff";
+
+/** Make the chosen git call fail the way GitService does: throw by default, or return a non-zero exit. */
+function failingGitCommand(failure: GitFailure, armed: () => boolean) {
+  const original = GitService.prototype.runGitCommand;
+  return stub(
+    GitService.prototype,
+    "runGitCommand",
+    function (this: GitService, args: string[], options?: { throwOnError?: boolean }) {
+      const matches = failure === "head" ? args[0] === "rev-parse" && args[1] === "HEAD" : args[0] === "diff";
+      if (!armed() || !matches) return original.call(this, args, options);
+      if (options?.throwOnError === false) return Promise.resolve({ output: "", exitCode: 128 });
+      return Promise.reject(new Error(`git ${args[0]} failed`));
+    },
+  );
+}
+
+const STUB_PROVIDER = {
+  id: "stub",
+  generate: () =>
+    Promise.resolve({
+      content: "",
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      model: "",
+      provider: "",
+    }),
+};
 
 const PASSED: IVerificationResult = { passed: true, error: false, failures: [] };
 const FAILED: IVerificationResult = {
@@ -131,10 +166,17 @@ async function runRepairScenario(options: {
   prefix: string;
   verification: IPortalVerification;
   results: IVerificationResult[];
-  behavior: "commit" | "noop" | "throw";
+  behavior: "commit" | "noop" | "throw" | "real";
   amendmentEnabled?: boolean;
+  gitFailure?: GitFailure;
 }): Promise<
-  { handle: IRepairHandle; runner: ScriptedVerificationRunner; calls: IRepairCall[]; branchAtRepair?: string }
+  {
+    handle: IRepairHandle;
+    runner: ScriptedVerificationRunner;
+    calls: IRepairCall[];
+    branchAtRepair?: string;
+    shouldAmendCalls: () => number;
+  }
 > {
   const rootDir = await Deno.makeTempDir({ prefix: options.prefix });
   const portalDir = join(rootDir, "my-portal");
@@ -170,9 +212,30 @@ async function runRepairScenario(options: {
 
   const logger = new EventLogger({ db, defaultActor: "user:test" });
   const reviewRegistry = new ReviewRegistry(db, logger);
-  const runner = new ScriptedVerificationRunner(options.results);
+  let gitFailureArmed = false;
+  const runner = new ScriptedVerificationRunner(options.results, () => {
+    gitFailureArmed = true;
+  });
+  const gitStub = options.gitFailure ? failingGitCommand(options.gitFailure, () => gitFailureArmed) : undefined;
   const calls: IRepairCall[] = [];
   let branchAtRepair: string | undefined;
+
+  let shouldAmendCalls = 0;
+  const realRepair = options.behavior === "real"
+    ? {
+      llmProvider: STUB_PROVIDER as never,
+      onCodeChangesDelegate: async (_trace: string, _step: IRepairPlanStepCapture, worktreePath: string) => {
+        await Deno.writeTextFile(join(worktreePath, "fixed.ts"), "export const fixed = 1;\n");
+        return "changes_made" as const;
+      },
+      amendmentService: {
+        shouldAmend: () => {
+          shouldAmendCalls++;
+          return Promise.resolve(true);
+        },
+      } as never,
+    }
+    : {};
 
   const loop = new ExecutionLoop({
     config,
@@ -180,6 +243,7 @@ async function runRepairScenario(options: {
     logger,
     agentRole: "test-agent",
     reviewRegistry,
+    ...realRepair,
     verificationRunnerFactory: () => runner,
     gitServiceFactory: {
       createGitService(repoPath: string, trace: string) {
@@ -197,7 +261,7 @@ async function runRepairScenario(options: {
   const planPath = join(activeDir, `${options.behavior}.md`);
   await Deno.writeTextFile(planPath, actionPlan(traceId, `repair-${options.behavior}`));
 
-  const repairStub = stub(
+  const repairStub = options.behavior === "real" ? undefined : stub(
     castAny<IExecutionLoopInternals>(ExecutionLoop.prototype),
     "executeStructuredPlan",
     async (
@@ -226,10 +290,17 @@ async function runRepairScenario(options: {
     const result = await loop.processTask(planPath);
     assert(result.success, result.error);
   } finally {
-    repairStub.restore();
+    repairStub?.restore();
+    gitStub?.restore();
   }
 
-  return { handle: { rootDir, db, cleanupDb, reviewRegistry, traceId }, runner, calls, branchAtRepair };
+  return {
+    handle: { rootDir, db, cleanupDb, reviewRegistry, traceId },
+    runner,
+    calls,
+    branchAtRepair,
+    shouldAmendCalls: () => shouldAmendCalls,
+  };
 }
 
 function completedStatus(db: IRepairHandle["db"], traceId: string): VerificationStatus {
@@ -388,20 +459,93 @@ Deno.test("[execution-repair] the repair step carries the original step titles a
   }
 });
 
-Deno.test("[execution-repair] a low-confidence repair step never proposes an amendment", async () => {
-  const { handle, calls } = await runRepairScenario({
+Deno.test("[execution-repair] a low-confidence real repair step never proposes an amendment", async () => {
+  const { handle, shouldAmendCalls } = await runRepairScenario({
     prefix: "exec-repair-amend-",
     verification: VERIFICATION,
     results: [FAILED, PASSED],
-    behavior: "noop",
+    behavior: "real",
     amendmentEnabled: true,
   });
   try {
     await handle.db.waitForFlush();
     assertEquals(completedStatus(handle.db, handle.traceId), "repaired");
-    assertEquals(calls[0].options.disableAmendments, true);
+    assertEquals(shouldAmendCalls(), 0, "the real repair executor must not consult amendments");
     assertEquals(eventPayloads(handle.db, handle.traceId, "plan.amendment_triggered").length, 0);
     assertEquals(eventPayloads(handle.db, handle.traceId, "execution.amendment_pending").length, 0);
+    const repairRuns = eventPayloads(handle.db, handle.traceId, "plan.execution_completed");
+    assertEquals(repairRuns.map((payload) => payload.phase), ["repair"], "the repair run is on the request trace");
+  } finally {
+    await handle.cleanupDb();
+    await Deno.remove(handle.rootDir, { recursive: true });
+  }
+});
+
+Deno.test("[execution-repair] a failing HEAD read before a repair keeps the worktree, registers the review and completes as failed", async () => {
+  const { handle, calls } = await runRepairScenario({
+    prefix: "exec-repair-head-",
+    verification: VERIFICATION,
+    results: [FAILED, FAILED, FAILED],
+    behavior: "noop",
+    gitFailure: "head",
+  });
+  try {
+    await handle.db.waitForFlush();
+    assertEquals(completedStatus(handle.db, handle.traceId), "failed");
+    assertEquals(calls.length, 2, "an unreadable HEAD must not stop the repair attempts");
+    const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
+    assertEquals(reviews.length, 1);
+    assert(await exists(join(handle.rootDir, ".exa", "worktrees", "my-portal", handle.traceId)));
+  } finally {
+    await handle.cleanupDb();
+    await Deno.remove(handle.rootDir, { recursive: true });
+  }
+});
+
+Deno.test("[execution-repair] a diff failure after a committed repair keeps the repair commit on the event and the review", async () => {
+  const { handle } = await runRepairScenario({
+    prefix: "exec-repair-diff-",
+    verification: VERIFICATION,
+    results: [FAILED, PASSED],
+    behavior: "commit",
+    gitFailure: "diff",
+  });
+  try {
+    await handle.db.waitForFlush();
+    assertEquals(completedStatus(handle.db, handle.traceId), "repaired");
+    const repairCompleted = eventPayloads(handle.db, handle.traceId, "execution.repair.completed");
+    assertEquals(repairCompleted.length, 1);
+    assert(repairCompleted[0].commit_sha !== null, "a diff failure must not hide the repair commit");
+    assertEquals(repairCompleted[0].changed_files, []);
+    assertEquals(repairCompleted[0].error_class, null);
+    const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
+    assertEquals(reviews[0].commit_sha, repairCompleted[0].commit_sha);
+  } finally {
+    await handle.cleanupDb();
+    await Deno.remove(handle.rootDir, { recursive: true });
+  }
+});
+
+Deno.test("[execution-repair] the repair step content fits the agent request limit when several checks fail", async () => {
+  const marker = (task: string) => `END-OF-${task.toUpperCase()}`;
+  const tasks = ["test", "lint", "check"] as const;
+  const bigFailures: IVerificationResult = {
+    passed: false,
+    error: false,
+    failures: tasks.map((task) => ({ task, exit_code: 1, output: "x".repeat(4000) + marker(task) })),
+  };
+  const { handle, calls } = await runRepairScenario({
+    prefix: "exec-repair-budget-",
+    verification: VERIFICATION,
+    results: [bigFailures, PASSED],
+    behavior: "noop",
+  });
+  try {
+    const content = calls[0].steps[0].content;
+    assert(content.length <= USER_REQUEST_MAX_LENGTH, `${content.length}`);
+    assert(UserRequestSchema.safeParse(content).success, "repair content must pass agent input validation");
+    for (const task of tasks) assert(content.includes(marker(task)), `the tail of the ${task} failure must survive`);
+    assert(content.includes("Original plan steps:"), content.slice(0, 300));
   } finally {
     await handle.cleanupDb();
     await Deno.remove(handle.rootDir, { recursive: true });

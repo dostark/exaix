@@ -661,6 +661,8 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 
 Reserved members exist in the enum but have no active emission site — their phases were postponed or cancelled. They are excluded from `EventRegistry.registeredPublishers()` assertions.
 
+`plan.execution_started`, `plan.execution_completed` and `plan.execution_failed` are journaled on the request trace. A post-execution verification repair run adds `phase: "repair"` to all three, so a count of the original plan run can exclude it.
+
 ### Milestone Event Types
 
 Milestone events are higher-level projections of domain events for operator-facing UX surfaces (CLI `watch`, TUI, SSE consumers). They are defined in `packages/schemas/src/milestone_event.ts:ExecutionMilestoneSchema` and emitted via `packages/core/src/observability/milestone_emitter.ts:IMilestoneEmitter`. Constants live in `packages/core/src/types/constants.ts`.

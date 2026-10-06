@@ -11,6 +11,7 @@ import { assert, assertEquals } from "@std/assert";
 import { stub } from "@std/testing/mock";
 import { join } from "@std/path";
 import { DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS, type ISubprocessOptions, SafeSubprocess, ToolName } from "@exaix/core";
+import { createCoreToolSchemas } from "../src/tool_schemas.ts";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
 
 Deno.test("[deno-task] ToolRegistry.denoTask keeps its IToolResult shapes for pass, fail and invalid task", async () => {
@@ -57,4 +58,31 @@ Deno.test("[deno-task] a run_deno_task call without a timeout uses DEFAULT_DENO_
     s.restore();
     await cleanupTempDir(tempDir);
   }
+});
+
+Deno.test("[deno-task] a failing run_deno_task returns data.output, data.errorOutput and data.exitCode", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "tool-registry-denofields-" });
+  const registry = createToolRegistryForTests(tempDir);
+  const s = stub(
+    SafeSubprocess,
+    "run",
+    () => Promise.resolve({ code: 1, stdout: "STDOUT-PART", stderr: "STDERR-PART" }),
+  );
+  try {
+    const fail = await registry.execute(ToolName.DENO_TASK, { task: "test", path: tempDir });
+    assert(!fail.success);
+    assertEquals(fail.data, { output: "STDOUT-PART", errorOutput: "STDERR-PART", exitCode: 1 });
+    assertEquals(fail.error, "Task 'test' failed with exit code 1:\nSTDOUT-PART\nSTDERR-PART");
+  } finally {
+    s.restore();
+    await cleanupTempDir(tempDir);
+  }
+});
+
+Deno.test("[deno-task] the run_deno_task description names only fields the result carries", () => {
+  const schema = createCoreToolSchemas().find((tool) => tool.name === ToolName.DENO_TASK);
+  assert(schema, "run_deno_task schema must exist");
+  const namedFields = [...schema.description.matchAll(/data\.(\w+)/g)].map((match) => match[1]).sort();
+  assertEquals(namedFields, ["errorOutput", "exitCode", "output"]);
+  assert(schema.description.includes(String(DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS)), schema.description);
 });

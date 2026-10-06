@@ -9,7 +9,12 @@
 import { Command } from "@cliffy/command";
 import { PlanCommands } from "./commands/plan_commands.ts";
 import { RequestCommands } from "./commands/request_commands.ts";
-import { type IReviewDetails, type IReviewMetadata, ReviewCommands } from "./commands/review_commands.ts";
+import {
+  type IReviewDetails,
+  type IReviewMetadata,
+  ReviewCommands,
+  verificationWarning,
+} from "./commands/review_commands.ts";
 import { GitCommands } from "./commands/git_commands.ts";
 import { DaemonCommands } from "./commands/daemon_commands.ts";
 import { ConfigCommands } from "./commands/config_commands.ts";
@@ -319,10 +324,17 @@ async function handleReviewShowAction(options: { diff?: boolean }, id: string) {
 
 function renderReviewShow(cs: IReviewDetails, id: string) {
   renderReviewShowSummary(cs);
+  renderReviewShowVerificationWarning(cs, id);
   renderReviewShowDecision(cs);
   renderReviewShowAnomalies(cs);
   renderReviewShowCommits(cs);
   display.info("review.diff", id, { diff: cs.diff });
+}
+
+function renderReviewShowVerificationWarning(cs: IReviewDetails, id: string) {
+  const warning = verificationWarning(cs.verification_status);
+  if (!warning) return;
+  display.warn("review.verification", id, { verification_status: cs.verification_status ?? null, message: warning });
 }
 
 function renderReviewShowAnomalies(cs: IReviewDetails) {
@@ -362,6 +374,7 @@ function renderReviewShowSummary(cs: IReviewDetails) {
     files_changed: cs.files_changed,
     commits: cs.commits.length,
     trace: cs.trace_id ?? null,
+    verification: cs.verification_status ?? null,
   });
 }
 

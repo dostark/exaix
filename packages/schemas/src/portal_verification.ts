@@ -16,9 +16,11 @@ import {
   DEFAULT_VERIFICATION_MAX_REPAIR_ATTEMPTS,
   DEFAULT_VERIFICATION_OUTPUT_MAX_CHARS,
   GeneralStatus,
+  VERIFICATION_ALLOW_FLAG_PREFIX,
   VERIFICATION_FORBIDDEN_ARGS,
-  VERIFICATION_FORBIDDEN_BARE_ALLOW_FLAGS,
   VERIFICATION_MAX_REPAIR_ATTEMPTS_LIMIT,
+  VERIFICATION_PERMISSION_SET_FLAGS,
+  VERIFICATION_PERMISSION_SHORT_FLAGS,
 } from "@exaix/core";
 
 /** One failed check as it appears in `IVerificationResult` and the repair prompt. */
@@ -47,13 +49,29 @@ export function isConfinedRelativePath(path: string): boolean {
   return !normalize(path).split(SEPARATOR).includes(PARENT_SEGMENT);
 }
 
-/** True when `args` contains no whole-host or in-place-mutation flag. */
-export function hasNoForbiddenVerificationArgs(args: readonly string[]): boolean {
-  for (const arg of args) {
-    if (VERIFICATION_FORBIDDEN_ARGS.includes(arg)) return false;
-    if (VERIFICATION_FORBIDDEN_BARE_ALLOW_FLAGS.includes(arg)) return false;
+/** A single-dash token of one or more letters, e.g. `-q` or the cluster `-qA`. */
+const SHORT_FLAG_TOKEN = /^-[A-Za-z]+$/;
+/** Separator between a flag and its value list. */
+const FLAG_VALUE_SEPARATOR = "=";
+
+/** True when `arg` grants an unscoped or config-chosen permission, or mutates the worktree. */
+function isForbiddenVerificationArg(arg: string): boolean {
+  const separatorIndex = arg.indexOf(FLAG_VALUE_SEPARATOR);
+  const flag = separatorIndex === -1 ? arg : arg.slice(0, separatorIndex);
+  const value = separatorIndex === -1 ? "" : arg.slice(separatorIndex + 1);
+
+  if (VERIFICATION_FORBIDDEN_ARGS.includes(flag)) return true;
+  if (VERIFICATION_PERMISSION_SET_FLAGS.includes(flag)) return true;
+  if (SHORT_FLAG_TOKEN.test(flag)) {
+    return [...flag.slice(1)].some((letter) => VERIFICATION_PERMISSION_SHORT_FLAGS.includes(letter));
   }
-  return true;
+  if (flag.startsWith(VERIFICATION_ALLOW_FLAG_PREFIX)) return value.length === 0;
+  return false;
+}
+
+/** True when `args` contains no unscoped permission grant and no in-place-mutation flag. */
+export function hasNoForbiddenVerificationArgs(args: readonly string[]): boolean {
+  return !args.some(isForbiddenVerificationArg);
 }
 
 /** One operator-configured post-execution check. */
@@ -62,7 +80,7 @@ export const VerificationCheckSchema = z.object({
   task: z.enum(["test", "lint", "check", "fmt"]),
   /** Relative to the worktree root, defaulting to ".". Absolute paths and ".." segments are rejected. */
   path: z.string().default(".").refine(isConfinedRelativePath, "path must be relative with no '..' segment"),
-  /** Operator-supplied flags, e.g. ["--allow-read=."]. Never model-supplied. */
+  /** Operator-supplied flags, e.g. ["--allow-read=."]. Never model-supplied. Permission flags must be scoped. */
   args: z.array(z.string()).default([]).refine(hasNoForbiddenVerificationArgs, "forbidden verification arg"),
 });
 

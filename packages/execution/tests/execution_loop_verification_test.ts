@@ -11,6 +11,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
+import { exists } from "@std/fs/exists";
 import { ExecutionLoop, type IVerificationRunner } from "@exaix/execution";
 import { GitService } from "@exaix/git";
 import { ToolRegistry } from "@exaix/tool-runtime";
@@ -297,6 +298,27 @@ Deno.test("[execution-verification] a fake verificationRunnerFactory drives the 
     await handle.db.waitForFlush();
     assertEquals(completedStatus(handle.db, handle.traceId), "passed");
     assertEquals(calls, 1);
+  } finally {
+    await handle.cleanupDb();
+    await Deno.remove(handle.rootDir, { recursive: true });
+  }
+});
+
+Deno.test("[execution-verification] a verification runner that throws completes as error with a registered review and the worktree kept", async () => {
+  const handle = await makeVerificationLoop({
+    prefix: "exec-verif-throw-",
+    verification: PortalVerificationSchema.parse({ checks: [{ kind: "deno_task", task: "test" }] }),
+    planAction: writeAction("pass_test.ts", 'Deno.test("ok", () => {});\n'),
+    requestId: "verify-throw",
+    factory: () => ({ run: () => Promise.reject(new Error("runner exploded")) }),
+  });
+  try {
+    await handle.db.waitForFlush();
+    assertEquals(completedStatus(handle.db, handle.traceId), "error");
+    const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
+    assertEquals(reviews.length, 1, "the review must be registered on the committed work");
+    const worktree = join(handle.rootDir, ".exa", "worktrees", "my-portal", handle.traceId);
+    assert(await exists(worktree), "the worktree must be kept");
   } finally {
     await handle.cleanupDb();
     await Deno.remove(handle.rootDir, { recursive: true });

@@ -1825,8 +1825,19 @@ output_max_chars = 4000      # default 4000
 kind = "deno_task"           # only deno_task in this phase
 task = "test"                # test | lint | check | fmt
 path = "."                   # relative to the worktree, default "."
-args = ["--allow-read=."]    # operator flags; -A/--allow-all/--fix are rejected
+args = ["--allow-read=."]    # operator flags; permission flags must be scoped (see below)
 ```
+
+Permission flags in `args` must use the scoped long form `--allow-<name>=<values>` with a non-empty
+value list, for every permission (`read`, `write`, `env`, `net`, `run`, `ffi`, `sys`, `import`).
+The schema rejects at config load:
+
+- `-A` / `--allow-all` and `--fix`;
+- short permission flags (`-R`, `-W`, `-N`, `-E`, `-S`, `-I`, `-P`), alone or in a cluster such as `-qA`;
+- `-P` / `--permission-set`, which loads permissions from the worktree's `deno.json`, a file the model can edit;
+- any bare `--allow-<name>`, or one with an empty value list.
+
+Non-permission flags such as `--no-check`, `--parallel` or `--filter=<name>` are accepted.
 
 `verification_status` is written on `execution.completed`:
 
@@ -1843,8 +1854,14 @@ Security: verification executes model-written code without a human in the loop, 
 environment (the `ChildEnvPolicy` allowlist plus `DENO_DIR`, `DENO_NO_UPDATE_CHECK` and
 `XDG_CACHE_HOME`). Proxy variables are not forwarded, so dependencies must be pre-cached in
 `DENO_DIR` (for example with `deno install`). `fmt` always runs with `--check`. Failure output is
-redacted against the daemon's known secret values and framed as untrusted data. The worst-case wall
+redacted against the daemon's known secret values and framed as untrusted data. A check's output is
+bounded in memory while it is read: the daemon keeps only the tail (`output_max_chars` plus a small
+redaction margin), so a check that prints without limit cannot exhaust the daemon. ANSI escapes and
+control characters are stripped before the output enters the repair prompt. The worst-case wall
 clock is `(1 + max_repair_attempts) × N_checks × check_timeout_ms`.
+
+`exactl review show` prints `verification_status` for the review's trace, and adds a warning line
+when it is `failed` or `error`, so a reviewer sees a failed verification before approving.
 
 The agent `run_deno_task` tool also stops after `DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS` (300 s) where it
 previously had no timeout.

@@ -8,7 +8,13 @@
  * @architectural-layer Services
  * @related-files ["packages/tool-runtime/src/tool_registry.ts"]
  */
-import { JsonSchemaType, PLANNING_TOOLS_EXCLUDED, ToolName, ToolSideEffectScope } from "@exaix/core";
+import {
+  DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS,
+  JsonSchemaType,
+  PLANNING_TOOLS_EXCLUDED,
+  ToolName,
+  ToolSideEffectScope,
+} from "@exaix/core";
 import type { ITool } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -469,7 +475,7 @@ export function createCoreToolSchemas(
     {
       name: ToolName.DENO_TASK,
       description:
-        "Run a standard Deno task (test, lint, fmt, check) at the given path. Use when you need to validate code quality or run tests within an agent strategy; returns output even when the task finds issues. Returns data.output (stdout), data.errorOutput, and data.exitCode.",
+        `Run a standard Deno task (test, lint, fmt, check) at the given path. Use when you need to validate code quality or run tests within an agent strategy; returns output even when the task finds issues. Returns data.output (stdout), data.errorOutput (stderr), and data.exitCode. Stops after ${DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS} ms.`,
       parameters: {
         type: "object",
         properties: {

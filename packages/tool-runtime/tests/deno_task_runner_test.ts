@@ -40,7 +40,7 @@ Deno.test("[deno-task-runner] the task runs with the given cwd", async () => {
     });
 
     assertEquals(outcome.kind, "exited");
-    const output = outcome.kind === "exited" ? outcome.output : outcome.kind;
+    const output = outcome.kind === "exited" ? outcome.stdout : outcome.kind;
     assert(outcome.kind === "exited" && outcome.code === 0, output);
     assert(output.includes(`CWD=${tempDir}`), output);
   } finally {
@@ -48,7 +48,7 @@ Deno.test("[deno-task-runner] the task runs with the given cwd", async () => {
   }
 });
 
-Deno.test("[deno-task-runner] an exited task returns its code, arg order and combined output", async () => {
+Deno.test("[deno-task-runner] an exited task returns stdout and stderr separately", async () => {
   let captured: { args: string[]; options?: ISubprocessOptions } | undefined;
   const s = stubRun((command, args, options) => {
     assertEquals(command, SystemCommand.DENO);
@@ -64,7 +64,7 @@ Deno.test("[deno-task-runner] an exited task returns its code, arg order and com
       timeoutMs: 1234,
     });
 
-    assertEquals(outcome, { kind: "exited", code: 2, output: "outerr" });
+    assertEquals(outcome, { kind: "exited", code: 2, stdout: "out", stderr: "err" });
     assertEquals(captured?.args, ["test", "--quiet", "src"]);
     assertEquals(captured?.options?.cwd, "/work");
     assertEquals(captured?.options?.timeoutMs, 1234);

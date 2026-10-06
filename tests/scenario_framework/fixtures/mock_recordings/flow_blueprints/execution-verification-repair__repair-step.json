@@ -1,0 +1,11 @@
+{
+  "promptHash": "execution-verification-repair-step",
+  "promptPreview": "AGENT ROLE: Verification Repair Coder\n",
+  "response": "THOUGHT: The test imports greeting from src/verification_repair/greeting.ts, which does not exist. I will create it.\n```toml\n[[actions]]\ntool = \"write_file\"\n[actions.params]\npath = \"src/verification_repair/greeting.ts\"\ncontent = \"export function greeting(): string {\\n  return \\\"repaired\\\";\\n}\\n\"\n```\nSTATUS: COMPLETE\nSUMMARY: Created src/verification_repair/greeting.ts exporting greeting().",
+  "model": "mock-model",
+  "tokens": {
+    "input": 1000,
+    "output": 200
+  },
+  "recordedAt": "2026-10-06T00:00:00.000Z"
+}

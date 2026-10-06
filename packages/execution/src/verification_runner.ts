@@ -4,15 +4,20 @@
  * @description Runs a portal's operator-configured post-execution checks in the
  *   execution worktree. Spawns through the middleware-free runDenoTask so check
  *   output never enters the registry journal. Emits the verification lifecycle
- *   events on the request trace. @visible
+ *   events on the request trace.
  * @architectural-layer Services
  * @dependencies ["@exaix/core", "@exaix/schemas", "@exaix/tool-runtime"]
  * @related-files ["packages/execution/src/execution_loop.ts", "packages/tool-runtime/src/deno_task_runner.ts"]
  */
 
 import { join, SEPARATOR } from "@std/path";
-import { buildChildEnv, VERIFICATION_DENO_ENV_KEYS, VERIFICATION_FMT_CHECK_FLAG } from "@exaix/core";
-import { DomainEventType } from "@exaix/core/events";
+import {
+  buildChildEnv,
+  VERIFICATION_DENO_ENV_KEYS,
+  VERIFICATION_FMT_CHECK_FLAG,
+  VERIFICATION_OUTPUT_REDACTION_MARGIN_CHARS,
+} from "@exaix/core";
+import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
 import { redactKnownSecrets } from "@exaix/core/func";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { JSONValue, LogMetadata } from "@exaix/core/types";
@@ -32,6 +37,32 @@ export interface IVerificationRunner {
   run(config: IPortalVerification, context: IVerificationRunContext): Promise<IVerificationResult>;
 }
 
+/** Escape character that opens an ANSI terminal sequence. */
+const ESCAPE_CHAR = String.fromCharCode(0x1b);
+/** ANSI CSI sequences (colors, cursor moves) that coloured tool output emits. */
+const ANSI_CSI_PATTERN = new RegExp(`${ESCAPE_CHAR}\\[[0-?]*[ -/]*[@-~]`, "g");
+/** First printable character code. Lower codes are control characters. */
+const FIRST_PRINTABLE_CHAR_CODE = 0x20;
+/** DEL, the only control character above the printable range. */
+const DELETE_CHAR_CODE = 0x7f;
+/** Whitespace control characters agent input validation accepts. */
+const ALLOWED_CONTROL_CHARS = new Set(["\t", "\n", "\r"]);
+/** The `<` that opens a markup tag agent input validation rejects. */
+const REJECTED_TAG_OPENING_PATTERN = /<(?=\/?(?:script|iframe|img)\b)/gi;
+const ESCAPED_LESS_THAN = "&lt;";
+
+/** Make check output safe to embed in an agent prompt. Removes ANSI escapes and non-whitespace
+ *  control characters, and escapes the markup tags that agent input validation rejects. */
+function sanitizeCheckOutput(output: string): string {
+  const withoutAnsi = output.replace(ANSI_CSI_PATTERN, "");
+  const printable = [...withoutAnsi].filter((char) => {
+    const code = char.charCodeAt(0);
+    if (ALLOWED_CONTROL_CHARS.has(char)) return true;
+    return code >= FIRST_PRINTABLE_CHAR_CODE && code !== DELETE_CHAR_CODE;
+  }).join("");
+  return printable.replace(REJECTED_TAG_OPENING_PATTERN, ESCAPED_LESS_THAN);
+}
+
 /** True when the real path of `resolved` lies at or under the real worktree path. */
 async function isConfined(executionRoot: string, resolved: string): Promise<boolean> {
   try {
@@ -43,6 +74,7 @@ async function isConfined(executionRoot: string, resolved: string): Promise<bool
   }
 }
 
+/** @visible */
 export class VerificationRunner implements IVerificationRunner {
   constructor(
     private readonly logger: IEventLogger,
@@ -82,6 +114,7 @@ export class VerificationRunner implements IVerificationRunner {
         timeoutMs: config.check_timeout_ms,
         env,
         clearEnv,
+        maxOutputChars: config.output_max_chars + VERIFICATION_OUTPUT_REDACTION_MARGIN_CHARS,
       });
 
       if (outcome.kind === "exited") {
@@ -89,7 +122,7 @@ export class VerificationRunner implements IVerificationRunner {
         failures.push({
           task: check.task,
           exit_code: outcome.code,
-          output: this.prepareOutput(outcome.output, config.output_max_chars),
+          output: this.prepareOutput(outcome.stdout + outcome.stderr, config.output_max_chars),
         });
         continue;
       }
@@ -131,13 +164,13 @@ export class VerificationRunner implements IVerificationRunner {
     return buildChildEnv({ mode: "allowlist", env: overlay });
   }
 
-  /** Redact known secrets, then keep only the last `maxChars` characters. */
+  /** Sanitize, redact known secrets, then keep only the last `maxChars` characters. */
   private prepareOutput(output: string, maxChars: number): string {
-    const redacted = redactKnownSecrets(output, this.knownSecrets).text;
+    const redacted = redactKnownSecrets(sanitizeCheckOutput(output), this.knownSecrets).text;
     return redacted.length > maxChars ? redacted.slice(redacted.length - maxChars) : redacted;
   }
 
-  private emit(action: string, context: IVerificationRunContext, payload: LogMetadata): Promise<void> {
+  private emit(action: TDomainEventType, context: IVerificationRunContext, payload: LogMetadata): Promise<void> {
     return this.logger.info(action, null, payload, context.traceId);
   }
 }

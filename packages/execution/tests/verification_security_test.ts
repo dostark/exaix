@@ -26,6 +26,16 @@ import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
 import { type IPortalVerification, PortalVerificationSchema, type VerificationStatus } from "@exaix/schemas";
 
 const REDACTION_MARKER = "[REDACTED]";
+const STUB_PROVIDER = {
+  id: "stub",
+  generate: () =>
+    Promise.resolve({
+      content: "",
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      model: "",
+      provider: "",
+    }),
+};
 const CONFIGURED_SECRET = "SECRET-TOKEN-42";
 
 interface IExecutionLoopInternals {
@@ -95,6 +105,8 @@ async function runSecurityScenario(options: {
   testBody: string;
   knownSecrets: readonly string[];
   planExtra?: string;
+  /** Run the repair through a real PlanExecutor whose delegate writes a file that does not echo the output. */
+  realRepair?: boolean;
 }): Promise<{ handle: ISecurityHandle; repairContents: string[] }> {
   const rootDir = await Deno.makeTempDir({ prefix: options.prefix });
   const portalDir = join(rootDir, "my-portal");
@@ -116,6 +128,7 @@ async function runSecurityScenario(options: {
 
   const activeDir = join(rootDir, config.paths.workspace, "Active");
   await ensureDir(activeDir);
+  const repairContents: string[] = [];
 
   const logger = new EventLogger({ db, defaultActor: "user:test" });
   const reviewRegistry = new ReviewRegistry(db, logger);
@@ -126,6 +139,16 @@ async function runSecurityScenario(options: {
     agentRole: "test-agent",
     reviewRegistry,
     knownSecrets: options.knownSecrets,
+    ...(options.realRepair
+      ? {
+        llmProvider: STUB_PROVIDER as never,
+        onCodeChangesDelegate: async (_trace: string, step: { content: string }, worktreePath: string) => {
+          repairContents.push(step.content);
+          await Deno.writeTextFile(join(worktreePath, "fixed.ts"), "export const fixed = 1;\n");
+          return "changes_made" as const;
+        },
+      }
+      : {}),
     gitServiceFactory: {
       createGitService(repoPath: string, trace: string) {
         return new GitService({ config, traceId: trace, agentRole: "test-agent", repoPath });
@@ -143,8 +166,7 @@ async function runSecurityScenario(options: {
   const plan = planWithTestFile(traceId, options.prefix, options.testBody) + (options.planExtra ?? "");
   await Deno.writeTextFile(planPath, plan);
 
-  const repairContents: string[] = [];
-  const repairStub = stub(
+  const repairStub = options.realRepair ? undefined : stub(
     castAny<IExecutionLoopInternals>(ExecutionLoop.prototype),
     "executeStructuredPlan",
     (repairPlan: { steps: Array<{ content: string }> }) => {
@@ -157,7 +179,7 @@ async function runSecurityScenario(options: {
     const result = await loop.processTask(planPath);
     assert(result.success, result.error);
   } finally {
-    repairStub.restore();
+    repairStub?.restore();
   }
 
   return { handle: { rootDir, db, cleanupDb, traceId }, repairContents };
@@ -241,6 +263,36 @@ Deno.test("[verification-security] a request or plan cannot add or change verifi
     const events = handle.db.getActivitiesByTrace(handle.traceId)
       .filter((row) => row.action_type.startsWith("execution.verification."));
     assertEquals(events.length, 0, "a plan cannot start verification checks");
+  } finally {
+    await handle.cleanupDb();
+    await Deno.remove(handle.rootDir, { recursive: true });
+  }
+});
+
+Deno.test("[verification-security] the sentinel appears in no journal row of the trace when a real repair run executes", async () => {
+  const sentinelParts = '["REAL", "SENT", "INEL"]';
+  const testBody = `Deno.test("leak", () => {
+  const s = ${sentinelParts}.join("");
+  console.log(s);
+  throw new Error(s);
+});
+`;
+  const { handle, repairContents } = await runSecurityScenario({
+    prefix: "verify-real-sentinel",
+    verification: TEST_CHECK,
+    testBody,
+    knownSecrets: [],
+    realRepair: true,
+  });
+  try {
+    await handle.db.waitForFlush();
+    const joinedSentinel = "REALSENTINEL";
+    assertEquals(repairContents.length, 1, "the real repair step must run");
+    assert(repairContents[0].includes(joinedSentinel), "the repair prompt carries the check output");
+    const rows = handle.db.getActivitiesByTrace(handle.traceId);
+    assert(rows.some((row) => row.action_type === "plan.execution_completed"), "the repair run must reach the journal");
+    const leaked = rows.filter((row) => row.payload.includes(joinedSentinel));
+    assertEquals(leaked.map((row) => row.action_type), [], "the real repair run must not journal check output");
   } finally {
     await handle.cleanupDb();
     await Deno.remove(handle.rootDir, { recursive: true });

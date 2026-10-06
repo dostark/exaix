@@ -52,3 +52,21 @@ Deno.test("ARCHITECTURE and the event taxonomy describe the verification stage",
     assertStringIncludes(reference, event);
   }
 });
+
+Deno.test("User Guide documents the scoped-only verification arg rule", async () => {
+  const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
+  for (const token of ["--allow-<name>=<values>", "--permission-set", "short permission flags", "bounded in memory"]) {
+    assertStringIncludes(guide, token);
+  }
+});
+
+Deno.test("User Guide documents verification_status in exactl review show", async () => {
+  const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
+  assertStringIncludes(guide, "`exactl review show` prints `verification_status`");
+});
+
+Deno.test("Reference_Data documents the repair phase on trace-scoped plan.execution events", async () => {
+  const reference = await Deno.readTextFile(join(ROOT, "docs", "Reference_Data.md"));
+  assertStringIncludes(reference, 'phase: "repair"');
+  assertStringIncludes(reference, "on the request trace");
+});

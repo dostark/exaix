@@ -19,9 +19,54 @@ export interface ISubprocessOptions {
    *  with the parent env by default, leaking vars like ANTHROPIC_API_KEY unless
    *  clearEnv is set — then only the vars in `env` are passed. */
   clearEnv?: boolean;
+  /** When set, keep only the last `maxOutputChars` characters of each stream while reading.
+   *  A child that prints without limit then cannot grow the parent's memory. */
+  maxOutputChars?: number;
 }
 
 const DEFAULT_SUBPROCESS_TIMEOUT_MS = 30000;
+/** A bounded tail buffer may grow to this multiple of its limit before it is trimmed. */
+const TAIL_BUFFER_SLACK_FACTOR = 2;
+
+/** Decoded process output. */
+interface IDecodedOutput {
+  code: number;
+  stdout: string;
+  stderr: string;
+}
+
+/** Read a byte stream to its end, keeping only the last `maxChars` decoded characters. */
+async function readStreamTail(stream: ReadableStream<Uint8Array>, maxChars: number): Promise<string> {
+  const decoder = new TextDecoder();
+  let tail = "";
+  for await (const chunk of stream) {
+    tail += decoder.decode(chunk, { stream: true });
+    if (tail.length > maxChars * TAIL_BUFFER_SLACK_FACTOR) tail = tail.slice(tail.length - maxChars);
+  }
+  tail += decoder.decode();
+  return tail.length > maxChars ? tail.slice(tail.length - maxChars) : tail;
+}
+
+/** Run to completion and decode the whole of stdout and stderr. */
+async function collectFullOutput(cmd: Deno.Command): Promise<IDecodedOutput> {
+  const result = await cmd.output();
+  return {
+    code: result.code,
+    stdout: new TextDecoder().decode(result.stdout),
+    stderr: new TextDecoder().decode(result.stderr),
+  };
+}
+
+/** Run to completion, keeping only the tail of each stream. */
+async function collectTailOutput(cmd: Deno.Command, maxChars: number): Promise<IDecodedOutput> {
+  const child = cmd.spawn();
+  const [status, stdout, stderr] = await Promise.all([
+    child.status,
+    readStreamTail(child.stdout, maxChars),
+    readStreamTail(child.stderr, maxChars),
+  ]);
+  return { code: status.code, stdout, stderr };
+}
 
 export class SafeSubprocess {
   static async run(
@@ -35,6 +80,7 @@ export class SafeSubprocess {
       cwd,
       env,
       clearEnv,
+      maxOutputChars,
     } = options;
 
     const timeoutController = new AbortController();
@@ -64,7 +110,9 @@ export class SafeSubprocess {
 
       const cmd = new Deno.Command(command, cmdOptions);
 
-      const result = await cmd.output();
+      const result = maxOutputChars === undefined
+        ? await collectFullOutput(cmd)
+        : await collectTailOutput(cmd, maxOutputChars);
 
       clearTimeout(timeoutId);
 
@@ -74,10 +122,7 @@ export class SafeSubprocess {
         );
       }
 
-      const stdout = new TextDecoder().decode(result.stdout);
-      const stderr = new TextDecoder().decode(result.stderr);
-
-      return { code: result.code, stdout, stderr };
+      return result;
     } catch (error) {
       clearTimeout(timeoutId);
 

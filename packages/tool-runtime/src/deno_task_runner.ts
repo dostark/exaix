@@ -21,11 +21,13 @@ export interface IDenoTaskRunOptions {
   timeoutMs: number;
   env?: Record<string, string>;
   clearEnv?: boolean;
+  /** Keep only the last N characters of each output stream while reading. */
+  maxOutputChars?: number;
 }
 
 /** Typed result of one deno task invocation. */
 export type IDenoTaskOutcome =
-  | { kind: "exited"; code: number; output: string }
+  | { kind: "exited"; code: number; stdout: string; stderr: string }
   | { kind: "timed_out" }
   | { kind: "spawn_failed"; error_class: string };
 
@@ -40,9 +42,10 @@ export async function runDenoTask(options: IDenoTaskRunOptions): Promise<IDenoTa
         timeoutMs: options.timeoutMs,
         env: options.env,
         clearEnv: options.clearEnv,
+        maxOutputChars: options.maxOutputChars,
       },
     );
-    return { kind: "exited", code: result.code, output: result.stdout + result.stderr };
+    return { kind: "exited", code: result.code, stdout: result.stdout, stderr: result.stderr };
   } catch (error) {
     if (error instanceof SubprocessTimeoutError) return { kind: "timed_out" };
     const errorClass = error instanceof Error ? error.constructor.name : "UnknownError";

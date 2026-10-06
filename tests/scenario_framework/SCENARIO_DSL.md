@@ -100,6 +100,25 @@ A mount's `verification` block is appended to the sandbox config after that port
 `verification_status` on `execution.completed`. A verification-bearing mount that fails to
 mount fails the setup step.
 
+To assert a repair, inject an approved plan whose committed change fails a check, set
+`max_repair_attempts` of at least 1, and assert `execution.completed` carries
+`verification_status: repaired`. A directly injected plan emits no `request.created`, so
+`trace_scoped` has no trace to resolve. Scope with the plan's `request_id` instead, which every
+verification and repair event carries
+(`tests/scenario_framework/scenarios/agent_flows/execution-verification-repair.yaml`):
+
+```yaml
+- id: "assert-repaired"
+  type: "journal-assert"
+  action_type: "execution.completed"
+  payload_equals:
+    - path: "request_id"
+      value: "execution-verification-repair"
+    - path: "verification_status"
+      value: "repaired"
+  expect_count: 1
+```
+
 ### 2.2 Matrix Cells
 
 A `matrix` block expands a scenario into one run per cell. Each cell can pick a different

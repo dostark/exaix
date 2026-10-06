@@ -14,7 +14,7 @@
  * @related-files [scripts/check_event_coverage.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import ts from "typescript";
 import {
   analyzeClass,
@@ -815,4 +815,12 @@ export class Svc {
   const cls = firstClass(sf);
   const result = analyzeClass(cls, sf);
   assertEquals(result.wiredUnused !== null, true);
+});
+
+Deno.test("[event-coverage] VerificationRunner is detected as @visible by hasVisibleTag", async () => {
+  const path = new URL("../../packages/execution/src/verification_runner.ts", import.meta.url);
+  const sf = parse(await Deno.readTextFile(path));
+  const runner = allClasses(sf).find((cls) => cls.name?.text === "VerificationRunner");
+  assert(runner, "VerificationRunner class must exist");
+  assertEquals(hasVisibleTag(runner, sf.getFullText()), true);
 });

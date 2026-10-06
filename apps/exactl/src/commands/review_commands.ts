@@ -19,9 +19,10 @@ import { enrichWithRequest } from "../helpers/request_enricher.ts";
 import { isReviewStatus, ReviewStatus } from "@exaix/core/status";
 import type { IReviewStatus } from "@exaix/core/status";
 import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "@exaix/schemas/artifact.ts";
+import { VerificationStatus } from "@exaix/schemas";
 import type { IGitService, Opt, Reason } from "@exaix/core/types";
 import { type ArtifactSubtype, ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "@exaix/core";
-import { classifyTraceAnomalies, summarizeAnomalies } from "@exaix/core/events";
+import { classifyTraceAnomalies, DomainEventType, summarizeAnomalies } from "@exaix/core/events";
 import type { IAnomalyFinding, IAnomalySummary } from "@exaix/core/events";
 import { GitBranchName } from "@exaix/git";
 import { createGitService } from "../../../../apps/common/adapters/git_adapter.ts";
@@ -77,9 +78,22 @@ export interface IReviewDetails extends IReviewMetadata {
     timestamp: string;
   }>;
   anomalies?: IAnomalyFinding[];
+  /** Post-execution verification outcome from the trace's execution.completed row. */
+  verification_status?: VerificationStatus;
 }
 
 export type ReviewTypeFilter = ReviewFilterEnum;
+
+/** Verification outcomes a reviewer must be warned about before approving. */
+const WARNED_VERIFICATION_STATUSES: readonly string[] = [VerificationStatus.FAILED, VerificationStatus.ERROR];
+
+/** A reviewer warning for a failed or errored post-execution verification, else undefined. */
+export function verificationWarning(
+  status: Opt<VerificationStatus, Reason.OptionalInput>,
+): string | undefined {
+  if (!status || !WARNED_VERIFICATION_STATUSES.includes(status)) return undefined;
+  return `post-execution verification ${status}: the committed change did not pass its configured checks`;
+}
 
 type ArtifactFrontmatterData = {
   status?: IReviewStatus;
@@ -1130,13 +1144,28 @@ export class ReviewCommands extends BaseCommand {
     const enrichedMetadata = await this.extractReviewMetadataWithContext(basicMetadata);
 
     const anomalyPayload = await this.loadAnomalyPayload(storedTraceId ?? trace_id);
+    const verificationStatus = await this.loadVerificationStatus(storedTraceId ?? trace_id);
 
     return {
       ...enrichedMetadata,
       diff,
       commits,
       ...anomalyPayload,
+      ...(verificationStatus ? { verification_status: verificationStatus } : {}),
     };
+  }
+
+  /** The verification_status journaled on the trace's execution.completed row, if any. */
+  private async loadVerificationStatus(traceId: string): Promise<VerificationStatus | undefined> {
+    try {
+      const activities = await this.db.getActivitiesByTraceSafe(traceId);
+      const completed = activities.findLast((row) => row.action_type === DomainEventType.ExecutionCompleted);
+      if (!completed) return undefined;
+      const payload = JSON.parse(completed.payload) as { verification_status?: VerificationStatus };
+      return payload.verification_status;
+    } catch {
+      return undefined;
+    }
   }
 
   async approve(branchName: string): Promise<void> {

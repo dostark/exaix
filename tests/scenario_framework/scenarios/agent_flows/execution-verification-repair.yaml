@@ -1,6 +1,6 @@
 schema_version: "1.0.0"
 id: "execution-verification-repair"
-title: "Post-execution verification runs after a committed plan and journals its outcome"
+title: "Post-execution verification repairs a failing check and journals repaired"
 pack: "agent_flows"
 tags: ["safety-gate"]
 request_fixture: "fixtures/requests/agent_flows/execution_verification_repair.md"
@@ -16,82 +16,134 @@ portals:
           task: "test"
           path: "checked_test.ts"
           args: ["--no-check"]
-      max_repair_attempts: 0
+      max_repair_attempts: 1
       check_timeout_ms: 20000
 steps:
+  # The repair step runs natively under this agent. Its ReAct prompt opens with the agent
+  # role line, which the committed fixture execution-verification-repair__repair-step.json
+  # matches to replay a write of the missing module.
+  - id: "write-repair-agent"
+    type: "write-file"
+    name: "Write the repair agent blueprint"
+    path: "Blueprints/Agents/verification-repair-coder.md"
+    content: |
+      ---
+      agent_role: "verification-repair-coder"
+      name: "Verification Repair Coder"
+      model: "mock:test"
+      capabilities: ["read_file", "write_file"]
+      created: "2026-10-06T00:00:00Z"
+      created_by: "test"
+      version: "1.0.0"
+      ---
+
+      # Verification Repair Coder
+    output_criteria:
+      - id: "agent-written"
+        kind: "command-exit-code"
+        equals: 0
+
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
     args: ["start"]
     env:
       EXA_CI_MODE: "1"
+      EXA_LLM_PROVIDER: "mock"
     output_criteria:
       - id: "daemon-started"
-        score_weight: 0.2
+        score_weight: 0.1
         kind: "command-output-contains"
         contains: ["daemon.started"]
 
   - id: "inject-approved-plan"
     type: "write-file"
-    name: "Write an approved plan whose action commits a passing test"
+    name: "Write an approved plan whose action commits a test that fails until repaired"
     path: "Workspace/Active/execution-verification-repair_plan.md"
     content: |
       ---
-      trace_id: "execution-verification-repair-trace"
+      trace_id: "20800000-0000-4000-8000-000000000208"
       request_id: "execution-verification-repair"
       status: approved
       portal: verify-app
+      agent_role: verification-repair-coder
       ---
 
-      # Verification wiring plan
+      # Verification repair plan
 
       ```toml
       tool = "write_file"
-      description = "write a passing test into the portal worktree"
+      description = "write a test that imports a module the repair must create"
 
       [params]
       path = "checked_test.ts"
       content = """
-      Deno.test("ok", () => { if (1 !== 1) throw new Error("no"); });
+      import { greeting } from "./src/verification_repair/greeting.ts";
+      Deno.test("greeting", () => { if (greeting() !== "repaired") throw new Error("not repaired"); });
       """
       ```
     output_criteria:
       - id: "plan-injected"
-        score_weight: 0.2
+        score_weight: 0.1
         kind: "command-exit-code"
         equals: 0
 
+  # The plan is archived just before execution.completed is journaled, so wait on the event.
   - id: "wait-for-execution"
-    type: "wait-for-file"
-    args: ["**/Archive/*_plan.md"]
-    timeout_sec: 120
-    output_criteria:
-      - id: "execution-completed"
-        score_weight: 0.2
-        kind: "file-found"
-        path_pattern: "**/Archive/*_plan.md"
-
-  - id: "wait-for-verification"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "execution.verification.passed", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
-    timeout_sec: 90
+    args: ["wait", "--event", "execution.completed", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "120"]
+    timeout_sec: 150
     output_criteria:
-      - id: "verification-passed"
+      - id: "execution-completed"
+        score_weight: 0.1
+        kind: "command-exit-code"
+        equals: 0
+
+  # An injected plan emits no request.created, so trace_scoped has nothing to resolve; every
+  # verification and repair event carries the plan's request_id, which scopes them instead.
+  - id: "assert-repaired"
+    type: "journal-assert"
+    action_type: "execution.completed"
+    payload_equals:
+      - path: "request_id"
+        value: "execution-verification-repair"
+      - path: "verification_status"
+        value: "repaired"
+    expect_count: 1
+    output_criteria:
+      - id: "verification-repaired"
         class: "security"
         score_weight: 0.3
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-one-repair"
+    type: "journal-assert"
+    action_type: "execution.repair.completed"
+    payload_equals:
+      - path: "request_id"
+        value: "execution-verification-repair"
+    payload_contains: ["src/verification_repair/greeting.ts"]
+    expect_count: 1
+    output_criteria:
+      - id: "repair-changed-the-module"
+        class: "security"
+        score_weight: 0.2
         kind: "command-exit-code"
         equals: 0
 
   - id: "assert-not-exhausted"
     type: "journal-assert"
     action_type: "execution.verification.exhausted"
-    trace_scoped: false
+    payload_equals:
+      - path: "request_id"
+        value: "execution-verification-repair"
     expect_count: 0
     output_criteria:
       - id: "verification-not-exhausted"
         class: "security"
-        score_weight: 0.3
+        score_weight: 0.2
         kind: "command-exit-code"
         equals: 0
 

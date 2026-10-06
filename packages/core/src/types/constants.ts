@@ -241,8 +241,14 @@ export const DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS: number = configurable({
 export const VERIFICATION_DENO_ENV_KEYS: readonly string[] = ["DENO_DIR", "DENO_NO_UPDATE_CHECK", "XDG_CACHE_HOME"];
 /** Whole-host or in-place-mutation flags rejected in a verification check's args. */
 export const VERIFICATION_FORBIDDEN_ARGS: readonly string[] = ["-A", "--allow-all", "--fix"];
-/** Bare permission flags rejected in a verification check's args (scoped `--flag=value` forms stay allowed). */
-export const VERIFICATION_FORBIDDEN_BARE_ALLOW_FLAGS: readonly string[] = ["--allow-env", "--allow-run", "--allow-net"];
+/** Deno permission short flags (`-A`, `-R`, ...). Rejected alone or in a cluster, since they have no scoped form. */
+export const VERIFICATION_PERMISSION_SHORT_FLAGS: readonly string[] = ["A", "R", "W", "N", "E", "S", "I", "P"];
+/** Flags that load permissions from the worktree config, which model-written code can edit. */
+export const VERIFICATION_PERMISSION_SET_FLAGS: readonly string[] = ["-P", "--permission-set"];
+/** Prefix of a long permission flag. A verification check accepts it only with a non-empty `=<values>` list. */
+export const VERIFICATION_ALLOW_FLAG_PREFIX = "--allow-";
+/** Extra characters read past `output_max_chars` so a secret cut at the read boundary is still redacted whole. */
+export const VERIFICATION_OUTPUT_REDACTION_MARGIN_CHARS = 4096;
 /** Flag prepended to a `fmt` check so it never rewrites the worktree. */
 export const VERIFICATION_FMT_CHECK_FLAG = "--check";
 /** Fixed instruction prepended to a post-execution verification repair step. */

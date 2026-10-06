@@ -15,7 +15,7 @@ import type { ModelResolver } from "@exaix/ai";
 import type { IEffortDeclarationPair } from "@exaix/ai";
 import type { EffortTier, IFixedModelClient, IModelIntent } from "@exaix/schemas/model_intent.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
-import type { IEventLogger } from "@exaix/core/logger";
+import { createNoopEventLogger, type IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import { SafeSubprocess } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -171,18 +171,6 @@ export function buildFullPlanText(steps: IPlanStep[]): string {
     .join("\n\n---\n\n");
 }
 
-function noopLogger(): IEventLogger {
-  return {
-    info: () => Promise.resolve(),
-    warn: () => Promise.resolve(),
-    log: () => Promise.resolve(),
-    error: () => Promise.resolve(),
-    fatal: () => Promise.resolve(),
-    debug: () => Promise.resolve(),
-    child: () => noopLogger(),
-  };
-}
-
 export class PlanExecutor {
   private logger: IEventLogger;
   private enableGit: boolean;
@@ -201,7 +189,7 @@ export class PlanExecutor {
     const ctx = options.context;
     this.config = ctx?.config.get() || config;
     this.db = ctx?.db || db;
-    this.logger = logger ?? noopLogger();
+    this.logger = logger ?? createNoopEventLogger();
     this.enableGit = options.enableGit ?? true;
     this.generateReport = options.generateReport ?? false;
   }
@@ -223,7 +211,7 @@ export class PlanExecutor {
       request_id: requestId,
       step_count: context.steps.length,
       ...phaseFields,
-    });
+    }, traceId);
 
     try {
       const git = this.enableGit
@@ -274,6 +262,7 @@ export class PlanExecutor {
             last_commit: lastCommitSha === initialHeadSha ? null : lastCommitSha,
             ...phaseFields,
           },
+          traceId,
         );
 
         const report = (this.generateReport || context.steps.length === 0)
@@ -293,7 +282,8 @@ export class PlanExecutor {
       await this.logger.error(DomainEventType.PlanExecutionFailed, planPath, {
         error: error instanceof Error ? error.message : String(error),
         trace_id: traceId,
-      });
+        ...phaseFields,
+      }, traceId);
       throw error;
     }
   }

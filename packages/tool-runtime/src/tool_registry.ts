@@ -47,7 +47,7 @@ import {
 } from "@exaix/portal/knowledge";
 import type { IPortalKnowledge, ISymbolEntry } from "@exaix/schemas/portal_knowledge.ts";
 import type { IToolConfirmationInterceptor } from "@exaix/core/types";
-import type { IEventLogger } from "@exaix/core/logger";
+import { createNoopEventLogger, type IEventLogger } from "@exaix/core/logger";
 import { DomainEventType, type IToolAliasRewrittenPayload, type IToolParamUnknownPayload } from "@exaix/core/events";
 import type { HitlRule } from "@exaix/schemas/hitl.ts";
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
@@ -1781,13 +1781,14 @@ export class ToolRegistry implements IToolRegistry {
           if (outcome.code !== 0) {
             return {
               success: false,
-              error: `Task '${task}' failed with exit code ${outcome.code}:\n${outcome.output}`,
-              data: { output: outcome.output, exitCode: outcome.code },
+              error: `Task '${task}' failed with exit code ${outcome.code}:\n${outcome.stdout}\n${outcome.stderr}`,
+              data: { output: outcome.stdout, errorOutput: outcome.stderr, exitCode: outcome.code },
             };
           }
 
           return this.formatSuccess({
-            output: outcome.output,
+            output: outcome.stdout,
+            errorOutput: outcome.stderr,
             exitCode: outcome.code,
           });
         case "timed_out":
@@ -1854,18 +1855,6 @@ export class ToolRegistry implements IToolRegistry {
       return this.formatError(error);
     }
   }
-}
-
-function createNoopEventLogger(): IEventLogger {
-  return {
-    log: () => Promise.resolve(),
-    info: () => Promise.resolve(),
-    warn: () => Promise.resolve(),
-    error: () => Promise.resolve(),
-    fatal: () => Promise.resolve(),
-    debug: () => Promise.resolve(),
-    child: () => createNoopEventLogger(),
-  };
 }
 
 function createNoopPipeline<T>(): IMiddlewarePipeline<T> {

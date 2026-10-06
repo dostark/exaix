@@ -13,7 +13,6 @@ import {
   DEFAULT_VERIFICATION_MAX_REPAIR_ATTEMPTS,
   DEFAULT_VERIFICATION_OUTPUT_MAX_CHARS,
   VERIFICATION_FORBIDDEN_ARGS,
-  VERIFICATION_FORBIDDEN_BARE_ALLOW_FLAGS,
   VERIFICATION_MAX_REPAIR_ATTEMPTS_LIMIT,
 } from "@exaix/core";
 import { PortalPermissionsSchema } from "@exaix/schemas/portal_permissions.ts";
@@ -94,7 +93,7 @@ Deno.test("[verification-schema] an absolute path and a ../ check path are rejec
 });
 
 Deno.test("[verification-schema] whole-host and bare permission args are rejected; scoped allow flags are accepted", () => {
-  const forbidden = [...VERIFICATION_FORBIDDEN_ARGS, ...VERIFICATION_FORBIDDEN_BARE_ALLOW_FLAGS];
+  const forbidden = [...VERIFICATION_FORBIDDEN_ARGS, "--allow-env", "--allow-run", "--allow-net"];
   for (const arg of forbidden) {
     const parsed = VerificationCheckSchema.safeParse({
       kind: "deno_task",
@@ -117,4 +116,51 @@ Deno.test("[verification-schema] whole-host and bare permission args are rejecte
     args: ["--allow-env=FOO"],
   });
   assert(scopedEnv.success);
+});
+
+function argsAccepted(args: string[]): boolean {
+  return VerificationCheckSchema.safeParse({ kind: "deno_task", task: "test", args }).success;
+}
+
+Deno.test("[verification-schema] a short-flag cluster containing a permission flag (-qA, -ERN) is rejected", () => {
+  for (const arg of ["-qA", "-ERN", "-Aq", "-R=."]) {
+    assert(!argsAccepted([arg]), `expected ${arg} to be rejected`);
+  }
+  assert(argsAccepted(["-q"]), "a cluster with no permission flag stays accepted");
+});
+
+Deno.test("[verification-schema] -E, -N, -R, -W and -S are rejected", () => {
+  for (const arg of ["-E", "-N", "-R", "-W", "-S", "-I"]) {
+    assert(!argsAccepted([arg]), `expected ${arg} to be rejected`);
+  }
+});
+
+Deno.test("[verification-schema] -P and --permission-set are rejected", () => {
+  for (const arg of ["-P", "-P=ci", "--permission-set", "--permission-set=ci"]) {
+    assert(!argsAccepted([arg]), `expected ${arg} to be rejected`);
+  }
+});
+
+Deno.test("[verification-schema] every bare --allow-<name> flag, and an empty --allow-<name>= list, is rejected", () => {
+  const bare = [
+    "--allow-read",
+    "--allow-write",
+    "--allow-ffi",
+    "--allow-sys",
+    "--allow-import",
+    "--allow-env",
+    "--allow-run",
+    "--allow-net",
+  ];
+  for (const arg of [...bare, "--allow-env=", "--allow-net=", "--allow-all=true"]) {
+    assert(!argsAccepted([arg]), `expected ${arg} to be rejected`);
+  }
+});
+
+Deno.test("[verification-schema] scoped --allow-<name>=<values> and non-permission flags are accepted", () => {
+  for (
+    const arg of ["--allow-read=.", "--allow-env=FOO", "--allow-run=bash", "--no-check", "--parallel", "--filter=x"]
+  ) {
+    assert(argsAccepted([arg]), `expected ${arg} to be accepted`);
+  }
 });

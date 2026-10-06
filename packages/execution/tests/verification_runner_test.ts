@@ -12,9 +12,9 @@ import { stub } from "@std/testing/mock";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
-import { type ISubprocessOptions, SafeSubprocess } from "@exaix/core";
+import { type ISubprocessOptions, SafeSubprocess, VERIFICATION_OUTPUT_REDACTION_MARGIN_CHARS } from "@exaix/core";
 import type { LogMetadata } from "@exaix/core/types";
-import { type IPortalVerification, PortalVerificationSchema } from "@exaix/schemas";
+import { type IPortalVerification, PortalVerificationSchema, UserRequestSchema } from "@exaix/schemas";
 import { VerificationRunner } from "@exaix/execution";
 import { withEnv } from "@exaix/testing";
 
@@ -250,6 +250,87 @@ Deno.test("[verification-runner] the check env is exactly buildChildEnv allowlis
     assertEquals(keys.includes("HTTP_PROXY"), false);
     assertEquals(keys.includes("LD_PRELOAD"), false);
     assert(keys.includes("PATH"), keys.join(","));
+  } finally {
+    s.restore();
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[verification-runner] a check printing far beyond output_max_chars returns a bounded, redacted tail", async () => {
+  const root = await makeRoot("verification-bounded-");
+  const outputMaxChars = 200;
+  const seenLimits: Array<number | undefined> = [];
+  const originalRun = SafeSubprocess.run.bind(SafeSubprocess);
+  const s = stubRun((command, args, options) => {
+    seenLimits.push(options?.maxOutputChars);
+    return originalRun(command, args, options);
+  });
+  try {
+    await Deno.writeTextFile(
+      join(root, "loud_test.ts"),
+      'Deno.test("loud", () => { console.log("x".repeat(5_000_000)); throw new Error("LOUD-END"); });\n',
+    );
+    const runner = new VerificationRunner(createCapturingLogger([]), []);
+
+    const result = await runner.run(
+      parseConfig([{ kind: "deno_task", task: "test" }], { output_max_chars: outputMaxChars }),
+      { requestId: "req-1", traceId: "trace-1", attempt: 0, executionRoot: root },
+    );
+
+    assertEquals(result.passed, false);
+    assertEquals(seenLimits, [outputMaxChars + VERIFICATION_OUTPUT_REDACTION_MARGIN_CHARS]);
+    assert(result.failures[0].output.length <= outputMaxChars, `${result.failures[0].output.length}`);
+  } finally {
+    s.restore();
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[verification-runner] a known secret straddling the buffer boundary is still redacted", async () => {
+  const root = await makeRoot("verification-straddle-");
+  const secret = "STRADDLE-SECRET-0123456789";
+  const outputMaxChars = 100;
+  const printed = "x".repeat(10_000) + secret + "y".repeat(outputMaxChars - secret.length / 2);
+  const s = stubRun((_command, _args, options) => {
+    const limit = options?.maxOutputChars ?? printed.length;
+    return Promise.resolve({ code: 1, stdout: printed.slice(printed.length - limit), stderr: "" });
+  });
+  try {
+    const runner = new VerificationRunner(createCapturingLogger([]), [secret]);
+
+    const result = await runner.run(
+      parseConfig([{ kind: "deno_task", task: "test" }], { output_max_chars: outputMaxChars }),
+      { requestId: "req-1", traceId: "trace-1", attempt: 0, executionRoot: root },
+    );
+
+    const output = result.failures[0].output;
+    assertEquals(output.length, outputMaxChars);
+    assertEquals(output.includes(secret.slice(secret.length / 2)), false, output);
+  } finally {
+    s.restore();
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[verification-runner] check output is stripped of ANSI escapes and control characters, and markup tags are neutralised", async () => {
+  const root = await makeRoot("verification-sanitize-");
+  const raw = "\x1b[31mFAIL\x1b[0m bell\x07 <script>x</script> <IMG src=a> <iframe></iframe>\ttab\nline";
+  const s = stubRun(() => Promise.resolve({ code: 1, stdout: raw, stderr: "" }));
+  try {
+    const runner = new VerificationRunner(createCapturingLogger([]), []);
+    const result = await runner.run(parseConfig([{ kind: "deno_task", task: "test" }]), {
+      requestId: "req-1",
+      traceId: "trace-1",
+      attempt: 0,
+      executionRoot: root,
+    });
+
+    const output = result.failures[0].output;
+    assertEquals(
+      output,
+      "FAIL bell &lt;script>x&lt;/script> &lt;IMG src=a> &lt;iframe>&lt;/iframe>\ttab\nline",
+    );
+    assert(UserRequestSchema.safeParse(output).success, "sanitized output must pass agent input validation");
   } finally {
     s.restore();
     await Deno.remove(root, { recursive: true });
