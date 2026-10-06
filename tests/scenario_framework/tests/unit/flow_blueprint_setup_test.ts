@@ -17,6 +17,7 @@ import { MockStrategy } from "@exaix/core";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { FlowLoader } from "@exaix/flow";
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";
+import { expandVariablesInStep } from "../../runner/synthetic_runner.ts";
 import { resolveCellConfig } from "../../runner/matrix_expander.ts";
 
 const FRAMEWORK_HOME = new URL("../../", import.meta.url).pathname;
@@ -53,6 +54,12 @@ for (
       scenario.steps.find((step) => step.id === "start-daemon")!.env!.PATH,
       "$WORKSPACE_ROOT/.mock-cli:$PATH",
     );
+    const expanded = expandVariablesInStep(scenario.steps.find((step) => step.id === "start-daemon")!, {
+      ...Deno.env.toObject(),
+      WORKSPACE_ROOT: REPO_ROOT,
+      FRAMEWORK_HOME,
+    });
+    assertEquals(expanded.env!.PATH, `${REPO_ROOT}/.mock-cli:${Deno.env.get("PATH")}`);
     assertEquals(config.ai?.provider, "mock");
     assertEquals(config.ai?.model, "test");
     const flow = await new FlowLoader(`${REPO_ROOT}Blueprints/Flows`).loadFlow(flowId);

@@ -32,7 +32,7 @@ const REPO_ROOT = resolve(FRAMEWORK_HOME, "..", "..");
 const SCENARIOS_DIR = join(FRAMEWORK_HOME, "scenarios");
 
 /** Names the process environment supplies, which the runner merges in ahead of its own table. */
-const PASSTHROUGH_ENV_VARIABLES = ["HOME"];
+const PASSTHROUGH_ENV_VARIABLES = ["HOME", "PATH"];
 
 /** Only UPPER_SNAKE names are candidates — a lowercase `$name` (e.g. `$signal` bound by `read -r id signal`, or a TS template literal `${i}`) belongs to embedded scenario code, not the framework. */
 const VARIABLE_REFERENCE = /\$\{([A-Z][A-Z0-9_]*)\}|\$([A-Z][A-Z0-9_]*)/g;
