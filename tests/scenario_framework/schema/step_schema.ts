@@ -412,6 +412,12 @@ export const CriterionResultSchema = z.object({
     provider: z.string(),
     model: z.string(),
     reasoning: z.string().optional(),
+    /** Methodology skills the judge read, with the revision and content hash of each. */
+    methodology: z.array(z.object({
+      skill: z.string(),
+      revision_id: z.string(),
+      content_sha256: z.string(),
+    })).optional(),
   }).optional(),
 }).strict();
 

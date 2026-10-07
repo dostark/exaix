@@ -341,9 +341,9 @@ auto-injects its instructions into the agent's prompt:
 | `gap-analysis`     | Pre-implementation plan validation against codebase |
 | `step-execution`   | TDD step-by-step workflow with CI gates per step    |
 
-Skills live in `Blueprints/Skills/<name>.skill.md` (source) and
-`Memory/Skills/global/<name>.json` (runtime, loaded by `SkillsService`).
-Runtime JSON skills are validated against `SkillSchema`.
+Skills are folders. Shipped skills live in `Blueprints/Skills/<name>/SKILL.md`, and the dogfood
+sandbox reads the worktree's `.copilot/skills/<name>/` folders directly. `SkillsService` loads them
+through the skill folder loader, and an optional `exaix.yaml` sidecar carries triggers and constraints.
 
 ### 3.4 Generating Step Requests from a Plan
 

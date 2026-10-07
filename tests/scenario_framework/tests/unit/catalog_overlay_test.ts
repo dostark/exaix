@@ -11,12 +11,14 @@
  * @related-files [packages/core/src/skills/skills.ts, packages/request/src/blueprint_resolver.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertRejects } from "@std/assert";
+import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "@exaix/core/skills";
 import { initTestDbService } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing";
 import { BlueprintResolver, EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR } from "@exaix/request";
+import { produceSkillFolderOverlay } from "../../runner/skill_folder_overlay.ts";
 
 /** Runs `fn` with an env var set, always restoring the prior value. */
 async function withEnv<T>(name: string, value: string | undefined, fn: () => Promise<T>): Promise<T> {
@@ -160,5 +162,91 @@ Deno.test("[CatalogOverlay] an agent role with no overlay file falls back to the
   } finally {
     await Deno.remove(testDir, { recursive: true });
     await Deno.remove(overlayRoot, { recursive: true });
+  }
+});
+
+async function fingerprint(dir: string): Promise<string[]> {
+  const entries: string[] = [];
+  for await (const entry of Deno.readDir(dir)) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory) entries.push(...(await fingerprint(path)).map((rel) => `${entry.name}/${rel}`));
+    else entries.push(`${entry.name}:${await Deno.readTextFile(path)}`);
+  }
+  return entries.sort();
+}
+
+Deno.test("[CatalogOverlay] the producer copies treatment folders into an exclusive root that changes resolution and leaves the shipped catalog untouched", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+  const base = await Deno.makeTempDir({ prefix: "skill-overlay-producer-" });
+  try {
+    const shipped = join(base, "shipped");
+    const treatments = join(base, "treatments");
+    await writeSkillFolder(shipped, "tdd-methodology", "shipped version", "shipped instructions");
+    await writeSkillFolder(treatments, "tdd-methodology", "treated version", "treated instructions");
+    await Deno.writeTextFile(
+      join(treatments, "tdd-methodology", "exaix.yaml"),
+      "triggers:\n  keywords: [treatmentword]\n",
+    );
+    const shippedBefore = await fingerprint(shipped);
+
+    const overlay = await produceSkillFolderOverlay({
+      root: base,
+      sourceDir: treatments,
+      targetDir: join(base, "arm-overlay"),
+    });
+    assertEquals(overlay.skills, ["tdd-methodology"]);
+    assertEquals(overlay.overlayDir, join(base, "arm-overlay"));
+
+    const service = new SkillsService({
+      memoryDir: join(config.system.root, config.paths.memory),
+      blueprintSkillsDir: shipped,
+    }, db);
+    await service.initialize();
+    await withEnv(EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, overlay.overlayDir, async () => {
+      assertEquals((await service.getSkill("tdd-methodology"))?.instructions, "treated instructions");
+      const matches = await service.matchSkills({ keywords: ["treatmentword"] });
+      assertEquals(matches.matches.map((match) => match.skillId), ["tdd-methodology"]);
+    });
+    assertEquals((await service.getSkill("tdd-methodology"))?.instructions, "shipped instructions");
+    assertEquals(await fingerprint(shipped), shippedBefore);
+  } finally {
+    await Deno.remove(base, { recursive: true });
+    await cleanup();
+  }
+});
+
+Deno.test("[CatalogOverlay] a treatment that fails validation leaves no staged overlay behind", async () => {
+  const base = await Deno.makeTempDir({ prefix: "skill-overlay-cleanup-" });
+  try {
+    const treatments = join(base, "treatments");
+    await writeSkillFolder(treatments, "good-treatment", "good", "good body");
+    await Deno.mkdir(join(treatments, "broken-treatment"), { recursive: true });
+    await Deno.writeTextFile(join(treatments, "broken-treatment", "SKILL.md"), "no frontmatter");
+    await assertRejects(
+      () => produceSkillFolderOverlay({ root: base, sourceDir: treatments, targetDir: join(base, "arm-overlay") }),
+      Error,
+      "broken-treatment: invalid_frontmatter",
+    );
+    assertEquals(await exists(join(base, "arm-overlay")), false);
+  } finally {
+    await Deno.remove(base, { recursive: true });
+  }
+});
+
+Deno.test("[CatalogOverlay] the producer refuses an existing target and a target outside the isolated root", async () => {
+  const base = await Deno.makeTempDir({ prefix: "skill-overlay-target-" });
+  try {
+    const treatments = join(base, "treatments");
+    await writeSkillFolder(treatments, "one-treatment", "one", "body");
+    await Deno.mkdir(join(base, "taken"));
+    await assertRejects(() =>
+      produceSkillFolderOverlay({ root: base, sourceDir: treatments, targetDir: join(base, "taken") })
+    );
+    await assertRejects(() =>
+      produceSkillFolderOverlay({ root: join(base, "taken"), sourceDir: treatments, targetDir: join(base, "outside") })
+    );
+    assertEquals(await exists(join(base, "outside")), false);
+  } finally {
+    await Deno.remove(base, { recursive: true });
   }
 });

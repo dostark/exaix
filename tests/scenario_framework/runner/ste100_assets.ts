@@ -68,7 +68,7 @@ export interface ISte100FreezeInput {
 }
 
 export interface ISte100IsolatedGeneratorInput {
-  kind: "skills" | "dogfood-skills";
+  kind: "skills" | "dogfood-skills" | "overlay";
   root: string;
   sourceDir: string;
   targetDir: string;
@@ -379,6 +379,12 @@ async function copyValidatedSkillFolders(
   return result;
 }
 
+const ISOLATED_ROOT_KINDS: Readonly<Record<ISte100IsolatedGeneratorInput["kind"], SkillRootKind>> = {
+  skills: SkillRootKind.BLUEPRINT,
+  "dogfood-skills": SkillRootKind.DOGFOOD,
+  overlay: SkillRootKind.EVAL_OVERLAY,
+};
+
 /** Preflights and creates an isolated arm output, then runs the named production
  *  generator with explicit arm sources; output is revalidated afterwards. */
 export async function runIsolatedGenerator(
@@ -386,7 +392,7 @@ export async function runIsolatedGenerator(
   options?: Opt<{ check?: boolean }, Reason.ExecutionConfig>,
 ): Promise<{ success: boolean; generated: string[]; errors: string[]; warnings: string[] }> {
   const absoluteTarget = await createExclusiveIsolatedDir(input.targetDir, input.root, input.existingTrees);
-  const rootKind = input.kind === "dogfood-skills" ? SkillRootKind.DOGFOOD : SkillRootKind.BLUEPRINT;
+  const rootKind = ISOLATED_ROOT_KINDS[input.kind];
   const result = await copyValidatedSkillFolders(input.sourceDir, absoluteTarget, options?.check === true, rootKind);
   await revalidateIsolatedTarget(absoluteTarget, input.root);
   return result;

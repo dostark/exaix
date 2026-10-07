@@ -137,6 +137,19 @@ export interface IScenarioStepOutcome {
   executionResult?: IScenarioStepExecutionResult;
 }
 
+/** One methodology skill the judge read, identified by the revision and hash of the text it used. */
+export interface IJudgeMethodologySkill {
+  skill: string;
+  revision_id: string;
+  content_sha256: string;
+}
+
+/** The judge methodology policy text and the provenance of each skill that contributed to it. */
+export interface IJudgeMethodology {
+  instructions: string;
+  skills: IJudgeMethodologySkill[];
+}
+
 const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---\n?/;
 const JSON_PATH_ROOT = "$";
 
@@ -1729,8 +1742,10 @@ export function resolveTestRunStatus(
 function judgeResult(
   provenance: Opt<{ provider: string; model: string }, Reason.OptionalInput> = undefined,
   reasoning: string,
-): { provider: string; model: string; reasoning: string } | undefined {
-  return provenance ? { ...provenance, reasoning } : undefined;
+  methodology: IJudgeMethodologySkill[] = [],
+): { provider: string; model: string; reasoning: string; methodology?: IJudgeMethodologySkill[] } | undefined {
+  if (!provenance) return undefined;
+  return { ...provenance, reasoning, ...(methodology.length > 0 ? { methodology } : {}) };
 }
 
 // Resolves the `context` buildEvaluationPrompt receives: `context_path`'s file content when set
@@ -1752,9 +1767,9 @@ export async function resolveEvalJudgeContext(
 
 const JUDGE_METHODOLOGY_SKILL_IDS: readonly string[] = ["verdict-rubric", "response-contract-judge"];
 
-// Reads the judge skills through the folder loader, not SkillsService. That path needs no DB.
-// It also keeps EXA_EVAL_SUPPRESS_SKILLS of the arm under test out of the judge.
-export async function loadJudgeMethodologyInstructions(workspaceRoot: string): Promise<string> {
+// Reads the judge skills through the folder loader over the shipped Blueprint root only. The loader
+// reads no eval overlay and no suppression list, so the arm under test never reaches the judge.
+export async function loadJudgeMethodology(workspaceRoot: string): Promise<IJudgeMethodology> {
   const loader = createSkillLoaderFor([{
     path: resolve(workspaceRoot, "Blueprints", "Skills"),
     kind: SkillRootKind.BLUEPRINT,
@@ -1762,12 +1777,19 @@ export async function loadJudgeMethodologyInstructions(workspaceRoot: string): P
     project: null,
   }]);
   const parts: string[] = [];
+  const skills: IJudgeMethodologySkill[] = [];
   for (const skillId of JUDGE_METHODOLOGY_SKILL_IDS) {
     // A missing, invalid or inactive skill contributes nothing and never fails the judge.
     const loaded = await loader.get(skillId, testSkillContext());
-    if (loaded?.skill.instructions) parts.push(loaded.skill.instructions);
+    if (!loaded?.skill.instructions) continue;
+    parts.push(loaded.skill.instructions);
+    skills.push({ skill: skillId, revision_id: loaded.revisionId, content_sha256: loaded.contentSha256 });
   }
-  return parts.join("\n\n---\n\n");
+  return { instructions: parts.join("\n\n---\n\n"), skills };
+}
+
+export async function loadJudgeMethodologyInstructions(workspaceRoot: string): Promise<string> {
+  return (await loadJudgeMethodology(workspaceRoot)).instructions;
 }
 
 /** Prepends methodology ahead of the evaluation request so the judge reads "how to judge" before "what to judge"; empty methodology returns the prompt unchanged. */
@@ -1918,8 +1940,8 @@ export async function evaluateLlmJudgeCriterion(
     ? `Role evaluation rubric:\n${criterion.rubric}\n\n${contextWithTests ?? ""}`
     : contextWithTests;
   const basePrompt = buildEvaluationPrompt(content, effectiveCriteria, groundedContext, isMulti);
-  const methodology = await loadJudgeMethodologyInstructions(options.workspaceRoot);
-  const promptUsed = prependMethodologyInstructions(basePrompt, methodology);
+  const judgeMethodology = await loadJudgeMethodology(options.workspaceRoot);
+  const promptUsed = prependMethodologyInstructions(basePrompt, judgeMethodology.instructions);
   const threshold = criterion.score_threshold ?? 0.7;
   let judgeProvenance = resolveEvalJudgeProvenance(options.env);
 
@@ -1959,7 +1981,9 @@ export async function evaluateLlmJudgeCriterion(
         evidence_refs: llmJudgeEvidenceRefs(criterion),
         score: weightedScore,
         score_weight: options.criterion.score_weight,
-        ...(judgeResult(judgeProvenance, "mock pass") ? { judge: judgeResult(judgeProvenance, "mock pass") } : {}),
+        ...(judgeResult(judgeProvenance, "mock pass", judgeMethodology.skills)
+          ? { judge: judgeResult(judgeProvenance, "mock pass", judgeMethodology.skills) }
+          : {}),
       };
     }
     return {
@@ -1971,7 +1995,9 @@ export async function evaluateLlmJudgeCriterion(
       evidence_refs: llmJudgeEvidenceRefs(criterion),
       score: 1.0,
       score_weight: options.criterion.score_weight,
-      ...(judgeResult(judgeProvenance, "mock pass") ? { judge: judgeResult(judgeProvenance, "mock pass") } : {}),
+      ...(judgeResult(judgeProvenance, "mock pass", judgeMethodology.skills)
+        ? { judge: judgeResult(judgeProvenance, "mock pass", judgeMethodology.skills) }
+        : {}),
     };
   }
 
@@ -1989,7 +2015,7 @@ export async function evaluateLlmJudgeCriterion(
         await calibrationCapture({
           requestContext: groundedContext ?? "",
           artifact: content,
-          rubricMethodology: methodology,
+          rubricMethodology: judgeMethodology.instructions,
           provider: resolved.provider,
           model: resolved.model,
           promptUsed,
@@ -2032,7 +2058,9 @@ export async function evaluateLlmJudgeCriterion(
         expected_value: threshold,
         score: weightedScore,
         score_weight: options.criterion.score_weight,
-        ...(judgeResult(judgeProvenance, reasoning) ? { judge: judgeResult(judgeProvenance, reasoning) } : {}),
+        ...(judgeResult(judgeProvenance, reasoning, judgeMethodology.skills)
+          ? { judge: judgeResult(judgeProvenance, reasoning, judgeMethodology.skills) }
+          : {}),
       };
     }
 
@@ -2056,8 +2084,8 @@ export async function evaluateLlmJudgeCriterion(
       expected_value: threshold,
       score: score,
       score_weight: options.criterion.score_weight,
-      ...(judgeResult(judgeProvenance, parsed.reasoning)
-        ? { judge: judgeResult(judgeProvenance, parsed.reasoning) }
+      ...(judgeResult(judgeProvenance, parsed.reasoning, judgeMethodology.skills)
+        ? { judge: judgeResult(judgeProvenance, parsed.reasoning, judgeMethodology.skills) }
         : {}),
     };
   } catch (err) {

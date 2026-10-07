@@ -257,3 +257,22 @@ Deno.test("ste100 isolated dogfood skills: a Blueprint-style folder under the do
     assertEquals(result.errors, ["bad-skill: invalid_frontmatter"]);
   });
 });
+
+Deno.test("ste100 isolated overlay: treatment folders are copied through the overlay kind and returned as generated folders", async () => {
+  await withTempRoot(async (root) => {
+    const source = join(root, "treatments");
+    await writeSkillFolder(source, "treated-skill", { "exaix.yaml": "title: Treated\n" });
+    const result = await runIsolatedGenerator({
+      kind: "overlay",
+      root,
+      sourceDir: source,
+      targetDir: join(root, "arm-overlay"),
+    });
+    assertEquals(result.errors, []);
+    assertEquals(result.generated, [join(root, "arm-overlay", "treated-skill")]);
+    assertEquals(
+      await Deno.readTextFile(join(root, "arm-overlay", "treated-skill", "exaix.yaml")),
+      await Deno.readTextFile(join(source, "treated-skill", "exaix.yaml")),
+    );
+  });
+});
