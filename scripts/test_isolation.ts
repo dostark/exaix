@@ -472,20 +472,32 @@ export async function runBatch2InContainers(
     if (entry.serializedOutput) serializedInFlight--;
   };
 
+  const retire = async (worker: IWorkerContainer): Promise<void> => {
+    liveWorkers.delete(worker);
+    try {
+      await worker.kill();
+    } catch {
+      // The worker already exited, or docker is gone, so nothing is left to reap.
+    }
+  };
+
   const runWorker = async (initial: IWorkerContainer): Promise<void> => {
     let worker = initial;
     while (true) {
       const entry = takeNext();
       if (!entry) return;
-      await worker.send(entry.file);
-      const outcome = await nextWithWatchdog(worker, options.watchdogMs);
-      releaseSerialized(entry);
-      if (outcome === "timeout") {
-        await worker.kill();
-        liveWorkers.delete(worker);
+      let outcome: IContainerRunResult | null | "timeout" = null;
+      try {
+        await worker.send(entry.file);
+        outcome = await nextWithWatchdog(worker, options.watchdogMs);
+      } catch {
+        // A closed stdin pipe means the worker exited before this file dispatched.
+        outcome = null;
       }
+      releaseSerialized(entry);
       if (outcome === "timeout" || outcome === null) {
-        // The worker wedged or exited mid-flight: requeue once, then mark the file failed.
+        // The worker wedged or exited mid-flight, so retire it and requeue once.
+        await retire(worker);
         const attempts = (entry.attempts ?? 0) + 1;
         if (attempts <= MAX_WORKER_RETRIES) {
           queue.unshift({ ...entry, attempts });
@@ -519,7 +531,7 @@ export async function runBatch2InContainers(
 
   await Promise.all(initialWorkers.map((worker) => runWorker(worker)));
 
-  await Promise.all(
+  await Promise.allSettled(
     [...liveWorkers].map((worker) => worker.send(TEST_CONTAINER_DONE_SENTINEL)),
   );
 

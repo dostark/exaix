@@ -250,6 +250,61 @@ Deno.test("runBatch2InContainers requeues an in-flight file when a worker exits,
   assert(started >= 2, "a replacement worker was started");
 });
 
+Deno.test("a worker that exits mid-flight and whose stdin rejects is requeued, not fatal", async () => {
+  let started = 0;
+  const options = baseRunOptions(() => {
+    const index = started++;
+    if (index === 0) {
+      let sends = 0;
+      return {
+        name: "w0",
+        send(): Promise<void> {
+          sends++;
+          return sends === 1 ? Promise.resolve() : Promise.reject(new Error("BrokenPipe: Broken pipe (os error 32)"));
+        },
+        next(): Promise<IContainerRunResult | null> {
+          return Promise.resolve(null);
+        },
+        kill(): Promise<void> {
+          return Promise.resolve();
+        },
+      };
+    }
+    return makeFakeWorker(`w${index}`, (file) => resultFor(file));
+  });
+  options.jobs = 1;
+  const results = await runBatch2InContainers([{ file: "a_test.ts" }], options);
+  assertEquals(results.map((r) => r.testFile), ["a_test.ts"]);
+  assertEquals(results[0].exitCode, 0);
+});
+
+Deno.test("the DONE sentinel is never written to an exited worker", async () => {
+  const doneSentTo: number[] = [];
+  let started = 0;
+  const options = baseRunOptions(() => {
+    const index = started++;
+    if (index === 0) {
+      return {
+        name: "w0",
+        send(file: string): Promise<void> {
+          if (file === TEST_CONTAINER_DONE_SENTINEL) doneSentTo.push(index);
+          return Promise.resolve();
+        },
+        next(): Promise<IContainerRunResult | null> {
+          return Promise.resolve(null);
+        },
+        kill(): Promise<void> {
+          return Promise.resolve();
+        },
+      };
+    }
+    return makeFakeWorker(`w${index}`, (file) => resultFor(file));
+  });
+  options.jobs = 1;
+  await runBatch2InContainers([{ file: "a_test.ts" }], options);
+  assertEquals(doneSentTo, []);
+});
+
 Deno.test("runBatch2InContainers never runs two serializedOutput files concurrently", async () => {
   let serializedActive = 0;
   let maxSerialized = 0;
