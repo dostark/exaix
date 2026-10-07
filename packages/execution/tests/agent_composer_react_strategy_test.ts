@@ -6,7 +6,7 @@
  * @related-files [packages/execution/src/agent_composer.ts]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer, StrategyRegistry } from "@exaix/execution";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
@@ -561,6 +561,66 @@ Deno.test("flag-off and incapable providers use the one-turn ReAct path", async 
       }
     }
   } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("text-mode ReAct keeps the prior action and tool result in the next turn's prompt", async () => {
+  const fixture = await setup();
+  const prompts: string[] = [];
+  const provider: IModelProvider = {
+    id: "text-react-history-fixture",
+    generate: (prompt) => {
+      prompts.push(prompt);
+      return Promise.resolve({
+        content: prompts.length === 1
+          ? 'THOUGHT: Read it.\n```toml\n[[actions]]\ntool = "read_file"\n[actions.params]\npath = "README.md"\n```'
+          : `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`,
+        usage: { promptTokens: 4, completionTokens: 2, totalTokens: 6 },
+        model: "test",
+        provider: "text-react-history-fixture",
+      });
+    },
+  };
+  const { config, db, cleanup } = fixture;
+  const composer = new AgentComposer({
+    config,
+    db,
+    logger: new EventLogger({ db }),
+    pathResolver: new PathResolver(config),
+    permissions: new PortalPermissionsService(config.portals),
+    provider,
+    toolRegistry: {
+      getTools:
+        () => [{ name: ToolName.READ_FILE, description: "Read", parameters: { type: "object", properties: {} } }],
+      execute: () => Promise.resolve({ success: true, data: { content: "PORTAL README SENTINEL" } }),
+      getBaseDir: () => fixture.portal,
+    } as never,
+  });
+  try {
+    await composer.executeStep(
+      {
+        trace_id: crypto.randomUUID(),
+        request_id: "request-text",
+        request: "Read",
+        plan: "Read",
+        portal: "TestPortal",
+      },
+      {
+        portal: "TestPortal",
+        agent_role: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 30000,
+        max_tool_calls: 5,
+        audit_enabled: true,
+        native_tools_enabled: false,
+      },
+    );
+    assertEquals(prompts.length, 2);
+    assertStringIncludes(prompts[1], "Tool read_file result:");
+    assertStringIncludes(prompts[1], "PORTAL README SENTINEL");
+  } finally {
+    composer.dispose();
     await cleanup();
   }
 });

@@ -704,9 +704,9 @@ export class AgentComposer {
       // Use ReAct for all other provider-backed plan steps.
       const _blueprint = await this.loadBlueprint(options.agent_role ?? "", context.trace_id);
       const pinnedSkills = await this.resolvePinnedSkillPrompt(context, options);
-      await this.prepareStepBudget(_blueprint, options, context.trace_id, pinnedSkills);
-
       const strategyName = this.resolveStrategyName(_blueprint, options);
+      await this.prepareStepBudget(_blueprint, options, context.trace_id, pinnedSkills, strategyName);
+
       // Log execution start
       await this.logExecutionStart(
         context.trace_id,
@@ -834,6 +834,7 @@ export class AgentComposer {
     options: IAgentExecutionOptions,
     traceId: string,
     pinnedSkills: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
+    strategyName: ExecutionStrategyName,
   ): Promise<void> {
     const effortResolution = this.resolveStepEffort(blueprint, options);
     const projection = projectResolvedCallOptions(effortResolution, {
@@ -846,7 +847,7 @@ export class AgentComposer {
     await this.ctx.allocateBudget(
       this.resolveModelId(blueprint),
       options.request_analysis as IRequestAnalysis | undefined,
-      this.stepAllocationHints(options, pinnedSkills),
+      this.stepAllocationHints(options, pinnedSkills, strategyName),
     );
   }
 
@@ -854,9 +855,13 @@ export class AgentComposer {
   private stepAllocationHints(
     options: IAgentExecutionOptions,
     pinnedSkills: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
+    strategyName: ExecutionStrategyName,
   ): Opt<IAllocationHints, Reason.OptionalInput> {
     const hints: IAllocationHints = {};
-    if (options.native_tools_enabled && this.provider && providerSupportsNativeConversation(this.provider.id)) {
+    // A ReAct loop carries prior actions and tool results into every later turn, in text and native mode.
+    const loops = strategyName === ExecutionStrategyName.REACT ||
+      (options.native_tools_enabled && this.provider && providerSupportsNativeConversation(this.provider.id));
+    if (loops) {
       hints.loopHistoryUsedTokens = options.max_tool_calls * PLANNING_TOOL_CALL_OVERHEAD_TOKENS;
     }
     if (pinnedSkills && pinnedSkills.text.length > 0) {
