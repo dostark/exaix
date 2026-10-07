@@ -1,0 +1,31 @@
+{
+  "scenarioId": "triage-router-docs",
+  "edition": "solo",
+  "flow": "triage-router",
+  "fixtureDir": "fixtures/mock_recordings/phase205/triage",
+  "requestStepId": "submit",
+  "selectedPath": [
+    "triage",
+    "docs-draft",
+    "summary"
+  ],
+  "expectedFailure": null,
+  "gateEvaluations": {},
+  "calls": [
+    {
+      "lane": "triage",
+      "callIndex": 0,
+      "dialect": "agent"
+    },
+    {
+      "lane": "docs-draft",
+      "callIndex": 0,
+      "dialect": "agent"
+    },
+    {
+      "lane": "summary",
+      "callIndex": 0,
+      "dialect": "agent"
+    }
+  ]
+}

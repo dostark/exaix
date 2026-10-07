@@ -125,6 +125,16 @@ const AUDIT_TABLE: Record<string, Record<string, Decision>> = {
     "review-test-quality": "no-strategy",
     "compile-test-suite": "no-strategy",
   },
+  "triage-router": {
+    triage: "no-strategy",
+    "bug-root-cause": "no-strategy",
+    "bug-fix-plan": "no-strategy",
+    "feature-design": "no-strategy",
+    "feature-plan": "no-strategy",
+    "docs-draft": "no-strategy",
+    "security-review": "no-strategy",
+    summary: "no-strategy",
+  },
 };
 
 async function listCatalogFlowIds(): Promise<string[]> {

@@ -1,0 +1,57 @@
+schema_version: "1.0.0"
+id: triage-router-docs
+title: Triage router runs only the docs pipeline
+pack: flow_blueprints
+tags: ["subsystem:flows", "entity:triage-router.flow", "docs-route"]
+edition: solo
+request_fixture: fixtures/requests/flow_blueprints/triage_router_docs.md
+mode_support: [auto]
+portals: []
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+    env: { EXA_LLM_PROVIDER: mock, MOCK_STRICT: "1", EXA_CI_MODE: "1" }
+    output_criteria:
+      - id: started
+        kind: command-output-contains
+        contains: [daemon.started]
+  - id: submit
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE"]
+    env: { EXA_RECORDING_LANES: "1" }
+    output_criteria:
+      - id: submitted
+        kind: command-exit-code
+        equals: 0
+  - id: await-terminal
+    type: exactl
+    command: journal
+    args: [wait, --event, request.planned, --since-rowid, "$STEP_BASELINE", --timeout, "30"]
+    timeout_sec: 35
+    output_criteria:
+      - id: planned
+        kind: command-exit-code
+        equals: 0
+  - id: assert-branch-skips
+    type: journal-assert
+    action_type: flow.step.skipped
+    trace_scoped: true
+    expect_count: 5
+    payload_equals:
+      - path: skipCode
+        value: branch_not_taken
+    output_criteria:
+      - id: unchosen-skipped
+        kind: command-exit-code
+        equals: 0
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]
+    output_criteria:
+      - id: stopped
+        kind: command-exit-code
+        equals: 0

@@ -33,6 +33,8 @@ for (
     ["architecture_decision", "architecture-decision", "majority", "planned", 4, 0, 0, "team"],
     ["architecture_decision_solo", "architecture-decision-solo", "unavailable", "failed", 4, 0, 0, "solo"],
     ["self_correcting_implementation", "self-correcting-implementation", "passed", "planned", 5, 2, 1],
+    ["triage_router", "triage-router", "bug", "planned", 6, 0, 0],
+    ["triage_router_docs", "triage-router-docs", "docs", "planned", 6, 0, 0],
   ] as const
 ) {
   Deno.test({
@@ -205,6 +207,31 @@ enabled = false
               "branch_not_taken",
             ]],
           );
+        } else if (phaseStep === 6) {
+          const decisions = activities.filter((row) => row.action_type === "flow.branch.decided");
+          assertEquals(decisions.length, 1);
+          const decision = JSON.parse(decisions[0].payload);
+          const pipelines: Record<string, string[]> = {
+            bug: ["bug-root-cause", "bug-fix-plan"],
+            feature: ["feature-design", "feature-plan"],
+            docs: ["docs-draft"],
+            security: ["security-review"],
+          };
+          assertEquals([decision.data, decision.chosen, decision.traceId], [
+            { category: action },
+            pipelines[action][0],
+            traceId,
+          ]);
+          const unchosen = Object.entries(pipelines).filter(([category]) => category !== action).flatMap(([, ids]) =>
+            ids
+          );
+          assertEquals(
+            activities.filter((row) => row.action_type === "flow.step.skipped").map((row) =>
+              [JSON.parse(row.payload).stepId, JSON.parse(row.payload).skipCode].join(":")
+            ).sort(),
+            unchosen.map((id) => `${id}:branch_not_taken`).sort(),
+          );
+          assertEquals(activities.filter((row) => row.action_type === "flow.completed").length, 1);
         } else if (phaseStep === 4) {
           const resolved = activities.filter((row) => row.action_type === "voting.step.consensus_resolved");
           assertEquals(resolved.length, edition === "team" ? 1 : 0);
@@ -255,7 +282,8 @@ enabled = false
         const downstream = activities.filter((row) =>
           row.action_type === "flow.step.started" &&
           (JSON.parse(row.payload) as { stepId: string }).stepId ===
-            (phaseStep === 4 ? "adr" : phaseStep === 5 ? "report" : file === "branch_routing" ? "join" : "after")
+            ({ 4: "adr", 5: "report", 6: "summary" }[phaseStep as number] ??
+              (file === "branch_routing" ? "join" : "after"))
         );
         assertEquals(downstream.length, status === "failed" ? 0 : 1);
         const failed = activities.filter((row) => row.action_type === "flow.failed");
@@ -297,7 +325,12 @@ enabled = false
           const plan = await Deno.readTextFile(
             await new PathResolver(config).resolve(`@Workspace/Plans/${planNames[0]}`),
           );
-          assertStringIncludes(plan, phaseStep === 4 ? "SQLite majority ADR" : "Accepted guarded implementation");
+          assertStringIncludes(
+            plan,
+            { 4: "SQLite majority ADR", 5: "Accepted guarded implementation", 6: `Triage summary: ${action}` }[
+              phaseStep as number
+            ]!,
+          );
         }
         if (phaseStep !== 4) assert(generations.every((row) => row.completion_tokens === COMPLETION_TOKENS));
       } finally {

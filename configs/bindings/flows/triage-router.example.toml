@@ -1,0 +1,7 @@
+schema = 1
+
+# Merge with an operator catalog that defines strong-service.
+# Only the classifier needs the strong service; the selected pipeline keeps the default provider.
+[bindings."flow:triage-router/step:triage"]
+service = "strong-service"
+effort = "high"

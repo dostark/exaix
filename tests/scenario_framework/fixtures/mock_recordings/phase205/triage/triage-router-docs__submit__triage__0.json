@@ -1,0 +1,29 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Triage fixture",
+  "response": "<thought>Classify.</thought><content>{\"category\": \"docs\"}</content>",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "Classify the request as bug, feature, docs or security",
+      "'bug'",
+      "'feature'",
+      "'docs'",
+      "'security'",
+      "Write user documentation for the export command, including its options and an example."
+    ],
+    "promptExcludes": []
+  },
+  "callSite": {
+    "scenarioId": "triage-router-docs",
+    "stepId": "submit",
+    "flowStepId": "triage",
+    "callIndex": 0
+  }
+}

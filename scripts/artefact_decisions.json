@@ -12,6 +12,12 @@
     "rationale": "Phase 205 verifies one gate loop-back with strict keyed replay of a low then high verdict; comparative value against a single-pass flow has not been measured."
   },
   {
+    "kind": "flow",
+    "artefactId": "triage-router",
+    "status": "non-coverage",
+    "rationale": "Phase 205 verifies one routed pipeline per category with strict keyed replay of the bug and docs paths; comparative value against an unrouted flow has not been measured."
+  },
+  {
     "kind": "skill",
     "artefactId": "memory-extraction-content-policy",
     "status": "non-coverage",

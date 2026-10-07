@@ -130,3 +130,71 @@ Deno.test("[contract] the self-correcting overlay binds plan and gate strong, th
     [step("report")]: "light-service",
   });
 });
+
+const TRIAGE = "triage-router";
+const TRIAGE_TARGETS = ["bug-root-cause", "feature-design", "docs-draft", "security-review"];
+const TRIAGE_TERMINALS = ["bug-fix-plan", "feature-plan", "docs-draft", "security-review"];
+
+Deno.test("[contract] the shipped triage router parses with the planned branches, edges and transforms", async () => {
+  const flow = await new FlowLoader(FLOWS_DIR).loadFlow(TRIAGE);
+  const triage = flow.steps.find((step) => step.id === "triage")!;
+  assertEquals([triage.type as string, triage.agent_role, triage.name], [
+    "branch",
+    "code-analyst",
+    "Classify the request as bug, feature, docs or security",
+  ]);
+  assertEquals(triage.strategy, undefined);
+  assertEquals(triage.effort, undefined);
+  assertEquals(
+    triage.branches?.map((branch) => [branch.condition, branch.goto]),
+    ["bug", "feature", "docs", "security"].map((category, index) => [
+      `results.triage.data.category === '${category}'`,
+      TRIAGE_TARGETS[index],
+    ]),
+  );
+  assertEquals(triage.default, "feature-design");
+  assertEquals([triage.input.source as string, triage.input.transform as string], ["request", "passthrough"]);
+  const edges = Object.fromEntries(
+    flow.steps.filter((step) => step.id !== "triage").map((step) => [step.id, {
+      role: step.agent_role,
+      dependsOn: step.dependsOn,
+      source: step.input.source as string,
+      from: step.input.stepId ?? step.input.from,
+      transform: step.input.transform as string,
+    }]),
+  );
+  const fromStep = (role: string, stepId: string) => ({
+    role,
+    dependsOn: [stepId],
+    source: "step",
+    from: stepId,
+    transform: "appendToRequest",
+  });
+  assertEquals(edges, {
+    "bug-root-cause": fromStep("senior-coder", "triage"),
+    "bug-fix-plan": fromStep("senior-coder", "bug-root-cause"),
+    "feature-design": fromStep("software-architect", "triage"),
+    "feature-plan": fromStep("software-architect", "feature-design"),
+    "docs-draft": fromStep("technical-writer", "triage"),
+    "security-review": fromStep("security-expert", "triage"),
+    summary: {
+      role: "technical-writer",
+      dependsOn: TRIAGE_TERMINALS,
+      source: "aggregate",
+      from: TRIAGE_TERMINALS,
+      transform: "appendToRequest",
+    },
+  });
+  assertEquals(flow.namespace?.enabled, false);
+  assertEquals([flow.settings.maxParallelism, flow.settings.failFast, flow.settings.timeout], [1, true, 300000]);
+  assertEquals([flow.output.from, flow.output.format as string], ["summary", "markdown"]);
+});
+
+Deno.test("[contract] the triage overlay binds only the classifier to the strong service", async () => {
+  const raw = parseToml(await Deno.readTextFile(`${OVERLAYS_DIR}/${TRIAGE}.example.toml`));
+  const overlay = BindingOverlaySchema.parse(raw);
+  assertEquals(
+    Object.entries(overlay.bindings ?? {}).map(([selector, binding]) => [selector, binding.service, binding.effort]),
+    [[`flow:${TRIAGE}/step:triage`, "strong-service", "high"]],
+  );
+});

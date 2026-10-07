@@ -1,0 +1,26 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Triage fixture",
+  "response": "<thought>Work the selected pipeline.</thought><content>BUG ROOT CAUSE EVIDENCE: the empty email reaches the validator unchecked.</content>",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "The login form crashes when the email field is empty. Find the root cause and plan a fix.",
+      "Original:",
+      "\"category\": \"bug\""
+    ],
+    "promptExcludes": []
+  },
+  "callSite": {
+    "scenarioId": "triage-router",
+    "stepId": "submit",
+    "flowStepId": "bug-root-cause",
+    "callIndex": 0
+  }
+}

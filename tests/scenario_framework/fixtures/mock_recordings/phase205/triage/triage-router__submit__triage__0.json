@@ -1,0 +1,29 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Triage fixture",
+  "response": "<thought>Classify.</thought><content>{\"category\": \"bug\"}</content>",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "Classify the request as bug, feature, docs or security",
+      "'bug'",
+      "'feature'",
+      "'docs'",
+      "'security'",
+      "The login form crashes when the email field is empty. Find the root cause and plan a fix."
+    ],
+    "promptExcludes": []
+  },
+  "callSite": {
+    "scenarioId": "triage-router",
+    "stepId": "submit",
+    "flowStepId": "triage",
+    "callIndex": 0
+  }
+}

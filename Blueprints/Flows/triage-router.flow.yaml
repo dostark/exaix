@@ -1,0 +1,70 @@
+id: triage-router
+name: Triage router
+description: Classify a request as bug, feature, docs or security, then run only the matching pipeline.
+version: 1.0.0
+defaultSkills:
+  - requirements-analysis
+namespace:
+  enabled: false
+settings:
+  maxParallelism: 1
+  failFast: true
+  timeout: 300000
+steps:
+  - id: triage
+    name: Classify the request as bug, feature, docs or security
+    type: branch
+    agent_role: code-analyst
+    dependsOn: []
+    input: { source: request, transform: passthrough }
+    branches:
+      - condition: "results.triage.data.category === 'bug'"
+        goto: bug-root-cause
+      - condition: "results.triage.data.category === 'feature'"
+        goto: feature-design
+      - condition: "results.triage.data.category === 'docs'"
+        goto: docs-draft
+      - condition: "results.triage.data.category === 'security'"
+        goto: security-review
+    default: feature-design
+  - id: bug-root-cause
+    name: Find the root cause of the reported bug
+    agent_role: senior-coder
+    dependsOn: [triage]
+    input: { source: step, stepId: triage, transform: appendToRequest }
+  - id: bug-fix-plan
+    name: Plan the bug fix
+    agent_role: senior-coder
+    dependsOn: [bug-root-cause]
+    input: { source: step, stepId: bug-root-cause, transform: appendToRequest }
+  - id: feature-design
+    name: Design the requested feature
+    agent_role: software-architect
+    dependsOn: [triage]
+    input: { source: step, stepId: triage, transform: appendToRequest }
+  - id: feature-plan
+    name: Plan the feature implementation
+    agent_role: software-architect
+    dependsOn: [feature-design]
+    input: { source: step, stepId: feature-design, transform: appendToRequest }
+  - id: docs-draft
+    name: Draft the requested documentation
+    agent_role: technical-writer
+    dependsOn: [triage]
+    input: { source: step, stepId: triage, transform: appendToRequest }
+  - id: security-review
+    name: Review the reported security concern
+    agent_role: security-expert
+    dependsOn: [triage]
+    input: { source: step, stepId: triage, transform: appendToRequest }
+  - id: summary
+    name: Summarize the selected pipeline
+    agent_role: technical-writer
+    dependsOn: [bug-fix-plan, feature-plan, docs-draft, security-review]
+    input:
+      source: aggregate
+      from: [bug-fix-plan, feature-plan, docs-draft, security-review]
+      transform: appendToRequest
+output:
+  from: summary
+  format: markdown
