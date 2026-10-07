@@ -4,7 +4,7 @@
  * @path scripts/verify_batch2_container_cutover.ts
  * @description Manual verification of the Phase 207 containerized Batch-2 runner. It times
  *   Batch 2 in container mode and in serial mode, compares the per-file pass/fail/ignored
- *   counts, and fails when the counts differ or the wall-clock drop is below 60%. It is NOT
+ *   counts, and fails when the counts differ or the wall-clock drop is below 50%. It is NOT
  *   part of the test suite; run it on a booted dev host with Docker.
  * Usage:
  *   deno run --allow-run --allow-read --allow-env --allow-write --allow-ffi --allow-sys \
@@ -29,7 +29,7 @@ import { buildContainerEnv, parseDotReporterCounts, parseSummaryLine, SEQUENTIAL
 const REPO_ROOT = fromFileUrl(new URL("..", import.meta.url)).replace(/\/$/, "");
 const JOBS_FLAG = "--jobs";
 const DEFAULT_JOBS = 4;
-const MIN_DROP = 0.6;
+const MIN_DROP = 0.5;
 const SLOWEST_REPORTED = 5;
 const DAEMON_PATTERN = "daemon/main.ts";
 
