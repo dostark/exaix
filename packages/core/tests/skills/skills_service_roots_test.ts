@@ -34,6 +34,7 @@ interface ISkillsConfigInput {
   keyword_match_saturation?: number;
   fallback_min_word_chars?: number;
   fallback_max_keywords?: number;
+  reference_max_chars?: number;
 }
 
 /** A config provider whose generation moves only when `set` installs a new valid config. */
@@ -314,5 +315,25 @@ Deno.test("[roots] the runtime name tdd-methodology resolves to the dogfood tdd-
   } finally {
     await dogfood.cleanup();
     await plain.cleanup();
+  }
+});
+
+Deno.test("[roots] the configured reference character cap invalidates an oversized reference at the next operation", async () => {
+  const roots = [{ kind: SkillRootKind.BLUEPRINT, path: "shared" }];
+  const fx = await fixture({ roots, reference_max_chars: 1_000_000 });
+  try {
+    const dir = fx.dir("shared", "with-reference");
+    await writeSkillFolder(fx.dir("shared"), {
+      name: "with-reference",
+      instructions: "See [notes](references/notes.md).",
+    });
+    await Deno.mkdir(join(dir, "references"), { recursive: true });
+    await Deno.writeTextFile(join(dir, "references", "notes.md"), "x".repeat(2_000));
+    assertEquals((await fx.service.getSkill("with-reference", fx.ctx()))?.references.length, 1);
+
+    fx.provider.set({ roots, reference_max_chars: 256 });
+    assertEquals(await fx.service.getSkill("with-reference", fx.ctx()), null);
+  } finally {
+    await fx.cleanup();
   }
 });
