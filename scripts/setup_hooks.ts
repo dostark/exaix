@@ -10,7 +10,26 @@
 import { join } from "@std/path";
 
 const REPO_ROOT = Deno.cwd();
-const HOOKS_DIR = join(REPO_ROOT, ".git", "hooks");
+
+/** Resolve the git hooks directory. In a linked worktree `.git` is a file. Ask git for the
+ *  path, and fall back to the classic location when git is unavailable. */
+async function resolveHooksDir(): Promise<string> {
+  try {
+    const out = await new Deno.Command("git", {
+      args: ["rev-parse", "--git-path", "hooks"],
+      cwd: REPO_ROOT,
+      stdout: "piped",
+      stderr: "null",
+    }).output();
+    if (out.success) {
+      const dir = new TextDecoder().decode(out.stdout).trim();
+      if (dir.length > 0) return dir;
+    }
+  } catch {
+    // git unavailable — use the classic path
+  }
+  return join(REPO_ROOT, ".git", "hooks");
+}
 
 const PRE_COMMIT_CONTENT = `#!/bin/sh
 # ============================================
@@ -522,8 +541,9 @@ fi
 export async function installHooks() {
   console.log("🛠️ Installing Exaix Git Hooks...");
 
+  const hooksDir = await resolveHooksDir();
   try {
-    const stats = await Deno.stat(HOOKS_DIR);
+    const stats = await Deno.stat(hooksDir);
     if (!stats.isDirectory) {
       console.error("❌ Error: .git/hooks directory not found. Are you in a git repository?");
       Deno.exit(1);
@@ -533,11 +553,11 @@ export async function installHooks() {
     Deno.exit(1);
   }
 
-  const preCommitPath = join(HOOKS_DIR, "pre-commit");
-  const prePushPath = join(HOOKS_DIR, "pre-push");
-  const commitMsgPath = join(HOOKS_DIR, "commit-msg");
-  const preMergeCommitPath = join(HOOKS_DIR, "pre-merge-commit");
-  const preRebasePath = join(HOOKS_DIR, "pre-rebase");
+  const preCommitPath = join(hooksDir, "pre-commit");
+  const prePushPath = join(hooksDir, "pre-push");
+  const commitMsgPath = join(hooksDir, "commit-msg");
+  const preMergeCommitPath = join(hooksDir, "pre-merge-commit");
+  const preRebasePath = join(hooksDir, "pre-rebase");
 
   await Deno.writeTextFile(preCommitPath, PRE_COMMIT_CONTENT);
   await Deno.writeTextFile(prePushPath, PRE_PUSH_CONTENT);
