@@ -29,6 +29,18 @@ Blueprints/Skills/<name>/
 Project-scoped skills live under `Memory/Skills/project/<portal>/<name>/`. Skills written by
 the learning system are draft folders under `Memory/Skills/learned/` until a person approves them.
 
+## Authoring and import subset
+
+- `SKILL.md` frontmatter carries only `name` (1 to 64 characters of lowercase letters, digits and single hyphens, equal to the folder name) and `description` (1 to 1024 characters). `license`, `compatibility`, `metadata` and `allowed-tools` are accepted as import metadata. `allowed-tools` never widens an agent role's permissions. An unknown frontmatter key makes the folder invalid, except in the dogfood root, which also keeps its knowledge-base keys.
+- A folder from another harness that has no `exaix.yaml` loads as it is. Its trigger keywords come from its name and description, and the sidecar can replace them with `triggers`. In `learned` and `project` roots such a folder is a draft until a person approves its revision. In `Blueprints/Skills` and the dogfood root it is active.
+- `exaix.yaml` is strict. Unknown fields, `status: active` written by hand in a draft root through an update, and managed fields such as ids or counters are rejected.
+- The body links to a reference with a Markdown link, inline or reference-style, outside code. The target is a file directly inside the skill's `references` folder, named in lowercase ASCII with single hyphens and ending in `.md`. An anchor is allowed. A query, an encoded or absolute path, a backslash, a parent folder or a nested folder makes the skill invalid, and so does a link to a missing file. Every file in the folder is stored with the revision, and only linked files are shown to the model.
+- Limits (config keys under `[skills]`): `main_max_bytes`, `sidecar_max_bytes`, `reference_max_bytes`, `reference_max_chars`, `reference_max_count`, `reference_total_max_bytes` and `snapshot_max_bytes`. Going over a limit invalidates that one skill.
+
+## Lifecycle
+
+`exactl skills create` and `derive` write a draft. Review the folder, then run `exactl skills approve <name> --revision <revision>`. An edit to the body or the sidecar returns an approved learned or project skill to draft. See the [User Guide](../../docs/Exaix_User_Guide.md#33-procedural-skills).
+
 ## Structure
 
 - Each skill declares `triggers` (tags), `constraints`, `quality_criteria`, and an

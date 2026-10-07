@@ -51,6 +51,20 @@ target_path = "/home/me/projects/my-repo"
 # default_branch = "main"
 # execution_strategy = "branch"
 
+# ── Skills ─────────────────────────────────────────────────────────────
+# Skill folders are read directly. Roots are listed highest precedence first, and the first
+# root that holds a name wins. These are the defaults. Omit the table to use them, or set only
+# the keys you want to change. A project root applies only when a portal is selected.
+[skills]
+roots = [
+  { kind = "project", path = "Memory/Skills/project" },
+  { kind = "learned", path = "Memory/Skills/learned" },
+  { kind = "blueprint", path = "Blueprints/Skills" },
+]
+# Resource limits (an overflow invalidates that skill) and fallback keywords.
+# reference_max_count = 16
+# fallback_max_keywords = 32
+
 # ── Notes ──────────────────────────────────────────────────────────────
 # Run `exactl config show` to see all ~180 configurable settings.
 # Run `exactl config set <key> <value>` to override any setting.

@@ -28,6 +28,10 @@ Schemas are defined in `@exaix/schemas`:
 | `MemoryExtractor`        | Learning extraction from executions | `packages/memory/src/extraction/memory_extractor.ts` |
 | `MemoryEmbeddingService` | Embedding generation                | `packages/memory/src/embedding/memory_embedding.ts`  |
 
+## Skills in Memory Services
+
+`LlmLearningExtractor` and `MemoryReflectionService` submit their content policy skills through `policySkillSubmission` (`@exaix/core/skills`), so every background model call writes its `skill_usage` rows like a request call does. Learned skills are written as draft folders under `Memory/Skills/learned` and need `exactl skills approve` before they are injected.
+
 ## See Also
 
 - [`docs/Exaix_User_Guide.md`](../../docs/Exaix_User_Guide.md) §3.2 — CLI usage and directory structure

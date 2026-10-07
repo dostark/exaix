@@ -788,27 +788,50 @@ Procedural Skills are specialized "how-to" guides that agents use to perform spe
 
 #### Key Concepts
 
-- **Triggering**: Skills are automatically matched to your request based on keywords, task types, or file patterns.
-- **Hydration**: When a skill matches, its full instructions are "hydrated" and injected into the agent's prompt.
+- **Skill folders**: A skill is a folder `<name>/SKILL.md` in the Agent Skills format. The optional `exaix.yaml` next to it holds Exaix-only fields (`title`, `triggers`, `constraints`, `critical`, `tools`, `applies_to` and more). An optional `references/` folder holds read-only markdown files that the body links to. The daemon reads the folders directly, so an edit takes effect on the next request without a restart.
+- **Triggering**: Skills are automatically matched to your request based on keywords, task types, or file patterns. A skill with no `triggers` in its sidecar, such as a folder written for another harness, gets keywords derived from its name and description. A sidecar that sets `triggers: {}` turns that fallback off.
+- **Hydration**: When a skill matches, its full instructions are "hydrated" and injected into the agent's prompt. Linked reference files are appended in full mode and omitted in trimmed mode.
+- **Revisions**: The id of a revision comes from the hash of the skill's files, so every edit is a new revision. The first time a revision is used, its complete content is stored in the journal database. Each model call records one row per injected skill in `skill_usage`, so a trace always shows what the agent saw.
+- **Plan pins**: A plan records the skill revisions that were used to write it (`resolved_skills` in the plan frontmatter). When you approve the plan, execution runs those exact revisions even if the files changed. The journal records `skills.pin_drifted` once when the live revision differs.
 - **Fail-Open Design**: Skill retrieval has a 500ms timeout. If it takes too long, the agent continues without the skill to avoid delays.
+- **Drafts**: A skill that has no sidecar status in the `learned` or `project` roots, and every skill the learning system writes, is a **draft**. A draft is never matched or injected until a person approves the exact revision they reviewed.
+
+#### Skill roots
+
+Skills load from an ordered list of roots. The first root that holds a name wins. Without a `[skills].roots` list the defaults are `Memory/Skills/project/<portal>` (only when you pass `--portal` or set `EXA_PORTAL`), `Memory/Skills/learned`, then `Blueprints/Skills`. Without a portal only global skills apply. The dogfood sandbox adds the worktree's `.copilot/skills` as a `dogfood` root.
 
 #### CLI Access
 
-Use the top-level `exactl skills` command (or the alias `exactl memory skill`):
+Use the top-level `exactl skills` command (or the alias `exactl memory skill`). Add `--portal <alias>` to include that portal's project skills. Add `--format table|json|md` for output.
 
 ```bash
-# List all available skills
+# List all available skills; --all also reports folders that did not load
 exactl skills list
-
-# Filter by category (core, project, learned)
 exactl skills list --category core
+exactl skills list --all --format json
 
-# Show details and instructions for a skill
+# Show a skill, or one stored revision of it
 exactl skills show testing-standard
+exactl skills show testing-standard --revision <revision-uuid> --format json
 
 # Test skill matching for a specific request
 exactl skills match "Implement the feature and run tests"
+
+# Create or derive a DRAFT, review its folder, then approve the exact revision
+exactl skills create release-notes --description "Draft release notes" --instructions "..."
+exactl skills derive --learning-ids a,b --name "API Security Patterns"
+exactl skills approve release-notes --revision <revision-uuid>
+exactl skills deprecate release-notes
+
+# History and audit
+exactl skills revisions release-notes
+exactl skills usage --trace <trace-id> --format json
+exactl skills validate            # typed reasons for every folder; exits 1 when one is invalid
 ```
+
+`approve` fails with exit code 1 when the draft changed after your review, so an old review never approves new content. `deprecate` takes a skill out of matching, and it needs a fresh approval to return. Exit code 0 means success, exit code 1 means a refused or failed operation, and exit code 2 means a malformed argument such as a revision that is not a UUID. Failures print a short message and never the body of a skill.
+
+Only `exactl skills show --revision` and `revisions` read stored history. A deleted or edited skill stays readable there, but a stored revision is never injected by itself.
 
 #### Configuration
 
@@ -819,8 +842,31 @@ You can tune skill matching in your `exa.config.toml`:
 max_per_request = 5        # Max skills to inject per request
 match_threshold = 0.3      # Minimum confidence score (0.0 to 1.0)
 context_budget_chars = 4000 # Max characters for skills context
-render_mode = "trimmed"    # "full" (default) includes each ordinary skill's examples; "trimmed" omits them
+render_mode = "trimmed"    # "full" (default) includes each ordinary skill's examples and references; "trimmed" omits them
+keyword_match_saturation = 2 # Matched keywords that earn the full keyword score
+
+# Explicit root order, highest precedence first. Omit it to use the defaults above.
+roots = [
+  { kind = "project", path = "Memory/Skills/project" },
+  { kind = "learned", path = "Memory/Skills/learned" },
+  { kind = "blueprint", path = "Blueprints/Skills" },
+]
+
+# Resource limits. An overflow makes that one skill invalid.
+main_max_bytes = 262144
+sidecar_max_bytes = 65536
+reference_max_bytes = 65536
+reference_max_chars = 16384
+reference_max_count = 16
+reference_total_max_bytes = 262144
+snapshot_max_bytes = 524288
+
+# Fallback keywords for a skill with no authored triggers
+fallback_min_word_chars = 4
+fallback_max_keywords = 32
 ```
+
+Edits to these settings apply to the next operation. A refused edit leaves the last valid config in force.
 
 #### Communication Requirement
 
@@ -2470,49 +2516,37 @@ exactl eval report --pack swe-tasks --format table
 
 #### **Skill Commands** - Manage Procedural Skills
 
-Skills are reusable procedural knowledge that agents can learn and apply. They represent patterns, techniques, and best practices that improve agent performance over time.
+Skills are reusable procedural knowledge that agents apply. They are folders (`SKILL.md` plus an optional `exaix.yaml`). See [Procedural Skills](#33-procedural-skills) for the folder format, roots and plan pins.
 
 ```bash
-# List all available skills
-exactl skill list
-
-# Show details of a specific skill
-exactl skill show <skill-id>
-
-# Match skills for a given request
-exactl skill match "Implement user authentication"
-
-# Derive a new skill from recent learnings
-exactl skill derive --name "API Security Patterns"
-
-# Create a new skill manually
-exactl skill create <name> --description "Skill description"
+exactl skills list [--all] [--category core|project|learned]
+exactl skills show <skill-id> [--revision <uuid>]
+exactl skills match "Implement user authentication"
+exactl skills create <name> --description "Skill description"
+exactl skills derive --learning-ids <id1,id2> --name "API Security Patterns"
+exactl skills approve <name> --revision <uuid>
+exactl skills deprecate <name>
+exactl skills revisions <name>
+exactl skills usage --trace <trace-id>
+exactl skills validate [name]
 ```
 
-**Skill Types:**
+`exactl memory skill ...` is the same command group. Every command accepts `--portal` and `--format`.
 
-- **Procedural Skills:** Step-by-step processes (e.g., "Code Review Process")
-- **Pattern Skills:** Reusable patterns (e.g., "Error Handling Patterns")
-- **Domain Skills:** Specialized knowledge (e.g., "React Best Practices")
-- **Tool Skills:** How to use specific tools effectively
-
-**Example workflow:**
+**Review flow:**
 
 ```bash
-# Find relevant skills for a task
-$ exactl skill match "Build a REST API"
-🔍 Matching skills for: "Build a REST API"
+# 1. A draft is created. It prints the draft path and its revision.
+$ exactl skills create release-notes --instructions "Summarize merged commits."
+Created draft skill: release-notes (release-notes)
+Draft path: learned/release-notes
+Revision: 3c0e...
 
-API Design Patterns (95% match)
-  Description: Best practices for REST API design
-  Usage: 23 times, Success: 21/23
+# 2. Read the folder, then approve exactly the revision you read.
+$ exactl skills approve release-notes --revision 3c0e...
 
-Authentication Implementation (87% match)
-  Description: Secure authentication patterns
-  Usage: 15 times, Success: 14/15
-
-# Use a skill in a request
-$ exactl request "Build a REST API for user management" --skill api-design-patterns
+# 3. Use it in a request.
+$ exactl request "Write the release notes" --skills release-notes
 ```
 
 #### **Log & Journal Commands** - Inspect the Activity Journal and cost reports
@@ -3079,8 +3113,8 @@ exactl git log --trace <id>                # Find commits by trace
 
 # Memory and skills
 exactl memory search "authentication"      # Search execution history
-exactl skill match "API design"            # Find relevant skills
-exactl skill list                          # List all skills
+exactl skills match "API design"           # Find relevant skills
+exactl skills list                          # List all skills
 
 # MCP server
 exactl mcp start                          # Start MCP server for external clients

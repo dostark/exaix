@@ -29,6 +29,10 @@ Content is organized by **role**, not by provider.
 └── manifest.json   # Auto-generated index of all agent docs
 ```
 
+## Dogfood skill folders
+
+Each `.copilot/skills/<name>/` folder holds `SKILL.md` and an `exaix.yaml` sidecar. The daemon reads these folders directly through a `dogfood` skills root, so nothing is generated. The sidecar carries triggers, constraints, output requirements, quality criteria, `applies_to` and `related_skills`. The knowledge-base frontmatter (`qwen_skill`, `topics`, `short_summary` and the rest) stays in `SKILL.md`, and `manifest.json` is regenerated from it by the normal hook workflow. The runtime name `tdd-methodology` resolves to the `tdd-workflow` folder while a dogfood root is selected. `deno task check:skill-index` validates these folders with the shipped ones.
+
 ## Role Distinction
 
 | Directory  | Role             | Format                                 | When to use                                        |

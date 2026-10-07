@@ -192,6 +192,13 @@ the `ReActLoopStrategy` path which reads `AgentComposer.currentPromptBudget` dir
 | `src/context/snapshot_store.ts`             | `ISnapshotStore`, `FileSnapshotStore`, `SecurityError`             |
 | `src/context/context_budget_event_types.ts` | `IContextBudgetEventPayloadMap`                                    |
 
+## Skills in Execution
+
+- `AgentRunner` resolves skills for planning, renders them with `renderSkillEntry`, fits them to the final prompt budget and records one `skill_usage` row per included skill before each provider call.
+- `AgentComposer.executeStep` replays the plan's `resolved_skills` pins through `createPinnedSkillPrompt` (`skill_pin_transport.ts`), declares the pinned text to the step's prompt budget, and passes the prompt to the strategy. Strategies record `plan_pinned` rows for each submission and stop before the provider when the audit write fails.
+- Dynamic matching stops after `SKILL_MATCH_TIMEOUT_MS` and the request continues without skills.
+- External CLI tools count only the submissions Exaix makes. Their own internal turns and MCP child dispatches are outside the count.
+
 ## See Also
 
 - [@exaix/mcp](../../packages/mcp/) — MCP tool handlers and manifest

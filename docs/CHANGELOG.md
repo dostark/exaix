@@ -18,6 +18,26 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 206 (Skill Folders and Revision Tracking)
+
+### Added
+
+- Skills are folders (`SKILL.md` plus an optional `exaix.yaml`) that the daemon reads directly, so an edit applies to the next request without a restart (see [Procedural Skills](Exaix_User_Guide.md#33-procedural-skills)).
+- A skill folder written for another harness loads without a sidecar and matches on keywords from its name and description.
+- `exactl skills approve`, `deprecate`, `revisions`, `usage --trace` and `validate`, plus `show --revision`, review and audit skills, and every command accepts `--portal`.
+- `[skills]` accepts `roots` and resource limits, and `skills.keyword_match_saturation`, and changes apply to the next operation.
+- Each model call records the skill revisions it used, and a plan runs the revisions it was written with even after a skill file changes.
+
+### Changed
+
+- Skills written by the learning system and folders without a sidecar in the learned or project roots are drafts until a person approves the reviewed revision.
+- `exactl skills list`, `show`, `match`, `derive` and `create` now exit with code 1 on failure and code 2 on a missing argument.
+- The dogfood sandbox reads `.copilot/skills` directly.
+
+### Removed
+
+- The `--skill` option on plan approval, the compiled skill JSON store and its generator and index.
+
 ## Unreleased — Phase 208 (Post-Execution Verification Feedback)
 
 ### Added

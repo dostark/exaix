@@ -655,6 +655,14 @@ delegate permission hardening reconcile crash).
 
 ---
 
+### Skill Folders {#skill-folders}
+
+- A skill is a folder `<name>/SKILL.md` with an optional `exaix.yaml` sidecar and `references/`. Read it only through `SkillFolderLoader` or `SkillsService`, never by parsing files in feature code.
+- Resource limits and fallback settings come from the `skills.*` config keys through the root plan of the current config generation. Do not add a literal cap beside them.
+- Parse and render each skill once. `renderSkillEntry` is the only function that turns a skill into prompt text, so budgets, pins and usage rows all measure the same block.
+- Status changes go through the service lifecycle (`approveSkill`, `deprecateSkill`). An approve names the reviewed revision, and a content update returns the skill to draft.
+- Never write skill bodies or host paths into events or CLI errors. Use typed reasons.
+
 ## 8. Module Boundaries & TUI Isolation {#tui-boundaries}
 
 Exaix enforces a strict boundary between the Terminal User Interface (TUI) and the core system. This decoupling is essential for maintainability and independent evolution of the layers.

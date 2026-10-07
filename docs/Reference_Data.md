@@ -663,6 +663,37 @@ Reserved members exist in the enum but have no active emission site — their ph
 
 `plan.execution_started`, `plan.execution_completed` and `plan.execution_failed` are journaled on the request trace. A post-execution verification repair run adds `phase: "repair"` to all three, so a count of the original plan run can exclude it.
 
+### Skill Tables and Events
+
+The skill tables live in the journal database (`migrations/001_init.sql`). A revision row is written the first time a revision is injected or pinned, and a usage row is written for each skill at each observable model submission. Root and path provenance belong to the usage row and never to the revision.
+
+| Table             | Key columns                                                                                                                                                                                                                      | Purpose                                                             |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `skill_revisions` | `revision_id` (UUIDv5 of the content hash), `content_sha256`, `skill_name`, `skill_md`, `exaix_yaml`, `references`, `first_seen_at`                                                                                              | Content-addressed snapshots of every revision that was used         |
+| `skill_usage`     | `call_id`, `skill_name`, `revision_id`, `trace_id`, `request_id`, `flow_id`, `flow_step_id`, `agent_role`, `match_source`, `render_mode`, `submission_kind`, `round`, `attempt`, `root_kind`, `source_path`, `config_generation` | One row per skill per model call, unique on `(call_id, skill_name)` |
+
+`match_source` is `pinned`, `matched`, `default` or `plan_pinned` (a replayed plan pin). `render_mode` is `full`, `trimmed` or `critical`. A usage write that fails stops the call before the provider is reached.
+
+A plan records its skills in the `resolved_skills` frontmatter field, one entry per skill with `name`, `revision_id`, `content_sha256`, `root_kind`, `source_path`, `portal`, `match_source`, `confidence`, `matched_task_types`, `required`, `render_mode` and `content_included`. An absent field means live matching, an empty list freezes no skills, and an entry with `content_included: false` is kept as a pin but its content is not replayed. Calls made by an external CLI tool on its own, such as its internal turns, are not counted, and neither are MCP child dispatches.
+
+| Enum Member              | String Value               | Emitted when                                                          |
+| ------------------------ | -------------------------- | --------------------------------------------------------------------- |
+| `SkillsInitialized`      | `skills.initialized`       | The service has recovered interrupted publications and is ready       |
+| `SkillsRevisionRecorded` | `skills.revision_recorded` | A revision snapshot is stored for the first time                      |
+| `SkillsLoadFailed`       | `skills.load_failed`       | A folder is invalid, with a typed reason                              |
+| `SkillsShadowed`         | `skills.shadowed`          | A folder is hidden by a root of higher precedence                     |
+| `SkillsAuditFailed`      | `skills.audit_failed`      | The audit write failed and the call was stopped                       |
+| `SkillsUsageRecorded`    | `skills.usage_recorded`    | One usage vector is committed for a model call                        |
+| `SkillsPinDrifted`       | `skills.pin_drifted`       | A pinned revision differs from the live one, once per pin             |
+| `SkillsMatchCompleted`   | `skills.match_completed`   | A dynamic match ends, with confidence and trigger source per skill    |
+| `SkillsCreated`          | `skill.created`            | A draft is created                                                    |
+| `SkillsUpdated`          | `skill.updated`            | A skill's content changes and it returns to draft                     |
+| `SkillsDerived`          | `skill.derived`            | A draft is derived from learnings                                     |
+| `SkillsApproved`         | `skills.approved`          | The reviewed revision is approved and an active revision is published |
+| `SkillsDeprecated`       | `skill.deprecated`         | A skill leaves matching                                               |
+| `SkillsDeleted`          | `skill.deleted`            | A skill folder is removed                                             |
+| `SkillsMutationFailed`   | `skills.mutation_failed`   | A refused or failed mutation, with its typed code                     |
+
 ### Milestone Event Types
 
 Milestone events are higher-level projections of domain events for operator-facing UX surfaces (CLI `watch`, TUI, SSE consumers). They are defined in `packages/schemas/src/milestone_event.ts:ExecutionMilestoneSchema` and emitted via `packages/core/src/observability/milestone_emitter.ts:IMilestoneEmitter`. Constants live in `packages/core/src/types/constants.ts`.
