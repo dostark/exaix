@@ -226,6 +226,8 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "tests/scenario_framework/tests/integration/self_hosted_split_bindings_test.ts",
   "tests/scenario_framework/tests/integration/binding_evidence_cli_test.ts",
   "tests/scenario_framework/tests/integration/memory_pipeline_test.ts",
+  "apps/exactl/tests/commands/skill_commands_cli_test.ts",
+  "packages/core/tests/skills/skill_folder_performance_test.ts",
 ];
 
 Deno.test("SEQUENTIAL_FILES is unchanged in content and order after classification", () => {

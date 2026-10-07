@@ -283,6 +283,9 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
     file: "tests/scenario_framework/tests/integration/memory_pipeline_test.ts",
     reasons: [IsolationReason.moduleCache],
   },
+  // CLI- and timing-sensitive: these fail under the Parallel Batch's concurrent load.
+  { file: "apps/exactl/tests/commands/skill_commands_cli_test.ts", reasons: [IsolationReason.pressure] },
+  { file: "packages/core/tests/skills/skill_folder_performance_test.ts", reasons: [IsolationReason.pressure] },
 ];
 
 /** Derived so the Parallel Batch's `--ignore` list is unchanged. Content and order come from SEQUENTIAL_TESTS. */

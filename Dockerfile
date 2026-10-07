@@ -155,6 +155,7 @@ COPY scripts/ scripts/
 # computed specifier (`npm:tree-sitter-<lang>/…wasm`), so name them explicitly or a
 # Batch-2 file that builds a workspace would fetch them from npm at run time.
 RUN deno cache --config deno.json scripts/test_container_driver.ts tests/ packages/ apps/ exaix-team/ \
+  packages/core/tests/skills/skill_folder_performance_test.ts \
   npm:web-tree-sitter@0.26.12 npm:tree-sitter-python@0.25.0 npm:tree-sitter-rust@0.24.0 npm:tree-sitter-go@0.25.0 npm:tree-sitter-java@0.23.5 \
   npm:tree-sitter@0.25.0
 
