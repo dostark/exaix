@@ -6,7 +6,7 @@
  * and respects the milestoneEmitter config field.
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import {
   FlowGateAction,
   FlowGateOnFail,
@@ -26,6 +26,7 @@ import {
 } from "@exaix/core";
 import {
   DefaultStepReplayPolicy,
+  FlowExecutionError,
   FlowRunner,
   type IFlowEventLogger,
   type IFlowStepRequest,
@@ -356,7 +357,7 @@ Deno.test("FlowRunner: emits flow.step.replayed when step result is reused", asy
   assertExists(replayed, "flow.step.replayed milestone should be emitted when replay candidate exists");
 });
 
-Deno.test("FlowRunner: emits approval.gate.entered on gate failure with wait state", async () => {
+Deno.test("FlowRunner: emits flow.failed and no approval milestone for a halting gate", async () => {
   const emitter = new MockMilestoneEmitter();
   const flow: IFlow = {
     id: "test-flow-gate",
@@ -390,11 +391,13 @@ Deno.test("FlowRunner: emits approval.gate.entered on gate failure with wait sta
     waitStateService: mockWaitStateService,
   });
 
-  await runner.execute(flow, { userPrompt: "test", traceId: crypto.randomUUID() });
-
-  const gateEntered = emitter.milestones.find((m) => m.milestoneType === MILESTONE_APPROVAL_GATE_ENTERED);
-  assertExists(gateEntered, "approval.gate.entered milestone should be emitted");
-  assertEquals(gateEntered.requiresAttention, true, "gate milestone should require attention");
+  const error = await assertRejects(
+    () => runner.execute(flow, { userPrompt: "test", traceId: crypto.randomUUID() }),
+    FlowExecutionError,
+  );
+  assertEquals(error.reasonCode, "gate_halted");
+  assertEquals(emitter.countByType(MILESTONE_APPROVAL_GATE_ENTERED), 0);
+  assertEquals(emitter.countByType(MILESTONE_FLOW_FAILED), 1);
 });
 
 Deno.test("FlowRunner: emits flow.failed when execution error occurs", async () => {

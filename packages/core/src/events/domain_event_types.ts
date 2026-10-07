@@ -22,6 +22,7 @@ import type { JSONValue } from "@exaix/core/types";
 import type { IBindingFieldSource, IBindingIssue } from "@exaix/schemas/model_binding.ts";
 import type {
   ContextInspectionResult,
+  FlowGateAction,
   HitlRuleSource,
   HitlSurface,
   OtelDestinationScheme,
@@ -38,6 +39,18 @@ import type {
   ToolCallEntryPoint,
   VotingStrategy,
 } from "../types/enums.ts";
+
+export interface IFlowGateEvaluatedEventPayload {
+  flowRunId: string;
+  stepId: string;
+  traceId?: string;
+  requestId?: string;
+  score: number;
+  threshold: number;
+  passed: boolean;
+  action: FlowGateAction;
+  attempt: number;
+}
 
 /** Guardrail verdict type. */
 export interface IBindingResolvedEventPayload {
@@ -849,6 +862,7 @@ export const DomainEventType = {
   FlowTokenSummary: "flow.token_summary",
   FlowTokenSummaryError: "flow.token_summary.error",
   FlowGateCriteriaNoAnalysis: "flow.gate.criteria.no_analysis",
+  FlowGateEvaluated: "flow.gate.evaluated",
 
   // Request lifecycle events (request/processor.ts)
   RequestProcessStarted: "request.process.started",

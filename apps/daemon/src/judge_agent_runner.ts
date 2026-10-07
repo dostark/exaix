@@ -17,7 +17,7 @@ import { BOUND_TARGET_KIND_PROVIDER, type ModelBindingService } from "@exaix/ai"
 import { EFFORT_AUTO } from "@exaix/schemas";
 import type { IAgentContext, IAgentRunner } from "@exaix/flow/judge_evaluator.ts";
 import type { IBindingGateContext } from "@exaix/schemas";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { IFlowJudgeCallMetadata, Opt, Reason } from "@exaix/core/types";
 
 export class JudgeAgentRunner implements IAgentRunner {
   constructor(
@@ -27,7 +27,12 @@ export class JudgeAgentRunner implements IAgentRunner {
 
   async run(
     _agentRole: string,
-    request: { userPrompt: string; context?: IAgentContext; bindingContext?: IBindingGateContext },
+    request: {
+      userPrompt: string;
+      context?: IAgentContext;
+      bindingContext?: IBindingGateContext;
+      callMetadata?: IFlowJudgeCallMetadata;
+    },
   ): Promise<{ content: string }> {
     const bound = request.bindingContext && this.bindingService
       ? await this.bindingService.providerFor(request.bindingContext.snapshot, request.bindingContext.stepRef)
@@ -43,7 +48,18 @@ export class JudgeAgentRunner implements IAgentRunner {
           : {}),
       }
       : undefined;
-    const result = await provider.generate(request.userPrompt, generateOptions);
+    const criteria: string[] = [];
+    if (Array.isArray(request.context?.criteria)) {
+      for (const criterion of request.context.criteria) {
+        if (typeof criterion === "string") criteria.push(criterion);
+      }
+    }
+    const result = await provider.generate(request.userPrompt, {
+      ...generateOptions,
+      traceId: request.callMetadata?.traceId,
+      callSite: request.callMetadata?.callSite,
+      responseContract: { kind: "judge-json", criteria },
+    });
     return { content: result.content };
   }
 }

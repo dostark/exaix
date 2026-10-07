@@ -88,6 +88,8 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
       "flow-strategy-react",
       "flow-strategy-routing",
       "flowrunner-execution",
+      "gate-continue-warning",
+      "gate-halt",
       "guardrail-block-violation",
       "memory-aware-analysis",
       "memory-full-loop",

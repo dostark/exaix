@@ -105,6 +105,8 @@ export interface INativeConversationSnapshot {
  * Options for model generation requests.
  */
 export interface IModelOptions {
+  /** Selects raw judge capture validation for this caller. */
+  responseContract?: { kind: "judge-json"; criteria: string[] };
   /** Parent Exaix trace used only for cross-layer observability correlation. */
   traceId?: string;
   temperature?: number;

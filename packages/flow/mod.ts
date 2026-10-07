@@ -82,6 +82,7 @@ export { createJudgeEvaluator, JudgeEvaluator } from "./src/judge_evaluator.ts";
 export { FlowStepHandlerRegistry } from "./src/step_handlers/step_handler_registry.ts";
 export { AgentStepHandler } from "./src/step_handlers/agent_step_handler.ts";
 export { GateStepHandler } from "./src/step_handlers/gate_step_handler.ts";
+export { FlowGateHaltedError } from "./src/errors/flow_control_errors.ts";
 export { SessionDelegateCycleStepHandler } from "./src/step_handlers/session_delegate_cycle_step_handler.ts";
 export type { ISessionDelegateCycleStepHandlerDeps } from "./src/step_handlers/session_delegate_cycle_step_handler.ts";
 export { FlowTraceStore, isUuid } from "./src/flow_trace_store.ts";

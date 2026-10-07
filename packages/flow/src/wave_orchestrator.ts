@@ -13,6 +13,7 @@
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { DependencyResolver } from "@exaix/flow";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import { FLOW_GATE_HALTED_CODE } from "./errors/flow_control_errors.ts";
 import { DomainEventType, type IEventRegistry } from "@exaix/core/events";
 import {
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -328,11 +329,14 @@ export class WaveOrchestrator {
       throw abortResult.reason;
     }
 
-    if (!waveFailed || !failFast) {
+    const terminalIndex = waveResults.findIndex((result) =>
+      this.isPromiseFulfilledResult(result) && result.value.errorCode === FLOW_GATE_HALTED_CODE
+    );
+    if ((!waveFailed || !failFast) && terminalIndex < 0) {
       return;
     }
 
-    const failedStepIndex = pendingStepIds.findIndex((_stepId, index) => {
+    const failedStepIndex = terminalIndex >= 0 ? terminalIndex : pendingStepIds.findIndex((_stepId, index) => {
       const result = waveResults[index];
       return this.isPromiseRejectedResult(result) ||
         (this.isPromiseFulfilledResult(result) && !result.value.success);
@@ -340,7 +344,8 @@ export class WaveOrchestrator {
     const failedStepId = pendingStepIds[failedStepIndex];
     const failedResult = waveResults[failedStepIndex];
     const errorMessage = this.getWaveFailureMessage(failedResult);
-    throw new FlowExecutionError(`Step ${failedStepId} failed: ${errorMessage}`, flowRunId);
+    const reasonCode = this.isPromiseFulfilledResult(failedResult) ? failedResult.value.errorCode : undefined;
+    throw new FlowExecutionError(`Step ${failedStepId} failed: ${errorMessage}`, flowRunId, reasonCode);
   }
 
   private getWaveFailureMessage(failedResult: PromiseSettledResult<IStepResult>): string {
@@ -441,7 +446,10 @@ export class WaveOrchestrator {
 
     const processed = continueOnError
       ? results.map((result) => {
-        if (this.isPromiseFulfilledResult(result) && !result.value.success) {
+        if (
+          this.isPromiseFulfilledResult(result) && !result.value.success &&
+          result.value.errorCode !== FLOW_GATE_HALTED_CODE
+        ) {
           return {
             ...result,
             value: { ...result.value, success: true, error: undefined },

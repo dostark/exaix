@@ -7,7 +7,7 @@
  */
 
 import { buildEvaluationPrompt, type EvaluationCriterion, type EvaluationResult } from "@exaix/core/evaluation";
-import type { IJudgeInvoker } from "@exaix/core/types";
+import type { IFlowJudgeCallMetadata, IJudgeInvoker } from "@exaix/core/types";
 import type { IBindingGateContext } from "@exaix/schemas";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -58,6 +58,7 @@ export interface IAgentRunner {
       /** Flow-gate judge binding (step ref plus run snapshot) forwarded from the gate evaluator.
        *  Non-flow callers omit it and keep the boot provider. */
       bindingContext?: Opt<IBindingGateContext, Reason.AbstractBoundary>;
+      callMetadata?: IFlowJudgeCallMetadata;
     },
   ): Promise<{ content: string }>;
 }
@@ -76,6 +77,7 @@ export class JudgeEvaluator implements IJudgeInvoker {
     criteria: EvaluationCriterion[],
     context?: Opt<string, Reason.OptionalContext>,
     bindingContext?: Opt<IBindingGateContext, Reason.AbstractBoundary>,
+    callMetadata?: Opt<IFlowJudgeCallMetadata, Reason.OptionalContext>,
   ): Promise<EvaluationResult> {
     // Build evaluation prompt
     const prompt = buildEvaluationPrompt(content, criteria, context);
@@ -89,6 +91,7 @@ export class JudgeEvaluator implements IJudgeInvoker {
         criteria: criteria.map((c) => c.name),
       },
       ...(bindingContext ? { bindingContext } : {}),
+      ...(callMetadata ? { callMetadata } : {}),
     });
 
     // Parse and validate response

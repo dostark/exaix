@@ -90,6 +90,7 @@ export class GateEvaluator implements IGateEvaluator {
         allCriteria,
         context,
         config.bindingContext,
+        config.callMetadata,
       );
 
       // Calculate pass/fail

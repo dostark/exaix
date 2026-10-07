@@ -1,0 +1,47 @@
+schema_version: "1.0.0"
+id: gate-halt
+title: Gate halt through a Solo daemon
+pack: agent_flows
+tags: ["subsystem:flows", "safety-gate"]
+request_fixture: fixtures/requests/agent_flows/halt_gate.md
+flow_fixture: fixtures/flows/gates/halt_gate.flow.yaml
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+    env:
+      EXA_LLM_PROVIDER: mock
+      MOCK_STRICT: "1"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: daemon-started
+        kind: command-output-contains
+        contains: [daemon.started]
+  - id: submit
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE"]
+    output_criteria:
+      - id: submitted
+        kind: command-exit-code
+        equals: 0
+  - id: await-terminal
+    type: exactl
+    command: journal
+    args: [wait, --event, request.failed, --since-rowid, "$STEP_BASELINE", --timeout, "30"]
+    timeout_sec: 35
+    output_criteria:
+      - id: terminal-event
+        kind: command-exit-code
+        equals: 0
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]
+    output_criteria:
+      - id: stopped
+        kind: command-exit-code
+        equals: 0

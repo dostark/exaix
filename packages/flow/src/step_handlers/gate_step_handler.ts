@@ -8,69 +8,66 @@
 
 import type { IFlowStepHandler, IStepExecutionContext } from "./step_handler.ts";
 import type { IGateConfig, IGateEvaluator, IGateResult } from "@exaix/core/types";
-import type { IWaitStateService } from "../wait_states/wait_state_service.ts";
-import type { IMilestoneEmitter } from "@exaix/core/observability";
-import type { IExecutionMilestone } from "@exaix/schemas";
 import { DomainEventType } from "@exaix/core/events";
-import { MILESTONE_APPROVAL_GATE_ENTERED } from "@exaix/core";
-import type { Opt, Reason } from "@exaix/core/types";
 import type { IBindingGateContext, IBindingStepRef } from "@exaix/schemas";
 import { STEP_KIND_GATE } from "@exaix/ai/bindings/binding_types.ts";
-import { toGateConfig } from "../flow_runner.ts";
+import { type IFlowEventLogger, toGateConfig } from "../flow_runner.ts";
+import { gateEvaluationResult } from "../errors/flow_control_errors.ts";
 
-/** Mutable reference to pendingWaitStateId so GateStepHandler can set it on the
- *  FlowRunner instance without FlowRunner exposing the field as public. */
+/** Stores pending wait-state identity for non-gate flow handlers. */
 export interface IPendingWaitStateRef {
   current: string | undefined;
 }
 
 export interface IGateStepHandlerDeps {
   gateEvaluator: IGateEvaluator;
-  eventLogger: {
-    log(
-      eventType: string,
-      payload: {
-        flowRunId?: string;
-        stepId?: string;
-        traceId?: string;
-        requestId?: string;
-        waitStateId?: string;
-        resumeToken?: string;
-        kind?: string;
-      },
-    ): void;
-  };
-  waitStateService?: IWaitStateService;
-  milestoneEmitter?: IMilestoneEmitter;
-  pendingWaitStateRef: IPendingWaitStateRef;
+  eventLogger: IFlowEventLogger;
 }
 
+/** Evaluates gate decisions and emits their trace events.
+ * @visible
+ */
 export class GateStepHandler implements IFlowStepHandler {
   readonly stepType = "gate";
 
   readonly #gateEvaluator: IGateEvaluator;
   readonly #eventLogger: IGateStepHandlerDeps["eventLogger"];
-  readonly #waitStateService?: IWaitStateService;
-  readonly #milestoneEmitter?: IMilestoneEmitter;
-  readonly #pendingWaitStateRef: IPendingWaitStateRef;
 
   constructor(deps: IGateStepHandlerDeps) {
     this.#gateEvaluator = deps.gateEvaluator;
     this.#eventLogger = deps.eventLogger;
-    this.#waitStateService = deps.waitStateService;
-    this.#milestoneEmitter = deps.milestoneEmitter;
-    this.#pendingWaitStateRef = deps.pendingWaitStateRef;
   }
 
   async execute(ctx: IStepExecutionContext): Promise<{ thought: string; content: string; raw: string }> {
-    const { step, flow, request, stepRequest, flowRunId, startedAt: _startedAt } = ctx;
+    const result = await this.evaluateGate(ctx, 1);
+    return gateEvaluationResult(ctx.step.id, ctx.step.evaluate!.threshold, result);
+  }
+
+  async evaluateGate(ctx: IStepExecutionContext, attempt: number): Promise<IGateResult> {
+    const { step, flow, request, stepRequest, flowRunId } = ctx;
     if (!step.evaluate) {
       throw new Error("Gate step has no evaluate config");
     }
 
     const gateConfig = toGateConfig(step.evaluate);
     const effectiveInclude = gateConfig.includeRequestCriteria || flow.settings?.includeRequestCriteria;
-    const effectiveGateConfig: IGateConfig = { ...gateConfig, includeRequestCriteria: effectiveInclude ?? false };
+    const effectiveGateConfig: IGateConfig = {
+      ...gateConfig,
+      includeRequestCriteria: effectiveInclude ?? false,
+      callMetadata: {
+        traceId: request.traceId,
+        ...(stepRequest.scenarioId && stepRequest.stepId
+          ? {
+            callSite: {
+              scenarioId: stepRequest.scenarioId,
+              stepId: stepRequest.stepId,
+              flowStepId: step.id,
+              callIndex: attempt - 1,
+            },
+          }
+          : {}),
+      },
+    };
 
     // A flow gate carries its own judge binding context.
     // It names the gate step and the evaluate.agent_role.
@@ -102,69 +99,21 @@ export class GateStepHandler implements IFlowStepHandler {
       effectiveGateConfig,
       stepRequest.userPrompt,
       stepRequest.userPrompt,
-      0,
+      attempt - 1,
       stepRequest.requestAnalysis,
     );
 
-    if (this.#waitStateService && gateResult.score < effectiveGateConfig.threshold && request.traceId) {
-      try {
-        const ws = await this.#waitStateService.create({
-          kind: "plan_approval",
-          traceId: request.traceId,
-          artifactPath: `Workspace/WaitStates/${request.traceId}/${step.id}.json`,
-          resumeToken: crypto.randomUUID(),
-          requestedBy: step.agent_role,
-          deadlineAt: undefined,
-        });
-        this.#pendingWaitStateRef.current = ws.waitStateId;
-        await this.#eventLogger.log(DomainEventType.WaitStateCreated, {
-          flowRunId,
-          stepId: step.id,
-          waitStateId: ws.waitStateId,
-          resumeToken: ws.resumeToken,
-          kind: ws.kind,
-          traceId: request.traceId,
-          ...ctx.flowLogBase,
-        });
-
-        await this.#emitMilestone(
-          MILESTONE_APPROVAL_GATE_ENTERED,
-          request.traceId,
-          `Approval gate entered for step ${step.id}`,
-          undefined,
-          true,
-          "Operator approval needed to continue",
-        );
-      } catch {
-        this.#pendingWaitStateRef.current = undefined;
-      }
-    }
-
-    return {
-      thought: "",
-      content: gateResult.evaluation.feedback,
-      raw: JSON.stringify(gateResult.evaluation),
-    };
-  }
-
-  async #emitMilestone(
-    milestoneType: IExecutionMilestone["milestoneType"],
-    traceId: Opt<string, Reason.TraceAbsent>,
-    summary: string,
-    progressHint?: Opt<IExecutionMilestone["progressHint"], Reason.OptionalContext>,
-    requiresAttention = false,
-    attentionReason?: Opt<string, Reason.OptionalContext>,
-  ): Promise<void> {
-    if (!this.#milestoneEmitter) return;
-    await this.#milestoneEmitter.emit({
-      milestoneId: crypto.randomUUID(),
-      traceId: traceId ?? "",
-      milestoneType,
-      requiresAttention,
-      attentionReason,
-      progressHint,
-      occurredAt: new Date().toISOString(),
-      summary,
+    await this.#eventLogger.log(DomainEventType.FlowGateEvaluated, {
+      flowRunId,
+      stepId: step.id,
+      traceId: request.traceId,
+      requestId: request.requestId,
+      score: gateResult.score,
+      threshold: effectiveGateConfig.threshold,
+      passed: gateResult.passed,
+      action: gateResult.action,
+      attempt: gateResult.attempts,
     });
+    return gateResult;
   }
 }

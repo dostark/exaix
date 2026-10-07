@@ -13,6 +13,14 @@ import { FlowStepExecutionMode, FlowStepOnErrorAction, FlowStepType } from "@exa
 
 /** Runs pre-execution structural checks against a flow definition. */
 export class FlowRuntimeValidator {
+  validateGatePolicies(flow: IFlow): string | null {
+    for (const step of flow.steps) {
+      if (step.type === FlowStepType.GATE && step.onError) {
+        return `Step '${step.id}': a gate's failure policy is evaluate.onFail`;
+      }
+    }
+    return null;
+  }
   findCyclicFallbackChain(flow: IFlow): string[] | null {
     const stepsById = new Map(flow.steps.map((step) => [step.id, step]));
 

@@ -18,6 +18,7 @@ import {
   FLOW_EVENT_CHECKPOINT_LOADED,
   FLOW_EVENT_CHECKPOINT_SAVED,
   FLOW_EVENT_CHECKPOINT_STALE,
+  FlowStepType,
   StepAttemptClass,
   StepExecutionDisposition,
   StepSideEffectClass,
@@ -25,7 +26,8 @@ import {
 import { DomainEventType } from "@exaix/core/events";
 import type { IFlowCheckpointService } from "./checkpoint_service.ts";
 import type { IStepDurabilityStore, IStepExecutionRecord } from "./contracts/step_durability.ts";
-import type { IFlowEventLogger, IStepResult } from "./flow_runner.ts";
+import { FlowExecutionError, type IFlowEventLogger, type IStepResult } from "./flow_runner.ts";
+import { FLOW_CONTROL_RESUME_UNSUPPORTED_CODE } from "./errors/flow_control_errors.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 
 export interface IFlowCheckpointRequest {
@@ -118,6 +120,16 @@ export class FlowCheckpointCoordinator implements IFlowCheckpointCoordinator {
       return;
     }
 
+    const completedControl = flow.steps.find((step) =>
+      (step.type === FlowStepType.GATE || step.type === FlowStepType.BRANCH) && checkpoint.completedSteps[step.id]
+    );
+    if (completedControl) {
+      throw new FlowExecutionError(
+        `Control step '${completedControl.id}' requires typed checkpoint state`,
+        flowRunId,
+        FLOW_CONTROL_RESUME_UNSUPPORTED_CODE,
+      );
+    }
     const restoredSteps = this.restoreStepResultsFromCheckpoint(checkpoint);
     for (const [stepId, result] of Object.entries(restoredSteps)) {
       stepResults.set(stepId, result);

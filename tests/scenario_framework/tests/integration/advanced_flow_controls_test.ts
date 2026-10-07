@@ -1,0 +1,151 @@
+/**
+ * @module AdvancedFlowControlsTest
+ * @path tests/scenario_framework/tests/integration/advanced_flow_controls_test.ts
+ * @description Executes halt and warning controls on real Solo daemons with strict fixtures.
+ * @architectural-layer Test
+ * @dependencies [@exaix/core, @exaix/portal, @exaix/testing]
+ * @related-files [tests/scenario_framework/scenarios/agent_flows/gate_halt.yaml, tests/scenario_framework/scenarios/agent_flows/gate_continue_warning.yaml]
+ */
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { join } from "@std/path";
+import { ConfigService } from "@exaix/core/config";
+import { PathResolver } from "@exaix/portal";
+import { withEnv } from "@exaix/testing";
+import { runSyntheticScenario } from "../../runner/synthetic_runner.ts";
+import { loadScenarioActivities } from "../../runner/provider_live_evidence.ts";
+import { ScenarioExecutionMode } from "../../schema/step_schema.ts";
+
+const FRAMEWORK_HOME = new URL("../../", import.meta.url).pathname;
+const REPO_ROOT = new URL("../../../../", import.meta.url).pathname;
+const OUTPUT_HOME = join(FRAMEWORK_HOME, "output", "phase205", "step1");
+const PROMPT_TOKENS = 100;
+const COMPLETION_TOKENS = 200;
+for (
+  const [file, scenarioId, action, status, calls] of [
+    ["gate_halt", "gate-halt", "halted", "failed", 1],
+    ["gate_continue_warning", "gate-continue-warning", "continued-with-warning", "planned", 2],
+  ] as const
+) {
+  Deno.test({
+    name: `[phase205 step1] ${scenarioId} real Solo daemon`,
+    ignore: Deno.env.get("CI") === "true",
+    sanitizeOps: false,
+    sanitizeResources: false,
+    async fn() {
+      const workspaceRoot = await Deno.makeTempDir({ prefix: `phase205-${scenarioId}-` });
+      const outputDir = join(OUTPUT_HOME, scenarioId);
+      await Deno.mkdir(outputDir, { recursive: true });
+      const cliDir = join(workspaceRoot, ".test-cli");
+      await Deno.mkdir(cliDir);
+      const exactlExecutable = join(cliDir, "exactl");
+      const cliArgs = [
+        "run",
+        "-A",
+        "--config",
+        join(REPO_ROOT, "deno.json"),
+        join(REPO_ROOT, "apps", "exactl", "main.ts"),
+      ];
+      await Deno.writeTextFile(
+        exactlExecutable,
+        `#!/usr/bin/env -S deno run -A
+const result = await new Deno.Command(Deno.execPath(), { args: [...${
+          JSON.stringify(cliArgs)
+        }, ...Deno.args], stdin: "inherit", stdout: "inherit", stderr: "inherit" }).spawn().status;
+Deno.exit(result.code);
+`,
+      );
+      await Deno.chmod(exactlExecutable, 0o755);
+      try {
+        await Deno.writeTextFile(
+          join(workspaceRoot, "exa.config.toml"),
+          `
+[system]
+root = "${workspaceRoot}"
+[ai]
+provider = "mock"
+model = "phase205-fixture"
+[models.mock]
+provider = "mock"
+model = "phase205-fixture"
+[agents]
+default_model = "mock"
+[ai.mock]
+strategy = "recorded"
+strict = true
+fixtures_dir = "${join(FRAMEWORK_HOME, "fixtures", "mock_recordings", "phase205", "gates")}"
+[quality_gate]
+enabled = false
+[request_analysis]
+enabled = false
+`,
+        );
+        let run: Awaited<ReturnType<typeof runSyntheticScenario>> | undefined;
+        await withEnv({ PATH: `${cliDir}:${Deno.env.get("PATH") ?? ""}` }, async () => {
+          run = await runSyntheticScenario({
+            frameworkHome: FRAMEWORK_HOME,
+            scenarioPath: `scenarios/agent_flows/${file}.yaml`,
+            workspaceRoot,
+            outputDir,
+            mode: ScenarioExecutionMode.AUTO,
+            exactlExecutable,
+          });
+        });
+        assert(run);
+        const journal = loadScenarioActivities(join(workspaceRoot, ".exa", "journal.db"), 0);
+        await Deno.writeTextFile(join(outputDir, "journal-evidence.json"), JSON.stringify(journal, null, 2));
+        await Deno.copyFile(join(workspaceRoot, ".exa", "daemon.log"), join(outputDir, "daemon.log"));
+        assertEquals(run.manifest.outcome, "success", JSON.stringify(run.manifest.steps));
+        const created = journal.activities.filter((row) =>
+          row.action_type === "request.created" && (JSON.parse(row.payload) as { via?: string }).via === "cli"
+        );
+        assertEquals(created.length, 1);
+        const traceId = created[0].trace_id;
+        const activities = journal.activities.filter((row) => row.trace_id === traceId);
+        const gates = activities.filter((row) => row.action_type === "flow.gate.evaluated");
+        assertEquals(gates.length, 1);
+        const gate = JSON.parse(gates[0].payload) as {
+          action: string;
+          attempt: number;
+          score: number;
+          threshold: number;
+          passed: boolean;
+          traceId: string;
+        };
+        assertEquals(gate, { ...gate, action, attempt: 1, score: 0.2, threshold: 0.8, passed: false, traceId });
+        assertEquals(gates[0].trace_id, traceId);
+        const generations = activities.filter((row) => row.action_type === "llm.call.completed");
+        assertEquals(generations.length, calls);
+        assertEquals(generations.map((row) => row.trace_id), Array(calls).fill(traceId));
+        assertEquals(generations.map((row) => row.prompt_tokens), Array(calls).fill(PROMPT_TOKENS));
+        const downstream = activities.filter((row) =>
+          row.action_type === "flow.step.started" && (JSON.parse(row.payload) as { stepId: string }).stepId === "after"
+        );
+        assertEquals(downstream.length, action === "halted" ? 0 : 1);
+        const failed = activities.filter((row) => row.action_type === "flow.failed");
+        assertEquals(failed.length, action === "halted" ? 1 : 0);
+        if (action === "halted") {
+          assertEquals((JSON.parse(failed[0].payload) as { reasonCode: string }).reasonCode, "gate_halted");
+        }
+        const config = new ConfigService(join(workspaceRoot, "exa.config.toml")).getAll();
+        const requests = await new PathResolver(config).resolve("@Workspace/Requests");
+        const requestNames: string[] = [];
+        for await (const entry of Deno.readDir(requests)) {
+          if (entry.isFile && entry.name.endsWith(".md")) requestNames.push(entry.name);
+        }
+        assertEquals(requestNames.length, 1);
+        const content = await Deno.readTextFile(
+          await new PathResolver(config).resolve(`@Workspace/Requests/${requestNames[0]}`),
+        );
+        assertStringIncludes(content, `status: ${status}`);
+        assert(generations.every((row) => row.completion_tokens === COMPLETION_TOKENS));
+      } finally {
+        await new Deno.Command(exactlExecutable, {
+          args: ["daemon", "stop"],
+          cwd: workspaceRoot,
+          env: { EXA_CONFIG_PATH: join(workspaceRoot, "exa.config.toml") },
+        }).output();
+        await Deno.remove(workspaceRoot, { recursive: true });
+      }
+    },
+  });
+}

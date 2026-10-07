@@ -65,6 +65,8 @@ import type {
   IToolConfirmationInterceptor,
 } from "@exaix/core/types";
 import { FlowStepHandlerRegistry } from "./step_handlers/step_handler_registry.ts";
+import { FlowGateHaltedError, gateEvaluationResult } from "./errors/flow_control_errors.ts";
+import type { IFlowGateEvaluatedEventPayload } from "@exaix/core/events";
 import { GateStepHandler, type IPendingWaitStateRef } from "./step_handlers/gate_step_handler.ts";
 import { AgentStepHandler } from "./step_handlers/agent_step_handler.ts";
 import { SessionDelegateCycleStepHandler } from "./step_handlers/session_delegate_cycle_step_handler.ts";
@@ -286,6 +288,8 @@ export interface IStepResult {
   result?: IAgentExecutionResult;
   /** Error message if failed */
   error?: string;
+  /** Terminal control error code retained through wave processing. */
+  errorCode?: string;
   /** Allowlisted provider failure reason, when failure occurred before a model call. */
   providerReasonCode?: string;
   /** Execution duration in milliseconds */
@@ -482,6 +486,7 @@ export interface IFlowEventPayloadMap {
     stepsAttempted: number;
     successfulSteps: number;
     failedSteps: number;
+    reasonCode?: string;
   };
   [DomainEventType.FlowStepQueued]: IFlowEventRequestContext & {
     flowRunId: string;
@@ -544,6 +549,7 @@ export interface IFlowEventPayloadMap {
     condition: string;
     reason: string;
   };
+  [DomainEventType.FlowGateEvaluated]: IFlowGateEvaluatedEventPayload;
   [DomainEventType.FlowGateCriteriaNoAnalysis]: IFlowEventRequestContext & { flowRunId: string; stepId: string };
   [DomainEventType.FlowStepCompleted]: IFlowEventRequestContext & {
     flowRunId: string;
@@ -724,7 +730,11 @@ export interface IFlowEventLogger {
  * Error thrown when flow execution fails
  */
 export class FlowExecutionError extends Error {
-  constructor(message: string, public readonly flowRunId?: Opt<string, Reason.TraceAbsent>) {
+  constructor(
+    message: string,
+    public readonly flowRunId?: Opt<string, Reason.TraceAbsent>,
+    public readonly reasonCode?: Opt<string, Reason.OptionalContext>,
+  ) {
     super(message);
     this.name = "FlowExecutionError";
   }
@@ -894,9 +904,6 @@ export class FlowRunner implements IFlowRunner {
       new GateStepHandler({
         gateEvaluator: this.gateEvaluator!,
         eventLogger: this.eventLogger,
-        waitStateService: this.waitStateService,
-        milestoneEmitter: this.options.milestoneEmitter,
-        pendingWaitStateRef: this.pendingWaitStateRef,
       }),
     );
     const agentHandler = new AgentStepHandler({
@@ -964,6 +971,7 @@ export class FlowRunner implements IFlowRunner {
       DomainEventType.WaitStateResolved,
       DomainEventType.FlowStepReplayed,
       DomainEventType.FlowStepInvalidated,
+      DomainEventType.FlowGateEvaluated,
     ]);
   }
 
@@ -1389,6 +1397,9 @@ export class FlowRunner implements IFlowRunner {
       throw new FlowExecutionError(parallelValidationError, flowRunId);
     }
 
+    const gatePolicyError = this.runtimeValidator.validateGatePolicies(flow);
+    if (gatePolicyError) throw new FlowExecutionError(gatePolicyError, flowRunId);
+
     const strategyValidationError = this.runtimeValidator.validateStepStrategy(flow);
     if (strategyValidationError) {
       await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
@@ -1530,6 +1541,7 @@ export class FlowRunner implements IFlowRunner {
       flowId: flow.id,
       error: error instanceof Error ? error.message : String(error),
       errorType: error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL,
+      reasonCode: error instanceof FlowExecutionError ? error.reasonCode : undefined,
       duration,
       stepsAttempted: stepResults.size,
       successfulSteps,
@@ -1637,7 +1649,7 @@ export class FlowRunner implements IFlowRunner {
       portalScopeHash,
     });
 
-    if (priorRecord) {
+    if (priorRecord && step.type !== FlowStepType.GATE && step.type !== FlowStepType.BRANCH) {
       const reuseDecision = this.stepReplayPolicy.canReuse({
         step: { userPrompt: stepRequest.userPrompt, context: stepRequest.context ?? {} },
         prior: priorRecord,
@@ -1728,6 +1740,9 @@ export class FlowRunner implements IFlowRunner {
     initialError: Error | string | unknown,
   ): Promise<IStepResult> {
     const { flowRunId, step, request, startedAt } = ctx;
+    if (initialError instanceof FlowGateHaltedError) {
+      return this.formatStepFailure(flowRunId, step, request, initialError, startedAt);
+    }
     if (
       initialError instanceof ContextBudgetExceededError ||
       (initialError instanceof Error && getProviderFailureReason(initialError) !== undefined)
@@ -2023,6 +2038,10 @@ export class FlowRunner implements IFlowRunner {
       startedAt,
       flowLogBase,
     };
+    if (handler instanceof GateStepHandler) {
+      const result = await handler.evaluateGate(ctx, 1);
+      return gateEvaluationResult(step.id, step.evaluate!.threshold, result);
+    }
     return await handler.execute(ctx);
   }
 
@@ -2104,6 +2123,7 @@ export class FlowRunner implements IFlowRunner {
       stepId: step.id,
       success: false,
       error: errorMessage,
+      errorCode: error instanceof Error && "code" in error && typeof error.code === "string" ? error.code : undefined,
       ...(providerReasonCode ? { providerReasonCode } : {}),
       duration,
       startedAt,

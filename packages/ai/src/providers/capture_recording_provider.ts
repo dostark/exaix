@@ -22,12 +22,33 @@ import {
 } from "./mock_llm_provider.ts";
 import { DEFAULT_CAPTURE_MAX_ATTEMPTS } from "../constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
+import { z } from "zod";
 
 export interface ICaptureRecordingProviderOptions {
   /** Directory fixtures are written into. Created if it does not exist. */
   dir: string;
   /** Max attempts per logical call before refusing to write a fixture. */
   maxAttempts?: number;
+}
+
+const JudgeCaptureSchema = z.object({
+  criteriaScores: z.record(z.string(), z.object({ score: z.number().min(0).max(1) })),
+  feedback: z.string(),
+  suggestions: z.array(z.string()),
+});
+
+/** Validates raw judge responses against all requested criterion names. */
+function validateJudgeCapture(response: string, criteria: string[]): string | null {
+  try {
+    const parsed = JudgeCaptureSchema.safeParse(JSON.parse(response));
+    if (!parsed.success) return "judge JSON requires bounded criterion scores, feedback and suggestions";
+    if (criteria.some((name) => !(name in parsed.data.criteriaScores))) {
+      return "judge JSON is missing a requested criterion";
+    }
+    return null;
+  } catch {
+    return "judge response must contain raw JSON";
+  }
 }
 
 /** Error thrown when capture cannot produce a contract-satisfying response, or is refused. */
@@ -127,7 +148,9 @@ export class CaptureRecordingProvider implements IModelProvider {
 
     for (attempts = 1; attempts <= maxAttempts; attempts++) {
       const result = await this.inner.generate(prompt, options);
-      const violation = validateCaptureContract(prompt, result.content);
+      const violation = options?.responseContract?.kind === "judge-json"
+        ? validateJudgeCapture(result.content, options.responseContract.criteria)
+        : validateCaptureContract(prompt, result.content);
       if (!violation) {
         accepted = result;
         break;

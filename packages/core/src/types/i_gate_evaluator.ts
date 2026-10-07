@@ -12,6 +12,12 @@ import type { IBindingGateContext, IRequestAnalysis } from "@exaix/schemas";
 
 import type { FlowGateAction, FlowGateOnFail } from "@exaix/core";
 
+/** Structural metadata keeps core independent of the AI provider package. */
+export interface IFlowJudgeCallMetadata {
+  traceId?: string;
+  callSite?: { scenarioId: string; stepId: string; flowStepId?: string; callIndex: number };
+}
+
 /**
  * Result of gate evaluation
  */
@@ -51,6 +57,7 @@ export interface IGateConfig {
   /** Flow-gate judge binding carried on the evaluation. Non-flow callers omit it and
    *  the judge runner keeps the boot provider. */
   bindingContext?: IBindingGateContext;
+  callMetadata?: IFlowJudgeCallMetadata;
 }
 
 /**
@@ -63,6 +70,7 @@ export interface IJudgeInvoker {
     criteria: EvaluationCriterion[],
     context?: string,
     bindingContext?: IBindingGateContext,
+    callMetadata?: IFlowJudgeCallMetadata,
   ): Promise<EvaluationResult>;
 }
 

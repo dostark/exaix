@@ -495,6 +495,7 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 | `FlowTokenSummary`                       | `flow.token_summary`                          | Flow                            |
 | `FlowTokenSummaryError`                  | `flow.token_summary.error`                    | Flow                            |
 | `FlowGateCriteriaNoAnalysis`             | `flow.gate.criteria.no_analysis`              | Flow                            |
+| `FlowGateEvaluated`                      | `flow.gate.evaluated`                         | Flow                            |
 | `WaitStateCreated`                       | `wait_state.created`                          | Flow / Wait States              |
 | `WaitStateResolved`                      | `wait_state.resolved`                         | Flow / Wait States              |
 | `ExecutionSkipped`                       | `execution.skipped`                           | Execution                       |
