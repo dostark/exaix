@@ -105,10 +105,10 @@ serial loop automatically.
 # Build the worker image once. `test_all` also builds it on demand when absent.
 docker build --target dev-test -t exaix-dev-test:dev .
 
-# Default: container mode with 4 workers.
+# Default: container mode with a core-derived worker count (~1 per 3 CPU cores).
 deno task test_all
 
-# Choose the worker count: CLI flag > EXA_TEST_CONTAINER_JOBS > default 4.
+# Choose the worker count: CLI flag > EXA_TEST_CONTAINER_JOBS > core-derived default.
 deno task test_all --test-container-jobs=6
 
 # Force the legacy serial Batch 2.
@@ -119,7 +119,7 @@ EXA_TEST_CONTAINERS=0 deno task test_all
 | Env var                                               | Purpose                                                                                     |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `EXA_TEST_CONTAINERS`                                 | `0` opts out to the serial Batch 2. Container mode is the default when Docker is reachable. |
-| `EXA_TEST_CONTAINER_JOBS`                             | Worker-container count, clamped to the core count.                                          |
+| `EXA_TEST_CONTAINER_JOBS`                             | Worker-container count. Defaults to about one per 3 CPU cores, clamped to the core count.   |
 | `EXA_TEST_CONTAINER_IMAGE`                            | Worker image tag, default `exaix-dev-test:dev`.                                             |
 | `EXA_TEST_CONTAINER_PIDS_LIMIT` / `_MEMORY` / `_CPUS` | Per-worker resource bounds.                                                                 |
 

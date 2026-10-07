@@ -9,6 +9,7 @@ import { assert, assertEquals, assertRejects } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import {
   buildWorkerContainerLaunch,
+  DEFAULT_CONTAINER_CORES_PER_WORKER,
   DEFAULT_TEST_CONTAINER_CPUS,
   DEFAULT_TEST_CONTAINER_IMAGE,
   DEFAULT_TEST_CONTAINER_JOBS,
@@ -518,6 +519,17 @@ Deno.test("selectBatch2Strategy clamps jobs to [MIN_TEST_CONTAINER_JOBS, navigat
     { jobs: MIN_TEST_CONTAINER_JOBS },
   );
   assertEquals(low.jobs, MIN_TEST_CONTAINER_JOBS);
+});
+
+Deno.test("the default worker count derives from the host CPU cores", () => {
+  const cores = navigator.hardwareConcurrency;
+  const expected = Math.min(
+    cores,
+    Math.max(MIN_TEST_CONTAINER_JOBS, Math.ceil(cores / DEFAULT_CONTAINER_CORES_PER_WORKER)),
+  );
+  assertEquals(DEFAULT_TEST_CONTAINER_JOBS, expected);
+  assert(DEFAULT_TEST_CONTAINER_JOBS >= MIN_TEST_CONTAINER_JOBS);
+  assert(DEFAULT_TEST_CONTAINER_JOBS <= cores);
 });
 
 Deno.test("selectBatch2Strategy defaults to container mode when EXA_TEST_CONTAINERS is unset", async () => {

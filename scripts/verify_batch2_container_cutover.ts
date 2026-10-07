@@ -17,6 +17,7 @@
 import { fromFileUrl } from "@std/path";
 import {
   DEFAULT_TEST_CONTAINER_IMAGE,
+  DEFAULT_TEST_CONTAINER_JOBS,
   DEFAULT_TEST_CONTAINER_NETWORK,
   DEFAULT_TEST_CONTAINER_WATCHDOG_MS,
   ensureDevTestImage,
@@ -28,7 +29,6 @@ import { buildContainerEnv, parseDotReporterCounts, parseSummaryLine, SEQUENTIAL
 
 const REPO_ROOT = fromFileUrl(new URL("..", import.meta.url)).replace(/\/$/, "");
 const JOBS_FLAG = "--jobs";
-const DEFAULT_JOBS = 4;
 const MIN_DROP = 0.5;
 const SLOWEST_REPORTED = 5;
 const DAEMON_PATTERN = "daemon/main.ts";
@@ -40,7 +40,7 @@ interface IFileCounts {
   ignored: number;
 }
 
-/** Parse `--jobs <N>` / `=<N>`, defaulting to `DEFAULT_JOBS`. */
+/** Parse `--jobs <N>` / `=<N>`, defaulting to the core-derived worker count. */
 export function parseJobs(args: readonly string[]): number {
   for (let index = 0; index < args.length; index++) {
     const arg = args[index];
@@ -57,7 +57,7 @@ export function parseJobs(args: readonly string[]): number {
     }
     return value;
   }
-  return DEFAULT_JOBS;
+  return DEFAULT_TEST_CONTAINER_JOBS;
 }
 
 /** Kill daemons left by a previous phase, mirroring `test_parallel.ts:main`. */

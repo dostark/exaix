@@ -164,8 +164,18 @@ export const DEFAULT_TEST_CONTAINER_IMAGE = "exaix-dev-test:dev";
 export const TEST_CONTAINER_IMAGE_ENV = "EXA_TEST_CONTAINER_IMAGE";
 export const TEST_CONTAINER_JOBS_ENV = "EXA_TEST_CONTAINER_JOBS";
 export const TEST_CONTAINERS_ENABLED_ENV = "EXA_TEST_CONTAINERS";
-export const DEFAULT_TEST_CONTAINER_JOBS = 4;
 export const MIN_TEST_CONTAINER_JOBS = 1;
+/** CPU cores each worker container targets. The default worker count derives from the host cores. */
+export const DEFAULT_CONTAINER_CORES_PER_WORKER = 3;
+/** Default workers: one per `DEFAULT_CONTAINER_CORES_PER_WORKER` host cores, rounded up
+ *  (6 on a 16-core host). */
+export const DEFAULT_TEST_CONTAINER_JOBS = Math.min(
+  navigator.hardwareConcurrency,
+  Math.max(
+    MIN_TEST_CONTAINER_JOBS,
+    Math.ceil(navigator.hardwareConcurrency / DEFAULT_CONTAINER_CORES_PER_WORKER),
+  ),
+);
 export const DEFAULT_TEST_CONTAINER_NETWORK: TestContainerNetwork = "none";
 export const DEFAULT_TEST_CONTAINER_PIDS_LIMIT = 512;
 export const TEST_CONTAINER_PIDS_LIMIT_ENV = "EXA_TEST_CONTAINER_PIDS_LIMIT";
