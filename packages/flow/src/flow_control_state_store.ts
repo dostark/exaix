@@ -6,13 +6,15 @@
  * @dependencies [@exaix/core, @exaix/schemas]
  * @related-files [packages/flow/src/flow_checkpoint_coordinator.ts]
  */
-import { DEFAULT_FLOW_GATE_MAX_EVALUATIONS, FlowGateAction, FlowStepType } from "@exaix/core";
+import { DEFAULT_FLOW_GATE_MAX_EVALUATIONS, FlowGateAction, FlowStepSkipCode, FlowStepType } from "@exaix/core";
 import type { BindingOutcome, IBindingRunSnapshot } from "@exaix/schemas";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IFlowCheckpointRequest } from "./flow_checkpoint_coordinator.ts";
 import { FlowExecutionError, type IStepResult } from "./flow_runner.ts";
 import { FLOW_CONTROL_RESUME_UNSUPPORTED_CODE } from "./errors/flow_control_errors.ts";
-import type { IFlowControlState, IGateLoopState } from "./contracts/flow_control_state.ts";
+import type { IBranchExecutionResult, IFlowControlState, IGateLoopState } from "./contracts/flow_control_state.ts";
+import { parseBranchOutput } from "./step_handlers/branch_step_handler.ts";
+import { branchSkipReason } from "./branch_routing.ts";
 import { StepContentHasher } from "./step_content_hasher.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -41,11 +43,11 @@ export class FlowControlStateStore {
     flowContentHash: string,
     defaultModelIdentity: IDefaultModelIdentity = { ai: null, models: null },
   ): void {
-    this.runs.set(results, { state: { gates: {} }, ceiling, flowContentHash, defaultModelIdentity });
+    this.runs.set(results, { state: { gates: {}, branches: {} }, ceiling, flowContentHash, defaultModelIdentity });
   }
   get(results: Map<string, IStepResult>): IFlowControlRunContext {
     return this.runs.get(results) ??
-      { state: { gates: {} }, ceiling: DEFAULT_FLOW_GATE_MAX_EVALUATIONS, flowContentHash: "" };
+      { state: { gates: {}, branches: {} }, ceiling: DEFAULT_FLOW_GATE_MAX_EVALUATIONS, flowContentHash: "" };
   }
   async fingerprint(
     flow: IFlow,
@@ -101,7 +103,123 @@ export class FlowControlStateStore {
         );
       }
     }
+    await this.restoreBranches(state, flow, request, results, flowRunId);
     this.get(results).state = state;
+  }
+  async settleBranch(
+    flow: IFlow,
+    step: IFlowStep,
+    request: IFlowCheckpointRequest,
+    results: Map<string, IStepResult>,
+    execution: IBranchExecutionResult,
+  ): Promise<void> {
+    const { decision, thought, content, raw } = execution;
+    const branch = {
+      phase: "settled" as const,
+      decision,
+      inputIds: [...results.keys()].sort(),
+      result: { thought, content, raw },
+      fingerprint: "pending",
+    };
+    branch.fingerprint = await this.branchFingerprint(flow, step, request, results, branch);
+    this.get(results).state.branches[step.id] = branch;
+  }
+  private async branchFingerprint(
+    flow: IFlow,
+    step: IFlowStep,
+    request: IFlowCheckpointRequest,
+    results: Map<string, IStepResult>,
+    branch: IFlowControlState["branches"][string],
+  ): Promise<string> {
+    return await new StepContentHasher().computeStringHash(JSON.stringify({
+      identity: await this.fingerprint(flow, step, request, results),
+      config: { branches: step.branches, default: step.default, input: step.input, name: step.name },
+      inputs: branch.inputIds.map((id) => {
+        const result = results.get(id);
+        return [
+          id,
+          result?.result?.content ?? null,
+          result?.skipCode ?? null,
+          result?.success,
+          result?.skipped,
+          result?.duration,
+          result?.error,
+        ];
+      }),
+      result: branch.result,
+      decision: branch.decision,
+    }));
+  }
+  private async restoreBranches(
+    state: IFlowControlState,
+    flow: IFlow,
+    request: IFlowCheckpointRequest,
+    results: Map<string, IStepResult>,
+    flowRunId: string,
+  ): Promise<void> {
+    for (const [id, branch] of Object.entries(state.branches)) {
+      const step = flow.steps.find((candidate) => candidate.id === id);
+      if (!step || !await this.branchStateMatches(flow, step, request, results, id, branch)) {
+        throw new FlowExecutionError(
+          "Branch checkpoint cannot safely resume",
+          flowRunId,
+          FLOW_CONTROL_RESUME_UNSUPPORTED_CODE,
+        );
+      }
+    }
+    for (const step of flow.steps) {
+      const completed = results.get(step.id);
+      if (completed && !this.routeResultMatches(step, completed, results, state)) {
+        throw new FlowExecutionError(
+          "Branch skip checkpoint cannot safely resume",
+          flowRunId,
+          FLOW_CONTROL_RESUME_UNSUPPORTED_CODE,
+        );
+      }
+    }
+  }
+  private routeResultMatches(
+    step: IFlowStep,
+    completed: IStepResult,
+    results: Map<string, IStepResult>,
+    state: IFlowControlState,
+  ): boolean {
+    return branchSkipReason(step, results, state)
+      ? completed.skipped === true && completed.skipCode === FlowStepSkipCode.BRANCH_NOT_TAKEN
+      : completed.skipCode !== FlowStepSkipCode.BRANCH_NOT_TAKEN;
+  }
+  private async branchStateMatches(
+    flow: IFlow,
+    step: IFlowStep,
+    request: IFlowCheckpointRequest,
+    results: Map<string, IStepResult>,
+    id: string,
+    branch: IFlowControlState["branches"][string],
+  ): Promise<boolean> {
+    if (step.type !== FlowStepType.BRANCH || branch.decision.branchId !== id) return false;
+    const targets = [
+      ...new Set([
+        ...(step.branches ?? []).map((candidate) => candidate.goto),
+        ...(step.default ? [step.default] : []),
+      ]),
+    ];
+    const { chosen, notTaken, data } = branch.decision;
+    if (
+      !targets.includes(chosen) ||
+      JSON.stringify(notTaken) !== JSON.stringify(targets.filter((target) => target !== chosen))
+    ) return false;
+    if (targets.some((target) => !flow.steps.find((candidate) => candidate.id === target)?.dependsOn.includes(id))) {
+      return false;
+    }
+    if (branch.inputIds.some((inputId) => inputId === id || !results.has(inputId))) return false;
+    if (branch.fingerprint !== await this.branchFingerprint(flow, step, request, results, branch)) return false;
+    const completed = results.get(id);
+    if (completed && (completed.skipped || completed.result?.content !== branch.result.content)) return false;
+    try {
+      return JSON.stringify(parseBranchOutput(branch.result.content)) === JSON.stringify(data);
+    } catch {
+      return false;
+    }
   }
   private isSettled(state: IGateLoopState, gate: IFlowStep, flow: IFlow, results: Map<string, IStepResult>): boolean {
     return gate.type === FlowStepType.GATE && gate.evaluate !== undefined && state.phase === "settled" &&

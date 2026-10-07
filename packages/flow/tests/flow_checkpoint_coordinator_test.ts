@@ -9,7 +9,12 @@
 
 import { assertEquals } from "@std/assert";
 import { FlowCheckpointCoordinator, type IFlowEventLogger } from "@exaix/flow";
-import { FlowSchema, type IFlowCheckpoint, type IFlowStepResultSnapshot } from "@exaix/schemas/flow.ts";
+import {
+  FlowSchema,
+  type IFlowCheckpoint,
+  type IFlowStepResultSnapshot,
+  ZFlowCheckpoint,
+} from "@exaix/schemas/flow.ts";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { IStepResult } from "@exaix/flow";
 import type { IStepDurabilityStore, IStepExecutionRecord } from "@exaix/flow";
@@ -141,6 +146,34 @@ Deno.test("[FlowCheckpointCoordinator] saveCheckpointIfEnabled persists snapshot
   assertEquals(saved?.completedSteps["step-1"]?.stepId, "step-1");
   assertEquals(eventLogger.events.some((e) => e.event.includes("checkpoint.saved") || e.event.includes("saved")), true);
 });
+
+for (const skipCode of ["condition", "branch_not_taken", undefined] as const) {
+  Deno.test(`[checkpoint] save and parsed load preserve skipCode=${skipCode} and legacy reasons`, async () => {
+    const { coordinator, checkpointService } = makeCoordinator();
+    const results = buildStepResults();
+    Object.assign(results.get("step-1")!, { skipped: true, skipCode, skipReason: "Legacy free-text reason" });
+    await coordinator.saveCheckpointIfEnabled(
+      buildFlow(),
+      { userPrompt: "do it", traceId: "skip-trace" },
+      "skip-run",
+      "skip-hash",
+      results,
+    );
+    const parsed = ZFlowCheckpoint.parse(JSON.parse(JSON.stringify(await checkpointService.load("skip-trace"))));
+    assertEquals(parsed.completedSteps["step-1"].skipCode, skipCode);
+    await checkpointService.save("skip-trace", "skip-hash", parsed.completedSteps);
+    const restored = new Map<string, IStepResult>();
+    await coordinator.loadCheckpointIfAvailable(
+      buildFlow(),
+      { userPrompt: "do it", traceId: "skip-trace" },
+      "skip-run",
+      "skip-hash",
+      restored,
+    );
+    assertEquals(restored.get("step-1")?.skipCode, skipCode);
+    assertEquals(restored.get("step-1")?.skipReason, "Legacy free-text reason");
+  });
+}
 
 Deno.test("[FlowCheckpointCoordinator] loadCheckpointIfAvailable restores step results and migrates to durability store", async () => {
   const checkpointService = new FakeCheckpointService();

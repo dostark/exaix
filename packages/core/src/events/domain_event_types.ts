@@ -52,6 +52,17 @@ export interface IFlowLoopIterationEventPayload {
   requestId?: string;
 }
 
+export interface IFlowBranchDecidedEventPayload {
+  flowRunId: string;
+  stepId: string;
+  chosen: string;
+  notTaken: string[];
+  data: JSONValue;
+  traceId?: string;
+  requestId?: string;
+  restored?: boolean;
+}
+
 export interface IFlowGateEvaluatedEventPayload {
   flowRunId: string;
   stepId: string;
@@ -876,6 +887,7 @@ export const DomainEventType = {
   FlowGateCriteriaNoAnalysis: "flow.gate.criteria.no_analysis",
   FlowGateEvaluated: "flow.gate.evaluated",
   FlowLoopIteration: "flow.loop.iteration",
+  FlowBranchDecided: "flow.branch.decided",
 
   // Request lifecycle events (request/processor.ts)
   RequestProcessStarted: "request.process.started",

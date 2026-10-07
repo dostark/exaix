@@ -27,6 +27,7 @@ for (
     ["gate_retry", "gate-retry", "passed", "planned", 5, 2, 2, 1],
     ["gate_retry_exhausted", "gate-retry-exhausted", "halted", "failed", 6, 2, 3, 2],
     ["gate_retry_budget", "gate-retry-budget", "retry", "failed", 2, 2, 1, 0],
+    ["branch_routing", "branch-routing", "bug", "planned", 4, 3, 0, 0],
   ] as const
 ) {
   Deno.test({
@@ -87,7 +88,15 @@ default_model = "mock"
 [ai.mock]
 strategy = "recorded"
 strict = true
-fixtures_dir = "${join(FRAMEWORK_HOME, "fixtures", "mock_recordings", "phase205", "gates")}"
+fixtures_dir = "${
+            join(
+              FRAMEWORK_HOME,
+              "fixtures",
+              "mock_recordings",
+              "phase205",
+              file === "branch_routing" ? "branches" : "gates",
+            )
+          }"
 ${
             file === "gate_retry_budget"
               ? `
@@ -136,30 +145,56 @@ enabled = false
           gates.map((row) => JSON.parse(row.payload).attempt),
           Array.from({ length: evaluations }, (_, i) => i + 1),
         );
-        const gate = JSON.parse(gates[gates.length - 1].payload) as {
-          action: string;
-          attempt: number;
-          score: number;
-          threshold: number;
-          passed: boolean;
-          traceId: string;
-        };
-        assertEquals(gate, {
-          ...gate,
-          action,
-          attempt: evaluations,
-          score: action === "passed" ? 1 : 0.2,
-          threshold: 0.8,
-          passed: action === "passed",
-          traceId,
-        });
-        assertEquals(gates[0].trace_id, traceId);
+        if (file === "branch_routing") {
+          const decisions = activities.filter((row) => row.action_type === "flow.branch.decided");
+          assertEquals(decisions.length, 1);
+          const decision = JSON.parse(decisions[0].payload);
+          assertEquals(decision.data, { category: "bug", items: [1, 2] });
+          assertEquals(decision.chosen, "bug");
+          assertEquals(decision.notTaken, ["feature", "other"]);
+          assertEquals(decision.traceId, traceId);
+          assertEquals(
+            activities.filter((row) => row.action_type === "flow.step.started").map((row) =>
+              JSON.parse(row.payload).stepId
+            ),
+            ["classify", "bug", "bug-child", "join"],
+          );
+          assertEquals(
+            activities.filter((row) => row.action_type === "flow.step.skipped").map((
+              row,
+            ) => [JSON.parse(row.payload).stepId, JSON.parse(row.payload).skipCode]),
+            [["feature", "branch_not_taken"], ["other", "branch_not_taken"], ["feature-child", "branch_not_taken"], [
+              "other-child",
+              "branch_not_taken",
+            ]],
+          );
+        } else {
+          const gate = JSON.parse(gates[gates.length - 1].payload) as {
+            action: string;
+            attempt: number;
+            score: number;
+            threshold: number;
+            passed: boolean;
+            traceId: string;
+          };
+          assertEquals(gate, {
+            ...gate,
+            action,
+            attempt: evaluations,
+            score: action === "passed" ? 1 : 0.2,
+            threshold: 0.8,
+            passed: action === "passed",
+            traceId,
+          });
+          assertEquals(gates[0].trace_id, traceId);
+        }
         const generations = activities.filter((row) => row.action_type === "llm.call.completed");
         assertEquals(generations.length, calls);
         assertEquals(generations.map((row) => row.trace_id), Array(calls).fill(traceId));
         assertEquals(generations.map((row) => row.prompt_tokens), Array(calls).fill(PROMPT_TOKENS));
         const downstream = activities.filter((row) =>
-          row.action_type === "flow.step.started" && (JSON.parse(row.payload) as { stepId: string }).stepId === "after"
+          row.action_type === "flow.step.started" &&
+          (JSON.parse(row.payload) as { stepId: string }).stepId === (file === "branch_routing" ? "join" : "after")
         );
         assertEquals(downstream.length, status === "failed" ? 0 : 1);
         const failed = activities.filter((row) => row.action_type === "flow.failed");

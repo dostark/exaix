@@ -19,6 +19,7 @@ import {
   FlowOutputFormat,
   FlowStepExecutionMode,
   FlowStepOnErrorAction,
+  FlowStepSkipCode,
   FlowStepType,
   McpToolName,
   ProviderCostTier,
@@ -79,6 +80,7 @@ export const ZFlowStepResult = z.object({
   success: z.boolean(),
   skipped: z.boolean().optional(),
   skipReason: z.string().optional(),
+  skipCode: z.nativeEnum(FlowStepSkipCode).optional(),
   result: z.unknown().optional(),
   error: z.string().optional(),
   duration: z.number().nonnegative(),
@@ -105,7 +107,23 @@ export const ZGateLoopState = z.object({
   ceiling: z.number().int().min(2).max(100),
   result: ZFlowGateResult.optional(),
 });
-export const ZFlowControlState = z.object({ gates: z.record(z.string(), ZGateLoopState) });
+export const ZBranchDecision = z.object({
+  branchId: z.string().min(1),
+  chosen: z.string().min(1),
+  notTaken: z.array(z.string().min(1)),
+  data: JSONValueSchema,
+});
+export const ZBranchState = z.object({
+  phase: z.literal("settled"),
+  decision: ZBranchDecision,
+  inputIds: z.array(z.string().min(1)),
+  fingerprint: z.string().min(1),
+  result: z.object({ thought: z.string(), content: z.string(), raw: z.string() }),
+});
+export const ZFlowControlState = z.object({
+  gates: z.record(z.string(), ZGateLoopState),
+  branches: z.record(z.string(), ZBranchState).default({}),
+});
 
 export const ZFlowCheckpoint = z.object({
   traceId: z.string().min(1),
@@ -370,6 +388,7 @@ export const FlowStepSchema = FlowStepSchemaBase.extend({
   delegateCycle: SessionDelegateCycleConfigSchema.optional(),
 }).superRefine((step, ctx) => {
   validateGateLoopFields(step, ctx);
+  validateBranchPolicies(step, ctx);
   if (step.strategy !== undefined) {
     if (step.execution_mode === FlowStepExecutionMode.DYNAMIC) {
       ctx.addIssue({
@@ -444,6 +463,25 @@ export const FlowStepSchema = FlowStepSchemaBase.extend({
   }, ctx);
 });
 
+const FLOW_BRANCH_DEFAULT_FIELD = "default";
+function validateBranchPolicies(step: z.infer<typeof FlowStepSchemaBase>, ctx: z.RefinementCtx): void {
+  const fields: string[] = [];
+  if (step.type !== FlowStepType.BRANCH) {
+    if (step.branches !== undefined) fields.push("branches");
+    if (step.default !== undefined) fields.push(FLOW_BRANCH_DEFAULT_FIELD);
+  } else {
+    if (step.execution_mode !== FlowStepExecutionMode.DECLARED) fields.push("execution_mode");
+    if (step.condition !== undefined) fields.push("condition");
+    if (step.onError !== undefined) fields.push("onError");
+  }
+  if ([FlowStepType.BRANCH, FlowStepType.GATE].includes(step.type) && step.retry.maxAttempts > 1) {
+    fields.push("retry");
+  }
+  for (const field of fields) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: `Invalid control policy: ${field}` });
+  }
+}
+
 // Flow schema definition
 /** Flow-step model binding and pin are valid on LLM-calling step types only.
  *  Every pinned field must be present in the step's own binding. */
@@ -511,6 +549,24 @@ export const FlowSchema = z.object({
   /** Default skills to apply to all steps */
   defaultSkills: z.array(z.string()).optional(),
   namespace: ZFlowNamespaceConfig.optional(),
+}).superRefine((flow, ctx) => {
+  for (const [index, step] of flow.steps.entries()) {
+    if (step.type !== FlowStepType.BRANCH) continue;
+    for (
+      const target of new Set([
+        ...(step.branches ?? []).map((branch) => branch.goto),
+        ...(step.default ? [step.default] : []),
+      ])
+    ) {
+      if (!flow.steps.find((candidate) => candidate.id === target)?.dependsOn.includes(step.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["steps", index, "branches"],
+          message: `Branch target '${target}' must directly depend on '${step.id}'`,
+        });
+      }
+    }
+  }
 });
 
 // Type exports for use in other modules

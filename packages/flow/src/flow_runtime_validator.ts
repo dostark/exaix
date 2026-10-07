@@ -37,9 +37,31 @@ export class FlowRuntimeValidator {
   private validateControlStep(flow: IFlow, step: IFlowStep, ceiling: number): string | null {
     if (step.input.source === FlowInputSource.FEEDBACK) return "use a gate with onFail: retry and loop.backTo";
     if (step.loop && step.type !== FlowStepType.GATE) return "loop is valid on gate steps only";
+    if (step.type !== FlowStepType.BRANCH && (step.branches !== undefined || step.default !== undefined)) {
+      return "branches and default are valid on branch steps only";
+    }
+    if ([FlowStepType.GATE, FlowStepType.BRANCH].includes(step.type) && (step.retry?.maxAttempts ?? 1) > 1) {
+      return "Control steps cannot use generic retries";
+    }
+    if (step.type === FlowStepType.BRANCH) return this.validateBranch(flow, step);
     if (step.type !== FlowStepType.GATE) return null;
     if (step.onError) return `Step '${step.id}': a gate's failure policy is evaluate.onFail`;
     return this.validateGateLimits(flow, step, ceiling);
+  }
+  private validateBranch(flow: IFlow, step: IFlowStep): string | null {
+    if (
+      (step.execution_mode ?? FlowStepExecutionMode.DECLARED) !== FlowStepExecutionMode.DECLARED ||
+      step.strategy !== undefined ||
+      step.effort !== undefined || step.thinking !== undefined || step.condition !== undefined ||
+      step.onError !== undefined
+    ) {
+      return `Branch '${step.id}' must be a declared single call without condition or recovery policies`;
+    }
+    const targets = [...(step.branches ?? []).map((branch) => branch.goto), ...(step.default ? [step.default] : [])];
+    if (targets.some((id) => !flow.steps.find((target) => target.id === id)?.dependsOn.includes(step.id))) {
+      return `Branch '${step.id}' targets must directly depend on it`;
+    }
+    return null;
   }
   private validateGateLimits(flow: IFlow, step: IFlowStep, ceiling: number): string | null {
     if (!step.evaluate) return `Gate '${step.id}' requires evaluate config`;

@@ -11,6 +11,7 @@ import { FlowCheckpointService, FlowExecutionError, FlowRunner, GateEvaluator, S
 import { initTestDbService } from "@exaix/testing";
 import { GATE_TRACE, GateTestLogger } from "./helpers/gate_controls.ts";
 import { gateRetryFlow, RetryTestAgent, RetryTestJudge } from "./helpers/gate_retry_controls.ts";
+import { BRANCH_TRACE, BranchTestAgent, branchTestFlow } from "./helpers/branch_controls.ts";
 for (const phase of ["rerunning", "evaluating"] as const) {
   Deno.test(`[checkpoint] interrupted ${phase} fails before body or judge calls`, async () => {
     const env = await initTestDbService();
@@ -40,7 +41,7 @@ for (const phase of ["rerunning", "evaluating"] as const) {
         savedAt: new Date().toISOString(),
         controlState,
       };
-      assertEquals(ZFlowCheckpoint.parse(checkpoint).controlState, controlState);
+      assertEquals(ZFlowCheckpoint.parse(checkpoint).controlState, { ...controlState, branches: {} });
       await Deno.writeTextFile(file, JSON.stringify(checkpoint));
       const agent = new RetryTestAgent();
       const judge = new RetryTestJudge([0.2]);
@@ -64,6 +65,132 @@ for (const phase of ["rerunning", "evaluating"] as const) {
     }
   });
 }
+
+for (
+  const drift of [
+    "none",
+    "missing",
+    "chosen",
+    "notTaken",
+    "output",
+    "request",
+    "skipCode",
+    "flow",
+    "default model",
+    "upstream",
+    "upstream duration",
+    "incomplete",
+  ]
+) {
+  Deno.test(`[resume] branch route and exclusive skips survive restart with drift=${drift}`, async () => {
+    const env = await initTestDbService();
+    try {
+      const flow = branchTestFlow();
+      flow.steps[0].dependsOn = ["prior"];
+      flow.steps.unshift({ ...flow.steps[1], id: "prior", name: "Prior", dependsOn: [] });
+      const checkpointService = new FlowCheckpointService(env.config);
+      const agent = new BranchTestAgent();
+      const run = agent.run.bind(agent);
+      agent.run = (role, request) =>
+        request.flowStepId === "bug-child" ? Promise.reject(new Error("Consumer interrupted")) : run(role, request);
+      await assertRejects(
+        () =>
+          new FlowRunner({
+            config: env.config,
+            checkpointService,
+            agentExecutor: agent,
+            eventLogger: new GateTestLogger(),
+          }).execute(flow, { userPrompt: "Classify", traceId: BRANCH_TRACE }),
+        FlowExecutionError,
+      );
+      const checkpoint = (await checkpointService.load(BRANCH_TRACE))!;
+      assertEquals(checkpoint.controlState?.branches.classify.decision.chosen, "bug");
+      assertEquals(checkpoint.completedSteps.feature.skipCode, "branch_not_taken");
+      if (drift === "missing") checkpoint.controlState = undefined;
+      if (drift === "chosen") checkpoint.controlState!.branches.classify.decision.chosen = "feature";
+      if (drift === "notTaken") checkpoint.controlState!.branches.classify.decision.notTaken = [];
+      if (drift === "output") checkpoint.controlState!.branches.classify.result.content = '{"category":"feature"}';
+      if (drift === "skipCode") checkpoint.completedSteps.feature.skipCode = undefined;
+      if (drift === "flow") flow.steps[1].branches![0].condition = "false";
+      if (drift === "default model") env.config.ai = { ...env.config.ai, provider: "mock", model: "changed-model" };
+      if (drift === "upstream") {
+        checkpoint.completedSteps.prior.result = { thought: "", content: "Changed", raw: "Changed" };
+      }
+      if (drift === "upstream duration") checkpoint.completedSteps.prior.duration += 1;
+      await checkpointService.save(
+        BRANCH_TRACE,
+        checkpoint.flowContentHash,
+        checkpoint.completedSteps,
+        checkpoint.controlState,
+      );
+      if (drift === "incomplete") {
+        await Deno.writeTextFile(
+          checkpointService.getCheckpointPath(BRANCH_TRACE),
+          JSON.stringify(checkpoint).replace('"phase":"settled"', '"phase":"deciding"'),
+        );
+      }
+      const resumedAgent = new BranchTestAgent();
+      const logger = new GateTestLogger();
+      const execute = () =>
+        new FlowRunner({ config: env.config, checkpointService, agentExecutor: resumedAgent, eventLogger: logger })
+          .execute(flow, { userPrompt: drift === "request" ? "Different" : "Classify", traceId: BRANCH_TRACE });
+      if (drift === "none") {
+        assertEquals((await execute()).success, true);
+        assertEquals(resumedAgent.requests.map((request) => request.flowStepId), ["bug-child", "join"]);
+        const event = logger.events.find((entry) => entry.event === "flow.branch.decided")!;
+        assertEquals([event.payload.chosen, event.payload.restored, event.payload.traceId], [
+          "bug",
+          true,
+          BRANCH_TRACE,
+        ]);
+      } else {
+        assertEquals((await assertRejects(execute, FlowExecutionError)).reasonCode, "flow_control_resume_unsupported");
+        assertEquals(resumedAgent.requests, []);
+      }
+    } finally {
+      await env.cleanup();
+    }
+  });
+}
+
+Deno.test("[resume] decision saved before branch completion restores without a second model call", async () => {
+  const env = await initTestDbService();
+  try {
+    const flow = branchTestFlow();
+    const checkpointService = new FlowCheckpointService(env.config);
+    const save = checkpointService.save.bind(checkpointService);
+    checkpointService.save = async (...args) => {
+      const checkpoint = await save(...args);
+      if (checkpoint.controlState?.branches.classify && !checkpoint.completedSteps.classify) {
+        throw new Error("Interrupted after the settled decision was saved");
+      }
+      return checkpoint;
+    };
+    const agent = new BranchTestAgent();
+    await assertRejects(() =>
+      new FlowRunner({ config: env.config, checkpointService, agentExecutor: agent, eventLogger: new GateTestLogger() })
+        .execute(flow, { userPrompt: "Classify", traceId: BRANCH_TRACE })
+    );
+    assertEquals(agent.requests.map((request) => request.flowStepId), ["classify"]);
+    const checkpoint = (await checkpointService.load(BRANCH_TRACE))!;
+    assertEquals(checkpoint.completedSteps.classify, undefined);
+    assertEquals(checkpoint.controlState?.branches.classify.decision.chosen, "bug");
+    checkpointService.save = save;
+    const resumed = new BranchTestAgent("unparseable if called");
+    assertEquals(
+      (await new FlowRunner({
+        config: env.config,
+        checkpointService,
+        agentExecutor: resumed,
+        eventLogger: new GateTestLogger(),
+      }).execute(flow, { userPrompt: "Classify", traceId: BRANCH_TRACE })).success,
+      true,
+    );
+    assertEquals(resumed.requests.map((request) => request.flowStepId), ["bug", "bug-child", "join"]);
+  } finally {
+    await env.cleanup();
+  }
+});
 
 for (const drift of ["none", "request", "config", "body content", "ceiling"]) {
   Deno.test(`[checkpoint] settled gate restores its verdict with identity drift=${drift}`, async () => {

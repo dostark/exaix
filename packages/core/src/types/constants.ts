@@ -2176,6 +2176,9 @@ export const DEFAULT_SESSION_DELEGATE_CYCLE_CLAIM_MAX_POLLS: number = configurab
 export const FLOW_EVENT_STEP_RETRY = "flow.step.retry";
 export const FLOW_EVENT_STEP_FALLBACK = "flow.step.fallback";
 export const FLOW_EVENT_STEP_SKIPPED = "flow.step.skipped";
+export const FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION =
+  "Return <thought>brief reasoning</thought><content>classification JSON</content>. " +
+  "The content must be valid classification JSON containing the fields used by the routing conditions.";
 export const FLOW_EVENT_STEP_COMPENSATED = "flow.step.compensated";
 export const FLOW_EVENT_STEP_COMPENSATION_FAILED = "flow.step.compensation_failed";
 export const FLOW_EVENT_CHECKPOINT_SAVED = "flow.checkpoint.saved";

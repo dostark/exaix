@@ -342,6 +342,7 @@ export async function resolveFlowForAudit(
  *  step or a react strategy step then runs a native tool loop. */
 const STEP_KINDS = new Set<FlowStepType>([
   FlowStepType.AGENT,
+  FlowStepType.BRANCH,
   FlowStepType.GATE,
   FlowStepType.SESSION_DELEGATE_CYCLE,
 ]);
@@ -352,7 +353,7 @@ export function bindingStepRef(
   nativeToolsEnabled: boolean,
 ): IBindingStepRef | undefined {
   if (!STEP_KINDS.has(step.type)) return undefined;
-  if (step.type === FlowStepType.AGENT) {
+  if (step.type === FlowStepType.AGENT || step.type === FlowStepType.BRANCH) {
     return {
       flowId: flow.id,
       stepId: step.id,

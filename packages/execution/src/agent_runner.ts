@@ -104,6 +104,7 @@ import { DomainEventType } from "@exaix/core/events";
 import type { IRetryContext, IRetryPolicy, IRetryPolicyConfig, IRetryResult } from "@exaix/core/request";
 import type { Opt, Reason } from "@exaix/core/types";
 import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
+import { FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION } from "@exaix/core";
 
 export interface ISelectedModelIdentity {
   provider: string;
@@ -168,6 +169,7 @@ interface ISkillUsagePlan {
 export interface IParsedRequest {
   /** The user's request/prompt */
   userPrompt: string;
+  flowOutputKind?: "branch-json";
 
   /** Additional context (e.g., file contents, environment info) */
   context: IRequestContextContext;
@@ -1292,7 +1294,9 @@ export class AgentRunner implements IAgentRunner {
     if (skillContext?.trim()) {
       entries.push({ content: skillContext, kind: k.skills, priority: 50, nonCompactable: false });
     }
-    const schemaInstructions = this.planAdapter.getSchemaInstructions();
+    const schemaInstructions = request.flowOutputKind === "branch-json"
+      ? FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION
+      : this.planAdapter.getSchemaInstructions();
     entries.push({ content: schemaInstructions, kind: k.acceptance_criteria, priority: 90, nonCompactable: true });
 
     let directoryListingEntryIndex = -1;

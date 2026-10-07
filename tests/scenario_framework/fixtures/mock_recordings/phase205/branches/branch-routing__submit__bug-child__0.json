@@ -1,0 +1,29 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Branch routing fixture",
+  "response": "<thought>Route one pipeline.</thought><content>BUG CHILD EVIDENCE</content>",
+  "model": "phase205-branch-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "callSite": {
+    "scenarioId": "branch-routing",
+    "stepId": "submit",
+    "flowStepId": "bug-child",
+    "callIndex": 0
+  },
+  "expectedInput": {
+    "promptIncludes": [
+      "BUG TARGET EVIDENCE"
+    ],
+    "promptExcludes": [
+      "FEATURE TARGET EVIDENCE",
+      "OTHER TARGET EVIDENCE",
+      "FEATURE CHILD EVIDENCE",
+      "OTHER CHILD EVIDENCE"
+    ]
+  }
+}

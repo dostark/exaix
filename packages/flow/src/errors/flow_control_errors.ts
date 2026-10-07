@@ -18,6 +18,9 @@ export const FLOW_RETRY_BUDGET_EXCEEDED_CODE = "flow_retry_budget_exceeded";
 export const GATE_LOOP_BODY_FAILED_CODE = "gate_loop_body_failed";
 export const GATE_LOOP_BODY_SKIPPED_CODE = "gate_loop_body_skipped";
 export const GATE_RETRY_REQUIRES_RUNNER_CODE = "gate_retry_requires_runner";
+export const BRANCH_OUTPUT_UNPARSEABLE_CODE = "branch_output_unparseable";
+export const BRANCH_CONDITION_ERROR_CODE = "branch_condition_error";
+export const BRANCH_NO_MATCH_CODE = "branch_no_match";
 export class FlowControlError extends Error {
   constructor(public readonly code: string, message: string) {
     super(message);
@@ -35,6 +38,9 @@ export function isTerminalFlowControlCode(code: Opt<string, Reason.OptionalConte
       GATE_LOOP_BODY_FAILED_CODE,
       GATE_LOOP_BODY_SKIPPED_CODE,
       GATE_RETRY_REQUIRES_RUNNER_CODE,
+      BRANCH_OUTPUT_UNPARSEABLE_CODE,
+      BRANCH_CONDITION_ERROR_CODE,
+      BRANCH_NO_MATCH_CODE,
     ].includes(code);
 }
 export class FlowGateHaltedError extends Error {

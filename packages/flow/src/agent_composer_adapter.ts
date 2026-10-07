@@ -74,6 +74,7 @@ interface IParsedRequest {
   portal?: string;
   flowId?: string;
   flowStepId?: string;
+  flowOutputKind?: "branch-json";
   flowStepEffort?: EffortDeclaration;
   flowStepThinking?: ThinkingDeclaration;
   bindingEffort?: EffortDeclaration;
@@ -196,6 +197,7 @@ export class AgentComposerAdapter {
       portal: request.portal,
       flowId: request.flowId,
       flowStepId: request.flowStepId,
+      flowOutputKind: request.flowOutputKind,
       flowStepEffort: request.effort,
       flowStepThinking: request.thinking,
       taskComplexity: taskComplexityFromAnalysis(analysis?.complexity),

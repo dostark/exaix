@@ -99,7 +99,7 @@ export class FlowCheckpointCoordinator implements IFlowCheckpointCoordinator {
       return;
     }
 
-    const checkpoint = await this.checkpointService.load(request.traceId);
+    const checkpoint = await this.loadControlCheckpoint(flow, request.traceId, flowRunId);
     if (!checkpoint) {
       return;
     }
@@ -114,7 +114,9 @@ export class FlowCheckpointCoordinator implements IFlowCheckpointCoordinator {
 
     const completedControl = flow.steps.find((step) =>
       (step.type === FlowStepType.GATE || step.type === FlowStepType.BRANCH) && checkpoint.completedSteps[step.id] &&
-      !checkpoint.controlState?.gates[step.id]
+      !(step.type === FlowStepType.GATE
+        ? checkpoint.controlState?.gates[step.id]
+        : checkpoint.controlState?.branches[step.id])
     );
     if (completedControl) {
       throw new FlowExecutionError(
@@ -128,9 +130,7 @@ export class FlowCheckpointCoordinator implements IFlowCheckpointCoordinator {
       stepResults.set(stepId, result);
     }
 
-    if (checkpoint.controlState) {
-      await this.controlStateStore.restore(checkpoint.controlState, flow, request, stepResults, flowRunId);
-    }
+    await this.restoreControlState(checkpoint, flow, request, stepResults, flowRunId);
     await this.migrateCheckpointToDurabilityStore(checkpoint, flow.id, request.traceId);
 
     await this.eventLogger.log(FLOW_EVENT_CHECKPOINT_LOADED, {
@@ -140,6 +140,55 @@ export class FlowCheckpointCoordinator implements IFlowCheckpointCoordinator {
       requestId: request.requestId,
       restoredSteps: Object.keys(restoredSteps).length,
     });
+  }
+
+  private async loadControlCheckpoint(
+    flow: IFlow,
+    traceId: string,
+    flowRunId: string,
+  ): Promise<IFlowCheckpoint | null> {
+    try {
+      return await this.checkpointService!.load(traceId);
+    } catch (error) {
+      if (flow.steps.some((step) => step.type === FlowStepType.BRANCH || step.type === FlowStepType.GATE)) {
+        throw new FlowExecutionError("Control checkpoint is invalid", flowRunId, FLOW_CONTROL_RESUME_UNSUPPORTED_CODE);
+      }
+      throw error;
+    }
+  }
+
+  private async restoreControlState(
+    checkpoint: IFlowCheckpoint,
+    flow: IFlow,
+    request: IFlowCheckpointRequest,
+    stepResults: Map<string, IStepResult>,
+    flowRunId: string,
+  ): Promise<void> {
+    if (checkpoint.controlState) {
+      await this.controlStateStore.restore(checkpoint.controlState, flow, request, stepResults, flowRunId);
+      for (const [id, branch] of Object.entries(checkpoint.controlState.branches)) {
+        if (!stepResults.has(id)) {
+          stepResults.set(id, {
+            stepId: id,
+            success: true,
+            result: branch.result,
+            duration: 0,
+            startedAt: new Date(checkpoint.savedAt),
+            completedAt: new Date(checkpoint.savedAt),
+          });
+        }
+        await this.eventLogger.log(DomainEventType.FlowBranchDecided, {
+          flowRunId,
+          stepId: id,
+          chosen: branch.decision.chosen,
+          notTaken: branch.decision.notTaken,
+          data: branch.decision.data,
+          traceId: request.traceId,
+          requestId: request.requestId,
+          restored: true,
+        });
+      }
+    }
   }
 
   async saveCheckpointIfEnabled(
@@ -190,6 +239,7 @@ export class FlowCheckpointCoordinator implements IFlowCheckpointCoordinator {
 
   private hasControlCheckpoint(flow: IFlow, checkpoint: IFlowCheckpoint): boolean {
     return Object.keys(checkpoint.controlState?.gates ?? {}).length > 0 ||
+      Object.keys(checkpoint.controlState?.branches ?? {}).length > 0 ||
       flow.steps.some((step) =>
         [FlowStepType.GATE, FlowStepType.BRANCH].includes(step.type) && checkpoint.completedSteps[step.id]
       );
@@ -288,6 +338,7 @@ export class FlowCheckpointCoordinator implements IFlowCheckpointCoordinator {
         success: result.success,
         skipped: result.skipped,
         skipReason: result.skipReason,
+        skipCode: result.skipCode,
         result: result.result,
         error: result.error,
         duration: result.duration,

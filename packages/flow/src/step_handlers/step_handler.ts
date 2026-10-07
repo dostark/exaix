@@ -13,6 +13,7 @@ import type { IBindingRunSnapshot } from "@exaix/schemas";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { JSONValue } from "@exaix/core";
+import type { IConditionContext } from "../condition_evaluator.ts";
 
 /** Context passed to a flow step handler's execute() — carries the step, request, flow state, and runtime services it needs. */
 export interface IStepExecutionContext {
@@ -23,7 +24,13 @@ export interface IStepExecutionContext {
   readonly step: IFlowStep;
 
   /** The flow being executed */
-  readonly flow: { readonly id: string; readonly settings?: { readonly includeRequestCriteria?: boolean } };
+  readonly flow: {
+    readonly id: string;
+    readonly name?: string;
+    readonly version?: string;
+    readonly settings?: { readonly includeRequestCriteria?: boolean };
+  };
+  readonly conditionContext?: IConditionContext;
 
   /** The original request */
   readonly request: {
@@ -51,6 +58,7 @@ export interface IStepExecutionContext {
     readonly stepId?: string;
     readonly flowStepId?: string;
     readonly flowId?: string;
+    readonly flowOutputKind?: "branch-json";
     readonly bindingSnapshot?: IBindingRunSnapshot;
     readonly requestAnalysis?: IRequestAnalysis;
     readonly skills?: readonly string[];

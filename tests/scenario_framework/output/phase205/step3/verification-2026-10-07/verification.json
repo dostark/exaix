@@ -1,0 +1,161 @@
+{
+  "phase": 205,
+  "step": 3,
+  "status": "PENDING VERIFICATION",
+  "worktree_path": "/home/dkasymov/git/exaix-phase205",
+  "branch": "feat/phase-205",
+  "docs_branch": "feat/phase-205-docs",
+  "source_base_commit": "af912fda2ea779d279da0c39cc6ec083bde9d514",
+  "source_index_tree_before_manifest": "e237f7ab940d10be1b5860b08a3a31587d4584fb",
+  "results": {
+    "focused_before_final_identity_extension": {
+      "passed": 119,
+      "failed": 0,
+      "exit_code": 0,
+      "log": "final-focused.log"
+    },
+    "final_checkpoint_identity": {
+      "passed": 20,
+      "failed": 0,
+      "exit_code": 0,
+      "log": "checkpoint-final.log"
+    },
+    "final_package_and_related": {
+      "passed": 690,
+      "substeps": 42,
+      "failed": 0,
+      "exit_code": 0,
+      "log": "packages-final.log"
+    },
+    "real_daemon_step3": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 5,
+      "exit_code": 0,
+      "log": "daemon.log",
+      "journal": "../branch-routing/journal-evidence.json"
+    },
+    "security": {
+      "passed": 112,
+      "substeps": 8,
+      "failed": 0,
+      "exit_code": 0,
+      "log": "security.log"
+    },
+    "final_static_ci": {
+      "exit_code": 0,
+      "log": "static-final.log"
+    },
+    "complexity": {
+      "exit_code": 0,
+      "log": "final-complexity.log"
+    },
+    "duplication": {
+      "exit_code": 0,
+      "log": "duplication.log"
+    },
+    "visible_event_coverage": {
+      "exit_code": 0,
+      "log": "events.log"
+    },
+    "reachability_ledger": {
+      "closed_rows": 4,
+      "unverifiable_call_sites": 0,
+      "exit_code": 0,
+      "log": "reachability.log"
+    },
+    "step_manifests": {
+      "checked_steps": 10,
+      "exit_code": 0,
+      "log": "manifests.log"
+    },
+    "full_suite_phase205_daemon_cases": {
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0,
+      "log": "full-suite.log"
+    },
+    "binding_fixture_failure_reproduction": {
+      "passed": 9,
+      "failed": 1,
+      "exit_code": 1,
+      "log": "binding-fixture-repro.log"
+    },
+    "final_markdown": {
+      "format_exit_code": 0,
+      "strict_lint_exit_code": 0,
+      "diff_exit_code": 0
+    }
+  },
+  "runtime_canaries": {
+    "count": 14,
+    "all_failed_at_runtime": true,
+    "mutants_restored": true,
+    "summary": "../canaries/summary.json"
+  },
+  "user_exception": "Commit checkpoints despite failures. Do not fix unrelated CI failures.",
+  "pending": [
+    {
+      "token": "BranchBindingFixtureGraph",
+      "owner_step": 3,
+      "commands": [
+        "deno test --allow-all packages/schemas/tests/flow_step_binding_schema_test.ts",
+        "deno task test_parallel"
+      ],
+      "reason": "CI test repair skipped by user. Correct the invalid fixture target graph without weakening binding assertions, then obtain a clean isolated suite result."
+    },
+    {
+      "token": "ShippedTriageBranchSchemaParse",
+      "owner_step": 6,
+      "reason": "Step 6 creates the actual shipped triage blueprint. Step 3 tests its declared contract fixture only."
+    }
+  ],
+  "full_suite": {
+    "command": "deno task test_parallel",
+    "exit_code": 1,
+    "elapsed_wall_seconds": 1996.5,
+    "worktree": "/home/dkasymov/git/exaix-phase205",
+    "passed": 12008,
+    "failed": 1,
+    "ignored": 10,
+    "parallel": {
+      "passed": 11644,
+      "failed": 1
+    },
+    "sequential": {
+      "passed": 364,
+      "failed": 0,
+      "ignored": 10
+    },
+    "foreign_runner_observation_count": 622,
+    "foreign_runner_intervals": [
+      {
+        "pid": 2790577,
+        "worktree": "/home/dkasymov/git/exaix-phase207",
+        "first_elapsed_seconds": 215.8,
+        "last_elapsed_seconds": 217.9,
+        "observation_count": 2
+      },
+      {
+        "pid": 2819477,
+        "worktree": "/home/dkasymov/git/exaix",
+        "first_elapsed_seconds": 785.4,
+        "last_elapsed_seconds": 1994.5,
+        "observation_count": 620
+      }
+    ],
+    "log": "full-suite.log",
+    "failures": [
+      {
+        "file": "packages/schemas/tests/flow_step_binding_schema_test.ts",
+        "symbol": "flowWith",
+        "test": "binding and pin parse on a branch step",
+        "reason": "Fixture uses goto next without a target depending on s1. Required new branch graph validation rejects it.",
+        "classification": "Step 3 verification gap",
+        "resolution": "Left unchanged under user instruction to skip CI test repairs."
+      }
+    ]
+  },
+  "docs_checkpoint_commit": "77d0b4b8002089c39671407240d2a29c61339092"
+}

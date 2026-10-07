@@ -809,8 +809,14 @@ export enum ExecutionStrategyName {
 }
 
 /**
- * Types of steps in a flow.
+ * Reasons for skipping a flow step.
  */
+export enum FlowStepSkipCode {
+  CONDITION = "condition",
+  BRANCH_NOT_TAKEN = "branch_not_taken",
+}
+
+/** Types of steps in a flow. */
 export enum FlowStepType {
   AGENT = "agent",
   GATE = "gate",

@@ -1,0 +1,67 @@
+# @schema-version: 1.0.0
+id: branch-routing
+name: Branch routing
+version: "1.0.0"
+description: Classify an issue and execute exactly one target pipeline.
+steps:
+  - id: classify
+    name: Classify issue
+    type: branch
+    agent_role: code-analyst
+    branches:
+      - condition: "results.classify.data.category === 'bug'"
+        goto: bug
+      - condition: "results.classify.data.category === 'feature'"
+        goto: feature
+    default: other
+  - id: bug
+    name: bug target
+    agent_role: senior-coder
+    dependsOn: [classify]
+    input:
+      source: request
+  - id: feature
+    name: feature target
+    agent_role: senior-coder
+    dependsOn: [classify]
+    input:
+      source: request
+  - id: other
+    name: other target
+    agent_role: senior-coder
+    dependsOn: [classify]
+    input:
+      source: request
+  - id: bug-child
+    name: bug descendant
+    agent_role: senior-coder
+    dependsOn: [bug]
+    input:
+      source: step
+      stepId: bug
+  - id: feature-child
+    name: feature descendant
+    agent_role: senior-coder
+    dependsOn: [feature]
+    input:
+      source: step
+      stepId: feature
+  - id: other-child
+    name: other descendant
+    agent_role: senior-coder
+    dependsOn: [other]
+    input:
+      source: step
+      stepId: other
+  - id: join
+    name: Final report
+    agent_role: technical-writer
+    dependsOn: [bug-child, feature-child, other-child]
+    input:
+      source: aggregate
+output:
+  from: join
+  format: json
+settings:
+  maxParallelism: 1
+  failFast: true

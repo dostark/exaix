@@ -18,6 +18,8 @@ import type {
 import { FlowRuntimeValidator } from "./flow_runtime_validator.ts";
 import { ParallelGroupMergeService } from "./parallel_group_merge_service.ts";
 import { FlowControlStateStore } from "./flow_control_state_store.ts";
+import { branchSkipReason } from "./branch_routing.ts";
+import { BranchStepHandler } from "./step_handlers/branch_step_handler.ts";
 import { computeLoopBody } from "./loop_body.ts";
 import { runGateLoop } from "./gate_loop_coordinator.ts";
 import { finalizeStepResult } from "./step_result_finalizer.ts";
@@ -45,6 +47,7 @@ import {
   FlowInputSource,
   FlowOutputFormat,
   FlowStepOnErrorAction,
+  FlowStepSkipCode,
   FlowStepType,
   StepAttemptClass,
   StepExecutionDisposition,
@@ -73,7 +76,11 @@ import type {
 } from "@exaix/core/types";
 import { FlowStepHandlerRegistry } from "./step_handlers/step_handler_registry.ts";
 import { FlowControlError, FlowGateHaltedError, gateEvaluationResult } from "./errors/flow_control_errors.ts";
-import type { IFlowGateEvaluatedEventPayload, IFlowLoopIterationEventPayload } from "@exaix/core/events";
+import type {
+  IFlowBranchDecidedEventPayload,
+  IFlowGateEvaluatedEventPayload,
+  IFlowLoopIterationEventPayload,
+} from "@exaix/core/events";
 import { GateStepHandler, type IPendingWaitStateRef } from "./step_handlers/gate_step_handler.ts";
 import { AgentStepHandler } from "./step_handlers/agent_step_handler.ts";
 import { SessionDelegateCycleStepHandler } from "./step_handlers/session_delegate_cycle_step_handler.ts";
@@ -109,6 +116,7 @@ import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   DEFAULT_UNKNOWN_LABEL,
+  FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION,
   FLOW_EVENT_COMPLETED,
   FLOW_EVENT_STEP_FALLBACK,
   FLOW_EVENT_STEP_RETRY,
@@ -188,6 +196,7 @@ export interface IFlowStepRequest {
    *  Promise.all) cannot collide on the same index. */
   flowStepId?: string;
   flowId?: string;
+  flowOutputKind?: "branch-json";
   bindingSnapshot?: IBindingRunSnapshot;
   /** Skills to apply for this step execution */
   skills?: string[];
@@ -291,6 +300,7 @@ export interface IStepResult {
   skipped?: boolean;
   /** The condition that caused skipping (if skipped) */
   skipReason?: string;
+  skipCode?: FlowStepSkipCode;
   /** Execution result if successful */
   result?: IAgentExecutionResult;
   /** Error message if failed */
@@ -556,10 +566,12 @@ export interface IFlowEventPayloadMap {
   "flow.step.skipped": IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
-    condition: string;
+    condition?: string;
+    skipCode?: IStepResult["skipCode"];
     reason: string;
   };
   [DomainEventType.FlowGateEvaluated]: IFlowGateEvaluatedEventPayload;
+  [DomainEventType.FlowBranchDecided]: IFlowBranchDecidedEventPayload;
   [DomainEventType.FlowGateCriteriaNoAnalysis]: IFlowEventRequestContext & { flowRunId: string; stepId: string };
   [DomainEventType.FlowStepCompleted]: IFlowEventRequestContext & {
     flowRunId: string;
@@ -800,6 +812,10 @@ function isFinalJsonStrategyStep(step: IFlowStep, flow: IFlow): boolean {
  *  fails both the capture contract (a flow-step response's <content> block must be valid JSON) and, for the final
  *  step, plan validation downstream. Exported so durability tests can seed replay records with the exact prompt hash. */
 export function flowStepOutputInstruction(step: IFlowStep, flow: IFlow): string {
+  if (step.type === FlowStepType.BRANCH) {
+    return `\n\nClassify the input for ${step.name}. ${FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION}\n` +
+      `Routing contract: ${JSON.stringify({ branches: step.branches ?? [], default: step.default })}`;
+  }
   const planShape = `{"subject": "Flow Step Output", "description": "Structured output for this step", ` +
     `"steps": [{"step": 1, "title": "Step title", "description": "What this step produced"}]}`;
   const from = flow.output?.from;
@@ -928,8 +944,8 @@ export class FlowRunner implements IFlowRunner {
       config: this.config,
     });
     this.stepHandlerRegistry.register(agentHandler);
-    // Preserve old fall-through: BRANCH, CONSENSUS, and unknown types all routed to agent
-    this.stepHandlerRegistry.registerWithKey(FlowStepType.BRANCH, agentHandler);
+    // Consensus retains the agent handler until specialized registration.
+    this.stepHandlerRegistry.register(new BranchStepHandler(agentHandler, this.eventLogger));
     this.stepHandlerRegistry.registerWithKey(FlowStepType.CONSENSUS, agentHandler);
     this.eventLogger.log("flow.deprecation.consensus", { step_type: FlowStepType.CONSENSUS });
 
@@ -987,6 +1003,7 @@ export class FlowRunner implements IFlowRunner {
       DomainEventType.FlowStepReplayed,
       DomainEventType.FlowStepInvalidated,
       DomainEventType.FlowGateEvaluated,
+      DomainEventType.FlowBranchDecided,
     ]);
   }
 
@@ -1127,7 +1144,7 @@ export class FlowRunner implements IFlowRunner {
       config: this.config,
     });
     this.stepHandlerRegistry.register(agentHandler);
-    this.stepHandlerRegistry.registerWithKey(FlowStepType.BRANCH, agentHandler);
+    this.stepHandlerRegistry.register(new BranchStepHandler(agentHandler, this.eventLogger));
     this.stepHandlerRegistry.registerWithKey(FlowStepType.CONSENSUS, agentHandler);
   }
 
@@ -1294,8 +1311,8 @@ export class FlowRunner implements IFlowRunner {
     let snapshotTraceId: string | undefined;
 
     try {
-      await this.ensureDynamicExecutor(flow, flowRunId);
       await this.validateIFlow(flow, request, flowRunId, this.controlStateStore.get(stepResults).ceiling);
+      await this.ensureDynamicExecutor(flow, flowRunId);
       const flowDeclaresBindings = flow.steps.some((step) => step.binding !== undefined || step.pin !== undefined);
       if (
         this.options.bindingService &&
@@ -1607,6 +1624,33 @@ export class FlowRunner implements IFlowRunner {
       loopIteration: repeat?.iteration,
       gateFeedback: repeat?.feedback,
     };
+
+    const branchSkip = branchSkipReason(step, stepResults, this.controlStateStore.get(stepResults).state);
+    if (branchSkip) {
+      await this.eventLogger.log(FLOW_EVENT_STEP_SKIPPED, {
+        flowRunId,
+        stepId,
+        reason: branchSkip,
+        skipCode: FlowStepSkipCode.BRANCH_NOT_TAKEN,
+        traceId: request.traceId,
+        requestId: request.requestId,
+      });
+      await this.emitMilestone(
+        MILESTONE_FLOW_STEP_SKIPPED,
+        request.traceId,
+        `Step ${step.name} skipped: ${branchSkip}`,
+      );
+      return {
+        stepId,
+        success: true,
+        skipped: true,
+        skipCode: FlowStepSkipCode.BRANCH_NOT_TAKEN,
+        skipReason: branchSkip,
+        duration: Date.now() - startedAt.getTime(),
+        startedAt,
+        completedAt: new Date(),
+      };
+    }
 
     // Evaluate step condition if present
     const conditionResult = await this.evaluateStepCondition(flowRunId, step, flow, stepResults, request, startedAt);
@@ -2004,6 +2048,7 @@ export class FlowRunner implements IFlowRunner {
         flowRunId,
         stepId: step.id,
         condition: step.condition,
+        skipCode: FlowStepSkipCode.CONDITION,
         reason: conditionResult.error || "Condition evaluated to false",
         traceId: request.traceId,
         requestId: request.requestId,
@@ -2019,6 +2064,7 @@ export class FlowRunner implements IFlowRunner {
         stepId: step.id,
         success: true,
         skipped: true,
+        skipCode: FlowStepSkipCode.CONDITION,
         skipReason: conditionResult.error || `Condition "${step.condition}" evaluated to false`,
         duration,
         startedAt,
@@ -2046,7 +2092,8 @@ export class FlowRunner implements IFlowRunner {
     const ctx: IStepExecutionContext = {
       stepType,
       step,
-      flow: { id: flow.id, settings: flow.settings },
+      flow: { id: flow.id, name: flow.name, version: flow.version, settings: flow.settings },
+      conditionContext: this.conditionEvaluator.buildContext(stepResults, request, flow),
       request: {
         userPrompt: request.userPrompt,
         traceId: request.traceId,
@@ -2065,6 +2112,7 @@ export class FlowRunner implements IFlowRunner {
         stepId: stepRequest.stepId,
         flowStepId: stepRequest.flowStepId,
         flowId: stepRequest.flowId,
+        flowOutputKind: stepRequest.flowOutputKind,
         bindingSnapshot: stepRequest.bindingSnapshot,
         requestAnalysis: stepRequest.requestAnalysis,
         skills: stepRequest.skills,
@@ -2082,6 +2130,19 @@ export class FlowRunner implements IFlowRunner {
     if (handler instanceof GateStepHandler) {
       const result = await this.executeGateLoop(ctx, handler, flow, request, stepResults);
       return gateEvaluationResult(step.id, step.evaluate!.threshold, result);
+    }
+    if (handler instanceof BranchStepHandler) {
+      const result = await handler.decideBranch(ctx, ctx.conditionContext!);
+      await this.controlStateStore.settleBranch(flow, step, request, stepResults, result);
+      const run = this.controlStateStore.get(stepResults);
+      await this.checkpointCoordinator.saveCheckpointIfEnabled(
+        flow,
+        request,
+        flowRunId,
+        run.flowContentHash,
+        stepResults,
+      );
+      return result;
     }
     return await handler.execute(ctx);
   }
@@ -2277,6 +2338,7 @@ export class FlowRunner implements IFlowRunner {
       scenarioId: originalRequest.scenarioId,
       stepId: originalRequest.stepId,
       flowStepId: step.id,
+      flowOutputKind: step.type === FlowStepType.BRANCH ? "branch-json" : undefined,
       flowId: originalRequest.flowId ?? flow.id,
       bindingSnapshot: originalRequest.bindingSnapshot,
       skills,
@@ -2314,7 +2376,7 @@ export class FlowRunner implements IFlowRunner {
       case FlowInputSource.REQUEST:
         return originalRequest.userPrompt;
 
-      case "step":
+      case FlowInputSource.STEP:
         return this.getStepResultContent(step, step.input.stepId, stepResults);
 
       case "aggregate":
@@ -2354,7 +2416,8 @@ export class FlowRunner implements IFlowRunner {
       );
     }
 
-    const aggregatedInputs = from.map((stepId) => this.getStepResultContent(step, stepId, stepResults));
+    const aggregatedInputs = from.filter((id) => stepResults.get(id)?.skipCode !== FlowStepSkipCode.BRANCH_NOT_TAKEN)
+      .map((stepId) => this.getStepResultContent(step, stepId, stepResults));
     return aggregatedInputs.length === 1 ? aggregatedInputs[0] : aggregatedInputs.join("\n\n");
   }
 

@@ -81,6 +81,7 @@ export { createJudgeEvaluator, JudgeEvaluator } from "./src/judge_evaluator.ts";
 // Flow step-handler registry
 export { FlowStepHandlerRegistry } from "./src/step_handlers/step_handler_registry.ts";
 export { AgentStepHandler } from "./src/step_handlers/agent_step_handler.ts";
+export { BranchStepHandler } from "./src/step_handlers/branch_step_handler.ts";
 export { GateStepHandler } from "./src/step_handlers/gate_step_handler.ts";
 export * from "./src/errors/flow_control_errors.ts";
 export { computeLoopBody, validateLoopBody } from "./src/loop_body.ts";
@@ -109,7 +110,12 @@ export { runGateLoop } from "./src/gate_loop_coordinator.ts";
 export type { IGateLoopCallbacks } from "./src/gate_loop_coordinator.ts";
 export { finalizeStepResult } from "./src/step_result_finalizer.ts";
 
-export type { IFlowControlState, IGateLoopState } from "./src/contracts/flow_control_state.ts";
+export type {
+  IBranchDecision,
+  IBranchExecutionResult,
+  IFlowControlState,
+  IGateLoopState,
+} from "./src/contracts/flow_control_state.ts";
 export { FlowControlStateStore } from "./src/flow_control_state_store.ts";
 
 export type { IStepFinalizationContext } from "./src/step_result_finalizer.ts";

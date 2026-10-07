@@ -6,7 +6,12 @@
  * @dependencies [@exaix/schemas]
  * @related-files [packages/flow/src/flow_control_state_store.ts]
  */
-import type { ZFlowControlState, ZGateLoopState } from "@exaix/schemas/flow.ts";
+import type { ZBranchDecision, ZFlowControlState, ZGateLoopState } from "@exaix/schemas/flow.ts";
+import type { IAgentExecutionResult } from "@exaix/execution";
 import type { z } from "zod";
 export type IFlowControlState = z.infer<typeof ZFlowControlState>;
 export type IGateLoopState = z.infer<typeof ZGateLoopState>;
+export type IBranchDecision = z.infer<typeof ZBranchDecision>;
+export interface IBranchExecutionResult extends IAgentExecutionResult {
+  decision: IBranchDecision;
+}

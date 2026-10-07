@@ -10,12 +10,14 @@ import {
   FlowCheckpointService,
   FlowExecutionError,
   FlowRunner,
+  flowStepOutputInstruction,
   GateEvaluator,
   StepContentHasher,
 } from "@exaix/flow";
 import type { IStepDurabilityStore, IStepExecutionRecord } from "@exaix/flow";
 import { initTestDbService } from "@exaix/testing";
 import { GATE_TRACE, GateTestAgent, gateTestFlow, GateTestJudge, GateTestLogger } from "./helpers/gate_controls.ts";
+import { BRANCH_TRACE, BranchTestAgent, branchTestFlow } from "./helpers/branch_controls.ts";
 
 class SeededGateStore implements IStepDurabilityStore {
   readonly records = new Map<string, IStepExecutionRecord>();
@@ -38,6 +40,51 @@ class SeededGateStore implements IStepDurabilityStore {
     this.records.delete(recordId);
     return Promise.resolve();
   }
+}
+for (const sideEffectClass of [StepSideEffectClass.NONE, StepSideEffectClass.LLM]) {
+  Deno.test(`[real-store replay] summary-only ${sideEffectClass} branch cannot bypass routing`, async () => {
+    const flow = branchTestFlow();
+    const store = new SeededGateStore();
+    const request = { userPrompt: `Classify${flowStepOutputInstruction(flow.steps[0], flow)}`, context: {} };
+    const inputHash = await new StepContentHasher().computeStepInputHash(request);
+    const prior: IStepExecutionRecord = {
+      recordId: "prior-branch",
+      traceId: BRANCH_TRACE,
+      flowId: flow.id,
+      stepId: "classify",
+      idempotencyKey: {
+        traceId: BRANCH_TRACE,
+        flowId: flow.id,
+        stepId: "classify",
+        inputHash,
+        attemptClass: StepAttemptClass.INITIAL,
+      },
+      inputHash,
+      disposition: StepExecutionDisposition.EXECUTED,
+      startedAt: new Date().toISOString(),
+      sideEffectClass,
+      replayEligible: true,
+      summary: '{"category":"feature"}',
+    };
+    await store.save(prior);
+    const policy = new DefaultStepReplayPolicy();
+    assertEquals(policy.canReuse({ step: request, prior, currentInputHash: inputHash }).allowed, true);
+    const agent = new BranchTestAgent();
+    const logger = new GateTestLogger();
+    const result = await new FlowRunner({
+      agentExecutor: agent,
+      eventLogger: logger,
+      stepDurabilityStore: store,
+      stepReplayPolicy: policy,
+    }).execute(flow, { userPrompt: "Classify", traceId: BRANCH_TRACE });
+    assertEquals(result.success, true);
+    assertEquals(store.matchedCandidates, ["prior-branch"]);
+    assertEquals(agent.requests.map((entry) => entry.flowStepId), ["classify", "bug", "bug-child", "join"]);
+    assertEquals(
+      logger.events.filter((entry) => entry.event === "flow.branch.decided").map((entry) => entry.payload.traceId),
+      [BRANCH_TRACE],
+    );
+  });
 }
 for (const sideEffectClass of [StepSideEffectClass.NONE, StepSideEffectClass.LLM]) {
   Deno.test(`[real-store replay] summary-only ${sideEffectClass} gate cannot bypass evaluation`, async () => {
