@@ -346,7 +346,7 @@ export class PlanExecutor {
       options.topSkillTaskTypes = topSkillTaskTypes;
     }
     const matchedSkillTools = await this.deriveMatchedSkillTools(context, skillSnapshot);
-    if (matchedSkillTools.length > 0) {
+    if (matchedSkillTools.some((tools) => tools !== undefined && tools.length > 0)) {
       options.matchedSkillTools = matchedSkillTools;
     }
     const matchedSkillFloors = await this.deriveMatchedSkillFloors(context, skillSnapshot);

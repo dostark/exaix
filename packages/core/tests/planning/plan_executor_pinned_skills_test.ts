@@ -223,6 +223,25 @@ Deno.test({
 });
 
 Deno.test({
+  name: "[selection] a pinned skill that declares no tools does not clear the agent role's permitted_tools",
+  ...NOT_ALLOWED,
+  async fn() {
+    const noTools = skillFor("no-tools", "No tools declared.");
+    const skills = new PinSkillsService(new Map([["no-tools", noTools]]), new Map());
+    const env = await run(skills, { resolved_skills: [pinFor(noTools)] });
+    try {
+      await env.execute();
+      const tools = env.prompts[0].match(/AVAILABLE TOOLS:\n([^\n]*)/)?.[1] ?? "";
+      assertStringIncludes(tools, "read_file");
+      assertStringIncludes(tools, "write_file");
+      assertStringIncludes(tools, "list_directory");
+    } finally {
+      env.cleanup();
+    }
+  },
+});
+
+Deno.test({
   name: "[selection] an absent vector keeps dynamic matching and injects nothing",
   ...NOT_ALLOWED,
   async fn() {

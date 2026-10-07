@@ -90,7 +90,7 @@ async function cli(
   const result = await new Deno.Command("deno", {
     args: ["run", "-A", "--config", join(REPO_ROOT, "deno.json"), EXACTL, "skills", ...args],
     cwd: root,
-    env: { EXA_CONFIG_PATH: configPath },
+    env: { EXA_CONFIG_PATH: configPath, EXA_TEST_MODE: "" },
     stdout: "piped",
     stderr: "piped",
   }).output();
