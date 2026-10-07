@@ -157,6 +157,9 @@ export const DEFAULT_TEST_CONTAINER_MEMORY = "2g";
 export const TEST_CONTAINER_MEMORY_ENV = "EXA_TEST_CONTAINER_MEMORY";
 export const DEFAULT_TEST_CONTAINER_CPUS = "2.0";
 export const TEST_CONTAINER_CPUS_ENV = "EXA_TEST_CONTAINER_CPUS";
+/** Disable IPv6 in the worker so `localhost` resolves to IPv4. The host binds 127.0.0.1,
+ *  but a container with IPv6 binds ::1, so a server and its client would disagree. */
+export const WORKER_CONTAINER_SYSCTLS: readonly string[] = ["net.ipv6.conf.all.disable_ipv6=1"];
 
 /** True when `image` is present in the local docker image store. */
 async function defaultImageExists(image: string): Promise<boolean> {
@@ -282,6 +285,7 @@ export function buildWorkerContainerLaunch(options: IWorkerContainerLaunchOption
       pidsLimit: options.pidsLimit,
       memory: options.memory,
       cpus: options.cpus,
+      sysctls: [...WORKER_CONTAINER_SYSCTLS],
       containerName: options.workerName,
       image: options.image,
       init: true,
@@ -416,11 +420,14 @@ export async function runBatch2InContainers(
   const liveWorkers = new Set<IWorkerContainer>();
   let serializedInFlight = 0;
   let workerSeq = 0;
+  // A per-run token keeps worker names unique across runs. Two suites must not collide.
+  // The name stays deterministic for the watchdog kill.
+  const runToken = crypto.randomUUID().slice(0, 8);
 
   const workerOptions = (): IWorkerContainerLaunchOptions => ({
     repoRoot: options.repoRoot,
     image: options.image,
-    workerName: `exaix-test-worker-${workerSeq++}`,
+    workerName: `exaix-test-worker-${runToken}-${workerSeq++}`,
     network: options.network,
     env: options.env,
     pidsLimit: options.pidsLimit,

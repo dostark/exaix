@@ -62,6 +62,8 @@ export interface IJailLaunchOptions {
   memory?: Opt<string, Reason.OptionalInput>;
   /** `--cpus`. emitted only when set. */
   cpus?: Opt<string, Reason.OptionalInput>;
+  /** `--sysctl KEY=VALUE` args. emitted only when set (Phase 207 worker containers). */
+  sysctls?: Opt<string[], Reason.OptionalInput>;
   /** `--init` (reap zombie grandchildren). emitted only when true. */
   init?: Opt<boolean, Reason.OptionalInput>;
   /** `-i` (keep stdin open for a piped protocol). emitted only when true. */
@@ -284,6 +286,7 @@ export function buildJailLaunch(
   const pidsArgs = options.pidsLimit !== undefined ? ["--pids-limit", String(options.pidsLimit)] : [];
   const memoryArgs = options.memory ? ["--memory", options.memory] : [];
   const cpusArgs = options.cpus ? ["--cpus", options.cpus] : [];
+  const sysctlArgs = (options.sysctls ?? []).flatMap((entry) => ["--sysctl", entry]);
   return {
     bin: "docker",
     args: [
@@ -304,6 +307,7 @@ export function buildJailLaunch(
       ...pidsArgs,
       ...memoryArgs,
       ...cpusArgs,
+      ...sysctlArgs,
       "-e",
       "HOME=/tmp",
       ...extraEnvArgs,

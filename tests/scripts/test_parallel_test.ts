@@ -235,13 +235,16 @@ Deno.test("every SEQUENTIAL_TESTS entry names at least one isolation reason", ()
   }
 });
 
-Deno.test("only the dist/bin writers are marked serializedOutput and only live legs are marked network", () => {
+Deno.test("only the dist/bin writers are marked serializedOutput and the egress-dependent files are marked network", () => {
   const serialized = SEQUENTIAL_TESTS.filter((test) => test.serializedOutput).map((test) => test.file);
   assertEquals(serialized, ["tests/infra/build_test.ts", "tests/infra/exactl_edition_build_test.ts"]);
   const network = SEQUENTIAL_TESTS.filter((test) => test.network).map((test) => test.file);
   assertEquals(network, [
     "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
     "tests/security/calibration_sandbox_test.ts",
+    "apps/daemon/tests/deploy_workspace_test.ts",
+    "tests/infra/build_test.ts",
+    "tests/infra/exactl_edition_build_test.ts",
     "tests/integration/model_registry_route_admit_live_test.ts",
   ]);
 });
@@ -289,10 +292,19 @@ Deno.test("IContainerRunResult maps to a TestStats row and a failure block in al
   assertEquals(containerResultFailureBlock({ ...result, exitCode: 0, failed: 0 }), null);
 });
 
-Deno.test("buildContainerEnv forwards only the explicit allowlist and never DENO_JOBS", () => {
-  const env = buildContainerEnv();
-  assert(!("DENO_JOBS" in env));
-  for (const key of Object.keys(env)) {
-    assert(["TZ", "CI", "LANG", "LC_ALL"].includes(key), `unexpected env key ${key}`);
-  }
+Deno.test("the container env is an explicit allowlist, never Deno.env.toObject(), and omits DENO_JOBS", () => {
+  const env = buildContainerEnv({
+    PATH: "/host/bin",
+    TZ: "UTC",
+    CI: "true",
+    LANG: "en_US.UTF-8",
+    LC_ALL: "C",
+    DENO_JOBS: "8",
+    EXA_TEST_MODE: "1",
+    LD_LIBRARY_PATH: "/host/lib",
+    HOME: "/home/host",
+  });
+  assertEquals(env, { TZ: "UTC", CI: "true", LANG: "en_US.UTF-8", LC_ALL: "C" });
+  assert(!("DENO_JOBS" in env), "DENO_JOBS must never be forwarded");
+  assert(!("PATH" in env) && !("HOME" in env), "host PATH/HOME must not leak into the container");
 });

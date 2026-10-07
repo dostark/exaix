@@ -139,14 +139,24 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends git ca-certificates procps \
   && rm -rf /var/lib/apt/lists/*
 
+# The scenario runner and several daemon tests spawn `exactl` as a bare command from
+# PATH (the host has it from `deno install`). Install a shim that runs the bind-mounted
+# repo, so the container's exactl matches the checkout under test.
+RUN printf '#!/bin/sh\nexec deno run --allow-all --config /workspaces/exaix/deno.json /workspaces/exaix/apps/exactl/main.ts "$@"\n' > /usr/local/bin/exactl \
+  && chmod 0755 /usr/local/bin/exactl
+
 COPY tests/ tests/
 COPY scripts/ scripts/
 
 # Warm the driver entrypoint's import graph (plus the test/package/app graph) so the
 # worker resolves every module with `--network none`. Cache the entrypoint, not the
 # whole scripts/ tree: `deno task check` excludes scripts/, so a directory-wide cache
-# can fail on an unrelated script error.
-RUN deno cache --config deno.json scripts/test_container_driver.ts tests/ packages/ apps/ exaix-team/
+# can fail on an unrelated script error. The grammar packages are imported through a
+# computed specifier (`npm:tree-sitter-<lang>/…wasm`), so name them explicitly or a
+# Batch-2 file that builds a workspace would fetch them from npm at run time.
+RUN deno cache --config deno.json scripts/test_container_driver.ts tests/ packages/ apps/ exaix-team/ \
+  npm:web-tree-sitter@0.26.12 npm:tree-sitter-python@0.25.0 npm:tree-sitter-rust@0.24.0 npm:tree-sitter-go@0.25.0 npm:tree-sitter-java@0.23.5 \
+  npm:tree-sitter@0.25.0
 
 # The worker runs as `--user <host-uid>:<host-gid>`; make the warmed cache writable by
 # any uid (the runtime stage pins a fixed uid; dev-test cannot).

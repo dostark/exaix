@@ -142,7 +142,13 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
     file: "tests/scenario_framework/tests/portal_knowledge_strategies_scenario_test.ts",
     reasons: [IsolationReason.moduleCache, IsolationReason.pressure],
   },
-  { file: "apps/daemon/tests/deploy_workspace_test.ts", reasons: [IsolationReason.pressure] },
+  // Deploys a fresh workspace and runs `deno task setup`, which resolves npm deps at run
+  // time. That egress cannot run under `--network none`, so it runs host-serial.
+  {
+    file: "apps/daemon/tests/deploy_workspace_test.ts",
+    reasons: [IsolationReason.pressure],
+    network: true,
+  },
   {
     file: "tests/integration/cli_commands_test.ts",
     reasons: [IsolationReason.moduleCache, IsolationReason.pressure],
@@ -217,15 +223,18 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
     file: "tests/integration/agent_runner_daemon_cutover_test.ts",
     reasons: [IsolationReason.port, IsolationReason.pressure],
   },
+  // `deno compile` downloads the `denort` runtime from dl.deno.land, so it needs egress.
   {
     file: "tests/infra/build_test.ts",
     reasons: [IsolationReason.sharedPath],
     serializedOutput: true,
+    network: true,
   },
   {
     file: "tests/infra/exactl_edition_build_test.ts",
     reasons: [IsolationReason.sharedPath],
     serializedOutput: true,
+    network: true,
   },
   {
     file: "apps/daemon/tests/agent_role_cutover_e2e_test.ts",
@@ -399,11 +408,14 @@ export function stripContainerJobsArgs(args: string[]): string[] {
 /** Host env vars forwarded to a worker container. Never the whole host env, never DENO_JOBS. */
 const CONTAINER_ENV_ALLOWLIST = ["TZ", "CI", "LANG", "LC_ALL"];
 
-/** Build the explicit worker-container env from the allowlist. */
-export function buildContainerEnv(): Record<string, string> {
+/** Build the explicit worker-container env from the allowlist. The source defaults to the
+ *  process env, but only allowlist keys are copied, so `Deno.env.toObject()` is never forwarded. */
+export function buildContainerEnv(
+  source: Record<string, string | undefined> = Deno.env.toObject(),
+): Record<string, string> {
   const env: Record<string, string> = {};
   for (const key of CONTAINER_ENV_ALLOWLIST) {
-    const value = Deno.env.get(key);
+    const value = source[key];
     if (value !== undefined) env[key] = value;
   }
   return env;

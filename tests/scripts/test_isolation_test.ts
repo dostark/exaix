@@ -6,20 +6,41 @@
  */
 
 import { assert, assertEquals, assertRejects } from "@std/assert";
+import { fromFileUrl, join } from "@std/path";
 import {
   buildWorkerContainerLaunch,
+  DEFAULT_TEST_CONTAINER_CPUS,
+  DEFAULT_TEST_CONTAINER_IMAGE,
   DEFAULT_TEST_CONTAINER_JOBS,
+  DEFAULT_TEST_CONTAINER_MEMORY,
+  DEFAULT_TEST_CONTAINER_PIDS_LIMIT,
+  dockerDaemonReachable,
+  ensureDevTestImage,
   type IContainerTestEntry,
   type IRunBatch2Options,
   type IWorkerContainer,
+  type IWorkerContainerLaunchOptions,
   MIN_TEST_CONTAINER_JOBS,
   parseWorkerResultLine,
   runBatch2InContainers,
   selectBatch2Strategy,
+  startWorkerContainer,
+  TEST_CONTAINER_IMAGE_ENV,
 } from "../../scripts/test_isolation.ts";
-import { killActiveChildGroups, trackChild, untrackChild } from "../../scripts/test_parallel.ts";
-import { type IContainerRunResult, TEST_CONTAINER_RESULT_PREFIX } from "../../scripts/test_container_driver.ts";
-import { ensureDevTestImage } from "../../scripts/test_isolation.ts";
+import {
+  buildContainerEnv,
+  killActiveChildGroups,
+  parseDotReporterCounts,
+  parseSummaryLine,
+  SEQUENTIAL_TESTS,
+  trackChild,
+  untrackChild,
+} from "../../scripts/test_parallel.ts";
+import {
+  type IContainerRunResult,
+  TEST_CONTAINER_DONE_SENTINEL,
+  TEST_CONTAINER_RESULT_PREFIX,
+} from "../../scripts/test_container_driver.ts";
 
 const DOCKERFILE = await Deno.readTextFile(new URL("../../Dockerfile", import.meta.url));
 const DOCKERIGNORE = await Deno.readTextFile(new URL("../../.dockerignore", import.meta.url));
@@ -181,6 +202,7 @@ Deno.test("buildWorkerContainerLaunch isolates HOME, EXA_HOME and DENO_DIR, defa
   assert(joined.includes("DENO_DIR=/deno-dir"), "DENO_DIR isolated");
   assert(joined.includes("--network none"), "network none by default");
   assert(joined.includes("--pids-limit 512"), "pids-limit wired");
+  assert(joined.includes("--sysctl net.ipv6.conf.all.disable_ipv6=1"), "IPv6 disabled for deterministic loopback");
   assert(!joined.includes("DENO_JOBS"), "DENO_JOBS must never be forwarded");
   assert(joined.includes("scripts/test_container_driver.ts"), "runs the driver");
 });
@@ -375,4 +397,259 @@ Deno.test("selectBatch2Strategy falls back to serial when the docker probe fails
   const strategy = await selectBatch2Strategy({ EXA_TEST_CONTAINERS: "1" }, dockerUnreachable);
   assertEquals(strategy.mode, "serial");
   assertEquals(strategy.jobs, DEFAULT_TEST_CONTAINER_JOBS);
+});
+
+// --- Step 5: Batch-2 migration and parity ---
+
+Deno.test("runBatch2InContainers never drops a non-network Batch-2 file (no silent downgrade)", async () => {
+  const entries: IContainerTestEntry[] = SEQUENTIAL_TESTS.map((test) => ({
+    file: test.file,
+    serializedOutput: test.serializedOutput,
+    network: test.network,
+  }));
+  const dispatched: string[] = [];
+  const options = baseRunOptions(() =>
+    makeFakeWorker("w", (file) => {
+      dispatched.push(file);
+      return resultFor(file);
+    })
+  );
+  const results = await runBatch2InContainers(entries, options);
+  const expected = SEQUENTIAL_TESTS.filter((test) => !test.network).map((test) => test.file).sort();
+  assertEquals(results.map((r) => r.testFile).sort(), expected);
+  assertEquals(dispatched.sort(), expected);
+});
+
+// Real-Docker integration. Skipped when Docker is unavailable. The parity test uses a
+// representative subset of isolation reasons and the loopback and exactl surfaces.
+// The Step 7 entry-point run covers the full suite.
+
+const DOCKER_READY = await dockerDaemonReachable();
+const INTEGRATION_IGNORE = !DOCKER_READY;
+const IT_IMAGE = Deno.env.get(TEST_CONTAINER_IMAGE_ENV) ?? DEFAULT_TEST_CONTAINER_IMAGE;
+const IT_REPO_ROOT = fromFileUrl(new URL("../../", import.meta.url)).replace(/\/$/, "");
+let itWorkerSeq = 0;
+
+let imageReady: Promise<void> | undefined;
+function ensureImageOnce(): Promise<void> {
+  imageReady ??= ensureDevTestImage(IT_IMAGE);
+  return imageReady;
+}
+
+function itWorkerOptions(): IWorkerContainerLaunchOptions {
+  return {
+    repoRoot: IT_REPO_ROOT,
+    image: IT_IMAGE,
+    workerName: `exaix-test-it-${Deno.pid}-${itWorkerSeq++}`,
+    network: "none",
+    env: buildContainerEnv(),
+    pidsLimit: DEFAULT_TEST_CONTAINER_PIDS_LIMIT,
+    memory: DEFAULT_TEST_CONTAINER_MEMORY,
+    cpus: DEFAULT_TEST_CONTAINER_CPUS,
+    watchdogMs: 120_000,
+  };
+}
+
+function itRunOptions(jobs: number): IRunBatch2Options {
+  return {
+    repoRoot: IT_REPO_ROOT,
+    image: IT_IMAGE,
+    jobs,
+    env: buildContainerEnv(),
+    network: "none",
+    pidsLimit: DEFAULT_TEST_CONTAINER_PIDS_LIMIT,
+    memory: DEFAULT_TEST_CONTAINER_MEMORY,
+    cpus: DEFAULT_TEST_CONTAINER_CPUS,
+    watchdogMs: 600_000,
+  };
+}
+
+/** Write a throwaway fixture under tests/scripts/, run `fn`, then delete it. */
+async function withTempTestFile(
+  name: string,
+  content: string,
+  fn: (rel: string) => Promise<void>,
+): Promise<void> {
+  const rel = `tests/scripts/__phase207_${name}_${Deno.pid}.ts`;
+  const abs = join(IT_REPO_ROOT, rel);
+  await Deno.writeTextFile(abs, content);
+  try {
+    await fn(rel);
+  } finally {
+    await Deno.remove(abs).catch(() => {});
+  }
+}
+
+async function runOneFile(rel: string): Promise<IContainerRunResult> {
+  const worker = startWorkerContainer(itWorkerOptions());
+  try {
+    await worker.send(rel);
+    const result = await worker.next();
+    if (result === null) throw new Error(`worker exited without a result for ${rel}`);
+    return result;
+  } finally {
+    await worker.send(TEST_CONTAINER_DONE_SENTINEL).catch(() => {});
+    await worker.kill();
+  }
+}
+
+async function serialCounts(file: string): Promise<{ passed: number; failed: number; ignored: number }> {
+  const env = { ...Deno.env.toObject() };
+  delete env["DENO_JOBS"];
+  const out = await new Deno.Command(Deno.execPath(), {
+    args: ["test", "--allow-all", "--reporter=dot", file],
+    cwd: IT_REPO_ROOT,
+    env,
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  const text = new TextDecoder().decode(out.stdout) + new TextDecoder().decode(out.stderr);
+  const summary = parseSummaryLine(text);
+  return summary.passed === 0 && summary.failed === 0 ? parseDotReporterCounts(text, summary.durationSec) : summary;
+}
+
+const LOOPBACK_FIXTURE = [
+  'Deno.test("loopback", async () => {',
+  '  const server = Deno.serve({ hostname: "127.0.0.1", port: 0 }, () => new Response("pong"));',
+  "  try {",
+  "    const res = await fetch(`http://127.0.0.1:${server.addr.port}/`);",
+  '    if ((await res.text()) !== "pong") throw new Error("bad body");',
+  "  } finally {",
+  "    await server.shutdown();",
+  "  }",
+  "});",
+].join("\n");
+
+const STDERR_BURST_FIXTURE = [
+  'Deno.test("burst", () => {',
+  '  const chunk = new TextEncoder().encode("x".repeat(1024) + "\\n");',
+  "  for (let i = 0; i < 256; i++) Deno.stderr.writeSync(chunk);",
+  "});",
+].join("\n");
+
+Deno.test({
+  name: "[integration] a daemon test binds and serves over loopback under --network none",
+  ignore: INTEGRATION_IGNORE,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    await ensureImageOnce();
+    await withTempTestFile("loopback", LOOPBACK_FIXTURE, async (rel) => {
+      const result = await runOneFile(rel);
+      assertEquals(result.exitCode, 0, result.failureDetail ?? "loopback test failed");
+      assertEquals(result.passed, 1);
+    });
+  },
+});
+
+Deno.test({
+  name: "[integration] the host drains worker stderr continuously and does not deadlock on a large burst",
+  ignore: INTEGRATION_IGNORE,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    await ensureImageOnce();
+    await withTempTestFile("stderr_burst", STDERR_BURST_FIXTURE, async (rel) => {
+      const result = await runOneFile(rel);
+      assertEquals(result.exitCode, 0, result.failureDetail ?? "stderr burst failed");
+      assertEquals(result.passed, 1);
+    });
+  },
+});
+
+Deno.test({
+  name: "[integration] two real Batch-2 files run green through one worker container",
+  ignore: INTEGRATION_IGNORE,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    await ensureImageOnce();
+    const files = ["packages/core/tests/child_env_test.ts", "tests/scripts/check_commit_msg_test.ts"];
+    const results = await runBatch2InContainers(files.map((file) => ({ file })), itRunOptions(1));
+    assertEquals(results.length, 2);
+    for (const result of results) {
+      assertEquals(result.exitCode, 0, result.failureDetail ?? `${result.testFile} failed`);
+    }
+  },
+});
+
+Deno.test({
+  name: "[integration] files run through a worker container do not leak process env between files",
+  ignore: INTEGRATION_IGNORE,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    await ensureImageOnce();
+    const leakA = [
+      'Deno.env.set("EXA_PHASE207_LEAK_A", "1");',
+      'Deno.test("a", () => {',
+      '  if (Deno.env.get("EXA_PHASE207_LEAK_B") !== undefined) throw new Error("leaked B into A");',
+      "});",
+    ].join("\n");
+    const leakB = [
+      'Deno.env.set("EXA_PHASE207_LEAK_B", "1");',
+      'Deno.test("b", () => {',
+      '  if (Deno.env.get("EXA_PHASE207_LEAK_A") !== undefined) throw new Error("leaked A into B");',
+      "});",
+    ].join("\n");
+    const relA = `tests/scripts/__phase207_leaka_${Deno.pid}.ts`;
+    const relB = `tests/scripts/__phase207_leakb_${Deno.pid}.ts`;
+    await Deno.writeTextFile(join(IT_REPO_ROOT, relA), leakA);
+    await Deno.writeTextFile(join(IT_REPO_ROOT, relB), leakB);
+    try {
+      const results = await runBatch2InContainers([{ file: relA }, { file: relB }], itRunOptions(1));
+      assertEquals(results.length, 2);
+      for (const result of results) {
+        assertEquals(result.exitCode, 0, result.failureDetail ?? `${result.testFile} failed`);
+      }
+    } finally {
+      await Deno.remove(join(IT_REPO_ROOT, relA)).catch(() => {});
+      await Deno.remove(join(IT_REPO_ROOT, relB)).catch(() => {});
+    }
+  },
+});
+
+const PARITY_SUBSET = [
+  "packages/core/tests/child_env_test.ts",
+  "tests/scripts/db_cache_schema_upgrade_test.ts",
+  "tests/scenario_framework/tests/integration/flow_step_model_bindings_test.ts",
+  "tests/integration/mcp_server_spec_compliance_cutover_test.ts",
+  "apps/daemon/tests/readiness_test.ts",
+  "tests/agents/build_agents_index_test.ts",
+];
+
+Deno.test({
+  name:
+    "[integration] containerized Batch 2 reproduces the serial pass/fail/ignored counts for a representative isolation-reason subset",
+  ignore: INTEGRATION_IGNORE,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    await ensureImageOnce();
+    const entries = PARITY_SUBSET.map((file) => ({ file }));
+    const containerResults = await runBatch2InContainers(entries, { ...itRunOptions(2), memory: "1.5g" });
+    const byFile = new Map(containerResults.map((result) => [result.testFile, result]));
+    const mismatches: string[] = [];
+    for (const entry of entries) {
+      const container = byFile.get(entry.file);
+      assert(container, `container produced no result for ${entry.file}`);
+      const serial = await serialCounts(entry.file);
+      const containerCounts = {
+        passed: container.passed,
+        failed: container.failed,
+        ignored: container.ignored,
+      };
+      const serialCounts_ = { passed: serial.passed, failed: serial.failed, ignored: serial.ignored };
+      if (
+        containerCounts.passed !== serialCounts_.passed ||
+        containerCounts.failed !== serialCounts_.failed ||
+        containerCounts.ignored !== serialCounts_.ignored
+      ) {
+        mismatches.push(
+          `${entry.file}: container=${JSON.stringify(containerCounts)} serial=${JSON.stringify(serialCounts_)}`,
+        );
+      }
+    }
+    assertEquals(mismatches, [], `parity mismatches:\n${mismatches.join("\n")}`);
+  },
 });
