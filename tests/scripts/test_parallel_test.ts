@@ -7,8 +7,11 @@
 import { assert, assertEquals, assertMatch, assertThrows } from "@std/assert";
 
 import {
+  buildContainerEnv,
   buildDenoTestArgs,
   compactDotReporterChunk,
+  containerResultFailureBlock,
+  containerResultToStats,
   createDotReporterState,
   DOT_REPORTER_LEGEND,
   extractTapFailures,
@@ -18,12 +21,16 @@ import {
   parseDotReporterCounts,
   parseSummaryLine,
   parseTapOutput,
+  resolveContainerJobs,
   resolveReporter,
   SEQUENTIAL_FILES,
   SEQUENTIAL_TESTS,
   SequentialTestSchema,
+  stripContainerJobsArgs,
   stripReporterArgs,
+  TEST_CONTAINER_JOBS_FLAG,
 } from "../../scripts/test_parallel.ts";
+import type { IContainerRunResult } from "../../scripts/test_container_driver.ts";
 import * as testOutputParse from "../../scripts/test_output_parse.ts";
 
 Deno.test("resolveReporter defaults to pretty output", () => {
@@ -237,4 +244,55 @@ Deno.test("only the dist/bin writers are marked serializedOutput and only live l
     "tests/security/calibration_sandbox_test.ts",
     "tests/integration/model_registry_route_admit_live_test.ts",
   ]);
+});
+
+// --- Step 4: container-jobs CLI and result mapping ---
+
+Deno.test("resolveContainerJobs parses the equals and spaced forms", () => {
+  assertEquals(resolveContainerJobs([`${TEST_CONTAINER_JOBS_FLAG}=6`]), 6);
+  assertEquals(resolveContainerJobs([TEST_CONTAINER_JOBS_FLAG, "6"]), 6);
+  assertEquals(resolveContainerJobs(["--filter", "flow"]), undefined);
+});
+
+Deno.test("resolveContainerJobs rejects zero, negative, and non-numeric values", () => {
+  assertThrows(() => resolveContainerJobs([`${TEST_CONTAINER_JOBS_FLAG}=0`]), Error);
+  assertThrows(() => resolveContainerJobs([`${TEST_CONTAINER_JOBS_FLAG}=-2`]), Error);
+  assertThrows(() => resolveContainerJobs([`${TEST_CONTAINER_JOBS_FLAG}=abc`]), Error);
+  assertThrows(() => resolveContainerJobs([`${TEST_CONTAINER_JOBS_FLAG}=1.5`]), Error);
+  assertThrows(() => resolveContainerJobs([TEST_CONTAINER_JOBS_FLAG]), Error);
+});
+
+Deno.test("the --test-container-jobs flag is stripped from the shared forwarded args (Batch 1 and Batch 2)", () => {
+  assertEquals(stripContainerJobsArgs([TEST_CONTAINER_JOBS_FLAG, "6", "--filter", "flow"]), ["--filter", "flow"]);
+  assertEquals(stripContainerJobsArgs([`${TEST_CONTAINER_JOBS_FLAG}=6`, "--parallel"]), ["--parallel"]);
+});
+
+Deno.test("IContainerRunResult maps to a TestStats row and a failure block in allFailures", () => {
+  const result: IContainerRunResult = {
+    testFile: "tests/x_test.ts",
+    passed: 3,
+    failed: 1,
+    ignored: 2,
+    durationSec: 4,
+    exitCode: 1,
+    failureDetail: "boom",
+  };
+  const stats = containerResultToStats(result);
+  assertEquals(stats.label, "Batch 2 – x_test.ts");
+  assertEquals(stats.passed, 3);
+  assertEquals(stats.failed, 1);
+  assertEquals(stats.ignored, 2);
+  assertEquals(stats.durationSec, 4);
+  assertEquals(stats.exitCode, 1);
+  const block = containerResultFailureBlock(result);
+  assert(block !== null && block.includes("SEQUENTIAL BATCH: FAILURES (1 total)") && block.includes("boom"));
+  assertEquals(containerResultFailureBlock({ ...result, exitCode: 0, failed: 0 }), null);
+});
+
+Deno.test("buildContainerEnv forwards only the explicit allowlist and never DENO_JOBS", () => {
+  const env = buildContainerEnv();
+  assert(!("DENO_JOBS" in env));
+  for (const key of Object.keys(env)) {
+    assert(["TZ", "CI", "LANG", "LC_ALL"].includes(key), `unexpected env key ${key}`);
+  }
 });

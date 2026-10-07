@@ -26,6 +26,20 @@ import {
   stripAnsi,
 } from "./test_output_parse.ts";
 import type { ITapFailure, ITestCounts } from "./test_output_parse.ts";
+import {
+  DEFAULT_TEST_CONTAINER_CPUS,
+  DEFAULT_TEST_CONTAINER_IMAGE,
+  DEFAULT_TEST_CONTAINER_MEMORY,
+  DEFAULT_TEST_CONTAINER_NETWORK,
+  DEFAULT_TEST_CONTAINER_PIDS_LIMIT,
+  DEFAULT_TEST_CONTAINER_WATCHDOG_MS,
+  ensureDevTestImage,
+  MIN_TEST_CONTAINER_JOBS,
+  runBatch2InContainers,
+  selectBatch2Strategy,
+  TEST_CONTAINER_IMAGE_ENV,
+} from "./test_isolation.ts";
+import type { IContainerRunResult } from "./test_container_driver.ts";
 
 export interface IDotReporterState {
   pendingDots: string;
@@ -45,6 +59,9 @@ export {
 const REPO_ROOT = join(fromFileUrl(import.meta.url), "..", "..");
 const SUPPORTED_REPORTERS = ["pretty", "dot", "tap"] as const;
 export const DOT_REPORTER_LEGEND = "dot legend: .=passed ,=ignored !=failed";
+
+/** CLI input option for the worker-container count. */
+export const TEST_CONTAINER_JOBS_FLAG = "--test-container-jobs";
 
 // Matches deno test --parallel's own default (hardwareConcurrency) rather than a
 // hardcoded value: oversubscribing the host's core count causes concurrent CLI-heavy
@@ -271,6 +288,32 @@ interface TestStats extends ITestCounts {
 /** Subset passed to row() for rendering (everything except label). */
 type TestRowData = Pick<TestStats, "passed" | "failed" | "ignored" | "durationSec" | "exitCode">;
 
+/** Rule width for the failure blocks shown at the end of a run. */
+const FAILURE_RULE = "═".repeat(60);
+
+/** Render one failure block in the same shape `runAndCapture` uses. */
+export function formatFailureBlock(batchTag: string, failedCount: number, body: string): string {
+  return `\n${FAILURE_RULE}\n ${batchTag}: FAILURES (${failedCount} total)\n${FAILURE_RULE}\n${body}\n${FAILURE_RULE}\n`;
+}
+
+/** Map a container result onto the existing summary row shape. */
+export function containerResultToStats(result: IContainerRunResult): TestStats {
+  return {
+    label: `Batch 2 – ${basename(result.testFile)}`,
+    passed: result.passed,
+    failed: result.failed,
+    ignored: result.ignored,
+    durationSec: result.durationSec,
+    exitCode: result.exitCode,
+  };
+}
+
+/** Failure block for a failed container result, or null when it passed. */
+export function containerResultFailureBlock(result: IContainerRunResult): string | null {
+  if (result.exitCode === 0) return null;
+  return formatFailureBlock("SEQUENTIAL BATCH", result.failed, result.failureDetail ?? "(no details)");
+}
+
 const DEFAULT_DOT_WRAP_WIDTH = 80;
 
 export function resolveReporter(args: string[]): TestReporter {
@@ -311,6 +354,59 @@ export function stripReporterArgs(args: string[]): string[] {
   }
 
   return filteredArgs;
+}
+
+/** Parse `--test-container-jobs <N>` / `=<N>`. Undefined when absent, and throws on a bad value. */
+export function resolveContainerJobs(args: string[]): number | undefined {
+  for (let index = 0; index < args.length; index++) {
+    const arg = args[index];
+    let raw: string | undefined;
+    if (arg.startsWith(`${TEST_CONTAINER_JOBS_FLAG}=`)) {
+      raw = arg.slice(TEST_CONTAINER_JOBS_FLAG.length + 1);
+    } else if (arg === TEST_CONTAINER_JOBS_FLAG) {
+      raw = args[index + 1];
+      if (raw === undefined) {
+        throw new Error(`Missing value after ${TEST_CONTAINER_JOBS_FLAG}`);
+      }
+    }
+    if (raw === undefined) continue;
+    const value = Number(raw);
+    if (!Number.isInteger(value) || value < MIN_TEST_CONTAINER_JOBS) {
+      throw new Error(
+        `Invalid ${TEST_CONTAINER_JOBS_FLAG} value "${raw}": expected an integer >= ${MIN_TEST_CONTAINER_JOBS}`,
+      );
+    }
+    return value;
+  }
+  return undefined;
+}
+
+/** Remove `--test-container-jobs` from the args forwarded to `deno test`. */
+export function stripContainerJobsArgs(args: string[]): string[] {
+  const filtered: string[] = [];
+  for (let index = 0; index < args.length; index++) {
+    const arg = args[index];
+    if (arg.startsWith(`${TEST_CONTAINER_JOBS_FLAG}=`)) continue;
+    if (arg === TEST_CONTAINER_JOBS_FLAG) {
+      index++;
+      continue;
+    }
+    filtered.push(arg);
+  }
+  return filtered;
+}
+
+/** Host env vars forwarded to a worker container. Never the whole host env, never DENO_JOBS. */
+const CONTAINER_ENV_ALLOWLIST = ["TZ", "CI", "LANG", "LC_ALL"];
+
+/** Build the explicit worker-container env from the allowlist. */
+export function buildContainerEnv(): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const key of CONTAINER_ENV_ALLOWLIST) {
+    const value = Deno.env.get(key);
+    if (value !== undefined) env[key] = value;
+  }
+  return env;
 }
 
 export function createDotReporterState(wrapWidth = DEFAULT_DOT_WRAP_WIDTH): IDotReporterState {
@@ -544,12 +640,8 @@ async function runAndCapture(
     failures = extractTapFailures(allText);
     if (failures.length > 0) {
       const batchTag = label.startsWith("Batch 1") ? "PARALLEL BATCH" : "SEQUENTIAL BATCH";
-      let msg = `\n${"═".repeat(60)}\n ${batchTag}: FAILURES (${counts.failed} total)\n${"═".repeat(60)}`;
-      for (const f of failures) {
-        msg += `\n  ${f.name}\n  ${f.message}`;
-      }
-      msg += `\n${"═".repeat(60)}\n`;
-      allFailures.push(msg);
+      const body = failures.map((f) => `  ${f.name}\n  ${f.message}`).join("\n");
+      allFailures.push(formatFailureBlock(batchTag, counts.failed, body));
     }
   } else {
     counts = reporter === "dot" && parsedSummary.passed === 0 && parsedSummary.failed === 0
@@ -564,11 +656,7 @@ async function runAndCapture(
         const body = errorsMatch[1].trim();
         if (body) {
           const batchTag = label.startsWith("Batch 1") ? "PARALLEL BATCH" : "SEQUENTIAL BATCH";
-          allFailures.push(
-            `\n${"═".repeat(60)}\n ${batchTag}: FAILURES (${counts.failed} total)\n${"═".repeat(60)}\n${body}\n${
-              "═".repeat(60)
-            }\n`,
-          );
+          allFailures.push(formatFailureBlock(batchTag, counts.failed, body));
         }
       } else if (reporter === "dot") {
         allFailures.push(`(${counts.failed} test(s) failed in "${label}". Use dot legend '!' for location.)\n`);
@@ -622,7 +710,8 @@ const HEADER_NUMS = `${"PASS".padStart(NUM_W)}  ${"FAIL".padStart(NUM_W)}  ${"SK
 
 export async function main(args: string[]): Promise<number> {
   const reporter = resolveReporter(args);
-  const forwardedArgs = stripReporterArgs(args);
+  const forwardedArgs = stripContainerJobsArgs(stripReporterArgs(args));
+  const cliJobs = resolveContainerJobs(args);
 
   if (reporter === "dot") {
     console.log(DOT_REPORTER_LEGEND);
@@ -670,16 +759,51 @@ export async function main(args: string[]): Promise<number> {
   const batch2Env: Record<string, string> = { ...Deno.env.toObject() };
   delete batch2Env["DENO_JOBS"]; // ensures skipInParallel === false inside each file
 
+  const strategy = await selectBatch2Strategy(Deno.env.toObject(), undefined, { jobs: cliJobs });
+  console.log(`› Batch 2 strategy: ${strategy.mode} — ${strategy.reason}`);
+
   const seq: TestStats[] = [];
-  for (const file of SEQUENTIAL_FILES) {
-    const stats = await runAndCapture(
-      [file, ...forwardedArgs],
-      `Batch 2 – ${basename(file)}`,
-      batch2Env,
-      reporter,
-      true,
-    );
-    seq.push(stats);
+  if (strategy.mode === "container") {
+    const image = Deno.env.get(TEST_CONTAINER_IMAGE_ENV) ?? DEFAULT_TEST_CONTAINER_IMAGE;
+    await ensureDevTestImage(image);
+    const results = await runBatch2InContainers(SEQUENTIAL_TESTS, {
+      repoRoot: REPO_ROOT,
+      image,
+      jobs: strategy.jobs,
+      env: buildContainerEnv(),
+      network: DEFAULT_TEST_CONTAINER_NETWORK,
+      pidsLimit: DEFAULT_TEST_CONTAINER_PIDS_LIMIT,
+      memory: DEFAULT_TEST_CONTAINER_MEMORY,
+      cpus: DEFAULT_TEST_CONTAINER_CPUS,
+      watchdogMs: DEFAULT_TEST_CONTAINER_WATCHDOG_MS,
+    });
+    for (const result of results) {
+      seq.push(containerResultToStats(result));
+      const block = containerResultFailureBlock(result);
+      if (block) allFailures.push(block);
+    }
+    // Network-flagged files run host-serial so their counts still join Batch 2.
+    for (const entry of SEQUENTIAL_TESTS.filter((test) => test.network)) {
+      const stats = await runAndCapture(
+        [entry.file, ...forwardedArgs],
+        `Batch 2 – ${basename(entry.file)}`,
+        batch2Env,
+        reporter,
+        true,
+      );
+      seq.push(stats);
+    }
+  } else {
+    for (const file of SEQUENTIAL_FILES) {
+      const stats = await runAndCapture(
+        [file, ...forwardedArgs],
+        `Batch 2 – ${basename(file)}`,
+        batch2Env,
+        reporter,
+        true,
+      );
+      seq.push(stats);
+    }
   }
 
   const b2Passed = seq.reduce((a, s) => a + s.passed, 0);

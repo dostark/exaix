@@ -8,11 +8,14 @@
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import {
   buildWorkerContainerLaunch,
+  DEFAULT_TEST_CONTAINER_JOBS,
   type IContainerTestEntry,
   type IRunBatch2Options,
   type IWorkerContainer,
+  MIN_TEST_CONTAINER_JOBS,
   parseWorkerResultLine,
   runBatch2InContainers,
+  selectBatch2Strategy,
 } from "../../scripts/test_isolation.ts";
 import { killActiveChildGroups, trackChild, untrackChild } from "../../scripts/test_parallel.ts";
 import { type IContainerRunResult, TEST_CONTAINER_RESULT_PREFIX } from "../../scripts/test_container_driver.ts";
@@ -326,4 +329,50 @@ Deno.test("a registered worker pid is signaled by killActiveChildGroups on shutd
   const afterUntrack: number[] = [];
   killActiveChildGroups(undefined, (pid) => afterUntrack.push(pid));
   assert(!afterUntrack.includes(-4242), "untracked pid is not signaled");
+});
+
+// --- Step 4: Batch-2 strategy selection ---
+
+const dockerReachable = () => Promise.resolve(true);
+const dockerUnreachable = () => Promise.resolve(false);
+
+Deno.test("selectBatch2Strategy lets the CLI jobs override win over EXA_TEST_CONTAINER_JOBS and the default", async () => {
+  const strategy = await selectBatch2Strategy(
+    { EXA_TEST_CONTAINERS: "1", EXA_TEST_CONTAINER_JOBS: "3" },
+    dockerReachable,
+    { jobs: 6 },
+  );
+  assertEquals(strategy.mode, "container");
+  assertEquals(strategy.jobs, Math.min(6, navigator.hardwareConcurrency));
+  assert(strategy.reason.includes("flag"));
+});
+
+Deno.test("selectBatch2Strategy clamps jobs to [MIN_TEST_CONTAINER_JOBS, navigator.hardwareConcurrency]", async () => {
+  const high = await selectBatch2Strategy(
+    { EXA_TEST_CONTAINERS: "1", EXA_TEST_CONTAINER_JOBS: "9999" },
+    dockerReachable,
+  );
+  assertEquals(high.jobs, navigator.hardwareConcurrency);
+  const low = await selectBatch2Strategy(
+    { EXA_TEST_CONTAINERS: "1" },
+    dockerReachable,
+    { jobs: MIN_TEST_CONTAINER_JOBS },
+  );
+  assertEquals(low.jobs, MIN_TEST_CONTAINER_JOBS);
+});
+
+Deno.test("selectBatch2Strategy falls back to serial when EXA_TEST_CONTAINERS is unset", async () => {
+  const strategy = await selectBatch2Strategy({}, dockerReachable);
+  assertEquals(strategy.mode, "serial");
+});
+
+Deno.test("selectBatch2Strategy falls back to serial when EXA_TEST_CONTAINERS is 0", async () => {
+  const strategy = await selectBatch2Strategy({ EXA_TEST_CONTAINERS: "0" }, dockerReachable);
+  assertEquals(strategy.mode, "serial");
+});
+
+Deno.test("selectBatch2Strategy falls back to serial when the docker probe fails", async () => {
+  const strategy = await selectBatch2Strategy({ EXA_TEST_CONTAINERS: "1" }, dockerUnreachable);
+  assertEquals(strategy.mode, "serial");
+  assertEquals(strategy.jobs, DEFAULT_TEST_CONTAINER_JOBS);
 });

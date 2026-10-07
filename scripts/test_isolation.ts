@@ -102,6 +102,25 @@ export interface IRunBatch2Options {
   startWorker?: Opt<StartWorkerContainer, Reason.OptionalInput>;
 }
 
+/** Batch-2 execution mode. */
+export type Batch2Mode = "container" | "serial";
+
+/** The chosen Batch-2 strategy plus a one-line reason for the log. */
+export interface IBatch2Strategy {
+  mode: Batch2Mode;
+  jobs: number;
+  reason: string;
+}
+
+/** CLI overrides for the strategy. The CLI flag wins over the env var. */
+export interface IStrategyOverrides {
+  /** Worker-container count from `--test-container-jobs` (already validated positive). */
+  jobs?: Opt<number, Reason.OptionalInput>;
+}
+
+/** Async probe: true when the docker daemon is reachable. */
+export type IContainerRuntimeProbe = () => Promise<boolean>;
+
 const REPO_ROOT = join(fromFileUrl(import.meta.url), "..", "..");
 
 const DOCKER_BIN = "docker";
@@ -124,6 +143,20 @@ export const TEST_CONTAINER_DRIVER_SCRIPT = "scripts/test_container_driver.ts";
 export const DEFAULT_TEST_CONTAINER_WATCHDOG_MS = 15 * 60 * 1000;
 /** A wedged or exited worker requeues a file at most this many times before it is failed. */
 const MAX_WORKER_RETRIES = 1;
+
+export const DEFAULT_TEST_CONTAINER_IMAGE = "exaix-dev-test:dev";
+export const TEST_CONTAINER_IMAGE_ENV = "EXA_TEST_CONTAINER_IMAGE";
+export const TEST_CONTAINER_JOBS_ENV = "EXA_TEST_CONTAINER_JOBS";
+export const TEST_CONTAINERS_ENABLED_ENV = "EXA_TEST_CONTAINERS";
+export const DEFAULT_TEST_CONTAINER_JOBS = 4;
+export const MIN_TEST_CONTAINER_JOBS = 1;
+export const DEFAULT_TEST_CONTAINER_NETWORK: TestContainerNetwork = "none";
+export const DEFAULT_TEST_CONTAINER_PIDS_LIMIT = 512;
+export const TEST_CONTAINER_PIDS_LIMIT_ENV = "EXA_TEST_CONTAINER_PIDS_LIMIT";
+export const DEFAULT_TEST_CONTAINER_MEMORY = "2g";
+export const TEST_CONTAINER_MEMORY_ENV = "EXA_TEST_CONTAINER_MEMORY";
+export const DEFAULT_TEST_CONTAINER_CPUS = "2.0";
+export const TEST_CONTAINER_CPUS_ENV = "EXA_TEST_CONTAINER_CPUS";
 
 /** True when `image` is present in the local docker image store. */
 async function defaultImageExists(image: string): Promise<boolean> {
@@ -171,6 +204,65 @@ export async function ensureDevTestImage(
   if (exitCode !== 0) {
     throw new Error(`dev-test image build failed with exit code ${exitCode}`);
   }
+}
+
+/** Default docker probe: true when the binary is on PATH and `docker info` succeeds. */
+export async function dockerDaemonReachable(): Promise<boolean> {
+  if (dockerProbeSkipReason() !== null) return false;
+  try {
+    const out = await new Deno.Command(DOCKER_BIN, {
+      args: ["info"],
+      stdout: "null",
+      stderr: "null",
+    }).output();
+    return out.success;
+  } catch {
+    return false;
+  }
+}
+
+/** Resolve the worker count and its source, clamped to the minimum and hardware concurrency. */
+function resolveWorkerCount(
+  env: Record<string, string | undefined>,
+  overrides: IStrategyOverrides,
+): { jobs: number; source: string } {
+  let requested = DEFAULT_TEST_CONTAINER_JOBS;
+  let source = "default";
+  if (overrides.jobs !== undefined) {
+    requested = overrides.jobs;
+    source = "flag";
+  } else {
+    const envValue = env[TEST_CONTAINER_JOBS_ENV];
+    const parsed = envValue !== undefined ? Number(envValue) : Number.NaN;
+    if (Number.isFinite(parsed)) {
+      requested = parsed;
+      source = "env";
+    }
+  }
+  const ceiling = navigator.hardwareConcurrency;
+  const jobs = Math.min(Math.max(Math.floor(requested), MIN_TEST_CONTAINER_JOBS), ceiling);
+  return { jobs, source };
+}
+
+/** Choose the Batch-2 execution strategy from the environment and runtime probes. */
+export async function selectBatch2Strategy(
+  env: Record<string, string | undefined>,
+  probeDocker: IContainerRuntimeProbe = dockerDaemonReachable,
+  overrides: IStrategyOverrides = {},
+): Promise<IBatch2Strategy> {
+  const enabled = env[TEST_CONTAINERS_ENABLED_ENV];
+  if (enabled === undefined || enabled === "0") {
+    return {
+      mode: "serial",
+      jobs: DEFAULT_TEST_CONTAINER_JOBS,
+      reason: "EXA_TEST_CONTAINERS is unset or 0",
+    };
+  }
+  if (!(await probeDocker())) {
+    return { mode: "serial", jobs: DEFAULT_TEST_CONTAINER_JOBS, reason: "docker binary or daemon is unavailable" };
+  }
+  const { jobs, source } = resolveWorkerCount(env, overrides);
+  return { mode: "container", jobs, reason: `container mode with ${jobs} workers (${source})` };
 }
 
 /** Build the worker-container `docker run` argv by reusing the hardened `buildJailLaunch`
