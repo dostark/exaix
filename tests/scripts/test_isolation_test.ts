@@ -344,6 +344,33 @@ Deno.test("runBatch2InContainers never runs two serializedOutput files concurren
   assert(maxSerialized <= 1, `at most one serializedOutput in flight, saw ${maxSerialized}`);
 });
 
+Deno.test("the host rejects a dispatched path that escapes the repo root", async () => {
+  const sent: string[] = [];
+  const options = baseRunOptions(() => {
+    const worker = makeFakeWorker("w", (file) => resultFor(file));
+    return {
+      name: worker.name,
+      send(file: string): Promise<void> {
+        sent.push(file);
+        return worker.send(file);
+      },
+      next: () => worker.next(),
+      kill: () => worker.kill(),
+    };
+  });
+  options.jobs = 1;
+  const results = await runBatch2InContainers(
+    [{ file: "../escape_test.ts" }, { file: "ok_test.ts" }],
+    options,
+  );
+  const escape = results.find((r) => r.testFile === "../escape_test.ts");
+  assert(escape, "the escaping entry produced a result");
+  assertEquals(escape.exitCode, 1);
+  assertEquals(escape.failureDetail, "invalid test file path");
+  assert(!sent.includes("../escape_test.ts"), "the escaping path was never sent to a worker");
+  assert(sent.includes("ok_test.ts"), "the valid path was dispatched");
+});
+
 Deno.test("at most one shared-path writer runs concurrently in the worker pool", async () => {
   let concurrent = 0;
   let exclusiveActive = false;
@@ -801,6 +828,27 @@ Deno.test("buildWorkerContainerLaunch applies pids/memory/cpus bounds from the n
   assert(joined.includes("--pids-limit 1024"), "--pids-limit override applied");
   assert(joined.includes("--memory 4g"), "--memory override applied");
   assert(joined.includes("--cpus 3.0"), "--cpus override applied");
+});
+
+Deno.test("resolveContainerResourceBounds falls back on invalid memory and cpus overrides", () => {
+  const invalid = resolveContainerResourceBounds({
+    EXA_TEST_CONTAINER_MEMORY: "bogus",
+    EXA_TEST_CONTAINER_CPUS: "abc",
+  });
+  assertEquals(invalid, {
+    pidsLimit: DEFAULT_TEST_CONTAINER_PIDS_LIMIT,
+    memory: DEFAULT_TEST_CONTAINER_MEMORY,
+    cpus: DEFAULT_TEST_CONTAINER_CPUS,
+  });
+  const valid = resolveContainerResourceBounds({
+    EXA_TEST_CONTAINER_MEMORY: "4g",
+    EXA_TEST_CONTAINER_CPUS: "3.0",
+  });
+  assertEquals(valid, {
+    pidsLimit: DEFAULT_TEST_CONTAINER_PIDS_LIMIT,
+    memory: "4g",
+    cpus: "3.0",
+  });
 });
 
 Deno.test("resolveContainerResourceBounds falls back to the named defaults on an invalid pids override", () => {

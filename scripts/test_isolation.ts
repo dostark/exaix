@@ -20,6 +20,7 @@ import { buildJailLaunch, dockerProbeSkipReason } from "../tests/scenario_framew
 import { trackChild, untrackChild } from "./test_parallel.ts";
 import {
   type IContainerRunResult,
+  isRepoRelativeTestFile,
   TEST_CONTAINER_DONE_SENTINEL,
   TEST_CONTAINER_RESULT_PREFIX,
 } from "./test_container_driver.ts";
@@ -154,6 +155,10 @@ export const TEST_CONTAINER_DRIVER_SCRIPT = "scripts/test_container_driver.ts";
 export const DEFAULT_TEST_CONTAINER_WATCHDOG_MS = 15 * 60 * 1000;
 /** A wedged or exited worker requeues a file at most this many times before it is failed. */
 const MAX_WORKER_RETRIES = 1;
+/** Docker `--memory` size syntax: a number with an optional b/k/m/g suffix. */
+const DOCKER_MEMORY_PATTERN = /^\d+(?:\.\d+)?(?:[bkmg]b?)?$/i;
+/** Docker `--cpus` value: a positive decimal number. */
+const DOCKER_CPUS_PATTERN = /^\d+(?:\.\d+)?$/;
 
 export const DEFAULT_TEST_CONTAINER_IMAGE = "exaix-dev-test:dev";
 export const TEST_CONTAINER_IMAGE_ENV = "EXA_TEST_CONTAINER_IMAGE";
@@ -287,11 +292,15 @@ export function resolveContainerResourceBounds(
   const rawPids = env[TEST_CONTAINER_PIDS_LIMIT_ENV];
   const parsedPids = rawPids !== undefined ? Number(rawPids) : Number.NaN;
   const pidsLimit = Number.isInteger(parsedPids) && parsedPids > 0 ? parsedPids : DEFAULT_TEST_CONTAINER_PIDS_LIMIT;
-  return {
-    pidsLimit,
-    memory: env[TEST_CONTAINER_MEMORY_ENV] || DEFAULT_TEST_CONTAINER_MEMORY,
-    cpus: env[TEST_CONTAINER_CPUS_ENV] || DEFAULT_TEST_CONTAINER_CPUS,
-  };
+  const rawMemory = env[TEST_CONTAINER_MEMORY_ENV];
+  const memory = rawMemory !== undefined && DOCKER_MEMORY_PATTERN.test(rawMemory)
+    ? rawMemory
+    : DEFAULT_TEST_CONTAINER_MEMORY;
+  const rawCpus = env[TEST_CONTAINER_CPUS_ENV];
+  const cpus = rawCpus !== undefined && DOCKER_CPUS_PATTERN.test(rawCpus) && Number(rawCpus) > 0
+    ? rawCpus
+    : DEFAULT_TEST_CONTAINER_CPUS;
+  return { pidsLimit, memory, cpus };
 }
 
 /** Build the worker-container `docker run` argv by reusing the hardened `buildJailLaunch`
@@ -510,6 +519,19 @@ export async function runBatch2InContainers(
       if (!entry) {
         if (queue.length === 0) return;
         await waitForSlot();
+        continue;
+      }
+      if (!isRepoRelativeTestFile(entry.file, options.repoRoot)) {
+        release(entry);
+        results.push({
+          testFile: entry.file,
+          passed: 0,
+          failed: 1,
+          ignored: 0,
+          durationSec: 0,
+          exitCode: 1,
+          failureDetail: "invalid test file path",
+        });
         continue;
       }
       let outcome: IContainerRunResult | null | "timeout" = null;
