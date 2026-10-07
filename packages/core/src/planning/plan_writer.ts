@@ -18,6 +18,8 @@ import { stringify as stringifyYaml } from "@std/yaml";
 import type { IDatabaseService } from "@exaix/core/types";
 import { PlanAdapter, PlanValidationError } from "./plan_adapter.ts";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
+import { SkillPinVectorSchema } from "@exaix/schemas/skill_pin.ts";
+import type { ISkillPin } from "../skills/skill_types.ts";
 import type { IModelIntent } from "@exaix/schemas";
 import type { IEffortDeclarationPair } from "@exaix/ai";
 import { MiddlewarePipeline } from "@exaix/core/func";
@@ -46,10 +48,9 @@ export interface IRequestMetadata {
   /** The request's declaration-time effort/thinking pair ("auto" allowed), persisted beside
    *  requestIntent so the execution path resolves it AFTER provider selection (GAP-3). */
   requestEffortDeclaration?: IEffortDeclarationPair;
-  /** The FINAL resolved skill id set from the planning run (pinned ∪ matched ∪ agent-role
-   *  defaults, minus suppressed), persisted onto the plan frontmatter so the execution path
-   *  applies the same skill floors one request gets on both paths (GAP-5). */
-  resolvedSkillIds?: string[];
+  /** The final successful planning run's pin vector, persisted so execution replays those exact
+   *  revisions. An empty vector freezes no skills and an absent one keeps live behavior. */
+  resolvedSkills?: ISkillPin[];
 }
 
 export interface IPlanWriterConfig {
@@ -282,7 +283,7 @@ export class PlanWriter {
 
     this.applyRequestIntentToFrontmatter(frontmatter, metadata.requestIntent ?? {});
     this.applyRequestEffortDeclaration(frontmatter, metadata.requestEffortDeclaration);
-    this.applyResolvedSkillIds(frontmatter, metadata.resolvedSkillIds);
+    this.applyResolvedSkills(frontmatter, metadata.resolvedSkills);
 
     if (metadata.portal) {
       frontmatter.portal = metadata.portal;
@@ -348,15 +349,13 @@ export class PlanWriter {
     passthrough.request_effort_declaration = persisted;
   }
 
-  /** Persists the planning run's final resolved skill id set so execution applies the same
-   *  skill floors (pinned + matched + defaults) the request got during plan generation (GAP-5). */
-  private applyResolvedSkillIds(
+  /** Persists the planning run's final pin vector, including an empty one, without loading files. */
+  private applyResolvedSkills(
     frontmatter: PlanFrontmatter,
-    resolvedSkillIds?: Opt<string[], Reason.OptionalContext>,
+    resolvedSkills?: Opt<ISkillPin[], Reason.OptionalContext>,
   ): void {
-    if (!resolvedSkillIds || resolvedSkillIds.length === 0) return;
-    const passthrough = frontmatter as PlanFrontmatter & Record<string, JSONValue | undefined>;
-    passthrough.resolved_skill_ids = resolvedSkillIds;
+    if (resolvedSkills === undefined) return;
+    frontmatter.resolved_skills = SkillPinVectorSchema.parse(resolvedSkills);
   }
 
   private async getTokenUsageSummary(traceId: string): Promise<ITokenUsageSummary | null> {

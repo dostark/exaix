@@ -21,7 +21,8 @@
 
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import type { HitlPolicy } from "@exaix/schemas/hitl.ts";
-import type { IDatabaseService } from "@exaix/core/types";
+import type { IDatabaseService, ISkillsService } from "@exaix/core/types";
+import { createSkillOperationContext, SkillUnavailableError } from "@exaix/core/skills";
 import type { IEventLogger } from "@exaix/core/logger";
 import { ActorType, AGENT_GENERATION_COMPLETED, canonicalizeToolName, LogLevel, RunnerKind } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
@@ -92,6 +93,7 @@ import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import { ExecutionContextService } from "./execution_context_service.ts";
 import { BlueprintService } from "./blueprint_service.ts";
 import { PromptBuilder } from "./prompt_builder.ts";
+import { createPinnedSkillPrompt, type IPinnedSkillPrompt } from "./skill_pin_transport.ts";
 import { resolveEffectiveSkillTools } from "./skill_tools_derivation.ts";
 import { GitAuditService } from "./git_audit_service.ts";
 import { HistoryManager } from "./history_manager.ts";
@@ -187,6 +189,8 @@ export interface IAgentComposerDeps {
    *  It stops a bound delegate test from spawning a real tool.
    *  Production never sets this flag. */
   cliDelegateRun?: Opt<IRunCliDelegateProcess, Reason.TestOverride>;
+  /** Resolves the pinned skill revisions of a plan step. Absent only for callers that never pin skills. */
+  skills?: Opt<ISkillsService, Reason.OptionalDependency>;
 }
 
 /** Explicit binary mapping for the supported cli-delegate session tools. Anything else
@@ -241,6 +245,7 @@ export class AgentComposer {
   private ctx: ExecutionContextService;
   private readonly contextPort?: IDogfoodContextPort;
   private readonly trustedAgentRoles?: ReadonlySet<string>;
+  private readonly skills?: ISkillsService;
 
   /** Resolved per-call options from ModelResolver, forwarded to generate(). */
   private _resolvedCallOptions?: IModelCallOptions;
@@ -289,6 +294,7 @@ export class AgentComposer {
     this._guardrailRunner = deps.guardrailRunner;
     this.contextPort = deps.contextPort;
     this.trustedAgentRoles = deps.trustedAgentRoles;
+    this.skills = deps.skills;
     this.options = deps.options;
     this.modelResolver = deps.modelResolver;
     this.effortResolver = deps.effortResolver ?? new EffortResolver();
@@ -645,6 +651,26 @@ export class AgentComposer {
   }
 
   /**
+   * Renders the plan's pinned skills from their stored snapshots. Absent pins keep live behavior and
+   * return null. Pins that cannot resolve fail the step before any strategy runs.
+   */
+  private async resolvePinnedSkillPrompt(
+    context: IExecutionContext,
+    options: IAgentExecutionOptions,
+  ): Promise<IPinnedSkillPrompt | null> {
+    const pins = options.resolved_skills ?? context.resolved_skills;
+    if (!pins || pins.length === 0) return null;
+    if (!this.skills) throw new SkillUnavailableError("", "Pinned skills cannot be replayed without a skills service");
+    const operation = createSkillOperationContext({
+      agentRole: options.agent_role ?? "unknown",
+      portal: options.portal,
+      traceId: context.trace_id,
+      requestId: context.request_id,
+    });
+    return await createPinnedSkillPrompt(this.skills, pins, operation);
+  }
+
+  /**
    * Execute a plan step using agent via MCP
    */
   async executeStep(
@@ -694,7 +720,8 @@ export class AgentComposer {
       if (this._resolvedCallOptions && "callOptions" in strategy) {
         (strategy as { callOptions?: IModelCallOptions }).callOptions = this._resolvedCallOptions;
       }
-      const validated = await strategy.execute(_blueprint, context, options);
+      const pinnedSkills = await this.resolvePinnedSkillPrompt(context, options);
+      const validated = await strategy.execute(_blueprint, context, options, pinnedSkills);
 
       // Real usage from the strategy, when reported; otherwise undefined — no heuristic
       // cost estimation, since output tokens are unknowable pre-call and input-side
@@ -835,10 +862,11 @@ export class AgentComposer {
     blueprint: IAgentFileBlueprint,
     context: IExecutionContext,
     options: IAgentExecutionOptions,
+    pinnedSkills?: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
   ): Promise<string> {
     const modelId = this.resolveModelId(blueprint);
     const tools = this._toolRegistry?.getTools();
-    return this.promptBuilder.buildExecutionPrompt(blueprint, context, options, modelId, tools);
+    return this.promptBuilder.buildExecutionPrompt(blueprint, context, options, modelId, tools, pinnedSkills);
   }
 
   /**

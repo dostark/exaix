@@ -122,28 +122,6 @@ Deno.test("PlanService.approve: throws for non-review status", async () => {
   }
 });
 
-Deno.test("PlanService.approve: with skills injects into frontmatter", async () => {
-  const root = await Deno.makeTempDir({ prefix: "plan-svc-approve-skills-" });
-  try {
-    const { service, plansDir, activeDir } = createPlanTestEnv(root);
-    await ensureDir(plansDir);
-
-    const planId = "skills-plan";
-    await Deno.writeTextFile(
-      join(plansDir, `${planId}.md`),
-      createReviewPlanContent(),
-    );
-
-    await service.approve(planId, ["typescript", "deno"]);
-
-    const content = await Deno.readTextFile(join(activeDir, `${planId}.md`));
-    assertEquals(content.includes("skills"), true);
-    assertEquals(content.includes("typescript"), true);
-  } finally {
-    await Deno.remove(root, { recursive: true }).catch(() => {});
-  }
-});
-
 // reject
 
 Deno.test("PlanService.reject: moves plan to Rejected directory", async () => {

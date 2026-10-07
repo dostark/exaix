@@ -191,7 +191,7 @@ Deno.test("[integration] executing the plan's requestDeclaration through AgentCo
 
 Deno.test("[integration] a pinned floor-bearing skill resolves medium on both plan generation and step execution", async () => {
   // The planning run's final resolved skill set is persisted to the plan frontmatter
-  // (resolved_skill_ids) and the execution path reads it, so --skills pins survive the
+  // (resolved_skills) and the execution path reads it, so --skills pins survive the
   // plan→execution hand-off even when the skill's triggers never match the subject.
   const env = await TestEnvironment.create({
     initGit: false,
@@ -203,11 +203,11 @@ Deno.test("[integration] a pinned floor-bearing skill resolves medium on both pl
     const blueprintSkillsDir = join(REPO_ROOT, "Blueprints", "Skills");
     const skillsService = new SkillsService({ memoryDir, blueprintSkillsDir }, env.db);
     await skillsService.initialize();
-    const getSkillCalls: string[] = [];
-    const originalGetSkill = skillsService.getSkill.bind(skillsService);
-    skillsService.getSkill = (skillId: string) => {
-      getSkillCalls.push(skillId);
-      return originalGetSkill(skillId);
+    const resolvedPinNames: string[] = [];
+    const originalResolvePinned = skillsService.resolvePinned.bind(skillsService);
+    skillsService.resolvePinned = (pins, ctx) => {
+      resolvedPinNames.push(...pins.map((pin) => pin.name));
+      return originalResolvePinned(pins, ctx);
     };
 
     const blueprintPath = join(env.tempDir, "Blueprints", "Agents", "default.md");
@@ -277,12 +277,12 @@ Review the response contract for injection risks and fix the login handler.
 
     const planContent = await Deno.readTextFile(String(planPath));
     assert(
-      planContent.includes("resolved_skill_ids"),
-      "the written plan must persist the final resolved skill id set",
+      planContent.includes("resolved_skills"),
+      "the written plan must persist the final pin vector",
     );
 
     // Execution path: thread the written plan's frontmatter exactly as ExecutionLoop does
-    // and drive a real PlanExecutor (frontmatter carries resolved_skill_ids + request
+    // and drive a real PlanExecutor (frontmatter carries resolved_skills + request
     // effort declaration; context reuses the same floor-bearing SkillsService).
     const planFrontmatter = parseYaml((planContent.match(/^---\n([\s\S]*?)\n---/) ?? [])[1] ?? "") as never;
     const config = env.config;
@@ -311,9 +311,9 @@ Review the response contract for injection risks and fix the login handler.
     } as never);
 
     assertEquals(
-      getSkillCalls.includes(FLOOR_SKILL_ID),
+      resolvedPinNames.includes(FLOOR_SKILL_ID),
       true,
-      "the execution path must consult the persisted resolved_skill_ids via getSkill",
+      "the execution path must replay the persisted resolved_skills through resolvePinned",
     );
     await env.db.waitForFlush();
     const effortRows = await env.db.queryActivity({ traceId: stepTraceId, actionType: "agent.effort_resolved" });

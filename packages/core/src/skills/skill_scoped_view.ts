@@ -15,8 +15,10 @@ import type { ISkillMatchRequest } from "../types/mod.ts";
 import type { Opt, Reason } from "../types/optional_marker.ts";
 import type { ISkill, ISkillMatch, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
 import type {
+  IPinnedSkill,
   ISkillDiagnostic,
   ISkillOperationContext,
+  ISkillPin,
   ISkillSubmission,
   ISkillUsageRecord,
   ISkillUsageSummary,
@@ -64,6 +66,13 @@ export class ScopedSkillsService implements ISkillsService {
     ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
   ): Promise<void> {
     return this.inner.ensureRevisions(revisionIds, ctx ?? this.bound);
+  }
+
+  resolvePinned(
+    pins: readonly ISkillPin[],
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<IPinnedSkill[]> {
+    return this.inner.resolvePinned(pins, ctx ?? this.bound);
   }
 
   recordSubmission(submission: ISkillSubmission, ctx: ISkillOperationContext): Promise<void> {

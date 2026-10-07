@@ -16,6 +16,7 @@ import {
   SecurityMode,
 } from "@exaix/core";
 import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "./model_intent.ts";
+import { SkillPinVectorSchema } from "./skill_pin.ts";
 
 /**
  * Security mode for agent execution
@@ -31,8 +32,8 @@ export const ExecutionContextSchema = z.object({
   request: z.string().describe("Original user request content"),
   plan: z.string().describe("Plan to execute"),
   portal: z.string().describe("Target portal name"),
-  skills_context: z.string().optional().describe(
-    "Optional pre-built skills context block for prompt injection",
+  resolved_skills: SkillPinVectorSchema.optional().describe(
+    "Pinned skill revisions replayed for this execution. Absent keeps live behavior and empty freezes no skills",
   ),
   step_number: z.number().int().positive().optional().describe(
     "Step number if executing multi-step plan",
@@ -87,6 +88,9 @@ export const AgentExecutionOptionsSchema = z.object({
    *  own `thinking` field. */
   thinking: ThinkingDeclarationSchema.optional().describe(
     "Per-step thinking declaration; set by a flow step's own `thinking` field",
+  ),
+  resolved_skills: SkillPinVectorSchema.optional().describe(
+    "Pinned skill revisions replayed for this execution. Absent keeps live behavior and empty freezes no skills",
   ),
 });
 export type IAgentExecutionOptions = z.output<

@@ -12,6 +12,7 @@ export * from "./src/agent_composer.ts";
 export * from "./src/execution_context_service.ts";
 export * from "./src/blueprint_service.ts";
 export * from "./src/prompt_builder.ts";
+export * from "./src/skill_pin_transport.ts";
 export * from "./src/git_audit_service.ts";
 export * from "./src/output_parser.ts";
 export * from "./src/history_manager.ts";

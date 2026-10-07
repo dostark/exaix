@@ -20,6 +20,7 @@ import {
   USER_REQUEST_MAX_LENGTH,
 } from "@exaix/core";
 import { AgentExecutionOptionsSchema } from "./agent_composer.ts";
+import { SkillPinVectorSchema } from "./skill_pin.ts";
 import { CompatibleChatOverrideSchema, MODEL_CONFIG_FIELD } from "./ai_config.ts";
 
 /**
@@ -160,7 +161,7 @@ export const ExecutionContextSchema = z.object({
   userId: z.string().optional(),
   sessionId: z.string().optional(),
   timestamp: z.date().optional(),
-  skills_context: z.string().optional(),
+  resolved_skills: SkillPinVectorSchema.optional(),
   /** All of the current plan's steps concatenated, set once per plan (PlanExecutor.executeSteps). CliDelegateStrategy uses this on a trace's first turn so a headless CLI session sees the whole task, not just the current step's fragment. */
   full_plan: z.string().optional(),
 }).strict();

@@ -14,7 +14,7 @@ export interface IPlanService {
   /**
    * Approve a plan for execution.
    */
-  approve(planId: string, reviewer?: string, skills?: string[]): Promise<boolean>;
+  approve(planId: string, reviewer?: string): Promise<boolean>;
 
   /**
    * Reject a plan with a reason.

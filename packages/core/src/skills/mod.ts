@@ -17,6 +17,14 @@ export {
 } from "./skill_context.ts";
 export { SkillFolderLoader } from "./skill_folder_loader.ts";
 export { SkillFolderPublisher, type SkillLockMode } from "./skill_folder_publisher.ts";
+export {
+  buildSkillPin,
+  type ISkillEntryState,
+  type ISkillPinSelection,
+  type ISkillPinState,
+  orderSkillPins,
+  skillToContextEntry,
+} from "./skill_pins.ts";
 export { policySkillSubmission } from "./skill_submission.ts";
 export { SKILL_USAGE_STORE_SOURCE_ID, SkillUsageStore } from "./skill_usage_store.ts";
 export { SKILL_REVISION_STORE_SOURCE_ID, SkillRevisionStore } from "./skill_revision_store.ts";
@@ -30,6 +38,7 @@ export {
 } from "./skill_snapshot.ts";
 export {
   type ILoadedSkill,
+  type IPinnedSkill,
   type IResolvedSkillRoot,
   type ISkillDiagnostic,
   type ISkillFolderLimits,

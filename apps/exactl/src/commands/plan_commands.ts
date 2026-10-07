@@ -108,7 +108,7 @@ export class PlanCommands extends BaseCommand {
   /** Approve a plan: move from Workspace/Plans to Workspace/Active.
    * Only plans with status='review' can be approved.
    */
-  async approve(planId: string, skills?: Opt<string[], Reason.OptionalInput>): Promise<void> {
+  async approve(planId: string): Promise<void> {
     try {
       // Validate input
       const validation = new ValidationChain()
@@ -153,11 +153,6 @@ export class PlanCommands extends BaseCommand {
         approved_at: now,
       };
 
-      // Add skills if provided
-      if (skills && skills.length > 0) {
-        updatedFrontmatter.skills = skills;
-      }
-
       // Write updated plan to target
       await ensureDir(this.workspaceActiveDir);
       const updatedContent = this.serializePlan(updatedFrontmatter, body);
@@ -175,7 +170,7 @@ export class PlanCommands extends BaseCommand {
     } catch (error) {
       await DefaultErrorStrategy.handle({
         commandName: "PlanCommands.approve",
-        args: { planId, skills },
+        args: { planId },
         error: error as Error | string | object | null | undefined,
       });
     }
@@ -184,7 +179,7 @@ export class PlanCommands extends BaseCommand {
   /**
    * Approve all plans awaiting review.
    */
-  async approveAll(skills?: Opt<string[], Reason.OptionalInput>): Promise<void> {
+  async approveAll(): Promise<void> {
     try {
       const plans = await this.list(PlanStatus.REVIEW);
       if (plans.length === 0) {
@@ -194,12 +189,12 @@ export class PlanCommands extends BaseCommand {
 
       await this.display.info("plan.approve_all", "starting", { count: plans.length });
       for (const plan of plans) {
-        await this.approve(plan.id, skills);
+        await this.approve(plan.id);
       }
     } catch (error) {
       await DefaultErrorStrategy.handle({
         commandName: "PlanCommands.approveAll",
-        args: { skills },
+        args: {},
         error: error as Error | string | object | null | undefined,
       });
     }

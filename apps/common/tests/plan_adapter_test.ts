@@ -29,14 +29,13 @@ function createPlanCommandService(overrides: Partial<{
 
 Deno.test("[adapters/PlanAdapter] approve() success path", async () => {
   const mockService = createPlanCommandService({
-    approve: (planId: string, skills?: string[]) => {
+    approve: (planId: string) => {
       assertEquals(planId, "plan-123");
-      assertEquals(skills, ["skill1"]);
       return Promise.resolve();
     },
   });
   const adapter = new PlanAdapter(mockService);
-  const result = await adapter.approve("plan-123", "reviewer", ["skill1"]);
+  const result = await adapter.approve("plan-123", "reviewer");
   assertEquals(result, true);
 });
 

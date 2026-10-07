@@ -47,6 +47,7 @@ import {
   toMcpConnectionInput,
 } from "@exaix/session/dogfood_mcp_config.ts";
 import type { IExecutionStrategy } from "./execution_strategy.ts";
+import type { IPinnedSkillPrompt } from "../skill_pin_transport.ts";
 import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_composer.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
@@ -56,7 +57,7 @@ import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import { deriveClaudeToolFlags } from "@exaix/session/claude_permission_flags.ts";
 import { buildAllowlistChildEnv } from "@exaix/core/helpers/child_env.ts";
-import { SafeSubprocess, SubprocessError } from "@exaix/core";
+import { SafeSubprocess, SkillSubmissionKind, SubprocessError } from "@exaix/core";
 import {
   AgentExecutionErrorType,
   CLI_DELEGATE_TURN_TIMEOUT_MS,
@@ -244,6 +245,8 @@ export class CliDelegateStrategy implements IExecutionStrategy {
   /** Turn counter per plan (trace_id) for dogfood context records — a fresh capture per
    *  turn, independent of the resumed CLI session's own history. */
   private readonly turnCounts = new Map<string, number>();
+  /** Launch counter per plan (trace_id) for skill usage rows. */
+  private readonly skillRounds = new Map<string, number>();
 
   constructor(private readonly deps: ICliDelegateStrategyDeps) {
     if (deps.contextPort && !deps.trustedAgentRoles) {
@@ -259,6 +262,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     blueprint: IAgentFileBlueprint,
     context: IExecutionContext,
     options: IAgentExecutionOptions,
+    pinnedSkills?: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
   ): Promise<IChangesetResult> {
     const startTime = Date.now();
     const portalPath = this.deps.resolvePortalPath(options.portal);
@@ -269,13 +273,21 @@ export class CliDelegateStrategy implements IExecutionStrategy {
       );
     }
     const isFirstTurn = !this.sessionIds.has(context.trace_id);
-    const objective = this.buildObjective(blueprint, context, isFirstTurn);
+    const objective = this.buildObjective(blueprint, context, isFirstTurn, pinnedSkills?.text);
     const { objective: finalObjective, recordId, connection } = await this.applyDogfoodContext(
       objective,
       context,
       options.agent_role,
     );
     const isClaude = this.deps.tool === SessionToolSchema.enum["claude-code"];
+
+    if (pinnedSkills) {
+      await pinnedSkills.record(
+        finalObjective,
+        SkillSubmissionKind.CLI_DELEGATE,
+        this.nextSkillRound(context.trace_id),
+      );
+    }
 
     let parsed: ICliDelegateParsedOutcome;
     try {
@@ -444,11 +456,24 @@ export class CliDelegateStrategy implements IExecutionStrategy {
   /** First turn leads with the whole plan (context.full_plan) so the CLI session orients
    *  on the complete task before seeing an isolated step fragment. Later turns in the same
    *  resumed session already carry that orientation in conversation history. */
-  private buildObjective(blueprint: IAgentFileBlueprint, context: IExecutionContext, isFirstTurn: boolean): string {
+  private buildObjective(
+    blueprint: IAgentFileBlueprint,
+    context: IExecutionContext,
+    isFirstTurn: boolean,
+    skillsText: Opt<string, Reason.OptionalContext>,
+  ): string {
     const taskSection = isFirstTurn && context.full_plan
       ? `TASK: ${context.request}\n\nFULL PLAN:\n${context.full_plan}\n\nBEGIN WITH THE FIRST STEP BELOW.`
       : `TASK: ${context.request}`;
-    return `${blueprint.systemPrompt}\n\n${taskSection}\n\nPLAN STEP: ${context.plan}`;
+    const skillsSection = skillsText ? `${skillsText}\n\n` : "";
+    return `${blueprint.systemPrompt}\n\n${skillsSection}${taskSection}\n\nPLAN STEP: ${context.plan}`;
+  }
+
+  /** The next launch number for one plan, counted from one. */
+  private nextSkillRound(traceId: string): number {
+    const round = (this.skillRounds.get(traceId) ?? 0) + 1;
+    this.skillRounds.set(traceId, round);
+    return round;
   }
 
   /** Absent contextPort, or an untrusted agentRole, returns `objective` unchanged —

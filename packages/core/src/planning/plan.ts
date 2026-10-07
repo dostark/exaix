@@ -82,7 +82,7 @@ export class PlanService {
 
   // Public API
 
-  async approve(planId: string, skills?: Opt<string[], Reason.OptionalInput>): Promise<void> {
+  async approve(planId: string): Promise<void> {
     const sourcePath = join(this.workspacePlansDir, `${planId}.md`);
     const targetPath = join(this.workspaceActiveDir, `${planId}.md`);
 
@@ -111,7 +111,6 @@ export class PlanService {
     fm.status = PlanStatus.APPROVED;
     fm.approved_by = actor;
     fm.approved_at = now;
-    if (skills && skills.length > 0) fm.skills = JSON.stringify(skills);
 
     const updatedContent = this.serializePlanContent(fm, body);
 

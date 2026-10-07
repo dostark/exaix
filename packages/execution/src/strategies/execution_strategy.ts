@@ -9,7 +9,9 @@
  */
 
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { IAgentFileBlueprint } from "../agent_composer.ts";
+import type { IPinnedSkillPrompt } from "../skill_pin_transport.ts";
 
 export interface IExecutionStrategy {
   readonly name: string;
@@ -18,6 +20,7 @@ export interface IExecutionStrategy {
     blueprint: IAgentFileBlueprint,
     context: IExecutionContext,
     options: IAgentExecutionOptions,
+    pinnedSkills?: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
   ): Promise<IChangesetResult>;
 
   /** Optional — only implement when the strategy holds external resources (signal

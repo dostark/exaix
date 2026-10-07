@@ -11,8 +11,10 @@
 import type { MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core";
 import type { ISkill, ISkillMatch, SkillDefinition, SkillUpdates } from "@exaix/schemas";
 import type {
+  IPinnedSkill,
   ISkillDiagnostic,
   ISkillOperationContext,
+  ISkillPin,
   ISkillSubmission,
   ISkillUsageRecord,
   ISkillUsageSummary,
@@ -40,6 +42,16 @@ export interface ISkillsService {
     revisionIds: readonly string[],
     ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
   ): Promise<void>;
+
+  /**
+   * Join each pin to the immutable snapshot it names. Never reads live files. Throws
+   * `skill_unavailable` for a malformed vector, a name/digest mismatch, an unknown or corrupt
+   * revision or a foreign portal.
+   */
+  resolvePinned(
+    pins: readonly ISkillPin[],
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<IPinnedSkill[]>;
 
   /**
    * Record one observable model submission: its revision snapshots first, then one usage row per

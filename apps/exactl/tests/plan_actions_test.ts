@@ -133,13 +133,12 @@ Deno.test("handlePlanShow: prints metadata and content", async () => {
   assertEquals(calls[1].a, "plan.content");
 });
 
-Deno.test("handlePlanApprove: splits skills", async () => {
+Deno.test("handlePlanApprove: delegates to approve with the plan id only", async () => {
   const { display } = createDisplay();
-  // Use explicit type for calls array, per code style
-  const calls: Array<{ id: string; skills?: string[] }> = [];
+  const calls: string[][] = [];
   const planCommands = {
-    approve: (id: string, skills?: string[]) => {
-      calls.push({ id, skills });
+    approve: (...args: string[]) => {
+      calls.push(args);
       return Promise.resolve();
     },
   };
@@ -148,8 +147,8 @@ Deno.test("handlePlanApprove: splits skills", async () => {
     planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
     display,
   };
-  await handlePlanApprove(context, "p1", { skills: "a, b" });
-  assertEquals(calls[0].skills, ["a", "b"]);
+  await handlePlanApprove(context, "p1");
+  assertEquals(calls, [["p1"]]);
 });
 
 Deno.test("handlePlanReject/Revise: delegates", async () => {
@@ -178,10 +177,10 @@ Deno.test("handlePlanReject/Revise: delegates", async () => {
 
 Deno.test("handlePlanApproveAll: delegates to approveAll", async () => {
   const { display } = createDisplay();
-  const calls: Array<{ skills?: string[] }> = [];
+  const calls: string[][] = [];
   const planCommands = {
-    approveAll: (skills?: string[]) => {
-      calls.push({ skills });
+    approveAll: (...args: string[]) => {
+      calls.push(args);
       return Promise.resolve();
     },
   };
@@ -190,8 +189,8 @@ Deno.test("handlePlanApproveAll: delegates to approveAll", async () => {
     planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
     display,
   };
-  await handlePlanApproveAll(context, { skills: "x,y" });
-  assertEquals(calls[0].skills, ["x", "y"]);
+  await handlePlanApproveAll(context);
+  assertEquals(calls, [[]]);
 });
 
 Deno.test("handlePlanAmendmentList: displays amendments", async () => {

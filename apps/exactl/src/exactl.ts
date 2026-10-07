@@ -99,7 +99,6 @@ import {
   handlePlanReject,
   handlePlanRevise,
   handlePlanShow,
-  type IPlanApproveOptions,
   type IPlanListOptions,
 } from "./command_builders/plan_actions.ts";
 
@@ -580,18 +579,16 @@ const baseCommand: ExaCtlBaseCommand = new Command()
         "approve <id>",
         new Command()
           .description("Approve a plan and move it to Workspace/Active")
-          .option("--skills <skills:string>", "Comma-separated list of skills to inject during execution")
-          .action(async (options, ...args: string[]) => {
-            await handlePlanApprove({ planCommands, display }, args[0] as string, options as IPlanApproveOptions);
+          .action(async (_options, ...args: string[]) => {
+            await handlePlanApprove({ planCommands, display }, args[0] as string);
           }),
       )
       .command(
         "approve-all",
         new Command()
           .description("Approve all plans awaiting review")
-          .option("--skills <skills:string>", "Comma-separated list of skills to inject during execution")
-          .action(async (options) => {
-            await handlePlanApproveAll({ planCommands, display }, options as IPlanApproveOptions);
+          .action(async () => {
+            await handlePlanApproveAll({ planCommands, display });
           }),
       )
       .command(

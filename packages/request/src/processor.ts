@@ -802,9 +802,7 @@ export class RequestProcessor {
       traceId,
       traceLogger,
     });
-    // GAP-5: carry the planning run's FINAL resolved skill set (pinned ∪ matched ∪ defaults)
-    // onto the plan so execution applies the same skill floors this request resolved with.
-    if (result.skillsApplied) metadata.resolvedSkillIds = result.skillsApplied;
+    metadata.resolvedSkills = result.resolvedSkills;
     let attempts = 0;
     const maxRetries = 2;
 
@@ -836,7 +834,7 @@ export class RequestProcessor {
             traceId,
             traceLogger,
           });
-          if (result.skillsApplied) metadata.resolvedSkillIds = result.skillsApplied;
+          metadata.resolvedSkills = result.resolvedSkills;
           continue;
         }
         throw error;

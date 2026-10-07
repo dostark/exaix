@@ -28,8 +28,10 @@ import {
 } from "@exaix/tui/helpers/constants.ts";
 import type { ISkill, ISkillMatch, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
 import type {
+  IPinnedSkill,
   ISkillDiagnostic,
   ISkillOperationContext,
+  ISkillPin,
   ISkillSubmission,
   ISkillUsageRecord,
   ISkillUsageSummary,
@@ -364,6 +366,10 @@ export class MinimalSkillsServiceMock implements ISkillsService {
 
   ensureRevisions(_revisionIds: readonly string[]): Promise<void> {
     return Promise.resolve();
+  }
+
+  resolvePinned(_pins: readonly ISkillPin[]): Promise<IPinnedSkill[]> {
+    return Promise.resolve([]);
   }
 
   recordSubmission(_submission: ISkillSubmission, _ctx: ISkillOperationContext): Promise<void> {

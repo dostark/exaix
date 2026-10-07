@@ -24,10 +24,6 @@ export interface IPlanListOptions {
   status?: PlanStatus;
 }
 
-export interface IPlanApproveOptions {
-  skills?: string;
-}
-
 /**
  * Handle plan list action
  */
@@ -136,15 +132,11 @@ export async function handlePlanShow(
 export async function handlePlanApprove(
   context: IPlanActionContext,
   id: string,
-  options: IPlanApproveOptions,
 ): Promise<void> {
   const { planCommands, display } = context;
 
   try {
-    await planCommands.approve(
-      id,
-      options.skills ? options.skills.split(",").map((s: string) => s.trim()) : undefined,
-    );
+    await planCommands.approve(id);
   } catch (error) {
     display.error("cli.error", "plan approve", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -156,16 +148,11 @@ export async function handlePlanApprove(
 /**
  * Handle plan approve all action
  */
-export async function handlePlanApproveAll(
-  context: IPlanActionContext,
-  options: IPlanApproveOptions,
-): Promise<void> {
+export async function handlePlanApproveAll(context: IPlanActionContext): Promise<void> {
   const { planCommands, display } = context;
 
   try {
-    await planCommands.approveAll(
-      options.skills ? options.skills.split(",").map((s: string) => s.trim()) : undefined,
-    );
+    await planCommands.approveAll();
   } catch (error) {
     display.error("cli.error", "plan approve-all", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,

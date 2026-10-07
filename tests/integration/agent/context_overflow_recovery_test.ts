@@ -7,6 +7,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { AgentComposer, ExecutionContextService } from "@exaix/execution";
 import { StrategyRegistry } from "@exaix/execution";
+import type { IPinnedSkillPrompt } from "@exaix/execution";
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
@@ -43,7 +44,12 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
     strategyRegistry.register({
       name: ExecutionStrategyName.REACT,
       execute: async (blueprint, context, options) => {
-        const prompt = await holder.executor!.buildExecutionPrompt(blueprint, context, options);
+        const skillsPrompt: IPinnedSkillPrompt = {
+          text: "S".repeat(500),
+          record: () => Promise.resolve(),
+          fit: () => skillsPrompt,
+        };
+        const prompt = await holder.executor!.buildExecutionPrompt(blueprint, context, options, skillsPrompt);
         promptLengthSeen = prompt.length;
         const skillMatch = prompt.match(/--- BEGIN SKILLS ---\n([\s\S]*?)\n--- END SKILLS ---/);
         skillsBlockLengthSeen = skillMatch?.[1].length ?? 0;
@@ -77,8 +83,7 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
       request: `Request: ${requestHuge}`,
       plan: `Plan: ${planHuge}`,
       portal: "TestPortal",
-      skills_context: "S".repeat(500),
-    } as IExecutionContext & { skills_context: string };
+    };
     const options: IAgentExecutionOptions = {
       agent_role: "test-agent",
       portal: "TestPortal",

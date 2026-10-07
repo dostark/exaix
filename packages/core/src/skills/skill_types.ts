@@ -10,6 +10,7 @@
  */
 
 import type { IRuntimeSkill } from "@exaix/schemas/runtime_skill.ts";
+import type { ISkillPinRecord } from "@exaix/schemas/skill_pin.ts";
 import type { Opt, Reason } from "../types/optional_marker.ts";
 import type { IEventLogger } from "../logger/mod.ts";
 import type { IEventRegistry } from "../events/event_registry.ts";
@@ -73,19 +74,12 @@ export interface ISkillOperationContext {
 }
 
 /** A durable plan pin. Provenance lives on the pin, not the revision row. */
-export interface ISkillPin {
-  name: string;
-  revision_id: string;
-  content_sha256: string;
-  root_kind: SkillRootKind;
-  source_path: string;
-  portal: string | null;
-  match_source: SkillMatchSource;
-  confidence: number;
-  matched_task_types: readonly string[];
-  required: boolean;
-  render_mode: SkillRenderOutcome;
-  content_included: boolean;
+export type ISkillPin = ISkillPinRecord;
+
+/** A pin joined to the immutable snapshot it names. */
+export interface IPinnedSkill {
+  pin: ISkillPin;
+  loaded: ILoadedSkill;
 }
 
 /** One skill included in one model submission. */

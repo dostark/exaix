@@ -10,8 +10,10 @@
 
 import type { ISkillMatchRequest, ISkillsService } from "@exaix/core/types";
 import type {
+  IPinnedSkill,
   ISkillDiagnostic,
   ISkillOperationContext,
+  ISkillPin,
   ISkillSubmission,
   ISkillUsageRecord,
   ISkillUsageSummary,
@@ -31,6 +33,10 @@ export class StubSkillsService implements ISkillsService {
 
   ensureRevisions(_revisionIds: readonly string[]): Promise<void> {
     return Promise.resolve();
+  }
+
+  resolvePinned(_pins: readonly ISkillPin[]): Promise<IPinnedSkill[]> {
+    return Promise.resolve([]);
   }
 
   recordSubmission(_submission: ISkillSubmission, _ctx: ISkillOperationContext): Promise<void> {

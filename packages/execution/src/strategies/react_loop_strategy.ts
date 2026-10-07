@@ -21,7 +21,7 @@ import type {
 import { TOOL_CHOICE_TYPE_AUTO } from "@exaix/ai/types.ts";
 import { PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
 import type { INativePromptSection } from "@exaix/ai";
-import { PromptBudgetAllocator } from "@exaix/core";
+import { PromptBudgetAllocator, SkillSubmissionKind } from "@exaix/core";
 import type { IProviderToolCall } from "@exaix/ai/providers";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { ITool, IToolResult } from "@exaix/core/types";
@@ -73,6 +73,7 @@ import type { IContextSegment } from "../context/context_segment.ts";
 import type { IReActLoopExecutor } from "../react_loop_adapter.ts";
 import { ContextBudgetExceededError } from "@exaix/core/errors";
 import { computeRegistryPredictedCost } from "../registry_computed_cost.ts";
+import type { IPinnedSkillPrompt } from "../skill_pin_transport.ts";
 import {
   calculateAciDocBudgetChars,
   canonicalizeForRegistry,
@@ -161,6 +162,15 @@ interface IIterationParams {
   nativeConversationInitialSections?: readonly INativePromptSection[];
   nativeConversationTurns: IProviderTurn[];
   nativePreferredTool?: Opt<string, Reason.OptionalInput>;
+  pinnedSkills?: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>;
+}
+
+/** Optional prompt segments `buildPrompt` places around the plan step. */
+interface IReActPromptExtras {
+  aciSection?: Opt<IAciRenderResult, Reason.OptionalContext>;
+  sections?: Opt<INativePromptSection[], Reason.OptionalInput>;
+  /** Rendered pinned skill blocks, placed ahead of the plan step. */
+  skillsText?: Opt<string, Reason.OptionalContext>;
 }
 
 /** Result of a single iteration in execute(). */
@@ -199,6 +209,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     blueprint: IAgentFileBlueprint,
     context: IExecutionContext,
     options: IAgentExecutionOptions,
+    pinnedSkills?: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
   ): Promise<IChangesetResult> {
     if (!this.provider) {
       throw new AgentExecutionError(
@@ -206,6 +217,10 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         AgentExecutionErrorType.CONFIGURATION_ERROR,
       );
     }
+    const skillsBudgetTokens = this.executor.currentPromptBudget?.sections.skills;
+    const skills = pinnedSkills && skillsBudgetTokens !== undefined
+      ? pinnedSkills.fit(skillsBudgetTokens * TOKEN_ESTIMATION_CHARS_PER_TOKEN)
+      : pinnedSkills;
 
     const startTime = Date.now();
     const history: Array<{ role: ReActRole; content: string }> = [];
@@ -272,6 +287,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         nativeConversationInitialSections,
         nativeConversationTurns,
         nativePreferredTool,
+        pinnedSkills: skills,
       });
       toolCallCount = iterResult.toolCallCount;
       totalPromptTokens = iterResult.totalPromptTokens;
@@ -499,8 +515,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         [],
         nativeToolsUsed,
         visibleToolIds,
-        aciSection?.result,
-        initialSections,
+        { aciSection: aciSection?.result, sections: initialSections, skillsText: params.pinnedSkills?.text },
       )
       : undefined;
     const prompt = initialPrompt ?? this.buildPrompt(
@@ -510,7 +525,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       budgetedHistory,
       nativeToolsUsed,
       visibleToolIds,
-      aciSection?.result,
+      { aciSection: aciSection?.result, skillsText: params.pinnedSkills?.text },
     );
 
     const generateOptions = this.buildNativeGenerateOptions(
@@ -614,6 +629,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       context.trace_id,
     );
     await this.emitPromptAssembledEvent(context, i, aciSection);
+    await params.pinnedSkills?.record(prompt, SkillSubmissionKind.PROVIDER, i + 1);
     const generateStartTime = Date.now();
     const response = await this.withHeartbeat(context, () => this.provider!.generate(prompt, generateOptions as never));
     const generateDurationMs = Date.now() - generateStartTime;
@@ -1080,9 +1096,11 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     history: Array<{ role: ReActRole; content: string }>,
     skipToolProse = false,
     visibleToolIds: string[] = this.deriveVisibleToolIds(options),
-    aciSection: Opt<IAciRenderResult, Reason.OptionalContext> = this.renderAciSection(visibleToolIds)?.result,
-    sections?: Opt<INativePromptSection[], Reason.OptionalInput>,
+    extras: IReActPromptExtras = {},
   ): string {
+    const aciSection = extras.aciSection ?? this.renderAciSection(visibleToolIds)?.result;
+    const sections = extras.sections;
+    const skillsSection = extras.skillsText ? `${extras.skillsText}\n\n` : "";
     const historyText = this.buildBudgetedHistoryText(history);
 
     const roleSection = `${
@@ -1095,7 +1113,7 @@ Portal: ${options.portal}
 Trace ID: ${context.trace_id}
 `;
     const planSection = `Request: ${context.request}\nPlan Step: ${context.plan}\n`;
-    let prompt = `${roleSection}${planSection}
+    let prompt = `${roleSection}${skillsSection}${planSection}
 ${history.length > 0 ? `HISTORY:\n${historyText}` : ""}
 
 INSTRUCTIONS:
@@ -1153,8 +1171,12 @@ When you are finished, output "${REACT_STATUS_COMPLETE}" followed by "${REACT_SU
 
     sections?.push(
       { section: PromptBudgetSection.SYSTEM, text: roleSection },
+      ...(skillsSection ? [{ section: PromptBudgetSection.SKILLS, text: skillsSection }] : []),
       { section: PromptBudgetSection.PLAN, text: planSection },
-      { section: PromptBudgetSection.SYSTEM, text: prompt.slice(roleSection.length + planSection.length) },
+      {
+        section: PromptBudgetSection.SYSTEM,
+        text: prompt.slice(roleSection.length + skillsSection.length + planSection.length),
+      },
     );
     return prompt;
   }

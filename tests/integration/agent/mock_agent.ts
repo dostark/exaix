@@ -64,6 +64,8 @@ async function main() {
     filesChanged.push("unauthorized.txt");
   }
 
+  const description = context.request === "echo_context" ? JSON.stringify(taskMsg) : "Done";
+
   // 4. Return result
   console.error("DEBUG: Sending final result");
   console.log(JSON.stringify({
@@ -72,7 +74,7 @@ async function main() {
       branch: "feat/test",
       commit_sha: "0000000000000000000000000000000000000000",
       files_changed: filesChanged,
-      description: "Done",
+      description,
       tool_calls: 1,
       execution_time_ms: 100,
     },

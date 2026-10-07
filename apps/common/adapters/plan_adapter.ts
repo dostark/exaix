@@ -14,7 +14,7 @@ import type { PlanStatusType } from "@exaix/core/status";
 import type { Opt, Reason } from "@exaix/core/types";
 
 interface IPlanCommandService {
-  approve(planId: string, skills?: string[]): Promise<void>;
+  approve(planId: string): Promise<void>;
   reject(planId: string, reason?: string): Promise<void>;
   revise(planId: string, comments: string[]): Promise<void>;
   list(statusFilter?: PlanStatusType): Promise<IPlanMetadata[]>;
@@ -24,20 +24,20 @@ interface IPlanCommandService {
 export class PlanAdapter implements IPlanService {
   constructor(private service: IPlanCommandService) {}
 
-  async approve(
-    planId: string,
-    _reviewer?: string,
-    skills?: Opt<string[], Reason.OptionalDependency>,
-  ): Promise<boolean> {
+  async approve(planId: string, _reviewer?: Opt<string, Reason.OptionalInput>): Promise<boolean> {
     try {
-      await this.service.approve(planId, skills);
+      await this.service.approve(planId);
       return true;
     } catch {
       return false;
     }
   }
 
-  async reject(planId: string, _reviewer?: string, reason?: string): Promise<boolean> {
+  async reject(
+    planId: string,
+    _reviewer?: Opt<string, Reason.OptionalInput>,
+    reason?: Opt<string, Reason.OptionalInput>,
+  ): Promise<boolean> {
     try {
       await this.service.reject(planId, reason || "Rejected via TUI");
       return true;
@@ -50,7 +50,7 @@ export class PlanAdapter implements IPlanService {
     await this.service.revise(planId, comments);
   }
 
-  async list(statusFilter?: PlanStatusType): Promise<IPlanMetadata[]> {
+  async list(statusFilter?: Opt<PlanStatusType, Reason.QueryFilter>): Promise<IPlanMetadata[]> {
     return await this.service.list(statusFilter);
   }
 

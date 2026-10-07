@@ -8,8 +8,10 @@
 
 import type { ISkillsService } from "@exaix/core/types";
 import type {
+  IPinnedSkill,
   ISkillDiagnostic,
   ISkillOperationContext,
+  ISkillPin,
   ISkillSubmission,
   ISkillUsageRecord,
   ISkillUsageSummary,
@@ -25,6 +27,13 @@ export class SkillsAdapter implements ISkillsService {
 
   async initialize(): Promise<void> {
     return await this.inner.initialize();
+  }
+
+  async resolvePinned(
+    pins: readonly ISkillPin[],
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<IPinnedSkill[]> {
+    return await this.inner.resolvePinned(pins, ctx);
   }
 
   async recordSubmission(submission: ISkillSubmission, ctx: ISkillOperationContext): Promise<void> {

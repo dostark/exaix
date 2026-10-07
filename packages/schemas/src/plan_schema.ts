@@ -12,6 +12,7 @@ import { canonicalizeToolName, DEFAULT_QUERY_LIMIT, EXECUTION_TOOL_NAMES, JSONVa
 import { PlanStatus } from "@exaix/core/status";
 
 import { RequestAnalysisSchema } from "./request_analysis.ts";
+import { SkillPinVectorSchema } from "./skill_pin.ts";
 import { zodToJsonSchema } from "./json_schema_adapter.ts";
 
 // YAML's parseYaml() converts ISO-formatted date strings to Date objects; coerce them
@@ -44,6 +45,7 @@ export const PlanFrontmatterSchema = z.object({
   rejection_reason: z.string().optional(),
   reviewed_by: z.string().optional(),
   skills: z.array(z.string()).optional(),
+  resolved_skills: SkillPinVectorSchema.optional(),
   request_analysis: RequestAnalysisSchema.optional(),
   subject: z.string().optional(),
   // Amendment fields

@@ -1,11 +1,10 @@
 /**
  * @module PlanExecutorSkillFloorsTest
  * @path packages/core/tests/planning/plan_executor_skill_floors_test.ts
- * @description Phase-197 Step 12 (GAP-5): the execution path's skill floors come from the
- *   UNION of the planning run's persisted resolved_skill_ids (pinned ∪ matched ∪ defaults,
- *   order first) and the dynamic trigger matches re-run at execution — so a request that
- *   PINNED a floor-bearing skill resolves the same floor during step execution that plan
- *   generation applied, even when the skill's triggers never match the request subject.
+ * @description The execution path's skill floors come from the plan's pinned skills, so a request
+ *   that pinned a floor-bearing skill resolves the same floor during step execution that plan
+ *   generation applied, even when the skill's triggers never match the request subject. A plan
+ *   without pins applies no floor when nothing matches dynamically.
  * @architectural-layer Test
  * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_composer.ts]
  */
@@ -23,7 +22,15 @@ import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts
 import { DefaultRoutingStrategy, ModelResolver, ProviderRegistry } from "@exaix/ai";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import { createStubCostTracker, createStubHealthChecker } from "../../../ai/tests/helpers/service_stubs.ts";
-import { MemoryBankSource, PricingTier, ProviderCostTier } from "@exaix/core";
+import {
+  MemoryBankSource,
+  PricingTier,
+  ProviderCostTier,
+  SkillMatchSource,
+  SkillRenderOutcome,
+  SkillRootKind,
+} from "@exaix/core";
+import type { IPinnedSkill, ISkillPin } from "@exaix/core/skills";
 import type { IApplicationContext, ISkillsService } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core/types";
 import type { ISkill } from "@exaix/schemas";
@@ -75,16 +82,46 @@ function floorSkill(skillId: string): ISkill {
 }
 
 /** Stub SkillsService: declares one floor-bearing skill, no dynamic matches. */
-function createFloorSkillsService(): { service: ISkillsService; getSkillCalls: string[] } {
-  const getSkillCalls: string[] = [];
+function createFloorSkillsService(): { service: ISkillsService; resolvedPins: string[] } {
+  const resolvedPins: string[] = [];
   class FloorSkillsService extends StubSkillsService {
     override getSkill(skillId: string): Promise<ISkill | null> {
-      getSkillCalls.push(skillId);
       return Promise.resolve(skillId === FLOOR_SKILL_ID ? floorSkill(skillId) : null);
     }
+    override resolvePinned(pins: readonly ISkillPin[]): Promise<IPinnedSkill[]> {
+      return Promise.resolve(pins.map((pin) => {
+        resolvedPins.push(pin.name);
+        return {
+          pin,
+          loaded: {
+            skill: floorSkill(pin.name),
+            revisionId: pin.revision_id,
+            contentSha256: pin.content_sha256,
+            rootKind: pin.root_kind,
+            sourcePath: pin.source_path,
+            snapshot: { skill_md: "", exaix_yaml: null, references: [] },
+          },
+        };
+      }));
+    }
   }
-  return { service: new FloorSkillsService(), getSkillCalls };
+  return { service: new FloorSkillsService(), resolvedPins };
 }
+
+const FLOOR_PIN: ISkillPin = {
+  name: FLOOR_SKILL_ID,
+  revision_id: "0f3e1c6a-2f3b-5c1a-9a77-0d6a1f9d4e21",
+  content_sha256: "a".repeat(64),
+  root_kind: SkillRootKind.BLUEPRINT,
+  source_path: FLOOR_SKILL_ID,
+  portal: null,
+  match_source: SkillMatchSource.PINNED,
+  confidence: 1,
+  matched_task_types: [],
+  required: true,
+  render_mode: SkillRenderOutcome.FULL,
+  content_included: true,
+};
 
 Deno.test("PlanExecutor: a pinned floor-bearing skill raises the execution-path resolution", async () => {
   ProviderRegistry.clear();
@@ -105,7 +142,7 @@ Deno.test("PlanExecutor: a pinned floor-bearing skill raises the execution-path 
       logger,
     );
 
-    const { service: skills, getSkillCalls } = createFloorSkillsService();
+    const { service: skills, resolvedPins } = createFloorSkillsService();
 
     const context: IApplicationContext = {
       config: createStubConfig(config),
@@ -136,15 +173,15 @@ Deno.test("PlanExecutor: a pinned floor-bearing skill raises the execution-path 
       agent_role: "senior-coder",
       frontmatter: {
         subject: "Review the response contract for weaknesses",
-        resolved_skill_ids: ["response-contract-security-analysis"],
+        resolved_skills: [FLOOR_PIN] as never,
       },
       steps: [{ number: 1, title: "Do nothing", content: "No-op step." }],
     });
 
     assertEquals(
-      getSkillCalls.includes("response-contract-security-analysis"),
+      resolvedPins.includes("response-contract-security-analysis"),
       true,
-      "getSkill must be consulted for the persisted resolved_skill_ids",
+      "resolvePinned must be consulted for the persisted resolved_skills",
     );
 
     const effortEvents = logger.events.filter((e) => e.action === "agent.effort_resolved");
@@ -159,7 +196,7 @@ Deno.test("PlanExecutor: a pinned floor-bearing skill raises the execution-path 
   }
 });
 
-Deno.test("PlanExecutor: no resolved_skill_ids means no pinned skill floor is applied", async () => {
+Deno.test("PlanExecutor: no resolved_skills means no pinned skill floor is applied", async () => {
   ProviderRegistry.clear();
   registerLocalProvider("ollama");
   try {

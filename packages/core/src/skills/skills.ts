@@ -25,6 +25,7 @@ import {
   SkillSidecarSchema,
 } from "@exaix/schemas/skill_folder.ts";
 import type { ISkill, ISkillMatch, ISkillTriggers, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
+import { SkillPinVectorSchema } from "@exaix/schemas/skill_pin.ts";
 import { DEFAULT_SKILL_CONTEXT_CHAR_BUDGET, DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION } from "../types/constants.ts";
 import {
   type MemoryBankSource,
@@ -52,15 +53,18 @@ import { ScopedSkillsService } from "./skill_scoped_view.ts";
 import { buildRootContext, canonicalizeSkillText, parseSkillSnapshot } from "./skill_snapshot.ts";
 import {
   type ILoadedSkill,
+  type IPinnedSkill,
   type IResolvedSkillRoot,
   type ISkillDiagnostic,
   type ISkillOperationContext,
+  type ISkillPin,
   type ISkillRevisionSnapshot,
   type ISkillSubmission,
   type ISkillUsageRecord,
   type ISkillUsageSummary,
   SkillAuditUnavailableError,
   SkillMutationError,
+  SkillUnavailableError,
 } from "./skill_types.ts";
 
 export interface ISkillsConfig {
@@ -158,6 +162,53 @@ export class SkillsService implements ISkillsService {
       }
       await this.revisions.record(loaded, operation);
     }
+  }
+
+  /** Joins each pin to the immutable snapshot it names. Live files are never read. */
+  async resolvePinned(
+    pins: readonly ISkillPin[],
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<IPinnedSkill[]> {
+    const operation = ctx ?? this.defaultContext();
+    const parsed = SkillPinVectorSchema.safeParse(pins);
+    if (!parsed.success) {
+      throw new SkillUnavailableError("", `Skill pin vector is malformed: ${parsed.error.issues[0]?.message}`);
+    }
+    const resolved: IPinnedSkill[] = [];
+    for (const pin of pins) resolved.push({ pin, loaded: await this.resolveOnePin(pin, operation) });
+    return resolved;
+  }
+
+  private async resolveOnePin(pin: ISkillPin, operation: ISkillOperationContext): Promise<ILoadedSkill> {
+    const fail = (reason: string) => new SkillUnavailableError(pin.name, `Pinned skill "${pin.name}" ${reason}`);
+    if (pin.portal !== null && pin.portal !== operation.portal) throw fail("belongs to a different portal");
+    if (pin.root_kind === SkillRootKind.PROJECT && pin.portal === null) {
+      throw fail("is a project skill without a portal");
+    }
+    const record = await this.revisions.get(pin.revision_id, operation).catch(() => {
+      throw fail("has a corrupt stored snapshot");
+    });
+    if (!record) throw fail("has no stored snapshot");
+    if (record.skillName !== pin.name || record.contentSha256 !== pin.content_sha256) {
+      throw fail("does not match its stored snapshot");
+    }
+    const root: IResolvedSkillRoot = {
+      path: pin.source_path,
+      kind: pin.root_kind,
+      writable: false,
+      project: pin.portal,
+    };
+    const skill = await parseSkillSnapshot(record.snapshot, buildRootContext(root, pin.name)).catch(() => {
+      throw fail("has a snapshot that no longer parses");
+    });
+    return this.remember({
+      skill,
+      revisionId: record.revisionId,
+      contentSha256: record.contentSha256,
+      rootKind: pin.root_kind,
+      sourcePath: pin.source_path,
+      snapshot: record.snapshot,
+    });
   }
 
   /**

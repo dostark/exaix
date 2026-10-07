@@ -593,6 +593,14 @@ export interface ISkillsUsageRecordedPayload extends ISkillEventIdentityPayload 
   count: number;
 }
 
+/** Typed payload for skills.pin_drifted: a pinned revision that differs from the live one. */
+export interface ISkillsPinDriftedPayload {
+  name: string;
+  pinned_revision_id: string;
+  current_revision_id: string | null;
+  request_id: string | null;
+}
+
 /** Typed payload for skills.initialized — skill service readiness. */
 export interface ISkillsInitializedPayload extends ISkillEventIdentityPayload {
   writable_roots: number;
@@ -1193,6 +1201,7 @@ export const DomainEventType = {
   SkillsAuditFailed: "skills.audit_failed",
   SkillsInitialized: "skills.initialized",
   SkillsUsageRecorded: "skills.usage_recorded",
+  SkillsPinDrifted: "skills.pin_drifted",
   SkillsCreated: "skill.created",
   SkillsUpdated: "skill.updated",
   SkillsDerived: "skill.derived",

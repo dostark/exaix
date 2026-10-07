@@ -14,6 +14,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IEffortDeclarationPair } from "@exaix/ai";
 import type { EffortTier, IFixedModelClient, IModelIntent } from "@exaix/schemas/model_intent.ts";
+import type { ISkill } from "@exaix/schemas/memory_bank.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import { createNoopEventLogger, type IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
@@ -52,6 +53,14 @@ import { PlanAmendmentService } from "./plan_amendment_service.ts";
 import { PlanAmendmentGate } from "./plan_amendment_gate.ts";
 import type { IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import { GuardrailBlockedError, PlanAmendmentPendingError } from "./errors.ts";
+import { SkillPinVectorSchema } from "@exaix/schemas/skill_pin.ts";
+import { createSkillOperationContext } from "../skills/skill_context.ts";
+import {
+  type IPinnedSkill,
+  type ISkillOperationContext,
+  type ISkillPin,
+  SkillUnavailableError,
+} from "../skills/skill_types.ts";
 
 export interface IPlanStep {
   number: number;
@@ -151,15 +160,10 @@ function frontmatterTags(context: IPlanContext): string[] | undefined {
   return undefined;
 }
 
-/** Validates and deduplicates the plan frontmatter's `resolved_skill_ids` passthrough (the
- *  planning run's final resolved skill set) — non-string entries are ignored. */
-function resolvedSkillIdsFromFrontmatter(rawResolved: Opt<JSONValue, Reason.OptionalInput>): string[] {
-  if (!Array.isArray(rawResolved)) return [];
-  const ids: string[] = [];
-  for (const id of rawResolved) {
-    if (typeof id === "string" && !ids.includes(id)) ids.push(id);
-  }
-  return ids;
+/** The plan's pinned skills resolved once at execution ingress. Every derived metadata value reads it. */
+interface IPlanSkillSnapshot {
+  pins: ISkillPin[];
+  resolved: IPinnedSkill[];
 }
 
 /** Concatenates every step's title and content into one document, passed as
@@ -214,6 +218,7 @@ export class PlanExecutor {
     }, traceId);
 
     try {
+      const skillSnapshot = await this.resolvePlanSkills(context);
       const git = this.enableGit
         ? new GitService({
           config: this.config,
@@ -233,7 +238,7 @@ export class PlanExecutor {
 
       const initialHeadSha = git ? await this.getPortalHeadSha(this.repoPath) : null;
       const portalName = this.resolvePortalName(context.frontmatter.portal);
-      const agentExecutor = await this.createAgentExecutor(traceId, context);
+      const agentExecutor = await this.createAgentExecutor(traceId, context, skillSnapshot);
 
       try {
         const lastCommitSha = await this.executeSteps(
@@ -242,6 +247,7 @@ export class PlanExecutor {
           git,
           agentExecutor,
           actionReports,
+          skillSnapshot?.pins,
         );
 
         if (git && this.options.commitCompletion !== false) {
@@ -305,7 +311,11 @@ export class PlanExecutor {
   /**
    * Create an AgentComposer instance with proper dependencies.
    */
-  private async createAgentExecutor(traceId: string, context: IPlanContext): Promise<AgentComposer> {
+  private async createAgentExecutor(
+    traceId: string,
+    context: IPlanContext,
+    skillSnapshot: Opt<IPlanSkillSnapshot, Reason.OptionalContext>,
+  ): Promise<AgentComposer> {
     const portalAlias = this.resolvePortalName(context.frontmatter.portal);
     const executionConfig = {
       ...this.config,
@@ -331,15 +341,15 @@ export class PlanExecutor {
     if (this.options.fixedClient) {
       options.fixedClient = this.options.fixedClient;
     }
-    const topSkillTaskTypes = await this.deriveTopSkillTaskTypes(context);
+    const topSkillTaskTypes = await this.deriveTopSkillTaskTypes(context, skillSnapshot);
     if (topSkillTaskTypes.length > 0) {
       options.topSkillTaskTypes = topSkillTaskTypes;
     }
-    const matchedSkillTools = await this.deriveMatchedSkillTools(context);
+    const matchedSkillTools = await this.deriveMatchedSkillTools(context, skillSnapshot);
     if (matchedSkillTools.length > 0) {
       options.matchedSkillTools = matchedSkillTools;
     }
-    const matchedSkillFloors = await this.deriveMatchedSkillFloors(context);
+    const matchedSkillFloors = await this.deriveMatchedSkillFloors(context, skillSnapshot);
     if (matchedSkillFloors.length > 0) {
       options.matchedSkillFloors = matchedSkillFloors;
     }
@@ -369,6 +379,7 @@ export class PlanExecutor {
         },
       }),
       options,
+      skills: this.options.context?.skills,
       modelResolver: this.options.modelResolver,
       effortResolver: this.options.effortResolver,
       executionContext: new ExecutionContextService(this.config, this.logger, {
@@ -378,10 +389,71 @@ export class PlanExecutor {
     });
   }
 
-  /** Reachability Ledger: resolves the skill-trigger tier of deriveTaskType's precedence
-   *  chain by re-running the same skill match against the plan's request subject via
-   *  SkillsService; returns [] when unconfigured, unmatched, or no TaskType recognised. */
-  private async deriveTopSkillTaskTypes(context: IPlanContext): Promise<TaskType[]> {
+  /** The skill operation context every pin resolution of this plan shares. */
+  private skillOperation(context: IPlanContext): ISkillOperationContext {
+    const portal = context.frontmatter.portal;
+    return createSkillOperationContext({
+      agentRole: context.agent_role,
+      portal: typeof portal === "string" ? portal : null,
+      traceId: context.trace_id,
+      requestId: context.request_id,
+    });
+  }
+
+  /**
+   * Resolves the plan's pinned skills once. Undefined means the plan has no vector, so live matching stays.
+   * An empty vector freezes no skills. A malformed vector or an unresolvable pin fails here.
+   * Nothing has started by then, so no git work or strategy call follows.
+   */
+  private async resolvePlanSkills(
+    context: IPlanContext,
+  ): Promise<Opt<IPlanSkillSnapshot, Reason.OptionalContext>> {
+    const raw = context.frontmatter.resolved_skills;
+    if (raw === undefined) return undefined;
+    const parsed = SkillPinVectorSchema.safeParse(raw);
+    if (!parsed.success) {
+      throw new SkillUnavailableError("", `Plan skill pins are malformed: ${parsed.error.issues[0]?.message}`);
+    }
+    const pins = parsed.data;
+    if (pins.length === 0) return { pins, resolved: [] };
+    const skills = this.options.context?.skills;
+    if (!skills) throw new SkillUnavailableError("", "Plan skill pins cannot be replayed without a skills service");
+    const operation = this.skillOperation(context);
+    const resolved = await skills.resolvePinned(pins, operation);
+    await this.reportPinDrift(skills, resolved, operation, context.trace_id);
+    return { pins, resolved };
+  }
+
+  /** Journals each pin whose current live revision differs from the pinned one, once per pin. */
+  private async reportPinDrift(
+    skills: ISkillsService,
+    resolved: readonly IPinnedSkill[],
+    operation: ISkillOperationContext,
+    traceId: string,
+  ): Promise<void> {
+    for (const { pin } of resolved) {
+      const current = await skills.getSkill(pin.name, operation).catch(() => null);
+      if (current?.id === pin.revision_id) continue;
+      await this.logger.warn(DomainEventType.SkillsPinDrifted, pin.name, {
+        name: pin.name,
+        pinned_revision_id: pin.revision_id,
+        current_revision_id: current?.id ?? null,
+        request_id: operation.requestId,
+      }, traceId);
+    }
+  }
+
+  /** Resolves the skill-trigger tier of deriveTaskType's precedence chain. A pinned plan reads the
+   *  highest-confidence pin that names task types. Without pins it re-runs the skill match. */
+  private async deriveTopSkillTaskTypes(
+    context: IPlanContext,
+    snapshot: Opt<IPlanSkillSnapshot, Reason.OptionalContext>,
+  ): Promise<TaskType[]> {
+    const knownTaskTypes = new Set<string>(Object.values(TaskType));
+    if (snapshot) {
+      const top = snapshot.pins.find((pin) => pin.matched_task_types.length > 0);
+      return (top?.matched_task_types ?? []).filter((value): value is TaskType => knownTaskTypes.has(value));
+    }
     const skills = this.options.context?.skills;
     const requestText = context.frontmatter.subject;
     if (!skills || typeof requestText !== "string" || requestText.length === 0) {
@@ -398,55 +470,37 @@ export class PlanExecutor {
     });
     const topMatch = matches[0];
     const candidateTaskTypes = topMatch?.matchedTriggers.task_types ?? [];
-    const knownTaskTypes = new Set<string>(Object.values(TaskType));
     return candidateTaskTypes.filter((value): value is TaskType => knownTaskTypes.has(value));
   }
 
-  /** Builds the execution path's skill floors from the UNION of the planning run's final
-   *  resolved skill set (persisted on the plan frontmatter — pinned ∪ matched ∪ defaults,
-   *  order first) and the dynamic trigger matches re-run here. Deduplicated, resolved ids
-   *  first; each id is validated as a string before the getSkill lookup. */
+  /** Builds the execution path's skill floors. A pinned plan reads its pinned skills, excluded ones
+   *  included. Without pins only the dynamic trigger matches apply. */
   private async deriveMatchedSkillFloors(
     context: IPlanContext,
+    snapshot: Opt<IPlanSkillSnapshot, Reason.OptionalContext>,
   ): Promise<Array<{ skillId: string; effort?: EffortTier; thinking?: boolean }>> {
     const skills = this.options.context?.skills;
-    if (!skills) return [];
+    if (!snapshot && !skills) return [];
 
-    const resolvedSkillIds = resolvedSkillIdsFromFrontmatter(context.frontmatter.resolved_skill_ids);
-    const matchedSkillIds = typeof context.frontmatter.subject === "string" &&
-        context.frontmatter.subject.length > 0
-      ? await this.dynamicMatchedSkillIds(context, skills)
-      : [];
-    const unionSkillIds = [...resolvedSkillIds, ...matchedSkillIds.filter((id) => !resolvedSkillIds.includes(id))];
-    if (unionSkillIds.length === 0) return [];
-
-    return await Promise.all(
-      unionSkillIds.map(async (skillId) => {
-        const skill = await skills.getSkill(skillId);
-        if (!skill || (skill.effort === undefined && skill.thinking === undefined)) return null;
-        return {
-          skillId,
-          ...(skill.effort !== undefined ? { effort: skill.effort } : {}),
-          ...(skill.thinking !== undefined ? { thinking: skill.thinking } : {}),
-        };
-      }),
-    ).then((entries) =>
-      entries.filter((e) => e !== null) as Array<{
-        skillId: string;
-        effort?: EffortTier;
-        thinking?: boolean;
-      }>
+    const candidates = snapshot
+      ? snapshot.resolved.map((entry) => entry.loaded.skill)
+      : await this.dynamicMatchedSkills(context, skills!);
+    return candidates.flatMap((skill) =>
+      skill.effort === undefined && skill.thinking === undefined ? [] : [{
+        skillId: skill.skill_id,
+        ...(skill.effort !== undefined ? { effort: skill.effort } : {}),
+        ...(skill.thinking !== undefined ? { thinking: skill.thinking } : {}),
+      }]
     );
   }
 
-  /** Re-runs the dynamic skill match against the plan's request subject and returns the
-   *  matched skill ids in match order, deduplicated. */
-  private async dynamicMatchedSkillIds(
-    context: IPlanContext,
-    skills: ISkillsService,
-  ): Promise<string[]> {
+  /** Re-runs the dynamic skill match against the plan's request subject and loads each matched skill,
+   *  in match order, deduplicated. */
+  private async dynamicMatchedSkills(context: IPlanContext, skills: ISkillsService): Promise<ISkill[]> {
+    const requestText = context.frontmatter.subject;
+    if (typeof requestText !== "string" || requestText.length === 0) return [];
     const { matches } = await skills.matchSkills({
-      requestText: String(context.frontmatter.subject),
+      requestText,
       tags: frontmatterTags(context),
       agentRole: context.agent_role,
     });
@@ -454,31 +508,20 @@ export class PlanExecutor {
     for (const match of matches) {
       if (!ids.includes(match.skillId)) ids.push(match.skillId);
     }
-    return ids;
+    const loaded = await Promise.all(ids.map((id) => skills.getSkill(id)));
+    return loaded.filter((skill): skill is ISkill => skill !== null);
   }
 
-  /** Re-runs the same skill match as deriveTopSkillTaskTypes (that one-hot path stays
-   *  untouched), then fetches each match's full ISkill for its `tools`; returns one array
-   *  per match, unioned/intersected with permitted_tools by the caller. */
-  private async deriveMatchedSkillTools(context: IPlanContext): Promise<Array<string[] | undefined>> {
+  /** The `tools` of every skill that applies to this execution, one array per skill. A pinned plan
+   *  reads its pinned skills, and the caller intersects them with permitted_tools. */
+  private async deriveMatchedSkillTools(
+    context: IPlanContext,
+    snapshot: Opt<IPlanSkillSnapshot, Reason.OptionalContext>,
+  ): Promise<Array<string[] | undefined>> {
+    if (snapshot) return snapshot.resolved.map((entry) => entry.loaded.skill.tools);
     const skills = this.options.context?.skills;
-    const requestText = context.frontmatter.subject;
-    if (!skills || typeof requestText !== "string" || requestText.length === 0) {
-      return [];
-    }
-
-    const { matches } = await skills.matchSkills({
-      requestText,
-      tags: frontmatterTags(context),
-      agentRole: context.agent_role,
-    });
-
-    return await Promise.all(
-      matches.map(async (match) => {
-        const skill = await skills.getSkill(match.skillId);
-        return skill?.tools;
-      }),
-    );
+    if (!skills) return [];
+    return (await this.dynamicMatchedSkills(context, skills)).map((skill) => skill.tools);
   }
 
   /** Executes all plan steps sequentially, collecting action reports; returns the last successful commit SHA. */
@@ -488,6 +531,7 @@ export class PlanExecutor {
     git: GitService | null,
     agentExecutor: AgentComposer,
     actionReports: IPlanActionReport[],
+    resolvedSkills: Opt<ISkillPin[], Reason.OptionalContext>,
   ): Promise<string | null> {
     const traceId = context.trace_id;
     const requestId = context.request_id;
@@ -513,6 +557,7 @@ export class PlanExecutor {
               plan: `${PROMPT_PLAN_STEP_TASK_PREFIX}${step.title}${PROMPT_PLAN_STEP_REASONING_PREFIX}${step.content}`,
               portal: portalName,
               full_plan: fullPlan,
+              ...(resolvedSkills ? { resolved_skills: resolvedSkills } : {}),
             },
             {
               agent_role: context.agent_role,
@@ -520,6 +565,7 @@ export class PlanExecutor {
               security_mode: SecurityMode.HYBRID,
               audit_enabled: true,
               native_tools_enabled: this.config.execution?.native_tools_enabled ?? false,
+              ...(resolvedSkills ? { resolved_skills: resolvedSkills } : {}),
             },
           );
         }

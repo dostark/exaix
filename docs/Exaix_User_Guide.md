@@ -1492,9 +1492,6 @@ exactl plan show <plan-id>
 # Approve a plan (moves to Workspace/Active for detection and parsing)
 exactl plan approve <plan-id>
 
-# Approve with skills injection for execution
-exactl plan approve <plan-id> --skills file-ops,testing-best-practices
-
 # Reject a plan with reason
 exactl plan reject <plan-id> --reason "Approach too risky"
 

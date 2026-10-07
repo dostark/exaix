@@ -13,6 +13,7 @@ import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/a
 import type { IAgentFileBlueprint } from "./agent_composer.ts";
 import { buildPortalContextBlock } from "@exaix/core/func";
 import type { ExecutionContextService } from "./execution_context_service.ts";
+import type { IPinnedSkillPrompt } from "./skill_pin_transport.ts";
 import { AGENT_EXECUTION_EXAMPLE_TIME_MS, MAX_USER_INPUT_LENGTH } from "@exaix/core";
 import type { ITool, Opt, Reason } from "@exaix/core/types";
 
@@ -40,6 +41,7 @@ export class PromptBuilder {
     options: IAgentExecutionOptions,
     modelId: string,
     tools?: Opt<ITool[], Reason.OptionalContext>,
+    pinnedSkills?: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
   ): Promise<string> {
     const sanitizedRequest = await this.applyTokenBudget(
       this.sanitizeUserInput(context.request),
@@ -66,7 +68,7 @@ export class PromptBuilder {
       modelId,
     );
     const skillContext = await this.applyTokenBudget(
-      context.skills_context ?? "",
+      pinnedSkills?.text ?? "",
       this.ctx.currentPromptBudget?.sections.skills,
       "skills",
       modelId,

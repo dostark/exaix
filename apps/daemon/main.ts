@@ -675,6 +675,7 @@ if (import.meta.main) {
       portalKnowledge,
       executionMemoryStore: executionMemoryStore,
       embeddings: providerEmbedding,
+      skills: skillsService,
     };
 
     // Initialize health checks for system monitoring

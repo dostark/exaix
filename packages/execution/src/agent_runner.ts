@@ -29,6 +29,7 @@ import {
   PortalOperation,
   SkillMatchSource,
   SkillRenderOutcome,
+  SkillRootKind,
   SkillSubmissionKind,
   TaskComplexity,
 } from "@exaix/core";
@@ -47,9 +48,13 @@ import type { IPortalKnowledgeRequestSignals } from "@exaix/core/func";
 import type { IApplicationContext, ISkillsContext, ISkillsService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import {
+  buildSkillPin,
   createSkillOperationContext,
   type ISkillOperationContext,
+  type ISkillPin,
   type ISkillSubmissionItem,
+  orderSkillPins,
+  skillToContextEntry,
 } from "@exaix/core/skills";
 import type { IExecutionMilestone } from "@exaix/schemas";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
@@ -253,6 +258,9 @@ export interface IAgentExecutionResult {
 
   /** Skills that were matched and injected */
   skillsApplied?: string[];
+
+  /** Durable pins for every selected skill. Absent when skills are off, empty when none were selected. */
+  resolvedSkills?: ISkillPin[];
 }
 
 /**
@@ -472,6 +480,7 @@ export class AgentRunner implements IAgentRunner {
     // One usage row per included skill is written before each provider dispatch. A failed write throws,
     // so no model call follows.
     const skillUsage = this.buildSkillUsagePlan(skillsContext, combinedPrompt, trimmedSkillRender, skillOperation);
+    const resolvedSkills = await this.persistSkillPins(skillsContext, skillUsage, trimmedSkillRender, skillOperation);
 
     // Log prompt assembled event for observability
     this.logActivity(
@@ -584,6 +593,7 @@ export class AgentRunner implements IAgentRunner {
     return {
       ...result,
       skillsApplied: skillIds.length > 0 ? skillIds : undefined,
+      resolvedSkills,
     };
   }
 
@@ -791,6 +801,36 @@ export class AgentRunner implements IAgentRunner {
   }
 
   /**
+   * The durable pin vector for every skill this run selected, ordered by confidence. A skill the budget
+   * dropped stays a pin with `content_included` false. Every pinned snapshot is made durable before the
+   * provider is called, so a failure stops the run. Undefined when skills are off.
+   */
+  private async persistSkillPins(
+    skillsContext: ISkillsContext | null,
+    usage: ISkillUsagePlan | null,
+    trimmed: boolean,
+    operation: ISkillOperationContext,
+  ): Promise<ISkillPin[] | undefined> {
+    if (!this.skillsService || this.disableSkills) return undefined;
+    const included = new Set(usage?.items.map((item) => item.skillName));
+    const pins = orderSkillPins(
+      (skillsContext?.matched ?? []).map((match) =>
+        buildSkillPin(match, {
+          portal: match.rootKind === SkillRootKind.PROJECT ? operation.portal : null,
+          renderMode: match.critical
+            ? SkillRenderOutcome.CRITICAL
+            : trimmed
+            ? SkillRenderOutcome.TRIMMED
+            : SkillRenderOutcome.FULL,
+          contentIncluded: included.has(match.skillId),
+        })
+      ),
+    );
+    await this.skillsService.ensureRevisions(pins.map((pin) => pin.revision_id), operation);
+    return pins;
+  }
+
+  /**
    * Wraps one provider dispatch round. Each invocation, including every retry attempt, records the
    * skill vector under a fresh call id before dispatching. A recording failure is kept so the run can
    * rethrow it unchanged, and no further attempt reaches the provider.
@@ -878,25 +918,13 @@ export class AgentRunner implements IAgentRunner {
     const validSkills = skillsFound.filter((s): s is ISkill => s !== null);
 
     return {
-      matched: validSkills.map((s) => ({
-        skillId: s.skill_id,
-        revisionId: s.id,
-        contentSha256: s.content_sha256,
-        rootKind: s.root_kind,
-        sourcePath: s.path,
-        name: s.title,
-        description: s.description,
-        content: s.instructions,
-        confidence: resolution.matchScores.get(s.skill_id) ?? 0.5,
-        matchedTriggers: resolution.matchedTriggers.get(s.skill_id) ?? {},
-        source: resolution.sources.get(s.skill_id) ?? SkillMatchSource.MATCHED,
-        references: s.references,
-        tags: s.triggers.tags || [],
-        critical: s.critical ?? false,
-        effort: s.effort,
-        thinking: s.thinking,
-        examples: s.examples,
-      })),
+      matched: validSkills.map((s) =>
+        skillToContextEntry(s, {
+          confidence: resolution.matchScores.get(s.skill_id) ?? 0.5,
+          source: resolution.sources.get(s.skill_id) ?? SkillMatchSource.MATCHED,
+          matchedTriggers: resolution.matchedTriggers.get(s.skill_id) ?? {},
+        })
+      ),
       totalAvailable,
       retrievalLatencyMs: Date.now() - startTime,
     };

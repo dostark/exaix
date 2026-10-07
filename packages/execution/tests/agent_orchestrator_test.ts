@@ -54,6 +54,7 @@ import { EventLogger } from "@exaix/core/logger";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { StrategyRegistry } from "@exaix/execution";
+import type { IPinnedSkillPrompt } from "@exaix/execution";
 import { PromptBudgetAllocator } from "@exaix/core/context";
 import { readFixtureTextSync } from "@exaix/testing";
 
@@ -2938,8 +2939,7 @@ Deno.test({
         request: "Do stuff",
         plan: "My plan",
         portal: "P1",
-        skills_context: "S".repeat(200),
-      } as IExecutionContext & { skills_context: string };
+      };
       const options: IAgentExecutionOptions = {
         portal: "P1",
         security_mode: SecurityMode.HYBRID,
@@ -2949,7 +2949,12 @@ Deno.test({
         audit_enabled: true,
       };
 
-      const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
+      const skillsPrompt: IPinnedSkillPrompt = {
+        text: "S".repeat(200),
+        record: () => Promise.resolve(),
+        fit: () => skillsPrompt,
+      };
+      const prompt = await executor.buildExecutionPrompt(blueprint, context, options, skillsPrompt);
       const skillMatch = prompt.match(/--- BEGIN SKILLS ---\n([\s\S]*?)\n--- END SKILLS ---/);
 
       assertExists(skillMatch);
