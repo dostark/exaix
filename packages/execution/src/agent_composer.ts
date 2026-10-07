@@ -37,6 +37,8 @@ import {
   AGENT_EVENT_EXECUTION_FAILED,
   AGENT_EVENT_EXECUTION_STARTED,
   AGENT_EVENT_SECURITY_VIOLATION,
+  type IAllocationHints,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import {
   DEFAULT_MCP_AGENT_ROLE_ID,
@@ -701,7 +703,8 @@ export class AgentComposer {
       // Load the blueprint. Keep MCP and CLI delegation as explicit routes.
       // Use ReAct for all other provider-backed plan steps.
       const _blueprint = await this.loadBlueprint(options.agent_role ?? "", context.trace_id);
-      await this.prepareStepBudget(_blueprint, options, context.trace_id);
+      const pinnedSkills = await this.resolvePinnedSkillPrompt(context, options);
+      await this.prepareStepBudget(_blueprint, options, context.trace_id, pinnedSkills);
 
       const strategyName = this.resolveStrategyName(_blueprint, options);
       // Log execution start
@@ -721,7 +724,6 @@ export class AgentComposer {
       if (this._resolvedCallOptions && "callOptions" in strategy) {
         (strategy as { callOptions?: IModelCallOptions }).callOptions = this._resolvedCallOptions;
       }
-      const pinnedSkills = await this.resolvePinnedSkillPrompt(context, options);
       const validated = await strategy.execute(_blueprint, context, options, pinnedSkills);
 
       // Real usage from the strategy, when reported; otherwise undefined — no heuristic
@@ -831,6 +833,7 @@ export class AgentComposer {
     blueprint: IAgentFileBlueprint,
     options: IAgentExecutionOptions,
     traceId: string,
+    pinnedSkills: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
   ): Promise<void> {
     const effortResolution = this.resolveStepEffort(blueprint, options);
     const projection = projectResolvedCallOptions(effortResolution, {
@@ -843,10 +846,23 @@ export class AgentComposer {
     await this.ctx.allocateBudget(
       this.resolveModelId(blueprint),
       options.request_analysis as IRequestAnalysis | undefined,
-      options.native_tools_enabled && this.provider && providerSupportsNativeConversation(this.provider.id)
-        ? { loopHistoryUsedTokens: options.max_tool_calls * PLANNING_TOOL_CALL_OVERHEAD_TOKENS }
-        : undefined,
+      this.stepAllocationHints(options, pinnedSkills),
     );
+  }
+
+  /** Sections the step expects to fill. An unused section is returned to the others, so pinned skills must be declared. */
+  private stepAllocationHints(
+    options: IAgentExecutionOptions,
+    pinnedSkills: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
+  ): Opt<IAllocationHints, Reason.OptionalInput> {
+    const hints: IAllocationHints = {};
+    if (options.native_tools_enabled && this.provider && providerSupportsNativeConversation(this.provider.id)) {
+      hints.loopHistoryUsedTokens = options.max_tool_calls * PLANNING_TOOL_CALL_OVERHEAD_TOKENS;
+    }
+    if (pinnedSkills && pinnedSkills.text.length > 0) {
+      hints.skillsUsedTokens = Math.ceil(pinnedSkills.text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
+    }
+    return Object.keys(hints).length > 0 ? hints : undefined;
   }
 
   /** Logs output from an agent subprocess. */

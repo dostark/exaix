@@ -97,6 +97,7 @@ import {
   SKILL_EVENT_RESOLVED,
   SKILL_EVENT_RETRIEVAL_FAILED,
   SKILL_EVENT_RETRIEVAL_TIMEOUT,
+  SKILL_MATCH_TIMEOUT_MS,
   SkillRenderMode,
 } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
@@ -864,7 +865,7 @@ export class AgentRunner implements IAgentRunner {
     };
   }
 
-  /** Performs dynamic skill matching with a 500ms timeout guard. */
+  /** Performs dynamic skill matching with a timeout guard. */
   private async performDynamicSkillMatching(
     request: IParsedRequest,
     agentRole: string,
@@ -884,7 +885,7 @@ export class AgentRunner implements IAgentRunner {
 
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     const timeoutPromise = new Promise<{ matches: ISkillMatch[]; totalAvailable: number }>((_, reject) =>
-      timeoutId = setTimeout(() => reject(new Error("Skill matching timed out")), 500)
+      timeoutId = setTimeout(() => reject(new Error("Skill matching timed out")), SKILL_MATCH_TIMEOUT_MS)
     );
 
     try {

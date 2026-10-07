@@ -183,7 +183,14 @@ export async function bootRealDaemon(
   const journalPath = join(workspaceRoot, ".exa", "journal.db");
   const readyBaseline = journalMaxRowid(journalPath);
   const proc = new Deno.Command("deno", {
-    args: ["run", ...(options.denoPermissions ?? ["--allow-all"]), "apps/daemon/main.ts"],
+    args: [
+      "run",
+      "--config",
+      join(REPO_ROOT, "deno.json"),
+      ...(options.denoPermissions ?? ["--allow-all"]),
+      join(REPO_ROOT, "apps", "daemon", "main.ts"),
+    ],
+    cwd: REPO_ROOT,
     stdin: "null",
     stdout: "null",
     stderr: "null",

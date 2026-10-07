@@ -668,6 +668,9 @@ export const PLAN_AMENDMENT_EVENT_REJECTED = "plan.amendment.rejected";
 export const PLAN_AMENDMENT_EVENT_EXPIRED = "plan.amendment.expired";
 export const PLAN_AMENDMENT_EVENT_APPLIED = "plan.amendment.applied";
 
+/** Milliseconds a dynamic skill match may run before the request continues without skills. */
+export const SKILL_MATCH_TIMEOUT_MS = 500;
+
 // Skill event names
 export const SKILL_EVENT_RETRIEVAL_TIMEOUT = "skills.retrieval_timeout";
 export const SKILL_EVENT_RETRIEVAL_FAILED = "skills.retrieval_failed";
