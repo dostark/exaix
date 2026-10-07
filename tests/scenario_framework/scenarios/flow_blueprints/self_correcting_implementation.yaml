@@ -1,0 +1,58 @@
+schema_version: "1.0.0"
+id: self-correcting-implementation
+title: Self-correcting implementation loops back once on a rejected change
+pack: flow_blueprints
+tags: ["subsystem:flows", "entity:self-correcting-implementation.flow", "gate-retry"]
+edition: solo
+request_fixture: fixtures/requests/flow_blueprints/self_correcting_implementation.md
+mode_support: [auto]
+portals:
+  - alias: self-correcting-fixture
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/simple_repo"
+    target_path: "$WORKSPACE_ROOT/self-correcting-fixture"
+    git_init: true
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+    env: { EXA_LLM_PROVIDER: mock, MOCK_STRICT: "1", EXA_CI_MODE: "1" }
+    output_criteria:
+      - id: started
+        kind: command-output-contains
+        contains: [daemon.started]
+  - id: submit
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE"]
+    env: { EXA_RECORDING_LANES: "1" }
+    output_criteria:
+      - id: submitted
+        kind: command-exit-code
+        equals: 0
+  - id: await-terminal
+    type: exactl
+    command: journal
+    args: [wait, --event, request.planned, --since-rowid, "$STEP_BASELINE", --timeout, "60"]
+    timeout_sec: 65
+    output_criteria:
+      - id: planned
+        kind: command-exit-code
+        equals: 0
+  - id: assert-one-loop
+    type: journal-assert
+    action_type: flow.loop.iteration
+    trace_scoped: true
+    expect_count: 1
+    output_criteria:
+      - id: one-loop
+        kind: command-exit-code
+        equals: 0
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]
+    output_criteria:
+      - id: stopped
+        kind: command-exit-code
+        equals: 0

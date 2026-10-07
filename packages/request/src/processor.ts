@@ -656,6 +656,7 @@ export class RequestProcessor {
         // agent steps, or every flow-step LLM call is unkeyed and capture mode refuses it.
         scenarioId: frontmatter.scenario_id,
         stepId: frontmatter.step_id,
+        recordingLanes: frontmatter.recording_lanes === true,
         executionRoot: cycleContext.executionRoot,
         planContextRef: cycleContext.planContextRef,
       });

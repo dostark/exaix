@@ -19,7 +19,7 @@
 
 import type { IFlowStepHandler, IStepExecutionContext } from "./step_handler.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
-import type { IGateEvaluator, Opt, Reason } from "@exaix/core/types";
+import type { IGateEvaluator, IGateResult, IRecordingLane, Opt, Reason } from "@exaix/core/types";
 import { FlowStepType } from "@exaix/core";
 import {
   DEFAULT_SESSION_DELEGATE_CYCLE_CLAIM_MAX_POLLS,
@@ -49,6 +49,7 @@ import { computePlanDigest } from "../plan_digest.ts";
 import type { IBindingGateContext } from "@exaix/schemas";
 import { STEP_KIND_GATE } from "@exaix/ai/bindings/binding_types.ts";
 import { type IFlowEventLogger, toGateConfig } from "../flow_runner.ts";
+import { delegateReviewLane } from "../contracts/flow_recording_context.ts";
 
 export interface ISessionDelegateCycleStepHandlerDeps {
   coordinator: ISessionDelegationCoordinator;
@@ -81,6 +82,8 @@ interface IStepDelegationContext {
    *  The review judge uses the step's bound provider.
    *  Absent when no binding layer exists, the boot provider grades as before. */
   bindingContext?: IBindingGateContext;
+  /** Run-local fixture lane for review judge calls. It is absent outside an opted-in scenario run. */
+  reviewLane?: IRecordingLane;
 }
 
 interface ICompletedCycleStep {
@@ -191,6 +194,7 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
                 snapshot: ctx.stepRequest.bindingSnapshot,
               }
               : undefined,
+            reviewLane: ctx.stepRequest.recording?.lane(delegateReviewLane(ctx.step.id)),
           },
           checkpoint,
         );
@@ -269,6 +273,24 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
       );
     }
     return steps;
+  }
+
+  /** Judges a returned outcome. An opted-in run keys the judge call on the cycle's review lane. */
+  private async reviewOutcome(step: IStepDelegationContext, summary: string): Promise<IGateResult> {
+    const { cycleConfig, bindingContext, reviewLane, parentTraceId, parsedStep } = step;
+    const callSite = reviewLane?.current();
+    const result = await this.deps.gateEvaluator.evaluate(
+      {
+        ...toGateConfig(cycleConfig.review),
+        ...(bindingContext ? { bindingContext } : {}),
+        ...(callSite ? { callMetadata: { traceId: parentTraceId, callSite } } : {}),
+      },
+      summary,
+      parsedStep.sectionText,
+      0,
+    );
+    if (callSite) reviewLane!.consume(callSite);
+    return result;
   }
 
   /** Loads a persisted checkpoint for (parentTraceId, flowStepId) or initializes a fresh one. Rejects a checkpoint
@@ -394,7 +416,6 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
       portalAlias,
       worktreePath,
       artifactRef,
-      bindingContext,
     } = step;
     let state = claim.state;
     let outcome = claim.outcome;
@@ -465,12 +486,7 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
           parsedStep.stepNumber,
         );
       }
-      const gateResult = await this.deps.gateEvaluator.evaluate(
-        bindingContext ? { ...toGateConfig(cycleConfig.review), bindingContext } : toGateConfig(cycleConfig.review),
-        outcome!.summary,
-        parsedStep.sectionText,
-        0,
-      );
+      const gateResult = await this.reviewOutcome(step, outcome!.summary);
       if (!gateResult.passed) {
         await this.deps.claimStore.transition(key, claimState.failed, {
           failureReason: SessionDelegateCycleRejectionReasonSchema.enum.review_failed,

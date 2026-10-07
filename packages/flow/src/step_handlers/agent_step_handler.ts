@@ -7,6 +7,7 @@
  * @related-files [packages/flow/src/step_handlers/step_handler.ts, packages/flow/src/flow_runner.ts]
  */
 
+import { dynamicLane } from "../contracts/flow_recording_context.ts";
 import type { IFlowStepHandler, IStepExecutionContext } from "./step_handler.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { IAgentExecutor, IFlowStepRequest } from "../flow_runner.ts";
@@ -91,6 +92,7 @@ export class AgentStepHandler implements IFlowStepHandler {
       {
         traceId: request.traceId || crypto.randomUUID(),
         ...(this.#config ? { config: this.#config } : {}),
+        ...(stepRequest.recording ? { recordingLane: stepRequest.recording.lane(dynamicLane(step.id)) } : {}),
       },
     );
 

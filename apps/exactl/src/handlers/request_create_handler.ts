@@ -26,6 +26,10 @@ import { DEFAULT_AGENT_ROLE } from "@exaix/core";
 import { RunBindingsStore } from "@exaix/ai/bindings/run_bindings_store.ts";
 import { BindingLockSchema, BindingOverlaySchema, BindOneOffSchema, type IRunBindingsFile } from "@exaix/schemas";
 
+/** The scenario runner opts a request into run-local fixture recording lanes with this variable. */
+const RECORDING_LANES_ENV = "EXA_RECORDING_LANES";
+const RECORDING_LANES_ENABLED = "1";
+
 const VALID_PRIORITIES: RequestPriority[] = [
   RequestPriority.LOW,
   RequestPriority.NORMAL,
@@ -297,6 +301,7 @@ export class RequestCreateHandler extends BaseCommand {
     const stepId = Deno.env.get("EXA_STEP_ID");
     if (scenarioId) frontmatterFields.scenario_id = scenarioId;
     if (stepId) frontmatterFields.step_id = stepId;
+    if (Deno.env.get(RECORDING_LANES_ENV) === RECORDING_LANES_ENABLED) frontmatterFields.recording_lanes = true;
   }
 
   private addModelIntentFrontmatterFields(

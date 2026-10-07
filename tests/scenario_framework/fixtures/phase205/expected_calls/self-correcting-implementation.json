@@ -1,0 +1,68 @@
+{
+  "scenarioId": "self-correcting-implementation",
+  "edition": "solo",
+  "flow": "self-correcting-implementation",
+  "fixtureDir": "fixtures/mock_recordings/phase205/self_correcting",
+  "requestStepId": "submit",
+  "selectedPath": [
+    "plan",
+    "implement",
+    "write-tests",
+    "quality-gate",
+    "report"
+  ],
+  "expectedFailure": null,
+  "gateEvaluations": {
+    "quality-gate": 2
+  },
+  "calls": [
+    {
+      "lane": "plan",
+      "callIndex": 0,
+      "dialect": "agent"
+    },
+    {
+      "lane": "implement--react",
+      "callIndex": 0,
+      "dialect": "react",
+      "toolTurn": true
+    },
+    {
+      "lane": "implement--react",
+      "callIndex": 1,
+      "dialect": "react"
+    },
+    {
+      "lane": "write-tests--react",
+      "callIndex": 0,
+      "dialect": "react"
+    },
+    {
+      "lane": "quality-gate--judge",
+      "callIndex": 0,
+      "dialect": "judge",
+      "verdict": "below"
+    },
+    {
+      "lane": "implement--react",
+      "callIndex": 2,
+      "dialect": "react"
+    },
+    {
+      "lane": "write-tests--react",
+      "callIndex": 1,
+      "dialect": "react"
+    },
+    {
+      "lane": "quality-gate--judge",
+      "callIndex": 1,
+      "dialect": "judge",
+      "verdict": "above"
+    },
+    {
+      "lane": "report",
+      "callIndex": 0,
+      "dialect": "agent"
+    }
+  ]
+}

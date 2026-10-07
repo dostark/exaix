@@ -1,0 +1,29 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Report fixture",
+  "response": "<thought>Report the accepted change.</thought><content>{\"subject\": \"Accepted guarded implementation\", \"description\": \"The quality gate accepted the second implementation and its tests.\", \"steps\": [{\"step\": 1, \"title\": \"Accepted guarded implementation\", \"description\": \"IMPLEMENTATION V2 with TESTS V2 accepted by the quality gate.\"}]}</content>",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "IMPLEMENTATION V2",
+      "TESTS V2",
+      "Accepted: the guard"
+    ],
+    "promptExcludes": [
+      "IMPLEMENTATION V1",
+      "TESTS V1"
+    ]
+  },
+  "callSite": {
+    "scenarioId": "self-correcting-implementation",
+    "stepId": "submit",
+    "flowStepId": "report",
+    "callIndex": 0
+  }
+}

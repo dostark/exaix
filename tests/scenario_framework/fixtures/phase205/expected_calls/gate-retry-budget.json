@@ -1,0 +1,28 @@
+{
+  "scenarioId": "gate-retry-budget",
+  "edition": "solo",
+  "flow": "gate-retry-budget",
+  "fixtureDir": "fixtures/mock_recordings/phase205/gates",
+  "requestStepId": "submit",
+  "selectedPath": [
+    "draft",
+    "gate"
+  ],
+  "expectedFailure": "flow_retry_budget_exceeded",
+  "gateEvaluations": {
+    "gate": 1
+  },
+  "calls": [
+    {
+      "lane": "draft",
+      "callIndex": 0,
+      "dialect": "agent"
+    },
+    {
+      "lane": "gate--judge",
+      "callIndex": 0,
+      "dialect": "judge",
+      "verdict": "below"
+    }
+  ]
+}

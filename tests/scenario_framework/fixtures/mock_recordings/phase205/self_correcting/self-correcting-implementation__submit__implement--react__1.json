@@ -1,0 +1,25 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Implement fixture",
+  "response": "THOUGHT: The entry point logs unconditionally.\nSTATUS: COMPLETE\nSUMMARY: IMPLEMENTATION V1: logs the greeting without an argument guard.",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "Tool read_file result:",
+      "simple_repo/src/main"
+    ],
+    "promptExcludes": []
+  },
+  "callSite": {
+    "scenarioId": "self-correcting-implementation",
+    "stepId": "submit",
+    "flowStepId": "implement--react",
+    "callIndex": 1
+  }
+}

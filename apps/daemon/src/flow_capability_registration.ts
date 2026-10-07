@@ -8,7 +8,12 @@
  */
 import { CAP_VOTING, type ICapabilityModule, isCapabilityEligible } from "@exaix/core/composer";
 import type { IExecutor } from "@exaix/core/types";
-import { getInstalledFlowCapabilities, type IAgentExecutor, type IFlowStepHandlerRegistry } from "@exaix/flow";
+import {
+  getInstalledFlowCapabilities,
+  type IAgentExecutor,
+  type IFlowStepHandlerRegistry,
+  voterLane,
+} from "@exaix/flow";
 
 export function registerFlowCapabilityModules(
   edition: string,
@@ -24,7 +29,16 @@ export function registerFlowCapabilityModules(
 export function createVotingExecutor(agentExecutor: IAgentExecutor): IExecutor {
   return {
     run: async (blueprint, prompt, context) => {
-      const result = await agentExecutor.run(blueprint, { ...context, userPrompt: prompt, context: {} });
+      const { runnerIndex, ...flowContext } = context ?? {};
+      const voterRecording = flowContext.recording && flowContext.flowStepId && runnerIndex !== undefined
+        ? { recordingLaneId: voterLane(flowContext.flowStepId, runnerIndex) }
+        : {};
+      const result = await agentExecutor.run(blueprint, {
+        ...flowContext,
+        ...voterRecording,
+        userPrompt: prompt,
+        context: {},
+      });
       return { content: result.content };
     },
   };

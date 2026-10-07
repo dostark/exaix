@@ -1,0 +1,28 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Judge fixture",
+  "response": "{\"criteriaScores\": {\"code_correctness\": {\"score\": 1.0, \"reasoning\": \"Accepted: the guard and its test are present.\", \"issues\": []}, \"has_tests\": {\"score\": 1.0, \"reasoning\": \"Accepted: the guard and its test are present.\", \"issues\": []}, \"task_fulfillment\": {\"score\": 1.0, \"reasoning\": \"Accepted: the guard and its test are present.\", \"issues\": []}}, \"feedback\": \"Accepted: the guard and its test are present.\", \"suggestions\": []}",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "IMPLEMENTATION V2",
+      "TESTS V2"
+    ],
+    "promptExcludes": [
+      "IMPLEMENTATION V1",
+      "TESTS V1"
+    ]
+  },
+  "callSite": {
+    "scenarioId": "self-correcting-implementation",
+    "stepId": "submit",
+    "flowStepId": "quality-gate--judge",
+    "callIndex": 1
+  }
+}

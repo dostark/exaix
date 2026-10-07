@@ -13,6 +13,7 @@ import type { IBindingRunSnapshot } from "@exaix/schemas";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { JSONValue } from "@exaix/core";
+import type { IRecordingLaneSource } from "@exaix/core/types";
 import type { IConditionContext } from "../condition_evaluator.ts";
 
 /** Context passed to a flow step handler's execute() — carries the step, request, flow state, and runtime services it needs. */
@@ -60,6 +61,8 @@ export interface IStepExecutionContext {
     readonly flowId?: string;
     readonly flowOutputKind?: "branch-json";
     readonly bindingSnapshot?: IBindingRunSnapshot;
+    /** Run-local fixture recording allocator of an opted-in scenario run. */
+    readonly recording?: IRecordingLaneSource;
     readonly requestAnalysis?: IRequestAnalysis;
     readonly skills?: readonly string[];
     readonly sharedNamespace?: Readonly<Record<string, string>>;

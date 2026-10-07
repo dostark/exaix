@@ -18,7 +18,7 @@
   "callSite": {
     "scenarioId": "architecture-decision",
     "stepId": "submit",
-    "flowStepId": "vote",
+    "flowStepId": "vote--voter-1",
     "callIndex": 0
   }
 }

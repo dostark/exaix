@@ -252,6 +252,8 @@ export interface ILlmClient {
     nativeConversation?: INativeConversationSnapshot;
     flowStepEffort?: EffortDeclaration;
     flowStepThinking?: boolean | "auto";
+    /** Fixture call site of this reasoning turn, from the run's DYNAMIC lane. */
+    callSite?: ICallSite;
   }): Promise<{
     done: boolean;
     tool?: McpToolName;

@@ -1,0 +1,41 @@
+{
+  "scenarioId": "architecture-decision",
+  "edition": "team",
+  "flow": "architecture-decision",
+  "fixtureDir": "fixtures/mock_recordings/phase205/voting",
+  "requestStepId": "submit",
+  "selectedPath": [
+    "context",
+    "vote",
+    "adr"
+  ],
+  "expectedFailure": null,
+  "gateEvaluations": {},
+  "calls": [
+    {
+      "lane": "context--react",
+      "callIndex": 0,
+      "dialect": "react"
+    },
+    {
+      "lane": "vote--voter-0",
+      "callIndex": 0,
+      "dialect": "agent"
+    },
+    {
+      "lane": "vote--voter-1",
+      "callIndex": 0,
+      "dialect": "agent"
+    },
+    {
+      "lane": "vote--voter-2",
+      "callIndex": 0,
+      "dialect": "agent"
+    },
+    {
+      "lane": "adr",
+      "callIndex": 0,
+      "dialect": "agent"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
   "promptPreview": "Review this change.",
-  "response": "{\"criteriaScores\": {\"code_correctness\": {\"score\": 1, \"reasoning\": \"Accepted\", \"issues\": []}}, \"feedback\": \"Accepted\", \"suggestions\": []}",
+  "response": "{\"criteriaScores\": {\"code_correctness\": {\"score\": 0.2, \"reasoning\": \"Required change is missing\", \"issues\": []}}, \"feedback\": \"Required change is missing\", \"suggestions\": []}",
   "model": "phase205-judge-fixture",
   "tokens": {
     "input": 100,
@@ -11,12 +11,12 @@
   "callSite": {
     "scenarioId": "gate-retry",
     "stepId": "submit",
-    "flowStepId": "gate",
-    "callIndex": 1
+    "flowStepId": "gate--judge",
+    "callIndex": 0
   },
   "expectedInput": {
     "promptIncludes": [
-      "Draft 2",
+      "Draft 1",
       "code_correctness"
     ]
   }

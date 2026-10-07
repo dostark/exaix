@@ -27,6 +27,8 @@ import type {
   IApplicationContext,
   IDogfoodContextPort,
   IFlowWorktreeCoordinator,
+  IRecordingLane,
+  IRecordingLaneSource,
   Opt,
   Reason,
 } from "@exaix/core/types";
@@ -44,7 +46,13 @@ import {
   type ModelResolver,
   STEP_KIND_AGENT,
 } from "@exaix/ai";
-import { COMPLEXITY_SOURCE_ANALYSIS, COMPLEXITY_SOURCE_DEFAULT, taskComplexityFromAnalysis } from "@exaix/ai";
+import {
+  COMPLEXITY_SOURCE_ANALYSIS,
+  COMPLEXITY_SOURCE_DEFAULT,
+  RecordingLaneProvider,
+  taskComplexityFromAnalysis,
+} from "@exaix/ai";
+import { strategyLane } from "./contracts/flow_recording_context.ts";
 import type { EffortDeclaration, IFixedModelClient, SessionTool, ThinkingDeclaration } from "@exaix/schemas";
 import type { TaskComplexity } from "@exaix/core";
 import type { IAgentExecutionOptionsInput, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
@@ -75,6 +83,7 @@ interface IParsedRequest {
   flowId?: string;
   flowStepId?: string;
   flowOutputKind?: "branch-json";
+  recordingLane?: IRecordingLane;
   flowStepEffort?: EffortDeclaration;
   flowStepThinking?: ThinkingDeclaration;
   bindingEffort?: EffortDeclaration;
@@ -158,6 +167,14 @@ function ensurePlanJson(content: string): string {
   }
 }
 
+/** Keys each strategy turn by the run lane when the run opted into recording lanes. */
+function withRecordingLane(
+  provider: Opt<IModelProvider, Reason.OptionalDependency>,
+  lane: Opt<IRecordingLane, Reason.OptionalContext>,
+): Opt<IModelProvider, Reason.OptionalDependency> {
+  return provider && lane ? new RecordingLaneProvider(provider, lane) : provider;
+}
+
 /** Wraps an IAgentRunner (or compatible IRunner) into FlowRunner's IAgentExecutor interface. */
 export class AgentComposerAdapter {
   private loader: IBlueprintLoader;
@@ -172,6 +189,16 @@ export class AgentComposerAdapter {
     private bindingService?: Opt<ModelBindingService, Reason.OptionalDependency>,
   ) {
     this.loader = new IBlueprintLoader({ blueprintsPath });
+  }
+
+  /** The fixture lane a provider-backed strategy step records its turns on. A CLI delegate is protocol-fixtured. */
+  static strategyRecordingLane(
+    recording: Opt<IRecordingLaneSource, Reason.OptionalContext>,
+    flowStepId: Opt<string, Reason.OptionalContext>,
+    strategy: string,
+  ): IRecordingLane | undefined {
+    if (!recording || !flowStepId || strategy === ExecutionStrategyName.CLI_DELEGATE) return undefined;
+    return recording.lane(strategyLane(flowStepId, strategy));
   }
 
   async hasBlueprint(agentRole: string): Promise<boolean> {
@@ -198,6 +225,9 @@ export class AgentComposerAdapter {
       flowId: request.flowId,
       flowStepId: request.flowStepId,
       flowOutputKind: request.flowOutputKind,
+      recordingLane: request.flowStepId
+        ? request.recording?.lane(request.recordingLaneId ?? request.flowStepId)
+        : undefined,
       flowStepEffort: request.effort,
       flowStepThinking: request.thinking,
       taskComplexity: taskComplexityFromAnalysis(analysis?.complexity),
@@ -269,6 +299,7 @@ export class AgentComposerAdapter {
     // A bound cli-delegate tool launches on strategy cli_delegate.
     // Never resolved after the run snapshot, so an unbound step keeps the boot provider.
     const boundResolution = await this.resolveStrategyBinding(agentRole, request, strategy, provider);
+    const recordingLane = AgentComposerAdapter.strategyRecordingLane(request.recording, request.flowStepId, strategy);
 
     const traceId = request.traceId ?? crypto.randomUUID();
     const pathResolver = new PathResolver(config, { traceId });
@@ -299,7 +330,7 @@ export class AgentComposerAdapter {
       logger,
       pathResolver,
       permissions,
-      provider: boundResolution.effectiveProvider,
+      provider: withRecordingLane(boundResolution.effectiveProvider, recordingLane),
       toolRegistry,
       modelResolver,
       strategyRegistry,

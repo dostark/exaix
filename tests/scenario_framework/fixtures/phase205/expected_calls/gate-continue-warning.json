@@ -1,0 +1,28 @@
+{
+  "scenarioId": "gate-continue-warning",
+  "edition": "solo",
+  "flow": "gate-continue-warning",
+  "fixtureDir": "fixtures/mock_recordings/phase205/gates",
+  "requestStepId": "submit",
+  "selectedPath": [
+    "gate",
+    "after"
+  ],
+  "expectedFailure": null,
+  "gateEvaluations": {
+    "gate": 1
+  },
+  "calls": [
+    {
+      "lane": "gate--judge",
+      "callIndex": 0,
+      "dialect": "judge",
+      "verdict": "below"
+    },
+    {
+      "lane": "after",
+      "callIndex": 0,
+      "dialect": "agent"
+    }
+  ]
+}

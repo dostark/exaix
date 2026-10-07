@@ -7,6 +7,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { FlowGateAction, FlowGateOnFail } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { FlowGateHaltedError, GateEvaluator, GateStepHandler } from "@exaix/flow";
+import type { IFlowJudgeCallMetadata, IJudgeInvoker } from "@exaix/core/types";
 import {
   GATE_FEEDBACK,
   GATE_SCORE,
@@ -75,4 +76,22 @@ Deno.test("[wrapper] retry requires the runner instead of returning low-scoring 
   });
   const error = await assertRejects(() => handler.execute(gateTestContext(gateTestFlow(FlowGateOnFail.RETRY))));
   assertEquals((error as Error & { code: string }).code, "gate_retry_requires_runner");
+});
+
+Deno.test("[recording] each gate evaluation replays on the judge lane at index attempt minus one", async () => {
+  const inner = new GateTestJudge();
+  const sites: Array<IFlowJudgeCallMetadata["callSite"]> = [];
+  const judge: IJudgeInvoker = {
+    evaluate: (role, content, criteria, _context, _binding, metadata) => {
+      sites.push(metadata?.callSite);
+      return inner.evaluate(role, content, criteria);
+    },
+  };
+  const handler = new GateStepHandler({ gateEvaluator: new GateEvaluator(judge), eventLogger: new GateTestLogger() });
+  await handler.evaluateGate(gateTestContext(), 1);
+  await handler.evaluateGate(gateTestContext(), 2);
+  assertEquals(sites, [
+    { scenarioId: "gate-halt", stepId: "submit", flowStepId: "gate--judge", callIndex: 0 },
+    { scenarioId: "gate-halt", stepId: "submit", flowStepId: "gate--judge", callIndex: 1 },
+  ]);
 });

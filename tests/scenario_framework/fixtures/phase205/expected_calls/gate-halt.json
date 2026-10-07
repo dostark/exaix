@@ -1,0 +1,22 @@
+{
+  "scenarioId": "gate-halt",
+  "edition": "solo",
+  "flow": "gate-halt",
+  "fixtureDir": "fixtures/mock_recordings/phase205/gates",
+  "requestStepId": "submit",
+  "selectedPath": [
+    "gate"
+  ],
+  "expectedFailure": "gate_halted",
+  "gateEvaluations": {
+    "gate": 1
+  },
+  "calls": [
+    {
+      "lane": "gate--judge",
+      "callIndex": 0,
+      "dialect": "judge",
+      "verdict": "below"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "scenarioId": "architecture-decision-solo",
+  "edition": "solo",
+  "flow": "architecture-decision",
+  "fixtureDir": "fixtures/mock_recordings/phase205/voting",
+  "requestStepId": "submit",
+  "selectedPath": [],
+  "expectedFailure": "capability_unavailable",
+  "gateEvaluations": {},
+  "calls": []
+}

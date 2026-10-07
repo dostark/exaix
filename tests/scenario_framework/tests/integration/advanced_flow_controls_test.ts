@@ -1,7 +1,8 @@
 /**
  * @module AdvancedFlowControlsTest
  * @path tests/scenario_framework/tests/integration/advanced_flow_controls_test.ts
- * @description Executes halt and warning controls on real Solo daemons with strict fixtures.
+ * @description Executes Phase 205 flow controls and blueprints on real daemons with strict keyed fixtures.
+ *   Each case reconciles its observed model calls and started steps with its expected-call manifest.
  * @architectural-layer Test
  * @dependencies [@exaix/core, @exaix/portal, @exaix/testing]
  * @related-files [tests/scenario_framework/scenarios/agent_flows/gate_halt.yaml, tests/scenario_framework/scenarios/agent_flows/gate_continue_warning.yaml]
@@ -14,6 +15,7 @@ import { withEnv } from "@exaix/testing";
 import { runSyntheticScenario } from "../../runner/synthetic_runner.ts";
 import { loadScenarioActivities } from "../../runner/provider_live_evidence.ts";
 import { ScenarioExecutionMode } from "../../schema/step_schema.ts";
+import { loadManifest } from "../helpers/expected_call_manifest.ts";
 
 const FRAMEWORK_HOME = new URL("../../", import.meta.url).pathname;
 const REPO_ROOT = new URL("../../../../", import.meta.url).pathname;
@@ -21,15 +23,16 @@ const OUTPUT_HOME = join(FRAMEWORK_HOME, "output", "phase205", "step1");
 const PROMPT_TOKENS = 100;
 const COMPLETION_TOKENS = 200;
 for (
-  const [file, scenarioId, action, status, calls, phaseStep, evaluations, iterations, edition = "solo"] of [
-    ["gate_halt", "gate-halt", "halted", "failed", 1, 1, 1, 0],
-    ["gate_continue_warning", "gate-continue-warning", "continued-with-warning", "planned", 2, 1, 1, 0],
-    ["gate_retry", "gate-retry", "passed", "planned", 5, 2, 2, 1],
-    ["gate_retry_exhausted", "gate-retry-exhausted", "halted", "failed", 6, 2, 3, 2],
-    ["gate_retry_budget", "gate-retry-budget", "retry", "failed", 2, 2, 1, 0],
-    ["branch_routing", "branch-routing", "bug", "planned", 4, 3, 0, 0],
-    ["architecture_decision", "architecture-decision", "majority", "planned", 5, 4, 0, 0, "team"],
-    ["architecture_decision_solo", "architecture-decision-solo", "unavailable", "failed", 0, 4, 0, 0, "solo"],
+  const [file, scenarioId, action, status, phaseStep, evaluations, iterations, edition = "solo"] of [
+    ["gate_halt", "gate-halt", "halted", "failed", 1, 1, 0],
+    ["gate_continue_warning", "gate-continue-warning", "continued-with-warning", "planned", 1, 1, 0],
+    ["gate_retry", "gate-retry", "passed", "planned", 2, 2, 1],
+    ["gate_retry_exhausted", "gate-retry-exhausted", "halted", "failed", 2, 3, 2],
+    ["gate_retry_budget", "gate-retry-budget", "retry", "failed", 2, 1, 0],
+    ["branch_routing", "branch-routing", "bug", "planned", 3, 0, 0],
+    ["architecture_decision", "architecture-decision", "majority", "planned", 4, 0, 0, "team"],
+    ["architecture_decision_solo", "architecture-decision-solo", "unavailable", "failed", 4, 0, 0, "solo"],
+    ["self_correcting_implementation", "self-correcting-implementation", "passed", "planned", 5, 2, 1],
   ] as const
 ) {
   Deno.test({
@@ -38,6 +41,9 @@ for (
     sanitizeOps: false,
     sanitizeResources: false,
     async fn() {
+      const expected = await loadManifest(FRAMEWORK_HOME, scenarioId);
+      const calls = expected.calls.length;
+      const blueprint = phaseStep >= 4;
       const workspaceRoot = await Deno.makeTempDir({ prefix: `phase205-${scenarioId}-` });
       const outputDir = join(OUTPUT_HOME, "..", `step${phaseStep}`, scenarioId);
       await Deno.mkdir(outputDir, { recursive: true });
@@ -118,15 +124,7 @@ default_model = "mock"
 [ai.mock]
 strategy = "recorded"
 strict = true
-fixtures_dir = "${
-            join(
-              FRAMEWORK_HOME,
-              "fixtures",
-              "mock_recordings",
-              "phase205",
-              phaseStep === 4 ? "voting" : file === "branch_routing" ? "branches" : "gates",
-            )
-          }"
+fixtures_dir = "${join(FRAMEWORK_HOME, expected.fixtureDir)}"
 ${
             file === "gate_retry_budget"
               ? `
@@ -155,7 +153,7 @@ enabled = false
         }, async () => {
           run = await runSyntheticScenario({
             frameworkHome: FRAMEWORK_HOME,
-            scenarioPath: `scenarios/${phaseStep === 4 ? "flow_blueprints" : "agent_flows"}/${file}.yaml`,
+            scenarioPath: `scenarios/${blueprint ? "flow_blueprints" : "agent_flows"}/${file}.yaml`,
             workspaceRoot,
             outputDir,
             mode: ScenarioExecutionMode.AUTO,
@@ -173,6 +171,10 @@ enabled = false
         assertEquals(created.length, 1);
         const traceId = created[0].trace_id;
         const activities = journal.activities.filter((row) => row.trace_id === traceId);
+        const started = activities.filter((row) => row.action_type === "flow.step.started").map((row) =>
+          (JSON.parse(row.payload) as { stepId: string }).stepId
+        );
+        assertEquals([...new Set(started)], expected.selectedPath, "started steps match the manifest path");
         const gates = activities.filter((row) => row.action_type === "flow.gate.evaluated");
         assertEquals(gates.length, evaluations);
         assertEquals(activities.filter((row) => row.action_type === "flow.loop.iteration").length, iterations);
@@ -253,7 +255,7 @@ enabled = false
         const downstream = activities.filter((row) =>
           row.action_type === "flow.step.started" &&
           (JSON.parse(row.payload) as { stepId: string }).stepId ===
-            (phaseStep === 4 ? "adr" : file === "branch_routing" ? "join" : "after")
+            (phaseStep === 4 ? "adr" : phaseStep === 5 ? "report" : file === "branch_routing" ? "join" : "after")
         );
         assertEquals(downstream.length, status === "failed" ? 0 : 1);
         const failed = activities.filter((row) => row.action_type === "flow.failed");
@@ -286,7 +288,7 @@ enabled = false
           await new PathResolver(config).resolve(`@Workspace/Requests/${requestNames[0]}`),
         );
         assertStringIncludes(content, `status: ${status}`);
-        if (phaseStep === 4 && edition === "team") {
+        if (blueprint && status === "planned") {
           const planNames: string[] = [];
           for await (const entry of Deno.readDir(join(workspaceRoot, "Workspace", "Plans"))) {
             if (entry.isFile && entry.name.endsWith(".md")) planNames.push(entry.name);
@@ -295,7 +297,7 @@ enabled = false
           const plan = await Deno.readTextFile(
             await new PathResolver(config).resolve(`@Workspace/Plans/${planNames[0]}`),
           );
-          assertStringIncludes(plan, "SQLite majority ADR");
+          assertStringIncludes(plan, phaseStep === 4 ? "SQLite majority ADR" : "Accepted guarded implementation");
         }
         if (phaseStep !== 4) assert(generations.every((row) => row.completion_tokens === COMPLETION_TOKENS));
       } finally {

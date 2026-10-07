@@ -30,6 +30,7 @@ import type {
 } from "@exaix/session/session_delegation.ts";
 import { createInMemorySessionDelegateCycleClaimStore } from "@exaix/session/session_delegate_cycle_claim_store.ts";
 import { createInMemorySessionDelegateCycleStore } from "@exaix/session/session_delegate_cycle_store.ts";
+import { createFlowRecordingContext } from "@exaix/flow";
 
 function stepHeading(n: number): string {
   return `## Step ${n}\n\n**Actions:**\n- do ${n}\n\n\`\`\`yaml\n# step-manifest\nstep: ${n}\ntitle: Step ${n}\n\`\`\`\n`;
@@ -308,4 +309,38 @@ Deno.test("[security] a plan exceeding the step-count ceiling fails before the f
 
   await assertRejects(() => handler.execute(makeCtx()));
   assertEquals(coordinator.calls.length, 0, "no delegation may launch for an excessive step count");
+});
+
+// Recording lanes
+
+Deno.test("[recording] each delegated review is a keyed judge call on the cycle's review lane", async () => {
+  const configs: IGateConfig[] = [];
+  const gateEvaluator: IGateEvaluator = {
+    evaluate: (config) => {
+      configs.push(config);
+      return new AlwaysPassGateEvaluator().evaluate();
+    },
+  };
+  const handler = new SessionDelegateCycleStepHandler({
+    coordinator: new RecordingCoordinator((sequence) => completedOutcome(sequence)),
+    planContextResolver: new FakeResolver(nStepPlan(2)),
+    gateEvaluator,
+    eventLogger: new NoOpFlowEventLogger(),
+    claimStore: createInMemorySessionDelegateCycleClaimStore(),
+    cycleStore: createInMemorySessionDelegateCycleStore(),
+  });
+  const base = makeCtx();
+  const recording = createFlowRecordingContext({ scenarioId: "cycle", stepId: "submit", enabled: true });
+  const ctx: IStepExecutionContext = {
+    ...base,
+    stepRequest: { ...base.stepRequest, scenarioId: "cycle", stepId: "submit", flowStepId: "next-steps", recording },
+  };
+
+  await handler.execute(ctx);
+
+  assertEquals(configs.map((config) => config.callMetadata?.callSite), [
+    { scenarioId: "cycle", stepId: "submit", flowStepId: "next-steps--delegate-review", callIndex: 0 },
+    { scenarioId: "cycle", stepId: "submit", flowStepId: "next-steps--delegate-review", callIndex: 1 },
+  ]);
+  assertEquals(configs.map((config) => config.callMetadata?.traceId), [ctx.request.traceId, ctx.request.traceId]);
 });

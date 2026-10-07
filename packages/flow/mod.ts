@@ -36,6 +36,7 @@ export type { IStepDurabilityStore } from "./src/contracts/step_durability.ts";
 export type { IStepExecutionRecord } from "./src/contracts/step_durability.ts";
 export type { IStepReplayPolicy } from "./src/contracts/step_durability.ts";
 export { DefaultStepReplayPolicy } from "./src/contracts/step_durability.ts";
+export type { IFlowRecordingContext, IFlowRecordingContextOptions } from "./src/contracts/flow_recording_context.ts";
 
 export * from "./src/wait_states/mod.ts";
 export { mapPresetToSize } from "./src/preset_mapper.ts";
@@ -55,6 +56,15 @@ export { FlowAbortError, FlowExecutionError, FlowRunner, toGateConfig } from "./
 export { FlowCapabilityUnavailableError, getInstalledFlowCapabilities } from "./src/flow_capabilities.ts";
 export { StepContentHasher } from "./src/step_content_hasher.ts";
 export { FlowRuntimeValidator } from "./src/flow_runtime_validator.ts";
+export {
+  createFlowRecordingContext,
+  delegateReviewLane,
+  dynamicLane,
+  judgeLane,
+  reactLane,
+  strategyLane,
+  voterLane,
+} from "./src/contracts/flow_recording_context.ts";
 export {
   FlowCheckpointCoordinator,
   type IFlowCheckpointCoordinator,

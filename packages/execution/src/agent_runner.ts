@@ -102,7 +102,7 @@ import {
 } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IRetryContext, IRetryPolicy, IRetryPolicyConfig, IRetryResult } from "@exaix/core/request";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { IRecordingLane, Opt, Reason } from "@exaix/core/types";
 import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
 import { FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION } from "@exaix/core";
 
@@ -230,6 +230,8 @@ export interface IParsedRequest {
    *  scopes call-index assignment per flow step so concurrent steps in the same parallel
    *  wave cannot collide on the same index. Absent for non-flow calls. */
   flowStepId?: string;
+  /** Run-local fixture lane from an opted-in flow run. It replaces the runner's shared counter. */
+  recordingLane?: Opt<IRecordingLane, Reason.OptionalContext>;
   /** Flow step's own effort declaration, set by AgentComposerAdapter for declared flow
    *  steps (GAP-4) — distinct from request-level `effort`. */
   flowStepEffort?: EffortDeclaration;
@@ -360,6 +362,25 @@ function readSuppressedSkillIds(): Set<string> {
 
 // Agent Runner Service
 
+/** Remembers which run lane issued each explicit call site until its response is consumed. */
+class LaneCallSites {
+  readonly #lanes = new WeakMap<ICallSite, IRecordingLane>();
+
+  track(callSite: ICallSite, lane: IRecordingLane): ICallSite {
+    this.#lanes.set(callSite, lane);
+    return callSite;
+  }
+
+  /** Advances the issuing lane. Returns false for a call site that the shared counter owns. */
+  consume(callSite: ICallSite): boolean {
+    const lane = this.#lanes.get(callSite);
+    if (!lane) return false;
+    lane.consume(callSite);
+    this.#lanes.delete(callSite);
+    return true;
+  }
+}
+
 /** Combines Blueprint (system prompt) with IParsedRequest (user prompt), executes via an
  *  LLM provider, and parses the structured XML response — with retry/recovery, output
  *  validation, and the Skills Architecture layered in. */
@@ -378,11 +399,14 @@ export class AgentRunner implements IAgentRunner {
   /** Next call index per (scenarioId, stepId), for fixture replay addressing.
    *  Incremented once per consumed response — a retried logical call keeps its index. */
   private callIndexByCallSite = new Map<string, number>();
+  /** Explicit run-lane call sites awaiting consumption. They never touch the shared counter. */
+  private laneCallSites = new LaneCallSites();
 
   /** Return an invocation-local runner with the same dependencies and a bound model. */
   withProvider(provider: IModelProvider, selectedModel: ISelectedModelIdentity): AgentRunner {
     const sibling = new AgentRunner(this.planAdapter, provider, { ...this.config, selectedModel });
     sibling.callIndexByCallSite = this.callIndexByCallSite;
+    sibling.laneCallSites = this.laneCallSites;
     return sibling;
   }
 
@@ -966,6 +990,7 @@ export class AgentRunner implements IAgentRunner {
    *  call index for (scenarioId, stepId, flowStepId); flowStepId scopes the counter so
    *  concurrent flow steps in the same parallel wave cannot collide on one callIndex. */
   private resolveCallSite(request: IParsedRequest): ICallSite | undefined {
+    if (request.recordingLane) return this.laneCallSites.track(request.recordingLane.current(), request.recordingLane);
     if (!request.scenarioId || !request.stepId) return undefined;
     const key = this.callSiteCounterKey(request.scenarioId, request.stepId, request.flowStepId);
     const callIndex = this.callIndexByCallSite.get(key) ?? 0;
@@ -984,6 +1009,7 @@ export class AgentRunner implements IAgentRunner {
    *  before the retry loop started, so only a subsequent run() sees the new index. */
   private markCallSiteConsumed(callSite: Opt<ICallSite, Reason.OptionalContext>): void {
     if (!callSite) return;
+    if (this.laneCallSites.consume(callSite)) return;
     const key = this.callSiteCounterKey(callSite.scenarioId, callSite.stepId, callSite.flowStepId);
     this.callIndexByCallSite.set(key, callSite.callIndex + 1);
   }

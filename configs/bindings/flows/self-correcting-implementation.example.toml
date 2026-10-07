@@ -1,0 +1,21 @@
+schema = 1
+
+# Merge with an operator catalog that defines strong-service and light-service.
+# The plan and the quality gate run on the strong service; the loop body and report run on the light one.
+[bindings."flow:self-correcting-implementation/step:plan"]
+service = "strong-service"
+effort = "high"
+
+[bindings."flow:self-correcting-implementation/step:quality-gate"]
+service = "strong-service"
+effort = "high"
+
+[bindings."flow:self-correcting-implementation/step:implement"]
+service = "light-service"
+
+[bindings."flow:self-correcting-implementation/step:write-tests"]
+service = "light-service"
+
+[bindings."flow:self-correcting-implementation/step:report"]
+service = "light-service"
+effort = "low"

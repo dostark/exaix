@@ -134,7 +134,8 @@ import {
 import type { IStepDurabilityStore, IStepExecutionRecord, IStepReplayPolicy } from "./contracts/step_durability.ts";
 import { DefaultStepReplayPolicy } from "./contracts/step_durability.ts";
 import type { IWaitStateService } from "./wait_states/wait_state_service.ts";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { IRecordingLaneSource, Opt, Reason } from "@exaix/core/types";
+import { createFlowRecordingContext, type IFlowRecordingContext } from "./contracts/flow_recording_context.ts";
 
 /**
  * Interface for agent executors (IAgentRunner or similar)
@@ -177,6 +178,8 @@ export interface IFlowRunner {
       requestPath?: string;
       /** SHA-256 of the exact request bytes read from `requestPath` by the daemon. */
       requestSha256?: string;
+      /** True when the scenario request opted into run-local fixture recording lanes. */
+      recordingLanes?: boolean;
     },
   ): Promise<IFlowResult>;
 }
@@ -199,6 +202,10 @@ export interface IFlowStepRequest {
   flowId?: string;
   flowOutputKind?: "branch-json";
   bindingSnapshot?: IBindingRunSnapshot;
+  /** Run-local fixture recording allocator of an opted-in scenario run. */
+  recording?: IRecordingLaneSource;
+  /** Recording lane for this call when it differs from `flowStepId`, such as one voter of a group. */
+  recordingLaneId?: string;
   /** Skills to apply for this step execution */
   skills?: string[];
   /** Structured request analysis. */
@@ -362,6 +369,8 @@ type IFlowOriginalRequest = {
   executionRoot?: string;
   /** Worktree-relative `.exa/PlanContext/<slug>.md` pointer; required by a session_delegate_cycle step. */
   planContextRef?: string;
+  /** Run-local fixture recording allocator, present only for an opted-in scenario run. */
+  recording?: IFlowRecordingContext;
 };
 
 /** Shared context for step-level execution (reduces parameter count across step methods). */
@@ -1280,7 +1289,7 @@ export class FlowRunner implements IFlowRunner {
    */
   async execute(
     flow: IFlow,
-    request: {
+    submittedRequest: {
       userPrompt: string;
       traceId?: string;
       requestId?: string;
@@ -1294,9 +1303,19 @@ export class FlowRunner implements IFlowRunner {
       requestPath?: string;
       requestSha256?: string;
       bindingSnapshot?: IBindingRunSnapshot;
+      recordingLanes?: boolean;
     },
   ): Promise<IFlowResult> {
     const flowRunId = crypto.randomUUID();
+    const { recordingLanes, ...submitted } = submittedRequest;
+    const recording = createFlowRecordingContext({
+      scenarioId: submitted.scenarioId,
+      stepId: submitted.stepId,
+      enabled: recordingLanes === true,
+    });
+    let request: typeof submitted & { recording?: IFlowRecordingContext } = recording
+      ? { ...submitted, recording }
+      : submitted;
     const startedAt = new Date();
     const flowContentHash = await this.stepContentHasher.computeFlowContentHash(flow);
 
@@ -2124,6 +2143,7 @@ export class FlowRunner implements IFlowRunner {
         flowStepId: stepRequest.flowStepId,
         flowId: stepRequest.flowId,
         flowOutputKind: stepRequest.flowOutputKind,
+        recording: stepRequest.recording,
         bindingSnapshot: stepRequest.bindingSnapshot,
         requestAnalysis: stepRequest.requestAnalysis,
         skills: stepRequest.skills,
@@ -2349,6 +2369,7 @@ export class FlowRunner implements IFlowRunner {
       scenarioId: originalRequest.scenarioId,
       stepId: originalRequest.stepId,
       flowStepId: step.id,
+      ...(originalRequest.recording ? { recording: originalRequest.recording } : {}),
       flowOutputKind: step.type === FlowStepType.BRANCH ? "branch-json" : undefined,
       flowId: originalRequest.flowId ?? flow.id,
       bindingSnapshot: originalRequest.bindingSnapshot,

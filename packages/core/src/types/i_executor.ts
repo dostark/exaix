@@ -9,6 +9,7 @@
 
 import type { IBindingRunSnapshot } from "@exaix/schemas";
 import type { Opt, Reason } from "./optional_marker.ts";
+import type { IRecordingLaneSource } from "./i_recording_lane.ts";
 
 /** Original flow identity retained by every voter in a prepared fan-out. */
 export interface IExecutorContext {
@@ -19,6 +20,10 @@ export interface IExecutorContext {
   flowId?: Opt<string, Reason.OptionalContext>;
   flowStepId?: Opt<string, Reason.OptionalContext>;
   bindingSnapshot?: Opt<IBindingRunSnapshot, Reason.OptionalContext>;
+  /** The run's fixture lane allocator, present only for opted-in scenario runs. */
+  recording?: Opt<IRecordingLaneSource, Reason.OptionalContext>;
+  /** Position of this voter within its voting group's runner list. */
+  runnerIndex?: Opt<number, Reason.OptionalContext>;
 }
 
 export interface IExecutorResult {

@@ -1,0 +1,25 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Judge fixture",
+  "response": "{\"criteriaScores\": {\"code_correctness\": {\"score\": 0.2, \"reasoning\": \"GUARD MISSING: reject empty arguments before logging.\", \"issues\": []}, \"has_tests\": {\"score\": 0.2, \"reasoning\": \"GUARD MISSING: reject empty arguments before logging.\", \"issues\": []}, \"task_fulfillment\": {\"score\": 0.2, \"reasoning\": \"GUARD MISSING: reject empty arguments before logging.\", \"issues\": []}}, \"feedback\": \"GUARD MISSING: reject empty arguments before logging.\", \"suggestions\": [\"Reject empty arguments\"]}",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "IMPLEMENTATION V1",
+      "TESTS V1"
+    ],
+    "promptExcludes": []
+  },
+  "callSite": {
+    "scenarioId": "self-correcting-implementation",
+    "stepId": "submit",
+    "flowStepId": "quality-gate--judge",
+    "callIndex": 0
+  }
+}

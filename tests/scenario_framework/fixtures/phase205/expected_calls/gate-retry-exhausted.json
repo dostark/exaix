@@ -1,0 +1,50 @@
+{
+  "scenarioId": "gate-retry-exhausted",
+  "edition": "solo",
+  "flow": "gate-retry-exhausted",
+  "fixtureDir": "fixtures/mock_recordings/phase205/gates",
+  "requestStepId": "submit",
+  "selectedPath": [
+    "draft",
+    "gate"
+  ],
+  "expectedFailure": "gate_halted",
+  "gateEvaluations": {
+    "gate": 3
+  },
+  "calls": [
+    {
+      "lane": "draft",
+      "callIndex": 0,
+      "dialect": "agent"
+    },
+    {
+      "lane": "gate--judge",
+      "callIndex": 0,
+      "dialect": "judge",
+      "verdict": "below"
+    },
+    {
+      "lane": "draft",
+      "callIndex": 1,
+      "dialect": "agent"
+    },
+    {
+      "lane": "gate--judge",
+      "callIndex": 1,
+      "dialect": "judge",
+      "verdict": "below"
+    },
+    {
+      "lane": "draft",
+      "callIndex": 2,
+      "dialect": "agent"
+    },
+    {
+      "lane": "gate--judge",
+      "callIndex": 2,
+      "dialect": "judge",
+      "verdict": "below"
+    }
+  ]
+}

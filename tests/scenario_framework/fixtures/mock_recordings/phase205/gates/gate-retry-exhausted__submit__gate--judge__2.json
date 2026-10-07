@@ -11,12 +11,12 @@
   "callSite": {
     "scenarioId": "gate-retry-exhausted",
     "stepId": "submit",
-    "flowStepId": "gate",
-    "callIndex": 1
+    "flowStepId": "gate--judge",
+    "callIndex": 2
   },
   "expectedInput": {
     "promptIncludes": [
-      "Draft 2",
+      "Draft 3",
       "code_correctness"
     ]
   }

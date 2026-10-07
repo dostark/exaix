@@ -83,9 +83,14 @@ Deno.test("[voting input] three Team voters receive prepared evidence and origin
     scenarioId: "voting-scenario",
     stepId: "submit",
     bindingSnapshot: snapshot,
+    recordingLanes: true,
   });
   assertEquals(result.success, true);
   assertEquals(calls.length, 3);
+  assertEquals(calls.map((call) => call.context?.runnerIndex).sort(), [0, 1, 2]);
+  const recording = calls[0].context?.recording;
+  assertEquals(recording?.lane("vote--voter-0").current().scenarioId, "voting-scenario");
+  for (const call of calls) assertEquals(call.context?.recording, recording, "voters share the run allocator");
   for (const call of calls) {
     assertEquals(call.role, "software-architect");
     assertStringIncludes(call.prompt, "Output context");

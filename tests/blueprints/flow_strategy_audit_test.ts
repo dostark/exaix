@@ -98,6 +98,13 @@ const AUDIT_TABLE: Record<string, Record<string, Decision>> = {
     "validate-refactoring": "cli_delegate",
     "final-review": "cli_delegate",
   },
+  "self-correcting-implementation": {
+    plan: "no-strategy",
+    implement: "react",
+    "write-tests": "react",
+    "quality-gate": "no-strategy",
+    report: "no-strategy",
+  },
   "security-audit": {
     "static-analysis": "react",
     "dependency-audit": "react",

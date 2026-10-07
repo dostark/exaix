@@ -23,6 +23,7 @@ import { createCliTestContext } from "./helpers/test_setup.ts";
 interface ICreatedFrontmatter {
   scenario_id?: string;
   step_id?: string;
+  recording_lanes?: boolean;
 }
 
 function splitFrontmatter(content: string): ICreatedFrontmatter {
@@ -53,6 +54,19 @@ describe("exactl request stamps scenario_id/step_id from EXA_SCENARIO_ID/EXA_STE
       assertEquals(frontmatter.scenario_id, "flow_blueprints");
       assertEquals(frontmatter.step_id, "submit-request");
     });
+  });
+
+  it("stamps recording_lanes only when EXA_RECORDING_LANES opts the scenario request in", async () => {
+    for (const [value, expected] of [["1", true], ["0", undefined], [null, undefined]] as const) {
+      await withEnv(
+        { EXA_SCENARIO_ID: "self-correcting", EXA_STEP_ID: "submit", EXA_RECORDING_LANES: value },
+        async () => {
+          const result = await requestCommands.create("Implement feature X");
+          assert(result.path);
+          assertEquals(splitFrontmatter(await Deno.readTextFile(result.path)).recording_lanes, expected);
+        },
+      );
+    }
   });
 
   it("omits scenario_id and step_id when the env vars are unset", async () => {

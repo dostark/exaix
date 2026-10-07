@@ -1,7 +1,7 @@
 {
   "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
   "promptPreview": "Architecture decision fixture",
-  "response": "<thought>Consider a server database.</thought><content>PostgreSQL minority choice</content>",
+  "response": "<thought>Choose the local database.</thought><content>SQLite majority choice</content>",
   "model": "phase205-fixture",
   "tokens": {
     "input": 100,
@@ -18,7 +18,7 @@
   "callSite": {
     "scenarioId": "architecture-decision",
     "stepId": "submit",
-    "flowStepId": "vote",
-    "callIndex": 2
+    "flowStepId": "vote--voter-0",
+    "callIndex": 0
   }
 }

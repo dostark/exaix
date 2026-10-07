@@ -11,11 +11,12 @@ import type { EvaluationCriterion, EvaluationResult } from "@exaix/core/types";
 import type { IBindingGateContext, IRequestAnalysis } from "@exaix/schemas";
 
 import type { FlowGateAction, FlowGateOnFail } from "@exaix/core";
+import type { IRecordedCallSite } from "./i_recording_lane.ts";
 
 /** Structural metadata keeps core independent of the AI provider package. */
 export interface IFlowJudgeCallMetadata {
   traceId?: string;
-  callSite?: { scenarioId: string; stepId: string; flowStepId?: string; callIndex: number };
+  callSite?: IRecordedCallSite;
 }
 
 /**

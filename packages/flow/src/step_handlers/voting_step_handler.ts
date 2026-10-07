@@ -58,6 +58,7 @@ export class VotingStepHandler implements IFlowStepHandler {
         flowId: ctx.flow.id,
         flowStepId: step.id,
         bindingSnapshot: ctx.stepRequest.bindingSnapshot,
+        ...(ctx.stepRequest.recording ? { recording: ctx.stepRequest.recording } : {}),
       },
     );
 

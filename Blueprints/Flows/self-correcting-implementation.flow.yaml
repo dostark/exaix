@@ -1,0 +1,55 @@
+id: self-correcting-implementation
+name: Self-correcting implementation
+description: Plan, implement and test a change, then loop back once when the quality gate rejects it.
+version: 1.0.0
+defaultSkills:
+  - tdd-methodology
+namespace:
+  enabled: false
+settings:
+  maxParallelism: 1
+  failFast: true
+  timeout: 600000
+steps:
+  - id: plan
+    name: Plan the implementation
+    agent_role: software-architect
+    effort: high
+    dependsOn: []
+    input: { source: request, transform: passthrough }
+  - id: implement
+    name: Implement the planned change
+    agent_role: senior-coder
+    strategy: react
+    dependsOn: [plan]
+    input: { source: step, stepId: plan, transform: passthrough }
+  - id: write-tests
+    name: Write tests for the implementation
+    agent_role: test-engineer
+    strategy: react
+    dependsOn: [implement]
+    input: { source: step, stepId: implement, transform: passthrough }
+  - id: quality-gate
+    name: Judge the implementation and its tests
+    type: gate
+    agent_role: quality-judge
+    dependsOn: [implement, write-tests]
+    input: { source: aggregate, from: [implement, write-tests], transform: passthrough }
+    evaluate:
+      agent_role: quality-judge
+      criteria: [code_correctness, has_tests, task_fulfillment]
+      threshold: 0.8
+      onFail: retry
+      maxRetries: 2
+      includeRequestCriteria: false
+    loop:
+      backTo: implement
+  - id: report
+    name: Report the accepted change
+    agent_role: technical-writer
+    effort: low
+    dependsOn: [quality-gate]
+    input: { source: aggregate, from: [implement, write-tests, quality-gate], transform: passthrough }
+output:
+  from: report
+  format: markdown

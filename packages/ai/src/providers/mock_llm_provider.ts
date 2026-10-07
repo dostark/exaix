@@ -24,6 +24,7 @@ import {
 } from "@exaix/ai";
 import { ToolName } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+import { validateJudgeResponse } from "./judge_response_contract.ts";
 
 // Types and Interfaces
 
@@ -402,6 +403,34 @@ I will address this step and produce output the next step can consume.
 }
 </content>`;
 
+/** Strict replay addresses each call site once, so two recordings for one key are ambiguous. */
+function assertUniqueCallSites(recordings: IRecordedResponse[]): void {
+  const seen = new Set<string>();
+  for (const recording of recordings) {
+    if (!recording.callSite) continue;
+    const key = callSiteKey(recording.callSite);
+    if (seen.has(key)) {
+      throw new MockLLMError(`Duplicate keyed recording for call site ${describeCallSite(recording.callSite)}.`);
+    }
+    seen.add(key);
+  }
+}
+
+/** A judge caller receives raw criterion JSON. An agent-dialect recording at its call site is a fixture error. */
+function assertResponseContract(
+  recording: IRecordedResponse,
+  contract: Opt<IModelOptions["responseContract"], Reason.OptionalInput>,
+  callSite: ICallSite,
+): void {
+  if (contract?.kind !== "judge-json") return;
+  const violation = validateJudgeResponse(recording.response, contract.criteria);
+  if (violation) {
+    throw new MockLLMError(
+      `Recording at call site ${describeCallSite(callSite)} violates the judge contract: ${violation}`,
+    );
+  }
+}
+
 export class MockLLMProvider implements IModelProvider {
   public readonly id: string;
 
@@ -438,6 +467,7 @@ export class MockLLMProvider implements IModelProvider {
     if (options.fixtureDir) {
       this.loadRecordingsFromDir(options.fixtureDir);
     }
+    if (this.strictRecordings) assertUniqueCallSites(this.recordings);
 
     // Add default patterns for recorded and pattern strategy. A miss then falls back to a
     // pattern match. Only an explicit `patterns` option skips this step. A loaded fixture
@@ -525,7 +555,7 @@ export class MockLLMProvider implements IModelProvider {
    *  for calls without options.callSite. */
   private generateRecorded(prompt: string, options: Opt<IModelOptions, Reason.OptionalInput>): IRecordedReplay {
     if (options?.callSite) {
-      return this.generateRecordedByCallSite(prompt, options.callSite, options.priorTurn);
+      return this.generateRecordedByCallSite(prompt, options.callSite, options.priorTurn, options.responseContract);
     }
 
     const hash = this.hashPrompt(prompt);
@@ -582,6 +612,7 @@ export class MockLLMProvider implements IModelProvider {
     prompt: string,
     callSite: ICallSite,
     priorTurn: Opt<IProviderTurn, Reason.OptionalInput>,
+    responseContract: Opt<IModelOptions["responseContract"], Reason.OptionalInput>,
   ): IRecordedReplay {
     const key = callSiteKey(callSite);
     const recording = this.recordings.find((r) => r.callSite && callSiteKey(r.callSite) === key);
@@ -598,6 +629,7 @@ export class MockLLMProvider implements IModelProvider {
         );
       }
       assertExpectedInput(recording, prompt, priorTurn, `call site ${describeCallSite(callSite)}`);
+      assertResponseContract(recording, responseContract, callSite);
       return { response: recording.response, toolCalls: recording.toolCalls, cost_usd: recording.cost_usd };
     }
 

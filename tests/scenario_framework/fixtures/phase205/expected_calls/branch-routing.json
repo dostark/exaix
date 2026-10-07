@@ -1,0 +1,37 @@
+{
+  "scenarioId": "branch-routing",
+  "edition": "solo",
+  "flow": "branch-routing",
+  "fixtureDir": "fixtures/mock_recordings/phase205/branches",
+  "requestStepId": "submit",
+  "selectedPath": [
+    "classify",
+    "bug",
+    "bug-child",
+    "join"
+  ],
+  "expectedFailure": null,
+  "gateEvaluations": {},
+  "calls": [
+    {
+      "lane": "classify",
+      "callIndex": 0,
+      "dialect": "agent"
+    },
+    {
+      "lane": "bug",
+      "callIndex": 0,
+      "dialect": "agent"
+    },
+    {
+      "lane": "bug-child",
+      "callIndex": 0,
+      "dialect": "agent"
+    },
+    {
+      "lane": "join",
+      "callIndex": 0,
+      "dialect": "agent"
+    }
+  ]
+}

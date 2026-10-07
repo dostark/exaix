@@ -62,6 +62,8 @@ export interface IRequestFrontmatter {
   /** Step id stamped by the scenario runner via EXA_STEP_ID, for fixture replay call-site
    *  addressing. Absent outside the scenario framework. */
   step_id?: string;
+  /** Stamped from EXA_RECORDING_LANES so a flow run keys fixture replay by run-local caller lanes. */
+  recording_lanes?: boolean;
   /** Worktree-relative `.exa/PlanContext/<slug>.md` pointer stamped by
    *  `scripts/plan_to_requests.ts --plan-context-root`. Required by
    *  RequestProcessor for a flow request whose flow has a session_delegate_cycle step. */

@@ -9,7 +9,7 @@ import { FlowStepHandlerRegistry, VotingStepHandler } from "@exaix/flow";
 import { VotingCapabilityModule, VotingConsensusService } from "@exaix-team/voting";
 import { createMockLogger } from "@exaix/testing";
 import { createVotingExecutor, registerFlowCapabilityModules } from "../src/flow_capability_registration.ts";
-import type { IFlowStepRequest } from "@exaix/flow";
+import { createFlowRecordingContext, type IFlowStepRequest } from "@exaix/flow";
 
 for (const edition of ["solo", "team", "enterprise", "unknown"]) {
   Deno.test(`[daemon registration] voting module requires tier and actual specialized aliases: ${edition}`, () => {
@@ -59,4 +59,27 @@ Deno.test("[daemon voting] adapter forwards prepared prompt and original voter b
     role: "software-architect",
     request: { ...context, userPrompt: "Prepared context evidence", context: {} },
   }]);
+});
+
+Deno.test("[daemon voting] each voter replays on its own run lane without renaming the bound step", async () => {
+  const received: IFlowStepRequest[] = [];
+  const executor = createVotingExecutor({
+    run: (_role, request) => {
+      received.push(request);
+      return Promise.resolve({ thought: "", content: "SQLite", raw: "" });
+    },
+  });
+  const recording = createFlowRecordingContext({
+    scenarioId: "architecture-decision",
+    stepId: "submit",
+    enabled: true,
+  });
+  const context = { scenarioId: "architecture-decision", stepId: "submit", flowStepId: "vote", recording };
+  await Promise.all(
+    [2, 0, 1].map((runnerIndex) => executor.run("software-architect", "p", { ...context, runnerIndex })),
+  );
+
+  assertEquals(received.map((request) => request.flowStepId), ["vote", "vote", "vote"]);
+  assertEquals(received.map((request) => request.recording), [recording, recording, recording]);
+  assertEquals(received.map((request) => request.recordingLaneId), ["vote--voter-2", "vote--voter-0", "vote--voter-1"]);
 });

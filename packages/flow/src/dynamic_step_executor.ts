@@ -35,7 +35,7 @@ import type { ProviderCostStatus } from "@exaix/ai/providers";
 import type { IMcpClient } from "@exaix/mcp";
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import type { IExecutionMilestone } from "@exaix/schemas";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { IRecordingLane, Opt, Reason } from "@exaix/core/types";
 
 /**
  * Journal entry for activity logging
@@ -85,6 +85,8 @@ export interface IDynamicStepExecutorOptions {
     tools?: { confirmation_timeout_s?: number };
     execution?: { native_tools_enabled?: boolean };
   };
+  /** Run-local fixture lane. Each consumed reasoning turn takes the next call index. */
+  recordingLane?: IRecordingLane;
 }
 
 /** For audit logging. */
@@ -175,6 +177,7 @@ export class DynamicStepExecutor {
       const toolsMetadata = this.mcpClient.getToolDefinitions(effectiveTools);
 
       // ReAct: model reasons about what tool to call next (or declares done)
+      const callSite = opts.recordingLane?.current();
       const decision = await this.llmClient.reasonNextAction({
         agent_role,
         stepObjective: step.name,
@@ -189,7 +192,9 @@ export class DynamicStepExecutor {
         flowStepEffort: step.effort,
         flowStepThinking: step.thinking,
         ...(nativeConversation ? { nativeConversation } : {}),
+        ...(callSite ? { callSite } : {}),
       });
+      if (callSite) opts.recordingLane!.consume(callSite);
       this.addModelUsage(modelUsage, decision);
 
       if (decision.done) {

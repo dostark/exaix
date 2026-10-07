@@ -24,6 +24,7 @@ steps:
     type: exactl
     command: request
     args: [--file, "$REQUEST_FIXTURE"]
+    env: { EXA_RECORDING_LANES: "1" }
     output_criteria:
       - id: submitted
         kind: command-exit-code

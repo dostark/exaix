@@ -26,6 +26,7 @@ export * from "./i_daemon_service.ts";
 export * from "./i_database_service.ts";
 export * from "./i_display_service.ts";
 export * from "./i_executor.ts";
+export * from "./i_recording_lane.ts";
 export * from "./i_extraction_strategy.ts";
 export * from "./i_flow_loader_service.ts";
 export * from "./i_flow_worktree_coordinator.ts";

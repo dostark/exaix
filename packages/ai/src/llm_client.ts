@@ -292,8 +292,11 @@ export class LlmClient implements ILlmClient {
       params.flowStepThinking,
       params.options,
     );
-    const trace = params.traceId ? { traceId: params.traceId } : {};
-    if (!nativeEnabled) return options || params.traceId ? { ...options, ...trace } : undefined;
+    const trace = {
+      ...(params.traceId ? { traceId: params.traceId } : {}),
+      ...(params.callSite ? { callSite: params.callSite } : {}),
+    };
+    if (!nativeEnabled) return options || params.traceId || params.callSite ? { ...options, ...trace } : undefined;
     const outputTokens = params.options?.max_tokens ?? this.config?.ai?.max_tokens ?? REACT_DEFAULT_MAX_TOKENS;
     const nativeConversation = await this.measureNativeSnapshot(
       {

@@ -6,6 +6,7 @@
  * @related-files [packages/flow/src/step_handlers/step_handler.ts, packages/flow/src/flow_runner.ts]
  */
 
+import { judgeLane } from "../contracts/flow_recording_context.ts";
 import type { IFlowStepHandler, IStepExecutionContext } from "./step_handler.ts";
 import type { IGateConfig, IGateEvaluator, IGateResult } from "@exaix/core/types";
 import { DEFAULT_FLOW_GATE_MAX_EVALUATIONS } from "@exaix/core";
@@ -67,7 +68,7 @@ export class GateStepHandler implements IFlowStepHandler {
             callSite: {
               scenarioId: stepRequest.scenarioId,
               stepId: stepRequest.stepId,
-              flowStepId: step.id,
+              flowStepId: judgeLane(step.id),
               callIndex: attempt - 1,
             },
           }
