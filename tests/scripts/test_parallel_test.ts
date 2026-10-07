@@ -23,12 +23,15 @@ import {
   parseTapOutput,
   resolveContainerJobs,
   resolveReporter,
+  resolveTestSerial,
   SEQUENTIAL_FILES,
   SEQUENTIAL_TESTS,
   SequentialTestSchema,
   stripContainerJobsArgs,
   stripReporterArgs,
+  stripTestControlArgs,
   TEST_CONTAINER_JOBS_FLAG,
+  TEST_SERIAL_FLAG,
 } from "../../scripts/test_parallel.ts";
 import type { IContainerRunResult } from "../../scripts/test_container_driver.ts";
 import * as testOutputParse from "../../scripts/test_output_parse.ts";
@@ -268,6 +271,13 @@ Deno.test("resolveContainerJobs rejects zero, negative, and non-numeric values",
 Deno.test("the --test-container-jobs flag is stripped from the shared forwarded args (Batch 1 and Batch 2)", () => {
   assertEquals(stripContainerJobsArgs([TEST_CONTAINER_JOBS_FLAG, "6", "--filter", "flow"]), ["--filter", "flow"]);
   assertEquals(stripContainerJobsArgs([`${TEST_CONTAINER_JOBS_FLAG}=6`, "--parallel"]), ["--parallel"]);
+});
+
+Deno.test("the --test-serial flag is stripped from the shared forwarded args and selects serial", () => {
+  assertEquals(stripTestControlArgs([TEST_SERIAL_FLAG, "--filter", "flow"]), ["--filter", "flow"]);
+  assertEquals(stripTestControlArgs([TEST_CONTAINER_JOBS_FLAG, "6", TEST_SERIAL_FLAG]), []);
+  assertEquals(resolveTestSerial([TEST_SERIAL_FLAG]), true);
+  assertEquals(resolveTestSerial(["--filter", "flow"]), false);
 });
 
 Deno.test("IContainerRunResult maps to a TestStats row and a failure block in allFailures", () => {

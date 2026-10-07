@@ -116,6 +116,8 @@ export interface IBatch2Strategy {
 export interface IStrategyOverrides {
   /** Worker-container count from `--test-container-jobs` (already validated positive). */
   jobs?: Opt<number, Reason.OptionalInput>;
+  /** true when `--test-serial` requests the serial path explicitly. */
+  serial?: Opt<boolean, Reason.OptionalInput>;
 }
 
 /** Async probe: true when the docker daemon is reachable. */
@@ -254,19 +256,19 @@ function resolveWorkerCount(
   return { jobs, source };
 }
 
-/** Choose the Batch-2 execution strategy from the environment and runtime probes. */
+/** Choose the Batch-2 execution strategy from the environment and runtime probes. Container
+ *  mode is the default. `--test-serial` or `EXA_TEST_CONTAINERS=0` opts out. An unreachable
+ *  Docker daemon falls back to serial. */
 export async function selectBatch2Strategy(
   env: Record<string, string | undefined>,
   probeDocker: IContainerRuntimeProbe = dockerDaemonReachable,
   overrides: IStrategyOverrides = {},
 ): Promise<IBatch2Strategy> {
-  const enabled = env[TEST_CONTAINERS_ENABLED_ENV];
-  if (enabled === undefined || enabled === "0") {
-    return {
-      mode: "serial",
-      jobs: DEFAULT_TEST_CONTAINER_JOBS,
-      reason: "EXA_TEST_CONTAINERS is unset or 0",
-    };
+  if (overrides.serial) {
+    return { mode: "serial", jobs: DEFAULT_TEST_CONTAINER_JOBS, reason: "serial mode requested (--test-serial)" };
+  }
+  if (env[TEST_CONTAINERS_ENABLED_ENV] === "0") {
+    return { mode: "serial", jobs: DEFAULT_TEST_CONTAINER_JOBS, reason: "EXA_TEST_CONTAINERS=0" };
   }
   if (!(await probeDocker())) {
     return { mode: "serial", jobs: DEFAULT_TEST_CONTAINER_JOBS, reason: "docker binary or daemon is unavailable" };

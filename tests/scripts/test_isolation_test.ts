@@ -385,13 +385,18 @@ Deno.test("selectBatch2Strategy clamps jobs to [MIN_TEST_CONTAINER_JOBS, navigat
   assertEquals(low.jobs, MIN_TEST_CONTAINER_JOBS);
 });
 
-Deno.test("selectBatch2Strategy falls back to serial when EXA_TEST_CONTAINERS is unset", async () => {
+Deno.test("selectBatch2Strategy defaults to container mode when EXA_TEST_CONTAINERS is unset", async () => {
   const strategy = await selectBatch2Strategy({}, dockerReachable);
+  assertEquals(strategy.mode, "container");
+});
+
+Deno.test("selectBatch2Strategy opts into serial when EXA_TEST_CONTAINERS is 0", async () => {
+  const strategy = await selectBatch2Strategy({ EXA_TEST_CONTAINERS: "0" }, dockerReachable);
   assertEquals(strategy.mode, "serial");
 });
 
-Deno.test("selectBatch2Strategy falls back to serial when EXA_TEST_CONTAINERS is 0", async () => {
-  const strategy = await selectBatch2Strategy({ EXA_TEST_CONTAINERS: "0" }, dockerReachable);
+Deno.test("selectBatch2Strategy opts into serial when --test-serial is passed", async () => {
+  const strategy = await selectBatch2Strategy({ EXA_TEST_CONTAINERS: "1" }, dockerReachable, { serial: true });
   assertEquals(strategy.mode, "serial");
 });
 
@@ -495,7 +500,9 @@ async function runOneFile(rel: string): Promise<IContainerRunResult> {
   }
 }
 
-async function serialCounts(file: string): Promise<{ passed: number; failed: number; ignored: number }> {
+async function serialCounts(
+  file: string,
+): Promise<{ passed: number; failed: number; ignored: number; exitCode: number }> {
   const env = { ...Deno.env.toObject() };
   delete env["DENO_JOBS"];
   const out = await new Deno.Command(Deno.execPath(), {
@@ -507,7 +514,10 @@ async function serialCounts(file: string): Promise<{ passed: number; failed: num
   }).output();
   const text = new TextDecoder().decode(out.stdout) + new TextDecoder().decode(out.stderr);
   const summary = parseSummaryLine(text);
-  return summary.passed === 0 && summary.failed === 0 ? parseDotReporterCounts(text, summary.durationSec) : summary;
+  const counts = summary.passed === 0 && summary.failed === 0
+    ? parseDotReporterCounts(text, summary.durationSec)
+    : summary;
+  return { passed: counts.passed, failed: counts.failed, ignored: counts.ignored, exitCode: out.code };
 }
 
 const LOOPBACK_FIXTURE = [
@@ -621,9 +631,8 @@ const PARITY_SUBSET = [
 ];
 
 Deno.test({
-  name:
-    "[integration] containerized Batch 2 reproduces the serial pass/fail/ignored counts for a representative isolation-reason subset",
-  ignore: INTEGRATION_IGNORE,
+  name: "[integration] containerized Batch 2 parity for six isolation reasons (opt-in via EXA_TEST_CUTOVER)",
+  ignore: INTEGRATION_IGNORE || Deno.env.get("EXA_TEST_CUTOVER") !== "1",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {

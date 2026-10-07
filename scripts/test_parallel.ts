@@ -61,6 +61,9 @@ export const DOT_REPORTER_LEGEND = "dot legend: .=passed ,=ignored !=failed";
 /** CLI input option for the worker-container count. */
 export const TEST_CONTAINER_JOBS_FLAG = "--test-container-jobs";
 
+/** CLI input option that forces the serial Batch-2 path (opts out of containers). */
+export const TEST_SERIAL_FLAG = "--test-serial";
+
 // Matches deno test --parallel's own default (hardwareConcurrency) rather than a
 // hardcoded value: oversubscribing the host's core count causes concurrent CLI-heavy
 // tests to fail spawning subprocesses transiently (observed on a 4-core WSL2 host).
@@ -403,6 +406,17 @@ export function stripContainerJobsArgs(args: string[]): string[] {
   return filtered;
 }
 
+/** True when `--test-serial` is present. */
+export function resolveTestSerial(args: string[]): boolean {
+  return args.includes(TEST_SERIAL_FLAG);
+}
+
+/** Remove the container-control flags (`--test-container-jobs`, `--test-serial`) from the
+ *  args forwarded to `deno test`. */
+export function stripTestControlArgs(args: string[]): string[] {
+  return stripContainerJobsArgs(args).filter((arg) => arg !== TEST_SERIAL_FLAG);
+}
+
 /** Host env vars forwarded to a worker container. Never the whole host env, never DENO_JOBS. */
 const CONTAINER_ENV_ALLOWLIST = ["TZ", "CI", "LANG", "LC_ALL"];
 
@@ -720,8 +734,9 @@ const HEADER_NUMS = `${"PASS".padStart(NUM_W)}  ${"FAIL".padStart(NUM_W)}  ${"SK
 
 export async function main(args: string[]): Promise<number> {
   const reporter = resolveReporter(args);
-  const forwardedArgs = stripContainerJobsArgs(stripReporterArgs(args));
+  const forwardedArgs = stripTestControlArgs(stripReporterArgs(args));
   const cliJobs = resolveContainerJobs(args);
+  const cliSerial = resolveTestSerial(args);
 
   if (reporter === "dot") {
     console.log(DOT_REPORTER_LEGEND);
@@ -769,7 +784,7 @@ export async function main(args: string[]): Promise<number> {
   const batch2Env: Record<string, string> = { ...Deno.env.toObject() };
   delete batch2Env["DENO_JOBS"]; // ensures skipInParallel === false inside each file
 
-  const strategy = await selectBatch2Strategy(Deno.env.toObject(), undefined, { jobs: cliJobs });
+  const strategy = await selectBatch2Strategy(Deno.env.toObject(), undefined, { jobs: cliJobs, serial: cliSerial });
   console.log(`› Batch 2 strategy: ${strategy.mode} — ${strategy.reason}`);
 
   const seq: TestStats[] = [];
