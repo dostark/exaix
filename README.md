@@ -224,7 +224,7 @@ justifies it:
 
 ```bash
 deno task check
-deno task test_parallel
+deno task test_all
 ```
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a contribution. It covers hooks,

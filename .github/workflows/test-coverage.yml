@@ -2,7 +2,7 @@ name: "Tests & Coverage"
 
 # Runs once daily rather than on every push/PR: the full suite + coverage
 # measurement is the slowest gate in the pipeline and doesn't need to block
-# every push. `deno task test_parallel`-equivalent functional correctness is
+# every push. `deno task test_all`-equivalent functional correctness is
 # still enforced on every push to main by the "Test Suite" workflow
 # (merge-validation.yml); this workflow adds the periodic coverage-threshold
 # check on top, on a cadence cheap enough to run daily without slowing

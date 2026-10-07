@@ -631,7 +631,7 @@ const PARITY_SUBSET = [
 ];
 
 Deno.test({
-  name: "[integration] containerized Batch 2 parity for six isolation reasons (opt-in via EXA_TEST_CUTOVER)",
+  name: "[integration] Containered Batch parity for six isolation reasons (opt-in via EXA_TEST_CUTOVER)",
   ignore: INTEGRATION_IGNORE || Deno.env.get("EXA_TEST_CUTOVER") !== "1",
   sanitizeOps: false,
   sanitizeResources: false,

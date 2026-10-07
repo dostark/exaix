@@ -78,7 +78,7 @@ Before submitting a PR, drive the codebase to a fully green state:
 2. **Run the full test suite** to confirm nothing is broken:
 
    ```bash
-   deno task test_parallel
+   deno task test_all
    ```
 
 3. **Run the prose and comment STE gates** on the files you changed:
@@ -357,7 +357,7 @@ what: Added check-tool-result-parity script to MCP package that validates
   handler output schemas match TOOL_MANIFEST entries.
 rationale: Prevents silent schema drift between handler implementations
   and the manifest causing runtime type mismatches.
-tests: deno task test_parallel — 142/142 passed
+tests: deno task test_all — 142/142 passed
 who: Claude
 impact: MCP: added parity validation script
 ```

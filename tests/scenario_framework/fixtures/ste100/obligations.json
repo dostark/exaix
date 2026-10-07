@@ -368,7 +368,7 @@
         "Use conventional commit format with the what, rationale, tests, who, impact schema",
         "Merge feature branches into main fast-forward only",
         "Carry a plan field on plan-step commits via commit_plan_step.ts",
-        "Use deno task test_parallel for test validation, never deno task test",
+        "Use deno task test_all for test validation, never deno task test",
         "Never bypass the guard with --no-verify and do not hallucinate identity"
       ]
     },

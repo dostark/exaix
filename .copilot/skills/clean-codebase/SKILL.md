@@ -182,8 +182,8 @@ Phase 23 — Final full-suite validation
         unchecked before centralization).
      b. Extras ci.ts misses: `check:duplication`, `check:god-objects`,
         `check:leak-guard`, `check:no-edition-conditionals`, `check:version --dry-run`.
-     c. Tests: `deno task test_parallel` (all editions) / `deno task test:solo &&
-        deno task test:security` (Solo) / `deno task test:team` (Team). A `test_parallel`
+     c. Tests: `deno task test_all` (all editions) / `deno task test:solo &&
+        deno task test:security` (Solo) / `deno task test:team` (Team). A `test_all`
         failure is not automatically a regression: reproduce it in isolation, check the
         test's `ignore:` (some are `ignore: CI === "true"`, for example
         `self_hosted_split_bindings_test.ts`) and whether it is load-flaky. Attribute it by
@@ -258,7 +258,7 @@ Workflow chain: **#clean-codebase** → #commit
 1. Baseline tallies per gate.
 1. Fix log: per phase — what was fixed, file/line.
 1. Intermediate check results after each phase (0 errors).
-1. Final `deno task test_parallel` output: all gates green.
+1. Final `deno task test_all` output: all gates green.
 1. Commit payload.
 
 ## Examples

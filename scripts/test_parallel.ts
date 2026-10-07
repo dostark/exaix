@@ -2,17 +2,12 @@
 /**
  * @module TestParallel
  * @path scripts/test_parallel.ts
- * @description Two-batch test runner that maximises parallel throughput while
- * still executing CLI-subprocess-heavy tests that are unsafe to run concurrently.
- *
- * Batch 1 – the whole test suite run with `--parallel`, at a worker count
- *            that matches the host's detected concurrency (or an explicit
- *            DENO_JOBS the caller already exported) for maximum safe speed.
- * Batch 2 – the sequential files run one after another without DENO_JOBS so
- *            their skipInParallel guards evaluate to false and every test runs.
- *
+ * @description Two-batch test runner: a Parallel Batch (the whole suite with `--parallel`)
+ *   and a Containered Batch (the isolation-sensitive files, run in worker containers or
+ *   serially). The Containered Batch uses the pretty reporter so every test name stays
+ *   visible.
  * Usage:
- *   deno task test_parallel
+ *   deno task test_all
  */
 
 import { basename, fromFileUrl, join } from "@std/path";
@@ -57,6 +52,13 @@ export {
 const REPO_ROOT = join(fromFileUrl(import.meta.url), "..", "..");
 const SUPPORTED_REPORTERS = ["pretty", "dot", "tap"] as const;
 export const DOT_REPORTER_LEGEND = "dot legend: .=passed ,=ignored !=failed";
+
+/** Human-readable label for the parallel batch (the whole suite with `--parallel`). */
+export const PARALLEL_BATCH_LABEL = "Parallel Batch";
+/** Human-readable label for the container batch (the isolation-sensitive files). */
+export const CONTAINERED_BATCH_LABEL = "Containered Batch";
+/** The Containered Batch always uses the pretty reporter, so every test name stays visible. */
+const CONTAINERED_BATCH_REPORTER = "pretty";
 
 /** CLI input option for the worker-container count. */
 export const TEST_CONTAINER_JOBS_FLAG = "--test-container-jobs";
@@ -126,7 +128,7 @@ export const SequentialTestSchema = z.object({
 
 export type SequentialTest = z.input<typeof SequentialTestSchema>;
 
-/** Batch-2 files with their isolation reasons. Order is authoritative and feeds Batch 1's ignore list. */
+/** Containered Batch files with their isolation reasons. Order is authoritative and feeds the Parallel Batch's ignore list. */
 export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
   { file: "apps/exactl/tests/exactl_all_test.ts", reasons: [IsolationReason.processEnv] },
   {
@@ -282,7 +284,7 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
   },
 ];
 
-/** Derived so Batch 1's `--ignore` list is unchanged. Content and order come from SEQUENTIAL_TESTS. */
+/** Derived so the Parallel Batch's `--ignore` list is unchanged. Content and order come from SEQUENTIAL_TESTS. */
 export const SEQUENTIAL_FILES: string[] = SEQUENTIAL_TESTS.map((test) => test.file);
 
 /** An explicit `--ignore` on the CLI overrides deno.json's config `exclude` for the walk, so fixtures excluded there (e.g. broken-on-purpose portal sources) must be re-listed here or they leak back into type-checking. */
@@ -309,7 +311,7 @@ export function formatFailureBlock(batchTag: string, failedCount: number, body: 
 /** Map a container result onto the existing summary row shape. */
 export function containerResultToStats(result: IContainerRunResult): TestStats {
   return {
-    label: `Batch 2 – ${basename(result.testFile)}`,
+    label: `${CONTAINERED_BATCH_LABEL} – ${basename(result.testFile)}`,
     passed: result.passed,
     failed: result.failed,
     ignored: result.ignored,
@@ -321,7 +323,7 @@ export function containerResultToStats(result: IContainerRunResult): TestStats {
 /** Failure block for a failed container result, or null when it passed. */
 export function containerResultFailureBlock(result: IContainerRunResult): string | null {
   if (result.exitCode === 0) return null;
-  return formatFailureBlock("SEQUENTIAL BATCH", result.failed, result.failureDetail ?? "(no details)");
+  return formatFailureBlock("CONTAINERED BATCH", result.failed, result.failureDetail ?? "(no details)");
 }
 
 const DEFAULT_DOT_WRAP_WIDTH = 80;
@@ -663,7 +665,7 @@ async function runAndCapture(
     counts = tapResult;
     failures = extractTapFailures(allText);
     if (failures.length > 0) {
-      const batchTag = label.startsWith("Batch 1") ? "PARALLEL BATCH" : "SEQUENTIAL BATCH";
+      const batchTag = label.startsWith(PARALLEL_BATCH_LABEL) ? "PARALLEL BATCH" : "CONTAINERED BATCH";
       const body = failures.map((f) => `  ${f.name}\n  ${f.message}`).join("\n");
       allFailures.push(formatFailureBlock(batchTag, counts.failed, body));
     }
@@ -679,7 +681,7 @@ async function runAndCapture(
       if (errorsMatch) {
         const body = errorsMatch[1].trim();
         if (body) {
-          const batchTag = label.startsWith("Batch 1") ? "PARALLEL BATCH" : "SEQUENTIAL BATCH";
+          const batchTag = label.startsWith(PARALLEL_BATCH_LABEL) ? "PARALLEL BATCH" : "CONTAINERED BATCH";
           allFailures.push(formatFailureBlock(batchTag, counts.failed, body));
         }
       } else if (reporter === "dot") {
@@ -723,7 +725,8 @@ function row(
 }
 
 export function formatRunHeader(label: string, compact = false): string {
-  const compactLabel = label.replace(/^Batch \d+ – /, "");
+  const prefix = `${CONTAINERED_BATCH_LABEL} – `;
+  const compactLabel = label.startsWith(prefix) ? label.slice(prefix.length) : label;
   return `${compact ? "\n" : ""}› ${compactLabel}`;
 }
 
@@ -746,7 +749,7 @@ export async function main(args: string[]): Promise<number> {
   const edition = Deno.env.get("EXAIX_EDITION") ?? "solo";
   const teamPaths = edition === "solo" ? [] : ["exaix-team/"];
 
-  // Batch 1: full test suite in parallel (use TAP reporter for error capture)
+  // Parallel Batch: the full test suite in parallel (TAP reporter for error capture).
   const batch1Env: Record<string, string> = {
     ...Deno.env.toObject(),
     DENO_JOBS: BATCH1_WORKER_COUNT,
@@ -760,14 +763,14 @@ export async function main(args: string[]): Promise<number> {
 
   const batch1Stats = await runAndCapture(
     batch1Args,
-    "Batch 1 – Parallel suite",
+    PARALLEL_BATCH_LABEL,
     batch1Env,
     "tap",
   );
 
-  // Batch 2: sequential files, one per Deno.Command, no DENO_JOBS set.
-  // Kill any daemon left behind by the parallel batch — it occupies the default
-  // CLI port and causes sequential daemon tests to fail with "Daemon died during startup".
+  // Containered Batch: sequential files, one per Deno.Command, no DENO_JOBS set.
+  // Kill any daemon left behind by the parallel batch. It holds the default CLI port,
+  // so a sequential daemon test would fail with "Daemon died during startup".
   try {
     const cleanup = new Deno.Command("pkill", { args: ["-f", "daemon/main.ts"] }).outputSync();
     if (cleanup.code === 0) {
@@ -785,7 +788,7 @@ export async function main(args: string[]): Promise<number> {
   delete batch2Env["DENO_JOBS"]; // ensures skipInParallel === false inside each file
 
   const strategy = await selectBatch2Strategy(Deno.env.toObject(), undefined, { jobs: cliJobs, serial: cliSerial });
-  console.log(`› Batch 2 strategy: ${strategy.mode} — ${strategy.reason}`);
+  console.log(`› ${CONTAINERED_BATCH_LABEL} strategy: ${strategy.mode} — ${strategy.reason}`);
 
   const seq: TestStats[] = [];
   if (strategy.mode === "container") {
@@ -808,13 +811,13 @@ export async function main(args: string[]): Promise<number> {
       const block = containerResultFailureBlock(result);
       if (block) allFailures.push(block);
     }
-    // Network-flagged files run host-serial so their counts still join Batch 2.
+    // Network-flagged files run host-serial so their counts still join the Containered Batch.
     for (const entry of SEQUENTIAL_TESTS.filter((test) => test.network)) {
       const stats = await runAndCapture(
         [entry.file, ...forwardedArgs],
-        `Batch 2 – ${basename(entry.file)}`,
+        `${CONTAINERED_BATCH_LABEL} – ${basename(entry.file)}`,
         batch2Env,
-        reporter,
+        CONTAINERED_BATCH_REPORTER,
         true,
       );
       seq.push(stats);
@@ -823,9 +826,9 @@ export async function main(args: string[]): Promise<number> {
     for (const file of SEQUENTIAL_FILES) {
       const stats = await runAndCapture(
         [file, ...forwardedArgs],
-        `Batch 2 – ${basename(file)}`,
+        `${CONTAINERED_BATCH_LABEL} – ${basename(file)}`,
         batch2Env,
-        reporter,
+        CONTAINERED_BATCH_REPORTER,
         true,
       );
       seq.push(stats);
@@ -850,21 +853,21 @@ export async function main(args: string[]): Promise<number> {
   console.log(`   ${HEADER_LABEL}    ${HEADER_NUMS}`);
   console.log(HR);
 
-  // Batch 1 row
-  console.log(`  ${row("Batch 1 – Parallel suite", batch1Stats)}`);
+  // Parallel Batch row
+  console.log(`  ${row(PARALLEL_BATCH_LABEL, batch1Stats)}`);
   console.log(HR);
 
-  // Batch 2 per-file rows
+  // Containered Batch per-file rows
   for (const s of seq) {
-    const shortLabel = s.label.replace(/^Batch 2 – /, "");
+    const shortLabel = s.label.replace(`${CONTAINERED_BATCH_LABEL} – `, "");
     console.log(`  ${row(shortLabel, s)}`);
   }
   console.log(HR);
 
-  // Batch 2 subtotal
+  // Containered Batch subtotal
   console.log(
     `  ${
-      row("Batch 2 total", {
+      row(`${CONTAINERED_BATCH_LABEL} total`, {
         passed: b2Passed,
         failed: b2Failed,
         ignored: b2Ignored,

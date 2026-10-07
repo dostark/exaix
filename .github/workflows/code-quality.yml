@@ -210,4 +210,4 @@ jobs:
       - name: "Run the containerized suite"
         env:
           EXA_TEST_CONTAINERS: "1"
-        run: deno task test_parallel
+        run: deno task test_all

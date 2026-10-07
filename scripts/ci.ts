@@ -130,7 +130,7 @@ const testCommand = new Command()
     }
 
     const edition = options.edition as EditionType | undefined;
-    const testTask = edition === EDITION_SOLO ? "test:solo" : edition === EDITION_TEAM ? "test:team" : "test_parallel";
+    const testTask = edition === EDITION_SOLO ? "test:solo" : edition === EDITION_TEAM ? "test:team" : "test_all";
 
     const success = await runParallel([
       { cmd: ["deno", "task", testTask], desc: `Unit & Integration Tests [edition: ${edition ?? "all"}]` },
@@ -447,11 +447,7 @@ const allCommand = new Command()
     } else {
       // 2. Tests (Parallel) — edition-scoped
       console.log(`\n--- Phase 2: Testing [edition: ${edition}] ---`);
-      const testTask = edition === EDITION_SOLO
-        ? "test:solo"
-        : edition === EDITION_TEAM
-        ? "test:team"
-        : "test_parallel";
+      const testTask = edition === EDITION_SOLO ? "test:solo" : edition === EDITION_TEAM ? "test:team" : "test_all";
       if (
         !await runParallel([
           { cmd: ["deno", "task", testTask], desc: `Unit & Integration Tests [edition: ${edition}]` },

@@ -70,15 +70,15 @@ Deno.test("stripReporterArgs preserves non-reporter flags", () => {
   ]);
 });
 
-Deno.test("formatRunHeader renders compact sequential header", () => {
+Deno.test("formatRunHeader renders compact Containered Batch header", () => {
   assertEquals(
-    formatRunHeader("Batch 2 – 24_portal_e2e_workflow_test.ts", true),
+    formatRunHeader("Containered Batch – 24_portal_e2e_workflow_test.ts", true),
     "\n› 24_portal_e2e_workflow_test.ts",
   );
 });
 
-Deno.test("formatRunHeader renders compact batch one header", () => {
-  assertEquals(formatRunHeader("Batch 1 – Parallel suite"), "› Parallel suite");
+Deno.test("formatRunHeader renders the Parallel Batch header unchanged", () => {
+  assertEquals(formatRunHeader("Parallel Batch"), "› Parallel Batch");
 });
 
 Deno.test("DOT_REPORTER_LEGEND documents symbol meanings", () => {
@@ -268,7 +268,7 @@ Deno.test("resolveContainerJobs rejects zero, negative, and non-numeric values",
   assertThrows(() => resolveContainerJobs([TEST_CONTAINER_JOBS_FLAG]), Error);
 });
 
-Deno.test("the --test-container-jobs flag is stripped from the shared forwarded args (Batch 1 and Batch 2)", () => {
+Deno.test("the --test-container-jobs flag is stripped from the shared forwarded args (Parallel and Containered Batch)", () => {
   assertEquals(stripContainerJobsArgs([TEST_CONTAINER_JOBS_FLAG, "6", "--filter", "flow"]), ["--filter", "flow"]);
   assertEquals(stripContainerJobsArgs([`${TEST_CONTAINER_JOBS_FLAG}=6`, "--parallel"]), ["--parallel"]);
 });
@@ -291,14 +291,14 @@ Deno.test("IContainerRunResult maps to a TestStats row and a failure block in al
     failureDetail: "boom",
   };
   const stats = containerResultToStats(result);
-  assertEquals(stats.label, "Batch 2 – x_test.ts");
+  assertEquals(stats.label, "Containered Batch – x_test.ts");
   assertEquals(stats.passed, 3);
   assertEquals(stats.failed, 1);
   assertEquals(stats.ignored, 2);
   assertEquals(stats.durationSec, 4);
   assertEquals(stats.exitCode, 1);
   const block = containerResultFailureBlock(result);
-  assert(block !== null && block.includes("SEQUENTIAL BATCH: FAILURES (1 total)") && block.includes("boom"));
+  assert(block !== null && block.includes("CONTAINERED BATCH: FAILURES (1 total)") && block.includes("boom"));
   assertEquals(containerResultFailureBlock({ ...result, exitCode: 0, failed: 0 }), null);
 });
 

@@ -59,7 +59,7 @@ Workflow per step
 ─────────────────
 Validation policy
    0a. Default to file-scoped: `deno test --allow-all <test-file>` or the touched set.
-   0b. No full-suite (`deno task test`, `test_parallel`, `deno test -A`, unscoped
+   0b. No full-suite (`deno task test`, `test_all`, `deno test -A`, unscoped
        `deno test --allow-all`) for a normal one-step cycle.
    0c. Full-suite only when: the change is massive/cross-cutting; it modifies files
        imported by > 3 unrelated packages or shared classes across subsystems
@@ -67,7 +67,7 @@ Validation policy
        Postpone these runs until the full step implementation and refactoring are done.
        Run the required suite during final step validation (step 22), before marking
        the step complete or committing. Use focused tests during RED/GREEN and fixes.
-       Use `deno task test_parallel` (`deno task test_parallel:team` for team scope),
+       Use `deno task test_all` (`deno task test_all:team` for team scope),
        not the sequential suite tasks selected by `ci.ts test` or `ci.ts all`.
    0d. After renaming or removing an exported symbol, or changing its signature, grep every
        importer, including `tests/` and `scripts/`, and run the repo-wide `deno task check`
@@ -165,7 +165,7 @@ REFACTOR + CI gates
       file's existing bare `?` parameters also fail the ratchet.
   22. Final step validation: once the full step implementation, wiring, and refactoring
       are done and focused checks pass, run any full suite required by Validation policy
-      with `deno task test_parallel` (or `test_parallel:team` for team scope).
+      with `deno task test_all` (or `test_all:team` for team scope).
       Redirect output to a temp file, inspect failures, and confirm the command exits
       successfully. Fix failures with focused tests; rerun the required suite after
       fixes before marking the step complete. Reuse the passing result for the commit

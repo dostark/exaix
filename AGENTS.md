@@ -193,11 +193,11 @@ repository gates. This matches [.copilot/skills/next-steps/SKILL.md](.copilot/sk
 and avoids sequential full-suite + coverage runs during a narrow step.
 
 When a repository-wide run is justified by one of the exceptions above, redirect
-`deno task test_parallel` output to a temp file to avoid truncation, then search for
+`deno task test_all` output to a temp file to avoid truncation, then search for
 failures. Requires `ripgrep` (`rg`); fall back to `grep -E` if unavailable:
 
 ```bash
-deno task test_parallel > /tmp/test_output.txt 2>&1
+deno task test_all > /tmp/test_output.txt 2>&1
 rg "FAILED|failed|error" /tmp/test_output.txt   # or: grep -E "FAILED|failed|error" /tmp/test_output.txt
 ```
 
