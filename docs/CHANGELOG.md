@@ -43,6 +43,18 @@
 
 - The `--skill` option on plan approval, the compiled skill JSON store and its generator and index.
 
+## Unreleased — Phase 207 (Containerized Test Isolation)
+
+### Added
+
+- `deno task test_all` runs the isolation-sensitive test batch in worker containers when Docker is reachable, with the worker count derived from the host CPU cores (about one per 3).
+- The `--test-container-jobs <N>` and `--test-serial` flags choose the worker count or force the serial batch.
+- The `EXA_TEST_CONTAINERS`, `EXA_TEST_CONTAINER_JOBS`, `EXA_TEST_CONTAINER_IMAGE`, `EXA_TEST_CONTAINER_PIDS_LIMIT`, `EXA_TEST_CONTAINER_MEMORY`, and `EXA_TEST_CONTAINER_CPUS` environment variables configure the containerized batch.
+
+### Changed
+
+- The test suite's isolation-sensitive batch runs in isolated worker containers by default, roughly halving its wall-clock time on a 16-core host, and falls back to the serial loop when Docker is absent.
+
 ## Unreleased — Phase 208 (Post-Execution Verification Feedback)
 
 ### Added
