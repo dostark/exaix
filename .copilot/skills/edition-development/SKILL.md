@@ -35,12 +35,6 @@ Key points
 - Exaix ships **three tiers**: Solo (Apache 2.0), Team (BSL), Enterprise (private submodule).
 - **Option-C layout:** `packages/` (Solo, always compiled) · `exaix-team/` (BSL, private
   submodule, internal `packages/`+`apps/` split) · `exaix-enterprise/` (private, never published).
-- **`IEditionComposer` + `ICapabilityModule` seam** shipped in Phase 115. `SoloComposer`
-  stores modules, invokes no hooks; `TeamComposer` (Phase 116) is wired when
-  `EXAIX_EDITION=team`.
-- **`ISeamRegistryPlaceholder`** avoids circular deps between `@exaix/core` and consumers;
-  concrete types are resolved at the app entry via `as unknown as ISeamRegistryPlaceholder` —
-  the intended bridge (replaced by a concrete type once a consumer exists).
 - **Hooks are invoked post-construction**: build the seam owner (e.g. `FlowRunner`), then
   iterate `composer.getModules()` and call each hook with the registry cast to the placeholder.
 - Edition conditionals (`edition ===`, `EXAIX_EDITION`) are **forbidden** outside

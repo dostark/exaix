@@ -44,7 +44,7 @@ interface IBaselineSkill {
 
 const BASELINE_COUNT = 28;
 /** Skills whose prose was edited on purpose after the baseline capture. Only their opening is pinned. */
-const EDITED_SINCE_BASELINE = new Set(["plan", "clean-codebase"]);
+const EDITED_SINCE_BASELINE = new Set(["plan", "clean-codebase", "edition-development"]);
 const EDITED_PREFIX_CHARS = 200;
 const RENAMED_IDS: Record<string, string> = {
   security: "audit-security",
