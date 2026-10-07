@@ -6,7 +6,7 @@
  *   the `dev-test` image exists, builds the worker-container launch, starts workers that run
  *   `scripts/test_container_driver.ts`, and dispatches files from a work-stealing queue.
  * Usage:
- *   Imported as a library by `scripts/test_parallel.ts` (Step 4). No standalone CLI yet.
+ *   Imported as a library by `scripts/test_parallel.ts`. No standalone CLI yet.
  *   `ensureDevTestImage(image)` builds the image only when `docker image inspect` misses it.
  * @architectural-layer Tooling
  * @dependencies [@std/path, @std/streams, tests/scenario_framework/runner/matrix_expander.ts, scripts/test_parallel.ts, scripts/test_container_driver.ts]
@@ -71,7 +71,7 @@ export interface IWorkerContainer {
   kill(): Promise<void>;
 }
 
-/** One Batch-2 entry the scheduler consumes (a subset of the Step 3 classification). */
+/** One Batch-2 entry the scheduler consumes (a subset of the classification). */
 export interface IContainerTestEntry {
   file: string;
   /** true ⇒ at most one such file may be in flight across all workers. */

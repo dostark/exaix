@@ -137,7 +137,7 @@ Deno.test("the build context un-excludes tests/ for the dev-test image", () => {
   );
 });
 
-// --- Step 2: worker-container launcher and host scheduler ---
+// --- worker-container launcher and host scheduler ---
 
 function baseRunOptions(startWorker: IRunBatch2Options["startWorker"]): IRunBatch2Options {
   return {
@@ -355,7 +355,7 @@ Deno.test("a registered worker pid is signaled by killActiveChildGroups on shutd
   assert(!afterUntrack.includes(-4242), "untracked pid is not signaled");
 });
 
-// --- Step 4: Batch-2 strategy selection ---
+// --- Batch-2 strategy selection ---
 
 const dockerReachable = () => Promise.resolve(true);
 const dockerUnreachable = () => Promise.resolve(false);
@@ -406,7 +406,7 @@ Deno.test("selectBatch2Strategy falls back to serial when the docker probe fails
   assertEquals(strategy.jobs, DEFAULT_TEST_CONTAINER_JOBS);
 });
 
-// --- Step 5: Batch-2 migration and parity ---
+// --- Batch-2 migration and parity ---
 
 Deno.test("runBatch2InContainers never drops a non-network Batch-2 file (no silent downgrade)", async () => {
   const entries: IContainerTestEntry[] = SEQUENTIAL_TESTS.map((test) => ({
@@ -429,7 +429,7 @@ Deno.test("runBatch2InContainers never drops a non-network Batch-2 file (no sile
 
 // Real-Docker integration. Skipped when Docker is unavailable. The parity test uses a
 // representative subset of isolation reasons and the loopback and exactl surfaces.
-// The Step 7 entry-point run covers the full suite.
+// The entry-point run covers the full suite.
 
 const DOCKER_READY = await dockerDaemonReachable();
 const INTEGRATION_IGNORE = !DOCKER_READY;
@@ -665,7 +665,7 @@ Deno.test({
   },
 });
 
-// --- Step 6: resource bounds and CI ---
+// --- resource bounds and CI ---
 
 Deno.test("buildWorkerContainerLaunch applies pids/memory/cpus bounds from the named constants and env overrides", () => {
   const defaults = resolveContainerResourceBounds({});

@@ -113,6 +113,7 @@ export async function runLeakGuard(options: ILeakGuardOptions = {}): Promise<ILe
       if (relativePath === "tests/scripts/check_edition_leak_import_test.ts") continue;
       if (relativePath === "tests/scripts/check_prod_tests_import_test.ts") continue;
       if (relativePath === ".copilot/skills/edition-development/SKILL.md") continue;
+      if (relativePath === "tests/fixtures/skills/dogfood_baseline.json") continue;
       if (relativePath === "deno.json") continue;
       if (relativePath === "CODE_STYLE.md") continue;
       if (relativePath === "scripts/check_code_style.md") continue;

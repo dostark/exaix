@@ -142,6 +142,7 @@ async function runDuplicationCheck() {
       "**/*.md",
       "**/*.yaml",
       "**/*.yml",
+      "**/*.toml",
       "**/fixtures/portals/**",
     ],
   );

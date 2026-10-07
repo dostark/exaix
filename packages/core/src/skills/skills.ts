@@ -133,7 +133,7 @@ const DEFAULT_CONFIG: ISkillsConfig = {
 export const EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR = "EXA_EVAL_SKILL_OVERLAY_DIR";
 
 /** Event source id registered by the service. */
-export const SKILLS_SERVICE_SOURCE_ID = "skills-service";
+const SKILLS_SERVICE_SOURCE_ID = "skills-service";
 
 /** Revisions kept for `ensureRevisions`. A caller records right after reading, so a small window suffices. */
 const MAX_REMEMBERED_REVISIONS = 256;
@@ -281,10 +281,8 @@ export class SkillsService implements ISkillsService {
     });
   }
 
-  /**
-   * Records one model submission. The revision snapshots are made durable first, then the complete
-   * usage vector is written in one statement. Either failure throws, so no model call follows.
-   */
+  /** Records one model submission. Revisions are made durable first, then the usage vector.
+   *  Either failure throws, so no model call follows. */
   async recordSubmission(submission: ISkillSubmission, ctx: ISkillOperationContext): Promise<void> {
     await this.ensureRevisions(submission.items.map((item) => item.revisionId), ctx);
     await this.usage.record(submission, ctx);

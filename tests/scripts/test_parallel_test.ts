@@ -174,7 +174,7 @@ Deno.test("test_output_parse is the single source and test_parallel re-exports t
   assertEquals(parseSummaryLine, testOutputParse.parseSummaryLine);
 });
 
-// --- Step 3: Batch-2 classification ---
+// --- Batch-2 classification ---
 
 /** The Batch-2 file list pinned before the classification change. Order is authoritative. */
 const EXPECTED_SEQUENTIAL_FILES = [
@@ -253,7 +253,7 @@ Deno.test("only the dist/bin writers are marked serializedOutput and the egress-
   ]);
 });
 
-// --- Step 4: container-jobs CLI and result mapping ---
+// --- container-jobs CLI and result mapping ---
 
 Deno.test("resolveContainerJobs parses the equals and spaced forms", () => {
   assertEquals(resolveContainerJobs([`${TEST_CONTAINER_JOBS_FLAG}=6`]), 6);

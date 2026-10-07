@@ -48,7 +48,7 @@ import type {
 } from "./skill_types.ts";
 
 /** Event source id registered by the loader. */
-export const SKILL_FOLDER_LOADER_SOURCE_ID = "skill-folder-loader";
+const SKILL_FOLDER_LOADER_SOURCE_ID = "skill-folder-loader";
 
 const SKILL_FILE = "SKILL.md";
 const SIDECAR_FILE = "exaix.yaml";
