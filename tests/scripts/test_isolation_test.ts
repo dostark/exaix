@@ -344,6 +344,59 @@ Deno.test("runBatch2InContainers never runs two serializedOutput files concurren
   assert(maxSerialized <= 1, `at most one serializedOutput in flight, saw ${maxSerialized}`);
 });
 
+Deno.test("at most one shared-path writer runs concurrently in the worker pool", async () => {
+  let concurrent = 0;
+  let exclusiveActive = false;
+  let overlap = false;
+  const options = baseRunOptions(undefined);
+  options.jobs = 3;
+  options.startWorker = () => {
+    let lastFile = "";
+    return {
+      name: "w",
+      send(file: string): Promise<void> {
+        if (file === TEST_CONTAINER_DONE_SENTINEL) return Promise.resolve();
+        lastFile = file;
+        concurrent++;
+        if (file === "shared_test.ts") exclusiveActive = true;
+        if (exclusiveActive && concurrent > 1) overlap = true;
+        if (file !== "shared_test.ts" && exclusiveActive) overlap = true;
+        return Promise.resolve();
+      },
+      next(): Promise<IContainerRunResult | null> {
+        const wasExclusive = lastFile === "shared_test.ts";
+        concurrent--;
+        if (wasExclusive) exclusiveActive = false;
+        return Promise.resolve(resultFor(lastFile));
+      },
+      kill(): Promise<void> {
+        return Promise.resolve();
+      },
+    };
+  };
+  const entries: IContainerTestEntry[] = [
+    { file: "shared_test.ts", exclusive: true },
+    { file: "a_test.ts" },
+    { file: "b_test.ts" },
+  ];
+  const results = await runBatch2InContainers(entries, options);
+  assertEquals(results.length, 3);
+  assertEquals(overlap, false, "no entry may overlap an exclusive entry");
+});
+
+Deno.test("shared-path entries are exclusive so a manifest writer never overlaps another entry", () => {
+  const sharedPathPool = SEQUENTIAL_TESTS.filter(
+    (test) => test.reasons.includes("shared-path") && !test.network,
+  );
+  assertEquals(sharedPathPool.map((test) => test.file), [
+    "tests/integration/agent/mcp_handshake_test.ts",
+    "tests/agents/build_agents_index_test.ts",
+  ]);
+  for (const test of sharedPathPool) {
+    assertEquals(test.exclusive, true, `${test.file} must be exclusive`);
+  }
+});
+
 Deno.test("a worker running several files under the per-file timeout is not killed by the inactivity watchdog", async () => {
   let killed = 0;
   const options = baseRunOptions(undefined);

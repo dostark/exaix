@@ -76,6 +76,8 @@ export interface IContainerTestEntry {
   file: string;
   /** true ⇒ at most one such file may be in flight across all workers. */
   serializedOutput?: boolean;
+  /** true ⇒ this file runs alone, and no other entry is in flight while it runs. */
+  exclusive?: boolean;
   /** true ⇒ run host-serial, never in a worker container. */
   network?: boolean;
   /** Internal retry counter: a wedged or exited worker requeues a file at most once. */
@@ -443,6 +445,9 @@ export async function runBatch2InContainers(
   const startWorker = options.startWorker ?? startWorkerContainer;
   const liveWorkers = new Set<IWorkerContainer>();
   let serializedInFlight = 0;
+  let inFlight = 0;
+  let exclusiveInFlight = 0;
+  let slotWaiters: Array<() => void> = [];
   let workerSeq = 0;
   // A per-run token keeps worker names unique across runs. Two suites must not collide.
   // The name stays deterministic for the watchdog kill.
@@ -460,16 +465,33 @@ export async function runBatch2InContainers(
     watchdogMs: options.watchdogMs,
   });
 
+  const notifySlot = (): void => {
+    const waiters = slotWaiters;
+    slotWaiters = [];
+    for (const resolve of waiters) resolve();
+  };
+
+  const waitForSlot = (): Promise<void> => new Promise((resolve) => slotWaiters.push(resolve));
+
   const takeNext = (): IContainerTestEntry | undefined => {
-    const index = queue.findIndex((entry) => !(entry.serializedOutput && serializedInFlight > 0));
+    if (exclusiveInFlight > 0) return undefined;
+    const index = queue.findIndex((entry) =>
+      !(entry.exclusive && inFlight > 0) &&
+      !(entry.serializedOutput && serializedInFlight > 0)
+    );
     if (index === -1) return undefined;
     const entry = queue.splice(index, 1)[0];
+    inFlight++;
     if (entry.serializedOutput) serializedInFlight++;
+    if (entry.exclusive) exclusiveInFlight++;
     return entry;
   };
 
-  const releaseSerialized = (entry: IContainerTestEntry): void => {
+  const release = (entry: IContainerTestEntry): void => {
+    inFlight--;
     if (entry.serializedOutput) serializedInFlight--;
+    if (entry.exclusive) exclusiveInFlight--;
+    notifySlot();
   };
 
   const retire = async (worker: IWorkerContainer): Promise<void> => {
@@ -485,7 +507,11 @@ export async function runBatch2InContainers(
     let worker = initial;
     while (true) {
       const entry = takeNext();
-      if (!entry) return;
+      if (!entry) {
+        if (queue.length === 0) return;
+        await waitForSlot();
+        continue;
+      }
       let outcome: IContainerRunResult | null | "timeout" = null;
       try {
         await worker.send(entry.file);
@@ -494,7 +520,7 @@ export async function runBatch2InContainers(
         // A closed stdin pipe means the worker exited before this file dispatched.
         outcome = null;
       }
-      releaseSerialized(entry);
+      release(entry);
       if (outcome === "timeout" || outcome === null) {
         // The worker wedged or exited mid-flight, so retire it and requeue once.
         await retire(worker);

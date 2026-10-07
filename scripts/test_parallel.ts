@@ -124,6 +124,8 @@ export const SequentialTestSchema = z.object({
   file: z.string().min(1),
   reasons: z.array(IsolationReasonSchema).min(1),
   serializedOutput: z.boolean().default(false),
+  /** true ⇒ the file runs alone, so a repo-shared writer never overlaps another file. */
+  exclusive: z.boolean().default(false),
   network: z.boolean().default(false),
 });
 
@@ -157,7 +159,11 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
     file: "tests/integration/cli_commands_test.ts",
     reasons: [IsolationReason.moduleCache, IsolationReason.pressure],
   },
-  { file: "tests/integration/agent/mcp_handshake_test.ts", reasons: [IsolationReason.sharedPath] },
+  {
+    file: "tests/integration/agent/mcp_handshake_test.ts",
+    reasons: [IsolationReason.sharedPath],
+    exclusive: true,
+  },
   { file: "tests/scenario_framework/tests/plan_amendment_scenario_test.ts", reasons: [IsolationReason.port] },
   {
     file: "tests/integration/config_cutover_daemon_boot_test.ts",
@@ -209,7 +215,11 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
   { file: "packages/ai/tests/model_resolver_determinism_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "packages/ai/tests/model_resolver_registry_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "packages/storage-sqlite/tests/test_mode_schema_test.ts", reasons: [IsolationReason.processEnv] },
-  { file: "tests/agents/build_agents_index_test.ts", reasons: [IsolationReason.sharedPath] },
+  {
+    file: "tests/agents/build_agents_index_test.ts",
+    reasons: [IsolationReason.sharedPath],
+    exclusive: true,
+  },
   { file: "apps/exactl/tests/blueprint_commands_test.ts", reasons: [IsolationReason.pressure] },
   { file: "apps/daemon/tests/session_delegation_coordinator_test.ts", reasons: [IsolationReason.pressure] },
   { file: "packages/flow/tests/session_delegate_cycle_sequencing_test.ts", reasons: [IsolationReason.pressure] },
