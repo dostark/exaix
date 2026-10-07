@@ -117,3 +117,31 @@ RUN set -eux; \
 # is only a fallback when --user is absent.
 ENV HOME=/tmp
 WORKDIR /worktree
+
+# ---------------------------------------------------------------------------
+# Stage 4 — dev-test: the worker-container image for the Phase 207 Batch-2 pool.
+# It extends the warmed `builder` toolchain and adds git + procps and the test-graph
+# cache. The repo is bind-mounted read-write at run time; the copied tests/scripts
+# only warm DENO_DIR so the worker's `--network none` driver resolves offline.
+# Build:   docker build --target dev-test -t exaix-dev-test:dev .
+# ---------------------------------------------------------------------------
+FROM builder AS dev-test
+
+# git is required by Batch-2 tests that run git; procps supplies pkill/ps for the
+# in-container driver's per-file reap. ca-certificates matches the builder stage.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git ca-certificates procps \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY tests/ tests/
+COPY scripts/ scripts/
+
+# Warm the driver entrypoint's import graph (plus the test/package/app graph) so the
+# worker resolves every module with `--network none`. Cache the entrypoint, not the
+# whole scripts/ tree: `deno task check` excludes scripts/, so a directory-wide cache
+# can fail on an unrelated script error.
+RUN deno cache --config deno.json scripts/test_container_driver.ts tests/ packages/ apps/
+
+# The worker runs as `--user <host-uid>:<host-gid>`; make the warmed cache writable by
+# any uid (the runtime stage pins a fixed uid; dev-test cannot).
+RUN chmod -R a+rwX /deno-dir

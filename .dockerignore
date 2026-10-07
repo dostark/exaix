@@ -19,3 +19,6 @@ node_modules
 compose.sandbox.yaml
 Dockerfile
 .dockerignore
+# Re-include tests/ for the dev-test image stage (Phase 207), which copies and caches
+# the test graph. Later patterns win, so this overrides the `tests` exclusion above.
+!tests/
