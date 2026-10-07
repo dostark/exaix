@@ -34,6 +34,11 @@
 - `exactl skills list`, `show`, `match`, `derive` and `create` now exit with code 1 on failure and code 2 on a missing argument.
 - The dogfood sandbox reads `.copilot/skills` directly.
 
+### Security
+
+- Skill text shown by `exactl skills` has terminal control characters removed, so a draft cannot change your terminal while you review it, and `--format json` keeps the exact text.
+- A stored skill revision is readable only from its own portal or from global scope, so `show --revision` and `revisions` never reveal another portal's project skill.
+
 ### Removed
 
 - The `--skill` option on plan approval, the compiled skill JSON store and its generator and index.
