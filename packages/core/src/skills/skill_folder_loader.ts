@@ -19,8 +19,11 @@ import type { IRuntimeSkill } from "@exaix/schemas/runtime_skill.ts";
 import { DomainEventType } from "../events/domain_event_types.ts";
 import type { IEventRegistry } from "../events/event_registry.ts";
 import {
+  DEFAULT_SKILL_FALLBACK_MAX_KEYWORDS,
+  DEFAULT_SKILL_FALLBACK_MIN_WORD_CHARS,
   DEFAULT_SKILL_MAIN_MAX_BYTES,
   DEFAULT_SKILL_REFERENCE_MAX_BYTES,
+  DEFAULT_SKILL_REFERENCE_MAX_CHARS,
   DEFAULT_SKILL_REFERENCE_MAX_COUNT,
   DEFAULT_SKILL_REFERENCE_TOTAL_MAX_BYTES,
   DEFAULT_SKILL_SIDECAR_MAX_BYTES,
@@ -28,10 +31,10 @@ import {
 } from "../types/constants.ts";
 import { SkillDiagnosticReason, SkillDiagnosticSeverity, SkillRootKind, SkillStatus } from "../types/enums.ts";
 import {
+  analyzeReferenceLinks,
   buildRootContext,
   canonicalizeSkillText,
   computeSkillContentSha256,
-  findLinkedReferencePaths,
   parseSkillSnapshot,
 } from "./skill_snapshot.ts";
 import type {
@@ -62,10 +65,19 @@ export const DEFAULT_SKILL_FOLDER_LIMITS: ISkillFolderLimits = {
   mainMaxBytes: DEFAULT_SKILL_MAIN_MAX_BYTES,
   sidecarMaxBytes: DEFAULT_SKILL_SIDECAR_MAX_BYTES,
   referenceMaxBytes: DEFAULT_SKILL_REFERENCE_MAX_BYTES,
+  referenceMaxChars: DEFAULT_SKILL_REFERENCE_MAX_CHARS,
   referenceMaxCount: DEFAULT_SKILL_REFERENCE_MAX_COUNT,
   referenceTotalMaxBytes: DEFAULT_SKILL_REFERENCE_TOTAL_MAX_BYTES,
   snapshotMaxBytes: DEFAULT_SKILL_SNAPSHOT_MAX_BYTES,
+  fallbackMinWordChars: DEFAULT_SKILL_FALLBACK_MIN_WORD_CHARS,
+  fallbackMaxKeywords: DEFAULT_SKILL_FALLBACK_MAX_KEYWORDS,
 };
+
+function countCodePoints(text: string): number {
+  let count = 0;
+  for (const _ of text) count++;
+  return count;
+}
 
 /** A load failure with the diagnostic reason it maps to. */
 class SkillLoadError extends Error {
@@ -295,7 +307,8 @@ export class SkillFolderLoader {
     ], [skillMd.identity, ...(sidecar ? [sidecar.identity] : []), ...references.map((r) => r.identity)]);
 
     const skill = await this.parse(snapshot, root, name);
-    const linked = findLinkedReferencePaths(snapshot.skill_md);
+    const { linked, unsupported } = analyzeReferenceLinks(snapshot.skill_md);
+    if (unsupported.length > 0) throw new SkillLoadError(SkillDiagnosticReason.REFERENCE_INVALID, name);
     const present = new Set(snapshot.references.map((r) => r.path));
     if (linked.some((path) => !present.has(path))) {
       throw new SkillLoadError(SkillDiagnosticReason.REFERENCE_MISSING, name);
@@ -336,6 +349,9 @@ export class SkillFolderLoader {
         this.limits.referenceMaxBytes,
         SkillDiagnosticReason.REFERENCE_INVALID,
       );
+      if (countCodePoints(read.text) > this.limits.referenceMaxChars) {
+        throw new SkillLoadError(SkillDiagnosticReason.SIZE_LIMIT, "reference exceeds the character cap");
+      }
       out.push({ path: `${REFERENCES_DIR}/${entry.name}`, ...read });
     }
     return out;
@@ -427,7 +443,10 @@ export class SkillFolderLoader {
     const cached = this.parseCache.get(key);
     if (cached) return cached;
     try {
-      const skill = await parseSkillSnapshot(snapshot, buildRootContext(root, name));
+      const skill = await parseSkillSnapshot(snapshot, buildRootContext(root, name), {
+        minWordChars: this.limits.fallbackMinWordChars,
+        maxKeywords: this.limits.fallbackMaxKeywords,
+      });
       this.parseCache.set(key, skill);
       return skill;
     } catch {

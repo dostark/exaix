@@ -171,9 +171,24 @@ export interface ISkillFolderLimits {
   mainMaxBytes: number;
   sidecarMaxBytes: number;
   referenceMaxBytes: number;
+  referenceMaxChars: number;
   referenceMaxCount: number;
   referenceTotalMaxBytes: number;
   snapshotMaxBytes: number;
+  fallbackMinWordChars: number;
+  fallbackMaxKeywords: number;
+}
+
+/** Limits of the keyword fallback, taken from the validated config. */
+export interface ISkillFallbackLimits {
+  minWordChars: number;
+  maxKeywords: number;
+}
+
+/** Linked reference files of a body and the targets under `references/` that the grammar does not support. */
+export interface ISkillReferenceLinks {
+  linked: string[];
+  unsupported: string[];
 }
 
 export interface ISkillStoreDeps {

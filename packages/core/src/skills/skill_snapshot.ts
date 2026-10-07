@@ -17,7 +17,15 @@ import { splitInstructionsAndExamples } from "../func/skill_body.ts";
 import { MemoryBankSource, MemoryScope, SkillRootKind, SkillStatus } from "../types/enums.ts";
 import { SkillTriggersSourceSchema } from "@exaix/schemas/runtime_skill.ts";
 import type { IRuntimeSkill } from "@exaix/schemas/runtime_skill.ts";
-import type { IResolvedSkillRoot, ISkillRevisionSnapshot, ISkillRootContext, ISkillYamlMap } from "./skill_types.ts";
+import { DEFAULT_SKILL_FALLBACK_MAX_KEYWORDS, DEFAULT_SKILL_FALLBACK_MIN_WORD_CHARS } from "../types/constants.ts";
+import type {
+  IResolvedSkillRoot,
+  ISkillFallbackLimits,
+  ISkillReferenceLinks,
+  ISkillRevisionSnapshot,
+  ISkillRootContext,
+  ISkillYamlMap,
+} from "./skill_types.ts";
 
 /** Fixed UUIDv5 namespace for Exaix skill revision ids. */
 export const SKILL_REVISION_NAMESPACE = "7ca2dd7f-933c-51d6-bb14-728efc21406f";
@@ -154,14 +162,135 @@ function validateFrontmatter(
   return { name: parsed.name, description: parsed.description };
 }
 
+/** Words the description fallback never turns into trigger keywords. */
+const FALLBACK_STOPWORDS: ReadonlySet<string> = new Set([
+  "about",
+  "after",
+  "also",
+  "and",
+  "are",
+  "before",
+  "for",
+  "from",
+  "into",
+  "more",
+  "that",
+  "the",
+  "their",
+  "then",
+  "these",
+  "this",
+  "through",
+  "using",
+  "when",
+  "where",
+  "which",
+  "with",
+  "your",
+]);
+
+const ASCII_WORD_PATTERN = /[a-z0-9]+/g;
+
+const DEFAULT_FALLBACK_LIMITS: ISkillFallbackLimits = {
+  minWordChars: DEFAULT_SKILL_FALLBACK_MIN_WORD_CHARS,
+  maxKeywords: DEFAULT_SKILL_FALLBACK_MAX_KEYWORDS,
+};
+
+function asciiWords(text: string): string[] {
+  return text.normalize("NFKC").toLowerCase().match(ASCII_WORD_PATTERN) ?? [];
+}
+
+/**
+ * Trigger keywords for a skill that authored none. Name words come first and keep short words, then
+ * description words that meet the minimum length. Stopwords and repeats drop, and the cap applies last.
+ */
+export function synthesizeFallbackKeywords(
+  name: string,
+  description: string,
+  limits: ISkillFallbackLimits = DEFAULT_FALLBACK_LIMITS,
+): string[] {
+  const terms = [
+    ...asciiWords(name),
+    ...asciiWords(description).filter((word) => word.length >= limits.minWordChars),
+  ];
+  const unique = [...new Set(terms)].filter((term) => !FALLBACK_STOPWORDS.has(term));
+  return unique.slice(0, limits.maxKeywords);
+}
+
+const FENCE_PATTERN = /^ {0,3}(`{3,}|~{3,})/;
+const INLINE_CODE_PATTERN = /`+[^`]*`+/g;
+const INLINE_LINK_PATTERN = /\]\(\s*(<[^>\n]*>|[^\s)]*)[^)]*\)/g;
+const DEFINITION_PATTERN = /^ {0,3}\[([^\]\n]+)\]:\s*(<[^>\n]*>|\S+)/;
+const REFERENCE_USE_PATTERN = /\[([^\]\n]*)\](?:\[([^\]\n]*)\])?/g;
+const SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
+const SUPPORTED_REFERENCE_TARGET = /^references\/[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
+const REFERENCES_SEGMENT = /(^|\/)references(\/|$)/i;
+
+function outsideCode(body: string): string {
+  const kept: string[] = [];
+  let fence: string | null = null;
+  for (const line of body.split("\n")) {
+    const opening = FENCE_PATTERN.exec(line);
+    if (fence === null && opening) {
+      fence = opening[1][0];
+    } else if (fence !== null && FENCE_PATTERN.exec(line)?.[1][0] === fence) {
+      fence = null;
+    } else if (fence === null) {
+      kept.push(line.replace(INLINE_CODE_PATTERN, ""));
+    }
+  }
+  return kept.join("\n");
+}
+
+function referenceTargets(text: string): string[] {
+  const definitions = new Map<string, string>();
+  const bodyLines: string[] = [];
+  for (const line of text.split("\n")) {
+    const definition = DEFINITION_PATTERN.exec(line);
+    if (definition) {
+      const label = definition[1].trim().toLowerCase();
+      if (!definitions.has(label)) definitions.set(label, definition[2].replace(/^<|>$/g, ""));
+    } else {
+      bodyLines.push(line);
+    }
+  }
+  const targets: string[] = [];
+  const prose = bodyLines.join("\n");
+  for (const match of prose.matchAll(INLINE_LINK_PATTERN)) targets.push(match[1].replace(/^<|>$/g, ""));
+  const withoutInline = prose.replace(INLINE_LINK_PATTERN, "]");
+  for (const match of withoutInline.matchAll(REFERENCE_USE_PATTERN)) {
+    const label = (match[2] === undefined || match[2] === "" ? match[1] : match[2]).trim().toLowerCase();
+    const target = definitions.get(label);
+    if (target !== undefined) targets.push(target);
+  }
+  return targets;
+}
+
+/** Splits the links of a body into supported `references/<slug>.md` targets and unsupported ones. Code and external links are ignored. */
+export function analyzeReferenceLinks(body: string): ISkillReferenceLinks {
+  const linked = new Set<string>();
+  const unsupported = new Set<string>();
+  for (const raw of referenceTargets(outsideCode(body))) {
+    if (SCHEME_PATTERN.test(raw)) continue;
+    let decoded = raw;
+    try {
+      decoded = decodeURIComponent(raw);
+    } catch {
+      decoded = raw;
+    }
+    const slashed = (value: string) => value.replaceAll("\\", "/");
+    if (!REFERENCES_SEGMENT.test(slashed(raw)) && !REFERENCES_SEGMENT.test(slashed(decoded))) continue;
+    const hash = raw.indexOf("#");
+    const path = hash === -1 ? raw : raw.slice(0, hash);
+    if (SUPPORTED_REFERENCE_TARGET.test(path)) linked.add(path);
+    else unsupported.add(raw);
+  }
+  return { linked: [...linked].sort(), unsupported: [...unsupported].sort() };
+}
+
 /** Finds the `references/<slug>.md` targets a body links to, deduplicated and sorted. */
 export function findLinkedReferencePaths(body: string): string[] {
-  const found = new Set<string>();
-  const pattern = /\]\(\s*(references\/[a-z0-9]+(?:-[a-z0-9]+)*\.md)(?:#[^)\s]*)?\s*\)/g;
-  for (const match of body.matchAll(pattern)) {
-    found.add(match[1]);
-  }
-  return [...found].sort();
+  return analyzeReferenceLinks(body).linked;
 }
 
 /**
@@ -171,6 +300,7 @@ export function findLinkedReferencePaths(body: string): string[] {
 export async function parseSkillSnapshot(
   snapshot: ISkillRevisionSnapshot,
   rootContext: ISkillRootContext,
+  fallback: ISkillFallbackLimits = DEFAULT_FALLBACK_LIMITS,
 ): Promise<IRuntimeSkill> {
   const canonicalMd = canonicalizeSkillText(snapshot.skill_md);
   const { frontmatter, body } = splitFrontmatter(canonicalMd);
@@ -200,7 +330,8 @@ export async function parseSkillSnapshot(
     root_kind: rootContext.rootKind,
     path: rootContext.path,
     content_sha256: contentSha256,
-    triggers: sidecar?.triggers ?? {},
+    triggers: sidecar?.triggers ??
+      { keywords: synthesizeFallbackKeywords(identity.name, identity.description, fallback) },
     triggers_source: sidecar?.triggers ? AUTHORED_TRIGGERS_SOURCE : DESCRIPTION_TRIGGERS_SOURCE,
     instructions,
     examples,

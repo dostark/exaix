@@ -104,6 +104,7 @@ Deno.test({
         skillId: "security-review",
         revisionId: "123e4567-e89b-52d3-a456-426614174000",
         confidence: 0.9,
+        triggersSource: "authored",
         matchedTriggers: { task_types: ["security"] },
       });
 

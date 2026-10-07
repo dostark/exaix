@@ -12,12 +12,22 @@ import { stripExamplesSection } from "./skill_body.ts";
 /** A single matched-skill entry (element of `ISkillsContext.matched`). */
 type ISkillMatchEntry = ISkillsContext["matched"][number];
 
+/** Linked reference files in sorted path order. Unlinked files stay in the snapshot but never reach the prompt. */
+function renderLinkedReferences(skill: ISkillMatchEntry): string {
+  return skill.references
+    .filter((reference) => reference.linked)
+    .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))
+    .map((reference) => `##### Reference: ${reference.path}\n${reference.content}\n\n`)
+    .join("");
+}
+
 /** One skill's rendered block. Both section renderers use it. A caller finds it in the final prompt to see if it survived budget fitting. */
 export function renderSkillEntry(skill: ISkillMatchEntry, includeExamples: boolean): string {
   let output = `#### ${skill.name}\n`;
   output += `${skill.description}\n\n`;
   const instructions = includeExamples ? skill.content : stripExamplesSection(skill.content);
   output += `**Instructions:**\n${instructions}\n\n`;
+  if (includeExamples) output += renderLinkedReferences(skill);
   if (skill.tags.length > 0) {
     output += `*Tags: ${skill.tags.join(", ")}*\n\n`;
   }

@@ -38,6 +38,7 @@ import {
   SkillDiagnosticReason,
   SkillDiagnosticSeverity,
   SkillInitOutcome,
+  SkillMatchSource,
   SkillMutationErrorCode,
   SkillMutationOperation,
   SkillRootKind,
@@ -51,6 +52,8 @@ import type { ISkillMatchRequest, ISkillsService } from "../types/mod.ts";
 import type { LogMetadata } from "../types/json.ts";
 import type { Opt, Reason } from "../types/optional_marker.ts";
 import { SKILL_EXAMPLES_HEADING, splitInstructionsAndExamples, stripExamplesSection } from "../func/skill_body.ts";
+import { renderSkillEntry } from "../func/prompt_formatter.ts";
+import { skillToContextEntry } from "./skill_pins.ts";
 import { extractKeywords } from "./text_utils.ts";
 import { DEFAULT_SKILL_FOLDER_LIMITS, SkillFolderLoader } from "./skill_folder_loader.ts";
 import { SkillFolderPublisher } from "./skill_folder_publisher.ts";
@@ -81,6 +84,8 @@ export interface ISkillsConfig {
   maxSkillsPerRequest: number;
   skillContextBudget: number;
   matchThreshold: number;
+  /** Matched keywords that earn the full keyword score. */
+  keywordMatchSaturation: number;
 }
 
 /** The current validated config and the checksum that names its generation. */
@@ -119,6 +124,7 @@ const DEFAULT_CONFIG: ISkillsConfig = {
   maxSkillsPerRequest: 5,
   skillContextBudget: DEFAULT_SKILL_CONTEXT_CHAR_BUDGET,
   matchThreshold: 0.3,
+  keywordMatchSaturation: DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION,
 };
 
 /** Directory checked ahead of the shipped catalog for a skill's folder (process lifetime).
@@ -155,7 +161,7 @@ const SERVICE_EVENTS: readonly TDomainEventType[] = [
 ];
 
 export class SkillsService implements ISkillsService {
-  private readonly skillsConfig: ISkillsConfig;
+  private readonly skillsOverrides: Partial<ISkillsConfig>;
   private readonly registry: IEventRegistry;
   private readonly publisher = new SkillFolderPublisher(createPathSecurity());
   private readonly loaders = new Map<string, SkillFolderLoader>();
@@ -173,7 +179,7 @@ export class SkillsService implements ISkillsService {
     skillsConfig?: Opt<Partial<ISkillsConfig>, Reason.OptionalInput>,
     logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
-    this.skillsConfig = { ...DEFAULT_CONFIG, ...skillsConfig };
+    this.skillsOverrides = { ...skillsConfig };
     this.loggerForLoaders = logger ?? createNoopEventLogger();
     this.registry = new EventRegistry(this.loggerForLoaders);
     this.registry.registerPublisher(SKILLS_SERVICE_SOURCE_ID, SERVICE_EVENTS);
@@ -468,26 +474,47 @@ export class SkillsService implements ISkillsService {
     });
   }
 
+  /** Matching settings: explicit constructor overrides win, then the current config's skills section, then defaults. */
+  private matching(): ISkillsConfig {
+    const skills = this.config.configProvider?.get().skills;
+    const fromConfig: Partial<ISkillsConfig> = skills
+      ? {
+        maxSkillsPerRequest: skills.max_per_request,
+        skillContextBudget: skills.context_budget_chars,
+        matchThreshold: skills.match_threshold,
+        keywordMatchSaturation: skills.keyword_match_saturation,
+      }
+      : {};
+    return { ...DEFAULT_CONFIG, ...fromConfig, ...this.skillsOverrides };
+  }
+
   async matchSkills(
     request: ISkillMatchRequest,
     ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
   ): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
     const operation = ctx ?? this.defaultContext();
-    if (!this.skillsConfig.autoMatch) return { matches: [], totalAvailable: 0 };
+    if (!this.matching().autoMatch) return { matches: [], totalAvailable: 0 };
 
     const active = await this.loaderFor(operation).list(operation);
     const matches: Array<ISkillMatch & { skill: ISkill }> = [];
     for (const loaded of active) {
       const { skill } = this.remember(loaded);
       const { confidence, matchedTriggers } = this.calculateTriggerMatch(skill.triggers, request);
-      if (confidence >= this.skillsConfig.matchThreshold) {
-        matches.push({ skillId: skill.name, revisionId: skill.id, confidence, matchedTriggers, skill });
+      if (confidence >= this.matching().matchThreshold) {
+        matches.push({
+          skillId: skill.name,
+          revisionId: skill.id,
+          confidence,
+          triggersSource: skill.triggers_source,
+          matchedTriggers,
+          skill,
+        });
       }
     }
     matches.sort((a, b) => b.confidence - a.confidence);
 
     const totalAvailable = matches.length;
-    const limited = matches.slice(0, this.skillsConfig.maxSkillsPerRequest);
+    const limited = matches.slice(0, this.matching().maxSkillsPerRequest);
     const strip = ({ skill: _skill, ...match }: ISkillMatch & { skill: ISkill }): ISkillMatch => match;
     const contextBudgetChars = request.contextBudgetChars;
 
@@ -499,7 +526,14 @@ export class SkillsService implements ISkillsService {
     const budgeted: ISkillMatch[] = [];
     let remainingBudget = contextBudgetChars;
     for (const match of limited) {
-      const blockLength = this.formatSkillForPrompt(match.skill).length;
+      const blockLength = renderSkillEntry(
+        skillToContextEntry(match.skill, {
+          confidence: match.confidence,
+          source: SkillMatchSource.MATCHED,
+          matchedTriggers: match.matchedTriggers,
+        }),
+        true,
+      ).length;
       // Skip an over-budget match and try the next. Matches are confidence-sorted, so a single
       // over-budget top match must not discard smaller matches that still fit.
       if (blockLength > remainingBudget) continue;
@@ -521,7 +555,7 @@ export class SkillsService implements ISkillsService {
 
     let context = "\n### APPLICABLE SKILLS & PROCEDURES\n";
     context += "The following specialized procedures should be applied to this task:\n\n";
-    let currentBudget = this.skillsConfig.skillContextBudget;
+    let currentBudget = this.matching().skillContextBudget;
     for (const skill of validSkills) {
       const skillBlock = this.formatSkillForPrompt(skill);
       if (skillBlock.length <= currentBudget) {
@@ -546,8 +580,10 @@ export class SkillsService implements ISkillsService {
     await this.emit(DomainEventType.SkillsMatchCompleted, ctx, {
       matched_skill_ids: matches.map((match) => match.skillId),
       matched_count: matches.length,
+      confidence_by_name: Object.fromEntries(matches.map((match) => [match.skillId, match.confidence])),
+      triggers_source_by_name: Object.fromEntries(matches.map((match) => [match.skillId, match.triggersSource])),
       total_available: totalAvailable,
-      max_per_request: this.skillsConfig.maxSkillsPerRequest,
+      max_per_request: this.matching().maxSkillsPerRequest,
       budget_truncated: budgetTruncated,
     });
   }
@@ -605,7 +641,7 @@ export class SkillsService implements ISkillsService {
     // Score by matched-keyword count against a saturation cap, not by dividing over the
     // trigger's total keyword count: a skill with a long trigger list must not be penalized
     // for the keywords a given request doesn't use.
-    const score = Math.min(matches.length / DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION, 1.0) * max;
+    const score = Math.min(matches.length / this.matching().keywordMatchSaturation, 1.0) * max;
     return { max, score, matched: matches };
   }
 
@@ -757,9 +793,12 @@ export class SkillsService implements ISkillsService {
         mainMaxBytes: skills.main_max_bytes,
         sidecarMaxBytes: skills.sidecar_max_bytes,
         referenceMaxBytes: skills.reference_max_bytes,
+        referenceMaxChars: skills.reference_max_chars,
         referenceMaxCount: skills.reference_max_count,
         referenceTotalMaxBytes: skills.reference_total_max_bytes,
         snapshotMaxBytes: skills.snapshot_max_bytes,
+        fallbackMinWordChars: skills.fallback_min_word_chars,
+        fallbackMaxKeywords: skills.fallback_max_keywords,
       },
       portals: new Set(config.portals.map((portal) => portal.alias)),
       diagnostics,

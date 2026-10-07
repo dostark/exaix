@@ -1,0 +1,101 @@
+schema_version: "1.0.0"
+id: "foreign-skill-fallback"
+title: "Skill lifecycle — a foreign folder without a sidecar is approved, matched from its description and delivers its linked reference"
+pack: "skill_eval"
+tags: ["smoke", "subsystem:skills", "entity:foreign-fallback"]
+request_fixture: "fixtures/requests/skill_eval/foreign_fallback.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "write-foreign-skill"
+    type: "write-file"
+    path: "Memory/Skills/learned/changelog-writer/SKILL.md"
+    content: |
+      ---
+      name: changelog-writer
+      description: Compose changelog entries from merged commits
+      ---
+      # Changelog writer
+
+      Follow the [style guide](references/style.md) for every entry.
+
+  - id: "write-foreign-reference"
+    type: "write-file"
+    path: "Memory/Skills/learned/changelog-writer/references/style.md"
+    content: |
+      Entries start with a verb in the past tense.
+
+  - id: "validate-catalog"
+    type: "exactl"
+    command: "skills"
+    args: ["validate", "--format", "json"]
+    output_criteria:
+      - id: "catalog-valid"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "approve-the-reviewed-revision"
+    type: "exactl"
+    command: "skills"
+    args: ["approve", "changelog-writer", "--revision", "e61c1688-73d9-57a8-96c9-b4ccddc8e6e0"]
+    output_criteria:
+      - id: "approval-succeeds"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "wait-for-usage"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "skills.usage_recorded", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "90"]
+    timeout_sec: 90
+    input_criteria: []
+    output_criteria: []
+
+  - id: "assert-match-names-the-description-source"
+    type: "journal-assert"
+    action_type: "skills.match_completed"
+    payload_contains: ["\"changelog-writer\":\"description\""]
+    output_criteria:
+      - id: "match-journaled-with-description-source"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-exit-code"
+        equals: 0

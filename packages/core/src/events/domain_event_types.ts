@@ -581,6 +581,8 @@ export interface ISkillsMatchCompletedPayload extends ISkillEventIdentityPayload
   total_available: number;
   max_per_request: number;
   budget_truncated: boolean;
+  confidence_by_name: Record<string, number>;
+  triggers_source_by_name: Record<string, string>;
 }
 
 /** Typed payload for skills.usage_recorded: one committed usage vector for one model submission. */

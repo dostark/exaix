@@ -213,6 +213,7 @@ function createSkillMatch(): ISkillMatch {
     skillId: TEST_SKILL_ID,
     revisionId: TEST_SKILL_REVISION_ID,
     confidence: 0.92,
+    triggersSource: "authored",
     matchedTriggers: {
       keywords: [TEST_SKILL_KEYWORD],
       task_types: [TEST_SKILL_TASK_TYPE],

@@ -418,6 +418,7 @@ const ConfigObjectSchema = z.object({
     snapshot_max_bytes: c("skills.snapshot_max_bytes"),
     fallback_min_word_chars: c("skills.fallback_min_word_chars"),
     fallback_max_keywords: c("skills.fallback_max_keywords"),
+    keyword_match_saturation: c("skills.keyword_match_saturation"),
   }).default({
     max_per_request: DEFAULTS.DEFAULT_SKILLS_MAX_PER_REQUEST,
     match_threshold: DEFAULTS.DEFAULT_SKILLS_MATCH_THRESHOLD,
@@ -434,6 +435,7 @@ const ConfigObjectSchema = z.object({
     snapshot_max_bytes: DEFAULTS.DEFAULT_SKILL_SNAPSHOT_MAX_BYTES,
     fallback_min_word_chars: DEFAULTS.DEFAULT_SKILL_FALLBACK_MIN_WORD_CHARS,
     fallback_max_keywords: DEFAULTS.DEFAULT_SKILL_FALLBACK_MAX_KEYWORDS,
+    keyword_match_saturation: DEFAULTS.DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION,
   }),
   portals: z.array(PortalPermissionsSchema).default([]),
   /** AI/LLM provider configuration (legacy/single) */

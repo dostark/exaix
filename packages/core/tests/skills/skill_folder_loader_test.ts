@@ -342,3 +342,129 @@ Deno.test("[loader/events] load_failed and shadowed events carry safe identity a
     await fx.cleanup();
   }
 });
+
+const GUIDE_REFERENCES = { "guide.md": "Guide body", "other.md": "Other body" };
+
+async function reasonFor(body: string, references: Record<string, string> = GUIDE_REFERENCES) {
+  const fx = await fixture();
+  try {
+    const dir = join(fx.base, "blueprints");
+    await writeSkill(dir, "linked", { md: skillMd("linked", body), references });
+    const loader = fx.loader([root(dir)]);
+    const loaded = await loader.get("linked", CTX);
+    const diagnostic = (await loader.diagnostics(CTX)).find((d) => d.safe_path === "linked");
+    return { loaded, reason: diagnostic?.reason };
+  } finally {
+    await fx.cleanup();
+  }
+}
+
+Deno.test("[reference grammar] inline, reference-style and anchored links resolve once, deduplicated and sorted", async () => {
+  const { loaded } = await reasonFor(
+    [
+      "Read [other](references/other.md#part) then [guide](references/guide.md).",
+      "Again [guide](references/guide.md) and [style][g] plus [shortcut].",
+      "",
+      "[g]: references/guide.md",
+      "[shortcut]: references/other.md#top",
+    ].join("\n"),
+  );
+  const linked = loaded?.skill.references?.filter((r) => r.linked).map((r) => r.path);
+  assertEquals(linked, ["references/guide.md", "references/other.md"]);
+});
+
+Deno.test("[reference grammar] links in fenced or inline code and external links are ordinary text", async () => {
+  const { loaded, reason } = await reasonFor(
+    [
+      "Inline code `[x](references/missing.md)` is text.",
+      "```",
+      "[y](references/also-missing.md)",
+      "```",
+      "~~~",
+      "[z](../references/bad.md)",
+      "~~~",
+      "External [site](https://example.com/references/nope.md) is text.",
+    ].join("\n"),
+  );
+  assertEquals(reason, undefined);
+  assertEquals(loaded?.skill.references?.some((r) => r.linked), false);
+});
+
+Deno.test("[reference grammar] an unlinked reference file is still snapshotted and hashed", async () => {
+  const { loaded } = await reasonFor("No links here.");
+  assertEquals(loaded?.snapshot.references.map((r) => r.path), ["references/guide.md", "references/other.md"]);
+  assertEquals(loaded?.skill.references?.some((r) => r.linked), false);
+});
+
+Deno.test("[reference security] unsupported references targets invalidate the skill", async () => {
+  const targets = [
+    "references/%67uide.md",
+    "references/guide.md?raw=1",
+    "/references/guide.md",
+    "../references/guide.md",
+    "./references/guide.md",
+    "references/sub/guide.md",
+    "references\\guide.md",
+    "references/Guide.md",
+    "references/guide.txt",
+    "references/../references/guide.md",
+    "REFERENCES/guide.md",
+  ];
+  for (const target of targets) {
+    const { loaded, reason } = await reasonFor(`See [x](${target}).`);
+    assertEquals(loaded, null, target);
+    assertEquals(reason, SkillDiagnosticReason.REFERENCE_INVALID, target);
+  }
+});
+
+Deno.test("[reference security] a reference-style definition to a missing or unsupported target invalidates the skill", async () => {
+  const missing = await reasonFor("See [x][a].\n\n[a]: references/absent.md");
+  assertEquals(missing.reason, SkillDiagnosticReason.REFERENCE_MISSING);
+  const nested = await reasonFor("See [x][a].\n\n[a]: references/deep/guide.md");
+  assertEquals(nested.reason, SkillDiagnosticReason.REFERENCE_INVALID);
+});
+
+Deno.test("[reference security] only direct references are followed and a linked file is not scanned for more links", async () => {
+  const { loaded, reason } = await reasonFor("See [guide](references/guide.md).", {
+    "guide.md": "Deeper [x](references/other.md) and [y](references/ghost.md).",
+    "other.md": "Other",
+  });
+  assertEquals(reason, undefined);
+  assertEquals(loaded?.skill.references?.filter((r) => r.linked).map((r) => r.path), ["references/guide.md"]);
+});
+
+Deno.test("[reference security] the character cap counts code points while the byte cap counts bytes", async () => {
+  const fx = await fixture();
+  try {
+    const dir = join(fx.base, "blueprints");
+    await writeSkill(dir, "wide", { references: { "a.md": "🔒".repeat(10) } });
+    await writeSkill(dir, "narrow", { references: { "a.md": "🔒".repeat(4) } });
+    const loader = fx.loader([root(dir)], { referenceMaxChars: 8, referenceMaxBytes: 1_000 });
+    assertEquals((await loader.list(CTX)).map((s) => s.skill.name), ["narrow"]);
+    const diagnostic = (await loader.diagnostics(CTX)).find((d) => d.safe_path === "wide");
+    assertEquals(diagnostic?.reason, SkillDiagnosticReason.SIZE_LIMIT);
+    const byteBound = fx.loader([root(dir)], { referenceMaxChars: 100, referenceMaxBytes: 16 });
+    assertEquals((await byteBound.list(CTX)).map((s) => s.skill.name), ["narrow"]);
+  } finally {
+    await fx.cleanup();
+  }
+});
+
+Deno.test("[reference security] the byte cap and count cap are exact at the boundary", async () => {
+  const fx = await fixture();
+  try {
+    const dir = join(fx.base, "blueprints");
+    await writeSkill(dir, "at-cap", { references: { "a.md": "x".repeat(10), "b.md": "y".repeat(10) } });
+    await writeSkill(dir, "over-cap", { references: { "a.md": "x".repeat(11) } });
+    const loader = fx.loader([root(dir)], { referenceMaxBytes: 10, referenceMaxCount: 2, referenceTotalMaxBytes: 20 });
+    assertEquals((await loader.list(CTX)).map((s) => s.skill.name), ["at-cap"]);
+    const tightTotal = fx.loader([root(dir)], {
+      referenceMaxBytes: 10,
+      referenceMaxCount: 2,
+      referenceTotalMaxBytes: 19,
+    });
+    assertEquals((await tightTotal.list(CTX)).map((s) => s.skill.name), []);
+  } finally {
+    await fx.cleanup();
+  }
+});

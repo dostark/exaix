@@ -17,8 +17,15 @@ import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
-import { AgentRunner, type IAgentRunnerConfig, type IBlueprint, type IParsedRequest } from "@exaix/execution";
-import { PricingTier, ProviderCostTier, SkillStatus } from "@exaix/core";
+import {
+  AgentRunner,
+  ContextBudgetManager,
+  type IAgentRunnerConfig,
+  type IBlueprint,
+  type IParsedRequest,
+} from "@exaix/execution";
+import { PricingTier, PromptBudgetAllocator, ProviderCostTier, SkillStatus } from "@exaix/core";
+import { ContextBudgetExceededError } from "@exaix/core/errors";
 import { SkillAuditUnavailableError, SkillsService } from "@exaix/core/skills";
 import { EventLogger } from "@exaix/core/logger";
 import type { IApplicationContext, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
@@ -357,6 +364,119 @@ Deno.test("[usage] each planning-tool round is a separate submission with the ne
     assertEquals(new Set(rows.map((r) => r.call_id)).size, 2);
   } finally {
     await Deno.remove(portalRoot, { recursive: true }).catch(() => {});
+    await fx.cleanup();
+  }
+});
+
+class RecordingProvider extends ScriptedProvider {
+  prompts: string[] = [];
+  override generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
+    this.prompts.push(prompt);
+    return super.generate(prompt, options);
+  }
+}
+
+const REFERENCED = "referenced-skill";
+const REFERENCED_CONTRACT = "referenced-contract";
+const REFERENCE_TEXT = "REFERENCE_MARKER_TEXT";
+
+async function seedReferenced(fx: IFixture, name: string, critical: boolean, referenceChars: number, count = 1) {
+  const files = Array.from({ length: count }, (_, index) => `guide-${String.fromCharCode(97 + index)}`);
+  const links = files.map((file) => `[${file}](references/${file}.md)`).join(" ");
+  await writeSkillFolder(fx.skillsDir, {
+    name,
+    instructions: `Follow ${links}.`,
+    sidecar: critical ? { critical: true } : undefined,
+  });
+  await Deno.mkdir(join(fx.skillsDir, name, "references"), { recursive: true });
+  for (const file of files) {
+    await Deno.writeTextFile(
+      join(fx.skillsDir, name, "references", `${file}.md`),
+      `${REFERENCE_TEXT} ${file}\n${"x".repeat(referenceChars)}`,
+    );
+  }
+}
+
+Deno.test("[references] full mode delivers linked references of ordinary and critical skills to the provider", async () => {
+  const fx = await fixture();
+  try {
+    await seedReferenced(fx, REFERENCED, false, 10);
+    await seedReferenced(fx, REFERENCED_CONTRACT, true, 10);
+    const provider = new RecordingProvider([OK]);
+    await runnerFor(fx, provider).run(BLUEPRINT, request({ skills: [REFERENCED, REFERENCED_CONTRACT] }), undefined);
+    assertEquals(
+      provider.prompts[0].split(`##### Reference: references/guide-a.md\n${REFERENCE_TEXT} guide-a`).length,
+      3,
+    );
+    assertEquals((await fx.rows()).map((r) => r.skill_name).sort(), [REFERENCED_CONTRACT, REFERENCED]);
+  } finally {
+    await fx.cleanup();
+  }
+});
+
+Deno.test("[references] trimmed mode drops ordinary references but a critical skill keeps them", async () => {
+  const fx = await fixture();
+  try {
+    await seedReferenced(fx, REFERENCED, false, 10);
+    await seedReferenced(fx, REFERENCED_CONTRACT, true, 10);
+    const provider = new RecordingProvider([OK]);
+    const context = { config: { get: () => ({ skills: { render_mode: "trimmed" } }), getAll: () => ({}) } } as never;
+    await runnerFor(fx, provider, { context }).run(
+      BLUEPRINT,
+      request({ skills: [REFERENCED, REFERENCED_CONTRACT] }),
+      undefined,
+    );
+    assertEquals(provider.prompts[0].split(REFERENCE_TEXT).length, 2, "only the critical reference is rendered");
+  } finally {
+    await fx.cleanup();
+  }
+});
+
+function tightBudget(fx: IFixture): Partial<IAgentRunnerConfig> {
+  return {
+    promptBudgetAllocator: new PromptBudgetAllocator({ costTargetTokens: 10_000 }),
+    contextBudgetManager: new ContextBudgetManager(undefined, undefined, undefined, new EventLogger({ db: fx.db })),
+  };
+}
+
+Deno.test("[references] final budget fitting drops an ordinary referenced skill with its references and writes no row", async () => {
+  const fx = await fixture();
+  try {
+    await seedReferenced(fx, REFERENCED, false, 10);
+    const dropOrdinary = {
+      prepare: ({ segments }: { segments: Array<{ content: string }> }) =>
+        Promise.resolve({ segments: segments.filter((s) => !s.content.includes("APPLICABLE SKILLS")) }),
+    };
+    const provider = new RecordingProvider([OK]);
+    await runnerFor(fx, provider, { contextBudgetManager: dropOrdinary as never }).run(
+      BLUEPRINT,
+      request({ skills: [REFERENCED, CONTRACT] }),
+      undefined,
+    );
+    assertEquals(provider.prompts[0].includes(REFERENCE_TEXT), false);
+    assertEquals((await fx.rows()).map((r) => r.skill_name), [CONTRACT]);
+  } finally {
+    await fx.cleanup();
+  }
+});
+
+Deno.test("[references] a protected skill whose references exceed the ceiling fails before any provider call", async () => {
+  const fx = await fixture();
+  try {
+    await seedReferenced(fx, REFERENCED_CONTRACT, true, 16_000, 5);
+    const provider = new RecordingProvider([OK]);
+    await assertRejects(
+      () =>
+        runnerFor(fx, provider, tightBudget(fx)).run(
+          BLUEPRINT,
+          request({ skills: [REFERENCED_CONTRACT] }),
+          undefined,
+        ),
+      ContextBudgetExceededError,
+    );
+    assertEquals(provider.calls, 0);
+    assertEquals((await fx.rows()).length, 0);
+  } finally {
     await fx.cleanup();
   }
 });

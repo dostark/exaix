@@ -855,6 +855,7 @@ Deno.test("IAgentRunner: matches skills when skillsService provided", async () =
       skillId: "tdd-methodology",
       revisionId: SKILL_TEST_REVISION_ID,
       confidence: 0.85,
+      triggersSource: "authored",
       matchedTriggers: { keywords: ["create"] },
     },
   ]);
@@ -882,7 +883,13 @@ Deno.test("IAgentRunner: injects skill context into prompt", async () => {
 
   const mockSkills = new MockSkillsService();
   mockSkills.setMatchedSkills([
-    { skillId: "security-first", revisionId: SKILL_TEST_REVISION_ID, confidence: 0.9, matchedTriggers: {} },
+    {
+      skillId: "security-first",
+      revisionId: SKILL_TEST_REVISION_ID,
+      confidence: 0.9,
+      triggersSource: "authored",
+      matchedTriggers: {},
+    },
   ]);
   mockSkills.setSkillContext("## Skill: Security First\n\nAlways validate input.");
 
@@ -909,8 +916,20 @@ Deno.test("IAgentRunner: assembled prompt orders system, critical skills, ordina
   const mockSkills = new MockSkillsService();
   mockSkills.criticalSkillIds.add("security-first");
   mockSkills.setMatchedSkills([
-    { skillId: "security-first", revisionId: SKILL_TEST_REVISION_ID, confidence: 0.9, matchedTriggers: {} },
-    { skillId: "tdd-methodology", revisionId: SKILL_TEST_REVISION_ID, confidence: 0.8, matchedTriggers: {} },
+    {
+      skillId: "security-first",
+      revisionId: SKILL_TEST_REVISION_ID,
+      confidence: 0.9,
+      triggersSource: "authored",
+      matchedTriggers: {},
+    },
+    {
+      skillId: "tdd-methodology",
+      revisionId: SKILL_TEST_REVISION_ID,
+      confidence: 0.8,
+      triggersSource: "authored",
+      matchedTriggers: {},
+    },
   ]);
 
   const runner = new AgentRunner(mockProvider, { skillsService: mockSkills });
@@ -975,7 +994,13 @@ Deno.test("IAgentRunner: skips skill matching when disableSkills is true", async
   const mockProvider = new MockProvider(wellFormedResponse);
   const mockSkills = new MockSkillsService();
   mockSkills.setMatchedSkills([
-    { skillId: "tdd-methodology", revisionId: SKILL_TEST_REVISION_ID, confidence: 0.8, matchedTriggers: {} },
+    {
+      skillId: "tdd-methodology",
+      revisionId: SKILL_TEST_REVISION_ID,
+      confidence: 0.8,
+      triggersSource: "authored",
+      matchedTriggers: {},
+    },
   ]);
 
   const runner = new AgentRunner(mockProvider, {
@@ -1058,6 +1083,7 @@ Deno.test("IAgentRunner: trigger matches are concatenated with blueprint default
       skillId: "matched-skill",
       revisionId: SKILL_TEST_REVISION_ID,
       confidence: 0.9,
+      triggersSource: "authored",
       matchedTriggers: { keywords: ["test"] },
     },
   ]);
@@ -1091,6 +1117,7 @@ Deno.test("IAgentRunner: request-level skills override trigger matches", async (
       skillId: "matched-skill",
       revisionId: SKILL_TEST_REVISION_ID,
       confidence: 0.9,
+      triggersSource: "authored",
       matchedTriggers: { keywords: ["test"] },
     },
   ]);

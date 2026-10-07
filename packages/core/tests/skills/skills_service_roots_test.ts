@@ -30,6 +30,10 @@ const ACTIVE = { status: SkillStatus.ACTIVE };
 interface ISkillsConfigInput {
   roots?: Array<{ kind: SkillRootKind; path: string }>;
   main_max_bytes?: number;
+  match_threshold?: number;
+  keyword_match_saturation?: number;
+  fallback_min_word_chars?: number;
+  fallback_max_keywords?: number;
 }
 
 /** A config provider whose generation moves only when `set` installs a new valid config. */
@@ -256,5 +260,39 @@ Deno.test("[roots] a service without a config provider reports the static genera
     assertEquals(service.currentConfigGeneration(), "static");
   } finally {
     await env.cleanup();
+  }
+});
+
+Deno.test("[roots] matching and fallback settings come from the current config and apply to the next operation", async () => {
+  const fx = await fixture({ roots: [{ kind: SkillRootKind.BLUEPRINT, path: "shared" }] });
+  try {
+    await writeSkillFolder(fx.dir("shared"), {
+      name: "changelog-writer",
+      description: "Compose changelog entries from merged commits",
+      instructions: "Write entries.",
+    });
+    const request = { requestText: "changelog" };
+    const names = async () => (await fx.service.matchSkills(request, fx.ctx())).matches.map((m) => m.skillId);
+    assertEquals(await names(), [], "the default threshold refuses a weak text-only match");
+
+    fx.provider.set({
+      roots: [{ kind: SkillRootKind.BLUEPRINT, path: "shared" }],
+      match_threshold: 0.1,
+    });
+    assertEquals(await names(), ["changelog-writer"], "the operator threshold applies at the next operation");
+
+    fx.provider.set({
+      roots: [{ kind: SkillRootKind.BLUEPRINT, path: "shared" }],
+      match_threshold: 0.1,
+      fallback_max_keywords: 1,
+    });
+    const capped = await fx.service.matchSkills({ requestText: "commits" }, fx.ctx());
+    assertEquals(
+      capped.matches.length,
+      0,
+      "a one-keyword cap keeps only the first name word, so a description word no longer matches",
+    );
+  } finally {
+    await fx.cleanup();
   }
 });

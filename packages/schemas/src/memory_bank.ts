@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import { DEFAULT_QUERY_LIMIT } from "@exaix/core";
-import type { IRuntimeSkill } from "./runtime_skill.ts";
+import type { IRuntimeSkill, ISkillTriggersSource } from "./runtime_skill.ts";
 import type { ISkillAuthoring, ISkillAuthoringUpdate } from "./skill_folder.ts";
 import { MEMORY_STATUS_VALUES } from "@exaix/core/status";
 import {
@@ -44,6 +44,8 @@ export interface ISkillMatch {
   skillId: string;
   revisionId: string;
   confidence: number;
+  /** Whether the triggers were authored in the sidecar or derived from the description. */
+  triggersSource: ISkillTriggersSource;
   matchedTriggers: {
     keywords?: string[];
     task_types?: string[];

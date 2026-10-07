@@ -29,22 +29,26 @@ export { policySkillSubmission } from "./skill_submission.ts";
 export { SKILL_USAGE_STORE_SOURCE_ID, SkillUsageStore } from "./skill_usage_store.ts";
 export { SKILL_REVISION_STORE_SOURCE_ID, SkillRevisionStore } from "./skill_revision_store.ts";
 export {
+  analyzeReferenceLinks,
   canonicalizeSkillText,
   computeRevisionId,
   computeSkillContentSha256,
   findLinkedReferencePaths,
   parseSkillSnapshot,
   SKILL_REVISION_NAMESPACE,
+  synthesizeFallbackKeywords,
 } from "./skill_snapshot.ts";
 export {
   type ILoadedSkill,
   type IPinnedSkill,
   type IResolvedSkillRoot,
   type ISkillDiagnostic,
+  type ISkillFallbackLimits,
   type ISkillFolderLimits,
   type ISkillFolderLoaderDeps,
   type ISkillOperationContext,
   type ISkillPin,
+  type ISkillReferenceLinks,
   type ISkillRevisionRecord,
   type ISkillRevisionSnapshot,
   type ISkillRootContext,
