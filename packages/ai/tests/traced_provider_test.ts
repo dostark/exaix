@@ -214,9 +214,12 @@ Deno.test("[TracedProvider] shares a canonical trace ID across generate lifecycl
 
   await traced.generate("prompt");
 
-  assertEquals(logger.info.calls.length, 1);
+  assertEquals(logger.info.calls.map((call) => call.args[0]), [
+    DomainEventType.LlmCallStarted,
+    DomainEventType.LlmUsageRecorded,
+  ]);
   assertEquals(logger.log.calls.length, 1);
-  assertEquals(logger.info.calls[0].args[3], logger.log.calls[0].args[0].traceId);
+  assertEquals(logger.info.calls.map((call) => call.args[3]), Array(2).fill(logger.log.calls[0].args[0].traceId));
   assertEquals(typeof logger.info.calls[0].args[3], "string");
 });
 
@@ -502,5 +505,53 @@ Deno.test("[TracedProvider.generateStream] emits llm.stream.cancelled with a rea
     assertEquals(typeof cancelledPayload.duration_ms, "number");
   } finally {
     await cleanup();
+  }
+});
+
+Deno.test("[usage] traced generation persists measured retry usage on its request trace", async () => {
+  const env = await initTestDbService();
+  try {
+    const traced = new TracedProvider({
+      id: "retry-fixture",
+      generate: () =>
+        Promise.resolve({
+          content: "draft",
+          model: "retry-fixture",
+          provider: "fixture",
+          cost_usd: 0.01,
+          usage: { promptTokens: 100, completionTokens: 200, totalTokens: 300 },
+        }),
+    }, new EventLogger({ db: env.db }));
+    await traced.generate("Generate", { traceId: "gate-retry-usage-trace" });
+    const usage = await env.db.queryActivity({ actionType: "llm.usage", traceId: "gate-retry-usage-trace" });
+    assertEquals(usage.length, 1);
+    assertEquals(JSON.parse(usage[0].payload).cost_usd, 0.01);
+    assertEquals(JSON.parse(usage[0].payload).input_tokens, 100);
+  } finally {
+    await env.cleanup();
+  }
+});
+
+Deno.test("[usage] missing provider price stays unknown for retry admission", async () => {
+  const env = await initTestDbService();
+  try {
+    const traced = new TracedProvider({
+      id: "unpriced-fixture",
+      generate: () =>
+        Promise.resolve({
+          content: "draft",
+          model: "unpriced-fixture",
+          provider: "fixture",
+          usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        }),
+    }, new EventLogger({ db: env.db }));
+    await traced.generate("Generate", { traceId: "gate-retry-unpriced-trace" });
+    const usage = await env.db.queryActivity({ actionType: "llm.usage", traceId: "gate-retry-unpriced-trace" });
+    assertEquals(usage.length, 1);
+    const payload = JSON.parse(usage[0].payload);
+    assertEquals(payload.cost_status, "unknown");
+    assertEquals(payload.cost_usd, undefined);
+  } finally {
+    await env.cleanup();
   }
 });

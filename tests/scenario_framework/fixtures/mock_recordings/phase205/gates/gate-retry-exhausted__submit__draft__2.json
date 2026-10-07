@@ -1,0 +1,22 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Review this change.",
+  "response": "<thought>Generate.</thought><content>Draft 3</content>",
+  "model": "phase205-judge-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "recordedAt": "2026-10-06T00:00:00.000Z",
+  "callSite": {
+    "scenarioId": "gate-retry-exhausted",
+    "stepId": "submit",
+    "flowStepId": "draft",
+    "callIndex": 2
+  },
+  "expectedInput": {
+    "promptIncludes": [
+      "Required change is missing"
+    ]
+  }
+}

@@ -6,6 +6,7 @@
  * @description Persistence service for FlowRunner step checkpoints under Memory/Execution/{traceId}/checkpoint.json.
  */
 
+import type { Opt, Reason } from "@exaix/core/types";
 import { ensureDir, exists } from "@std/fs";
 import { dirname, join } from "@std/path";
 import { FLOW_CHECKPOINT_SCHEMA_VERSION } from "@exaix/core";
@@ -20,6 +21,7 @@ export interface IFlowCheckpointService {
     traceId: string,
     flowContentHash: string,
     completedSteps: Record<string, IFlowStepResultSnapshot>,
+    controlState?: Opt<IFlowCheckpoint["controlState"], Reason.OptionalContext>,
   ): Promise<IFlowCheckpoint>;
   load(traceId: string): Promise<IFlowCheckpoint | null>;
   delete(traceId: string): Promise<void>;
@@ -45,6 +47,7 @@ export class FlowCheckpointService implements IFlowCheckpointService {
     traceId: string,
     flowContentHash: string,
     completedSteps: Record<string, IFlowStepResultSnapshot>,
+    controlState?: Opt<IFlowCheckpoint["controlState"], Reason.OptionalContext>,
   ): Promise<IFlowCheckpoint> {
     const checkpointPath = this.getCheckpointPath(traceId);
     await ensureDir(dirname(checkpointPath));
@@ -54,10 +57,17 @@ export class FlowCheckpointService implements IFlowCheckpointService {
       flowContentHash,
       schemaVersion: FLOW_CHECKPOINT_SCHEMA_VERSION,
       completedSteps,
+      controlState,
       savedAt: new Date().toISOString(),
     });
 
-    await Deno.writeTextFile(checkpointPath, JSON.stringify(checkpoint, null, 2));
+    const temporaryPath = `${checkpointPath}.${crypto.randomUUID()}.tmp`;
+    try {
+      await Deno.writeTextFile(temporaryPath, JSON.stringify(checkpoint, null, 2));
+      await Deno.rename(temporaryPath, checkpointPath);
+    } finally {
+      await Deno.remove(temporaryPath).catch(() => {});
+    }
     return checkpoint;
   }
 

@@ -1,0 +1,41 @@
+# @schema-version: 1.0.0
+id: gate-retry-exhausted
+name: Gate action fixture
+description: A low-scoring gate and its downstream consumer.
+version: "1.0.0"
+steps:
+  - id: draft
+    name: Generate the draft
+    type: agent
+    agent_role: senior-coder
+    input:
+      source: request
+  - id: gate
+    name: Review the change
+    type: gate
+    agent_role: code-reviewer
+    evaluate:
+      agent_role: code-reviewer
+      criteria: [CODE_CORRECTNESS]
+      threshold: 0.8
+      onFail: retry
+      maxRetries: 3
+    loop:
+      backTo: draft
+    input:
+      source: step
+      stepId: draft
+    dependsOn: [draft]
+  - id: after
+    name: Produce the final plan
+    agent_role: senior-coder
+    dependsOn: [gate]
+    input:
+      source: step
+      stepId: gate
+output:
+  from: after
+  format: json
+settings:
+  maxParallelism: 1
+  failFast: false

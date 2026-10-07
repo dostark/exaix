@@ -1,0 +1,57 @@
+schema_version: "1.0.0"
+id: gate-retry-budget
+title: Gate retry control through a Solo daemon
+pack: agent_flows
+tags: ["subsystem:flows", "safety-gate"]
+request_fixture: fixtures/requests/agent_flows/gate_retry_budget.md
+flow_fixture: fixtures/flows/gates/gate_retry_budget.flow.yaml
+mode_support: ["auto"]
+portals: []
+bindings:
+  default:
+    service: retry-fixture
+    model: mock/phase205-fixture
+  "flow:gate-retry-budget/step:draft":
+    service: retry-fixture
+    model: mock/phase205-fixture
+  "flow:gate-retry-budget/step:gate":
+    service: retry-fixture
+    model: mock/phase205-fixture
+steps:
+  - id: submit
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE"]
+    output_criteria:
+      - id: submitted
+        kind: command-exit-code
+        equals: 0
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+    env:
+      EXA_LLM_PROVIDER: mock
+      MOCK_STRICT: "1"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: daemon-started
+        kind: command-output-contains
+        contains: [daemon.started]
+  - id: await-terminal
+    type: exactl
+    command: journal
+    args: [wait, --event, request.failed, --since-rowid, "$STEP_BASELINE", --timeout, "30"]
+    timeout_sec: 35
+    output_criteria:
+      - id: terminal-event
+        kind: command-exit-code
+        equals: 0
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]
+    output_criteria:
+      - id: stopped
+        kind: command-exit-code
+        equals: 0

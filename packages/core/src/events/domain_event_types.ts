@@ -40,6 +40,18 @@ import type {
   VotingStrategy,
 } from "../types/enums.ts";
 
+export interface IFlowLoopIterationEventPayload {
+  flowRunId: string;
+  gateStepId: string;
+  backTo: string;
+  iteration: number;
+  maxRetries: number;
+  bodyStepIds: string[];
+  previousScore: number;
+  traceId?: string;
+  requestId?: string;
+}
+
 export interface IFlowGateEvaluatedEventPayload {
   flowRunId: string;
   stepId: string;
@@ -863,6 +875,7 @@ export const DomainEventType = {
   FlowTokenSummaryError: "flow.token_summary.error",
   FlowGateCriteriaNoAnalysis: "flow.gate.criteria.no_analysis",
   FlowGateEvaluated: "flow.gate.evaluated",
+  FlowLoopIteration: "flow.loop.iteration",
 
   // Request lifecycle events (request/processor.ts)
   RequestProcessStarted: "request.process.started",

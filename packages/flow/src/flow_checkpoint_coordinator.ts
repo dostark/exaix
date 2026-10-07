@@ -28,10 +28,17 @@ import type { IFlowCheckpointService } from "./checkpoint_service.ts";
 import type { IStepDurabilityStore, IStepExecutionRecord } from "./contracts/step_durability.ts";
 import { FlowExecutionError, type IFlowEventLogger, type IStepResult } from "./flow_runner.ts";
 import { FLOW_CONTROL_RESUME_UNSUPPORTED_CODE } from "./errors/flow_control_errors.ts";
+import { FlowControlStateStore } from "./flow_control_state_store.ts";
+import type { IBindingRunSnapshot } from "@exaix/schemas";
 import type { IAgentExecutionResult } from "@exaix/execution";
 
 export interface IFlowCheckpointRequest {
   userPrompt: string;
+  portal?: string;
+  executionRoot?: string;
+  planContextRef?: string;
+  requestSha256?: string;
+  bindingSnapshot?: IBindingRunSnapshot;
   traceId?: string;
   requestId?: string;
   requestAnalysis?: IRequestAnalysis;
@@ -39,6 +46,7 @@ export interface IFlowCheckpointRequest {
 
 export interface IFlowCheckpointCoordinatorDeps {
   checkpointService?: IFlowCheckpointService;
+  controlStateStore?: FlowControlStateStore;
   stepDurabilityStore: IStepDurabilityStore;
   eventLogger: IFlowEventLogger;
 }
@@ -67,6 +75,7 @@ export interface IFlowCheckpointCoordinator {
 }
 
 export class FlowCheckpointCoordinator implements IFlowCheckpointCoordinator {
+  private readonly controlStateStore: FlowControlStateStore;
   private readonly checkpointService?: IFlowCheckpointService;
   private readonly stepDurabilityStore: IStepDurabilityStore;
   private readonly eventLogger: IFlowEventLogger;
@@ -74,6 +83,7 @@ export class FlowCheckpointCoordinator implements IFlowCheckpointCoordinator {
 
   constructor(deps: IFlowCheckpointCoordinatorDeps) {
     this.checkpointService = deps.checkpointService;
+    this.controlStateStore = deps.controlStateStore ?? new FlowControlStateStore();
     this.stepDurabilityStore = deps.stepDurabilityStore;
     this.eventLogger = deps.eventLogger;
   }
@@ -95,33 +105,16 @@ export class FlowCheckpointCoordinator implements IFlowCheckpointCoordinator {
     }
 
     if (
-      checkpoint.schemaVersion !== FLOW_CHECKPOINT_SCHEMA_VERSION ||
+      checkpoint.traceId !== request.traceId || checkpoint.schemaVersion !== FLOW_CHECKPOINT_SCHEMA_VERSION ||
       checkpoint.flowContentHash !== flowContentHash
     ) {
-      await this.eventLogger.log(FLOW_EVENT_CHECKPOINT_STALE, {
-        flowRunId,
-        flowId: flow.id,
-        traceId: request.traceId,
-        requestId: request.requestId,
-      });
-      await this.checkpointService.delete(request.traceId);
-      for (const stepId of Object.keys(checkpoint.completedSteps)) {
-        const recordId = `stale:${request.traceId}:${stepId}`;
-        await this.stepDurabilityStore.invalidate(recordId, "stale-checkpoint");
-        this.eventLogger.log(DomainEventType.FlowStepInvalidated, {
-          traceId: request.traceId,
-          requestId: request.requestId,
-          flowRunId,
-          stepId,
-          recordId,
-          reason: "stale-checkpoint",
-        });
-      }
+      await this.discardStaleCheckpoint(flow, request, flowRunId, checkpoint, request.traceId);
       return;
     }
 
     const completedControl = flow.steps.find((step) =>
-      (step.type === FlowStepType.GATE || step.type === FlowStepType.BRANCH) && checkpoint.completedSteps[step.id]
+      (step.type === FlowStepType.GATE || step.type === FlowStepType.BRANCH) && checkpoint.completedSteps[step.id] &&
+      !checkpoint.controlState?.gates[step.id]
     );
     if (completedControl) {
       throw new FlowExecutionError(
@@ -135,6 +128,9 @@ export class FlowCheckpointCoordinator implements IFlowCheckpointCoordinator {
       stepResults.set(stepId, result);
     }
 
+    if (checkpoint.controlState) {
+      await this.controlStateStore.restore(checkpoint.controlState, flow, request, stepResults, flowRunId);
+    }
     await this.migrateCheckpointToDurabilityStore(checkpoint, flow.id, request.traceId);
 
     await this.eventLogger.log(FLOW_EVENT_CHECKPOINT_LOADED, {
@@ -161,6 +157,7 @@ export class FlowCheckpointCoordinator implements IFlowCheckpointCoordinator {
       request.traceId,
       flowContentHash,
       this.buildCheckpointSnapshot(stepResults),
+      this.controlStateStore.get(stepResults).state,
     );
 
     await this.eventLogger.log(FLOW_EVENT_CHECKPOINT_SAVED, {
@@ -189,6 +186,47 @@ export class FlowCheckpointCoordinator implements IFlowCheckpointCoordinator {
       traceId: request.traceId,
       requestId: request.requestId,
     });
+  }
+
+  private hasControlCheckpoint(flow: IFlow, checkpoint: IFlowCheckpoint): boolean {
+    return Object.keys(checkpoint.controlState?.gates ?? {}).length > 0 ||
+      flow.steps.some((step) =>
+        [FlowStepType.GATE, FlowStepType.BRANCH].includes(step.type) && checkpoint.completedSteps[step.id]
+      );
+  }
+  private async discardStaleCheckpoint(
+    flow: IFlow,
+    request: IFlowCheckpointRequest,
+    flowRunId: string,
+    checkpoint: IFlowCheckpoint,
+    traceId: string,
+  ): Promise<void> {
+    if (this.hasControlCheckpoint(flow, checkpoint)) {
+      throw new FlowExecutionError(
+        "Control checkpoint identity changed",
+        flowRunId,
+        FLOW_CONTROL_RESUME_UNSUPPORTED_CODE,
+      );
+    }
+    await this.eventLogger.log(FLOW_EVENT_CHECKPOINT_STALE, {
+      flowRunId,
+      flowId: flow.id,
+      traceId: request.traceId,
+      requestId: request.requestId,
+    });
+    await this.checkpointService!.delete(traceId);
+    for (const stepId of Object.keys(checkpoint.completedSteps)) {
+      const recordId = `stale:${traceId}:${stepId}`;
+      await this.stepDurabilityStore.invalidate(recordId, "stale-checkpoint");
+      this.eventLogger.log(DomainEventType.FlowStepInvalidated, {
+        traceId: request.traceId,
+        requestId: request.requestId,
+        flowRunId,
+        stepId,
+        recordId,
+        reason: "stale-checkpoint",
+      });
+    }
   }
 
   private async migrateCheckpointToDurabilityStore(

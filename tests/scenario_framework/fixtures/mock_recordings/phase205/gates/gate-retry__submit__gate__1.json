@@ -1,0 +1,23 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Review this change.",
+  "response": "{\"criteriaScores\": {\"code_correctness\": {\"score\": 1, \"reasoning\": \"Accepted\", \"issues\": []}}, \"feedback\": \"Accepted\", \"suggestions\": []}",
+  "model": "phase205-judge-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "recordedAt": "2026-10-06T00:00:00.000Z",
+  "callSite": {
+    "scenarioId": "gate-retry",
+    "stepId": "submit",
+    "flowStepId": "gate",
+    "callIndex": 1
+  },
+  "expectedInput": {
+    "promptIncludes": [
+      "Draft 2",
+      "code_correctness"
+    ]
+  }
+}

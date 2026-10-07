@@ -2087,6 +2087,17 @@ export const DEFAULT_SKILL_INDEX_VERSION = "1.0.0";
 /** Semantic version for flows. Bump on breaking schema changes. */
 export const DEFAULT_FLOW_VERSION = "1.0.0";
 
+/** Maximum judge evaluations admitted by one gate in a logical flow run. */
+export const DEFAULT_FLOW_GATE_MAX_EVALUATIONS: number = configurable({
+  key: "flow.max_gate_evaluations",
+  default: 10,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum gate evaluations per logical flow run",
+  min: 2,
+  max: 100,
+  swap: SwapClass.RESTART,
+});
+
 /** Default backoff for flow step retries and onError retry recovery. */
 export const DEFAULT_FLOW_STEP_BACKOFF_MS: number = configurable({
   key: "flow.step_backoff_ms",

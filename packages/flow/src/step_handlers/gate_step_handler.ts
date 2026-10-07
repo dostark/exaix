@@ -8,6 +8,7 @@
 
 import type { IFlowStepHandler, IStepExecutionContext } from "./step_handler.ts";
 import type { IGateConfig, IGateEvaluator, IGateResult } from "@exaix/core/types";
+import { DEFAULT_FLOW_GATE_MAX_EVALUATIONS } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IBindingGateContext, IBindingStepRef } from "@exaix/schemas";
 import { STEP_KIND_GATE } from "@exaix/ai/bindings/binding_types.ts";
@@ -43,7 +44,11 @@ export class GateStepHandler implements IFlowStepHandler {
     return gateEvaluationResult(ctx.step.id, ctx.step.evaluate!.threshold, result);
   }
 
-  async evaluateGate(ctx: IStepExecutionContext, attempt: number): Promise<IGateResult> {
+  async evaluateGate(
+    ctx: IStepExecutionContext,
+    attempt: number,
+    evaluationCeiling = DEFAULT_FLOW_GATE_MAX_EVALUATIONS,
+  ): Promise<IGateResult> {
     const { step, flow, request, stepRequest, flowRunId } = ctx;
     if (!step.evaluate) {
       throw new Error("Gate step has no evaluate config");
@@ -53,6 +58,7 @@ export class GateStepHandler implements IFlowStepHandler {
     const effectiveInclude = gateConfig.includeRequestCriteria || flow.settings?.includeRequestCriteria;
     const effectiveGateConfig: IGateConfig = {
       ...gateConfig,
+      evaluationCeiling,
       includeRequestCriteria: effectiveInclude ?? false,
       callMetadata: {
         traceId: request.traceId,

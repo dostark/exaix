@@ -52,6 +52,8 @@ export interface IGateConfig {
   onFail: FlowGateOnFail;
   /** Maximum retry attempts if onFail is "retry" */
   maxRetries: number;
+  /** Immutable evaluation ceiling captured at flow admission. */
+  evaluationCeiling?: number;
   /** Include dynamic criteria generated from the request analysis */
   includeRequestCriteria: boolean;
   /** Flow-gate judge binding carried on the evaluation. Non-flow callers omit it and

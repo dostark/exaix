@@ -13,7 +13,11 @@ import type { JSONValue } from "@exaix/core";
 import { DEFAULT_TIMEOUT_MS } from "@exaix/core";
 import { RetryPolicy } from "@exaix/core/request";
 import type { Opt, Reason } from "@exaix/core/types";
-import { FlowExecutionError } from "./flow_runner.ts";
+import {
+  FLOW_RETRY_BUDGET_EXCEEDED_CODE,
+  FLOW_RETRY_BUDGET_UNAVAILABLE_CODE,
+  FlowControlError,
+} from "./errors/flow_control_errors.ts";
 
 /** Computes retry backoff delays and enforces the per-flow cumulative retry-cost budget. */
 export class RetryBudgetService {
@@ -41,13 +45,21 @@ export class RetryBudgetService {
     request: { traceId?: string },
   ): Promise<void> {
     const maxFlowRetryCostUsd = this.config?.max_flow_retry_cost_usd;
-    if (!this.db || !request.traceId || !maxFlowRetryCostUsd || maxFlowRetryCostUsd <= 0) {
+    if (!maxFlowRetryCostUsd || maxFlowRetryCostUsd <= 0) {
       return;
     }
 
-    const totalCostUsd = await this.getCumulativeFlowCostUsd(request.traceId);
-    if (totalCostUsd > maxFlowRetryCostUsd) {
-      throw new FlowExecutionError("Retry budget exceeded", flowRunId);
+    if (!this.db || !request.traceId) {
+      throw new FlowControlError(FLOW_RETRY_BUDGET_UNAVAILABLE_CODE, `Retry budget unavailable for ${flowRunId}`);
+    }
+    let totalCostUsd: number;
+    try {
+      totalCostUsd = await this.getCumulativeFlowCostUsd(request.traceId);
+    } catch {
+      throw new FlowControlError(FLOW_RETRY_BUDGET_UNAVAILABLE_CODE, `Retry usage query failed for ${flowRunId}`);
+    }
+    if (totalCostUsd >= maxFlowRetryCostUsd) {
+      throw new FlowControlError(FLOW_RETRY_BUDGET_EXCEEDED_CODE, "Retry budget exceeded");
     }
   }
 
@@ -55,19 +67,23 @@ export class RetryBudgetService {
     const tokenEvents = await this.db!.queryActivity({
       traceId,
       actionType: "llm.usage",
+      limit: Number.MAX_SAFE_INTEGER,
     });
 
     let totalCostUsd = 0;
     for (const event of tokenEvents) {
       try {
         const payload = JSON.parse(event.payload) as Record<string, JSONValue>;
+        if (payload.cost_status === "unknown") throw new Error("Retry usage cost is unknown");
         const rawCost = payload.cost_usd;
-        const costUsd = typeof rawCost === "number" ? rawCost : Number(rawCost ?? 0);
-        if (Number.isFinite(costUsd)) {
-          totalCostUsd += costUsd;
+        if (typeof rawCost !== "number" && (typeof rawCost !== "string" || rawCost.trim() === "")) {
+          throw new Error("Retry usage cost is missing");
         }
+        const costUsd = typeof rawCost === "number" ? rawCost : Number(rawCost);
+        if (!Number.isFinite(costUsd) || costUsd < 0) throw new Error("Retry usage cost is invalid");
+        totalCostUsd += costUsd;
       } catch {
-        // Ignore malformed activity rows when calculating the retry budget.
+        throw new Error("Retry usage cost is unavailable");
       }
     }
 

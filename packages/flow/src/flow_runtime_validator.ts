@@ -9,17 +9,50 @@
  */
 
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
-import { FlowStepExecutionMode, FlowStepOnErrorAction, FlowStepType } from "@exaix/core";
+import {
+  DEFAULT_FLOW_GATE_MAX_EVALUATIONS,
+  FlowGateOnFail,
+  FlowInputSource,
+  FlowStepExecutionMode,
+  FlowStepOnErrorAction,
+  FlowStepType,
+} from "@exaix/core";
+
+import { resolveConfigurableBounds } from "@exaix/core/config";
+import { validateLoopBody } from "./loop_body.ts";
 
 /** Runs pre-execution structural checks against a flow definition. */
 export class FlowRuntimeValidator {
-  validateGatePolicies(flow: IFlow): string | null {
+  validateGatePolicies(flow: IFlow, ceiling = DEFAULT_FLOW_GATE_MAX_EVALUATIONS): string | null {
+    const bounds = resolveConfigurableBounds("flow.max_gate_evaluations");
+    if (!Number.isInteger(ceiling) || ceiling < bounds.min! || ceiling > bounds.max!) {
+      return "Invalid gate evaluation ceiling";
+    }
     for (const step of flow.steps) {
-      if (step.type === FlowStepType.GATE && step.onError) {
-        return `Step '${step.id}': a gate's failure policy is evaluate.onFail`;
-      }
+      const error = this.validateControlStep(flow, step, ceiling);
+      if (error) return error;
     }
     return null;
+  }
+  private validateControlStep(flow: IFlow, step: IFlowStep, ceiling: number): string | null {
+    if (step.input.source === FlowInputSource.FEEDBACK) return "use a gate with onFail: retry and loop.backTo";
+    if (step.loop && step.type !== FlowStepType.GATE) return "loop is valid on gate steps only";
+    if (step.type !== FlowStepType.GATE) return null;
+    if (step.onError) return `Step '${step.id}': a gate's failure policy is evaluate.onFail`;
+    return this.validateGateLimits(flow, step, ceiling);
+  }
+  private validateGateLimits(flow: IFlow, step: IFlowStep, ceiling: number): string | null {
+    if (!step.evaluate) return `Gate '${step.id}' requires evaluate config`;
+    const count = step.evaluate.maxRetries ?? 3;
+    if (!Number.isInteger(count) || count < 1 || count > ceiling) {
+      return `Gate '${step.id}' exceeds the evaluation ceiling`;
+    }
+    if (step.loop?.maxIterations !== undefined || step.loop?.targetScore !== undefined) {
+      return "gate loops use evaluate limits";
+    }
+    if (step.evaluate.onFail !== FlowGateOnFail.RETRY) return null;
+    if (count < 2) return "a retrying gate needs maxRetries >= 2";
+    return validateLoopBody(flow, step);
   }
   findCyclicFallbackChain(flow: IFlow): string[] | null {
     const stepsById = new Map(flow.steps.map((step) => [step.id, step]));

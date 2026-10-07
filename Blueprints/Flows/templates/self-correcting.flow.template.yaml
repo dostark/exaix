@@ -12,22 +12,25 @@ steps:
       source: request
       transform: passthrough
     retry:
-      maxAttempts: 2
+      maxAttempts: 1
       backoffMs: 1000
   - id: evaluate-quality
     name: Evaluate Output Quality
-    type: agent
+    type: gate
     agent_role: quality-judge
-    dependsOn:
-      - generate-initial
+    dependsOn: [generate-initial]
     input:
-      source: aggregate
-      from:
-        - generate-initial
-      transform: merge_as_context
-    retry:
-      maxAttempts: 1
-      backoffMs: 2000
+      source: step
+      stepId: generate-initial
+      transform: passthrough
+    evaluate:
+      agent_role: quality-judge
+      criteria: [CODE_CORRECTNESS]
+      threshold: 0.8
+      onFail: retry
+      maxRetries: 3
+    loop:
+      backTo: generate-initial
   - id: refine-output
     name: Refine Output Based on Feedback
     type: agent

@@ -1,0 +1,22 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Review this change.",
+  "response": "<thought>Prepare a final plan.</thought><content>{\"subject\": \"Gate warning plan\", \"description\": \"The warning was received.\", \"steps\": [{\"step\": 1, \"title\": \"Address the missing change\", \"description\": \"Add the required change.\"}]}</content>",
+  "model": "phase205-agent-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "recordedAt": "2026-10-06T00:00:00.000Z",
+  "callSite": {
+    "scenarioId": "gate-retry",
+    "stepId": "submit",
+    "flowStepId": "after",
+    "callIndex": 0
+  },
+  "expectedInput": {
+    "promptIncludes": [
+      "Accepted"
+    ]
+  }
+}

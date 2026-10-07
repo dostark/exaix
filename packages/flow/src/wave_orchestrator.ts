@@ -13,7 +13,8 @@
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { DependencyResolver } from "@exaix/flow";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import { FLOW_GATE_HALTED_CODE } from "./errors/flow_control_errors.ts";
+import { finalizeStepResult } from "./step_result_finalizer.ts";
+import { isTerminalFlowControlCode } from "./errors/flow_control_errors.ts";
 import { DomainEventType, type IEventRegistry } from "@exaix/core/events";
 import {
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -330,7 +331,7 @@ export class WaveOrchestrator {
     }
 
     const terminalIndex = waveResults.findIndex((result) =>
-      this.isPromiseFulfilledResult(result) && result.value.errorCode === FLOW_GATE_HALTED_CODE
+      this.isPromiseFulfilledResult(result) && isTerminalFlowControlCode(result.value.errorCode)
     );
     if ((!waveFailed || !failFast) && terminalIndex < 0) {
       return;
@@ -448,7 +449,7 @@ export class WaveOrchestrator {
       ? results.map((result) => {
         if (
           this.isPromiseFulfilledResult(result) && !result.value.success &&
-          result.value.errorCode !== FLOW_GATE_HALTED_CODE
+          !isTerminalFlowControlCode(result.value.errorCode)
         ) {
           return {
             ...result,
@@ -577,7 +578,7 @@ export class WaveOrchestrator {
     stepId: string,
     waveNumber: number,
     promiseValue: IStepResult,
-    namespaceId: string,
+    _namespaceId: string,
   ): Promise<IWaveProcessingOutcome> {
     const result = {
       ...promiseValue,
@@ -589,20 +590,7 @@ export class WaveOrchestrator {
       return { successCount: 0, failureCount: 1, failed: ctx.failFast };
     }
 
-    await this.namespaceCoordinator.persistWaveNamespaceWrites(
-      result,
-      ctx.request,
-      stepId,
-      namespaceId,
-      ctx.flow.namespace?.enabled === true,
-    );
-    await this.checkpointCoordinator.saveCheckpointIfEnabled(
-      ctx.flow,
-      ctx.request,
-      ctx.flowRunId,
-      ctx.flowContentHash,
-      ctx.stepResults,
-    );
+    await finalizeStepResult(ctx, result, this.namespaceCoordinator, this.checkpointCoordinator);
 
     return { successCount: 1, failureCount: 0, failed: false };
   }

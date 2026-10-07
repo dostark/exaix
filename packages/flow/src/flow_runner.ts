@@ -17,6 +17,10 @@ import type {
 } from "@exaix/schemas/flow.ts";
 import { FlowRuntimeValidator } from "./flow_runtime_validator.ts";
 import { ParallelGroupMergeService } from "./parallel_group_merge_service.ts";
+import { FlowControlStateStore } from "./flow_control_state_store.ts";
+import { computeLoopBody } from "./loop_body.ts";
+import { runGateLoop } from "./gate_loop_coordinator.ts";
+import { finalizeStepResult } from "./step_result_finalizer.ts";
 import { RetryBudgetService } from "./retry_budget_service.ts";
 import { CompensationService } from "./compensation_service.ts";
 import { WaveOrchestrator } from "./wave_orchestrator.ts";
@@ -36,6 +40,8 @@ import {
 } from "@exaix/ai";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
 import {
+  DEFAULT_FLOW_GATE_MAX_EVALUATIONS,
+  FlowGateAction,
   FlowInputSource,
   FlowOutputFormat,
   FlowStepOnErrorAction,
@@ -61,12 +67,13 @@ import type {
   IApplicationContext,
   IGateConfig,
   IGateEvaluator,
+  IGateResult,
   IHitlPolicyEvaluator,
   IToolConfirmationInterceptor,
 } from "@exaix/core/types";
 import { FlowStepHandlerRegistry } from "./step_handlers/step_handler_registry.ts";
-import { FlowGateHaltedError, gateEvaluationResult } from "./errors/flow_control_errors.ts";
-import type { IFlowGateEvaluatedEventPayload } from "@exaix/core/events";
+import { FlowControlError, FlowGateHaltedError, gateEvaluationResult } from "./errors/flow_control_errors.ts";
+import type { IFlowGateEvaluatedEventPayload, IFlowLoopIterationEventPayload } from "@exaix/core/events";
 import { GateStepHandler, type IPendingWaitStateRef } from "./step_handlers/gate_step_handler.ts";
 import { AgentStepHandler } from "./step_handlers/agent_step_handler.ts";
 import { SessionDelegateCycleStepHandler } from "./step_handlers/session_delegate_cycle_step_handler.ts";
@@ -352,6 +359,8 @@ interface IStepContext {
   request: IFlowOriginalRequest;
   stepResults: Map<string, IStepResult>;
   startedAt: Date;
+  loopIteration?: number;
+  gateFeedback?: string;
 }
 
 type IFormatStepSuccessContext = Pick<IStepContext, "flowRunId" | "step" | "request" | "startedAt">;
@@ -385,6 +394,7 @@ interface IFlowWaveErrorPayload {
 }
 
 export interface IFlowEventPayloadMap {
+  [DomainEventType.FlowLoopIteration]: IFlowLoopIterationEventPayload;
   [DomainEventType.FlowValidating]: IFlowEventLogBase & { stepCount: number };
   "flow.validation.failed": IFlowEventLogBase & { error: string };
   [DomainEventType.FlowValidated]: IFlowEventLogBase & { stepCount: number; maxParallelism: number; failFast: boolean };
@@ -730,6 +740,9 @@ export interface IFlowEventLogger {
  * Error thrown when flow execution fails
  */
 export class FlowExecutionError extends Error {
+  get code(): string | undefined {
+    return this.reasonCode;
+  }
   constructor(
     message: string,
     public readonly flowRunId?: Opt<string, Reason.TraceAbsent>,
@@ -760,7 +773,7 @@ export function toGateConfig(evaluate: IGateEvaluate): IGateConfig {
     criteria: evaluate.criteria,
     threshold: evaluate.threshold,
     onFail: evaluate.onFail,
-    maxRetries: evaluate.maxRetries,
+    maxRetries: evaluate.maxRetries ?? 3,
     includeRequestCriteria: evaluate.includeRequestCriteria,
   };
 }
@@ -826,6 +839,7 @@ export class FlowRunner implements IFlowRunner {
   private namespaceService?: IExecutionMemoryStore;
   private stepDurabilityStore: IStepDurabilityStore;
   private stepReplayPolicy: IStepReplayPolicy;
+  private readonly controlStateStore = new FlowControlStateStore();
   private checkpointCoordinator!: FlowCheckpointCoordinator;
   private namespaceCoordinator!: FlowNamespaceCoordinator;
   private readonly stepOutputFormatter: StepOutputFormatter = new StepOutputFormatter();
@@ -870,6 +884,7 @@ export class FlowRunner implements IFlowRunner {
     this.flowTraceStore = options.flowTraceStore;
     this.checkpointCoordinator = new FlowCheckpointCoordinator({
       checkpointService: this.checkpointService,
+      controlStateStore: this.controlStateStore,
       stepDurabilityStore: this.stepDurabilityStore,
       eventLogger: this.eventLogger,
     });
@@ -1270,11 +1285,17 @@ export class FlowRunner implements IFlowRunner {
     }
 
     const stepResults = new Map<string, IStepResult>();
+    this.controlStateStore.initialize(
+      stepResults,
+      this.config?.flow?.max_gate_evaluations ?? DEFAULT_FLOW_GATE_MAX_EVALUATIONS,
+      flowContentHash,
+      structuredClone({ ai: this.config?.ai ?? null, models: this.config?.models ?? null }),
+    );
     let snapshotTraceId: string | undefined;
 
     try {
       await this.ensureDynamicExecutor(flow, flowRunId);
-      await this.validateIFlow(flow, request, flowRunId);
+      await this.validateIFlow(flow, request, flowRunId, this.controlStateStore.get(stepResults).ceiling);
       const flowDeclaresBindings = flow.steps.some((step) => step.binding !== undefined || step.pin !== undefined);
       if (
         this.options.bindingService &&
@@ -1363,6 +1384,7 @@ export class FlowRunner implements IFlowRunner {
     flow: IFlow,
     request: IFlowOriginalRequest,
     flowRunId: string,
+    ceiling: number,
   ): Promise<void> {
     // Log flow validation start
     await this.eventLogger.log(DomainEventType.FlowValidating, {
@@ -1397,7 +1419,7 @@ export class FlowRunner implements IFlowRunner {
       throw new FlowExecutionError(parallelValidationError, flowRunId);
     }
 
-    const gatePolicyError = this.runtimeValidator.validateGatePolicies(flow);
+    const gatePolicyError = this.runtimeValidator.validateGatePolicies(flow, ceiling);
     if (gatePolicyError) throw new FlowExecutionError(gatePolicyError, flowRunId);
 
     const strategyValidationError = this.runtimeValidator.validateStepStrategy(flow);
@@ -1571,10 +1593,20 @@ export class FlowRunner implements IFlowRunner {
     flow: IFlow,
     request: IFlowOriginalRequest,
     stepResults: Map<string, IStepResult>,
+    repeat?: Opt<{ iteration: number; feedback?: string }, Reason.OptionalContext>,
   ): Promise<IStepResult> {
     const step = flow.steps.find((s) => s.id === stepId)!;
     const startedAt = new Date();
-    const stepCtx: IStepContext = { flowRunId, step, flow, request, stepResults, startedAt };
+    const stepCtx: IStepContext = {
+      flowRunId,
+      step,
+      flow,
+      request,
+      stepResults,
+      startedAt,
+      loopIteration: repeat?.iteration,
+      gateFeedback: repeat?.feedback,
+    };
 
     // Evaluate step condition if present
     const conditionResult = await this.evaluateStepCondition(flowRunId, step, flow, stepResults, request, startedAt);
@@ -1608,7 +1640,10 @@ export class FlowRunner implements IFlowRunner {
     });
 
     try {
-      const attemptOutcome = await this.runStepAttempt(stepCtx);
+      const attemptOutcome = await this.runStepAttempt(
+        stepCtx,
+        repeat ? StepAttemptClass.RETRY : StepAttemptClass.INITIAL,
+      );
       return this.formatStepSuccess(
         stepCtx,
         attemptOutcome.result,
@@ -1616,6 +1651,7 @@ export class FlowRunner implements IFlowRunner {
         attemptOutcome.namespaceWrites,
       );
     } catch (error) {
+      if (repeat) return this.formatStepFailure(flowRunId, step, request, error, startedAt);
       return await this.handleStepFailureRecovery(
         stepCtx,
         error,
@@ -1632,6 +1668,11 @@ export class FlowRunner implements IFlowRunner {
   ): Promise<{ result: IAgentExecutionResult; namespaceWrites?: IStepNamespaceWrites }> {
     const { flowRunId, step, flow, request, stepResults, startedAt } = ctx;
     const stepRequest = await this.prepareStepRequest(flowRunId, step, flow, request, stepResults);
+    if (ctx.loopIteration !== undefined) stepRequest.context.loopIteration = ctx.loopIteration;
+    if (ctx.gateFeedback !== undefined) {
+      stepRequest.context.gateFeedback = ctx.gateFeedback;
+      stepRequest.userPrompt += `\n\nGate feedback:\n${ctx.gateFeedback}`;
+    }
     const inputHash = await this.stepContentHasher.computeStepInputHash(stepRequest);
     const stepId = step.id;
     const traceId = request.traceId ?? flowRunId;
@@ -1649,7 +1690,10 @@ export class FlowRunner implements IFlowRunner {
       portalScopeHash,
     });
 
-    if (priorRecord && step.type !== FlowStepType.GATE && step.type !== FlowStepType.BRANCH) {
+    if (
+      ctx.loopIteration === undefined && priorRecord && step.type !== FlowStepType.GATE &&
+      step.type !== FlowStepType.BRANCH
+    ) {
       const reuseDecision = this.stepReplayPolicy.canReuse({
         step: { userPrompt: stepRequest.userPrompt, context: stepRequest.context ?? {} },
         prior: priorRecord,
@@ -1705,7 +1749,7 @@ export class FlowRunner implements IFlowRunner {
     await this.stepDurabilityStore.save(record);
 
     try {
-      const result = await this.executeStepLogic(flowRunId, step, flow, request, stepRequest, startedAt);
+      const result = await this.executeStepLogic(ctx, stepRequest);
       record.completedAt = new Date().toISOString();
       record.durationMs = Date.now() - startedAt.getTime();
       record.replayEligible = true;
@@ -1740,7 +1784,7 @@ export class FlowRunner implements IFlowRunner {
     initialError: Error | string | unknown,
   ): Promise<IStepResult> {
     const { flowRunId, step, request, startedAt } = ctx;
-    if (initialError instanceof FlowGateHaltedError) {
+    if (initialError instanceof FlowGateHaltedError || initialError instanceof FlowControlError) {
       return this.formatStepFailure(flowRunId, step, request, initialError, startedAt);
     }
     if (
@@ -1989,13 +2033,10 @@ export class FlowRunner implements IFlowRunner {
    * Execute step logic by dispatching to a registered IFlowStepHandler.
    */
   private async executeStepLogic(
-    flowRunId: string,
-    step: IFlowStep,
-    flow: IFlow,
-    request: IFlowOriginalRequest,
+    stepContext: IStepContext,
     stepRequest: IFlowStepRequest,
-    startedAt: Date,
   ): Promise<IAgentExecutionResult> {
+    const { flowRunId, step, flow, request, startedAt, stepResults } = stepContext;
     const stepType = step.type ?? FlowStepType.AGENT;
     const handler = this.stepHandlerRegistry.get(stepType);
     if (!handler) {
@@ -2039,10 +2080,82 @@ export class FlowRunner implements IFlowRunner {
       flowLogBase,
     };
     if (handler instanceof GateStepHandler) {
-      const result = await handler.evaluateGate(ctx, 1);
+      const result = await this.executeGateLoop(ctx, handler, flow, request, stepResults);
       return gateEvaluationResult(step.id, step.evaluate!.threshold, result);
     }
     return await handler.execute(ctx);
+  }
+
+  private async executeGateLoop(
+    ctx: IStepExecutionContext,
+    handler: GateStepHandler,
+    flow: IFlow,
+    request: IFlowOriginalRequest,
+    stepResults: Map<string, IStepResult>,
+  ): Promise<IGateResult> {
+    const bodyIds = computeLoopBody(flow, ctx.step);
+    const run = this.controlStateStore.get(stepResults);
+    const flowContentHash = run.flowContentHash;
+    const restored = run.state.gates[ctx.step.id];
+    if (restored?.phase === "settled" && restored.result) return restored.result;
+    const save = () =>
+      this.checkpointCoordinator.saveCheckpointIfEnabled(flow, request, ctx.flowRunId, flowContentHash, stepResults);
+    return await runGateLoop(
+      bodyIds,
+      ctx.step.loop?.backTo ?? ctx.step.input.stepId,
+      toGateConfig(ctx.step.evaluate!).maxRetries,
+      {
+        evaluate: async (attempt) => {
+          const stepRequest = attempt === 1
+            ? ctx.stepRequest
+            : await this.prepareStepRequest(ctx.flowRunId, ctx.step, flow, request, stepResults);
+          run.state.gates[ctx.step.id] = {
+            gateId: ctx.step.id,
+            bodyIds,
+            evaluationCount: attempt,
+            nextIteration: attempt,
+            phase: "evaluating",
+            ceiling: run.ceiling,
+            fingerprint: await this.controlStateStore.fingerprint(flow, ctx.step, request, stepResults),
+          };
+          await save();
+          const verdict = await handler.evaluateGate({ ...ctx, stepRequest }, attempt, run.ceiling);
+          if (verdict.action !== FlowGateAction.RETRY) {
+            Object.assign(run.state.gates[ctx.step.id], { phase: "settled", result: verdict });
+            await save();
+          }
+          return verdict;
+        },
+        admit: async (iteration, verdict) => {
+          await this.retryBudgetService.enforceRetryCostBudget(ctx.flowRunId, request);
+          run.state.gates[ctx.step.id].phase = "rerunning";
+          await save();
+          await this.eventLogger.log(DomainEventType.FlowLoopIteration, {
+            flowRunId: ctx.flowRunId,
+            gateStepId: ctx.step.id,
+            backTo: ctx.step.loop?.backTo ?? ctx.step.input.stepId ?? bodyIds[0],
+            iteration,
+            maxRetries: toGateConfig(ctx.step.evaluate!).maxRetries,
+            bodyStepIds: bodyIds,
+            previousScore: verdict.score,
+            traceId: request.traceId,
+            requestId: request.requestId,
+          });
+        },
+        invalidate: () => {
+          for (const id of bodyIds) stepResults.delete(id);
+        },
+        runMember: (id, iteration, feedback) =>
+          this.executeStep(ctx.flowRunId, id, flow, request, stepResults, { iteration, feedback }),
+        finalize: (result) =>
+          finalizeStepResult(
+            { flow, request, flowRunId: ctx.flowRunId, flowContentHash, stepResults },
+            result,
+            this.namespaceCoordinator,
+            this.checkpointCoordinator,
+          ),
+      },
+    );
   }
 
   /**

@@ -1132,6 +1132,7 @@ if (import.meta.main) {
     }
     const gateEvaluator = new GateEvaluator(createJudgeEvaluator(new JudgeAgentRunner(llmProvider, bindingService)));
     const flowRunner = new FlowRunner({
+      db: dbService,
       agentExecutor: agentExecutorAdapter,
       bindingService,
       gateEvaluator,

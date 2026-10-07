@@ -67,3 +67,12 @@ Deno.test("[gate] evaluateGate returns typed halt and emits score, threshold, pa
   });
   assertEquals(judge.calls, 1);
 });
+
+Deno.test("[wrapper] retry requires the runner instead of returning low-scoring content", async () => {
+  const handler = new GateStepHandler({
+    gateEvaluator: new GateEvaluator(new GateTestJudge()),
+    eventLogger: new GateTestLogger(),
+  });
+  const error = await assertRejects(() => handler.execute(gateTestContext(gateTestFlow(FlowGateOnFail.RETRY))));
+  assertEquals((error as Error & { code: string }).code, "gate_retry_requires_runner");
+});

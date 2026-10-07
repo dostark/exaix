@@ -6,12 +6,14 @@
  * @related-files [packages/flow/src/flow_loader.ts, packages/flow/src/condition_evaluator.ts]
  */
 
+import { EvaluationResultSchema } from "@exaix/core/evaluation";
 import { z } from "zod";
 import {
   canonicalizeToolName,
   DataFormat,
   ExecutionStrategyName,
   FlowConsensusMethod,
+  FlowGateAction,
   FlowGateOnFail,
   FlowInputSource,
   FlowOutputFormat,
@@ -31,6 +33,7 @@ import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "./model_inte
 import { BindingSpecSchema, StepPinSchema } from "./model_binding.ts";
 
 import {
+  DEFAULT_FLOW_GATE_MAX_EVALUATIONS,
   DEFAULT_FLOW_MAX_RETRIES,
   DEFAULT_FLOW_STEP_BACKOFF_MS,
   DEFAULT_FLOW_VERSION,
@@ -83,11 +86,33 @@ export const ZFlowStepResult = z.object({
   completedAt: DateOrStringSchema,
 });
 
+export const ZFlowGateResult = z.object({
+  passed: z.boolean(),
+  score: z.number().min(0).max(1),
+  evaluation: EvaluationResultSchema,
+  attempts: z.number().int().positive().max(100),
+  action: z.nativeEnum(FlowGateAction),
+  evaluationDurationMs: z.number().nonnegative(),
+  error: z.string().optional(),
+});
+export const ZGateLoopState = z.object({
+  gateId: z.string().min(1),
+  bodyIds: z.array(z.string().min(1)),
+  evaluationCount: z.number().int().positive().max(100),
+  nextIteration: z.number().int().positive().max(100),
+  phase: z.enum(["evaluating", "rerunning", "settled"]),
+  fingerprint: z.string().min(1),
+  ceiling: z.number().int().min(2).max(100),
+  result: ZFlowGateResult.optional(),
+});
+export const ZFlowControlState = z.object({ gates: z.record(z.string(), ZGateLoopState) });
+
 export const ZFlowCheckpoint = z.object({
   traceId: z.string().min(1),
   flowContentHash: z.string().min(1).describe("Hash of the flow YAML to prevent resume on stale definitions"),
   schemaVersion: z.string().default(FLOW_CHECKPOINT_SCHEMA_VERSION),
   completedSteps: z.record(z.string(), ZFlowStepResult),
+  controlState: ZFlowControlState.optional(),
   savedAt: z.string().datetime(),
 });
 
@@ -147,7 +172,7 @@ export const GateEvaluateSchema = z.object({
   /** Action on failure */
   onFail: z.nativeEnum(FlowGateOnFail).default(FlowGateOnFail.HALT),
   /** Max retries if onFail is "retry" */
-  maxRetries: z.number().int().min(1).default(3),
+  maxRetries: z.number().int().min(1).max(DEFAULT_FLOW_GATE_MAX_EVALUATIONS).default(3),
   /** Include dynamic criteria generated from the request analysis */
   includeRequestCriteria: z.boolean().default(false),
 });
@@ -155,9 +180,9 @@ export const GateEvaluateSchema = z.object({
 // Feedback loop configuration schema
 export const FeedbackLoopSchema = z.object({
   /** Maximum iterations */
-  maxIterations: z.number().int().min(1).max(10).default(3),
+  maxIterations: z.number().int().min(1).max(10).optional(),
   /** Target score to achieve */
-  targetScore: z.number().min(0).max(1).default(0.9),
+  targetScore: z.number().min(0).max(1).optional(),
   /** Step ID to loop back to */
   backTo: z.string().optional(),
 });
@@ -316,10 +341,35 @@ export const SessionDelegateCycleAggregateSchema = z.object({
 
 export type ISessionDelegateCycleAggregate = z.infer<typeof SessionDelegateCycleAggregateSchema>;
 
+function validateGateLoopFields(step: z.infer<typeof FlowStepSchemaBase>, ctx: z.RefinementCtx): void {
+  if (step.loop && step.type !== FlowStepType.GATE) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "loop is valid on gate steps only", path: ["loop"] });
+  }
+  if (
+    step.type === FlowStepType.GATE && (step.loop?.maxIterations !== undefined || step.loop?.targetScore !== undefined)
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "gate loops use evaluate.maxRetries and threshold",
+      path: ["loop"],
+    });
+  }
+  if (
+    step.type === FlowStepType.GATE && step.evaluate?.onFail === FlowGateOnFail.RETRY && step.evaluate.maxRetries < 2
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "a retrying gate needs maxRetries >= 2",
+      path: ["evaluate", "maxRetries"],
+    });
+  }
+}
+
 export const FlowStepSchema = FlowStepSchemaBase.extend({
   /** Config for `type: session_delegate_cycle` steps only. */
   delegateCycle: SessionDelegateCycleConfigSchema.optional(),
 }).superRefine((step, ctx) => {
+  validateGateLoopFields(step, ctx);
   if (step.strategy !== undefined) {
     if (step.execution_mode === FlowStepExecutionMode.DYNAMIC) {
       ctx.addIssue({

@@ -23,3 +23,9 @@ Deno.test("[security] [validator] onError on a gate step is rejected", async () 
   );
   assertEquals(logger.events.filter((entry) => entry.event === "flow.step.started"), []);
 });
+
+Deno.test("[validator] feedback input directs callers to gate retry", () => {
+  const flow = gateTestFlow();
+  flow.steps[1].input.source = "feedback" as typeof flow.steps[1]["input"]["source"];
+  assertEquals(new FlowRuntimeValidator().validateGatePolicies(flow), "use a gate with onFail: retry and loop.backTo");
+});

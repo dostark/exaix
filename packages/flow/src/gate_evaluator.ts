@@ -6,6 +6,8 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/core/src/evaluation/mod.ts]
  */
 
+import { FLOW_GATE_EVALUATION_LIMIT_CODE, FlowControlError } from "./errors/flow_control_errors.ts";
+import { resolveConfigurableBounds } from "@exaix/core/config";
 import { z } from "zod";
 import {
   calculateWeightedScore,
@@ -16,7 +18,7 @@ import {
   getCriteriaByNames,
 } from "@exaix/core/evaluation";
 import type { IStepResult } from "./flow_runner.ts";
-import { FlowGateAction, FlowGateOnFail } from "@exaix/core";
+import { DEFAULT_FLOW_GATE_MAX_EVALUATIONS, FlowGateAction, FlowGateOnFail } from "@exaix/core";
 import type {
   ICriteriaGeneratorService,
   IGateConfig,
@@ -41,7 +43,7 @@ export const GateConfigSchema = z.object({
   /** Action to take on gate failure */
   onFail: z.nativeEnum(FlowGateOnFail).default(FlowGateOnFail.HALT),
   /** Maximum retry attempts if onFail is "retry" */
-  maxRetries: z.number().int().min(1).default(3),
+  maxRetries: z.number().int().min(1).max(DEFAULT_FLOW_GATE_MAX_EVALUATIONS).default(3),
   /** Include dynamic criteria generated from the request analysis */
   includeRequestCriteria: z.boolean().default(false),
 });
@@ -64,6 +66,7 @@ export class GateEvaluator implements IGateEvaluator {
     previousAttempts: number = 0,
     requestAnalysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
   ): Promise<IGateResult> {
+    this.validateEvaluationAdmission(config, previousAttempts);
     const startTime = performance.now();
 
     try {
@@ -169,6 +172,22 @@ export class GateEvaluator implements IGateEvaluator {
   /**
    * Check if evaluation passed based on score and required criteria
    */
+  private validateEvaluationAdmission(config: IGateConfig, previousAttempts: number): void {
+    const bounds = resolveConfigurableBounds("flow.max_gate_evaluations");
+    const ceiling = z.number().int().min(bounds.min!).max(bounds.max!).parse(
+      config.evaluationCeiling ?? DEFAULT_FLOW_GATE_MAX_EVALUATIONS,
+    );
+    if (config.onFail === FlowGateOnFail.RETRY && config.maxRetries < 2) {
+      throw new FlowControlError(FLOW_GATE_EVALUATION_LIMIT_CODE, "A retrying gate needs at least two evaluations");
+    }
+    if (!GateConfigSchema.extend({ maxRetries: z.number().int().min(1).max(ceiling) }).safeParse(config).success) {
+      throw new FlowControlError(FLOW_GATE_EVALUATION_LIMIT_CODE, "Gate configuration exceeds its evaluation limits");
+    }
+    if (!Number.isInteger(previousAttempts) || previousAttempts < 0 || previousAttempts >= config.maxRetries) {
+      throw new FlowControlError(FLOW_GATE_EVALUATION_LIMIT_CODE, "Gate evaluation count exhausted or invalid");
+    }
+  }
+
   private checkPassed(
     evaluation: EvaluationResult,
     criteria: EvaluationCriterion[],

@@ -75,6 +75,16 @@ export class TracedProvider implements IModelProvider {
         cacheCreationTokens: result.usage?.cacheCreationTokens,
       });
 
+      await this.logger.info(DomainEventType.LlmUsageRecorded, this.id, {
+        provider: result.provider,
+        model: result.model,
+        input_tokens: result.usage?.promptTokens ?? 0,
+        output_tokens: result.usage?.completionTokens ?? 0,
+        total_tokens: result.usage?.totalTokens ?? 0,
+        ...(result.costStatus === "unknown" || result.cost_usd === undefined
+          ? { cost_status: "unknown" }
+          : { cost_usd: result.cost_usd }),
+      }, traceId);
       return result;
     } catch (error) {
       const durationMs = performance.now() - startTime;
