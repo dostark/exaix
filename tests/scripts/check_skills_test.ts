@@ -2,8 +2,8 @@
  * @module CheckSkillsTest
  * @path tests/scripts/check_skills_test.ts
  * @description Phase 206 Step 3 — the retained `check:skill-index` gate validates skill
- *   folders through the production loader: the repository catalog passes with exactly 27
- *   folders, and invalid folders, legacy JSON, flat skill files and executable content fail
+ *   folders through the production loader: the repository catalog passes with its 27 Blueprint and
+ *   project folders plus the 28 dogfood folders, and invalid folders, legacy JSON, flat skill files and executable content fail
  *   with typed reasons.
  * @architectural-layer Test
  * @dependencies [@std/assert, @exaix/testing, scripts/check_skills.ts]
@@ -15,7 +15,7 @@ import { join } from "@std/path";
 import { REPO_ROOT } from "@exaix/testing";
 import { checkSkillCatalog } from "../../scripts/check_skills.ts";
 
-const CATALOG_SIZE = 27;
+const CATALOG_SIZE = 27 + 28;
 
 async function withRepo(fn: (root: string) => Promise<void>): Promise<void> {
   const root = await Deno.makeTempDir({ prefix: "exa-check-skills-" });
@@ -31,7 +31,7 @@ async function withRepo(fn: (root: string) => Promise<void>): Promise<void> {
   }
 }
 
-Deno.test("[check-skills] the repository catalog passes with exactly 27 skill folders", async () => {
+Deno.test("[check-skills] the repository catalog passes with all Blueprint, project and dogfood folders", async () => {
   const result = await checkSkillCatalog(REPO_ROOT);
   assertEquals(result.errors, []);
   assertEquals(result.ok, true);
@@ -81,4 +81,18 @@ Deno.test("[check-skills] a missing Blueprint root is a warning, not an error", 
   } finally {
     await Deno.remove(root, { recursive: true });
   }
+});
+
+Deno.test("[check-skills] a dogfood folder with an invalid sidecar is reported under .copilot/skills", async () => {
+  await withRepo(async (root) => {
+    const dogfood = join(root, ".copilot", "skills", "dev-skill");
+    await Deno.mkdir(dogfood, { recursive: true });
+    await Deno.writeTextFile(
+      join(dogfood, "SKILL.md"),
+      "---\nname: dev-skill\ndescription: Dev skill\nscope: dev\n---\nx\n",
+    );
+    await Deno.writeTextFile(join(dogfood, "exaix.yaml"), "unknown_field: true\n");
+    const result = await checkSkillCatalog(root);
+    assertEquals(result.errors, [".copilot/skills/dev-skill: invalid_sidecar"]);
+  });
 });

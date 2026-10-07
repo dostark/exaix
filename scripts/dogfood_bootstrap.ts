@@ -22,13 +22,41 @@
  *   TEST_GIT_REPO=<path>      Git repo root for test mode (default: cwd)
  */
 
-import { dirname, fromFileUrl, join, resolve } from "@std/path";
+import { copy } from "@std/fs";
+import type { Opt, Reason } from "@exaix/core/types";
+import { dirname, fromFileUrl, join, resolve, SEPARATOR } from "@std/path";
 
 const REPO_ROOT = resolve(join(dirname(fromFileUrl(import.meta.url)), ".."));
 const DOGFOOD_CONFIG_TEMPLATE = Deno.env.get("OVERRIDE_CONFIG_PATH") || join(REPO_ROOT, "configs/dogfood.toml");
 const EXACTL_CMD = ["deno", "run", "-A", join(REPO_ROOT, "apps/exactl/main.ts")];
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 30_000;
+
+/** Folder of the repository's own Exaix guidance, copied to the dogfood portal's project root. */
+const PROJECT_GUIDANCE_SOURCE = join("Memory", "Skills", "project", "Exaix");
+const DOGFOOD_PORTAL_ALIAS = "exaix-self";
+const DOGFOOD_SKILLS_DIR = join(".copilot", "skills");
+
+/** Result of checking the external worktree skills root before the daemon reads it. */
+export type DogfoodRootAdmission = { admitted: true; present: boolean } | { admitted: false; reason: string };
+
+/** The worktree's `.copilot/skills` folder is admitted only when it resolves physically inside the worktree. */
+export async function admitDogfoodSkillRoot(worktreePath: string): Promise<DogfoodRootAdmission> {
+  const skillsDir = join(worktreePath, DOGFOOD_SKILLS_DIR);
+  try {
+    const realRoot = await Deno.realPath(worktreePath);
+    const realSkills = await Deno.realPath(skillsDir);
+    if (!realSkills.startsWith(`${realRoot}${SEPARATOR}`)) {
+      return { admitted: false, reason: `${skillsDir} resolves outside the worktree (${realSkills})` };
+    }
+    return (await Deno.stat(realSkills)).isDirectory
+      ? { admitted: true, present: true }
+      : { admitted: false, reason: `${skillsDir} is not a directory` };
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) return { admitted: true, present: false };
+    throw error;
+  }
+}
 
 async function run(
   cmd: string[],
@@ -52,7 +80,7 @@ async function run(
 
 async function runCommand(
   cmd: string[],
-  cwd?: string,
+  cwd?: Opt<string, Reason.OptionalInput>,
 ): Promise<{ code: number; stdout: string; stderr: string }> {
   const proc = new Deno.Command(cmd[0], {
     args: cmd.slice(1),
@@ -167,17 +195,6 @@ async function main() {
   Deno.writeTextFileSync(configPath, configContent);
   console.log(`  ✅ Dogfood config written to ${configPath}`);
 
-  // 5. Generate skill JSON from .copilot/skills/ SKILL.md envelopes
-  const skillsTargetDir = join(workspaceDir, "Memory", "Skills");
-  if (
-    !await run(
-      ["deno", "run", "-A", join(REPO_ROOT, "scripts/generate_skill_json.ts"), skillsTargetDir, sandboxRoot],
-      "Generating skill JSON from .copilot/skills/",
-    )
-  ) {
-    Deno.exit(1);
-  }
-
   // 6. Initialize database
   if (!testModeForDeploy) {
     if (
@@ -203,6 +220,23 @@ async function main() {
       console.error("Failed to create worktree. See output above.");
       Deno.exit(1);
     }
+  }
+
+  // 7a. The dogfood skills are read directly from the worktree folders. The config names the root.
+  const admission = await admitDogfoodSkillRoot(worktreePath);
+  if (!admission.admitted) {
+    console.error(`  ❌ Dogfood skills root refused: ${admission.reason}`);
+    Deno.exit(1);
+  }
+  if (!admission.present) {
+    console.warn(`  ⚠️  No ${DOGFOOD_SKILLS_DIR} in the worktree. The dogfood skills root is empty.`);
+  }
+  const guidance = join(gitRepoRoot, PROJECT_GUIDANCE_SOURCE);
+  try {
+    await copy(guidance, join(workspaceDir, "Memory", "Skills", "project", DOGFOOD_PORTAL_ALIAS), { overwrite: false });
+    console.log(`  ✅ Exaix guidance copied to the ${DOGFOOD_PORTAL_ALIAS} project skills root`);
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
   }
 
   // 8. Register portal and wait for knowledge (skip when SKIP_PORTAL is set or in full test mode)

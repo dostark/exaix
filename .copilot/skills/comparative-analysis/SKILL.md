@@ -16,7 +16,6 @@ version: "1.0.0"
 topics: ["comparative-analysis", "competitive-intelligence", "gap-analysis", "positioning", "strategy"]
 qwen_skill: comparative-analysis
 ---
-
 ```text
 Key points
 - Identify the competitor/product/topic to compare against first.
@@ -229,47 +228,3 @@ Do / Don't
 - `#comparative-analysis Compare Exaix vs Google ADK`
 - `#comparative-analysis Produce a gap analysis against Inngest durable execution`
 - `#comparative-analysis Update the Credal Agent Registry comparison with new findings`
-
----
-exaix:
-  skill_id: comparative-analysis
-  triggers:
-    keywords: [comparative, analysis, competitor, compare, vs, gap-analysis, positioning]
-    task_types: [analysis]
-    tags: [strategy, competitive-intelligence]
-  constraints:
-    - "Must complete Phase 0 (read ARCHITECTURE.md, GLOSSARY.md, White Paper, System Architecture Diagram) before any competitor research"
-    - "Must research competitor deeply before producing analysis"
-    - "Must preserve all 9 Exaix core invariants"
-    - "Must include rejected patterns section"
-    - "Must tier suggestions by priority/risk"
-    - "Must reference existing canonical analyses as structural patterns"
-    - "Must follow submodule-workflow for exaix-dev-docs changes"
-    - "Must use correct GLOSSARY.md terminology (Actor/Agent/Agent Role distinction)"
-    - "Must cite specific doc sections when referencing Exaix capabilities"
-    - "Must look past marketing terminology — map actual architecture and functionality from source code or API docs"
-    - "Must flag unverifiable claims instead of reproducing them"
-  output_requirements:
-    - "Target file identified (create or update exaix-dev-docs/dev/Exaix_{Competitor}_Comparative_Analysis.md)"
-    - "Feature matrix completed (at least 10 dimensions)"
-    - "Gap analysis with priority tiering"
-    - "Rejected patterns explicitly documented"
-    - "Positioning conclusion with roadmap recommendations"
-  quality_criteria:
-    - name: architectural_comprehension
-      description: Phase 0 completed; Exaix's own architecture, terminology, and positioning accurately represented from all 4 docs
-      weight: 20
-    - name: depth
-      description: Feature comparison covers 10+ dimensions
-      weight: 25
-    - name: actionability
-      description: Suggestions are tiered by priority and risk
-      weight: 25
-    - name: architectural_safety
-      description: All suggestions preserve Exaix's 9 invariants
-      weight: 20
-    - name: accuracy
-      description: Competitor claims verified against real source material; Exaix capabilities cited with correct doc references
-      weight: 10
----
-

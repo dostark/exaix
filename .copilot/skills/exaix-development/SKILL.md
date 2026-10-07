@@ -15,7 +15,6 @@ version: "1.0.1"
 topics: ["source", "development", "tdd", "patterns", "architecture"]
 qwen_skill: exaix-development
 ---
-
 ````text
 Key points
 
@@ -315,38 +314,3 @@ Examples
   #exaix-development Refactor provider selection to CircuitBreaker pattern
   #exaix-development Security audit for file path handling
 ````
-
-```
----
-exaix:
-  skill_id: exaix-development
-  triggers:
-    keywords: [development, source, tdd, pattern, architecture, implementation]
-    task_types: [feature, bugfix, refactor]
-    tags: [development]
-  constraints:
-    - "Write tests first (TDD)"
-    - "Use constructor-based DI with I-prefix interfaces"
-    - "No magic numbers — use named constants"
-    - "No raw SQL in tests"
-    - "No Record<string, unknown>"
-    - "No import * from"
-    - "No console.log for production logging"
-    - "All external operations must have timeout protection"
-  output_requirements:
-    - "Tests written before implementation"
-    - "Module-level JSDoc on new files"
-    - "check:style, check:arch, check:magic pass"
-    - "Planning doc success criteria updated"
-  quality_criteria:
-    - name: tdd_compliance
-      description: Tests written before implementation
-      weight: 40
-    - name: convention_compliance
-      description: Follows Exaix patterns (DI, I-prefix, constants, security)
-      weight: 30
-    - name: gate_compliance
-      description: All CI gates pass
-      weight: 30
----
-```

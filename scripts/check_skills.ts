@@ -3,7 +3,7 @@
 /**
  * @module CheckSkills
  * @path scripts/check_skills.ts
- * @description Folder validation of the authored skill catalog. Loads `Blueprints/Skills` and every
+ * @description Folder validation of the authored skill catalog. Loads `Blueprints/Skills`, `.copilot/skills` and every
  *   `Memory/Skills/project/<portal>` root through the production SkillFolderLoader and fails on any
  *   invalid, legacy-layout or executable-content entry. Runs behind the retained
  *   `check:skill-index` task. A read-only check: nothing is generated or written.
@@ -31,6 +31,7 @@ export interface ISkillCatalogCheck {
 
 const BLUEPRINT_SKILLS = join("Blueprints", "Skills");
 const PROJECT_SKILLS = join("Memory", "Skills", "project");
+const DOGFOOD_SKILLS = join(".copilot", "skills");
 async function projectRoots(repoRoot: string): Promise<IResolvedSkillRoot[]> {
   const base = join(repoRoot, PROJECT_SKILLS);
   const roots: IResolvedSkillRoot[] = [];
@@ -58,6 +59,10 @@ export async function checkSkillCatalog(repoRoot: string): Promise<ISkillCatalog
     {
       label: BLUEPRINT_SKILLS,
       root: { path: join(repoRoot, BLUEPRINT_SKILLS), kind: SkillRootKind.BLUEPRINT, writable: false, project: null },
+    },
+    {
+      label: DOGFOOD_SKILLS,
+      root: { path: join(repoRoot, DOGFOOD_SKILLS), kind: SkillRootKind.DOGFOOD, writable: false, project: null },
     },
     ...(await projectRoots(repoRoot)).map((root) => ({ label: join(PROJECT_SKILLS, root.project ?? ""), root })),
   ];

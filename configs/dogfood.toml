@@ -11,6 +11,15 @@ workspace = "Workspace"
 portals = "Portals"
 memory = "Memory"
 
+# Skill folders are read directly. The dogfood root is the worktree's own .copilot/skills.
+[skills]
+roots = [
+  { kind = "project", path = "Memory/Skills/project" },
+  { kind = "dogfood", path = "__WORKTREE_PATH__/.copilot/skills" },
+  { kind = "learned", path = "Memory/Skills/learned" },
+  { kind = "blueprint", path = "Blueprints/Skills" },
+]
+
 [ai]
 provider = "ollama"
 model = "ollama/llama3"

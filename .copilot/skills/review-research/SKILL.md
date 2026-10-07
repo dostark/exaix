@@ -14,7 +14,6 @@ version: "1.0.1"
 topics: ["architecture-review", "improvement-planning", "patterns", "refactoring", "quality", "planning"]
 qwen_skill: review-research
 ---
-
 ```text
 Key points
 
@@ -134,35 +133,3 @@ Workflow chain: **#review-research** → #review-phase-plan → #next-steps → 
 - `#review-research Evaluate the LLM provider layer for extensibility weaknesses`
 - `#review-research Assess EventLogger against structured logging best practices`
 - `#review-research Review MCP tool handlers for security and input validation gaps`
-
----
-exaix:
-  skill_id: review-research
-  triggers:
-    keywords: [review-research, evaluate, assess, research-review, subsystem]
-    task_types: [research]
-    tags: [research, review]
-  constraints:
-    - "Read the subsystem implementation (not just docs) before identifying weaknesses"
-    - "Include file:line evidence for every weakness"
-    - "Keep the plan realistic: 6-8 sub-phases max"
-    - "Always make Documentation Update the final sub-phase"
-    - "Do not speculate about weaknesses without code evidence"
-    - "Do not start implementation in this skill — this skill produces a plan only"
-  output_requirements:
-    - "Phase 1: Capability inventory with gaps annotated"
-    - "Phase 2: Weakness list with problem, impact, evidence per item"
-    - "Gap table comparing Current State vs Best Practice"
-    - "Phase 3: Planning document with sub-phases"
-    - "Phase 4: Artifacts created (templates, README updates)"
-  quality_criteria:
-    - name: evidence_quality
-      description: Every weakness has file:line code evidence
-      weight: 40
-    - name: plan_actionability
-      description: Improvement plan has concrete sub-phases with success criteria
-      weight: 30
-    - name: scope_discipline
-      description: Limited to 6-8 sub-phases, documentation is final
-      weight: 30
----

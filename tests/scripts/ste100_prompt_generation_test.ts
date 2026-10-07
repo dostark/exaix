@@ -5,7 +5,7 @@
  *   regenerated routing wrappers preserve every reviewed obligation. Covers: obligation
  *   preservation (workflow/authority) against the seeded ste100 obligations map, real
  *   wrapper generation (routing kept, STE prose, idempotent with the committed wrappers),
- *   envelope validity (frontmatter + exaix block + qwen_skill parity), deterministic-clean
+ *   sidecar validity (frontmatter + exaix.yaml sidecar + qwen_skill parity), deterministic-clean
  *   compressed guidance, a developer context report that separates instruction / metadata /
  *   policy channels, wrapper-to-canonical loading, and an obligation map that honestly
  *   distinguishes delivery, review-only, and observed evidence.
@@ -18,7 +18,7 @@
  */
 
 import { assertEquals, assertGreater, assertNotEquals, assertObjectMatch, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
+import { dirname, join } from "@std/path";
 import { describe, test } from "@std/testing/bdd";
 import { parse as parseYaml } from "@std/yaml";
 import { normalizeSteProse, summarizeSteCount } from "../../scripts/ste100_prose_rules.ts";
@@ -75,17 +75,13 @@ interface IContextReport {
   policyMarkerBytes: number;
 }
 
-/** Splits a skill file into its channels: instructions body vs frontmatter + exaix
- *  envelope metadata vs the added-policy channel (0 for now; eligibility measures it
- *  separately later in the phase). Bytes are UTF-8 lengths. */
-function developerContextReport(content: string, relPath: string): IContextReport {
+/** Splits a skill folder into instruction, metadata and added-policy byte channels. Bytes are UTF-8 lengths. */
+function developerContextReport(content: string, sidecar: string, relPath: string): IContextReport {
   const encoder = new TextEncoder();
   const frontmatter = content.match(/^---\n([\s\S]*?)\n---\n?/);
-  const trailingYaml = content.match(/\n---\nexaix:[\s\S]*\n---\s*$/);
   const fmEnd = frontmatter ? frontmatter[0].length : 0;
-  const exaixStart = trailingYaml ? content.length - (content.length - trailingYaml.index!) : content.length;
-  const instructionBytes = encoder.encode(content.slice(fmEnd, exaixStart)).length;
-  const metadataBytes = encoder.encode((frontmatter?.[0] ?? "") + (trailingYaml?.[0] ?? "").replace(/^\n/, "")).length;
+  const instructionBytes = encoder.encode(content.slice(fmEnd)).length;
+  const metadataBytes = encoder.encode((frontmatter?.[0] ?? "") + sidecar).length;
   const policyMarkerBytes = 0;
   return {
     relPath,
@@ -133,7 +129,7 @@ describe("ste100 developer corpus conversion", () => {
     assertEquals(wrapper, generatePromptContent("commit", frontmatter.description));
   });
 
-  test("Developer skill envelopes remain valid after conversion", () => {
+  test("Developer skill sidecars remain valid after conversion", () => {
     for (const entry of pilot) {
       const skillText = Deno.readTextFileSync(join(REPO, entry.canonicalPath));
       const skillName = entry.id.replace("copilot-", "");
@@ -146,7 +142,9 @@ describe("ste100 developer corpus conversion", () => {
       assertEquals(frontmatter.qwen_skill, name, "qwen_skill parity for check:qwen-skills-sync");
       assertNotEquals(frontmatter.title, undefined);
       assertNotEquals(frontmatter.description, undefined);
-      assertStringIncludes(skillText, "\n---\nexaix:", `${entry.id}: exaix envelope present`);
+      const sidecar = Deno.readTextFileSync(join(REPO, dirname(entry.canonicalPath), "exaix.yaml"));
+      assertNotEquals(parseYaml(sidecar), null, `${entry.id}: exaix.yaml sidecar present`);
+      assertEquals(skillText.includes("\n---\nexaix:"), false, `${entry.id}: no trailing exaix block remains`);
     }
   });
 
@@ -171,7 +169,8 @@ describe("ste100 developer corpus conversion", () => {
   test("Developer skill context report includes metadata and added policy text", () => {
     for (const entry of pilot) {
       const skillText = Deno.readTextFileSync(join(REPO, entry.canonicalPath));
-      const report = developerContextReport(skillText, entry.canonicalPath);
+      const sidecar = Deno.readTextFileSync(join(REPO, dirname(entry.canonicalPath), "exaix.yaml"));
+      const report = developerContextReport(skillText, sidecar, entry.canonicalPath);
       assertGreater(report.instructionBytes, 0, `${entry.id}: instructions channel measured`);
       assertGreater(report.metadataBytes, 0, `${entry.id}: metadata channel measured`);
       assertObjectMatch(report, { policyMarkerBytes: 0 });

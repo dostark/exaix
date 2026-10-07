@@ -181,14 +181,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# 14. Skill Envelope Validity (every .copilot/skills exaix: block must transform)
-deno task check:skill-envelopes
-if [ $? -ne 0 ]; then
-  echo "❌ Error: A .copilot/skills exaix: block is invalid (would not load in the dogfood daemon)."
-  exit 1
-fi
-
-# 14b. Skill folders valid (Blueprints/Skills and Memory/Skills/project load through the production loader)
+# 14. Skill folders valid (Blueprints/Skills, .copilot/skills and Memory/Skills/project load through the production loader)
 deno task check:skill-index
 if [ $? -ne 0 ]; then
   echo "❌ Error: A skill folder is invalid (run: deno task check:skill-index for the typed reasons)."

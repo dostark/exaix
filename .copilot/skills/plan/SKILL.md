@@ -24,7 +24,6 @@ topics: [
 ]
 qwen_skill: plan
 ---
-
 ```text
 Key points
 
@@ -204,8 +203,8 @@ Refine the goal into a formal planning document at `exaix-dev-docs/planning/phas
    ```
 
    **`skills:` constraint — `.copilot` runtime skills only.** Each `skills:` entry must be
-   a skill id compiled into the dogfood workspace from `.copilot/skills/*/SKILL.md`
-   (`generate_skill_json.ts` — e.g. `exaix-development`, `tdd-workflow` → `tdd-methodology`,
+   a skill folder name loaded by the dogfood root from `.copilot/skills/*/SKILL.md`
+   (e.g. `exaix-development`, `tdd-workflow`, also reachable as `tdd-methodology`,
    `commit`, `review-code`, `fix-bug`, `plan`). Do NOT list Blueprint skills
    (`Blueprints/Skills/<name>/SKILL.md`, e.g. `portal-grounding`, `security-first`,
    `response-contract`): during Exaix development only the `.copilot` runtime skills are
@@ -432,37 +431,3 @@ criterion or planned-test line, or the manifest fence line itself.
 - `#plan Phase 14: Add caching layer for LLM provider responses`
 - `#plan Refactor EventLogger to support structured JSON output`
 - `#plan Migrate CLI from Cliffy to a lighter argument parser`
-
----
-exaix:
-  skill_id: plan
-  related_skills: [review-phase-plan, test-development]
-  triggers:
-    keywords: [plan, phase, planning, design]
-    task_types: [planning]
-    tags: [planning, architecture]
-  constraints:
-    - "Follow Exaix TDD, security, and traceability standards"
-    - "Each step includes a step-manifest YAML block"
-    - "Ground third-party integrations in deep web research"
-    - "Include a Reachability Ledger section"
-    - "Vertical end-to-end slice before breadth"
-    - "Balance implementation workload and split overloaded steps before plan handoff"
-    - "Documentation update step as final step"
-  output_requirements:
-    - "Phase planning document with numbered steps"
-    - "Step Workload Assessment with independently testable steps and bounded acceptance criteria"
-    - "Step-manifest blocks for dogfood compatibility"
-    - "Reachability Ledger table"
-    - "Pre-Gap Analysis recommended"
-  quality_criteria:
-    - name: step_manifest_completeness
-      description: Every step has a manifest block
-      weight: 35
-    - name: architectural_rigor
-      description: Plan references ARCHITECTURE.md components
-      weight: 35
-    - name: reachability_tracking
-      description: Reachability Ledger tracks production-dead symbols
-      weight: 30
----

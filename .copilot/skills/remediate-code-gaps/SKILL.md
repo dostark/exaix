@@ -15,7 +15,6 @@ version: "1.2.1"
 topics: ["planning", "gap-analysis", "remediation", "tdd", "code-quality"]
 qwen_skill: remediate-code-gaps
 ---
-
 ```text
 Key points
 
@@ -165,35 +164,3 @@ Spans the submodule plan doc (the ✅/deferred marks) and the parent source → 
 1. Files edited, with what changed.
 1. All tests pass and CI gates clean.
 1. Commit payload.
-
----
-exaix:
-  skill_id: remediate-code-gaps
-  related_skills: [review-phase-code, test-development, exaix-development, self-improvement]
-  triggers:
-    keywords: [remediate-code, code-gaps, close-code-gaps, fix-code]
-    task_types: [bugfix, refactor]
-    tags: [remediate-code]
-  constraints:
-    - "Only close gaps explicitly opened by a Post-Gap Analysis section"
-    - "Do not add new refactoring or polish beyond named gaps"
-    - "Edit source files; in the plan doc only flip the remediation step's criteria/tests to the done form (never rewrite its Actions/prose)"
-    - "Write tests first (TDD) when adding new behaviour"
-    - "Commit remediation that flips plan-doc criteria via commit_plan_step.ts with a plan: field"
-    - "Run full CI gate suite before committing"
-  output_requirements:
-    - "All code gaps resolved in the source files"
-    - "All affected tests pass"
-    - "CI gates clean (deno run -A scripts/ci.ts check)"
-    - "Structured commit with gap references"
-  quality_criteria:
-    - name: scope_discipline
-      description: Only named gaps are closed — no scope creep
-      weight: 40
-    - name: tdd_compliance
-      description: Tests written before implementation for new behaviour
-      weight: 30
-    - name: ci_gate_compliance
-      description: All CI gates pass before commit
-      weight: 30
----

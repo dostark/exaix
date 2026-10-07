@@ -467,11 +467,6 @@ function extractReferences(text: string): { refs: IExtractedRef[]; anchorRefs: I
       continue; // frontmatter carries no rendered references
     }
 
-    // Trailing metadata block: a `---` opening a section whose first content line is
-    // `exaix:` (the .copilot/skills SKILL.md envelope) is structured YAML, not prose —
-    // its paths are validated by check:skill-envelopes, so skip to EOF.
-    if (line.trim() === "---" && lines[i + 1]?.trim() === "exaix:") break;
-
     const fence = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
     if (fenceMarker) {
       // Inside a fence: it closes only on a line that is exactly the marker

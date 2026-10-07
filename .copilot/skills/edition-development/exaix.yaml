@@ -1,0 +1,39 @@
+applies_to:
+  agents:
+    - copilot
+triggers:
+  keywords:
+    - edition
+    - edition-model
+    - tier
+    - community
+    - pro
+    - enterprise
+    - option-c
+  task_types:
+    - feature
+    - refactor
+  tags:
+    - edition
+    - architecture
+constraints:
+  - 'Follow Exaix three-tier edition architecture (Community, Pro, Enterprise)'
+  - Use Option-C layout for edition-specific code
+  - Wire via seam interfaces in packages/core/src/composer/
+  - Respect build targets and CI pipeline per edition
+  - Do not introduce edition conditionals in shared code paths
+output_requirements:
+  - Edition-specific implementation in correct tier directory
+  - Seam interface wired in composer contract
+  - Build target updated for the new edition
+  - CI pipeline includes edition-specific gate
+quality_criteria:
+  - name: seam_compliance
+    description: 'Edition features wired through composer contracts, not conditionals'
+    weight: 40
+  - name: build_integrity
+    description: Each edition builds independently with correct dependencies
+    weight: 30
+  - name: boundary_discipline
+    description: Shared code paths contain no edition-specific branching
+    weight: 30

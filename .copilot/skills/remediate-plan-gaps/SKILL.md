@@ -15,7 +15,6 @@ version: "1.0.1"
 topics: ["planning", "gap-analysis", "remediation", "tdd", "documentation"]
 qwen_skill: remediate-plan-gaps
 ---
-
 ```text
 Key points
 
@@ -107,34 +106,3 @@ Use `#commit`. Type: `fix`. Fields: `what:`, `rationale:`, `tests:`, `who:`, `im
 1. Confirmation that planned tests pass.
 1. Version bump and Status update.
 1. Commit payload.
-
----
-exaix:
-  skill_id: remediate-plan-gaps
-  related_skills: [review-phase-plan, next-steps, test-development]
-  triggers:
-    keywords: [remediate-plan, plan-gaps, close-gaps, fix-plan]
-    task_types: [planning]
-    tags: [remediate-plan]
-  constraints:
-    - "Only close gaps explicitly opened by a Pre-Gap Analysis section"
-    - "Do not add new analysis or scope-creep beyond named gaps"
-    - "Do not edit source code files — only the planning document"
-    - "Work through gaps in severity order: Critical, Security, Feasibility, Testing, Conceptual"
-    - "Re-run all planned tests after remediation"
-  output_requirements:
-    - "All named gaps resolved in the planning document"
-    - "Document version bumped"
-    - "Status updated to Gap Remediation In Progress"
-    - "Documentation update step added if interfaces/schemas changed"
-  quality_criteria:
-    - name: scope_discipline
-      description: Only named gaps are closed — no scope creep
-      weight: 40
-    - name: completeness
-      description: Every gap has a corresponding edit in the affected step
-      weight: 30
-    - name: validation
-      description: All planned tests pass after remediation
-      weight: 30
----

@@ -15,7 +15,6 @@ version: "1.3.0"
 topics: ["cleanup", "validation", "linting", "style", "qa", "ci", "architecture"]
 qwen_skill: clean-codebase
 ---
-
 ```text
 Key points
 
@@ -50,7 +49,7 @@ Phase 1 — Baseline
      deno lint; deno task fmt:check; deno task check:style; check:test-placement;
      check:magic; check:no-edition-conditionals; check:arch; check:complexity;
      check:unused-exports:strict; check:duplication; check:tool-result-parity;
-     check:skill-envelopes; check:manifests; check:hardcoded-models; check:event-strings;
+     check:skill-index; check:manifests; check:hardcoded-models; check:event-strings;
      check:optional-params; check:leak-guard; check:docs; check:version (--dry-run);
      check:god-objects (advisory); check:edition-graph; check:runtime-artifacts;
      check:agent-docs-integrity; check:blueprint-integrity; check:skill-index;
@@ -136,9 +135,9 @@ Phase 13 — Test placement
  27. `check:test-placement` — every test file in its owning boundary.
  28. Fix mislocated files, re-run — 0 violations.
 
-Phase 14 — Skill envelopes
- 29. `check:skill-envelopes` — every `.copilot/skills/` SKILL.md has a valid `exaix:` block.
- 30. Fix invalid envelopes (missing `---` separator, malformed YAML, missing fields), re-run.
+Phase 14 — Skill folders
+ 29. `check:skill-index` — every skill folder, including `.copilot/skills/`, loads through the production loader.
+ 30. Fix invalid folders (missing frontmatter, malformed `exaix.yaml`, unknown sidecar fields), re-run.
 
 Phase 15 — Step manifests
  31. `check:manifests` — every step in phase-NN-*.md (NN ≥ 130) has a valid step-manifest.
@@ -267,35 +266,3 @@ Workflow chain: **#clean-codebase** → #commit
 - `#clean-codebase` — drive the full repo to CI-green from scratch
 - `#clean-codebase packages/` — scope cleanup to the packages layer only
 - `#clean-codebase after merge — fix type errors and lint introduced by the merge`
-
----
-exaix:
-  skill_id: clean-codebase
-  related_skills: [exaix-development, test-development]
-  triggers:
-    keywords: [clean-codebase, ci-green, cleanup, fix-all, sweep]
-    task_types: [chore, refactor]
-    tags: [cleanup, ci]
-  constraints:
-    - "Fix in dependency order: type errors first (they cascade)"
-    - "Run the specific check after each fix batch before moving to next phase"
-    - "Prefer fixing root cause over suppression annotations"
-    - "Keep changes behavioral-neutral — cleanup only, no feature changes"
-    - "Do not use as any to silence type errors"
-    - "Do not refactor or restructure code during a cleanup pass"
-  output_requirements:
-    - "Baseline tallies per gate (type errors, lint, fmt, style, arch, magic, duplication, complexity)"
-    - "Fix log per phase — what was fixed, file:line"
-    - "Intermediate check results after each phase (0 errors confirmed)"
-    - "Final full-suite test output: all gates green"
-  quality_criteria:
-    - name: full_coverage
-      description: All CI gates pass with zero violations
-      weight: 40
-    - name: root_cause_fix
-      description: Fixes address root cause, not suppress symptoms
-      weight: 30
-    - name: behavioral_neutrality
-      description: No behavioral changes introduced during cleanup
-      weight: 30
----

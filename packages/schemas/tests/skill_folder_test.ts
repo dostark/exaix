@@ -91,3 +91,13 @@ Deno.test("[skill_folder] runtime view carries no removed counter, UUID or versi
     assert(keys.includes(required), `runtime view must expose ${required}`);
   }
 });
+
+Deno.test("[skill_folder] sidecar accepts dogfood related_skills and quality criteria and rejects a non-slug related skill", () => {
+  const parsed = SkillSidecarSchema.parse({
+    applies_to: { agents: ["general"] },
+    related_skills: ["test-development", "exaix-development"],
+    quality_criteria: [{ name: "tdd_compliance", description: "Tests first", weight: 40 }],
+  });
+  assertEquals(parsed.related_skills, ["test-development", "exaix-development"]);
+  assertThrows(() => SkillSidecarSchema.parse({ related_skills: ["Not A Slug"] }));
+});

@@ -15,7 +15,6 @@ version: "1.0.0"
 topics: ["dogfooding", "workflow", "sandbox", "delegation"]
 qwen_skill: dogfood-development
 ---
-
 ```text
 Key points
 
@@ -94,35 +93,4 @@ Examples
   #dogfood-development Bootstrap sandbox for Phase 134
   #dogfood-development Write request for Phase 134 Step 3.2
   #dogfood-development Review plan and approve execution
-```
-
-```
----
-exaix:
-  skill_id: dogfood-development
-  triggers:
-    keywords: [dogfood, sandbox, bootstrap, daemon, delegate]
-    task_types: [feature, infrastructure]
-    tags: [dogfooding]
-  constraints:
-    - "Use deno task dogfood:bootstrap for one-time sandbox setup"
-    - "Write requests as .md files with frontmatter (agent_role, skills, portal, target_branch)"
-    - "Always review the plan before approving — HITL gates exist for a reason"
-    - "Dogfood runs in an isolated git worktree — never on the live checkout"
-  output_requirements:
-    - "Sandbox bootstrapped and daemon started"
-    - "Request written with frontmatter and acceptance criteria"
-    - "Plan reviewed and approved"
-    - "Result reviewed before merge"
-  quality_criteria:
-    - name: isolation
-      description: Worktree isolated from live checkout
-      weight: 40
-    - name: plan_review
-      description: Plan reviewed before approval
-      weight: 30
-    - name: journal_audit
-      description: Journal shows complete execution chain
-      weight: 30
----
 ```

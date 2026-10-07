@@ -1,0 +1,35 @@
+applies_to:
+  agents:
+    - copilot
+triggers:
+  keywords:
+    - submodule
+    - exaix-dev-docs
+    - pointer
+    - git-submodule
+    - subrepo
+  task_types:
+    - chore
+    - docs
+  tags:
+    - git
+    - submodule
+constraints:
+  - Never commit a submodule pointer update without corresponding parent repo changes
+  - Always commit submodule changes before updating parent pointer
+  - Use correct pointer policy — detached HEAD in submodule is normal
+  - Verify submodule status with git submodule status before committing
+output_requirements:
+  - Submodule updated to correct commit hash
+  - Parent repo commit includes the new submodule pointer
+  - No dangling submodule references
+quality_criteria:
+  - name: pointer_consistency
+    description: Submodule pointer matches the parent repo's expected state
+    weight: 40
+  - name: commit_order
+    description: Submodule changes committed before parent pointer update
+    weight: 30
+  - name: verification
+    description: git submodule status confirms clean state after update
+    weight: 30

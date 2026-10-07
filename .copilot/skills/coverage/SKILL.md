@@ -15,7 +15,6 @@ version: "1.0.0"
 topics: ["testing", "coverage", "tdd", "ci", "quality"]
 qwen_skill: coverage
 ---
-
 ```text
 Key points
 
@@ -150,32 +149,3 @@ No new UNGROUNDED files, no lint errors.
 ## Related
 
 - [CODE_STYLE.md](../../../CODE_STYLE.md) — naming, type, import, constants rules for test code
-
----
-exaix:
-  skill_id: coverage
-  related_skills: [test-development, tdd-workflow]
-  triggers:
-    keywords: [coverage, test-coverage, uncovered, untested, threshold]
-    task_types: [testing]
-    tags: [coverage, testing]
-  constraints:
-    - "Run measure_coverage.ts before and after writing tests"
-    - "Target uncovered code paths reported by coverage tool"
-    - "Do not reduce overall line or branch coverage"
-    - "Preferred file-scoped test commands — full suite for cross-cutting only"
-  output_requirements:
-    - "Coverage delta report (before vs after)"
-    - "Targeted tests for previously uncovered paths"
-    - "All tests passing after new tests added"
-  quality_criteria:
-    - name: path_closure
-      description: Every reported uncovered path has a corresponding test
-      weight: 40
-    - name: threshold_defense
-      description: Line coverage does not drop below 70%, branch below 60%
-      weight: 30
-    - name: minimal_overhead
-      description: Tests are concise and targeted, not blanket coverage
-      weight: 30
----

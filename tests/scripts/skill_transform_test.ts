@@ -1,22 +1,20 @@
 /**
  * @module SkillTransformTest
  * @path tests/scripts/skill_transform_test.ts
- * @description Phase 125 Step 3 — verifies the .copilot/skills → sandbox
- *   Memory/Skills transform covers the breadth + no-cross-store-leak guarantee:
- *   every dev skill with an exaix: block transforms into a SkillSchema-valid JSON,
- *   a skill without an exaix block is skipped, and — critically — the transform
- *   never mutates the main repo's committed Memory/Skills/ or Blueprints/Skills/
- *   (the security guarantee that Exaix-dev skills cannot leak into a user portal).
+ * @description The isolated dogfood skill copy keeps the no-cross-store-leak guarantee: copying the
+ *   `.copilot/skills` folders into an arm root writes only that root, never the repository's committed
+ *   Memory/Skills or Blueprints/Skills, and a folder without a sidecar is still a valid dogfood skill.
  * @architectural-layer Test
- * @dependencies [@std/assert, @std/path, @std/fs, @std/crypto, @exaix/schemas]
- * @related-files [scripts/generate_skill_json.ts, scripts/dogfood_bootstrap.ts]
+ * @dependencies [@std/assert, @std/path, @exaix/core/skills, tests/scenario_framework/runner/ste100_assets.ts]
+ * @related-files [tests/scenario_framework/runner/ste100_assets.ts, scripts/dogfood_bootstrap.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { LegacySkillSchema as SkillSchema } from "../../scripts/legacy_skill_schema.ts";
-import { generateSkillJson } from "../../scripts/generate_skill_json.ts";
+import { SkillRootKind } from "@exaix/core";
+import { loadCatalogRoot } from "../../scripts/skill_catalog_loader.ts";
+import { runIsolatedGenerator } from "../scenario_framework/runner/ste100_assets.ts";
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 const COPILOT_SKILLS = join(REPO_ROOT, ".copilot", "skills");
@@ -45,77 +43,44 @@ async function fingerprintDir(root: string): Promise<string[]> {
   return entries.sort();
 }
 
-Deno.test("[skill_transform] each dev skill with an exaix block transforms into a SkillSchema-valid JSON", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "skill-transform-breadth-" });
-  try {
-    const targetDir = join(tempDir, "Memory", "Skills");
-    const result = await generateSkillJson(COPILOT_SKILLS, targetDir, tempDir);
-
-    assertEquals(result.success, true, `transform failed: ${result.errors.join("; ")}`);
-    assert(result.generated.length >= 1, "at least one skill must transform");
-
-    // Every emitted JSON must satisfy the runtime SkillSchema.
-    for await (const e of Deno.readDir(join(targetDir, "global"))) {
-      if (!e.isFile || !e.name.endsWith(".json")) continue;
-      const content = JSON.parse(await Deno.readTextFile(join(targetDir, "global", e.name)));
-      const parsed = SkillSchema.safeParse(content);
-      assert(parsed.success, `${e.name} must satisfy SkillSchema: ${parsed.success ? "" : parsed.error.message}`);
-    }
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
-});
-
-Deno.test("[skill_transform] a .copilot skill WITHOUT an exaix block is not transformed", async () => {
+Deno.test("[skill_transform] a .copilot skill without a sidecar is a valid dogfood skill with description triggers", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "skill-transform-skip-" });
   try {
-    const skillsDir = join(tempDir, "skills");
-    const noExaixDir = join(skillsDir, "no-exaix-skill");
-    await ensureDir(noExaixDir);
+    const skillDir = join(tempDir, "skills", "plain-skill");
+    await ensureDir(skillDir);
     await Deno.writeTextFile(
-      join(noExaixDir, "SKILL.md"),
-      `---\nname: No Exaix\nscope: dev\n---\n\nA body with no exaix block at all.\n`,
+      join(skillDir, "SKILL.md"),
+      `---\nname: plain-skill\ndescription: Plain skill without any sidecar\nscope: dev\n---\n\nA body with no sidecar at all.\n`,
     );
-
-    const targetDir = join(tempDir, "Memory", "Skills");
-    const result = await generateSkillJson(skillsDir, targetDir, tempDir);
-
-    assertEquals(result.success, true);
-    assertEquals(result.generated.length, 0, "no exaix block ⇒ no JSON emitted");
-    assert(result.warnings.some((w) => w.includes("no-exaix-skill")), "must warn about the skipped skill");
+    const loaded = await loadCatalogRoot(join(tempDir, "skills"), SkillRootKind.DOGFOOD);
+    assertEquals(loaded.map((entry) => entry.skill.name), ["plain-skill"]);
+    assertEquals(loaded[0].skill.triggers_source, "description");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
 });
 
-Deno.test("[skill_transform] the transform leaves the repo Memory/Skills byte-unchanged (no cross-store leak)", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "skill-transform-noleak-mem-" });
+Deno.test("[skill_transform] the isolated copy leaves the repo Memory/Skills and Blueprints/Skills byte-unchanged", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "skill-transform-noleak-" });
   try {
-    const before = await fingerprintDir(REPO_MEMORY_SKILLS);
+    const memoryBefore = await fingerprintDir(REPO_MEMORY_SKILLS);
+    const blueprintsBefore = await fingerprintDir(REPO_BLUEPRINTS_SKILLS);
 
-    // Run the real transform against a sandbox target — the repo store is NOT the target.
-    const targetDir = join(tempDir, "Memory", "Skills");
-    const result = await generateSkillJson(COPILOT_SKILLS, targetDir, tempDir);
-    assertEquals(result.success, true, `transform failed: ${result.errors.join("; ")}`);
+    const result = await runIsolatedGenerator({
+      kind: "dogfood-skills",
+      root: tempDir,
+      sourceDir: COPILOT_SKILLS,
+      targetDir: join(tempDir, "arm"),
+    });
+    assertEquals(result.errors, []);
+    assertEquals(result.generated.length, 28);
 
-    const after = await fingerprintDir(REPO_MEMORY_SKILLS);
-    assertEquals(after, before, "the main repo's Memory/Skills/ must be byte-unchanged by the transform");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
-});
-
-Deno.test("[skill_transform] Blueprints/Skills is untouched by the transform", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "skill-transform-noleak-bp-" });
-  try {
-    const before = await fingerprintDir(REPO_BLUEPRINTS_SKILLS);
-
-    const targetDir = join(tempDir, "Memory", "Skills");
-    const result = await generateSkillJson(COPILOT_SKILLS, targetDir, tempDir);
-    assertEquals(result.success, true, `transform failed: ${result.errors.join("; ")}`);
-
-    const after = await fingerprintDir(REPO_BLUEPRINTS_SKILLS);
-    assertEquals(after, before, "Blueprints/Skills/ (universal seed set) must be untouched by the transform");
+    assertEquals(await fingerprintDir(REPO_MEMORY_SKILLS), memoryBefore, "Memory/Skills must be byte-unchanged");
+    assertEquals(
+      await fingerprintDir(REPO_BLUEPRINTS_SKILLS),
+      blueprintsBefore,
+      "Blueprints/Skills must be byte-unchanged",
+    );
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

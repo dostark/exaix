@@ -24,7 +24,6 @@ topics: [
 ]
 qwen_skill: review-phase-plan
 ---
-
 ```text
 Key points
 
@@ -416,36 +415,3 @@ edits = not closed.
 1. Confirmation the doc was updated (fixes + gap sections + actions list).
 1. Version bump confirmation.
 1. Blocking issues.
-
----
-exaix:
-  skill_id: review-phase-plan
-  related_skills: [plan, remediate-plan-gaps, test-development]
-  triggers:
-    keywords: [pre-gap, plan-review, gap-analysis, gap]
-    task_types: [planning]
-    tags: [pre-gap, plan-review]
-  constraints:
-    - "Validate every behavioural claim against the codebase"
-    - "Check Reachability Ledger for missing production consumers"
-    - "Assess step workload balance; require concrete splits for overloaded steps before readiness"
-    - "Flag underspecified fields"
-    - "Do not modify source files — report gaps only"
-    - "Fix trivial gaps in-place in plan, register non-trivial as gap entries"
-  output_requirements:
-    - "Gap summary table sorted by severity"
-    - "Step Workload Assessment with justified effort differences and bounded split proposals"
-    - "Detailed gap entries with Finding, Impact, Resolution"
-    - "Pre-Implementation Actions list with grep verification"
-    - "In-Place fixes subsection listing trivial corrections"
-  quality_criteria:
-    - name: completeness
-      description: Every plan step verified against codebase
-      weight: 40
-    - name: specificity
-      description: Gaps reference specific lines or symbols
-      weight: 30
-    - name: actionability
-      description: Each gap includes a proposed fix
-      weight: 30
----

@@ -9,7 +9,6 @@ version: "1.3.0"
 topics: ["self-improvement", "instruction-adequacy", "retrospective", "agents", "maintenance", "rag", "process"]
 qwen_skill: self-improvement
 ---
-
 ```text
 Key points
 
@@ -307,51 +306,3 @@ Do / Don't
 - [review-phase-plan](../review-phase-plan/SKILL.md) — plan validation before implementation
 - [review-phase-code](../review-phase-code/SKILL.md) — post-implementation review against plan
 - [test-development](../test-development/SKILL.md) — regression-test placement for doc fixes
-
----
-exaix:
-  skill_id: self-improvement
-  related_skills: [remediate-code-gaps, plan, review-phase-plan, review-phase-code, test-development]
-  triggers:
-    keywords: [
-      self-improvement,
-      self-improvement-retro,
-      retro,
-      retrospective,
-      instruction-adequacy,
-      doc-patch,
-      gap-detection,
-      phase-loop,
-      phase-status,
-      status-header,
-    ]
-    task_types: [docs, maintenance, process]
-    tags: [self-improvement, documentation, retrospective]
-  constraints:
-    - "Run Instruction Adequacy Check before non-trivial work"
-    - "Run the retro once per phase, after remediate-code-gaps, before declaring the phase done"
-    - "Prefer minimal diffs over full rewrites"
-    - "Rebuild manifest and chunks after agent doc edits"
-    - "Add regression tests when a missing instruction caused real friction"
-    - "Route every retro finding to PATCHED, DEFERRED, or REJECTED — none die silently"
-    - "Verify a phase doc's completion at the step level before trusting or rewriting its Status header"
-  output_requirements:
-    - "Gap list with actionable fixes"
-    - "Minimal doc patch applied"
-    - "Rebuilt manifest/chunks validated"
-    - "Retrospective section in the phase planning doc (retro mode, ~15 lines)"
-    - "Four retro questions answered from session evidence (retro mode)"
-  quality_criteria:
-    - name: minimality
-      description: Doc changes are scoped to the current task, not speculative
-      weight: 30
-    - name: testability
-      description: Regression tests guard against repeated gaps
-      weight: 25
-    - name: completeness
-      description: Patch covers all identified gaps
-      weight: 25
-    - name: retro_completeness
-      description: All four retro questions answered; every finding routed to PATCHED / DEFERRED / REJECTED
-      weight: 20
----

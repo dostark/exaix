@@ -296,3 +296,23 @@ Deno.test("[roots] matching and fallback settings come from the current config a
     await fx.cleanup();
   }
 });
+
+Deno.test("[roots] the runtime name tdd-methodology resolves to the dogfood tdd-workflow folder only when a dogfood root is configured", async () => {
+  const dogfood = await fixture({
+    roots: [{ kind: SkillRootKind.DOGFOOD, path: "dogfood" }, { kind: SkillRootKind.BLUEPRINT, path: "shared" }],
+  });
+  const plain = await fixture({ roots: [{ kind: SkillRootKind.BLUEPRINT, path: "shared" }] });
+  try {
+    for (const fx of [dogfood, plain]) {
+      await writeSkillFolder(fx.dir("shared"), { name: "tdd-methodology", instructions: "Shipped TDD." });
+    }
+    await writeSkillFolder(dogfood.dir("dogfood"), { name: "tdd-workflow", instructions: "Dogfood TDD." });
+    const aliased = await dogfood.service.getSkill("tdd-methodology", dogfood.ctx());
+    assertEquals([aliased?.name, aliased?.instructions], ["tdd-workflow", "Dogfood TDD."]);
+    assertEquals((await dogfood.service.getSkill("tdd-workflow", dogfood.ctx()))?.root_kind, SkillRootKind.DOGFOOD);
+    assertEquals((await plain.service.getSkill("tdd-methodology", plain.ctx()))?.instructions, "Shipped TDD.");
+  } finally {
+    await dogfood.cleanup();
+    await plain.cleanup();
+  }
+});

@@ -155,7 +155,11 @@ function validateFrontmatter(
       throw new Error(`dogfood frontmatter has unknown keys: ${unknown.join(", ")}`);
     }
   }
-  const parsed = SkillFrontmatterSchema.parse(frontmatter);
+  const specKeys = Object.keys(SkillFrontmatterSchema.shape);
+  const specFrontmatter = rootKind === SkillRootKind.DOGFOOD
+    ? Object.fromEntries(Object.entries(frontmatter).filter(([key]) => specKeys.includes(key)))
+    : frontmatter;
+  const parsed = SkillFrontmatterSchema.parse(specFrontmatter);
   if (parsed.name !== folderName) {
     throw new Error(`frontmatter name "${parsed.name}" does not match folder "${folderName}"`);
   }

@@ -15,7 +15,6 @@ version: "1.0.0"
 topics: ["refactoring", "code-quality", "maintenance"]
 qwen_skill: refactor
 ---
-
 ```text
 Key points
 
@@ -203,34 +202,3 @@ Related
 
 - [test-development](../test-development/SKILL.md) — test patterns, helpers, coverage
 - [exaix-development](../exaix-development/SKILL.md) — required patterns, prohibited anti-patterns
-
----
-exaix:
-  skill_id: refactor
-  related_skills: [test-development, exaix-development]
-  triggers:
-    keywords: [refactor, restructure, rename, extract, interface, di]
-    task_types: [refactor]
-    tags: [refactoring]
-  constraints:
-    - "Do not change behaviour — tests must pass before and after"
-    - "Do not mix refactoring with new features in the same commit"
-    - "Use IFoo naming for extracted interfaces"
-    - "Place constants in the correct file (prod vs. test)"
-    - "Do not use as any to resolve type errors introduced by refactor"
-  output_requirements:
-    - "Baseline evidence: tests pass before refactor"
-    - "Verification evidence: tests pass after refactor (same count)"
-    - "CI gates clean (lint, type-check, style, arch, fmt)"
-    - "Structured commit with refactoring type and files changed"
-  quality_criteria:
-    - name: behavior_preservation
-      description: Test count and results identical before and after
-      weight: 40
-    - name: interface_quality
-      description: Extracted interfaces follow IFoo naming convention
-      weight: 30
-    - name: ci_gate_compliance
-      description: All CI gates pass before commit
-      weight: 30
----

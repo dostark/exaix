@@ -138,6 +138,8 @@ export const SKILLS_SERVICE_SOURCE_ID = "skills-service";
 /** Revisions kept for `ensureRevisions`. A caller records right after reading, so a small window suffices. */
 const MAX_REMEMBERED_REVISIONS = 256;
 const MAX_REMEMBERED_PLANS = 8;
+/** Runtime names that differ from their dogfood folder names. The folder name is canonical everywhere else. */
+const DOGFOOD_RUNTIME_ALIASES: Readonly<Record<string, string>> = { "tdd-methodology": "tdd-workflow" };
 const REVISION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const GENERATION_LENGTH = 16;
 const SKILLS_SUBDIR = "Skills";
@@ -335,7 +337,7 @@ export class SkillsService implements ISkillsService {
 
   async getSkill(name: string, ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>): Promise<ISkill | null> {
     const operation = ctx ?? this.defaultContext();
-    const loaded = await this.loaderFor(operation).get(name, operation);
+    const loaded = await this.loaderFor(operation).get(this.canonicalName(name, operation), operation);
     return loaded ? this.remember(loaded).skill : null;
   }
 
@@ -472,6 +474,12 @@ export class SkillsService implements ISkillsService {
       });
       return removed ?? false;
     });
+  }
+
+  /** Maps a runtime name that predates the folder layout to its folder name, only while a dogfood root is selected. */
+  private canonicalName(name: string, ctx: ISkillOperationContext): string {
+    const dogfood = this.planFor(ctx).entries.some((entry) => entry.kind === SkillRootKind.DOGFOOD);
+    return dogfood ? DOGFOOD_RUNTIME_ALIASES[name] ?? name : name;
   }
 
   /** Matching settings: explicit constructor overrides win, then the current config's skills section, then defaults. */

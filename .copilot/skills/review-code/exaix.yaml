@@ -1,0 +1,40 @@
+applies_to:
+  agents:
+    - senior-coder
+triggers:
+  keywords:
+    - review
+    - code-review
+    - pr-review
+    - cr
+  task_types:
+    - feature
+    - bugfix
+    - refactor
+  tags:
+    - code-review
+    - quality
+constraints:
+  - 'Check correctness, security, test coverage, architecture, style'
+  - 'Reference Exaix conventions (CODE_STYLE.md, ARCHITECTURE.md)'
+  - Do not implement changes — report findings only
+  - Work through all 10 phases in order
+  - Apply Phase 3b security for any input/FS/auth/secrets/network change
+output_requirements:
+  - 'Review verdict: Approved / Approved with minor issues / Changes requested'
+  - Findings table with severity per finding
+  - Detail section for Critical and Security findings
+  - Suggested next action
+quality_criteria:
+  - name: dimension_coverage
+    description: All five review dimensions covered
+    weight: 30
+  - name: actionability
+    description: Each finding includes concrete suggestion
+    weight: 30
+  - name: evidence_quality
+    description: 'Findings reference specific file:line or symbol'
+    weight: 40
+related_skills:
+  - exaix-development
+  - audit-security

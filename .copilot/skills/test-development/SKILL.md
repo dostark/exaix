@@ -15,7 +15,6 @@ version: "1.3.0"
 topics: ["testing", "tdd", "coverage", "test-helpers", "assertion-sensitivity"]
 qwen_skill: test-development
 ---
-
 ```text
 Key points
 
@@ -286,52 +285,4 @@ Examples
   #test-development Add unit tests for PlanWriter error handling
   #test-development Write security tests for file path validation
   #test-development Create integration test for workspace bootstrap flow
-```
-
-```
----
-exaix:
-  skill_id: test-development
-  triggers:
-    keywords: [test, testing, coverage, tdd, unit-test, integration-test, tautology, flaky-assertion]
-    task_types: [testing]
-    tags: [testing]
-  constraints:
-    - "Use shared helpers (initTestDbService, createCliTestContext)"
-    - "Place tests per package/app/root boundary"
-    - "Label security tests [security]"
-    - "Use EXA_TEST_* env vars"
-    - "No raw SQL table creation in tests"
-    - "Canary every new or edited test — break what it names, confirm red, restore"
-    - "No tautologies: never restate a constant, derive the expectation from the input, assert the test's own scaffolding, or test the runtime instead of our code"
-    - "No blind sleep where a readiness signal exists — poll the event (daemon.ready) or rely on the verifying command"
-    - "Do not re-do work a helper already did (e.g. re-mount + restart after the runner already mounted portals)"
-    - "Run independent I/O concurrently with Promise.all/allSettled, preserving error attribution"
-    - "Route daemon-boot, env-mutating, and wall-clock-ordered tests to SEQUENTIAL_FILES in scripts/test_parallel.ts"
-  output_requirements:
-    - "Target test files created or modified"
-    - "Helpers and patterns used"
-    - "Test command and coverage check results"
-    - "Canary evidence for each new assertion — what was broken and that it went red"
-    - "For a slow test fixed: before/after per-test duration and pass counts"
-  quality_criteria:
-    - name: placement_compliance
-      description: Test placement follows boundaries
-      weight: 20
-    - name: helper_usage
-      description: Shared helpers used instead of bespoke setup
-      weight: 15
-    - name: coverage_target
-      description: Coverage met or verified
-      weight: 15
-    - name: edge_case_coverage
-      description: Edge case dimensions tested per mandatory dimensions section
-      weight: 25
-    - name: assertion_sensitivity
-      description: Each assertion discriminates — canaried against a break in the code it names
-      weight: 25
-    - name: execution_time
-      description: No blind sleeps or duplicated setup; independent I/O runs concurrently; process-sensitive tests are in the sequential batch
-      weight: 10
----
 ```

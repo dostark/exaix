@@ -9,7 +9,6 @@ version: "1.1.0"
 topics: ["planning", "roadmap", "phase-selection", "dependencies", "prioritization", "process"]
 qwen_skill: next-phase
 ---
-
 ```text
 Key points
 
@@ -154,48 +153,3 @@ Classify precisely:
 - [review-phase-plan](../review-phase-plan/SKILL.md) — validates the chosen plan
 - [submodule-workflow](../submodule-workflow/SKILL.md) — registry lives in the submodule
 - [docs/CHANGELOG.md](../../../docs/CHANGELOG.md) — the shipped-phase list reconciled against
-
----
-exaix:
-  skill_id: next-phase
-  related_skills: [self-improvement, plan, next-steps, review-phase-plan, submodule-workflow]
-  triggers:
-    keywords: [
-      next-phase,
-      which-phase,
-      phase-selection,
-      phase-registry,
-      roadmap,
-      backlog,
-      implementation-order,
-      what-next,
-    ]
-    task_types: [planning, process, docs]
-    tags: [planning, roadmap, prioritization, phase-registry]
-  constraints:
-    - "Read PHASE_REGISTRY.md before scanning the full planning/ corpus"
-    - "Verify real completion at the step level before trusting any registry row"
-    - "Check environment-executability with a real command, not inference"
-    - "Reconcile docs/CHANGELOG.md phases with their open waived/ledger items every run"
-    - "Recommend one top pick plus 2-3 ranked runners-up, each with a stated reason"
-    - "Update PHASE_REGISTRY.md with every row touched before finishing"
-  output_requirements:
-    - "One clear top-pick recommendation with evidence"
-    - "2-3 named runners-up, each with a reason it ranks lower"
-    - "PHASE_REGISTRY.md updated to reflect the audit"
-    - "Not-fully-closed registry section kept current (phases and items added/removed as items close)"
-    - "Explicit statement when no candidate is ready, naming the blocker"
-  quality_criteria:
-    - name: evidence_grounding
-      description: Every readiness/risk/scope claim is backed by something actually read, not inferred
-      weight: 30
-    - name: registry_freshness
-      description: PHASE_REGISTRY.md is left current, not stale, after the run — including the Not-fully-closed CHANGELOG section
-      weight: 25
-    - name: ranking_rationale
-      description: Every candidate's rank (including runners-up) has a stated reason
-      weight: 25
-    - name: environment_check
-      description: Environment-executability is verified with a real command, not assumed
-      weight: 20
----

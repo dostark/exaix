@@ -1,0 +1,41 @@
+applies_to:
+  agents:
+    - senior-coder
+triggers:
+  keywords:
+    - plan
+    - phase
+    - planning
+    - design
+  task_types:
+    - planning
+  tags:
+    - planning
+    - architecture
+constraints:
+  - 'Follow Exaix TDD, security, and traceability standards'
+  - Each step includes a step-manifest YAML block
+  - Ground third-party integrations in deep web research
+  - Include a Reachability Ledger section
+  - Vertical end-to-end slice before breadth
+  - Balance implementation workload and split overloaded steps before plan handoff
+  - Documentation update step as final step
+output_requirements:
+  - Phase planning document with numbered steps
+  - Step Workload Assessment with independently testable steps and bounded acceptance criteria
+  - Step-manifest blocks for dogfood compatibility
+  - Reachability Ledger table
+  - Pre-Gap Analysis recommended
+quality_criteria:
+  - name: step_manifest_completeness
+    description: Every step has a manifest block
+    weight: 35
+  - name: architectural_rigor
+    description: Plan references ARCHITECTURE.md components
+    weight: 35
+  - name: reachability_tracking
+    description: Reachability Ledger tracks production-dead symbols
+    weight: 30
+related_skills:
+  - review-phase-plan
+  - test-development

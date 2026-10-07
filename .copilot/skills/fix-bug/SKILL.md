@@ -17,7 +17,6 @@ version: "1.0.0"
 topics: ["bug-fix", "tdd", "regression", "root-cause", "ci", "validation"]
 qwen_skill: fix-bug
 ---
-
 ```text
 Key points
 
@@ -114,34 +113,3 @@ Related: #next-steps (return after the fix); #commit (structured commit); #audit
 
 - [AGENTS.md](../../../AGENTS.md#behavioral-guidelines) — behavioral guidelines
 - [CODE_STYLE.md](../../../CODE_STYLE.md) — naming, type, import, constants rules
-
----
-exaix:
-  skill_id: fix-bug
-  related_skills: [test-development, exaix-development]
-  triggers:
-    keywords: [fix, bug, bugfix, failing-test, defect, regression]
-    task_types: [bugfix]
-    tags: [bugfix, tdd]
-  constraints:
-    - "Write regression test first that reproduces the bug (RED phase)"
-    - "Implement minimal fix to pass the test (GREEN phase)"
-    - "Run all CI gates after fix to prevent regressions"
-    - "If GREEN unreachable after 2 attempts, revert and re-analyse"
-    - "Use structured commit with bug reference"
-  output_requirements:
-    - "RED evidence: failing test reproducing the bug"
-    - "GREEN evidence: all tests passing after fix"
-    - "CI gates clean before commit"
-    - "Structured commit message referencing the bug"
-  quality_criteria:
-    - name: regression_test
-      description: Test written that reproduces the bug before fix
-      weight: 40
-    - name: minimal_fix
-      description: Only the minimum code changed to fix the bug
-      weight: 30
-    - name: ci_gate_compliance
-      description: All CI gates pass before commit
-      weight: 30
----

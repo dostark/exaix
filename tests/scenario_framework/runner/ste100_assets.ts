@@ -9,23 +9,20 @@
  *   and tampered blobs. `assertIsolatedTarget`/`createExclusiveIsolatedDir`/
  *   `revalidateIsolatedTarget` preflight arm output paths (rejecting escaped, symlinked,
  *   sibling-prefix, and overlapping targets) before the existing generators run, and
- *   `runIsolatedGenerator` copies validated skill folders, or drives `generateSkillJson`
- *   for the dogfood corpus, into an isolated arm root. `withSte100Arm` guarantees cleanup in `finally`. Step 1 asset
+ *   `runIsolatedGenerator` copies validated Blueprint or dogfood skill folders into an isolated arm root. `withSte100Arm` guarantees cleanup in `finally`. Step 1 asset
  *   module; Steps 3-6 build on it.
  * @architectural-layer Test
  * @related-files [
  *   "tests/scenario_framework/tests/unit/ste100_assets_test.ts",
- *   "scripts/skill_catalog_loader.ts",
- *   "scripts/generate_skill_json.ts"
+ *   "scripts/skill_catalog_loader.ts"
  * ]
  */
 
 import { exists } from "@std/fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, SEPARATOR } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
-import { SkillDiagnosticSeverity } from "@exaix/core";
+import { SkillDiagnosticSeverity, SkillRootKind } from "@exaix/core";
 import { CATALOG_CONTEXT, createCatalogLoader } from "../../../scripts/skill_catalog_loader.ts";
-import { generateSkillJson } from "../../../scripts/generate_skill_json.ts";
 
 export type Ste100BaselineKind = "source" | "generated" | "configuration";
 
@@ -71,7 +68,7 @@ export interface ISte100FreezeInput {
 }
 
 export interface ISte100IsolatedGeneratorInput {
-  kind: "skills" | "skill-json";
+  kind: "skills" | "dogfood-skills";
   root: string;
   sourceDir: string;
   targetDir: string;
@@ -351,9 +348,10 @@ async function copyValidatedSkillFolders(
   sourceDir: string,
   target: string,
   check: boolean,
+  rootKind: SkillRootKind,
 ): Promise<{ success: boolean; generated: string[]; errors: string[]; warnings: string[] }> {
   const result = { success: true, generated: [] as string[], errors: [] as string[], warnings: [] as string[] };
-  const loader = createCatalogLoader(sourceDir);
+  const loader = createCatalogLoader(sourceDir, rootKind);
   for (const diagnostic of await loader.diagnostics(CATALOG_CONTEXT)) {
     if (diagnostic.severity === SkillDiagnosticSeverity.ERROR) {
       result.errors.push(`${diagnostic.safe_path}: ${diagnostic.reason}`);
@@ -388,12 +386,8 @@ export async function runIsolatedGenerator(
   options?: Opt<{ check?: boolean }, Reason.ExecutionConfig>,
 ): Promise<{ success: boolean; generated: string[]; errors: string[]; warnings: string[] }> {
   const absoluteTarget = await createExclusiveIsolatedDir(input.targetDir, input.root, input.existingTrees);
-  if (input.kind === "skills") {
-    const result = await copyValidatedSkillFolders(input.sourceDir, absoluteTarget, options?.check === true);
-    await revalidateIsolatedTarget(absoluteTarget, input.root);
-    return result;
-  }
-  const result = await generateSkillJson(input.sourceDir, absoluteTarget, input.root, options);
+  const rootKind = input.kind === "dogfood-skills" ? SkillRootKind.DOGFOOD : SkillRootKind.BLUEPRINT;
+  const result = await copyValidatedSkillFolders(input.sourceDir, absoluteTarget, options?.check === true, rootKind);
   await revalidateIsolatedTarget(absoluteTarget, input.root);
   return result;
 }

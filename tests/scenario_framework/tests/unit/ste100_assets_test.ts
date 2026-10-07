@@ -9,9 +9,10 @@
  *   target is created exclusively. Proves the two Step 1 assets obligations without
  *   touching the real conversion corpus.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/runner/ste100_assets.ts, scripts/skill_catalog_loader.ts, scripts/generate_skill_json.ts]
+ * @related-files [tests/scenario_framework/runner/ste100_assets.ts, scripts/skill_catalog_loader.ts]
  */
 
+import { REPO_ROOT } from "@exaix/testing";
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { exists } from "@std/fs";
 import { dirname, join, resolve } from "@std/path";
@@ -218,5 +219,41 @@ Deno.test("ste100 isolated skills: check mode validates without writing any fold
     assertEquals(result.success, true);
     assertEquals(result.generated.length, 1);
     assertEquals(await exists(join(root, "arm-skills", "alpha-skill")), false);
+  });
+});
+
+Deno.test("ste100 isolated dogfood skills: the repository corpus is copied as 28 folders and the source is unchanged", async () => {
+  await withTempRoot(async (root) => {
+    const source = join(REPO_ROOT, ".copilot", "skills");
+    const before = await Deno.readTextFile(join(source, "commit", "exaix.yaml"));
+    const result = await runIsolatedGenerator({
+      kind: "dogfood-skills",
+      root,
+      sourceDir: source,
+      targetDir: join(root, "arm-dogfood"),
+    });
+    assertEquals(result.errors, []);
+    assertEquals(result.generated.length, 28);
+    assertEquals(
+      await Deno.readTextFile(join(root, "arm-dogfood", "commit", "SKILL.md")),
+      await Deno.readTextFile(join(source, "commit", "SKILL.md")),
+    );
+    assertEquals(await Deno.readTextFile(join(root, "arm-dogfood", "commit", "exaix.yaml")), before);
+    assertEquals(await Deno.readTextFile(join(source, "commit", "exaix.yaml")), before);
+  });
+});
+
+Deno.test("ste100 isolated dogfood skills: a Blueprint-style folder under the dogfood kind reports its reason", async () => {
+  await withTempRoot(async (root) => {
+    const source = join(root, "source");
+    await writeFile(join(source, "bad-skill", "SKILL.md"), "no frontmatter");
+    const result = await runIsolatedGenerator({
+      kind: "dogfood-skills",
+      root,
+      sourceDir: source,
+      targetDir: join(root, "arm-dogfood"),
+    });
+    assertEquals(result.success, false);
+    assertEquals(result.errors, ["bad-skill: invalid_frontmatter"]);
   });
 });

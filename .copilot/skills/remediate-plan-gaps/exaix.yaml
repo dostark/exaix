@@ -1,0 +1,38 @@
+applies_to:
+  agents:
+    - senior-coder
+triggers:
+  keywords:
+    - remediate-plan
+    - plan-gaps
+    - close-gaps
+    - fix-plan
+  task_types:
+    - planning
+  tags:
+    - remediate-plan
+constraints:
+  - Only close gaps explicitly opened by a Pre-Gap Analysis section
+  - Do not add new analysis or scope-creep beyond named gaps
+  - Do not edit source code files — only the planning document
+  - 'Work through gaps in severity order: Critical, Security, Feasibility, Testing, Conceptual'
+  - Re-run all planned tests after remediation
+output_requirements:
+  - All named gaps resolved in the planning document
+  - Document version bumped
+  - Status updated to Gap Remediation In Progress
+  - Documentation update step added if interfaces/schemas changed
+quality_criteria:
+  - name: scope_discipline
+    description: Only named gaps are closed — no scope creep
+    weight: 40
+  - name: completeness
+    description: Every gap has a corresponding edit in the affected step
+    weight: 30
+  - name: validation
+    description: All planned tests pass after remediation
+    weight: 30
+related_skills:
+  - review-phase-plan
+  - next-steps
+  - test-development

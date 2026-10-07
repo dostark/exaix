@@ -25,7 +25,6 @@ topics: [
 ]
 qwen_skill: review-phase-code
 ---
-
 ```text
 Key points
 
@@ -330,37 +329,3 @@ met items to the done form; the gate blocks any `- [ ]` left in a committed step
 1. Commit payload. Findings-only doc edit → normal docs commit (submodule-first). A
    remediation commit that ALSO marks criteria/tests done → plan-step commit with
    `plan: <doc>#<step>` via `scripts/commit_plan_step.ts <msg> --commit`.
-
----
-exaix:
-  skill_id: review-phase-code
-  related_skills: [review-code, remediate-code-gaps, test-development]
-  triggers:
-    keywords: [post-gap, implementation-review, post-implementation]
-    task_types: [planning, review]
-    tags: [post-gap, review]
-  constraints:
-    - "Verify what was built matches the plan"
-    - "Falsify problem-statement outcomes independently of completed plan criteria"
-    - "Delegate code quality review to review-code skill"
-    - "Write remediation steps back into the plan document"
-    - "Run semantic value verification on events, schemas, responses"
-    - "Verify canonical persisted or indexed values for correlation, identity, provenance, status, routing, and authorization"
-    - "Run integration surface audit — dead fields with no consumers are gaps"
-  output_requirements:
-    - "Gap summary table with findings per step"
-    - "Required Outcome & Falsification Matrix with production evidence and an adversarial case per outcome"
-    - "Detailed gap entries with Expected vs Actual"
-    - "Remediation steps in TDD-First format"
-    - "Documentation update step for interface/schema/CLI changes"
-  quality_criteria:
-    - name: plan_accuracy
-      description: Each step verified against plan
-      weight: 40
-    - name: remediation_clarity
-      description: Each gap has clear remediation steps
-      weight: 30
-    - name: delegation
-      description: Code quality concerns delegated to review-code
-      weight: 30
----

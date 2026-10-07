@@ -15,7 +15,6 @@ version: "1.0.0"
 topics: ["tdd", "testing", "red-green-refactor", "coverage", "helpers"]
 qwen_skill: tdd-workflow
 ---
-
 ```text
 Key points
 
@@ -140,31 +139,3 @@ Workflow chain:
 
 - [test-development](../test-development/SKILL.md) — test helpers, placement rules, patterns
 - [exaix-development](../exaix-development/SKILL.md) — DI patterns, config constants, coding conventions
-
----
-exaix:
-  skill_id: tdd-methodology
-  related_skills: [test-development, exaix-development]
-  triggers:
-    keywords: [tdd, test, red-green-refactor]
-    task_types: [feature, bugfix, refactor]
-    tags: [tdd, testing]
-  constraints:
-    - "Write the failing test BEFORE writing any source code (RED must come first)"
-    - "TDD is non-negotiable -- no implementation without a prior failing test"
-    - "When the scope involves more than ~20 files, work in batches of 5-10"
-  output_requirements:
-    - "CONTEXT: Component, test helper selection, test file path"
-    - "RED evidence: failing test run output (error type and line)"
-    - "GREEN evidence: passing test run summary (N/N tests passing)"
-  quality_criteria:
-    - name: tdd_compliance
-      description: Tests were written before implementation for every behaviour change
-      weight: 40
-    - name: ci_gate_compliance
-      description: All CI gates pass before each commit (lint, type-check, style, arch, magic)
-      weight: 30
-    - name: coverage_maintained
-      description: Line coverage does not drop below 70%, branch below 60%
-      weight: 30
----

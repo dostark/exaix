@@ -13,7 +13,6 @@ version: "1.0.0"
 topics: ["evaluation", "scenario-framework", "testing", "testing", "debugging"]
 qwen_skill: run-scenario-test
 ---
-
 ```text
 Key points
 
@@ -150,32 +149,3 @@ For broader knowledge, read the full documents this skill condenses:
 - [tdd-workflow](../tdd-workflow/SKILL.md) — RED/GREEN workflow for the code under test
 - [fix-bug](../fix-bug/SKILL.md) — regression-driven bug fixing surfaced by scenarios
 - [explore](../explore/SKILL.md) — navigate the codebase a scenario touches
-
----
-exaix:
-  skill_id: run-scenario-test
-  related_skills: [test-development, tdd-workflow, fix-bug, explore]
-  triggers:
-    keywords: [scenario, scenario test, run evaluation, eval run, exactl eval, debug scenario, scenario framework]
-    task_types: [testing, feature, bugfix]
-    tags: [evaluation, testing, scenario-framework]
-  constraints:
-    - "Use `exactl eval run --scenario <id>` (scenario ID), never the scenario file path"
-    - "Never pass --eval-mode to exactl eval run; it is appended internally"
-    - "Prefer package/tests integration tests for deterministic in-process assertions; use scenarios for score-, daemon-, or provider-level behaviour"
-    - "Validate new scenario YAML against ScenarioSchema before running"
-  output_requirements:
-    - "The exact command(s) to run the scenario"
-    - "For a failure: sandbox path, the failing step/criterion, and the observed-vs-expected evidence"
-    - "The fix applied or the command that reproduces the failure"
-  quality_criteria:
-    - name: command_accuracy
-      description: Run and debug commands reflect the current CLI and framework behavior
-      weight: 40
-    - name: evidence_based
-      description: Failures diagnosed from the sandbox journal/daemon log, not assumed
-      weight: 35
-    - name: minimal_scope
-      description: Scenarios used only where they add value over unit/integration tests
-      weight: 25
----
