@@ -11,6 +11,8 @@
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
+import { MockStrategy } from "@exaix/core";
+import { MockLLMProvider } from "../src/providers/mock_llm_provider.ts";
 import { createMockLogger, initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { TracedProvider } from "../src/traced_provider.ts";
@@ -555,3 +557,35 @@ Deno.test("[usage] missing provider price stays unknown for retry admission", as
     await env.cleanup();
   }
 });
+
+for (const lookup of ["call site", "preview"]) {
+  Deno.test(`fix(mock): traced recording preserves explicit zero cost through ${lookup} lookup`, async () => {
+    const env = await initTestDbService();
+    try {
+      const callSite = { scenarioId: "gate-budget-cost", stepId: "submit", flowStepId: "draft", callIndex: 0 };
+      const recording = {
+        promptHash: "unused",
+        promptPreview: "Generate",
+        response: "draft",
+        model: "mock-cost-fixture",
+        tokens: { input: 100, output: 200 },
+        recordedAt: "2026-10-07T00:00:00.000Z",
+        callSite,
+        cost_usd: 0,
+      };
+      const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings: [recording], strictRecordings: true });
+      const result = await new TracedProvider(provider, new EventLogger({ db: env.db })).generate("Generate", {
+        traceId: "gate-recorded-cost-trace",
+        ...(lookup === "call site" ? { callSite } : {}),
+      });
+      assertEquals(result.cost_usd, 0);
+      const rows = await env.db.queryActivity({ actionType: "llm.usage", traceId: "gate-recorded-cost-trace" });
+      assertEquals(rows.length, 1);
+      const payload = JSON.parse(rows[0].payload);
+      assertEquals(payload.cost_usd, 0);
+      assertEquals(payload.cost_status, undefined);
+    } finally {
+      await env.cleanup();
+    }
+  });
+}

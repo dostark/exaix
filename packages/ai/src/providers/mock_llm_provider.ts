@@ -41,6 +41,8 @@ export interface IRecordedResponse {
   model: string;
   /** Token counts */
   tokens: { input: number; output: number };
+  /** Explicit recorded price, including zero. Omitted recordings retain registry-based costing. */
+  cost_usd?: number;
   /** When this was recorded */
   recordedAt: string;
   /** Where this recording was captured. When present, lookup addresses by call site instead
@@ -70,6 +72,7 @@ export interface IRecordedInputExpectation {
 /** A replayed recording: the recorded text response plus any native tool calls it carried. */
 interface IRecordedReplay {
   response: string;
+  cost_usd?: number;
   toolCalls?: IProviderToolCall[];
 }
 
@@ -305,6 +308,13 @@ function assertExpectedInput(
   if (resultError) fail(resultError);
 }
 
+function recordedCostValidationError(cost: Opt<number, Reason.OptionalInput>): string | null {
+  if (cost === undefined) return null;
+  return typeof cost === "number" && Number.isFinite(cost) && cost >= 0
+    ? null
+    : "cost_usd must be a finite non-negative number";
+}
+
 /** Validate a loaded fixture file against the IRecordedResponse contract, so a corrupt or
  *  schema-violating recording fails loudly at load time — naming the file — instead of an
  *  unvalidated JSON.parse crash or a silently-malformed recording that can never replay correctly. */
@@ -328,7 +338,8 @@ function validateRecordedResponse(value: JSONValue, filePath: string): IRecorded
   if (candidate.callSite !== undefined && !isValidCallSite(candidate.callSite)) {
     fail("callSite is present but malformed — expected { scenarioId, stepId, callIndex, flowStepId? }");
   }
-  const optionalFieldError = toolCallsValidationError(candidate.toolCalls) ??
+  const optionalFieldError = recordedCostValidationError(candidate.cost_usd) ??
+    toolCallsValidationError(candidate.toolCalls) ??
     expectedInputValidationError(candidate.expectedInput as Opt<JSONValue, Reason.OptionalInput>);
   if (optionalFieldError) fail(optionalFieldError);
   return candidate as IRecordedResponse;
@@ -460,11 +471,13 @@ export class MockLLMProvider implements IModelProvider {
 
     const timestamp = new Date();
     let response: string;
+    let recordedCost: number | undefined;
     let toolCalls: IProviderToolCall[] | undefined;
     switch (this.strategy) {
       case MockStrategy.RECORDED: {
         const replay = this.generateRecorded(prompt, options);
         response = replay.response;
+        recordedCost = replay.cost_usd;
         // IGenerateResult.toolCalls is produced only when the caller requested tools.
         toolCalls = options?.tools && replay.toolCalls && replay.toolCalls.length > 0 ? replay.toolCalls : undefined;
         break;
@@ -501,6 +514,7 @@ export class MockLLMProvider implements IModelProvider {
       model: "mock-model",
       provider: this.id,
       ...(toolCalls !== undefined ? { toolCalls } : {}),
+      ...(recordedCost !== undefined ? { cost_usd: recordedCost } : {}),
     };
   }
 
@@ -520,7 +534,7 @@ export class MockLLMProvider implements IModelProvider {
     const recording = this.recordings.find((r) => r.promptHash === hash);
     if (recording) {
       assertExpectedInput(recording, prompt, options?.priorTurn, `prompt hash ${hash}`);
-      return { response: recording.response, toolCalls: recording.toolCalls };
+      return { response: recording.response, toolCalls: recording.toolCalls, cost_usd: recording.cost_usd };
     }
 
     // Try matching by prompt preview (partial match)
@@ -529,7 +543,7 @@ export class MockLLMProvider implements IModelProvider {
     );
     if (previewMatch) {
       assertExpectedInput(previewMatch, prompt, options?.priorTurn, `prompt preview "${previewMatch.promptPreview}"`);
-      return { response: previewMatch.response, toolCalls: previewMatch.toolCalls };
+      return { response: previewMatch.response, toolCalls: previewMatch.toolCalls, cost_usd: previewMatch.cost_usd };
     }
 
     // A miss under `recorded` is a hole in the fixture set, and silently answering it from a
@@ -584,7 +598,7 @@ export class MockLLMProvider implements IModelProvider {
         );
       }
       assertExpectedInput(recording, prompt, priorTurn, `call site ${describeCallSite(callSite)}`);
-      return { response: recording.response, toolCalls: recording.toolCalls };
+      return { response: recording.response, toolCalls: recording.toolCalls, cost_usd: recording.cost_usd };
     }
 
     if (this.strictRecordings) {

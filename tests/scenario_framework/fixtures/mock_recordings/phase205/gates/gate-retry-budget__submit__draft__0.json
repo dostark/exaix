@@ -18,5 +18,6 @@
     "promptIncludes": [
       "Review this change."
     ]
-  }
+  },
+  "cost_usd": 0
 }

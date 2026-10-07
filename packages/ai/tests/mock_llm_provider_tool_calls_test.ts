@@ -230,3 +230,19 @@ Deno.test("[recorded_mock] a fixture without expectedInput replays unchanged", a
 
   assertEquals(result.content, "the plan");
 });
+
+Deno.test("[security] recorded mock cost rejects malformed or negative prices at fixture load", async () => {
+  const base = JSON.parse(JSON.stringify(finalRecording(undefined))) as Record<string, JSONValue>;
+  for (const cost_usd of [-0.01, "0", null]) {
+    const dir = await writeFixture({ ...base, cost_usd });
+    try {
+      assertThrows(
+        () => new MockLLMProvider(MockStrategy.RECORDED, { fixtureDir: dir }),
+        MockLLMError,
+        "cost_usd",
+      );
+    } finally {
+      await Deno.remove(dir, { recursive: true });
+    }
+  }
+});
