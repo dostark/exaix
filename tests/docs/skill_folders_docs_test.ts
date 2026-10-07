@@ -125,3 +125,12 @@ Deno.test("[skill docs] active guidance never instructs the removed compiler, ru
     }
   }
 });
+
+Deno.test("[skill docs] the reference data documents the scope table and the append-only retention rule", async () => {
+  const reference = await read(REFERENCE);
+  assert(reference.includes("skill_revision_scopes"), "the scope table is documented");
+  assert(/append-only/i.test(reference), "the retention rule is documented");
+  const guide = await read(GUIDE);
+  assert(guide.includes("own portal"), "the Guide explains the portal rule for history reads");
+  assert(/control (byte|character)s?/i.test(guide), "the Guide explains that control bytes are removed from output");
+});

@@ -831,6 +831,8 @@ exactl skills validate            # typed reasons for every folder; exits 1 when
 
 `approve` fails with exit code 1 when the draft changed after your review, so an old review never approves new content. `deprecate` takes a skill out of matching, and it needs a fresh approval to return. Exit code 0 means success, exit code 1 means a refused or failed operation, and exit code 2 means a malformed argument such as a revision that is not a UUID. Failures print a short message and never the body of a skill.
 
+Skill text is shown with terminal control characters removed, so a draft cannot change your terminal while you review it. `--format json` returns the exact stored text. A stored revision is readable only from its own portal or from global scope, so `show --revision` and `revisions` never reveal another portal's project skill.
+
 Only `exactl skills show --revision` and `revisions` read stored history. A deleted or edited skill stays readable there, but a stored revision is never injected by itself.
 
 #### Configuration
