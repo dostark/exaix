@@ -551,15 +551,16 @@ export class MemoryCommands extends BaseCommand {
         return `Skill not found: ${skillId}`;
       }
 
+      const usage = await this.skills.getUsageSummary(skill.skill_id);
       switch (format) {
         case UIOutputFormat.JSON:
-          return JSON.stringify(skill, null, 2);
+          return JSON.stringify({ ...skill, usage }, null, 2);
 
         case UIOutputFormat.MARKDOWN:
-          return this.formatter.formatSkillShowMarkdown(skill);
+          return `${this.formatter.formatSkillShowMarkdown(skill)}\n\n${this.formatter.formatSkillUsage(usage)}`;
         case UIOutputFormat.TABLE:
         default:
-          return this.formatter.formatSkillShowTable(skill);
+          return `${this.formatter.formatSkillShowTable(skill)}\n\n${this.formatter.formatSkillUsage(usage)}`;
       }
     } catch (error) {
       return `Error showing skill: ${(error as Error).message}`;

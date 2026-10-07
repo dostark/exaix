@@ -17,6 +17,8 @@ export {
 } from "./skill_context.ts";
 export { SkillFolderLoader } from "./skill_folder_loader.ts";
 export { SkillFolderPublisher, type SkillLockMode } from "./skill_folder_publisher.ts";
+export { policySkillSubmission } from "./skill_submission.ts";
+export { SKILL_USAGE_STORE_SOURCE_ID, SkillUsageStore } from "./skill_usage_store.ts";
 export { SKILL_REVISION_STORE_SOURCE_ID, SkillRevisionStore } from "./skill_revision_store.ts";
 export {
   canonicalizeSkillText,
@@ -38,6 +40,10 @@ export {
   type ISkillRevisionSnapshot,
   type ISkillRootContext,
   type ISkillStoreDeps,
+  type ISkillSubmission,
+  type ISkillSubmissionItem,
+  type ISkillUsageRecord,
+  type ISkillUsageSummary,
   SkillAuditUnavailableError,
   SkillMutationError,
   SkillUnavailableError,

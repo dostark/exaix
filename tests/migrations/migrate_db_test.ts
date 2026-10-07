@@ -509,3 +509,82 @@ Deno.test("[phase206] migrate_db.ts down drops skill_revisions before activity",
     await Deno.remove(tmp, { recursive: true }).catch(() => {});
   }
 });
+
+const SKILL_USAGE_COLUMNS = [
+  "id",
+  "call_id",
+  "revision_id",
+  "skill_name",
+  "trace_id",
+  "request_id",
+  "flow_id",
+  "flow_step_id",
+  "agent_role",
+  "match_source",
+  "render_mode",
+  "submission_kind",
+  "round",
+  "attempt",
+  "root_kind",
+  "source_path",
+  "config_generation",
+  "used_at",
+];
+
+Deno.test("[phase206] migrate_db.ts up installs skill_usage with its indexes and keeps prior rows on an applied-001 journal", async () => {
+  const tmp = await setupTestWorkspace();
+  try {
+    assertEquals((await runMigrate(tmp, ["up"])).code, 0);
+    const dbPath = join(getRuntimeDir(tmp), "journal.db");
+    const cols = await queryDb(dbPath, "SELECT name FROM pragma_table_info('skill_usage');");
+    for (const column of SKILL_USAGE_COLUMNS) assertStringIncludes(cols, column);
+    const indexes = await queryDb(dbPath, "SELECT name FROM sqlite_master WHERE type='index';");
+    assertStringIncludes(indexes, "idx_skill_usage_name");
+    assertStringIncludes(indexes, "idx_skill_usage_trace");
+
+    const db = new Database(dbPath);
+    try {
+      db.exec("DROP INDEX idx_skill_usage_name; DROP INDEX idx_skill_usage_trace; DROP TABLE skill_usage;");
+    } finally {
+      await db.close();
+    }
+    assertEquals((await runMigrate(tmp, ["up"])).code, 0);
+    assertStringIncludes(await queryDb(dbPath, "SELECT name FROM pragma_table_info('skill_usage');"), "call_id");
+  } finally {
+    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("[phase206] migrate_db.ts down drops skill_usage before skill_revisions", async () => {
+  const tmp = await setupTestWorkspace();
+  try {
+    assertEquals((await runMigrate(tmp, ["up"])).code, 0);
+    const dbPath = join(getRuntimeDir(tmp), "journal.db");
+    const db = new Database(dbPath);
+    try {
+      db.exec("PRAGMA foreign_keys = ON");
+      db.prepare("INSERT INTO skill_revisions VALUES (?, ?, ?, ?, ?, ?, ?)").run(
+        "r1",
+        "h",
+        "n",
+        "md",
+        null,
+        "[]",
+        "now",
+      );
+      db.prepare(
+        `INSERT INTO skill_usage (call_id, revision_id, skill_name, trace_id, agent_role, match_source, render_mode,
+           submission_kind, round, attempt, root_kind, source_path, config_generation, used_at)
+         VALUES ('c', 'r1', 'n', 't', 'a', 'pinned', 'full', 'provider', 1, 1, 'blueprint', 'n', 'static', 'now')`,
+      ).run();
+    } finally {
+      await db.close();
+    }
+    const down = await runMigrate(tmp, ["down"]);
+    assertEquals(down.code, 0, `migrate down failed: ${down.stderr}`);
+    const lookup = "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('skill_usage','skill_revisions');";
+    assertEquals(await queryDb(dbPath, lookup), "");
+  } finally {
+    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+  }
+});

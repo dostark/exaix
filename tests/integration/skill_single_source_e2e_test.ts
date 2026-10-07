@@ -23,6 +23,7 @@ const SKILL_MARKER = "E2E_FOLDER_SKILL_MARKER";
 const SKILLS_INITIALIZED_EVENT = "skills.initialized";
 const PROMPT_ASSEMBLED_EVENT = "agent.prompt_assembled";
 const REVISION_RECORDED_EVENT = "skills.revision_recorded";
+const USAGE_RECORDED_EVENT = "skills.usage_recorded";
 const DAEMON_SETTLE_MS = 20000;
 const REQUEST_WAIT_MS = 60000;
 
@@ -81,6 +82,28 @@ async function readRevision(configPath: string): Promise<IRevisionRow | undefine
       "SELECT skill_name, skill_md, exaix_yaml FROM skill_revisions WHERE skill_name = ?",
       [SKILL_NAME],
     ) ?? undefined;
+  } finally {
+    await db.close();
+  }
+}
+
+interface IUsageRow {
+  skill_name: string;
+  match_source: string;
+  render_mode: string;
+  round: number;
+  attempt: number;
+  agent_role: string;
+}
+
+async function readUsage(configPath: string, traceId: string): Promise<IUsageRow[]> {
+  const db = new DatabaseService(new ConfigService(configPath).getAll());
+  try {
+    return await db.preparedAll<IUsageRow>(
+      `SELECT skill_name, match_source, render_mode, round, attempt, agent_role
+         FROM skill_usage WHERE trace_id = ? ORDER BY id`,
+      [traceId],
+    );
   } finally {
     await db.close();
   }
@@ -186,6 +209,21 @@ Add a hello world function.
         assert(!content.includes("usage_count"), `no usage_count may be written: ${path}`);
       }
       assertEquals(memorySkills.has("/index.json"), false, "no skill index is written");
+
+      const usage = await readUsage(configPath, traceId);
+      assertEquals(usage.length, 1, "one usage row per included skill per attempted call");
+      assertEquals(usage[0].skill_name, SKILL_NAME);
+      assertEquals([usage[0].match_source, usage[0].render_mode, usage[0].round, usage[0].attempt], [
+        "pinned",
+        "full",
+        1,
+        1,
+      ]);
+      assertEquals(usage[0].agent_role, "mock-agent");
+      assert(
+        activity.some((row) => row.trace_id === traceId && row.action_type === USAGE_RECORDED_EVENT),
+        "the usage vector journals skills.usage_recorded on the request trace",
+      );
 
       const snapshot = await readRevision(configPath);
       assert(snapshot, "the injected skill revision must be durably snapshotted in the journal");

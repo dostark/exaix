@@ -180,7 +180,7 @@ Deno.test("[AgentRunner.previewPrompt] matchedSkillIds reflects the real skill-m
     forContext() {
       return this;
     },
-    ensureRevisions: () => Promise.resolve(),
+    recordSubmission: () => Promise.resolve(),
     matchSkills: () =>
       Promise.resolve({
         matches: [{ skillId: "matched-skill-id", confidence: 1.0, matchedTriggers: {} }],

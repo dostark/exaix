@@ -24,6 +24,7 @@ import type {
   SkillMutationErrorCode,
   SkillRenderOutcome,
   SkillRootKind,
+  SkillSubmissionKind,
 } from "../types/enums.ts";
 
 /** Permissive container for YAML frontmatter/sidecar values, validated by schema before use. */
@@ -85,6 +86,55 @@ export interface ISkillPin {
   required: boolean;
   render_mode: SkillRenderOutcome;
   content_included: boolean;
+}
+
+/** One skill included in one model submission. */
+export interface ISkillSubmissionItem {
+  skillName: string;
+  revisionId: string;
+  matchSource: SkillMatchSource;
+  renderMode: SkillRenderOutcome;
+  rootKind: SkillRootKind;
+  sourcePath: string;
+}
+
+/** One observable model submission and the complete vector of skills it carried. */
+export interface ISkillSubmission {
+  callId: string;
+  submissionKind: SkillSubmissionKind;
+  round: number;
+  attempt: number;
+  items: readonly ISkillSubmissionItem[];
+}
+
+/** One stored usage row, joined to the canonical snapshot of its revision. */
+export interface ISkillUsageRecord {
+  callId: string;
+  revisionId: string;
+  skillName: string;
+  traceId: string;
+  requestId: string | null;
+  flowId: string | null;
+  flowStepId: string | null;
+  agentRole: string;
+  matchSource: SkillMatchSource;
+  renderMode: SkillRenderOutcome;
+  submissionKind: SkillSubmissionKind;
+  round: number;
+  attempt: number;
+  rootKind: SkillRootKind;
+  sourcePath: string;
+  configGeneration: string;
+  usedAt: string;
+  snapshot: ISkillRevisionSnapshot;
+}
+
+/** Usage totals for one skill, with a per-revision breakdown. */
+export interface ISkillUsageSummary {
+  name: string;
+  totalUses: number;
+  lastUsedAt: string | null;
+  revisions: Array<{ revisionId: string; useCount: number; lastUsedAt: string; firstSeenAt: string }>;
 }
 
 /** One admitted skill root, ordered by precedence. */

@@ -24,7 +24,7 @@ import {
   MemoryScope,
 } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
-import { createSkillOperationContext } from "@exaix/core/skills";
+import { createSkillOperationContext, policySkillSubmission } from "@exaix/core/skills";
 import type { IExecutionMemory, IProposalLearning, IScratchpadEntry } from "@exaix/schemas/memory_bank.ts";
 import { ProposalLearningSchema } from "@exaix/schemas/memory_bank.ts";
 
@@ -74,8 +74,8 @@ export class LlmLearningExtractor implements IExtractionStrategy {
     const scratchpadEntries = this.executionMemoryStore
       ? await this.executionMemoryStore.readNotes(execution.trace_id)
       : [];
-    // The policy revision is durable before the provider sees it. A failed write throws before the call.
-    await this.skillsService.ensureRevisions([policy.id], operation);
+    // The policy revision and its usage row are durable before the provider sees it. A failed write throws before the call.
+    await this.skillsService.recordSubmission(policySkillSubmission(policy), operation);
     const result = await this.provider.generate(
       this.buildPrompt(execution, policy.instructions, scratchpadEntries),
       {

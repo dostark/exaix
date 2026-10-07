@@ -171,6 +171,7 @@ function validateMigration(migrationFile: string, db: Database): IValidationResu
         "registry_refresh_audit",
         "model_benchmark",
         "skill_revisions",
+        "skill_usage",
       ];
       for (const table of tables) {
         const result = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table);
@@ -198,6 +199,8 @@ function validateMigration(migrationFile: string, db: Database): IValidationResu
         "idx_latency_lookup",
         "idx_benchmark_rank",
         "idx_skill_revisions_name",
+        "idx_skill_usage_name",
+        "idx_skill_usage_trace",
       ];
       for (const index of indexes) {
         const indexExists = db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name=?").get(index);

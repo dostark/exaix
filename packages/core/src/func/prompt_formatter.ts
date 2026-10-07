@@ -12,6 +12,18 @@ import { stripExamplesSection } from "./skill_body.ts";
 /** A single matched-skill entry (element of `ISkillsContext.matched`). */
 type ISkillMatchEntry = ISkillsContext["matched"][number];
 
+/** One skill's rendered block. Both section renderers use it. A caller finds it in the final prompt to see if it survived budget fitting. */
+export function renderSkillEntry(skill: ISkillMatchEntry, includeExamples: boolean): string {
+  let output = `#### ${skill.name}\n`;
+  output += `${skill.description}\n\n`;
+  const instructions = includeExamples ? skill.content : stripExamplesSection(skill.content);
+  output += `**Instructions:**\n${instructions}\n\n`;
+  if (skill.tags.length > 0) {
+    output += `*Tags: ${skill.tags.join(", ")}*\n\n`;
+  }
+  return output;
+}
+
 /** Renders a heading + skill matches. `instructions` carry the full body byte-identically
  *  (ordering is a compatibility contract), so examples are never re-appended; `false` strips
  *  the Examples section for trimmed mode. */
@@ -24,15 +36,7 @@ function renderSkillBlock(
   if (skills.length === 0) return "";
 
   let output = `### ${heading}\n${intro}\n\n`;
-  for (const skill of skills) {
-    output += `#### ${skill.name}\n`;
-    output += `${skill.description}\n\n`;
-    const instructions = includeExamples ? skill.content : stripExamplesSection(skill.content);
-    output += `**Instructions:**\n${instructions}\n\n`;
-    if (skill.tags.length > 0) {
-      output += `*Tags: ${skill.tags.join(", ")}*\n\n`;
-    }
-  }
+  for (const skill of skills) output += renderSkillEntry(skill, includeExamples);
   return output;
 }
 

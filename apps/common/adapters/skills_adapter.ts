@@ -7,7 +7,14 @@
  * @related-files ["packages/core/src/types/i_skills_service.ts", "packages/core/src/skills/skills.ts"] */
 
 import type { ISkillsService } from "@exaix/core/types";
-import type { ISkillDiagnostic, ISkillOperationContext, SkillsService } from "@exaix/core/skills";
+import type {
+  ISkillDiagnostic,
+  ISkillOperationContext,
+  ISkillSubmission,
+  ISkillUsageRecord,
+  ISkillUsageSummary,
+  SkillsService,
+} from "@exaix/core/skills";
 import type { ISkill, ISkillMatch, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
 import type { ISkillMatchRequest } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -18,6 +25,24 @@ export class SkillsAdapter implements ISkillsService {
 
   async initialize(): Promise<void> {
     return await this.inner.initialize();
+  }
+
+  async recordSubmission(submission: ISkillSubmission, ctx: ISkillOperationContext): Promise<void> {
+    return await this.inner.recordSubmission(submission, ctx);
+  }
+
+  async getUsageSummary(
+    skillId: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillUsageSummary> {
+    return await this.inner.getUsageSummary(skillId, ctx);
+  }
+
+  async usageByTrace(
+    traceId: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillUsageRecord[]> {
+    return await this.inner.usageByTrace(traceId, ctx);
   }
 
   forContext(ctx: ISkillOperationContext): ISkillsService {

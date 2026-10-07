@@ -28,6 +28,8 @@ import {
   PlanningToolsSkipReason,
   PortalOperation,
   SkillMatchSource,
+  SkillRenderOutcome,
+  SkillSubmissionKind,
   TaskComplexity,
 } from "@exaix/core";
 import type { ProviderType } from "@exaix/core";
@@ -44,7 +46,11 @@ import { buildAdaptivePortalKnowledge } from "@exaix/core/func";
 import type { IPortalKnowledgeRequestSignals } from "@exaix/core/func";
 import type { IApplicationContext, ISkillsContext, ISkillsService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
-import { createSkillOperationContext, type ISkillOperationContext } from "@exaix/core/skills";
+import {
+  createSkillOperationContext,
+  type ISkillOperationContext,
+  type ISkillSubmissionItem,
+} from "@exaix/core/skills";
 import type { IExecutionMilestone } from "@exaix/schemas";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
@@ -65,7 +71,7 @@ import { computeRegistryPredictedCost } from "./registry_computed_cost.ts";
 import { createLLMRetryPolicy, createRetryPolicy } from "@exaix/core/request";
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "@exaix/tool-runtime";
 import { extractKeywords } from "@exaix/core/func";
-import { renderCriticalSkillsSection, renderSkillsSection } from "@exaix/core/func";
+import { renderCriticalSkillsSection, renderSkillEntry, renderSkillsSection } from "@exaix/core/func";
 import {
   ACTIVITY_ACTOR_AGENT,
   AGENT_EVENT_EXECUTION_COMPLETED,
@@ -145,6 +151,14 @@ export interface IRequestContextContext {
 /**
  * IParsedRequest represents the user's intent and any additional context
  */
+/** The skills one run submits to the model, with the round counter and any audit failure it hit. */
+interface ISkillUsagePlan {
+  operation: ISkillOperationContext;
+  items: ISkillSubmissionItem[];
+  round: number;
+  auditError?: Error;
+}
+
 export interface IParsedRequest {
   /** The user's request/prompt */
   userPrompt: string;
@@ -455,8 +469,9 @@ export class AgentRunner implements IAgentRunner {
       criticalSkillContext,
     );
 
-    // Durable snapshots precede any provider dispatch. A failed write throws, so no model call follows.
-    await this.ensureSkillRevisions(skillsContext, skillOperation);
+    // One usage row per included skill is written before each provider dispatch. A failed write throws,
+    // so no model call follows.
+    const skillUsage = this.buildSkillUsagePlan(skillsContext, combinedPrompt, trimmedSkillRender, skillOperation);
 
     // Log prompt assembled event for observability
     this.logActivity(
@@ -516,9 +531,10 @@ export class AgentRunner implements IAgentRunner {
       combinedPrompt,
       startTime,
       hints,
-      promptBudget,
+      { promptBudget, usage: skillUsage },
     );
-    const retryResult = toolsResult ?? await this.executeWithRetry(combinedPrompt, startTime, hints);
+    const retryResult = toolsResult ?? await this.executeWithRetry(combinedPrompt, startTime, hints, skillUsage);
+    if (skillUsage?.auditError) throw skillUsage.auditError;
 
     const duration = Date.now() - startTime;
 
@@ -743,13 +759,68 @@ export class AgentRunner implements IAgentRunner {
     });
   }
 
-  /** Snapshots the exact revisions injected into this prompt. No-op without skills. */
-  private async ensureSkillRevisions(
+  /**
+   * The skills whose complete rendered block survived final budget fitting, one item each. Null when
+   * no skill reached the prompt. A skill the budget dropped or truncated is not "included".
+   */
+  private buildSkillUsagePlan(
     skillsContext: ISkillsContext | null,
+    combinedPrompt: string,
+    trimmed: boolean,
     operation: ISkillOperationContext,
-  ): Promise<void> {
-    if (!this.skillsService || !skillsContext || skillsContext.matched.length === 0) return;
-    await this.skillsService.ensureRevisions(skillsContext.matched.map((match) => match.revisionId), operation);
+  ): ISkillUsagePlan | null {
+    if (!this.skillsService || !skillsContext) return null;
+    const items: ISkillSubmissionItem[] = [];
+    for (const match of skillsContext.matched) {
+      const includeExamples = match.critical || !trimmed;
+      if (!combinedPrompt.includes(renderSkillEntry(match, includeExamples).trimEnd())) continue;
+      items.push({
+        skillName: match.skillId,
+        revisionId: match.revisionId,
+        matchSource: match.source,
+        renderMode: match.critical
+          ? SkillRenderOutcome.CRITICAL
+          : trimmed
+          ? SkillRenderOutcome.TRIMMED
+          : SkillRenderOutcome.FULL,
+        rootKind: match.rootKind,
+        sourcePath: match.sourcePath,
+      });
+    }
+    return items.length === 0 ? null : { operation, items, round: 0 };
+  }
+
+  /**
+   * Wraps one provider dispatch round. Each invocation, including every retry attempt, records the
+   * skill vector under a fresh call id before dispatching. A recording failure is kept so the run can
+   * rethrow it unchanged, and no further attempt reaches the provider.
+   */
+  private withSkillUsage(
+    usage: ISkillUsagePlan | null,
+    generate: () => Promise<IGenerateResult>,
+  ): () => Promise<IGenerateResult> {
+    const skills = this.skillsService;
+    if (!usage || !skills) return generate;
+    usage.round += 1;
+    const round = usage.round;
+    let attempt = 0;
+    return async () => {
+      if (usage.auditError) throw usage.auditError;
+      attempt += 1;
+      try {
+        await skills.recordSubmission({
+          callId: crypto.randomUUID(),
+          submissionKind: SkillSubmissionKind.PROVIDER,
+          round,
+          attempt,
+          items: usage.items,
+        }, usage.operation);
+      } catch (error) {
+        if (error instanceof Error) usage.auditError = error;
+        throw error;
+      }
+      return await generate();
+    };
   }
 
   /** Performs dynamic skill matching with a 500ms timeout guard. */
@@ -919,9 +990,13 @@ export class AgentRunner implements IAgentRunner {
     combinedPrompt: string,
     startTime: number,
     hints: IGenerationHints,
+    usage: ISkillUsagePlan | null,
   ): Promise<IRetryResult<IGenerateResult>> {
     const generateOptions = this.buildGenerateOptions(hints);
-    return await this.runGeneration(() => this.modelProvider.generate(combinedPrompt, generateOptions), startTime);
+    return await this.runGeneration(
+      this.withSkillUsage(usage, () => this.modelProvider.generate(combinedPrompt, generateOptions)),
+      startTime,
+    );
   }
 
   /** Shared retry-wrapping used by both executeWithRetry and the planning tools loop's
@@ -995,8 +1070,9 @@ export class AgentRunner implements IAgentRunner {
     combinedPrompt: string,
     startTime: number,
     hints: IGenerationHints,
-    promptBudget: IPromptBudget,
+    dispatch: { promptBudget: IPromptBudget; usage: ISkillUsagePlan | null },
   ): Promise<IRetryResult<IGenerateResult> | undefined> {
+    const { promptBudget, usage } = dispatch;
     const gate = this.resolvePlanningGate(request, agentRole);
     const traceId = hints.conversationId;
     if (!gate.engage) {
@@ -1026,7 +1102,10 @@ export class AgentRunner implements IAgentRunner {
       tokenizer: this.config!.tokenizer!,
       modelId: this.selectedModelId(),
       generate: (prompt, options) =>
-        this.runGeneration(() => this.modelProvider.generate(prompt, options), startTime).then((r) => {
+        this.runGeneration(
+          this.withSkillUsage(usage, () => this.modelProvider.generate(prompt, options)),
+          startTime,
+        ).then((r) => {
           if (!r.success) throw r.error ?? new Error("Planning tool round failed");
           return r.value!;
         }),

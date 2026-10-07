@@ -11,6 +11,7 @@ import { MEMORY_COMMAND_DEFAULTS } from "../config.ts";
 import type { IMemoryBankSummary } from "../types/memory_types.ts";
 import { MemoryScope } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+import type { ISkillUsageSummary } from "@exaix/core/skills";
 import type {
   IExecutionMemory,
   IGlobalMemory,
@@ -874,6 +875,20 @@ export class MemoryFormatter {
     lines.push("```");
     lines.push(skill.instructions);
     lines.push("```");
+    return lines.join("\n");
+  }
+
+  /** Usage totals for one skill: overall, per revision and the last use. Read from the journal DB. */
+  formatSkillUsage(summary: ISkillUsageSummary): string {
+    const lines: string[] = ["Usage:"];
+    lines.push(`  Total uses: ${summary.totalUses}`);
+    lines.push(`  Last used: ${summary.lastUsedAt ?? DEFAULT_NONE_VALUE}`);
+    for (const revision of summary.revisions) {
+      lines.push(
+        `  Revision ${revision.revisionId.slice(0, CLI_LAYOUT_SKILL_REVISION_WIDTH)}: ${revision.useCount} use(s), ` +
+          `first seen ${revision.firstSeenAt}, last used ${revision.lastUsedAt}`,
+      );
+    }
     return lines.join("\n");
   }
 

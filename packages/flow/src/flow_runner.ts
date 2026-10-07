@@ -2144,7 +2144,7 @@ export class FlowRunner implements IFlowRunner {
       scenarioId: originalRequest.scenarioId,
       stepId: originalRequest.stepId,
       flowStepId: step.id,
-      flowId: originalRequest.flowId,
+      flowId: originalRequest.flowId ?? flow.id,
       bindingSnapshot: originalRequest.bindingSnapshot,
       skills,
       requestAnalysis: originalRequest.requestAnalysis,

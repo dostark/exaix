@@ -9,7 +9,13 @@
  */
 
 import type { ISkillMatchRequest, ISkillsService } from "@exaix/core/types";
-import type { ISkillDiagnostic, ISkillOperationContext } from "@exaix/core/skills";
+import type {
+  ISkillDiagnostic,
+  ISkillOperationContext,
+  ISkillSubmission,
+  ISkillUsageRecord,
+  ISkillUsageSummary,
+} from "@exaix/core/skills";
 import type { ISkill, ISkillMatch, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
 import { SkillStatus } from "@exaix/core";
 import { runtimeSkillFixture } from "./skill_catalog.ts";
@@ -25,6 +31,18 @@ export class StubSkillsService implements ISkillsService {
 
   ensureRevisions(_revisionIds: readonly string[]): Promise<void> {
     return Promise.resolve();
+  }
+
+  recordSubmission(_submission: ISkillSubmission, _ctx: ISkillOperationContext): Promise<void> {
+    return Promise.resolve();
+  }
+
+  getUsageSummary(skillId: string): Promise<ISkillUsageSummary> {
+    return Promise.resolve({ name: skillId, totalUses: 0, lastUsedAt: null, revisions: [] });
+  }
+
+  usageByTrace(_traceId: string): Promise<ISkillUsageRecord[]> {
+    return Promise.resolve([]);
   }
 
   matchSkills(_request: ISkillMatchRequest): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {

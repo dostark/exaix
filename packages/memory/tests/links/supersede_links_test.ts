@@ -179,7 +179,7 @@ Deno.test("the reflection merge path produces the same supersession links on all
     const reflection = new MemoryReflectionService({
       provider: new StubProvider(JSON.stringify({ actions: [] })),
       skillsService: castAny<IReflectionSkills>({
-        ensureRevisions: () => Promise.resolve(),
+        recordSubmission: () => Promise.resolve(),
         getSkill: (skillId: string) => Promise.resolve({ skill_id: skillId, instructions: "policy" }),
       }),
       memoryBank: bank,

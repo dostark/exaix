@@ -22,7 +22,13 @@ import {
   RequestSource,
   SkillStatus,
 } from "@exaix/core";
-import type { ISkillDiagnostic, ISkillOperationContext } from "@exaix/core/skills";
+import type {
+  ISkillDiagnostic,
+  ISkillOperationContext,
+  ISkillSubmission,
+  ISkillUsageRecord,
+  ISkillUsageSummary,
+} from "@exaix/core/skills";
 import { runtimeSkillFixture } from "@exaix/testing";
 import {
   type Opt,
@@ -914,6 +920,18 @@ export class MockSkillsService implements ISkillsService {
 
   ensureRevisions(_revisionIds: readonly string[]): Promise<void> {
     return Promise.resolve();
+  }
+
+  recordSubmission(_submission: ISkillSubmission, _ctx: ISkillOperationContext): Promise<void> {
+    return Promise.resolve();
+  }
+
+  getUsageSummary(skillId: string): Promise<ISkillUsageSummary> {
+    return Promise.resolve({ name: skillId, totalUses: 0, lastUsedAt: null, revisions: [] });
+  }
+
+  usageByTrace(_traceId: string): Promise<ISkillUsageRecord[]> {
+    return Promise.resolve([]);
   }
 
   createSkill(skillDef: SkillDefinition, _ctx: ISkillOperationContext): Promise<ISkill> {

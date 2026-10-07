@@ -47,6 +47,7 @@ import { extractKeywords } from "./text_utils.ts";
 import { SkillFolderLoader } from "./skill_folder_loader.ts";
 import { SkillFolderPublisher } from "./skill_folder_publisher.ts";
 import { SkillRevisionStore } from "./skill_revision_store.ts";
+import { SkillUsageStore } from "./skill_usage_store.ts";
 import { ScopedSkillsService } from "./skill_scoped_view.ts";
 import { buildRootContext, canonicalizeSkillText, parseSkillSnapshot } from "./skill_snapshot.ts";
 import {
@@ -55,6 +56,9 @@ import {
   type ISkillDiagnostic,
   type ISkillOperationContext,
   type ISkillRevisionSnapshot,
+  type ISkillSubmission,
+  type ISkillUsageRecord,
+  type ISkillUsageSummary,
   SkillAuditUnavailableError,
   SkillMutationError,
 } from "./skill_types.ts";
@@ -117,6 +121,7 @@ export class SkillsService implements ISkillsService {
   private readonly loaders = new Map<string, SkillFolderLoader>();
   private readonly loggerForLoaders: IEventLogger;
   private readonly revisions: SkillRevisionStore;
+  private readonly usage: SkillUsageStore;
   /** Immutable snapshots of skills this service returned, so a recorded revision is exactly what a caller saw. */
   private readonly loadedByRevision = new Map<string, ILoadedSkill>();
 
@@ -130,7 +135,9 @@ export class SkillsService implements ISkillsService {
     this.loggerForLoaders = logger ?? createNoopEventLogger();
     this.registry = new EventRegistry(this.loggerForLoaders);
     this.registry.registerPublisher(SKILLS_SERVICE_SOURCE_ID, SERVICE_EVENTS);
-    this.revisions = new SkillRevisionStore({ db, logger: this.loggerForLoaders, eventRegistry: this.registry });
+    const storeDeps = { db, logger: this.loggerForLoaders, eventRegistry: this.registry };
+    this.revisions = new SkillRevisionStore(storeDeps);
+    this.usage = new SkillUsageStore(storeDeps);
   }
 
   /** A view that binds one operation context. The singleton and every other view stay untouched. */
@@ -151,6 +158,29 @@ export class SkillsService implements ISkillsService {
       }
       await this.revisions.record(loaded, operation);
     }
+  }
+
+  /**
+   * Records one model submission. The revision snapshots are made durable first, then the complete
+   * usage vector is written in one statement. Either failure throws, so no model call follows.
+   */
+  async recordSubmission(submission: ISkillSubmission, ctx: ISkillOperationContext): Promise<void> {
+    await this.ensureRevisions(submission.items.map((item) => item.revisionId), ctx);
+    await this.usage.record(submission, ctx);
+  }
+
+  async getUsageSummary(
+    name: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillUsageSummary> {
+    return await this.usage.summary(name, ctx ?? this.defaultContext());
+  }
+
+  async usageByTrace(
+    traceId: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillUsageRecord[]> {
+    return await this.usage.byTrace(traceId, ctx ?? this.defaultContext());
   }
 
   private remember(loaded: ILoadedSkill): ILoadedSkill {

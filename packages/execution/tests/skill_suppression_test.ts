@@ -65,7 +65,7 @@ function makeSkillsService(matches: { skillId: string; confidence: number }[]) {
     forContext() {
       return this;
     },
-    ensureRevisions: () => Promise.resolve(),
+    recordSubmission: () => Promise.resolve(),
     matchSkills: () =>
       Promise.resolve({ matches: matches.map((m) => ({ ...m, matchedTriggers: {} })), totalAvailable: matches.length }),
     buildSkillContext: (_ids: string[]) => Promise.resolve("context"),

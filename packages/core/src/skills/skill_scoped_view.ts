@@ -14,7 +14,13 @@ import type { ISkillsService } from "../types/i_skills_service.ts";
 import type { ISkillMatchRequest } from "../types/mod.ts";
 import type { Opt, Reason } from "../types/optional_marker.ts";
 import type { ISkill, ISkillMatch, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
-import type { ISkillDiagnostic, ISkillOperationContext } from "./skill_types.ts";
+import type {
+  ISkillDiagnostic,
+  ISkillOperationContext,
+  ISkillSubmission,
+  ISkillUsageRecord,
+  ISkillUsageSummary,
+} from "./skill_types.ts";
 
 export class ScopedSkillsService implements ISkillsService {
   constructor(private readonly inner: ISkillsService, private readonly bound: ISkillOperationContext) {}
@@ -58,6 +64,24 @@ export class ScopedSkillsService implements ISkillsService {
     ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
   ): Promise<void> {
     return this.inner.ensureRevisions(revisionIds, ctx ?? this.bound);
+  }
+
+  recordSubmission(submission: ISkillSubmission, ctx: ISkillOperationContext): Promise<void> {
+    return this.inner.recordSubmission(submission, ctx);
+  }
+
+  getUsageSummary(
+    skillId: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillUsageSummary> {
+    return this.inner.getUsageSummary(skillId, ctx ?? this.bound);
+  }
+
+  usageByTrace(
+    traceId: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillUsageRecord[]> {
+    return this.inner.usageByTrace(traceId, ctx ?? this.bound);
   }
 
   createSkill(skillDef: SkillDefinition, ctx: ISkillOperationContext): Promise<ISkill> {

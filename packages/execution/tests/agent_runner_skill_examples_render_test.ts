@@ -23,7 +23,7 @@ function makeSkillsService(skill: { id: string; critical: boolean; examples?: st
     forContext() {
       return this;
     },
-    ensureRevisions: () => Promise.resolve(),
+    recordSubmission: () => Promise.resolve(),
     matchSkills: () =>
       Promise.resolve({
         matches: [{ skillId: skill.id, confidence: 1.0, matchedTriggers: {} }],

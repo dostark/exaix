@@ -32,6 +32,7 @@ import type {
   SkillInitOutcome,
   SkillMutationOperation,
   SkillStatus,
+  SkillSubmissionKind,
   TaskComplexity,
   TaskType,
   ToolCallEntryPoint,
@@ -580,6 +581,16 @@ export interface ISkillsMatchCompletedPayload extends ISkillEventIdentityPayload
   total_available: number;
   max_per_request: number;
   budget_truncated: boolean;
+}
+
+/** Typed payload for skills.usage_recorded: one committed usage vector for one model submission. */
+export interface ISkillsUsageRecordedPayload extends ISkillEventIdentityPayload {
+  call_id: string;
+  submission_kind: SkillSubmissionKind;
+  round: number;
+  attempt: number;
+  revisions: string[];
+  count: number;
 }
 
 /** Typed payload for skills.initialized — skill service readiness. */
@@ -1181,6 +1192,7 @@ export const DomainEventType = {
   SkillsShadowed: "skills.shadowed",
   SkillsAuditFailed: "skills.audit_failed",
   SkillsInitialized: "skills.initialized",
+  SkillsUsageRecorded: "skills.usage_recorded",
   SkillsCreated: "skill.created",
   SkillsUpdated: "skill.updated",
   SkillsDerived: "skill.derived",

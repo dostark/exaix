@@ -111,6 +111,54 @@ Deno.test("[extractor] extract snapshots the policy revision before the provider
   }
 });
 
+interface IPolicyUsageRow {
+  agent_role: string;
+  trace_id: string;
+  match_source: string;
+  render_mode: string;
+  round: number;
+  attempt: number;
+}
+
+async function policyUsage(fx: IFixture): Promise<IPolicyUsageRow[]> {
+  return await fx.db.preparedAll<IPolicyUsageRow>(
+    `SELECT agent_role, trace_id, match_source, render_mode, round, attempt
+       FROM skill_usage WHERE skill_name = ? ORDER BY id`,
+    [POLICY_SKILL],
+  );
+}
+
+Deno.test("[extractor] each extraction records one policy usage row attributed to the execution trace", async () => {
+  const fx = await fixture();
+  try {
+    const extractor = new LlmLearningExtractor(new CountingProvider(EXTRACTION_RESPONSE), fx.skills, COST_ROUTER);
+    const execution = createMinimalExecutionMemory({});
+    await extractor.extract(execution);
+    await extractor.extract(execution);
+    const rows = await policyUsage(fx);
+    assertEquals(rows.length, 2, "one row per provider call");
+    assertEquals(
+      rows.map((r) => [r.agent_role, r.trace_id, r.match_source, r.render_mode, r.round, r.attempt]),
+      Array(2).fill(["memory-extractor", execution.trace_id, "pinned", "full", 1, 1]),
+    );
+  } finally {
+    await fx.cleanup();
+  }
+});
+
+Deno.test("[extractor] a failed usage write stops extraction with zero provider calls", async () => {
+  const fx = await fixture();
+  try {
+    await fx.db.preparedRun("DROP TABLE skill_usage");
+    const provider = new CountingProvider(EXTRACTION_RESPONSE);
+    const extractor = new LlmLearningExtractor(provider, fx.skills, COST_ROUTER);
+    await assertRejects(() => extractor.extract(createMinimalExecutionMemory({})), SkillAuditUnavailableError);
+    assertEquals(provider.calls, 0);
+  } finally {
+    await fx.cleanup();
+  }
+});
+
 Deno.test("[extractor] a failed snapshot write stops extraction with zero provider calls", async () => {
   const fx = await fixture();
   try {
@@ -161,6 +209,24 @@ Deno.test("[reflection] runReflectionCycle snapshots the policy revision before 
     await reflection.runReflectionCycle();
     assertEquals((await policyBodies(fx)).length, 2);
     assertEquals(provider.calls, 2);
+  } finally {
+    await fx.cleanup();
+  }
+});
+
+Deno.test("[reflection] each cycle records one policy usage row for the memory-reflector role", async () => {
+  const fx = await fixture();
+  try {
+    const reflection = await reflectionService(fx, new CountingProvider(JSON.stringify({ actions: [] })));
+    await reflection.runReflectionCycle();
+    const rows = await policyUsage(fx);
+    assertEquals(rows.map((r) => [r.agent_role, r.match_source, r.round, r.attempt]), [[
+      "memory-reflector",
+      "pinned",
+      1,
+      1,
+    ]]);
+    assertEquals(rows[0].trace_id.length > 0, true);
   } finally {
     await fx.cleanup();
   }

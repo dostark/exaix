@@ -36,7 +36,7 @@ import {
 } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
-import { createSkillOperationContext } from "@exaix/core/skills";
+import { createSkillOperationContext, policySkillSubmission } from "@exaix/core/skills";
 import { MemoryStatus } from "@exaix/core/status";
 import { mergeLearnings } from "../dedup/semantic_dedup.ts";
 import type { ILearning, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
@@ -53,10 +53,10 @@ export interface IReflectionCycleResult {
 export type IReflectionProposalStore = Pick<MemoryExtractorService, "createProposal" | "listPending">;
 
 /** Constructor dependencies for the reflection service. */
-/** The skill reads the reflection pass needs: the policy skill and its durable revision snapshot. */
+/** The skill reads the reflection pass needs: the policy skill and its durable submission record. */
 export interface IReflectionSkills {
   getSkill: ISkillsService["getSkill"];
-  ensureRevisions: ISkillsService["ensureRevisions"];
+  recordSubmission: ISkillsService["recordSubmission"];
 }
 
 export interface IMemoryReflectionServiceDeps {
@@ -120,8 +120,8 @@ export class MemoryReflectionService {
       if (!skill) {
         throw new Error(`Required content policy skill not found: ${REFLECTION_SKILL_ID}`);
       }
-      // The policy revision is durable before the provider sees it. A failed write throws before the call.
-      await this.deps.skillsService.ensureRevisions([skill.id], operation);
+      // The policy revision and its usage row are durable before the provider sees it. A failed write throws before the call.
+      await this.deps.skillsService.recordSubmission(policySkillSubmission(skill), operation);
       const proposals = await this.proposeActions(approved, skill.instructions);
       const applied = await this.applyActions(proposals.actions, approved, runAt, synthesisSourceIds);
       synthesised = applied.synthesised;

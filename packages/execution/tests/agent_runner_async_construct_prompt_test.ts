@@ -322,7 +322,7 @@ Deno.test("[IAgentRunner] allocation hints preserve present memory and ordinary 
       forContext() {
         return this;
       },
-      ensureRevisions: () => Promise.resolve(),
+      recordSubmission: () => Promise.resolve(),
       matchSkills: () =>
         Promise.resolve({
           matches: [{ skillId: "ordinary", confidence: 1, matchedTriggers: {} }],

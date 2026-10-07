@@ -10,7 +10,13 @@
 
 import type { MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core";
 import type { ISkill, ISkillMatch, SkillDefinition, SkillUpdates } from "@exaix/schemas";
-import type { ISkillDiagnostic, ISkillOperationContext } from "../skills/skill_types.ts";
+import type {
+  ISkillDiagnostic,
+  ISkillOperationContext,
+  ISkillSubmission,
+  ISkillUsageRecord,
+  ISkillUsageSummary,
+} from "../skills/skill_types.ts";
 import type { Opt, Reason } from "./optional_marker.ts";
 
 import type { ISkillMatchRequest } from "@exaix/core/types";
@@ -34,6 +40,28 @@ export interface ISkillsService {
     revisionIds: readonly string[],
     ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
   ): Promise<void>;
+
+  /**
+   * Record one observable model submission: its revision snapshots first, then one usage row per
+   * skill in a single statement. Throws `skill_audit_unavailable` on any failure.
+   */
+  recordSubmission(submission: ISkillSubmission, ctx: ISkillOperationContext): Promise<void>;
+
+  /**
+   * Usage totals for one skill, with a per-revision breakdown.
+   */
+  getUsageSummary(
+    skillId: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillUsageSummary>;
+
+  /**
+   * Every skill use on one trace, joined to the canonical snapshot it used.
+   */
+  usageByTrace(
+    traceId: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillUsageRecord[]>;
 
   /**
    * Match skills based on request context.

@@ -321,7 +321,36 @@ CREATE TABLE IF NOT EXISTS skill_revisions (
 );
 CREATE INDEX IF NOT EXISTS idx_skill_revisions_name ON skill_revisions (skill_name);
 
+-- One row per skill per observable model submission. A skill's revision row is always
+-- written first, so the foreign key holds.
+CREATE TABLE IF NOT EXISTS skill_usage (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  call_id           TEXT    NOT NULL,
+  revision_id       TEXT    NOT NULL REFERENCES skill_revisions (revision_id),
+  skill_name        TEXT    NOT NULL,
+  trace_id          TEXT    NOT NULL,
+  request_id        TEXT,
+  flow_id           TEXT,
+  flow_step_id      TEXT,
+  agent_role        TEXT    NOT NULL,
+  match_source      TEXT    NOT NULL,
+  render_mode       TEXT    NOT NULL,
+  submission_kind   TEXT    NOT NULL,
+  round             INTEGER NOT NULL,
+  attempt           INTEGER NOT NULL,
+  root_kind         TEXT    NOT NULL,
+  source_path       TEXT    NOT NULL,
+  config_generation TEXT    NOT NULL,
+  used_at           TEXT    NOT NULL,
+  UNIQUE (call_id, skill_name)
+);
+CREATE INDEX IF NOT EXISTS idx_skill_usage_name ON skill_usage (skill_name);
+CREATE INDEX IF NOT EXISTS idx_skill_usage_trace ON skill_usage (trace_id);
+
 -- down
+DROP INDEX IF EXISTS idx_skill_usage_trace;
+DROP INDEX IF EXISTS idx_skill_usage_name;
+DROP TABLE IF EXISTS skill_usage;
 DROP INDEX IF EXISTS idx_skill_revisions_name;
 DROP TABLE IF EXISTS skill_revisions;
 DROP INDEX IF EXISTS idx_benchmark_rank;
