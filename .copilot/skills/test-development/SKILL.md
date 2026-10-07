@@ -15,6 +15,7 @@ version: "1.3.0"
 topics: ["testing", "tdd", "coverage", "test-helpers", "assertion-sensitivity"]
 qwen_skill: test-development
 ---
+
 ```text
 Key points
 
@@ -202,12 +203,17 @@ Execution-time budget — avoid time bottlenecks
      overhead. Where the assertion is about logic (not the process boundary), call the
      handler in-process with the shared helpers instead of spawning `exactl`. Keep at
      least one real-subprocess test per boundary, and put it in the sequential batch.
-  5. **Route process-sensitive tests to the sequential batch, not around it.** Tests that
-     boot a real daemon, mutate process env (`withEnv`, `Deno.env.set`), or order rows by
-     wall-clock `created_at` cannot run under `--parallel`: they race on the Deno module
-     cache, leak env into other workers, or flip order when timestamps collide. Add such a
-     file to `SEQUENTIAL_FILES` in scripts/test_parallel.ts with a one-line reason — do not
-     weaken the assertion or drop the parallelism only for it.
+  5. **Route process-sensitive tests to the Containered Batch, not around it.** Tests that
+     boot a real daemon, mutate process env (`withEnv`, `Deno.env.set`), bind the default
+     port, write a shared path, or order rows by wall-clock `created_at` cannot run under
+     `--parallel`: they race on the Deno module cache, leak env into other workers, or flip
+     order when timestamps collide. Add a `SEQUENTIAL_TESTS` entry in
+     scripts/test_parallel.ts with at least one `reasons` value (`module-cache`,
+     `process-env`, `port`, `shared-path`, `pressure`). Mark a `dist/bin` writer
+     `serializedOutput: true`, a repo-shared writer `exclusive: true`, and an
+     egress-dependent file `network: true`. `SEQUENTIAL_FILES` is derived from
+     `SEQUENTIAL_TESTS`, so its order stays authoritative. Do not weaken the assertion or
+     drop the parallelism only for it.
 
   A time win is not done until the same tests still pass. Re-run the changed files (and
   the pack that owns them), confirm identical pass/fail counts, then record before/after

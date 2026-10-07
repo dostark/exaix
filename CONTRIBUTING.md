@@ -93,6 +93,40 @@ Before submitting a PR, drive the codebase to a fully green state:
    adds or modifies, so pre-existing non-compliant comments stay
    grandfathered.
 
+### 2.3 Containerized Batch 2 (test isolation)
+
+`deno task test_all` runs the isolation-sensitive Batch 2 in worker containers by default.
+Each worker is a long-lived `exaix-dev-test:dev` container that runs one `deno test`
+subprocess per file, so the environment is isolated but container start is paid once per
+worker, not once per file. When Docker is unavailable the runner falls back to the legacy
+serial loop automatically.
+
+```bash
+# Build the worker image once. `test_all` also builds it on demand when absent.
+docker build --target dev-test -t exaix-dev-test:dev .
+
+# Default: container mode with 4 workers.
+deno task test_all
+
+# Choose the worker count: CLI flag > EXA_TEST_CONTAINER_JOBS > default 4.
+deno task test_all --test-container-jobs=6
+
+# Force the legacy serial Batch 2.
+deno task test_all --test-serial
+EXA_TEST_CONTAINERS=0 deno task test_all
+```
+
+| Env var                                               | Purpose                                                                                     |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `EXA_TEST_CONTAINERS`                                 | `0` opts out to the serial Batch 2. Container mode is the default when Docker is reachable. |
+| `EXA_TEST_CONTAINER_JOBS`                             | Worker-container count, clamped to the core count.                                          |
+| `EXA_TEST_CONTAINER_IMAGE`                            | Worker image tag, default `exaix-dev-test:dev`.                                             |
+| `EXA_TEST_CONTAINER_PIDS_LIMIT` / `_MEMORY` / `_CPUS` | Per-worker resource bounds.                                                                 |
+
+The devcontainer does not mount the Docker socket, so run the containerized batch on the
+host (or enable Docker-in-Docker first). Manual cutover verification is
+`deno task verify:container-cutover`.
+
 ## 3. Migration Guide
 
 If you are updating legacy code, refer to `CODE_STYLE.md` §2 (No Magic Numbers or Strings) for the authoritative rules on replacing hardcoded values with the new configuration system.
@@ -143,6 +177,10 @@ across `packages/`, `apps/`, and `tests/` to catch type errors in ALL files (not
 There is no "run only the tests
 for your changed files" step — the type check and security suite always run in full. If
 any step fails, the push (including either submodule push) is blocked.
+
+`deno task test_all` runs the isolation-sensitive Batch 2 in worker containers by default
+(see §2.3). It needs a reachable Docker daemon and falls back to the serial loop when
+Docker is absent. The pre-push hook itself does not run the full suite.
 
 **Submodule access:** `exaix-dev-docs`, `exaix-team` (Team-tier, BSL — backed by the
 separate `exaix-team` repo), and `exaix-enterprise` are all private submodules. Cloning

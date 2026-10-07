@@ -31,6 +31,9 @@ criteria (the "what" and "why"), the daemon agent executes the mechanical work (
 
 - **Git** — for worktree creation (isolates agent changes from the live checkout)
 - **Deno 2.x** — runtime for the Exaix daemon and scripts
+- **Docker** (optional) — `deno task test_all` runs the isolation-sensitive Batch 2 in
+  worker containers when a Docker daemon is reachable; without Docker it falls back to a
+  serial loop.
 - **LLM provider** — Ollama (default, free, no API key), or an API key for
   Anthropic, OpenAI, or Google. Set `EXA_LLM_PROVIDER` to switch.
 - **OpenCode CLI** (optional) — for headless agent delegation (`opencode run`)
@@ -220,6 +223,18 @@ daemon can safely automate:
    human gate that authorizes execution; it is not a formality.
 1. When the flow finishes, inspect the worktree diff and focused checks before merging
    anything. For a context-enabled delegate, also inspect the capture by trace ID.
+
+**Running the full suite in the worktree.** `deno task test_all` builds the
+`exaix-dev-test:dev` worker image on demand and runs Batch 2 in containers:
+
+```bash
+docker build --target dev-test -t exaix-dev-test:dev .   # optional, test_all builds it too
+deno task test_all --test-container-jobs=6               # worker count, default 4
+deno task test_all --test-serial                         # force the serial Batch 2
+```
+
+Set `EXA_TEST_CONTAINERS=0` to opt out, or `EXA_TEST_CONTAINER_JOBS` for the worker count.
+See [CONTRIBUTING.md](../CONTRIBUTING.md) §2.3 for the full knob list.
 
 ### 3.1 Authoring a Plan (the `/plan` skill)
 
