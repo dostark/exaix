@@ -24,6 +24,8 @@ function makeSkillsService(skill: { id: string; critical: boolean; examples?: st
       return this;
     },
     recordSubmission: () => Promise.resolve(),
+    currentConfigGeneration: () => "test-generation",
+    ensureRevisions: () => Promise.resolve(),
     matchSkills: () =>
       Promise.resolve({
         matches: [{ skillId: skill.id, confidence: 1.0, matchedTriggers: {} }],
@@ -40,6 +42,7 @@ function makeSkillsService(skill: { id: string; critical: boolean; examples?: st
           : "Do the thing.",
         examples: skill.examples,
         triggers: {},
+        references: [],
         critical: skill.critical,
       } as any),
     initialize: () => Promise.resolve(),

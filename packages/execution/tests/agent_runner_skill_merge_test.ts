@@ -38,6 +38,8 @@ function makeMockSkillsService() {
       return this;
     },
     recordSubmission: () => Promise.resolve(),
+    currentConfigGeneration: () => "test-generation",
+    ensureRevisions: () => Promise.resolve(),
     matchSkills: () => Promise.resolve({ matches: [], totalAvailable: 0 }),
     buildSkillContext: (_ids: string[]) => Promise.resolve("context"),
     getSkill: (_id: string) => Promise.resolve(null),
@@ -54,6 +56,8 @@ function makeMockSkillsServiceWithDynamicMatch(
       return this;
     },
     recordSubmission: () => Promise.resolve(),
+    currentConfigGeneration: () => "test-generation",
+    ensureRevisions: () => Promise.resolve(),
     matchSkills: () =>
       Promise.resolve({
         matches: [{ skillId: dynamicMatchSkillId, confidence: 1.0, matchedTriggers: {} }],

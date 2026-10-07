@@ -135,6 +135,8 @@ Deno.test("[integration][phase-147 cutover] capture → extract → approve → 
     const realInstructions = await loadPolicyInstructions();
     const skillsService = castAny<ISkillsService>({
       recordSubmission: () => Promise.resolve(),
+      currentConfigGeneration: () => "test-generation",
+      ensureRevisions: () => Promise.resolve(),
       getSkill: (skillId: string) =>
         Promise.resolve(skillId === POLICY_SKILL_ID ? { skill_id: skillId, instructions: realInstructions } : null),
     });

@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "foreign-skill-fallback"
 title: "Skill lifecycle — a foreign folder without a sidecar is approved, matched from its description and delivers its linked reference"
 pack: "skill_eval"
-tags: ["smoke", "subsystem:skills", "entity:foreign-fallback"]
+tags: ["smoke", "engine", "subsystem:skills"]
 request_fixture: "fixtures/requests/skill_eval/foreign_fallback.md"
 mode_support: ["auto"]
 portals: []

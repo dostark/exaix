@@ -181,6 +181,8 @@ Deno.test("[AgentRunner.previewPrompt] matchedSkillIds reflects the real skill-m
       return this;
     },
     recordSubmission: () => Promise.resolve(),
+    currentConfigGeneration: () => "test-generation",
+    ensureRevisions: () => Promise.resolve(),
     matchSkills: () =>
       Promise.resolve({
         matches: [{ skillId: "matched-skill-id", confidence: 1.0, matchedTriggers: {} }],
@@ -194,6 +196,7 @@ Deno.test("[AgentRunner.previewPrompt] matchedSkillIds reflects the real skill-m
         description: "A test skill.",
         instructions: "Do the thing.",
         triggers: {},
+        references: [],
         critical: false,
       } as any),
     initialize: () => Promise.resolve(),
