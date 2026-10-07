@@ -4,7 +4,7 @@
  * @description Verifies reporter parsing for the custom parallel test runner.
  */
 
-import { assertEquals, assertMatch, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertMatch, assertThrows } from "@std/assert";
 
 import {
   buildDenoTestArgs,
@@ -19,6 +19,9 @@ import {
   parseSummaryLine,
   parseTapOutput,
   resolveReporter,
+  SEQUENTIAL_FILES,
+  SEQUENTIAL_TESTS,
+  SequentialTestSchema,
   stripReporterArgs,
 } from "../../scripts/test_parallel.ts";
 import * as testOutputParse from "../../scripts/test_output_parse.ts";
@@ -158,4 +161,80 @@ Deno.test("test_output_parse is the single source and test_parallel re-exports t
   assertEquals(extractTapFailures, testOutputParse.extractTapFailures);
   assertEquals(parseDotReporterCounts, testOutputParse.parseDotReporterCounts);
   assertEquals(parseSummaryLine, testOutputParse.parseSummaryLine);
+});
+
+// --- Step 3: Batch-2 classification ---
+
+/** The Batch-2 file list pinned before the classification change. Order is authoritative. */
+const EXPECTED_SEQUENTIAL_FILES = [
+  "apps/exactl/tests/exactl_all_test.ts",
+  "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
+  "tests/security/calibration_sandbox_test.ts",
+  "tests/scenario_framework/tests/portal_knowledge_strategies_scenario_test.ts",
+  "apps/daemon/tests/deploy_workspace_test.ts",
+  "tests/integration/cli_commands_test.ts",
+  "tests/integration/agent/mcp_handshake_test.ts",
+  "tests/scenario_framework/tests/plan_amendment_scenario_test.ts",
+  "tests/integration/config_cutover_daemon_boot_test.ts",
+  "tests/integration/config_integrity_daemon_boot_test.ts",
+  "tests/integration/execution_verification_cutover_test.ts",
+  "tests/integration/openai_compatible_daemon_cutover_test.ts",
+  "tests/scenario_framework/tests/integration/openai_compatible_native_test.ts",
+  "tests/scenario_framework/tests/integration/scenario_bindings_test.ts",
+  "tests/scenario_framework/tests/integration/operator_override_axes_test.ts",
+  "tests/scenario_framework/tests/integration/flow_step_model_bindings_test.ts",
+  "tests/integration/dogfood_e2e_test.ts",
+  "tests/integration/dogfood_crash_recovery_e2e_test.ts",
+  "tests/integration/daemon_watcher_readiness_test.ts",
+  "tests/migrations/migrate_db_test.ts",
+  "packages/core/tests/child_env_test.ts",
+  "tests/scripts/check_commit_msg_test.ts",
+  "packages/ai/tests/model_resolver_determinism_test.ts",
+  "packages/ai/tests/model_resolver_registry_test.ts",
+  "packages/storage-sqlite/tests/test_mode_schema_test.ts",
+  "tests/agents/build_agents_index_test.ts",
+  "apps/exactl/tests/blueprint_commands_test.ts",
+  "apps/daemon/tests/session_delegation_coordinator_test.ts",
+  "packages/flow/tests/session_delegate_cycle_sequencing_test.ts",
+  "apps/daemon/tests/health_check_service_test.ts",
+  "apps/daemon/tests/dynamic_step_wiring_test.ts",
+  "apps/daemon/tests/session_delegate_cycle_dogfood_e2e_test.ts",
+  "apps/daemon/tests/readiness_test.ts",
+  "tests/integration/agent_runner_daemon_cutover_test.ts",
+  "tests/infra/build_test.ts",
+  "tests/infra/exactl_edition_build_test.ts",
+  "apps/daemon/tests/agent_role_cutover_e2e_test.ts",
+  "tests/integration/model_registry_route_admit_live_test.ts",
+  "tests/integration/model_registry_team_cost_source_test.ts",
+  "tests/integration/model_registry_team_edition_sweep_test.ts",
+  "tests/integration/model_registry_team_cutover_test.ts",
+  "tests/integration/mcp_server_spec_compliance_cutover_test.ts",
+  "tests/scripts/db_cache_schema_upgrade_test.ts",
+  "tests/integration/daemon_net_policy_enforcement_test.ts",
+  "tests/scenario_framework/tests/unit/assertions_evidence_test.ts",
+  "tests/scenario_framework/tests/integration/self_hosted_split_bindings_test.ts",
+  "tests/scenario_framework/tests/integration/binding_evidence_cli_test.ts",
+  "tests/scenario_framework/tests/integration/memory_pipeline_test.ts",
+];
+
+Deno.test("SEQUENTIAL_FILES is unchanged in content and order after classification", () => {
+  assertEquals(SEQUENTIAL_FILES, EXPECTED_SEQUENTIAL_FILES);
+});
+
+Deno.test("every SEQUENTIAL_TESTS entry names at least one isolation reason", () => {
+  for (const test of SEQUENTIAL_TESTS) {
+    assert(test.reasons.length >= 1, `${test.file} names no isolation reason`);
+    assert(SequentialTestSchema.safeParse(test).success, `${test.file} fails SequentialTestSchema`);
+  }
+});
+
+Deno.test("only the dist/bin writers are marked serializedOutput and only live legs are marked network", () => {
+  const serialized = SEQUENTIAL_TESTS.filter((test) => test.serializedOutput).map((test) => test.file);
+  assertEquals(serialized, ["tests/infra/build_test.ts", "tests/infra/exactl_edition_build_test.ts"]);
+  const network = SEQUENTIAL_TESTS.filter((test) => test.network).map((test) => test.file);
+  assertEquals(network, [
+    "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
+    "tests/security/calibration_sandbox_test.ts",
+    "tests/integration/model_registry_route_admit_live_test.ts",
+  ]);
 });

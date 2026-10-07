@@ -16,6 +16,7 @@
  */
 
 import { basename, fromFileUrl, join } from "@std/path";
+import { z } from "zod";
 import {
   DOT_REPORTER_SYMBOLS_PATTERN,
   extractTapFailures,
@@ -81,123 +82,181 @@ export function untrackChild(pid: number): void {
 
 type TestReporter = typeof SUPPORTED_REPORTERS[number];
 
-/** Sequential because they spawn CLI sub-processes sensitive to environment-variable cross-contamination. */
-const SEQUENTIAL_FILES: string[] = [
-  // exactl_all_test.ts changes process mode flags while reading its context.
-  // Run it sequentially to prevent state changes from racing across test files.
-  "apps/exactl/tests/exactl_all_test.ts",
-  // The Claude trial can produce fewer approved candidates under parallel load.
-  // Keep this live provider test sequential.
-  "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
-  // Live calibration must not inherit temporary fixture-capture settings from
-  // concurrent tests that mutate the process environment.
-  "tests/security/calibration_sandbox_test.ts",
-  // Tests that launch daemon subprocesses or heavy I/O — these do not
-  // parallelize safely due to Deno cache races on direct `deno run` calls
-  // and resource contention from multiple concurrent daemon instances.
-  "tests/scenario_framework/tests/portal_knowledge_strategies_scenario_test.ts",
-  // Daemon-launching scenario: waits on daemon.ready within 30s, which loses
-  // the race under DENO_JOBS parallelism (passes comfortably run sequentially).
-  "apps/daemon/tests/deploy_workspace_test.ts",
-  "tests/integration/cli_commands_test.ts",
-  // MCP handshake test — `mock_agent.ts` hardcodes branch "feat/test" which
-  // conflicts when parallel tests create branches with different names.
-  "tests/integration/agent/mcp_handshake_test.ts",
-  // Plan amendment scenario — starts a real daemon; port contention with
-  // other daemon-launching tests in the parallel batch causes failures.
-  "tests/scenario_framework/tests/plan_amendment_scenario_test.ts",
-  // Config cutover daemon boot — boots a real daemon; the poll-watcher test
-  // (1500ms settle + 1500ms post-inject) times out under DENO_JOBS contention.
-  "tests/integration/config_cutover_daemon_boot_test.ts",
-  // Integrity daemon boot — boots a real daemon and writes mid-flight config DB
-  // overrides; races on Deno module cache and SQLite busy-timeout under parallel.
-  "tests/integration/config_integrity_daemon_boot_test.ts",
-  // Boots real daemons and waits for execution and verification events on their request traces.
-  "tests/integration/execution_verification_cutover_test.ts",
-  // Parallel daemon startup can exceed the review-plan approval deadline.
-  "tests/integration/openai_compatible_daemon_cutover_test.ts",
-  // Runs real scenarios and sets process-wide capture and key environment. Parallel files would read it.
-  "tests/scenario_framework/tests/integration/openai_compatible_native_test.ts",
-  // Boot a daemon and set the process-wide EXA_COMPAT_TEST_API_KEY a matrix cell needs to be
-  // selected. Under parallelism the key leaks away, the cell is skipped, and the flow never runs.
-  "tests/scenario_framework/tests/integration/scenario_bindings_test.ts",
-  "tests/scenario_framework/tests/integration/operator_override_axes_test.ts",
-  "tests/scenario_framework/tests/integration/flow_step_model_bindings_test.ts",
-  // Dogfood e2e — boots a real daemon and waits for plan generation; daemon
-  // subprocess crashes under parallel Deno cache contention.
-  "tests/integration/dogfood_e2e_test.ts",
-  // Dogfood crash recovery — boots daemon twice (normal + recovery) and checks
-  // journal; daemon subprocess races on module cache under parallel.
-  "tests/integration/dogfood_crash_recovery_e2e_test.ts",
-  // Daemon watcher readiness — boots a real daemon and asserts watcher.started /
-  // daemon.ready journal events; daemon subprocess crashes under parallel.
-  "tests/integration/daemon_watcher_readiness_test.ts",
-  // DB migration test — runs migrate_db.ts via deno run subprocess; races on
-  // the Deno module cache under parallel, yielding partial @exaix/core exports.
-  "tests/migrations/migrate_db_test.ts",
-  // scrubProcessEnv here deletes process-global vars like LD_LIBRARY_PATH while
-  // parallel workers are snapshotting parent env for subprocess spawns, which
-  // surfaced as transient "Failed to spawn 'deno'" errors in unrelated test files.
-  "packages/core/tests/child_env_test.ts",
-  // Changes Git repository variables while other tests spawn Git against their own temporary repositories.
-  "tests/scripts/check_commit_msg_test.ts",
-  // Both change the process-wide model preset override while other tests resolve providers.
-  "packages/ai/tests/model_resolver_determinism_test.ts",
-  "packages/ai/tests/model_resolver_registry_test.ts",
-  // Test-mode schema test — uses withEnv() to delete EXA_TEST_MODE from the
-  // global Deno.env; this leaks across tests under DENO_JOBS parallelism.
-  "packages/storage-sqlite/tests/test_mode_schema_test.ts",
-  // Rewrites the real .copilot/manifest.json in place (buildIndex() has no
-  // output-path override); races with other tests reading that same file under
-  // DENO_JOBS parallelism, producing truncated-JSON reads.
-  "tests/agents/build_agents_index_test.ts",
-  // Its dense git subprocess use can exhaust parallel spawn capacity.
-  "apps/exactl/tests/blueprint_commands_test.ts",
-  // The hardened delegation test probes the real OpenCode binary. Under Batch 1 spawn
-  // pressure, that probe can fail before writing its per-test permission config.
-  "apps/daemon/tests/session_delegation_coordinator_test.ts",
-  // Sequencing assertions advance promise-controlled steps with zero-delay timers. Heavy
-  // Batch 1 event-loop pressure can delay the first dispatch past the assertion boundary.
-  "packages/flow/tests/session_delegate_cycle_sequencing_test.ts",
-  // Its `df` subprocess can fail under parallel spawn contention.
-  "apps/daemon/tests/health_check_service_test.ts",
-  // Both boot a daemon that spawns `deno run scripts/setup_db.ts`.
-  // That subprocess can fail under Batch 1 spawn pressure but passes standalone.
-  "apps/daemon/tests/dynamic_step_wiring_test.ts",
-  "apps/daemon/tests/session_delegate_cycle_dogfood_e2e_test.ts",
-  // Its tight readiness poll can time out under Batch 1 CPU pressure.
-  "apps/daemon/tests/readiness_test.ts",
-  // Boots a real daemon; loses its startup race under Batch 1 spawn pressure.
-  "tests/integration/agent_runner_daemon_cutover_test.ts",
-  // Both `deno compile` to the identical dist/bin/exactl-solo-<target> path;
-  // running together under Batch 1 races two writers on the same output file.
-  "tests/infra/build_test.ts",
-  "tests/infra/exactl_edition_build_test.ts",
-  // Boot a real daemon with a tight startup or inject deadline. Under Batch 1 spawn
-  // pressure the daemon loses that race. This matches the daemon cutover tests above.
-  "apps/daemon/tests/agent_role_cutover_e2e_test.ts",
-  "tests/integration/model_registry_route_admit_live_test.ts",
-  "tests/integration/model_registry_team_cost_source_test.ts",
-  "tests/integration/model_registry_team_edition_sweep_test.ts",
-  "tests/integration/model_registry_team_cutover_test.ts",
-  "tests/integration/mcp_server_spec_compliance_cutover_test.ts",
-  // Runs `deno run scripts/setup_db.ts`. Under Batch 1 the shared Deno module cache can
-  // serve a partial @exaix/core, so the child reports a missing export.
-  "tests/scripts/db_cache_schema_upgrade_test.ts",
-  // Boots a daemon with open --allow-net and reads its refusal on stderr. The boot can
-  // exceed the kill ceiling under Batch 1 pressure, which yields empty stderr.
-  "tests/integration/daemon_net_policy_enforcement_test.ts",
-  // Mutates the process env through withEnv across 14 cases. A parallel worker that
-  // snapshots env for a spawn reads another test's EXA_LLM_PROVIDER.
-  "tests/scenario_framework/tests/unit/assertions_evidence_test.ts",
-  // Boots a real daemon against a loopback fixture. Contention under Batch 1 fails the boot.
-  "tests/scenario_framework/tests/integration/self_hosted_split_bindings_test.ts",
-  // Spawns the scenario runner, which boots a daemon. Under Batch 1 the runner times out
-  // before it writes the evidence file the test then reads.
-  "tests/scenario_framework/tests/integration/binding_evidence_cli_test.ts",
-  // Scenario subprocesses can load incomplete module exports during parallel cache contention.
-  "tests/scenario_framework/tests/integration/memory_pipeline_test.ts",
+/** The isolation reasons a Batch-2 file can carry. */
+export const IsolationReason = {
+  moduleCache: "module-cache",
+  processEnv: "process-env",
+  port: "port",
+  sharedPath: "shared-path",
+  pressure: "pressure",
+} as const;
+
+export const IsolationReasonSchema = z.enum([
+  IsolationReason.moduleCache,
+  IsolationReason.processEnv,
+  IsolationReason.port,
+  IsolationReason.sharedPath,
+  IsolationReason.pressure,
+]);
+
+export const SequentialTestSchema = z.object({
+  file: z.string().min(1),
+  reasons: z.array(IsolationReasonSchema).min(1),
+  serializedOutput: z.boolean().default(false),
+  network: z.boolean().default(false),
+});
+
+export type SequentialTest = z.input<typeof SequentialTestSchema>;
+
+/** Batch-2 files with their isolation reasons. Order is authoritative and feeds Batch 1's ignore list. */
+export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
+  { file: "apps/exactl/tests/exactl_all_test.ts", reasons: [IsolationReason.processEnv] },
+  {
+    file: "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
+    reasons: [IsolationReason.pressure],
+    network: true,
+  },
+  {
+    file: "tests/security/calibration_sandbox_test.ts",
+    reasons: [IsolationReason.processEnv],
+    network: true,
+  },
+  {
+    file: "tests/scenario_framework/tests/portal_knowledge_strategies_scenario_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.pressure],
+  },
+  { file: "apps/daemon/tests/deploy_workspace_test.ts", reasons: [IsolationReason.pressure] },
+  {
+    file: "tests/integration/cli_commands_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.pressure],
+  },
+  { file: "tests/integration/agent/mcp_handshake_test.ts", reasons: [IsolationReason.sharedPath] },
+  { file: "tests/scenario_framework/tests/plan_amendment_scenario_test.ts", reasons: [IsolationReason.port] },
+  {
+    file: "tests/integration/config_cutover_daemon_boot_test.ts",
+    reasons: [IsolationReason.port, IsolationReason.pressure],
+  },
+  {
+    file: "tests/integration/config_integrity_daemon_boot_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.port],
+  },
+  {
+    file: "tests/integration/execution_verification_cutover_test.ts",
+    reasons: [IsolationReason.port, IsolationReason.pressure],
+  },
+  {
+    file: "tests/integration/openai_compatible_daemon_cutover_test.ts",
+    reasons: [IsolationReason.port, IsolationReason.pressure],
+  },
+  {
+    file: "tests/scenario_framework/tests/integration/openai_compatible_native_test.ts",
+    reasons: [IsolationReason.processEnv, IsolationReason.port],
+  },
+  {
+    file: "tests/scenario_framework/tests/integration/scenario_bindings_test.ts",
+    reasons: [IsolationReason.processEnv, IsolationReason.port],
+  },
+  {
+    file: "tests/scenario_framework/tests/integration/operator_override_axes_test.ts",
+    reasons: [IsolationReason.processEnv, IsolationReason.port],
+  },
+  {
+    file: "tests/scenario_framework/tests/integration/flow_step_model_bindings_test.ts",
+    reasons: [IsolationReason.processEnv, IsolationReason.port],
+  },
+  {
+    file: "tests/integration/dogfood_e2e_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.port],
+  },
+  {
+    file: "tests/integration/dogfood_crash_recovery_e2e_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.port],
+  },
+  {
+    file: "tests/integration/daemon_watcher_readiness_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.port],
+  },
+  { file: "tests/migrations/migrate_db_test.ts", reasons: [IsolationReason.moduleCache] },
+  { file: "packages/core/tests/child_env_test.ts", reasons: [IsolationReason.processEnv] },
+  { file: "tests/scripts/check_commit_msg_test.ts", reasons: [IsolationReason.processEnv] },
+  { file: "packages/ai/tests/model_resolver_determinism_test.ts", reasons: [IsolationReason.processEnv] },
+  { file: "packages/ai/tests/model_resolver_registry_test.ts", reasons: [IsolationReason.processEnv] },
+  { file: "packages/storage-sqlite/tests/test_mode_schema_test.ts", reasons: [IsolationReason.processEnv] },
+  { file: "tests/agents/build_agents_index_test.ts", reasons: [IsolationReason.sharedPath] },
+  { file: "apps/exactl/tests/blueprint_commands_test.ts", reasons: [IsolationReason.pressure] },
+  { file: "apps/daemon/tests/session_delegation_coordinator_test.ts", reasons: [IsolationReason.pressure] },
+  { file: "packages/flow/tests/session_delegate_cycle_sequencing_test.ts", reasons: [IsolationReason.pressure] },
+  { file: "apps/daemon/tests/health_check_service_test.ts", reasons: [IsolationReason.pressure] },
+  {
+    file: "apps/daemon/tests/dynamic_step_wiring_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.pressure],
+  },
+  {
+    file: "apps/daemon/tests/session_delegate_cycle_dogfood_e2e_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.pressure],
+  },
+  { file: "apps/daemon/tests/readiness_test.ts", reasons: [IsolationReason.pressure] },
+  {
+    file: "tests/integration/agent_runner_daemon_cutover_test.ts",
+    reasons: [IsolationReason.port, IsolationReason.pressure],
+  },
+  {
+    file: "tests/infra/build_test.ts",
+    reasons: [IsolationReason.sharedPath],
+    serializedOutput: true,
+  },
+  {
+    file: "tests/infra/exactl_edition_build_test.ts",
+    reasons: [IsolationReason.sharedPath],
+    serializedOutput: true,
+  },
+  {
+    file: "apps/daemon/tests/agent_role_cutover_e2e_test.ts",
+    reasons: [IsolationReason.port, IsolationReason.pressure],
+  },
+  {
+    file: "tests/integration/model_registry_route_admit_live_test.ts",
+    reasons: [IsolationReason.port],
+    network: true,
+  },
+  {
+    file: "tests/integration/model_registry_team_cost_source_test.ts",
+    reasons: [IsolationReason.port, IsolationReason.pressure],
+  },
+  {
+    file: "tests/integration/model_registry_team_edition_sweep_test.ts",
+    reasons: [IsolationReason.port, IsolationReason.pressure],
+  },
+  {
+    file: "tests/integration/model_registry_team_cutover_test.ts",
+    reasons: [IsolationReason.port, IsolationReason.pressure],
+  },
+  {
+    file: "tests/integration/mcp_server_spec_compliance_cutover_test.ts",
+    reasons: [IsolationReason.port, IsolationReason.pressure],
+  },
+  { file: "tests/scripts/db_cache_schema_upgrade_test.ts", reasons: [IsolationReason.moduleCache] },
+  {
+    file: "tests/integration/daemon_net_policy_enforcement_test.ts",
+    reasons: [IsolationReason.port, IsolationReason.pressure],
+  },
+  { file: "tests/scenario_framework/tests/unit/assertions_evidence_test.ts", reasons: [IsolationReason.processEnv] },
+  {
+    file: "tests/scenario_framework/tests/integration/self_hosted_split_bindings_test.ts",
+    reasons: [IsolationReason.port, IsolationReason.pressure],
+  },
+  {
+    file: "tests/scenario_framework/tests/integration/binding_evidence_cli_test.ts",
+    reasons: [IsolationReason.port, IsolationReason.pressure],
+  },
+  {
+    file: "tests/scenario_framework/tests/integration/memory_pipeline_test.ts",
+    reasons: [IsolationReason.moduleCache],
+  },
 ];
+
+/** Derived so Batch 1's `--ignore` list is unchanged. Content and order come from SEQUENTIAL_TESTS. */
+export const SEQUENTIAL_FILES: string[] = SEQUENTIAL_TESTS.map((test) => test.file);
 
 /** An explicit `--ignore` on the CLI overrides deno.json's config `exclude` for the walk, so fixtures excluded there (e.g. broken-on-purpose portal sources) must be re-listed here or they leak back into type-checking. */
 const PARALLEL_IGNORE_PATHS: string[] = [
