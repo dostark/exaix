@@ -172,6 +172,7 @@ function validateMigration(migrationFile: string, db: Database): IValidationResu
         "model_benchmark",
         "skill_revisions",
         "skill_usage",
+        "skill_revision_scopes",
       ];
       for (const table of tables) {
         const result = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table);

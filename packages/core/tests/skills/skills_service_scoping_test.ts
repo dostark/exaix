@@ -166,3 +166,51 @@ Deno.test("[revisions] an unknown revision or a failed write fails closed with s
     await fx.cleanup();
   }
 });
+
+Deno.test("[scoping][security] a stored project revision is readable only from its own portal while a global one is readable everywhere", async () => {
+  const fx = await fixture();
+  try {
+    const alphaCtx = createSkillOperationContext({ agentRole: "test", portal: "Alpha" });
+    const betaCtx = createSkillOperationContext({ agentRole: "test", portal: "Beta" });
+    const globalCtx = createSkillOperationContext({ agentRole: "test" });
+    const alphaSkill = (await fx.service.getSkill("alpha-skill", alphaCtx))!;
+    const shared = (await fx.service.getSkill("shared-skill", alphaCtx))!;
+    await fx.service.ensureRevisions([alphaSkill.id, shared.id], alphaCtx);
+
+    assertEquals((await fx.service.getRevision(alphaSkill.id, alphaCtx))?.skillName, "alpha-skill");
+    assertEquals(await fx.service.getRevision(alphaSkill.id, betaCtx), null, "another portal sees nothing");
+    assertEquals(await fx.service.getRevision(alphaSkill.id, globalCtx), null, "global scope sees nothing");
+    assertEquals((await fx.service.listRevisions("alpha-skill", alphaCtx)).length, 1);
+    assertEquals(await fx.service.listRevisions("alpha-skill", betaCtx), []);
+    assertEquals(await fx.service.listRevisions("alpha-skill", globalCtx), []);
+
+    for (const ctx of [alphaCtx, betaCtx, globalCtx]) {
+      assertEquals((await fx.service.getRevision(shared.id, ctx))?.skillName, "shared-skill");
+    }
+  } finally {
+    await fx.cleanup();
+  }
+});
+
+Deno.test("[scoping][security] identical content recorded in two scopes is visible to both", async () => {
+  const fx = await fixture();
+  try {
+    const alphaCtx = createSkillOperationContext({ agentRole: "test", portal: "Alpha" });
+    const betaCtx = createSkillOperationContext({ agentRole: "test", portal: "Beta" });
+    await writeSkillFolder(join(fx.memoryDir, "Skills", "project", "Beta"), {
+      name: "alpha-skill",
+      instructions: "Body for Alpha.",
+      sidecar: ACTIVE_SIDECAR,
+    });
+    const inAlpha = (await fx.service.getSkill("alpha-skill", alphaCtx))!;
+    const inBeta = (await fx.service.getSkill("alpha-skill", betaCtx))!;
+    assertEquals(inAlpha.id, inBeta.id, "the same content has one revision id");
+    await fx.service.ensureRevisions([inAlpha.id], alphaCtx);
+    assertEquals(await fx.service.getRevision(inAlpha.id, betaCtx), null, "Beta has not recorded it yet");
+    await fx.service.ensureRevisions([inBeta.id], betaCtx);
+    assertNotEquals(await fx.service.getRevision(inAlpha.id, betaCtx), null);
+    assertNotEquals(await fx.service.getRevision(inAlpha.id, alphaCtx), null);
+  } finally {
+    await fx.cleanup();
+  }
+});

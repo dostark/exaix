@@ -347,7 +347,16 @@ CREATE TABLE IF NOT EXISTS skill_usage (
 CREATE INDEX IF NOT EXISTS idx_skill_usage_name ON skill_usage (skill_name);
 CREATE INDEX IF NOT EXISTS idx_skill_usage_trace ON skill_usage (trace_id);
 
+-- Portal scope of each recorded revision. An empty project means a global skill. The same content can be
+-- recorded in several scopes, and a read sees a revision only through its own portal or a global scope.
+CREATE TABLE IF NOT EXISTS skill_revision_scopes (
+  revision_id TEXT NOT NULL REFERENCES skill_revisions (revision_id),
+  project     TEXT NOT NULL,
+  PRIMARY KEY (revision_id, project)
+);
+
 -- down
+DROP TABLE IF EXISTS skill_revision_scopes;
 DROP INDEX IF EXISTS idx_skill_usage_trace;
 DROP INDEX IF EXISTS idx_skill_usage_name;
 DROP TABLE IF EXISTS skill_usage;

@@ -329,6 +329,11 @@ export const SKILL_REVISIONS_TABLE_SQL = `
   );
   CREATE INDEX IF NOT EXISTS idx_skill_usage_name ON skill_usage (skill_name);
   CREATE INDEX IF NOT EXISTS idx_skill_usage_trace ON skill_usage (trace_id);
+  CREATE TABLE IF NOT EXISTS skill_revision_scopes (
+    revision_id TEXT NOT NULL REFERENCES skill_revisions (revision_id),
+    project     TEXT NOT NULL,
+    PRIMARY KEY (revision_id, project)
+  );
 `;
 
 /**

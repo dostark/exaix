@@ -2,7 +2,7 @@
 /**
  * @module SkillJournalSchema
  * @path scripts/skill_journal_schema.ts
- * @description Idempotently installs the skill_revisions and skill_usage tables and their indexes on
+ * @description Idempotently installs the skill_revisions, skill_usage and skill_revision_scopes tables and their indexes on
  *   journals that already applied the consolidated initialization migration, without
  *   touching existing rows. Mirrors scripts/provider_costs_schema.ts.
  * @architectural-layer Infrastructure
@@ -47,6 +47,13 @@ CREATE TABLE IF NOT EXISTS skill_usage (
 );
 CREATE INDEX IF NOT EXISTS idx_skill_usage_name ON skill_usage (skill_name);
 CREATE INDEX IF NOT EXISTS idx_skill_usage_trace ON skill_usage (trace_id);
+CREATE TABLE IF NOT EXISTS skill_revision_scopes (
+  revision_id TEXT NOT NULL REFERENCES skill_revisions (revision_id),
+  project     TEXT NOT NULL,
+  PRIMARY KEY (revision_id, project)
+);
+INSERT OR IGNORE INTO skill_revision_scopes (revision_id, project)
+  SELECT DISTINCT revision_id, '' FROM skill_usage WHERE root_kind <> 'project';
 `;
 
 /** Runs only from explicit database setup/upgrade commands, outside their migration transactions. */

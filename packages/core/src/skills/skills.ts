@@ -140,6 +140,10 @@ const MAX_REMEMBERED_REVISIONS = 256;
 const MAX_REMEMBERED_PLANS = 8;
 /** Runtime names that differ from their dogfood folder names. The folder name is canonical everywhere else. */
 const DOGFOOD_RUNTIME_ALIASES: Readonly<Record<string, string>> = { "tdd-methodology": "tdd-workflow" };
+/** Remembered loads are keyed by scope as well as revision, because the same content can load in two portals. */
+function rememberedKey(revisionId: string, project: string): string {
+  return `${project}\u0000${revisionId}`;
+}
 const REVISION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const GENERATION_LENGTH = 16;
 const SKILLS_SUBDIR = "Skills";
@@ -202,7 +206,8 @@ export class SkillsService implements ISkillsService {
   ): Promise<void> {
     const operation = ctx ?? this.defaultContext();
     for (const revisionId of revisionIds) {
-      const loaded = this.loadedByRevision.get(revisionId);
+      const loaded = this.loadedByRevision.get(rememberedKey(revisionId, operation.portal ?? "")) ??
+        this.loadedByRevision.get(rememberedKey(revisionId, ""));
       if (!loaded) {
         throw new SkillAuditUnavailableError(`No loaded snapshot is available for skill revision ${revisionId}`);
       }
@@ -300,8 +305,9 @@ export class SkillsService implements ISkillsService {
   }
 
   private remember(loaded: ILoadedSkill): ILoadedSkill {
-    this.loadedByRevision.delete(loaded.revisionId);
-    this.loadedByRevision.set(loaded.revisionId, loaded);
+    const key = rememberedKey(loaded.revisionId, loaded.skill.project ?? "");
+    this.loadedByRevision.delete(key);
+    this.loadedByRevision.set(key, loaded);
     while (this.loadedByRevision.size > MAX_REMEMBERED_REVISIONS) {
       const oldest = this.loadedByRevision.keys().next().value;
       if (oldest === undefined) break;

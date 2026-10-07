@@ -588,3 +588,41 @@ Deno.test("[phase206] migrate_db.ts down drops skill_usage before skill_revision
     await Deno.remove(tmp, { recursive: true }).catch(() => {});
   }
 });
+
+Deno.test("[phase206] migrate_db.ts up installs skill_revision_scopes and backfills global scopes on an applied-001 journal", async () => {
+  const tmp = await setupTestWorkspace();
+  try {
+    assertEquals((await runMigrate(tmp, ["up"])).code, 0);
+    const dbPath = join(getRuntimeDir(tmp), "journal.db");
+    assertEquals(
+      await queryDb(dbPath, "SELECT name FROM sqlite_master WHERE type='table' AND name='skill_revision_scopes';"),
+      "skill_revision_scopes",
+    );
+    const db = new Database(dbPath);
+    try {
+      db.exec("DROP TABLE skill_revision_scopes;");
+      for (const [revision, name] of [["rev-global", "shared"], ["rev-project", "guide"]]) {
+        db.prepare(
+          `INSERT INTO skill_revisions (revision_id, content_sha256, skill_name, skill_md, exaix_yaml, "references", first_seen_at)
+           VALUES (?, 'sha', ?, 'md', NULL, '[]', 't')`,
+        ).run(revision, name);
+      }
+      for (
+        const [revision, name, root] of [["rev-global", "shared", "blueprint"], ["rev-project", "guide", "project"]]
+      ) {
+        db.prepare(
+          `INSERT INTO skill_usage (call_id, revision_id, skill_name, trace_id, agent_role, match_source, render_mode,
+             submission_kind, round, attempt, root_kind, source_path, config_generation, used_at)
+           VALUES ('call', ?, ?, 'trace', 'role', 'matched', 'full', 'provider', 1, 1, ?, ?, 'gen', 't')`,
+        ).run(revision, name, root, name);
+      }
+    } finally {
+      await db.close();
+    }
+    assertEquals((await runMigrate(tmp, ["up"])).code, 0);
+    const scopes = await queryDb(dbPath, "SELECT revision_id || ':' || project FROM skill_revision_scopes;");
+    assertEquals(scopes.trim(), "rev-global:", "a global revision keeps its scope and a project one stays unreadable");
+  } finally {
+    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+  }
+});

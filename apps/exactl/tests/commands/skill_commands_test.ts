@@ -269,3 +269,36 @@ Deno.test("[security] a hostile draft prints no control byte in table or markdow
     await cleanup();
   }
 });
+
+Deno.test("[security] a project skill's stored revision is refused to another portal and to global scope", async () => {
+  const { commands, config, db, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  try {
+    const memoryDir = join(config.system.root, config.paths.memory);
+    await writeSkillFolder(join(memoryDir, "Skills", "project", "Alpha"), {
+      name: "alpha-guide",
+      instructions: "Alpha only guidance.",
+      sidecar: { status: SkillStatus.ACTIVE },
+    });
+    const service = new SkillsService({ memoryDir }, db);
+    const alpha = { ...testSkillContext(), portal: "Alpha" };
+    const skill = (await service.getSkill("alpha-guide", alpha))!;
+    await service.recordSubmission(policySkillSubmission(skill), alpha);
+
+    const own = JSON.parse(await commands.skillShow("alpha-guide", UIOutputFormat.JSON, "Alpha", skill.id));
+    assertStringIncludes(own.skillMd, "Alpha only guidance.");
+    for (const portal of ["Beta", undefined]) {
+      const refused = await assertRejects(
+        () => commands.skillShow("alpha-guide", UIOutputFormat.JSON, portal, skill.id),
+        SkillCommandError,
+      );
+      assertEquals(refused.exitCode, 1);
+      assertEquals(refused.message.includes("Alpha only guidance."), false);
+      assertEquals(
+        JSON.parse(await commands.skillRevisions("alpha-guide", { format: UIOutputFormat.JSON, portal })),
+        [],
+      );
+    }
+  } finally {
+    await cleanup();
+  }
+});

@@ -38,7 +38,18 @@ interface ISkillRevisionRow {
 }
 
 const SELECT_COLUMNS =
-  'revision_id, content_sha256, skill_name, skill_md, exaix_yaml, "references" AS "references", first_seen_at';
+  'r.revision_id, r.content_sha256, r.skill_name, r.skill_md, r.exaix_yaml, r."references" AS "references", r.first_seen_at';
+
+/** Scope value of a global skill. A project skill is scoped by its portal alias. */
+const GLOBAL_SCOPE = "";
+
+/** A read sees a revision only when it was recorded in a global scope or in the reader's own portal. */
+const VISIBLE_TO_SCOPE =
+  "EXISTS (SELECT 1 FROM skill_revision_scopes s WHERE s.revision_id = r.revision_id AND s.project IN (?, ?))";
+
+function scopeOf(ctx: ISkillOperationContext): string {
+  return ctx.portal ?? GLOBAL_SCOPE;
+}
 
 export class SkillRevisionStore {
   private readonly db: IDatabaseService;
@@ -73,6 +84,10 @@ export class SkillRevisionStore {
           new Date().toISOString(),
         ],
       );
+      await this.db.preparedRun(
+        "INSERT OR IGNORE INTO skill_revision_scopes (revision_id, project) VALUES (?, ?)",
+        [loaded.revisionId, loaded.skill.project ?? GLOBAL_SCOPE],
+      );
       inserted = typeof result === "number" && result > 0;
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
@@ -100,20 +115,21 @@ export class SkillRevisionStore {
     return inserted;
   }
 
-  /** Returns the verified revision, or null when no such revision was ever recorded. */
-  async get(revisionId: string, _ctx: ISkillOperationContext): Promise<ISkillRevisionRecord | null> {
+  /** Returns the verified revision, or null when it was never recorded or is outside the reader's scope. */
+  async get(revisionId: string, ctx: ISkillOperationContext): Promise<ISkillRevisionRecord | null> {
     const row = await this.db.preparedGet<ISkillRevisionRow>(
-      `SELECT ${SELECT_COLUMNS} FROM skill_revisions WHERE revision_id = ?`,
-      [revisionId],
+      `SELECT ${SELECT_COLUMNS} FROM skill_revisions r WHERE r.revision_id = ? AND ${VISIBLE_TO_SCOPE}`,
+      [revisionId, GLOBAL_SCOPE, scopeOf(ctx)],
     );
     return row ? await verifyRow(row) : null;
   }
 
-  /** All recorded revisions of one skill, oldest first. */
-  async listByName(name: string, _ctx: ISkillOperationContext): Promise<ISkillRevisionRecord[]> {
+  /** All revisions of one skill that the reader's scope can see, oldest first. */
+  async listByName(name: string, ctx: ISkillOperationContext): Promise<ISkillRevisionRecord[]> {
     const rows = await this.db.preparedAll<ISkillRevisionRow>(
-      `SELECT ${SELECT_COLUMNS} FROM skill_revisions WHERE skill_name = ? ORDER BY first_seen_at ASC, rowid ASC`,
-      [name],
+      `SELECT ${SELECT_COLUMNS} FROM skill_revisions r WHERE r.skill_name = ? AND ${VISIBLE_TO_SCOPE}
+         ORDER BY r.first_seen_at ASC, r.rowid ASC`,
+      [name, GLOBAL_SCOPE, scopeOf(ctx)],
     );
     return await Promise.all(rows.map(verifyRow));
   }
