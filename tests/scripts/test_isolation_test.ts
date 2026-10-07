@@ -183,7 +183,7 @@ function makeFakeWorker(name: string, resolve: (file: string) => IContainerRunRe
   };
 }
 
-Deno.test("buildWorkerContainerLaunch isolates HOME, EXA_HOME and DENO_DIR, defaults to --network none, passes --init, and never forwards DENO_JOBS", () => {
+Deno.test("buildWorkerContainerLaunch isolates HOME, EXA_HOME and DENO_DIR, defaults to --network none, adds no second init, and never forwards DENO_JOBS", () => {
   const launch = buildWorkerContainerLaunch({
     repoRoot: "/repo",
     image: "exaix-dev-test:dev",
@@ -196,7 +196,7 @@ Deno.test("buildWorkerContainerLaunch isolates HOME, EXA_HOME and DENO_DIR, defa
     watchdogMs: 60_000,
   });
   const joined = launch.args.join(" ");
-  assert(launch.args.includes("--init"), "--init present");
+  assertEquals(launch.args.includes("--init"), false, "the image entrypoint already runs tini as PID 1");
   assert(launch.args.includes("-i"), "-i present");
   assert(joined.includes("--name exaix-test-worker-0"), "--name present");
   assert(joined.includes("HOME=/tmp/home"), "HOME isolated");

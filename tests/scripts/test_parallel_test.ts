@@ -5,6 +5,7 @@
  */
 
 import { assert, assertEquals, assertMatch, assertThrows } from "@std/assert";
+import { TEST_CONTAINER_REPORTER_ENV } from "../../scripts/test_container_driver.ts";
 
 import {
   buildContainerEnv,
@@ -314,7 +315,17 @@ Deno.test("the container env is an explicit allowlist, never Deno.env.toObject()
     LD_LIBRARY_PATH: "/host/lib",
     HOME: "/home/host",
   });
-  assertEquals(env, { TZ: "UTC", CI: "true", LANG: "en_US.UTF-8", LC_ALL: "C" });
+  assertEquals(env, {
+    TZ: "UTC",
+    CI: "true",
+    LANG: "en_US.UTF-8",
+    LC_ALL: "C",
+    [TEST_CONTAINER_REPORTER_ENV]: "pretty",
+  });
   assert(!("DENO_JOBS" in env), "DENO_JOBS must never be forwarded");
   assert(!("PATH" in env) && !("HOME" in env), "host PATH/HOME must not leak into the container");
+});
+
+Deno.test("the worker container env tells the driver to use the Containered Batch reporter", () => {
+  assertEquals(buildContainerEnv({ PATH: "/usr/bin" })[TEST_CONTAINER_REPORTER_ENV], "pretty");
 });

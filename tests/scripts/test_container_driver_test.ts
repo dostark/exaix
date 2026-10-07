@@ -5,13 +5,17 @@
  *   process-group kill plus daemon reap, the per-file timeout, and dot-reporter parsing.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import {
+  buildDriverTestArgs,
   type IContainerDriverDeps,
   type IContainerRunResult,
   type IDriverChild,
+  processFile,
+  resolveDriverReporter,
   runDriverLoop,
   TEST_CONTAINER_DONE_SENTINEL,
+  TEST_CONTAINER_REPORTER_ENV,
   TEST_CONTAINER_TIMEOUT_EXIT_CODE,
 } from "../../scripts/test_container_driver.ts";
 
@@ -130,4 +134,41 @@ Deno.test("the driver stops at the DONE sentinel", async () => {
   const deps = makeDeps(recorder, () => fakeChild(0, "ok | 1 passed | 0 failed (1ms)\n", 1));
   await runDriverLoop(lines(TEST_CONTAINER_DONE_SENTINEL, "ignored_test.ts"), deps);
   assertEquals(recorder.spawned, []);
+});
+
+Deno.test("the driver runs each file with the pretty reporter by default so test names stay visible", () => {
+  assertEquals(resolveDriverReporter({}), "pretty");
+  assertEquals(buildDriverTestArgs("tests/a_test.ts", "pretty"), [
+    "test",
+    "--allow-all",
+    "--reporter=pretty",
+    "tests/a_test.ts",
+  ]);
+});
+
+Deno.test("the host can choose another supported reporter through the environment and an unknown one is refused", () => {
+  assertEquals(resolveDriverReporter({ [TEST_CONTAINER_REPORTER_ENV]: "dot" }), "dot");
+  assertEquals(resolveDriverReporter({ [TEST_CONTAINER_REPORTER_ENV]: "" }), "pretty");
+  assertThrows(() => resolveDriverReporter({ [TEST_CONTAINER_REPORTER_ENV]: "html" }), Error, "html");
+});
+
+Deno.test("pretty-reporter output is counted from its summary line", async () => {
+  const log: string[] = [];
+  const deps: IContainerDriverDeps = {
+    repoRoot: "/repo",
+    spawn: () =>
+      fakeChild(
+        0,
+        "running 2 tests from ./tests/a_test.ts\nfirst ... ok (1ms)\nsecond ... ok (2ms)\n\nok | 2 passed | 0 failed | 1 ignored (3ms)\n",
+      ),
+    killGroup: () => {},
+    reap: () => Promise.resolve(),
+    timeoutMs: 1000,
+    now: () => 0,
+    writeLog: (text) => log.push(text),
+    writeResult: () => {},
+  };
+  const result = await processFile("tests/a_test.ts", deps);
+  assertEquals([result.passed, result.failed, result.ignored], [2, 0, 1]);
+  assertEquals(log.join("").includes("first ... ok"), true, "the test names reach the log");
 });

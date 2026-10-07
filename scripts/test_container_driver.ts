@@ -59,9 +59,27 @@ export const TEST_CONTAINER_FAILURE_DETAIL_MAX_CHARS = 4000;
 export const DEFAULT_TEST_CONTAINER_TIMEOUT_MS = 10 * 60 * 1000;
 
 const DAEMON_PATTERN = "daemon/main.ts";
-const REPORTER_FLAG = "--reporter=dot";
+/** Environment variable the host sets to choose the reporter of every file the driver runs. */
+export const TEST_CONTAINER_REPORTER_ENV = "EXA_TEST_CONTAINER_REPORTER";
+const SUPPORTED_DRIVER_REPORTERS: readonly string[] = ["pretty", "dot"];
+const DEFAULT_DRIVER_REPORTER = "pretty";
 const TEST_SUBCOMMAND = "test";
 const ALLOW_ALL_FLAG = "--allow-all";
+
+/** The reporter for this run: the host's choice, else pretty so every test name stays visible. */
+export function resolveDriverReporter(env: Record<string, string | undefined>): string {
+  const value = env[TEST_CONTAINER_REPORTER_ENV];
+  if (value === undefined || value === "") return DEFAULT_DRIVER_REPORTER;
+  if (!SUPPORTED_DRIVER_REPORTERS.includes(value)) {
+    throw new Error(`Unsupported reporter "${value}". Expected one of: ${SUPPORTED_DRIVER_REPORTERS.join(", ")}`);
+  }
+  return value;
+}
+
+/** The `deno test` argv for one file. */
+export function buildDriverTestArgs(file: string, reporter: string): string[] {
+  return [TEST_SUBCOMMAND, ALLOW_ALL_FLAG, `--reporter=${reporter}`, file];
+}
 
 /** True when `file` is a repo-relative path that stays inside `repoRoot` (no absolute path, no `..`). */
 export function isRepoRelativeTestFile(file: string, repoRoot: string): boolean {
@@ -156,9 +174,9 @@ export async function runDriverLoop(
 }
 
 /** Real spawn: a fresh `deno test` in its own process group. */
-function realSpawn(file: string, repoRoot: string): IDriverChild {
+function realSpawn(file: string, repoRoot: string, reporter: string): IDriverChild {
   const child = new Deno.Command(Deno.execPath(), {
-    args: [TEST_SUBCOMMAND, ALLOW_ALL_FLAG, REPORTER_FLAG, file],
+    args: buildDriverTestArgs(file, reporter),
     cwd: repoRoot,
     stdout: "piped",
     stderr: "piped",
@@ -191,13 +209,14 @@ async function realReap(): Promise<void> {
 
 if (import.meta.main) {
   const repoRoot = Deno.cwd();
+  const reporter = resolveDriverReporter(Deno.env.toObject());
   const encoder = new TextEncoder();
   const lines = Deno.stdin.readable
     .pipeThrough(new TextDecoderStream())
     .pipeThrough(new TextLineStream());
   await runDriverLoop(lines, {
     repoRoot,
-    spawn: (file) => realSpawn(file, repoRoot),
+    spawn: (file) => realSpawn(file, repoRoot, reporter),
     killGroup: realKillGroup,
     reap: realReap,
     timeoutMs: DEFAULT_TEST_CONTAINER_TIMEOUT_MS,

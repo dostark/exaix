@@ -32,6 +32,7 @@ import {
   selectBatch2Strategy,
   TEST_CONTAINER_IMAGE_ENV,
 } from "./test_isolation.ts";
+import { TEST_CONTAINER_REPORTER_ENV } from "./test_container_driver.ts";
 import type { IContainerRunResult } from "./test_container_driver.ts";
 
 export interface IDotReporterState {
@@ -432,6 +433,7 @@ export function buildContainerEnv(
     const value = source[key];
     if (value !== undefined) env[key] = value;
   }
+  env[TEST_CONTAINER_REPORTER_ENV] = CONTAINERED_BATCH_REPORTER;
   return env;
 }
 

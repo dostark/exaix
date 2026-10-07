@@ -293,7 +293,8 @@ export function resolveContainerResourceBounds(
 }
 
 /** Build the worker-container `docker run` argv by reusing the hardened `buildJailLaunch`
- *  shape. The worker runs the driver with a piped stdin/stdout protocol. */
+ *  shape. It passes no `--init`, because the image entrypoint already runs tini as PID 1.
+ *  The worker runs the driver with a piped stdin/stdout protocol. */
 export function buildWorkerContainerLaunch(options: IWorkerContainerLaunchOptions): IWorkerContainerLaunch {
   const env = Object.fromEntries(
     Object.entries(options.env).filter(([key]) => key !== DENO_JOBS_ENV),
@@ -312,7 +313,6 @@ export function buildWorkerContainerLaunch(options: IWorkerContainerLaunchOption
       sysctls: [...WORKER_CONTAINER_SYSCTLS],
       containerName: options.workerName,
       image: options.image,
-      init: true,
       interactive: true,
     },
   );
