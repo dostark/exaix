@@ -121,6 +121,13 @@ export interface IStrategyOverrides {
 /** Async probe: true when the docker daemon is reachable. */
 export type IContainerRuntimeProbe = () => Promise<boolean>;
 
+/** Resource bounds applied to each worker container. */
+export interface IContainerResourceBounds {
+  pidsLimit: number;
+  memory: string;
+  cpus: string;
+}
+
 const REPO_ROOT = join(fromFileUrl(import.meta.url), "..", "..");
 
 const DOCKER_BIN = "docker";
@@ -266,6 +273,21 @@ export async function selectBatch2Strategy(
   }
   const { jobs, source } = resolveWorkerCount(env, overrides);
   return { mode: "container", jobs, reason: `container mode with ${jobs} workers (${source})` };
+}
+
+/** Resolve worker-container resource bounds from `EXA_TEST_CONTAINER_*`. Each unset or invalid
+ *  value falls back to its named default, so a bad override never breaks the run. */
+export function resolveContainerResourceBounds(
+  env: Record<string, string | undefined>,
+): IContainerResourceBounds {
+  const rawPids = env[TEST_CONTAINER_PIDS_LIMIT_ENV];
+  const parsedPids = rawPids !== undefined ? Number(rawPids) : Number.NaN;
+  const pidsLimit = Number.isInteger(parsedPids) && parsedPids > 0 ? parsedPids : DEFAULT_TEST_CONTAINER_PIDS_LIMIT;
+  return {
+    pidsLimit,
+    memory: env[TEST_CONTAINER_MEMORY_ENV] || DEFAULT_TEST_CONTAINER_MEMORY,
+    cpus: env[TEST_CONTAINER_CPUS_ENV] || DEFAULT_TEST_CONTAINER_CPUS,
+  };
 }
 
 /** Build the worker-container `docker run` argv by reusing the hardened `buildJailLaunch`

@@ -27,14 +27,12 @@ import {
 } from "./test_output_parse.ts";
 import type { ITapFailure, ITestCounts } from "./test_output_parse.ts";
 import {
-  DEFAULT_TEST_CONTAINER_CPUS,
   DEFAULT_TEST_CONTAINER_IMAGE,
-  DEFAULT_TEST_CONTAINER_MEMORY,
   DEFAULT_TEST_CONTAINER_NETWORK,
-  DEFAULT_TEST_CONTAINER_PIDS_LIMIT,
   DEFAULT_TEST_CONTAINER_WATCHDOG_MS,
   ensureDevTestImage,
   MIN_TEST_CONTAINER_JOBS,
+  resolveContainerResourceBounds,
   runBatch2InContainers,
   selectBatch2Strategy,
   TEST_CONTAINER_IMAGE_ENV,
@@ -777,6 +775,7 @@ export async function main(args: string[]): Promise<number> {
   const seq: TestStats[] = [];
   if (strategy.mode === "container") {
     const image = Deno.env.get(TEST_CONTAINER_IMAGE_ENV) ?? DEFAULT_TEST_CONTAINER_IMAGE;
+    const bounds = resolveContainerResourceBounds(Deno.env.toObject());
     await ensureDevTestImage(image);
     const results = await runBatch2InContainers(SEQUENTIAL_TESTS, {
       repoRoot: REPO_ROOT,
@@ -784,9 +783,9 @@ export async function main(args: string[]): Promise<number> {
       jobs: strategy.jobs,
       env: buildContainerEnv(),
       network: DEFAULT_TEST_CONTAINER_NETWORK,
-      pidsLimit: DEFAULT_TEST_CONTAINER_PIDS_LIMIT,
-      memory: DEFAULT_TEST_CONTAINER_MEMORY,
-      cpus: DEFAULT_TEST_CONTAINER_CPUS,
+      pidsLimit: bounds.pidsLimit,
+      memory: bounds.memory,
+      cpus: bounds.cpus,
       watchdogMs: DEFAULT_TEST_CONTAINER_WATCHDOG_MS,
     });
     for (const result of results) {

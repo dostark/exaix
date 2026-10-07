@@ -22,6 +22,7 @@ import {
   type IWorkerContainerLaunchOptions,
   MIN_TEST_CONTAINER_JOBS,
   parseWorkerResultLine,
+  resolveContainerResourceBounds,
   runBatch2InContainers,
   selectBatch2Strategy,
   startWorkerContainer,
@@ -29,6 +30,7 @@ import {
 } from "../../scripts/test_isolation.ts";
 import {
   buildContainerEnv,
+  containerResultFailureBlock,
   killActiveChildGroups,
   parseDotReporterCounts,
   parseSummaryLine,
@@ -651,5 +653,67 @@ Deno.test({
       }
     }
     assertEquals(mismatches, [], `parity mismatches:\n${mismatches.join("\n")}`);
+  },
+});
+
+// --- Step 6: resource bounds and CI ---
+
+Deno.test("buildWorkerContainerLaunch applies pids/memory/cpus bounds from the named constants and env overrides", () => {
+  const defaults = resolveContainerResourceBounds({});
+  assertEquals(defaults, {
+    pidsLimit: DEFAULT_TEST_CONTAINER_PIDS_LIMIT,
+    memory: DEFAULT_TEST_CONTAINER_MEMORY,
+    cpus: DEFAULT_TEST_CONTAINER_CPUS,
+  });
+  const overridden = resolveContainerResourceBounds({
+    EXA_TEST_CONTAINER_PIDS_LIMIT: "1024",
+    EXA_TEST_CONTAINER_MEMORY: "4g",
+    EXA_TEST_CONTAINER_CPUS: "3.0",
+  });
+  assertEquals(overridden, { pidsLimit: 1024, memory: "4g", cpus: "3.0" });
+  const launch = buildWorkerContainerLaunch({
+    repoRoot: "/repo",
+    image: "exaix-dev-test:dev",
+    workerName: "exaix-test-worker-bounds",
+    network: "none",
+    env: {},
+    ...overridden,
+    watchdogMs: 60_000,
+  });
+  const joined = launch.args.join(" ");
+  assert(joined.includes("--pids-limit 1024"), "--pids-limit override applied");
+  assert(joined.includes("--memory 4g"), "--memory override applied");
+  assert(joined.includes("--cpus 3.0"), "--cpus override applied");
+});
+
+Deno.test("resolveContainerResourceBounds falls back to the named defaults on an invalid pids override", () => {
+  const nonNumeric = resolveContainerResourceBounds({ EXA_TEST_CONTAINER_PIDS_LIMIT: "not-a-number" });
+  assertEquals(nonNumeric.pidsLimit, DEFAULT_TEST_CONTAINER_PIDS_LIMIT);
+  const zero = resolveContainerResourceBounds({ EXA_TEST_CONTAINER_PIDS_LIMIT: "0" });
+  assertEquals(zero.pidsLimit, DEFAULT_TEST_CONTAINER_PIDS_LIMIT);
+});
+
+const FAILING_FIXTURE = [
+  'Deno.test("fails", () => {',
+  '  throw new Error("seeded failure");',
+  "});",
+].join("\n");
+
+Deno.test({
+  name: "[integration] the CI job command exits non-zero on a seeded failing file",
+  ignore: INTEGRATION_IGNORE,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    await ensureImageOnce();
+    await withTempTestFile("failing", FAILING_FIXTURE, async (rel) => {
+      const results = await runBatch2InContainers([{ file: rel }], itRunOptions(1));
+      assertEquals(results.length, 1);
+      const result = results[0];
+      assert(result.exitCode !== 0, "a failing file must report a non-zero exit code");
+      assert(containerResultFailureBlock(result) !== null, "a failing file must produce a failure block");
+      const batchExitCode = results.some((entry) => entry.exitCode !== 0) ? 1 : 0;
+      assertEquals(batchExitCode, 1, "the batch exit code must be non-zero");
+    });
   },
 });

@@ -171,3 +171,43 @@ jobs:
 
       - name: "Check no edition conditionals outside allowed dirs"
         run: deno task check:no-edition-conditionals
+
+  containerized-suite:
+    name: "Containerized Batch 2 Suite"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: "Init team submodule"
+        run: |
+          git config --local submodule.exaix-team.url "https://x-access-token:${{ secrets.EXAIX_TEAM_PAT }}@github.com/dostark/exaix-team.git"
+          git submodule update --init --depth 1 exaix-team
+
+      - name: "Setup Deno"
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: "2.x"
+
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v3
+
+      - name: "Build dev-test image (cached by Dockerfile + deno.lock layers)"
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: dev-test
+          tags: exaix-dev-test:dev
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: "Run the containerized suite"
+        env:
+          EXA_TEST_CONTAINERS: "1"
+        run: deno task test_parallel
