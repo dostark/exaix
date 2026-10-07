@@ -15,6 +15,7 @@ import {
   SkillMutationError,
   SkillUnavailableError,
 } from "@exaix/core/skills";
+import { stripTerminalControlBytes } from "@exaix/core/func";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
@@ -661,7 +662,7 @@ export class MemoryCommands extends BaseCommand {
         dto.exaixYaml ?? DEFAULT_NONE_VALUE,
       ];
       for (const reference of dto.references) lines.push("", `${reference.path}:`, reference.content);
-      return lines.join("\n");
+      return stripTerminalControlBytes(lines.join("\n"));
     });
   }
 
@@ -915,9 +916,11 @@ export class MemoryCommands extends BaseCommand {
           return this.formatter.formatSkillShowMarkdown(derivedSkill);
         case UIOutputFormat.TABLE:
         default:
-          return `Derived draft skill:\n${
-            this.formatter.formatSkillShowTable(derivedSkill)
-          }\nDraft path: ${derivedSkill.root_kind}/${derivedSkill.path}\nRevision: ${derivedSkill.id}`;
+          return stripTerminalControlBytes(
+            `Derived draft skill:\n${
+              this.formatter.formatSkillShowTable(derivedSkill)
+            }\nDraft path: ${derivedSkill.root_kind}/${derivedSkill.path}\nRevision: ${derivedSkill.id}`,
+          );
       }
     });
   }
@@ -974,7 +977,9 @@ export class MemoryCommands extends BaseCommand {
         case UIOutputFormat.MARKDOWN:
         case UIOutputFormat.TABLE:
         default:
-          return `Created draft skill: ${skill.skill_id} (${skill.title})\nDraft path: ${skill.root_kind}/${skill.path}\nRevision: ${skill.id}\nReview it, then approve this revision to activate it.`;
+          return stripTerminalControlBytes(
+            `Created draft skill: ${skill.skill_id} (${skill.title})\nDraft path: ${skill.root_kind}/${skill.path}\nRevision: ${skill.id}\nReview it, then approve this revision to activate it.`,
+          );
       }
     });
   }

@@ -239,3 +239,33 @@ Deno.test("[skills] older commands fail with exit codes instead of returning err
     await cleanup();
   }
 });
+
+Deno.test("[security] a hostile draft prints no control byte in table or markdown output and stays exact in JSON", async () => {
+  const { commands, config, db, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  const hostile = "Body \x1b]0;pwned\x07 and \x1b[2J end";
+  // deno-lint-ignore no-control-regex
+  const controlByte = /[\x00-\x08\x0B-\x1F\x7F]/;
+  try {
+    const learned = join(config.system.root, config.paths.memory, "Skills", "learned");
+    await writeSkillFolder(learned, { name: "hostile-draft", instructions: hostile });
+    const service = new SkillsService({ memoryDir: join(config.system.root, config.paths.memory) }, db);
+    const draft = await draftOf(service, "hostile-draft");
+    await service.ensureRevisions([draft.id], testSkillContext());
+
+    for (const format of [UIOutputFormat.TABLE, UIOutputFormat.MARKDOWN]) {
+      for (
+        const output of [
+          await commands.skillShow("hostile-draft", format),
+          await commands.skillShow("hostile-draft", format, undefined, draft.id),
+          await commands.skillList({ format }),
+        ]
+      ) {
+        assertEquals(controlByte.test(output), false, JSON.stringify(output));
+      }
+    }
+    const json = JSON.parse(await commands.skillShow("hostile-draft", UIOutputFormat.JSON, undefined, draft.id));
+    assertStringIncludes(json.skillMd, hostile);
+  } finally {
+    await cleanup();
+  }
+});

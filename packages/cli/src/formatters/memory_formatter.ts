@@ -49,6 +49,7 @@ import {
   CLI_TRUNCATE_TITLE_SHORT,
 } from "../constants.ts";
 import { DEFAULT_NONE_VALUE } from "@exaix/core";
+import { stripTerminalControlBytes } from "@exaix/core/func";
 
 /** One stored revision of a skill with its use counts, as the CLI prints it. */
 export interface ISkillRevisionRow {
@@ -797,7 +798,7 @@ export class MemoryFormatter {
 
     lines.push("└──────────────────────┴─────────────────────────┴──────────┴──────────┴────────────┘");
     lines.push(`\nTotal: ${skills.length} skill(s)`);
-    return lines.join("\n");
+    return stripTerminalControlBytes(lines.join("\n"));
   }
 
   formatSkillListMarkdown(skills: ISkill[]): string {
@@ -815,7 +816,7 @@ export class MemoryFormatter {
     }
 
     lines.push(`\n**Total:** ${skills.length} skill(s)`);
-    return lines.join("\n");
+    return stripTerminalControlBytes(lines.join("\n"));
   }
 
   formatSkillShowTable(skill: ISkill): string {
@@ -885,7 +886,7 @@ export class MemoryFormatter {
     }
 
     lines.push("└─────────────────────────────────────────────────────────────┘");
-    return lines.join("\n");
+    return stripTerminalControlBytes(lines.join("\n"));
   }
 
   formatSkillShowMarkdown(skill: ISkill): string {
@@ -906,7 +907,7 @@ export class MemoryFormatter {
     lines.push("```");
     lines.push(skill.instructions);
     lines.push("```");
-    return lines.join("\n");
+    return stripTerminalControlBytes(lines.join("\n"));
   }
 
   /** Usage totals for one skill: overall, per revision and the last use. Read from the journal DB. */
@@ -920,7 +921,7 @@ export class MemoryFormatter {
           `first seen ${revision.firstSeenAt}, last used ${revision.lastUsedAt}`,
       );
     }
-    return lines.join("\n");
+    return stripTerminalControlBytes(lines.join("\n"));
   }
 
   /** Stored revisions of one skill, oldest first, with their use counts. */
@@ -933,7 +934,7 @@ export class MemoryFormatter {
           `first seen ${row.firstSeenAt}  ${row.useCount} use(s)  last used ${row.lastUsedAt ?? DEFAULT_NONE_VALUE}`,
       );
     }
-    return lines.join("\n");
+    return stripTerminalControlBytes(lines.join("\n"));
   }
 
   /** Every skill use on one trace, one line per call and skill. */
@@ -946,7 +947,7 @@ export class MemoryFormatter {
           `${row.submissionKind} round ${row.round} attempt ${row.attempt}  ${row.rootKind}/${row.sourcePath}`,
       );
     }
-    return lines.join("\n");
+    return stripTerminalControlBytes(lines.join("\n"));
   }
 
   /** Typed discovery and validation outcomes. Never includes skill bodies or host paths. */
@@ -959,7 +960,7 @@ export class MemoryFormatter {
           `${diagnostic.root_kind}/${diagnostic.safe_path}`,
       );
     }
-    return lines.join("\n");
+    return stripTerminalControlBytes(lines.join("\n"));
   }
 
   formatSkillMatchTable(matches: ISkillMatch[]): string {
@@ -987,7 +988,7 @@ export class MemoryFormatter {
 
     lines.push("└──────────────────────────────────┴────────────┴─────────────────────────────────┘");
     lines.push(`\nMatched: ${matches.length} skill(s)`);
-    return lines.join("\n");
+    return stripTerminalControlBytes(lines.join("\n"));
   }
 
   formatSkillMatchMarkdown(matches: ISkillMatch[]): string {
@@ -1013,7 +1014,7 @@ export class MemoryFormatter {
     }
 
     lines.push(`\n**Matched:** ${matches.length} skill(s)`);
-    return lines.join("\n");
+    return stripTerminalControlBytes(lines.join("\n"));
   }
 
   private appendChangesSummary(lines: string[], exec: IExecutionMemory): void {
