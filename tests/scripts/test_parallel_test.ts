@@ -11,13 +11,17 @@ import {
   compactDotReporterChunk,
   createDotReporterState,
   DOT_REPORTER_LEGEND,
+  extractTapFailures,
   flushDotReporterState,
   formatRunHeader,
   killActiveChildGroups,
+  parseDotReporterCounts,
   parseSummaryLine,
+  parseTapOutput,
   resolveReporter,
   stripReporterArgs,
 } from "../../scripts/test_parallel.ts";
+import * as testOutputParse from "../../scripts/test_output_parse.ts";
 
 Deno.test("resolveReporter defaults to pretty output", () => {
   assertEquals(resolveReporter([]), "pretty");
@@ -147,4 +151,11 @@ Deno.test("parseSummaryLine handles failed batch summaries with step counts", ()
       durationSec: 81,
     },
   );
+});
+
+Deno.test("test_output_parse is the single source and test_parallel re-exports the parsers unchanged", () => {
+  assertEquals(parseTapOutput, testOutputParse.parseTapOutput);
+  assertEquals(extractTapFailures, testOutputParse.extractTapFailures);
+  assertEquals(parseDotReporterCounts, testOutputParse.parseDotReporterCounts);
+  assertEquals(parseSummaryLine, testOutputParse.parseSummaryLine);
 });

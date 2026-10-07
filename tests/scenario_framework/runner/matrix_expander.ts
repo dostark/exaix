@@ -35,6 +35,9 @@ export interface IMatrixCellRun {
   status: MatrixCellStatusValue;
   skipReason?: string;
 }
+/** Network mode for a jail launch: "none" isolates ports, "bridge" enables egress. */
+export type JailNetworkMode = "none" | "bridge";
+
 /** Options for `buildJailLaunch`. `mountSource` is the only required field; other options
  *  default to a `/worktree` mount + workdir with no extra env beyond `HOME=/tmp`. */
 export interface IJailLaunchOptions {
@@ -51,6 +54,22 @@ export interface IJailLaunchOptions {
   extraMounts?: Opt<string[], Reason.OptionalInput>;
   /** Explicit `--mount` args used VERBATIM instead of live-resolving credentials — required when a caller persists launch args to a static file (e.g. scenario YAML), since a live-resolved mount would go stale after the process exits. */
   credentialMountArgs?: Opt<string[], Reason.OptionalInput>;
+  /** `--network` mode. emitted only when set (Phase 207 worker containers). */
+  network?: Opt<JailNetworkMode, Reason.OptionalInput>;
+  /** `--pids-limit`. emitted only when set. */
+  pidsLimit?: Opt<number, Reason.OptionalInput>;
+  /** `--memory`. emitted only when set. */
+  memory?: Opt<string, Reason.OptionalInput>;
+  /** `--cpus`. emitted only when set. */
+  cpus?: Opt<string, Reason.OptionalInput>;
+  /** `--init` (reap zombie grandchildren). emitted only when true. */
+  init?: Opt<boolean, Reason.OptionalInput>;
+  /** `-i` (keep stdin open for a piped protocol). emitted only when true. */
+  interactive?: Opt<boolean, Reason.OptionalInput>;
+  /** `--name`. emitted only when set. */
+  containerName?: Opt<string, Reason.OptionalInput>;
+  /** Image override. defaults to `EXA_EVAL_JAIL_IMAGE` / `exaix-eval-jail`. */
+  image?: Opt<string, Reason.OptionalInput>;
 }
 
 export interface IExpandMatrixOptions {
@@ -246,7 +265,7 @@ export function buildJailLaunch(
   inner: { bin: string; args: string[] },
   options: IJailLaunchOptions,
 ): { bin: string; args: string[] } {
-  const image = Deno.env.get(EXA_EVAL_JAIL_IMAGE_ENV) ?? DEFAULT_EXA_EVAL_JAIL_IMAGE;
+  const image = options.image ?? Deno.env.get(EXA_EVAL_JAIL_IMAGE_ENV) ?? DEFAULT_EXA_EVAL_JAIL_IMAGE;
   const uid = Deno.uid();
   const gid = Deno.gid();
   const userArgs = uid !== null && gid !== null ? ["--user", `${uid}:${gid}`] : [];
@@ -258,11 +277,21 @@ export function buildJailLaunch(
   const workdir = options.workdir ?? DEFAULT_JAIL_MOUNT_DEST;
   const extraEnvArgs = Object.entries(options.extraEnv ?? {}).flatMap(([key, value]) => ["-e", `${key}=${value}`]);
   const extraMountArgs = (options.extraMounts ?? []).flatMap((entry) => ["--mount", entry]);
+  const nameArgs = options.containerName ? ["--name", options.containerName] : [];
+  const interactiveArgs = options.interactive ? ["-i"] : [];
+  const initArgs = options.init ? ["--init"] : [];
+  const networkArgs = options.network ? ["--network", options.network] : [];
+  const pidsArgs = options.pidsLimit !== undefined ? ["--pids-limit", String(options.pidsLimit)] : [];
+  const memoryArgs = options.memory ? ["--memory", options.memory] : [];
+  const cpusArgs = options.cpus ? ["--cpus", options.cpus] : [];
   return {
     bin: "docker",
     args: [
       "run",
       "--rm",
+      ...nameArgs,
+      ...interactiveArgs,
+      ...initArgs,
       "--mount",
       `type=bind,src=${options.mountSource},dst=${mountDest}`,
       ...extraMountArgs,
@@ -271,6 +300,10 @@ export function buildJailLaunch(
       ...userArgs,
       "--cap-drop=ALL",
       "--security-opt=no-new-privileges",
+      ...networkArgs,
+      ...pidsArgs,
+      ...memoryArgs,
+      ...cpusArgs,
       "-e",
       "HOME=/tmp",
       ...extraEnvArgs,
