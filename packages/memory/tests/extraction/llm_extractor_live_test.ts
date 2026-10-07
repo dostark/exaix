@@ -210,6 +210,7 @@ Deno.test({
       const realInstructions = await loadPolicyInstructions();
       const skillsService = castAny<ISkillsService>({
         recordSubmission: () => Promise.resolve(),
+        currentConfigGeneration: () => "static",
         getSkill: (skillId: string) =>
           Promise.resolve(skillId === POLICY_SKILL_ID ? { skill_id: skillId, instructions: realInstructions } : null),
       });

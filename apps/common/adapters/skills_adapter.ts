@@ -36,6 +36,10 @@ export class SkillsAdapter implements ISkillsService {
     return await this.inner.resolvePinned(pins, ctx);
   }
 
+  currentConfigGeneration(): string {
+    return this.inner.currentConfigGeneration();
+  }
+
   async recordSubmission(submission: ISkillSubmission, ctx: ISkillOperationContext): Promise<void> {
     return await this.inner.recordSubmission(submission, ctx);
   }

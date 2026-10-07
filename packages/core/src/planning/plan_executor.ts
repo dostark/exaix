@@ -397,6 +397,7 @@ export class PlanExecutor {
       portal: typeof portal === "string" ? portal : null,
       traceId: context.trace_id,
       requestId: context.request_id,
+      configGeneration: this.options.context?.skills?.currentConfigGeneration(),
     });
   }
 

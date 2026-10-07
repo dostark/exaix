@@ -71,6 +71,7 @@ interface IParsedRequest {
   traceId?: string;
   scenarioId?: string;
   stepId?: string;
+  portal?: string;
   flowId?: string;
   flowStepId?: string;
   flowStepEffort?: EffortDeclaration;
@@ -192,6 +193,7 @@ export class AgentComposerAdapter {
       traceId: request.traceId,
       scenarioId: request.scenarioId,
       stepId: request.stepId,
+      portal: request.portal,
       flowId: request.flowId,
       flowStepId: request.flowStepId,
       flowStepEffort: request.effort,

@@ -18,6 +18,7 @@ import type {
   ISkillUsageRecord,
   ISkillUsageSummary,
 } from "@exaix/core/skills";
+import { SKILL_CONFIG_GENERATION_STATIC } from "@exaix/core/skills";
 import type { ISkill, ISkillMatch, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
 import { SkillStatus } from "@exaix/core";
 import { runtimeSkillFixture } from "./skill_catalog.ts";
@@ -33,6 +34,10 @@ export class StubSkillsService implements ISkillsService {
 
   ensureRevisions(_revisionIds: readonly string[]): Promise<void> {
     return Promise.resolve();
+  }
+
+  currentConfigGeneration(): string {
+    return SKILL_CONFIG_GENERATION_STATIC;
   }
 
   resolvePinned(_pins: readonly ISkillPin[]): Promise<IPinnedSkill[]> {

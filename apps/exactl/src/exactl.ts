@@ -138,6 +138,8 @@ const CLI_CMD_LIST = "list";
 const CLI_OPTION_REASON = "-r, --reason <reason:string>";
 const CLI_OPTION_MODEL = "-m, --model <model:string>";
 const CLI_OPTION_PORTAL = "-p, --portal <portal:string>";
+const CLI_PORTAL_LONG_OPTION = "--portal <portal:string>";
+const CLI_SKILL_PORTAL_HELP = "Portal whose project skills apply. Without it only global skills apply";
 const CLI_OPTION_WAIT_STATUS = "-s, --status <status:string>";
 const CLI_OPTION_WAIT_MESSAGE = "-m, --message <message:string>";
 const CLI_OPTION_WAIT_MESSAGE_DESC = "Resolution summary";
@@ -417,7 +419,7 @@ const baseCommand: ExaCtlBaseCommand = new Command()
       .option("-p, --priority <priority:string>", "Priority: low, normal, high, critical", {
         default: CLI_DEFAULTS.PRIORITY,
       })
-      .option("--portal <portal:string>", "Portal alias for context")
+      .option(CLI_PORTAL_LONG_OPTION, "Portal alias for context")
       .option("--target-branch <branch:string>", "Target branch for this request (portal-aware)")
       .option(CLI_OPTION_MODEL, "Named model configuration")
       .option("--model-size <size:string>", "Capability tier: S|M|L|XL (maps to context/cost preset via ModelResolver)")
@@ -858,7 +860,7 @@ const baseCommand: ExaCtlBaseCommand = new Command()
             RequestOperation.LIST,
             new Command()
               .description("List git worktrees")
-              .option("--portal <portal:string>", "Target a configured portal repository")
+              .option(CLI_PORTAL_LONG_OPTION, "Target a configured portal repository")
               .option("--repo <repo:string>", "Target a repository path (absolute or relative)")
               .action(async (options) => {
                 try {
@@ -911,7 +913,7 @@ const baseCommand: ExaCtlBaseCommand = new Command()
             "prune",
             new Command()
               .description("Prune stale git worktree metadata")
-              .option("--portal <portal:string>", "Target a configured portal repository")
+              .option(CLI_PORTAL_LONG_OPTION, "Target a configured portal repository")
               .option("--repo <repo:string>", "Target a repository path (absolute or relative)")
               .option("--dry-run", "Show what would be pruned")
               .option("--verbose", "Verbose output")
@@ -2550,11 +2552,16 @@ const baseCommand: ExaCtlBaseCommand = new Command()
             new Command()
               .description("List all skills")
               .option("-c, --category <category:string>", "Filter by category: core, project, learned")
+              .option(
+                CLI_PORTAL_LONG_OPTION,
+                CLI_SKILL_PORTAL_HELP,
+              )
               .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options) => {
                 const result = await memoryCommands.skillList({
                   category: options.category as MemoryBankSource | undefined,
                   format: options.format as OutputFormat,
+                  portal: options.portal,
                 });
                 console.log(result);
               }),
@@ -2563,10 +2570,18 @@ const baseCommand: ExaCtlBaseCommand = new Command()
             "show <skillId:string>",
             new Command()
               .description("Show details of a specific skill")
+              .option(
+                CLI_PORTAL_LONG_OPTION,
+                CLI_SKILL_PORTAL_HELP,
+              )
               .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options, ...args: string[]) => {
                 const skillId = args[0];
-                const result = await memoryCommands.skillShow(skillId, options.format as UIOutputFormat);
+                const result = await memoryCommands.skillShow(
+                  skillId,
+                  options.format as UIOutputFormat,
+                  options.portal,
+                );
                 console.log(result);
               }),
           )
@@ -2575,6 +2590,10 @@ const baseCommand: ExaCtlBaseCommand = new Command()
             new Command()
               .description("Match skills for a given request")
               .option("-t, --task-type <taskType:string>", "Task type filter")
+              .option(
+                CLI_PORTAL_LONG_OPTION,
+                CLI_SKILL_PORTAL_HELP,
+              )
               .option("--tags <tags:string>", "Comma-separated tags filter")
               .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 10 })
               .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
@@ -2586,6 +2605,7 @@ const baseCommand: ExaCtlBaseCommand = new Command()
                   tags,
                   limit: options.limit,
                   format: options.format as UIOutputFormat,
+                  portal: options.portal,
                 });
                 console.log(result);
               }),
@@ -2594,6 +2614,10 @@ const baseCommand: ExaCtlBaseCommand = new Command()
             "derive",
             new Command()
               .description("Derive a new skill from learnings")
+              .option(
+                CLI_PORTAL_LONG_OPTION,
+                CLI_SKILL_PORTAL_HELP,
+              )
               .option("-l, --learning-ids <ids:string>", "Comma-separated learning IDs to derive from", {
                 required: true,
               })
@@ -2611,6 +2635,7 @@ const baseCommand: ExaCtlBaseCommand = new Command()
                   description: options.description,
                   instructions: options.instructions,
                   format: options.format as UIOutputFormat,
+                  portal: options.portal,
                 });
                 console.log(result);
               }),
@@ -2619,6 +2644,10 @@ const baseCommand: ExaCtlBaseCommand = new Command()
             "create <name:string>",
             new Command()
               .description("Create a new skill")
+              .option(
+                CLI_PORTAL_LONG_OPTION,
+                CLI_SKILL_PORTAL_HELP,
+              )
               .option("-d, --description <desc:string>", "Skill description")
               .option("-c, --category <category:string>", "Category: core, project, learned", {
                 default: MemoryScope.PROJECT,
@@ -2642,6 +2671,7 @@ const baseCommand: ExaCtlBaseCommand = new Command()
                   triggersKeywords: keywords,
                   triggersTaskTypes: taskTypes,
                   format: options.format as UIOutputFormat,
+                  portal: options.portal,
                 });
                 console.log(result);
               }),
@@ -2970,11 +3000,13 @@ const skillsCommand = new Command()
     new Command()
       .description("List all skills")
       .option("-c, --category <category:string>", "Filter by category: core, project, learned")
+      .option(CLI_PORTAL_LONG_OPTION, CLI_SKILL_PORTAL_HELP)
       .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
       .action(async (options) => {
         const result = await memoryCommands.skillList({
           category: options.category as MemoryBankSource | undefined,
           format: options.format as OutputFormat,
+          portal: options.portal,
         });
         console.log(result);
       }),
@@ -2983,10 +3015,11 @@ const skillsCommand = new Command()
     "show <skillId:string>",
     new Command()
       .description("Show details of a specific skill")
+      .option(CLI_PORTAL_LONG_OPTION, CLI_SKILL_PORTAL_HELP)
       .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
       .action(async (options, ...args: string[]) => {
         const skillId = args[0];
-        const result = await memoryCommands.skillShow(skillId, options.format as UIOutputFormat);
+        const result = await memoryCommands.skillShow(skillId, options.format as UIOutputFormat, options.portal);
         console.log(result);
       }),
   )
@@ -2995,6 +3028,7 @@ const skillsCommand = new Command()
     new Command()
       .description("Match skills for a given request")
       .option("-t, --task-type <taskType:string>", "Task type filter")
+      .option(CLI_PORTAL_LONG_OPTION, CLI_SKILL_PORTAL_HELP)
       .option("--tags <tags:string>", "Comma-separated tags filter")
       .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 10 })
       .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
@@ -3006,6 +3040,7 @@ const skillsCommand = new Command()
           tags,
           limit: options.limit,
           format: options.format as UIOutputFormat,
+          portal: options.portal,
         });
         console.log(result);
       }),

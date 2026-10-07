@@ -1346,6 +1346,36 @@ export const DEFAULT_SKILL_SNAPSHOT_MAX_BYTES: number = configurable({
   max: 8_388_608,
   swap: SwapClass.RESTART,
 });
+/** Maximum characters of one skill reference file after decoding. */
+export const DEFAULT_SKILL_REFERENCE_MAX_CHARS: number = configurable({
+  key: "skills.reference_max_chars",
+  default: 16_384,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum characters of one skill reference file after decoding",
+  min: 256,
+  max: 1_048_576,
+  swap: SwapClass.RESTART,
+});
+/** Shortest word, in characters, that the description fallback turns into a trigger keyword. */
+export const DEFAULT_SKILL_FALLBACK_MIN_WORD_CHARS: number = configurable({
+  key: "skills.fallback_min_word_chars",
+  default: 4,
+  type: ConfigValueType.NUMBER,
+  description: "Shortest word, in characters, that the description fallback turns into a trigger keyword",
+  min: 2,
+  max: 16,
+  swap: SwapClass.RESTART,
+});
+/** Most keywords the description fallback derives for one skill. */
+export const DEFAULT_SKILL_FALLBACK_MAX_KEYWORDS: number = configurable({
+  key: "skills.fallback_max_keywords",
+  default: 32,
+  type: ConfigValueType.NUMBER,
+  description: "Most keywords the description fallback derives for one skill",
+  min: 1,
+  max: 256,
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_SKILLS_MAX_PER_REQUEST: number = configurable({
   key: "skills.max_per_request",
   default: 5,

@@ -201,13 +201,10 @@ export async function initializeServices(
     const memoryBank = new MemoryBankService(cfg, displayLogger);
     const extractor = new MemoryExtractorService(cfg, dbLocal, memoryBank);
     const embedding = new MemoryEmbeddingService(cfg);
+    // Mirrors apps/daemon/main.ts: without a logger every skills event is dropped by
+    // `this.logger?.`, leaving skill selection absent from the Activity Journal.
     const skills = new SkillsService(
-      {
-        memoryDir: join(cfg.system.root!, cfg.paths.memory!),
-        blueprintSkillsDir: join(cfg.system.root!, cfg.paths.blueprints!, "Skills"),
-        // Mirrors apps/daemon/main.ts: without a logger every skills event is dropped by
-        // `this.logger?.`, leaving skill selection absent from the Activity Journal.
-      },
+      { configProvider: cfgService },
       dbLocal,
       undefined,
       displayLogger,

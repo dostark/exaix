@@ -666,6 +666,7 @@ export class AgentComposer {
       portal: options.portal,
       traceId: context.trace_id,
       requestId: context.request_id,
+      configGeneration: this.skills.currentConfigGeneration(),
     });
     return await createPinnedSkillPrompt(this.skills, pins, operation);
   }

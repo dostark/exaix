@@ -86,6 +86,7 @@ Deno.test("the real maintenance loop invokes reflection; a synthesized learning 
       })),
       skillsService: castAny<IReflectionSkills>({
         recordSubmission: () => Promise.resolve(),
+        currentConfigGeneration: () => "static",
         getSkill: (skillId: string) => Promise.resolve({ skill_id: skillId, instructions: POLICY_INSTRUCTIONS }),
       }),
       memoryBank: bank,

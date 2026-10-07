@@ -57,6 +57,7 @@ export type IReflectionProposalStore = Pick<MemoryExtractorService, "createPropo
 export interface IReflectionSkills {
   getSkill: ISkillsService["getSkill"];
   recordSubmission: ISkillsService["recordSubmission"];
+  currentConfigGeneration: ISkillsService["currentConfigGeneration"];
 }
 
 export interface IMemoryReflectionServiceDeps {
@@ -115,7 +116,10 @@ export class MemoryReflectionService {
     let pruned = 0;
     const synthesisSourceIds = new Set<string>();
     if (await this.llmAllowed()) {
-      const operation = createSkillOperationContext({ agentRole: REFLECTOR_AGENT_ROLE });
+      const operation = createSkillOperationContext({
+        agentRole: REFLECTOR_AGENT_ROLE,
+        configGeneration: this.deps.skillsService.currentConfigGeneration(),
+      });
       const skill = await this.deps.skillsService.getSkill(REFLECTION_SKILL_ID, operation);
       if (!skill) {
         throw new Error(`Required content policy skill not found: ${REFLECTION_SKILL_ID}`);

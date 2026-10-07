@@ -37,7 +37,7 @@ export class ConfigService {
   private load(): Config {
     try {
       const content = Deno.readTextFileSync(this.configPath);
-      this.checksum = this.computeChecksum(content);
+      const checksum = this.computeChecksum(content);
 
       const rawConfig = parse(content);
 
@@ -59,6 +59,7 @@ export class ConfigService {
         throw new Error(errorMessage);
       }
 
+      this.checksum = checksum;
       return result.data;
     } catch (error) {
       if (error instanceof Deno.errors.NotFound) {

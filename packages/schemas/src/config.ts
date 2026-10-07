@@ -109,6 +109,17 @@ function cBounds(key: string): z.ZodNumber {
   return s;
 }
 
+/** One ordered skill root entry. The evaluation overlay root is environment-only and never configured. */
+const SkillConfigRootSchema = z.object({
+  kind: z.enum([
+    DEFAULTS.SkillRootKind.BLUEPRINT,
+    DEFAULTS.SkillRootKind.LEARNED,
+    DEFAULTS.SkillRootKind.PROJECT,
+    DEFAULTS.SkillRootKind.DOGFOOD,
+  ]),
+  path: z.string().min(1),
+}).strict();
+
 const DEFAULT_COST_TRACKING_RATES: Record<string, number> = {
   [PROVIDER_OPENAI]: DEFAULTS.COST_RATE_OPENAI,
   [PROVIDER_ANTHROPIC]: DEFAULTS.COST_RATE_ANTHROPIC,
@@ -397,6 +408,16 @@ const ConfigObjectSchema = z.object({
     log_matched_ids: z.boolean().default(DEFAULTS.DEFAULT_SKILLS_LOG_MATCHED_IDS),
     context_budget_chars: z.number().int().min(0).default(DEFAULTS.DEFAULT_SKILL_CONTEXT_CHAR_BUDGET),
     render_mode: z.nativeEnum(SkillRenderMode).default(DEFAULTS.DEFAULT_SKILL_RENDER_MODE).optional(),
+    roots: z.array(SkillConfigRootSchema).optional(),
+    main_max_bytes: c("skills.main_max_bytes"),
+    sidecar_max_bytes: c("skills.sidecar_max_bytes"),
+    reference_max_bytes: c("skills.reference_max_bytes"),
+    reference_max_chars: c("skills.reference_max_chars"),
+    reference_max_count: c("skills.reference_max_count"),
+    reference_total_max_bytes: c("skills.reference_total_max_bytes"),
+    snapshot_max_bytes: c("skills.snapshot_max_bytes"),
+    fallback_min_word_chars: c("skills.fallback_min_word_chars"),
+    fallback_max_keywords: c("skills.fallback_max_keywords"),
   }).default({
     max_per_request: DEFAULTS.DEFAULT_SKILLS_MAX_PER_REQUEST,
     match_threshold: DEFAULTS.DEFAULT_SKILLS_MATCH_THRESHOLD,
@@ -404,6 +425,15 @@ const ConfigObjectSchema = z.object({
     log_matched_ids: DEFAULTS.DEFAULT_SKILLS_LOG_MATCHED_IDS,
     context_budget_chars: DEFAULTS.DEFAULT_SKILL_CONTEXT_CHAR_BUDGET,
     render_mode: DEFAULTS.DEFAULT_SKILL_RENDER_MODE,
+    main_max_bytes: DEFAULTS.DEFAULT_SKILL_MAIN_MAX_BYTES,
+    sidecar_max_bytes: DEFAULTS.DEFAULT_SKILL_SIDECAR_MAX_BYTES,
+    reference_max_bytes: DEFAULTS.DEFAULT_SKILL_REFERENCE_MAX_BYTES,
+    reference_max_chars: DEFAULTS.DEFAULT_SKILL_REFERENCE_MAX_CHARS,
+    reference_max_count: DEFAULTS.DEFAULT_SKILL_REFERENCE_MAX_COUNT,
+    reference_total_max_bytes: DEFAULTS.DEFAULT_SKILL_REFERENCE_TOTAL_MAX_BYTES,
+    snapshot_max_bytes: DEFAULTS.DEFAULT_SKILL_SNAPSHOT_MAX_BYTES,
+    fallback_min_word_chars: DEFAULTS.DEFAULT_SKILL_FALLBACK_MIN_WORD_CHARS,
+    fallback_max_keywords: DEFAULTS.DEFAULT_SKILL_FALLBACK_MAX_KEYWORDS,
   }),
   portals: z.array(PortalPermissionsSchema).default([]),
   /** AI/LLM provider configuration (legacy/single) */

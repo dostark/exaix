@@ -57,6 +57,7 @@ Deno.test("scratchpad candidates pass Step 1's content-curation skill identicall
     const provider = new PolicyObeyingStubProvider();
     const skills = castAny<ISkillsService>({
       recordSubmission: () => Promise.resolve(),
+      currentConfigGeneration: () => "static",
       getSkill: (skillId: string) =>
         Promise.resolve(
           skillId === "memory-extraction-content-policy"

@@ -67,6 +67,7 @@ class ScriptedProvider implements IModelProvider {
 function skillsService(instructions: string | null) {
   return castAny<ISkillsService>({
     recordSubmission: () => Promise.resolve(),
+    currentConfigGeneration: () => "static",
     getSkill: (skillId: string) =>
       Promise.resolve(
         skillId === POLICY_SKILL_ID && instructions !== null ? { skill_id: skillId, instructions } : null,

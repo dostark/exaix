@@ -18,6 +18,7 @@ import type { IBlueprint } from "@exaix/execution";
 const BLUEPRINT = "---\nagent_role: test-agent\nname: Test\n---\nYou are a test agent.\n";
 
 interface ICapturedRequest {
+  portal?: string;
   flowId?: string;
   flowStepId?: string;
   traceId?: string;
@@ -63,5 +64,14 @@ Deno.test("AgentComposerAdapter.run forwards no flow id when the step request ha
   await withAdapter(async (adapter, captured) => {
     await adapter.run("test-agent", { userPrompt: "Do the thing", context: {}, traceId: "trace-2" });
     assertEquals(captured[0].flowId, undefined);
+  });
+});
+
+Deno.test("AgentComposerAdapter.run forwards the flow's portal so project skills resolve, and none when absent", async () => {
+  await withAdapter(async (adapter, captured) => {
+    await adapter.run("test-agent", { userPrompt: "Do it", context: {}, traceId: "trace-3", portal: "Alpha" });
+    await adapter.run("test-agent", { userPrompt: "Do it", context: {}, traceId: "trace-4" });
+    assertEquals(captured[0].portal, "Alpha");
+    assertEquals(captured[1].portal, undefined);
   });
 });

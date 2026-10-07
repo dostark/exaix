@@ -15,7 +15,7 @@ import { MemoryAutoApprovalAdapter } from "../../../../apps/common/adapters/memo
 import { type MemoryBankSource, MemoryScope, MemoryType } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
 import type { SkillDefinition } from "@exaix/schemas/memory_bank.ts";
-import type { ISkillMatchRequest, Opt, Reason } from "@exaix/core/types";
+import type { ISkillMatchRequest, ISkillsService, Opt, Reason } from "@exaix/core/types";
 import type { ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
 import { MEMORY_COMMAND_DEFAULTS } from "@exaix/cli/config.ts";
 import { MemoryFormatter } from "@exaix/cli/formatters/memory_formatter.ts";
@@ -500,6 +500,7 @@ export class MemoryCommands extends BaseCommand {
   async skillList(options: {
     category?: MemoryBankSource;
     format?: OutputFormat;
+    portal?: Opt<string, Reason.OptionalInput>;
   } = {}): Promise<string> {
     const format = options.format || UIOutputFormat.TABLE;
 
@@ -507,7 +508,10 @@ export class MemoryCommands extends BaseCommand {
       await this.skills.initialize();
       // Map category to source for the API
       const sourceFilter = options.category as MemoryBankSource | undefined;
-      const skills = await this.skills.listSkills({ source: sourceFilter });
+      const skills = await this.skills.listSkills(
+        { source: sourceFilter },
+        cliSkillContext(this.skills, options.portal),
+      );
 
       if (skills.length === 0) {
         return options.category ? `No ${options.category} skills found.` : "No skills found.";
@@ -540,18 +544,24 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  async skillShow(skillId: string, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
+  async skillShow(
+    skillId: string,
+    format: OutputFormat = UIOutputFormat.TABLE,
+    portal?: Opt<string, Reason.OptionalInput>,
+  ): Promise<string> {
     try {
       await this.skills.initialize();
       // `getSkill` resolves active skills only. A draft awaiting review must still be shown.
-      const skill = await this.skills.getSkill(skillId) ??
-        (await this.skills.listSkills()).find((candidate) => candidate.skill_id === skillId) ?? null;
+      const operation = cliSkillContext(this.skills, portal);
+      const skill = await this.skills.getSkill(skillId, operation) ??
+        (await this.skills.listSkills(undefined, operation)).find((candidate) => candidate.skill_id === skillId) ??
+        null;
 
       if (!skill) {
         return `Skill not found: ${skillId}`;
       }
 
-      const usage = await this.skills.getUsageSummary(skill.skill_id);
+      const usage = await this.skills.getUsageSummary(skill.skill_id, operation);
       switch (format) {
         case UIOutputFormat.JSON:
           return JSON.stringify({ ...skill, usage }, null, 2);
@@ -574,6 +584,7 @@ export class MemoryCommands extends BaseCommand {
       tags?: string[];
       limit?: number;
       format?: OutputFormat;
+      portal?: Opt<string, Reason.OptionalInput>;
     } = {},
   ): Promise<string> {
     const format = options.format || UIOutputFormat.TABLE;
@@ -587,7 +598,7 @@ export class MemoryCommands extends BaseCommand {
         tags: options.tags,
       };
 
-      const { matches } = await this.skills.matchSkills(matchRequest);
+      const { matches } = await this.skills.matchSkills(matchRequest, cliSkillContext(this.skills, options.portal));
       const limitedMatches = options.limit ? matches.slice(0, options.limit) : matches;
 
       if (limitedMatches.length === 0) {
@@ -624,6 +635,7 @@ export class MemoryCommands extends BaseCommand {
     description?: string;
     instructions?: string;
     format?: OutputFormat;
+    portal?: Opt<string, Reason.OptionalInput>;
   } = {}): Promise<string> {
     const format = options.format || UIOutputFormat.TABLE;
 
@@ -648,7 +660,7 @@ export class MemoryCommands extends BaseCommand {
       const derivedSkill = await this.skills.deriveSkillFromLearnings(
         options.learningIds,
         skillDef,
-        cliSkillContext(),
+        cliSkillContext(this.skills, options.portal),
       );
 
       switch (format) {
@@ -699,6 +711,7 @@ export class MemoryCommands extends BaseCommand {
       triggersKeywords?: string[];
       triggersTaskTypes?: string[];
       format?: OutputFormat;
+      portal?: Opt<string, Reason.OptionalInput>;
     } = {},
   ): Promise<string> {
     const format = options.format || UIOutputFormat.TABLE;
@@ -708,7 +721,7 @@ export class MemoryCommands extends BaseCommand {
 
       const skillId = toSkillSlug(name);
       const skillDef = this.buildSkillDefinition(name, skillId, options);
-      const skill = await this.skills.createSkill(skillDef, cliSkillContext());
+      const skill = await this.skills.createSkill(skillDef, cliSkillContext(this.skills, options.portal));
 
       switch (format) {
         case UIOutputFormat.JSON:
@@ -755,7 +768,14 @@ function toSkillSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
-/** Operation context for CLI skill operations. The portal comes from `EXA_PORTAL`, otherwise the skill is global. */
-function cliSkillContext(): ISkillOperationContext {
-  return createSkillOperationContext({ agentRole: CLI_AGENT_ROLE, portal: Deno.env.get(ENV_PORTAL_ALIAS) });
+/** Operation context for CLI skill operations. The portal comes from `--portal`, then `EXA_PORTAL`, else only global skills apply. */
+function cliSkillContext(
+  skills: ISkillsService,
+  portal: Opt<string, Reason.OptionalInput>,
+): ISkillOperationContext {
+  return createSkillOperationContext({
+    agentRole: CLI_AGENT_ROLE,
+    portal: portal ?? Deno.env.get(ENV_PORTAL_ALIAS),
+    configGeneration: skills.currentConfigGeneration(),
+  });
 }

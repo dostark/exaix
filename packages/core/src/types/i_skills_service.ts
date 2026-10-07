@@ -35,6 +35,12 @@ export interface ISkillsService {
   forContext(ctx: ISkillOperationContext): ISkillsService;
 
   /**
+   * The generation of the validated config the next operation resolves against. Stamp it into an
+   * operation context so a reload cannot change the roots mid-operation. `static` without a config source.
+   */
+  currentConfigGeneration(): string;
+
+  /**
    * Durably snapshot the canonical content of revisions this service returned. Throws
    * `skill_audit_unavailable` when a snapshot cannot be made durable, so no model call follows.
    */

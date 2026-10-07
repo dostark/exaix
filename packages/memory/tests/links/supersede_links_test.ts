@@ -180,6 +180,7 @@ Deno.test("the reflection merge path produces the same supersession links on all
       provider: new StubProvider(JSON.stringify({ actions: [] })),
       skillsService: castAny<IReflectionSkills>({
         recordSubmission: () => Promise.resolve(),
+        currentConfigGeneration: () => "static",
         getSkill: (skillId: string) => Promise.resolve({ skill_id: skillId, instructions: "policy" }),
       }),
       memoryBank: bank,

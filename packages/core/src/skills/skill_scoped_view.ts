@@ -31,6 +31,10 @@ export class ScopedSkillsService implements ISkillsService {
     return this.inner.forContext(ctx);
   }
 
+  currentConfigGeneration(): string {
+    return this.inner.currentConfigGeneration();
+  }
+
   initialize(): Promise<void> {
     return this.inner.initialize();
   }

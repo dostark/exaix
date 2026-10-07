@@ -10,7 +10,7 @@
  * @visible
  */
 
-import { join } from "@std/path";
+import { isAbsolute, join, relative, resolve } from "@std/path";
 import { exists } from "@std/fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import { z } from "zod";
@@ -26,10 +26,17 @@ import {
 } from "@exaix/schemas/skill_folder.ts";
 import type { ISkill, ISkillMatch, ISkillTriggers, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
 import { SkillPinVectorSchema } from "@exaix/schemas/skill_pin.ts";
-import { DEFAULT_SKILL_CONTEXT_CHAR_BUDGET, DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION } from "../types/constants.ts";
+import type { Config } from "@exaix/schemas/config.ts";
+import {
+  DEFAULT_SKILL_CONTEXT_CHAR_BUDGET,
+  DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION,
+  ExaPathDefaults,
+} from "../types/constants.ts";
 import {
   type MemoryBankSource,
   type MemoryScope,
+  SkillDiagnosticReason,
+  SkillDiagnosticSeverity,
   SkillInitOutcome,
   SkillMutationErrorCode,
   SkillMutationOperation,
@@ -45,7 +52,7 @@ import type { LogMetadata } from "../types/json.ts";
 import type { Opt, Reason } from "../types/optional_marker.ts";
 import { SKILL_EXAMPLES_HEADING, splitInstructionsAndExamples, stripExamplesSection } from "../func/skill_body.ts";
 import { extractKeywords } from "./text_utils.ts";
-import { SkillFolderLoader } from "./skill_folder_loader.ts";
+import { DEFAULT_SKILL_FOLDER_LIMITS, SkillFolderLoader } from "./skill_folder_loader.ts";
 import { SkillFolderPublisher } from "./skill_folder_publisher.ts";
 import { SkillRevisionStore } from "./skill_revision_store.ts";
 import { SkillUsageStore } from "./skill_usage_store.ts";
@@ -56,6 +63,7 @@ import {
   type IPinnedSkill,
   type IResolvedSkillRoot,
   type ISkillDiagnostic,
+  type ISkillFolderLimits,
   type ISkillOperationContext,
   type ISkillPin,
   type ISkillRevisionSnapshot,
@@ -74,11 +82,35 @@ export interface ISkillsConfig {
   matchThreshold: number;
 }
 
-/** Filesystem layout the service reads. Roots are ordered by precedence at each resolution. */
+/** The current validated config and the checksum that names its generation. */
+export interface ISkillsConfigProvider {
+  get(): Config;
+  getChecksum(): string;
+}
+
+/** Filesystem layout the service reads. Without a config provider the layout is fixed at construction. */
 export interface ISkillsServiceConfig {
-  memoryDir: string;
+  memoryDir?: Opt<string, Reason.OptionalInput>;
   /** Read-only Blueprint skills root, `<Blueprints>/Skills`. */
   blueprintSkillsDir?: Opt<string, Reason.OptionalInput>;
+  /** Selects roots and limits from the current config at each operation. Wins over the fixed layout. */
+  configProvider?: Opt<ISkillsConfigProvider, Reason.OptionalDependency>;
+}
+
+/** One ordered root entry with its resolved path. A project entry's path is the parent of the portal folders. */
+interface IRootEntry {
+  kind: SkillRootKind;
+  path: string;
+}
+
+/** The roots, limits and generation one operation resolves against. Immutable once built. */
+interface IRootPlan {
+  generation: string;
+  entries: readonly IRootEntry[];
+  limits: ISkillFolderLimits;
+  /** Configured portal aliases, or null when any valid portal name is accepted. */
+  portals: ReadonlySet<string> | null;
+  diagnostics: readonly ISkillDiagnostic[];
 }
 
 const DEFAULT_CONFIG: ISkillsConfig = {
@@ -98,6 +130,8 @@ export const SKILLS_SERVICE_SOURCE_ID = "skills-service";
 
 /** Revisions kept for `ensureRevisions`. A caller records right after reading, so a small window suffices. */
 const MAX_REMEMBERED_REVISIONS = 256;
+const MAX_REMEMBERED_PLANS = 8;
+const GENERATION_LENGTH = 16;
 const SKILLS_SUBDIR = "Skills";
 const LEARNED_SUBDIR = "learned";
 const PROJECT_SUBDIR = "project";
@@ -128,6 +162,8 @@ export class SkillsService implements ISkillsService {
   private readonly usage: SkillUsageStore;
   /** Immutable snapshots of skills this service returned, so a recorded revision is exactly what a caller saw. */
   private readonly loadedByRevision = new Map<string, ILoadedSkill>();
+  /** Root plans by config generation, so an operation that started before a reload keeps its roots. */
+  private readonly plans = new Map<string, IRootPlan>();
 
   constructor(
     private readonly config: ISkillsServiceConfig,
@@ -248,7 +284,7 @@ export class SkillsService implements ISkillsService {
   /** Creates the learned root, recovers interrupted publications and journals readiness. */
   async initialize(): Promise<void> {
     const ctx = this.defaultContext();
-    const writable = this.writableRoots(null);
+    const writable = this.writableRoots(ctx);
     try {
       let recovered = 0;
       for (const root of writable) {
@@ -272,7 +308,7 @@ export class SkillsService implements ISkillsService {
 
   async getSkill(name: string, ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>): Promise<ISkill | null> {
     const operation = ctx ?? this.defaultContext();
-    const loaded = await this.loaderFor(operation.portal).get(name, operation);
+    const loaded = await this.loaderFor(operation).get(name, operation);
     return loaded ? this.remember(loaded).skill : null;
   }
 
@@ -285,9 +321,7 @@ export class SkillsService implements ISkillsService {
     ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
   ): Promise<ISkill[]> {
     const operation = ctx ?? this.defaultContext();
-    const all = (await this.loaderFor(operation.portal).listAll(operation)).map((loaded) =>
-      this.remember(loaded).skill
-    );
+    const all = (await this.loaderFor(operation).listAll(operation)).map((loaded) => this.remember(loaded).skill);
     return all.filter((skill) =>
       (!filter?.status || skill.status === filter.status) &&
       (!filter?.scope || skill.scope === filter.scope) &&
@@ -297,7 +331,8 @@ export class SkillsService implements ISkillsService {
 
   async listDiagnostics(ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>): Promise<ISkillDiagnostic[]> {
     const operation = ctx ?? this.defaultContext();
-    return await this.loaderFor(operation.portal).diagnostics(operation);
+    const found = await this.loaderFor(operation).diagnostics(operation);
+    return [...this.planFor(operation).diagnostics, ...found];
   }
 
   async createSkill(skillDef: SkillDefinition, ctx: ISkillOperationContext): Promise<ISkill> {
@@ -419,7 +454,7 @@ export class SkillsService implements ISkillsService {
     const operation = ctx ?? this.defaultContext();
     if (!this.skillsConfig.autoMatch) return { matches: [], totalAvailable: 0 };
 
-    const active = await this.loaderFor(operation.portal).list(operation);
+    const active = await this.loaderFor(operation).list(operation);
     const matches: Array<ISkillMatch & { skill: ISkill }> = [];
     for (const loaded of active) {
       const { skill } = this.remember(loaded);
@@ -620,50 +655,150 @@ export class SkillsService implements ISkillsService {
       flowId: null,
       flowStepId: null,
       agentRole: SYSTEM_AGENT_ROLE,
-      configGeneration: STATIC_CONFIG_GENERATION,
+      configGeneration: this.currentConfigGeneration(),
     };
   }
 
-  /** Roots for one operation, highest precedence first. Without a portal no project root is admitted. */
-  private rootsFor(portal: string | null): IResolvedSkillRoot[] {
+  /** The generation of the config the next operation resolves against. `static` without a config provider. */
+  currentConfigGeneration(): string {
+    return this.currentPlan().generation;
+  }
+
+  /** The plan for the current config, rebuilt only when the config generation moves. */
+  private currentPlan(): IRootPlan {
+    const provider = this.config.configProvider;
+    const generation = provider ? provider.getChecksum().slice(0, GENERATION_LENGTH) : STATIC_CONFIG_GENERATION;
+    const known = this.plans.get(generation);
+    if (known) return known;
+    const plan = provider ? this.planFromConfig(provider.get(), generation) : this.staticPlan();
+    this.plans.set(generation, plan);
+    while (this.plans.size > MAX_REMEMBERED_PLANS) {
+      const oldest = this.plans.keys().next().value;
+      if (oldest === undefined) break;
+      this.plans.delete(oldest);
+    }
+    return plan;
+  }
+
+  /** The plan an operation resolves against: the generation it was stamped with, else the current one. */
+  private planFor(ctx: ISkillOperationContext): IRootPlan {
+    return this.plans.get(ctx.configGeneration) ?? this.currentPlan();
+  }
+
+  private staticPlan(): IRootPlan {
+    const entries: IRootEntry[] = [];
+    if (this.config.memoryDir) {
+      const skillsDir = join(this.config.memoryDir, SKILLS_SUBDIR);
+      entries.push({ kind: SkillRootKind.PROJECT, path: join(skillsDir, PROJECT_SUBDIR) });
+      entries.push({ kind: SkillRootKind.LEARNED, path: join(skillsDir, LEARNED_SUBDIR) });
+    }
+    if (this.config.blueprintSkillsDir) {
+      entries.push({ kind: SkillRootKind.BLUEPRINT, path: this.config.blueprintSkillsDir });
+    }
+    return {
+      generation: STATIC_CONFIG_GENERATION,
+      entries,
+      limits: DEFAULT_SKILL_FOLDER_LIMITS,
+      portals: null,
+      diagnostics: [],
+    };
+  }
+
+  /** Roots from the config snapshot: explicit `skills.roots` win, `[]` disables the catalog. */
+  private planFromConfig(config: Config, generation: string): IRootPlan {
+    const systemRoot = config.system.root ?? ".";
+    const diagnostics: ISkillDiagnostic[] = [];
+    const place = (kind: SkillRootKind, path: string): IRootEntry | null => {
+      const absolute = resolve(systemRoot, path);
+      const within = relative(systemRoot, absolute);
+      if (!isAbsolute(path) && (within.startsWith("..") || isAbsolute(within))) {
+        diagnostics.push({
+          name: null,
+          root_kind: kind,
+          safe_path: kind,
+          reason: SkillDiagnosticReason.PATH_ESCAPE,
+          severity: SkillDiagnosticSeverity.ERROR,
+        });
+        return null;
+      }
+      return { kind, path: absolute };
+    };
+    const configured = config.skills.roots ?? this.defaultRootConfig(config);
+    const entries = configured.flatMap((entry) => {
+      const placed = place(entry.kind, entry.path);
+      return placed ? [placed] : [];
+    });
+    const skills = config.skills;
+    return {
+      generation,
+      entries,
+      limits: {
+        mainMaxBytes: skills.main_max_bytes,
+        sidecarMaxBytes: skills.sidecar_max_bytes,
+        referenceMaxBytes: skills.reference_max_bytes,
+        referenceMaxCount: skills.reference_max_count,
+        referenceTotalMaxBytes: skills.reference_total_max_bytes,
+        snapshotMaxBytes: skills.snapshot_max_bytes,
+      },
+      portals: new Set(config.portals.map((portal) => portal.alias)),
+      diagnostics,
+    };
+  }
+
+  /** Project and learned roots under the configured skills path, then the Blueprint catalog. */
+  private defaultRootConfig(config: Config): Array<{ kind: SkillRootKind; path: string }> {
+    const memorySkills = config.paths.memorySkills === ExaPathDefaults.memorySkills
+      ? join(config.paths.memory, SKILLS_SUBDIR)
+      : config.paths.memorySkills;
+    return [
+      { kind: SkillRootKind.PROJECT, path: join(memorySkills, PROJECT_SUBDIR) },
+      { kind: SkillRootKind.LEARNED, path: join(memorySkills, LEARNED_SUBDIR) },
+      { kind: SkillRootKind.BLUEPRINT, path: join(config.paths.blueprints, SKILLS_SUBDIR) },
+    ];
+  }
+
+  /** Roots for one operation, highest precedence first. A project root needs a valid, configured portal. */
+  private rootsFor(ctx: ISkillOperationContext): IResolvedSkillRoot[] {
+    const plan = this.planFor(ctx);
     const roots: IResolvedSkillRoot[] = [];
     const overlay = Deno.env.get(EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR);
     if (overlay) roots.push({ path: overlay, kind: SkillRootKind.EVAL_OVERLAY, writable: false, project: null });
-    roots.push(...this.writableRoots(portal));
-    if (this.config.blueprintSkillsDir) {
-      roots.push({
-        path: this.config.blueprintSkillsDir,
-        kind: SkillRootKind.BLUEPRINT,
-        writable: false,
-        project: null,
-      });
-    }
-    return roots;
-  }
-
-  /** Project root for a validated portal, then the learned root. */
-  private writableRoots(portal: string | null): IResolvedSkillRoot[] {
-    const skillsDir = join(this.config.memoryDir, SKILLS_SUBDIR);
-    const roots: IResolvedSkillRoot[] = [];
-    if (portal !== null) {
-      if (!PORTAL_NAME_PATTERN.test(portal)) {
-        throw new SkillMutationError(SkillMutationErrorCode.INVALID_INPUT, "invalid portal name for skill resolution");
+    for (const entry of plan.entries) {
+      if (entry.kind === SkillRootKind.PROJECT) {
+        const portal = ctx.portal;
+        if (portal === null) continue;
+        if (!PORTAL_NAME_PATTERN.test(portal)) {
+          throw new SkillMutationError(
+            SkillMutationErrorCode.INVALID_INPUT,
+            "invalid portal name for skill resolution",
+          );
+        }
+        if (plan.portals !== null && !plan.portals.has(portal)) continue;
+        roots.push({ path: join(entry.path, portal), kind: SkillRootKind.PROJECT, writable: true, project: portal });
+      } else {
+        roots.push({
+          path: entry.path,
+          kind: entry.kind,
+          writable: entry.kind === SkillRootKind.LEARNED,
+          project: null,
+        });
       }
-      roots.push({
-        path: join(skillsDir, PROJECT_SUBDIR, portal),
-        kind: SkillRootKind.PROJECT,
-        writable: true,
-        project: portal,
-      });
     }
-    roots.push({ path: join(skillsDir, LEARNED_SUBDIR), kind: SkillRootKind.LEARNED, writable: true, project: null });
     return roots;
   }
 
-  /** A loader for one portal's roots. `underLock` is for callers that already hold the root locks. */
-  private loaderFor(portal: string | null, underLock = false): SkillFolderLoader {
-    const roots = this.rootsFor(portal);
-    const key = `${underLock ? "locked" : "open"}|${roots.map((root) => `${root.kind}:${root.path}`).join("|")}`;
+  /** The writable roots in precedence order: the portal's project root, then the learned root. */
+  private writableRoots(ctx: ISkillOperationContext): IResolvedSkillRoot[] {
+    return this.rootsFor(ctx).filter((root) => root.writable);
+  }
+
+  /** A loader for one operation's roots. `underLock` is for callers that already hold the root locks. */
+  private loaderFor(ctx: ISkillOperationContext, underLock = false): SkillFolderLoader {
+    const plan = this.planFor(ctx);
+    const roots = this.rootsFor(ctx);
+    const key = `${underLock ? "locked" : "open"}|${JSON.stringify(plan.limits)}|${
+      roots.map((root) => `${root.kind}:${root.path}`).join("|")
+    }`;
     const cached = this.loaders.get(key);
     if (cached) return cached;
     const loader = new SkillFolderLoader({
@@ -672,7 +807,7 @@ export class SkillsService implements ISkillsService {
       logger: this.loggerForLoaders,
       eventRegistry: this.registry,
       readLock: underLock ? undefined : (root, scan) => this.readUnderSharedLock(root, scan),
-    });
+    }, plan.limits);
     this.loaders.set(key, loader);
     return loader;
   }
@@ -729,7 +864,7 @@ export class SkillsService implements ISkillsService {
 
   /** The root that mutations of a new skill target: the portal's project root, else the learned root. */
   private targetRoot(ctx: ISkillOperationContext): IResolvedSkillRoot {
-    const target = this.writableRoots(ctx.portal)[0];
+    const target = this.writableRoots(ctx)[0];
     if (!target) throw new SkillMutationError(SkillMutationErrorCode.ROOT_UNAVAILABLE, "no writable skill root");
     return target;
   }
@@ -741,8 +876,8 @@ export class SkillsService implements ISkillsService {
   ): Promise<ILoadedSkill> {
     const input = this.parseInput(SkillAuthoringSchema, skillDef);
     const target = this.targetRoot(ctx);
-    const writable = this.writableRoots(ctx.portal);
-    const allRoots = this.rootsFor(ctx.portal);
+    const writable = this.writableRoots(ctx);
+    const allRoots = this.rootsFor(ctx);
     for (const root of writable) await this.publisher.ensureState(root.path);
     return await this.publisher.withLocks(writable.map((root) => root.path), "exclusive", async () => {
       for (const root of allRoots) {
@@ -773,10 +908,10 @@ export class SkillsService implements ISkillsService {
     ctx: ISkillOperationContext,
     run: (current: ILoadedSkill, root: IResolvedSkillRoot) => Promise<T>,
   ): Promise<T | null> {
-    const writable = this.writableRoots(ctx.portal);
+    const writable = this.writableRoots(ctx);
     for (const root of writable) await this.publisher.ensureState(root.path);
     return await this.publisher.withLocks(writable.map((root) => root.path), "exclusive", async () => {
-      const current = await this.loaderFor(ctx.portal, true).getAny(name, ctx);
+      const current = await this.loaderFor(ctx, true).getAny(name, ctx);
       if (current === null) return null;
       const root = writable.find((candidate) => candidate.kind === current.rootKind);
       if (!root) {
@@ -798,7 +933,7 @@ export class SkillsService implements ISkillsService {
   }
 
   private async requireLoaded(name: string, ctx: ISkillOperationContext): Promise<ILoadedSkill> {
-    const loaded = await this.loaderFor(ctx.portal, true).getAny(name, ctx);
+    const loaded = await this.loaderFor(ctx, true).getAny(name, ctx);
     if (loaded === null) {
       throw new SkillMutationError(
         SkillMutationErrorCode.PUBLICATION_UNAVAILABLE,

@@ -19,6 +19,8 @@ export interface ISkillOperationInput {
   requestId?: string | null;
   flowId?: string | null;
   flowStepId?: string | null;
+  /** The service's current config generation. Absent means the static generation. */
+  configGeneration?: string | null;
 }
 
 /** Config generation stamped on contexts until configured roots reload at runtime. */
@@ -41,6 +43,6 @@ export function createSkillOperationContext(input: ISkillOperationInput): ISkill
     flowId: input.flowId ?? null,
     flowStepId: input.flowStepId ?? null,
     agentRole: input.agentRole,
-    configGeneration: SKILL_CONFIG_GENERATION_STATIC,
+    configGeneration: input.configGeneration ?? SKILL_CONFIG_GENERATION_STATIC,
   };
 }

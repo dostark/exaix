@@ -14,7 +14,7 @@ import { join } from "@std/path";
 import { UIOutputFormat } from "@exaix/tui";
 import { SkillStatus } from "@exaix/core";
 import { policySkillSubmission, SkillsService } from "@exaix/core/skills";
-import { testSkillContext } from "@exaix/testing";
+import { testSkillContext, writeSkillFolder } from "@exaix/testing";
 import { TestEnvironmentFactory } from "../../../../tests/fixtures/test_environment_factory.ts";
 
 Deno.test("[skills show] prints total, per-revision and last-use counts read from the journal", async () => {
@@ -50,6 +50,30 @@ Deno.test("[skills show] an unused skill shows zero uses", async () => {
     const output = await commands.skillShow("idle-skill");
     assertStringIncludes(output, "Total uses: 0");
     assertEquals(JSON.parse(await commands.skillShow("idle-skill", UIOutputFormat.JSON)).usage.revisions, []);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[skills --portal] project skills show only for their portal and are global-only without one", async () => {
+  const { commands, config, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  try {
+    const projectRoot = join(config.system.root, config.paths.memory, "Skills", "project", "Alpha");
+    await writeSkillFolder(projectRoot, {
+      name: "alpha-guide",
+      instructions: "Alpha body.",
+      sidecar: { status: SkillStatus.ACTIVE },
+    });
+    assertStringIncludes(await commands.skillList({ portal: "Alpha" }), "alpha-guide");
+    assertEquals((await commands.skillList({ portal: "Beta" })).includes("alpha-guide"), false);
+    assertEquals((await commands.skillList()).includes("alpha-guide"), false);
+    assertStringIncludes(await commands.skillShow("alpha-guide", UIOutputFormat.TABLE, "Alpha"), "alpha-guide");
+    assertStringIncludes(await commands.skillShow("alpha-guide"), "Skill not found");
+
+    const created = await commands.skillCreate("beta-note", { instructions: "Beta note.", portal: "Beta" });
+    assertStringIncludes(created, "beta-note");
+    assertStringIncludes(await commands.skillList({ portal: "Beta" }), "beta-note");
+    assertEquals((await commands.skillList({ portal: "Alpha" })).includes("beta-note"), false);
   } finally {
     await cleanup();
   }

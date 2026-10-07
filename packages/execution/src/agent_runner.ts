@@ -766,6 +766,7 @@ export class AgentRunner implements IAgentRunner {
       requestId: request.requestId,
       flowId: request.flowId,
       flowStepId: request.flowStepId,
+      configGeneration: this.skillsService?.currentConfigGeneration(),
     });
   }
 

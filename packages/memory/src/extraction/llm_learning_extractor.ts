@@ -67,7 +67,11 @@ export class LlmLearningExtractor implements IExtractionStrategy {
   ) {}
 
   async extract(execution: IExecutionMemory): Promise<IProposalLearning[]> {
-    const operation = createSkillOperationContext({ agentRole: EXTRACTOR_AGENT_ROLE, traceId: execution.trace_id });
+    const operation = createSkillOperationContext({
+      agentRole: EXTRACTOR_AGENT_ROLE,
+      traceId: execution.trace_id,
+      configGeneration: this.skillsService.currentConfigGeneration(),
+    });
     const policy = await this.skillsService.getSkill(EXTRACTION_POLICY_SKILL_ID, operation);
     if (!policy) throw new Error(`Required extraction policy skill not found: ${EXTRACTION_POLICY_SKILL_ID}`);
 

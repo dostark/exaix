@@ -67,6 +67,7 @@ Deno.test("offline reflection skips the LLM and completes its deterministic pass
 function skillsService(): IReflectionSkills {
   return castAny<IReflectionSkills>({
     recordSubmission: () => Promise.resolve(),
+    currentConfigGeneration: () => "static",
     getSkill: (skillId: string) =>
       Promise.resolve(
         skillId === "memory-extraction-content-policy" ? { skill_id: skillId, instructions: SKILL_INSTRUCTIONS } : null,
@@ -177,6 +178,7 @@ Deno.test("missing content-policy skill fails the cycle loudly", async () => {
     const extractor = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
     const missingSkill = castAny<IReflectionSkills>({
       recordSubmission: () => Promise.resolve(),
+      currentConfigGeneration: () => "static",
       getSkill: () => Promise.resolve(null),
     });
     const reflection = new MemoryReflectionService({
