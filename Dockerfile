@@ -18,10 +18,18 @@ FROM denoland/deno:2.8.2 AS builder
 ENV DENO_DIR=/deno-dir
 WORKDIR /app
 
+# Install the Node/build toolchain FIRST: the `deno cache` below runs npm lifecycle
+# scripts (the tree-sitter grammar packages compile via node-gyp), which need node,
+# npm, make, g++ and python3 on PATH. Installing after the cache makes it fail.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates curl nodejs npm build-essential python3 \
+  && rm -rf /var/lib/apt/lists/*
+
 # Copy the module-graph inputs first so dependency caching is its own layer.
 COPY deno.json deno.lock ./
 COPY packages/ packages/
 COPY apps/ apps/
+COPY exaix-team/ exaix-team/
 
 # Vendor the daemon module graph into DENO_DIR. (The CLI `exactl` is not run inside
 # the daemon container; one of its commands imports from tests/, which is excluded.)
@@ -34,15 +42,13 @@ RUN printf 'import { Database } from "@db/sqlite";\nconst db = new Database(":me
   && deno run --config deno.json --allow-ffi --allow-read --allow-write --allow-env --allow-net /tmp/warm_sqlite.ts \
   && rm /tmp/warm_sqlite.ts
 
-# Install Node.js and delegate CLI tools (Claude Code, OpenCode CLI) for
-# headless agent integration tests and dogfooding. The devcontainer (target
-# "builder") needs these on PATH so the @provider_live E2E test can run.
-# OpenRouter does not require a binary — it is configured via env vars only.
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl nodejs npm build-essential python3 \
-  && npm install -g node-gyp @anthropic-ai/claude-code \
+# Install delegate CLI tools (Claude Code, OpenCode CLI) for headless agent
+# integration tests and dogfooding. The devcontainer (target "builder") needs
+# these on PATH so the @provider_live E2E test can run. OpenRouter does not
+# require a binary — it is configured via env vars only.
+RUN npm install -g node-gyp @anthropic-ai/claude-code \
   && curl -fsSL https://opencode.ai/install | bash \
-  && rm -rf /var/lib/apt/lists/* /root/.npm /root/.cache
+  && rm -rf /root/.npm /root/.cache
 
 # ---------------------------------------------------------------------------
 # Stage 2 — runtime: non-root, minimal toolset, scoped permissions
@@ -140,7 +146,7 @@ COPY scripts/ scripts/
 # worker resolves every module with `--network none`. Cache the entrypoint, not the
 # whole scripts/ tree: `deno task check` excludes scripts/, so a directory-wide cache
 # can fail on an unrelated script error.
-RUN deno cache --config deno.json scripts/test_container_driver.ts tests/ packages/ apps/
+RUN deno cache --config deno.json scripts/test_container_driver.ts tests/ packages/ apps/ exaix-team/
 
 # The worker runs as `--user <host-uid>:<host-gid>`; make the warmed cache writable by
 # any uid (the runtime stage pins a fixed uid; dev-test cannot).
