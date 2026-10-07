@@ -1,0 +1,14 @@
+schema = 1
+
+# Merge with the operator catalog that defines architecture-service and its model.
+[bindings."flow:architecture-decision/step:context"]
+service = "architecture-service"
+effort = "high"
+
+[bindings."role:software-architect"]
+service = "architecture-service"
+effort = "high"
+
+[bindings."flow:architecture-decision/step:adr"]
+service = "architecture-service"
+effort = "low"

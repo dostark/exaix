@@ -43,13 +43,22 @@ export class VotingStepHandler implements IFlowStepHandler {
       throw new Error("Voting step has no voting config");
     }
 
-    const basePrompt = request.userPrompt;
+    const basePrompt = ctx.stepRequest.userPrompt;
     const traceId = request.traceId ?? crypto.randomUUID();
 
     const result: VotingResult = await this.#votingService.run(
       step.voting,
       basePrompt,
       traceId,
+      {
+        traceId,
+        requestId: request.requestId,
+        scenarioId: ctx.stepRequest.scenarioId,
+        stepId: ctx.stepRequest.stepId,
+        flowId: ctx.flow.id,
+        flowStepId: step.id,
+        bindingSnapshot: ctx.stepRequest.bindingSnapshot,
+      },
     );
 
     await this.#eventLogger.info(DomainEventType.VotingStepConsensusResolved, step.id, {

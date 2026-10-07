@@ -1,0 +1,42 @@
+id: architecture-decision
+name: Architecture decision
+description: Gather portal evidence, resolve an architecture vote, and write an ADR.
+version: 1.0.0
+requires_capabilities: [voting]
+namespace:
+  enabled: false
+settings:
+  maxParallelism: 1
+  failFast: true
+  timeout: 300000
+steps:
+  - id: context
+    name: Gather architecture context and alternatives
+    agent_role: code-analyst
+    execution_mode: declared
+    strategy: react
+    permitted_tools: [read_file, list_directory, search_files]
+    dependsOn: []
+    input: { source: request, transform: passthrough }
+  - id: vote
+    name: Choose an architecture through a majority vote
+    type: voting_group
+    agent_role: software-architect
+    dependsOn: [context]
+    input: { source: step, stepId: context, transform: passthrough }
+    voting:
+      runners:
+        - blueprint: software-architect
+        - blueprint: software-architect
+        - blueprint: software-architect
+      strategy: majority
+      halt_on_no_consensus: true
+      timeout_ms: 60000
+  - id: adr
+    name: Write the ADR from the resolved architecture vote
+    agent_role: technical-writer
+    dependsOn: [vote]
+    input: { source: step, stepId: vote, transform: passthrough }
+output:
+  from: adr
+  format: markdown

@@ -8,6 +8,7 @@
 
 import { EvaluationResultSchema } from "@exaix/core/evaluation";
 import { z } from "zod";
+import { CAP_VOTING } from "@exaix/core/composer";
 import {
   canonicalizeToolName,
   DataFormat,
@@ -534,6 +535,7 @@ export const FlowSchema = z.object({
   name: z.string().min(1, "Flow name cannot be empty"),
   description: z.string().min(1, "Flow description cannot be empty"),
   version: z.string().default(DEFAULT_FLOW_VERSION),
+  requires_capabilities: z.array(z.literal(CAP_VOTING)).optional(),
   steps: z.array(FlowStepSchema).min(1, "Flow must have at least one step"),
   output: z.object({
     from: z.union([z.string(), z.array(z.string())]),

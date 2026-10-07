@@ -343,6 +343,7 @@ export async function resolveFlowForAudit(
 const STEP_KINDS = new Set<FlowStepType>([
   FlowStepType.AGENT,
   FlowStepType.BRANCH,
+  FlowStepType.VOTING_GROUP,
   FlowStepType.GATE,
   FlowStepType.SESSION_DELEGATE_CYCLE,
 ]);
@@ -353,7 +354,9 @@ export function bindingStepRef(
   nativeToolsEnabled: boolean,
 ): IBindingStepRef | undefined {
   if (!STEP_KINDS.has(step.type)) return undefined;
-  if (step.type === FlowStepType.AGENT || step.type === FlowStepType.BRANCH) {
+  if (
+    step.type === FlowStepType.AGENT || step.type === FlowStepType.BRANCH || step.type === FlowStepType.VOTING_GROUP
+  ) {
     return {
       flowId: flow.id,
       stepId: step.id,

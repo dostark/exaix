@@ -1,0 +1,18 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "AGENT ROLE: Code Analyst",
+  "response": "THOUGHT: Analyze the fixture.\nSTATUS: COMPLETE\nSUMMARY: ARCHITECTURE CONTEXT EVIDENCE: single-user local database; SQLite and PostgreSQL alternatives.",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "Compare SQLite and PostgreSQL"
+    ],
+    "promptExcludes": []
+  }
+}

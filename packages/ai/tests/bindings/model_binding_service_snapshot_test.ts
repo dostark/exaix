@@ -37,6 +37,51 @@ const catalog: Config["catalog"] = {
   preferences: {},
 };
 
+Deno.test("voting group snapshots its architect binding and retains the original voter reference", async () => {
+  const votingFlow = FlowSchema.parse({
+    id: "architecture-decision",
+    name: "Architecture decision",
+    description: "Bound architecture vote",
+    steps: [{
+      id: "vote",
+      name: "Vote",
+      type: "voting_group",
+      agent_role: "software-architect",
+      voting: { runners: Array.from({ length: 3 }, () => ({ blueprint: "software-architect" })) },
+    }],
+    output: { from: "vote" },
+  });
+  const config = ConfigSchema.parse({
+    system: {},
+    paths: {},
+    catalog,
+    bindings: { "role:software-architect": { service: "alpha", model: "mock/alpha" } },
+  });
+  const service = new ModelBindingService({
+    configSource: { get: () => config },
+    logger: createMockEventLogger(),
+    probe: { hasKey: () => true, hasOptIn: () => true },
+  });
+  const traceId = crypto.randomUUID();
+  try {
+    const snapshot = await service.snapshotForRun(votingFlow, { traceId });
+    assertEquals(snapshot.bindings.get("vote")?.kind, "bound");
+    for (const runner of votingFlow.steps[0].voting!.runners) {
+      const bound = await service.providerFor(snapshot, {
+        flowId: votingFlow.id,
+        stepId: "vote",
+        agentRole: runner.blueprint,
+        kind: "agent",
+        nativeTools: false,
+      });
+      assertEquals(bound?.binding.service, "alpha");
+      assertEquals(bound?.binding.sources.service?.selector, "role:software-architect");
+    }
+  } finally {
+    await service.releaseRun(traceId);
+  }
+});
+
 Deno.test("run snapshot retains two service choices after the config changes", async () => {
   let config = ConfigSchema.parse({
     system: {},

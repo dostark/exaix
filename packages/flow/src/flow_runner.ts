@@ -16,6 +16,7 @@ import type {
   ISessionDelegateCycleRejectionReason,
 } from "@exaix/schemas/flow.ts";
 import { FlowRuntimeValidator } from "./flow_runtime_validator.ts";
+import { assertFlowCapabilities, FlowCapabilityUnavailableError } from "./flow_capabilities.ts";
 import { ParallelGroupMergeService } from "./parallel_group_merge_service.ts";
 import { FlowControlStateStore } from "./flow_control_state_store.ts";
 import { branchSkipReason } from "./branch_routing.ts";
@@ -233,6 +234,8 @@ export interface IParallelGroupSummary {
  * Configuration for FlowRunner
  */
 export interface IFlowRunnerConfig {
+  edition?: Opt<string, Reason.OptionalInput>;
+  installedCapabilities?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
   agentExecutor: IAgentExecutor;
   bindingService?: ModelBindingService;
   eventLogger: IFlowEventLogger;
@@ -1311,6 +1314,12 @@ export class FlowRunner implements IFlowRunner {
     let snapshotTraceId: string | undefined;
 
     try {
+      assertFlowCapabilities(
+        flow.requires_capabilities ?? [],
+        this.options.edition,
+        new Set(this.options.installedCapabilities ?? []),
+        this.stepHandlerRegistry,
+      );
       await this.validateIFlow(flow, request, flowRunId, this.controlStateStore.get(stepResults).ceiling);
       await this.ensureDynamicExecutor(flow, flowRunId);
       const flowDeclaresBindings = flow.steps.some((step) => step.binding !== undefined || step.pin !== undefined);
@@ -1580,7 +1589,9 @@ export class FlowRunner implements IFlowRunner {
       flowId: flow.id,
       error: error instanceof Error ? error.message : String(error),
       errorType: error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL,
-      reasonCode: error instanceof FlowExecutionError ? error.reasonCode : undefined,
+      reasonCode: error instanceof FlowExecutionError || error instanceof FlowCapabilityUnavailableError
+        ? error.reasonCode
+        : undefined,
       duration,
       stepsAttempted: stepResults.size,
       successfulSteps,

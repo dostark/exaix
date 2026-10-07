@@ -1,0 +1,26 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Architecture decision fixture",
+  "response": "<thought>Write the accepted decision.</thought><content>{\"subject\": \"SQLite majority ADR\", \"description\": \"The two-to-one vote selects SQLite.\", \"steps\": [{\"step\": 1, \"title\": \"Adopt SQLite\", \"description\": \"SQLite majority choice for the single-user fixture portal.\"}]}</content>",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "SQLite majority choice"
+    ],
+    "promptExcludes": [
+      "PostgreSQL minority choice"
+    ]
+  },
+  "callSite": {
+    "scenarioId": "architecture-decision",
+    "stepId": "submit",
+    "flowStepId": "adr",
+    "callIndex": 0
+  }
+}

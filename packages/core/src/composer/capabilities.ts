@@ -16,7 +16,8 @@
  * @related-files ["packages/core/src/types/constants.ts", "packages/ai/README.md", "apps/common/registry_bootstrap.ts"]
  */
 
-import { EDITION_ENTERPRISE, EDITION_TEAM } from "../types/constants.ts";
+import { EDITION_ENTERPRISE, EDITION_SOLO, EDITION_TEAM } from "../types/constants.ts";
+import type { Opt, Reason } from "../types/mod.ts";
 
 // Capability IDs
 
@@ -60,3 +61,25 @@ export const CAPABILITY_EDITION: Record<string, string> = {
   [CAP_MODEL_REGISTRY_GOVERNANCE]: EDITION_ENTERPRISE,
   [CAP_OTEL_EXPORT]: EDITION_TEAM,
 };
+
+/** Minimum tier comparison does not prove runtime module installation. */
+export const EDITION_RANK: Readonly<Record<string, number>> = {
+  [EDITION_SOLO]: 0,
+  [EDITION_TEAM]: 1,
+  [EDITION_ENTERPRISE]: 2,
+};
+
+export function isCapabilityEligible(capability: string, edition: Opt<string, Reason.OptionalInput>): boolean {
+  if (!Object.hasOwn(CAPABILITY_EDITION, capability) || !edition || !Object.hasOwn(EDITION_RANK, edition)) {
+    return false;
+  }
+  return EDITION_RANK[edition] >= EDITION_RANK[CAPABILITY_EDITION[capability]];
+}
+
+export function isCapabilityAvailable(
+  capability: string,
+  edition: Opt<string, Reason.OptionalInput>,
+  installed: ReadonlySet<string>,
+): boolean {
+  return isCapabilityEligible(capability, edition) && installed.has(capability);
+}

@@ -18,7 +18,25 @@ import {
   CAP_OTEL_EXPORT,
   CAP_VOTING,
   CAPABILITY_EDITION,
+  isCapabilityAvailable,
+  isCapabilityEligible,
 } from "../src/composer/mod.ts";
+
+Deno.test("capabilities: voting requires an eligible tier and installed module", () => {
+  for (const edition of [undefined, "unknown", "solo", "toString"]) {
+    assertEquals(isCapabilityEligible(CAP_VOTING, edition), false);
+    assertEquals(isCapabilityAvailable(CAP_VOTING, edition, new Set([CAP_VOTING])), false);
+  }
+  for (const edition of [EDITION_TEAM, EDITION_ENTERPRISE]) {
+    assertEquals(isCapabilityEligible(CAP_VOTING, edition), true);
+    assertEquals(isCapabilityAvailable(CAP_VOTING, edition, new Set()), false);
+    assertEquals(isCapabilityAvailable(CAP_VOTING, edition, new Set([CAP_VOTING])), true);
+  }
+  assertEquals(isCapabilityEligible("unknown", EDITION_ENTERPRISE), false);
+  assertEquals(isCapabilityEligible("toString", EDITION_ENTERPRISE), false);
+  assertEquals(isCapabilityEligible(CAP_MODEL_REGISTRY_GOVERNANCE, EDITION_TEAM), false);
+  assertEquals(isCapabilityEligible(CAP_MODEL_REGISTRY_GOVERNANCE, EDITION_ENTERPRISE), true);
+});
 
 Deno.test("capabilities: all expected capability IDs are defined", () => {
   assertEquals(CAP_VOTING, "voting");

@@ -1,0 +1,48 @@
+schema_version: "1.0.0"
+id: architecture-decision
+title: Team architecture decision from prepared portal evidence
+pack: flow_blueprints
+tags: ["subsystem:flows", "entity:architecture-decision.flow", "voting"]
+edition: team
+request_fixture: fixtures/requests/flow_blueprints/architecture_decision.md
+mode_support: [auto]
+portals:
+  - alias: architecture-fixture
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/simple_repo"
+    target_path: "$WORKSPACE_ROOT/architecture-fixture"
+    git_init: true
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+    env: { EXA_LLM_PROVIDER: mock, MOCK_STRICT: "1", EXA_CI_MODE: "1" }
+    output_criteria:
+      - id: started
+        kind: command-output-contains
+        contains: [daemon.started]
+  - id: submit
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE"]
+    output_criteria:
+      - id: submitted
+        kind: command-exit-code
+        equals: 0
+  - id: await-terminal
+    type: exactl
+    command: journal
+    args: [wait, --event, request.planned, --since-rowid, "$STEP_BASELINE", --timeout, "30"]
+    timeout_sec: 35
+    output_criteria:
+      - id: planned
+        kind: command-exit-code
+        equals: 0
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]
+    output_criteria:
+      - id: stopped
+        kind: command-exit-code
+        equals: 0

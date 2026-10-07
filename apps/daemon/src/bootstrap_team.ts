@@ -29,7 +29,8 @@ import {
 import { DefaultModelRegistry, isCostExempt } from "@exaix/model-registry";
 import type { IAdapterContext } from "@exaix/model-registry";
 import { type IResolutionStrategy, ProviderRegistry } from "@exaix/ai";
-import type { IDatabaseService, IExecutor, IHitlPolicyEvaluator, IModelRegistry } from "@exaix/core/types";
+import type { IDatabaseService, IHitlPolicyEvaluator, IModelRegistry } from "@exaix/core/types";
+import { createVotingExecutor, registerFlowCapabilityModules } from "./flow_capability_registration.ts";
 import type { IModelRegistryProvider, IModelRegistryProviderDeps } from "@exaix/core/composer";
 import type { IProviderHealthChecker } from "@exaix/ai";
 import type { Config, IRouteReason } from "@exaix/schemas";
@@ -41,6 +42,11 @@ import type { ISeamRegistryPlaceholder } from "@exaix/core/composer";
 import type { ISymbolExtractorRegistry } from "@exaix/portal/knowledge";
 import { EDITION_TEAM } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+
+export interface ITeamCapabilityOptions {
+  edition: string;
+  hitlPolicyEvaluator?: Opt<IHitlPolicyEvaluator, Reason.OptionalDependency>;
+}
 
 /** Runtime dependencies the Team model-registry provider closes over. */
 export interface ITeamModelRegistryDeps {
@@ -210,15 +216,16 @@ export async function loadBenchmarkFloor(
   }
 }
 
-/** Called from main.ts after FlowRunner construction, inside the EDITION_TEAM guard. */
+/** Registers Team capability modules after FlowRunner construction. */
 export function registerTeamCapabilities(
   agentExecutorAdapter: AgentComposerAdapter,
   logger: IEventLogger,
   flowRunner: FlowRunner,
   composer: TeamComposer,
   symbolRegistry: ISymbolExtractorRegistry,
-  hitlPolicyEvaluator?: Opt<IHitlPolicyEvaluator, Reason.OptionalDependency>,
-): void {
+  options: ITeamCapabilityOptions,
+): ReadonlySet<string> {
+  const { edition, hitlPolicyEvaluator } = options;
   // Assert the capability-to-edition mapping is consistent at wiring time
   if (CAPABILITY_EDITION[CAP_VOTING] !== EDITION_TEAM) {
     throw new Error(
@@ -232,15 +239,7 @@ export function registerTeamCapabilities(
     composer.registerCapabilityModule(hitlModule);
   }
 
-  const votingExecutor: IExecutor = {
-    run: async (blueprint, prompt) => {
-      const result = await agentExecutorAdapter.run(blueprint, {
-        userPrompt: prompt,
-        context: {},
-      });
-      return { content: result.content };
-    },
-  };
+  const votingExecutor = createVotingExecutor(agentExecutorAdapter);
   const votingService = new VotingConsensusService(votingExecutor, logger);
   const votingModule = new VotingCapabilityModule(votingService, logger);
   composer.registerCapabilityModule(votingModule);
@@ -249,8 +248,9 @@ export function registerTeamCapabilities(
   composer.registerCapabilityModule(portalExtractorsModule);
 
   const stepRegistry = flowRunner.getStepHandlerRegistry();
+  const installed = registerFlowCapabilityModules(edition, composer.getModules(), stepRegistry);
   for (const module of composer.getModules()) {
-    module.registerFlowStepHandlers?.(stepRegistry);
     module.registerSymbolExtractors?.(symbolRegistry as ISeamRegistryPlaceholder);
   }
+  return installed;
 }

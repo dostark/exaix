@@ -21,18 +21,20 @@ const OUTPUT_HOME = join(FRAMEWORK_HOME, "output", "phase205", "step1");
 const PROMPT_TOKENS = 100;
 const COMPLETION_TOKENS = 200;
 for (
-  const [file, scenarioId, action, status, calls, phaseStep, evaluations, iterations] of [
+  const [file, scenarioId, action, status, calls, phaseStep, evaluations, iterations, edition = "solo"] of [
     ["gate_halt", "gate-halt", "halted", "failed", 1, 1, 1, 0],
     ["gate_continue_warning", "gate-continue-warning", "continued-with-warning", "planned", 2, 1, 1, 0],
     ["gate_retry", "gate-retry", "passed", "planned", 5, 2, 2, 1],
     ["gate_retry_exhausted", "gate-retry-exhausted", "halted", "failed", 6, 2, 3, 2],
     ["gate_retry_budget", "gate-retry-budget", "retry", "failed", 2, 2, 1, 0],
     ["branch_routing", "branch-routing", "bug", "planned", 4, 3, 0, 0],
+    ["architecture_decision", "architecture-decision", "majority", "planned", 5, 4, 0, 0, "team"],
+    ["architecture_decision_solo", "architecture-decision-solo", "unavailable", "failed", 0, 4, 0, 0, "solo"],
   ] as const
 ) {
   Deno.test({
-    name: `[phase205 step${phaseStep}] ${scenarioId} real Solo daemon`,
-    ignore: Deno.env.get("CI") === "true",
+    name: `[phase205 step${phaseStep}] ${scenarioId} real ${edition} daemon`,
+    ignore: phaseStep !== 4 && Deno.env.get("CI") === "true",
     sanitizeOps: false,
     sanitizeResources: false,
     async fn() {
@@ -42,7 +44,20 @@ for (
       const cliDir = join(workspaceRoot, ".test-cli");
       await Deno.mkdir(cliDir);
       const exactlExecutable = join(cliDir, "exactl");
-      const cliArgs = [
+      const compiled = phaseStep === 4;
+      const compiledCli = join(REPO_ROOT, "dist", "bin", `exactl-${edition}-${Deno.build.target}`);
+      const compiledDaemon = join(
+        REPO_ROOT,
+        "dist",
+        "bin",
+        `${edition === "team" ? "exaix-team" : "exaix"}-${Deno.build.target}`,
+      );
+      if (compiled) {
+        for (const binary of [compiledCli, compiledDaemon]) {
+          assert((await Deno.stat(binary)).isFile, `Required edition binary missing: ${binary}`);
+        }
+      }
+      const cliArgs = compiled ? [] : [
         "run",
         "-A",
         "--config",
@@ -55,7 +70,22 @@ for (
 import { recordGateBudgetUsage, activateGateBudgetRequest } from ${
           JSON.stringify(new URL("../helpers/gate_budget_fixture.ts", import.meta.url).href)
         };
-const result = await new Deno.Command(Deno.execPath(), { args: [...${
+if (${JSON.stringify(compiled)} && Deno.args[0] === "daemon" && Deno.args[1] === "start") {
+  const launched = await new Deno.Command("bash", { args: ["-c", 'nohup "$1" > "$2" 2>&1 < /dev/null & echo $!', "--", ${
+          JSON.stringify(compiledDaemon)
+        }, ${JSON.stringify(join(workspaceRoot, ".exa", "daemon.log"))}], cwd: ${
+          JSON.stringify(workspaceRoot)
+        } }).output();
+  const pid = new TextDecoder().decode(launched.stdout).trim();
+  if (!launched.success || !/^[0-9]+$/.test(pid)) throw new Error("Compiled daemon launch failed");
+  await Deno.writeTextFile(${JSON.stringify(join(workspaceRoot, ".exa", "daemon.pid"))}, pid);
+  const ready = await new Deno.Command(${
+          JSON.stringify(compiledCli)
+        }, { args: ["journal", "wait", "--event", "daemon.ready", "--timeout", "30"], stdout: "inherit", stderr: "inherit" }).spawn().status;
+  if (ready.success) console.log("daemon.started");
+  Deno.exit(ready.code);
+}
+const result = await new Deno.Command(${JSON.stringify(compiled ? compiledCli : Deno.execPath())}, { args: [...${
           JSON.stringify(cliArgs)
         }, ...Deno.args], stdin: "inherit", stdout: "inherit", stderr: "inherit" }).spawn().status;
 if (result.success && ${
@@ -94,7 +124,7 @@ fixtures_dir = "${
               "fixtures",
               "mock_recordings",
               "phase205",
-              file === "branch_routing" ? "branches" : "gates",
+              phaseStep === 4 ? "voting" : file === "branch_routing" ? "branches" : "gates",
             )
           }"
 ${
@@ -117,10 +147,15 @@ enabled = false
 `,
         );
         let run: Awaited<ReturnType<typeof runSyntheticScenario>> | undefined;
-        await withEnv({ PATH: `${cliDir}:${Deno.env.get("PATH") ?? ""}` }, async () => {
+        await withEnv({
+          PATH: `${cliDir}:${Deno.env.get("PATH") ?? ""}`,
+          EXAIX_EDITION: edition,
+          EXA_DAEMON_SCRIPT: null,
+          EXA_CONFIG_PATH: join(workspaceRoot, "exa.config.toml"),
+        }, async () => {
           run = await runSyntheticScenario({
             frameworkHome: FRAMEWORK_HOME,
-            scenarioPath: `scenarios/agent_flows/${file}.yaml`,
+            scenarioPath: `scenarios/${phaseStep === 4 ? "flow_blueprints" : "agent_flows"}/${file}.yaml`,
             workspaceRoot,
             outputDir,
             mode: ScenarioExecutionMode.AUTO,
@@ -168,6 +203,27 @@ enabled = false
               "branch_not_taken",
             ]],
           );
+        } else if (phaseStep === 4) {
+          const resolved = activities.filter((row) => row.action_type === "voting.step.consensus_resolved");
+          assertEquals(resolved.length, edition === "team" ? 1 : 0);
+          assertEquals(
+            activities.filter((row) => row.action_type === "flow.step.started").map((row) =>
+              JSON.parse(row.payload).stepId
+            ),
+            edition === "team" ? ["context", "vote", "adr"] : [],
+          );
+          if (edition === "team") {
+            const votingStarted = activities.filter((row) => row.action_type === "voting.started");
+            const votingResolved = activities.filter((row) => row.action_type === "voting.resolved");
+            assertEquals(votingStarted.length, 1);
+            assertEquals(votingResolved.length, 1);
+            assertEquals(JSON.parse(votingResolved[0].payload).winner_runner_id, "software-architect");
+            const payload = JSON.parse(resolved[0].payload);
+            assertEquals(payload.candidate_count, 3);
+            assertEquals(payload.strategy, "majority");
+            assertEquals(payload.consensus_reached, true);
+            assertEquals(activities.filter((row) => row.action_type === "flow.completed").length, 1);
+          }
         } else {
           const gate = JSON.parse(gates[gates.length - 1].payload) as {
             action: string;
@@ -191,10 +247,13 @@ enabled = false
         const generations = activities.filter((row) => row.action_type === "llm.call.completed");
         assertEquals(generations.length, calls);
         assertEquals(generations.map((row) => row.trace_id), Array(calls).fill(traceId));
-        assertEquals(generations.map((row) => row.prompt_tokens), Array(calls).fill(PROMPT_TOKENS));
+        if (phaseStep !== 4) {
+          assertEquals(generations.map((row) => row.prompt_tokens), Array(calls).fill(PROMPT_TOKENS));
+        }
         const downstream = activities.filter((row) =>
           row.action_type === "flow.step.started" &&
-          (JSON.parse(row.payload) as { stepId: string }).stepId === (file === "branch_routing" ? "join" : "after")
+          (JSON.parse(row.payload) as { stepId: string }).stepId ===
+            (phaseStep === 4 ? "adr" : file === "branch_routing" ? "join" : "after")
         );
         assertEquals(downstream.length, status === "failed" ? 0 : 1);
         const failed = activities.filter((row) => row.action_type === "flow.failed");
@@ -202,7 +261,11 @@ enabled = false
         if (status === "failed") {
           assertEquals(
             (JSON.parse(failed[0].payload) as { reasonCode: string }).reasonCode,
-            file === "gate_retry_budget" ? "flow_retry_budget_exceeded" : "gate_halted",
+            phaseStep === 4
+              ? "capability_unavailable"
+              : file === "gate_retry_budget"
+              ? "flow_retry_budget_exceeded"
+              : "gate_halted",
           );
         }
         if (file === "gate_retry_budget") {
@@ -223,7 +286,18 @@ enabled = false
           await new PathResolver(config).resolve(`@Workspace/Requests/${requestNames[0]}`),
         );
         assertStringIncludes(content, `status: ${status}`);
-        assert(generations.every((row) => row.completion_tokens === COMPLETION_TOKENS));
+        if (phaseStep === 4 && edition === "team") {
+          const planNames: string[] = [];
+          for await (const entry of Deno.readDir(join(workspaceRoot, "Workspace", "Plans"))) {
+            if (entry.isFile && entry.name.endsWith(".md")) planNames.push(entry.name);
+          }
+          assertEquals(planNames.length, 1);
+          const plan = await Deno.readTextFile(
+            await new PathResolver(config).resolve(`@Workspace/Plans/${planNames[0]}`),
+          );
+          assertStringIncludes(plan, "SQLite majority ADR");
+        }
+        if (phaseStep !== 4) assert(generations.every((row) => row.completion_tokens === COMPLETION_TOKENS));
       } finally {
         await new Deno.Command(exactlExecutable, {
           args: ["daemon", "stop"],

@@ -1,5 +1,11 @@
 [
   {
+    "kind": "flow",
+    "artefactId": "architecture-decision",
+    "status": "non-coverage",
+    "rationale": "Phase 205 verifies Team voting mechanics and Solo refusal with deterministic replay; comparative value has not been measured."
+  },
+  {
     "kind": "skill",
     "artefactId": "memory-extraction-content-policy",
     "status": "non-coverage",

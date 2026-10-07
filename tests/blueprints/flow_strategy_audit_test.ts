@@ -19,6 +19,7 @@ type Decision = "react" | "cli_delegate" | "no-strategy" | "n/a-dynamic" | "sess
 
 /** Mirrors the "Flow catalog strategy audit table" in phase-159-flow-step-execution-strategy.md. */
 const AUDIT_TABLE: Record<string, Record<string, Decision>> = {
+  "architecture-decision": { context: "react", vote: "no-strategy", adr: "no-strategy" },
   "analyze-codebase": { "explore": "n/a-dynamic", "write-report": "no-strategy" },
   "api-design": {
     "gather-requirements": "no-strategy",

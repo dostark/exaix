@@ -2,6 +2,7 @@
   "name": "@exaix/schemas",
   "version": "0.1.0",
   "imports": {
+    "@exaix/core/composer": "../core/src/composer/mod.ts",
     "@exaix/core": "../core/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/core/types": "../core/src/types/mod.ts",

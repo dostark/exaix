@@ -1,0 +1,118 @@
+{
+  "phase": 205,
+  "step": 4,
+  "status": "PENDING VERIFICATION",
+  "date": "2026-10-07",
+  "worktree_path": "/home/dkasymov/git/exaix-phase205",
+  "branch": "feat/phase-205",
+  "basis_parent_commit": "5106080a7d22ad30be3c192777b5c37623e60f46",
+  "team_commit": "6f58d95be0bc95818d5a45487f2e897090fac244",
+  "docs_basis_commit": "77d0b4b8002089c39671407240d2a29c61339092",
+  "focused": {
+    "command": "deno test --allow-all packages/flow/tests packages/ai/tests/bindings/model_binding_service_snapshot_test.ts packages/core/tests/capabilities_test.ts packages/schemas/tests/flow_capabilities_schema_test.ts apps/daemon/tests/flow_capability_registration_test.ts apps/exactl/tests/flow_list_capabilities_test.ts apps/exactl/tests/flow_commands_test.ts exaix-team/packages/voting/tests tests/blueprints/flow_strategy_audit_test.ts tests/scenario_framework/tests/unit/artefact_catalog_test.ts tests/scenario_framework/tests/unit/artefact_decision_coverage_test.ts tests/scenario_framework/tests/unit/workspace_catalog_seeding_test.ts",
+    "passed": 750,
+    "steps": 42,
+    "failed": 0
+  },
+  "compiled_daemons": {
+    "command": "env -u CI deno test --allow-all --filter '[phase205 step4]' tests/scenario_framework/tests/integration/advanced_flow_controls_test.ts",
+    "passed": 2,
+    "failed": 0,
+    "filtered": 6,
+    "ignored_selected": 0,
+    "team_model_calls": 5,
+    "team_voters": 3,
+    "solo_started_steps": 0
+  },
+  "security": {
+    "command": "deno task test:security",
+    "passed": 112,
+    "steps": 8,
+    "failed": 0,
+    "filtered": 2905
+  },
+  "static_ci": {
+    "command": "deno run -A scripts/ci.ts check",
+    "exit": 0
+  },
+  "repository_types": {
+    "command": "deno task check",
+    "exit": 0
+  },
+  "coverage": {
+    "files": [
+      "packages/core/src/composer/capabilities.ts",
+      "packages/flow/src/flow_capabilities.ts",
+      "apps/daemon/src/flow_capability_registration.ts"
+    ],
+    "covered_branches": 19,
+    "total_branches": 19,
+    "line_percent": 100
+  },
+  "canaries": [
+    {
+      "name": "tier",
+      "exit": 1,
+      "assertion_failed": true,
+      "log": "/tmp/phase205-step4-canary-tier.log"
+    },
+    {
+      "name": "allowlist",
+      "exit": 1,
+      "assertion_failed": true,
+      "log": "/tmp/phase205-step4-canary-allowlist.log"
+    },
+    {
+      "name": "guard",
+      "exit": 1,
+      "assertion_failed": true,
+      "log": "/tmp/phase205-step4-canary-guard.log"
+    },
+    {
+      "name": "registration",
+      "exit": 1,
+      "assertion_failed": true,
+      "log": "/tmp/phase205-step4-canary-registration.log"
+    },
+    {
+      "name": "input",
+      "exit": 1,
+      "assertion_failed": true,
+      "log": "/tmp/phase205-step4-canary-input.log"
+    }
+  ],
+  "restored_canaries": {
+    "passed": 33,
+    "failed": 0
+  },
+  "builds": [
+    "deno task build:solo --compile",
+    "deno task build:team --compile"
+  ],
+  "integration_duplication": {
+    "command": "deno task check:duplication",
+    "exit": 1,
+    "percent": 3.8068622594423833,
+    "threshold": 3.8,
+    "cause": "Strict voter recordings are reported as clones",
+    "repair": "Skipped under user CI-repair exception"
+  },
+  "full_suite": {
+    "command": "deno task test_parallel:team",
+    "status": "interrupted after linked-worktree overlap",
+    "exit": 1,
+    "final_summary": null,
+    "parallel_failure_markers": 4,
+    "overlapping_runner": {
+      "pid": 3106793,
+      "worktree_path": "/home/dkasymov/git/exaix-phase207"
+    },
+    "interruption": "SIGTERM to Phase 205 runner only",
+    "required_command": "deno task test_parallel:team without other full-suite runners"
+  },
+  "notes": [
+    "Step 3 missing branch-target binding fixture remains unchanged",
+    "Operator catalog must define architecture-service for the companion overlay",
+    "Recording allocator and caller-specific lanes are owned by Step 5"
+  ]
+}

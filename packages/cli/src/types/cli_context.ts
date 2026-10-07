@@ -7,8 +7,11 @@
  */
 
 import type { IApplicationContext } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 
-export interface ICliApplicationContext extends IApplicationContext {}
+export interface ICliApplicationContext extends IApplicationContext {
+  edition?: Opt<string, Reason.OptionalContext>;
+}
 
 export type {
   IArchiveService,

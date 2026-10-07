@@ -17,6 +17,7 @@ import {
   DEFAULT_AGENTS_PATH,
   DEFAULT_DOGFOOD_CONTEXT_PRUNE_INTERVAL_MS,
   DEFAULT_PROJECTS_MEMORY_PATH,
+  EDITION_ENTERPRISE,
   EDITION_SOLO,
   EDITION_TEAM,
   ProviderType,
@@ -459,7 +460,7 @@ if (import.meta.main) {
     // capability modules and bootstraps Team-only providers (Vertex AI).
     const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
     let _editionComposer: SoloComposer | TeamComposer;
-    if (editionType === EDITION_TEAM) {
+    if (editionType === EDITION_TEAM || editionType === EDITION_ENTERPRISE) {
       const { bootstrapTeamProviders, TeamComposer } = await import("@exaix-team/team-composer");
       bootstrapTeamProviders();
       const teamComposer = new TeamComposer();
@@ -1131,7 +1132,10 @@ if (import.meta.main) {
       );
     }
     const gateEvaluator = new GateEvaluator(createJudgeEvaluator(new JudgeAgentRunner(llmProvider, bindingService)));
+    const installedFlowCapabilities = new Set<string>();
     const flowRunner = new FlowRunner({
+      edition: editionType,
+      installedCapabilities: installedFlowCapabilities,
       db: dbService,
       agentExecutor: agentExecutorAdapter,
       bindingService,
@@ -1161,16 +1165,17 @@ if (import.meta.main) {
 
     // Wire Team-edition capability modules through the edition-composer seam.
     // Dynamic import keeps bootstrap_team.ts (+ its @exaix-team deps) out of the Solo binary.
-    if (editionType === EDITION_TEAM) {
+    if (editionType === EDITION_TEAM || editionType === EDITION_ENTERPRISE) {
       const { registerTeamCapabilities } = await import("./src/bootstrap_team.ts");
-      registerTeamCapabilities(
+      const installed = registerTeamCapabilities(
         agentExecutorAdapter,
         logger,
         flowRunner,
         _editionComposer as TeamComposer,
         symbolRegistry,
-        hitlPolicyEvaluator,
+        { edition: editionType, hitlPolicyEvaluator },
       );
+      for (const capability of installed) installedFlowCapabilities.add(capability);
     }
 
     // Initialize Request Processor

@@ -11,6 +11,7 @@ import { join } from "@std/path";
 import { FlowLoader } from "@exaix/flow";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { DEFAULT_NONE_LABEL, MODEL_COLUMN_LABEL } from "@exaix/core";
+import { isCapabilityEligible } from "@exaix/core/composer";
 import { BaseCommand } from "@exaix/cli/base.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -70,6 +71,11 @@ export class FlowCommands extends BaseCommand {
             description: flow.description,
             version: flow.version,
             steps: flow.steps.length,
+            requiresCapabilities: flow.requires_capabilities ?? [],
+            tierEligible: (flow.requires_capabilities ?? []).every((capability) =>
+              isCapabilityEligible(capability, this.context.edition)
+            ),
+            runtimeAvailability: "unknown",
           })),
           null,
           2,
@@ -83,7 +89,7 @@ export class FlowCommands extends BaseCommand {
       }
 
       const table = new Table()
-        .header(["ID", "Name", "Version", "Steps", "Description"])
+        .header(["ID", "Name", "Version", "Steps", "Description", "Capabilities"])
         .border(true);
 
       for (const flow of flows) {
@@ -93,6 +99,11 @@ export class FlowCommands extends BaseCommand {
           flow.version,
           flow.steps.length.toString(),
           flow.description,
+          (flow.requires_capabilities ?? []).length === 0
+            ? DEFAULT_NONE_LABEL
+            : flow.requires_capabilities!.every((capability) => isCapabilityEligible(capability, this.context.edition))
+            ? "eligible (runtime unverified)"
+            : `unavailable (needs ${flow.requires_capabilities!.join(", ")})`,
         ]);
       }
 

@@ -283,6 +283,7 @@ export async function initializeServices(
     );
 
     const context: ICliApplicationContext = {
+      edition: editionType,
       db: dbLocal,
       cost: new CostTracker(dbLocal, cfg, displayLogger),
       git: gitLocal,

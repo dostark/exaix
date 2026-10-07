@@ -8,6 +8,8 @@
  */
 
 import type { VotingGroupConfig, VotingResult } from "@exaix/schemas/voting.ts";
+import type { IExecutorContext } from "./i_executor.ts";
+import type { Opt, Reason } from "./optional_marker.ts";
 
 export interface IVotingConsensusService {
   /** Fan out all runners for one objective, then resolve consensus. */
@@ -15,5 +17,6 @@ export interface IVotingConsensusService {
     config: VotingGroupConfig,
     basePrompt: string,
     traceId: string,
+    context?: Opt<IExecutorContext, Reason.OptionalContext>,
   ): Promise<VotingResult>;
 }
