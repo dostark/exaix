@@ -11,7 +11,7 @@ import { MEMORY_COMMAND_DEFAULTS } from "../config.ts";
 import type { IMemoryBankSummary } from "../types/memory_types.ts";
 import { MemoryScope } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
-import type { ISkillUsageSummary } from "@exaix/core/skills";
+import type { ISkillDiagnostic, ISkillUsageSummary } from "@exaix/core/skills";
 import type {
   IExecutionMemory,
   IGlobalMemory,
@@ -29,6 +29,7 @@ import {
   CLI_LAYOUT_BOX_WIDTH_STANDARD,
   CLI_LAYOUT_BOX_WIDTH_WIDE,
   CLI_LAYOUT_PADDING_STANDARD,
+  CLI_LAYOUT_SKILL_HASH_WIDTH,
   CLI_LAYOUT_SKILL_ID_WIDTH,
   CLI_LAYOUT_SKILL_NAME_WIDTH,
   CLI_LAYOUT_SKILL_REVISION_WIDTH,
@@ -48,6 +49,36 @@ import {
   CLI_TRUNCATE_TITLE_SHORT,
 } from "../constants.ts";
 import { DEFAULT_NONE_VALUE } from "@exaix/core";
+
+/** One stored revision of a skill with its use counts, as the CLI prints it. */
+export interface ISkillRevisionRow {
+  revisionId: string;
+  contentSha256: string;
+  firstSeenAt: string;
+  useCount: number;
+  lastUsedAt: string | null;
+}
+
+/** One model call that carried a skill, without any skill body. */
+export interface ISkillTraceRow {
+  callId: string;
+  skillName: string;
+  revisionId: string;
+  contentSha256: string;
+  matchSource: string;
+  renderMode: string;
+  submissionKind: string;
+  round: number;
+  attempt: number;
+  rootKind: string;
+  sourcePath: string;
+  usedAt: string;
+  requestId: string | null;
+  flowId: string | null;
+  flowStepId: string | null;
+  agentRole: string;
+  configGeneration: string;
+}
 
 const CLI_BOX_SEPARATOR = "├─────────────────────────────────────────────────────────────┤";
 
@@ -887,6 +918,45 @@ export class MemoryFormatter {
       lines.push(
         `  Revision ${revision.revisionId.slice(0, CLI_LAYOUT_SKILL_REVISION_WIDTH)}: ${revision.useCount} use(s), ` +
           `first seen ${revision.firstSeenAt}, last used ${revision.lastUsedAt}`,
+      );
+    }
+    return lines.join("\n");
+  }
+
+  /** Stored revisions of one skill, oldest first, with their use counts. */
+  formatSkillRevisions(name: string, rows: ISkillRevisionRow[]): string {
+    if (rows.length === 0) return `No stored revisions for skill: ${name}`;
+    const lines = [`Revisions of ${name}:`];
+    for (const row of rows) {
+      lines.push(
+        `  ${row.revisionId}  sha256 ${row.contentSha256.slice(0, CLI_LAYOUT_SKILL_HASH_WIDTH)}  ` +
+          `first seen ${row.firstSeenAt}  ${row.useCount} use(s)  last used ${row.lastUsedAt ?? DEFAULT_NONE_VALUE}`,
+      );
+    }
+    return lines.join("\n");
+  }
+
+  /** Every skill use on one trace, one line per call and skill. */
+  formatSkillTrace(traceId: string, rows: ISkillTraceRow[]): string {
+    if (rows.length === 0) return `No skill usage recorded for trace: ${traceId}`;
+    const lines = [`Skill usage on trace ${traceId}:`];
+    for (const row of rows) {
+      lines.push(
+        `  ${row.usedAt}  ${row.skillName}  ${row.revisionId}  ${row.matchSource}/${row.renderMode}  ` +
+          `${row.submissionKind} round ${row.round} attempt ${row.attempt}  ${row.rootKind}/${row.sourcePath}`,
+      );
+    }
+    return lines.join("\n");
+  }
+
+  /** Typed discovery and validation outcomes. Never includes skill bodies or host paths. */
+  formatSkillDiagnostics(diagnostics: ISkillDiagnostic[]): string {
+    if (diagnostics.length === 0) return "No skill diagnostics.";
+    const lines = ["Skill diagnostics:"];
+    for (const diagnostic of diagnostics) {
+      lines.push(
+        `  [${diagnostic.severity}] ${diagnostic.name ?? DEFAULT_NONE_VALUE}  ${diagnostic.reason}  ` +
+          `${diagnostic.root_kind}/${diagnostic.safe_path}`,
       );
     }
     return lines.join("\n");

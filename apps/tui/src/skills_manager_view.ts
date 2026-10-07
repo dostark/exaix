@@ -32,6 +32,7 @@ import type {
   ISkillDiagnostic,
   ISkillOperationContext,
   ISkillPin,
+  ISkillRevisionRecord,
   ISkillSubmission,
   ISkillUsageRecord,
   ISkillUsageSummary,
@@ -367,6 +368,14 @@ export class MinimalSkillsServiceMock implements ISkillsService {
 
   ensureRevisions(_revisionIds: readonly string[]): Promise<void> {
     return Promise.resolve();
+  }
+
+  getRevision(_revisionId: string): Promise<ISkillRevisionRecord | null> {
+    return Promise.resolve(null);
+  }
+
+  listRevisions(_skillId: string): Promise<ISkillRevisionRecord[]> {
+    return Promise.resolve([]);
   }
 
   currentConfigGeneration(): string {

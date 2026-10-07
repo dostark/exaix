@@ -103,3 +103,43 @@ Deno.test("[journal] a shadowed skill journals its winner and masked paths once 
     await fx.cleanup();
   }
 });
+
+Deno.test("[journal] approve, delete and a refused mutation journal their payloads on the operation trace", async () => {
+  const fx = await fixture();
+  try {
+    const service = new SkillsService({ memoryDir: join(fx.base, "Memory") }, fx.env.db, undefined, fx.logger);
+    await service.initialize();
+    const ctx = createSkillOperationContext({ agentRole: "reviewer", traceId: "trace-lifecycle" });
+    const draft = await service.createSkill({ name: "lifecycle", description: "d", instructions: "Body." }, ctx);
+
+    await assertRejects(() => service.approveSkill("lifecycle", crypto.randomUUID(), ctx));
+    const active = await service.approveSkill("lifecycle", draft.id, ctx);
+    await service.deleteSkill("lifecycle", ctx);
+
+    const approved = await fx.rows(DomainEventType.SkillsApproved);
+    assertEquals(approved.length, 1);
+    assertEquals(approved[0].trace_id, "trace-lifecycle");
+    const approvedPayload = JSON.parse(approved[0].payload);
+    assertEquals(approvedPayload.name, "lifecycle");
+    assertEquals(approvedPayload.reviewed_revision_id, draft.id);
+    assertEquals(approvedPayload.active_revision_id, active.id);
+    assertEquals(approvedPayload.actor, "reviewer");
+
+    const deleted = await fx.rows(DomainEventType.SkillsDeleted);
+    assertEquals(deleted.length, 1);
+    assertEquals(JSON.parse(deleted[0].payload).revision_id, active.id);
+    assertEquals(deleted[0].trace_id, "trace-lifecycle");
+
+    const failed = await fx.rows(DomainEventType.SkillsMutationFailed);
+    assertEquals(failed.length, 1);
+    const failedPayload = JSON.parse(failed[0].payload);
+    assertEquals([failedPayload.name, failedPayload.operation, failedPayload.reason], [
+      "lifecycle",
+      "approve",
+      "skill_revision_mismatch",
+    ]);
+    assertEquals(failed[0].trace_id, "trace-lifecycle");
+  } finally {
+    await fx.cleanup();
+  }
+});

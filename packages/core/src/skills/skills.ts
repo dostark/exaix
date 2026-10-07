@@ -66,6 +66,7 @@ import {
   type ISkillFolderLimits,
   type ISkillOperationContext,
   type ISkillPin,
+  type ISkillRevisionRecord,
   type ISkillRevisionSnapshot,
   type ISkillSubmission,
   type ISkillUsageRecord,
@@ -131,6 +132,7 @@ export const SKILLS_SERVICE_SOURCE_ID = "skills-service";
 /** Revisions kept for `ensureRevisions`. A caller records right after reading, so a small window suffices. */
 const MAX_REMEMBERED_REVISIONS = 256;
 const MAX_REMEMBERED_PLANS = 8;
+const REVISION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const GENERATION_LENGTH = 16;
 const SKILLS_SUBDIR = "Skills";
 const LEARNED_SUBDIR = "learned";
@@ -198,6 +200,25 @@ export class SkillsService implements ISkillsService {
       }
       await this.revisions.record(loaded, operation);
     }
+  }
+
+  async getRevision(
+    revisionId: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillRevisionRecord | null> {
+    if (!REVISION_ID_PATTERN.test(revisionId)) return null;
+    return await this.revisions.get(revisionId, ctx ?? this.defaultContext()).catch(() => {
+      throw new SkillUnavailableError("", `Skill revision ${revisionId} has a corrupt stored snapshot`);
+    });
+  }
+
+  async listRevisions(
+    name: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillRevisionRecord[]> {
+    return await this.revisions.listByName(name, ctx ?? this.defaultContext()).catch(() => {
+      throw new SkillUnavailableError(name, `Skill "${name}" has a corrupt stored revision`);
+    });
   }
 
   /** Joins each pin to the immutable snapshot it names. Live files are never read. */

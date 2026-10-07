@@ -1592,6 +1592,16 @@ export enum SkillPublicationOperation {
   DELETE = "delete",
 }
 
+/** A boundary inside one guarded publication. A fault hook fires right after the step it names completes. */
+export enum SkillPublicationStage {
+  STAGE_MAIN = "stage-main",
+  STAGE_SIDECAR = "stage-sidecar",
+  INTENT_SYNC = "intent-sync",
+  OLD_TO_BACKUP = "old-to-backup",
+  STAGE_TO_DESTINATION = "stage-to-destination",
+  CLEANUP = "cleanup",
+}
+
 /** Operation a guarded skill mutation attempted, journaled on every mutation failure. */
 export enum SkillMutationOperation {
   CREATE = "create",

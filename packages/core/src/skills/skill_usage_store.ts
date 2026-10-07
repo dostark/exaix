@@ -68,6 +68,8 @@ interface ISummaryRow {
   use_count: number;
   last_used_at: string;
   first_seen_at: string;
+  root_kind: SkillRootKind;
+  source_path: string;
 }
 
 export class SkillUsageStore {
@@ -143,7 +145,11 @@ export class SkillUsageStore {
   async summary(name: string, _ctx: ISkillOperationContext): Promise<ISkillUsageSummary> {
     const rows = await this.db.preparedAll<ISummaryRow>(
       `SELECT u.revision_id AS revision_id, COUNT(*) AS use_count, MAX(u.used_at) AS last_used_at,
-              r.first_seen_at AS first_seen_at
+              r.first_seen_at AS first_seen_at,
+              (SELECT u2.root_kind FROM skill_usage u2 WHERE u2.revision_id = u.revision_id
+                ORDER BY u2.id DESC LIMIT 1) AS root_kind,
+              (SELECT u2.source_path FROM skill_usage u2 WHERE u2.revision_id = u.revision_id
+                ORDER BY u2.id DESC LIMIT 1) AS source_path
          FROM skill_usage u JOIN skill_revisions r ON r.revision_id = u.revision_id
         WHERE u.skill_name = ?
         GROUP BY u.revision_id
@@ -163,6 +169,8 @@ export class SkillUsageStore {
         useCount: row.use_count,
         lastUsedAt: row.last_used_at,
         firstSeenAt: row.first_seen_at,
+        rootKind: row.root_kind,
+        sourcePath: row.source_path,
       })),
     };
   }

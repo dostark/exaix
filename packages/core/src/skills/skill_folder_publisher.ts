@@ -13,7 +13,8 @@
 
 import { join } from "@std/path";
 import type { IPathSecurityOps } from "@exaix/tool-runtime";
-import { SkillMutationErrorCode, SkillPublicationOperation } from "../types/enums.ts";
+import { SkillMutationErrorCode, SkillPublicationOperation, SkillPublicationStage } from "../types/enums.ts";
+import type { Opt, Reason } from "../types/optional_marker.ts";
 import { computeSkillContentSha256 } from "./skill_snapshot.ts";
 import { type ISkillRevisionSnapshot, SkillMutationError } from "./skill_types.ts";
 
@@ -38,6 +39,9 @@ interface IPublicationIntent {
 }
 
 export type SkillLockMode = "shared" | "exclusive";
+
+/** Called after each publication stage completes. A throw simulates a crash at exactly that boundary. */
+export type SkillPublicationFaultHook = (stage: SkillPublicationStage, name: string) => void | Promise<void>;
 
 /** Reads a skill directory back into a snapshot without caps, for verifying folders this module wrote. */
 async function readFolderSnapshot(dir: string): Promise<ISkillRevisionSnapshot> {
@@ -106,7 +110,12 @@ export class SkillFolderPublisher {
   constructor(
     private readonly pathSecurity: IPathSecurityOps,
     private readonly lockTimeoutMs: number = DEFAULT_LOCK_TIMEOUT_MS,
+    private readonly faultHook?: Opt<SkillPublicationFaultHook, Reason.TestOverride>,
   ) {}
+
+  private async reached(stage: SkillPublicationStage, name: string): Promise<void> {
+    await this.faultHook?.(stage, name);
+  }
 
   /** Creates the reserved state directories and the stable lock file for one writable root. */
   async ensureState(root: string): Promise<void> {
@@ -169,7 +178,7 @@ export class SkillFolderPublisher {
       throw new SkillMutationError(SkillMutationErrorCode.NAME_CONFLICT, `skill "${name}" already exists`);
     }
     const operationId = crypto.randomUUID();
-    const staging = await this.stage(root, operationId, snapshot);
+    const staging = await this.stage(root, operationId, snapshot, name);
     const intent: IPublicationIntent = {
       operation: SkillPublicationOperation.CREATE,
       name,
@@ -179,9 +188,12 @@ export class SkillFolderPublisher {
       intended_sha256: await computeSkillContentSha256(snapshot),
     };
     await this.writeIntent(root, operationId, intent);
+    await this.reached(SkillPublicationStage.INTENT_SYNC, name);
     await this.confine(root, destination);
     await Deno.rename(staging, destination);
     await syncDir(root);
+    await this.reached(SkillPublicationStage.STAGE_TO_DESTINATION, name);
+    await this.reached(SkillPublicationStage.CLEANUP, name);
     await this.clearIntent(root, operationId);
   }
 
@@ -191,7 +203,7 @@ export class SkillFolderPublisher {
     await this.confine(root, destination);
     await this.requirePlainDirectory(destination, name);
     const operationId = crypto.randomUUID();
-    const staging = await this.stage(root, operationId, snapshot);
+    const staging = await this.stage(root, operationId, snapshot, name);
     const backup = join(root, STATE_DIR, BACKUP_DIR, operationId);
     const intent: IPublicationIntent = {
       operation: SkillPublicationOperation.UPDATE,
@@ -202,10 +214,14 @@ export class SkillFolderPublisher {
       intended_sha256: await computeSkillContentSha256(snapshot),
     };
     await this.writeIntent(root, operationId, intent);
+    await this.reached(SkillPublicationStage.INTENT_SYNC, name);
     await this.confine(root, destination);
     await Deno.rename(destination, backup);
+    await this.reached(SkillPublicationStage.OLD_TO_BACKUP, name);
     await Deno.rename(staging, destination);
     await syncDir(root);
+    await this.reached(SkillPublicationStage.STAGE_TO_DESTINATION, name);
+    await this.reached(SkillPublicationStage.CLEANUP, name);
     await removeIfPresent(backup);
     await this.clearIntent(root, operationId);
   }
@@ -225,9 +241,12 @@ export class SkillFolderPublisher {
       backup,
       intended_sha256: null,
     });
+    await this.reached(SkillPublicationStage.INTENT_SYNC, name);
     await this.confine(root, destination);
     await Deno.rename(destination, backup);
     await syncDir(root);
+    await this.reached(SkillPublicationStage.OLD_TO_BACKUP, name);
+    await this.reached(SkillPublicationStage.CLEANUP, name);
     await removeIfPresent(backup);
     await this.clearIntent(root, operationId);
   }
@@ -242,7 +261,14 @@ export class SkillFolderPublisher {
       await Deno.remove(join(intents, entry.name));
       resolved += 1;
     }
+    await this.removeOrphanStaging(root);
     return resolved;
+  }
+
+  /** Drops staging folders left by a crash before their intent was written. Callers hold the exclusive locks. */
+  private async removeOrphanStaging(root: string): Promise<void> {
+    const staging = join(root, STATE_DIR, STAGING_DIR);
+    for await (const entry of Deno.readDir(staging)) await removeIfPresent(join(staging, entry.name));
   }
 
   private async resolveIntent(intent: IPublicationIntent): Promise<void> {
@@ -274,11 +300,18 @@ export class SkillFolderPublisher {
     }
   }
 
-  private async stage(root: string, operationId: string, snapshot: ISkillRevisionSnapshot): Promise<string> {
+  private async stage(
+    root: string,
+    operationId: string,
+    snapshot: ISkillRevisionSnapshot,
+    name: string,
+  ): Promise<string> {
     const staging = join(root, STATE_DIR, STAGING_DIR, operationId);
     await Deno.mkdir(staging, { recursive: true });
     await writeSynced(join(staging, SKILL_FILE), snapshot.skill_md);
+    await this.reached(SkillPublicationStage.STAGE_MAIN, name);
     if (snapshot.exaix_yaml !== null) await writeSynced(join(staging, SIDECAR_FILE), snapshot.exaix_yaml);
+    await this.reached(SkillPublicationStage.STAGE_SIDECAR, name);
     if (snapshot.references.length > 0) {
       await Deno.mkdir(join(staging, REFERENCES_DIR));
       for (const reference of snapshot.references) {

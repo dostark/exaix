@@ -12,6 +12,7 @@ import type {
   ISkillDiagnostic,
   ISkillOperationContext,
   ISkillPin,
+  ISkillRevisionRecord,
   ISkillSubmission,
   ISkillUsageRecord,
   ISkillUsageSummary,
@@ -38,6 +39,20 @@ export class SkillsAdapter implements ISkillsService {
 
   currentConfigGeneration(): string {
     return this.inner.currentConfigGeneration();
+  }
+
+  async getRevision(
+    revisionId: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillRevisionRecord | null> {
+    return await this.inner.getRevision(revisionId, ctx);
+  }
+
+  async listRevisions(
+    skillId: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillRevisionRecord[]> {
+    return await this.inner.listRevisions(skillId, ctx);
   }
 
   async recordSubmission(submission: ISkillSubmission, ctx: ISkillOperationContext): Promise<void> {

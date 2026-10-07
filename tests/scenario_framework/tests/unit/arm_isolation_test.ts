@@ -44,6 +44,7 @@ Deno.test("[ArmIsolation] suppressing skill X for one arm does not suppress it f
         return this;
       },
       recordSubmission: () => Promise.resolve(),
+      currentConfigGeneration: () => "test-generation",
       matchSkills: () => Promise.resolve({ matches: [], totalAvailable: 0 }),
       buildSkillContext: () => Promise.resolve(""),
       getSkill: (id: string) =>

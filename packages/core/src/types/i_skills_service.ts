@@ -15,6 +15,7 @@ import type {
   ISkillDiagnostic,
   ISkillOperationContext,
   ISkillPin,
+  ISkillRevisionRecord,
   ISkillSubmission,
   ISkillUsageRecord,
   ISkillUsageSummary,
@@ -58,6 +59,23 @@ export interface ISkillsService {
     pins: readonly ISkillPin[],
     ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
   ): Promise<IPinnedSkill[]>;
+
+  /**
+   * One stored revision with its canonical snapshot, or null when it was never recorded. Historical
+   * content only: this never grants injection authority. Throws `skill_unavailable` for a corrupt row.
+   */
+  getRevision(
+    revisionId: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillRevisionRecord | null>;
+
+  /**
+   * Every stored revision of one skill, oldest first, including revisions whose files no longer exist.
+   */
+  listRevisions(
+    skillId: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillRevisionRecord[]>;
 
   /**
    * Record one observable model submission: its revision snapshots first, then one usage row per

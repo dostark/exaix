@@ -19,6 +19,7 @@ import type {
   ISkillDiagnostic,
   ISkillOperationContext,
   ISkillPin,
+  ISkillRevisionRecord,
   ISkillSubmission,
   ISkillUsageRecord,
   ISkillUsageSummary,
@@ -77,6 +78,20 @@ export class ScopedSkillsService implements ISkillsService {
     ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
   ): Promise<IPinnedSkill[]> {
     return this.inner.resolvePinned(pins, ctx ?? this.bound);
+  }
+
+  getRevision(
+    revisionId: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillRevisionRecord | null> {
+    return this.inner.getRevision(revisionId, ctx ?? this.bound);
+  }
+
+  listRevisions(
+    skillId: string,
+    ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
+  ): Promise<ISkillRevisionRecord[]> {
+    return this.inner.listRevisions(skillId, ctx ?? this.bound);
   }
 
   recordSubmission(submission: ISkillSubmission, ctx: ISkillOperationContext): Promise<void> {

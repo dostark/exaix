@@ -128,7 +128,15 @@ export interface ISkillUsageSummary {
   name: string;
   totalUses: number;
   lastUsedAt: string | null;
-  revisions: Array<{ revisionId: string; useCount: number; lastUsedAt: string; firstSeenAt: string }>;
+  revisions: Array<{
+    revisionId: string;
+    useCount: number;
+    lastUsedAt: string;
+    firstSeenAt: string;
+    /** Root and folder of the most recent use, the revision's origin. */
+    rootKind: SkillRootKind;
+    sourcePath: string;
+  }>;
 }
 
 /** One admitted skill root, ordered by precedence. */

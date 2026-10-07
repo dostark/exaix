@@ -7,6 +7,7 @@
  */
 
 import { Command } from "@cliffy/command";
+import { registerSkillCommands } from "./command_builders/skill_commands.ts";
 import { PlanCommands } from "./commands/plan_commands.ts";
 import { RequestCommands } from "./commands/request_commands.ts";
 import {
@@ -38,7 +39,6 @@ import { ToolCommands } from "./commands/tool_commands.ts";
 import {
   FlowInputSource,
   GeneralStatus,
-  type MemoryBankSource,
   MemoryScope,
   type PortalAnalysisMode,
   PortalExecutionStrategy,
@@ -139,7 +139,6 @@ const CLI_OPTION_REASON = "-r, --reason <reason:string>";
 const CLI_OPTION_MODEL = "-m, --model <model:string>";
 const CLI_OPTION_PORTAL = "-p, --portal <portal:string>";
 const CLI_PORTAL_LONG_OPTION = "--portal <portal:string>";
-const CLI_SKILL_PORTAL_HELP = "Portal whose project skills apply. Without it only global skills apply";
 const CLI_OPTION_WAIT_STATUS = "-s, --status <status:string>";
 const CLI_OPTION_WAIT_MESSAGE = "-m, --message <message:string>";
 const CLI_OPTION_WAIT_MESSAGE_DESC = "Resolution summary";
@@ -168,6 +167,8 @@ const toolCommands: ToolCommands = new ToolCommands(fullContext);
 const flowCommands: FlowCommands = new FlowCommands(fullContext);
 const dashboardCommands: DashboardCommands = new DashboardCommands(fullContext);
 const memoryCommands: MemoryCommands = new MemoryCommands(fullContext);
+const memorySkillCommand = new Command().description("Manage procedural skills");
+registerSkillCommands(memorySkillCommand, memoryCommands);
 const watchCommandInstance: WatchCommand = new WatchCommand(fullContext);
 const waitStateCommands: WaitStateCommands = new WaitStateCommands(fullContext);
 const evalCommands: EvalCommands = new EvalCommands(fullContext);
@@ -2537,146 +2538,7 @@ const baseCommand: ExaCtlBaseCommand = new Command()
           ),
       )
       // Skill commands
-      .command(
-        "skill",
-        new Command()
-          .description("Manage procedural skills (Phase 17)")
-          .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-          .action(async (options) => {
-            // Default: list skills
-            const result = await memoryCommands.skillList({ format: options.format as OutputFormat });
-            console.log(result);
-          })
-          .command(
-            RequestOperation.LIST,
-            new Command()
-              .description("List all skills")
-              .option("-c, --category <category:string>", "Filter by category: core, project, learned")
-              .option(
-                CLI_PORTAL_LONG_OPTION,
-                CLI_SKILL_PORTAL_HELP,
-              )
-              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-              .action(async (options) => {
-                const result = await memoryCommands.skillList({
-                  category: options.category as MemoryBankSource | undefined,
-                  format: options.format as OutputFormat,
-                  portal: options.portal,
-                });
-                console.log(result);
-              }),
-          )
-          .command(
-            "show <skillId:string>",
-            new Command()
-              .description("Show details of a specific skill")
-              .option(
-                CLI_PORTAL_LONG_OPTION,
-                CLI_SKILL_PORTAL_HELP,
-              )
-              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-              .action(async (options, ...args: string[]) => {
-                const skillId = args[0];
-                const result = await memoryCommands.skillShow(
-                  skillId,
-                  options.format as UIOutputFormat,
-                  options.portal,
-                );
-                console.log(result);
-              }),
-          )
-          .command(
-            "match <request:string>",
-            new Command()
-              .description("Match skills for a given request")
-              .option("-t, --task-type <taskType:string>", "Task type filter")
-              .option(
-                CLI_PORTAL_LONG_OPTION,
-                CLI_SKILL_PORTAL_HELP,
-              )
-              .option("--tags <tags:string>", "Comma-separated tags filter")
-              .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 10 })
-              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-              .action(async (options, ...args: string[]) => {
-                const request = args[0];
-                const tags = options.tags ? options.tags.split(",").map((t: string) => t.trim()) : undefined;
-                const result = await memoryCommands.skillMatch(request, {
-                  taskType: options.taskType,
-                  tags,
-                  limit: options.limit,
-                  format: options.format as UIOutputFormat,
-                  portal: options.portal,
-                });
-                console.log(result);
-              }),
-          )
-          .command(
-            "derive",
-            new Command()
-              .description("Derive a new skill from learnings")
-              .option(
-                CLI_PORTAL_LONG_OPTION,
-                CLI_SKILL_PORTAL_HELP,
-              )
-              .option("-l, --learning-ids <ids:string>", "Comma-separated learning IDs to derive from", {
-                required: true,
-              })
-              .option("-n, --name <name:string>", "Name for the derived skill", { required: true })
-              .option("-d, --description <desc:string>", "Skill description")
-              .option("-i, --instructions <instructions:string>", "Skill instructions")
-              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-              .action(async (options) => {
-                const learningIds = options.learningIds
-                  ? options.learningIds.split(",").map((id: string) => id.trim())
-                  : undefined;
-                const result = await memoryCommands.skillDerive({
-                  learningIds,
-                  name: options.name,
-                  description: options.description,
-                  instructions: options.instructions,
-                  format: options.format as UIOutputFormat,
-                  portal: options.portal,
-                });
-                console.log(result);
-              }),
-          )
-          .command(
-            "create <name:string>",
-            new Command()
-              .description("Create a new skill")
-              .option(
-                CLI_PORTAL_LONG_OPTION,
-                CLI_SKILL_PORTAL_HELP,
-              )
-              .option("-d, --description <desc:string>", "Skill description")
-              .option("-c, --category <category:string>", "Category: core, project, learned", {
-                default: MemoryScope.PROJECT,
-              })
-              .option("-i, --instructions <instructions:string>", "Skill instructions")
-              .option("-k, --keywords <keywords:string>", "Comma-separated trigger keywords")
-              .option("-t, --task-types <taskTypes:string>", "Comma-separated trigger task types")
-              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-              .action(async (options, ...args: string[]) => {
-                const name = args[0];
-                const keywords = options.keywords
-                  ? options.keywords.split(",").map((k: string) => k.trim())
-                  : undefined;
-                const taskTypes = options.taskTypes
-                  ? options.taskTypes.split(",").map((t: string) => t.trim())
-                  : undefined;
-                const result = await memoryCommands.skillCreate(name, {
-                  description: options.description,
-                  category: options.category as MemoryBankSource,
-                  instructions: options.instructions,
-                  triggersKeywords: keywords,
-                  triggersTaskTypes: taskTypes,
-                  format: options.format as UIOutputFormat,
-                  portal: options.portal,
-                });
-                console.log(result);
-              }),
-          ),
-      ),
+      .command("skill", memorySkillCommand),
   )
   .command(
     "dashboard",
@@ -2988,63 +2850,8 @@ baseCommand.command("tool", toolCommand);
 
 // skills subcommand alias (wires the Skills Service)
 
-const skillsCommand = new Command()
-  .description("Manage procedural skills (Alias for 'memory skill')")
-  .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-  .action(async (options) => {
-    const result = await memoryCommands.skillList({ format: options.format as OutputFormat });
-    console.log(result);
-  })
-  .command(
-    CLI_CMD_LIST,
-    new Command()
-      .description("List all skills")
-      .option("-c, --category <category:string>", "Filter by category: core, project, learned")
-      .option(CLI_PORTAL_LONG_OPTION, CLI_SKILL_PORTAL_HELP)
-      .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-      .action(async (options) => {
-        const result = await memoryCommands.skillList({
-          category: options.category as MemoryBankSource | undefined,
-          format: options.format as OutputFormat,
-          portal: options.portal,
-        });
-        console.log(result);
-      }),
-  )
-  .command(
-    "show <skillId:string>",
-    new Command()
-      .description("Show details of a specific skill")
-      .option(CLI_PORTAL_LONG_OPTION, CLI_SKILL_PORTAL_HELP)
-      .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-      .action(async (options, ...args: string[]) => {
-        const skillId = args[0];
-        const result = await memoryCommands.skillShow(skillId, options.format as UIOutputFormat, options.portal);
-        console.log(result);
-      }),
-  )
-  .command(
-    "match <request:string>",
-    new Command()
-      .description("Match skills for a given request")
-      .option("-t, --task-type <taskType:string>", "Task type filter")
-      .option(CLI_PORTAL_LONG_OPTION, CLI_SKILL_PORTAL_HELP)
-      .option("--tags <tags:string>", "Comma-separated tags filter")
-      .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 10 })
-      .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
-      .action(async (options, ...args: string[]) => {
-        const request = args[0];
-        const tags = options.tags ? options.tags.split(",").map((t: string) => t.trim()) : undefined;
-        const result = await memoryCommands.skillMatch(request, {
-          taskType: options.taskType,
-          tags,
-          limit: options.limit,
-          format: options.format as UIOutputFormat,
-          portal: options.portal,
-        });
-        console.log(result);
-      }),
-  );
+const skillsCommand = new Command().description("Manage procedural skills (alias of 'memory skill')");
+registerSkillCommands(skillsCommand, memoryCommands);
 
 baseCommand.command("skills", skillsCommand);
 
