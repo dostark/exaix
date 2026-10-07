@@ -768,6 +768,10 @@ export async function main(args: string[]): Promise<number> {
     "tap",
   );
 
+  // Measure the Containered Batch wall-clock here. Per-file durations overlap across
+  // workers, so their sum is not the batch duration.
+  const batch2StartedAt = Date.now();
+
   // Containered Batch: sequential files, one per Deno.Command, no DENO_JOBS set.
   // Kill any daemon left behind by the parallel batch. It holds the default CLI port,
   // so a sequential daemon test would fail with "Daemon died during startup".
@@ -838,13 +842,13 @@ export async function main(args: string[]): Promise<number> {
   const b2Passed = seq.reduce((a, s) => a + s.passed, 0);
   const b2Failed = seq.reduce((a, s) => a + s.failed, 0);
   const b2Ignored = seq.reduce((a, s) => a + s.ignored, 0);
-  const b2Sec = seq.reduce((a, s) => a + s.durationSec, 0);
+  const batch2WallSec = Math.max(0, Math.round((Date.now() - batch2StartedAt) / 1000));
   const b2ExitCode = seq.some((s) => s.exitCode !== 0) ? 1 : 0;
 
   const totalPassed = batch1Stats.passed + b2Passed;
   const totalFailed = batch1Stats.failed + b2Failed;
   const totalIgnored = batch1Stats.ignored + b2Ignored;
-  const totalSec = batch1Stats.durationSec + b2Sec;
+  const totalSec = batch1Stats.durationSec + batch2WallSec;
   const anyFailed = batch1Stats.exitCode !== 0 || b2ExitCode !== 0;
 
   console.log(`\n${DHR}`);
@@ -871,7 +875,7 @@ export async function main(args: string[]): Promise<number> {
         passed: b2Passed,
         failed: b2Failed,
         ignored: b2Ignored,
-        durationSec: b2Sec,
+        durationSec: batch2WallSec,
         exitCode: b2ExitCode,
       })
     }`,
