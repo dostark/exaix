@@ -61,9 +61,9 @@ Surface, apply the nine-item checklist, classify all findings, and write TDD
 remediation steps that reuse the canonical primitives."
 
 Examples
-- "#security packages/mcp/server/handlers/patch_file_tool.ts — new file-mutation tool"
-- "#security packages/triggers/adapters/ — external event ingestion adapters"
-- "#security — audit all changes in the current PR for security gaps"
+- "#audit-security packages/mcp/server/handlers/patch_file_tool.ts — new file-mutation tool"
+- "#audit-security packages/triggers/adapters/ — external event ingestion adapters"
+- "#audit-security — audit all changes in the current PR for security gaps"
 
 Do / Don't
 - ✅ Read the source — never trust the plan's description of security controls.
