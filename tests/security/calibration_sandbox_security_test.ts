@@ -1,6 +1,6 @@
 /**
  * @module CalibrationSandboxTest
- * @path tests/security/calibration_sandbox_test.ts
+ * @path tests/security/calibration_sandbox_security_test.ts
  * @description Phase 146 Step 1 — capability-preflight tests for the isolated
  *   cross-provider reference-evaluator profile: a sandboxed process must not be able to
  *   read the repository or another CLI's own history/session data, must fail closed

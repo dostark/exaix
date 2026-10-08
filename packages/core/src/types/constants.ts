@@ -3404,7 +3404,7 @@ export const DAEMON_DEFAULT_NET_HOSTS: readonly string[] = [
   "api.openai.com",
   // Both of these are shipped, bootstrap-registered providers that `ProviderSelector` will
   // choose, so omitting them isn't a security posture — each host traces to that provider
-  // package's own base-URL constant, and `net_allowlist_covers_providers_test.ts` keeps them in step.
+  // package's own base-URL constant, and `net_allowlist_covers_providers_security_test.ts` keeps them in step.
   "generativelanguage.googleapis.com",
   "openrouter.ai",
   "localhost:11434",

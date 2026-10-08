@@ -180,7 +180,7 @@ Deno.test("test_output_parse is the single source and test_parallel re-exports t
 const EXPECTED_SEQUENTIAL_FILES = [
   "apps/exactl/tests/exactl_all_test.ts",
   "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
-  "tests/security/calibration_sandbox_test.ts",
+  "tests/security/calibration_sandbox_security_test.ts",
   "tests/scenario_framework/tests/portal_knowledge_strategies_scenario_test.ts",
   "apps/daemon/tests/deploy_workspace_test.ts",
   "tests/integration/cli_commands_test.ts",
@@ -246,7 +246,7 @@ Deno.test("only the dist/bin writers are marked serializedOutput and the egress-
   const network = SEQUENTIAL_TESTS.filter((test) => test.network).map((test) => test.file);
   assertEquals(network, [
     "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
-    "tests/security/calibration_sandbox_test.ts",
+    "tests/security/calibration_sandbox_security_test.ts",
     "apps/daemon/tests/deploy_workspace_test.ts",
     "tests/infra/build_test.ts",
     "tests/infra/exactl_edition_build_test.ts",

@@ -257,8 +257,10 @@ Advanced patterns
     pressure, assert the fake's calls, release, then await the original (see
     `packages/flow/tests/flow_worktree_coordinator_test.ts`'s `FakeGitService.addWorktreeGate`).
 
-Security tests as first-class citizens: label with [security]; cover traversal, injection,
-exfiltration, env leakage. Run `deno task test:security`.
+Security tests as first-class citizens: put every `[security]`-tagged test in a
+`*_security_test.ts` file and cover traversal, injection, exfiltration, env leakage. Run
+`deno task test:security` (it globs `tests/**/*_security_test.ts`; a tagged test in a normal
+file is not selected). `check:security-test-naming` enforces the suffix.
 
 Organization (root tests/): tests/cli/ (CLI), tests/services/ (services),
 tests/integration/ (e2e), tests/helpers/ (shared utils).

@@ -1,6 +1,6 @@
 /**
  * @module PersonaIsolationOverlayPathValidationTest
- * @path tests/scenario_framework/tests/unit/persona_isolation_overlay_path_validation_test.ts
+ * @path tests/scenario_framework/tests/unit/persona_isolation_overlay_path_validation_security_test.ts
  * @description Security coverage for persona overlay alias validation.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/persona_isolation_arm.ts, packages/portal/src/path_resolver.ts]

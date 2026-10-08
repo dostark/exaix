@@ -221,6 +221,13 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# 15b. Security test naming (every [security] test lives in a *_security_test.ts file)
+deno task check:security-test-naming
+if [ $? -ne 0 ]; then
+  echo "❌ Error: A [security]-tagged test lives outside a *_security_test.ts file."
+  exit 1
+fi
+
 # 16. Stale Markdown Path Check (ratchet: only STAGED markdown files must resolve)
 deno task check:md-path:staged
 if [ $? -ne 0 ]; then
@@ -454,11 +461,13 @@ if [ $? -ne 0 ]; then
 fi
 
 # 4. Security Regression Tests (always run — small, fast, critical)
-#    Run only the security-tagged regression suite, not the full test suite.
+#    Select by filename (tests/**/*_security_test.ts), not --filter: the filter still loads
+#    every test module under tests/, while the glob loads only the security files. The type
+#    check above already validated the tree, so --no-check skips a redundant pass.
 #    git sets GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE in a hook's environment; left set,
 #    they leak into deno test's spawned children and corrupt any test that creates its
 #    own temp git repo, making its raw git commands operate on THIS repo instead.
-env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE deno test --allow-all --filter "[security]" tests/
+env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE deno test --allow-all --no-check "tests/**/*_security_test.ts"
 if [ $? -ne 0 ]; then
   echo "❌ Error: Security regression tests failed."
   exit 1

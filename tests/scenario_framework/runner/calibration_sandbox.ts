@@ -11,7 +11,7 @@
  *   unavailable. Network stays reachable (the model call itself needs it); no MCP, no
  *   tools, no session persistence, no resume.
  * @architectural-layer Test
- * @related-files [tests/security/calibration_sandbox_test.ts, tests/scenario_framework/runner/calibration_reference.ts, packages/core/src/helpers/subprocess.ts, packages/core/src/helpers/child_env.ts]
+ * @related-files [tests/security/calibration_sandbox_security_test.ts, tests/scenario_framework/runner/calibration_reference.ts, packages/core/src/helpers/subprocess.ts, packages/core/src/helpers/child_env.ts]
  */
 
 import { join } from "@std/path";

@@ -1,6 +1,6 @@
 /**
  * @module AgentDocsSecretScanTest
- * @path tests/agents/agent_docs_secret_scan_test.ts
+ * @path tests/agents/agent_docs_secret_scan_security_test.ts
  * @description Scans the whole `.copilot/` agent-docs corpus for committed credentials.
  *
  *   Replaces the secret-scan case in `claude_enhancements_test.ts`, which walked

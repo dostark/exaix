@@ -44,8 +44,8 @@ describe("scripts/setup_hooks.ts", () => {
       "pre-commit hook should run test placement validation",
     );
     assert(
-      hookInstaller.includes('deno test --allow-all --filter "[security]" tests/'),
-      "pre-push hook should run only the security regression suite",
+      hookInstaller.includes('deno test --allow-all --no-check "tests/**/*_security_test.ts"'),
+      "pre-push hook should select only the *_security_test.ts files (not load all of tests/)",
     );
     assert(
       !hookInstaller.includes("deno test --allow-all $TEST_FILES"),
@@ -79,6 +79,10 @@ describe("scripts/setup_hooks.ts", () => {
       hookInstaller.includes("deno task check:skill-duplication"),
       "pre-commit hook should run the fast skill-instruction duplication check",
     );
+    assert(
+      hookInstaller.includes("deno task check:security-test-naming"),
+      "pre-commit hook should run the security-test naming gate",
+    );
   });
 
   it("clears git-hook-injected GIT_* env vars before running the pre-push security suite", async () => {
@@ -86,7 +90,7 @@ describe("scripts/setup_hooks.ts", () => {
     // unset, these leak into `deno test`'s spawned children and make raw `git` commands in
     // tests with their own temp repo operate against THIS repo's real .git instead.
     const hookInstaller = await Deno.readTextFile("scripts/setup_hooks.ts");
-    const securityTestLine = 'deno test --allow-all --filter "[security]" tests/';
+    const securityTestLine = 'deno test --allow-all --no-check "tests/**/*_security_test.ts"';
     const idx = hookInstaller.indexOf(securityTestLine);
     assert(idx !== -1, "pre-push hook must still invoke the security regression suite");
     const lineStart = hookInstaller.lastIndexOf("\n", idx) + 1;

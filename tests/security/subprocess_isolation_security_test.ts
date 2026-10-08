@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module SubprocessIsolationTest
- * @path tests/security/subprocess_isolation_test.ts
+ * @path tests/security/subprocess_isolation_security_test.ts
  * @description Verify that McpAgentStrategy.buildAgentArgs() produces Deno permission
  * flags that prevent subprocess write access. Satisfies Step 61.7 (G3) success
  * criterion: subprocess_isolation_test asserts permission flags match

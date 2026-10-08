@@ -1,6 +1,6 @@
 /**
  * @module DaemonNetAllowlistCoversProvidersTest
- * @path tests/daemon/net_allowlist_covers_providers_test.ts
+ * @path tests/daemon/net_allowlist_covers_providers_security_test.ts
  * @description Phase 142 Step 7 — the daemon's default outbound allowlist must reach every
  *   provider the product ships.
  *

@@ -18,26 +18,10 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { fromFileUrl, join } from "@std/path";
-import { parse as parseYaml } from "@std/yaml";
 import { expandMatrix, MatrixSchema } from "../../runner/matrix_expander.ts";
-import { ScenarioSchema } from "../../schema/scenario_schema.ts";
+import type { ScenarioSchema } from "../../schema/scenario_schema.ts";
 import { CriterionKind, ScenarioStepType } from "../../schema/step_schema.ts";
-
-const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const MATRIX_SCENARIO = join(
-  REPO_ROOT,
-  "tests/scenario_framework/scenarios/provider_live/session_delegate_matrix_live.yaml",
-);
-const HARDENING_SCENARIO = join(
-  REPO_ROOT,
-  "tests/scenario_framework/scenarios/provider_live/session_delegate_hardening_active_live.yaml",
-);
-
-async function parseMatrixScenario(): Promise<ReturnType<typeof ScenarioSchema.parse>> {
-  const raw = await Deno.readTextFile(MATRIX_SCENARIO);
-  return ScenarioSchema.parse(parseYaml(raw));
-}
+import { parseHardeningScenario, parseMatrixScenario } from "./helpers/delegate_matrix_scenario_fixture.ts";
 
 /**
  * Collect every journal-event-exists event_type declared in the steps array.
@@ -133,14 +117,6 @@ Deno.test("[delegate_matrix] dry parse: every cell terminates in journal-assert 
   );
 });
 
-/**
- * Read and parse the hardening scenario YAML.
- */
-async function parseHardeningScenario(): Promise<ReturnType<typeof ScenarioSchema.parse>> {
-  const raw = await Deno.readTextFile(HARDENING_SCENARIO);
-  return ScenarioSchema.parse(parseYaml(raw));
-}
-
 Deno.test("[delegate_hardening] the hardening scenario parses and has correct tags", async () => {
   const scenario = await parseHardeningScenario();
   assertEquals(scenario.id, "session-delegate-hardening-active-live");
@@ -217,64 +193,6 @@ Deno.test("[delegate_matrix] the scenario steps expandMatrix produces 5 cell-run
     assertEquals(env.EXA_SESSION_DELEGATE_TOOL, run.cell.tool);
     assertEquals(env.EXA_SESSION_DELEGATE_ENABLED, "true");
   }
-});
-
-Deno.test("[delegate_matrix][security] the codex cell asserts the REAL worktree file-content proof (GREETING in src/main.ts), not just a reconciled journal row", async () => {
-  // The matrix previously only asserted journal events, so a codex run returning
-  // accepted-changes_made with ZERO real edits could pass. Assert the codex cell carries a
-  // file-contains step pinning the fixture's acceptance content.
-  const scenario = await parseMatrixScenario();
-  const byId = new Map(scenario.steps.map((s) => [s.id, s]));
-  const contentStep = byId.get("assert-codex-worktree-change");
-  assert(contentStep, "assert-codex-worktree-change step must exist on the codex cell");
-  assertEquals(contentStep.type, ScenarioStepType.FILE_CONTAINS);
-  assertEquals(contentStep.cells, ["codex"], "the file-content step must be codex-cell-scoped");
-  const textContains = (contentStep.output_criteria ?? []).find((c) => c.kind === CriterionKind.TEXT_CONTAINS);
-  assert(textContains, "the file-content step must carry a text-contains criterion");
-  assertEquals(
-    "contains" in textContains! ? textContains.contains : undefined,
-    "export const GREETING =",
-    "must pin the actual fixture acceptance content (src/main.ts declares GREETING)",
-  );
-});
-
-Deno.test("[delegate_matrix][security] the codex cell is skipped, not run, when EXA_MATRIX_CODEX is unset (explicit opt-in; default CI never spends a Codex subscription)", async () => {
-  const scenario = await parseMatrixScenario();
-  assert(scenario.matrix, "scenario must have a matrix block");
-  const matrix = MatrixSchema.parse(scenario.matrix);
-
-  const runs = expandMatrix(scenario.steps, matrix, {
-    env: { OPENROUTER_API_KEY: "k", ANTHROPIC_API_KEY: "k", EXA_MATRIX_OPENCODE: "1" },
-    binOnPath: () => true,
-  });
-
-  const codexRuns = runs.filter((r) => r.cell.tool === "codex");
-  assertEquals(codexRuns.length, 1, "the codex cell must still be enumerated, just recorded skipped");
-  for (const r of codexRuns) {
-    assertEquals(r.status, "skip");
-    assert(
-      r.skipReason?.includes("EXA_MATRIX_CODEX"),
-      `skip reason should name the missing opt-in, got: ${r.skipReason}`,
-    );
-  }
-});
-
-Deno.test("[delegate_matrix][security] the codex cell is skipped when the codex binary is absent from PATH, independent of the opt-in", async () => {
-  const scenario = await parseMatrixScenario();
-  assert(scenario.matrix, "scenario must have a matrix block");
-  const matrix = MatrixSchema.parse(scenario.matrix);
-
-  const runs = expandMatrix(scenario.steps, matrix, {
-    env: { OPENROUTER_API_KEY: "k", ANTHROPIC_API_KEY: "k", EXA_MATRIX_OPENCODE: "1", EXA_MATRIX_CODEX: "1" },
-    binOnPath: (bin) => bin !== "codex",
-  });
-
-  const codexRun = runs.find((r) => r.cell.tool === "codex");
-  assertEquals(codexRun?.status, "skip");
-  assert(
-    codexRun?.skipReason?.includes("codex"),
-    `skip reason should name the missing binary, got: ${codexRun?.skipReason}`,
-  );
 });
 
 Deno.test("[delegate_matrix] the codex-only trace-scoped steps assert the exact briefed/launched(tool=codex)/returned(accepted)/reconciled(accepted) chain, scoped to the codex cell only", async () => {

@@ -1,6 +1,6 @@
 /**
  * @module DenoPermissionsPolicySecurityTest
- * @path tests/security/deno_permissions_policy_test.ts
+ * @path tests/security/deno_permissions_policy_security_test.ts
  * @description Security regression for Finding 2 (Exaix_Security_Vulnerability_Analysis.md).
  * The operational deno tasks that launch the daemon / CLI / TUI must not grant the
  * blanket `--allow-all` permission. They run with an explicit, scoped grant whose

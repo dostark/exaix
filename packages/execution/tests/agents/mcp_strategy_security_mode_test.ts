@@ -1,12 +1,12 @@
 /**
  * @module McpStrategySecurityModeTest
  * @path packages/execution/tests/agents/mcp_strategy_security_mode_test.ts
- * @related-files [packages/execution/src/strategies/mcp_agent_strategy.ts, tests/security/subprocess_isolation_test.ts]
+ * @related-files [packages/execution/src/strategies/mcp_agent_strategy.ts, tests/security/subprocess_isolation_security_test.ts]
  * @description Phase 170 Weakness 1 regression test (narrowed). The original finding claimed
  * McpAgentStrategy.buildAgentArgs inverts SecurityMode's meaning across three dimensions:
  * SANDBOXED granting --allow-net, SANDBOXED granting unscoped --allow-read, and HYBRID
  * granting unrestricted --allow-all. Cross-checking against the existing test suite before
- * writing this file surfaced a real conflict: tests/security/subprocess_isolation_test.ts
+ * writing this file surfaced a real conflict: tests/security/subprocess_isolation_security_test.ts
  * (Step 61.7 / G3, a deliberate, named prior-phase security requirement) already asserts
  * SANDBOXED buildAgentArgs *must* include --allow-read and --allow-net — i.e. that document
  * treats "no write access" as SANDBOXED's actual contract for this MCP-transport-carrying

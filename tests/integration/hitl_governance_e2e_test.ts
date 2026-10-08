@@ -7,22 +7,14 @@
  * @dependencies @exaix-team/hitl, @exaix/tool-runtime, @exaix/testing
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import { HitlPolicyEvaluator } from "@exaix-team/hitl";
-import { ToolRegistry } from "@exaix/tool-runtime";
-import { createMockConfig } from "@exaix/testing";
-import { EventLogger } from "@exaix/core/logger";
-import { initTestDbService } from "@exaix/testing";
 import type { IToolConfirmationInterceptor } from "@exaix/core/types";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
-import type { HitlRule } from "@exaix/schemas/hitl.ts";
+import { ApproveTrackingInterceptor, decisionId, withRegistry } from "./helpers/hitl_governance_helpers.ts";
 
 const TOOL_EXECUTED_MARKER = "outside the allowed directories";
-
-function decisionId(): string {
-  return crypto.randomUUID();
-}
 
 function createDenyInterceptor(): IToolConfirmationInterceptor {
   return {
@@ -40,70 +32,7 @@ function createDenyInterceptor(): IToolConfirmationInterceptor {
   };
 }
 
-class ApproveTrackingInterceptor implements IToolConfirmationInterceptor {
-  requests: ToolConfirmationRequest[] = [];
-  requestApproval(req: ToolConfirmationRequest): Promise<ToolConfirmationDecision> {
-    this.requests.push(req);
-    return Promise.resolve({
-      id: decisionId(),
-      approved: true,
-      reason: "approved",
-      decidedAt: new Date().toISOString(),
-      decidedBy: "system:test",
-    });
-  }
-}
-
-async function withRegistry(
-  evaluator: HitlPolicyEvaluator | undefined,
-  interceptor: IToolConfirmationInterceptor | undefined,
-  blueprintRules: HitlRule[] | undefined,
-  fn: (registry: ToolRegistry) => Promise<void>,
-): Promise<void> {
-  const tempDir = await Deno.makeTempDir({ prefix: "hitl-e2e-" });
-  const { db, cleanup } = await initTestDbService();
-  const config = createMockConfig(tempDir);
-  const logger = new EventLogger({ db });
-
-  try {
-    const registry = new ToolRegistry({
-      config,
-      logger,
-      hitlPolicyEvaluator: evaluator,
-      confirmationInterceptor: interceptor,
-      hitlBlueprintRules: blueprintRules,
-    });
-    await fn(registry);
-  } finally {
-    await cleanup();
-    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
-  }
-}
-
 describe("[hitl] ToolRegistry path — E2E HITL wiring", () => {
-  it("[security] canonical task and legacy search policies request approval after renaming", async () => {
-    for (const [rule, name] of [["run_deno_task", "run_deno_task"], ["grep_search", "search_text"]]) {
-      const interceptor = new ApproveTrackingInterceptor();
-      await withRegistry(new HitlPolicyEvaluator([{ tool: rule }]), interceptor, undefined, async (registry) => {
-        await registry.execute(name, { path: "/outside/allowed", task: "fmt", pattern: "test" });
-        assertEquals(interceptor.requests.length, 1);
-        assertEquals(interceptor.requests[0].toolName, name);
-      });
-    }
-  });
-
-  it("[security] invalid native policy blocks registry execution before approval", async () => {
-    const interceptor = new ApproveTrackingInterceptor();
-    await withRegistry(new HitlPolicyEvaluator([{ tool: "deno_task" }]), interceptor, undefined, async (registry) => {
-      await assertRejects(
-        () => registry.execute("run_deno_task", { task: "fmt" }),
-        Error,
-        "Invalid native tool name",
-      );
-      assertEquals(interceptor.requests.length, 0);
-    });
-  });
-
   it("mandatory rule + approve interceptor — tool runs to completion (reaches executor)", async () => {
     const interceptor = new ApproveTrackingInterceptor();
     await withRegistry(

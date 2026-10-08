@@ -4,35 +4,19 @@
  * @description Phase 195 Step 1 — RED-first tests for `ste100_assets.ts`: the
  *   reconstructable pre-conversion baseline (content-addressed freeze/restore of the
  *   exact dirty instruction state, with omitted active dependencies rejected and blob
- *   tampering detected) and the isolated-output preflight that rejects escaped,
- *   symlinked, sibling-prefix, and overlapping targets before any writes, while a clean
- *   target is created exclusively. Proves the two Step 1 assets obligations without
- *   touching the real conversion corpus.
+ *   tampering detected) and the isolated skill/overlay generation. The isolated-output
+ *   preflight guards live in the sibling security test. Proves the two Step 1 assets
+ *   obligations without touching the real conversion corpus.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/ste100_assets.ts, scripts/skill_catalog_loader.ts]
  */
 
 import { REPO_ROOT } from "@exaix/testing";
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
-import { dirname, join, resolve } from "@std/path";
-import {
-  assertIsolatedTarget,
-  createExclusiveIsolatedDir,
-  freezeSte100Baseline,
-  reconstructSte100Baseline,
-  runIsolatedGenerator,
-  Ste100PathError,
-} from "../../runner/ste100_assets.ts";
-
-async function withTempRoot(fn: (root: string) => Promise<void>): Promise<void> {
-  const root = await Deno.makeTempDir({ prefix: "ste100-assets-" });
-  try {
-    await fn(root);
-  } finally {
-    await Deno.remove(root, { recursive: true }).catch(() => {});
-  }
-}
+import { dirname, join } from "@std/path";
+import { freezeSte100Baseline, reconstructSte100Baseline, runIsolatedGenerator } from "../../runner/ste100_assets.ts";
+import { withTempRoot } from "./helpers/ste100_assets_fixture.ts";
 
 async function writeFile(path: string, content: string): Promise<void> {
   await Deno.mkdir(dirname(path), { recursive: true });
@@ -107,46 +91,6 @@ Deno.test("ste100 baseline: rejects omitted active dependencies and tampered blo
       Error,
       "hash mismatch",
     );
-  });
-});
-
-Deno.test("[security] ste100 isolated output: rejects escaped and sibling-prefix paths without writes", async () => {
-  await withTempRoot(async (root) => {
-    // A sibling whose name shares a prefix with the intended target leaf.
-    await Deno.mkdir(join(root, "out-prefix"), { recursive: true });
-
-    assertThrows(
-      () => assertIsolatedTarget(`${root}/../escaped`, root),
-      Ste100PathError,
-      "is outside isolated root",
-    );
-
-    assertThrows(
-      () => assertIsolatedTarget(join(root, "out"), root),
-      Ste100PathError,
-      "is confusable with sibling",
-    );
-
-    const outsideRoot = await Deno.makeTempDir({ prefix: "ste100-outside-" });
-    try {
-      await Deno.symlink(outsideRoot, join(root, "link"));
-      assertThrows(
-        () => assertIsolatedTarget(join(root, "link", "out"), root),
-        Ste100PathError,
-        "crosses symlinked path",
-      );
-    } finally {
-      await Deno.remove(outsideRoot, { recursive: true }).catch(() => {});
-    }
-
-    // Nothing was written on any rejected path.
-    assertEquals(await exists(join(root, "out")), false);
-    assertEquals(await exists(join(root, "escaped")), false);
-
-    // A clean target is accepted and created exclusively.
-    const created = await createExclusiveIsolatedDir(join(root, "isolated"), root);
-    assertEquals(created, resolve(join(root, "isolated")));
-    assertEquals(await exists(join(root, "isolated")), true);
   });
 });
 

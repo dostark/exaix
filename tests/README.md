@@ -56,22 +56,22 @@ apps/<name>/tests/                  # App-local tests (6 apps: daemon, exactl, t
 
 ### Root `tests/` — Cross-package & Infrastructure (stays)
 
-| Folder                | Purpose                        | Examples                                                      |
-| --------------------- | ------------------------------ | ------------------------------------------------------------- |
-| `integration/`        | Multi-package E2E scenarios    | `happy_path_test.ts`, `31_cli_flow_integration_test.ts`       |
-| `flows/`              | Integration-heavy flow tests   | `parallel_flow_groups_test.ts`, `condition_evaluator_test.ts` |
-| `scenario_framework/` | Declarative E2E framework      | Scenario definitions, runner, bin/                            |
-| `scripts/`            | CI/build script validation     | `check_code_style_test.ts`, `validate_architecture_test.ts`   |
-| `docs/`               | Documentation integrity        | `hallucination_benchmark_test.ts`, `user_guide_test.ts`       |
-| `config/`             | Multi-package configuration    | Test configuration constants                                  |
-| `security/`           | Cross-cutting security tests   | `mcp_security_test.ts`, `permission_test.ts`                  |
-| `agents/`             | Agent documentation validation | Agent-related integration tests                               |
-| `blueprints/`         | Blueprint loading/validation   | Cross-cutting blueprint tests                                 |
-| `migrations/`         | DB schema migration            | `migrate_db_test.ts`                                          |
-| `regression/`         | Strategy parity regression     | Cross-package regression                                      |
-| `load/`               | Cross-cutting load test        | Load benchmarks                                               |
-| `journal/`            | Activity journal integration   | Multi-service journal tests                                   |
-| `repositories/`       | Data-access integration        | Repository integration tests                                  |
+| Folder                | Purpose                        | Examples                                                               |
+| --------------------- | ------------------------------ | ---------------------------------------------------------------------- |
+| `integration/`        | Multi-package E2E scenarios    | `happy_path_test.ts`, `31_cli_flow_integration_test.ts`                |
+| `flows/`              | Integration-heavy flow tests   | `parallel_flow_groups_test.ts`, `condition_evaluator_test.ts`          |
+| `scenario_framework/` | Declarative E2E framework      | Scenario definitions, runner, bin/                                     |
+| `scripts/`            | CI/build script validation     | `check_code_style_test.ts`, `validate_architecture_test.ts`            |
+| `docs/`               | Documentation integrity        | `hallucination_benchmark_test.ts`, `user_guide_test.ts`                |
+| `config/`             | Multi-package configuration    | Test configuration constants                                           |
+| `security/`           | Cross-cutting security tests   | `credential_security_test.ts`, `subprocess_isolation_security_test.ts` |
+| `agents/`             | Agent documentation validation | Agent-related integration tests                                        |
+| `blueprints/`         | Blueprint loading/validation   | Cross-cutting blueprint tests                                          |
+| `migrations/`         | DB schema migration            | `migrate_db_test.ts`                                                   |
+| `regression/`         | Strategy parity regression     | Cross-package regression                                               |
+| `load/`               | Cross-cutting load test        | Load benchmarks                                                        |
+| `journal/`            | Activity journal integration   | Multi-service journal tests                                            |
+| `repositories/`       | Data-access integration        | Repository integration tests                                           |
 
 ### Package-Local Tests — `packages/<name>/tests/`
 
@@ -172,11 +172,13 @@ Test migration from root `tests/` to package directories is **in progress** (~26
 ```typescript
 // Unit tests
 <module> _test.ts < // agent_executor_test.ts
-                            module > _unit_test.ts < // plan_service_unit_test.ts
-                    // Integration tests
-                    feature > _integration_test.ts < // memory_integration_test.ts
-            // Regression tests
-            issue > _regression_test.ts < // git_security_regression_test.ts
+                                    module > _unit_test.ts < // plan_service_unit_test.ts
+                            // Integration tests
+                            feature > _integration_test.ts < // memory_integration_test.ts
+                    // Regression tests
+                    issue > _regression_test.ts < // plan_failure_handling_regression_test.ts
+            // Cross-cutting security tests (MANDATORY suffix — see Security Tests below)
+            concern > _security_test.ts < // credential_security_test.ts
     // Type tests (compile-time only)
     feature > _type_test.ts; // log_event_fields_type_test.ts
 ```
@@ -244,6 +246,11 @@ Deno.test("MyService: handles edge case", async () => {
 
 #### Security Tests
 
+Every test tagged `[security]` MUST live in a file named `*_security_test.ts`. `deno task
+test:security` selects exactly `tests/**/*_security_test.ts`, so the filename is what makes the
+test reachable — a tagged test in a normal file is not run by the security gate.
+`check:security-test-naming` enforces this.
+
 Label security tests with `[security]` and test:
 
 - Path traversal attempts
@@ -252,6 +259,7 @@ Label security tests with `[security]` and test:
 - Environment variable leakage
 
 ```typescript
+// tests/security/my_control_security_test.ts
 Deno.test("[security] Service: prevents path traversal", async () => {
   // Test path like "../../../etc/passwd" is rejected
 });

@@ -92,6 +92,7 @@ const STATIC_CHECK_TASKS: Array<{ cmd: string[]; desc: string }> = [
     desc: "Bare-Optional Gate (staged files: ? / | undefined must use Opt)",
   },
   { cmd: ["deno", "task", "check:config-keys"], desc: "Config Key Uniqueness Gate" },
+  { cmd: ["deno", "task", "check:security-test-naming"], desc: "Security Test Naming Gate" },
   { cmd: ["deno", "task", "check:skill-duplication"], desc: "Skill Instruction Duplication Gate" },
   { cmd: ["deno", "task", "check:skill-index"], desc: "Skill Folder Validity" },
   { cmd: ["deno", "task", "check:blueprint-integrity"], desc: "Blueprint Catalog Integrity" },

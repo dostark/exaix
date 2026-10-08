@@ -64,7 +64,7 @@ Deno.test("[daemon_least_privilege] allow_net=undefined → --allow-net includes
     const netFlag = flags.find((f) => f.startsWith("--allow-net="));
     // An undefined allow_net falls back to the start-time grant (default hosts plus every
     // catalog service host), never --allow-all. The default set is pinned in
-    // tests/daemon/net_allowlist_covers_providers_test.ts.
+    // tests/daemon/net_allowlist_covers_providers_security_test.ts.
     const hosts = netFlag ? netFlag.slice("--allow-net=".length).split(",") : [];
     for (const host of DAEMON_DEFAULT_NET_HOSTS) {
       assertEquals(hosts.includes(host), true, `expected default host ${host}`);

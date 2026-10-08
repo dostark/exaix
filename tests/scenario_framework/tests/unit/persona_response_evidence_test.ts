@@ -82,31 +82,6 @@ Deno.test("[PersonaResponse] no judge file list still walks every source file", 
   }
 });
 
-Deno.test("[security][PersonaResponse] explicit judge file traversal is rejected before reading", async () => {
-  const ctx = await createPersonaResponseFixture();
-  try {
-    const portalRoot = join(ctx.tempDir, "Portals/task/src");
-    await Deno.mkdir(portalRoot, { recursive: true });
-    await Deno.mkdir(join(ctx.tempDir, "Portals/sibling"), { recursive: true });
-    await Deno.writeTextFile(join(ctx.tempDir, "Portals/sibling/secret.ts"), "must never be read");
-    await assertRejects(
-      () =>
-        preparePersonaJudgeContext(ctx.config, "Read safe files", ["@Portals/task"], [{
-          alias: "@Portals/task",
-          path: "../sibling/secret.ts",
-        }]),
-      Error,
-      "outside",
-    );
-    await assertRejects(
-      () => Deno.stat(join(ctx.tempDir, "Memory/persona-judge-context.txt")),
-      Deno.errors.NotFound,
-    );
-  } finally {
-    await ctx.cleanup();
-  }
-});
-
 Deno.test("[PersonaResponse] selects accepted role response and excludes other traces and downstream reports", async () => {
   const ctx = await createPersonaResponseFixture();
   try {

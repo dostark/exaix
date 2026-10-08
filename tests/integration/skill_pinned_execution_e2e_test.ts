@@ -12,145 +12,20 @@
  * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_composer.ts]
  */
 
-import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { parse as parseYaml } from "@std/yaml";
-import { TestEnvironment } from "./helpers/test_environment.ts";
-import { AgentComposer, AgentRunner, McpAgentStrategy, StrategyRegistry } from "@exaix/execution";
+import { AgentComposer, McpAgentStrategy, StrategyRegistry } from "@exaix/execution";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
-import { MockStrategy, ProcessManager, SecurityMode } from "@exaix/core";
-import type { JSONObject, JSONValue } from "@exaix/core/types";
-import { RequestProcessor } from "@exaix/request";
-import { PlanExecutor } from "@exaix/core/planning";
-import { SkillsService, SkillUnavailableError } from "@exaix/core/skills";
-import {
-  createStubConfig,
-  createStubDisplay,
-  createStubGit,
-  makeGenerateResult,
-  writeSkillFolder,
-} from "@exaix/testing";
-import type { IModelProvider } from "@exaix/ai/types.ts";
+import { ProcessManager, SecurityMode } from "@exaix/core";
+import { writeSkillFolder } from "@exaix/testing";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
-
-const PLAN_RESPONSE = '<thought>ok</thought><content>{"subject":"Test","description":"A plan.",' +
-  '"steps":[{"step":1,"title":"Step","description":"Do it."}]}</content>';
-const SKILL = "approved-skill";
-const OTHER = "other-skill";
-
-interface IUsageRow {
-  skill_name: string;
-  match_source: string;
-  submission_kind: string;
-  revision_id: string;
-  trace_id: string;
-}
-
-async function planWithPinnedSkill() {
-  const env = await TestEnvironment.create({
-    initGit: false,
-    configOverrides: { request_analysis: { mode: "heuristic" } } as never,
-  });
-  const root = await Deno.makeTempDir({ prefix: "skill-pinned-exec-" });
-  const skillsDir = join(root, "Skills");
-  await writeSkillFolder(skillsDir, { name: SKILL, instructions: "Approved body A." });
-  await writeSkillFolder(skillsDir, { name: OTHER, instructions: "Other body." });
-  const skills = new SkillsService(
-    { memoryDir: join(root, "Memory"), blueprintSkillsDir: skillsDir },
-    env.db,
-    undefined,
-    new EventLogger({ db: env.db }),
-  );
-  await skills.initialize();
-  await Deno.writeTextFile(
-    join(env.tempDir, "Blueprints", "Agents", "default.md"),
-    "---\nagent_role: default\nmodel: mock:test\n---\nYou are a helpful assistant.\n",
-  );
-  const provider = env.createMockProvider(MockStrategy.RECORDED, [{
-    promptHash: ".*",
-    promptPreview: "You are a helpful assistant.",
-    response: PLAN_RESPONSE,
-    model: "test",
-    tokens: { input: 0, output: 0 },
-    recordedAt: new Date().toISOString(),
-  }]);
-  const applicationContext = {
-    config: createStubConfig(env.config),
-    db: env.db,
-    provider,
-    git: createStubGit(),
-    display: createStubDisplay(env.db),
-    skills,
-  } as never;
-  const processor = new RequestProcessor({
-    workspacePath: join(env.tempDir, "Workspace"),
-    requestsDir: join(env.tempDir, "Workspace", "Requests"),
-    blueprintsPath: join(env.tempDir, "Blueprints", "Agents"),
-    includeReasoning: true,
-    context: applicationContext,
-    testProvider: provider,
-    agentRunner: new AgentRunner(provider, { skillsService: skills, disableRetry: true }),
-  });
-  const traceId = crypto.randomUUID();
-  const requestPath = join(env.tempDir, "Workspace", "Requests", `request-${traceId.slice(0, 8)}.md`);
-  await Deno.writeTextFile(
-    requestPath,
-    `---
-trace_id: "${traceId}"
-created: "${new Date().toISOString()}"
-status: pending
-priority: normal
-agent_role: default
-source: cli
-created_by: "test@example.com"
-subject: "Pinned execution"
-skills: ["${SKILL}"]
----
-# Request
-Do the pinned thing.
-`,
-  );
-  const planPath = await processor.process(requestPath);
-  assert(planPath, "planning must produce a plan path");
-  const planContent = await Deno.readTextFile(String(planPath));
-  const frontmatter = parseYaml((planContent.match(/^---\n([\s\S]*?)\n---/) ?? [])[1] ?? "") as JSONObject;
-  return {
-    env,
-    root,
-    skills,
-    skillsDir,
-    applicationContext,
-    frontmatter,
-    usage: (traceId: string) =>
-      env.db.preparedAll<IUsageRow>(
-        "SELECT skill_name, match_source, submission_kind, revision_id, trace_id FROM skill_usage WHERE trace_id = ? ORDER BY id",
-        [traceId],
-      ),
-    cleanup: async () => {
-      await Deno.remove(root, { recursive: true }).catch(() => {});
-      await env.cleanup();
-    },
-  };
-}
-
-function capturingProvider(prompts: string[]): IModelProvider {
-  return {
-    id: "pinned-exec-capture",
-    generate: (prompt: string) => {
-      prompts.push(prompt);
-      return Promise.resolve(makeGenerateResult("STATUS: COMPLETE\nSUMMARY: done"));
-    },
-  };
-}
-
-function executorFor(fx: Awaited<ReturnType<typeof planWithPinnedSkill>>, provider: IModelProvider): PlanExecutor {
-  return new PlanExecutor(fx.env.config, provider, fx.env.db, fx.env.tempDir, new EventLogger({ db: fx.env.db }), {
-    enableGit: false,
-    generateReport: false,
-    context: fx.applicationContext,
-  });
-}
+import {
+  capturingProvider,
+  executorFor,
+  planWithPinnedSkill,
+  SKILL,
+} from "./helpers/skill_pinned_execution_helpers.ts";
 
 Deno.test("[real execution] the executor sees the approved body after a live edit and journals plan_pinned rows", async () => {
   const fx = await planWithPinnedSkill();
@@ -180,31 +55,6 @@ Deno.test("[real execution] the executor sees the approved body after a live edi
     await fx.env.db.waitForFlush();
     const drift = await fx.env.db.queryActivity({ traceId: executionTrace, actionType: "skills.pin_drifted" });
     assertEquals(drift.length, 1, "the edit is reported as drift once");
-  } finally {
-    await fx.cleanup();
-  }
-});
-
-Deno.test("[security] a swapped pin or a missing snapshot runs nothing and writes no usage", async () => {
-  const fx = await planWithPinnedSkill();
-  try {
-    const original = (fx.frontmatter.resolved_skills as JSONObject[])[0];
-    const executionTrace = crypto.randomUUID();
-    const prompts: string[] = [];
-    const attempt = (pins: JSONValue) =>
-      executorFor(fx, capturingProvider(prompts)).execute(`${fx.env.tempDir}/plan.md`, {
-        trace_id: executionTrace,
-        request_id: "req-swap",
-        agent_role: "default",
-        frontmatter: { ...fx.frontmatter, resolved_skills: pins } as never,
-        steps: [{ number: 1, title: "Review", content: "Do the task." }],
-      });
-    await assertRejects(() => attempt([{ ...original, name: OTHER }]), SkillUnavailableError);
-    await assertRejects(() => attempt([{ ...original, content_sha256: "e".repeat(64) }]), SkillUnavailableError);
-    await assertRejects(() => attempt([{ ...original, revision_id: crypto.randomUUID() }]), SkillUnavailableError);
-    await assertRejects(() => attempt([{ name: "broken" }]), SkillUnavailableError);
-    assertEquals(prompts.length, 0);
-    assertEquals((await fx.usage(executionTrace)).length, 0);
   } finally {
     await fx.cleanup();
   }

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module AgentIsolationAuditTest
- * @path tests/security/agent_isolation_audit_test.ts
+ * @path tests/security/agent_isolation_audit_security_test.ts
  * @description Step 61.7 (G3) + Step 61.11 (G7): Verifies that AgentComposer.executeStep()
  * detects unauthorized file modifications via post-execution git audit,
  * logs a security.violation event, and throws AgentExecutionError(SECURITY_VIOLATION).

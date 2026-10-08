@@ -1,6 +1,6 @@
 /**
  * @module ToolValidationFailClosedTest
- * @path tests/security/tool_validation_fail_closed_test.ts
+ * @path tests/security/tool_validation_fail_closed_security_test.ts
  * @description Security tests for Phase 78 tool result validation. Verifies that
  * rawResult payloads are never forwarded to MCP clients, that fail_closed tools
  * do not retry on validation mismatch, and that validation failure messages are

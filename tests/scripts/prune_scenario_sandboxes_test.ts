@@ -19,26 +19,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { applySandboxPrune, planSandboxPrune } from "../../scripts/prune_scenario_sandboxes.ts";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-interface ISeededSandbox {
-  name: string;
-  ageDays: number;
-}
-
-async function seedSandboxRoot(entries: ISeededSandbox[]): Promise<string> {
-  const root = await Deno.makeTempDir({ prefix: "prune-sandboxes-" });
-  const now = Date.now();
-  for (const entry of entries) {
-    const dir = join(root, entry.name);
-    await Deno.mkdir(dir, { recursive: true });
-    await Deno.writeTextFile(join(dir, "exa.config.toml"), "[system]\n");
-    const stamp = new Date(now - entry.ageDays * DAY_MS);
-    await Deno.utime(dir, stamp, stamp);
-  }
-  return root;
-}
+import { DAY_MS, seedSandboxRoot } from "./helpers/prune_scenario_sandboxes_fixture.ts";
 
 async function exists(path: string): Promise<boolean> {
   return await Deno.stat(path).then(() => true).catch(() => false);
@@ -121,42 +102,6 @@ Deno.test("[prune] retentionDays of 0 selects everything, and is still only a pl
   }
 });
 
-// `--root` drives a recursive delete; a mistyped path one level too high could put a repo
-// checkout among the candidates. A sandbox never has a top-level `.git`; a repository always
-// does — that is the discriminator.
-
-Deno.test("[security] a git repository is never selected for pruning", async () => {
-  const root = await seedSandboxRoot([{ name: "a-sandbox", ageDays: 30 }, { name: "a-checkout", ageDays: 30 }]);
-  try {
-    await Deno.mkdir(join(root, "a-checkout", ".git"), { recursive: true });
-    const aged = new Date(Date.now() - 30 * DAY_MS);
-    await Deno.utime(join(root, "a-checkout"), aged, aged);
-
-    const plan = await planSandboxPrune({ root, retentionDays: 7 });
-
-    assertEquals(plan.selected.map((entry) => entry.name), ["a-sandbox"]);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
-});
-
-Deno.test("[security] a nested .git inside a sandbox does not protect it", async () => {
-  // The seeded portal fixtures ARE git repos, at `<sandbox>/fixtures/portals/<name>/.git`. Only a
-  // top-level `.git` means "this directory is a checkout"; anything deeper is a sandbox's contents.
-  const root = await seedSandboxRoot([{ name: "sandbox-with-fixtures", ageDays: 30 }]);
-  try {
-    await Deno.mkdir(join(root, "sandbox-with-fixtures", "fixtures", "portals", "repo", ".git"), { recursive: true });
-    const aged = new Date(Date.now() - 30 * DAY_MS);
-    await Deno.utime(join(root, "sandbox-with-fixtures"), aged, aged);
-
-    const plan = await planSandboxPrune({ root, retentionDays: 7 });
-
-    assertEquals(plan.selected.map((entry) => entry.name), ["sandbox-with-fixtures"]);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
-});
-
 Deno.test("[prune] applying a plan removes exactly what it selected", async () => {
   const root = await seedSandboxRoot([{ name: "old", ageDays: 30 }, { name: "fresh", ageDays: 1 }]);
   try {
@@ -167,27 +112,6 @@ Deno.test("[prune] applying a plan removes exactly what it selected", async () =
     assertEquals(removed, 1);
     assertEquals(await exists(join(root, "old")), false);
     assert(await exists(join(root, "fresh")), "a sandbox inside the window must survive --apply");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
-});
-
-Deno.test("[security] a directory with no sandbox marker is never selected", async () => {
-  // Excluding git checkouts is not enough: ordinary directories that merely aren't repos would
-  // still be selected. Identifying a sandbox POSITIVELY, by a marker the runner always writes,
-  // is what makes a mistyped `--root` inert instead of merely less bad.
-  const root = await seedSandboxRoot([{ name: "real-sandbox", ageDays: 30 }]);
-  try {
-    const aged = new Date(Date.now() - 30 * DAY_MS);
-    for (const name of ["my-photos", "notes"]) {
-      await Deno.mkdir(join(root, name), { recursive: true });
-      await Deno.writeTextFile(join(root, name, "something.txt"), "personal");
-      await Deno.utime(join(root, name), aged, aged);
-    }
-
-    const plan = await planSandboxPrune({ root, retentionDays: 7 });
-
-    assertEquals(plan.selected.map((entry) => entry.name), ["real-sandbox"]);
   } finally {
     await Deno.remove(root, { recursive: true });
   }

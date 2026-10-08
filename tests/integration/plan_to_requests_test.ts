@@ -18,6 +18,14 @@ import { RequestSchema } from "@exaix/schemas/request.ts";
 import { BlueprintResolver, RequestProcessor } from "@exaix/request";
 import { RequestKind } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
+import {
+  CONTEXT_FIXTURE_PATH,
+  CONTEXT_SLUG,
+  FIXTURES_DIR,
+  makeFakeWorktree,
+  REPO_ROOT,
+  runGenerator,
+} from "./helpers/plan_to_requests_helpers.ts";
 
 const noopTraceLogger: IEventLogger = {
   log: () => Promise.resolve(),
@@ -30,29 +38,6 @@ const noopTraceLogger: IEventLogger = {
 };
 
 const DOGFOOD_META_RE = /> Dogfood metadata — portal: `([^`]+)`; target_branch: `([^`]+)`/;
-
-const REPO_ROOT = join(import.meta.dirname!, "..", "..");
-const FIXTURES_DIR = join(REPO_ROOT, "tests", "integration", "fixtures");
-const SCRIPT_PATH = join(REPO_ROOT, "scripts", "plan_to_requests.ts");
-
-async function runGenerator(args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
-  const cmd = new Deno.Command(Deno.execPath(), {
-    args: [
-      "run",
-      "-A",
-      SCRIPT_PATH,
-      ...args,
-    ],
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const output = await cmd.output();
-  return {
-    code: output.code,
-    stdout: new TextDecoder().decode(output.stdout),
-    stderr: new TextDecoder().decode(output.stderr),
-  };
-}
 
 Deno.test("[plan-to-requests] generates 3 request files from a 3-step fixture", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-test-" });
@@ -352,8 +337,6 @@ Deno.test("[plan-to-requests] heading-scrape fallback uses default portal and ta
   }
 });
 
-const CONTEXT_FIXTURE_PATH = join(FIXTURES_DIR, "phase-nn-fixture-with-context.md");
-
 Deno.test("[plan-to-requests][context] doc-shaped fixture emits Why This Step Exists with Executive Summary + only shared bullets", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-context-" });
   try {
@@ -451,20 +434,6 @@ Deno.test("[plan-to-requests][context] a real repo phase doc yields requests far
 
 const PLAN_CONTEXT_POINTER_RE =
   /> Full phase context: `\.exa\x2fPlanContext\x2f([^`]+)\.md` \(read this if the context above isn't enough\)\./;
-const CONTEXT_SLUG = "phase-nn-fixture-with-context";
-
-/** Minimal stand-in for a delegate worktree: a directory optionally containing a
- *  `.git/` tree, a pre-seeded `.git/info/exclude`, and a tracked `.gitignore`. */
-async function makeFakeWorktree(opts: { withGit: boolean; gitignore?: string }): Promise<string> {
-  const root = await Deno.makeTempDir({ prefix: "plan-to-req-wt-" });
-  if (opts.withGit) {
-    await Deno.mkdir(join(root, ".git", "info"), { recursive: true });
-  }
-  if (opts.gitignore !== undefined) {
-    await Deno.writeTextFile(join(root, ".gitignore"), opts.gitignore);
-  }
-  return root;
-}
 
 Deno.test("[plan-to-requests][plan-context] generator copies the phase doc to .exa/PlanContext/<slug>.md under --plan-context-root", async () => {
   const wt = await makeFakeWorktree({ withGit: true });
@@ -610,42 +579,6 @@ Deno.test("[plan-to-requests][plan-context][regression] without --plan-context-r
   }
 });
 
-Deno.test("[plan-to-requests][plan-context][security] a '..'-laden plan slug is rejected and nothing is written", async () => {
-  const wt = await makeFakeWorktree({ withGit: true });
-  try {
-    // The slug derives from the plan filename; ".." inside it simulates traversal input.
-    const evilDoc = join(await Deno.makeTempDir({ prefix: "evil-src-" }), "phase..evil.md");
-    await Deno.writeTextFile(
-      evilDoc,
-      "# Evil\n\n## Step 1\n\n**Actions:**\n- x\n\n```yaml\n# step-manifest\nstep: 1\ntitle: t\n```\n",
-    );
-
-    const { code, stdout, stderr } = await runGenerator([
-      evilDoc,
-      "--out-dir",
-      join(wt, "Workspace", "Requests"),
-      "--plan-context-root",
-      wt,
-    ]);
-    assertEquals(code !== 0, true, "must exit non-zero on an unsafe slug");
-    assertEquals(
-      (stdout + stderr).includes("phase..evil"),
-      true,
-      "the error must name the rejected slug (rejection-by-validation, not a silent skip)",
-    );
-
-    let planContextAbsent = false;
-    try {
-      await Deno.stat(join(wt, ".exa", "PlanContext"));
-    } catch {
-      planContextAbsent = true;
-    }
-    assertEquals(planContextAbsent, true, "nothing may be written into the sandbox on rejection");
-  } finally {
-    await Deno.remove(wt, { recursive: true });
-  }
-});
-
 // Phase 173 Step 5 remediation - admission contract (GAP-1)
 
 const REPO_ROOT_ADM = join(import.meta.dirname!, "..", "..");
@@ -741,38 +674,6 @@ Deno.test("[regression][admission] strict RequestSchema accepts canonical genera
     assertEquals(RequestSchema.safeParse(fm).success, true);
   } finally {
     await Deno.remove(tmpDir, { recursive: true });
-  }
-});
-
-Deno.test("[plan-context][relocation][security] pre-existing symlinked PlanContext file is refused", async () => {
-  const wt = await makeFakeWorktree({ withGit: false });
-  const outside = await Deno.makeTempDir({ prefix: "plan-context-outside-" });
-  try {
-    const destDir = join(wt, ".exa", "PlanContext");
-    const OUTSIDE_SENTINEL = "must remain untouched";
-    const outsideTarget = join(outside, "captured-plan.md");
-    await Deno.mkdir(destDir, { recursive: true });
-    await Deno.writeTextFile(outsideTarget, OUTSIDE_SENTINEL);
-    await Deno.symlink(outsideTarget, join(destDir, `${CONTEXT_SLUG}.md`));
-
-    const result = await runGenerator([
-      CONTEXT_FIXTURE_PATH,
-      "--out-dir",
-      join(wt, "Workspace", "Requests"),
-      "--plan-context-root",
-      wt,
-    ]);
-
-    assertEquals(result.code !== 0, true, "symlinked destination must fail closed");
-    assertEquals(
-      (result.stdout + result.stderr).toLowerCase().includes("symbolic link"),
-      true,
-      "failure must identify the rejected symbolic link",
-    );
-    assertEquals(await Deno.readTextFile(outsideTarget), OUTSIDE_SENTINEL, "symlink target must remain untouched");
-  } finally {
-    await Deno.remove(wt, { recursive: true });
-    await Deno.remove(outside, { recursive: true });
   }
 });
 

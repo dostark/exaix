@@ -1,6 +1,6 @@
 /**
  * @module MCPPermissionEnforcementTest
- * @path tests/security/mcp_permission_enforcement_test.ts
+ * @path tests/security/mcp_permission_enforcement_security_test.ts
  * @description Verifies MCP server permission denials are enforced and logged.
  */
 

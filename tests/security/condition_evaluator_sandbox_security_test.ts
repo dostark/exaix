@@ -1,6 +1,6 @@
 /**
  * @module ConditionEvaluatorSandboxSecurityTest
- * @path tests/security/condition_evaluator_sandbox_test.ts
+ * @path tests/security/condition_evaluator_sandbox_security_test.ts
  * @description Security regression for Finding 1 (Exaix_Security_Vulnerability_Analysis.md).
  * Flow step conditions are DATA, not code. They must never reach host globals
  * (Deno, globalThis, fetch, import) or constructor-based escapes, and must never

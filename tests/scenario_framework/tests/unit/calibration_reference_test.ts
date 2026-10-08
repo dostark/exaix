@@ -12,13 +12,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { withEnv } from "@exaix/testing";
 import { CalibrationLabel } from "@exaix/eval-history";
 import { evaluateReference, ReferenceEvaluationError } from "../../runner/calibration_reference.ts";
-
-const NO_BACKWARD_KEYS: Record<string, null> = {
-  ANTHROPIC_API_KEY: null,
-  OPENAI_API_KEY: null,
-  GOOGLE_API_KEY: null,
-  OPENROUTER_API_KEY: null,
-};
+import { NO_BACKWARD_KEYS } from "./helpers/calibration_reference_fixture.ts";
 
 Deno.test({
   name:
@@ -42,32 +36,6 @@ Deno.test({
       } catch (error) {
         assertEquals(error instanceof ReferenceEvaluationError, true);
       }
-    });
-  },
-  sanitizeOps: false,
-  sanitizeResources: false,
-});
-
-Deno.test({
-  name:
-    "[CalibrationReference][security] an unrecognized referenceProvider fails loud rather than silently resolving to a substitute",
-  fn: async () => {
-    // ModelResolver rejects an unknown preferred_provider at resolution time, before any
-    // network call — a different (earlier, stricter) failure mode than the post-hoc
-    // resolved.provider !== requested check, but the same guarantee: never a silent swap.
-    await withEnv({ ...NO_BACKWARD_KEYS }, async () => {
-      await assertRejects(
-        () =>
-          evaluateReference({
-            requestContext: "Add input validation to the login form.",
-            artifact: "## Plan\n1. Validate email format\n2. Validate password length",
-            preset: "GOAL_ALIGNED_REVIEW",
-            labelThreshold: 0.7,
-            referenceProvider: "not-a-real-provider",
-            referenceModel: "not-a-real-model",
-          }),
-        ReferenceEvaluationError,
-      );
     });
   },
   sanitizeOps: false,

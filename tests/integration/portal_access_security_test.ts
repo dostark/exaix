@@ -1,6 +1,6 @@
 /**
  * @module PortalAccessIntegrationTest
- * @path tests/integration/portal_access_test.ts
+ * @path tests/integration/portal_access_security_test.ts
  * @description Verifies security enforcement across complex portal structures, ensuring
  * strict confinement of agent operations to authorized portal root boundaries.
  */

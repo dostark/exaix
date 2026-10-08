@@ -161,6 +161,10 @@ jobs:
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task check:config-keys
 
+      - name: "Gate 19b: Security Test Naming"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:security-test-naming
+
       - name: "Gate 20: Skill Duplication"
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task check:skill-duplication

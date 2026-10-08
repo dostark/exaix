@@ -140,7 +140,7 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
     network: true,
   },
   {
-    file: "tests/security/calibration_sandbox_test.ts",
+    file: "tests/security/calibration_sandbox_security_test.ts",
     reasons: [IsolationReason.processEnv],
     network: true,
   },
