@@ -6,7 +6,7 @@
  * @related-files [packages/flow/src/flow_loader.ts, packages/flow/src/condition_evaluator.ts]
  */
 
-import { EvaluationResultSchema } from "@exaix/core/evaluation";
+import { EvaluationCriterionSchema, EvaluationResultSchema } from "@exaix/core/evaluation";
 import { z } from "zod";
 import { CAP_VOTING } from "@exaix/core/composer";
 import {
@@ -185,7 +185,7 @@ export const GateEvaluateSchema = z.object({
   /** Judge agent role ID */
   agent_role: z.string(),
   /** Criteria to evaluate (names from built-in library or custom) */
-  criteria: z.array(z.string()),
+  criteria: z.array(z.union([z.string(), EvaluationCriterionSchema])),
   /** Score threshold for passing (0.0 - 1.0) */
   threshold: z.number().min(0).max(1).default(0.8),
   /** Action on failure */

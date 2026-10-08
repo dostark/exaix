@@ -9,6 +9,7 @@
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
+import { PlanContextRefSchema } from "@exaix/schemas/request.ts";
 import type { IRequestFrontmatter } from "@exaix/core/request";
 import { normalizeFrontmatterList } from "@exaix/request";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
@@ -247,6 +248,9 @@ export class RequestCreateHandler extends BaseCommand {
   }
 
   private validateCreateInputs(description: string, options: IRequestOptions, priority: RequestPriority): void {
+    if (options.plan_context_ref !== undefined && !PlanContextRefSchema.safeParse(options.plan_context_ref).success) {
+      throw new Error("Invalid plan_context_ref: expected .exa/PlanContext/<slug>.md");
+    }
     const validation = new ValidationChain()
       .addRule("description", (val) => (!val) ? "cannot be empty" : null)
       .addRule(
@@ -288,6 +292,7 @@ export class RequestCreateHandler extends BaseCommand {
     if (options.target_branch) frontmatterFields.target_branch = options.target_branch;
     if (options.model) frontmatterFields.model = options.model;
     if (options.flow) frontmatterFields.flow = options.flow;
+    if (options.plan_context_ref) frontmatterFields.plan_context_ref = options.plan_context_ref;
 
     this.addModelIntentFrontmatterFields(frontmatterFields, options);
     this.addArrayFrontmatterFields(frontmatterFields, options);
@@ -409,6 +414,7 @@ function mergeFileFrontmatterIntoOptions(
     priority: options.priority ?? priority,
     portal: options.portal ?? frontmatter.portal,
     target_branch: options.target_branch ?? frontmatter.target_branch,
+    plan_context_ref: options.plan_context_ref ?? frontmatter.plan_context_ref,
     model: options.model ?? frontmatter.model,
     model_size: options.model_size ?? frontmatter.model_size,
     preferred_provider: options.preferred_provider ?? frontmatter.preferred_provider,

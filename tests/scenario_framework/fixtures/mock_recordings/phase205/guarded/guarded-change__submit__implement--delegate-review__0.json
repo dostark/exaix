@@ -1,0 +1,26 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Guarded change fixture",
+  "response": "{\"criteriaScores\": {\"code_correctness\": {\"score\": 1, \"reasoning\": \"The confined implementation includes a regression test.\", \"issues\": []}, \"has_tests\": {\"score\": 1, \"reasoning\": \"The confined implementation includes a regression test.\", \"issues\": []}, \"task_fulfillment\": {\"score\": 1, \"reasoning\": \"The confined implementation includes a regression test.\", \"issues\": []}}, \"feedback\": \"Accepted guarded delegate implementation.\", \"suggestions\": []}",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-08T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "GUARDED IMPLEMENTATION PROOF",
+      "code_correctness",
+      "has_tests",
+      "task_fulfillment"
+    ]
+  },
+  "callSite": {
+    "scenarioId": "guarded-change",
+    "stepId": "submit",
+    "flowStepId": "implement--delegate-review",
+    "callIndex": 0
+  }
+}

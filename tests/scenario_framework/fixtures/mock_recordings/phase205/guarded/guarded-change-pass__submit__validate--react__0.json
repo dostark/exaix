@@ -1,0 +1,24 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Guarded change fixture",
+  "response": "THOUGHT: Both independent reviews passed.\nSTATUS: COMPLETE\nSUMMARY: {\"description\": \"{\\\"subject\\\": \\\"Accepted guarded change\\\", \\\"description\\\": \\\"Security and implementation reviews passed.\\\", \\\"steps\\\": [{\\\"step\\\": 1, \\\"title\\\": \\\"Accepted guarded change\\\", \\\"description\\\": \\\"The confined proof and regression test are validated.\\\"}]}\"}",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-08T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "GUARDED IMPLEMENTATION PROOF",
+      "Guarded security accepted."
+    ]
+  },
+  "callSite": {
+    "scenarioId": "guarded-change-pass",
+    "stepId": "submit",
+    "flowStepId": "validate--react",
+    "callIndex": 0
+  }
+}

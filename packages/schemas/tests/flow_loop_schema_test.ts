@@ -53,3 +53,16 @@ Deno.test("[limits] gate evaluation default remains three", () => {
   assertEquals(GateEvaluateSchema.parse({ agent_role: "code-reviewer", criteria: [] }).maxRetries, 3);
   assertEquals(GateConfigSchema.parse({ agentRole: "code-reviewer", criteria: [] }).maxRetries, 3);
 });
+
+Deno.test("[schema] YAML gates retain explicit security criteria with evidence descriptions", () => {
+  const criterion = {
+    name: "path_confinement",
+    description: "All writes are within the permitted worktree paths.",
+    category: "security",
+    weight: 1,
+    required: true,
+  };
+  const result = GateEvaluateSchema.safeParse({ agent_role: "security-expert", criteria: [criterion] });
+  assertEquals(result.success, true);
+  assertEquals<unknown>(result.success ? result.data.criteria : null, [criterion]);
+});

@@ -1,0 +1,25 @@
+{
+  "scenarioId": "guarded-change",
+  "edition": "team",
+  "flow": "guarded-change",
+  "fixtureDir": "fixtures/mock_recordings/phase205/guarded",
+  "requestStepId": "submit",
+  "selectedPath": [
+    "explore",
+    "implement",
+    "security-gate"
+  ],
+  "expectedFailure": "gate_halted",
+  "gateEvaluations": {
+    "security-gate": 1
+  },
+  "callPrefix": "guarded-change",
+  "calls": [
+    {
+      "lane": "security-gate--judge",
+      "callIndex": 0,
+      "dialect": "judge",
+      "verdict": "below"
+    }
+  ]
+}

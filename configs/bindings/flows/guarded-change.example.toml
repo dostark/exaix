@@ -1,0 +1,10 @@
+schema = 1
+
+[bindings."flow:guarded-change/step:explore"]
+service = "light-service"
+[bindings."flow:guarded-change/step:implement"]
+service = "strong-service"
+[bindings."flow:guarded-change/step:security-gate"]
+service = "strong-service"
+[bindings."flow:guarded-change/step:validate"]
+service = "light-service"

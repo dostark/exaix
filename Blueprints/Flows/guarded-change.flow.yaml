@@ -1,0 +1,60 @@
+id: guarded-change
+name: Guarded change
+description: Explore read-only, delegate confined implementation, and validate only after the security gate passes.
+version: 1.0.0
+defaultSkills: [tdd-methodology, step-execution]
+namespace: { enabled: false }
+settings: { maxParallelism: 1, failFast: true, timeout: 600000 }
+steps:
+  - id: explore
+    name: Explore the guarded change with read-only tools
+    agent_role: code-analyst
+    execution_mode: dynamic
+    permitted_tools: [read_file, list_directory, search_files]
+    dependsOn: []
+    input: { source: request, transform: passthrough }
+  - id: implement
+    name: Implement the hardened plan through a reviewed delegate cycle
+    type: session_delegate_cycle
+    agent_role: dogfood-coder
+    dependsOn: [explore]
+    input: { source: step, stepId: explore, transform: passthrough }
+    delegateCycle:
+      requireChangedPaths: true
+      review:
+        agent_role: quality-judge
+        criteria: [code_correctness, has_tests, task_fulfillment]
+        threshold: 0.8
+        onFail: halt
+        maxRetries: 2
+        includeRequestCriteria: false
+  - id: security-gate
+    name: Check path confinement and secret handling before validation
+    type: gate
+    agent_role: security-expert
+    dependsOn: [implement]
+    input: { source: aggregate, from: [explore, implement], transform: passthrough }
+    evaluate:
+      agent_role: security-expert
+      criteria:
+        - name: path_confinement
+          description: Every changed path is src/proof.txt or tests/proof_test.ts in the resolved worktree.
+          category: security
+          required: true
+          weight: 1
+        - name: no_secret_exposure
+          description: The diff and return evidence contain no credentials, tokens or host secrets.
+          category: security
+          required: true
+          weight: 1
+      threshold: 0.8
+      onFail: halt
+      maxRetries: 1
+      includeRequestCriteria: false
+  - id: validate
+    name: Validate the accepted guarded implementation
+    agent_role: qa-engineer
+    strategy: react
+    dependsOn: [security-gate]
+    input: { source: aggregate, from: [implement, security-gate], transform: passthrough }
+output: { from: validate, format: markdown }

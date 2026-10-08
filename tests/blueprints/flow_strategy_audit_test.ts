@@ -58,6 +58,12 @@ const AUDIT_TABLE: Record<string, Record<string, Decision>> = {
     "code-review": "cli_delegate",
     "integration-test": "cli_delegate",
   },
+  "guarded-change": {
+    explore: "n/a-dynamic",
+    implement: "session_delegate_cycle",
+    "security-gate": "no-strategy",
+    validate: "react",
+  },
   "migration-planning": {
     "gather-requirements": "no-strategy",
     "analyze-current-state": "react",

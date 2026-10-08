@@ -3,13 +3,15 @@
  * @path tests/blueprints/advanced_flow_contracts_test.ts
  * @description Pins the shipped Phase 205 advanced blueprints to their planned data edges and overlays.
  * @architectural-layer Test
- * @dependencies [@exaix/flow, @exaix/schemas]
+ * @dependencies [@exaix/flow, @exaix/schemas, @exaix/execution]
  * @related-files [packages/flow/src/loop_body.ts, packages/schemas/src/model_binding.ts]
  */
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertExists } from "@std/assert";
+import { parse as parseYaml } from "@std/yaml";
 import { parse as parseToml } from "@std/toml";
 import { computeLoopBody, FlowLoader, validateLoopBody } from "@exaix/flow";
-import { BindingOverlaySchema } from "@exaix/schemas";
+import { BindingOverlaySchema, ConfigSchema, PlanSchema } from "@exaix/schemas";
+import { OutputParser } from "@exaix/execution";
 
 /** The gate fields the contract pins, with enum values compared as plain strings. */
 interface IExpectedGate {
@@ -21,9 +23,34 @@ interface IExpectedGate {
   includeRequestCriteria: boolean;
 }
 
+interface IGuardedRequestFrontmatter {
+  flow: string;
+  portal: string;
+  plan_context_ref: string;
+}
+
 const FLOWS_DIR = "./Blueprints/Flows";
 const OVERLAYS_DIR = "./configs/bindings/flows";
 const SELF_CORRECTING = "self-correcting-implementation";
+
+Deno.test("[contract] guarded validation carries a valid plan through the ReAct result description", async () => {
+  const recording: { response: string } = JSON.parse(
+    await Deno.readTextFile(
+      "tests/scenario_framework/fixtures/mock_recordings/phase205/guarded/guarded-change-pass__submit__validate--react__0.json",
+    ),
+  );
+  const result = new OutputParser().parseAgentResponse(recording.response, {
+    trace_id: crypto.randomUUID(),
+    request_id: "guarded-output",
+    plan: "fallback",
+  }, Date.now());
+  const plan = PlanSchema.parse(JSON.parse(result.description));
+  assertEquals(plan.subject, "Accepted guarded change");
+  assertExists(plan.steps);
+  assertEquals(plan.steps.map((step) => step.description), [
+    "The confined proof and regression test are validated.",
+  ]);
+});
 
 Deno.test("[contract] self-correcting implementation declares the planned edges, gate and settings", async () => {
   const flow = await new FlowLoader(FLOWS_DIR).loadFlow(SELF_CORRECTING);
@@ -259,4 +286,94 @@ Deno.test("[contract] the research overlay keeps explorers light and the compose
     [step("compose")]: "strong-service",
     [step("evidence-gate")]: "strong-service",
   });
+});
+
+Deno.test("[contract] guarded change binds hardened implementation review and a terminal security gate", async () => {
+  const flow = await new FlowLoader(FLOWS_DIR).loadFlow("guarded-change");
+  assertEquals<unknown>(flow.steps.map((step) => [step.id, step.type as string, step.dependsOn, step.input]), [
+    ["explore", "agent", [], { source: "request", transform: "passthrough" }],
+    ["implement", "session_delegate_cycle", ["explore"], {
+      source: "step",
+      stepId: "explore",
+      transform: "passthrough",
+    }],
+    ["security-gate", "gate", ["implement"], {
+      source: "aggregate",
+      from: ["explore", "implement"],
+      transform: "passthrough",
+    }],
+    ["validate", "agent", ["security-gate"], {
+      source: "aggregate",
+      from: ["implement", "security-gate"],
+      transform: "passthrough",
+    }],
+  ]);
+  const [explore, implement, security, validate] = flow.steps;
+  assertEquals(explore.execution_mode as string, "dynamic");
+  assertEquals(explore.permitted_tools, ["read_file", "list_directory", "search_files"]);
+  assertEquals(implement.agent_role, "dogfood-coder");
+  assertEquals<unknown>(implement.delegateCycle, {
+    requireChangedPaths: true,
+    review: {
+      agent_role: "quality-judge",
+      criteria: ["code_correctness", "has_tests", "task_fulfillment"],
+      threshold: 0.8,
+      onFail: "halt",
+      maxRetries: 2,
+      includeRequestCriteria: false,
+    },
+  });
+  assertEquals(security.agent_role, "security-expert");
+  assertEquals<unknown>(security.evaluate?.criteria, [
+    {
+      name: "path_confinement",
+      category: "security",
+      description: "Every changed path is src/proof.txt or tests/proof_test.ts in the resolved worktree.",
+      required: true,
+      weight: 1,
+    },
+    {
+      name: "no_secret_exposure",
+      category: "security",
+      description: "The diff and return evidence contain no credentials, tokens or host secrets.",
+      required: true,
+      weight: 1,
+    },
+  ]);
+  assertEquals([
+    security.evaluate?.threshold,
+    security.evaluate?.onFail,
+    security.evaluate?.maxRetries,
+    security.evaluate?.includeRequestCriteria,
+  ], [0.8, "halt", 1, false]);
+  assertEquals([validate.agent_role, validate.strategy as string], ["qa-engineer", "react"]);
+  assertEquals(flow.namespace?.enabled, false);
+  assertEquals([flow.settings.maxParallelism, flow.settings.failFast, flow.settings.timeout], [1, true, 600000]);
+  assertEquals([flow.output.from, flow.output.format as string], ["validate", "markdown"]);
+  const overlay = BindingOverlaySchema.parse(
+    parseToml(await Deno.readTextFile(`${OVERLAYS_DIR}/guarded-change.example.toml`)),
+  );
+  assertEquals(
+    Object.keys(overlay.bindings ?? {}).sort(),
+    ["explore", "implement", "security-gate", "validate"].map((id) => `flow:guarded-change/step:${id}`).sort(),
+  );
+});
+
+Deno.test("[contract] guarded requests activate the hardened coordinator and retain the plan pointer", async () => {
+  const config = ConfigSchema.parse(
+    parseToml(await Deno.readTextFile("tests/scenario_framework/fixtures/configs/phase205-guarded-change.toml")),
+  );
+  assertEquals(config.session_delegate?.enabled, true);
+  assertEquals(config.session_delegate?.tool, "codex");
+  assertEquals(config.session_delegate?.gates, ["code_changes"]);
+  assertEquals(config.session_delegate?.launch_mode, "headless");
+  assertEquals(config.session_delegate?.harden_permissions, true);
+  assertEquals(config.session_delegate?.permitted_paths, ["src/proof.txt", "tests/proof_test.ts"]);
+  for (const file of ["guarded_change", "guarded_change_pass"]) {
+    const request = await Deno.readTextFile(`tests/scenario_framework/fixtures/requests/flow_blueprints/${file}.md`);
+    const frontmatter = parseYaml(request.split("---")[1]) as IGuardedRequestFrontmatter;
+    assertEquals(frontmatter.flow, "guarded-change");
+    assertEquals(frontmatter.portal, "exaix-self");
+    assertEquals(frontmatter.plan_context_ref, ".exa/PlanContext/phase205-guarded-change.md");
+  }
 });

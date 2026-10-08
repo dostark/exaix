@@ -20,6 +20,7 @@ import { assert } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
+import type { Opt, Reason } from "@exaix/core/types";
 import { RequestCommands } from "../src/commands/request_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 
@@ -33,10 +34,11 @@ interface ICreatedFrontmatter {
   tags?: string[] | string;
   subject?: string;
   model?: string;
+  plan_context_ref?: string;
 }
 
 /** Read a list field back regardless of which of the two shapes YAML produced. */
-function asList(value: string[] | string | undefined): string[] {
+function asList(value: Opt<string[] | string, Reason.OptionalInput>): string[] {
   if (Array.isArray(value)) return value;
   return value ? JSON.parse(value) as string[] : [];
 }
@@ -149,6 +151,15 @@ Evaluate the pinned skills.
     assert(result.path, "a flow request submitted by file must be created");
     const { frontmatter } = splitFrontmatter(await Deno.readTextFile(result.path));
     assertEquals((frontmatter as { flow?: string }).flow, "api-design", "the flow must reach the request file");
+  });
+
+  it("preserves a hardened plan context pointer on file submission", async () => {
+    await Deno.mkdir(join(tempDir, "Blueprints", "Flows"), { recursive: true });
+    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "api-design.flow.yaml"), "id: api-design\n");
+    const { frontmatter } = await submit(
+      "---\nflow: api-design\nplan_context_ref: .exa/PlanContext/guarded-change.md\n---\nRun the hardened plan.\n",
+    );
+    assertEquals(frontmatter.plan_context_ref, ".exa/PlanContext/guarded-change.md");
   });
 
   it("omits agent_role from a flow request's frontmatter, which the daemon requires", async () => {

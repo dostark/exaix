@@ -1,0 +1,9 @@
+[system]
+root = "."
+[session_delegate]
+enabled = true
+tool = "codex"
+gates = ["code_changes"]
+launch_mode = "headless"
+harden_permissions = true
+permitted_paths = ["src/proof.txt", "tests/proof_test.ts"]

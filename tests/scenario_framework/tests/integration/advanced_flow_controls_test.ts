@@ -16,10 +16,13 @@ import { runSyntheticScenario } from "../../runner/synthetic_runner.ts";
 import { loadScenarioActivities } from "../../runner/provider_live_evidence.ts";
 import { ScenarioExecutionMode } from "../../schema/step_schema.ts";
 import { loadManifest } from "../helpers/expected_call_manifest.ts";
+import { buildGuardedLauncher } from "../helpers/guarded_change_fixture.ts";
 
 const FRAMEWORK_HOME = new URL("../../", import.meta.url).pathname;
 const REPO_ROOT = new URL("../../../../", import.meta.url).pathname;
 const OUTPUT_HOME = join(FRAMEWORK_HOME, "output", "phase205", "step1");
+const GUARDED_CONFIG = new URL("../../fixtures/configs/phase205-guarded-change.toml", import.meta.url).pathname;
+const GUARDED_LAUNCHER = new URL("../../fixtures/bin/phase205-session-delegate.ts", import.meta.url).pathname;
 const PROMPT_TOKENS = 100;
 const COMPLETION_TOKENS = 200;
 for (
@@ -36,6 +39,8 @@ for (
     ["triage_router", "triage-router", "bug", "planned", 6, 0, 0],
     ["triage_router_docs", "triage-router-docs", "docs", "planned", 6, 0, 0],
     ["parallel_research", "parallel-research", "continued-with-warning", "planned", 7, 1, 0, "team"],
+    ["guarded_change", "guarded-change", "halted", "failed", 8, 1, 0, "team"],
+    ["guarded_change_pass", "guarded-change-pass", "passed", "planned", 8, 1, 0, "team"],
   ] as const
 ) {
   Deno.test({
@@ -95,9 +100,23 @@ if (${JSON.stringify(compiled)} && Deno.args[0] === "daemon" && Deno.args[1] ===
   if (ready.success) console.log("daemon.started");
   Deno.exit(ready.code);
 }
+if (${JSON.stringify(phaseStep === 8)} && Deno.args[0] === "daemon" && Deno.args[1] === "start") {
+  const { prepareGuardedPortal } = await import(${
+          JSON.stringify(new URL("../helpers/guarded_change_fixture.ts", import.meta.url).href)
+        });
+  await prepareGuardedPortal(${JSON.stringify(workspaceRoot)});
+}
 const result = await new Deno.Command(${JSON.stringify(compiled ? compiledCli : Deno.execPath())}, { args: [...${
           JSON.stringify(cliArgs)
-        }, ...Deno.args], stdin: "inherit", stdout: "inherit", stderr: "inherit" }).spawn().status;
+        }, ...Deno.args, ...(${
+          JSON.stringify(phaseStep === 8)
+        } && Deno.args[0] === "portal" && Deno.args[1] === "add" ? ["--execution-strategy", "worktree"] : [])], stdin: "inherit", stdout: "inherit", stderr: "inherit" }).spawn().status;
+if (result.success && ${JSON.stringify(phaseStep === 8)} && Deno.args[0] === "journal" && Deno.args[1] === "wait") {
+  const { captureGuardedDelegation } = await import(${
+          JSON.stringify(new URL("../helpers/guarded_change_fixture.ts", import.meta.url).href)
+        });
+  await captureGuardedDelegation(${JSON.stringify(workspaceRoot)});
+}
 if (result.success && ${
           JSON.stringify(file === "gate_retry_budget")
         } && Deno.args[0] === "request") await recordGateBudgetUsage(${JSON.stringify(workspaceRoot)});
@@ -110,6 +129,19 @@ Deno.exit(result.code);
 `,
       );
       await Deno.chmod(exactlExecutable, 0o755);
+      if (phaseStep === 8) {
+        const codexFixture = join(cliDir, "codex");
+        await Deno.writeTextFile(
+          codexFixture,
+          buildGuardedLauncher(
+            Deno.execPath(),
+            join(REPO_ROOT, "deno.json"),
+            GUARDED_LAUNCHER,
+            Deno.env.get("DENO_DIR"),
+          ),
+        );
+        await Deno.chmod(codexFixture, 0o755);
+      }
       try {
         await Deno.writeTextFile(
           join(workspaceRoot, "exa.config.toml"),
@@ -148,6 +180,14 @@ enabled = false
 enabled = false
 `,
         );
+        if (phaseStep === 8) {
+          const fixture = await Deno.readTextFile(GUARDED_CONFIG);
+          await Deno.writeTextFile(
+            join(workspaceRoot, "exa.config.toml"),
+            fixture.slice(fixture.indexOf("[session_delegate]")),
+            { append: true },
+          );
+        }
         let run: Awaited<ReturnType<typeof runSyntheticScenario>> | undefined;
         await withEnv({
           PATH: `${cliDir}:${Deno.env.get("PATH") ?? ""}`,
@@ -288,6 +328,19 @@ enabled = false
           assertEquals(failedSteps.map((row) => JSON.parse(row.payload).stepId), ["explore-tests"]);
           assertEquals(activities.filter((row) => row.action_type === "flow.completed").length, 1);
         }
+        if (phaseStep === 8) {
+          const completed = activities.filter((row) => row.action_type === "session.delegate.cycle_step_completed");
+          assertEquals(completed.length, 1, "cycle advancement requires an approved implementation review");
+          const delegationId = JSON.parse(completed[0].payload).delegationTraceId;
+          const evidence = JSON.parse(
+            await Deno.readTextFile(join(workspaceRoot, ".exa", "guarded-scope-evidence.json")),
+          );
+          assertEquals(evidence, { parentTraceId: traceId, delegationTraceId: delegationId });
+          await Deno.copyFile(
+            join(workspaceRoot, ".exa", "guarded-scope-evidence.json"),
+            join(outputDir, "guarded-scope-evidence.json"),
+          );
+        }
         assert(
           activities.filter((row) => row.action_type === "llm.call.failed").length >= failures,
           "every recorded provider failure journals a failed call",
@@ -301,7 +354,7 @@ enabled = false
         const downstream = activities.filter((row) =>
           row.action_type === "flow.step.started" &&
           (JSON.parse(row.payload) as { stepId: string }).stepId ===
-            ({ 4: "adr", 5: "report", 6: "summary", 7: "compose" }[phaseStep as number] ??
+            ({ 4: "adr", 5: "report", 6: "summary", 7: "compose", 8: "validate" }[phaseStep as number] ??
               (file === "branch_routing" ? "join" : "after"))
         );
         assertEquals(downstream.length, status === "failed" ? 0 : 1);
@@ -351,6 +404,7 @@ enabled = false
               5: "Accepted guarded implementation",
               6: `Triage summary: ${action}`,
               7: "Parallel research synthesis",
+              8: "Accepted guarded change",
             }[
               phaseStep as number
             ]!,

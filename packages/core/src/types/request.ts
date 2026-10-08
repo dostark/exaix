@@ -7,6 +7,7 @@
  */
 
 import { z } from "zod";
+import type { Opt, Reason } from "./optional_marker.ts";
 import type { RequestPriority, RequestSource } from "@exaix/core";
 import type { RequestStatusType } from "@exaix/core/status";
 
@@ -55,6 +56,8 @@ export interface IRequestOptions {
   /** Soft hints: cheapest|fastest, repeatable */
   characteristics?: string[];
   flow?: string;
+  /** Portal-relative hardened plan context for a delegated flow. */
+  plan_context_ref?: Opt<string, Reason.OptionalInput>;
   skills?: string[];
   /** Tags the skill matcher scores against a skill's declared trigger tags. */
   tags?: string[];

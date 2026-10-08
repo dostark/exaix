@@ -1,0 +1,61 @@
+schema_version: "1.0.0"
+id: guarded-change
+title: Guarded change halts before validation on a failing security verdict
+pack: flow_blueprints
+tags: ["subsystem:flows", "entity:guarded-change.flow", "session-delegation"]
+edition: team
+request_fixture: fixtures/requests/flow_blueprints/guarded_change.md
+mode_support: [auto]
+portals:
+  - alias: exaix-self
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/simple_repo"
+    target_path: "$WORKSPACE_ROOT/guarded-fixture"
+    git_init: true
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+    env: { EXA_LLM_PROVIDER: mock, MOCK_STRICT: "1", EXA_CI_MODE: "1" }
+    output_criteria:
+      - id: started
+        kind: command-output-contains
+        contains: [daemon.started]
+  - id: submit
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE"]
+    env: { EXA_RECORDING_LANES: "1" }
+    output_criteria:
+      - id: submitted
+        kind: command-exit-code
+        equals: 0
+  - id: await-terminal
+    type: exactl
+    command: journal
+    args: [wait, --event, request.failed, --since-rowid, "$STEP_BASELINE", --timeout, "90"]
+    timeout_sec: 95
+    output_criteria:
+      - id: planned
+        kind: command-exit-code
+        equals: 0
+  - id: assert-security-verdict
+    type: journal-assert
+    action_type: flow.gate.evaluated
+    trace_scoped: true
+    expect_count: 1
+    payload_equals:
+      - path: action
+        value: halted
+    output_criteria:
+      - id: security-verdict-journaled
+        kind: command-exit-code
+        equals: 0
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]
+    output_criteria:
+      - id: stopped
+        kind: command-exit-code
+        equals: 0

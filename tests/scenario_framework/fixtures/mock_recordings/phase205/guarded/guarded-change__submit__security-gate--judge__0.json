@@ -1,0 +1,26 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Guarded change fixture",
+  "response": "{\"criteriaScores\": {\"path_confinement\": {\"score\": 0.2, \"reasoning\": \"Security fixture fails.\", \"issues\": []}, \"no_secret_exposure\": {\"score\": 0.2, \"reasoning\": \"Security fixture fails.\", \"issues\": []}}, \"feedback\": \"Guarded security rejected.\", \"suggestions\": []}",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-08T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "GUARDED EXPLORATION PROOF",
+      "GUARDED IMPLEMENTATION PROOF",
+      "path_confinement",
+      "no_secret_exposure"
+    ]
+  },
+  "callSite": {
+    "scenarioId": "guarded-change",
+    "stepId": "submit",
+    "flowStepId": "security-gate--judge",
+    "callIndex": 0
+  }
+}

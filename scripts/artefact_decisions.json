@@ -351,5 +351,11 @@
     "artefactId": "test-generation",
     "status": "non-coverage",
     "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "guarded-change",
+    "status": "non-coverage",
+    "rationale": "covered by guarded-change pass and fail strict replay scenarios; no scoreable arm in this register"
   }
 ]

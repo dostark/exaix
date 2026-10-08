@@ -25,6 +25,7 @@ import { type IScenarioCatalogEntry, loadScenarioCatalog } from "../../runner/sc
 import { FlowLoader } from "@exaix/flow";
 import {
   loadFlowFile,
+  loadManifest,
   loadManifests,
   reconcileManifest,
   RECORDING_LANES_ENV,
@@ -42,6 +43,21 @@ const CALL_STEP_ID = "submit-flow-request";
 const SOLO_EDITION = "solo";
 const AGENT_STEP_TYPE = "agent";
 const FIRST_CALL_INDEX = 0;
+
+Deno.test("[flows_fixture_coverage] guarded manifests share exploration and review while preserving both gate outcomes", async () => {
+  const passed = await loadManifest(FRAMEWORK_HOME, "guarded-change-pass");
+  const halted = await loadManifest(FRAMEWORK_HOME, "guarded-change");
+  assertEquals(passed.calls.map((call) => `${call.lane}:${call.callIndex}`), [
+    "explore--dynamic:0",
+    "explore--dynamic:1",
+    "implement--delegate-review:0",
+    "security-gate--judge:0",
+    "validate--react:0",
+  ]);
+  assertEquals(halted.calls.length, 4);
+  assertEquals(halted.calls.at(-1)?.verdict, "below");
+  assertEquals(passed.calls.at(-2)?.verdict, "above");
+});
 const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---/;
 
 interface IScenarioFlow {

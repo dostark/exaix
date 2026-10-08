@@ -66,13 +66,18 @@ const REACT_ACTION = "```toml";
 const AGENT_CONTENT = "<content>";
 const DYNAMIC_TOOL_CALL = "tool_call";
 const DYNAMIC_COMPLETE = "complete";
+const CALL_PREFIX_SLUG = /^[a-z0-9-]+$/;
+
+interface IManifestFile extends IExpectedCallManifest {
+  callPrefix?: string;
+}
 
 export async function loadManifests(frameworkHome: string): Promise<IExpectedCallManifest[]> {
   const dir = join(frameworkHome, ...MANIFEST_DIR_SEGMENTS);
   const manifests: IExpectedCallManifest[] = [];
   for await (const entry of Deno.readDir(dir)) {
     if (!entry.isFile || !entry.name.endsWith(".json")) continue;
-    const manifest = JSON.parse(await Deno.readTextFile(join(dir, entry.name))) as IExpectedCallManifest;
+    const manifest = await loadManifest(frameworkHome, entry.name.slice(0, -".json".length));
     if (`${manifest.scenarioId}.json` !== entry.name) {
       throw new Error(`${entry.name} must be named after its scenarioId ${manifest.scenarioId}`);
     }
@@ -83,7 +88,12 @@ export async function loadManifests(frameworkHome: string): Promise<IExpectedCal
 
 export async function loadManifest(frameworkHome: string, scenarioId: string): Promise<IExpectedCallManifest> {
   const path = join(frameworkHome, ...MANIFEST_DIR_SEGMENTS, `${scenarioId}.json`);
-  return JSON.parse(await Deno.readTextFile(path)) as IExpectedCallManifest;
+  const { callPrefix, ...manifest } = JSON.parse(await Deno.readTextFile(path)) as IManifestFile;
+  if (callPrefix === undefined) return manifest;
+  if (!CALL_PREFIX_SLUG.test(callPrefix)) throw new Error("Invalid call prefix slug");
+  const prefixPath = join(frameworkHome, ...MANIFEST_DIR_SEGMENTS, "shared", `${callPrefix}.json`);
+  const prefix = JSON.parse(await Deno.readTextFile(prefixPath)) as IExpectedCall[];
+  return { ...manifest, calls: [...prefix, ...manifest.calls] };
 }
 
 export async function loadFlowFile(path: string): Promise<IFlow> {
@@ -131,13 +141,16 @@ function judgeError(call: IExpectedCall, response: string, gate: IFlowStep): str
     return "judge recording is not raw JSON";
   }
   if (JUDGE_RESPONSE_KEYS.some((name) => !(name in parsed))) return "judge recording lacks a required field";
-  const criteria = getCriteriaByNames(gate.evaluate?.criteria ?? []).map((criterion) => criterion.name);
+  const evaluate = gate.evaluate ?? gate.delegateCycle?.review;
+  const criteria = (evaluate?.criteria ?? []).flatMap((criterion) =>
+    typeof criterion === "string" ? getCriteriaByNames([criterion]) : [criterion]
+  ).map((criterion) => criterion.name);
   const scores = criteria.map((name) => parsed.criteriaScores?.[name]?.score);
   if (scores.some((score) => typeof score !== "number" || score < 0 || score > 1)) {
     return "judge recording lacks a bounded score for every gate criterion";
   }
   const mean = (scores as number[]).reduce((sum, score) => sum + score, 0) / scores.length;
-  const above = mean >= (gate.evaluate?.threshold ?? 1);
+  const above = mean >= (evaluate?.threshold ?? 1);
   if ((call.verdict === JudgeVerdict.ABOVE) !== above) return `judge verdict is not ${call.verdict} the threshold`;
   return null;
 }

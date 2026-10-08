@@ -1,0 +1,5 @@
+[
+  { "lane": "explore--dynamic", "callIndex": 0, "dialect": "dynamic", "toolTurn": true },
+  { "lane": "explore--dynamic", "callIndex": 1, "dialect": "dynamic" },
+  { "lane": "implement--delegate-review", "callIndex": 0, "dialect": "judge", "verdict": "above" }
+]

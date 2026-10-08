@@ -5,14 +5,28 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/tests/helpers/expected_call_manifest.ts]
  */
-import { assert } from "@std/assert";
+import { assert, assertRejects } from "@std/assert";
+import { join } from "@std/path";
 import {
   type IExpectedCallManifest,
   JudgeVerdict,
   loadFlowFile,
+  loadManifest,
   reconcileManifest,
 } from "../helpers/expected_call_manifest.ts";
 import { type IManifestCase, loadManifestCases } from "./helpers/flows_fixture_coverage_fixture.ts";
+
+Deno.test("[flows_fixture_coverage] [security] shared call prefixes reject path traversal", async () => {
+  const root = await Deno.makeTempDir({ prefix: "manifest-prefix-" });
+  try {
+    const dir = join(root, "fixtures", "phase205", "expected_calls");
+    await Deno.mkdir(dir, { recursive: true });
+    await Deno.writeTextFile(join(dir, "invalid.json"), JSON.stringify({ callPrefix: "../outside", calls: [] }));
+    await assertRejects(() => loadManifest(root, "invalid"), Error, "Invalid call prefix");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
 
 Deno.test("[flows_fixture_coverage] [security] omissions and extra fixtures cannot certify themselves", async () => {
   const cases = await loadManifestCases();
@@ -61,6 +75,17 @@ Deno.test("[flows_fixture_coverage] [security] omissions and extra fixtures cann
     calls: research.manifest.calls.map((call) => call.lane === "explore-docs" ? { ...call, failure: true } : call),
   };
   assert((await errorsFor(research, inventedFailure)).some((error) => error.includes("expected a recorded")));
+
+  const guarded = pick("guarded-change-pass");
+  const omittedSecurityScore = guarded.recordings.map((recording) => {
+    if (recording.callSite?.flowStepId !== "security-gate--judge") return recording;
+    const verdict = JSON.parse(recording.response);
+    delete verdict.criteriaScores.path_confinement;
+    return { ...recording, response: JSON.stringify(verdict) };
+  });
+  assert(
+    (await errorsFor(guarded, guarded.manifest, omittedSecurityScore)).some((error) => error.includes("bounded score")),
+  );
 
   const team = pick("architecture-decision");
   const absentVoter = { ...team.manifest, calls: team.manifest.calls.filter((call) => call.lane !== "vote--voter-2") };
