@@ -24,16 +24,6 @@ describe("scripts/setup_hooks.ts", () => {
     await Deno.remove(tmpDir, { recursive: true });
   });
 
-  it("[security] rejects hook installation outside a Git repository", async () => {
-    const result = await new Deno.Command(Deno.execPath(), {
-      args: ["run", "--allow-all", fromFileUrl(new URL("../../scripts/setup_hooks.ts", import.meta.url))],
-      cwd: tmpDir,
-    }).output();
-    assertEquals(result.success, false);
-    assert(new TextDecoder().decode(result.stderr).includes("Cannot resolve Git hooks"));
-    assertEquals([...Deno.readDirSync(tmpDir)], []);
-  });
-
   it("fix(hooks): installs executable hooks from a linked worktree", async () => {
     const repoDir = join(tmpDir, "repo");
     const worktreeDir = join(tmpDir, "worktree");

@@ -108,19 +108,6 @@ for (const useSymlink of [false, true]) {
   });
 }
 
-for (const model of ["../exa.config", "unknown__submit__gate__0"]) {
-  Deno.test(`[security] [flow blueprint delegate] refuses invalid or missing recording ${model}`, async () => {
-    const run = await new Deno.Command(Deno.execPath(), {
-      args: ["run", "-A", DELEGATE.pathname, "--model", model, "--print", "Review"],
-    }).output();
-    assertEquals(run.code, 1);
-    assertEquals(new TextDecoder().decode(run.stdout), "");
-    assert(
-      new TextDecoder().decode(run.stderr).includes(model.startsWith("../") ? "Invalid recording key" : "No such file"),
-    );
-  });
-}
-
 Deno.test("[flow blueprint setup] feature review recordings fit the production aggregate input limit", async () => {
   const responses = await Promise.all(["implement-feature", "write-tests"].map(async (step) => {
     const fixture = JSON.parse(

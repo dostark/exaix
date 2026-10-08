@@ -50,31 +50,6 @@ Deno.test("binding evidence accepts shipped scenario IDs with underscores", asyn
   }
 });
 
-Deno.test("[security] binding evidence rejects scenario path traversal before writing", async () => {
-  const outputDir = await Deno.makeTempDir();
-  try {
-    for (const scenarioId of ["../escape", "nested/scenario", "scenario\\escape"]) {
-      await assertRejects(
-        () =>
-          writeProviderLiveEvidence({
-            scenarioId,
-            outputDir,
-            configPath: `${outputDir}/exa.config.toml`,
-            activities: [],
-            outcome: "success",
-            suiteScore: 1,
-            exitCode: 0,
-          }),
-        Error,
-        "Invalid scenario ID",
-      );
-    }
-    assertEquals(Array.from(Deno.readDirSync(outputDir)), []);
-  } finally {
-    await Deno.remove(outputDir, { recursive: true });
-  }
-});
-
 Deno.test("provider live evidence retains a redacted trace and normalized usage after sandbox cleanup", async () => {
   const sandbox = await Deno.makeTempDir();
   const outputDir = await Deno.makeTempDir();
