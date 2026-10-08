@@ -595,3 +595,229 @@ The first full run reported 12,895 passed, two failures and six ignored. Both fa
 
 🎉  All batches passed.
 ```
+
+## Previous-step closure validation
+
+Verified against runtime source `4e8c1f6430de71c27d8b66bafcf0f2de19a4b52a`. This audit reconciles 45 entries: 14 Step 1 planned tests, 19 Step 2 planned tests, five Step 2 criteria, one Step 3 deferral and six runtime success metrics. Steps 1–9 have no unclosed criteria, test bullets or deferrals. Step 10 and phase completion remain pending.
+
+[Download current validation](phase205-prior-step-validation.json.gz) (gzip JSON; SHA-256 `1388fd44e0c07494a1f9531000b69af7a093d1ed1e9375cf07d53515747725ca`). It retains the per-entry original/verified wording, source hashes, current raw logs and all 28 current scenario/journal/provider-input artifacts.
+
+The current focused run passed 121 tests; the current compiled matrix passed all 28 cases. Both have zero failures and zero ignores. Static CI, Markdown lint, format, whitespace and the 22-row reachability audit also pass. The full-suite build test had replaced the Solo binary pair, so the matrix was rerun against the current binaries. All four current binary digests now match the retained case evidence.
+
+The preceding Team suite is reused because all 283 archived digests and the Team source revision match. It passed 12,892 tests with zero failures and 12 ignored; all six deployment skips passed separately. Only six baseline ignores remain uncovered. The prior raw full-suite output remains in the original cutover archive.
+
+The Step 2 checkpoint already records three successful daemon cases during that step. Its original pending status referred to full-suite validation, which later passed. The original log and metadata are retained alongside the new closure map.
+
+The shipped triage contract test now closes the Step 3 deferral. Static gate schemas bound evaluations at ten; configured lower ceilings add a runtime bound. Gate dispatch is asserted by the runner halt file; `GateStepHandler.execute` also visibly calls `evaluateGate(ctx, 1)` at line 44. These mappings correct the old same-file references without changing their required behavior.
+
+| Focused test file                                                     | Executed |
+| --------------------------------------------------------------------- | -------- |
+| `tests/scenario_framework/tests/unit/flows_fixture_coverage_test.ts`  | 4        |
+| `tests/blueprints/advanced_flow_contracts_test.ts`                    | 9        |
+| `tests/blueprints/flow_strategy_audit_test.ts`                        | 3        |
+| `tests/blueprints/referential_integrity_gate_test.ts`                 | 7        |
+| `tests/security/flow_retry_body_security_test.ts`                     | 5        |
+| `tests/eval/flow_eval_parity_test.ts`                                 | 3        |
+| `packages/flow/tests/step_handlers/gate_step_handler_actions_test.ts` | 6        |
+| `packages/flow/tests/flow_runner_gate_halt_test.ts`                   | 9        |
+| `packages/flow/tests/flow_runtime_validator_test.ts`                  | 2        |
+| `packages/flow/tests/flow_control_replay_test.ts`                     | 5        |
+| `packages/flow/tests/loop_body_test.ts`                               | 12       |
+| `packages/flow/tests/flow_runner_gate_retry_test.ts`                  | 10       |
+| `packages/flow/tests/flow_gate_retry_budget_test.ts`                  | 10       |
+| `packages/flow/tests/flow_control_checkpoint_test.ts`                 | 21       |
+| `packages/flow/tests/gate_evaluation_limits_test.ts`                  | 6        |
+| `packages/schemas/tests/flow_loop_schema_test.ts`                     | 9        |
+
+```text
+Check tests/scenario_framework/tests/unit/flows_fixture_coverage_test.ts
+Check tests/blueprints/advanced_flow_contracts_test.ts
+Check tests/blueprints/flow_strategy_audit_test.ts
+Check tests/blueprints/referential_integrity_gate_test.ts
+Check tests/security/flow_retry_body_security_test.ts
+Check tests/eval/flow_eval_parity_test.ts
+Check packages/flow/tests/step_handlers/gate_step_handler_actions_test.ts
+Check packages/flow/tests/flow_runner_gate_halt_test.ts
+Check packages/flow/tests/flow_runtime_validator_test.ts
+Check packages/flow/tests/flow_control_replay_test.ts
+Check packages/flow/tests/loop_body_test.ts
+Check packages/flow/tests/flow_runner_gate_retry_test.ts
+Check packages/flow/tests/flow_gate_retry_budget_test.ts
+Check packages/flow/tests/flow_control_checkpoint_test.ts
+Check packages/flow/tests/gate_evaluation_limits_test.ts
+Check packages/schemas/tests/flow_loop_schema_test.ts
+running 4 tests from ./tests/scenario_framework/tests/unit/flows_fixture_coverage_test.ts
+[flows_fixture_coverage] guarded manifests share exploration and review while preserving both gate outcomes ... ok (3ms)
+[flows_fixture_coverage] every AGENT step in each solo-edition scenario's flow has a committed fixture ... ok (393ms)
+[flows_fixture_coverage] every opted-in scenario has an independent expected-call manifest ... ok (141ms)
+[flows_fixture_coverage] manifests reconcile with schema-valid flows, editions and keyed recordings ... ok (169ms)
+running 9 tests from ./tests/blueprints/advanced_flow_contracts_test.ts
+[contract] guarded validation carries a valid plan through the ReAct result description ... ok (10ms)
+[contract] self-correcting implementation declares the planned edges, gate and settings ... ok (11ms)
+[contract] the self-correcting overlay binds plan and gate strong, the rest light ... ok (6ms)
+[contract] the shipped triage router parses with the planned branches, edges and transforms ... ok (4ms)
+[contract] the triage overlay binds only the classifier to the strong service ... ok (14ms)
+[contract] parallel research declares the bounded explore group, namespace and warning gate ... ok (2ms)
+[contract] the research overlay keeps explorers light and the composer and gate strong ... ok (1ms)
+[contract] guarded change binds hardened implementation review and a terminal security gate ... ok (2ms)
+[contract] guarded requests activate the hardened coordinator and retain the plan pointer ... ok (6ms)
+running 3 tests from ./tests/blueprints/flow_strategy_audit_test.ts
+Flow strategy audit: catalog enumeration matches the audit table's flows ... ok (1ms)
+Flow strategy audit: every catalog step has an explicit, recorded decision matching reality ... ok (33ms)
+Flow strategy audit: every catalog flow still validates after the strategy rollout ... ok (34ms)
+running 7 tests from ./tests/blueprints/referential_integrity_gate_test.ts
+[step9/integrity-gate] all default_skills references resolve to existent skill folders — FAILS CLOSED ... ok (15ms)
+[step9/integrity-gate] a dangling skill reference is detected — FAILS CLOSED ... ok (1ms)
+[step9/integrity-gate] every agent role declares its role-required default_skills — FAILS CLOSED ... ok (2ms)
+[step9/integrity-gate] a wrong-skills agent role is caught — FAILS CLOSED ... ok (179µs)
+[step9/integrity-gate] read-only agent roles carry no destructive permitted_tools — FAILS CLOSED ... ok (1ms)
+[step9/integrity-gate] an over-privileged read-only agent role is caught — FAILS CLOSED ... ok (140µs)
+[step9/integrity-gate] no agent role has McpToolName values in capabilities — FAILS CLOSED ... ok (1ms)
+running 5 tests from ./tests/security/flow_retry_body_security_test.ts
+[security] voting_group retry body is rejected before execution ... ok (9ms)
+[security] consensus retry body is rejected before execution ... ok (3ms)
+[security] session_delegate_cycle retry body is rejected before execution ... ok (1ms)
+[security] CLI-delegating retry body never reaches its launcher ... ok (1ms)
+[security] React retry calls retain the portal, trace and authorized write path ... ok (53ms)
+running 3 tests from ./tests/eval/flow_eval_parity_test.ts
+flow_eval_parity — the catalog is read from disk, not restated here ... ok (14ms)
+flow_eval_parity — every shipped flow has a real scenario, or a reasoned exclusion ... ok (222ms)
+flow_eval_parity — every flow entity tag names a flow that exists ... ok (144ms)
+running 6 tests from ./packages/flow/tests/step_handlers/gate_step_handler_actions_test.ts
+[gate] halt throws FlowGateHaltedError carrying score, threshold and feedback ... ok (16ms)
+[gate] halt never returns content, even when the judge errors ... ok (3ms)
+[gate] continue-with-warning returns the feedback ... ok (1ms)
+[gate] evaluateGate returns typed halt and emits score, threshold, passed, action and attempt ... ok (1ms)
+[wrapper] retry requires the runner instead of returning low-scoring content ... ok (1ms)
+[recording] each gate evaluation replays on the judge lane at index attempt minus one ... ok (2ms)
+running 9 tests from ./packages/flow/tests/flow_runner_gate_halt_test.ts
+[runner] a halted gate is terminal under default ... ok (15ms)
+[runner] a halted gate is terminal under failFast false ... ok (2ms)
+[runner] a halted gate is terminal under continue_on_error ... ok (4ms)
+[runner] a halted gate is terminal under retry ... ok (2ms)
+[runner] a halted gate is terminal under fallback ... ok (2ms)
+[runner] a halted gate is terminal under compensate ... ok (1ms)
+[runner] a halted gate is terminal under abort ... ok (16ms)
+[runner] warning continues through the downstream agent ... ok (3ms)
+[runner] gate dispatch calls evaluateGate without the generic execute wrapper ... ok (1ms)
+running 2 tests from ./packages/flow/tests/flow_runtime_validator_test.ts
+[security] [validator] onError on a gate step is rejected ... ok (9ms)
+[validator] feedback input directs callers to gate retry ... ok (464µs)
+running 5 tests from ./packages/flow/tests/flow_control_replay_test.ts
+[real-store replay] summary-only none branch cannot bypass routing ... ok (26ms)
+[real-store replay] summary-only llm branch cannot bypass routing ... ok (20ms)
+[real-store replay] summary-only none gate cannot bypass evaluation ... ok (4ms)
+[real-store replay] summary-only llm gate cannot bypass evaluation ... ok (1ms)
+[security] legacy completed gate checkpoint fails before downstream execution ... ok (131ms)
+running 12 tests from ./packages/flow/tests/loop_body_test.ts
+[loop] computes every path from backTo to gate in topological order ... ok (7ms)
+[security] [loop] rejects body type session_delegate_cycle ... ok (1ms)
+[security] [loop] rejects body type voting_group ... ok (670µs)
+[security] [loop] rejects body type consensus ... ok (407µs)
+[security] [loop] rejects body type gate ... ok (505µs)
+[security] [loop] rejects body type branch ... ok (330µs)
+[loop] rejects empty body and a same-wave output consumer ... ok (396µs)
+[security] [loop] rejects CLI delegation, body recovery, repeated attempts and append writes ... ok (435µs)
+[loop] accepts declared agent strategy undefined ... ok (691µs)
+[loop] accepts declared agent strategy react ... ok (346µs)
+[loop] accepts declared agent strategy mcp ... ok (272µs)
+[loop] accepts dynamic agents without a strategy ... ok (293µs)
+running 10 tests from ./packages/flow/tests/flow_runner_gate_retry_test.ts
+[runner] retry runs the body with feedback and passes on evaluation two ... ok (20ms)
+[loop] exhausted retries consume three evaluations and two body iterations ... ok (9ms)
+[limits] programmatic retry count 1 is rejected before calls ... ok (1ms)
+[limits] programmatic retry count 11 is rejected before calls ... ok (11ms)
+[limits] programmatic retry count 1000000000 is rejected before calls ... ok (1ms)
+[lifecycle] a failed middle member stops without another judge ... ok (4ms)
+[lifecycle] a skipped middle member stops without another judge ... ok (3ms)
+[lifecycle] all members have iteration identity and only backTo receives feedback ... ok (4ms)
+[lifecycle] retry writes are published before preparing the next body member ... ok (153ms)
+[lifecycle] retry persistence failure stops the gate even with failFast disabled ... ok (3ms)
+running 10 tests from ./packages/flow/tests/flow_gate_retry_budget_test.ts
+[budget] equality admits no unbudgeted retry calls ... ok (268ms)
+[budget] exceeded admits no unbudgeted retry calls ... ok (149ms)
+[budget] missing db admits no unbudgeted retry calls ... ok (125ms)
+[budget] missing trace admits no unbudgeted retry calls ... ok (117ms)
+[budget] query failure admits no unbudgeted retry calls ... ok (119ms)
+[budget] unknown cost admits no unbudgeted retry calls ... ok (122ms)
+[budget] missing cost admits no unbudgeted retry calls ... ok (122ms)
+[budget] invalid cost admits no unbudgeted retry calls ... ok (119ms)
+[budget] disabled admits no unbudgeted retry calls ... ok (138ms)
+[budget] cumulative spend includes usage older than the journal default window ... ok (127ms)
+running 21 tests from ./packages/flow/tests/flow_control_checkpoint_test.ts
+[checkpoint] interrupted rerunning fails before body or judge calls ... ok (135ms)
+[checkpoint] interrupted evaluating fails before body or judge calls ... ok (115ms)
+[resume] branch route and exclusive skips survive restart with drift=none ... ok (152ms)
+[resume] branch route and exclusive skips survive restart with drift=missing ... ok (139ms)
+[resume] branch route and exclusive skips survive restart with drift=chosen ... ok (181ms)
+[resume] branch route and exclusive skips survive restart with drift=notTaken ... ok (132ms)
+[resume] branch route and exclusive skips survive restart with drift=output ... ok (176ms)
+[resume] branch route and exclusive skips survive restart with drift=request ... ok (269ms)
+[resume] branch route and exclusive skips survive restart with drift=skipCode ... ok (143ms)
+[resume] branch route and exclusive skips survive restart with drift=flow ... ok (135ms)
+[resume] branch route and exclusive skips survive restart with drift=default model ... ok (122ms)
+[resume] branch route and exclusive skips survive restart with drift=upstream ... ok (251ms)
+[resume] branch route and exclusive skips survive restart with drift=upstream duration ... ok (139ms)
+[resume] branch route and exclusive skips survive restart with drift=incomplete ... ok (149ms)
+[resume] decision saved before branch completion restores without a second model call ... ok (135ms)
+[checkpoint] settled gate restores its verdict with identity drift=none ... ok (137ms)
+[checkpoint] settled gate restores its verdict with identity drift=request ... ok (127ms)
+[checkpoint] settled gate restores its verdict with identity drift=config ... ok (128ms)
+[checkpoint] settled gate restores its verdict with identity drift=body content ... ok (143ms)
+[checkpoint] settled gate restores its verdict with identity drift=ceiling ... ok (144ms)
+[checkpoint] a backward wall clock cannot invalidate completed branch checkpoints ... ok (159ms)
+running 6 tests from ./packages/flow/tests/gate_evaluation_limits_test.ts
+[limits] direct evaluator rejects over ceiling outside its warning handler ... ok (10ms)
+[limits] direct evaluator rejects invalid consumed count outside its warning handler ... ok (1ms)
+[limits] direct evaluator rejects retry count one outside its warning handler ... ok (829µs)
+[limits] configured lower ceiling rejects programmatic over-limit flows before calls ... ok (165ms)
+[limits] configured ceiling is captured before the first judge call ... ok (157ms)
+[limits] the default ceiling admits ten evaluations and exactly nine body retries ... ok (12ms)
+running 9 tests from ./packages/schemas/tests/flow_loop_schema_test.ts
+[schema] gate backTo has no independent iteration or score defaults ... ok (6ms)
+[schema] rejects redundant gate loop controls {"maxIterations":2} ... ok (1ms)
+[schema] rejects redundant gate loop controls {"targetScore":0.9} ... ok (350µs)
+[schema] rejects loop on a non-gate and retry with one evaluation ... ok (748µs)
+[limits] both gate schemas bound maxRetries=10 ... ok (529µs)
+[limits] both gate schemas bound maxRetries=11 ... ok (416µs)
+[limits] both gate schemas bound maxRetries=1000000000 ... ok (326µs)
+[limits] gate evaluation default remains three ... ok (147µs)
+[schema] YAML gates retain explicit security criteria with evidence descriptions ... ok (403µs)
+
+ok | 121 passed | 0 failed (18s)
+```
+
+```text
+running 14 tests from ./tests/scenario_framework/tests/integration/advanced_flow_controls_test.ts
+[phase205 step1] gate-halt real solo daemon ... ok (13s)
+[phase205 step1] gate-continue-warning real solo daemon ... ok (11s)
+[phase205 step2] gate-retry real solo daemon ... ok (11s)
+[phase205 step2] gate-retry-exhausted real solo daemon ... ok (11s)
+[phase205 step2] gate-retry-budget real solo daemon ... ok (11s)
+[phase205 step3] branch-routing real solo daemon ... ok (11s)
+[phase205 step4] architecture-decision real team daemon ... ok (14s)
+[phase205 step4] architecture-decision-solo real solo daemon ... ok (12s)
+[phase205 step5] self-correcting-implementation real solo daemon ... ok (12s)
+[phase205 step6] triage-router real solo daemon ... ok (11s)
+[phase205 step6] triage-router-docs real solo daemon ... ok (11s)
+[phase205 step7] parallel-research real team daemon ... ok (12s)
+[phase205 step8] guarded-change real team daemon ... ok (15s)
+[phase205 step8] guarded-change-pass real team daemon ... ok (15s)
+running 14 tests from ./tests/scenario_framework/tests/integration/advanced_flows_cutover_test.ts
+[phase205 cutover] compiled Solo retry loop uses an immutable gate overlay and mock body ... ok (14s)
+[phase205 cutover regression] migration_planning compiled solo ... ok (9s)
+[phase205 cutover regression] security_audit compiled solo ... ok (9s)
+[phase205 cutover regression] analyze-codebase compiled team ... ok (9s)
+[phase205 cutover regression] api_design compiled solo ... ok (8s)
+[phase205 cutover regression] feature_development compiled solo ... ok (8s)
+[phase205 cutover regression] dogfood_context compiled solo ... ok (8s)
+[phase205 cutover regression] pr_review compiled solo ... ok (9s)
+[phase205 cutover regression] dogfood_loop compiled solo ... ok (8s)
+[phase205 cutover regression] test_generation compiled solo ... ok (9s)
+[phase205 cutover regression] onboarding_docs compiled solo ... ok (9s)
+[phase205 cutover regression] bug_investigation compiled solo ... ok (9s)
+[phase205 cutover regression] refactoring compiled solo ... ok (8s)
+[phase205 cutover regression] api_documentation compiled solo ... ok (9s)
+
+ok | 28 passed | 0 failed (5m11s)
+```
