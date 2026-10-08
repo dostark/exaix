@@ -1,6 +1,6 @@
 ---
 title: "Advanced flow cutover evidence"
-description: "Compiled edition, provider input, request trace and regression evidence for Phase 205 integration."
+description: "Compiled edition, provider input, request trace and regression evidence for the advanced flow cutover."
 ---
 
 Verified on 2026-10-08. Step 9 is complete. Step 10 documentation remains pending.

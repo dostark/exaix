@@ -12,7 +12,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 import type { IFlowStepHandlerRegistry } from "./step_handlers/step_handler.ts";
 import { VotingStepHandler } from "./step_handlers/voting_step_handler.ts";
 
-export const FLOW_CAPABILITY_UNAVAILABLE_CODE = "capability_unavailable";
+const FLOW_CAPABILITY_UNAVAILABLE_CODE = "capability_unavailable";
 
 export class FlowCapabilityUnavailableError extends Error {
   readonly reasonCode = FLOW_CAPABILITY_UNAVAILABLE_CODE;
