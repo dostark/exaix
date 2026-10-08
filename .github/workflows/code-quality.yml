@@ -126,9 +126,80 @@ jobs:
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task docs-bench
 
+      # --- GATES 12-27: mirror the rest of scripts/ci.ts STATIC_CHECK_TASKS ---
+      # Keep these in sync with STATIC_CHECK_TASKS (guarded by tests/scripts/ci_wiring_test.ts).
+      # Each gate stays its own step; do not delegate the whole job to ci.ts.
+      - name: "Gate 12: Type Checking"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check
+
+      - name: "Gate 13: Runtime Artifacts"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:runtime-artifacts
+
+      - name: "Gate 14: Scenario Declarative Purity"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:scenario-declarative -- --fail
+
+      - name: "Gate 15: Tool Result Parity"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:tool-result-parity
+
+      - name: "Gate 16: Tool Catalog Parity"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:tool-catalog-parity
+
+      - name: "Gate 17: Event Strings"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:event-strings
+
+      - name: "Gate 18: Optional Parameters"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:optional-params --fail
+
+      - name: "Gate 19: Config Keys"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:config-keys
+
+      - name: "Gate 20: Skill Duplication"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:skill-duplication
+
+      - name: "Gate 21: Skill Index"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:skill-index
+
+      - name: "Gate 22: Blueprint Integrity"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:blueprint-integrity
+
+      - name: "Gate 23: Step Manifests"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:manifests
+
+      - name: "Gate 24: Hardcoded Models"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:hardcoded-models
+
+      - name: "Gate 25: Agent Docs Integrity"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:agent-docs-integrity
+
+      - name: "Gate 26: Qwen Skills Sync"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:qwen-skills-sync
+
+      - name: "Gate 27: Skill Ephemera"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:skill-ephemera
+
   edition-build:
     name: "Edition Build Smoke Tests"
     runs-on: ubuntu-latest
+    env:
+      # Run plain edition suites without worker containers. The Docker-backed integration
+      # tests are opt-in (EXA_TEST_CONTAINERS=1), so the dev-test image is never built here.
+      EXA_TEST_CONTAINERS: "0"
     steps:
       - name: "Checkout repository"
         uses: actions/checkout@v4
@@ -154,13 +225,13 @@ jobs:
         run: deno task build:solo
 
       - name: "Test Solo edition (excludes exaix-team/)"
-        run: deno run -A scripts/ci.ts test --edition solo
+        run: deno task test:solo
 
       - name: "Build Team edition"
         run: deno task build:team
 
       - name: "Test Team edition (includes exaix-team/)"
-        run: deno run -A scripts/ci.ts test --edition team
+        run: deno task test:team
 
       - name: "Team edition smoke test"
         run: deno task test:team-smoke
@@ -171,43 +242,3 @@ jobs:
 
       - name: "Check no edition conditionals outside allowed dirs"
         run: deno task check:no-edition-conditionals
-
-  containerized-suite:
-    name: "Containerized Batch 2 Suite"
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
-    steps:
-      - name: "Checkout repository"
-        uses: actions/checkout@v4
-        with:
-          submodules: false
-
-      - name: "Init team submodule"
-        run: |
-          git config --local submodule.exaix-team.url "https://x-access-token:${{ secrets.EXAIX_TEAM_PAT }}@github.com/dostark/exaix-team.git"
-          git submodule update --init --depth 1 exaix-team
-
-      - name: "Setup Deno"
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: "2.x"
-
-      - name: "Set up Docker Buildx"
-        uses: docker/setup-buildx-action@v3
-
-      - name: "Build dev-test image (cached by Dockerfile + deno.lock layers)"
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          target: dev-test
-          tags: exaix-dev-test:dev
-          load: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: "Run the containerized suite"
-        env:
-          EXA_TEST_CONTAINERS: "1"
-        run: deno task test_all

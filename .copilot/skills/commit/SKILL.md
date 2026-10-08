@@ -60,8 +60,7 @@ Required validation before commit
 - Include formatting, linting, type-checking, and tests required by the touched area.
 - Use focused tests for the touched area. When full-suite validation is required,
   run `deno task test_all` (`deno task test_all:team` for team scope).
-  This is faster for local development cycles than the sequential `test:solo` and
-  `test:team` tasks selected by `scripts/ci.ts`.
+  This is faster than `scripts/ci.ts all`, which also runs the static gates, coverage, and a build.
 - Keep local static validation separate: use `deno run -A scripts/ci.ts check`.
   Do not use `ci.ts test` or `ci.ts all` to run the local full suite. If a local
   check/build pass is required, use `deno run -A scripts/ci.ts all --skip-tests`

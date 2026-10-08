@@ -62,7 +62,7 @@ jobs:
         run: rm -rf ~/.cache/deno/plug/
 
       - name: "Run Quick Tests"
-        run: deno run -A scripts/ci.ts test --quick
+        run: deno task test:solo
 
   eval-quick:
     runs-on: ubuntu-latest

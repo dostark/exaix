@@ -2,7 +2,9 @@
 /**
  * @module CI
  * @path scripts/ci.ts
- * @description Main CI orchestration script that runs all checks, tests, and coverage reporting.
+ * @description Shared pipeline orchestrator for local runs and some CI jobs. It runs static
+ *   checks, tests, coverage, and builds. The authoritative CI definition is
+ *   `.github/workflows/*.yml`; this script is a reusable entry point, not that list.
  *
  * Usage:
  *   deno run -A scripts/ci.ts [command]
@@ -130,7 +132,13 @@ const testCommand = new Command()
     }
 
     const edition = options.edition as EditionType | undefined;
-    const testTask = edition === EDITION_SOLO ? "test:solo" : edition === EDITION_TEAM ? "test:team" : "test_all";
+    const testTask = edition === EDITION_SOLO
+      ? "test_all:solo"
+      : edition === EDITION_TEAM
+      ? "test_all:team"
+      : edition === EDITION_ENTERPRISE
+      ? "test_all:enterprise"
+      : "test_all";
 
     const success = await runParallel([
       { cmd: ["deno", "task", testTask], desc: `Unit & Integration Tests [edition: ${edition ?? "all"}]` },
@@ -447,7 +455,13 @@ const allCommand = new Command()
     } else {
       // 2. Tests (Parallel) — edition-scoped
       console.log(`\n--- Phase 2: Testing [edition: ${edition}] ---`);
-      const testTask = edition === EDITION_SOLO ? "test:solo" : edition === EDITION_TEAM ? "test:team" : "test_all";
+      const testTask = edition === EDITION_SOLO
+        ? "test_all:solo"
+        : edition === EDITION_TEAM
+        ? "test_all:team"
+        : edition === EDITION_ENTERPRISE
+        ? "test_all:enterprise"
+        : "test_all";
       if (
         !await runParallel([
           { cmd: ["deno", "task", testTask], desc: `Unit & Integration Tests [edition: ${edition}]` },

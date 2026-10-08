@@ -14,6 +14,9 @@ import { assert, assertEquals } from "@std/assert";
 
 const CI_SOURCE = await Deno.readTextFile(new URL("../../scripts/ci.ts", import.meta.url));
 const HOOKS_SOURCE = await Deno.readTextFile(new URL("../../scripts/setup_hooks.ts", import.meta.url));
+const CODE_QUALITY_WORKFLOW = await Deno.readTextFile(
+  new URL("../../.github/workflows/code-quality.yml", import.meta.url),
+);
 
 Deno.test("[ci_wiring] scripts/ci.ts check action includes check:skill-index and no envelope gate", () => {
   assert(
@@ -218,4 +221,61 @@ Deno.test("[ci_wiring] real run: --skip-tests suppresses Testing/Coverage banner
   );
   assert(full.includes("Phase 3: Coverage"), "default run (no flag) must still run Phase 3");
   assert(full.includes("Phase 4: Build"), "default run (no flag) must still run Phase 4");
+});
+
+Deno.test("[ci_wiring] code-quality's static gates match scripts/ci.ts's CI-applicable scope", () => {
+  // CI keeps each gate as its own workflow step — do not delegate the whole job to ci.ts.
+  const qualityGate = CODE_QUALITY_WORKFLOW.slice(
+    CODE_QUALITY_WORKFLOW.indexOf("quality-gate:"),
+    CODE_QUALITY_WORKFLOW.indexOf("edition-build:"),
+  );
+  assert(qualityGate.length > 0, "could not locate the quality-gate job block");
+
+  const workflowTasks = new Set<string>();
+  for (const line of qualityGate.split("\n")) {
+    if (line.trimStart().startsWith("#")) continue;
+    for (const m of line.matchAll(/\bdeno task ([\w:.-]+)/g)) workflowTasks.add(m[1]);
+  }
+  assert(workflowTasks.size > 20, `sanity: expected the workflow's static gates, found ${workflowTasks.size}`);
+
+  const staticBlock = CI_SOURCE.slice(
+    CI_SOURCE.indexOf("const STATIC_CHECK_TASKS"),
+    CI_SOURCE.indexOf("const checkCommand"),
+  );
+  const ciStatic = new Set<string>();
+  for (const m of staticBlock.matchAll(/"task",\s*"([\w:.-]+)"/g)) ciStatic.add(m[1]);
+  // check:docs is run by ci.ts check as a diff warning, outside STATIC_CHECK_TASKS.
+  ciStatic.add("check:docs");
+
+  // Staged-only gates cannot run on a CI checkout (nothing is staged). The
+  // check:commit-msg task is a per-commit gate, not a repo static-gate task.
+  const EXCLUDED = new Set([
+    "check:optional-params:staged",
+    "check:md-path:staged",
+    "check:doc-section-refs:staged",
+    "check:ste100-comments:staged",
+    "check:event-coverage:staged:visible",
+    "check:commit-msg",
+  ]);
+  const ciApplicable = [...ciStatic].filter((t) => !EXCLUDED.has(t)).sort();
+  const workflowStatic = [...workflowTasks].filter((t) => !EXCLUDED.has(t)).sort();
+  assertEquals(
+    workflowStatic,
+    ciApplicable,
+    "code-quality's static gates must match ci.ts's CI-applicable static-gate scope; add each " +
+      "missing gate as its own workflow step (never delegate the whole job to ci.ts).",
+  );
+});
+
+Deno.test("[ci_wiring] ci.ts test phases drive test_all for every edition", () => {
+  const mappings = [...CI_SOURCE.matchAll(/const testTask = ([^;]+);/g)].map((m) => m[1]);
+  assert(mappings.length >= 2, "expected the testTask mapping in both testCommand and allCommand");
+  for (const mapping of mappings) {
+    assert(mapping.includes('"test_all:solo"'), "solo must use test_all:solo");
+    assert(mapping.includes('"test_all:team"'), "team must use test_all:team");
+    assert(mapping.includes('"test_all:enterprise"'), "enterprise must use test_all:enterprise");
+    assert(mapping.includes('"test_all"'), "the fallback must be test_all");
+    assert(!mapping.includes('"test:solo"'), "must never use the plain test:solo task");
+    assert(!mapping.includes('"test:team"'), "must never use the plain test:team task");
+  }
 });

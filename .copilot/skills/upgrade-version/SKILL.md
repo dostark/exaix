@@ -22,7 +22,7 @@ Key points
 - Write or update regression tests BEFORE applying the upgrade.
 - Keep the upgrade atomic: one dependency per commit where possible.
 - Have a verified rollback path before merging.
-- Run the full test suite (deno task test) after any version bump — blast radius unknown.
+- Run the full test suite (`deno task test_all`; local fast runner) after any version bump — blast radius unknown.
 - Call-site audits > ~20 files: batches of 5–10. Read a batch, record findings, continue.
 
 Canonical prompt (short):
@@ -59,7 +59,7 @@ Phase 4 — Validate
  13. deno task check:style
  14. deno task check:arch
  15. deno task check:magic   (if new literals introduced)
- 16. deno task test          (full suite — blast radius unknown after the bump)
+ 16. deno task test_all      (full suite — blast radius unknown after the bump)
  17. deno run -A scripts/ci.ts coverage  (thresholds still met)
 
 Phase 5 — Document

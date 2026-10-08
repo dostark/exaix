@@ -58,7 +58,7 @@ jobs:
 
       - name: "Run Team edition tests"
         if: steps.team-check.outputs.team_changed == 'true'
-        run: deno run -A scripts/ci.ts test --edition team
+        run: deno task test:team
 
   eval-quick:
     runs-on: ubuntu-latest

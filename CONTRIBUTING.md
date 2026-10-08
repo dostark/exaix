@@ -58,6 +58,11 @@ and the rule catalog) for the review process and obligation evidence.
 For the full test layout and writing-new-tests guide, see [tests/README.md](./tests/README.md).
 For shared test helpers (`@exaix/testing`), see [packages/testing/README.md](./packages/testing/README.md).
 
+`scripts/ci.ts` is a shared pipeline orchestrator used by local runs and a few workflow jobs
+(`ci.ts check`, `ci.ts eval`, `ci.ts scenarios`, `ci.ts build`). It is **not** the CI definition —
+the `.github/workflows/*.yml` files are authoritative. `ci.ts check` reuses the pre-commit hook's
+static gate list (kept in sync by `tests/scripts/ci_wiring_test.ts`).
+
 ### 2.1 Configuration Testing
 
 When adding new configuration options:

@@ -182,10 +182,12 @@ Phase 23 — Final full-suite validation
         unchecked before centralization).
      b. Extras ci.ts misses: `check:duplication`, `check:god-objects`,
         `check:leak-guard`, `check:no-edition-conditionals`, `check:version --dry-run`.
-     c. Tests: `deno task test_all` (all editions) / `deno task test:solo &&
-        deno task test:security` (Solo) / `deno task test:team` (Team). A `test_all`
-        failure is not automatically a regression: reproduce it in isolation, check the
-        test's `ignore:` (some are `ignore: CI === "true"`, for example
+     c. Tests: `deno task test_all` (local fast runner: Parallel + Containered Batch;
+        `test_all:team` for team) / `deno task test` or `test:solo` +
+        `deno task test:security` (Solo, plain sequential) / `deno task test:team` (Team,
+        plain sequential) / `deno task test_verbose` (all editions, plain sequential). A
+        `test_all` failure is not automatically a regression: reproduce it in isolation,
+        check the test's `ignore:` (some are `ignore: CI === "true"`, for example
         `self_hosted_split_bindings_test.ts`) and whether it is load-flaky. Attribute it by
         re-running at `HEAD~1` in a `git worktree add --detach <tmp> HEAD~1`. Shortcut:
         `deno task ci:solo --skip-tests` / `ci:team --skip-tests` (= `scripts/ci.ts all

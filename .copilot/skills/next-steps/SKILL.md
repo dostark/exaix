@@ -59,16 +59,16 @@ Workflow per step
 ─────────────────
 Validation policy
    0a. Default to file-scoped: `deno test --allow-all <test-file>` or the touched set.
-   0b. No full-suite (`deno task test`, `test_all`, `deno test -A`, unscoped
-       `deno test --allow-all`) for a normal one-step cycle.
+   0b. No full-suite (`deno task test`/`test:solo`/`test:team`, `test_all`, `deno test -A`,
+       unscoped `deno test --allow-all`) for a normal one-step cycle.
    0c. Full-suite only when: the change is massive/cross-cutting; it modifies files
        imported by > 3 unrelated packages or shared classes across subsystems
        (e.g. packages/core/src/runtime/); the user requests it; a plan doc requires it.
        Postpone these runs until the full step implementation and refactoring are done.
        Run the required suite during final step validation (step 22), before marking
        the step complete or committing. Use focused tests during RED/GREEN and fixes.
-       Use `deno task test_all` (`deno task test_all:team` for team scope),
-       not the sequential suite tasks selected by `ci.ts test` or `ci.ts all`.
+       Use `deno task test_all` (`deno task test_all:team` for team scope). Prefer it over
+       `ci.ts test` / `ci.ts all`, which also run the static gates, coverage, and a build.
    0d. After renaming or removing an exported symbol, or changing its signature, grep every
        importer, including `tests/` and `scripts/`, and run the repo-wide `deno task check`
        once before committing. File-scoped runs miss importers outside the step's test set.

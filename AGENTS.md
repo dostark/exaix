@@ -119,11 +119,15 @@ Key facts about the Exaix system:
 - **Runtime:** Deno (strict TypeScript)
 - **Config:** `deno.json` (tasks, imports)
 - **Pre-commit / pre-push hooks:** [CONTRIBUTING.md](CONTRIBUTING.md) § 4.2 Hooks has the maintained hook-by-hook summary. Do not hand-copy the gate list here — it will drift silently; `.git/hooks/pre-commit` and `.git/hooks/pre-push` (installed via `deno task hooks:install`) are the executable ground truth.
+- **CI orchestration:** `.github/workflows/*.yml` is the authoritative CI definition. `scripts/ci.ts` is a shared pipeline orchestrator reused by local runs and a few workflow jobs (check/eval/scenarios/build); `ci.ts check` shares the pre-commit hook's static gate list.
 
 ### Key Commands
 
 ```bash
-deno task test              # Run all tests
+deno task test               # CI suite: plain sequential Solo tests (no batching/containers)
+deno task test:solo          # Same scope as `test`; `test:team` adds exaix-team/
+deno task test_verbose       # Plain sequential suite across all editions
+deno task test_all           # Local fast suite: Parallel + Containered Batch (worker containers)
 deno task check:style        # Check code style & boundaries
 deno task docs-agent-validate # Verify documentation nervous system integrity
 deno task docs-bench          # Run hallucination benchmarks

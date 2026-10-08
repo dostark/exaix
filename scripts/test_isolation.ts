@@ -250,6 +250,12 @@ export async function dockerDaemonReachable(): Promise<boolean> {
   }
 }
 
+/** True when worker-container mode is explicitly enabled (`EXA_TEST_CONTAINERS=1`). The
+ *  Docker-backed integration tests are opt-in, so a plain suite never builds the worker image. */
+export function isContainerModeEnabled(env: Record<string, string | undefined>): boolean {
+  return env[TEST_CONTAINERS_ENABLED_ENV] === "1";
+}
+
 /** Resolve the worker count and its source, clamped to the minimum and hardware concurrency. */
 function resolveWorkerCount(
   env: Record<string, string | undefined>,

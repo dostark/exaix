@@ -19,6 +19,7 @@ import {
   ensureDevTestImage,
   type IContainerTestEntry,
   type IRunBatch2Options,
+  isContainerModeEnabled,
   type IWorkerContainer,
   type IWorkerContainerLaunchOptions,
   MIN_TEST_CONTAINER_JOBS,
@@ -553,6 +554,12 @@ Deno.test("selectBatch2Strategy falls back to serial when the docker probe fails
   assertEquals(strategy.jobs, DEFAULT_TEST_CONTAINER_JOBS);
 });
 
+Deno.test("isContainerModeEnabled is true only for an explicit EXA_TEST_CONTAINERS=1", () => {
+  assert(isContainerModeEnabled({ EXA_TEST_CONTAINERS: "1" }));
+  assert(!isContainerModeEnabled({ EXA_TEST_CONTAINERS: "0" }));
+  assert(!isContainerModeEnabled({}));
+});
+
 // --- Batch-2 migration and parity ---
 
 Deno.test("runBatch2InContainers never drops a non-network Batch-2 file (no silent downgrade)", async () => {
@@ -579,7 +586,9 @@ Deno.test("runBatch2InContainers never drops a non-network Batch-2 file (no sile
 // The entry-point run covers the full suite.
 
 const DOCKER_READY = await dockerDaemonReachable();
-const INTEGRATION_IGNORE = !DOCKER_READY;
+// The Docker-backed integration tests are opt-in. They build the dev-test image, so a plain
+// suite run must never reach them. Require an explicit EXA_TEST_CONTAINERS=1 to run them.
+const INTEGRATION_IGNORE = !DOCKER_READY || !isContainerModeEnabled(Deno.env.toObject());
 const IT_IMAGE = Deno.env.get(TEST_CONTAINER_IMAGE_ENV) ?? DEFAULT_TEST_CONTAINER_IMAGE;
 const IT_REPO_ROOT = fromFileUrl(new URL("../../", import.meta.url)).replace(/\/$/, "");
 let itWorkerSeq = 0;

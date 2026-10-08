@@ -7,8 +7,11 @@ This directory contains tests, test utilities, and testing infrastructure for th
 ## Quick Start
 
 ```bash
-# Run all tests
+# CI suite: plain sequential Solo tests (no batching/containers)
 deno task test
+
+# Local fast suite: Parallel + Containered Batch (worker containers)
+deno task test_all
 
 # Run tests with coverage
 deno task test --coverage
@@ -275,8 +278,11 @@ Deno.test("Feature: works in test mode", () => {
 ### Basic Commands
 
 ```bash
-# All tests
+# Plain sequential Solo suite (CI; `test:team` adds exaix-team/, `test_verbose` = all editions)
 deno task test
+
+# Local fast suite (parallel + worker containers)
+deno task test_all
 
 # With coverage
 deno task test --coverage
