@@ -40,7 +40,7 @@ interface IFileCounts {
   ignored: number;
 }
 
-/** Parse `--jobs <N>` / `=<N>`, defaulting to the core-derived worker count. */
+/** Parse `--jobs <N>` / `=<N>`, defaulting to `DEFAULT_TEST_CONTAINER_JOBS` (4). */
 export function parseJobs(args: readonly string[]): number {
   for (let index = 0; index < args.length; index++) {
     const arg = args[index];

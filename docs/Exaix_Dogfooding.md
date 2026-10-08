@@ -229,7 +229,7 @@ daemon can safely automate:
 
 ```bash
 docker build --target dev-test -t exaix-dev-test:dev .   # optional, test_all builds it too
-deno task test_all --test-container-jobs=6               # worker count (default: ~1 per 3 CPU cores)
+deno task test_all --test-container-jobs=6               # worker count (default: 4)
 deno task test_all --test-serial                         # force the serial Batch 2
 ```
 
