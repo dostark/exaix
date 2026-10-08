@@ -2098,6 +2098,17 @@ export const DEFAULT_FLOW_GATE_MAX_EVALUATIONS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
+/** Byte cap for the shared-namespace evidence block, including its label, notice, entries and markers. */
+export const DEFAULT_FLOW_NAMESPACE_PROMPT_MAX_BYTES: number = configurable({
+  key: "flow.namespace_prompt_max_bytes",
+  default: 16384,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum UTF-8 bytes of shared-namespace evidence appended to a flow step's model prompt",
+  min: 1024,
+  max: 65536,
+  swap: SwapClass.RESTART,
+});
+
 /** Default backoff for flow step retries and onError retry recovery. */
 export const DEFAULT_FLOW_STEP_BACKOFF_MS: number = configurable({
   key: "flow.step_backoff_ms",

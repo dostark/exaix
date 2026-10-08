@@ -2078,7 +2078,7 @@ exactl flow bindings research-pipeline
 exactl flow bindings research-pipeline --overlay ./run-cheap.json --bind 'flow:research-pipeline/step:explore-1=model=deepseek/deepseek-v4-pro' --json
 ```
 
-`exactl flow list` shows a Capabilities column. A flow without `requires_capabilities` shows `none`.
+`exactl flow list` shows a Capabilities column. A flow without `requires_capabilities` shows `None`.
 A flow whose capabilities your edition includes shows `eligible (runtime unverified)`.
 A flow that needs a capability your edition lacks shows `unavailable (needs voting)`.
 The list checks the edition only. The daemon confirms the installed capability when the run starts and
@@ -2259,9 +2259,10 @@ Flows support various step types for different orchestration patterns:
 | `agent`        | Execute an agent      | Agent invocation with context              |
 | `gate`         | Quality checkpoint    | Judge criteria, `onFail` halt/warn/retry   |
 | `branch`       | Conditional routing   | JSON output, ordered `branches`, `default` |
-| `parallel`     | Concurrent execution  | Multiple steps in parallel                 |
-| `loop`         | Iterative processing  | Repeat until condition met                 |
 | `voting_group` | Multi-agent consensus | Fan-out N runners, majority/weighted/judge |
+
+There is no `loop` or `parallel` step type. A loop is a gate with `onFail: retry` and `loop.backTo`. Parallelism is the
+`parallel:` field on an agent step. `FlowSchema` rejects `type: loop` and `type: parallel`.
 
 An LLM-calling step can declare a partial `binding` and pin specific fields. The pin reason
 records why the flow author fixed those fields. A broader operator selector cannot change
@@ -2345,6 +2346,7 @@ watcher_timeout_sec = 60
 
 [flow]
 max_gate_evaluations = 5
+namespace_prompt_max_bytes = 8192
 ```
 
 `max_flow_retry_cost_usd` is a cumulative cost budget, checked before every loop iteration.
@@ -2640,13 +2642,13 @@ policy in `evaluate`. See [Advanced Flow Controls](#advanced-flow-controls) for 
 
 **Built-in Evaluation Criteria:**
 
-| Criteria           | Description                           |
-| ------------------ | ------------------------------------- |
-| `CODE_CORRECTNESS` | Validates syntax and semantics        |
-| `HAS_TESTS`        | Ensures test coverage exists          |
-| `FOLLOWS_SPEC`     | Matches specification requirements    |
-| `IS_SECURE`        | Checks security best practices        |
-| `PERFORMANCE_OK`   | Validates performance characteristics |
+| Criteria                     | Description                           |
+| ---------------------------- | ------------------------------------- |
+| `code_correctness`           | Validates syntax and semantics        |
+| `has_tests`                  | Ensures test coverage exists          |
+| `follows_conventions`        | Matches project conventions           |
+| `no_security_issues`         | Checks security best practices        |
+| `performance_considerations` | Validates performance characteristics |
 
 ##### Feedback Loops
 
@@ -3046,10 +3048,10 @@ $ exactl daemon logs --follow
 
 #### **Wait Commands** - Resolve durable wait states
 
-When a flow execution reaches a quality gate that fails below the configured
-threshold, the `FlowRunner` creates a **durable wait state** that pauses the
-flow until an operator resolves it. Use `exactl wait` commands to list and
-resolve these pending decisions.
+Durable wait states come from session delegation gates, which pause until an
+operator resolves them. A failing flow quality gate does not create one: it
+halts the run with `gate_halted`. Use `exactl wait` commands to list and
+resolve pending session delegation decisions.
 
 ```bash
 # List all pending wait states

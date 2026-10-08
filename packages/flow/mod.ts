@@ -56,11 +56,7 @@ export { FlowAbortError, FlowExecutionError, FlowRunner, toGateConfig } from "./
 export { FlowCapabilityUnavailableError, getInstalledFlowCapabilities } from "./src/flow_capabilities.ts";
 export { StepContentHasher } from "./src/step_content_hasher.ts";
 export { FlowRuntimeValidator } from "./src/flow_runtime_validator.ts";
-export {
-  buildSharedNamespacePrompt,
-  DEFAULT_FLOW_NAMESPACE_PROMPT_MAX_BYTES,
-  SHARED_NAMESPACE_PROMPT_LABEL,
-} from "./src/shared_namespace_prompt.ts";
+export { buildSharedNamespacePrompt, SHARED_NAMESPACE_PROMPT_LABEL } from "./src/shared_namespace_prompt.ts";
 export {
   createFlowRecordingContext,
   delegateReviewLane,

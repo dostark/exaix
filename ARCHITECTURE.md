@@ -233,7 +233,7 @@ package-level configuration and restart/failure semantics:
 - Trace ID links: request → plan → review → commit
 - Immutable event stream for compliance (🟣 Enterprise: WORM storage)
 - Explicit approval gates: plans and reviews require human authorization
-- Durable, resumable wait states for approval gates — explicit lifecycle transitions, resume tokens, and time-based expiry via `exactl wait approve|reject|amend|expire`
+- Durable, resumable wait states for session delegation gates — explicit lifecycle transitions, resume tokens, and time-based expiry via `exactl wait approve|reject|amend|expire`
 
 ### 4. **Multi-Provider Support**
 
@@ -299,7 +299,7 @@ Exaix's reliability rests on three layered guarantees — each inspectable throu
 
 1. **Visibility** — Every significant runtime transition emits a typed, versioned, trace-linked domain event (`DomainEventType`; see the `Event Taxonomy` subsection below) — "trace-linked" means every lifecycle event for one operation carries that operation's canonical trace ID as the logger call's fourth argument, not just an embedded payload field, so the events are joinable in the Activity Journal. Operators can inspect what happened at any point in a run's lifecycle without reading raw runtime state. A class carrying the `@visible` JSDoc tag (see `CODE_STYLE.md#jsdoc-header-tags`) declares itself explicitly load-bearing for this guarantee — `scripts/check_event_coverage.ts --fail-on-tagged` treats any coverage gap on it as blocking at the real pre-commit hook (Gate 19), not advisory, and requires the emitted action to be a registered `DomainEventType` member, not merely a logger call. A streaming or async-generator operation on a tagged class must emit exactly one terminal event covering every exit path, including early consumer cancellation, not only normal completion and thrown error.
 1. **Recoverability** — Step results are persisted with idempotency keys so a failed run can resume from the last successful step rather than recompute from scratch; this resumption path is still maturing and should not yet be relied on as a complete guarantee. Long-running execution context is managed and compacted automatically by the Context Budget Manager (see the `Context Budget Management` subsection below).
-1. **Governance** — Human approval gates are first-class durable wait states with explicit lifecycle transitions, resume tokens, and operator-driven resolution via `exactl wait approve|reject|amend|expire` (see `Request Quality Gate` below and `packages/flow/README.md` for the full wait-state lifecycle).
+1. **Governance** — Session delegation gates are first-class durable wait states with explicit lifecycle transitions, resume tokens, and operator-driven resolution via `exactl wait approve|reject|amend|expire` (see `packages/flow/README.md` for the wait-state lifecycle). A flow quality gate halts the run instead of waiting (see `Request Quality Gate` below).
 
 Together these three tiers answer the question every operator asks before trusting an agent with a codebase: _what is it doing right now, can it recover from a transient failure without starting over, and can a human stop it before it commits to something irreversible?_
 
@@ -551,7 +551,7 @@ always registered on the last commit. See the `execution` package (`Verification
 
 The **Request Quality Gate** is a pre-execution filter that assesses every incoming request body before routing. It prevents vague or unactionable requests from consuming LLM budget and provides an iterative Q&A loop to improve request quality.
 
-A flow `gate` step is a different control from this pre-execution filter. When a gate step scores below its threshold, `FlowRunner` applies `evaluate.onFail`: `halt` (the default) is terminal and fails the run with `gate_halted`, `continue-with-warning` continues and journals a warning, and `retry` re-runs a bounded loop body. A flow gate does not create a wait state, pause the flow or resume it. Approval and resume of flow gates are deferred. Durable wait states remain for session delegation, plan approval and amendment (see `packages/flow/README.md`).
+A flow `gate` step is a different control from this pre-execution filter. When a gate step scores below its threshold, `FlowRunner` applies `evaluate.onFail`: `halt` (the default) is terminal and fails the run with `gate_halted`, `continue-with-warning` continues and journals a warning, and `retry` re-runs a bounded loop body. A flow gate does not create a wait state, pause the flow or resume it. Approval and resume of flow gates are deferred. Durable wait states remain for session delegation (see `packages/flow/README.md`).
 
 The gate produces one of four recommendations: **PROCEED**, **AUTO_ENRICH**, **NEEDS_CLARIFICATION**, or **REJECT** — each with configurable score thresholds. Assessment runs in `heuristic`, `llm`, or `hybrid` mode.
 

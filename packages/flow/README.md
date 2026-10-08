@@ -67,9 +67,7 @@ module actually registered. A missing capability fails the run with `capability_
 
 ## Wait States (session delegation)
 
-Durable wait states belong to session delegation, plan approval and amendment. A flow `gate` step does not create
-one. `IFlowRunnerConfig.waitStateService` remains an optional dependency, and gates never consult it. `FlowRunner`
-does not emit `flow.wait.*` events for gates.
+In the daemon, durable wait states belong to session delegation. A flow `gate` step does not create one. `FlowRunner` takes no wait-state dependency and does not emit `flow.wait.*` events for gates.
 
 ### Architecture Boundary
 

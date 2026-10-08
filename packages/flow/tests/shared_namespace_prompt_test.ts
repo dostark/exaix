@@ -11,14 +11,13 @@ import { join } from "@std/path";
 import {
   AgentComposerAdapter,
   buildSharedNamespacePrompt,
-  DEFAULT_FLOW_NAMESPACE_PROMPT_MAX_BYTES,
   FlowRunner,
   SHARED_NAMESPACE_PROMPT_LABEL,
 } from "@exaix/flow";
 import { AgentRunner, StrategyRegistry } from "@exaix/execution";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { BOUND_TARGET_KIND_PROVIDER, type IModelOptions } from "@exaix/ai";
-import { ExecutionStrategyName } from "@exaix/core";
+import { DEFAULT_FLOW_NAMESPACE_PROMPT_MAX_BYTES, ExecutionStrategyName } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { PortalPermissionsService } from "@exaix/portal";
 import { createMockConfig, initTestDbService } from "@exaix/testing";

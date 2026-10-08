@@ -32,9 +32,6 @@ import {
   type IFlowStepRequest,
   type IStepDurabilityStore,
   type IStepExecutionRecord,
-  type IWaitStateService,
-  WaitStateKindSchema,
-  WaitStateStatusSchema,
 } from "@exaix/flow";
 import type { IFlow, IFlowStepInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
@@ -90,52 +87,6 @@ const mockEvaluator = {
     } as IGateResult);
   },
 } as IGateEvaluator;
-
-function createMockWaitStateService(): IWaitStateService {
-  return {
-    create(
-      _input: {
-        traceId: string;
-        kind: string;
-        artifactPath: string;
-        resumeToken: string;
-        requestedBy?: string;
-        deadlineAt?: string;
-      },
-    ) {
-      const now = new Date().toISOString();
-      return Promise.resolve({
-        waitStateId: crypto.randomUUID(),
-        traceId: _input.traceId,
-        kind: WaitStateKindSchema.enum.plan_approval,
-        status: WaitStateStatusSchema.enum.pending,
-        artifactPath: _input.artifactPath,
-        resumeToken: _input.resumeToken,
-        requestedBy: _input.requestedBy ?? "",
-        createdAt: now,
-        updatedAt: now,
-        metadata: {} as const,
-      });
-    },
-    getById: () => Promise.resolve(null),
-    getByToken: () => Promise.resolve(null),
-    transition: () =>
-      Promise.resolve({
-        waitStateId: crypto.randomUUID(),
-        traceId: "",
-        kind: WaitStateKindSchema.enum.plan_approval,
-        status: WaitStateStatusSchema.enum.fulfilled,
-        artifactPath: "",
-        resumeToken: "",
-        requestedBy: "",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        metadata: {},
-      }),
-    listPending: () => Promise.resolve([]),
-  };
-}
-const mockWaitStateService = createMockWaitStateService();
 
 const mockDurabilityStore = {
   save(_record: IStepExecutionRecord): Promise<void> {
@@ -388,7 +339,6 @@ Deno.test("FlowRunner: emits flow.failed and no approval milestone for a halting
     eventLogger: new MockEventLogger(),
     milestoneEmitter: emitter,
     gateEvaluator: mockEvaluator,
-    waitStateService: mockWaitStateService,
   });
 
   const error = await assertRejects(

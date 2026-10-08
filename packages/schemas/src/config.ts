@@ -621,6 +621,7 @@ const ConfigObjectSchema = z.object({
   /** Flow retry cost budget guard. Omit or set to 0 to disable. */
   flow: z.object({
     max_gate_evaluations: z.number().int().min(2).max(100).default(DEFAULTS.DEFAULT_FLOW_GATE_MAX_EVALUATIONS),
+    namespace_prompt_max_bytes: z.number().int().min(1024).max(65536).optional(),
   }).optional(),
   max_flow_retry_cost_usd: z.number().min(0).optional(),
   /** Request intent analysis configuration */

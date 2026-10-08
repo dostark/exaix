@@ -21,6 +21,7 @@ import {
   BINDING_OUTCOME_UNBOUND,
   computeStartNetGrant,
   parseOverlayText,
+  readRegularOverlayFile,
   resolveFlowForAudit,
 } from "@exaix/ai";
 
@@ -363,7 +364,7 @@ export class FlowCommands extends BaseCommand {
     if (!options.overlay?.length && !options.bind?.length) return undefined;
     const overlays = [];
     for (const sourcePath of options.overlay ?? []) {
-      const content = await Deno.readTextFile(sourcePath);
+      const content = await readRegularOverlayFile(sourcePath);
       overlays.push({
         source_path: sourcePath,
         sha256: await this.auditSha256(content),

@@ -226,6 +226,14 @@ export class AgentComposerAdapter {
     await this.writeAuthorization.record(traceId, root, paths, (path) => resolver.resolve(`@${portalAlias}/${path}`));
   }
 
+  private withSharedNamespace(request: IFlowStepRequest): string {
+    return buildSharedNamespacePrompt(
+      request.userPrompt,
+      request.sharedNamespace,
+      this.orchestratorDeps?.config.flow?.namespace_prompt_max_bytes,
+    );
+  }
+
   async run(agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     const loaded = await this.loader.load(agentRole);
     if (!loaded) {
@@ -236,7 +244,7 @@ export class AgentComposerAdapter {
     const blueprint: IBlueprint = this.loader.toLegacyBlueprint(loaded);
     const analysis = request.requestAnalysis;
     const parsedRequest: IParsedRequest = {
-      userPrompt: buildSharedNamespacePrompt(request.userPrompt, request.sharedNamespace),
+      userPrompt: this.withSharedNamespace(request),
       context: (request.context ?? {}) as IRequestContextContext,
       requestId: request.requestId,
       traceId: request.traceId,
@@ -353,7 +361,7 @@ export class AgentComposerAdapter {
     });
 
     try {
-      const userPrompt = buildSharedNamespacePrompt(request.userPrompt, request.sharedNamespace);
+      const userPrompt = this.withSharedNamespace(request);
       const context: IExecutionContext = {
         trace_id: traceId,
         request_id: request.requestId ?? crypto.randomUUID(),

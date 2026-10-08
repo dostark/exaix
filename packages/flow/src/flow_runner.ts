@@ -133,7 +133,6 @@ import {
 } from "@exaix/core";
 import type { IStepDurabilityStore, IStepExecutionRecord, IStepReplayPolicy } from "./contracts/step_durability.ts";
 import { DefaultStepReplayPolicy } from "./contracts/step_durability.ts";
-import type { IWaitStateService } from "./wait_states/wait_state_service.ts";
 import type { IRecordingLaneSource, Opt, Reason } from "@exaix/core/types";
 import { createFlowRecordingContext, type IFlowRecordingContext } from "./contracts/flow_recording_context.ts";
 
@@ -274,8 +273,6 @@ export interface IFlowRunnerConfig {
   stepReplayPolicy?: IStepReplayPolicy;
   /** Optional checkpoint service override for testing; takes precedence over config-derived service. */
   checkpointService?: IFlowCheckpointService;
-  /** Optional wait-state service for durable approval/pause gates. No-op when omitted. */
-  waitStateService?: IWaitStateService;
   /** Model preset name for dynamic steps (e.g. "small", "medium", "large"); LlmClient defaults to "default" (models.default) when omitted. */
   dynamicModel?: string;
   /** Optional ModelResolver for resolving dynamicModel presets to provider:model. */
@@ -877,7 +874,6 @@ export class FlowRunner implements IFlowRunner {
   private namespaceCoordinator!: FlowNamespaceCoordinator;
   private readonly stepOutputFormatter: StepOutputFormatter = new StepOutputFormatter();
   private readonly stepHandlerRegistry = new FlowStepHandlerRegistry();
-  private waitStateService?: IWaitStateService;
   private readonly pendingWaitStateRef: IPendingWaitStateRef = { current: undefined };
   private eventRegistry?: IEventRegistry;
   private modelResolver?: ModelResolver;
@@ -912,7 +908,6 @@ export class FlowRunner implements IFlowRunner {
 
     this.stepDurabilityStore = options.stepDurabilityStore ?? this.createNoOpDurabilityStore();
     this.stepReplayPolicy = options.stepReplayPolicy ?? new DefaultStepReplayPolicy();
-    this.waitStateService = options.waitStateService;
     this.modelResolver = options.modelResolver;
     this.flowTraceStore = options.flowTraceStore;
     this.checkpointCoordinator = new FlowCheckpointCoordinator({

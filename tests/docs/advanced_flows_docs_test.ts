@@ -9,10 +9,16 @@
 import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
-import { DEFAULT_FLOW_GATE_MAX_EVALUATIONS, FlowGateOnFail, FlowStepSkipCode } from "@exaix/core";
+import {
+  DEFAULT_FLOW_GATE_MAX_EVALUATIONS,
+  DEFAULT_FLOW_NAMESPACE_PROMPT_MAX_BYTES,
+  FlowGateOnFail,
+  FlowStepSkipCode,
+  FlowStepType,
+} from "@exaix/core";
+import { CRITERIA } from "@exaix/core/evaluation";
 import { CAP_VOTING } from "@exaix/core/composer";
 import { BindingOverlaySchema, ConfigSchema, FlowSchema } from "@exaix/schemas";
-import { DEFAULT_FLOW_NAMESPACE_PROMPT_MAX_BYTES } from "@exaix/flow";
 import * as flowControlErrors from "../../packages/flow/src/errors/flow_control_errors.ts";
 import { readUserGuide } from "./helpers.ts";
 
@@ -121,6 +127,7 @@ Deno.test("[docs] config and overlay examples parse through their owning schemas
   assert(configs.length > 0, "Missing a flow config example");
   const config = ConfigSchema.parse(parseToml(configs[0]));
   assertEquals(config.flow?.max_gate_evaluations, 5);
+  assertEquals(config.flow?.namespace_prompt_max_bytes, 8192);
   assert((config.max_flow_retry_cost_usd ?? 0) > 0);
   const overlays = blocks(guide, "toml overlay");
   assertEquals(overlays.length, BLUEPRINT_IDS.length);
@@ -206,4 +213,55 @@ Deno.test("[docs] changelog records the added blueprints, branch routing, loops 
   assertStringIncludes(section, "### Added");
   assertStringIncludes(section, "### Changed");
   assertStringIncludes(section, "gates now halt");
+});
+
+function firstColumn(table: string): string[] {
+  return table.split("\n").filter((line) => line.startsWith("| `")).map((line) =>
+    line.split("|")[1].trim().replaceAll("`", "")
+  );
+}
+
+const GATE_WAIT_CLAIM =
+  /(gate[^.\n]{0,80}\b(?<!not )creates?\b[^.\n]{0,40}wait state)|(wait state[^.\n]{0,80}(failing|fails|failed)[^.\n]{0,40}gate)/i;
+
+Deno.test("[docs] every step type in the guide table is a FlowStepType member", async () => {
+  const guide = await readUserGuide();
+  const table = sectionOf(guide, "##### Flow Step Types", 5);
+  const types = firstColumn(table);
+  assert(types.length >= 4);
+  const valid = new Set<string>(Object.values(FlowStepType));
+  for (const type of types) assert(valid.has(type), `The guide lists '${type}', which is not a FlowStepType`);
+  for (const type of ["agent", "gate", "branch", "voting_group"]) assert(types.includes(type));
+});
+
+Deno.test("[docs] built-in evaluation criteria in the guide are library criteria", async () => {
+  const guide = await readUserGuide();
+  const start = guide.indexOf("**Built-in Evaluation Criteria:**");
+  assert(start >= 0);
+  const names = firstColumn(guide.slice(start, start + 800));
+  const library = new Set<string>(Object.values(CRITERIA).map((criterion) => criterion.name));
+  assert(names.length >= 4);
+  for (const name of names) assert(library.has(name), `The guide lists '${name}', which is not a library criterion`);
+});
+
+Deno.test("[docs] the guide shows the exact None label for flows without capabilities", async () => {
+  const commands = flat(sectionOf(await readUserGuide(), "#### **Flow Commands** - Manage multi-agent workflows", 4));
+  assertStringIncludes(commands, "shows `None`");
+});
+
+Deno.test("[docs] no flow-gate wait-state claim remains in the guide or architecture", async () => {
+  const guide = flat(await readUserGuide());
+  const architecture = flat(await Deno.readTextFile("ARCHITECTURE.md"));
+  assertFalse(GATE_WAIT_CLAIM.test(guide), `guide: ${guide.match(GATE_WAIT_CLAIM)?.[0]}`);
+  assertFalse(GATE_WAIT_CLAIM.test(architecture), `architecture: ${architecture.match(GATE_WAIT_CLAIM)?.[0]}`);
+  assertStringIncludes(guide, "session delegation");
+  assertStringIncludes(architecture, "wait states for session delegation");
+});
+
+Deno.test("[docs] the stale-claim detector flags a reintroduced gate wait-state sentence", () => {
+  const stale =
+    "When a flow reaches a quality gate that fails below the threshold, the FlowRunner creates a durable wait state.";
+  assert(GATE_WAIT_CLAIM.test(stale));
+  assertFalse(GATE_WAIT_CLAIM.test("A flow gate that fails below its threshold halts the run with gate_halted."));
+  assertFalse(GATE_WAIT_CLAIM.test("A flow gate step does not create a wait state."));
 });
