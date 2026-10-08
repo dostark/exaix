@@ -413,13 +413,12 @@ Deno.test("at most one shared-path writer runs concurrently in the worker pool",
   assertEquals(overlap, false, "no entry may overlap an exclusive entry");
 });
 
-Deno.test("shared-path entries are exclusive so a manifest writer never overlaps another entry", () => {
+Deno.test("shared-path entries are exclusive so a shared-path writer never overlaps another entry", () => {
   const sharedPathPool = SEQUENTIAL_TESTS.filter(
     (test) => test.reasons.includes("shared-path") && !test.network,
   );
   assertEquals(sharedPathPool.map((test) => test.file), [
     "tests/integration/agent/mcp_handshake_test.ts",
-    "tests/agents/build_agents_index_test.ts",
   ]);
   for (const test of sharedPathPool) {
     assertEquals(test.exclusive, true, `${test.file} must be exclusive`);
@@ -783,7 +782,7 @@ const PARITY_SUBSET = [
   "tests/scenario_framework/tests/integration/flow_step_model_bindings_test.ts",
   "tests/integration/mcp_server_spec_compliance_cutover_test.ts",
   "apps/daemon/tests/readiness_test.ts",
-  "tests/agents/build_agents_index_test.ts",
+  "tests/integration/agent/mcp_handshake_test.ts",
 ];
 
 Deno.test({

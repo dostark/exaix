@@ -10,12 +10,12 @@
  */
 
 import { walk } from "@std/fs";
+import { join } from "@std/path";
 import { parse } from "@std/yaml";
 import type { JSONObject } from "@exaix/core/types";
 
 const AGENTS_DIR = ".copilot";
 const SUBMODULE_DIR = "exaix-dev-docs";
-const OUT_MANIFEST = `${AGENTS_DIR}/manifest.json`;
 
 function extractFrontmatter(md: string): string | null {
   const match = md.match(/^---\n([\s\S]*?)\n---/);
@@ -84,8 +84,10 @@ export async function generateManifestObject(includeSubmodule = false): Promise<
   return { docs };
 }
 
-export async function generateDocsIndex(docs: JSONObject[]): Promise<void> {
-  const indexPath = `.copilot/DOCS.md`;
+export async function generateDocsIndex(
+  docs: JSONObject[],
+  indexPath = `${AGENTS_DIR}/DOCS.md`,
+): Promise<void> {
   function toRelPath(raw: string): string {
     if (raw.startsWith(".copilot/")) return raw.replace(".copilot/", "");
     if (!raw.startsWith(".") && !raw.startsWith("/")) return `../${raw}`;
@@ -132,17 +134,19 @@ ${topicList}
   console.log(`Wrote ${indexPath}`);
 }
 
-export async function buildIndex(includeSubmodule = false): Promise<void> {
+export async function buildIndex(includeSubmodule = false, outDir = AGENTS_DIR): Promise<void> {
   const manifest = await generateManifestObject(includeSubmodule);
-  await Deno.writeTextFile(OUT_MANIFEST, JSON.stringify(manifest, null, 2) + "\n");
-  console.log(`Wrote manifest to ${OUT_MANIFEST}`);
+  const manifestPath = join(outDir, "manifest.json");
+  const docsPath = join(outDir, "DOCS.md");
+  await Deno.writeTextFile(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+  console.log(`Wrote manifest to ${manifestPath}`);
 
-  await generateDocsIndex(manifest.docs);
+  await generateDocsIndex(manifest.docs, docsPath);
 
   // Normalize the generated markdown/JSON to what `deno fmt` produces, otherwise the
   // generator and `deno fmt` disagree on table alignment/trailing newline and drift
   // forever. Non-fatal if `deno fmt` is unavailable.
-  await formatGenerated([`${AGENTS_DIR}/DOCS.md`, OUT_MANIFEST]);
+  await formatGenerated([docsPath, manifestPath]);
 }
 
 /** Runs `deno fmt` over the given generated files; ignores failures. */

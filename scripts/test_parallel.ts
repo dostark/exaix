@@ -215,11 +215,6 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
   { file: "packages/ai/tests/model_resolver_determinism_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "packages/ai/tests/model_resolver_registry_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "packages/storage-sqlite/tests/test_mode_schema_test.ts", reasons: [IsolationReason.processEnv] },
-  {
-    file: "tests/agents/build_agents_index_test.ts",
-    reasons: [IsolationReason.sharedPath],
-    exclusive: true,
-  },
   { file: "apps/exactl/tests/blueprint_commands_test.ts", reasons: [IsolationReason.pressure] },
   { file: "apps/daemon/tests/session_delegation_coordinator_test.ts", reasons: [IsolationReason.pressure] },
   { file: "packages/flow/tests/session_delegate_cycle_sequencing_test.ts", reasons: [IsolationReason.pressure] },

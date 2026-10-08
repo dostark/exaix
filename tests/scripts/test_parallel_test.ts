@@ -203,7 +203,6 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "packages/ai/tests/model_resolver_determinism_test.ts",
   "packages/ai/tests/model_resolver_registry_test.ts",
   "packages/storage-sqlite/tests/test_mode_schema_test.ts",
-  "tests/agents/build_agents_index_test.ts",
   "apps/exactl/tests/blueprint_commands_test.ts",
   "apps/daemon/tests/session_delegation_coordinator_test.ts",
   "packages/flow/tests/session_delegate_cycle_sequencing_test.ts",
