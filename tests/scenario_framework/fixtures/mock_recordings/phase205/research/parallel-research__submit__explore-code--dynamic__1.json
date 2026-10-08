@@ -1,0 +1,23 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Research fixture",
+  "response": "{\"reasoning\": \"The entry point is enough.\", \"action\": {\"type\": \"complete\", \"output\": \"CODE EXPLORER SENTINEL: src/main.ts prints one greeting.\"}}",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "simple_repo/src/main"
+    ]
+  },
+  "callSite": {
+    "scenarioId": "parallel-research",
+    "stepId": "submit",
+    "flowStepId": "explore-code--dynamic",
+    "callIndex": 1
+  }
+}

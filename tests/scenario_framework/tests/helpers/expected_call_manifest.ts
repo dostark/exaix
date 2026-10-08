@@ -15,6 +15,7 @@ import { FlowSchema, type IFlow, type IFlowStep } from "@exaix/schemas/flow.ts";
 export enum ExpectedCallDialect {
   AGENT = "agent",
   REACT = "react",
+  DYNAMIC = "dynamic",
   JUDGE = "judge",
 }
 
@@ -31,6 +32,8 @@ export interface IExpectedCall {
   toolTurn?: boolean;
   /** Required on judge calls: the verdict relative to the gate threshold. */
   verdict?: JudgeVerdict;
+  /** A recorded provider failure. The call journals a failure instead of a completion. */
+  failure?: boolean;
 }
 
 export interface IExpectedCallManifest {
@@ -50,6 +53,7 @@ export interface IExpectedCallManifest {
 export interface IKeyedRecording {
   file: string;
   response: string;
+  error?: string;
   callSite?: { scenarioId: string; stepId: string; flowStepId?: string; callIndex: number };
 }
 
@@ -60,6 +64,8 @@ const JUDGE_RESPONSE_KEYS = ["criteriaScores", "feedback", "suggestions"] as con
 const REACT_COMPLETE = "STATUS: COMPLETE";
 const REACT_ACTION = "```toml";
 const AGENT_CONTENT = "<content>";
+const DYNAMIC_TOOL_CALL = "tool_call";
+const DYNAMIC_COMPLETE = "complete";
 
 export async function loadManifests(frameworkHome: string): Promise<IExpectedCallManifest[]> {
   const dir = join(frameworkHome, ...MANIFEST_DIR_SEGMENTS);
@@ -89,7 +95,7 @@ export async function loadKeyedRecordings(dir: string): Promise<IKeyedRecording[
   for await (const entry of Deno.readDir(dir)) {
     if (!entry.isFile || !entry.name.endsWith(".json")) continue;
     const parsed = JSON.parse(await Deno.readTextFile(join(dir, entry.name))) as Omit<IKeyedRecording, "file">;
-    recordings.push({ file: entry.name, response: parsed.response, callSite: parsed.callSite });
+    recordings.push({ file: entry.name, response: parsed.response, error: parsed.error, callSite: parsed.callSite });
   }
   return recordings;
 }
@@ -136,7 +142,27 @@ function judgeError(call: IExpectedCall, response: string, gate: IFlowStep): str
   return null;
 }
 
+/** A DYNAMIC turn is one JSON decision that either calls a tool or completes. */
+function dynamicError(call: IExpectedCall, response: string): string | null {
+  let decision: { action?: { type?: string } };
+  try {
+    decision = JSON.parse(response);
+  } catch {
+    return "DYNAMIC turn is not a JSON decision";
+  }
+  const toolTurn = decision.action?.type === DYNAMIC_TOOL_CALL;
+  if (!toolTurn && decision.action?.type !== DYNAMIC_COMPLETE) return "DYNAMIC turn must call a tool or complete";
+  return toolTurn === (call.toolTurn ?? false) ? null : "DYNAMIC tool-turn flag does not match the recording";
+}
+
+function recordingError(call: IExpectedCall, recording: IKeyedRecording, flow: IFlow): string | null {
+  if (call.failure) return recording.error ? null : "expected a recorded provider failure";
+  if (recording.error) return "an unexpected recorded provider failure";
+  return dialectError(call, recording.response, flow);
+}
+
 function dialectError(call: IExpectedCall, response: string, flow: IFlow): string | null {
+  if (call.dialect === ExpectedCallDialect.DYNAMIC) return dynamicError(call, response);
   if (call.dialect === ExpectedCallDialect.JUDGE) {
     const gate = flow.steps.find((step) => step.id === laneStep(call.lane));
     return gate ? judgeError(call, response, gate) : "judge lane has no gate step";
@@ -200,7 +226,7 @@ export function reconcileManifest(
       errors.push(`missing recording ${key(call.lane, call.callIndex)}`);
       continue;
     }
-    const dialect = dialectError(call, recording.response, flow);
+    const dialect = recordingError(call, recording, flow);
     if (dialect) errors.push(`${recording.file}: ${dialect}`);
   }
   for (const recordedKey of recorded.keys()) {

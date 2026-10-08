@@ -79,6 +79,13 @@ const AUDIT_TABLE: Record<string, Record<string, Decision>> = {
     "generate-glossary": "no-strategy",
     "compile-onboarding-docs": "no-strategy",
   },
+  "parallel-research": {
+    "explore-code": "n/a-dynamic",
+    "explore-docs": "no-strategy",
+    "explore-tests": "no-strategy",
+    compose: "no-strategy",
+    "evidence-gate": "no-strategy",
+  },
   "pr-review": {
     "diff-analysis": "react",
     "code-quality-review": "no-strategy",

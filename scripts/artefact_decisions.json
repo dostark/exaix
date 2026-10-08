@@ -18,6 +18,12 @@
     "rationale": "Phase 205 verifies one routed pipeline per category with strict keyed replay of the bug and docs paths; comparative value against an unrouted flow has not been measured."
   },
   {
+    "kind": "flow",
+    "artefactId": "parallel-research",
+    "status": "non-coverage",
+    "rationale": "Phase 205 verifies bounded parallel exploration, one tolerated explorer failure and namespace evidence reaching the composer with strict replay; comparative value against sequential research has not been measured."
+  },
+  {
     "kind": "skill",
     "artefactId": "memory-extraction-content-policy",
     "status": "non-coverage",

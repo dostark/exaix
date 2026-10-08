@@ -1,0 +1,24 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Research fixture",
+  "response": "<thought>Read the README.</thought><content>DOCS EXPLORER SENTINEL: the README describes a fixture repository.</content>",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "# Technical Writer Agent",
+      "Research how this fixture repository prints its greeting, using its code, docs and tests, and compose one answer."
+    ]
+  },
+  "callSite": {
+    "scenarioId": "parallel-research",
+    "stepId": "submit",
+    "flowStepId": "explore-docs",
+    "callIndex": 0
+  }
+}

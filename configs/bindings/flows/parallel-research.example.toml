@@ -1,0 +1,20 @@
+schema = 1
+
+# Merge with an operator catalog that defines light-service and strong-service.
+# Explorers run on a light or local service; the composer and the evidence gate run on the strong one.
+[bindings."flow:parallel-research/step:explore-code"]
+service = "light-service"
+
+[bindings."flow:parallel-research/step:explore-docs"]
+service = "light-service"
+
+[bindings."flow:parallel-research/step:explore-tests"]
+service = "light-service"
+
+[bindings."flow:parallel-research/step:compose"]
+service = "strong-service"
+effort = "high"
+
+[bindings."flow:parallel-research/step:evidence-gate"]
+service = "strong-service"
+effort = "high"

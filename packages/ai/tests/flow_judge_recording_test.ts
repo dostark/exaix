@@ -99,6 +99,7 @@ async function withRecordings(
     {
       callSite?: typeof SITE;
       response: string;
+      error?: string;
       promptHash?: string;
       promptPreview?: string;
       expectedInput?: { promptIncludes: string[] };
@@ -206,5 +207,20 @@ Deno.test("[security] [judge recording] an agent-dialect response on a judge cal
         "judge",
       );
     }
+  });
+});
+
+Deno.test("[recording] a keyed recorded provider failure replays as an error after its input check", async () => {
+  const site = { scenarioId: "parallel-research", stepId: "submit", flowStepId: "explore-tests", callIndex: 0 };
+  await withRecordings([
+    { callSite: site, response: "", error: "recorded explorer outage", expectedInput: { promptIncludes: ["tests"] } },
+  ], async (dir) => {
+    const replay = new MockLLMProvider(MockStrategy.RECORDED, { fixtureDir: dir, strictRecordings: true });
+    await assertRejects(
+      () => replay.generate("Explore the tests", { callSite: site }),
+      Error,
+      "recorded explorer outage",
+    );
+    await assertRejects(() => replay.generate("Explore the docs", { callSite: site }), Error, "expectation failed");
   });
 });

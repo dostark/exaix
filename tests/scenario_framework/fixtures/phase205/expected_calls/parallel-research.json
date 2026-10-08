@@ -1,0 +1,53 @@
+{
+  "scenarioId": "parallel-research",
+  "edition": "team",
+  "flow": "parallel-research",
+  "fixtureDir": "fixtures/mock_recordings/phase205/research",
+  "requestStepId": "submit",
+  "selectedPath": [
+    "explore-code",
+    "explore-docs",
+    "explore-tests",
+    "compose",
+    "evidence-gate"
+  ],
+  "expectedFailure": null,
+  "gateEvaluations": {
+    "evidence-gate": 1
+  },
+  "calls": [
+    {
+      "lane": "explore-code--dynamic",
+      "callIndex": 0,
+      "dialect": "dynamic",
+      "toolTurn": true
+    },
+    {
+      "lane": "explore-code--dynamic",
+      "callIndex": 1,
+      "dialect": "dynamic"
+    },
+    {
+      "lane": "explore-docs",
+      "callIndex": 0,
+      "dialect": "agent"
+    },
+    {
+      "lane": "explore-tests",
+      "callIndex": 0,
+      "dialect": "agent",
+      "failure": true
+    },
+    {
+      "lane": "compose",
+      "callIndex": 0,
+      "dialect": "agent"
+    },
+    {
+      "lane": "evidence-gate--judge",
+      "callIndex": 0,
+      "dialect": "judge",
+      "verdict": "below"
+    }
+  ]
+}

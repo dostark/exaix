@@ -1,0 +1,24 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Research fixture",
+  "response": "{\"reasoning\": \"Read the entry point.\", \"action\": {\"type\": \"tool_call\", \"tool\": \"read_file\", \"args\": {\"portal\": \"research-fixture\", \"path\": \"src/main.ts\"}}}",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "Explore the code for evidence",
+      "Research how this fixture repository prints its greeting, using its code, docs and tests, and compose one answer."
+    ]
+  },
+  "callSite": {
+    "scenarioId": "parallel-research",
+    "stepId": "submit",
+    "flowStepId": "explore-code--dynamic",
+    "callIndex": 0
+  }
+}

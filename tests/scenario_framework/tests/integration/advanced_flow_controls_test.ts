@@ -35,6 +35,7 @@ for (
     ["self_correcting_implementation", "self-correcting-implementation", "passed", "planned", 5, 2, 1],
     ["triage_router", "triage-router", "bug", "planned", 6, 0, 0],
     ["triage_router_docs", "triage-router-docs", "docs", "planned", 6, 0, 0],
+    ["parallel_research", "parallel-research", "continued-with-warning", "planned", 7, 1, 0, "team"],
   ] as const
 ) {
   Deno.test({
@@ -44,7 +45,8 @@ for (
     sanitizeResources: false,
     async fn() {
       const expected = await loadManifest(FRAMEWORK_HOME, scenarioId);
-      const calls = expected.calls.length;
+      const calls = expected.calls.filter((call) => !call.failure).length;
+      const failures = expected.calls.filter((call) => call.failure).length;
       const blueprint = phaseStep >= 4;
       const workspaceRoot = await Deno.makeTempDir({ prefix: `phase205-${scenarioId}-` });
       const outputDir = join(OUTPUT_HOME, "..", `step${phaseStep}`, scenarioId);
@@ -176,7 +178,11 @@ enabled = false
         const started = activities.filter((row) => row.action_type === "flow.step.started").map((row) =>
           (JSON.parse(row.payload) as { stepId: string }).stepId
         );
-        assertEquals([...new Set(started)], expected.selectedPath, "started steps match the manifest path");
+        assertEquals(
+          [...new Set(started)].sort(),
+          [...expected.selectedPath].sort(),
+          "started steps match the manifest",
+        );
         const gates = activities.filter((row) => row.action_type === "flow.gate.evaluated");
         assertEquals(gates.length, evaluations);
         assertEquals(activities.filter((row) => row.action_type === "flow.loop.iteration").length, iterations);
@@ -273,6 +279,19 @@ enabled = false
           });
           assertEquals(gates[0].trace_id, traceId);
         }
+        if (phaseStep === 7) {
+          const writes = activities.filter((row) => row.action_type === "flow.namespace.write");
+          assertEquals(writes.map((row) => JSON.parse(row.payload).stepId).sort(), ["explore-code", "explore-docs"]);
+          const groups = activities.filter((row) => row.action_type === "flow.parallel_group.completed");
+          assertEquals(groups.map((row) => JSON.parse(row.payload).failureCount), [0]);
+          const failedSteps = activities.filter((row) => row.action_type === "flow.step.failed");
+          assertEquals(failedSteps.map((row) => JSON.parse(row.payload).stepId), ["explore-tests"]);
+          assertEquals(activities.filter((row) => row.action_type === "flow.completed").length, 1);
+        }
+        assert(
+          activities.filter((row) => row.action_type === "llm.call.failed").length >= failures,
+          "every recorded provider failure journals a failed call",
+        );
         const generations = activities.filter((row) => row.action_type === "llm.call.completed");
         assertEquals(generations.length, calls);
         assertEquals(generations.map((row) => row.trace_id), Array(calls).fill(traceId));
@@ -282,7 +301,7 @@ enabled = false
         const downstream = activities.filter((row) =>
           row.action_type === "flow.step.started" &&
           (JSON.parse(row.payload) as { stepId: string }).stepId ===
-            ({ 4: "adr", 5: "report", 6: "summary" }[phaseStep as number] ??
+            ({ 4: "adr", 5: "report", 6: "summary", 7: "compose" }[phaseStep as number] ??
               (file === "branch_routing" ? "join" : "after"))
         );
         assertEquals(downstream.length, status === "failed" ? 0 : 1);
@@ -327,7 +346,12 @@ enabled = false
           );
           assertStringIncludes(
             plan,
-            { 4: "SQLite majority ADR", 5: "Accepted guarded implementation", 6: `Triage summary: ${action}` }[
+            {
+              4: "SQLite majority ADR",
+              5: "Accepted guarded implementation",
+              6: `Triage summary: ${action}`,
+              7: "Parallel research synthesis",
+            }[
               phaseStep as number
             ]!,
           );

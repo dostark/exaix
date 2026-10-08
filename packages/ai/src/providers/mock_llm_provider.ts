@@ -53,6 +53,8 @@ export interface IRecordedResponse {
    *  when the caller requested tools via IModelOptions.tools; otherwise ignored (matches the
    *  IGenerateResult.toolCalls contract). */
   toolCalls?: IProviderToolCall[];
+  /** A recorded provider failure. Replay throws it after the input expectation check. */
+  error?: string;
   /** Retry metadata from capture: how many attempts it took to get a contract-satisfying
    *  response, and why the earlier ones were refused. The rate this represents across a
    *  fixture set is a product finding, not noise to smooth away. */
@@ -309,6 +311,11 @@ function assertExpectedInput(
   if (resultError) fail(resultError);
 }
 
+function recordedErrorValidationError(error: Opt<unknown, Reason.OptionalInput>): string | null {
+  if (error === undefined) return null;
+  return typeof error === "string" && error.length > 0 ? null : "error must be a non-empty string when present";
+}
+
 function recordedCostValidationError(cost: Opt<number, Reason.OptionalInput>): string | null {
   if (cost === undefined) return null;
   return typeof cost === "number" && Number.isFinite(cost) && cost >= 0
@@ -339,7 +346,8 @@ function validateRecordedResponse(value: JSONValue, filePath: string): IRecorded
   if (candidate.callSite !== undefined && !isValidCallSite(candidate.callSite)) {
     fail("callSite is present but malformed — expected { scenarioId, stepId, callIndex, flowStepId? }");
   }
-  const optionalFieldError = recordedCostValidationError(candidate.cost_usd) ??
+  const optionalFieldError = recordedErrorValidationError(candidate.error) ??
+    recordedCostValidationError(candidate.cost_usd) ??
     toolCallsValidationError(candidate.toolCalls) ??
     expectedInputValidationError(candidate.expectedInput as Opt<JSONValue, Reason.OptionalInput>);
   if (optionalFieldError) fail(optionalFieldError);
@@ -629,6 +637,11 @@ export class MockLLMProvider implements IModelProvider {
         );
       }
       assertExpectedInput(recording, prompt, priorTurn, `call site ${describeCallSite(callSite)}`);
+      if (recording.error) {
+        throw new MockLLMError(
+          `Recorded provider failure at call site ${describeCallSite(callSite)}: ${recording.error}`,
+        );
+      }
       assertResponseContract(recording, responseContract, callSite);
       return { response: recording.response, toolCalls: recording.toolCalls, cost_usd: recording.cost_usd };
     }

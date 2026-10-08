@@ -1,0 +1,67 @@
+id: parallel-research
+name: Parallel research
+description: Explore code, docs and tests in parallel, share findings through the namespace, and compose one answer.
+version: 1.0.0
+defaultSkills:
+  - research-methodology
+namespace:
+  enabled: true
+  format: markdown
+  maxBytes: 65536
+settings:
+  maxParallelism: 3
+  failFast: true
+  timeout: 300000
+steps:
+  - id: explore-code
+    name: Explore the code for evidence
+    agent_role: code-analyst
+    execution_mode: dynamic
+    permitted_tools: [read_file, list_directory, search_files]
+    dependsOn: []
+    input: { source: request, transform: passthrough }
+    parallel: { group: explore, mergeMode: ordered, timeout_ms: 60000, continue_on_error: true }
+    namespace:
+      writes: [{ key: findings.code, mode: write }]
+  - id: explore-docs
+    name: Explore the documentation for evidence
+    agent_role: technical-writer
+    dependsOn: []
+    input: { source: request, transform: passthrough }
+    parallel: { group: explore, mergeMode: ordered, timeout_ms: 60000, continue_on_error: true }
+    namespace:
+      writes: [{ key: findings.docs, mode: write }]
+  - id: explore-tests
+    name: Explore the tests for evidence
+    agent_role: test-engineer
+    dependsOn: []
+    input: { source: request, transform: passthrough }
+    parallel: { group: explore, mergeMode: ordered, timeout_ms: 60000, continue_on_error: true }
+    namespace:
+      writes: [{ key: findings.tests, mode: write }]
+  - id: compose
+    name: Compose the research answer from the shared findings
+    agent_role: software-architect
+    effort: high
+    dependsOn: [explore-code, explore-docs, explore-tests]
+    input: { source: request, transform: passthrough }
+    namespace:
+      reads:
+        - { key: findings.code, required: false }
+        - { key: findings.docs, required: false }
+        - { key: findings.tests, required: false }
+  - id: evidence-gate
+    name: Check the answer against the gathered evidence
+    type: gate
+    agent_role: quality-judge
+    dependsOn: [compose]
+    input: { source: step, stepId: compose, transform: passthrough }
+    evaluate:
+      agent_role: quality-judge
+      criteria: [task_fulfillment, code_correctness]
+      threshold: 0.8
+      onFail: continue-with-warning
+      includeRequestCriteria: false
+output:
+  from: compose
+  format: markdown

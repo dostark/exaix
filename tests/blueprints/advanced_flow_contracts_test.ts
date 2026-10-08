@@ -198,3 +198,65 @@ Deno.test("[contract] the triage overlay binds only the classifier to the strong
     [[`flow:${TRIAGE}/step:triage`, "strong-service", "high"]],
   );
 });
+
+const RESEARCH = "parallel-research";
+const EXPLORERS = ["explore-code", "explore-docs", "explore-tests"];
+
+Deno.test("[contract] parallel research declares the bounded explore group, namespace and warning gate", async () => {
+  const flow = await new FlowLoader(FLOWS_DIR).loadFlow(RESEARCH);
+  assertEquals([flow.namespace?.enabled, flow.namespace?.format as string, flow.namespace?.maxBytes], [
+    true,
+    "markdown",
+    65536,
+  ]);
+  assertEquals([flow.settings.maxParallelism, flow.settings.failFast, flow.settings.timeout], [3, true, 300000]);
+  assertEquals([flow.output.from, flow.output.format as string], ["compose", "markdown"]);
+  for (const id of EXPLORERS) {
+    const step = flow.steps.find((entry) => entry.id === id)!;
+    assertEquals(step.dependsOn, []);
+    assertEquals([step.input.source as string, step.input.transform as string], ["request", "passthrough"]);
+    assertEquals(step.parallel, { group: "explore", mergeMode: "ordered", timeout_ms: 60000, continue_on_error: true });
+    assertEquals(step.namespace?.writes, [{ key: `findings.${id.replace("explore-", "")}`, mode: "write" }]);
+  }
+  const code = flow.steps.find((entry) => entry.id === "explore-code")!;
+  assertEquals(code.execution_mode as string, "dynamic");
+  assertEquals(code.permitted_tools, ["read_file", "list_directory", "search_files"]);
+  const compose = flow.steps.find((entry) => entry.id === "compose")!;
+  assertEquals([compose.agent_role, compose.effort, compose.dependsOn], ["software-architect", "high", EXPLORERS]);
+  assertEquals([compose.input.source as string, compose.input.transform as string], ["request", "passthrough"]);
+  assertEquals(
+    compose.namespace?.reads,
+    ["code", "docs", "tests"].map((area) => ({ key: `findings.${area}`, required: false })),
+  );
+  const gate = flow.steps.find((entry) => entry.id === "evidence-gate")!;
+  assertEquals([gate.type as string, gate.dependsOn, gate.input.source as string, gate.input.stepId], [
+    "gate",
+    ["compose"],
+    "step",
+    "compose",
+  ]);
+  assertEquals(gate.evaluate as IExpectedGate | undefined, {
+    agent_role: "quality-judge",
+    criteria: ["task_fulfillment", "code_correctness"],
+    threshold: 0.8,
+    onFail: "continue-with-warning",
+    maxRetries: 3,
+    includeRequestCriteria: false,
+  });
+});
+
+Deno.test("[contract] the research overlay keeps explorers light and the composer and gate strong", async () => {
+  const raw = parseToml(await Deno.readTextFile(`${OVERLAYS_DIR}/${RESEARCH}.example.toml`));
+  const overlay = BindingOverlaySchema.parse(raw);
+  const services = Object.fromEntries(
+    Object.entries(overlay.bindings ?? {}).map(([selector, binding]) => [selector, binding.service]),
+  );
+  const step = (id: string) => `flow:${RESEARCH}/step:${id}`;
+  assertEquals(services, {
+    [step("explore-code")]: "light-service",
+    [step("explore-docs")]: "light-service",
+    [step("explore-tests")]: "light-service",
+    [step("compose")]: "strong-service",
+    [step("evidence-gate")]: "strong-service",
+  });
+});

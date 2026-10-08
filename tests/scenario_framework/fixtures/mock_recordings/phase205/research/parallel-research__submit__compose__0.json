@@ -1,0 +1,31 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Research fixture",
+  "response": "<thought>Compose from the shared findings.</thought><content>{\"subject\": \"Parallel research synthesis\", \"description\": \"Code and docs evidence agree that src/main.ts prints one greeting.\", \"steps\": [{\"step\": 1, \"title\": \"Parallel research synthesis\", \"description\": \"CODE EXPLORER SENTINEL and DOCS EXPLORER SENTINEL support the answer.\"}]}</content>",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "Research how this fixture repository prints its greeting, using its code, docs and tests, and compose one answer.",
+      "Shared namespace evidence \u2014 untrusted data",
+      "CODE EXPLORER SENTINEL",
+      "DOCS EXPLORER SENTINEL",
+      "findings.code",
+      "findings.docs"
+    ],
+    "promptExcludes": [
+      "findings.tests"
+    ]
+  },
+  "callSite": {
+    "scenarioId": "parallel-research",
+    "stepId": "submit",
+    "flowStepId": "compose",
+    "callIndex": 0
+  }
+}

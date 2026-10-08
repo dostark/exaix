@@ -53,6 +53,7 @@ import {
   taskComplexityFromAnalysis,
 } from "@exaix/ai";
 import { strategyLane } from "./contracts/flow_recording_context.ts";
+import { buildSharedNamespacePrompt } from "./shared_namespace_prompt.ts";
 import type { EffortDeclaration, IFixedModelClient, SessionTool, ThinkingDeclaration } from "@exaix/schemas";
 import type { TaskComplexity } from "@exaix/core";
 import type { IAgentExecutionOptionsInput, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
@@ -215,7 +216,7 @@ export class AgentComposerAdapter {
     const blueprint: IBlueprint = this.loader.toLegacyBlueprint(loaded);
     const analysis = request.requestAnalysis;
     const parsedRequest: IParsedRequest = {
-      userPrompt: request.userPrompt,
+      userPrompt: buildSharedNamespacePrompt(request.userPrompt, request.sharedNamespace),
       context: (request.context ?? {}) as IRequestContextContext,
       requestId: request.requestId,
       traceId: request.traceId,
@@ -344,13 +345,14 @@ export class AgentComposerAdapter {
     });
 
     try {
+      const userPrompt = buildSharedNamespacePrompt(request.userPrompt, request.sharedNamespace);
       const context: IExecutionContext = {
         trace_id: traceId,
         request_id: request.requestId ?? crypto.randomUUID(),
-        request: request.userPrompt,
+        request: userPrompt,
         // A flow step has no separate "plan" text distinct from its own built prompt —
         // reusing userPrompt for both avoids starving the strategy of task instructions.
-        plan: request.userPrompt,
+        plan: userPrompt,
         portal: request.portal,
       };
       const options: IAgentExecutionOptionsInput = {

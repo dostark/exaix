@@ -1,0 +1,23 @@
+{
+  "promptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "promptPreview": "Research fixture",
+  "response": "{\"criteriaScores\": {\"task_fulfillment\": {\"score\": 0.2, \"reasoning\": \"The test evidence is missing.\", \"issues\": []}, \"code_correctness\": {\"score\": 0.2, \"reasoning\": \"The test evidence is missing.\", \"issues\": []}}, \"feedback\": \"WARNING: the test explorer supplied no evidence.\", \"suggestions\": [\"Rerun the test explorer\"]}",
+  "model": "phase205-fixture",
+  "tokens": {
+    "input": 100,
+    "output": 200
+  },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-07T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": [
+      "Parallel research synthesis"
+    ]
+  },
+  "callSite": {
+    "scenarioId": "parallel-research",
+    "stepId": "submit",
+    "flowStepId": "evidence-gate--judge",
+    "callIndex": 0
+  }
+}
