@@ -33,6 +33,7 @@
 
 - Flow gates now halt: a gate below its threshold fails the run with `gate_halted` instead of continuing.
 - Shared namespace evidence is added to a step's prompt as bounded, untrusted data.
+- `exactl flow bindings --overlay` now refuses a symlink, a non-regular file or an oversize overlay with `overlay_invalid`, the same as `exactl request --overlay`.
 
 ### Removed
 
