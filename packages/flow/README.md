@@ -23,33 +23,62 @@ Flow orchestration, validation, and checkpoint services for Exaix.
 ## Quality Gate Configuration
 
 ```yaml
-step:
+- id: quality-gate
   type: gate
-  name: code_quality_gate
-  condition: "score >= 80"
-  onPass: continue
-  onFail:
-    action: feedback
-    maxRetries: 3
-  criteria:
-    - CODE_CORRECTNESS
-    - HAS_TESTS
+  agent_role: quality-judge
+  dependsOn: [implement]
+  input: { source: step, stepId: implement, transform: passthrough }
+  evaluate:
+    agent_role: quality-judge
+    criteria: [code_correctness, has_tests]
+    threshold: 0.8
+    onFail: retry # halt (default) | continue-with-warning | retry
+    maxRetries: 2 # caps total gate evaluations; retry needs >= 2
+  loop:
+    backTo: implement
 ```
 
-## Wait States
+`FlowRunner` applies `evaluate.onFail` when the score is below `threshold`:
 
-Durable wait states allow a flow to pause at a quality gate when an operator
-decision is required, then resume once the operator approves, rejects, or amends
-the decision via CLI or daemon API.
+- `halt` throws `FlowGateHaltedError` and fails the run with `gate_halted`. It is terminal and ignores
+  `failFast` and `continue_on_error`.
+- `continue-with-warning` continues and journals a warning.
+- `retry` re-runs the loop body from `loop.backTo` with the judge feedback, then re-evaluates. After
+  `maxRetries` evaluations the gate applies `halt`.
+
+The run-wide evaluation ceiling is `flow.max_gate_evaluations` (default 10). `max_flow_retry_cost_usd`
+is a cumulative budget checked before each iteration. `FlowRuntimeValidator.validateGatePolicies` rejects
+`onError` on a gate, `loop` on a non-gate step, loop bodies with unsupported steps, and consumers that skip the gate.
+Control failure codes: `gate_halted`, `gate_evaluation_limit`, `gate_loop_body_failed`, `gate_loop_body_skipped`,
+`gate_retry_requires_runner`, `flow_retry_budget_exceeded`, `flow_retry_budget_unavailable`,
+`flow_control_resume_unsupported`, `branch_output_unparseable`, `branch_condition_error`, `branch_no_match`.
+See `docs/Exaix_User_Guide.md`, "Advanced Flow Controls", for authoring rules.
+
+## Branch Routing and Capability Guards
+
+`BranchStepHandler` runs a `branch` step's agent, parses its JSON output into `results.<id>.data`, and evaluates
+`branches` in order, then `default`. Targets not taken are skipped with `skipCode: branch_not_taken`, and so are
+steps reachable only through them. Typed decisions and loop state are checkpointed; a settled matching state
+resumes without another model call.
+
+A flow's `requires_capabilities` (currently `[voting]`) is checked by `FlowRunner.execute` through
+`assertFlowCapabilities` in `flow_capabilities.ts`, which uses `isCapabilityAvailable` and the handlers the Team
+module actually registered. A missing capability fails the run with `capability_unavailable`.
+
+## Wait States (session delegation)
+
+Durable wait states belong to session delegation, plan approval and amendment. A flow `gate` step does not create
+one. `IFlowRunnerConfig.waitStateService` remains an optional dependency, and gates never consult it. `FlowRunner`
+does not emit `flow.wait.*` events for gates.
 
 ### Architecture Boundary
 
-- `FlowRunner` creates a wait state via `IWaitStateService` when a gate step
-  score falls below threshold and `waitStateService` is configured.
-- `WaitStateService` (in-memory for tests; filesystem-backed for CLI) owns
-  state transitions, expiry, and amendment linkage.
-- `exactl wait` commands (`list`, `approve`, `reject`, `amend`, `expire`)
-  read/write JSON files at `Workspace/WaitStates/{traceId}/{waitStateId}.json`.
+- `SessionReturnWatcher` and the session delegation coordinator resume a durable wait state when a session
+  delegate returns (see Session Tool Integration below).
+- `WaitStateService` (in-memory for tests; filesystem-backed for CLI) owns state transitions, expiry, and
+  amendment linkage.
+- `exactl wait` commands (`list`, `approve`, `reject`, `amend`, `expire`) read/write JSON files at
+  `Workspace/WaitStates/{traceId}/{waitStateId}.json`.
 
 ### State Machine
 
@@ -62,21 +91,6 @@ pending → cancelled   (flow cancelled externally)
 amended → resumed     (amending wait resolved)
 amended → amended     (nested amendment)
 ```
-
-### Configuration
-
-```typescript
-interface IFlowRunnerConfig {
-  waitStateService?: IWaitStateService; // optional, no-op by default
-}
-```
-
-### Journal Events
-
-| Event               | Payload Fields                                                         | When Emitted                                        |
-| ------------------- | ---------------------------------------------------------------------- | --------------------------------------------------- |
-| `flow.wait.created` | `flowRunId`, `stepId`, `waitStateId`, `resumeToken`, `kind`, `traceId` | Gate step creates a wait state on failure           |
-| `flow.wait.pending` | `flowRunId`, `waitStateId`, `traceId`, `stepIds`                       | Flow pauses and saves checkpoint with pending waits |
 
 ### Amendment Loop
 

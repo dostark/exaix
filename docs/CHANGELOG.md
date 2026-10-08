@@ -18,6 +18,25 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 205 (Advanced Flow Runtime and Blueprints)
+
+### Added
+
+- Flow gates support `evaluate.onFail: retry` with `loop.backTo`, which re-runs the loop body with the judge feedback (see [Advanced Flow Controls](Exaix_User_Guide.md#advanced-flow-controls)).
+- `branch` steps route a flow on the agent's JSON output and skip the targets not taken.
+- A flow can declare `requires_capabilities: [voting]`, and `exactl flow list` shows a Capabilities column.
+- Five flow blueprints with companion binding overlays: `self-correcting-implementation`, `triage-router`, `parallel-research`, `guarded-change` and `architecture-decision`.
+- `flow.max_gate_evaluations`, `flow.namespace_prompt_max_bytes` and `max_flow_retry_cost_usd` config keys.
+
+### Changed
+
+- Flow gates now halt: a gate below its threshold fails the run with `gate_halted` instead of continuing.
+- Shared namespace evidence is added to a step's prompt as bounded, untrusted data.
+
+### Removed
+
+- `input.source: feedback` is rejected; use a gate with `onFail: retry` and `loop.backTo`.
+
 ## Unreleased — Phase 206 (Skill Folders and Revision Tracking)
 
 ### Added

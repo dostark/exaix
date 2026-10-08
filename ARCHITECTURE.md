@@ -495,8 +495,8 @@ For analysis mode details, data flow steps, and hardening additions, see `packag
     "AgentRunner executes agent task and generates Plan via AI Provider (ProviderFactory chain)",
     "FlowRunner executes multi-agent flow with declared/dynamic steps via AgentExecutorAdapter",
     "PlanWriter materializes Plan to Workspace/Plans",
-    "FlowRunner pauses on failing quality gates, creating durable wait states for operator resolution",
-    "Operator approves, rejects, or amends wait states via `exactl wait` CLI commands",
+    "FlowRunner applies each gate's onFail action: halt fails the run with gate_halted, continue-with-warning journals a warning, retry re-runs the bounded loop body",
+    "FlowRunner routes branch steps from typed JSON output and skips targets not taken with branch_not_taken",
     "ExecutionLoop commits plan work, runs the portal's post-execution verification, then registers the review",
     "Activity Journal records lifecycle events (including wait-state events)"
   ]
@@ -551,7 +551,7 @@ always registered on the last commit. See the `execution` package (`Verification
 
 The **Request Quality Gate** is a pre-execution filter that assesses every incoming request body before routing. It prevents vague or unactionable requests from consuming LLM budget and provides an iterative Q&A loop to improve request quality.
 
-When a quality gate step fails during flow execution and a `waitStateService` is configured, the `FlowRunner` creates a **durable wait state** that pauses the flow until an operator resolves it via `exactl wait approve|reject|amend|expire`. This replaces the previous feedback-loop retry model with an explicit asynchronous approval workflow with resume tokens and time-based expiry.
+A flow `gate` step is a different control from this pre-execution filter. When a gate step scores below its threshold, `FlowRunner` applies `evaluate.onFail`: `halt` (the default) is terminal and fails the run with `gate_halted`, `continue-with-warning` continues and journals a warning, and `retry` re-runs a bounded loop body. A flow gate does not create a wait state, pause the flow or resume it. Approval and resume of flow gates are deferred. Durable wait states remain for session delegation, plan approval and amendment (see `packages/flow/README.md`).
 
 The gate produces one of four recommendations: **PROCEED**, **AUTO_ENRICH**, **NEEDS_CLARIFICATION**, or **REJECT** — each with configurable score thresholds. Assessment runs in `heuristic`, `llm`, or `hybrid` mode.
 
@@ -649,6 +649,12 @@ apply), so `strategy: cli_delegate` and `type: session_delegate_cycle` are not a
 the same step — one is an `AgentStepHandler` execution mode, the other is a different handler
 altogether that happens to solve the same "delegate this work to a session tool" problem at a
 different granularity (one whole step vs. N reviewed sub-steps).
+
+Three further controls act on the flow graph itself. Each is enforced by `FlowRunner` and validated before a run starts.
+
+- **Gate actions and loop re-execution.** `GateStepHandler` evaluates the gate. For `halt` it throws `FlowGateHaltedError` (`gate_halted`), which fails the run whatever `failFast` or `continue_on_error` say. For `retry`, `FlowRunner.executeGateLoop` performs loop re-execution inside the wave: it runs the steps from `loop.backTo` to the gate again, sequentially, with the judge feedback injected at `backTo`. `evaluate.maxRetries` caps total evaluations, `flow.max_gate_evaluations` caps them per run, and `max_flow_retry_cost_usd` is checked before each iteration. Typed checkpoints persist consumed evaluations and phases. A settled matching state resumes within the original cap. An interrupted body or judge call, a changed identity or a legacy control state fails with `flow_control_resume_unsupported` before any model call.
+- **Branch skip propagation.** `BranchStepHandler` parses the branch agent's JSON output (`results.<id>.data`), evaluates ordered `branches` conditions, and records a typed decision. Targets not taken, and steps reachable only through them, are skipped with `skipCode: branch_not_taken`. A join step runs when at least one dependency ran. A `condition` skip keeps the code `condition` and does not propagate. Unparseable output, a condition error and no match are terminal (`branch_output_unparseable`, `branch_condition_error`, `branch_no_match`). Settled decisions are saved before target execution, so a matching resume reconstructs the same route without another model call.
+- **Capability guard.** A flow may declare `requires_capabilities: [voting]`. `FlowRunner.execute` checks the requirement against the edition and the capability set that module registration installed, and fails with `capability_unavailable` before any step runs. `exactl flow list` shows edition eligibility only (`eligible (runtime unverified)` or `unavailable (needs voting)`).
 
 ### Worktree Isolation for Delegated Code Changes {#worktree-isolation}
 

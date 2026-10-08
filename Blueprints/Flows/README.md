@@ -21,6 +21,28 @@ template — must resolve to an agent role under `Blueprints/Agents/`. This is
 enforced by `deno task check:blueprint-integrity` (recursive, all flows; `{{…}}`
 slots are skipped).
 
+## Advanced blueprints
+
+Five blueprints use gate halt and retry, branch routing, the shared namespace, delegate cycles and capability
+requirements. Each ships a companion binding overlay at `configs/bindings/flows/<flow-id>.example.toml`
+that binds its strong and light steps to concrete services. No blueprint hard-codes a service or model.
+
+| Flow file                                  | What it does                                                                       |
+| ------------------------------------------ | ---------------------------------------------------------------------------------- |
+| `self-correcting-implementation.flow.yaml` | Plan, implement, test. A gate loops back to `implement` once, then halts.          |
+| `triage-router.flow.yaml`                  | A branch classifies the request. Only the matching pipeline runs.                  |
+| `parallel-research.flow.yaml`              | Three explorers share findings through the namespace. A warning gate checks.       |
+| `guarded-change.flow.yaml`                 | Read-only explore, a reviewed delegate cycle, a halting security gate.             |
+| `architecture-decision.flow.yaml`          | Context, a majority vote, then an ADR. Declares `requires_capabilities: [voting]`. |
+
+`architecture-decision` needs the Team edition. In Solo the run fails with `capability_unavailable`, and
+`exactl flow list` shows `unavailable (needs voting)`. A gate with `onFail: halt` (the default) fails the run with
+`gate_halted`. See the User Guide, "Advanced Flow Controls", for the full semantics.
+
+`templates/self-correcting.flow.template.yaml` is the abstract version of the self-correcting blueprint.
+It is a real gate retry loop: a `gate` step with `onFail: retry` and `loop.backTo` re-runs the steps
+between `backTo` and the gate with the judge feedback. Copy it and fill the `{{placeholder}}` agent slots.
+
 ## Flow frontmatter (top-level keys)
 
 ```yaml
