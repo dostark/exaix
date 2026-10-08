@@ -8,6 +8,7 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
+import { FlowLoader } from "@exaix/flow";
 
 const BLUEPRINTS_DIR = "./Blueprints/Agents";
 const FLOWS_DIR = "./Blueprints/Flows";
@@ -78,6 +79,11 @@ async function getFlowAgentRefs(flowPath: string): Promise<string[]> {
 /** Flows that have never declared `defaultSkills`. Listed rather than fixed because whether
  * every flow REQUIRES defaultSkills is unconfirmed; this list must shrink, never grow. */
 const FLOWS_WITHOUT_DEFAULT_SKILLS = new Set(["analyze-codebase.flow.yaml", "api-documentation.flow.yaml"]);
+
+Deno.test("fix(blueprints): architecture decisions load the shipped architecture review skill", async () => {
+  const flow = await new FlowLoader(FLOWS_DIR).loadFlow("architecture-decision");
+  assertEquals(flow.defaultSkills, ["architecture-review"]);
+});
 
 Deno.test("Flow validation: no flow loses its defaultSkills", async () => {
   const missing: string[] = [];

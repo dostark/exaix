@@ -2,6 +2,8 @@ id: architecture-decision
 name: Architecture decision
 description: Gather portal evidence, resolve an architecture vote, and write an ADR.
 version: 1.0.0
+defaultSkills:
+  - architecture-review
 requires_capabilities: [voting]
 namespace:
   enabled: false

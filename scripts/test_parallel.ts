@@ -215,6 +215,19 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
   },
   { file: "tests/migrations/migrate_db_test.ts", reasons: [IsolationReason.moduleCache] },
   { file: "packages/core/tests/child_env_test.ts", reasons: [IsolationReason.processEnv] },
+  // Parallel workers share the environment. Catalog overlay writers need separate processes.
+  { file: "packages/core/tests/skills/skills_service_test.ts", reasons: [IsolationReason.processEnv] },
+  { file: "tests/scenario_framework/tests/unit/catalog_overlay_test.ts", reasons: [IsolationReason.processEnv] },
+  { file: "tests/scenario_framework/tests/unit/catalog_immutability_test.ts", reasons: [IsolationReason.processEnv] },
+  {
+    file: "tests/scenario_framework/tests/unit/judge_methodology_injection_test.ts",
+    reasons: [IsolationReason.processEnv],
+  },
+  { file: "tests/scenario_framework/tests/unit/arm_isolation_test.ts", reasons: [IsolationReason.processEnv] },
+  {
+    file: "tests/scenario_framework/tests/unit/persona_isolation_overlay_path_validation_security_test.ts",
+    reasons: [IsolationReason.processEnv],
+  },
   { file: "tests/scripts/check_commit_msg_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "packages/ai/tests/model_resolver_determinism_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "packages/ai/tests/model_resolver_registry_test.ts", reasons: [IsolationReason.processEnv] },

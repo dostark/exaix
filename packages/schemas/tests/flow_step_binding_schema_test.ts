@@ -11,7 +11,7 @@
 
 import { assertEquals, assertThrows } from "@std/assert";
 import { FlowStepType } from "@exaix/core";
-import { FlowSchema } from "@exaix/schemas";
+import { FlowSchema, type IFlow } from "@exaix/schemas";
 
 type TestStep = {
   id: string;
@@ -49,13 +49,13 @@ function stepOf(type: FlowStepType, extra: StepExtra = {}): TestStep {
 const DEFAULT_BINDING = { service: "openai", model: "openai/gpt-6-luna" };
 const PIN = { fields: ["service", "model"], reason: "compliance" };
 
-function flowWith(step: TestStep): void {
-  FlowSchema.parse({
+function flowWith(step: TestStep, following: TestStep[] = []): IFlow {
+  return FlowSchema.parse({
     id: "research",
     name: "Research",
     description: "bindings schema",
     version: "1.0.0",
-    steps: [step],
+    steps: [step, ...following],
     output: { from: "s1", format: "markdown" },
     settings: { maxParallelism: 1, failFast: true, includeRequestCriteria: false },
   });
@@ -74,11 +74,16 @@ Deno.test("binding and pin parse on a gate step", () => {
 });
 
 Deno.test("binding and pin parse on a branch step", () => {
-  flowWith(stepOf(FlowStepType.BRANCH, {
-    binding: DEFAULT_BINDING,
-    pin: PIN,
-    branches: [{ condition: "true", goto: "next" }],
-  }));
+  const flow = flowWith(
+    stepOf(FlowStepType.BRANCH, {
+      binding: DEFAULT_BINDING,
+      pin: PIN,
+      branches: [{ condition: "true", goto: "next" }],
+    }),
+    [stepOf(FlowStepType.AGENT, { id: "next", dependsOn: ["s1"] })],
+  );
+  assertEquals(flow.steps[0].binding, DEFAULT_BINDING);
+  assertEquals(flow.steps[0].pin, PIN);
 });
 
 Deno.test("binding and pin parse on a consensus step", () => {

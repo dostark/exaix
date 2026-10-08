@@ -18,6 +18,7 @@ import {
   extractTapFailures,
   flushDotReporterState,
   formatRunHeader,
+  IsolationReason,
   killActiveChildGroups,
   parseDotReporterCounts,
   parseSummaryLine,
@@ -176,7 +177,7 @@ Deno.test("test_output_parse is the single source and test_parallel re-exports t
 
 // --- Batch-2 classification ---
 
-/** The Batch-2 file list pinned before the classification change. Order is authoritative. */
+/** The expected Batch-2 file list. Order is authoritative. */
 const EXPECTED_SEQUENTIAL_FILES = [
   "apps/exactl/tests/exactl_all_test.ts",
   "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
@@ -200,6 +201,12 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "tests/integration/daemon_watcher_readiness_test.ts",
   "tests/migrations/migrate_db_test.ts",
   "packages/core/tests/child_env_test.ts",
+  "packages/core/tests/skills/skills_service_test.ts",
+  "tests/scenario_framework/tests/unit/catalog_overlay_test.ts",
+  "tests/scenario_framework/tests/unit/catalog_immutability_test.ts",
+  "tests/scenario_framework/tests/unit/judge_methodology_injection_test.ts",
+  "tests/scenario_framework/tests/unit/arm_isolation_test.ts",
+  "tests/scenario_framework/tests/unit/persona_isolation_overlay_path_validation_security_test.ts",
   "tests/scripts/check_commit_msg_test.ts",
   "packages/ai/tests/model_resolver_determinism_test.ts",
   "packages/ai/tests/model_resolver_registry_test.ts",
@@ -230,7 +237,7 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "packages/core/tests/skills/skill_folder_performance_test.ts",
 ];
 
-Deno.test("SEQUENTIAL_FILES is unchanged in content and order after classification", () => {
+Deno.test("SEQUENTIAL_FILES matches the required isolation files and order", () => {
   assertEquals(SEQUENTIAL_FILES, EXPECTED_SEQUENTIAL_FILES);
 });
 
@@ -238,6 +245,21 @@ Deno.test("every SEQUENTIAL_TESTS entry names at least one isolation reason", ()
   for (const test of SEQUENTIAL_TESTS) {
     assert(test.reasons.length >= 1, `${test.file} names no isolation reason`);
     assert(SequentialTestSchema.safeParse(test).success, `${test.file} fails SequentialTestSchema`);
+  }
+});
+
+Deno.test("fix(test-runner): catalog overlay environment writers run in isolated processes", () => {
+  const files = [
+    "packages/core/tests/skills/skills_service_test.ts",
+    "tests/scenario_framework/tests/unit/catalog_overlay_test.ts",
+    "tests/scenario_framework/tests/unit/catalog_immutability_test.ts",
+    "tests/scenario_framework/tests/unit/judge_methodology_injection_test.ts",
+    "tests/scenario_framework/tests/unit/arm_isolation_test.ts",
+    "tests/scenario_framework/tests/unit/persona_isolation_overlay_path_validation_security_test.ts",
+  ];
+  for (const file of files) {
+    const entry = SEQUENTIAL_TESTS.find((test) => test.file === file);
+    assert(entry?.reasons.includes(IsolationReason.processEnv), `${file} needs process environment isolation`);
   }
 });
 
