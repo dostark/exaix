@@ -3,6 +3,7 @@
  * @path packages/flow/tests/flow_control_checkpoint_test.ts
  * @description Verifies typed control persistence and refusal of interrupted control execution.
  */
+import type { Opt, Reason } from "@exaix/core/types";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { ZFlowCheckpoint } from "@exaix/schemas/flow.ts";
@@ -251,3 +252,42 @@ for (const drift of ["none", "request", "config", "body content", "ceiling"]) {
     }
   });
 }
+
+Deno.test("[checkpoint] a backward wall clock cannot invalidate completed branch checkpoints", async () => {
+  const env = await initTestDbService();
+  const realDate = globalThis.Date;
+  let wallTime = realDate.now();
+  const rollbackMs = 1000;
+  class RollbackDate extends realDate {
+    constructor(value?: Opt<string | number, Reason.OptionalInput>) {
+      super(value ?? wallTime);
+    }
+    static override now(): number {
+      return wallTime;
+    }
+  }
+  const agent = new BranchTestAgent();
+  const run = agent.run.bind(agent);
+  agent.run = (role, request) => {
+    wallTime -= rollbackMs;
+    return run(role, request);
+  };
+  const logger = new GateTestLogger();
+  try {
+    globalThis.Date = RollbackDate as DateConstructor;
+    const result = await new FlowRunner({
+      config: env.config,
+      checkpointService: new FlowCheckpointService(env.config),
+      agentExecutor: agent,
+      eventLogger: logger,
+    }).execute(branchTestFlow(), { userPrompt: "Classify", traceId: BRANCH_TRACE });
+    assertEquals(result.success, true);
+    assertEquals(result.duration >= 0, true);
+    assertEquals([...result.stepResults.values()].every((step) => step.duration >= 0), true);
+    assertEquals(agent.requests.map((request) => request.flowStepId), ["classify", "bug", "bug-child", "join"]);
+    assertEquals(logger.events.some((entry) => entry.event === "flow.checkpoint.saved"), true);
+  } finally {
+    globalThis.Date = realDate;
+    await env.cleanup();
+  }
+});

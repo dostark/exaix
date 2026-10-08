@@ -1390,7 +1390,7 @@ export class FlowRunner implements IFlowRunner {
           success: true,
           stepResults,
           output: "",
-          duration: new Date().getTime() - startedAt.getTime(),
+          duration: Math.max(0, new Date().getTime() - startedAt.getTime()),
           waiting: true,
           waitStateId: waitingSteps[0].waitStateId,
         } as IFlowResult;
@@ -1405,7 +1405,7 @@ export class FlowRunner implements IFlowRunner {
           flowId: flow.id,
           error: error.message,
           errorType: error.name,
-          duration: Date.now() - startedAt.getTime(),
+          duration: Math.max(0, Date.now() - startedAt.getTime()),
           stepsAttempted: 0,
           successfulSteps: 0,
           failedSteps: 0,
@@ -1417,7 +1417,7 @@ export class FlowRunner implements IFlowRunner {
           success: false,
           stepResults,
           output: "",
-          duration: Date.now() - startedAt.getTime(),
+          duration: Math.max(0, Date.now() - startedAt.getTime()),
           startedAt,
           completedAt: new Date(),
         };
@@ -1536,7 +1536,7 @@ export class FlowRunner implements IFlowRunner {
     });
 
     const completedAt = new Date();
-    const duration = completedAt.getTime() - startedAt.getTime();
+    const duration = Math.max(0, completedAt.getTime() - startedAt.getTime());
 
     // Determine overall success
     const success = Array.from(stepResults.values()).every((result) => result.success);
@@ -1602,7 +1602,7 @@ export class FlowRunner implements IFlowRunner {
     error: Error | string | unknown,
   ): Promise<never> {
     const completedAt = new Date();
-    const duration = completedAt.getTime() - startedAt.getTime();
+    const duration = Math.max(0, completedAt.getTime() - startedAt.getTime());
 
     // Determine partial results
     const successfulSteps = Array.from(stepResults.values()).filter((r) => r.success).length;
@@ -1682,7 +1682,7 @@ export class FlowRunner implements IFlowRunner {
         skipped: true,
         skipCode: FlowStepSkipCode.BRANCH_NOT_TAKEN,
         skipReason: branchSkip,
-        duration: Date.now() - startedAt.getTime(),
+        duration: Math.max(0, Date.now() - startedAt.getTime()),
         startedAt,
         completedAt: new Date(),
       };
@@ -1831,7 +1831,7 @@ export class FlowRunner implements IFlowRunner {
     try {
       const result = await this.executeStepLogic(ctx, stepRequest);
       record.completedAt = new Date().toISOString();
-      record.durationMs = Date.now() - startedAt.getTime();
+      record.durationMs = Math.max(0, Date.now() - startedAt.getTime());
       record.replayEligible = true;
       record.summary = result.content;
       await this.stepDurabilityStore.save(record);
@@ -2078,7 +2078,7 @@ export class FlowRunner implements IFlowRunner {
 
     if (!conditionResult.shouldExecute) {
       const completedAt = new Date();
-      const duration = completedAt.getTime() - startedAt.getTime();
+      const duration = Math.max(0, completedAt.getTime() - startedAt.getTime());
 
       await this.eventLogger.log(FLOW_EVENT_STEP_SKIPPED, {
         flowRunId,
@@ -2267,7 +2267,8 @@ export class FlowRunner implements IFlowRunner {
   ): IStepResult {
     const { flowRunId, step, request, startedAt } = ctx;
     const completedAt = new Date();
-    const duration = completedAt.getTime() - startedAt.getTime();
+    // Clock corrections must not invalidate nonnegative checkpoint durations.
+    const duration = Math.max(0, completedAt.getTime() - startedAt.getTime());
 
     this.eventLogger.log(DomainEventType.FlowStepCompleted, {
       flowRunId,
@@ -2313,7 +2314,7 @@ export class FlowRunner implements IFlowRunner {
     startedAt: Date,
   ): IStepResult {
     const completedAt = new Date();
-    const duration = completedAt.getTime() - startedAt.getTime();
+    const duration = Math.max(0, completedAt.getTime() - startedAt.getTime());
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorType = error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL;
     const providerReasonCode = error instanceof Error ? getProviderFailureReason(error) : undefined;
@@ -2483,7 +2484,7 @@ export class FlowRunner implements IFlowRunner {
         transformName: typeof step.input.transform === "string" ? step.input.transform : "custom",
         inputSize: inputData.length,
         outputSize: basePrompt.length,
-        duration: Date.now() - transformStart,
+        duration: Math.max(0, Date.now() - transformStart),
         traceId: originalRequest.traceId,
         requestId: originalRequest.requestId,
       });
