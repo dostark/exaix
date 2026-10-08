@@ -8,7 +8,7 @@
  * injected construction dependencies (never a stored, long-lived instance — see GAP-2)
  * and dispatches through the agent strategy registry with a forced strategy. Each call's
  * fresh orchestrator shares a `planWrittenFiles` Set with every other step of the SAME flow
- * run (keyed by trace_id, see `planWrittenFilesByTrace`), so a multi-step cli_delegate flow's
+ * run and physical execution root, so a multi-step cli_delegate flow's
  * later steps don't revert an earlier step's still-uncommitted, legitimate writes (Step 8).
  * @architectural-layer Flows
  * @dependencies ["@exaix/execution", "@exaix/core"]
@@ -54,6 +54,7 @@ import {
 } from "@exaix/ai";
 import { strategyLane } from "./contracts/flow_recording_context.ts";
 import { buildSharedNamespacePrompt } from "./shared_namespace_prompt.ts";
+import { FlowWriteAuthorization, type IFlowWriteAuthorization } from "./flow_write_authorization.ts";
 import type { EffortDeclaration, IFixedModelClient, SessionTool, ThinkingDeclaration } from "@exaix/schemas";
 import type { TaskComplexity } from "@exaix/core";
 import type { IAgentExecutionOptionsInput, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
@@ -180,8 +181,9 @@ function withRecordingLane(
 export class AgentComposerAdapter {
   private loader: IBlueprintLoader;
 
-  /** Files legitimately written by an earlier flow step, keyed by trace_id and shared across this run's AgentComposer instances so a later step's audit doesn't revert them. */
-  private readonly planWrittenFilesByTrace = new Map<string, Set<string>>();
+  private readonly writeAuthorization: IFlowWriteAuthorization = new FlowWriteAuthorization(
+    PLAN_WRITTEN_FILES_TRACE_MAX,
+  );
 
   constructor(
     private runner: IRunner,
@@ -204,6 +206,24 @@ export class AgentComposerAdapter {
 
   async hasBlueprint(agentRole: string): Promise<boolean> {
     return await this.loader.exists(agentRole);
+  }
+
+  /** Carry reconciled, reviewed cycle writes into this flow's later strategy audits. */
+  async recordReviewedWrites(
+    traceId: string,
+    executionRoot: string,
+    paths: readonly string[],
+    portalAlias: string,
+  ): Promise<void> {
+    if (!this.orchestratorDeps) throw new Error("Reviewed writes require AgentComposer construction dependencies");
+    const { config, worktreeCoordinator } = this.orchestratorDeps;
+    const portal = config.portals.find((entry) => entry.alias === portalAlias);
+    if (!portal || await Deno.realPath(portal.target_path) !== await Deno.realPath(executionRoot)) {
+      throw new Error("Reviewed writes do not match the configured portal root");
+    }
+    const root = await resolveWorktreeBaseDir(portal, traceId, worktreeCoordinator);
+    const resolver = new PathResolver({ ...config, portals: [{ ...portal, target_path: root }] });
+    await this.writeAuthorization.record(traceId, root, paths, (path) => resolver.resolve(`@${portalAlias}/${path}`));
   }
 
   async run(agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
@@ -304,27 +324,15 @@ export class AgentComposerAdapter {
 
     const traceId = request.traceId ?? crypto.randomUUID();
     const pathResolver = new PathResolver(config, { traceId });
+    const baseDir = await resolveWorktreeBaseDir(portalConfig, traceId, this.orchestratorDeps.worktreeCoordinator);
     const toolRegistry = new ToolRegistry({
       config,
       traceId,
-      baseDir: await resolveWorktreeBaseDir(portalConfig, traceId, this.orchestratorDeps.worktreeCoordinator),
+      baseDir,
       pathResolver,
       context: applicationContext,
     });
-    // Bounded, least-recently-touched-evicted map: re-inserting a key moves it to the end of
-    // the Map's iteration order, so an actively-touched trace is never the oldest entry and
-    // is never evicted while its flow run is still in progress.
-    let planWrittenFiles = this.planWrittenFilesByTrace.get(traceId);
-    if (planWrittenFiles) {
-      this.planWrittenFilesByTrace.delete(traceId);
-    } else {
-      if (this.planWrittenFilesByTrace.size >= PLAN_WRITTEN_FILES_TRACE_MAX) {
-        const oldestTraceId = this.planWrittenFilesByTrace.keys().next().value;
-        if (oldestTraceId) this.planWrittenFilesByTrace.delete(oldestTraceId);
-      }
-      planWrittenFiles = new Set<string>();
-    }
-    this.planWrittenFilesByTrace.set(traceId, planWrittenFiles);
+    const planWrittenFiles = await this.writeAuthorization.get(traceId, baseDir);
     const orchestrator = new AgentComposer({
       config,
       db,

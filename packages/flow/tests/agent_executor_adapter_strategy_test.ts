@@ -559,6 +559,96 @@ async function initGitPortal(portalPath: string): Promise<void> {
   await new Deno.Command("git", { args: ["commit", "-m", "init"], cwd: portalPath }).output();
 }
 
+Deno.test("fix(flow): reviewed cycle writes survive a later strategy audit only in the same trace and root", async () => {
+  const dbService = await initTestDbService();
+  try {
+    const portalPath = join(dbService.tempDir, "reviewed-cycle");
+    const worktreePath = join(dbService.tempDir, "reviewed-worktree");
+    const otherRoot = join(dbService.tempDir, "other-root");
+    await initGitPortal(portalPath);
+    await initGitPortal(worktreePath);
+    await initGitPortal(otherRoot);
+    const config = createMockConfig(dbService.tempDir, {
+      portals: [
+        {
+          alias: "portal",
+          target_path: portalPath,
+          default_branch: "main",
+          agents_allowed: ["*"],
+          operations: [],
+          execution_strategy: PortalExecutionStrategy.WORKTREE,
+        },
+        { alias: "other", target_path: otherRoot, default_branch: "main", agents_allowed: ["*"], operations: [] },
+      ],
+    });
+    await writeBlueprint(dbService.tempDir, "test-agent");
+    const strategyRegistry = new StrategyRegistry();
+    registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
+    const adapter = new AgentComposerAdapter(
+      { run: () => Promise.reject(new Error("unused")) },
+      join(dbService.tempDir, "Blueprints", "Agents"),
+      {
+        config,
+        db: dbService.db,
+        logger: new EventLogger({ db: dbService.db }),
+        permissions: new PortalPermissionsService(config.portals),
+        strategyRegistry,
+        worktreeCoordinator: new RecordingWorktreeCoordinator(worktreePath),
+      },
+    );
+    const traceId = crypto.randomUUID();
+    await Deno.mkdir(join(worktreePath, "src"));
+    const proofPath = join(worktreePath, "src", "reviewed.ts");
+    await Deno.writeTextFile(proofPath, "reviewed delegate change\n");
+    await adapter.recordReviewedWrites(traceId, portalPath, ["src/reviewed.ts"], "portal");
+    await adapter.runWithStrategy(
+      "test-agent",
+      makeStepRequest({ portal: "portal", traceId }),
+      ExecutionStrategyName.REACT,
+    );
+    assertEquals(await Deno.readTextFile(proofPath), "reviewed delegate change\n");
+    const rogue = join(worktreePath, "src", "rogue.ts");
+    await Deno.writeTextFile(rogue, "unauthorized later write\n");
+    await assertRejects(
+      () =>
+        adapter.runWithStrategy(
+          "test-agent",
+          makeStepRequest({ portal: "portal", traceId }),
+          ExecutionStrategyName.REACT,
+        ),
+      Error,
+      "Unauthorized file modifications",
+    );
+    assertEquals(await Deno.readTextFile(proofPath), "reviewed delegate change\n");
+    await assertRejects(
+      () => adapter.runWithStrategy("test-agent", makeStepRequest({ portal: "portal" }), ExecutionStrategyName.REACT),
+      Error,
+      "Unauthorized file modifications",
+    );
+    await Deno.writeTextFile(proofPath, "unreviewed change\n");
+    const otherTrace = crypto.randomUUID();
+    await adapter.recordReviewedWrites(otherTrace, otherRoot, ["src/reviewed.ts"], "other");
+    await assertRejects(
+      () =>
+        adapter.runWithStrategy(
+          "test-agent",
+          makeStepRequest({ portal: "portal", traceId: otherTrace }),
+          ExecutionStrategyName.REACT,
+        ),
+      Error,
+      "Unauthorized file modifications",
+    );
+    for (const invalid of ["../outside.ts", "/outside.ts", "src/\0bad.ts"]) {
+      await assertRejects(() => adapter.recordReviewedWrites(traceId, portalPath, [invalid], "portal"));
+    }
+    await assertRejects(() => adapter.recordReviewedWrites(traceId, otherRoot, ["src/reviewed.ts"], "portal"));
+    await Deno.symlink(otherRoot, join(worktreePath, "escape"));
+    await assertRejects(() => adapter.recordReviewedWrites(traceId, portalPath, ["escape/outside.ts"], "portal"));
+  } finally {
+    await dbService.cleanup();
+  }
+});
+
 Deno.test("AgentComposerAdapter.runWithStrategy: two calls sharing a traceId accumulate planWrittenFiles (a later step doesn't revert an earlier step's uncommitted write)", async () => {
   const dbService = await initTestDbService();
   try {

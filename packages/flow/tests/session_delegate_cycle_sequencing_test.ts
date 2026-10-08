@@ -176,6 +176,33 @@ function makeCtx(): IStepExecutionContext {
   } as IStepExecutionContext;
 }
 
+Deno.test("fix(flow): only a completed reviewed cycle publishes writes, including checkpoint replay", async () => {
+  const ctx = makeCtx();
+  const calls: Array<{ traceId: string; root: string; paths: readonly string[] }> = [];
+  const handler = new SessionDelegateCycleStepHandler({
+    coordinator: new RecordingCoordinator((sequence) => completedOutcome(sequence)),
+    planContextResolver: new FakeResolver(nStepPlan(1)),
+    gateEvaluator: new AlwaysPassGateEvaluator(),
+    eventLogger: new NoOpFlowEventLogger(),
+    claimStore: createInMemorySessionDelegateCycleClaimStore(),
+    cycleStore: createInMemorySessionDelegateCycleStore(),
+    onReviewedWrites: (traceId, root, paths) => {
+      calls.push({ traceId, root, paths });
+      return Promise.resolve();
+    },
+  });
+  await handler.execute(ctx);
+  await handler.execute(ctx);
+  assertEquals(
+    calls,
+    Array.from({ length: 2 }, () => ({
+      traceId: ctx.request.traceId!,
+      root: ctx.request.executionRoot!,
+      paths: ["x.ts"],
+    })),
+  );
+});
+
 // Sequencing
 
 Deno.test("[unit] a three-step plan produces exactly three non-overlapping coordinator calls in order", async () => {
@@ -237,6 +264,7 @@ async function assertHaltsBeforeNextStep(
   gateEvaluator: IGateEvaluator = new AlwaysPassGateEvaluator(),
 ): Promise<void> {
   const coordinator = new RecordingCoordinator((sequence) => sequence === 1 ? outcomeForStepOne : completedOutcome(2));
+  let published = false;
   const handler = new SessionDelegateCycleStepHandler({
     coordinator,
     planContextResolver: new FakeResolver(nStepPlan(2)),
@@ -244,9 +272,14 @@ async function assertHaltsBeforeNextStep(
     eventLogger: new NoOpFlowEventLogger(),
     claimStore: createInMemorySessionDelegateCycleClaimStore(),
     cycleStore: createInMemorySessionDelegateCycleStore(),
+    onReviewedWrites: () => {
+      published = true;
+      return Promise.resolve();
+    },
   });
 
   await assertRejects(() => handler.execute(makeCtx()));
+  assertEquals(published, false, "failed cycles must not authorize writes");
   assertEquals(coordinator.calls.length, 1, "step 2 must never be attempted after step 1 halts");
 }
 

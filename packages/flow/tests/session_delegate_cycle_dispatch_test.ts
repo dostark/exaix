@@ -26,6 +26,13 @@ import type {
 import type { JSONValue } from "@exaix/core/types";
 
 class NoOpAgentExecutor implements IAgentExecutor {
+  readonly reviewedWrites: Array<{ traceId: string; root: string; paths: readonly string[] }> = [];
+
+  recordReviewedWrites(traceId: string, root: string, paths: readonly string[]): Promise<void> {
+    this.reviewedWrites.push({ traceId, root, paths });
+    return Promise.resolve();
+  }
+
   run(): Promise<IAgentExecutionResult> {
     return Promise.resolve({ thought: "", content: "", raw: "" });
   }
@@ -115,8 +122,9 @@ Deno.test("[integration] a real FlowRunner dispatch reaches SessionDelegateCycle
   const root = await makeOneStepWorktree("phase-174");
   try {
     const coordinator = new RecordingCoordinator();
+    const agentExecutor = new NoOpAgentExecutor();
     const runner = new FlowRunner({
-      agentExecutor: new NoOpAgentExecutor(),
+      agentExecutor,
       eventLogger: new NoOpEventLogger(),
       gateEvaluator: new AlwaysPassGateEvaluator(),
       sessionDelegationCoordinator: coordinator,
@@ -134,6 +142,7 @@ Deno.test("[integration] a real FlowRunner dispatch reaches SessionDelegateCycle
     });
 
     assertEquals(result.success, true);
+    assertEquals(agentExecutor.reviewedWrites, [{ traceId, root, paths: ["packages/flow/src/example.ts"] }]);
     assertEquals(coordinator.requests.length, 1);
     assertEquals(coordinator.requests[0].parentTraceId, traceId);
     assertEquals(coordinator.requests[0].sequence, 1);

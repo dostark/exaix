@@ -142,6 +142,11 @@ import { createFlowRecordingContext, type IFlowRecordingContext } from "./contra
  */
 export interface IAgentExecutor {
   run(agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult>;
+  /** Trusted cycle review publishes reconciled paths for later cumulative strategy audits. */
+  recordReviewedWrites?: Opt<
+    (traceId: string, executionRoot: string, paths: readonly string[], portalAlias: string) => Promise<void>,
+    Reason.OptionalDependency
+  >;
   /** Optional blueprint-existence probe; absent executors (e.g. test doubles) skip the agent-role check. */
   hasBlueprint?(agentRole: string): Promise<boolean>;
   /** Strategy-routed step execution: forces `agentRole` through the agent strategy registry,
@@ -970,6 +975,7 @@ export class FlowRunner implements IFlowRunner {
           eventLogger: this.eventLogger,
           claimStore: options.sessionDelegateCycleClaimStore ?? createInMemorySessionDelegateCycleClaimStore(),
           cycleStore: options.sessionDelegateCycleStore ?? createInMemorySessionDelegateCycleStore(),
+          onReviewedWrites: this.agentExecutor.recordReviewedWrites?.bind(this.agentExecutor),
         }),
       );
     }

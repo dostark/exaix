@@ -48,7 +48,7 @@ import { type IParsedPhaseStep, parsePhaseStepManifests } from "../phase_step_ma
 import { computePlanDigest } from "../plan_digest.ts";
 import type { IBindingGateContext } from "@exaix/schemas";
 import { STEP_KIND_GATE } from "@exaix/ai/bindings/binding_types.ts";
-import { type IFlowEventLogger, toGateConfig } from "../flow_runner.ts";
+import { type IAgentExecutor, type IFlowEventLogger, toGateConfig } from "../flow_runner.ts";
 import { delegateReviewLane } from "../contracts/flow_recording_context.ts";
 
 export interface ISessionDelegateCycleStepHandlerDeps {
@@ -58,6 +58,7 @@ export interface ISessionDelegateCycleStepHandlerDeps {
   eventLogger: IFlowEventLogger;
   claimStore: ISessionDelegateCycleClaimStore;
   cycleStore: ISessionDelegateCycleStore;
+  onReviewedWrites?: IAgentExecutor["recordReviewedWrites"];
   now?: () => Date;
   sleep?: (milliseconds: number) => Promise<void>;
   pollIntervalMs?: number;
@@ -223,6 +224,12 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
         stepCount: steps.length,
       });
 
+      await this.deps.onReviewedWrites?.(
+        traceId,
+        executionRoot,
+        completed.flatMap((step) => step.pathsTouched),
+        portal,
+      );
       return this.buildResult(steps.length, completed);
     } catch (error) {
       if (error instanceof SessionDelegateCycleHaltError) {
