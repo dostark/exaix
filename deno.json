@@ -78,7 +78,7 @@
     "eval:subsystems": "deno run -A tests/scenario_framework/runner/main.ts --profile ci-extended --tag subsystem:tools --tag subsystem:mcp-server --tag subsystem:mcp-client --tag subsystem:agent_roles --tag subsystem:skills --tag subsystem:flows --tag subsystem:memory --mode auto --eval-mode --score-threshold 0.7",
     "eval:subsystems:core": "deno run -A tests/scenario_framework/runner/main.ts --profile ci-core --mode auto --eval-mode --score-threshold 0.7",
     "eval:jail:build": "docker build --target eval-jail -t exaix-eval-jail .",
-    "test:team-smoke": "deno test --allow-all --filter \"[team]\" tests/",
+    "test:team-smoke": "deno test --allow-all --filter \"[team]\" tests/integration/edition_team_smoke_test.ts",
     "test:ci": "deno test --allow-all tests/infra/",
     "test:llama": "EXA_RUN_LLAMA_TESTS=true deno test --allow-all tests/llama_provider_test.ts",
     "test:watch": "deno test --watch --allow-all tests/ packages/ exaix-team/ apps/",
