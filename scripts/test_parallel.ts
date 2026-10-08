@@ -202,6 +202,10 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
     reasons: [IsolationReason.processEnv, IsolationReason.port],
   },
   {
+    file: "tests/scenario_framework/tests/integration/advanced_flows_cutover_test.ts",
+    reasons: [IsolationReason.processEnv, IsolationReason.port],
+  },
+  {
     file: "tests/integration/dogfood_e2e_test.ts",
     reasons: [IsolationReason.moduleCache, IsolationReason.port],
   },

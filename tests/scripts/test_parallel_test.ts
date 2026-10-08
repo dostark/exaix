@@ -196,6 +196,7 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "tests/scenario_framework/tests/integration/operator_override_axes_test.ts",
   "tests/scenario_framework/tests/integration/flow_step_model_bindings_test.ts",
   "tests/scenario_framework/tests/integration/advanced_flow_controls_test.ts",
+  "tests/scenario_framework/tests/integration/advanced_flows_cutover_test.ts",
   "tests/integration/dogfood_e2e_test.ts",
   "tests/integration/dogfood_crash_recovery_e2e_test.ts",
   "tests/integration/daemon_watcher_readiness_test.ts",

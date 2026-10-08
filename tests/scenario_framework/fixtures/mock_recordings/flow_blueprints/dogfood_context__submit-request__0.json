@@ -1,0 +1,13 @@
+{
+  "promptHash": "0000000000000000",
+  "promptPreview": "Document the billing-service payment retry backoff policy",
+  "response": "<thought>Prepare the internal policy note from the billing service configuration.</thought><content>{\"subject\":\"Document payment retry backoff\",\"description\":\"Document the configured retry schedule and maximum attempt count.\",\"steps\":[{\"step\":1,\"title\":\"Inspect payment retry configuration\",\"description\":\"Read the billing service retry configuration and identify the backoff schedule and maximum attempt count.\"},{\"step\":2,\"title\":\"Write the internal policy note\",\"description\":\"State the configured backoff schedule and maximum attempt count and cite their source.\"}]}</content>",
+  "model": "test",
+  "tokens": { "input": 100, "output": 200 },
+  "cost_usd": 0,
+  "recordedAt": "2026-10-08T00:00:00.000Z",
+  "expectedInput": {
+    "promptIncludes": ["Document the billing-service payment retry backoff policy", "maximum attempt count"]
+  },
+  "callSite": { "scenarioId": "dogfood_context", "stepId": "submit-request", "callIndex": 0 }
+}
