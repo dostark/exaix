@@ -9,7 +9,7 @@
  * @related-files [tests/docs/helpers.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import { stripAnsiCode } from "@std/fmt/colors";
 import { join } from "@std/path";
 import { parse as parseToml } from "@std/toml";
@@ -62,6 +62,13 @@ async function help(...args: string[]): Promise<string> {
     stdout: "piped",
     stderr: "piped",
   }).output();
+  assertEquals(
+    output.code,
+    0,
+    `CLI help failed for ${args.join(" ")} (exit ${output.code}): ${
+      new TextDecoder().decode(output.stderr).slice(0, 500)
+    }`,
+  );
   return stripAnsiCode(new TextDecoder().decode(output.stdout));
 }
 
@@ -76,6 +83,7 @@ Deno.test("[skill docs] the User Guide documents every registered skills command
   for (const option of ["--revision", "--trace", "--portal", "--all"]) {
     assert(
       (await help("skills", option === "--trace" ? "usage" : option === "--all" ? "list" : "show")).includes(option),
+      `CLI help must document ${option}`,
     );
     assert(guide.includes(option), `the Guide documents ${option}`);
   }
@@ -133,4 +141,12 @@ Deno.test("[skill docs] the reference data documents the scope table and the app
   const guide = await read(GUIDE);
   assert(guide.includes("own portal"), "the Guide explains the portal rule for history reads");
   assert(/control (byte|character)s?/i.test(guide), "the Guide explains that control bytes are removed from output");
+});
+
+Deno.test("[skill docs] failed CLI help retains its command and exit diagnostic", async () => {
+  await assertRejects(
+    () => help("skills", "unregistered-cutover-command"),
+    Error,
+    "CLI help failed for skills unregistered-cutover-command",
+  );
 });

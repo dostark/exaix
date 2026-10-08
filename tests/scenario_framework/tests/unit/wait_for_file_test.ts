@@ -13,6 +13,7 @@
  * @related-files [tests/scenario_framework/runner/step_executor.ts, tests/scenario_framework/schema/step_schema.ts]
  */
 
+import { stub } from "@std/testing/mock";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
@@ -83,7 +84,7 @@ Deno.test("[wait_for_file] fails fast when failure_glob matches before the succe
       "Rejected Plan: Invalid enum value... received 'edit_file'",
     );
 
-    const startedAt = Date.now();
+    const startedAt = performance.now();
     const result = await executeScenarioStep({
       step: {
         id: "wait-for-plan",
@@ -97,7 +98,7 @@ Deno.test("[wait_for_file] fails fast when failure_glob matches before the succe
       },
       cwd: ws,
     });
-    const elapsedMs = Date.now() - startedAt;
+    const elapsedMs = performance.now() - startedAt;
 
     assertEquals(result.exitCode, 1);
     assertStringIncludes(result.stderr, "request-340a896b_rejected.md");
@@ -182,7 +183,7 @@ Deno.test("[wait_for_file] fails fast on request.failed for the current trace, w
       ["trace-current", "request.failed", JSON.stringify({ error: "CLI delegate 'claude' exited with code 1" })],
     ],
     async (ws) => {
-      const startedAt = Date.now();
+      const startedAt = performance.now();
       const result = await executeScenarioStep({
         step: {
           id: "wait-for-plan",
@@ -196,7 +197,7 @@ Deno.test("[wait_for_file] fails fast on request.failed for the current trace, w
         cwd: ws,
         traceBaselineRowid: 0,
       });
-      const elapsedMs = Date.now() - startedAt;
+      const elapsedMs = performance.now() - startedAt;
 
       assertEquals(result.exitCode, 1);
       assertStringIncludes(result.stderr, "request.failed");
@@ -321,7 +322,7 @@ Deno.test("[wait_for_file] does not resolve while a writer keeps growing the mat
       cwd: ws,
     }).then((r) => {
       resultPtr.value = r;
-      resultPtr.at = Date.now();
+      resultPtr.at = performance.now();
       return r;
     });
 
@@ -335,7 +336,11 @@ Deno.test("[wait_for_file] does not resolve while a writer keeps growing the mat
     // Mark when the writer stopped growing the file, then write the final stable body.
     body += "- final\n";
     await Deno.writeTextFile(target, body);
-    closedAt = Date.now();
+    closedAt = performance.now();
+    // A clock correction after the final write must not look like an early resolution.
+    const beforeCorrection = Date.now();
+    const correctionMs = 2000;
+    using _clockCorrection = stub(Date, "now", () => beforeCorrection - correctionMs);
 
     const result = await run;
     assertEquals(result.exitCode, 0);
@@ -356,7 +361,7 @@ Deno.test("[wait_for_file] resolves quickly (well under the old 2s tick) once a 
     // The file is old enough that the settle window is already satisfied on the first tick.
     await new Promise((resolve) => setTimeout(resolve, 400));
 
-    const startedAt = Date.now();
+    const startedAt = performance.now();
     const result = await executeScenarioStep({
       step: {
         id: "wait-for-plan",
@@ -369,7 +374,7 @@ Deno.test("[wait_for_file] resolves quickly (well under the old 2s tick) once a 
       },
       cwd: ws,
     });
-    const elapsedMs = Date.now() - startedAt;
+    const elapsedMs = performance.now() - startedAt;
 
     assertEquals(result.exitCode, 0);
     assert(elapsedMs < 1500, `expected a sub-second resolve, took ${elapsedMs}ms`);
