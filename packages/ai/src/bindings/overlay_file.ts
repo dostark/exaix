@@ -8,7 +8,8 @@
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, tests/scenario_framework/runner/binding_layers.ts]
  */
 
-import { BINDING_OVERLAY_MAX_BYTES } from "@exaix/core";
+import { BINDING_OVERLAY_MAX_BYTES, type JSONValue } from "@exaix/core";
+import { parse as parseToml } from "@std/toml";
 
 /** Prefix of every refusal, matching the other overlay entry points. */
 const OVERLAY_INVALID = "overlay_invalid";
@@ -48,4 +49,14 @@ export async function readRegularOverlayFile(path: string): Promise<string> {
     throw refuse(path, `exceeds the ${BINDING_OVERLAY_MAX_BYTES}-byte ceiling`);
   }
   return new TextDecoder().decode(buffer.subarray(0, total));
+}
+
+/** Parse overlay text as TOML when the path ends in `.toml`, otherwise as JSON. */
+export function parseOverlayText(path: string, text: string): JSONValue {
+  const isToml = path.endsWith(".toml");
+  try {
+    return isToml ? parseToml(text) as JSONValue : JSON.parse(text);
+  } catch {
+    throw refuse(path, `is not valid ${isToml ? "TOML" : "JSON"}`);
+  }
 }

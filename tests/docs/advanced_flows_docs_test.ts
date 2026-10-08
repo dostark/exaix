@@ -139,6 +139,13 @@ Deno.test("[docs] overlay examples match the shipped companion overlay files", a
   }
 });
 
+Deno.test("[docs] the guide says --overlay reads TOML directly", async () => {
+  const text = flat(await readUserGuide());
+  assertStringIncludes(text, "`--overlay` reads them directly");
+  assertStringIncludes(text, "parses a file as TOML when its name ends in `.toml`");
+  assertFalse(text.includes("even if a filename ends in `.toml`"));
+});
+
 Deno.test("[docs] Flow Commands documents availability in exactl flow list", async () => {
   const guide = await readUserGuide();
   const commands = flat(sectionOf(guide, "#### **Flow Commands** - Manage multi-agent workflows", 4));

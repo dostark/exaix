@@ -27,6 +27,7 @@
 - A flow can declare `requires_capabilities: [voting]`, and `exactl flow list` shows a Capabilities column.
 - Five flow blueprints with companion binding overlays: `self-correcting-implementation`, `triage-router`, `parallel-research`, `guarded-change` and `architecture-decision`.
 - `flow.max_gate_evaluations`, `flow.namespace_prompt_max_bytes` and `max_flow_retry_cost_usd` config keys.
+- `exactl request --overlay` and `exactl flow bindings --overlay` accept TOML overlay files by their `.toml` extension.
 
 ### Changed
 

@@ -2498,8 +2498,8 @@ and `capability_unavailable` all end the run. None of them is retried by a gener
 **Shipped blueprints.** Each blueprint lives in `Blueprints/Flows/` and ships a companion overlay.
 A blueprint marks step weight with `effort` and `thinking` and never hard-codes a service, so it runs on any
 configured provider. Pass an overlay with `exactl request --flow <id> --overlay <file>` to bind strong and light
-steps to concrete services. The CLI reads per-run overlays as JSON. The files below are TOML for the daemon overlay
-directory, or convert them to JSON for `--overlay`.
+steps to concrete services. The files below are TOML. `--overlay` reads them directly, and the daemon overlay
+directory accepts them too.
 
 | Blueprint                        | Shape                                                                                   |
 | -------------------------------- | --------------------------------------------------------------------------------------- |
@@ -4926,9 +4926,9 @@ later runs. Daemon overlays load in lexical filename order. A JSON overlay looks
 }
 ```
 
-For one run, pass a **JSON** overlay to `exactl request --flow research --overlay
-<overlay-file> "Explore the issue"`; `--overlay` is repeatable. The CLI currently parses
-per-run files as JSON, even if a filename ends in `.toml`. Add `--bind
+For one run, pass a JSON or TOML overlay to `exactl request --flow research --overlay
+<overlay-file> "Explore the issue"`; `--overlay` is repeatable. The CLI parses a file
+as TOML when its name ends in `.toml` and as JSON otherwise. Add `--bind
 'flow:research/step:explore-1=model=deepseek/deepseek-v4-pro,service=openai-chat'` for an
 inline, repeatable override. `--bind` takes `selector=field=value[,field=value]`; choose
 strings for its fields. `exactl flow bindings research --overlay <overlay-file> --json`

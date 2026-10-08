@@ -16,7 +16,13 @@ import { BaseCommand } from "@exaix/cli/base.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { BindingOverlaySchema, BindOneOffSchema, type IRunBindingsFile } from "@exaix/schemas";
-import { BINDING_OUTCOME_INVALID, BINDING_OUTCOME_UNBOUND, computeStartNetGrant, resolveFlowForAudit } from "@exaix/ai";
+import {
+  BINDING_OUTCOME_INVALID,
+  BINDING_OUTCOME_UNBOUND,
+  computeStartNetGrant,
+  parseOverlayText,
+  resolveFlowForAudit,
+} from "@exaix/ai";
 
 interface FlowListOptions {
   json?: boolean;
@@ -361,7 +367,7 @@ export class FlowCommands extends BaseCommand {
       overlays.push({
         source_path: sourcePath,
         sha256: await this.auditSha256(content),
-        overlay: BindingOverlaySchema.parse(JSON.parse(content)),
+        overlay: BindingOverlaySchema.parse(parseOverlayText(sourcePath, content)),
       });
     }
     const binds = this.auditBinds(options.bind ?? []);

@@ -14,7 +14,7 @@ import type { IRequestFrontmatter } from "@exaix/core/request";
 import { normalizeFrontmatterList } from "@exaix/request";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { RequestKind, RequestPriority, RequestSource } from "@exaix/core";
-import { readRegularOverlayFile } from "@exaix/ai";
+import { parseOverlayText, readRegularOverlayFile } from "@exaix/ai";
 import { RequestStatus } from "@exaix/core/status";
 import { ValidationChain } from "@exaix/cli/validation/validation_chain.ts";
 import { DefaultErrorStrategy } from "@exaix/cli/errors/error_strategy.ts";
@@ -85,7 +85,7 @@ export class RequestCreateHandler extends BaseCommand {
     const result = [];
     for (const sourcePath of paths) {
       const content = await readRegularOverlayFile(sourcePath);
-      const overlay = BindingOverlaySchema.parse(JSON.parse(content));
+      const overlay = BindingOverlaySchema.parse(parseOverlayText(sourcePath, content));
       result.push({ source_path: sourcePath, sha256: await this.sha256(content), overlay });
     }
     return result;
