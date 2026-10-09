@@ -675,6 +675,10 @@ async function readStep6Activity(configPath: string, traceId: string): Promise<I
   }
 }
 
+/** Poll caps only. Each poll returns as soon as its condition holds, so a generous cap costs nothing when the daemon is quick. */
+const CUTOVER_READY_CAP_MS = 30000;
+const CUTOVER_REQUEST_CAP_MS = 60000;
+
 async function bootCutoverRun(
   tempDir: string,
   sharedPortalDir: string,
@@ -692,7 +696,7 @@ async function bootCutoverRun(
   const traceId = crypto.randomUUID();
   const requestPath = join(tempDir, "Workspace", "Requests", `r-${traceId.slice(0, 8)}.md`);
 
-  await bootRealDaemon(configPath, 2000, {
+  await bootRealDaemon(configPath, CUTOVER_READY_CAP_MS, {
     midFlight: () => {
       Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
       Deno.writeTextFileSync(
@@ -715,7 +719,7 @@ Investigate ${PAYMENT_ROUTER_SYMBOL} behavior.
 `,
       );
     },
-    afterInjectMs: 25000,
+    afterInjectMs: CUTOVER_REQUEST_CAP_MS,
     waitForAfterInject: async () => {
       const rows = await readStep6Activity(configPath, traceId);
       return rows.some((r) => r.action_type === "agent.prompt_debug_dump");
