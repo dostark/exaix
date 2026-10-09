@@ -268,3 +268,24 @@ Deno.test("[native_tool_turns][round] validateProviderRound rejects a response w
   delete response.nativeAssistantReplay;
   assertThrows(() => validateProviderRound(response, ROUND_LIMITS));
 });
+
+Deno.test("[native_tool_turns][round] buildToolRound replays an alias call under its original name and id", () => {
+  const response: IGenerateResult = {
+    content: "",
+    usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+    model: "gemini-test",
+    provider: "google",
+    toolCalls: [{ id: "toolu_alias", name: "Read", input: { file_path: "a.ts" } }],
+    nativeAssistantReplay: {
+      provider: "google",
+      parts: [{ functionCall: { name: "Read", args: { file_path: "a.ts" } } }],
+    },
+  };
+  const built = buildToolRound(
+    validateProviderRound(response, ROUND_LIMITS),
+    [{ toolUseId: "toolu_alias", toolResultContent: "RESULT", toolResultIsError: false }],
+  );
+  assertEquals(built.calls[0].toolName, "Read");
+  assertEquals(built.calls[0].toolUseId, "toolu_alias");
+  assertEquals(built.calls[0].toolInput, { file_path: "a.ts" });
+});

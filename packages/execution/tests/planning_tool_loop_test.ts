@@ -1072,3 +1072,34 @@ Deno.test("[planning_tool_loop][parallel-replay] a call refused by the per-round
     ProviderRegistry.clear();
   }
 });
+
+Deno.test("[planning_tool_loop][parallel-replay] a native alias call executes as its catalog tool but replays its original name and id", async () => {
+  registerParallelReplayProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {
+      read_file: () => ({ success: true, data: { content: "ok" } }),
+    });
+    const generate = new ScriptedGenerate([
+      makeGenerateResult("", {
+        toolCalls: [{ id: "toolu_alias", name: "Read", input: { file_path: "a.ts" } }],
+        nativeAssistantReplay: {
+          provider: "google",
+          parts: [{ functionCall: { name: "Read", args: { file_path: "a.ts" } } }],
+        },
+      }),
+      makeGenerateResult("<thought>t</thought><content>plan</content>"),
+    ]);
+    const loop = new PlanningToolLoop(
+      makeDeps({ toolRegistry: registry, generate: generate.generate, providerId: PARALLEL_REPLAY_PROVIDER_ID }),
+    );
+
+    await loop.run(makeOptions({ maxRounds: 2, allowedTools: new Set(["read_file"]) }));
+
+    assertEquals(registry.calls.map((call) => call.name), ["read_file"]);
+    const entry = generate.calls[1].options.priorRound?.calls[0];
+    assertEquals(entry?.toolUseId, "toolu_alias");
+    assertEquals(entry?.toolName, "Read");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
