@@ -239,6 +239,9 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "tests/scenario_framework/tests/integration/memory_pipeline_test.ts",
   "apps/exactl/tests/commands/skill_commands_cli_test.ts",
   "packages/core/tests/skills/skill_folder_performance_test.ts",
+  "packages/ai/tests/provider_factory_test.ts",
+  "packages/ai/tests/provider_factory_binding_test.ts",
+  "packages/ai/tests/provider_factory_compatible_config_test.ts",
 ];
 
 Deno.test("SEQUENTIAL_FILES matches the required isolation files and order", () => {
@@ -260,6 +263,18 @@ Deno.test("fix(test-runner): catalog overlay environment writers run in isolated
     "tests/scenario_framework/tests/unit/judge_methodology_injection_test.ts",
     "tests/scenario_framework/tests/unit/arm_isolation_test.ts",
     "tests/scenario_framework/tests/unit/persona_isolation_overlay_path_validation_security_test.ts",
+  ];
+  for (const file of files) {
+    const entry = SEQUENTIAL_TESTS.find((test) => test.file === file);
+    assert(entry?.reasons.includes(IsolationReason.processEnv), `${file} needs process environment isolation`);
+  }
+});
+
+Deno.test("provider factory environment writers run in isolated processes", () => {
+  const files = [
+    "packages/ai/tests/provider_factory_test.ts",
+    "packages/ai/tests/provider_factory_binding_test.ts",
+    "packages/ai/tests/provider_factory_compatible_config_test.ts",
   ];
   for (const file of files) {
     const entry = SEQUENTIAL_TESTS.find((test) => test.file === file);
