@@ -150,40 +150,29 @@ Deno.test("HealthCheckService: handles check timeouts", async () => {
 
 Deno.test("HealthCheckService: runs checks in parallel", async () => {
   const service = new HealthCheckService(DEFAULT_MCP_VERSION);
-  let check1Executed = false;
-  let check2Executed = false;
-
-  const check1 = {
-    name: "check1",
+  // Each check waits until both have started. Only overlapping checks can finish, so this
+  // proves concurrency without a wall-clock bound that load can break.
+  let started = 0;
+  let openBarrier!: () => void;
+  const bothStarted = new Promise<void>((resolve) => (openBarrier = resolve));
+  const barrierCheck = (name: string) => ({
+    name,
     critical: false,
     check: async () => {
-      check1Executed = true;
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      started++;
+      if (started === 2) openBarrier();
+      await bothStarted;
       return { status: HealthCheckVerdict.PASS };
     },
-  };
+  });
+  service.registerCheck(barrierCheck("check1"));
+  service.registerCheck(barrierCheck("check2"));
 
-  const check2 = {
-    name: "check2",
-    critical: false,
-    check: async () => {
-      check2Executed = true;
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      return { status: HealthCheckVerdict.PASS };
-    },
-  };
+  const report = await service.checkHealth();
 
-  service.registerCheck(check1);
-  service.registerCheck(check2);
-
-  const startTime = Date.now();
-  await service.checkHealth();
-  const endTime = Date.now();
-
-  // Should complete in less than 30ms if running in parallel (each check takes 10ms)
-  assertEquals(endTime - startTime < 30, true);
-  assertEquals(check1Executed, true);
-  assertEquals(check2Executed, true);
+  assertEquals(started, 2);
+  assertEquals(report.checks.check1.status, HealthCheckVerdict.PASS);
+  assertEquals(report.checks.check2.status, HealthCheckVerdict.PASS);
 });
 
 Deno.test("DatabaseHealthCheck: passes when database is accessible", async () => {
