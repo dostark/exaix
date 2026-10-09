@@ -32,6 +32,8 @@ import {
   daemonConfigSections,
   daemonJournalHasAny,
   REQUEST_OUTCOME_ACTIONS,
+  waitForDaemonEvent,
+  watchChildExit,
   writePortalDir,
 } from "./helpers/daemon_config.ts";
 import { runMigrationsIn } from "./helpers/migrate_test_db.ts";
@@ -97,24 +99,6 @@ function writeMcpServerConfig(configPath: string, root: string, portalPath: stri
   Deno.writeTextFileSync(configPath, cfg);
 }
 
-/** Waits until a TCP listener on `port` accepts a connection. Fails at once if `server` exits first. There is no clock. */
-async function waitForPort(port: number, server: Deno.ChildProcess): Promise<void> {
-  let exit: Deno.CommandStatus | undefined;
-  void server.status.then((status) => {
-    exit = status;
-  });
-  while (exit === undefined) {
-    try {
-      const conn = await Deno.connect({ port, hostname: "127.0.0.1" });
-      conn.close();
-      return;
-    } catch {
-      await new Promise((r) => setTimeout(r, 100));
-    }
-  }
-  throw new Error(`MCP server exited with code ${exit.code} before listening on port ${port}`);
-}
-
 interface IServerHandle {
   port: number;
   proc: Deno.ChildProcess;
@@ -134,7 +118,11 @@ async function startSseServer(
     stdout: "piped",
     stderr: "piped",
   }).spawn();
-  await waitForPort(port, proc);
+  await waitForDaemonEvent(
+    () => daemonJournalHasAny(configPath, ["mcp.http_server.started"]),
+    watchChildExit(proc),
+    "the MCP server to bind its port",
+  );
   return {
     port,
     proc,

@@ -166,11 +166,11 @@ export async function waitForDaemonEvent(
     if (outcome === undefined) continue;
     // The event may have been journaled just before the exit.
     if (await check()) return;
-    throw new Error(`daemon exited with code ${outcome.code} before ${awaiting}:\n${outcome.stderrTail}`);
+    throw new Error(`process exited with code ${outcome.code} before ${awaiting}:\n${outcome.stderrTail}`);
   }
 }
 
-/** Reads a child's stderr to EOF and keeps only its last characters. Drained so the pipe never blocks the daemon. */
+/** Reads a child's stderr to EOF and keeps only its last characters. Drained so the pipe never blocks the child. */
 async function collectStderrTail(stream: ReadableStream<Uint8Array>): Promise<string> {
   const decoder = new TextDecoder();
   let tail = "";
@@ -178,6 +178,22 @@ async function collectStderrTail(stream: ReadableStream<Uint8Array>): Promise<st
     tail = (tail + decoder.decode(chunk, { stream: true })).slice(-DAEMON_STDERR_TAIL_CHARS);
   }
   return tail + decoder.decode();
+}
+
+/**
+ * Resolves with a child's exit code and the tail of its stderr. A child whose stderr is piped
+ * is drained as it runs, so a full pipe can never block it. A child with no piped stderr gets an empty tail.
+ */
+export function watchChildExit(proc: Deno.ChildProcess): Promise<IDaemonExit> {
+  // Deno throws on reading `stderr` when it was not piped, so the check is a try, not a null test.
+  let stderr: ReadableStream<Uint8Array> | undefined;
+  try {
+    stderr = proc.stderr;
+  } catch {
+    stderr = undefined;
+  }
+  const stderrTail = stderr ? collectStderrTail(stderr) : Promise.resolve("");
+  return proc.status.then(async (status) => ({ code: status.code, stderrTail: await stderrTail }));
 }
 
 /** Max activity rowid in the workspace journal, or 0 when the DB or table is absent. Read
@@ -236,6 +252,23 @@ export function daemonJournalHasAny(
   }
 }
 
+/** True once the journal holds a row with this exact action and target. Use it to observe one specific rejection. */
+export function daemonJournalHasEvent(configPath: string, action: string, target: string): boolean {
+  const journalPath = join(dirname(configPath), ".exa", "journal.db");
+  try {
+    const db = new Database(journalPath, { readonly: true });
+    try {
+      const row = db.prepare("SELECT 1 AS found FROM activity WHERE action_type = ? AND target = ? LIMIT 1")
+        .get(action, target);
+      return row !== undefined;
+    } finally {
+      db.close();
+    }
+  } catch {
+    return false;
+  }
+}
+
 /** True once a daemon.ready row newer than `afterRowid` exists. That event fires once every
  *  watcher is listening, so it is the daemon's authoritative readiness signal. */
 function daemonReadySince(journalPath: string, afterRowid: number): boolean {
@@ -278,8 +311,7 @@ export async function bootRealDaemon(configPath: string, options: IRealDaemonBoo
     stderr: "piped",
     env: { EXA_CONFIG_PATH: configPath, EXA_TEST_MODE: "1", ...options.extraEnv },
   }).spawn();
-  const stderrTail = collectStderrTail(proc.stderr);
-  const exited = proc.status.then(async (status) => ({ code: status.code, stderrTail: await stderrTail }));
+  const exited = watchChildExit(proc);
   try {
     await waitForDaemonEvent(() => daemonReadySince(journalPath, readyBaseline), exited, "daemon.ready");
     const daemon: IRunningDaemon = {

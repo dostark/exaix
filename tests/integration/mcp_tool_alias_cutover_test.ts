@@ -20,7 +20,12 @@ import { ConfigService } from "@exaix/core/config";
 import type { JSONValue } from "@exaix/core/types";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { setupGitRepo } from "@exaix/git/testing";
-import { daemonConfigSections } from "./helpers/daemon_config.ts";
+import {
+  daemonConfigSections,
+  daemonJournalHasAny,
+  waitForDaemonEvent,
+  watchChildExit,
+} from "./helpers/daemon_config.ts";
 import { runMigrationsIn } from "./helpers/migrate_test_db.ts";
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
@@ -59,20 +64,6 @@ function getFreePort(): number {
   const port = (listener.addr as Deno.NetAddr).port;
   listener.close();
   return port;
-}
-
-async function waitForPort(port: number, timeoutMs = 15000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      const conn = await Deno.connect({ port, hostname: "127.0.0.1" });
-      conn.close();
-      return;
-    } catch {
-      await new Promise((r) => setTimeout(r, JOURNAL_POLL_MS));
-    }
-  }
-  throw new Error(`server never listened on port ${port} within ${timeoutMs}ms`);
 }
 
 /** Two portals (one read-only), a readable marker file and a persisted symbol map. */
@@ -215,7 +206,11 @@ async function withHttpClient(configPath: string, fn: (client: Client, port: num
     stderr: "null",
   }).spawn();
   try {
-    await waitForPort(port);
+    await waitForDaemonEvent(
+      () => daemonJournalHasAny(configPath, ["mcp.http_server.started"]),
+      watchChildExit(proc),
+      "the MCP server to bind its port",
+    );
     const client = new Client({ name: "phase201-http-cutover", version: "1.0.0" });
     await client.connect(
       new StreamableHTTPClientTransport(new URL(`http://localhost:${port}/`), {

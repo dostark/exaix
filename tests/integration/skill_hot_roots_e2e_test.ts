@@ -17,6 +17,7 @@ import { ConfigService } from "@exaix/core/config";
 import {
   bootRealDaemon,
   daemonConfigSections,
+  daemonJournalHasEvent,
   type IRunningDaemon,
   REQUEST_OUTCOME_ACTIONS,
 } from "./helpers/daemon_config.ts";
@@ -169,10 +170,14 @@ Add a hello world function.
           traces.second = await submit(SECOND_SKILL, daemon);
           traces.droppedFirst = await submit(FIRST_SKILL, daemon);
 
-          // A TOML edit that fails to parse journals no event. Ordering proves the watcher instead.
-          // The probe request, submitted after the bad write, still runs on the last good generation.
+          // The watcher journals watcher.file_error for the rejected edit, so the rejection is observed.
+          // The probe request, submitted afterwards, still runs on the last good generation.
           const settled = await configUpdates();
           await Deno.writeTextFile(configPath, `${original}\n[skills]\nmain_max_bytes = "not a number"\n`);
+          await daemon.until(
+            () => daemonJournalHasEvent(configPath, "watcher.file_error", configPath),
+            "the daemon to reject the invalid config edit",
+          );
           traces.afterInvalid = await submit(SECOND_SKILL, daemon);
           assertEquals(await configUpdates(), settled, "an invalid edit never becomes a config update");
         },

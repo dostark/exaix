@@ -8,8 +8,8 @@
  * @related-files ["tests/integration/helpers/daemon_config.ts", "tests/integration/agent_runner_daemon_cutover_test.ts"]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
-import { type IDaemonExit, waitForDaemonEvent } from "./helpers/daemon_config.ts";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { type IDaemonExit, waitForDaemonEvent, watchChildExit } from "./helpers/daemon_config.ts";
 
 const NEVER_EXITS = new Promise<IDaemonExit>(() => {});
 
@@ -31,7 +31,7 @@ Deno.test("[daemon-wait] fails at once when the daemon exits before the event, n
   await assertRejects(
     () => waitForDaemonEvent(() => false, exited, "daemon.ready"),
     Error,
-    "daemon exited with code 3 before daemon.ready",
+    "process exited with code 3 before daemon.ready",
   );
 });
 
@@ -47,4 +47,25 @@ Deno.test("[daemon-wait] an event journaled just before the daemon exits still r
     "the event",
   );
   assertEquals(checks, 2);
+});
+
+Deno.test("[daemon-wait] watchChildExit reports the exit code and the stderr the child wrote", async () => {
+  const child = new Deno.Command(Deno.execPath(), {
+    args: ["eval", "console.error('boom-from-child'); Deno.exit(3);"],
+    stdout: "null",
+    stderr: "piped",
+  }).spawn();
+  const exit = await watchChildExit(child);
+  assertEquals(exit.code, 3);
+  assertStringIncludes(exit.stderrTail, "boom-from-child");
+});
+
+Deno.test("[daemon-wait] watchChildExit on a child without piped stderr reports the code and an empty tail", async () => {
+  const child = new Deno.Command(Deno.execPath(), {
+    args: ["eval", "Deno.exit(4);"],
+    stdout: "null",
+    stderr: "null",
+  }).spawn();
+  const exit = await watchChildExit(child);
+  assertEquals(exit, { code: 4, stderrTail: "" });
 });
