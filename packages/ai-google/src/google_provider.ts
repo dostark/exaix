@@ -15,6 +15,7 @@ import {
   PROVIDER_GOOGLE,
 } from "./constants.ts";
 import {
+  extractGoogleAssistantReplay,
   extractGoogleContent,
   extractGoogleToolCalls,
   type GoogleResponse,
@@ -26,6 +27,7 @@ import {
   type IModelOptions,
   type IToolChoice,
   type IToolDefinition,
+  type JSONObject,
   TOOL_CHOICE_TYPE_NONE,
   TOOL_CHOICE_TYPE_TOOL,
 } from "@exaix/ai/types.ts";
@@ -44,6 +46,7 @@ type GoogleContent =
     role: "model";
     parts: [{ functionCall: { name: string; args: Record<string, JSONValue> }; thoughtSignature?: string }];
   }
+  | { role: "model"; parts: readonly JSONObject[] }
   | {
     role: "user";
     parts: Array<{ functionResponse: { name: string; response: { content: JSONValue } } } | { text: string }>;
@@ -64,6 +67,8 @@ function mapToolDefinitionGoogle(
 /** Gemini's wire-format `toolConfig.functionCallingConfig`. */
 type GoogleToolConfig = { functionCallingConfig: { mode: "AUTO" | "ANY" | "NONE"; allowedFunctionNames?: string[] } };
 
+const GOOGLE_ROLE_MODEL = "model";
+const GOOGLE_ROLE_USER = "user";
 const GOOGLE_FUNCTION_CALLING_MODE_AUTO = "AUTO";
 const GOOGLE_FUNCTION_CALLING_MODE_ANY = "ANY";
 const GOOGLE_FUNCTION_CALLING_MODE_NONE = "NONE";
@@ -117,7 +122,23 @@ export class GoogleProvider extends BaseProvider {
     // Gemini requires a user turn immediately before a model functionCall.
     // Lead with the prompt, then replay the prior functionCall/functionResponse pair.
     contents.push({ role: "user", parts: [{ text: prompt }] });
-    if (options?.priorTurn) {
+    if (options?.priorRound) {
+      // A whole completed round: every original model part verbatim, then every result in one message.
+      const round = options.priorRound;
+      contents.push({ role: GOOGLE_ROLE_MODEL, parts: round.assistant.parts });
+      contents.push({
+        role: GOOGLE_ROLE_USER,
+        parts: [
+          ...round.calls.map((call) => ({
+            functionResponse: {
+              name: call.toolName,
+              response: { content: call.toolResultContent as JSONValue },
+            },
+          })),
+          ...(options.toolChoice?.type === TOOL_CHOICE_TYPE_NONE ? [{ text: GOOGLE_NO_TOOLS_TEXT_INSTRUCTION }] : []),
+        ],
+      });
+    } else if (options?.priorTurn) {
       const priorTurn = options.priorTurn;
       contents.push({
         role: "model",
@@ -166,6 +187,7 @@ export class GoogleProvider extends BaseProvider {
       tokenMapper: tokenMapperGoogle(this.model),
       extractor: extractGoogleContent,
       toolCallExtractor: extractGoogleToolCalls,
+      assistantReplayExtractor: extractGoogleAssistantReplay,
     });
   }
 }

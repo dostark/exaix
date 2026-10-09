@@ -125,6 +125,7 @@ function registerConcreteProviders(): void {
       capabilities: [...GOOGLE_PROVIDER_METADATA.capabilities],
       pricingTier: PricingTier.LOW,
       supportsNativeTools: true,
+      supportsParallelToolReplay: true,
     };
     ProviderRegistry.registerWithMetadata(
       PROVIDER_GOOGLE,

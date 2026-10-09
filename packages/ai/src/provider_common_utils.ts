@@ -21,9 +21,11 @@ import {
 import {
   type IModelOptions,
   type INativeConversationSnapshot,
+  type IProviderAssistantReplay,
   type IProviderTurn,
   type IToolChoice,
   type IToolDefinition,
+  type JSONObject,
   TOOL_CHOICE_TYPE_AUTO,
   TOOL_CHOICE_TYPE_NONE,
   TOOL_CHOICE_TYPE_TOOL,
@@ -625,6 +627,14 @@ export function extractGoogleContent(d: GoogleResponse): string {
   return d.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 }
 
+/** Extract the complete Gemini model content of a tool-calling response, every part in original
+ *  order (text, thoughts and signatures included). Undefined when the response has no functionCall. */
+export function extractGoogleAssistantReplay(d: GoogleResponse): IProviderAssistantReplay | undefined {
+  const parts = d.candidates?.[0]?.content?.parts;
+  if (!parts || !parts.some((part) => part.functionCall !== undefined)) return undefined;
+  return { provider: "google", parts: parts as JSONObject[] };
+}
+
 /** Extract ALL tool calls from a Google response, or undefined when none exist.
  *  `args` is already a PARSED object on the wire (unlike OpenAI's JSON-encoded
  *  string). Gemini's `functionCall` has no `id`, so one is synthesized per call. */
@@ -803,6 +813,7 @@ export async function performProviderCall<T>(
     extractor,
     stopReasonExtractor,
     toolCallExtractor,
+    assistantReplayExtractor,
     maxResponseBytes,
     exposeRemoteErrorText,
     logResponseBody,
@@ -821,6 +832,9 @@ export async function performProviderCall<T>(
     /** Optional extractor for native tool-call blocks in the provider response,
      *  surfaced as IGenerateResult.toolCalls when present. */
     toolCallExtractor?: (d: T) => IProviderToolCall[] | undefined;
+    /** Optional extractor for the complete assistant content, surfaced as
+     *  IGenerateResult.nativeAssistantReplay when the provider needs grouped replay. */
+    assistantReplayExtractor?: (d: T) => IProviderAssistantReplay | undefined;
     maxResponseBytes?: number;
     exposeRemoteErrorText?: boolean;
     logResponseBody?: boolean;
@@ -876,5 +890,6 @@ export async function performProviderCall<T>(
     provider: tokens?.provider ?? id,
     stop_reason: stopReasonExtractor?.(data),
     toolCalls: toolCallExtractor?.(data),
+    nativeAssistantReplay: assistantReplayExtractor?.(data),
   };
 }

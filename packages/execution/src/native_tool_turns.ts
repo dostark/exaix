@@ -11,12 +11,36 @@
  * @related-files ["packages/execution/src/strategies/react_loop_strategy.ts", "packages/execution/src/planning_tool_loop.ts"]
  */
 
-import type { IProviderTurn, IToolDefinition } from "@exaix/ai/types.ts";
-import type { IProviderToolCall } from "@exaix/ai/providers";
+import type {
+  IProviderToolResultEntry,
+  IProviderToolRound,
+  IProviderTurn,
+  IToolDefinition,
+  IValidatedProviderRound,
+  IValidatedRoundCall,
+  JSONObject,
+} from "@exaix/ai/types.ts";
+import type { IGenerateResult, IProviderToolCall } from "@exaix/ai/providers";
+import { ProviderProtocolError } from "@exaix/ai/errors.ts";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import type { ITool, IToolResult, JSONValue } from "@exaix/core/types";
 import { ToolName } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+
+/** Ceilings applied to one provider response before any tool effect. Fixed until the resolved
+ *  tools.* configuration supplies them. */
+export interface INativeRoundLimits {
+  maxResponseCalls: number;
+  maxArgumentBytes: number;
+  maxRoundReplayBytes: number;
+}
+
+/** One tool result, identified by the call id it answers. */
+export interface IRoundOutcome {
+  toolUseId: string;
+  toolResultContent: string | readonly JSONObject[];
+  toolResultIsError: boolean;
+}
 
 /** Maps ToolRegistry's ITool[] to provider-agnostic IToolDefinition[]. Pure transformation
  *  — no I/O, no side effects. */
@@ -73,4 +97,123 @@ export function providerSupportsNativeTools(providerId: Opt<string, Reason.Optio
 /** True when a provider accepts a complete invocation-local conversation snapshot. */
 export function providerSupportsNativeConversation(providerId: Opt<string, Reason.OptionalContext>): boolean {
   return ProviderRegistry.getMetadataForInstance(providerId)?.supportsNativeConversation === true;
+}
+
+const FIXED_MAX_RESPONSE_CALLS = 64;
+const FIXED_MAX_ARGUMENT_BYTES = 65536;
+const FIXED_MAX_ROUND_REPLAY_BYTES = 1048576;
+
+export const FIXED_NATIVE_ROUND_LIMITS: INativeRoundLimits = {
+  maxResponseCalls: FIXED_MAX_RESPONSE_CALLS,
+  maxArgumentBytes: FIXED_MAX_ARGUMENT_BYTES,
+  maxRoundReplayBytes: FIXED_MAX_ROUND_REPLAY_BYTES,
+};
+
+/** True when a provider replays a whole completed round (every assistant part and result). */
+export function providerSupportsParallelToolReplay(providerId: Opt<string, Reason.OptionalContext>): boolean {
+  return ProviderRegistry.getMetadataForInstance(providerId)?.supportsParallelToolReplay === true;
+}
+
+function utf8Bytes(text: string): number {
+  return new TextEncoder().encode(text).byteLength;
+}
+
+/** The functionCall object of a Gemini-shaped part, or undefined for any other part. */
+function functionCallOf(part: JSONObject): JSONObject | undefined {
+  const call = part.functionCall;
+  return typeof call === "object" && call !== null && !Array.isArray(call) ? call : undefined;
+}
+
+const MISMATCHED_ASSISTANT_PARTS_MESSAGE = "Tool round assistant parts do not match its calls";
+
+/** Validates one call's id, name and argument bytes. A non-object input is refused per call. */
+function validateCallEntry(
+  call: IProviderToolCall,
+  index: number,
+  seenIds: Set<string>,
+  limits: INativeRoundLimits,
+  provider: string,
+): IValidatedRoundCall {
+  if (call.id.trim() === "") throw new ProviderProtocolError("Tool call id is empty", provider);
+  if (call.name.trim() === "") throw new ProviderProtocolError("Tool call name is empty", provider);
+  if (seenIds.has(call.id)) throw new ProviderProtocolError("Tool call id is duplicated in the round", provider);
+  seenIds.add(call.id);
+  if (utf8Bytes(JSON.stringify(call.input) ?? "") > limits.maxArgumentBytes) {
+    throw new ProviderProtocolError("Tool call arguments exceed the byte ceiling", provider);
+  }
+  const isObject = typeof call.input === "object" && call.input !== null && !Array.isArray(call.input);
+  return isObject
+    ? { id: call.id, index, originalCall: call, executionInput: call.input }
+    : { id: call.id, index, originalCall: call, validationError: "invalid_arguments" };
+}
+
+/** Gemini pairs each functionCall part with the call in the same order.
+ *  Name, arguments and sibling signature must match, or the replay would invent content. */
+function assertCallsMatchParts(
+  calls: readonly IProviderToolCall[],
+  parts: readonly JSONObject[],
+  provider: string,
+): void {
+  const functionParts = parts.filter((part) => functionCallOf(part) !== undefined);
+  if (functionParts.length !== calls.length) {
+    throw new ProviderProtocolError(MISMATCHED_ASSISTANT_PARTS_MESSAGE, provider);
+  }
+  calls.forEach((call, index) => {
+    const part = functionParts[index];
+    const functionCall = functionCallOf(part);
+    const matches = functionCall?.name === call.name &&
+      JSON.stringify(functionCall?.args) === JSON.stringify(call.input) &&
+      (part.thoughtSignature ?? undefined) === call.thoughtSignature;
+    if (!matches) throw new ProviderProtocolError(MISMATCHED_ASSISTANT_PARTS_MESSAGE, provider);
+  });
+}
+
+/** Validates one provider response before any tool effect. Throws a protocol error when the round
+ *  cannot be replayed exactly. An input that is not a JSON object is refused per call instead. */
+export function validateProviderRound(result: IGenerateResult, limits: INativeRoundLimits): IValidatedProviderRound {
+  const provider = result.provider;
+  const calls = result.toolCalls ?? [];
+  if (calls.length === 0) throw new ProviderProtocolError("Tool round has no calls", provider);
+  if (calls.length > limits.maxResponseCalls) {
+    throw new ProviderProtocolError("Tool round exceeds the accepted call ceiling", provider);
+  }
+  const replay = result.nativeAssistantReplay;
+  if (replay === undefined) throw new ProviderProtocolError("Tool round has no replayable assistant content", provider);
+  if (utf8Bytes(JSON.stringify(replay.parts)) > limits.maxRoundReplayBytes) {
+    throw new ProviderProtocolError("Tool round assistant content exceeds the replay ceiling", provider);
+  }
+  const seenIds = new Set<string>();
+  const validated = calls.map((call, index) => validateCallEntry(call, index, seenIds, limits, provider));
+  assertCallsMatchParts(calls, replay.parts, provider);
+  return { calls: validated, assistant: replay };
+}
+
+/** Joins each validated call to exactly one outcome by id. Missing, extra or duplicate outcomes
+ *  are invariant errors, never an index-based guess. */
+export function buildToolRound(round: IValidatedProviderRound, outcomes: readonly IRoundOutcome[]): IProviderToolRound {
+  if (round.calls.length === 0) throw new Error("A tool round with no calls cannot be built");
+  const byId = new Map<string, IRoundOutcome>();
+  for (const outcome of outcomes) {
+    if (byId.has(outcome.toolUseId)) throw new Error(`Duplicate outcome for tool call ${outcome.toolUseId}`);
+    byId.set(outcome.toolUseId, outcome);
+  }
+  const requested = new Set(round.calls.map((call) => call.id));
+  for (const id of byId.keys()) {
+    if (!requested.has(id)) throw new Error(`Outcome for an unrequested tool call ${id}`);
+  }
+  const calls: IProviderToolResultEntry[] = round.calls.map((call) => {
+    const outcome = byId.get(call.id);
+    if (outcome === undefined) throw new Error(`Missing outcome for tool call ${call.id}`);
+    const signature = call.originalCall.thoughtSignature;
+    return {
+      toolUseId: call.id,
+      index: call.index,
+      toolName: call.originalCall.name,
+      toolInput: call.originalCall.input,
+      ...(signature !== undefined ? { thoughtSignature: signature } : {}),
+      toolResultContent: outcome.toolResultContent,
+      toolResultIsError: outcome.toolResultIsError,
+    };
+  });
+  return { calls, assistant: round.assistant };
 }

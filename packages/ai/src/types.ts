@@ -89,6 +89,45 @@ export interface IProviderTurn {
   reasoningContent?: string;
 }
 
+/** JSON object record used for replayed provider content (not `any`). */
+export type JSONObject = Record<string, JSONValue>;
+
+/** Complete assistant content of one provider response, kept verbatim for replay.
+ *  Google keeps every model part in original order, including text and signatures. */
+export type IProviderAssistantReplay = { provider: "google"; parts: readonly JSONObject[] };
+
+/** One tool call of a validated round. Invalid inputs never become execution parameters. */
+export interface IValidatedRoundCall {
+  id: string;
+  index: number;
+  originalCall: IProviderToolCall;
+  executionInput?: Record<string, JSONValue>;
+  validationError?: "invalid_arguments";
+}
+
+/** A provider response that passed validation before any tool effect. */
+export interface IValidatedProviderRound {
+  calls: readonly IValidatedRoundCall[];
+  assistant: IProviderAssistantReplay;
+}
+
+/** One ordered tool result of a completed round, joined to its call by id and index. */
+export interface IProviderToolResultEntry {
+  toolUseId: string;
+  index: number;
+  toolName: string;
+  toolInput: Record<string, JSONValue>;
+  thoughtSignature?: string;
+  toolResultContent: string | readonly JSONObject[];
+  toolResultIsError: boolean;
+}
+
+/** One completed provider response with every tool result it requested. */
+export interface IProviderToolRound {
+  calls: readonly IProviderToolResultEntry[];
+  assistant: IProviderAssistantReplay;
+}
+
 /** Immutable compatible-provider conversation state assembled by the caller.
  *  Each generate call replays the same initial prompt and completed turns, then
  *  appends only the current control instruction. */
@@ -138,6 +177,9 @@ export interface IModelOptions {
    *  tool_use + user tool_result) when continuing a native tool-use loop.
    *  Absent for every call today. */
   priorTurn?: IProviderTurn;
+  /** The latest completed response round, replayed whole: every original assistant part and
+   *  every tool result in order. Takes precedence over priorTurn when both are present. */
+  priorRound?: IProviderToolRound;
   /** Complete immutable conversation for providers that require serialized replay. */
   nativeConversation?: INativeConversationSnapshot;
   /** Internal transport signal used to enforce one provider-call deadline. */

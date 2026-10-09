@@ -50,6 +50,9 @@ export interface IProviderMetadata {
   chatFormat?: ChatFormat;
   /** True only when this provider accepts an invocation-local complete native conversation. */
   supportsNativeConversation?: boolean;
+  /** True only when generate() replays a whole completed round: every original assistant part and
+   *  every tool result in order (IModelOptions.priorRound). Set by real boot registration. */
+  supportsParallelToolReplay?: boolean;
 }
 
 /** True when a provider's metadata marks it as potentially billable: a paid/freemium cost tier,

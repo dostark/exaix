@@ -918,3 +918,157 @@ Deno.test("[planning_tool_loop][integration] an alias rewrite journals the canon
     await cleanup();
   }
 });
+
+// Grouped replay: a parallel-replay provider receives the whole latest round.
+
+const PARALLEL_REPLAY_PROVIDER_ID = "google-parallel-replay-fixture";
+
+function registerParallelReplayProvider(): void {
+  ProviderRegistry.clear();
+  ProviderRegistry.registerWithMetadata(PARALLEL_REPLAY_PROVIDER_ID, new MockProviderFactory(), {
+    name: PARALLEL_REPLAY_PROVIDER_ID,
+    description: "Parallel grouped-replay fixture",
+    capabilities: ["chat", "tools"],
+    costTier: ProviderCostTier.LOCAL,
+    pricingTier: PricingTier.LOCAL,
+    strengths: [],
+    supportsNativeTools: true,
+    supportsParallelToolReplay: true,
+    chatFormat: "openai",
+  });
+}
+
+/** A two-call Gemini-shaped response whose assistant parts mirror its calls. */
+function twoCallParallelResponse(ids: [string, string]): IGenerateResult {
+  return makeGenerateResult("", {
+    toolCalls: [
+      { id: ids[0], name: "read_file", input: { path: "a.ts" }, thoughtSignature: "sig-a" },
+      { id: ids[1], name: "read_file", input: { path: "b.ts" } },
+    ],
+    nativeAssistantReplay: {
+      provider: "google",
+      parts: [
+        { functionCall: { name: "read_file", args: { path: "a.ts" } }, thoughtSignature: "sig-a" },
+        { functionCall: { name: "read_file", args: { path: "b.ts" } } },
+      ],
+    },
+  });
+}
+
+Deno.test("[planning_tool_loop][parallel-replay] the next request replays the whole latest round as priorRound, one result per call in order", async () => {
+  registerParallelReplayProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {
+      read_file: (params) => ({ success: true, data: { content: `CONTENT-${params.path}` } }),
+    });
+    const generate = new ScriptedGenerate([
+      twoCallParallelResponse(["call-1", "call-2"]),
+      makeGenerateResult("<thought>t</thought><content>plan</content>"),
+    ]);
+    const loop = new PlanningToolLoop(
+      makeDeps({ toolRegistry: registry, generate: generate.generate, providerId: PARALLEL_REPLAY_PROVIDER_ID }),
+    );
+
+    await loop.run(makeOptions({ maxRounds: 2, allowedTools: new Set(["read_file"]) }));
+
+    const nextOptions = generate.calls[1].options;
+    assertEquals(nextOptions.priorTurn, undefined, "a grouped round must not fall back to priorTurn");
+    assertEquals(nextOptions.priorRound?.assistant, {
+      provider: "google",
+      parts: [
+        { functionCall: { name: "read_file", args: { path: "a.ts" } }, thoughtSignature: "sig-a" },
+        { functionCall: { name: "read_file", args: { path: "b.ts" } } },
+      ],
+    });
+    assertEquals(nextOptions.priorRound?.calls.map((entry) => entry.toolUseId), ["call-1", "call-2"]);
+    assertEquals(nextOptions.priorRound?.calls.map((entry) => entry.index), [0, 1]);
+    assertEquals(nextOptions.priorRound?.calls.map((entry) => entry.toolResultContent), [
+      '{"content":"CONTENT-@myportal/a.ts"}',
+      '{"content":"CONTENT-@myportal/b.ts"}',
+    ]);
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[planning_tool_loop][parallel-replay] an unrepresentable round aborts before any tool effect", async () => {
+  registerParallelReplayProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")]);
+    const invalid = twoCallParallelResponse(["call-1", "   "]);
+    const generate = new ScriptedGenerate([invalid, makeGenerateResult("unused")]);
+    const loop = new PlanningToolLoop(
+      makeDeps({ toolRegistry: registry, generate: generate.generate, providerId: PARALLEL_REPLAY_PROVIDER_ID }),
+    );
+
+    await assertRejects(() => loop.run(makeOptions({ maxRounds: 2, allowedTools: new Set(["read_file"]) })));
+    assertEquals(registry.calls.length, 0, "no call in an unrepresentable round may reach the registry");
+    assertEquals(generate.calls.length, 1, "the loop must not issue a follow-up request");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[planning_tool_loop][parallel-replay] an unknown tool call keeps its ordered error result in the grouped round", async () => {
+  registerParallelReplayProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {
+      read_file: () => ({ success: true, data: { content: "ok" } }),
+    });
+    const generate = new ScriptedGenerate([
+      makeGenerateResult("", {
+        toolCalls: [
+          { id: "call-1", name: "read_file", input: { path: "a.ts" } },
+          { id: "call-2", name: "no_such_tool", input: {} },
+        ],
+        nativeAssistantReplay: {
+          provider: "google",
+          parts: [
+            { functionCall: { name: "read_file", args: { path: "a.ts" } } },
+            { functionCall: { name: "no_such_tool", args: {} } },
+          ],
+        },
+      }),
+      makeGenerateResult("<thought>t</thought><content>plan</content>"),
+    ]);
+    const loop = new PlanningToolLoop(
+      makeDeps({ toolRegistry: registry, generate: generate.generate, providerId: PARALLEL_REPLAY_PROVIDER_ID }),
+    );
+
+    await loop.run(makeOptions({ maxRounds: 2, allowedTools: new Set(["read_file"]) }));
+
+    const entries = generate.calls[1].options.priorRound?.calls ?? [];
+    assertEquals(entries.map((entry) => entry.toolUseId), ["call-1", "call-2"]);
+    assertEquals(entries[1].toolName, "no_such_tool");
+    assertEquals(entries[1].toolResultIsError, true, "an unknown tool still answers with one error result");
+    assert(!registry.calls.some((call) => call.name === "no_such_tool"), "an unknown tool must not reach the registry");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[planning_tool_loop][parallel-replay] a call refused by the per-round cap keeps its ordered error result in the grouped round", async () => {
+  registerParallelReplayProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {
+      read_file: () => ({ success: true, data: { content: "ok" } }),
+    });
+    const generate = new ScriptedGenerate([
+      twoCallParallelResponse(["call-1", "call-2"]),
+      makeGenerateResult("<thought>t</thought><content>plan</content>"),
+    ]);
+    const loop = new PlanningToolLoop(
+      makeDeps({ toolRegistry: registry, generate: generate.generate, providerId: PARALLEL_REPLAY_PROVIDER_ID }),
+    );
+
+    await loop.run(makeOptions({ maxRounds: 2, allowedTools: new Set(["read_file"]), maxToolCallsPerRound: 1 }));
+
+    const entries = generate.calls[1].options.priorRound?.calls ?? [];
+    assertEquals(entries.map((entry) => entry.toolUseId), ["call-1", "call-2"]);
+    assertEquals(entries[0].toolResultIsError, false);
+    assertEquals(entries[1].toolResultIsError, true, "the refused call still answers with one error result");
+    assertEquals(registry.calls.length, 1, "only the call within the cap reaches the registry");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});

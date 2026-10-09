@@ -191,3 +191,118 @@ Deno.test("[regression] GoogleProvider.attemptGenerate without priorTurn produce
   assertEquals(body.contents?.length, 1);
   assertEquals(body.contents?.[0].parts[0].text, "test prompt");
 });
+
+// Grouped replay: a completed response round replays verbatim.
+
+const GOOGLE_ROUND_PARTS: Array<Record<string, JSONValue>> = [
+  { text: "Reading two files." },
+  { functionCall: { name: "read_file", args: { path: "a.txt" } }, thoughtSignature: "sig-a" },
+  { functionCall: { name: "read_file", args: { path: "b.txt" } } },
+];
+
+function groupedRoundOptions(toolChoiceType?: "none"): Parameters<GoogleProvider["generate"]>[1] {
+  return {
+    tools: [{ name: "read_file", inputSchema: { type: "object", properties: {} } }],
+    toolChoice: toolChoiceType === "none" ? { type: "none" } : { type: "auto" },
+    priorRound: {
+      assistant: { provider: "google", parts: GOOGLE_ROUND_PARTS },
+      calls: [
+        {
+          toolUseId: "call-1",
+          index: 1,
+          toolName: "read_file",
+          toolInput: { path: "a.txt" },
+          thoughtSignature: "sig-a",
+          toolResultContent: "A-CONTENT",
+          toolResultIsError: false,
+        },
+        {
+          toolUseId: "call-2",
+          index: 2,
+          toolName: "read_file",
+          toolInput: { path: "b.txt" },
+          toolResultContent: "B-CONTENT",
+          toolResultIsError: false,
+        },
+      ],
+    },
+  };
+}
+
+Deno.test("GoogleProvider.attemptGenerate with priorRound replays every original model part in order, then one grouped functionResponse message", async () => {
+  const body = await capturedBodyOf(groupedRoundOptions());
+  const contents = body.contents ?? [];
+  assertEquals(contents.length, 3);
+  assertEquals(contents[1].role, "model");
+  assertEquals(contents[1].parts as JSONValue[], GOOGLE_ROUND_PARTS);
+  assertEquals(contents[2].role, "user");
+  assertEquals(contents[2].parts.length, 2);
+  assertEquals(contents[2].parts[0].functionResponse?.name, "read_file");
+  assertEquals(contents[2].parts[0].functionResponse?.response.content, "A-CONTENT");
+  assertEquals(contents[2].parts[1].functionResponse?.response.content, "B-CONTENT");
+});
+
+Deno.test("GoogleProvider.attemptGenerate with priorRound asks for a text answer after the grouped functionResponses when tool choice is none", async () => {
+  const body = await capturedBodyOf(groupedRoundOptions("none"));
+  const finalUser = body.contents?.[2].parts ?? [];
+  assertEquals(finalUser.length, 3);
+  assertEquals(finalUser[2].text, "Answer now in text only. Do not call any tool.");
+});
+
+Deno.test("GoogleProvider.attemptGenerate exposes the complete response parts as nativeAssistantReplay in original order", async () => {
+  const provider = new GoogleProvider({ apiKey: "test-key" });
+  const origFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = () =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            candidates: [{ content: { parts: GOOGLE_ROUND_PARTS } }],
+            usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5 },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      );
+    const result = await provider.generate("test prompt", { tools: [{ name: "read_file", inputSchema: {} }] });
+    assertEquals(result.nativeAssistantReplay, { provider: "google", parts: GOOGLE_ROUND_PARTS });
+    assertEquals(result.toolCalls?.map((call) => call.thoughtSignature), ["sig-a", undefined]);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+Deno.test("GoogleProvider.attemptGenerate: a one-call priorRound and the same call as priorTurn produce identical request bodies", async () => {
+  const call = {
+    toolUseId: "call-1",
+    toolName: "read_file",
+    toolInput: { path: "a.txt" },
+    toolResultContent: "A",
+    toolResultIsError: false,
+    thoughtSignature: "sig-a",
+  };
+  const legacyBody = await capturedBodyOf({
+    tools: [{ name: "read_file", inputSchema: { type: "object", properties: {} } }],
+    toolChoice: { type: "auto" },
+    priorTurn: call,
+  });
+  const groupedBody = await capturedBodyOf({
+    tools: [{ name: "read_file", inputSchema: { type: "object", properties: {} } }],
+    toolChoice: { type: "auto" },
+    priorRound: {
+      assistant: {
+        provider: "google",
+        parts: [{ functionCall: { name: "read_file", args: { path: "a.txt" } }, thoughtSignature: "sig-a" }],
+      },
+      calls: [{
+        toolUseId: "call-1",
+        index: 0,
+        toolName: "read_file",
+        toolInput: { path: "a.txt" },
+        thoughtSignature: "sig-a",
+        toolResultContent: "A",
+        toolResultIsError: false,
+      }],
+    },
+  });
+  assertEquals(groupedBody, legacyBody);
+});

@@ -12,7 +12,14 @@
  */
 
 import { isAbsolute, resolve, SEPARATOR } from "@std/path";
-import type { IModelOptions, IProviderTurn, IToolChoice, IToolDefinition } from "@exaix/ai/types.ts";
+import type {
+  IModelOptions,
+  IProviderToolRound,
+  IProviderTurn,
+  IToolChoice,
+  IToolDefinition,
+  IValidatedProviderRound,
+} from "@exaix/ai/types.ts";
 import { TOOL_CHOICE_TYPE_AUTO, TOOL_CHOICE_TYPE_NONE } from "@exaix/ai/types.ts";
 import type { IGenerateResult, IProviderToolCall } from "@exaix/ai/providers";
 import type { INativeInputMeasurement } from "@exaix/ai";
@@ -48,8 +55,13 @@ import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import {
   buildNativeToolDefinitions,
   buildPriorTurn,
+  buildToolRound,
   enrichPortalPathParam,
+  FIXED_NATIVE_ROUND_LIMITS,
+  type IRoundOutcome,
   providerSupportsNativeConversation,
+  providerSupportsParallelToolReplay,
+  validateProviderRound,
 } from "./native_tool_turns.ts";
 import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
 
@@ -111,6 +123,37 @@ export interface IPlanningToolLoopResult {
   stopReason: PlanningToolLoopStopReason;
   promptTokens: number;
   completionTokens: number;
+}
+
+/** Replay state one planning run carries between rounds. The replay mode decides which field grows. */
+interface IRoundHistory {
+  transcript: string;
+  priorTurn: Opt<IProviderTurn, Reason.OptionalInput>;
+  priorTurnTool: string;
+  priorTurnRound: number;
+  priorRound: Opt<IProviderToolRound, Reason.OptionalInput>;
+  priorRoundNumber: number;
+  nativeTurns: IProviderTurn[];
+}
+
+/** Inputs for one generate request, before the replay mode is applied. */
+interface IRoundRequest {
+  basePrompt: string;
+  baseOptions: IModelOptions;
+  allowedToolDefs: IToolDefinition[];
+  maxRounds: number;
+  isFinalRound: boolean;
+  callSite: Opt<ICallSite, Reason.TraceAbsent>;
+  nativeConversationEnabled: boolean;
+}
+
+/** The outcome of one round's calls, before the round is replayed. */
+interface IExecutedRound {
+  lastTurn: Opt<IProviderTurn, Reason.OptionalInput>;
+  lastTool: string;
+  transcript: string;
+  guardrailBlocked: boolean;
+  outcomes: IRoundOutcome[];
 }
 
 /** Tool call parameter names the confinement guard checks — every string value under these
@@ -201,45 +244,39 @@ export class PlanningToolLoop {
     // A native-conversation provider owns turns[] instead of the text transcript/priorTurn.
     const nativeConversationEnabled = options.maxRounds > 1 &&
       providerSupportsNativeConversation(this.deps.providerId);
+    // A grouped-replay provider keeps older rounds in the text transcript.
+    // It replays only the latest round, whole.
+    const parallelReplayEnabled = options.maxRounds > 1 && !nativeConversationEnabled &&
+      providerSupportsParallelToolReplay(this.deps.providerId);
 
-    let transcript = "";
-    let priorTurn: Opt<IProviderTurn, Reason.OptionalInput> = undefined;
-    let priorTurnTool = "";
-    let priorTurnRound = 0;
-    const nativeTurns: IProviderTurn[] = [];
+    const history: IRoundHistory = {
+      transcript: "",
+      priorTurn: undefined,
+      priorTurnTool: "",
+      priorTurnRound: 0,
+      priorRound: undefined,
+      priorRoundNumber: 0,
+      nativeTurns: [],
+    };
     let finalRoundIndex = options.maxRounds;
     let guardrailForced = false;
 
     for (let round = 1; round <= finalRoundIndex; round++) {
       progress.rounds = round;
       const isFinalRound = round === finalRoundIndex;
-      const callSite = options.nextCallSite();
-      let roundPrompt = basePrompt;
-      let roundOptions: IModelOptions;
-      if (nativeConversationEnabled) {
-        roundOptions = this.buildNativeRoundOptions(
-          options.baseOptions,
-          allowedToolDefs,
-          nativeTurns,
-          basePrompt,
-          isFinalRound,
-          callSite,
-        );
-      } else {
-        roundPrompt = this.buildLegacyRoundPrompt(basePrompt, transcript, options.maxRounds, isFinalRound);
-        roundOptions = this.buildRoundOptions(
-          options.baseOptions,
-          allowedToolDefs,
-          priorTurn,
-          isFinalRound,
-          options.maxRounds,
-          callSite,
-        );
-      }
+      const request = this.buildRoundRequest(history, {
+        basePrompt,
+        baseOptions: options.baseOptions,
+        allowedToolDefs,
+        maxRounds: options.maxRounds,
+        isFinalRound,
+        callSite: options.nextCallSite(),
+        nativeConversationEnabled,
+      });
 
-      if (options.promptBudget) await this.preflightBudget(roundOptions, options.promptBudget, options.traceId);
+      if (options.promptBudget) await this.preflightBudget(request.roundOptions, options.promptBudget, options.traceId);
 
-      const response = await this.deps.generate(roundPrompt, roundOptions);
+      const response = await this.deps.generate(request.roundPrompt, request.roundOptions);
       progress.promptTokens += response.usage.promptTokens;
       progress.completionTokens += response.usage.completionTokens;
 
@@ -267,23 +304,13 @@ export class PlanningToolLoop {
         }, options.traceId);
       }
 
+      // A grouped round is validated whole before any call of it executes.
+      const validated = parallelReplayEnabled ? validateProviderRound(response, FIXED_NATIVE_ROUND_LIMITS) : undefined;
       const executed = await this.executeRoundCalls(response.toolCalls, canonicalOptions, round, progress, {
         provider: response.provider,
         model: response.model,
       });
-
-      if (nativeConversationEnabled) {
-        if (executed.lastTurn) nativeTurns.push(executed.lastTurn);
-      } else {
-        transcript += executed.transcript;
-        // Age the superseded priorTurn into the transcript, tagged with its real round.
-        if (priorTurn !== undefined) {
-          transcript += this.buildTranscriptBlock(priorTurnTool, priorTurnRound, String(priorTurn.toolResultContent));
-        }
-        priorTurn = executed.lastTurn;
-        priorTurnTool = executed.lastTool;
-        priorTurnRound = round;
-      }
+      this.recordRound(history, round, executed, validated, nativeConversationEnabled);
 
       if (executed.guardrailBlocked) {
         guardrailForced = true;
@@ -294,6 +321,82 @@ export class PlanningToolLoop {
     // Unreachable: the loop always returns from inside the for-body (isFinalRound is always
     // hit by round === finalRoundIndex, since finalRoundIndex only ever shrinks toward round+1).
     throw new Error("PlanningToolLoop.run: exited without a final response");
+  }
+
+  /** Builds one generate request in the replay mode the provider needs. */
+  private buildRoundRequest(
+    history: IRoundHistory,
+    request: IRoundRequest,
+  ): { roundPrompt: string; roundOptions: IModelOptions } {
+    if (request.nativeConversationEnabled) {
+      return {
+        roundPrompt: request.basePrompt,
+        roundOptions: this.buildNativeRoundOptions(
+          request.baseOptions,
+          request.allowedToolDefs,
+          history.nativeTurns,
+          request.basePrompt,
+          request.isFinalRound,
+          request.callSite,
+        ),
+      };
+    }
+    return {
+      roundPrompt: this.buildLegacyRoundPrompt(
+        request.basePrompt,
+        history.transcript,
+        request.maxRounds,
+        request.isFinalRound,
+      ),
+      roundOptions: this.buildRoundOptions(
+        request.baseOptions,
+        request.allowedToolDefs,
+        { priorTurn: history.priorTurn, priorRound: history.priorRound },
+        request.isFinalRound,
+        request.maxRounds,
+        request.callSite,
+      ),
+    };
+  }
+
+  /** Carries one executed round into the next request, in the replay mode the provider needs. */
+  private recordRound(
+    history: IRoundHistory,
+    round: number,
+    executed: IExecutedRound,
+    validated: Opt<IValidatedProviderRound, Reason.OptionalInput>,
+    nativeConversationEnabled: boolean,
+  ): void {
+    if (nativeConversationEnabled) {
+      if (executed.lastTurn) history.nativeTurns.push(executed.lastTurn);
+    } else if (validated !== undefined) {
+      // Age the superseded round into the transcript, tagged with its real round.
+      if (history.priorRound !== undefined) {
+        history.transcript += this.buildRoundTranscript(history.priorRound, history.priorRoundNumber);
+      }
+      history.priorRound = buildToolRound(validated, executed.outcomes);
+      history.priorRoundNumber = round;
+    } else {
+      history.transcript += executed.transcript;
+      // Age the superseded priorTurn into the transcript, tagged with its real round.
+      if (history.priorTurn !== undefined) {
+        history.transcript += this.buildTranscriptBlock(
+          history.priorTurnTool,
+          history.priorTurnRound,
+          String(history.priorTurn.toolResultContent),
+        );
+      }
+      history.priorTurn = executed.lastTurn;
+      history.priorTurnTool = executed.lastTool;
+      history.priorTurnRound = round;
+    }
+  }
+
+  /** Transcript blocks for every result of a superseded grouped round. */
+  private buildRoundTranscript(round: IProviderToolRound, roundNumber: number): string {
+    return round.calls
+      .map((entry) => this.buildTranscriptBlock(entry.toolName, roundNumber, String(entry.toolResultContent)))
+      .join("");
   }
 
   private buildLegacyRoundPrompt(
@@ -321,12 +424,8 @@ export class PlanningToolLoop {
     round: number,
     progress: ILoopProgress,
     identity: { provider: string; model: string },
-  ): Promise<{
-    lastTurn: Opt<IProviderTurn, Reason.OptionalInput>;
-    lastTool: string;
-    transcript: string;
-    guardrailBlocked: boolean;
-  }> {
+  ): Promise<IExecutedRound> {
+    const outcomes: IRoundOutcome[] = [];
     const signedIndex = calls.findIndex((call) => call.thoughtSignature !== undefined);
     const replayIndex = signedIndex === -1 ? calls.length - 1 : signedIndex;
     let transcript = "";
@@ -341,6 +440,11 @@ export class PlanningToolLoop {
         : this.refuseCall(call, round, options);
       if (withinCap) progress.toolCalls++;
       guardrailBlocked ||= outcome.guardrailBlocked;
+      outcomes.push({
+        toolUseId: outcome.turn.toolUseId,
+        toolResultContent: outcome.turn.toolResultContent,
+        toolResultIsError: outcome.turn.toolResultIsError,
+      });
       if (i === replayIndex) {
         lastTurn = outcome.turn;
         lastTool = call.name;
@@ -348,13 +452,16 @@ export class PlanningToolLoop {
         transcript += this.buildTranscriptBlock(call.name, round, String(outcome.turn.toolResultContent));
       }
     }
-    return { lastTurn, lastTool, transcript, guardrailBlocked };
+    return { lastTurn, lastTool, transcript, guardrailBlocked, outcomes };
   }
 
   private buildRoundOptions(
     base: IModelOptions,
     toolDefs: IToolDefinition[],
-    priorTurn: Opt<IProviderTurn, Reason.OptionalInput>,
+    replay: {
+      priorTurn: Opt<IProviderTurn, Reason.OptionalInput>;
+      priorRound: Opt<IProviderToolRound, Reason.OptionalInput>;
+    },
     isFinalRound: boolean,
     maxRounds: number,
     callSite: Opt<ICallSite, Reason.TraceAbsent>,
@@ -368,7 +475,8 @@ export class PlanningToolLoop {
       ...withCallSite,
       tools: toolDefs,
       toolChoice,
-      ...(priorTurn ? { priorTurn } : {}),
+      ...(replay.priorTurn ? { priorTurn: replay.priorTurn } : {}),
+      ...(replay.priorRound ? { priorRound: replay.priorRound } : {}),
     };
   }
 

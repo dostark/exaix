@@ -7,7 +7,7 @@
  */
 
 import type { JSONValue } from "@exaix/core";
-import type { IModelProvider } from "../types.ts";
+import type { IModelProvider, IProviderAssistantReplay } from "../types.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export type ProviderCostStatus = "estimated" | "tracked" | "unknown";
@@ -49,6 +49,9 @@ export interface IGenerateResult {
    *  AND the caller requested tools via IModelOptions.tools. May contain multiple entries for
    *  parallel tool use. */
   toolCalls?: IProviderToolCall[];
+  /** Complete assistant content of this response, present only for providers whose replay needs
+   *  every original part (see IProviderAssistantReplay). Captured before any per-call filtering. */
+  nativeAssistantReplay?: IProviderAssistantReplay;
   /** Present only when the caller requested structured output (IModelOptions.jsonSchema) from
    *  a provider that implements the structured-output contract. */
   structuredOutputMode?: StructuredOutputMode;
