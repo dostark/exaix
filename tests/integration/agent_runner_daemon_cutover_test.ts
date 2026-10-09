@@ -53,7 +53,9 @@ import { buildPortalKnowledgeSummary } from "@exaix/request";
 import {
   bootRealDaemon,
   daemonConfigSections,
+  type IRunningDaemon,
   migrateDaemonWorkspace,
+  REQUEST_OUTCOME_ACTIONS,
   writeDaemonConfigWithMockAi,
 } from "./helpers/daemon_config.ts";
 
@@ -93,6 +95,20 @@ interface IActivityRow {
   runner_kind: string | null;
   trace_id: string | null;
   payload: string;
+}
+
+/** Journaled `config.updated` rows for `tools.strict_params`. The daemon writes one per hot-applied value. */
+async function countStrictUpdates(configPath: string): Promise<number> {
+  const configService = new ConfigService(configPath);
+  const db = new DatabaseService(configService.getAll());
+  try {
+    const rows = await db.preparedAll<{ updates: number }>(
+      "SELECT COUNT(*) AS updates FROM activity WHERE action_type = 'config.updated' AND target = 'tools.strict_params'",
+    );
+    return rows[0].updates;
+  } finally {
+    await db.close();
+  }
 }
 
 async function readActivity(configPath: string): Promise<IActivityRow[]> {
@@ -152,7 +168,7 @@ Deno.test({
       const traceId = crypto.randomUUID();
       const requestPath = join(tempDir, "Workspace", "Requests", `request-${traceId.slice(0, 8)}.md`);
 
-      await bootRealDaemon(configPath, 2000, {
+      await bootRealDaemon(configPath, {
         midFlight: () => {
           Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
           Deno.writeTextFileSync(
@@ -174,7 +190,6 @@ Add a hello world function.
 `,
           );
         },
-        afterInjectMs: 15000,
         waitForAfterInject: async () => {
           const rows = await readActivity(configPath);
           return rows.some((a) =>
@@ -224,7 +239,7 @@ Deno.test({
       const traceId = crypto.randomUUID();
       const requestPath = join(tempDir, "Workspace", "Requests", `request-${traceId.slice(0, 8)}.md`);
 
-      await bootRealDaemon(configPath, 2000, {
+      await bootRealDaemon(configPath, {
         midFlight: () => {
           Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
           Deno.writeTextFileSync(
@@ -246,7 +261,6 @@ Add a hello world function.
 `,
           );
         },
-        afterInjectMs: 15000,
         waitForAfterInject: async () => {
           const rows = await readActivity(configPath);
           return rows.some((a) => a.trace_id === traceId && a.action_type === "context.budget.allocated");
@@ -433,7 +447,7 @@ async function bootPortalRequestRun(
     join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
   );
   const { traceId, requestPath } = makePortalRequestAndBoot(tempDir);
-  await bootRealDaemon(configPath, 2000, {
+  await bootRealDaemon(configPath, {
     midFlight: () => {
       Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
       Deno.writeTextFileSync(
@@ -456,7 +470,6 @@ Add a hello world function to src/0000-module-file.ts.
 `,
       );
     },
-    afterInjectMs: 25000,
     waitForAfterInject: async () => (await collectBudgetEvents(configPath)).length > 0,
   });
   const campaignEvents = await collectBudgetEvents(configPath);
@@ -675,10 +688,6 @@ async function readStep6Activity(configPath: string, traceId: string): Promise<I
   }
 }
 
-/** Poll caps only. Each poll returns as soon as its condition holds, so a generous cap costs nothing when the daemon is quick. */
-const CUTOVER_READY_CAP_MS = 30000;
-const CUTOVER_REQUEST_CAP_MS = 60000;
-
 async function bootCutoverRun(
   tempDir: string,
   sharedPortalDir: string,
@@ -696,7 +705,7 @@ async function bootCutoverRun(
   const traceId = crypto.randomUUID();
   const requestPath = join(tempDir, "Workspace", "Requests", `r-${traceId.slice(0, 8)}.md`);
 
-  await bootRealDaemon(configPath, CUTOVER_READY_CAP_MS, {
+  await bootRealDaemon(configPath, {
     midFlight: () => {
       Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
       Deno.writeTextFileSync(
@@ -719,7 +728,6 @@ Investigate ${PAYMENT_ROUTER_SYMBOL} behavior.
 `,
       );
     },
-    afterInjectMs: CUTOVER_REQUEST_CAP_MS,
     waitForAfterInject: async () => {
       const rows = await readStep6Activity(configPath, traceId);
       return rows.some((r) => r.action_type === "agent.prompt_debug_dump");
@@ -1097,7 +1105,7 @@ async function bootPlanningToolsCutoverRun(
     return plans.length > 0 ? Deno.readTextFileSync(join(tempDir, "Workspace", "Plans", plans[0].name)) : "";
   };
 
-  await bootRealDaemon(configPath, 20000, {
+  await bootRealDaemon(configPath, {
     midFlight: () => {
       Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
       Deno.mkdirSync(join(tempDir, "Workspace", "Plans"), { recursive: true });
@@ -1120,7 +1128,6 @@ async function bootPlanningToolsCutoverRun(
           "Inspect the portal target file and produce a plan.\n",
       );
     },
-    afterInjectMs: 60000,
     waitForAfterInject: async () => {
       if (toolsEnabled) {
         const rows = await readPlanningCutoverActivity(configPath, traceId);
@@ -1376,7 +1383,7 @@ async function bootAliasCutoverRun(
     const plans = [...Deno.readDirSync(dir)];
     return plans.length > 0 ? Deno.readTextFileSync(join(dir, plans[0].name)) : "";
   };
-  await bootRealDaemon(configPath, 20000, {
+  await bootRealDaemon(configPath, {
     midFlight: () => {
       Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
       Deno.mkdirSync(join(tempDir, "Workspace", "Plans"), { recursive: true });
@@ -1397,7 +1404,6 @@ async function bootAliasCutoverRun(
           "---\n\n# Request\n\nInspect the portal target file and produce a plan.\n",
       );
     },
-    afterInjectMs: 60000,
     waitForAfterInject: async () => {
       const rows = await readPlanningCutoverActivity(configPath, traceId);
       return rows.some((r) => PLANNING_END_EVENTS.includes(r.action_type)) &&
@@ -1586,7 +1592,7 @@ Deno.test({
         join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
       );
 
-      const runRequest = async (index: number): Promise<IPlanningCutoverRow[]> => {
+      const runRequest = async (index: number, daemon: IRunningDaemon): Promise<IPlanningCutoverRow[]> => {
         const traceId = crypto.randomUUID();
         const scenarioId = `phase201-strict-${index}`;
         const requestDir = join(tempDir, "Workspace", "Requests");
@@ -1601,15 +1607,17 @@ Deno.test({
             'source: cli\ncreated_by: "test@example.com"\nsubject: "strict CLI cutover"\n' +
             "---\n\n# Request\n\nInspect the portal target file and produce a plan.\n",
         );
-        const deadline = Date.now() + 20000;
-        while (Date.now() < deadline) {
-          const rows = await readPlanningCutoverActivity(configPath, traceId);
-          if (rows.some((row) => PLANNING_END_EVENTS.includes(row.action_type))) return rows;
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
-        throw new Error(`request ${index} did not complete in time`);
+        let rows: IPlanningCutoverRow[] = [];
+        await daemon.until(async () => {
+          rows = await readPlanningCutoverActivity(configPath, traceId);
+          return rows.some((row) =>
+            PLANNING_END_EVENTS.includes(row.action_type) || REQUEST_OUTCOME_ACTIONS.includes(row.action_type)
+          );
+        }, `request ${index} to reach a planning end event`);
+        return rows;
       };
-      const setStrict = async (value: boolean): Promise<void> => {
+      const setStrict = async (value: boolean, daemon: IRunningDaemon): Promise<void> => {
+        const before = await countStrictUpdates(configPath);
         const result = await new Deno.Command("deno", {
           args: [
             "run",
@@ -1629,7 +1637,10 @@ Deno.test({
           0,
           new TextDecoder().decode(result.stderr) || new TextDecoder().decode(result.stdout),
         );
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        await daemon.until(
+          async () => (await countStrictUpdates(configPath)) > before,
+          `the daemon to hot-apply tools.strict_params=${value}`,
+        );
       };
       const setInvalidStrict = async (): Promise<void> => {
         const result = await new Deno.Command("deno", {
@@ -1647,19 +1658,18 @@ Deno.test({
           stderr: "piped",
         }).output();
         assertEquals(result.code === 0, false, "invalid values must be rejected by exactl config set");
-        await new Promise((resolve) => setTimeout(resolve, 300));
       };
 
       const runs: IPlanningCutoverRow[][] = [];
-      await bootRealDaemon(configPath, 2000, {
+      await bootRealDaemon(configPath, {
         extraEnv: { EXA_CONFIG_DB_POLL_INTERVAL_MS: "50" },
-        midFlight: async () => {
-          runs.push(await runRequest(0));
-          await setStrict(true);
-          runs.push(await runRequest(1));
+        midFlight: async (daemon) => {
+          runs.push(await runRequest(0, daemon));
+          await setStrict(true, daemon);
+          runs.push(await runRequest(1, daemon));
           await setInvalidStrict();
-          await setStrict(false);
-          runs.push(await runRequest(2));
+          await setStrict(false, daemon);
+          runs.push(await runRequest(2, daemon));
         },
       });
 
@@ -1764,7 +1774,7 @@ Deno.test({
         return true;
       };
 
-      await bootRealDaemon(configPath, 20000, {
+      await bootRealDaemon(configPath, {
         midFlight: () => {
           const activeDir = join(tempDir, "Workspace", "Active");
           Deno.mkdirSync(activeDir, { recursive: true });
@@ -1775,7 +1785,6 @@ Deno.test({
             );
           }
         },
-        afterInjectMs: 60000,
         waitForAfterInject: allEnded,
       });
 

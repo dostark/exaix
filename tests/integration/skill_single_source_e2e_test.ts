@@ -15,7 +15,7 @@ import { walk } from "@std/fs";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
-import { bootRealDaemon, daemonConfigSections } from "./helpers/daemon_config.ts";
+import { bootRealDaemon, daemonConfigSections, REQUEST_OUTCOME_ACTIONS } from "./helpers/daemon_config.ts";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
 const SKILL_NAME = "e2e-folder-skill";
@@ -24,8 +24,6 @@ const SKILLS_INITIALIZED_EVENT = "skills.initialized";
 const PROMPT_ASSEMBLED_EVENT = "agent.prompt_assembled";
 const REVISION_RECORDED_EVENT = "skills.revision_recorded";
 const USAGE_RECORDED_EVENT = "skills.usage_recorded";
-const DAEMON_SETTLE_MS = 20000;
-const REQUEST_WAIT_MS = 60000;
 
 interface IActivityRow {
   action_type: string;
@@ -149,7 +147,7 @@ Deno.test({
 
       const traceId = crypto.randomUUID();
       const requestPath = join(tempDir, "Workspace", "Requests", `request-${traceId.slice(0, 8)}.md`);
-      await bootRealDaemon(configPath, DAEMON_SETTLE_MS, {
+      await bootRealDaemon(configPath, {
         midFlight: () => {
           Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
           Deno.writeTextFileSync(
@@ -172,10 +170,10 @@ Add a hello world function.
 `,
           );
         },
-        afterInjectMs: REQUEST_WAIT_MS,
         waitForAfterInject: async () =>
           (await readActivity(configPath)).some((row) =>
-            row.trace_id === traceId && row.action_type === PROMPT_ASSEMBLED_EVENT
+            row.trace_id === traceId &&
+            (row.action_type === PROMPT_ASSEMBLED_EVENT || REQUEST_OUTCOME_ACTIONS.includes(row.action_type))
           ),
       });
 

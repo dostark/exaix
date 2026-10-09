@@ -47,8 +47,20 @@ async function readTraceActivity(configPath: string, traceId: string): Promise<I
   }
 }
 
+/** The first review plan id in `plansDir` (its file name without `.md`), or undefined before the daemon writes one. */
+function firstPlanId(plansDir: string): string | undefined {
+  try {
+    const plan = [...Deno.readDirSync(plansDir)].find((entry) => entry.isFile && entry.name.endsWith(".md"));
+    return plan?.name.slice(0, -3);
+  } catch {
+    // The daemon creates the plans directory after it receives the request.
+    return undefined;
+  }
+}
+
 for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unauthorized-write", "traversal"] as const) {
   const nativeToolsEnabled = mode !== "disabled";
+
   Deno.test({
     name: `[phase155] real daemon compatible cutover mode=${mode}`,
     ignore: Deno.env.get("CI") === "true",
@@ -221,7 +233,7 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
 
         const traceId = crypto.randomUUID();
         const requestPath = join(root, "Workspace", "Requests", `r-${traceId.slice(0, 8)}.md`);
-        await bootRealDaemon(configPath, 2000, {
+        await bootRealDaemon(configPath, {
           extraEnv: { EXA_COMPAT_TEST_API_KEY: "local-fixture-key" },
           denoPermissions: [
             "--allow-read",
@@ -232,7 +244,7 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
             "--allow-ffi",
             "--allow-net=127.0.0.1",
           ],
-          midFlight: async () => {
+          midFlight: async (daemon) => {
             await Deno.mkdir(join(root, "Workspace", "Requests"), { recursive: true });
             await Deno.writeTextFile(
               requestPath,
@@ -243,22 +255,11 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
             );
             if (mode === "invalid-config") return;
             const plansDir = join(root, "Workspace", "Plans");
-            const deadline = Date.now() + 20000;
             let planId: string | undefined;
-            while (Date.now() < deadline) {
-              try {
-                const plan = [...Deno.readDirSync(plansDir)].find((entry) =>
-                  entry.isFile && entry.name.endsWith(".md")
-                );
-                if (plan) {
-                  planId = plan.name.slice(0, -3);
-                  break;
-                }
-              } catch {
-                // The daemon creates the plans directory after it receives the request.
-              }
-              await new Promise((resolve) => setTimeout(resolve, 100));
-            }
+            await daemon.until(() => {
+              planId = firstPlanId(plansDir);
+              return planId !== undefined;
+            }, "the daemon to write a review plan");
             assert(
               planId,
               `daemon must write a review plan before approval: ${JSON.stringify(observedRequests)}`,
@@ -275,7 +276,6 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
               new TextDecoder().decode(approval.stderr) || new TextDecoder().decode(approval.stdout),
             );
           },
-          afterInjectMs: 60000,
           waitForAfterInject: async () => {
             const rows = await readTraceActivity(configPath, traceId);
             return rows.some((row) => row.action_type === "execution.completed") ||
@@ -492,7 +492,7 @@ Deno.test({
       );
       const traceId = crypto.randomUUID();
       const requestPath = join(root, "Workspace", "Requests", `r-${traceId.slice(0, 8)}.md`);
-      await bootRealDaemon(configPath, 2000, {
+      await bootRealDaemon(configPath, {
         extraEnv: { EXA_COMPAT_TEST_API_KEY: "local-fixture-key" },
         midFlight: async () => {
           await Deno.mkdir(join(root, "Workspace", "Requests"), { recursive: true });
@@ -518,7 +518,6 @@ Deno.test({
             ].join("\n"),
           );
         },
-        afterInjectMs: 60000,
         waitForAfterInject: async () => {
           const rows = await readTraceActivity(configPath, traceId);
           return rows.some((row) => row.action_type === "request.planned" || row.action_type === "request.failed");

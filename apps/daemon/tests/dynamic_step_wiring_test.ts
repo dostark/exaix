@@ -34,6 +34,8 @@ import { buildTeamMcpClient } from "../src/build_team_mcp_client.ts";
 import {
   bootRealDaemon,
   daemonConfigSections,
+  daemonJournalHasAny,
+  REQUEST_OUTCOME_ACTIONS,
   writePortalDir,
 } from "../../../tests/integration/helpers/daemon_config.ts";
 
@@ -231,19 +233,26 @@ function seedSoloWorkspace(root: string): void {
 }
 
 /** Boots the real daemon subprocess with a flow request injected mid-flight, then reads the activity journal. Team and Solo share this harness. */
+/** Journal actions that end the probe flow step, on either edition and either outcome. */
+const FLOW_STEP_OUTCOME_ACTIONS: readonly string[] = [
+  "flow.step.completed",
+  "flow.step.failed",
+  "flow.step.unexpected_error",
+];
+
 async function bootAndProbeFlow(
   configPath: string,
   root: string,
   extraEnv: Record<string, string>,
-  settleMs = 6000,
-  afterInjectMs = 10000,
 ): Promise<void> {
-  await bootRealDaemon(configPath, settleMs, {
+  await bootRealDaemon(configPath, {
     // EXA_LLM_PROVIDER=mock pins the provider to mock regardless of `config.models.default`
     // (which the schema defaults to a real Google provider) — see model_registry_team_cutover_test.ts.
     extraEnv: { EXA_LLM_PROVIDER: "mock", ...extraEnv },
     midFlight: () => writeFlowRequest(root),
-    afterInjectMs,
+    // The probe flow has one step, so its outcome is the flow's end on either edition.
+    waitForAfterInject: () =>
+      daemonJournalHasAny(configPath, [...FLOW_STEP_OUTCOME_ACTIONS, ...REQUEST_OUTCOME_ACTIONS]),
   });
 }
 

@@ -27,7 +27,12 @@ import { assertEquals, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
 import { DatabaseService } from "@exaix/storage-sqlite";
-import { bootRealDaemon, daemonConfigSections } from "./helpers/daemon_config.ts";
+import {
+  bootRealDaemon,
+  daemonConfigSections,
+  daemonJournalHasAny,
+  REQUEST_OUTCOME_ACTIONS,
+} from "./helpers/daemon_config.ts";
 import { runMigrationsIn } from "./helpers/migrate_test_db.ts";
 
 const TRACE_ID = "step135-9-cost-source-trace";
@@ -146,14 +151,14 @@ Deno.test({
       writeStubAgentRole(tempDir);
       writeMockDaemonConfig(configPath, tempDir);
 
-      await bootRealDaemon(configPath, 6000, {
+      await bootRealDaemon(configPath, {
         extraEnv: { EXA_LLM_PROVIDER: "mock" },
         midFlight: () => {
           Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
           Deno.writeTextFileSync(join(tempDir, "Workspace", "Requests", `${TRACE_ID}.md`), REQUEST_MARKDOWN);
         },
-        afterInjectMs: 12000,
-        waitForAfterInject: async () => (await readCostSource(configPath)) != null,
+        // The cost row may legitimately be absent, so wait for the request's outcome, not for the row.
+        waitForAfterInject: () => daemonJournalHasAny(configPath, REQUEST_OUTCOME_ACTIONS, TRACE_ID),
       });
 
       const costSource = await readCostSource(configPath);
@@ -204,7 +209,7 @@ Deno.test({
       writeTeamDaemonConfig(configPath, tempDir);
       await seedMockPricing(configPath);
 
-      await bootRealDaemon(configPath, 6000, {
+      await bootRealDaemon(configPath, {
         extraEnv: { EXA_LLM_PROVIDER: "mock", EXAIX_EDITION: "team" },
         midFlight: () => {
           Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
@@ -213,8 +218,7 @@ Deno.test({
             REGISTRY_COMPUTED_REQUEST_MARKDOWN,
           );
         },
-        afterInjectMs: 12000,
-        waitForAfterInject: async () => (await readCostSource(configPath)) === "registry_computed",
+        waitForAfterInject: () => daemonJournalHasAny(configPath, REQUEST_OUTCOME_ACTIONS, REGISTRY_COMPUTED_TRACE_ID),
       });
 
       const costSource = await readCostSource(configPath);

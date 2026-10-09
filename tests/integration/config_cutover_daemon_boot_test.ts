@@ -91,7 +91,7 @@ Deno.test({
     writeDaemonConfigWithMockAi(configPath, tempDir);
     seedConfigOverride(tempDir, CUTOVER_KEY, OVERRIDE_VALUE);
     try {
-      await bootRealDaemon(configPath, 5000);
+      await bootRealDaemon(configPath);
       const event = await readCutoverEvent(configPath);
       assert(
         event !== undefined,
@@ -130,10 +130,10 @@ Deno.test({
     // override yet — the watcher must pick up the LATER external write.
     seedConfigOverride(tempDir, "ai.retry.max_attempts", 5);
     try {
-      await bootRealDaemon(configPath, 1500, {
+      await bootRealDaemon(configPath, {
         extraEnv: { EXA_CONFIG_DB_POLL_INTERVAL_MS: TEST_POLL_INTERVAL_MS },
         midFlight: () => appendConfigOverride(tempDir, CUTOVER_KEY, OVERRIDE_VALUE),
-        afterInjectMs: 1500, // give the 300ms poll several cycles to detect + hot-apply
+        waitForAfterInject: () => hasJournalEvent(configPath, WATCHER_CHANGE_EVENT),
       });
       assert(
         await hasJournalEvent(configPath, WATCHER_CHANGE_EVENT),

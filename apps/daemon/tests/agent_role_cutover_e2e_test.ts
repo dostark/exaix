@@ -20,6 +20,8 @@ import { DatabaseService } from "@exaix/storage-sqlite";
 import {
   bootRealDaemon,
   daemonConfigSections,
+  daemonJournalHasAny,
+  REQUEST_OUTCOME_ACTIONS,
   writePortalDir,
 } from "../../../tests/integration/helpers/daemon_config.ts";
 
@@ -97,12 +99,12 @@ Deno.test({
       const portalDir = writePortalDir(tempDir);
       writeMockConfig(configPath, tempDir, portalDir);
 
-      await bootRealDaemon(configPath, 3000, {
+      await bootRealDaemon(configPath, {
         // Pins the provider to mock regardless of config.models.default — see
         // dynamic_step_wiring_test.ts's identical use of this env var for the same reason.
         extraEnv: { EXA_LLM_PROVIDER: "mock" },
         midFlight: () => writeAgentRoleRequest(tempDir),
-        afterInjectMs: 15000,
+        waitForAfterInject: () => daemonJournalHasAny(configPath, REQUEST_OUTCOME_ACTIONS),
       });
 
       const configService = new ConfigService(configPath);

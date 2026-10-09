@@ -57,7 +57,7 @@ Deno.test({
     const configPath = join(tempDir, "exa.config.toml");
     writeDaemonConfigWithMockAi(configPath, tempDir);
     try {
-      await bootRealDaemon(configPath, 5000);
+      await bootRealDaemon(configPath);
       const events = await readJournalOrdered(configPath);
       const types = events.map((e) => e.action_type);
       assert(
@@ -85,7 +85,7 @@ Deno.test({
     try {
       // bootRealDaemon runs apps/daemon/main.ts directly (no CLI), so the journal here carries only
       // the daemon-process emissions — which must be daemon.ready, never the CLI's daemon.started.
-      await bootRealDaemon(configPath, 5000);
+      await bootRealDaemon(configPath);
       const events = await readJournalOrdered(configPath);
       const firstWatcherStarted = events.find((e) => e.action_type === "watcher.started")?.seq;
       const daemonReadyRows = events.filter((e) => e.action_type === "daemon.ready").map((e) => e.seq);

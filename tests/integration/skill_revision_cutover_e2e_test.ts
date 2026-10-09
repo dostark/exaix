@@ -21,7 +21,12 @@ import { renderSkillEntry } from "@exaix/core/func";
 import { skillToContextEntry } from "@exaix/core/skills";
 import { createSkillLoaderFor, testSkillContext } from "@exaix/testing";
 import { setupGitRepo } from "@exaix/git/testing";
-import { bootRealDaemon, daemonConfigSections } from "./helpers/daemon_config.ts";
+import {
+  bootRealDaemon,
+  daemonConfigSections,
+  type IRunningDaemon,
+  REQUEST_OUTCOME_ACTIONS,
+} from "./helpers/daemon_config.ts";
 import { type ICutoverEvidence, verifyCutoverEvidence } from "./helpers/skill_cutover_evidence.ts";
 import { SkillRootKind } from "@exaix/core";
 
@@ -40,9 +45,6 @@ const SKILL = "code-review";
 const PORTAL = "cutover-portal";
 const B_MARKER = "CUTOVER_B_EDIT_MARKER";
 const EVIDENCE_ENV = "EXA_PHASE206_EVIDENCE_DIR";
-const DAEMON_SETTLE_MS = 30000;
-const STEP_WAIT_MS = 90000;
-const POLL_MS = 250;
 const REQUIRED_FIXTURE_FIELDS = ["trace_id", "created", "status", "agent_role", "portal", "skills"];
 
 interface IActivityRow {
@@ -110,15 +112,6 @@ function jsonOf<T>(out: string): T {
   const start = lines.findIndex((line) => line === "{" || line === "[");
   assert(start >= 0, `no JSON in output: ${out}`);
   return JSON.parse(lines.slice(start).join("\n")) as T;
-}
-
-async function until(check: () => Promise<boolean> | boolean, timeoutMs: number): Promise<boolean> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (await check()) return true;
-    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
-  }
-  return false;
 }
 
 interface ICutoverFixture {
@@ -322,7 +315,7 @@ Deno.test({
       ).trimEnd();
       const memorySkillsBefore = await gitStatus("Memory/Skills");
 
-      const submit = async (label: string): Promise<{ traceId: string; planId: string }> => {
+      const submit = async (label: string, daemon: IRunningDaemon): Promise<{ traceId: string; planId: string }> => {
         const before = (await readActivity(configPath)).reduce((max, row) => Math.max(max, row.rowid), 0);
         const file = join(tempDir, `${label}.md`);
         const request = loadFixture(new Date().toISOString());
@@ -340,24 +333,25 @@ Deno.test({
         ]);
         assertEquals(submitted.code, 0, submitted.err || submitted.out);
         let traceId: string | undefined;
-        assert(
-          await until(async () => {
-            const created = (await readActivity(configPath)).find((row) =>
-              row.rowid > before && row.action_type === "request.created" && row.trace_id !== null
-            );
-            traceId = created?.trace_id ?? undefined;
-            return traceId !== undefined;
-          }, STEP_WAIT_MS),
-          `request ${label} was never created`,
-        );
+        await daemon.until(async () => {
+          const created = (await readActivity(configPath)).find((row) =>
+            row.rowid > before && row.action_type === "request.created" && row.trace_id !== null
+          );
+          traceId = created?.trace_id ?? undefined;
+          return traceId !== undefined;
+        }, `request ${label} to be created`);
         let planId: string | undefined;
-        assert(
-          await until(() => {
-            planId = planOf(join(tempDir, "Workspace", "Plans"), traceId!);
-            return planId !== undefined;
-          }, STEP_WAIT_MS),
-          `no review plan for ${label}: ${JSON.stringify(provider.map((call) => call.prompt.slice(0, 200)))}`,
-        );
+        await daemon.until(async () => {
+          planId = planOf(join(tempDir, "Workspace", "Plans"), traceId!);
+          if (planId !== undefined) return true;
+          return (await readActivity(configPath)).some((row) =>
+            row.trace_id === traceId && REQUEST_OUTCOME_ACTIONS.includes(row.action_type)
+          );
+        }, `a review plan for ${label}`).catch((error: Error) => {
+          throw new Error(
+            `${error.message}: ${JSON.stringify(provider.map((call) => call.prompt.slice(0, 200)))}`,
+          );
+        });
         await Deno.copyFile(
           join(tempDir, "Workspace", "Plans", `${planId}.md`),
           join(evidenceDir, `plan-${label}.md`),
@@ -365,31 +359,27 @@ Deno.test({
         return { traceId: traceId!, planId: planId! };
       };
 
-      await bootRealDaemon(configPath, DAEMON_SETTLE_MS, {
+      await bootRealDaemon(configPath, {
         extraEnv: { EXA_COMPAT_TEST_API_KEY: "local-fixture-key" },
-        midFlight: async () => {
-          const a = await submit("request-a");
+        midFlight: async (daemon) => {
+          const a = await submit("request-a", daemon);
           state.traceA = a.traceId;
           state.planA = a.planId;
           await Deno.writeTextFile(skillPath, `${originalSkill.trimEnd()}\n\n${B_MARKER}\n`);
-          const b = await submit("request-b");
+          const b = await submit("request-b", daemon);
           state.traceB = b.traceId;
           state.planB = b.planId;
           const approved = await exactl(run, ["plan", "approve", state.planA!]);
           assertEquals(approved.code, 0, approved.err || approved.out);
-          assert(
-            await until(
-              async () =>
-                (await readActivity(configPath)).some((row) =>
-                  row.trace_id === state.traceA &&
-                  ["execution.completed", "execution.failed", "request.failed"].includes(row.action_type)
-                ),
-              STEP_WAIT_MS,
-            ),
-            "plan A never reached a terminal execution event",
+          await daemon.until(
+            async () =>
+              (await readActivity(configPath)).some((row) =>
+                row.trace_id === state.traceA &&
+                ["execution.completed", "execution.failed", "request.failed"].includes(row.action_type)
+              ),
+            "plan A to reach a terminal execution event",
           );
         },
-        afterInjectMs: 0,
       });
 
       await Deno.writeTextFile(join(evidenceDir, "provider-requests.json"), JSON.stringify(provider, null, 2));

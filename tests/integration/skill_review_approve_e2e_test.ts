@@ -13,16 +13,18 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
-import { bootRealDaemon, daemonConfigSections } from "./helpers/daemon_config.ts";
+import {
+  bootRealDaemon,
+  daemonConfigSections,
+  type IRunningDaemon,
+  REQUEST_OUTCOME_ACTIONS,
+} from "./helpers/daemon_config.ts";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
 const EXACTL = join(REPO_ROOT, "apps", "exactl", "src", "exactl.ts");
 const SKILL = "review-flow";
 const MARKER = "REVIEWED_SKILL_MARKER";
 const PROMPT_ASSEMBLED_EVENT = "agent.prompt_assembled";
-const DAEMON_SETTLE_MS = 20000;
-const STEP_WAIT_MS = 60000;
-const POLL_MS = 250;
 
 interface IActivityRow {
   action_type: string;
@@ -98,15 +100,6 @@ async function cli(
   return { code: result.code, out: decode(result.stdout), err: decode(result.stderr) };
 }
 
-async function until(check: () => Promise<boolean>, timeoutMs: number): Promise<boolean> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (await check()) return true;
-    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
-  }
-  return false;
-}
-
 Deno.test({
   name: "[skill_review_approve_e2e] a derived draft is injected only after its reviewed revision is approved",
   ignore: Deno.env.get("CI") === "true",
@@ -123,7 +116,7 @@ Deno.test({
         join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
       );
 
-      const submit = async (): Promise<string> => {
+      const submit = async (daemon: IRunningDaemon): Promise<string> => {
         const traceId = crypto.randomUUID();
         await Deno.mkdir(join(tempDir, "Workspace", "Requests"), { recursive: true });
         await Deno.writeTextFile(
@@ -145,20 +138,20 @@ subject: "Reviewed skill request"
 Add a hello world function.
 `,
         );
-        const assembled = await until(
+        await daemon.until(
           async () =>
             (await readActivity(configPath)).some((row) =>
-              row.trace_id === traceId && row.action_type === PROMPT_ASSEMBLED_EVENT
+              row.trace_id === traceId &&
+              (row.action_type === PROMPT_ASSEMBLED_EVENT || REQUEST_OUTCOME_ACTIONS.includes(row.action_type))
             ),
-          STEP_WAIT_MS,
+          "the request to assemble its prompt",
         );
-        assert(assembled, "the request never assembled a prompt");
         return traceId;
       };
 
       const state: { derived?: string; draftTrace?: string; activeTrace?: string; active?: string } = {};
-      await bootRealDaemon(configPath, DAEMON_SETTLE_MS, {
-        midFlight: async () => {
+      await bootRealDaemon(configPath, {
+        midFlight: async (daemon) => {
           const derived = await cli(configPath, tempDir, [
             "derive",
             "--learning-ids",
@@ -173,7 +166,7 @@ Add a hello world function.
           assert(match, `no revision in derive output: ${derived.out}`);
           state.derived = match[1];
 
-          state.draftTrace = await submit();
+          state.draftTrace = await submit(daemon);
 
           const approved = await cli(configPath, tempDir, [
             "approve",
@@ -187,9 +180,8 @@ Add a hello world function.
           const lines = approved.out.split("\n");
           state.active = JSON.parse(lines.slice(lines.findIndex((line) => line === "{")).join("\n")).activeRevisionId;
 
-          state.activeTrace = await submit();
+          state.activeTrace = await submit(daemon);
         },
-        afterInjectMs: 0,
       });
 
       assertEquals(

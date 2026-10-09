@@ -192,12 +192,11 @@ async function bootCutoverPlan(
   const activeDir = join(tempDir, "Workspace", "Active");
 
   try {
-    await bootRealDaemon(configPath, 2000, {
+    await bootRealDaemon(configPath, {
       midFlight: () => {
         Deno.mkdirSync(activeDir, { recursive: true });
         Deno.writeTextFileSync(join(activeDir, `cutover-${traceId.slice(0, 8)}_plan.md`), planFile(traceId, testBody));
       },
-      afterInjectMs: 60000,
       waitForAfterInject: async () => {
         const rows = await readTraceActivity(configPath, traceId);
         return rows.some((row) => row.action_type === "execution.completed");

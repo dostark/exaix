@@ -14,16 +14,18 @@ import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
-import { bootRealDaemon, daemonConfigSections } from "./helpers/daemon_config.ts";
+import {
+  bootRealDaemon,
+  daemonConfigSections,
+  type IRunningDaemon,
+  REQUEST_OUTCOME_ACTIONS,
+} from "./helpers/daemon_config.ts";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
 const FIRST_SKILL = "hot-first-skill";
 const SECOND_SKILL = "hot-second-skill";
 const PROMPT_ASSEMBLED_EVENT = "agent.prompt_assembled";
 const CONFIG_UPDATED_EVENT = "config.updated";
-const DAEMON_SETTLE_MS = 20000;
-const STEP_WAIT_MS = 60000;
-const POLL_MS = 250;
 
 interface IActivityRow {
   action_type: string;
@@ -86,15 +88,6 @@ const readUsage = (configPath: string, traceId: string) =>
       ),
   );
 
-async function until(check: () => Promise<boolean>, timeoutMs: number): Promise<boolean> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (await check()) return true;
-    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
-  }
-  return false;
-}
-
 async function writeSkill(dir: string, name: string): Promise<void> {
   const folder = join(dir, name);
   await Deno.mkdir(folder, { recursive: true });
@@ -127,7 +120,7 @@ Deno.test({
       await writeSkill(join(tempDir, "Blueprints", "Skills"), FIRST_SKILL);
       await writeSkill(join(tempDir, "Alt", "Skills"), SECOND_SKILL);
 
-      const submit = async (skill: string): Promise<string> => {
+      const submit = async (skill: string, daemon: IRunningDaemon): Promise<string> => {
         const traceId = crypto.randomUUID();
         await Deno.mkdir(join(tempDir, "Workspace", "Requests"), { recursive: true });
         await Deno.writeTextFile(
@@ -149,40 +142,40 @@ subject: "Hot roots ${skill}"
 Add a hello world function.
 `,
         );
-        const assembled = await until(
+        await daemon.until(
           async () =>
             (await readActivity(readerConfig)).some((row) =>
-              row.trace_id === traceId && row.action_type === PROMPT_ASSEMBLED_EVENT
+              row.trace_id === traceId &&
+              (row.action_type === PROMPT_ASSEMBLED_EVENT || REQUEST_OUTCOME_ACTIONS.includes(row.action_type))
             ),
-          STEP_WAIT_MS,
+          `request for ${skill} to assemble its prompt`,
         );
-        assert(assembled, `request for ${skill} never assembled a prompt`);
         return traceId;
       };
       const configUpdates = async (): Promise<number> =>
         (await readActivity(readerConfig)).filter((row) => row.action_type === CONFIG_UPDATED_EVENT).length;
-      const edit = async (text: string): Promise<void> => {
+      const edit = async (text: string, daemon: IRunningDaemon): Promise<void> => {
         const before = await configUpdates();
         await Deno.writeTextFile(configPath, text);
-        await until(async () => (await configUpdates()) > before, STEP_WAIT_MS);
+        await daemon.until(async () => (await configUpdates()) > before, "the config update to be journaled");
       };
 
       const traces: Record<string, string> = {};
-      await bootRealDaemon(configPath, DAEMON_SETTLE_MS, {
-        midFlight: async () => {
-          traces.first = await submit(FIRST_SKILL);
+      await bootRealDaemon(configPath, {
+        midFlight: async (daemon) => {
+          traces.first = await submit(FIRST_SKILL, daemon);
 
-          await edit(`${original}\n[skills]\nroots = [{ kind = "blueprint", path = "Alt/Skills" }]\n`);
-          traces.second = await submit(SECOND_SKILL);
-          traces.droppedFirst = await submit(FIRST_SKILL);
+          await edit(`${original}\n[skills]\nroots = [{ kind = "blueprint", path = "Alt/Skills" }]\n`, daemon);
+          traces.second = await submit(SECOND_SKILL, daemon);
+          traces.droppedFirst = await submit(FIRST_SKILL, daemon);
 
+          // A TOML edit that fails to parse journals no event. Ordering proves the watcher instead.
+          // The probe request, submitted after the bad write, still runs on the last good generation.
           const settled = await configUpdates();
           await Deno.writeTextFile(configPath, `${original}\n[skills]\nmain_max_bytes = "not a number"\n`);
-          await new Promise((resolve) => setTimeout(resolve, 3000));
+          traces.afterInvalid = await submit(SECOND_SKILL, daemon);
           assertEquals(await configUpdates(), settled, "an invalid edit never becomes a config update");
-          traces.afterInvalid = await submit(SECOND_SKILL);
         },
-        afterInjectMs: 0,
       });
 
       const names = async (traceId: string): Promise<string[]> =>

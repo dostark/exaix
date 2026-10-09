@@ -27,7 +27,13 @@ import { toSdkCallToolResult } from "@exaix-team/mcp-server";
 import { setupGitRepo } from "@exaix/git/testing";
 import { ConfigService } from "@exaix/core/config";
 import { DatabaseService } from "@exaix/storage-sqlite";
-import { bootRealDaemon, daemonConfigSections, writePortalDir } from "./helpers/daemon_config.ts";
+import {
+  bootRealDaemon,
+  daemonConfigSections,
+  daemonJournalHasAny,
+  REQUEST_OUTCOME_ACTIONS,
+  writePortalDir,
+} from "./helpers/daemon_config.ts";
 import { runMigrationsIn } from "./helpers/migrate_test_db.ts";
 import {
   GOLDEN_FIXTURE_PATH,
@@ -91,20 +97,22 @@ function writeMcpServerConfig(configPath: string, root: string, portalPath: stri
   Deno.writeTextFileSync(configPath, cfg);
 }
 
-/** Wait until a TCP listener on `port` accepts connections (or timeout). */
-async function waitForPort(port: number, timeoutMs = 15000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
+/** Waits until a TCP listener on `port` accepts a connection. Fails at once if `server` exits first. There is no clock. */
+async function waitForPort(port: number, server: Deno.ChildProcess): Promise<void> {
+  let exit: Deno.CommandStatus | undefined;
+  void server.status.then((status) => {
+    exit = status;
+  });
+  while (exit === undefined) {
     try {
       const conn = await Deno.connect({ port, hostname: "127.0.0.1" });
       conn.close();
-      await new Promise((r) => setTimeout(r, 200));
       return;
     } catch {
       await new Promise((r) => setTimeout(r, 100));
     }
   }
-  throw new Error(`server never listened on port ${port} within ${timeoutMs}ms`);
+  throw new Error(`MCP server exited with code ${exit.code} before listening on port ${port}`);
 }
 
 interface IServerHandle {
@@ -126,7 +134,7 @@ async function startSseServer(
     stdout: "piped",
     stderr: "piped",
   }).spawn();
-  await waitForPort(port);
+  await waitForPort(port, proc);
   return {
     port,
     proc,
@@ -356,10 +364,16 @@ Deno.test({
     try {
       seedAnalyzeCodebaseWorkspace(tempDir);
       writeTeamDaemonConfig(configPath, tempDir, join(tempDir, "portal-repo"), join(tempDir, "recordings"));
-      await bootRealDaemon(configPath, 6000, {
+      await bootRealDaemon(configPath, {
         extraEnv: { EXA_LLM_PROVIDER: "mock", EXAIX_EDITION: "team" },
         midFlight: () => writeAnalyzeCodebaseRequest(tempDir),
-        afterInjectMs: 10000,
+        waitForAfterInject: () =>
+          daemonJournalHasAny(configPath, [
+            DYNAMIC_STEP_COMPLETED,
+            "flow.step.completed",
+            "flow.step.failed",
+            ...REQUEST_OUTCOME_ACTIONS,
+          ]),
       });
 
       const completed = await readLastEvent(configPath, DYNAMIC_STEP_COMPLETED);

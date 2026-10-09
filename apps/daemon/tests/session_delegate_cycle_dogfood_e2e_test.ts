@@ -19,6 +19,8 @@ import { join } from "@std/path";
 import {
   bootRealDaemon,
   daemonConfigSections,
+  daemonJournalHasAny,
+  REQUEST_OUTCOME_ACTIONS,
   writePortalDir,
 } from "../../../tests/integration/helpers/daemon_config.ts";
 import { ConfigService } from "@exaix/core/config";
@@ -36,6 +38,12 @@ const MOCK_BIN_EXISTS = (() => {
 })();
 
 const FLOW_ID = "dogfood-meta-workflow";
+/** Journal actions that end a delegation cycle, by completion or by a rejected step that halts it. */
+const CYCLE_OUTCOME_ACTIONS: readonly string[] = [
+  "session.delegate.cycle_completed",
+  "session.delegate.cycle_step_rejected",
+  ...REQUEST_OUTCOME_ACTIONS,
+];
 
 function twoStepPlan(): string {
   return planWithSteps(2);
@@ -325,13 +333,13 @@ Deno.test({
       const traceId = crypto.randomUUID();
       const requestsDir = join(tempDir, "Workspace", "Requests");
 
-      await bootRealDaemon(configPath, 3000, {
+      await bootRealDaemon(configPath, {
         extraEnv: {
           EXA_LLM_PROVIDER: "mock",
           PATH: `${mockBinDir}:${Deno.env.get("PATH") ?? ""}`,
         },
         midFlight: () => writeCycleRequest(requestsDir, traceId, planContextRef),
-        afterInjectMs: 15000,
+        waitForAfterInject: () => daemonJournalHasAny(configPath, CYCLE_OUTCOME_ACTIONS, traceId),
       });
 
       const events = await readJournalEvents(configPath, traceId);
@@ -403,13 +411,13 @@ Deno.test({
       const traceId = crypto.randomUUID();
       const requestsDir = join(tempDir, "Workspace", "Requests");
 
-      await bootRealDaemon(configPath, 3000, {
+      await bootRealDaemon(configPath, {
         extraEnv: {
           EXA_LLM_PROVIDER: "mock",
           PATH: `${mockBinDir}:${Deno.env.get("PATH") ?? ""}`,
         },
         midFlight: () => writeCycleRequest(requestsDir, traceId, planContextRef),
-        afterInjectMs: 15000,
+        waitForAfterInject: () => daemonJournalHasAny(configPath, CYCLE_OUTCOME_ACTIONS, traceId),
       });
 
       const events = await readJournalEvents(configPath, traceId);
@@ -514,12 +522,12 @@ Deno.test({
       const traceId = crypto.randomUUID();
       const requestsDir = join(tempDir, "Workspace", "Requests");
 
-      await bootRealDaemon(configPath, 3000, {
+      await bootRealDaemon(configPath, {
         // This operator-run test boots a real Anthropic provider under EXA_TEST_MODE.
         // It must opt in to paid dispatch explicitly.
         extraEnv: { EXA_TEST_ENABLE_PAID_LLM: "1" },
         midFlight: () => writeCycleRequest(requestsDir, traceId, planContextRef),
-        afterInjectMs: 180000,
+        waitForAfterInject: () => daemonJournalHasAny(configPath, CYCLE_OUTCOME_ACTIONS, traceId),
       });
 
       const events = await readJournalEvents(configPath, traceId);

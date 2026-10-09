@@ -11,6 +11,34 @@
 
 import { dirname, join } from "@std/path";
 import { Database } from "@db/sqlite";
+import type { Opt, Reason } from "@exaix/core/types";
+
+/** How a daemon process ended, with its stderr tail for diagnosis. */
+export interface IDaemonExit {
+  code: number;
+  stderrTail: string;
+}
+
+/** The running daemon as seen from inside a boot callback. */
+export interface IRunningDaemon {
+  /** Resolves once `check` holds, or rejects if the daemon exits first. There is no clock. */
+  until(check: () => boolean | Promise<boolean>, awaiting: string): Promise<void>;
+}
+
+/**
+ * Options for {@link bootRealDaemon}. `midFlight` runs after `daemon.ready`.
+ * It must await its own effects. `waitForAfterInject` polls until it holds.
+ * A daemon exit fails either wait first.
+ */
+export interface IRealDaemonBootOptions {
+  /** Explicit child permissions for tests that prove network confinement. */
+  denoPermissions?: string[];
+  extraEnv?: Record<string, string>;
+  /** Runs once the daemon journals ready. It must await work through `daemon.until`. */
+  midFlight?: (daemon: IRunningDaemon) => void | Promise<void>;
+  /** Resolves true once the expected journaled effect is observable. */
+  waitForAfterInject?: () => boolean | Promise<boolean>;
+}
 
 /** Repo root, from `tests/integration/helpers/` — the source of `migrations/` and `deno.json`. */
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
@@ -112,17 +140,44 @@ export function assertDaemonPidIsDead(pid: number): void {
   }
 }
 
-/** Polls `check` until true or `maxMs` elapses — a fixed sleep races real CPU contention. */
-async function pollUntil(
+/** How often a waiter re-reads the journal. This is a read cadence, not a deadline. */
+const DAEMON_EVENT_POLL_MS = 100;
+/** Tail of daemon stderr kept for the failure message when the daemon exits early. */
+const DAEMON_STDERR_TAIL_CHARS = 2000;
+
+/**
+ * Resolves once `check` holds. Rejects when the daemon exits first, naming the awaited event.
+ * No wall-clock budget is used. A fixed budget encodes machine speed. A daemon that stays alive
+ * and never journals the event keeps the wait open. Only the CI job limit ends that case.
+ */
+export async function waitForDaemonEvent(
   check: () => boolean | Promise<boolean>,
-  maxMs: number,
-  intervalMs = 200,
+  exited: Promise<IDaemonExit>,
+  awaiting: string,
 ): Promise<void> {
-  const deadline = Date.now() + maxMs;
-  while (Date.now() < deadline) {
+  for (;;) {
     if (await check()) return;
-    await new Promise((r) => setTimeout(r, intervalMs));
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const tick = new Promise<undefined>((resolve) => {
+      timer = setTimeout(() => resolve(undefined), DAEMON_EVENT_POLL_MS);
+    });
+    const outcome = await Promise.race([tick, exited]);
+    clearTimeout(timer);
+    if (outcome === undefined) continue;
+    // The event may have been journaled just before the exit.
+    if (await check()) return;
+    throw new Error(`daemon exited with code ${outcome.code} before ${awaiting}:\n${outcome.stderrTail}`);
   }
+}
+
+/** Reads a child's stderr to EOF and keeps only its last characters. Drained so the pipe never blocks the daemon. */
+async function collectStderrTail(stream: ReadableStream<Uint8Array>): Promise<string> {
+  const decoder = new TextDecoder();
+  let tail = "";
+  for await (const chunk of stream) {
+    tail = (tail + decoder.decode(chunk, { stream: true })).slice(-DAEMON_STDERR_TAIL_CHARS);
+  }
+  return tail + decoder.decode();
 }
 
 /** Max activity rowid in the workspace journal, or 0 when the DB or table is absent. Read
@@ -140,6 +195,44 @@ function journalMaxRowid(journalPath: string): number {
     }
   } catch {
     return 0;
+  }
+}
+
+/** Journal actions that end a request in failure. Waits include them, so a failed run fails at once. */
+export const REQUEST_FAILURE_ACTIONS: readonly string[] = [
+  "request.processing.error",
+  "request.failed",
+  "request.invalid",
+];
+
+/** Journal actions that end a request's processing, on success. */
+export const REQUEST_SUCCESS_ACTIONS: readonly string[] = ["request.processing.duration"];
+
+/** Every journal action that ends a request, success or failure. */
+export const REQUEST_OUTCOME_ACTIONS: readonly string[] = [...REQUEST_SUCCESS_ACTIONS, ...REQUEST_FAILURE_ACTIONS];
+
+/** True once the journal holds a row with any of `actions`. Pass `traceId` to scope to one request. */
+export function daemonJournalHasAny(
+  configPath: string,
+  actions: readonly string[],
+  traceId?: Opt<string, Reason.OptionalInput>,
+): boolean {
+  const journalPath = join(dirname(configPath), ".exa", "journal.db");
+  try {
+    const db = new Database(journalPath, { readonly: true });
+    try {
+      const marks = actions.map(() => "?").join(", ");
+      const scoped = traceId === undefined ? "" : " AND trace_id = ?";
+      const params = traceId === undefined ? [...actions] : [...actions, traceId];
+      const row = db.prepare(
+        `SELECT 1 AS found FROM activity WHERE action_type IN (${marks})${scoped} LIMIT 1`,
+      ).get(...params);
+      return row !== undefined;
+    } finally {
+      db.close();
+    }
+  } catch {
+    return false;
   }
 }
 
@@ -161,23 +254,12 @@ function daemonReadySince(journalPath: string, afterRowid: number): boolean {
   }
 }
 
-/** Boots the real daemon, settles, then SIGTERM's it; migrates the workspace first (see {@link migrateDaemonWorkspace}). `midFlight`, if given, runs after settle to inject an external Config DB override the daemon must pick up.
- *  Pass `waitFor`/`waitForAfterInject` to poll the real condition instead of sleeping `settleMs`/`afterInjectMs` blind. */
-export async function bootRealDaemon(
-  configPath: string,
-  settleMs: number,
-  options: {
-    /** Explicit child permissions for tests that prove network confinement. */
-    denoPermissions?: string[];
-    extraEnv?: Record<string, string>;
-    midFlight?: () => void | Promise<void>;
-    afterInjectMs?: number;
-    /** Polled instead of sleeping `settleMs`; resolves true once the daemon is ready for `midFlight`. */
-    waitFor?: () => Promise<boolean>;
-    /** Polled instead of sleeping `afterInjectMs`; resolves true once `midFlight`'s effect is observable. */
-    waitForAfterInject?: () => Promise<boolean>;
-  } = {},
-): Promise<void> {
+/**
+ * Boots the real daemon and waits for its `daemon.ready` event.
+ * Then runs the optional mid-flight input and waits for its effect.
+ * Finally sends SIGTERM. Migrates the workspace first (see {@link migrateDaemonWorkspace}).
+ */
+export async function bootRealDaemon(configPath: string, options: IRealDaemonBootOptions = {}): Promise<void> {
   const workspaceRoot = dirname(configPath);
   await migrateDaemonWorkspace(workspaceRoot);
   const journalPath = join(workspaceRoot, ".exa", "journal.db");
@@ -193,31 +275,24 @@ export async function bootRealDaemon(
     cwd: REPO_ROOT,
     stdin: "null",
     stdout: "null",
-    stderr: "null",
+    stderr: "piped",
     env: { EXA_CONFIG_PATH: configPath, EXA_TEST_MODE: "1", ...options.extraEnv },
   }).spawn();
+  const stderrTail = collectStderrTail(proc.stderr);
+  const exited = proc.status.then(async (status) => ({ code: status.code, stderrTail: await stderrTail }));
   try {
-    if (options.waitFor) {
-      await pollUntil(options.waitFor, settleMs);
-    } else {
-      // Poll the authoritative daemon.ready row instead of sleeping settleMs blind. The
-      // daemon is ready once its watchers listen, usually a fraction of the old sleep.
-      await pollUntil(() => daemonReadySince(journalPath, readyBaseline), settleMs);
-    }
-    if (options.midFlight) {
-      await options.midFlight();
-      if (options.waitForAfterInject) {
-        await pollUntil(options.waitForAfterInject, options.afterInjectMs ?? 0);
-      } else {
-        await new Promise((r) => setTimeout(r, options.afterInjectMs ?? 0));
-      }
+    await waitForDaemonEvent(() => daemonReadySince(journalPath, readyBaseline), exited, "daemon.ready");
+    const daemon: IRunningDaemon = {
+      until: (check, awaiting) => waitForDaemonEvent(check, exited, awaiting),
+    };
+    if (options.midFlight) await options.midFlight(daemon);
+    if (options.waitForAfterInject) {
+      await waitForDaemonEvent(options.waitForAfterInject, exited, "the expected journaled effect");
     }
   } finally {
     try {
       Deno.kill(proc.pid, "SIGTERM");
     } catch { /* already dead */ }
-    try {
-      await proc.status;
-    } catch { /* already finished */ }
+    await exited;
   }
 }

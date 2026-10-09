@@ -79,7 +79,7 @@ Deno.test({
     writeDaemonConfigWithMockAi(configPath, tempDir);
     seedConfigDbTable(tempDir);
     try {
-      await bootRealDaemon(configPath, 4000);
+      await bootRealDaemon(configPath);
       assert(
         await hasJournalEvent(configPath, VERIFIED_EVENT),
         `journal must contain ${VERIFIED_EVENT} — proves the daemon verified integrity at boot`,
@@ -103,9 +103,9 @@ Deno.test({
 
     // Boot once to seed the checksum, then tamper, then boot again to detect.
     try {
-      await bootRealDaemon(configPath, 4000);
+      await bootRealDaemon(configPath);
       corruptChecksum(tempDir);
-      await bootRealDaemon(configPath, 4000);
+      await bootRealDaemon(configPath);
       assert(
         await hasJournalEvent(configPath, MISMATCH_EVENT),
         `journal must contain ${MISMATCH_EVENT} — proves the daemon detected an out-of-band checksum tamper at boot`,
@@ -129,13 +129,13 @@ Deno.test({
     seedConfigDbTable(tempDir);
     try {
       // Boot with short poll intervals; mid-flight inject causes periodic verify to detect mismatch.
-      await bootRealDaemon(configPath, 2000, {
+      await bootRealDaemon(configPath, {
         extraEnv: {
           EXA_CONFIG_DB_POLL_INTERVAL_MS: "300",
           EXA_INTEGRITY_POLL_INTERVAL_MS: "300",
         },
         midFlight: () => appendOutOfBandOverride(tempDir, "ai.max_tokens", 9999),
-        afterInjectMs: 2000,
+        waitForAfterInject: () => hasJournalEvent(configPath, MISMATCH_EVENT),
       });
       assert(
         await hasJournalEvent(configPath, MISMATCH_EVENT),

@@ -37,7 +37,13 @@ import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
 import { DatabaseService } from "@exaix/storage-sqlite";
-import { bootRealDaemon, daemonConfigSections, writePortalDir } from "./helpers/daemon_config.ts";
+import {
+  bootRealDaemon,
+  daemonConfigSections,
+  daemonJournalHasAny,
+  REQUEST_OUTCOME_ACTIONS,
+  writePortalDir,
+} from "./helpers/daemon_config.ts";
 import { runMigrationsIn } from "./helpers/migrate_test_db.ts";
 import { type IStubCatalogServer, shutdownAll, startAllStubCatalogServers } from "./helpers/stub_catalog_servers.ts";
 
@@ -213,7 +219,7 @@ Deno.test({
       const portalDir = writePortalDir(tempDir);
       writeTeamConfig(configPath, tempDir, portalDir, started.adapterBaseUrls, true, true);
 
-      await bootRealDaemon(configPath, 6000, {
+      await bootRealDaemon(configPath, {
         extraEnv: { EXA_LLM_PROVIDER: "mock", EXAIX_EDITION: "team" },
         midFlight: () =>
           writeStructuredPlan(
@@ -223,7 +229,7 @@ Deno.test({
             TWO_ROUTE_REQUEST_ID,
             "stub-two-route",
           ),
-        afterInjectMs: 3000,
+        waitForAfterInject: () => daemonJournalHasAny(configPath, ["model.route.selected", ...REQUEST_OUTCOME_ACTIONS]),
       });
 
       const routeEvents = await readEvents(configPath, "model.route.selected");
@@ -274,7 +280,7 @@ Deno.test({
       const portalDir = writePortalDir(tempDir);
       writeTeamConfig(configPath, tempDir, portalDir, started.adapterBaseUrls, false);
 
-      await bootRealDaemon(configPath, 6000, {
+      await bootRealDaemon(configPath, {
         extraEnv: { EXA_LLM_PROVIDER: "mock", EXAIX_EDITION: "team" },
         midFlight: () =>
           writeStructuredPlan(
@@ -284,7 +290,6 @@ Deno.test({
             EXPLICIT_REQUEST_ID,
             "stub-explicit",
           ),
-        afterInjectMs: 12000,
         waitForAfterInject: async () => {
           const events = await readEvents(configPath, "model.admitted");
           return events.some((e) => {
