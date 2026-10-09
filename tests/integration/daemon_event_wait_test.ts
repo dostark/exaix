@@ -69,3 +69,12 @@ Deno.test("[daemon-wait] watchChildExit on a child without piped stderr reports 
   const exit = await watchChildExit(child);
   assertEquals(exit, { code: 4, stderrTail: "" });
 });
+
+Deno.test("[daemon-wait] a process whose exit code is unknown fails the wait without naming a code", async () => {
+  const exited = Promise.resolve<IDaemonExit>({ code: null, stderrTail: "" });
+  await assertRejects(
+    () => waitForDaemonEvent(() => false, exited, "the journal to flush"),
+    Error,
+    "process exited before the journal to flush",
+  );
+});

@@ -15,7 +15,8 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 /** How a daemon process ended, with its stderr tail for diagnosis. */
 export interface IDaemonExit {
-  code: number;
+  /** Null when the transport reports only that the child closed, as the stdio transport does. */
+  code: number | null;
   stderrTail: string;
 }
 
@@ -166,7 +167,8 @@ export async function waitForDaemonEvent(
     if (outcome === undefined) continue;
     // The event may have been journaled just before the exit.
     if (await check()) return;
-    throw new Error(`process exited with code ${outcome.code} before ${awaiting}:\n${outcome.stderrTail}`);
+    const how = outcome.code === null ? "process exited" : `process exited with code ${outcome.code}`;
+    throw new Error(`${how} before ${awaiting}:\n${outcome.stderrTail}`);
   }
 }
 
@@ -249,6 +251,24 @@ export function daemonJournalHasAny(
     }
   } catch {
     return false;
+  }
+}
+
+/** Rowid of the first journal row with this action whose payload contains `text`, or undefined. Lets a barrier find its own row. */
+export function daemonJournalRowidWithText(configPath: string, action: string, text: string): number | undefined {
+  const journalPath = join(dirname(configPath), ".exa", "journal.db");
+  try {
+    const db = new Database(journalPath, { readonly: true });
+    try {
+      const row = db.prepare(
+        "SELECT rowid FROM activity WHERE action_type = ? AND instr(payload, ?) > 0 ORDER BY rowid LIMIT 1",
+      ).get<{ rowid: number }>(action, text);
+      return row?.rowid;
+    } finally {
+      db.close();
+    }
+  } catch {
+    return undefined;
   }
 }
 
