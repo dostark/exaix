@@ -6,10 +6,10 @@
  *   Dry-run by default; `--apply` removes.
  *
  * Usage:
- *   deno task scenario:prune                  # dry run, 7-day window
- *   deno task scenario:prune --days 14
- *   deno task scenario:prune --days 0 --apply # remove, all ages
- *   deno task scenario:prune --root <path>    # override the sandbox root
+ *   deno task sandboxes:prune                  # dry run, 7-day window
+ *   deno task sandboxes:prune --days 14
+ *   deno task sandboxes:prune --days 0 --apply # remove, all ages
+ *   deno task sandboxes:prune --root <path>    # override the sandbox root
  *
  * @architectural-layer Script
  * @related-files [tests/scenario_framework/runner/sandbox_lifecycle.ts, tests/scripts/prune_scenario_sandboxes_test.ts]

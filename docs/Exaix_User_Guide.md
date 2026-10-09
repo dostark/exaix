@@ -6269,7 +6269,7 @@ not widen the selection into other packs. Do not pin `EXA_LLM_PROVIDER` inside a
 `env` is merged last and would override the value you set here.
 
 Scenario sandboxes are reclaimed on success and kept on failure; reclaim the backlog with
-`deno task scenario:prune` (dry-run by default). See
+`deno task sandboxes:prune` (dry-run by default). See
 [`tests/scenario_framework/README.md`](../tests/scenario_framework/README.md) §2.5 and §4b.
 
 ---

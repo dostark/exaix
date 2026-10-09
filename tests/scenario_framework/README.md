@@ -557,9 +557,9 @@ the sandbox base.
 **Reclaiming the backlog.** Dry-run by default:
 
 ```bash
-deno task scenario:prune                 # 7-day window, lists what it would remove
-deno task scenario:prune --days 14
-deno task scenario:prune --days 0 --apply  # actually remove, all ages
+deno task sandboxes:prune                 # 7-day window, lists what it would remove
+deno task sandboxes:prune --days 14
+deno task sandboxes:prune --days 0 --apply  # actually remove, all ages
 ```
 
 Selection is by modification time, not by parsing the run-id. This is also what a periodic CI job

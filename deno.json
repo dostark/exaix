@@ -63,7 +63,7 @@
     "sandbox": "deno run -A scripts/setup_sandbox.ts",
     "scenario:test": "deno test --allow-all tests/scenario_framework/",
     "scenario:test:unit": "deno test --allow-all tests/scenario_framework/tests/unit/",
-    "scenario:prune": "deno run --allow-read --allow-write --allow-env scripts/prune_scenario_sandboxes.ts",
+    "sandboxes:prune": "deno run --allow-read --allow-write --allow-env scripts/prune_scenario_sandboxes.ts",
     "test": "deno test --allow-all --reporter=dot tests/ packages/ apps/",
     "test_verbose": "deno test --allow-all tests/ packages/ exaix-team/ apps/",
     "test:solo": "deno test --allow-all --reporter=dot tests/ packages/ apps/",

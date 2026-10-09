@@ -111,8 +111,8 @@ Authoring pointers
     (runner/pack_mutations.ts).
 
 Reclaim failed-run sandboxes
-  deno task scenario:prune           # dry-run, 7-day window
-  deno task scenario:prune --days 0 --apply
+  deno task sandboxes:prune           # dry-run, 7-day window
+  deno task sandboxes:prune --days 0 --apply
 
 Canonical prompt (short):
 "Run the {pack | scenario | tag | live legs} of the scenario framework for {feature},
