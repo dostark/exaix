@@ -1,14 +1,16 @@
 /**
  * @module NativeToolRoundLiveTest
  * @path tests/integration/native_tool_round_live_test.ts
- * @description Supplemental live qualification. Runs the real GoogleProvider and
- *   PlanningToolLoop against gemini-3-flash with three distinct files (a.txt, b.txt, c.txt) that
- *   each carry a random marker. The follow-up content must contain every marker, which proves the
- *   signed round replayed successfully. Opt-in only: without EXA_TEST_ENABLE_PAID_LLM=1 and
- *   GOOGLE_API_KEY the case is reported as ignored (NOT RUN) and never counts as a pass.
+ * @description Supplemental live qualification. Binds the provider through the phase-204 catalog
+ *   (EXA_TEST_BIND, default the Google preset) and runs the real PlanningToolLoop against it with
+ *   three distinct files (a.txt, b.txt, c.txt) that each carry a random marker. The follow-up content
+ *   must contain every marker, which proves the round replayed successfully. The bound provider must
+ *   declare grouped replay at boot. Opt-in only: without EXA_TEST_ENABLE_PAID_LLM=1 and the bound
+ *   service's key the case is reported as ignored (NOT RUN) and never counts as a pass.
  * @architectural-layer Test
  * @related-files [
  *   "tests/integration/native_tool_round_provider_test.ts",
+ *   "tests/helpers/llm_bindings.ts",
  *   "packages/ai-google/src/google_provider.ts",
  *   "packages/execution/src/planning_tool_loop.ts"
  * ]
@@ -16,19 +18,18 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { PlanningToolLoop } from "@exaix/execution";
-import { GoogleProvider } from "@exaix/ai-google";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
+import { createLlmProvider, liveReplayLlmSpec, llmKeyPresent } from "../helpers/llm_bindings.ts";
 
-const LIVE_MODEL = "gemini-3-flash";
 const LIVE_FILES = ["a.txt", "b.txt", "c.txt"] as const;
 const PAID_OPT_IN_ENV = "EXA_TEST_ENABLE_PAID_LLM";
-const GOOGLE_KEY_ENV = "GOOGLE_API_KEY";
 
-const liveEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && Boolean(Deno.env.get(GOOGLE_KEY_ENV));
+const liveSpec = liveReplayLlmSpec();
+const liveEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && llmKeyPresent(liveSpec);
 
 const READ_FILE_TOOL: ITool = {
   name: "read_file",
@@ -52,7 +53,9 @@ class PortalFileRegistry implements IToolRegistry {
 }
 
 Deno.test({
-  name: "[native_tool_round][live] gemini-3-flash replays three signed reads and answers with every marker",
+  name: `[native_tool_round][live] the bound provider replays three reads and answers with every marker (${
+    liveSpec.service ?? "unbound"
+  })`,
   ignore: !liveEnabled,
   fn: async () => {
     bootstrapProviderRegistry();
@@ -63,14 +66,18 @@ Deno.test({
       return marker;
     });
     try {
-      const provider = new GoogleProvider({ apiKey: Deno.env.get(GOOGLE_KEY_ENV) ?? "", model: LIVE_MODEL });
+      const { binding, provider } = await createLlmProvider(liveSpec);
+      assert(
+        ProviderRegistry.getMetadataForInstance(provider.id)?.supportsParallelToolReplay === true,
+        `${binding.service} declares no grouped replay at boot; choose a grouped-replay service in EXA_TEST_BIND`,
+      );
       const loop = new PlanningToolLoop({
         toolRegistry: new PortalFileRegistry(root),
         tokenizer: {
           countTokens: (t: string) => Promise.resolve(Math.ceil(t.length / 4)),
           countTokensBatch: (ts: string[]) => Promise.resolve(ts.map((t) => Math.ceil(t.length / 4))),
         },
-        modelId: LIVE_MODEL,
+        modelId: binding.service_model_id,
         providerId: provider.id,
         generate: (prompt: string, options: IModelOptions): Promise<IGenerateResult> =>
           provider.generate(prompt, options),

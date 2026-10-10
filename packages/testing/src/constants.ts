@@ -8,12 +8,7 @@
  * Incorporates test-specific constants (prompts, mock data, test environment variables, etc.).
  */
 
-import {
-  DEFAULT_BLUEPRINT_VERSION,
-  DEFAULT_SKILL_INDEX_VERSION,
-  OPENAI_COMPATIBLE_PROFILE_DEFAULTS,
-  ProviderType,
-} from "@exaix/core";
+import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_SKILL_INDEX_VERSION } from "@exaix/core";
 
 export const TEST_MODEL_OPENAI = "openai-gpt-4.1";
 
@@ -161,7 +156,6 @@ export const TEST_LLAMAPROVIDER_JSON_BODY = '{"ok":true}';
 export const ENV_GOOGLE_API_KEY = "GOOGLE_API_KEY";
 export const ENV_OPENAI_API_KEY = "OPENAI_API_KEY";
 export const ENV_ANTHROPIC_API_KEY = "ANTHROPIC_API_KEY";
-export const ENV_DEEPSEEK_API_KEY = "DEEPSEEK_API_KEY";
 
 // Log and Error Prefixes/Messages
 export const LOG_PREFIX_GOOGLE_RESPONSE = "Google Response:";
@@ -292,44 +286,6 @@ export const TEST_TOTAL_TOKENS_ANTHROPIC = 40;
 // Test model names for regression testing
 export const TEST_MODEL_GOOGLE = "gemini-pro";
 export const TEST_MODEL_ANTHROPIC = "claude-3-7-sonnet-20250219";
-
-// Env var names for overriding which real provider/model a live-provider test targets.
-// Prefixed EXA_TEST_ (not the production EXA_LLM_PROVIDER/EXA_LLM_MODEL pair) so setting
-// one never accidentally reconfigures a daemon under test in the same process/environment.
-export const ENV_TEST_LLM_PROVIDER = "EXA_TEST_LLM_PROVIDER";
-export const ENV_TEST_LLM_MODEL = "EXA_TEST_LLM_MODEL";
-
-/** The DeepSeek API, reached through the compatible profile. Not a ProviderType member. */
-export const TEST_LLM_PROVIDER_DEEPSEEK = "deepseek";
-/** The model the DeepSeek profile pins. The compatible factory rejects any other model. */
-export const DEEPSEEK_PINNED_MODEL: string = OPENAI_COMPATIBLE_PROFILE_DEFAULTS.deepseek.model;
-
-const DEFAULT_TEST_LLM_PROVIDER: string = TEST_LLM_PROVIDER_DEEPSEEK;
-
-// Maps providers to real, currently resolving live models (overriding EXA_TEST_LLM_PROVIDER
-// alone yields a working pair).
-const TEST_LLM_MODEL_BY_PROVIDER: Partial<Record<string, string>> = {
-  [TEST_LLM_PROVIDER_DEEPSEEK]: DEEPSEEK_PINNED_MODEL,
-  [ProviderType.ANTHROPIC]: "claude-haiku-4-5-20251001",
-  [ProviderType.OPENAI]: "gpt-5-mini",
-  [ProviderType.GOOGLE]: "gemini-flash-latest",
-  [ProviderType.CLAUDE_CLI]: "claude-sonnet-5",
-  [ProviderType.CODEX_CLI]: "gpt-5.6-terra",
-  [ProviderType.OPENCODE_CLI]: "opencode/deepseek-v4-flash-free",
-};
-
-/** The provider a live-provider test should target: EXA_TEST_LLM_PROVIDER, else the DeepSeek API. */
-export function getTestLlmProvider(): string {
-  return Deno.env.get(ENV_TEST_LLM_PROVIDER) ?? DEFAULT_TEST_LLM_PROVIDER;
-}
-
-/** Model targeted by live-provider tests: EXA_TEST_LLM_MODEL or provider-specific default. */
-export function getTestLlmModel(): string {
-  const envModel = Deno.env.get(ENV_TEST_LLM_MODEL);
-  if (envModel) return envModel;
-  const provider = getTestLlmProvider();
-  return TEST_LLM_MODEL_BY_PROVIDER[provider] ?? DEEPSEEK_PINNED_MODEL;
-}
 
 // Test provider IDs for regression testing
 export const TEST_PROVIDER_ID_GOOGLE = "google-gemini-pro";

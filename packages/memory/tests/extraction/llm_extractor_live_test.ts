@@ -6,9 +6,9 @@
  *   runs the real LlmLearningExtractor (skill-guided, scratchpad-informed) against a real
  *   execution fixture, alongside the deterministic heuristic baseline, and writes the measured
  *   quality evidence to `exaix-dev-docs/evidence/phase-147/step-2-extraction-quality.json`.
- *   Not CI-run: uses the established live-provider convention — EXA_TEST_LLM_PROVIDER
- *   (`claude-cli` uses the local subscription-authenticated Claude Code CLI; keyed cloud
- *   providers gate on their own API key env var) and EXA_TEST_LLM_MODEL for model selection.
+ *   Not CI-run: the extraction provider is bound through EXA_TEST_BIND (phase-204 --bind syntax,
+ *   default the DeepSeek preset), gated on the bound service's own API key. The judge is a CLI
+ *   provider (`claude-cli` by default, subscription-authenticated) or an API service bound the same way.
  * @architectural-layer Services (test)
  * @related-files ["apps/daemon/tests/memory_maturation_cutover_live_test.ts", "packages/memory/src/extraction/llm_learning_extractor.ts"]
  */
@@ -17,11 +17,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 
-import { OllamaProvider } from "@exaix/ai-ollama";
-import { AnthropicProvider } from "@exaix/ai-anthropic";
-import { OpenAIProvider } from "@exaix/ai-openai";
-import { createLiveDeepSeekProvider } from "../../../../tests/helpers/live_deepseek_provider.ts";
-import { GoogleProvider } from "@exaix/ai-google";
+import { createLlmProvider, liveLlmSpec, llmKeyPresent } from "../../../../tests/helpers/llm_bindings.ts";
 import {
   CliDelegateModelProvider,
   DEFAULT_CLAUDE_CLI_BIN,
@@ -37,26 +33,15 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { getCriterionResultJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IProposalLearning } from "@exaix/schemas/memory_bank.ts";
-import {
-  castAny,
-  createMinimalExecutionMemory,
-  ENV_ANTHROPIC_API_KEY,
-  ENV_DEEPSEEK_API_KEY,
-  ENV_GOOGLE_API_KEY,
-  ENV_OPENAI_API_KEY,
-  getTestLlmModel,
-  getTestLlmProvider,
-  initTestDbService,
-  loadRepoSkillCatalog,
-  TEST_LLM_PROVIDER_DEEPSEEK,
-} from "@exaix/testing";
+import { castAny, createMinimalExecutionMemory, initTestDbService, loadRepoSkillCatalog } from "@exaix/testing";
 import { EvaluationCategory, ProviderType } from "@exaix/core";
 import type { IMemoryCostRouter, ISkillsService } from "@exaix/core/types";
 
 const POLICY_SKILL_ID = "memory-extraction-content-policy";
 
-const testProvider = getTestLlmProvider();
-const testModel = getTestLlmModel();
+const liveSpec = liveLlmSpec();
+const testProvider = liveSpec.service ?? "unbound";
+const testModel = liveSpec.service_model_id ?? liveSpec.model ?? "unbound";
 
 const JUDGE_MODEL_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
   [ProviderType.CLAUDE_CLI]: "claude-sonnet-5",
@@ -68,17 +53,8 @@ const testJudgeProvider = Deno.env.get("EXA_EVAL_LLM_PROVIDER") ??
 const testJudgeModel = Deno.env.get("EXA_EVAL_LLM_MODEL") ??
   JUDGE_MODEL_BY_PROVIDER[testJudgeProvider as ProviderType];
 
-/** The env var name carrying the real API key for a given provider's own factory/tests. */
-const API_KEY_ENV_BY_PROVIDER: Partial<Record<string, string>> = {
-  [TEST_LLM_PROVIDER_DEEPSEEK]: ENV_DEEPSEEK_API_KEY,
-  [ProviderType.ANTHROPIC]: ENV_ANTHROPIC_API_KEY,
-  [ProviderType.OPENAI]: ENV_OPENAI_API_KEY,
-  [ProviderType.GOOGLE]: ENV_GOOGLE_API_KEY,
-};
-
-async function buildTestProvider(provider: string, model: string): Promise<IModelProvider> {
-  if (provider === TEST_LLM_PROVIDER_DEEPSEEK) return await createLiveDeepSeekProvider();
-  if (provider === ProviderType.OLLAMA) return new OllamaProvider({ model, timeoutMs: 300_000 });
+/** A CLI judge is built directly. An API judge is bound through the same helper as the system under test. */
+async function buildJudgeProvider(provider: string, model: string): Promise<IModelProvider> {
   if (
     provider === ProviderType.CLAUDE_CLI || provider === ProviderType.CODEX_CLI ||
     provider === ProviderType.OPENCODE_CLI
@@ -94,20 +70,7 @@ async function buildTestProvider(provider: string, model: string): Promise<IMode
       protocolBackend: TEXT_COMPLETION_PROTOCOL_BACKEND,
     });
   }
-  const apiKey = provider === ProviderType.OPENAI
-    ? Deno.env.get(ENV_OPENAI_API_KEY)
-    : provider === ProviderType.GOOGLE
-    ? Deno.env.get(ENV_GOOGLE_API_KEY)
-    : Deno.env.get(ENV_ANTHROPIC_API_KEY);
-  switch (provider as ProviderType) {
-    case ProviderType.OPENAI:
-      return new OpenAIProvider({ apiKey: apiKey ?? "", model });
-    case ProviderType.GOOGLE:
-      return new GoogleProvider({ apiKey: apiKey ?? "", model });
-    case ProviderType.ANTHROPIC:
-    default:
-      return new AnthropicProvider({ apiKey: apiKey ?? "", model });
-  }
+  return (await createLlmProvider({ service: provider, service_model_id: model })).provider;
 }
 
 /** Lexical markers of structural portal-knowledge facts the content-curation policy says to
@@ -181,17 +144,9 @@ function makeExecutionFixture(config: Config, store: ExecutionMemoryStore, trace
   return { lessons, scratchpadNotes, traceId, config, store };
 }
 
-const testApiKeyEnvVar = API_KEY_ENV_BY_PROVIDER[testProvider as ProviderType];
-
 Deno.test({
   name: `[live][phase-147] live LLM extraction quality vs heuristic baseline (${testProvider}:${testModel})`,
-  // Local CLI/Ollama providers require explicit selection; keyed providers require their key.
-  ignore: !(
-    testProvider === ProviderType.OLLAMA || testProvider === ProviderType.CLAUDE_CLI ||
-    testProvider === ProviderType.CODEX_CLI ||
-    testProvider === ProviderType.OPENCODE_CLI ||
-    Boolean(testApiKeyEnvVar && Deno.env.get(testApiKeyEnvVar))
-  ),
+  ignore: !llmKeyPresent(liveSpec),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {
@@ -207,7 +162,7 @@ Deno.test({
         portals: [],
         mcp: {},
       });
-      const provider = await buildTestProvider(testProvider, testModel);
+      const { provider } = await createLlmProvider(liveSpec);
       const costRouter = castAny<IMemoryCostRouter>({
         isRemoteAllowed: () => Promise.resolve(true),
         recordOperation: () => Promise.resolve(),
@@ -271,7 +226,7 @@ Deno.test({
         "extraction and judge providers must differ",
       );
       assertExists(testJudgeModel, `no default judge model for provider ${testJudgeProvider}`);
-      const judge = await buildTestProvider(testJudgeProvider, testJudgeModel);
+      const judge = await buildJudgeProvider(testJudgeProvider, testJudgeModel);
       const judgeInput = {
         summary: execution.summary,
         lessons_learned: execution.lessons_learned ?? [],

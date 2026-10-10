@@ -3,7 +3,7 @@
  * @path apps/daemon/tests/memory_maturation_cutover_live_test.ts
  * @description [live, operator-run] Phase 147 Step 12: the same memory-maturation chain as
  *   memory_maturation_cutover_test.ts, against a real provider instead of MockProviderFactory.
- *   Not CI-run: live-provider convention (EXA_TEST_LLM_PROVIDER / EXA_TEST_LLM_MODEL).
+ *   Not CI-run: live-provider convention. EXA_TEST_BIND binds the provider and model (phase-204 --bind syntax).
  *   Unlike the mock cutover, assertions are intentionally loose — a real model decides what
  *   to extract and how confident it is, so the test proves the WIRING carries real model
  *   behavior end-to-end (capture → extract → pending → approval attempt → retrieve → reflect),
@@ -19,19 +19,7 @@ import { ExecutionContextService, OutputParser, ReActLoopAdapter, ReActLoopStrat
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { SecurityMode, ToolName } from "@exaix/core";
 import { createStubConfig, createStubDisplay, createStubGit, loadRepoSkillCatalog } from "@exaix/testing";
-import { OllamaProvider } from "@exaix/ai-ollama";
-import { AnthropicProvider } from "@exaix/ai-anthropic";
-import { OpenAIProvider } from "@exaix/ai-openai";
-import { createLiveDeepSeekProvider } from "../../../tests/helpers/live_deepseek_provider.ts";
-import { GoogleProvider } from "@exaix/ai-google";
-import {
-  CliDelegateModelProvider,
-  DEFAULT_CLAUDE_CLI_BIN,
-  DEFAULT_CODEX_CLI_BIN,
-  DEFAULT_OPENCODE_CLI_BIN,
-  TEXT_COMPLETION_PROTOCOL_BACKEND,
-} from "@exaix/ai-clidelegate";
-import type { IModelProvider } from "@exaix/ai";
+import { createLlmProvider, liveLlmSpec, llmKeyPresent } from "../../../tests/helpers/llm_bindings.ts";
 import { EventLogger } from "@exaix/core/logger";
 import { MemoryStatus } from "@exaix/core/status";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryScope } from "@exaix/core";
@@ -49,68 +37,14 @@ import {
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import {
-  castAny,
-  createMinimalExecutionMemory,
-  createSampleLearning,
-  ENV_ANTHROPIC_API_KEY,
-  ENV_DEEPSEEK_API_KEY,
-  ENV_GOOGLE_API_KEY,
-  ENV_OPENAI_API_KEY,
-  getTestLlmModel,
-  getTestLlmProvider,
-  initTestDbService,
-  TEST_LLM_PROVIDER_DEEPSEEK,
-} from "@exaix/testing";
-import { ProviderType } from "@exaix/core";
+import { castAny, createMinimalExecutionMemory, createSampleLearning, initTestDbService } from "@exaix/testing";
 import type { IApplicationContext, IMemoryCostRouter, ISkillsService } from "@exaix/core/types";
 
 const POLICY_SKILL_ID = "memory-extraction-content-policy";
 
-const testProvider = getTestLlmProvider();
-const testModel = getTestLlmModel();
-
-/** The env var name carrying the real API key for a given provider's own factory/tests. */
-const API_KEY_ENV_BY_PROVIDER: Partial<Record<string, string>> = {
-  [TEST_LLM_PROVIDER_DEEPSEEK]: ENV_DEEPSEEK_API_KEY,
-  [ProviderType.ANTHROPIC]: ENV_ANTHROPIC_API_KEY,
-  [ProviderType.OPENAI]: ENV_OPENAI_API_KEY,
-  [ProviderType.GOOGLE]: ENV_GOOGLE_API_KEY,
-};
-
-async function buildTestProvider(provider: string, model: string): Promise<IModelProvider> {
-  if (provider === TEST_LLM_PROVIDER_DEEPSEEK) return await createLiveDeepSeekProvider();
-  if (provider === ProviderType.OLLAMA) return new OllamaProvider({ model, timeoutMs: 300_000 });
-  if (
-    provider === ProviderType.CLAUDE_CLI || provider === ProviderType.CODEX_CLI ||
-    provider === ProviderType.OPENCODE_CLI
-  ) {
-    const isClaude = provider === ProviderType.CLAUDE_CLI;
-    const isCodex = provider === ProviderType.CODEX_CLI;
-    return new CliDelegateModelProvider({
-      tool: isClaude ? "claude-code" : isCodex ? "codex" : "opencode",
-      bin: isClaude ? DEFAULT_CLAUDE_CLI_BIN : isCodex ? DEFAULT_CODEX_CLI_BIN : DEFAULT_OPENCODE_CLI_BIN,
-      model,
-      cwd: Deno.cwd(),
-      timeoutMs: 300_000,
-      protocolBackend: TEXT_COMPLETION_PROTOCOL_BACKEND,
-    });
-  }
-  const apiKey = provider === ProviderType.OPENAI
-    ? Deno.env.get(ENV_OPENAI_API_KEY)
-    : provider === ProviderType.GOOGLE
-    ? Deno.env.get(ENV_GOOGLE_API_KEY)
-    : Deno.env.get(ENV_ANTHROPIC_API_KEY);
-  switch (provider as ProviderType) {
-    case ProviderType.OPENAI:
-      return new OpenAIProvider({ apiKey: apiKey ?? "", model });
-    case ProviderType.GOOGLE:
-      return new GoogleProvider({ apiKey: apiKey ?? "", model });
-    case ProviderType.ANTHROPIC:
-    default:
-      return new AnthropicProvider({ apiKey: apiKey ?? "", model });
-  }
-}
+const liveSpec = liveLlmSpec();
+const testProvider = liveSpec.service ?? "unbound";
+const testModel = liveSpec.service_model_id ?? liveSpec.model ?? "unbound";
 
 async function loadPolicyInstructions(): Promise<string> {
   const skill = (await loadRepoSkillCatalog()).get("memory-extraction-content-policy")?.skill;
@@ -118,17 +52,9 @@ async function loadPolicyInstructions(): Promise<string> {
   return skill.instructions;
 }
 
-const testApiKeyEnvVar = API_KEY_ENV_BY_PROVIDER[testProvider as ProviderType];
-
 Deno.test({
   name: `[live][phase-147 cutover] the full memory chain runs against a real provider (${testProvider}:${testModel})`,
-  // Local CLI/Ollama providers require explicit selection; keyed providers require their key.
-  ignore: !(
-    testProvider === ProviderType.OLLAMA || testProvider === ProviderType.CLAUDE_CLI ||
-    testProvider === ProviderType.CODEX_CLI ||
-    testProvider === ProviderType.OPENCODE_CLI ||
-    Boolean(testApiKeyEnvVar && Deno.env.get(testApiKeyEnvVar))
-  ),
+  ignore: !llmKeyPresent(liveSpec),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {
@@ -149,7 +75,7 @@ Deno.test({
         },
       });
       const logger = new EventLogger({ db });
-      const provider = await buildTestProvider(testProvider, testModel);
+      const { provider } = await createLlmProvider(liveSpec);
 
       // The real cost router decides remotely-gated operations from real budget state; the
       // extraction strategy gate below is forced open so the live path is exercised even on

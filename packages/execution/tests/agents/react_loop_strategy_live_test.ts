@@ -18,9 +18,9 @@
  *   portal — the swe_tasks scenario pack already covers that heavier, full-stack path;
  *   this test isolates ReActLoopStrategy's own tool-use, comprehension, and termination
  *   contract against a real model as cheaply and directly as possible. Provider and model
- *   are overridable via EXA_TEST_LLM_PROVIDER/EXA_TEST_LLM_MODEL (@exaix/testing), so this
- *   same test can be pointed at the DeepSeek API (default), Anthropic, OpenAI, or Google without
- *   editing source. Gated on whichever provider's own API key is actually required.
+ *   are bound through EXA_TEST_BIND (the phase-204 --bind syntax, default the DeepSeek preset), so this
+ *   same test can be pointed at any catalog service without editing source. Gated on the bound
+ *   service's own API key.
  * @architectural-layer Services (test)
  * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/execution/tests/agents/react_loop_strategy_test.ts, packages/ai/tests/provider_endpoint_regression_test.ts]
  */
@@ -28,22 +28,9 @@
 import { assert, assertEquals } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
-import { AnthropicProvider } from "@exaix/ai-anthropic";
-import { OpenAIProvider } from "@exaix/ai-openai";
-import { createLiveDeepSeekProvider } from "../../../../tests/helpers/live_deepseek_provider.ts";
-import { GoogleProvider } from "@exaix/ai-google";
-import { ExecutionStrategyName, ProviderType, REACT_STATUS_COMPLETE, SecurityMode, ToolName } from "@exaix/core";
-import type { IModelProvider } from "@exaix/ai/types.ts";
+import { createLlmProvider, liveLlmSpec, llmKeyPresent } from "../../../../tests/helpers/llm_bindings.ts";
+import { ExecutionStrategyName, REACT_STATUS_COMPLETE, SecurityMode, ToolName } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
-import {
-  ENV_ANTHROPIC_API_KEY,
-  ENV_DEEPSEEK_API_KEY,
-  ENV_GOOGLE_API_KEY,
-  ENV_OPENAI_API_KEY,
-  getTestLlmModel,
-  getTestLlmProvider,
-  TEST_LLM_PROVIDER_DEEPSEEK,
-} from "@exaix/testing";
 import type { JSONValue } from "@exaix/core/types";
 import { bestSubstringSimilarity } from "../../../../tests/helpers/fuzzy_string_match.ts";
 
@@ -62,33 +49,9 @@ const FILE_STATEMENT_ONE = "The warehouse ships orders every Tuesday.";
 const FILE_STATEMENT_TWO = "The quokka guards the northern vault.";
 const READ_ONLY_FILE_CONTENT = `${FILE_STATEMENT_ONE} ${FILE_STATEMENT_TWO}`;
 
-const testProvider = getTestLlmProvider();
-const testModel = getTestLlmModel();
-
-/** The env var name carrying the real API key for a given provider's own factory/tests. */
-const API_KEY_ENV_BY_PROVIDER: Partial<Record<string, string>> = {
-  [TEST_LLM_PROVIDER_DEEPSEEK]: ENV_DEEPSEEK_API_KEY,
-  [ProviderType.ANTHROPIC]: ENV_ANTHROPIC_API_KEY,
-  [ProviderType.OPENAI]: ENV_OPENAI_API_KEY,
-  [ProviderType.GOOGLE]: ENV_GOOGLE_API_KEY,
-};
-
-function resolveApiKeyEnvVar(provider: string): string {
-  return API_KEY_ENV_BY_PROVIDER[provider] ?? ENV_ANTHROPIC_API_KEY;
-}
-
-async function buildTestProvider(provider: string, model: string, apiKey: string): Promise<IModelProvider> {
-  if (provider === TEST_LLM_PROVIDER_DEEPSEEK) return await createLiveDeepSeekProvider();
-  switch (provider as ProviderType) {
-    case ProviderType.OPENAI:
-      return new OpenAIProvider({ apiKey, model });
-    case ProviderType.GOOGLE:
-      return new GoogleProvider({ apiKey, model });
-    case ProviderType.ANTHROPIC:
-    default:
-      return new AnthropicProvider({ apiKey, model });
-  }
-}
+const liveSpec = liveLlmSpec();
+const testProvider = liveSpec.service ?? "unbound";
+const testModel = liveSpec.service_model_id ?? liveSpec.model ?? "unbound";
 
 const testBlueprint = {
   name: "react-live-test-agent",
@@ -152,16 +115,14 @@ function buildExecutor(toolCalls: Array<{ tool: string; params: TestToolParams }
   } as ReActExecutor;
 }
 
-const testApiKeyEnvVar = resolveApiKeyEnvVar(testProvider);
-
 Deno.test({
   name:
     `[live] ReActLoopStrategy (${testProvider}:${testModel}): a real model uses the AVAILABLE TOOLS list, comprehends the tool result content, and recognizes STATUS: COMPLETE to terminate`,
-  ignore: !Deno.env.get(testApiKeyEnvVar),
+  ignore: !llmKeyPresent(liveSpec),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {
-    const provider = await buildTestProvider(testProvider, testModel, Deno.env.get(testApiKeyEnvVar)!);
+    const { provider } = await createLlmProvider(liveSpec);
 
     let generateCallCount = 0;
     const countingProvider = {
