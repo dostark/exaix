@@ -23,6 +23,9 @@ import { EventLogger } from "@exaix/core/logger";
 import { createStubContext, createStubDb } from "@exaix/testing";
 import type { JSONObject } from "@exaix/core/types";
 import { BINARY_VERSION, DAEMON_STOP_TIMEOUT_MS, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
+import { getRegisteredDefaults } from "@exaix/core/config";
+import { ConfigValueType, SwapClass } from "@exaix/core/types";
 import { readFixtureTextSync } from "@exaix/testing";
 
 /**
@@ -236,6 +239,29 @@ describe("DaemonCommands", {
       assertExists(payload.command);
       assertEquals(payload.command.startsWith("exactl "), true);
       assertExists(payload.timestamp);
+    });
+
+    it("should fail at once with the journaled reason when the daemon exits before daemon.ready", async () => {
+      await Deno.writeTextFile(mainScript, "Deno.exit(1);\n");
+      daemonCommands.skipDaemonReadyWait = false;
+
+      await assertRejects(() => daemonCommands.start());
+
+      await db.waitForFlush();
+      const failures = db.instance.prepare("SELECT payload FROM activity WHERE action_type = ?")
+        .all(DomainEventType.DaemonStartFailed) as { payload: string }[];
+      assertEquals(failures.length, 1);
+      assertStringIncludes(JSON.parse(failures[0].payload).error, "exited before daemon.ready");
+      const started = db.instance.prepare("SELECT COUNT(*) AS n FROM activity WHERE action_type = ?")
+        .get(DomainEventType.DaemonStarted) as { n: number };
+      assertEquals(started.n, 0);
+    });
+
+    it("registers the daemon ready timeout as a restart-swap configurable key", () => {
+      const registered = getRegisteredDefaults().get("daemon.ready_timeout_ms");
+      assertExists(registered);
+      assertEquals(registered.opts.type, ConfigValueType.NUMBER);
+      assertEquals(registered.opts.swap, SwapClass.RESTART);
     });
   });
 

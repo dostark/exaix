@@ -1488,7 +1488,9 @@ if (import.meta.main) {
     const longLived = fileWatchers.map((w) => w.run());
     if (sessionReturnWatcher) longLived.push(sessionReturnWatcher.start());
 
-    // daemon.ready (NOT daemon.started): the watchers above are confirmed listening, so this is the authoritative "fully functioning" signal. The CLI `daemon start` already emitted daemon.started on process-alive; emitting a distinct daemon.ready here avoids two same-named events and lets a consumer wait for genuine readiness (the request watcher is live) before submitting work.
+    // daemon.ready (NOT daemon.started) marks the watchers as listening.
+    // The CLI emits daemon.started, so a distinct name avoids two same-named readiness events.
+    // Consumers can wait on it before they submit work.
     await logger.log({
       action: DomainEventType.DaemonReady,
       target: "exaix",

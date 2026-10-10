@@ -14,7 +14,7 @@ import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
 import { STDIO_INHERIT } from "./constants.ts";
 import { DefaultErrorStrategy } from "@exaix/cli/errors/error_strategy.ts";
-import { DAEMON_STOP_TIMEOUT_MS } from "@exaix/core";
+import { DAEMON_READY_TIMEOUT_MS, DAEMON_STOP_TIMEOUT_MS } from "@exaix/core";
 import { DAEMON_SPAWN_PERMISSIONS } from "@exaix/core/types";
 import { isProcessAlive } from "@exaix/cli/process_utils.ts";
 import type { JSONObject } from "@exaix/core/types";
@@ -26,11 +26,14 @@ import type { IDaemonStatus } from "@exaix/core/types";
 /** Logger actor name for daemon operations */
 const DAEMON_ACTOR = "daemon";
 
-/** How long (ms) to wait for the daemon to emit daemon.ready after the process is alive */
-const DAEMON_READY_TIMEOUT_MS = 30_000;
-
 /** How often (ms) to poll the journal for daemon.ready */
 const DAEMON_READY_POLL_INTERVAL_MS = 500;
+
+/** Start failure reason when the daemon process exits before it journals daemon.ready */
+const DAEMON_EXITED_BEFORE_READY = "Daemon process exited before daemon.ready";
+
+/** Start failure reason when the daemon is alive but does not journal daemon.ready in time */
+const DAEMON_NOT_READY_IN_TIME = "Daemon started but never reached ready state (watchers not listening)";
 
 /**
  * Commands for daemon control
@@ -120,37 +123,24 @@ export class DaemonCommands extends BaseCommand {
       // Write PID file
       await Deno.writeTextFile(this.pidFile, pid.toString());
 
-      // Wait for daemon to fully start (up to 3 seconds with retries)
-      // CI environments may need more time for database initialization
-      const started = await this.waitForProcessState(pid, true, 3000);
-
-      if (!started) {
+      // Block until the daemon emits daemon.ready (watchers confirmed listening).
+      // A process that exits first ends the wait at once. No fixed delay applies.
+      const ready = await this.waitForDaemonReady(workspaceRoot, pid, DAEMON_READY_TIMEOUT_MS);
+      if (!ready) {
+        const exited = !(await isProcessAlive(pid));
+        const reason = exited ? DAEMON_EXITED_BEFORE_READY : DAEMON_NOT_READY_IN_TIME;
         await this.logDaemonActivity(DomainEventType.DaemonStartFailed, {
-          error: "Daemon failed to start within timeout",
+          error: reason,
           pid: pid,
         });
-        throw new Error("Daemon failed to start. Check logs for details.");
+        throw new Error(`${reason}. Check logs for details.`);
       }
 
-      // Log successful start (writes to both console and IActivity Journal)
+      // Log successful start once the daemon is ready (writes to both console and IActivity Journal)
       await this.logDaemonActivity(DomainEventType.DaemonStarted, {
         pid: pid,
         log_file: logFile,
       });
-
-      // Block until the daemon emits daemon.ready (watchers confirmed listening).
-      // This eliminates the ~700ms race window between process-alive and watchers-up
-      // — the CLI only returns when the daemon is genuinely ready for work.
-      const ready = await this.waitForDaemonReady(workspaceRoot, pid, DAEMON_READY_TIMEOUT_MS);
-      if (!ready) {
-        await this.logDaemonActivity(DomainEventType.DaemonStartFailed, {
-          error: "Daemon started but never reached ready state (watchers not listening)",
-          pid: pid,
-        });
-        throw new Error(
-          "Daemon failed to become ready within timeout. Check logs for details.",
-        );
-      }
     } catch (error) {
       await DefaultErrorStrategy.handle({
         commandName: "DaemonCommands.start",

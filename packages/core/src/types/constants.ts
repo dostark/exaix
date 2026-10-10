@@ -1905,6 +1905,17 @@ export const DAEMON_STOP_TIMEOUT_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
+/** Ceiling for `daemon start` to wait for the daemon to emit daemon.ready */
+export const DAEMON_READY_TIMEOUT_MS: number = configurable({
+  key: "daemon.ready_timeout_ms",
+  default: 30_000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for the daemon to emit daemon.ready after start",
+  min: 100,
+  max: 600_000,
+  swap: SwapClass.RESTART,
+});
+
 /** Agent role ID used for the daemon actor in logs and permission checks */
 export const DAEMON_AGENT_ROLE_ID = "daemon";
 
