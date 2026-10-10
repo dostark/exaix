@@ -38,11 +38,6 @@ async function createActiveDir(env: TestEnvironment): Promise<string> {
   return activePath;
 }
 
-/** Wait for the file watcher to process (with stability check). */
-function waitForWatcher(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 200));
-}
-
 async function assertFileExists(path: string, message: string): Promise<void> {
   const exists = await Deno.stat(path)
     .then(() => true)
@@ -84,8 +79,6 @@ A working hello world function with tests.
 
     const planPath = join(activePath, `${requestId}_plan.md`);
     await Deno.writeTextFile(planPath, planContent);
-
-    await waitForWatcher();
 
     await assertFileExists(planPath, "Plan file should exist");
 
@@ -136,8 +129,6 @@ status: approved
 `,
     );
 
-    await waitForWatcher();
-
     const files = [];
     for await (const entry of Deno.readDir(activePath)) {
       if (entry.isFile && entry.name.endsWith("_plan.md")) {
@@ -172,8 +163,6 @@ status: invalid
 `,
     );
 
-    await waitForWatcher();
-
     await assertFileExists(planPath, "Invalid plan file should still exist");
 
     console.log("✅ Integration test passed: Invalid plan handled gracefully");
@@ -199,8 +188,6 @@ status: approved
 # Plan without trace_id
 `,
     );
-
-    await waitForWatcher();
 
     await assertFileExists(planPath, "Plan without trace_id should still exist");
 
