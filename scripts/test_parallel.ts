@@ -258,7 +258,6 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
     file: "apps/daemon/tests/session_delegate_cycle_dogfood_e2e_test.ts",
     reasons: [IsolationReason.moduleCache, IsolationReason.pressure],
   },
-  { file: "apps/daemon/tests/readiness_test.ts", reasons: [IsolationReason.pressure] },
   {
     file: "tests/integration/agent_runner_daemon_cutover_test.ts",
     reasons: [IsolationReason.port, IsolationReason.pressure],

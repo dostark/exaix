@@ -222,7 +222,6 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "apps/daemon/tests/health_check_service_test.ts",
   "apps/daemon/tests/dynamic_step_wiring_test.ts",
   "apps/daemon/tests/session_delegate_cycle_dogfood_e2e_test.ts",
-  "apps/daemon/tests/readiness_test.ts",
   "tests/integration/agent_runner_daemon_cutover_test.ts",
   "tests/infra/build_test.ts",
   "tests/infra/exactl_edition_build_test.ts",

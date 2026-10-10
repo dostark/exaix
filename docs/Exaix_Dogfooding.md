@@ -88,9 +88,9 @@ await Deno.writeTextFile(
 );
 '
 
-# 4. Start the daemon and wait for readiness.
+# 4. Start the daemon, then block until it journals daemon.ready.
 deno task dogfood
-deno run -A scripts/wait_for_daemon.ts $DOGFOOD_SANDBOX/workspace
+exactl journal wait --event daemon.ready
 
 # 5. Write a request. An unquoted heredoc deliberately expands the UUID and timestamp.
 cat > "$DOGFOOD_SANDBOX/workspace/Workspace/Requests/add-health-endpoint.md" <<REQUEST

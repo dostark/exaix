@@ -774,7 +774,6 @@ const PARITY_SUBSET = [
   "tests/scripts/db_cache_schema_upgrade_test.ts",
   "tests/scenario_framework/tests/integration/flow_step_model_bindings_test.ts",
   "tests/integration/mcp_server_spec_compliance_cutover_test.ts",
-  "apps/daemon/tests/readiness_test.ts",
   "tests/integration/agent/mcp_handshake_test.ts",
 ];
 
