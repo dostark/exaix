@@ -1049,9 +1049,13 @@ const baseCommand: ExaCtlBaseCommand = new Command()
         "start",
         new Command()
           .description("Start the Exaix daemon")
-          .action(async () => {
+          .option(
+            "--ready-timeout <ms:number>",
+            "Milliseconds to wait for daemon.ready (default: daemon.ready_timeout_ms)",
+          )
+          .action(async (options) => {
             try {
-              await daemonCommands.start();
+              await daemonCommands.start({ readyTimeoutMs: options.readyTimeout });
             } catch (error) {
               display.error("cli.error", "daemon start", {
                 message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,

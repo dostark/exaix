@@ -1905,9 +1905,12 @@ export const DAEMON_STOP_TIMEOUT_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
+/** Config key for the daemon ready ceiling, read by `daemon start` and the registry. */
+export const DAEMON_READY_TIMEOUT_CONFIG_KEY = "daemon.ready_timeout_ms";
+
 /** Ceiling for `daemon start` to wait for the daemon to emit daemon.ready */
 export const DAEMON_READY_TIMEOUT_MS: number = configurable({
-  key: "daemon.ready_timeout_ms",
+  key: DAEMON_READY_TIMEOUT_CONFIG_KEY,
   default: 30_000,
   type: ConfigValueType.NUMBER,
   description: "Timeout in milliseconds for the daemon to emit daemon.ready after start",

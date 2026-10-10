@@ -14,14 +14,21 @@ import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
 import { STDIO_INHERIT } from "./constants.ts";
 import { DefaultErrorStrategy } from "@exaix/cli/errors/error_strategy.ts";
-import { DAEMON_READY_TIMEOUT_MS, DAEMON_STOP_TIMEOUT_MS } from "@exaix/core";
-import { DAEMON_SPAWN_PERMISSIONS } from "@exaix/core/types";
+import { DAEMON_READY_TIMEOUT_CONFIG_KEY, DAEMON_READY_TIMEOUT_MS, DAEMON_STOP_TIMEOUT_MS } from "@exaix/core";
+import { createConfigAdapterAsync, ensureConfigDb } from "@exaix/core/config";
+import { DAEMON_SPAWN_PERMISSIONS, type Opt, type Reason } from "@exaix/core/types";
 import { isProcessAlive } from "@exaix/cli/process_utils.ts";
 import type { JSONObject } from "@exaix/core/types";
 import { computeStartNetGrant } from "@exaix/ai/bindings/net_grant.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core/version.ts";
 
 import type { IDaemonStatus } from "@exaix/core/types";
+
+/** Options for `daemon start`. Omitted fields fall back to the effective configuration. */
+export interface IDaemonStartOptions {
+  /** Ceiling in ms for daemon.ready. Overrides `daemon.ready_timeout_ms` for this start. */
+  readyTimeoutMs?: number;
+}
 
 /** Logger actor name for daemon operations */
 const DAEMON_ACTOR = "daemon";
@@ -52,7 +59,7 @@ export class DaemonCommands extends BaseCommand {
   /**
    * Start the Exaix daemon
    */
-  async start(): Promise<void> {
+  async start(options?: Opt<IDaemonStartOptions, Reason.OptionalInput>): Promise<void> {
     try {
       const workspaceRoot = this.config.system.root!;
       const logFile = join(workspaceRoot, this.config.paths.runtime!, "daemon.log");
@@ -81,6 +88,9 @@ export class DaemonCommands extends BaseCommand {
       // Ensure log file directory exists
       const exaDir = join(workspaceRoot, this.config.paths.runtime!);
       await ensureDir(exaDir);
+
+      // Resolved before the spawn, so an invalid ceiling starts no daemon.
+      const readyTimeoutMs = await this.resolveReadyTimeoutMs(options?.readyTimeoutMs);
 
       // Start daemon process in background using shell for true detachment
       // This allows the CLI to exit while daemon continues running
@@ -125,7 +135,7 @@ export class DaemonCommands extends BaseCommand {
 
       // Block until the daemon emits daemon.ready (watchers confirmed listening).
       // A process that exits first ends the wait at once. No fixed delay applies.
-      const ready = await this.waitForDaemonReady(workspaceRoot, pid, DAEMON_READY_TIMEOUT_MS);
+      const ready = await this.waitForDaemonReady(workspaceRoot, pid, readyTimeoutMs);
       if (!ready) {
         const exited = !(await isProcessAlive(pid));
         const reason = exited ? DAEMON_EXITED_BEFORE_READY : DAEMON_NOT_READY_IN_TIME;
@@ -148,6 +158,22 @@ export class DaemonCommands extends BaseCommand {
         error: error as Error | string | object | null | undefined,
       });
     }
+  }
+
+  // Explicit option first, then the effective config value, then the registered default.
+  // The explicit value is checked against the registry bounds, as `exactl config set` would check it.
+  private async resolveReadyTimeoutMs(explicit: Opt<number, Reason.OptionalInput>): Promise<number> {
+    const configDbPath = ensureConfigDb(this.config.system.root!);
+    const adapter = await createConfigAdapterAsync(configDbPath);
+    if (explicit !== undefined) {
+      const report = adapter.validateAtPath(DAEMON_READY_TIMEOUT_CONFIG_KEY, explicit);
+      if (!report.valid) {
+        const detail = report.issues.map((issue) => issue.message).join(" ");
+        throw new Error(`Invalid --ready-timeout ${explicit}: ${detail}`);
+      }
+      return explicit;
+    }
+    return adapter.get<number>(DAEMON_READY_TIMEOUT_CONFIG_KEY) ?? DAEMON_READY_TIMEOUT_MS;
   }
 
   // Builds the minimal `--allow-*` flag set for the daemon spawn from config. The

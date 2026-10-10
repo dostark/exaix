@@ -22,11 +22,22 @@ import type { IDisplayService } from "@exaix/core/types";
 import { EventLogger } from "@exaix/core/logger";
 import { createStubContext, createStubDb } from "@exaix/testing";
 import type { JSONObject } from "@exaix/core/types";
-import { BINARY_VERSION, DAEMON_STOP_TIMEOUT_MS, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import {
+  BINARY_VERSION,
+  DAEMON_READY_TIMEOUT_CONFIG_KEY,
+  DAEMON_READY_TIMEOUT_MS,
+  DAEMON_STOP_TIMEOUT_MS,
+  WORKSPACE_SCHEMA_VERSION,
+} from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
-import { getRegisteredDefaults } from "@exaix/core/config";
+import { createConfigAdapterAsync, getRegisteredDefaults } from "@exaix/core/config";
 import { ConfigValueType, SwapClass } from "@exaix/core/types";
 import { readFixtureTextSync } from "@exaix/testing";
+
+/** Ready ceilings for the option and config tests. The out-of-bounds value sits below the registered minimum. */
+const OPTION_READY_MS = 4321;
+const CONFIGURED_READY_MS = 9876;
+const OUT_OF_BOUNDS_READY_MS = 1;
 
 /**
  * Helper class to expose and mock protected methods of DaemonCommands
@@ -34,6 +45,7 @@ import { readFixtureTextSync } from "@exaix/testing";
 class TestDaemonCommands extends DaemonCommands {
   public mockActionLogger?: IDisplayService;
   public skipDaemonReadyWait = true;
+  public readyTimeouts: number[] = [];
 
   public override getActionLogger(): IDisplayService {
     if (this.mockActionLogger) return this.mockActionLogger;
@@ -45,12 +57,13 @@ class TestDaemonCommands extends DaemonCommands {
   }
 
   public override waitForDaemonReady(
-    _workspaceRoot: string,
-    _pid: number,
-    _timeoutMs: number,
+    workspaceRoot: string,
+    pid: number,
+    timeoutMs: number,
   ): Promise<boolean> {
+    this.readyTimeouts.push(timeoutMs);
     if (this.skipDaemonReadyWait) return Promise.resolve(true);
-    return super.waitForDaemonReady(_workspaceRoot, _pid, _timeoutMs);
+    return super.waitForDaemonReady(workspaceRoot, pid, timeoutMs);
   }
 }
 
@@ -258,10 +271,35 @@ describe("DaemonCommands", {
     });
 
     it("registers the daemon ready timeout as a restart-swap configurable key", () => {
-      const registered = getRegisteredDefaults().get("daemon.ready_timeout_ms");
+      const registered = getRegisteredDefaults().get(DAEMON_READY_TIMEOUT_CONFIG_KEY);
       assertExists(registered);
       assertEquals(registered.opts.type, ConfigValueType.NUMBER);
       assertEquals(registered.opts.swap, SwapClass.RESTART);
+    });
+
+    it("waits for daemon.ready under the --ready-timeout option", async () => {
+      await daemonCommands.start({ readyTimeoutMs: OPTION_READY_MS });
+      assertEquals(daemonCommands.readyTimeouts, [OPTION_READY_MS]);
+    });
+
+    it("waits for daemon.ready under the configured override when no option is given", async () => {
+      const adapter = await createConfigAdapterAsync(join(tempDir, ".exa", "config.db"));
+      await adapter.set(DAEMON_READY_TIMEOUT_CONFIG_KEY, CONFIGURED_READY_MS);
+
+      await daemonCommands.start();
+
+      assertEquals(daemonCommands.readyTimeouts, [CONFIGURED_READY_MS]);
+    });
+
+    it("waits for daemon.ready under the registered default when nothing is configured", async () => {
+      await daemonCommands.start();
+      assertEquals(daemonCommands.readyTimeouts, [DAEMON_READY_TIMEOUT_MS]);
+    });
+
+    it("rejects a --ready-timeout outside the registered bounds before any daemon is spawned", async () => {
+      await assertRejects(() => daemonCommands.start({ readyTimeoutMs: OUT_OF_BOUNDS_READY_MS }));
+      assertEquals(await exists(pidFile), false);
+      assertEquals(daemonCommands.readyTimeouts, []);
     });
   });
 
