@@ -12,10 +12,12 @@ import {
   DEFAULT_OPENAI_RETRY_BACKOFF_MS,
   DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
   DEFAULT_OPENAI_TIMEOUT_MS,
+  PROVIDER_OPENAI,
 } from "./constants.ts";
 import {
   COMPATIBLE_REDIRECT_POLICY,
   createOpenAIChatCompletionsRequestInit,
+  extractOpenAIAssistantReplay,
   extractOpenAICompatibleToolCalls,
   extractOpenAIContent,
   extractOpenAIToolCalls,
@@ -27,10 +29,9 @@ import { BaseProvider, type IBaseProviderOptions, type IGenerateResult } from "@
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import { assertSupportedCallOptions, type IProviderCallCapabilities } from "@exaix/ai";
 import type { CompatibleChatConfig } from "@exaix/schemas";
-import { PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
 import type { IModelPricing, IModelPricingLookup, Opt, Reason } from "@exaix/core/types";
 import { createCompatibleChatRequestInit, mapCompatibleUsage, validateCompatibleResponse } from "./compatible_chat.ts";
-import { type INativeInputMeasurement, measureNativeConversation, priceCompatibleUsage } from "@exaix/ai";
+import { type INativeInputMeasurement, measureOpenAiChatProjection, priceCompatibleUsage } from "@exaix/ai";
 import { AiTokenEstimatorTokenizer, type ITokenizer } from "@exaix/core/func";
 import {
   type JSONValue,
@@ -118,15 +119,14 @@ export class OpenAIProvider extends BaseProvider {
       ? createCompatibleChatRequestInit("", this.model, prompt, options, this.compatibleConfig?.profile).init
       : createOpenAIChatCompletionsRequestInit("", this.model, prompt, options);
     const projection = JSON.parse(request.body as string) as Record<string, JSONValue>;
-    const snapshot = options?.nativeConversation;
-    const messages = projection.messages as JSONValue[];
-    const historyMessages = snapshot ? messages.slice(1, 1 + snapshot.turns.length * 2) : [];
-    return await measureNativeConversation(this.tokenizer, this.model, { messages, tools: projection.tools ?? [] }, [
-      ...(snapshot?.initialPromptSections ?? [{ section: PromptBudgetSection.SYSTEM, text: prompt }]),
-      ...(historyMessages.length
-        ? [{ section: PromptBudgetSection.LOOP_HISTORY, text: JSON.stringify(historyMessages) }]
-        : []),
-    ]);
+    return await measureOpenAiChatProjection(
+      this.tokenizer,
+      this.model,
+      projection.messages as JSONValue[],
+      projection.tools ?? [],
+      prompt,
+      options,
+    );
   }
 
   async estimateCallCost(inputTokens: number, outputTokens: number): Promise<number | undefined> {
@@ -201,6 +201,10 @@ export class OpenAIProvider extends BaseProvider {
           }
           : {}),
         extractor: extractOpenAIContent,
+        ...(this.compatible ? {} : {
+          assistantReplayExtractor: (response: OpenAIResponse) =>
+            extractOpenAIAssistantReplay(response, PROVIDER_OPENAI),
+        }),
         toolCallExtractor: this.compatible
           ? (response) =>
             extractOpenAICompatibleToolCalls(

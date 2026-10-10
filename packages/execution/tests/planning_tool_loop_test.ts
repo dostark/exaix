@@ -10,7 +10,7 @@
  * @related-files [packages/execution/src/planning_tool_loop.ts, packages/execution/src/native_tool_turns.ts]
  */
 
-import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { PlanningToolLoop } from "../src/planning_tool_loop.ts";
 import type { IPlanningToolLoopDeps, IPlanningToolLoopOptions } from "../src/planning_tool_loop.ts";
 import type { ICallSite, IModelOptions } from "@exaix/ai/types.ts";
@@ -1099,6 +1099,171 @@ Deno.test("[planning_tool_loop][parallel-replay] a native alias call executes as
     const entry = generate.calls[1].options.priorRound?.calls[0];
     assertEquals(entry?.toolUseId, "toolu_alias");
     assertEquals(entry?.toolName, "Read");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+// Replayed OpenAI-family rounds: the carrier is the round's source, so every call is accounted for.
+
+const OPENAI_MALFORMED_CARRIER = {
+  provider: "openai" as const,
+  assistantContent: null,
+  toolCalls: [
+    { id: "call-1", type: "function", function: { name: "read_file", arguments: '{"path":"a.ts"}' } },
+    { id: "call-bad", type: "function", function: { name: "read_file", arguments: "{not json" } },
+  ],
+};
+
+Deno.test("[planning_tool_loop][openai-round] a malformed argument string gets its own error result while its sibling executes", async () => {
+  registerParallelReplayProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {
+      read_file: (params) => ({ success: true, data: { content: `CONTENT-${params.path}` } }),
+    });
+    const generate = new ScriptedGenerate([
+      makeGenerateResult("", {
+        toolCalls: [{ id: "call-1", name: "read_file", input: { path: "a.ts" } }],
+        nativeAssistantReplay: OPENAI_MALFORMED_CARRIER,
+      }),
+      makeGenerateResult("<thought>t</thought><content>plan</content>"),
+    ]);
+    const loop = new PlanningToolLoop(
+      makeDeps({ toolRegistry: registry, generate: generate.generate, providerId: PARALLEL_REPLAY_PROVIDER_ID }),
+    );
+
+    await loop.run(makeOptions({ maxRounds: 2, allowedTools: new Set(["read_file"]) }));
+
+    assertEquals(registry.calls.length, 1, "only the readable call may execute");
+    const entries = generate.calls[1].options.priorRound?.calls ?? [];
+    assertEquals(entries.map((entry) => entry.toolUseId), ["call-1", "call-bad"]);
+    assertEquals(entries[1].toolResultIsError, true);
+    assertStringIncludes(String(entries[1].toolResultContent), "not a valid JSON object");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[planning_tool_loop][openai-round] a round whose only call is malformed is replayed, not treated as a final answer", async () => {
+  registerParallelReplayProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")]);
+    const generate = new ScriptedGenerate([
+      makeGenerateResult("", {
+        toolCalls: undefined,
+        nativeAssistantReplay: {
+          provider: "openai",
+          assistantContent: null,
+          toolCalls: [OPENAI_MALFORMED_CARRIER.toolCalls[1]],
+        },
+      }),
+      makeGenerateResult("<thought>t</thought><content>plan</content>"),
+    ]);
+    const loop = new PlanningToolLoop(
+      makeDeps({ toolRegistry: registry, generate: generate.generate, providerId: PARALLEL_REPLAY_PROVIDER_ID }),
+    );
+
+    await loop.run(makeOptions({ maxRounds: 2, allowedTools: new Set(["read_file"]) }));
+
+    assertEquals(generate.calls.length, 2, "the refused call must reach the model as a result");
+    assertEquals(registry.calls.length, 0);
+    assertEquals(generate.calls[1].options.priorRound?.calls.map((entry) => entry.toolUseId), ["call-bad"]);
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+/** A three-call Gemini-shaped round, the budgeted round size the planned checkpoint names. */
+function threeCallParallelResponse(): IGenerateResult {
+  return makeGenerateResult("", {
+    toolCalls: [
+      { id: "call-1", name: "read_file", input: { path: "a.ts" } },
+      { id: "call-2", name: "read_file", input: { path: "b.ts" } },
+      { id: "call-3", name: "read_file", input: { path: "c.ts" } },
+    ],
+    nativeAssistantReplay: {
+      provider: "google",
+      parts: [
+        { functionCall: { name: "read_file", args: { path: "a.ts" } } },
+        { functionCall: { name: "read_file", args: { path: "b.ts" } } },
+        { functionCall: { name: "read_file", args: { path: "c.ts" } } },
+      ],
+    },
+  });
+}
+
+/** A replayed-round budget of 100 tokens with no safety buffer. */
+const REPLAY_BUDGET: IPromptBudget = {
+  model: "gpt-4",
+  totalBudgetTokens: 100,
+  safetyBufferTokens: 0,
+  sections: { system: 100, plan: 100, portalKnowledge: 100, memory: 100, skills: 100, loopHistory: 100 },
+};
+
+/** Measures only a replayed round, so the first request stays unmeasured as in production. */
+function measureReplayedRound(
+  totalTokens: number,
+): (prompt: string, options: IModelOptions) => Promise<INativeInputMeasurement> {
+  return (_prompt, options) =>
+    Promise.resolve(
+      options.priorRound === undefined
+        ? {
+          totalTokens: 0,
+          sections: { system: 0, plan: 0, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: 0 },
+          tokenSource: "tokenizer_estimate",
+        }
+        : {
+          totalTokens,
+          sections: { system: 0, plan: 0, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: totalTokens },
+          tokenSource: "tokenizer_estimate",
+        },
+    );
+}
+
+Deno.test("[planning_tool_loop][parallel-replay] a three-call replayed round one token over budget is refused before the next generate", async () => {
+  registerParallelReplayProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {
+      read_file: () => ({ success: true, data: {} }),
+    });
+    const generate = new ScriptedGenerate([
+      twoCallParallelResponse(["call-1", "call-2"]),
+      makeGenerateResult("unused"),
+    ]);
+    const loop = new PlanningToolLoop(makeDeps({
+      toolRegistry: registry,
+      generate: generate.generate,
+      providerId: PARALLEL_REPLAY_PROVIDER_ID,
+      measureInputTokens: measureReplayedRound(101),
+    }));
+
+    await assertRejects(
+      () => loop.run(makeOptions({ maxRounds: 2, allowedTools: new Set(["read_file"]), promptBudget: REPLAY_BUDGET })),
+      ContextBudgetExceededError,
+    );
+    assertEquals(generate.calls.length, 1, "the over-budget replayed round must not reach generate()");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[planning_tool_loop][parallel-replay] a three-call replayed round exactly at the budget is sent", async () => {
+  registerParallelReplayProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {
+      read_file: () => ({ success: true, data: {} }),
+    });
+    const generate = new ScriptedGenerate([threeCallParallelResponse(), makeGenerateResult("plan")]);
+    const loop = new PlanningToolLoop(makeDeps({
+      toolRegistry: registry,
+      generate: generate.generate,
+      providerId: PARALLEL_REPLAY_PROVIDER_ID,
+      measureInputTokens: measureReplayedRound(100),
+    }));
+
+    await loop.run(makeOptions({ maxRounds: 2, allowedTools: new Set(["read_file"]), promptBudget: REPLAY_BUDGET }));
+
+    assertEquals(generate.calls.length, 2, "a round at the limit is within budget");
   } finally {
     ProviderRegistry.clear();
   }

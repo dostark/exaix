@@ -8,7 +8,9 @@
  */
 import type { JSONValue } from "@exaix/core";
 import type { ITokenizer } from "@exaix/core/func";
-import type { IPromptBudgetSections } from "@exaix/schemas/prompt_budget.ts";
+import type { Opt, Reason } from "@exaix/core/types";
+import { type IPromptBudgetSections, PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
+import type { IModelOptions } from "./types.ts";
 
 export interface INativePromptSection {
   section: `${keyof IPromptBudgetSections}`;
@@ -42,4 +44,32 @@ export async function measureNativeConversation(
   const totalTokens = Math.max(segmentTokens, await tokenizer.countTokens(JSON.stringify(projection), model));
   sections.system += totalTokens - segmentTokens;
   return { totalTokens, sections, tokenSource: "tokenizer_estimate" };
+}
+
+/** Counts the messages a replayed round or a snapshot adds after the leading prompt.
+ *  Each round adds one assistant message and one tool message per call. Each turn adds two. */
+export function replayedOpenAiMessageCount(options: Opt<IModelOptions, Reason.OptionalInput>): number {
+  if (options?.priorRound) return 1 + options.priorRound.calls.length;
+  const snapshot = options?.nativeConversation;
+  if (!snapshot) return 0;
+  const roundMessages = (snapshot.rounds ?? []).reduce((sum, round) => sum + 1 + round.calls.length, 0);
+  return roundMessages + snapshot.turns.length * 2;
+}
+
+/** Measures one OpenAI-family projection as dispatched. It counts the leading prompt or the
+ *  initial sections, the replayed history after the prompt, and the tools. */
+export async function measureOpenAiChatProjection(
+  tokenizer: ITokenizer,
+  model: string,
+  messages: JSONValue[],
+  tools: JSONValue,
+  prompt: string,
+  options: Opt<IModelOptions, Reason.OptionalInput>,
+): Promise<INativeInputMeasurement> {
+  const snapshot = options?.nativeConversation;
+  const history = snapshot || options?.priorRound ? messages.slice(1, 1 + replayedOpenAiMessageCount(options)) : [];
+  return await measureNativeConversation(tokenizer, model, { messages, tools }, [
+    ...(snapshot?.initialPromptSections ?? [{ section: PromptBudgetSection.SYSTEM, text: prompt }]),
+    ...(history.length ? [{ section: PromptBudgetSection.LOOP_HISTORY, text: JSON.stringify(history) }] : []),
+  ]);
 }

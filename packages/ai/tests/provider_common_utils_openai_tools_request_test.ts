@@ -13,9 +13,9 @@
  * ]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertThrows } from "@std/assert";
 import { createOpenAIChatCompletionsRequestInit } from "../src/provider_common_utils.ts";
-import type { IModelOptions } from "../src/types.ts";
+import type { IModelOptions, IProviderToolRound } from "../src/types.ts";
 import type { JSONValue } from "@exaix/core";
 
 interface CapturedOpenAiTool {
@@ -287,4 +287,98 @@ Deno.test("[phase203.provider] the shared request builder omits Authorization on
     new Headers(createOpenAIChatCompletionsRequestInit(undefined, "gpt-5", "prompt").headers).get("Content-Type"),
     "application/json",
   );
+});
+
+const OPENAI_ROUND_TOOL_CALLS = [
+  { id: "call_a", type: "function", function: { name: "read_file", arguments: '{"path":"a.ts"}' } },
+  { id: "call_b", type: "function", function: { name: "read_file", arguments: '{"path":"b.ts"}' } },
+];
+
+/** A completed OpenAI round: assistant text, reasoning, structured reasoning details, two calls. */
+const OPENAI_ROUND: IProviderToolRound = {
+  calls: [
+    {
+      toolUseId: "call_a",
+      index: 0,
+      toolName: "read_file",
+      toolInput: { path: "a.ts" },
+      toolResultContent: "BODY-a",
+      toolResultIsError: false,
+    },
+    {
+      toolUseId: "call_b",
+      index: 1,
+      toolName: "read_file",
+      toolInput: { path: "b.ts" },
+      toolResultContent: "BODY-b",
+      toolResultIsError: false,
+    },
+  ],
+  assistant: {
+    provider: "openai",
+    assistantContent: "I will read both files.",
+    reasoningContent: "Read both first.",
+    reasoningDetails: [{ type: "reasoning.text", text: "Read both first.", signature: "sig-r" }],
+    toolCalls: OPENAI_ROUND_TOOL_CALLS,
+  },
+};
+
+/** Parses the messages the OpenAI request builder sends for one generate call. */
+function sentMessages(options: IModelOptions): Array<Record<string, JSONValue>> {
+  const init = createOpenAIChatCompletionsRequestInit("", "gpt-test", "Plan the change.", options);
+  return (JSON.parse(init.body as string) as { messages: Array<Record<string, JSONValue>> }).messages;
+}
+
+Deno.test("a priorRound replays one assistant tool_calls array verbatim, then one tool message per id", () => {
+  assertEquals(sentMessages({ priorRound: OPENAI_ROUND }), [
+    { role: "user", content: "Plan the change." },
+    {
+      role: "assistant",
+      content: "I will read both files.",
+      reasoning_content: "Read both first.",
+      reasoning_details: [{ type: "reasoning.text", text: "Read both first.", signature: "sig-r" }],
+      tool_calls: OPENAI_ROUND_TOOL_CALLS,
+    },
+    { role: "tool", tool_call_id: "call_a", content: "BODY-a" },
+    { role: "tool", tool_call_id: "call_b", content: "BODY-b" },
+  ]);
+});
+
+Deno.test("a snapshot carrying rounds projects each round once, after its initial prompt, before the control text", () => {
+  const messages = sentMessages({
+    nativeConversation: {
+      initialPrompt: "Plan the change.",
+      turns: [],
+      rounds: [OPENAI_ROUND],
+      roundInstruction: "Answer now.",
+    },
+  });
+  assertEquals(messages.map((message) => message.role), ["user", "assistant", "tool", "tool", "user"]);
+  assertEquals(messages[4], { role: "user", content: "Answer now." });
+});
+
+Deno.test("a snapshot refuses rounds together with legacy turns instead of duplicating the exchange", () => {
+  assertThrows(() =>
+    sentMessages({
+      nativeConversation: {
+        initialPrompt: "Plan the change.",
+        turns: [{
+          toolUseId: "call_x",
+          toolName: "read_file",
+          toolInput: { path: "x.ts" },
+          toolResultContent: "X",
+          toolResultIsError: false,
+        }],
+        rounds: [OPENAI_ROUND],
+      },
+    })
+  );
+});
+
+Deno.test("a priorRound refuses another provider's replay carrier", () => {
+  const anthropicRound: IProviderToolRound = {
+    ...OPENAI_ROUND,
+    assistant: { provider: "anthropic", blocks: [] },
+  };
+  assertThrows(() => sentMessages({ priorRound: anthropicRound }));
 });

@@ -78,6 +78,9 @@ export interface IProviderToolCall {
   /** OpenAI reasoning content (`reasoning_content`) accompanying the tool call — must be
    *  echoed back on the replayed assistant message for multi-turn continuity. */
   reasoningContent?: string;
+  /** Original argument text when it is not valid JSON. Set only on replayed rounds: the call is
+   *  refused without execution and its original text stays in the assistant carrier. */
+  rawArguments?: string;
 }
 
 /** One Anthropic `thinking` content block that must be replayed verbatim in a tool-use

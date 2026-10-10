@@ -22,11 +22,13 @@ import {
   type IModelOptions,
   type INativeConversationSnapshot,
   type IProviderAssistantReplay,
+  type IProviderToolRound,
   type IProviderTurn,
   type IToolChoice,
   type IToolDefinition,
   type JSONObject,
   NATIVE_TOOL_USE_BLOCK_TYPE,
+  type OpenAiFamilyReplayProvider,
   TOOL_CHOICE_TYPE_AUTO,
   TOOL_CHOICE_TYPE_NONE,
   TOOL_CHOICE_TYPE_TOOL,
@@ -47,7 +49,7 @@ import {
   PROVIDER_OPENAI_CHAT,
   TOKENS_PER_COST_UNIT,
 } from "@exaix/core";
-import { HTTP_FORBIDDEN, HTTP_TOO_MANY_REQUESTS, HTTP_UNAUTHORIZED } from "@exaix/core";
+import { HTTP_FORBIDDEN, HTTP_TOO_MANY_REQUESTS, HTTP_UNAUTHORIZED, ProviderType } from "@exaix/core";
 import { type Opt, type Reason, type SafeJsonInput, toSafeJson } from "@exaix/core/types";
 
 export type TokenMap = {
@@ -114,6 +116,8 @@ export type OpenAIResponse = {
       tool_calls?: OpenAIToolCall[];
       /** Reasoning content replayed with the assistant message for continuity. */
       reasoning_content?: string;
+      /** Structured reasoning blocks (OpenRouter), replayed verbatim in their original order. */
+      reasoning_details?: JSONObject[];
     };
     text?: string;
   }>;
@@ -405,22 +409,25 @@ export function mapToolChoiceOpenAI(choice: IToolChoice): OpenAiWireToolChoice {
 /** OpenAI's tool-result message `content` field is a plain string. Anthropic's
  *  IProviderTurn.toolResultContent may be a string OR rich content blocks; stringify
  *  the rich-block case rather than dropping it. */
-function stringifyOpenAiToolResultContent(
-  content: string | Array<{ type: string; [key: string]: JSONValue }>,
-): string {
+function stringifyOpenAiToolResultContent(content: string | ReadonlyArray<JSONObject>): string {
   return typeof content === "string" ? content : JSON.stringify(content);
 }
 
 /** One outbound message in the OpenAI Chat Completions `messages[]` array, covering the
  *  three shapes this module constructs (priorTurn's assistant tool_calls + tool result,
  *  plus the plain user prompt). Exported for reuse by other OpenAI-compatible callers. */
+/** One outbound function tool call in the Chat Completions wire shape. */
+export type OpenAiWireToolCall = { id: string; type: "function"; function: { name: string; arguments: string } };
+
 export type OpenAiChatMessage =
   | {
     role: "assistant";
     content: string | null;
     /** Prior reasoning content replayed with tool-call outputs. */
     reasoning_content?: string;
-    tool_calls: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }>;
+    /** Structured reasoning blocks replayed verbatim, in their original order. */
+    reasoning_details?: JSONObject[];
+    tool_calls: Array<OpenAiWireToolCall | JSONObject>;
   }
   | { role: "tool"; tool_call_id: string; content: string }
   | { role: "user"; content: string };
@@ -432,21 +439,54 @@ export type OpenAiChatMessage =
 export const NATIVE_NO_TOOLS_TEXT_INSTRUCTION = "Answer now in text only. Do not call any tool.";
 
 const OPENAI_MESSAGE_ROLE_TOOL = "tool";
+const OPENAI_MESSAGE_ROLE_USER = "user";
 
 /** Build the OpenAI Chat Completions `messages[]` array for `prompt`, optionally
  *  prepending `priorTurn`'s 2-message exchange (assistant tool_calls + tool result)
  *  first. Exported for reuse by other byte-for-byte OpenAI-compatible callers. */
+/** Messages that replay one completed OpenAI-family round. One assistant message carries the
+ *  original tool_calls array. One tool message follows for each id, in call order. */
+function openAiRoundMessages(round: IProviderToolRound): OpenAiChatMessage[] {
+  const replay = round.assistant;
+  if (replay.provider !== ProviderType.OPENAI && replay.provider !== ProviderType.OPENROUTER) {
+    throw new Error("An OpenAI-family request can only replay an OpenAI-family round");
+  }
+  return [
+    {
+      role: "assistant",
+      content: replay.assistantContent,
+      ...(replay.reasoningContent !== undefined ? { reasoning_content: replay.reasoningContent } : {}),
+      ...(replay.reasoningDetails !== undefined ? { reasoning_details: [...replay.reasoningDetails] } : {}),
+      tool_calls: [...replay.toolCalls],
+    },
+    ...round.calls.map((call): OpenAiChatMessage => ({
+      role: OPENAI_MESSAGE_ROLE_TOOL,
+      tool_call_id: call.toolUseId,
+      content: stringifyOpenAiToolResultContent(call.toolResultContent),
+    })),
+  ];
+}
+
+/** Projects the OpenAI Chat Completions messages for one request. Precedence is
+ *  nativeConversation, then priorRound, then priorTurn. A snapshot's rounds replace its legacy turns. */
 export function buildOpenAiMessages(
   prompt: string,
   priorTurn?: Opt<IProviderTurn, Reason.OptionalInput>,
   nativeConversation?: Opt<INativeConversationSnapshot, Reason.OptionalInput>,
+  priorRound?: Opt<IProviderToolRound, Reason.OptionalInput>,
 ): OpenAiChatMessage[] {
   const messages: OpenAiChatMessage[] = [];
   if (nativeConversation) {
     if (prompt !== nativeConversation.initialPrompt) {
       throw new Error("Native conversation prompt must match its immutable initialPrompt");
     }
-    messages.push({ role: "user", content: nativeConversation.initialPrompt });
+    messages.push({ role: OPENAI_MESSAGE_ROLE_USER, content: nativeConversation.initialPrompt });
+    if (nativeConversation.rounds !== undefined) {
+      if (nativeConversation.turns.length > 0) {
+        throw new Error("A native conversation snapshot cannot carry rounds and legacy turns together");
+      }
+      for (const round of nativeConversation.rounds) messages.push(...openAiRoundMessages(round));
+    }
     for (const turn of nativeConversation.turns) {
       messages.push({
         role: "assistant",
@@ -465,8 +505,13 @@ export function buildOpenAiMessages(
       });
     }
     if (nativeConversation.roundInstruction !== undefined) {
-      messages.push({ role: "user", content: nativeConversation.roundInstruction });
+      messages.push({ role: OPENAI_MESSAGE_ROLE_USER, content: nativeConversation.roundInstruction });
     }
+    return messages;
+  }
+  if (priorRound) {
+    messages.push({ role: OPENAI_MESSAGE_ROLE_USER, content: prompt });
+    messages.push(...openAiRoundMessages(priorRound));
     return messages;
   }
   if (priorTurn) {
@@ -487,7 +532,7 @@ export function buildOpenAiMessages(
       content: stringifyOpenAiToolResultContent(priorTurn.toolResultContent),
     });
   }
-  messages.push({ role: "user", content: prompt });
+  messages.push({ role: OPENAI_MESSAGE_ROLE_USER, content: prompt });
   return messages;
 }
 
@@ -525,7 +570,7 @@ export function createOpenAIChatCompletionsRequestInit(
     },
     body: JSON.stringify({
       model,
-      messages: buildOpenAiMessages(prompt, options?.priorTurn, options?.nativeConversation),
+      messages: buildOpenAiMessages(prompt, options?.priorTurn, options?.nativeConversation, options?.priorRound),
       // OpenAI deprecated max_tokens in favor of max_completion_tokens and rejects
       // max_tokens outright on o-series/gpt-5 reasoning models; IModelOptions.max_tokens
       // is Exaix's own field name — only the OpenAI wire serialization moves.
@@ -568,6 +613,25 @@ export function extractOpenAIToolCalls(d: OpenAIResponse): IProviderToolCall[] |
     }
   }
   return parsed.length > 0 ? parsed : undefined;
+}
+
+/** Extracts the replayable assistant content of an OpenAI-family tool-call response.
+ *  It keeps the text, the reasoning, its structured details, and the original tool_calls array.
+ *  Arguments stay as sent, so malformed ones are not parsed here. Undefined without tool calls. */
+export function extractOpenAIAssistantReplay(
+  d: OpenAIResponse,
+  provider: OpenAiFamilyReplayProvider,
+): IProviderAssistantReplay | undefined {
+  const message = d.choices?.[0]?.message;
+  const rawCalls = message?.tool_calls;
+  if (!message || !rawCalls || rawCalls.length === 0) return undefined;
+  return {
+    provider,
+    assistantContent: message.content ?? null,
+    ...(message.reasoning_content !== undefined ? { reasoningContent: message.reasoning_content } : {}),
+    ...(message.reasoning_details !== undefined ? { reasoningDetails: message.reasoning_details } : {}),
+    toolCalls: rawCalls,
+  };
 }
 
 /** Strict serial parser for the compatible profile: reject malformed, oversized, or parallel calls before execution. */

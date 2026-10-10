@@ -109,3 +109,140 @@ Deno.test("[regression] OpenRouterProvider.buildRequestBody without tools omits 
   assertEquals(body.tool_choice, undefined);
   assertEquals(body.usage, { include: true });
 });
+
+const OR_READ_TOOL = {
+  name: "read_file",
+  inputSchema: { type: "object", properties: { path: { type: "string" } } },
+};
+
+const OR_TOOL_CALLS = [
+  { id: "call_a", type: "function", function: { name: "read_file", arguments: '{"path":"a.ts"}' } },
+  { id: "call_b", type: "function", function: { name: "read_file", arguments: '{"path":"b.ts"}' } },
+];
+
+const OR_REASONING_DETAILS = [
+  { type: "reasoning.text", text: "Read both first.", signature: "sig-r" },
+  { type: "reasoning.summary", summary: "Two reads." },
+];
+
+/** A two-call OpenRouter response with assistant text, reasoning content and ordered reasoning details. */
+function openRouterTwoCallResponse(): Record<string, JSONValue> {
+  return {
+    model: "openrouter-test",
+    choices: [{
+      message: {
+        content: "I will read both files.",
+        reasoning_content: "Read both first.",
+        reasoning_details: OR_REASONING_DETAILS,
+        tool_calls: OR_TOOL_CALLS,
+      },
+    }],
+    usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+  };
+}
+
+function scriptOpenRouterFetch(
+  bodies: Array<Record<string, JSONValue>>,
+): { sent: Array<Record<string, JSONValue>>; restore: () => void } {
+  const original = globalThis.fetch;
+  const sent: Array<Record<string, JSONValue>> = [];
+  let index = 0;
+  globalThis.fetch = (_input: string | Request | URL, init?: RequestInit) => {
+    sent.push(JSON.parse((init?.body as string) ?? "{}"));
+    return Promise.resolve(
+      new Response(JSON.stringify(bodies[index++]), { status: 200, headers: { "Content-Type": "application/json" } }),
+    );
+  };
+  return { sent, restore: () => void (globalThis.fetch = original) };
+}
+
+const OR_ROUND_CALLS = [
+  {
+    toolUseId: "call_a",
+    index: 0,
+    toolName: "read_file",
+    toolInput: { path: "a.ts" },
+    toolResultContent: "BODY-a",
+    toolResultIsError: false,
+  },
+  {
+    toolUseId: "call_b",
+    index: 1,
+    toolName: "read_file",
+    toolInput: { path: "b.ts" },
+    toolResultContent: "BODY-b",
+    toolResultIsError: false,
+  },
+];
+
+Deno.test("OpenRouter's response carrier keeps reasoning details and every tool call as the model sent them", async () => {
+  const scripted = scriptOpenRouterFetch([openRouterTwoCallResponse()]);
+  try {
+    const result = await new OpenRouterProvider({ apiKey: "test-key" }).generate("Plan.", { tools: [OR_READ_TOOL] });
+    assertEquals(result.nativeAssistantReplay, {
+      provider: "openrouter",
+      assistantContent: "I will read both files.",
+      reasoningContent: "Read both first.",
+      reasoningDetails: OR_REASONING_DETAILS,
+      toolCalls: OR_TOOL_CALLS,
+    });
+  } finally {
+    scripted.restore();
+  }
+});
+
+Deno.test("OpenRouter replays a priorRound after the prompt with reasoning details unchanged and in order", async () => {
+  const scripted = scriptOpenRouterFetch([openRouterTwoCallResponse(), openRouterTwoCallResponse()]);
+  try {
+    const provider = new OpenRouterProvider({ apiKey: "test-key" });
+    const first = await provider.generate("Plan.", { tools: [OR_READ_TOOL] });
+    await provider.generate("Plan.", {
+      tools: [OR_READ_TOOL],
+      priorRound: { calls: OR_ROUND_CALLS, assistant: first.nativeAssistantReplay! },
+    });
+    const messages = scripted.sent[1].messages as Array<Record<string, JSONValue>>;
+    assertEquals(messages[0], { role: "user", content: "Plan." });
+    assertEquals(messages[1], {
+      role: "assistant",
+      content: "I will read both files.",
+      reasoning_content: "Read both first.",
+      reasoning_details: OR_REASONING_DETAILS,
+      tool_calls: OR_TOOL_CALLS,
+    });
+    assertEquals(messages.slice(2).map((message) => message.tool_call_id), ["call_a", "call_b"]);
+  } finally {
+    scripted.restore();
+  }
+});
+
+Deno.test("OpenRouter measureInputTokens counts the replayed round exactly as the request dispatches it", async () => {
+  const scripted = scriptOpenRouterFetch([openRouterTwoCallResponse(), openRouterTwoCallResponse()]);
+  try {
+    const provider = new OpenRouterProvider({
+      apiKey: "test-key",
+      tokenizer: {
+        countTokens: (text: string) => Promise.resolve(text.length),
+        countTokensBatch: (texts: string[]) => Promise.resolve(texts.map((text) => text.length)),
+      },
+    });
+    const options = {
+      tools: [OR_READ_TOOL],
+      priorRound: {
+        calls: OR_ROUND_CALLS,
+        assistant: {
+          provider: "openrouter" as const,
+          assistantContent: "I will read both files.",
+          reasoningContent: "Read both first.",
+          reasoningDetails: OR_REASONING_DETAILS,
+          toolCalls: OR_TOOL_CALLS,
+        },
+      },
+    };
+    await provider.generate("Plan.", options);
+    const dispatched = scripted.sent[0].messages as unknown[];
+    const measured = await provider.measureInputTokens("Plan.", options);
+    assertEquals(measured.sections.loopHistory, JSON.stringify(dispatched.slice(1)).length);
+  } finally {
+    scripted.restore();
+  }
+});

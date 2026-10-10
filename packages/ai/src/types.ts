@@ -92,12 +92,26 @@ export interface IProviderTurn {
 /** JSON object record used for replayed provider content (not `any`). */
 export type JSONObject = Record<string, JSONValue>;
 
+/** Providers whose replayed assistant content uses the OpenAI Chat Completions shape. */
+export type OpenAiFamilyReplayProvider = "openai" | "openrouter";
+
 /** Complete assistant content of one provider response, kept verbatim for replay.
  *  Google keeps every model part in original order, including text and signatures.
  *  Anthropic keeps every content block in original order, including thinking and redacted thinking. */
 export type IProviderAssistantReplay =
   | { provider: "google"; parts: readonly JSONObject[] }
-  | { provider: "anthropic"; blocks: readonly JSONObject[] };
+  | { provider: "anthropic"; blocks: readonly JSONObject[] }
+  | {
+    provider: OpenAiFamilyReplayProvider;
+    /** Assistant text of the response, or null when the response carried only tool calls. */
+    assistantContent: string | null;
+    /** Reasoning text the provider disclosed with this response, replayed unchanged. */
+    reasoningContent?: string;
+    /** Structured reasoning blocks in their original order, replayed unchanged. */
+    reasoningDetails?: readonly JSONObject[];
+    /** The original tool_calls array, arguments kept as the model sent them. */
+    toolCalls: readonly JSONObject[];
+  };
 
 /** One tool call of a validated round. Invalid inputs never become execution parameters. */
 export interface IValidatedRoundCall {
@@ -137,7 +151,10 @@ export interface IProviderToolRound {
 export interface INativeConversationSnapshot {
   initialPrompt: string;
   initialPromptSections?: readonly INativePromptSection[];
+  /** Legacy single-call exchanges. Callers that replay whole rounds set this to []. */
   turns: IProviderTurn[];
+  /** Completed response rounds, each replayed whole. Cannot be combined with non-empty turns. */
+  rounds?: readonly IProviderToolRound[];
   roundInstruction?: string;
   /** Token estimate of the complete provider projection before generation. */
   measurement?: INativeInputMeasurement;

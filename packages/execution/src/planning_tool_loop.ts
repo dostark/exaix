@@ -19,6 +19,7 @@ import type {
   IToolChoice,
   IToolDefinition,
   IValidatedProviderRound,
+  IValidatedRoundCall,
 } from "@exaix/ai/types.ts";
 import { TOOL_CHOICE_TYPE_AUTO, TOOL_CHOICE_TYPE_NONE } from "@exaix/ai/types.ts";
 import type { IGenerateResult, IProviderToolCall } from "@exaix/ai/providers";
@@ -59,6 +60,7 @@ import {
   enrichPortalPathParam,
   FIXED_NATIVE_ROUND_LIMITS,
   type IRoundOutcome,
+  providerRoundCallCount,
   providerSupportsNativeConversation,
   providerSupportsParallelToolReplay,
   validateProviderRound,
@@ -156,6 +158,15 @@ interface IExecutedRound {
   outcomes: IRoundOutcome[];
 }
 
+/** The call a validated round executes. A call the round could not read is refused, never executed. */
+function executableCall(call: IValidatedRoundCall): IProviderToolCall {
+  if (call.validationError === undefined) return call.originalCall;
+  return {
+    ...call.originalCall,
+    rawArguments: call.originalCall.rawArguments ?? JSON.stringify(call.originalCall.input),
+  };
+}
+
 /** Tool call parameter names the confinement guard checks — every string value under these
  *  keys must resolve inside the request portal before the tool call reaches ToolRegistry.
  *  `file_path` is the alias ToolRegistry accepts in place of `path`. */
@@ -182,6 +193,7 @@ const GUARDRAIL_BLOCKED_MESSAGE = "blocked by guardrail";
 /** Journal target and `phase` payload value that mark planning-call tool rows. */
 const PLANNING_LOG_PHASE = "planning";
 const TOOL_CALL_LIMIT_MESSAGE = "tool call limit reached for this round; call skipped";
+const INVALID_TOOL_ARGUMENTS_MESSAGE = "tool call arguments are not a valid JSON object; call skipped";
 
 /** True when a search_files pattern is absolute or has a `..` segment. */
 function escapesSearchRoot(toolName: string, params: Record<string, JSONValue>): boolean {
@@ -274,7 +286,9 @@ export class PlanningToolLoop {
         nativeConversationEnabled,
       });
 
-      if (options.promptBudget) await this.preflightBudget(request.roundOptions, options.promptBudget, options.traceId);
+      if (options.promptBudget) {
+        await this.preflightBudget(request.roundPrompt, request.roundOptions, options.promptBudget, options.traceId);
+      }
 
       const response = await this.deps.generate(request.roundPrompt, request.roundOptions);
       progress.promptTokens += response.usage.promptTokens;
@@ -293,7 +307,10 @@ export class PlanningToolLoop {
         }, options.traceId);
       }
 
-      if (!response.toolCalls || response.toolCalls.length === 0) {
+      const roundCallCount = parallelReplayEnabled
+        ? providerRoundCallCount(response)
+        : (response.toolCalls?.length ?? 0);
+      if (roundCallCount === 0) {
         return this.finish({
           response,
           rounds: round,
@@ -306,7 +323,8 @@ export class PlanningToolLoop {
 
       // A grouped round is validated whole before any call of it executes.
       const validated = parallelReplayEnabled ? validateProviderRound(response, FIXED_NATIVE_ROUND_LIMITS) : undefined;
-      const executed = await this.executeRoundCalls(response.toolCalls, canonicalOptions, round, progress, {
+      const calls = validated ? validated.calls.map(executableCall) : (response.toolCalls ?? []);
+      const executed = await this.executeRoundCalls(calls, canonicalOptions, round, progress, {
         provider: response.provider,
         model: response.model,
       });
@@ -436,8 +454,10 @@ export class PlanningToolLoop {
       const call = calls[i];
       const withinCap = i < options.maxToolCallsPerRound;
       const outcome = withinCap
-        ? await this.executeCall(call, options, round, { ...identity, modelCallId: call.id })
-        : this.refuseCall(call, round, options);
+        ? call.rawArguments !== undefined
+          ? this.refuseCall(call, round, options, INVALID_TOOL_ARGUMENTS_MESSAGE)
+          : await this.executeCall(call, options, round, { ...identity, modelCallId: call.id })
+        : this.refuseCall(call, round, options, TOOL_CALL_LIMIT_MESSAGE);
       if (withinCap) progress.toolCalls++;
       guardrailBlocked ||= outcome.guardrailBlocked;
       outcomes.push({
@@ -509,15 +529,17 @@ export class PlanningToolLoop {
   }
 
   /** Measures this round's real input tokens and aborts BEFORE issuing the call if they exceed
-   *  the caller's budget. A no-op without a native conversation snapshot or measureInputTokens. */
+   *  the caller's budget. A no-op without a native conversation or a replayed round, or without
+   *  measureInputTokens. */
   private async preflightBudget(
+    roundPrompt: string,
     roundOptions: IModelOptions,
     budget: IPromptBudget,
     traceId: string,
   ): Promise<void> {
-    const snapshot = roundOptions.nativeConversation;
-    if (!snapshot || !this.deps.measureInputTokens) return;
-    const measured: INativeInputMeasurement = await this.deps.measureInputTokens(snapshot.initialPrompt, roundOptions);
+    if (!roundOptions.nativeConversation && !roundOptions.priorRound) return;
+    if (!this.deps.measureInputTokens) return;
+    const measured: INativeInputMeasurement = await this.deps.measureInputTokens(roundPrompt, roundOptions);
     const inputLimit = Math.max(0, budget.totalBudgetTokens - budget.safetyBufferTokens);
     const sectionOverflow = Object.entries(measured.sections).some(([section, count]) =>
       count > budget.sections[section as keyof typeof budget.sections]
@@ -609,8 +631,9 @@ export class PlanningToolLoop {
     call: IProviderToolCall,
     round: number,
     options: IPlanningToolLoopOptions,
+    message: string,
   ): { turn: IProviderTurn; guardrailBlocked: boolean } {
-    const turn = buildPriorTurn(call, { success: false, error: TOOL_CALL_LIMIT_MESSAGE });
+    const turn = buildPriorTurn(call, { success: false, error: message });
     this.logDynamicToolCall(call.name, call.input, String(turn.toolResultContent), round, options.traceId);
     return { turn, guardrailBlocked: false };
   }

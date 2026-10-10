@@ -81,6 +81,7 @@ function registerConcreteProviders(): void {
       capabilities: [...OPENAI_PROVIDER_METADATA.capabilities],
       pricingTier: PricingTier.MEDIUM,
       supportsNativeTools: true,
+      supportsParallelToolReplay: true,
     };
     ProviderRegistry.registerWithMetadata(
       PROVIDER_OPENAI,
@@ -149,6 +150,7 @@ function registerConcreteProviders(): void {
       // tool-incapable underlying model with native_tools_enabled surfaces as an
       // OpenRouter-side API error, not a silent Exaix-side failure.
       supportsNativeTools: true,
+      supportsParallelToolReplay: true,
     };
     ProviderRegistry.registerWithMetadata(
       PROVIDER_OPENROUTER,

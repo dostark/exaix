@@ -21,12 +21,13 @@ import type {
   IValidatedProviderRound,
   IValidatedRoundCall,
   JSONObject,
+  OpenAiFamilyReplayProvider,
 } from "@exaix/ai/types.ts";
 import type { IGenerateResult, IProviderToolCall } from "@exaix/ai/providers";
 import { ProviderProtocolError } from "@exaix/ai/errors.ts";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import type { ITool, IToolResult, JSONValue } from "@exaix/core/types";
-import { ToolName } from "@exaix/core";
+import { ProviderType, ToolName } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
 /** Ceilings applied to one provider response before any tool effect. Fixed until the resolved
@@ -144,7 +145,7 @@ function validateCallEntry(
     throw new ProviderProtocolError("Tool call arguments exceed the byte ceiling", provider);
   }
   const isObject = typeof call.input === "object" && call.input !== null && !Array.isArray(call.input);
-  return isObject
+  return isObject && call.rawArguments === undefined
     ? { id: call.id, index, originalCall: call, executionInput: call.input }
     : { id: call.id, index, originalCall: call, validationError: "invalid_arguments" };
 }
@@ -180,29 +181,72 @@ function assertCallsMatchReplay(
   replay: IProviderAssistantReplay,
   provider: string,
 ): void {
+  // An OpenAI-family round reads its calls from this carrier, so there is no second list to match.
+  if (isOpenAiFamilyReplay(replay)) return;
   const matched = replay.provider === "google"
     ? googleCallsMatchParts(calls, replay.parts)
     : anthropicCallsMatchBlocks(calls, replay.blocks);
   if (!matched) throw new ProviderProtocolError(MISMATCHED_ASSISTANT_PARTS_MESSAGE, provider);
 }
 
-/** The replayed content items of a response, whichever provider produced them. */
-function replayItems(replay: IProviderAssistantReplay): readonly JSONObject[] {
-  return replay.provider === "google" ? replay.parts : replay.blocks;
+/** Reads one OpenAI-family tool_calls entry. Arguments that are not a JSON object keep their text
+ *  in rawArguments. The call is then refused on its own, with its id and name intact. */
+function openAiCarrierCall(raw: JSONObject): IProviderToolCall {
+  const fn = typeof raw.function === "object" && raw.function !== null && !Array.isArray(raw.function)
+    ? raw.function
+    : {};
+  const id = typeof raw.id === "string" ? raw.id : "";
+  const name = typeof fn.name === "string" ? fn.name : "";
+  const text = typeof fn.arguments === "string" ? fn.arguments : "";
+  try {
+    const parsed: JSONValue = JSON.parse(text);
+    const isObject = typeof parsed === "object" && parsed !== null && !Array.isArray(parsed);
+    if (isObject) return { id, name, input: parsed as Record<string, JSONValue> };
+  } catch {
+    // Malformed JSON is refused below, with the original text.
+  }
+  return { id, name, input: {}, rawArguments: text };
+}
+
+/** The calls of one round, from the source that can replay them. OpenAI-family calls come from
+ *  their carrier, so a call the extractor could not read is still present and refused. */
+function roundCalls(result: IGenerateResult): IProviderToolCall[] {
+  const replay = result.nativeAssistantReplay;
+  if (replay !== undefined && isOpenAiFamilyReplay(replay)) return replay.toolCalls.map(openAiCarrierCall);
+  return result.toolCalls ?? [];
+}
+
+/** Number of calls a grouped round carries, read from the same source the round is validated from. */
+export function providerRoundCallCount(result: IGenerateResult): number {
+  return roundCalls(result).length;
+}
+
+function isOpenAiFamilyReplay(replay: IProviderAssistantReplay): replay is Extract<
+  IProviderAssistantReplay,
+  { provider: OpenAiFamilyReplayProvider }
+> {
+  return replay.provider === ProviderType.OPENAI || replay.provider === ProviderType.OPENROUTER;
+}
+
+/** The replay content a byte ceiling measures. OpenAI-family carriers count in full. */
+function replayPayload(replay: IProviderAssistantReplay): readonly JSONObject[] | IProviderAssistantReplay {
+  if (replay.provider === "google") return replay.parts;
+  if (replay.provider === "anthropic") return replay.blocks;
+  return replay;
 }
 
 /** Validates one provider response before any tool effect. Throws a protocol error when the round
  *  cannot be replayed exactly. An input that is not a JSON object is refused per call instead. */
 export function validateProviderRound(result: IGenerateResult, limits: INativeRoundLimits): IValidatedProviderRound {
   const provider = result.provider;
-  const calls = result.toolCalls ?? [];
+  const calls = roundCalls(result);
   if (calls.length === 0) throw new ProviderProtocolError("Tool round has no calls", provider);
   if (calls.length > limits.maxResponseCalls) {
     throw new ProviderProtocolError("Tool round exceeds the accepted call ceiling", provider);
   }
   const replay = result.nativeAssistantReplay;
   if (replay === undefined) throw new ProviderProtocolError("Tool round has no replayable assistant content", provider);
-  if (utf8Bytes(JSON.stringify(replayItems(replay))) > limits.maxRoundReplayBytes) {
+  if (utf8Bytes(JSON.stringify(replayPayload(replay))) > limits.maxRoundReplayBytes) {
     throw new ProviderProtocolError("Tool round assistant content exceeds the replay ceiling", provider);
   }
   const seenIds = new Set<string>();

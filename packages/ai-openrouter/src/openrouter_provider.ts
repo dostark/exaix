@@ -10,6 +10,7 @@
 
 import {
   buildOpenAiMessages,
+  extractOpenAIAssistantReplay,
   extractOpenAIContent,
   extractOpenAIToolCalls,
   mapToolChoiceOpenAI,
@@ -22,6 +23,9 @@ import {
 import { type IOpenRouterResponse, tokenMapperOpenRouter } from "./openrouter_reported_cost.ts";
 import { BaseProvider, type IBaseProviderOptions, type IGenerateResult } from "@exaix/ai/providers";
 import type { IModelOptions } from "@exaix/ai/types.ts";
+import { type INativeInputMeasurement, measureOpenAiChatProjection } from "@exaix/ai";
+import { AiTokenEstimatorTokenizer, type ITokenizer } from "@exaix/core/func";
+import type { JSONValue } from "@exaix/core";
 import {
   DEFAULT_OPENROUTER_ENDPOINT,
   DEFAULT_OPENROUTER_MODEL,
@@ -91,6 +95,7 @@ export type OpenRouterProviderOptions = IBaseProviderOptions & {
   siteUrl?: string;
   /** Control-surface passthrough: serialized into the request body alongside model/messages. */
   routing?: IOpenRouterRouting;
+  tokenizer?: ITokenizer;
 };
 
 /**
@@ -100,6 +105,7 @@ export class OpenRouterProvider extends BaseProvider {
   private readonly siteName: string;
   private readonly siteUrl: string;
   private readonly routing?: IOpenRouterRouting;
+  private readonly tokenizer: ITokenizer;
 
   constructor(options: OpenRouterProviderOptions) {
     super({
@@ -113,6 +119,23 @@ export class OpenRouterProvider extends BaseProvider {
     this.siteName = options.siteName ?? OPENROUTER_DEFAULT_SITE_NAME;
     this.siteUrl = options.siteUrl ?? OPENROUTER_DEFAULT_SITE_URL;
     this.routing = options.routing;
+    this.tokenizer = options.tokenizer ?? new AiTokenEstimatorTokenizer();
+  }
+
+  /** Measures the request exactly as dispatched: the serialized body, with its prompt, replayed history and tools. */
+  async measureInputTokens(
+    prompt: string,
+    options?: Opt<IModelOptions, Reason.AbstractBoundary>,
+  ): Promise<INativeInputMeasurement> {
+    const projection = JSON.parse(JSON.stringify(this.buildRequestBody(prompt, options))) as Record<string, JSONValue>;
+    return await measureOpenAiChatProjection(
+      this.tokenizer,
+      this.model,
+      projection.messages as JSONValue[],
+      projection.tools ?? [],
+      prompt,
+      options,
+    );
   }
 
   /** Build the request body with optional OpenRouter routing fields injected. */
@@ -122,7 +145,7 @@ export class OpenRouterProvider extends BaseProvider {
   ): OpenRouterRequestBody {
     const body: OpenRouterRequestBody = {
       model: this.model,
-      messages: buildOpenAiMessages(prompt, options?.priorTurn),
+      messages: buildOpenAiMessages(prompt, options?.priorTurn, undefined, options?.priorRound),
       usage: { include: true },
     };
     if (options?.max_tokens !== undefined) body.max_tokens = options.max_tokens;
@@ -172,6 +195,7 @@ export class OpenRouterProvider extends BaseProvider {
       tokenMapper: tokenMapperOpenRouter(this.model),
       extractor: extractOpenAIContent,
       toolCallExtractor: extractOpenAIToolCalls,
+      assistantReplayExtractor: (response) => extractOpenAIAssistantReplay(response, PROVIDER_OPENROUTER),
     });
   }
 }

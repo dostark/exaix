@@ -18,6 +18,8 @@ import { assertEquals } from "@std/assert";
 import { PlanningToolLoop } from "@exaix/execution";
 import { GoogleProvider } from "@exaix/ai-google";
 import { AnthropicProvider, PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
+import { OpenAIProvider, PROVIDER_OPENAI } from "@exaix/ai-openai";
+import { OpenRouterProvider, PROVIDER_OPENROUTER } from "@exaix/ai-openrouter";
 import { NATIVE_NO_TOOLS_TEXT_INSTRUCTION } from "@exaix/ai/provider_common_utils.ts";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import type { IModelOptions } from "@exaix/ai/types.ts";
@@ -218,16 +220,17 @@ Deno.test("[native_tool_round][anthropic] the registered Anthropic provider repl
   }
 });
 
-/** Runs the registered Anthropic provider through the planning loop with a scripted two-response transport. */
-async function runAnthropicPlanning(
+/** Runs one provider through the planning loop with a scripted transport and returns what it sent. */
+async function runPlanning<TRequest>(
+  providerId: string,
+  generate: (prompt: string, options: IModelOptions) => Promise<IGenerateResult>,
   responses: Array<Record<string, JSONValue>>,
   baseOptions: IModelOptions,
   maxRounds: number,
-): Promise<{ registry: RecordingToolRegistry; requests: IAnthropicRequest[] }> {
+): Promise<{ registry: RecordingToolRegistry; requests: TRequest[] }> {
   bootstrapProviderRegistry();
-  const scripted = scriptedFetch<IAnthropicRequest>(responses);
+  const scripted = scriptedFetch<TRequest>(responses);
   try {
-    const provider = new AnthropicProvider({ apiKey: "test-key" });
     const registry = new RecordingToolRegistry();
     const loop = new PlanningToolLoop({
       toolRegistry: registry,
@@ -235,10 +238,9 @@ async function runAnthropicPlanning(
         countTokens: (t: string) => Promise.resolve(Math.ceil(t.length / 4)),
         countTokensBatch: (ts: string[]) => Promise.resolve(ts.map((t) => Math.ceil(t.length / 4))),
       },
-      modelId: "claude-test",
-      providerId: PROVIDER_ANTHROPIC,
-      generate: (prompt: string, options: IModelOptions): Promise<IGenerateResult> =>
-        provider.generate(prompt, options),
+      modelId: "provider-test",
+      providerId,
+      generate,
     });
     await loop.run({
       prompt: "Plan the change.",
@@ -250,7 +252,7 @@ async function runAnthropicPlanning(
       maxRounds,
       maxToolResultTokens: 2000,
       maxToolCallsPerRound: 10,
-      traceId: "trace-native-round-anthropic-variant",
+      traceId: "trace-native-round-variant",
     });
     return { registry, requests: scripted.requests };
   } finally {
@@ -271,7 +273,9 @@ Deno.test("[native_tool_round][anthropic] an alias call replays under the model'
     { type: "tool_use", id: "toolu_a", name: "read_file", input: { path: "a.ts" } },
     { type: "tool_use", id: "toolu_b", name: "Read", input: { file_path: "b.ts" } },
   ];
-  const { registry, requests } = await runAnthropicPlanning(
+  const { registry, requests } = await runPlanning<IAnthropicRequest>(
+    PROVIDER_ANTHROPIC,
+    (prompt, options) => new AnthropicProvider({ apiKey: "test-key" }).generate(prompt, options),
     [
       { content: aliasRound, stop_reason: "tool_use", usage: { input_tokens: 1, output_tokens: 1 } },
       ANTHROPIC_TEXT_RESPONSE,
@@ -290,7 +294,9 @@ Deno.test("[native_tool_round][anthropic] a one-call round keeps the original po
     { type: "tool_use", id: "toolu_a", name: "read_file", input: { path: "a.ts" } },
   ];
   const policy = { toolChoice: { type: "auto" as const, disable_parallel_tool_use: true } };
-  const { requests } = await runAnthropicPlanning(
+  const { requests } = await runPlanning<IAnthropicRequest>(
+    PROVIDER_ANTHROPIC,
+    (prompt, options) => new AnthropicProvider({ apiKey: "test-key" }).generate(prompt, options),
     [
       { content: oneCallRound, stop_reason: "tool_use", usage: { input_tokens: 1, output_tokens: 1 } },
       ANTHROPIC_TEXT_RESPONSE,
@@ -316,4 +322,107 @@ Deno.test("[native_tool_round][anthropic] a one-call round keeps the original po
       ],
     },
   ]);
+});
+
+/** The OpenAI-family round: assistant text, reasoning, ordered reasoning details and two calls. */
+const CHAT_ROUND_TOOL_CALLS: Array<Record<string, JSONValue>> = [
+  { id: "call_a", type: "function", function: { name: "read_file", arguments: '{"path":"a.ts"}' } },
+  { id: "call_b", type: "function", function: { name: "read_file", arguments: '{"path":"b.ts"}' } },
+];
+
+const CHAT_REASONING_DETAILS: Array<Record<string, JSONValue>> = [
+  { type: "reasoning.text", text: "Read both first.", signature: "sig-r" },
+  { type: "reasoning.summary", summary: "Two reads." },
+];
+
+function chatRoundResponse(): Record<string, JSONValue> {
+  return {
+    model: "chat-test",
+    choices: [{
+      message: {
+        content: "I will read both files.",
+        reasoning_content: "Read both first.",
+        reasoning_details: CHAT_REASONING_DETAILS,
+        tool_calls: CHAT_ROUND_TOOL_CALLS,
+      },
+    }],
+    usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+  };
+}
+
+const CHAT_TEXT_RESPONSE: Record<string, JSONValue> = {
+  model: "chat-test",
+  choices: [{ message: { content: "plan" } }],
+  usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+};
+
+interface IChatRequest {
+  messages: Array<Record<string, JSONValue>>;
+}
+
+Deno.test("[native_tool_round][openai] the registered OpenAI provider replays a two-call round with its reasoning details in order", async () => {
+  const provider = new OpenAIProvider({ apiKey: "test-key" });
+  const { registry, requests } = await runPlanning<IChatRequest>(
+    PROVIDER_OPENAI,
+    (prompt, options) => provider.generate(prompt, options),
+    [chatRoundResponse(), CHAT_TEXT_RESPONSE],
+    {},
+    2,
+  );
+
+  assertEquals(registry.calls, ["read_file:@fixture/a.ts", "read_file:@fixture/b.ts"]);
+  assertEquals(requests.length, 2);
+  const messages = requests[1].messages;
+  assertEquals(messages[0].role, "user", "the prompt leads the follow-up");
+  assertEquals(messages[1], {
+    role: "assistant",
+    content: "I will read both files.",
+    reasoning_content: "Read both first.",
+    reasoning_details: CHAT_REASONING_DETAILS,
+    tool_calls: CHAT_ROUND_TOOL_CALLS,
+  }, "the assistant message replays once, with its reasoning in the original order");
+  assertEquals(messages.slice(2).map((message) => message.tool_call_id), ["call_a", "call_b"]);
+});
+
+Deno.test("[native_tool_round][openai] a one-call round replays an exact golden follow-up", async () => {
+  const oneCall = {
+    model: "chat-test",
+    choices: [{ message: { content: null, tool_calls: [CHAT_ROUND_TOOL_CALLS[0]] } }],
+    usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+  };
+  const provider = new OpenAIProvider({ apiKey: "test-key" });
+  const { requests } = await runPlanning<IChatRequest>(
+    PROVIDER_OPENAI,
+    (prompt, options) => provider.generate(prompt, options),
+    [oneCall, CHAT_TEXT_RESPONSE],
+    {},
+    2,
+  );
+
+  assertEquals(requests[1].messages.slice(1), [
+    { role: "assistant", content: null, tool_calls: [CHAT_ROUND_TOOL_CALLS[0]] },
+    { role: "tool", tool_call_id: "call_a", content: '{"content":"BODY-@fixture/a.ts"}' },
+  ]);
+});
+
+Deno.test("[native_tool_round][openrouter] the registered OpenRouter provider replays a two-call round with its reasoning details in order", async () => {
+  const provider = new OpenRouterProvider({ apiKey: "test-key" });
+  const { registry, requests } = await runPlanning<IChatRequest>(
+    PROVIDER_OPENROUTER,
+    (prompt, options) => provider.generate(prompt, options),
+    [chatRoundResponse(), CHAT_TEXT_RESPONSE],
+    {},
+    2,
+  );
+
+  assertEquals(registry.calls, ["read_file:@fixture/a.ts", "read_file:@fixture/b.ts"]);
+  const messages = requests[1].messages;
+  assertEquals(messages[1], {
+    role: "assistant",
+    content: "I will read both files.",
+    reasoning_content: "Read both first.",
+    reasoning_details: CHAT_REASONING_DETAILS,
+    tool_calls: CHAT_ROUND_TOOL_CALLS,
+  });
+  assertEquals(messages.slice(2).map((message) => message.tool_call_id), ["call_a", "call_b"]);
 });
