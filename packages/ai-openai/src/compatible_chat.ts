@@ -21,6 +21,7 @@ import {
   COMPATIBLE_REDIRECT_POLICY,
   createOpenAIChatCompletionsRequestInit,
   extractOpenAICompatibleToolCalls,
+  openAiReasoningEffort,
   type OpenAIResponse,
   type TokenMap,
 } from "@exaix/ai/provider_common_utils.ts";
@@ -151,7 +152,7 @@ function applyProfileOptions(
   if (isDeepSeek && options?.thinking !== undefined) {
     body.thinking = { type: options.thinking ? "enabled" : "disabled" };
   }
-  if (options?.effort !== undefined) body.reasoning_effort = options.effort;
+  if (options?.effort !== undefined) body.reasoning_effort = openAiReasoningEffort(options.effort);
   // The OpenAI profile's pinned reasoning model rejects function tools at any other effort on Chat Completions.
   else if (profile === OPENAI_PROFILE && options?.tools?.length) body.reasoning_effort = OPENAI_TOOL_REASONING_EFFORT;
   if (isDeepSeek && options?.thinking === true) {

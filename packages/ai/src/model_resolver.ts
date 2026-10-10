@@ -82,6 +82,8 @@ const EFFORT_MAX_TOKENS: Record<EffortTier, number> = {
   low: 1024,
   medium: 4096,
   high: 8192,
+  xhigh: 32768,
+  max: 65536,
 };
 
 /** Exported so AgentComposer.executeStep can recompute max_tokens from the FINAL

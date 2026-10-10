@@ -115,7 +115,7 @@ export interface IModelResolutionTrace {
 
 /** Zod enum for the reasoning effort tiers, so intent parsing and validation round-trip
  *  through a schema. */
-export const EffortTierSchema = z.enum(["low", "medium", "high"]);
+export const EffortTierSchema = z.enum(["low", "medium", "high", "xhigh", "max"]);
 
 /** Canonical "auto" declaration value — the literal's single source for every surface
  *  that accepts a declaration-time value. */

@@ -654,10 +654,16 @@ export const PROVIDER_EVENT_REQUEST_DEBUG_DUMP = "provider.request_debug_dump";
 export const PROVIDER_EVENT_RESPONSE_DEBUG_DUMP = "provider.response_debug_dump";
 /** Warn-level: the provider reported the response was truncated (stop_reason max_tokens). */
 export const AGENT_EVENT_RESPONSE_TRUNCATED = "agent.response_truncated";
+/** Warn-level: the provider reported the model refused the request (stop_reason refusal), so the response is empty. */
+export const AGENT_EVENT_RESPONSE_REFUSED = "agent.response_refused";
+/** Warn-level: a request asked for thinking off, but the model at this effort cannot turn it off. Adaptive thinking was sent instead. */
+export const PROVIDER_EVENT_THINKING_NOT_DISABLED = "provider.thinking_not_disabled";
 /** Warn-level: a ReAct action's TOML block failed to parse and the action was dropped. */
 export const REACT_EVENT_ACTION_PARSE_FAILED = "agent.react_action_parse_failed";
 /** Anthropic stop_reason value meaning the generation hit max_tokens and was truncated. */
 export const RESPONSE_STOP_REASON_MAX_TOKENS = "max_tokens";
+/** The provider refused the request. The response carries no content. */
+export const RESPONSE_STOP_REASON_REFUSAL = "refusal";
 
 export const AGENT_COMPOSER_ID = "agent-composer";
 export const AGENT_RUNNER_ID = "agent-runner";

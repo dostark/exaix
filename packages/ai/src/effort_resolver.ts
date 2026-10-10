@@ -138,6 +138,8 @@ export const EFFORT_TIER_ORDER: readonly EffortTier[] = [
   EffortTierSchema.enum.low,
   EffortTierSchema.enum.medium,
   EffortTierSchema.enum.high,
+  EffortTierSchema.enum.xhigh,
+  EffortTierSchema.enum.max,
 ];
 
 /** Effort reached per TaskComplexity when a declaration resolves through the heuristic. */

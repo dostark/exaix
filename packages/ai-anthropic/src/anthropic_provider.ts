@@ -13,7 +13,7 @@ import {
   ANTHROPIC_CONTENT_TYPE_TOOL_USE,
   ANTHROPIC_MESSAGE_ROLE_ASSISTANT,
   ANTHROPIC_MESSAGE_ROLE_USER,
-  ANTHROPIC_THINKING_DISABLED,
+  ANTHROPIC_THINKING_ADAPTIVE,
   ANTHROPIC_TOOL_CHOICE_ANY,
   ANTHROPIC_TOOL_CHOICE_NONE,
   ANTHROPIC_TOOL_CHOICE_TOOL,
@@ -28,6 +28,12 @@ import {
 } from "./constants.ts";
 import { AnthropicMessagesRequestSchema } from "./anthropic_request_schema.ts";
 import {
+  anthropicCallCapabilities,
+  anthropicModelRules,
+  type IAnthropicModelRules,
+  requestTuning,
+} from "./model_rules.ts";
+import {
   type AnthropicResponse,
   extractAnthropicAssistantReplay,
   extractAnthropicContent,
@@ -38,7 +44,8 @@ import {
 } from "@exaix/ai/provider_common_utils.ts";
 import { BaseProvider, type IBaseProviderOptions, type IGenerateResult, ModelProviderError } from "@exaix/ai/providers";
 import type { IModelOptions, IProviderToolRound, IToolChoice, IToolDefinition } from "@exaix/ai/types.ts";
-import { PROVIDER_EVENT_REQUEST_DEBUG_DUMP } from "@exaix/core";
+import type { IProviderCallCapabilities } from "@exaix/ai";
+import { PROVIDER_EVENT_REQUEST_DEBUG_DUMP, PROVIDER_EVENT_THINKING_NOT_DISABLED } from "@exaix/core";
 import { type Opt, type Reason, toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
@@ -60,9 +67,24 @@ export class AnthropicToolChoiceThinkingConflictError extends ModelProviderError
 }
 
 /**
+ * Manual extended thinking rejects a forced tool_choice. Adaptive thinking accepts one on the models that allow it.
+ */
+function assertForcedChoiceAllowed(
+  toolChoiceType: Opt<string, Reason.OptionalInput>,
+  thinking: Opt<boolean, Reason.OptionalInput>,
+  rules: Opt<IAnthropicModelRules, Reason.OptionalContext>,
+): void {
+  const forced = toolChoiceType === ANTHROPIC_TOOL_CHOICE_ANY || toolChoiceType === ANTHROPIC_TOOL_CHOICE_TOOL;
+  if (forced && thinking && rules?.thinkingOn !== ANTHROPIC_THINKING_ADAPTIVE) {
+    throw new AnthropicToolChoiceThinkingConflictError(toolChoiceType);
+  }
+}
+
+/**
  * AnthropicProvider implements IModelProvider for Anthropic's Claude models.
  */
 export class AnthropicProvider extends BaseProvider {
+  readonly callCapabilities: IProviderCallCapabilities;
   private readonly apiVersion: string;
   private readonly maxTokensDefault: number;
   private readonly thinkingDefault?: boolean;
@@ -85,22 +107,16 @@ export class AnthropicProvider extends BaseProvider {
     this.maxTokensDefault = options.config?.ai_anthropic?.max_tokens_default ||
       DEFAULT_ANTHROPIC_MAX_TOKENS;
     this.thinkingDefault = options.config?.ai_anthropic?.thinking_default;
+    this.callCapabilities = anthropicCallCapabilities(this.model);
   }
 
   protected override async attemptGenerate(
     prompt: string,
     options?: Opt<IModelOptions, Reason.OptionalInput>,
   ): Promise<IGenerateResult> {
-    // Guard: tool_choice any/tool + thinking is not supported by Anthropic
-    if (
-      options?.toolChoice &&
-      (options.toolChoice.type === ANTHROPIC_TOOL_CHOICE_ANY || options.toolChoice.type === ANTHROPIC_TOOL_CHOICE_TOOL)
-    ) {
-      const thinkingEnabled = options?.thinking ?? this.thinkingDefault;
-      if (thinkingEnabled) {
-        throw new AnthropicToolChoiceThinkingConflictError(options.toolChoice.type);
-      }
-    }
+    const rules = anthropicModelRules(this.model);
+    const thinkingRequested = options?.thinking ?? this.thinkingDefault;
+    assertForcedChoiceAllowed(options?.toolChoice?.type, thinkingRequested, rules);
 
     const messages: AnthropicRequestMessage[] = [];
 
@@ -162,16 +178,28 @@ export class AnthropicProvider extends BaseProvider {
       messages.push(currentMessage);
     }
 
+    const tuning = requestTuning({
+      thinking: thinkingRequested,
+      maxTokens: options?.max_tokens ?? this.maxTokensDefault,
+      thinkingBudget: options?.thinking_budget,
+      effort: options?.effort,
+    }, rules);
+    if (tuning.thinkingOffRefused && this.logger) {
+      // The model cannot turn thinking off at this effort, so adaptive thinking was sent. The caller sees it in the journal.
+      void this.logger.warn(PROVIDER_EVENT_THINKING_NOT_DISABLED, this.id, {
+        model: this.model,
+        effort: options?.effort ?? "unset",
+      });
+    }
     const requestBody: AnthropicRequestBody = {
       model: this.model,
-      max_tokens: options?.max_tokens ?? this.maxTokensDefault,
+      max_tokens: tuning.maxTokens,
       messages,
       temperature: options?.temperature,
       top_p: options?.top_p,
       stop_sequences: options?.stop,
-      thinking: (options?.thinking ?? this.thinkingDefault) === false
-        ? { type: ANTHROPIC_THINKING_DISABLED }
-        : undefined,
+      thinking: tuning.thinking,
+      ...(tuning.outputConfig ? { output_config: tuning.outputConfig } : {}),
       tools: options?.tools?.map(mapToolDefinition),
       tool_choice: options?.toolChoice ? mapToolChoice(options.toolChoice) : undefined,
     };
@@ -277,7 +305,8 @@ type AnthropicRequestBody = {
   temperature?: Opt<number, Reason.OptionalInput>;
   top_p?: Opt<number, Reason.OptionalInput>;
   stop_sequences?: Opt<string[], Reason.OptionalInput>;
-  thinking?: Opt<{ type: string }, Reason.OptionalInput>;
+  thinking?: Opt<{ type: string; budget_tokens?: number }, Reason.OptionalInput>;
+  output_config?: Opt<{ effort: string }, Reason.OptionalInput>;
   tools?: AnthropicWireTool[];
   tool_choice?: AnthropicWireToolChoice;
 };

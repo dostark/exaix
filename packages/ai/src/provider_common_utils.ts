@@ -9,6 +9,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import { ProviderProtocolError } from "./errors.ts";
 
+import type { EffortTier } from "@exaix/schemas";
 import {
   AuthenticationError,
   ConnectionError,
@@ -555,6 +556,14 @@ function isOpenAiReasoningModel(model: string): boolean {
  *  EffortTier, so it is never a caller preference, only a forced override. */
 const OPENAI_REASONING_EFFORT_NONE = "none";
 
+/** OpenAI-family reasoning models take low to high. The two higher tiers clamp to high, so no caller tier reaches the API unsupported. */
+export function openAiReasoningEffort(
+  effort?: Opt<EffortTier, Reason.OptionalInput>,
+): EffortTier | undefined {
+  if (effort === "xhigh" || effort === "max") return "high";
+  return effort;
+}
+
 export function createOpenAIChatCompletionsRequestInit(
   apiKey: Opt<string, Reason.OptionalInput>,
   model: string,
@@ -566,7 +575,9 @@ export function createOpenAIChatCompletionsRequestInit(
   // gpt-5.6+ rejects function tools on Chat Completions unless reasoning_effort is
   // exactly "none"; force it whenever tools are present so native tool-calling
   // functions on this model family, overriding any caller-preferred effort tier.
-  const reasoningEffort = reasoningModel ? (hasTools ? OPENAI_REASONING_EFFORT_NONE : options?.effort) : undefined;
+  const reasoningEffort = reasoningModel
+    ? (hasTools ? OPENAI_REASONING_EFFORT_NONE : openAiReasoningEffort(options?.effort))
+    : undefined;
   return {
     method: "POST",
     ...(options?.requestSignal ? { signal: options.requestSignal } : {}),
@@ -791,8 +802,8 @@ export function extractAnthropicAssistantReplay(d: AnthropicResponse): IProvider
   return { provider: "anthropic", blocks: blocks as JSONObject[] };
 }
 
-/** Collect the `thinking` blocks immediately preceding the tool_use block at
- *  `toolUseIndex`, stopping at the previous tool_use boundary. Returns undefined
+/** Collect the `thinking` blocks preceding the tool_use block at `toolUseIndex`,
+ *  skipping text and stopping at the previous tool_use boundary. Returns undefined
  *  when none found, so the spread omits the field entirely. */
 function collectThinkingBlocksBefore(
   content: NonNullable<AnthropicResponse["content"]>,
@@ -805,8 +816,8 @@ function collectThinkingBlocksBefore(
       blocks.unshift({ thinking: block.thinking ?? "", signature: block.signature ?? "" });
       continue;
     }
+    // Text may sit between the thinking and its tool_use, as Opus 5.5 writes it. Only a previous tool_use ends the run.
     if (block.type === NATIVE_TOOL_USE_BLOCK_TYPE) break;
-    break;
   }
   return blocks.length > 0 ? { thinkingBlocks: blocks } : undefined;
 }

@@ -16,7 +16,12 @@ import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
-import { AGENT_EVENT_RESPONSE_TRUNCATED, ExecutionStrategyName, SecurityMode } from "@exaix/core";
+import {
+  AGENT_EVENT_RESPONSE_REFUSED,
+  AGENT_EVENT_RESPONSE_TRUNCATED,
+  ExecutionStrategyName,
+  SecurityMode,
+} from "@exaix/core";
 import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
@@ -154,4 +159,20 @@ Deno.test("ReActLoop budget: a complete turn (end_turn) journals no truncation w
     warns.every((w) => w.action !== AGENT_EVENT_RESPONSE_TRUNCATED),
     "end_turn is a complete response — warning on it would train operators to ignore the event",
   );
+});
+
+Deno.test("ReActLoop budget: a turn the model refuses journals agent.response_refused", async () => {
+  const warns: ICapturedWarn[] = [];
+  const provider = new OptionsCapturingProvider("refusal");
+  const strategy = new ReActLoopStrategy(buildExecutor(warns), provider);
+
+  await strategy.execute(testBlueprint, testContext, testOptions);
+
+  const refusalWarn = warns.find((w) => w.action === AGENT_EVENT_RESPONSE_REFUSED);
+  assertExists(
+    refusalWarn,
+    "a refused turn must be journaled, so an empty answer is attributable to the model's refusal",
+  );
+  assertEquals(refusalWarn.payload?.stop_reason, "refusal");
+  assertEquals(refusalWarn.traceId, testContext.trace_id);
 });

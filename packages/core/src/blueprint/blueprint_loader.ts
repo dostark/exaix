@@ -98,7 +98,7 @@ export interface IRuntimeFrontmatterValidation {
  *  schemas package at runtime); the types are imported type-only from it. */
 // deno-lint-ignore prefer-as-const
 const EFFORT_AUTO: "auto" = "auto";
-const EffortDeclarationSchema = z.union([z.enum(["low", "medium", "high"]), z.literal(EFFORT_AUTO)]);
+const EffortDeclarationSchema = z.union([z.enum(["low", "medium", "high", "xhigh", "max"]), z.literal(EFFORT_AUTO)]);
 /** Runtime mirror of @exaix/schemas' ThinkingDeclarationSchema — the preprocess maps
  *  failsafe-YAML's string "true"/"false". */
 const ThinkingDeclarationSchema = z.preprocess(

@@ -12,7 +12,7 @@ import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/c
 
 export const DEFAULT_ANTHROPIC_MODEL: string = configurable({
   key: "anthropic.model",
-  default: "claude-haiku-4-5-20251001",
+  default: "claude-haiku-5-5",
   type: ConfigValueType.STRING,
   description: "Default model identifier for anthropic provider",
   swap: SwapClass.RESTART,
@@ -93,6 +93,17 @@ export const ANTHROPIC_CACHE_CONTROL_EPHEMERAL = "ephemeral";
 
 /** Messages API thinking config value that turns off the model's default adaptive thinking. */
 export const ANTHROPIC_THINKING_DISABLED = "disabled";
+/** Messages API thinking config value that turns off up-front thinking on Claude Sonnet 5.5. */
+export const ANTHROPIC_THINKING_BETWEEN_TOOLS = "between_tools";
+/** Messages API thinking config value that lets the model decide, per request, whether and how much to think. */
+export const ANTHROPIC_THINKING_ADAPTIVE = "adaptive";
+/** Messages API thinking config value for manual extended thinking, which takes a budget_tokens value. */
+export const ANTHROPIC_THINKING_ENABLED = "enabled";
+/** The effort levels output_config.effort accepts on the models whose rules declare effort. */
+export const ANTHROPIC_EFFORT_TIERS = ["low", "medium", "high", "xhigh", "max"] as const;
+/** The two effort levels above high. Disabled thinking and between_tools are refused at both. */
+export const ANTHROPIC_EFFORT_XHIGH = "xhigh";
+export const ANTHROPIC_EFFORT_MAX = "max";
 
 /** Content block type for tool_use blocks. */
 export const ANTHROPIC_CONTENT_TYPE_TOOL_USE = "tool_use";

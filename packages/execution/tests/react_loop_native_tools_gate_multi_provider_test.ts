@@ -533,6 +533,59 @@ Deno.test(
 );
 
 Deno.test(
+  "[react] an unset thinking flag relaxes the forced tool to auto, because the DeepSeek model thinks by default",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    registerToolChoiceProvider();
+    const { provider, calls } = makeRecordingProvider(NO_FORCED_CHOICE_WITH_THINKING);
+    const strategy = new ReActLoopStrategy(makeTrackingExecutor({ count: 0 }, PATCH_FILE_TOOL), provider);
+
+    await strategy.execute(testBlueprint, targetedEditContext(), nativeOptions(["patch_file"]));
+
+    assertEquals(calls[0].options?.toolChoice, { type: "auto" });
+    assertEquals(toolChoiceModeOf(calls[0].options), "auto");
+  },
+);
+
+/** The capability of a model that refuses forced tool_choice in every thinking mode, as Opus 5.5 and Sonnet 5.5 do. */
+const NO_FORCED_CHOICE_ANY_THINKING: NonNullable<IModelProvider["callCapabilities"]> = {
+  profile: "anthropic",
+  supportsThinking: true,
+  supportedEffortTiers: ["low", "medium", "high"],
+  supportsForcedToolChoice: false,
+};
+
+Deno.test(
+  "[react] a model that refuses forced choice in every mode relaxes the forced tool to auto, even with thinking unset",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    registerToolChoiceProvider();
+    const { provider, calls } = makeRecordingProvider(NO_FORCED_CHOICE_ANY_THINKING);
+    const strategy = new ReActLoopStrategy(makeTrackingExecutor({ count: 0 }, PATCH_FILE_TOOL), provider);
+
+    await strategy.execute(testBlueprint, targetedEditContext(), nativeOptions(["patch_file"]));
+
+    assertEquals(calls[0].options?.toolChoice, { type: "auto" });
+    assertEquals(toolChoiceModeOf(calls[0].options), "auto");
+  },
+);
+
+Deno.test(
+  "[react] a model that refuses forced choice in every mode also relaxes it when thinking is off",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    registerToolChoiceProvider();
+    const { provider, calls } = makeRecordingProvider(NO_FORCED_CHOICE_ANY_THINKING);
+    const strategy = new ReActLoopStrategy(makeTrackingExecutor({ count: 0 }, PATCH_FILE_TOOL), provider);
+    strategy.callOptions = { thinking: false };
+
+    await strategy.execute(testBlueprint, targetedEditContext(), nativeOptions(["patch_file"]));
+
+    assertEquals(calls[0].options?.toolChoice, { type: "auto" });
+  },
+);
+
+Deno.test(
   "[phase203.react] a default provider still forces any, and a preferred tool still forces that tool",
   { sanitizeOps: false, sanitizeResources: false },
   async () => {

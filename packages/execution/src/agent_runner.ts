@@ -89,6 +89,7 @@ import {
   AGENT_EVENT_EXECUTION_STARTED,
   AGENT_EVENT_LLM_RESPONSE_RECEIVED,
   AGENT_EVENT_PROMPT_DEBUG_DUMP,
+  AGENT_EVENT_RESPONSE_REFUSED,
   AGENT_EVENT_RESPONSE_TRUNCATED,
   DEFAULT_MODEL_FALLBACK,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -100,6 +101,7 @@ import {
   PORTAL_CONTEXT_KEY,
   PORTAL_KNOWLEDGE_KEY,
   RESPONSE_STOP_REASON_MAX_TOKENS,
+  RESPONSE_STOP_REASON_REFUSAL,
   SKILL_EVENT_RESOLVED,
   SKILL_EVENT_RETRIEVAL_FAILED,
   SKILL_EVENT_RETRIEVAL_TIMEOUT,
@@ -598,17 +600,7 @@ export class AgentRunner implements IAgentRunner {
       prompt_tokens: generateResult?.usage?.promptTokens ?? null,
       completion_tokens: generateResult?.usage?.completionTokens ?? null,
     }, traceId);
-    // A max_tokens stop means the answer was cut off mid-generation: downstream structured
-    // parsing is expected to fail on it, and that failure must be attributable to
-    // truncation, not treated as a mysteriously malformed model response.
-    if (generateResult?.stop_reason === RESPONSE_STOP_REASON_MAX_TOKENS && this.logger) {
-      void this.logger.warn(AGENT_EVENT_RESPONSE_TRUNCATED, requestId || null, {
-        agent_role: agentRole,
-        stop_reason: generateResult.stop_reason,
-        response_length: rawResponse.length,
-        completion_tokens: generateResult?.usage?.completionTokens ?? null,
-      }, traceId);
-    }
+    this.warnOnStopReason(generateResult, rawResponse, agentRole, requestId, traceId);
     const result = this.parseResponse(rawResponse);
 
     // Log successful execution
@@ -1677,6 +1669,32 @@ export class AgentRunner implements IAgentRunner {
   /** Extracts keywords from text for skill matching. */
   private extractKeywords(text: string): string[] {
     return extractKeywords(text);
+  }
+
+  /** A truncated or refused answer is journaled as a warning, so the parse failure that follows is attributable to it. */
+  private warnOnStopReason(
+    generateResult: Opt<IGenerateResult, Reason.OptionalInput>,
+    rawResponse: string,
+    agentRole: string,
+    requestId: Opt<string, Reason.TraceAbsent>,
+    traceId: Opt<string, Reason.TraceAbsent>,
+  ): void {
+    if (!this.logger || !generateResult) return;
+    if (generateResult.stop_reason === RESPONSE_STOP_REASON_MAX_TOKENS) {
+      void this.logger.warn(AGENT_EVENT_RESPONSE_TRUNCATED, requestId || null, {
+        agent_role: agentRole,
+        stop_reason: generateResult.stop_reason,
+        response_length: rawResponse.length,
+        completion_tokens: generateResult.usage?.completionTokens ?? null,
+      }, traceId);
+    }
+    if (generateResult.stop_reason === RESPONSE_STOP_REASON_REFUSAL) {
+      void this.logger.warn(AGENT_EVENT_RESPONSE_REFUSED, requestId || null, {
+        agent_role: agentRole,
+        stop_reason: generateResult.stop_reason,
+        response_length: rawResponse.length,
+      }, traceId);
+    }
   }
 
   /** Parses the LLM response to extract <thought> and <content> tags via OutputValidator;

@@ -47,6 +47,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import { DomainEventType, type IToolAliasRewrittenPayload } from "@exaix/core/events";
 import {
+  AGENT_EVENT_RESPONSE_REFUSED,
   AGENT_EVENT_RESPONSE_TRUNCATED,
   CONTEXT_PRIORITY_REFLECTION,
   CONTEXT_PRIORITY_SYSTEM,
@@ -66,6 +67,7 @@ import {
   REACT_TOOL_RESULT_BUDGET_RATIO,
   REACT_TOOL_RESULT_SUMMARY_MAX,
   RESPONSE_STOP_REASON_MAX_TOKENS,
+  RESPONSE_STOP_REASON_REFUSAL,
   STREAMING_EVENT_HEARTBEAT,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
   ToolsRoundLoop,
@@ -421,8 +423,10 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       base.tools = nativeToolDefinitions;
       // A provider that cannot honor an explicit tool_choice still receives the tool list.
       const capabilities = this.provider?.callCapabilities;
-      const forcedChoiceRefused = this.callOptions?.thinking === true &&
-        capabilities?.supportsForcedToolChoiceWithThinking === false;
+      // An unset flag counts as thinking on: DeepSeek models think by default, and only they declare the thinking-only refusal.
+      const thinkingOn = this.callOptions?.thinking !== false;
+      const forcedChoiceRefused = capabilities?.supportsForcedToolChoice === false ||
+        (thinkingOn && capabilities?.supportsForcedToolChoiceWithThinking === false);
       if (capabilities?.supportsToolChoice !== false) {
         // PGAP-3: a detected preferred tool forces tool_choice: {type: "tool", name: "..."}.
         // That entry replaces the unconstrained {type: "any"} for a targeted-edit task.
@@ -468,6 +472,27 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         stop_reason: response.stop_reason,
         response_length: response.content.length,
         completion_tokens: response.usage.completionTokens,
+      },
+      context.trace_id,
+    );
+  }
+
+  /** Log a warning when the model refused the request, so the empty answer is attributable to the refusal. */
+  private logRefusal(
+    response: IGenerateResult,
+    options: IAgentExecutionOptions,
+    iteration: number,
+    context: IExecutionContext,
+  ): void {
+    if (response.stop_reason !== RESPONSE_STOP_REASON_REFUSAL) return;
+    void this.executor.budgetLogger?.warn(
+      AGENT_EVENT_RESPONSE_REFUSED,
+      context.request_id ?? null,
+      {
+        agent_role: options.agent_role ?? "",
+        iteration,
+        stop_reason: response.stop_reason,
+        response_length: response.content.length,
       },
       context.trace_id,
     );
@@ -652,6 +677,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     const generateDurationMs = Date.now() - generateStartTime;
 
     this.logMaxTokensTruncation(response, options, i, context);
+    this.logRefusal(response, options, i, context);
 
     const costUsd = await this.logIterationGeneration(response, context, options, generateDurationMs);
 

@@ -61,7 +61,7 @@ export const ZSkillMatch = z.object({
   critical: z.boolean().default(false),
   /** Minimum effort floor carried from the skill so EffortResolver can raise the resolved
    *  value (floors never lower). */
-  effort: z.enum(["low", "medium", "high"]).optional(),
+  effort: z.enum(["low", "medium", "high", "xhigh", "max"]).optional(),
   /** Minimum thinking floor carried from the skill (logical OR of matched floors). */
   thinking: z.boolean().optional(),
   /** Illustrative content split from `content`, carried from `ISkill.examples`. Rendered by

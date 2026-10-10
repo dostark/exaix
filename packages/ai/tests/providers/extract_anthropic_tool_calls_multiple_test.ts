@@ -109,3 +109,23 @@ Deno.test("extractAnthropicAssistantReplay is undefined when the response has no
   const response: AnthropicResponse = { content: [{ type: "text", text: "done" }] };
   assertEquals(extractAnthropicAssistantReplay(response), undefined);
 });
+
+Deno.test("extractAnthropicToolCalls keeps a thinking block that precedes text before the tool_use (Opus 5.5 order)", () => {
+  const response: AnthropicResponse = {
+    content: [
+      { type: "thinking", thinking: "Read all three files.", signature: "sig-think-2" },
+      { type: "text", text: "Reading the files now." },
+      { type: "tool_use", id: "toolu_a", name: "read_file", input: { path: "a.txt" } },
+      { type: "tool_use", id: "toolu_b", name: "read_file", input: { path: "b.txt" } },
+    ],
+  };
+  const result = extractAnthropicToolCalls(response);
+  assertEquals(result!.length, 2);
+  assertExists(result![0].thinkingBlocks);
+  assertEquals(result![0].thinkingBlocks![0].signature, "sig-think-2");
+  assertEquals(
+    result![1].thinkingBlocks,
+    undefined,
+    "the second call's preceding block is a tool_use, so none is attached",
+  );
+});

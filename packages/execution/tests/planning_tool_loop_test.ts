@@ -18,7 +18,13 @@ import type { IGenerateResult } from "@exaix/ai/providers";
 import { type INativeInputMeasurement, ProviderRegistry } from "@exaix/ai";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import type { ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
-import { PlanningToolLoopStopReason, PricingTier, ProviderCostTier, ToolsRoundMode } from "@exaix/core";
+import {
+  AGENT_EVENT_RESPONSE_REFUSED,
+  PlanningToolLoopStopReason,
+  PricingTier,
+  ProviderCostTier,
+  ToolsRoundMode,
+} from "@exaix/core";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
@@ -1277,5 +1283,27 @@ Deno.test("[planning_tool_loop][parallel-replay] a three-call replayed round exa
     assertEquals(generate.calls.length, 2, "a round at the limit is within budget");
   } finally {
     ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[planning_tool_loop] a refused round journals agent.response_refused with its stop reason", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const refused: IGenerateResult = { ...makeGenerateResult(""), stop_reason: "refusal" };
+    const generate = new ScriptedGenerate([refused]);
+    const loop = new PlanningToolLoop(
+      makeDeps({ toolRegistry: new StubToolRegistry(), generate: generate.generate, logger }),
+    );
+    const traceId = crypto.randomUUID();
+
+    await loop.run(makeOptions({ maxRounds: 1, traceId }));
+    await db.waitForFlush();
+
+    const refusals = db.getActivitiesByTrace(traceId).filter((r) => r.action_type === AGENT_EVENT_RESPONSE_REFUSED);
+    assertEquals(refusals.length, 1, "a refused round must leave one refusal row, so the empty plan is attributable");
+    assertStringIncludes(refusals[0].payload, "refusal");
+  } finally {
+    await cleanup();
   }
 });

@@ -52,7 +52,13 @@ import {
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import { canonicalizeForRegistry, PathSecurity } from "@exaix/tool-runtime";
-import { ToolCallEntryPoint, ToolName, ToolsRoundMode } from "@exaix/core";
+import {
+  AGENT_EVENT_RESPONSE_REFUSED,
+  RESPONSE_STOP_REASON_REFUSAL,
+  ToolCallEntryPoint,
+  ToolName,
+  ToolsRoundMode,
+} from "@exaix/core";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import {
   assertRoundWithinBounds,
@@ -323,6 +329,15 @@ export class PlanningToolLoop {
       }
 
       const response = await this.deps.generate(request.roundPrompt, request.roundOptions);
+      if (response.stop_reason === RESPONSE_STOP_REASON_REFUSAL) {
+        // A refused round carries no content, so the loop ends without a plan. The journal says why.
+        void this.deps.logger?.warn(AGENT_EVENT_RESPONSE_REFUSED, this.deps.modelId, {
+          model: this.deps.modelId,
+          round,
+          stop_reason: response.stop_reason,
+          response_length: response.content.length,
+        }, options.traceId);
+      }
       progress.promptTokens += response.usage.promptTokens;
       progress.completionTokens += response.usage.completionTokens;
 
