@@ -22,7 +22,7 @@ import type { IDisplayService } from "@exaix/core/types";
 import { EventLogger } from "@exaix/core/logger";
 import { createStubContext, createStubDb } from "@exaix/testing";
 import type { JSONObject } from "@exaix/core/types";
-import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import { BINARY_VERSION, DAEMON_STOP_TIMEOUT_MS, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import { readFixtureTextSync } from "@exaix/testing";
 
 /**
@@ -145,8 +145,6 @@ describe("DaemonCommands", {
         const pid = parseInt(pidStr.trim(), 10);
         if (!isNaN(pid)) {
           await killProcess(pid);
-          // Wait for process to fully exit
-          await waitForProcessState(pid, false, 1000);
         }
         // Remove PID file
         await Deno.remove(pidFile).catch(() => {});
@@ -209,9 +207,7 @@ describe("DaemonCommands", {
       const pidStr = await Deno.readTextFile(pidFile);
       const pid = parseInt(pidStr.trim(), 10);
 
-      // Wait for process to stabilize
-      await waitForProcessState(pid, true, 1000);
-
+      // start() returns only after daemon.ready, so the process is already stable.
       // Verify process still exists
       const isAlive = await isProcessAlive(pid);
       assertEquals(isAlive, true);
@@ -253,8 +249,9 @@ describe("DaemonCommands", {
       // Stop daemon
       await daemonCommands.stop();
 
-      // Verify process stopped
-      await waitForProcessState(pid, false, 1000);
+      // A graceful stop is journaled only after the exit is observed, so the method proves it.
+      await db.waitForFlush();
+      assertEquals(stopMethods(db), ["graceful"]);
       const isAlive = await isProcessAlive(pid);
       assertEquals(isAlive, false);
     });
@@ -302,9 +299,10 @@ describe("DaemonCommands", {
       // Stop it normally (should work fine)
       await daemonCommands.stop();
 
-      // Verify process stopped
-      const stopped = await waitForProcessState(pid, false, 1000);
-      assertEquals(stopped, true, "Process should be stopped");
+      // A graceful stop is journaled only after the exit is observed, so the method proves it.
+      await db.waitForFlush();
+      assertEquals(stopMethods(db), ["graceful"]);
+      assertEquals(await isProcessAlive(pid), false, "Process should be stopped");
     });
 
     it("should log daemon.stopped to activity journal", async () => {
@@ -528,6 +526,14 @@ describe("DaemonCommands", {
 
 // Helper functions
 
+/** Methods journaled by `daemon.stopped` rows, in order: `graceful` or `forced`. */
+function stopMethods(db: DatabaseService): string[] {
+  const rows = db.instance.prepare("SELECT payload FROM activity WHERE action_type = ? ORDER BY rowid").all(
+    "daemon.stopped",
+  ) as Array<{ payload: string }>;
+  return rows.map((row) => JSON.parse(row.payload).method as string);
+}
+
 async function killProcess(pid: number): Promise<void> {
   try {
     // Try graceful kill first
@@ -538,8 +544,8 @@ async function killProcess(pid: number): Promise<void> {
     });
     await termCmd.output();
 
-    // Wait for graceful termination
-    const terminated = await waitForProcessState(pid, false, 1000);
+    // Wait for graceful termination, for as long as production allows before it force-kills.
+    const terminated = await waitForProcessState(pid, false, DAEMON_STOP_TIMEOUT_MS);
 
     // Force kill if still alive
     if (!terminated && await isProcessAlive(pid)) {
