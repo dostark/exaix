@@ -29,6 +29,10 @@ import { createLlmProvider, liveReplayLlmSpec, llmKeyPresent } from "../helpers/
 const LIVE_FILES = ["a.txt", "b.txt", "c.txt"] as const;
 const PAID_OPT_IN_ENV = "EXA_TEST_ENABLE_PAID_LLM";
 const DEEPSEEK_SERVICE = "deepseek";
+const ANTHROPIC_SERVICE = "anthropic";
+/** A prompt that makes Claude Haiku 5.5 think before its three reads: adaptive thinking decides per request. */
+const THINKING_PROMPT =
+  "Three files a.txt, b.txt and c.txt each hold one number. Work out whether the product of the numbers in a.txt and b.txt, modulo the number in c.txt, equals 1, and why. Then read all three with read_file in this one response, and report the marker in each file.";
 const PORTAL_ALIAS = "live";
 
 const liveSpec = liveReplayLlmSpec();
@@ -58,8 +62,14 @@ class PortalFileRegistry implements IToolRegistry {
   }
 }
 
+/** A round's prompt and an observer of each provider response. Both are optional. */
+interface IRoundObservation {
+  prompt?: string;
+  observe?: (result: IGenerateResult, options: IModelOptions) => void;
+}
+
 /** Runs the three-file round through the real planning loop. The base options carry only what the case sets. */
-async function runThreeFileRound(baseOptions: IModelOptions): Promise<void> {
+async function runThreeFileRound(baseOptions: IModelOptions, round: IRoundObservation = {}): Promise<void> {
   bootstrapProviderRegistry();
   const root = Deno.makeTempDirSync({ prefix: "native-tool-round-live-" });
   const markers = LIVE_FILES.map((file) => {
@@ -81,11 +91,15 @@ async function runThreeFileRound(baseOptions: IModelOptions): Promise<void> {
       },
       modelId: binding.service_model_id,
       providerId: provider.id,
-      generate: (prompt: string, options: IModelOptions): Promise<IGenerateResult> =>
-        provider.generate(prompt, options),
+      generate: async (prompt: string, options: IModelOptions): Promise<IGenerateResult> => {
+        const result = await provider.generate(prompt, options);
+        round.observe?.(result, options);
+        return result;
+      },
     });
     const result = await loop.run({
-      prompt: `Read files ${LIVE_FILES.join(", ")} with read_file, then reply with the three secret markers.`,
+      prompt: round.prompt ??
+        `Read files ${LIVE_FILES.join(", ")} with read_file, then reply with the three secret markers.`,
       baseOptions,
       nextCallSite: () => ({ scenarioId: "live-native-round", stepId: "replay", callIndex: 0 }),
       portalAlias: PORTAL_ALIAS,
@@ -141,5 +155,38 @@ Deno.test({
     } finally {
       ProviderRegistry.clear();
     }
+  },
+});
+
+Deno.test({
+  name:
+    `[native_tool_round][live] Anthropic returns signed thinking blocks with its tool calls, and the follow-up carries them back (${liveName})`,
+  ignore: !liveEnabled || liveSpec.service !== ANTHROPIC_SERVICE,
+  fn: async () => {
+    const responses: IGenerateResult[] = [];
+    const replayedSigned: number[] = [];
+    await runThreeFileRound({}, {
+      prompt: THINKING_PROMPT,
+      observe: (result, options) => {
+        responses.push(result);
+        const assistant = options.priorRound?.assistant;
+        if (assistant?.provider === "anthropic") {
+          replayedSigned.push(
+            assistant.blocks.filter((block) =>
+              block.type === "thinking" && typeof block.signature === "string" && block.signature.length > 0
+            ).length,
+          );
+        }
+      },
+    });
+    const returned = responses
+      .flatMap((result) => result.toolCalls ?? [])
+      .flatMap((call) => call.thinkingBlocks ?? [])
+      .filter((block) => block.signature.length > 0);
+    assert(returned.length > 0, "no signed thinking block came back with a tool call, so replay was not exercised");
+    assert(
+      replayedSigned.some((count) => count > 0),
+      "the follow-up request carried no signed thinking block; the replay dropped it",
+    );
   },
 });

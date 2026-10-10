@@ -41,6 +41,9 @@ export interface ICompatibleFixture {
   shutdown(): Promise<void>;
 }
 
+/** The live provider a daemon run calls. */
+export type LiveProvider = "deepseek" | "anthropic";
+
 /** The options that shape the compatible-profile daemon config. */
 export interface ICompatibleConfigOptions {
   planningTools: boolean;
@@ -50,6 +53,10 @@ export interface ICompatibleConfigOptions {
   maxCallsPerRound?: number;
   /** Adds the catalog service and the default binding that the Flow path resolves its provider through. */
   flowBinding?: boolean;
+  /** Sends chat to the DeepSeek API through its profile instead of the loopback fixture. */
+  live?: boolean;
+  /** Names the live provider when `live` is set. Unset means DeepSeek. */
+  liveProvider?: LiveProvider;
 }
 
 /** One trace-scoped journal row. */
@@ -64,6 +71,15 @@ export const FIXTURE_MODEL = "compat-fixture-v1";
 /** The credential the local-test profile reads from its environment variable. */
 export const FIXTURE_API_KEY = "local-fixture-key";
 export const FIXTURE_API_KEY_ENV = "EXA_COMPAT_TEST_API_KEY";
+/** The DeepSeek preset the live leg binds to: its model, its canonical catalog id, and its key variable. */
+export const LIVE_MODEL = "deepseek-v4-pro";
+export const LIVE_CANONICAL_MODEL = "deepseek/deepseek-v4-pro";
+export const LIVE_KEY_ENV = "DEEPSEEK_API_KEY";
+/** The Anthropic live leg's model. The Anthropic provider reads its key from ANTHROPIC_API_KEY. */
+/** Defaults to Haiku 5.5. EXA_TEST_ANTHROPIC_MODEL picks another Claude model for one live run. */
+export const LIVE_ANTHROPIC_MODEL = Deno.env.get("EXA_TEST_ANTHROPIC_MODEL") ?? "claude-haiku-5-5";
+const FIXTURE_TIMEOUT_MS = 10000;
+const LIVE_TIMEOUT_MS = 120000;
 const EMBEDDING_DIMENSIONS = 768;
 
 /** Starts the loopback fixture. `respond` gets the zero-based index of each chat request and its body. */
@@ -122,7 +138,44 @@ export function toolCallCompletion(
   };
 }
 
-/** Writes the daemon config that selects the compatible local-test profile for the default agent. */
+/** The catalog service and default binding that route the Flow path to the loopback fixture. */
+function fixtureBinding(port: number): string[] {
+  return [
+    "[catalog.services.compat-fixture]",
+    'adapter = "openai-chat"',
+    'profile = "local-test"',
+    `endpoint = "http://127.0.0.1:${port}/v1/chat/completions"`,
+    "allow_insecure_loopback = true",
+    'transport = "local"',
+    'interface = "api"',
+    `serves = { "openai-chat/${FIXTURE_MODEL}" = "${FIXTURE_MODEL}" }`,
+    "",
+    `[catalog.models."openai-chat/${FIXTURE_MODEL}"]`,
+    'model_provider = "openai-chat"',
+    "",
+    "[bindings.default]",
+    'service = "compat-fixture"',
+    `model = "openai-chat/${FIXTURE_MODEL}"`,
+    "",
+  ];
+}
+
+/** The default binding that routes the Flow path to the DeepSeek preset in the built-in catalog. */
+function liveBinding(): string[] {
+  return ["[bindings.default]", 'service = "deepseek"', `model = "${LIVE_CANONICAL_MODEL}"`, ""];
+}
+
+/** The compatible-profile lines. The fixture profile names its loopback endpoint. DeepSeek takes its profile default. */
+function compatibleLines(port: number, model: string, live: boolean): string[] {
+  return live ? ['profile = "deepseek"', `model = "${model}"`] : [
+    'profile = "local-test"',
+    `endpoint = "http://127.0.0.1:${port}/v1/chat/completions"`,
+    `model = "${model}"`,
+    "allow_insecure_loopback = true",
+  ];
+}
+
+/** Writes the daemon config that selects the compatible local-test profile, or the DeepSeek profile when live. */
 export function writeCompatibleConfig(
   configPath: string,
   root: string,
@@ -141,26 +194,11 @@ export function writeCompatibleConfig(
     ]
     : [];
   const tools = options.toolsLines?.length ? ["[tools]", ...options.toolsLines, ""] : [];
-  const binding = options.flowBinding
-    ? [
-      "[catalog.services.compat-fixture]",
-      'adapter = "openai-chat"',
-      'profile = "local-test"',
-      `endpoint = "http://127.0.0.1:${port}/v1/chat/completions"`,
-      "allow_insecure_loopback = true",
-      'transport = "local"',
-      'interface = "api"',
-      `serves = { "openai-chat/${FIXTURE_MODEL}" = "${FIXTURE_MODEL}" }`,
-      "",
-      `[catalog.models."openai-chat/${FIXTURE_MODEL}"]`,
-      'model_provider = "openai-chat"',
-      "",
-      "[bindings.default]",
-      'service = "compat-fixture"',
-      `model = "openai-chat/${FIXTURE_MODEL}"`,
-      "",
-    ]
-    : [];
+  const anthropic = options.live === true && options.liveProvider === "anthropic";
+  if (anthropic && options.flowBinding) throw new Error("The Anthropic live leg has no Flow binding.");
+  const model = anthropic ? LIVE_ANTHROPIC_MODEL : options.live ? LIVE_MODEL : FIXTURE_MODEL;
+  const timeoutMs = options.live ? LIVE_TIMEOUT_MS : FIXTURE_TIMEOUT_MS;
+  const binding = options.flowBinding ? (options.live ? liveBinding() : fixtureBinding(port)) : [];
   const lines = [
     ...daemonConfigSections(root, ""),
     "",
@@ -175,15 +213,11 @@ export function writeCompatibleConfig(
     'default_model = "compat-agent"',
     "",
     "[models.compat-agent]",
-    'provider = "openai-chat"',
-    `model = "${FIXTURE_MODEL}"`,
-    "timeout_ms = 10000",
+    `provider = "${anthropic ? "anthropic" : "openai-chat"}"`,
+    `model = "${model}"`,
+    `timeout_ms = ${timeoutMs}`,
     "",
-    "[models.compat-agent.compatible]",
-    'profile = "local-test"',
-    `endpoint = "http://127.0.0.1:${port}/v1/chat/completions"`,
-    `model = "${FIXTURE_MODEL}"`,
-    "allow_insecure_loopback = true",
+    ...(anthropic ? [] : ["[models.compat-agent.compatible]", ...compatibleLines(port, model, options.live === true)]),
     "",
     "[quality_gate]",
     "enabled = false",
@@ -234,7 +268,12 @@ export async function createPortal(portalDir: string, files: Record<string, stri
 }
 
 /** Writes an agent blueprint that uses the compatible model with the given permitted tools. */
-export async function writeCompatAgent(root: string, role: string, permittedTools: string[]): Promise<void> {
+export async function writeCompatAgent(
+  root: string,
+  role: string,
+  permittedTools: string[],
+  modelRef: string = `openai-chat:${FIXTURE_MODEL}`,
+): Promise<void> {
   const dir = join(root, "Blueprints", "Agents");
   await Deno.mkdir(dir, { recursive: true });
   await Deno.writeTextFile(
@@ -243,7 +282,7 @@ export async function writeCompatAgent(root: string, role: string, permittedTool
       "---",
       `agent_role: "${role}"`,
       `name: "${role}"`,
-      `model: "openai-chat:${FIXTURE_MODEL}"`,
+      `model: "${modelRef}"`,
       "model_size: M",
       "characteristics: [fastest]",
       'capabilities: ["react"]',
@@ -281,7 +320,7 @@ export async function writePlanningRequest(root: string, traceId: string, subjec
       "",
       "# Request",
       "",
-      "Read the portal files and produce a plan.",
+      "Call read_file for src/a.ts, src/b.ts and src/c.ts in one response, then produce a plan.",
       "",
     ].join("\n"),
   );
