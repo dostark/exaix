@@ -4750,14 +4750,14 @@ source ~/.bashrc
 
 #### 5.3.2 Runtime Configuration Overrides
 
-Four environment variables allow runtime override of AI provider configuration:
+Four environment variables override the default AI provider and model. Restart the daemon after you change one.
 
-| Variable             | Purpose                    | Validation        | Example                                          |
-| -------------------- | -------------------------- | ----------------- | ------------------------------------------------ |
-| `EXA_LLM_PROVIDER`   | Override AI provider       | ProviderType enum | `export EXA_LLM_PROVIDER=ollama`                 |
-| `EXA_LLM_MODEL`      | Override model name        | Non-empty string  | `export EXA_LLM_MODEL=llama3.2`                  |
-| `EXA_LLM_BASE_URL`   | Override provider endpoint | Valid URL         | `export EXA_LLM_BASE_URL=http://localhost:11434` |
-| `EXA_LLM_TIMEOUT_MS` | Override request timeout   | 1000-300000ms     | `export EXA_LLM_TIMEOUT_MS=60000`                |
+| Variable             | Purpose                                | Validation                                                        | Example                                          |
+| -------------------- | -------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------ |
+| `EXA_LLM_PROVIDER`   | Override the default AI provider       | Registered provider name. An unknown name falls back to `mock`.   | `export EXA_LLM_PROVIDER=ollama`                 |
+| `EXA_LLM_MODEL`      | Override the default model name        | None. The value is passed to the provider unchanged.              | `export EXA_LLM_MODEL=llama3.2`                  |
+| `EXA_LLM_BASE_URL`   | Override the default provider endpoint | None. The value is used as given. `EXA_LLM_ENDPOINT` is an alias. | `export EXA_LLM_BASE_URL=http://localhost:11434` |
+| `EXA_LLM_TIMEOUT_MS` | Override the request timeout (ms)      | None. Parsed as an integer and not range-checked.                 | `export EXA_LLM_TIMEOUT_MS=60000`                |
 
 **Usage Example:**
 
@@ -4771,42 +4771,53 @@ export EXA_LLM_MODEL=claude-opus-4.5
 exactl daemon start
 ```
 
-**Validation:** All `EXA_LLM_*` variables are validated via Zod schema. Invalid values (e.g., timeout below 1000ms, invalid provider name) are rejected with clear warning messages.
+**Precedence:** Without an operator binding layer, `EXA_LLM_PROVIDER` and `EXA_LLM_MODEL` take precedence over the `[ai]` section of `exa.config.toml`, which takes precedence over the built-in `mock` default. With an operator binding layer, flow steps ignore all `EXA_LLM_*` variables. The binding lock records whether `EXA_LLM_PROVIDER` or `EXA_LLM_MODEL` was set and ignored.
+
+**Validation:** These variables have no Zod schema. An unknown `EXA_LLM_PROVIDER` logs a warning and falls back to `mock`. `EXA_LLM_TIMEOUT_MS` accepts any integer, including values below 1000.
 
 **Best Practice:** Use `exa.config.toml` for persistent configuration. Use environment variables for temporary overrides or testing different providers.
 
 #### 5.3.3 Test Environment Variables
 
-Three environment variables control cost-safe LLM testing:
+The live tests bind their provider and model with `EXA_TEST_BIND`. Three other variables control the manual tests and the paid-call opt-in.
 
-| Variable                   | Purpose                                      | Validation       | Example                                 |
-| -------------------------- | -------------------------------------------- | ---------------- | --------------------------------------- |
-| `EXA_TEST_ENABLE_PAID_LLM` | Opt-in to real LLM calls (mock by default)   | `"1"` to enable  | `export EXA_TEST_ENABLE_PAID_LLM=1`     |
-| `EXA_TEST_OPENAI_API_KEY`  | API key for OpenAI-compatible test endpoints | Non-empty string | `export EXA_TEST_OPENAI_API_KEY="sk-…"` |
-| `EXA_TEST_LLM_MODEL`       | Default model for paid LLM tests             | Model ID string  | `export EXA_TEST_LLM_MODEL=gpt-5-mini`  |
+| Variable                   | Purpose                                                                                                                               | Validation                                                                              | Example                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `EXA_TEST_BIND`            | Binds the live-test provider and model, in the `--bind` syntax `selector=field=value,field=value`.                                    | Parsed by the binding schema. An unknown service or model fails the test before a call. | `export EXA_TEST_BIND='default=service=openai,service_model_id=gpt-5-mini'` |
+| `EXA_TEST_ENABLE_PAID_LLM` | Opt-in for billable providers in test or CI mode. Without it, the daemon refuses a billable provider at boot, and routing skips them. | `"1"` to enable                                                                         | `export EXA_TEST_ENABLE_PAID_LLM=1`                                         |
+| `EXA_TEST_OPENAI_API_KEY`  | API key for the manual OpenAI integration tests. Those tests skip when it is unset.                                                   | Non-empty string                                                                        | `export EXA_TEST_OPENAI_API_KEY="sk-…"`                                     |
+| `EXA_TEST_LLM_MODEL`       | Model ID for the `packages/ai` provider tests (`free_providers_test.ts`, `openai_shim_retry_test.ts`). Default `gpt-5-mini`.          | Model ID string                                                                         | `export EXA_TEST_LLM_MODEL=gpt-5-mini`                                      |
 
-**CI Safety:** When `CI` is set and `EXA_TEST_ENABLE_PAID_LLM` is not `"1"`, the `ModelFactory` returns a `MockProvider` for cost-friendly model aliases. Never set `EXA_TEST_ENABLE_PAID_LLM=1` in CI jobs unless the run is on a trusted branch with properly stored secrets.
+**Live-test defaults:** The ReAct, memory maturation and extractor live tests use the DeepSeek preset (`deepseek-v4-pro`). They are reported as ignored unless `DEEPSEEK_API_KEY` is set. The native-round replay test uses the Google preset (`gemini-3-flash`) by default. It runs only with `EXA_TEST_ENABLE_PAID_LLM=1` and `GOOGLE_API_KEY`.
+
+**CI Safety:** In test or CI mode, the daemon refuses to boot a billable provider unless `EXA_TEST_ENABLE_PAID_LLM=1`. Configured fallback chains are exempt. Test mode is set by `EXA_TEST_MODE` or `EXA_TEST_CLI_MODE=1`. CI mode is set by `EXA_CI_MODE`, or by `CI` when `EXA_CI_MODE` is unset. Never set `EXA_TEST_ENABLE_PAID_LLM=1` in CI jobs unless the run is on a trusted branch with properly stored secrets.
 
 **Usage Example:**
 
 ```bash
-# Manual paid-LLM integration test
+# Manual OpenAI integration test (opt-in, calls the real API)
 export EXA_TEST_ENABLE_PAID_LLM=1
 export EXA_TEST_OPENAI_API_KEY="sk-..."
-export EXA_TEST_LLM_MODEL="gpt-5-mini"
-deno test tests/integration/19_llm_free_provider_test.ts --allow-env --allow-net --allow-read
+deno test --allow-all tests/integration/llm_free_provider_test.ts
+
+# ReAct live test: DeepSeek by default
+export DEEPSEEK_API_KEY="..."
+deno test --allow-all packages/execution/tests/agents/react_loop_strategy_live_test.ts
+
+# The same test bound to an OpenAI model
+export EXA_TEST_BIND='default=service=openai,service_model_id=gpt-5-mini'
+export OPENAI_API_KEY="..."
+deno test --allow-all packages/execution/tests/agents/react_loop_strategy_live_test.ts
 ```
 
 #### 5.3.4 Troubleshooting Environment Variables
 
-**Invalid environment variable warnings:**
+**Provider or endpoint not taking effect:**
 
-If you see warnings like "Invalid EXA_LLM_TIMEOUT_MS: must be ≥ 1000", check:
-
-1. **Value is within valid range** (timeout: 1000-300000ms)
-1. **No typos in variable name** (case-sensitive)
-1. **Provider name is valid** (`mock`, `ollama`, `anthropic`, `openai`, `google`)
-1. **URL is well-formed** (must include protocol: `http://` or `https://`)
+1. **Variable name is spelled exactly** (case-sensitive)
+1. **Provider name is a `ProviderType` value:** `ollama`, `anthropic`, `openai`, `google`, `vertex-ai`, `openrouter`, `mock`, `llamacpp`, `claude-cli`, `opencode-cli`, `codex-cli`, `openai-chat`. An unknown name falls back to `mock`.
+1. **URL includes the protocol** (`http://` or `https://`). `EXA_LLM_BASE_URL` is used as given, so check it before the first request.
+1. **Timeout is an integer in milliseconds.** It is not range-checked.
 
 **Environment variables not taking effect:**
 
@@ -5207,7 +5218,7 @@ those. Unit and fixture tests never prove live compatibility.
 
 ### 5.4 Testing & CI Model Aliases
 
-Exaix provides two predefined model configurations for testing and CI workflows via `exa.config.toml`:
+The `models` table in `exa.config.toml` defines named model entries. Exaix does not predefine any entries. The example below defines two entries that suit CI and manual testing:
 
 ```toml
 [models.ci_safe]
@@ -5219,10 +5230,10 @@ provider = "openai"
 model = "gpt-5-mini"
 ```
 
-- **`ci_safe`** — Always returns a `MockProvider` (no API calls, no costs). Used automatically when `CI` is set and `EXA_TEST_ENABLE_PAID_LLM` is not `"1"`. Safe for automated CI pipelines.
-- **`local_cheaper`** — Uses the `OpenAIShim` adapter with the `gpt-5-mini` model alias. Enables manual testing against real OpenAI-compatible endpoints at reduced cost.
+- **`ci_safe`** — Uses the `mock` provider, so it makes no API call and costs nothing. Exaix does not select it automatically. A flow, test or command must name it.
+- **`local_cheaper`** — Uses the `openai` provider with the `gpt-5-mini` model. It calls the real OpenAI API and is billed to `OPENAI_API_KEY`.
 
-The `ModelFactory` provides these convenience aliases and automatically selects `ci_safe` in CI environments unless explicitly opted out via `EXA_TEST_ENABLE_PAID_LLM=1`.
+The paid-provider guard does not read these entries. It applies to billable providers in test or CI mode, as described in section 5.3.3.
 
 ### 5.5 ACI (Agent-Computer Interface) Tool Guidance
 
