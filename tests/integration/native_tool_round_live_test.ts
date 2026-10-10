@@ -1,17 +1,18 @@
 /**
  * @module NativeToolRoundLiveTest
  * @path tests/integration/native_tool_round_live_test.ts
- * @description Supplemental live qualification. Binds the provider through the phase-204 catalog
- *   (EXA_TEST_BIND, default the Google preset) and runs the real PlanningToolLoop against it with
- *   three distinct files (a.txt, b.txt, c.txt) that each carry a random marker. The follow-up content
- *   must contain every marker, which proves the round replayed successfully. The bound provider must
- *   declare grouped replay at boot. Opt-in only: without EXA_TEST_ENABLE_PAID_LLM=1 and the bound
- *   service's key the case is reported as ignored (NOT RUN) and never counts as a pass.
+ * @description Live qualification of the openai-chat grouped replay against the DeepSeek API by default.
+ *   Binds the provider through the phase-204 catalog (EXA_TEST_BIND, default the DeepSeek preset). Three cases
+ *   run against the real provider. The round case runs the real PlanningToolLoop over three distinct files that
+ *   each carry a random marker, and the follow-up content must contain every marker. The thinking case replays
+ *   DeepSeek's reasoning with its tool calls. The call case checks that a live response passes the compatible
+ *   contract. Opt-in only: without EXA_TEST_ENABLE_PAID_LLM=1 and the bound service's key a case is reported as
+ *   ignored (NOT RUN) and never counts as a pass.
  * @architectural-layer Test
  * @related-files [
  *   "tests/integration/native_tool_round_provider_test.ts",
  *   "tests/helpers/llm_bindings.ts",
- *   "packages/ai-google/src/google_provider.ts",
+ *   "packages/ai-openai/src/compatible_chat.ts",
  *   "packages/execution/src/planning_tool_loop.ts"
  * ]
  */
@@ -27,9 +28,12 @@ import { createLlmProvider, liveReplayLlmSpec, llmKeyPresent } from "../helpers/
 
 const LIVE_FILES = ["a.txt", "b.txt", "c.txt"] as const;
 const PAID_OPT_IN_ENV = "EXA_TEST_ENABLE_PAID_LLM";
+const DEEPSEEK_SERVICE = "deepseek";
+const PORTAL_ALIAS = "live";
 
 const liveSpec = liveReplayLlmSpec();
 const liveEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && llmKeyPresent(liveSpec);
+const liveName = liveSpec.service ?? "unbound";
 
 const READ_FILE_TOOL: ITool = {
   name: "read_file",
@@ -44,7 +48,9 @@ class PortalFileRegistry implements IToolRegistry {
     return [READ_FILE_TOOL];
   }
   async execute(_toolName: string, params: Record<string, JSONValue>): Promise<IToolResult> {
-    const body = await Deno.readTextFile(`${this.root}/${String(params.path)}`);
+    // The loop enriches a relative path with the portal alias, so the registry strips it again.
+    const relative = String(params.path).replace(`@${PORTAL_ALIAS}/`, "");
+    const body = await Deno.readTextFile(`${this.root}/${relative}`);
     return { success: true, data: { content: body } };
   }
   getBaseDir(): string {
@@ -52,53 +58,88 @@ class PortalFileRegistry implements IToolRegistry {
   }
 }
 
+/** Runs the three-file round through the real planning loop. The base options carry only what the case sets. */
+async function runThreeFileRound(baseOptions: IModelOptions): Promise<void> {
+  bootstrapProviderRegistry();
+  const root = Deno.makeTempDirSync({ prefix: "native-tool-round-live-" });
+  const markers = LIVE_FILES.map((file) => {
+    const marker = `MARK-${crypto.randomUUID().slice(0, 8)}`;
+    Deno.writeTextFileSync(`${root}/${file}`, `secret for ${file}: ${marker}\n`);
+    return marker;
+  });
+  try {
+    const { binding, provider } = await createLlmProvider(liveSpec);
+    assert(
+      ProviderRegistry.getMetadataForInstance(provider.id)?.supportsParallelToolReplay === true,
+      `${binding.service} declares no grouped replay at boot; choose a grouped-replay service in EXA_TEST_BIND`,
+    );
+    const loop = new PlanningToolLoop({
+      toolRegistry: new PortalFileRegistry(root),
+      tokenizer: {
+        countTokens: (t: string) => Promise.resolve(Math.ceil(t.length / 4)),
+        countTokensBatch: (ts: string[]) => Promise.resolve(ts.map((t) => Math.ceil(t.length / 4))),
+      },
+      modelId: binding.service_model_id,
+      providerId: provider.id,
+      generate: (prompt: string, options: IModelOptions): Promise<IGenerateResult> =>
+        provider.generate(prompt, options),
+    });
+    const result = await loop.run({
+      prompt: `Read files ${LIVE_FILES.join(", ")} with read_file, then reply with the three secret markers.`,
+      baseOptions,
+      nextCallSite: () => ({ scenarioId: "live-native-round", stepId: "replay", callIndex: 0 }),
+      portalAlias: PORTAL_ALIAS,
+      portalRoot: root,
+      allowedTools: new Set(["read_file"]),
+      maxRounds: 3,
+      maxToolResultTokens: 2000,
+      maxToolCallsPerRound: 10,
+      traceId: "trace-live-native-round",
+    });
+    const outcome = `after ${result.rounds} rounds, ${result.toolCalls} tool calls, stop ${result.stopReason}; ` +
+      `final answer: ${JSON.stringify(result.final.content)}`;
+    for (const marker of markers) assert(result.final.content.includes(marker), `missing marker ${marker} ${outcome}`);
+    assertEquals(result.toolCalls >= LIVE_FILES.length, true, outcome);
+  } finally {
+    ProviderRegistry.clear();
+    Deno.removeSync(root, { recursive: true });
+  }
+}
+
 Deno.test({
-  name: `[native_tool_round][live] the bound provider replays three reads and answers with every marker (${
-    liveSpec.service ?? "unbound"
-  })`,
+  name: `[native_tool_round][live] the bound provider replays three reads and answers with every marker (${liveName})`,
+  ignore: !liveEnabled,
+  fn: () => runThreeFileRound({}),
+});
+
+Deno.test({
+  name:
+    `[native_tool_round][live] thinking mode replays its reasoning with the tool calls and answers with every marker (${liveName})`,
+  ignore: !liveEnabled || liveSpec.service !== DEEPSEEK_SERVICE,
+  fn: () => runThreeFileRound({ thinking: true }),
+});
+
+Deno.test({
+  name: `[native_tool_round][live] a tool-enabled call returns a call the compatible contract accepts (${liveName})`,
   ignore: !liveEnabled,
   fn: async () => {
     bootstrapProviderRegistry();
-    const root = Deno.makeTempDirSync({ prefix: "native-tool-round-live-" });
-    const markers = LIVE_FILES.map((file) => {
-      const marker = `MARK-${crypto.randomUUID().slice(0, 8)}`;
-      Deno.writeTextFileSync(`${root}/${file}`, `secret for ${file}: ${marker}\n`);
-      return marker;
-    });
     try {
-      const { binding, provider } = await createLlmProvider(liveSpec);
-      assert(
-        ProviderRegistry.getMetadataForInstance(provider.id)?.supportsParallelToolReplay === true,
-        `${binding.service} declares no grouped replay at boot; choose a grouped-replay service in EXA_TEST_BIND`,
-      );
-      const loop = new PlanningToolLoop({
-        toolRegistry: new PortalFileRegistry(root),
-        tokenizer: {
-          countTokens: (t: string) => Promise.resolve(Math.ceil(t.length / 4)),
-          countTokensBatch: (ts: string[]) => Promise.resolve(ts.map((t) => Math.ceil(t.length / 4))),
-        },
-        modelId: binding.service_model_id,
-        providerId: provider.id,
-        generate: (prompt: string, options: IModelOptions): Promise<IGenerateResult> =>
-          provider.generate(prompt, options),
+      const { provider } = await createLlmProvider(liveSpec);
+      const result = await provider.generate("Read the file a.txt with read_file before you answer.", {
+        tools: [{
+          name: READ_FILE_TOOL.name,
+          description: READ_FILE_TOOL.description,
+          inputSchema: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+        }],
+        toolChoice: { type: "auto", disable_parallel_tool_use: true },
       });
-      const result = await loop.run({
-        prompt: `Read files ${LIVE_FILES.join(", ")} with read_file, then reply with the three secret markers.`,
-        baseOptions: {},
-        nextCallSite: () => ({ scenarioId: "live-native-round", stepId: "replay", callIndex: 0 }),
-        portalAlias: "live",
-        portalRoot: root,
-        allowedTools: new Set(["read_file"]),
-        maxRounds: 3,
-        maxToolResultTokens: 2000,
-        maxToolCallsPerRound: 10,
-        traceId: "trace-live-native-round",
-      });
-      for (const marker of markers) assert(result.final.content.includes(marker), `missing marker ${marker}`);
-      assertEquals(result.toolCalls >= LIVE_FILES.length, true);
+      const call = result.toolCalls?.[0];
+      assertEquals(call?.name, "read_file");
+      assert(typeof call?.input.path === "string", "the call must carry a string path");
+      assert(result.usage.promptTokens > 0 && result.usage.completionTokens > 0, "usage must be reported");
     } finally {
       ProviderRegistry.clear();
-      Deno.removeSync(root, { recursive: true });
     }
   },
 });

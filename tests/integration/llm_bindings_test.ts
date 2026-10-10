@@ -86,9 +86,9 @@ Deno.test("[llm_bindings] without EXA_TEST_BIND the live binding is the DeepSeek
   });
 });
 
-Deno.test("[llm_bindings] the grouped-replay live default pins gemini-3-flash, not a latest alias", async () => {
+Deno.test("[llm_bindings] the grouped-replay live default is the DeepSeek preset", async () => {
   await withEnv({ [EXA_TEST_BIND_ENV]: null }, () => {
-    assertEquals(liveReplayLlmSpec(), { service: "google", service_model_id: "gemini-3-flash" });
+    assertEquals(liveReplayLlmSpec(), { service: "deepseek", service_model_id: "deepseek-v4-pro" });
   });
 });
 

@@ -70,10 +70,8 @@ export const LLM_TEST_PRESETS: readonly ILlmTestPreset[] = [
   },
 ];
 
-/** The live tests' default: the DeepSeek API. Grouped replay is not yet available there. */
+/** The live tests' default: the DeepSeek API, an openai-chat provider whose boot registration declares grouped replay. */
 const LIVE_PRESET_ID = "deepseek";
-/** The grouped-replay harness's default: the cheapest provider whose replay the boot registration declares. */
-const GROUPED_REPLAY_PRESET_ID = "google";
 
 /** Catalog models the built-in catalog does not list but the tests need. They join the catalog
  *  the way an operator catalog entry does, so the resolver validates them like any other model. */
@@ -139,10 +137,10 @@ export function liveLlmSpec(): IBindingSpec {
   return override ? parseBindOverride(override) : presetSpec(LIVE_PRESET_ID);
 }
 
-/** The binding the grouped-replay live harness uses: EXA_TEST_BIND, else the Google preset. */
+/** The binding the grouped-replay live harness uses: EXA_TEST_BIND, else the DeepSeek preset. */
 export function liveReplayLlmSpec(): IBindingSpec {
   const override = Deno.env.get(EXA_TEST_BIND_ENV);
-  return override ? parseBindOverride(override) : presetSpec(GROUPED_REPLAY_PRESET_ID);
+  return override ? parseBindOverride(override) : presetSpec(LIVE_PRESET_ID);
 }
 
 /** Resolves a spec through the phase-204 resolver. A spec that does not bind fails with its issue codes. */
