@@ -53,7 +53,7 @@ export const LLM_TEST_PRESETS: readonly ILlmTestPreset[] = [
   { id: "google", spec: { service: "google", service_model_id: "gemini-3-flash" }, groupedReplay: true },
   {
     id: "anthropic",
-    spec: { service: "anthropic", service_model_id: "claude-haiku-4-5-20251001" },
+    spec: { service: "anthropic", service_model_id: "claude-haiku-5-5" },
     groupedReplay: true,
   },
   { id: "openai", spec: { service: "openai", service_model_id: "gpt-5-mini" }, groupedReplay: true },
@@ -80,8 +80,8 @@ const TEST_CATALOG_MODELS = [
   { service: "google", canonical: "google/gemini-3-flash", serviceModelId: "gemini-3-flash" },
   {
     service: "anthropic",
-    canonical: "anthropic/claude-haiku-4-5-20251001",
-    serviceModelId: "claude-haiku-4-5-20251001",
+    canonical: "anthropic/claude-haiku-5-5",
+    serviceModelId: "claude-haiku-5-5",
   },
   { service: "openai", canonical: "openai/gpt-5-mini", serviceModelId: "gpt-5-mini" },
 ] as const;

@@ -15,7 +15,7 @@ import { anthropicResponseConfig, registerProviderTests } from "../helpers/provi
 registerProviderTests<{ id: string; generate: (prompt: string) => Promise<IGenerateResult> }>({
   name: "AnthropicProvider",
   createProvider: (options, logger) => new AnthropicProvider({ apiKey: "test-key", ...options, logger }),
-  defaultId: "anthropic-claude-haiku-4-5-20251001",
+  defaultId: "anthropic-claude-haiku-5-5",
   responseConfig: anthropicResponseConfig,
   apiKeyHeader: "x-api-key",
   apiKeyValue: "test-key",

@@ -25,7 +25,7 @@ const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 // The Solo floor's registry default for the anthropic provider (packages/ai-anthropic's
 // ProviderDefaultsRegistry entry) — models list always shows this exact row, so seeding
 // the benchmark for THIS pair is what makes the score column render deterministically.
-const SOLO_FLOOR_ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
+const SOLO_FLOOR_ANTHROPIC_MODEL = "claude-haiku-5-5";
 const SEEDED_SCORE = 0.611;
 
 function writeCliConfig(configPath: string, root: string): void {

@@ -93,13 +93,13 @@ CLI reference, scoring formulas, scenario authoring guide, and CI integration.
 
 The llm-judge criterion dispatches to different providers via the `EXA_LLM_PROVIDER` env var. Each provider reads its own API key and allows endpoint/model overrides:
 
-| Provider       | `EXA_LLM_PROVIDER` | API Key Env Var      | Default Model               | Default Endpoint                                |
-| -------------- | ------------------ | -------------------- | --------------------------- | ----------------------------------------------- |
-| Anthropic      | `anthropic`        | `ANTHROPIC_API_KEY`  | `claude-haiku-4-5-20251001` | `https://api.anthropic.com/v1/messages`         |
-| OpenAI         | `openai`           | `OPENAI_API_KEY`     | `gpt-4o-mini`               | `https://api.openai.com/v1/chat/completions`    |
-| Google Gemini  | `google`           | `GOOGLE_API_KEY`     | `gemini-2.0-flash`          | `https://generativelanguage.googleapis.com/...` |
-| OpenRouter     | `openrouter`       | `OPENROUTER_API_KEY` | `openrouter/auto`           | `https://openrouter.ai/api/v1/chat/completions` |
-| Ollama (local) | `ollama`           | _(none)_             | `llama3`                    | `http://127.0.0.1:11434/api/generate`           |
+| Provider       | `EXA_LLM_PROVIDER` | API Key Env Var      | Default Model      | Default Endpoint                                |
+| -------------- | ------------------ | -------------------- | ------------------ | ----------------------------------------------- |
+| Anthropic      | `anthropic`        | `ANTHROPIC_API_KEY`  | `claude-haiku-5-5` | `https://api.anthropic.com/v1/messages`         |
+| OpenAI         | `openai`           | `OPENAI_API_KEY`     | `gpt-4o-mini`      | `https://api.openai.com/v1/chat/completions`    |
+| Google Gemini  | `google`           | `GOOGLE_API_KEY`     | `gemini-2.0-flash` | `https://generativelanguage.googleapis.com/...` |
+| OpenRouter     | `openrouter`       | `OPENROUTER_API_KEY` | `openrouter/auto`  | `https://openrouter.ai/api/v1/chat/completions` |
+| Ollama (local) | `ollama`           | _(none)_             | `llama3`           | `http://127.0.0.1:11434/api/generate`           |
 
 Override the endpoint or model for any provider via `EXA_LLM_BASE_URL` and `EXA_LLM_MODEL`. Backward compatibility: `EXA_LLM_ENDPOINT` is mapped to `EXA_LLM_BASE_URL` if the latter is unset. Unset `EXA_LLM_PROVIDER` defaults to the Mock provider (no external call).
 

@@ -60,7 +60,7 @@ Deno.test("[llm_bindings] the DeepSeek preset binds the openai-chat deepseek pro
 Deno.test("[llm_bindings] a missing key fails the binding before any provider is built", async () => {
   await withEnv({ ANTHROPIC_API_KEY: null }, () => {
     assertThrows(
-      () => resolveLlmBinding({ service: "anthropic", service_model_id: "claude-haiku-4-5-20251001" }),
+      () => resolveLlmBinding({ service: "anthropic", service_model_id: "claude-haiku-5-5" }),
       Error,
       "key_missing",
     );

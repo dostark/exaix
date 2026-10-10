@@ -517,13 +517,13 @@ const ConfigObjectSchema = z.object({
   /** Anthropic-specific configuration */
   ai_anthropic: z.object({
     api_version: z.string().default("2023-06-01"),
-    default_model: z.string().default("claude-haiku-4-5-20251001"),
+    default_model: z.string().default("claude-haiku-5-5"),
     max_tokens_default: z.number().positive().default(4096),
     /** false disables the model's default adaptive thinking unless a call sets its own thinking option; undefined leaves the API default untouched. */
     thinking_default: z.boolean().optional(),
   }).optional().default({
     api_version: "2023-06-01",
-    default_model: "claude-haiku-4-5-20251001",
+    default_model: "claude-haiku-5-5",
     max_tokens_default: 4096,
   }),
   /** Google Vertex AI provider options (service-account auth, regional endpoints) */

@@ -288,7 +288,7 @@ Deno.test("[ToolRegistry] query_symbols and get_module_dependencies tokenize res
   const dir = await Deno.makeTempDir({ prefix: "tool-graph-cli-delegate-model-" });
   try {
     const config = createMockConfig(dir, {
-      ai: { provider: "claude-cli", model: "claude-haiku-4-5", timeout_ms: 60000 },
+      ai: { provider: "claude-cli", model: "claude-haiku-5-5", timeout_ms: 60000 },
       portals: [{
         alias: PORTAL_ALIAS,
         target_path: dir,

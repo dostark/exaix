@@ -113,7 +113,7 @@ Deno.test("EffortResolver property: heuristicInputs is present iff at least one 
     for (const thinkingDecl of THINKING_DECLARATIONS) {
       if (effortDecl !== "auto" && thinkingDecl !== "auto") continue; // heuristic needs an auto declaration
       for (const complexity of COMPLEXITIES) {
-        for (const model of ["claude-sonnet-5", "claude-haiku-4-5-20251001"]) {
+        for (const model of ["claude-sonnet-5", "claude-haiku-5-5"]) {
           for (const withFloor of [false, true]) {
             const result = resolver.resolve(
               { role: { effort: effortDecl, thinking: thinkingDecl } },

@@ -71,7 +71,7 @@ Deno.test("[ModelResolver] an explicit model cannot move a fixed client to anoth
   const { logger, resolver } = setup();
   try {
     const resolved = await resolver.resolve({
-      model: "anthropic:claude-haiku-4-5",
+      model: "anthropic:claude-haiku-5-5",
       fixed_client: FIXED_CLIENT,
     });
 

@@ -69,6 +69,6 @@ Deno.test("[Tokenizer] AiTokenEstimatorTokenizer falls back to heuristic for unk
 
 Deno.test("[Tokenizer] AUTO backend falls back to heuristic for a CLI-delegate provider:model id", async () => {
   const t = new AiTokenEstimatorTokenizer(TokenizerBackend.AUTO);
-  const result = await t.countTokens("hello world", "claude-cli:claude-haiku-4-5");
+  const result = await t.countTokens("hello world", "claude-cli:claude-haiku-5-5");
   assert(result > 0, "unknown provider:model id must estimate tokens, not throw");
 });

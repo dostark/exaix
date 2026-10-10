@@ -56,8 +56,8 @@ Deno.test("EffortResolver: thinking auto + ANTHROPIC + claude-sonnet-5 resolves 
   assertEquals(result.thinkingBasis, "native-adaptive");
 });
 
-Deno.test("EffortResolver: thinking auto + claude-haiku-4-5-20251001 falls back to the heuristic", () => {
-  const result = resolve({ thinking: "auto" }, { model: "claude-haiku-4-5-20251001" });
+Deno.test("EffortResolver: thinking auto + claude-haiku-5-5 falls back to the heuristic", () => {
+  const result = resolve({ thinking: "auto" }, { model: "claude-haiku-5-5" });
   assertEquals(result.thinkingBasis, "heuristic");
   assertEquals(result.thinking, undefined); // MEDIUM heuristic entry is false, never an explicit disable
 });
@@ -242,7 +242,7 @@ Deno.test("EffortResolver: thinking auto + CLAUDE_CLI (subscription Claude Code)
 Deno.test("EffortResolver: thinking auto + CLAUDE_CLI + a non-adaptive model falls back to the heuristic", () => {
   const result = resolve(
     { thinking: "auto" },
-    { providerType: ProviderType.CLAUDE_CLI, model: "claude-haiku-4-5-20251001" },
+    { providerType: ProviderType.CLAUDE_CLI, model: "claude-haiku-5-5" },
   );
   assertEquals(result.thinkingBasis, "heuristic");
 });

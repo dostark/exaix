@@ -14,7 +14,7 @@ memory = "Memory"
 # Google/Ollama provider.
 [ai]
 provider = "anthropic"
-model = "claude-haiku-4-5-20251001"
+model = "claude-haiku-5-5"
 
 # The daemon resolves its analysis provider via `agents.default_model` -> `[models.<name>]`, NOT the
 # `[ai]` block above (which is only a fallback). The config schema DEFAULTS `[models].default` to
@@ -22,12 +22,12 @@ model = "claude-haiku-4-5-20251001"
 # Pin the named models to Anthropic here so this Claude preset truly plans with Claude.
 [models.default]
 provider = "anthropic"
-model = "claude-haiku-4-5-20251001"
+model = "claude-haiku-5-5"
 timeout_ms = 60000
 
 [models.fast]
 provider = "anthropic"
-model = "claude-haiku-4-5-20251001"
+model = "claude-haiku-5-5"
 timeout_ms = 60000
 
 [agents]
