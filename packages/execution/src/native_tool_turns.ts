@@ -11,7 +11,9 @@
  * @related-files ["packages/execution/src/strategies/react_loop_strategy.ts", "packages/execution/src/planning_tool_loop.ts"]
  */
 
+import { NATIVE_TOOL_USE_BLOCK_TYPE } from "@exaix/ai/types.ts";
 import type {
+  IProviderAssistantReplay,
   IProviderToolResultEntry,
   IProviderToolRound,
   IProviderTurn,
@@ -149,23 +151,44 @@ function validateCallEntry(
 
 /** Gemini pairs each functionCall part with the call in the same order.
  *  Name, arguments and sibling signature must match, or the replay would invent content. */
-function assertCallsMatchParts(
-  calls: readonly IProviderToolCall[],
-  parts: readonly JSONObject[],
-  provider: string,
-): void {
+function googleCallsMatchParts(calls: readonly IProviderToolCall[], parts: readonly JSONObject[]): boolean {
   const functionParts = parts.filter((part) => functionCallOf(part) !== undefined);
-  if (functionParts.length !== calls.length) {
-    throw new ProviderProtocolError(MISMATCHED_ASSISTANT_PARTS_MESSAGE, provider);
-  }
-  calls.forEach((call, index) => {
+  if (functionParts.length !== calls.length) return false;
+  return calls.every((call, index) => {
     const part = functionParts[index];
     const functionCall = functionCallOf(part);
-    const matches = functionCall?.name === call.name &&
+    return functionCall?.name === call.name &&
       JSON.stringify(functionCall?.args) === JSON.stringify(call.input) &&
       (part.thoughtSignature ?? undefined) === call.thoughtSignature;
-    if (!matches) throw new ProviderProtocolError(MISMATCHED_ASSISTANT_PARTS_MESSAGE, provider);
   });
+}
+
+/** Anthropic pairs each tool_use block with the call in the same order. Id, name and input must match. */
+function anthropicCallsMatchBlocks(calls: readonly IProviderToolCall[], blocks: readonly JSONObject[]): boolean {
+  const toolUses = blocks.filter((block) => block.type === NATIVE_TOOL_USE_BLOCK_TYPE);
+  if (toolUses.length !== calls.length) return false;
+  return calls.every((call, index) => {
+    const block = toolUses[index];
+    return block.id === call.id && block.name === call.name &&
+      JSON.stringify(block.input) === JSON.stringify(call.input);
+  });
+}
+
+/** Refuses a round whose calls do not match the replayed assistant content of the same response. */
+function assertCallsMatchReplay(
+  calls: readonly IProviderToolCall[],
+  replay: IProviderAssistantReplay,
+  provider: string,
+): void {
+  const matched = replay.provider === "google"
+    ? googleCallsMatchParts(calls, replay.parts)
+    : anthropicCallsMatchBlocks(calls, replay.blocks);
+  if (!matched) throw new ProviderProtocolError(MISMATCHED_ASSISTANT_PARTS_MESSAGE, provider);
+}
+
+/** The replayed content items of a response, whichever provider produced them. */
+function replayItems(replay: IProviderAssistantReplay): readonly JSONObject[] {
+  return replay.provider === "google" ? replay.parts : replay.blocks;
 }
 
 /** Validates one provider response before any tool effect. Throws a protocol error when the round
@@ -179,12 +202,12 @@ export function validateProviderRound(result: IGenerateResult, limits: INativeRo
   }
   const replay = result.nativeAssistantReplay;
   if (replay === undefined) throw new ProviderProtocolError("Tool round has no replayable assistant content", provider);
-  if (utf8Bytes(JSON.stringify(replay.parts)) > limits.maxRoundReplayBytes) {
+  if (utf8Bytes(JSON.stringify(replayItems(replay))) > limits.maxRoundReplayBytes) {
     throw new ProviderProtocolError("Tool round assistant content exceeds the replay ceiling", provider);
   }
   const seenIds = new Set<string>();
   const validated = calls.map((call, index) => validateCallEntry(call, index, seenIds, limits, provider));
-  assertCallsMatchParts(calls, replay.parts, provider);
+  assertCallsMatchReplay(calls, replay, provider);
   return { calls: validated, assistant: replay };
 }
 

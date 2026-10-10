@@ -10,6 +10,7 @@ import {
   ANTHROPIC_CACHE_CONTROL_EPHEMERAL,
   ANTHROPIC_CONTENT_TYPE_TEXT,
   ANTHROPIC_CONTENT_TYPE_TOOL_RESULT,
+  ANTHROPIC_CONTENT_TYPE_TOOL_USE,
   ANTHROPIC_MESSAGE_ROLE_ASSISTANT,
   ANTHROPIC_MESSAGE_ROLE_USER,
   ANTHROPIC_THINKING_DISABLED,
@@ -28,13 +29,15 @@ import {
 import { AnthropicMessagesRequestSchema } from "./anthropic_request_schema.ts";
 import {
   type AnthropicResponse,
+  extractAnthropicAssistantReplay,
   extractAnthropicContent,
   extractAnthropicToolCalls,
+  NATIVE_NO_TOOLS_TEXT_INSTRUCTION,
   performProviderCall,
   tokenMapperAnthropic,
 } from "@exaix/ai/provider_common_utils.ts";
 import { BaseProvider, type IBaseProviderOptions, type IGenerateResult, ModelProviderError } from "@exaix/ai/providers";
-import type { IModelOptions, IToolChoice, IToolDefinition } from "@exaix/ai/types.ts";
+import type { IModelOptions, IProviderToolRound, IToolChoice, IToolDefinition } from "@exaix/ai/types.ts";
 import { PROVIDER_EVENT_REQUEST_DEBUG_DUMP } from "@exaix/core";
 import { type Opt, type Reason, toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
@@ -99,39 +102,7 @@ export class AnthropicProvider extends BaseProvider {
       }
     }
 
-    // Build messages with priorTurn if present (2-message exchange: assistant tool_use + user tool_result)
     const messages: AnthropicRequestMessage[] = [];
-
-    if (options?.priorTurn) {
-      const priorTurn = options.priorTurn;
-      // Anthropic requires passing prior thinking blocks back verbatim alongside tool_use.
-      const content: AnthropicRequestContentBlock[] = [
-        ...(priorTurn.thinkingBlocks?.map((block): AnthropicRequestContentBlock => ({
-          type: "thinking",
-          thinking: block.thinking,
-          signature: block.signature,
-        })) ?? []),
-        {
-          type: "tool_use",
-          id: priorTurn.toolUseId,
-          name: priorTurn.toolName,
-          input: priorTurn.toolInput,
-        },
-      ];
-      messages.push({
-        role: ANTHROPIC_MESSAGE_ROLE_ASSISTANT,
-        content,
-      });
-      messages.push({
-        role: ANTHROPIC_MESSAGE_ROLE_USER,
-        content: [{
-          type: ANTHROPIC_CONTENT_TYPE_TOOL_RESULT,
-          tool_use_id: priorTurn.toolUseId,
-          content: priorTurn.toolResultContent,
-          is_error: priorTurn.toolResultIsError,
-        }],
-      });
-    }
 
     // Current user prompt
     const cachedSections = options?.cachedSections;
@@ -152,7 +123,44 @@ export class AnthropicProvider extends BaseProvider {
           cache_control: { type: ANTHROPIC_CACHE_CONTROL_EPHEMERAL },
         }],
       };
-    messages.push(currentMessage);
+
+    if (options?.priorRound) {
+      // A completed round leads with the prompt, then replays every original block and every result.
+      messages.push(currentMessage, ...priorRoundMessages(options.priorRound, options.toolChoice));
+    } else {
+      // Legacy single-call replay: the assistant tool_use, its tool_result, then the prompt.
+      if (options?.priorTurn) {
+        const priorTurn = options.priorTurn;
+        // Anthropic requires passing prior thinking blocks back verbatim alongside tool_use.
+        const content: AnthropicRequestContentBlock[] = [
+          ...(priorTurn.thinkingBlocks?.map((block): AnthropicRequestContentBlock => ({
+            type: "thinking",
+            thinking: block.thinking,
+            signature: block.signature,
+          })) ?? []),
+          {
+            type: ANTHROPIC_CONTENT_TYPE_TOOL_USE,
+            id: priorTurn.toolUseId,
+            name: priorTurn.toolName,
+            input: priorTurn.toolInput,
+          },
+        ];
+        messages.push({
+          role: ANTHROPIC_MESSAGE_ROLE_ASSISTANT,
+          content,
+        });
+        messages.push({
+          role: ANTHROPIC_MESSAGE_ROLE_USER,
+          content: [{
+            type: ANTHROPIC_CONTENT_TYPE_TOOL_RESULT,
+            tool_use_id: priorTurn.toolUseId,
+            content: priorTurn.toolResultContent,
+            is_error: priorTurn.toolResultIsError,
+          }],
+        });
+      }
+      messages.push(currentMessage);
+    }
 
     const requestBody: AnthropicRequestBody = {
       model: this.model,
@@ -211,8 +219,33 @@ export class AnthropicProvider extends BaseProvider {
       extractor: extractAnthropicContent,
       stopReasonExtractor: (d) => d.stop_reason,
       toolCallExtractor: extractAnthropicToolCalls,
+      assistantReplayExtractor: extractAnthropicAssistantReplay,
     });
   }
+}
+
+/** Messages that replay one completed round: every original assistant block, then one user message
+ *  holding every result. Control text, when the round forbids tools, follows the results. */
+function priorRoundMessages(
+  round: IProviderToolRound,
+  toolChoice: Opt<IToolChoice, Reason.OptionalInput>,
+): AnthropicRequestMessage[] {
+  if (round.assistant.provider !== PROVIDER_ANTHROPIC) {
+    throw new Error("An Anthropic request can only replay an Anthropic round");
+  }
+  const results = round.calls.map((call) => ({
+    type: ANTHROPIC_CONTENT_TYPE_TOOL_RESULT,
+    tool_use_id: call.toolUseId,
+    content: call.toolResultContent,
+    is_error: call.toolResultIsError,
+  }));
+  const control = toolChoice?.type === ANTHROPIC_TOOL_CHOICE_NONE
+    ? [{ type: ANTHROPIC_CONTENT_TYPE_TEXT, text: NATIVE_NO_TOOLS_TEXT_INSTRUCTION }]
+    : [];
+  return [
+    { role: ANTHROPIC_MESSAGE_ROLE_ASSISTANT, content: [...round.assistant.blocks] },
+    { role: ANTHROPIC_MESSAGE_ROLE_USER, content: [...results, ...control] },
+  ];
 }
 
 /** Anthropic message role literal — "user" or "assistant". */

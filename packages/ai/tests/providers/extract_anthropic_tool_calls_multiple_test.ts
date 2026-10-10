@@ -6,7 +6,11 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { type AnthropicResponse, extractAnthropicToolCalls } from "../../src/provider_common_utils.ts";
+import {
+  type AnthropicResponse,
+  extractAnthropicAssistantReplay,
+  extractAnthropicToolCalls,
+} from "../../src/provider_common_utils.ts";
 
 Deno.test("extractAnthropicToolCalls extracts multiple parallel tool_use blocks", () => {
   const response: AnthropicResponse = {
@@ -86,4 +90,22 @@ Deno.test("extractAnthropicToolCalls leaves thinkingBlocks undefined when no thi
   };
   const result = extractAnthropicToolCalls(response);
   assertEquals(result![0].thinkingBlocks, undefined);
+});
+
+Deno.test("extractAnthropicAssistantReplay keeps every block once, in response order, redacted thinking included", () => {
+  const blocks = [
+    { type: "thinking", thinking: "Read both files first.", signature: "sig-thinking" },
+    { type: "redacted_thinking", data: "opaque-redacted" },
+    { type: "text", text: "I will read both files." },
+    { type: "tool_use", id: "toolu_1", name: "read_file", input: { path: "a.ts" } },
+    { type: "tool_use", id: "toolu_2", name: "read_file", input: { path: "b.ts" } },
+  ];
+  const response: AnthropicResponse = { content: blocks };
+
+  assertEquals(extractAnthropicAssistantReplay(response), { provider: "anthropic", blocks });
+});
+
+Deno.test("extractAnthropicAssistantReplay is undefined when the response has no tool_use block", () => {
+  const response: AnthropicResponse = { content: [{ type: "text", text: "done" }] };
+  assertEquals(extractAnthropicAssistantReplay(response), undefined);
 });

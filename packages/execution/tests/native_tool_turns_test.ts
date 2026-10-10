@@ -289,3 +289,42 @@ Deno.test("[native_tool_turns][round] buildToolRound replays an alias call under
   assertEquals(built.calls[0].toolUseId, "toolu_alias");
   assertEquals(built.calls[0].toolInput, { file_path: "a.ts" });
 });
+
+/** A two-call Anthropic response: thinking, text, then two tool_use blocks in order. */
+function twoCallAnthropicResponse(): IGenerateResult {
+  const blocks = [
+    { type: "thinking", thinking: "Read both files.", signature: "sig-thinking" },
+    { type: "text", text: "I will read both files." },
+    { type: "tool_use", id: "toolu_a", name: "read_file", input: { path: "a.txt" } },
+    { type: "tool_use", id: "toolu_b", name: "read_file", input: { path: "b.txt" } },
+  ];
+  return {
+    content: "",
+    usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+    model: "claude-test",
+    provider: "anthropic",
+    toolCalls: [
+      { id: "toolu_a", name: "read_file", input: { path: "a.txt" } },
+      { id: "toolu_b", name: "read_file", input: { path: "b.txt" } },
+    ],
+    nativeAssistantReplay: { provider: "anthropic", blocks },
+  };
+}
+
+Deno.test("[native_tool_turns][round] validateProviderRound keeps the Anthropic blocks for replay and the calls in order", () => {
+  const round = validateProviderRound(twoCallAnthropicResponse(), ROUND_LIMITS);
+  assertEquals(round.calls.map((call) => call.id), ["toolu_a", "toolu_b"]);
+  assertEquals(round.assistant.provider, "anthropic");
+});
+
+Deno.test("[native_tool_turns][round] validateProviderRound rejects an Anthropic call whose id does not match its tool_use block", () => {
+  const response = twoCallAnthropicResponse();
+  response.toolCalls![1] = { ...response.toolCalls![1], id: "toolu_other" };
+  assertThrows(() => validateProviderRound(response, ROUND_LIMITS));
+});
+
+Deno.test("[native_tool_turns][round] validateProviderRound rejects an Anthropic call whose input differs from its tool_use block", () => {
+  const response = twoCallAnthropicResponse();
+  response.toolCalls![0] = { ...response.toolCalls![0], input: { path: "z.txt" } };
+  assertThrows(() => validateProviderRound(response, ROUND_LIMITS));
+});

@@ -66,6 +66,7 @@ function registerConcreteProviders(): void {
       capabilities: [...ANTHROPIC_PROVIDER_METADATA.capabilities],
       pricingTier: PricingTier.HIGH,
       supportsNativeTools: true,
+      supportsParallelToolReplay: true,
     };
     ProviderRegistry.registerWithMetadata(
       PROVIDER_ANTHROPIC,

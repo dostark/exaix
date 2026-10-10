@@ -48,6 +48,12 @@ const AnthropicThinkingContentBlockSchema = z.object({
   signature: z.string(),
 });
 
+/** Replayed redacted thinking block, passed back verbatim with its opaque data. */
+const AnthropicRedactedThinkingContentBlockSchema = z.object({
+  type: z.literal("redacted_thinking"),
+  data: z.string(),
+});
+
 const AnthropicToolResultContentBlockSchema = z.object({
   type: z.literal(ANTHROPIC_CONTENT_TYPE_TOOL_RESULT),
   tool_use_id: z.string().min(1),
@@ -60,6 +66,7 @@ const AnthropicContentBlockSchema = z.union([
   AnthropicToolUseContentBlockSchema,
   AnthropicToolResultContentBlockSchema,
   AnthropicThinkingContentBlockSchema,
+  AnthropicRedactedThinkingContentBlockSchema,
 ]);
 
 const AnthropicMessageSchema = z.object({

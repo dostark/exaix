@@ -26,6 +26,7 @@ import {
   type IToolChoice,
   type IToolDefinition,
   type JSONObject,
+  NATIVE_TOOL_USE_BLOCK_TYPE,
   TOOL_CHOICE_TYPE_AUTO,
   TOOL_CHOICE_TYPE_NONE,
   TOOL_CHOICE_TYPE_TOOL,
@@ -427,6 +428,9 @@ export type OpenAiChatMessage =
 /** OpenAI Chat Completions message role for a tool-result message. Distinct concept from
  *  TOOL_CHOICE_TYPE_TOOL (a wire-protocol role, not an IToolChoice discriminant) - named
  *  separately even though the literal value happens to match. */
+/** Control text appended after a grouped round's results when the round forbids tool calls. */
+export const NATIVE_NO_TOOLS_TEXT_INSTRUCTION = "Answer now in text only. Do not call any tool.";
+
 const OPENAI_MESSAGE_ROLE_TOOL = "tool";
 
 /** Build the OpenAI Chat Completions `messages[]` array for `prompt`, optionally
@@ -695,17 +699,25 @@ export function extractAnthropicContent(d: AnthropicResponse): string {
  *  requires replaying them complete and unmodified. */
 export function extractAnthropicToolCalls(d: AnthropicResponse): IProviderToolCall[] | undefined {
   if (!d.content) return undefined;
-  const toolUseBlocks = d.content.filter((block) => block.type === "tool_use");
+  const toolUseBlocks = d.content.filter((block) => block.type === NATIVE_TOOL_USE_BLOCK_TYPE);
   if (toolUseBlocks.length === 0) return undefined;
   const content = d.content;
   return toolUseBlocks.map((block) => ({
     id: block.id ?? "",
     name: block.name ?? "",
     input: block.input ?? {},
-    type: "tool_use",
+    type: NATIVE_TOOL_USE_BLOCK_TYPE,
     // Capture thinking blocks since the preceding tool-use boundary.
     ...(collectThinkingBlocksBefore(content, content.indexOf(block)) ?? {}),
   }));
+}
+
+/** Extract the complete Anthropic content of a tool-use response: every block in original order,
+ *  thinking, redacted thinking and text included. Undefined when the response has no tool_use. */
+export function extractAnthropicAssistantReplay(d: AnthropicResponse): IProviderAssistantReplay | undefined {
+  const blocks = d.content;
+  if (!blocks || !blocks.some((block) => block.type === NATIVE_TOOL_USE_BLOCK_TYPE)) return undefined;
+  return { provider: "anthropic", blocks: blocks as JSONObject[] };
 }
 
 /** Collect the `thinking` blocks immediately preceding the tool_use block at
@@ -722,7 +734,7 @@ function collectThinkingBlocksBefore(
       blocks.unshift({ thinking: block.thinking ?? "", signature: block.signature ?? "" });
       continue;
     }
-    if (block.type === "tool_use") break;
+    if (block.type === NATIVE_TOOL_USE_BLOCK_TYPE) break;
     break;
   }
   return blocks.length > 0 ? { thinkingBlocks: blocks } : undefined;

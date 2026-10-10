@@ -56,3 +56,31 @@ Deno.test("schema validates tools and tool_choice fields", () => {
   const result = AnthropicMessagesRequestSchema.safeParse(body);
   assertEquals(result.success, true);
 });
+
+Deno.test("schema validates a replayed round: thinking, redacted thinking, text and a tool_use, then one result message", () => {
+  const body = {
+    model: "claude-sonnet-5",
+    max_tokens: 1024,
+    messages: [
+      { role: "user" as const, content: [{ type: "text", text: "Plan the change." }] },
+      {
+        role: "assistant" as const,
+        content: [
+          { type: "thinking", thinking: "Read the file.", signature: "sig-thinking" },
+          { type: "redacted_thinking", data: "opaque-redacted" },
+          { type: "text", text: "I will read it." },
+          { type: "tool_use", id: "call_1", name: "read_file", input: { path: "a.ts" } },
+        ],
+      },
+      {
+        role: "user" as const,
+        content: [
+          { type: "tool_result", tool_use_id: "call_1", content: "BODY" },
+          { type: "text", text: "Answer now in text only." },
+        ],
+      },
+    ],
+  };
+  const result = AnthropicMessagesRequestSchema.safeParse(body);
+  assertEquals(result.success, true, JSON.stringify(result.error?.flatten()));
+});

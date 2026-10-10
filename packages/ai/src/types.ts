@@ -93,8 +93,11 @@ export interface IProviderTurn {
 export type JSONObject = Record<string, JSONValue>;
 
 /** Complete assistant content of one provider response, kept verbatim for replay.
- *  Google keeps every model part in original order, including text and signatures. */
-export type IProviderAssistantReplay = { provider: "google"; parts: readonly JSONObject[] };
+ *  Google keeps every model part in original order, including text and signatures.
+ *  Anthropic keeps every content block in original order, including thinking and redacted thinking. */
+export type IProviderAssistantReplay =
+  | { provider: "google"; parts: readonly JSONObject[] }
+  | { provider: "anthropic"; blocks: readonly JSONObject[] };
 
 /** One tool call of a validated round. Invalid inputs never become execution parameters. */
 export interface IValidatedRoundCall {
@@ -317,3 +320,6 @@ export const TOOL_CHOICE_TYPE_AUTO = "auto";
 export const TOOL_CHOICE_TYPE_ANY = "any";
 export const TOOL_CHOICE_TYPE_TOOL = "tool";
 export const TOOL_CHOICE_TYPE_NONE = "none";
+
+/** Block type of an Anthropic tool call inside a replayed assistant content array. */
+export const NATIVE_TOOL_USE_BLOCK_TYPE = "tool_use";

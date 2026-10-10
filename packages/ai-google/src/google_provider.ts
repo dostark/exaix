@@ -19,6 +19,7 @@ import {
   extractGoogleContent,
   extractGoogleToolCalls,
   type GoogleResponse,
+  NATIVE_NO_TOOLS_TEXT_INSTRUCTION,
   performProviderCall,
   tokenMapperGoogle,
 } from "@exaix/ai/provider_common_utils.ts";
@@ -75,7 +76,6 @@ const GOOGLE_FUNCTION_CALLING_MODE_NONE = "NONE";
 
 /** Gemini 3 ignores functionCallingConfig mode NONE and calls another tool, so a no-tools
  *  turn also asks for a text answer beside the functionResponse. */
-const GOOGLE_NO_TOOLS_TEXT_INSTRUCTION = "Answer now in text only. Do not call any tool.";
 
 /**
  * Maps tool choice to Gemini; parallel-tool disabling has no API equivalent.
@@ -125,6 +125,9 @@ export class GoogleProvider extends BaseProvider {
     if (options?.priorRound) {
       // A whole completed round: every original model part verbatim, then every result in one message.
       const round = options.priorRound;
+      if (round.assistant.provider !== PROVIDER_GOOGLE) {
+        throw new Error("A Google request can only replay a Google round");
+      }
       contents.push({ role: GOOGLE_ROLE_MODEL, parts: round.assistant.parts });
       contents.push({
         role: GOOGLE_ROLE_USER,
@@ -135,7 +138,7 @@ export class GoogleProvider extends BaseProvider {
               response: { content: call.toolResultContent as JSONValue },
             },
           })),
-          ...(options.toolChoice?.type === TOOL_CHOICE_TYPE_NONE ? [{ text: GOOGLE_NO_TOOLS_TEXT_INSTRUCTION }] : []),
+          ...(options.toolChoice?.type === TOOL_CHOICE_TYPE_NONE ? [{ text: NATIVE_NO_TOOLS_TEXT_INSTRUCTION }] : []),
         ],
       });
     } else if (options?.priorTurn) {
@@ -157,7 +160,7 @@ export class GoogleProvider extends BaseProvider {
               response: { content: priorTurn.toolResultContent as JSONValue },
             },
           },
-          ...(options.toolChoice?.type === TOOL_CHOICE_TYPE_NONE ? [{ text: GOOGLE_NO_TOOLS_TEXT_INSTRUCTION }] : []),
+          ...(options.toolChoice?.type === TOOL_CHOICE_TYPE_NONE ? [{ text: NATIVE_NO_TOOLS_TEXT_INSTRUCTION }] : []),
         ],
       });
     }
