@@ -200,6 +200,7 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "tests/integration/dogfood_e2e_test.ts",
   "tests/integration/dogfood_crash_recovery_e2e_test.ts",
   "tests/integration/daemon_watcher_readiness_test.ts",
+  "tests/integration/plan_execution_detection_test.ts",
   "tests/migrations/migrate_db_test.ts",
   "packages/core/tests/child_env_test.ts",
   "packages/core/tests/skills/skills_service_test.ts",

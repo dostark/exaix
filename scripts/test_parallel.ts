@@ -217,6 +217,10 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
     file: "tests/integration/daemon_watcher_readiness_test.ts",
     reasons: [IsolationReason.moduleCache, IsolationReason.port],
   },
+  {
+    file: "tests/integration/plan_execution_detection_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.port],
+  },
   { file: "tests/migrations/migrate_db_test.ts", reasons: [IsolationReason.moduleCache] },
   { file: "packages/core/tests/child_env_test.ts", reasons: [IsolationReason.processEnv] },
   // Parallel workers share the environment. Catalog overlay writers need separate processes.

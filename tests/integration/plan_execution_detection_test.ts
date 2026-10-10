@@ -1,198 +1,171 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanExecutionDetectionIntegrationTest
  * @path tests/integration/plan_execution_detection_test.ts
- * @description Verifies the system's ability to detect and queue approved plans for execution,
- * ensuring it ignores malformed or non-plan files within the tracking directories.
+ * @description A real daemon watches Workspace/Active. An approved plan is detected with the content
+ *   the watcher read. Other markdown is ignored. A malformed plan is reported as failed, and the
+ *   watcher still detects the next plan.
+ * @architectural-layer Integration
+ * @dependencies [@std/assert, @std/fs, @std/path, @db/sqlite, @exaix/core/events, ./helpers/daemon_config.ts]
+ * @related-files [apps/daemon/main.ts, apps/daemon/src/watcher.ts, packages/execution/src/execution_loop.ts]
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { parse as parseYaml } from "@std/yaml";
-import { join } from "@std/path";
+import { assert, assertEquals, assertExists } from "@std/assert";
 import { ensureDir } from "@std/fs";
-import { MemoryStatus } from "@exaix/core/status";
-import { TestEnvironment } from "./helpers/test_environment.ts";
-import { getWorkspaceActiveDir } from "@exaix/testing";
+import { dirname, join } from "@std/path";
+import { Database } from "@db/sqlite";
+import { DomainEventType } from "@exaix/core/events";
+import { bootRealDaemon, type IRunningDaemon, writeDaemonConfigWithMockAi } from "./helpers/daemon_config.ts";
 
-interface Frontmatter {
-  trace_id?: string;
-  request_id?: string;
-  agent_role?: string;
-  status?: string;
-  created_at?: string;
-  [key: string]: any;
+/** Terminal rows the watcher handler journals after `ExecutionLoop.processTask` returns. */
+const EXECUTION_MANAGED_EVENT = "plan.execution_managed";
+const EXECUTION_MANAGED_FAILURE_EVENT = "plan.execution_managed_failure";
+const TRACE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+interface IPlanWorkspace {
+  root: string;
+  configPath: string;
+  activeDir: string;
 }
 
-function createWatcherEnv(): Promise<TestEnvironment> {
-  return TestEnvironment.create({
-    initGit: false,
-    configOverrides: {
-      watcher: { debounce_ms: 50, stability_check: false },
-    },
-  });
+interface IJournalRow {
+  payload: string;
+  trace_id: string | null;
 }
 
-async function createActiveDir(env: TestEnvironment): Promise<string> {
-  const activePath = getWorkspaceActiveDir(env.tempDir);
-  await ensureDir(activePath);
-  return activePath;
+async function createPlanWorkspace(): Promise<IPlanWorkspace> {
+  const root = await Deno.makeTempDir({ prefix: "plan-detection-" });
+  const configPath = join(root, "exa.config.toml");
+  writeDaemonConfigWithMockAi(configPath, root);
+  const activeDir = join(root, "Workspace", "Active");
+  await ensureDir(activeDir);
+  return { root, configPath, activeDir };
 }
 
-async function assertFileExists(path: string, message: string): Promise<void> {
-  const exists = await Deno.stat(path)
-    .then(() => true)
-    .catch(() => false);
-  assertEquals(exists, true, message);
-}
-
-Deno.test("Integration: Plan Execution Detection - approved plan detected", async () => {
-  const env = await createWatcherEnv();
-
+/** Journal rows for one action that name `path` as their target or inside their payload. */
+function journalRowsNaming(configPath: string, action: string, path: string): IJournalRow[] {
+  const db = new Database(join(dirname(configPath), ".exa", "journal.db"), { readonly: true });
   try {
-    const activePath = await createActiveDir(env);
-
-    const traceId = crypto.randomUUID();
-    const requestId = `request-${traceId.slice(0, 8)}`;
-    const planContent = `---
-trace_id: "${traceId}"
-request_id: "${requestId}"
-agent_role: "senior-coder"
-status: approved
-created_at: "${new Date().toISOString()}"
----
-
-# Plan: ${requestId}
-
-## Proposed Plan
-
-### Overview
-Implement a hello world function in utils.ts.
-
-### Steps
-1. **Create File** - Create src/utils.ts with hello function
-2. **Write Tests** - Add tests for the hello function
-3. **Verify** - Ensure tests pass
-
-### Expected Outcome
-A working hello world function with tests.
-`;
-
-    const planPath = join(activePath, `${requestId}_plan.md`);
-    await Deno.writeTextFile(planPath, planContent);
-
-    await assertFileExists(planPath, "Plan file should exist");
-
-    const content = await Deno.readTextFile(planPath);
-    assertStringIncludes(content, traceId);
-    assertStringIncludes(content, MemoryStatus.APPROVED);
-    assertStringIncludes(content, "Implement a hello world function");
-
-    const yamlMatch = content.match(/^---\n([\s\S]*?)\n---/);
-    assertExists(yamlMatch, "Should have YAML frontmatter");
-
-    const frontmatter = parseYaml(yamlMatch[1]) as Frontmatter;
-
-    assertEquals(frontmatter.trace_id, traceId);
-    assertEquals(frontmatter.request_id, requestId);
-    assertEquals(frontmatter.status, MemoryStatus.APPROVED);
-
-    console.log("✅ Integration test passed: Plan detection successful");
+    return db.prepare(
+      "SELECT payload, trace_id FROM activity WHERE action_type = ? AND (target = ? OR instr(payload, ?) > 0) ORDER BY rowid",
+    ).all<IJournalRow>(action, path, path);
   } finally {
-    await env.cleanup();
+    db.close();
   }
-});
+}
 
-Deno.test("Integration: Plan Execution Detection - ignores non-plan files", async () => {
-  const env = await createWatcherEnv();
+function journaled(configPath: string, action: string, path: string): boolean {
+  return journalRowsNaming(configPath, action, path).length > 0;
+}
 
-  try {
-    const activePath = await createActiveDir(env);
+/** True once the watcher handler has reported on this plan, as a success or as a failure. */
+function reported(configPath: string, path: string): boolean {
+  return journaled(configPath, EXECUTION_MANAGED_EVENT, path) ||
+    journaled(configPath, EXECUTION_MANAGED_FAILURE_EVENT, path);
+}
 
-    // Create non-plan files
-    await Deno.writeTextFile(join(activePath, "README.md"), "# Active Tasks");
-    await Deno.writeTextFile(join(activePath, "notes.txt"), "Some notes");
-    await Deno.writeTextFile(
-      join(activePath, "config.json"),
-      JSON.stringify({ test: true }),
-    );
+/** Frontmatter and body for a plan file. Only the frontmatter differs between the cases. */
+function planDocument(frontmatter: string): string {
+  return `---\n${frontmatter}\n---\n\n# Plan\n\n## Proposed Plan\n\n### Overview\nImplement a hello world function in utils.ts.\n`;
+}
 
-    const traceId = crypto.randomUUID();
-    const planPath = join(activePath, `request-${traceId.slice(0, 8)}_plan.md`);
-    await Deno.writeTextFile(
-      planPath,
-      `---
-trace_id: "${traceId}"
-status: approved
----
+Deno.test({
+  name:
+    "[plan_detection] an approved plan is detected with the content the watcher read, and other markdown is ignored",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const workspace = await createPlanWorkspace();
+    try {
+      const traceId = crypto.randomUUID();
+      const requestId = `request-${traceId.slice(0, 8)}`;
+      const readme = join(workspace.activeDir, "README.md");
+      const nearMiss = join(workspace.activeDir, "request-notes_planning.md");
+      const planPath = join(workspace.activeDir, `${requestId}_plan.md`);
+      const content = planDocument(
+        [
+          `trace_id: "${traceId}"`,
+          `request_id: "${requestId}"`,
+          'agent_role: "senior-coder"',
+          "status: approved",
+          `created_at: "${new Date().toISOString()}"`,
+        ].join("\n"),
+      );
 
-# Plan
-`,
-    );
+      await bootRealDaemon(workspace.configPath, {
+        midFlight: async (daemon: IRunningDaemon) => {
+          await Deno.writeTextFile(readme, "# Active tasks\n");
+          await Deno.writeTextFile(nearMiss, "# Planning notes\n");
+          await daemon.until(
+            () => journaled(workspace.configPath, DomainEventType.WatcherFileReady, readme),
+            "the watcher to read README.md",
+          );
+          await daemon.until(
+            () => journaled(workspace.configPath, DomainEventType.WatcherFileReady, nearMiss),
+            "the watcher to read a near-miss file name",
+          );
 
-    const files = [];
-    for await (const entry of Deno.readDir(activePath)) {
-      if (entry.isFile && entry.name.endsWith("_plan.md")) {
-        files.push(entry.name);
-      }
+          await Deno.writeTextFile(planPath, content);
+          await daemon.until(
+            () => journaled(workspace.configPath, DomainEventType.PlanDetected, planPath),
+            "the approved plan to be detected",
+          );
+
+          // Rows flush in queue order. A detection of a non-plan file was queued before the plan's.
+          assertEquals(journalRowsNaming(workspace.configPath, DomainEventType.PlanDetected, readme), []);
+          assertEquals(journalRowsNaming(workspace.configPath, DomainEventType.PlanDetected, nearMiss), []);
+        },
+      });
+
+      const [detected] = journalRowsNaming(workspace.configPath, DomainEventType.PlanDetected, planPath);
+      assertExists(detected);
+      assertEquals(
+        JSON.parse(detected.payload).size,
+        content.length,
+        "the handler received the content the watcher read",
+      );
+    } finally {
+      await Deno.remove(workspace.root, { recursive: true }).catch(() => {});
     }
-
-    assertEquals(files.length, 1);
-    assertEquals(files[0], `request-${traceId.slice(0, 8)}_plan.md`);
-
-    console.log("✅ Integration test passed: Non-plan files ignored");
-  } finally {
-    await env.cleanup();
-  }
+  },
 });
 
-Deno.test("Integration: Plan Execution Detection - handles invalid plan gracefully", async () => {
-  const env = await createWatcherEnv();
+Deno.test({
+  name: "[plan_detection] a malformed plan is reported as failed and the watcher still detects the next plan",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const workspace = await createPlanWorkspace();
+    try {
+      const broken = join(workspace.activeDir, "broken_plan.md");
+      const traceless = join(workspace.activeDir, "traceless_plan.md");
+      const next = join(workspace.activeDir, "next_plan.md");
 
-  try {
-    const activePath = await createActiveDir(env);
+      await bootRealDaemon(workspace.configPath, {
+        midFlight: async (daemon: IRunningDaemon) => {
+          await Deno.writeTextFile(broken, planDocument("trace_id: [broken yaml\nstatus: approved"));
+          await daemon.until(() => reported(workspace.configPath, broken), "the broken plan to be reported");
+          assertEquals(journaled(workspace.configPath, EXECUTION_MANAGED_EVENT, broken), false);
+          assertEquals(journaled(workspace.configPath, EXECUTION_MANAGED_FAILURE_EVENT, broken), true);
+          // The parse fails before a lease is taken, so execution never starts for this plan.
+          assertEquals(journaled(workspace.configPath, DomainEventType.ExecutionStarted, broken), false);
 
-    const planPath = join(activePath, "invalid_plan.md");
-    await Deno.writeTextFile(
-      planPath,
-      `---
-trace_id: [broken yaml syntax
-status: invalid
----
+          // A missing trace_id is not rejected. The schema generates one, and execution starts under it.
+          await Deno.writeTextFile(traceless, planDocument("status: approved"));
+          await daemon.until(() => reported(workspace.configPath, traceless), "the traceless plan to be reported");
+          const started = journalRowsNaming(workspace.configPath, DomainEventType.ExecutionStarted, traceless)[0];
+          assertExists(started, "a traceless plan that parses must start execution");
+          assert(TRACE_ID_PATTERN.test(started.trace_id ?? ""), "the generated trace id is a UUID");
 
-# Invalid Plan
-`,
-    );
-
-    await assertFileExists(planPath, "Invalid plan file should still exist");
-
-    console.log("✅ Integration test passed: Invalid plan handled gracefully");
-  } finally {
-    await env.cleanup();
-  }
-});
-
-Deno.test("Integration: Plan Execution Detection - handles missing trace_id", async () => {
-  const env = await createWatcherEnv();
-
-  try {
-    const activePath = await createActiveDir(env);
-
-    const planPath = join(activePath, "no-trace_plan.md");
-    await Deno.writeTextFile(
-      planPath,
-      `---
-request_id: "request-test"
-status: approved
----
-
-# Plan without trace_id
-`,
-    );
-
-    await assertFileExists(planPath, "Plan without trace_id should still exist");
-
-    console.log("✅ Integration test passed: Missing trace_id handled gracefully");
-  } finally {
-    await env.cleanup();
-  }
+          // The failures above must not stop the watcher from detecting a later plan.
+          await Deno.writeTextFile(next, planDocument(`trace_id: "${crypto.randomUUID()}"\nstatus: approved`));
+          await daemon.until(
+            () => journaled(workspace.configPath, DomainEventType.PlanDetected, next),
+            "the watcher to detect a plan after the failures",
+          );
+        },
+      });
+    } finally {
+      await Deno.remove(workspace.root, { recursive: true }).catch(() => {});
+    }
+  },
 });
