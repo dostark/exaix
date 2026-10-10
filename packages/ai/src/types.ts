@@ -324,6 +324,8 @@ export interface ILlmClient {
     provider?: string;
     model?: string;
     nativeToolCall?: IProviderToolCall;
+    /** The response's complete assistant content. The caller replays it with the call's round. */
+    nativeAssistantReplay?: IProviderAssistantReplay;
     usage?: IGenerateResult["usage"];
     cost_usd?: number;
     costStatus?: ProviderCostStatus;

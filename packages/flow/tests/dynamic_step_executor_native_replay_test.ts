@@ -13,7 +13,7 @@ import type { IToolManifestResolver } from "@exaix/core/types";
 import type { IToolConfirmationInterceptor } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
-import type { ILlmClient, ToolArgs } from "@exaix/ai";
+import type { ILlmClient, IProviderAssistantReplay, ToolArgs } from "@exaix/ai";
 import type { INativeConversationSnapshot } from "@exaix/ai";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import { DynamicStepExecutor, type IActivityJournal, type JournalEntry } from "@exaix/flow";
@@ -41,7 +41,7 @@ class ReplayLlmClient implements ILlmClient {
     [];
   decisions: Array<Awaited<ReturnType<ILlmClient["reasonNextAction"]>>> = [];
   createNativeConversation(): Promise<INativeConversationSnapshot> {
-    return Promise.resolve({ initialPrompt: "dynamic prompt", turns: [] });
+    return Promise.resolve({ initialPrompt: "dynamic prompt", turns: [], rounds: [] });
   }
   reasonNextAction(params: Parameters<ILlmClient["reasonNextAction"]>[0]) {
     this.calls.push({
@@ -81,6 +81,15 @@ const step = FlowStepSchema.parse({
   permitted_tools: [McpToolName.READ_FILE],
 });
 
+/** The assistant content a compatible provider returns for one call, kept verbatim for replay. */
+function replayOf(id: string, name: string, args: string): IProviderAssistantReplay {
+  return {
+    provider: "openai-chat",
+    assistantContent: null,
+    toolCalls: [{ id, type: "function", function: { name, arguments: args } }],
+  };
+}
+
 Deno.test("DynamicStepExecutor forwards native controls and replays exact successful call id", async () => {
   const mcp = new ReplayMcpClient();
   const llm = new ReplayLlmClient();
@@ -100,6 +109,7 @@ Deno.test("DynamicStepExecutor forwards native controls and replays exact succes
       tool: McpToolName.READ_FILE,
       args: { path: "src/a.ts" },
       nativeToolCall: { id: "call-22", name: McpToolName.READ_FILE, input: { path: "src/a.ts" } },
+      nativeAssistantReplay: replayOf("call-22", McpToolName.READ_FILE, '{"path":"src/a.ts"}'),
     },
     { done: true, output: "reviewed" },
   ];
@@ -110,7 +120,58 @@ Deno.test("DynamicStepExecutor forwards native controls and replays exact succes
   assertEquals(llm.calls[0].nativeToolsEnabled, true);
   assertEquals(llm.calls[0].traceId, "trace-22");
   assertEquals(mcp.executions.length, 1);
-  assertEquals(llm.calls[1].nativeConversation?.turns[0].toolUseId, "call-22");
+  assertEquals(llm.calls[1].nativeConversation?.turns.length, 0);
+  assertEquals(llm.calls[1].nativeConversation?.rounds, [{
+    calls: [{
+      toolUseId: "call-22",
+      index: 0,
+      toolName: McpToolName.READ_FILE,
+      toolInput: { path: "src/a.ts" },
+      toolResultContent: "tool-output",
+      toolResultIsError: false,
+    }],
+    assistant: replayOf("call-22", McpToolName.READ_FILE, '{"path":"src/a.ts"}'),
+  }]);
+});
+
+Deno.test("DynamicStepExecutor appends each completed native call as its own singleton round, in order", async () => {
+  const mcp = new ReplayMcpClient();
+  const llm = new ReplayLlmClient();
+  const executor = new DynamicStepExecutor(
+    mcp,
+    llm,
+    new ReplayJournal(),
+    undefined,
+    undefined,
+    undefined,
+    DYNAMIC_MODE_TOOLS,
+    DYNAMIC_MODE_APPROVAL_TOOLS,
+  );
+  llm.decisions = [
+    {
+      done: false,
+      tool: McpToolName.READ_FILE,
+      args: { path: "src/a.ts" },
+      nativeToolCall: { id: "call-a", name: McpToolName.READ_FILE, input: { path: "src/a.ts" } },
+      nativeAssistantReplay: replayOf("call-a", McpToolName.READ_FILE, '{"path":"src/a.ts"}'),
+    },
+    {
+      done: false,
+      tool: McpToolName.READ_FILE,
+      args: { path: "src/b.ts" },
+      nativeToolCall: { id: "call-b", name: McpToolName.READ_FILE, input: { path: "src/b.ts" } },
+      nativeAssistantReplay: replayOf("call-b", McpToolName.READ_FILE, '{"path":"src/b.ts"}'),
+    },
+    { done: true, output: "reviewed" },
+  ];
+  await executor.execute(step, role, "Review the sources", {
+    traceId: "trace-serial-rounds",
+    config: { execution: { native_tools_enabled: true } },
+  });
+  const rounds = llm.calls[2].nativeConversation?.rounds ?? [];
+  assertEquals(llm.calls[2].nativeConversation?.turns.length, 0);
+  assertEquals(rounds.map((round) => round.calls.map((entry) => entry.toolUseId)), [["call-a"], ["call-b"]]);
+  assertEquals(rounds.map((round) => round.calls.length), [1, 1]);
 });
 
 Deno.test("DynamicStepExecutor replays denied native call as an error without executing it", async () => {
@@ -146,6 +207,7 @@ Deno.test("DynamicStepExecutor replays denied native call as an error without ex
       tool: approvalTool,
       args: { request: "create" },
       nativeToolCall: { id: "call-denied-8", name: approvalTool, input: { request: "create" } },
+      nativeAssistantReplay: replayOf("call-denied-8", approvalTool, '{"request":"create"}'),
     },
     { done: true, output: "finished" },
   ];
@@ -158,13 +220,18 @@ Deno.test("DynamicStepExecutor replays denied native call as an error without ex
   assertEquals(approvalRequest?.toolName, approvalTool);
   assertEquals(mcp.executions.length, 0);
   assertEquals(result.completed, true);
-  assertEquals(llm.calls[1].nativeConversation?.turns[0], {
-    toolUseId: "call-denied-8",
-    toolName: approvalTool,
-    toolInput: { request: "create" },
-    toolResultContent: "Tool 'exaix_create_request' call denied: not authorized",
-    toolResultIsError: true,
-  });
+  assertEquals(llm.calls[1].nativeConversation?.turns.length, 0);
+  assertEquals(llm.calls[1].nativeConversation?.rounds, [{
+    calls: [{
+      toolUseId: "call-denied-8",
+      index: 0,
+      toolName: approvalTool,
+      toolInput: { request: "create" },
+      toolResultContent: "Tool 'exaix_create_request' call denied: not authorized",
+      toolResultIsError: true,
+    }],
+    assistant: replayOf("call-denied-8", approvalTool, '{"request":"create"}'),
+  }]);
 });
 
 Deno.test("DynamicStepExecutor does not replay an incomplete native turn after a tool failure", async () => {
@@ -187,6 +254,7 @@ Deno.test("DynamicStepExecutor does not replay an incomplete native turn after a
     tool: McpToolName.READ_FILE,
     args: { path: "outside/secret.ts" },
     nativeToolCall: { id: "call-failed-9", name: McpToolName.READ_FILE, input: { path: "outside/secret.ts" } },
+    nativeAssistantReplay: replayOf("call-failed-9", McpToolName.READ_FILE, '{"path":"outside/secret.ts"}'),
   }];
   try {
     await executor.execute(step, role, "Read file", {
@@ -198,7 +266,7 @@ Deno.test("DynamicStepExecutor does not replay an incomplete native turn after a
     assertEquals(error, mcp.failure);
   }
   assertEquals(llm.calls.length, 1);
-  assertEquals(llm.calls[0].nativeConversation?.turns.length, 0);
+  assertEquals(llm.calls[0].nativeConversation?.rounds?.length, 0);
   assertEquals(journal.entries.some((entry) => entry.event === "dynamic_step_completed"), false);
 });
 
@@ -223,12 +291,13 @@ Deno.test("DynamicStepExecutor starts each invocation with an empty native repla
         tool: McpToolName.READ_FILE,
         args: { path: "src/a.ts" },
         nativeToolCall: { id: `call-${traceId}`, name: McpToolName.READ_FILE, input: { path: "src/a.ts" } },
+        nativeAssistantReplay: replayOf(`call-${traceId}`, McpToolName.READ_FILE, '{"path":"src/a.ts"}'),
       },
       { done: true, output: "finished" },
     );
     await executor.execute(step, role, "Read file", { traceId, config });
   }
-  assertEquals(llm.calls[0].nativeConversation?.turns.length, 0);
-  assertEquals(llm.calls[2].nativeConversation?.turns.length, 0);
+  assertEquals(llm.calls[0].nativeConversation?.rounds?.length, 0);
+  assertEquals(llm.calls[2].nativeConversation?.rounds?.length, 0);
   assertEquals(mcp.executions.length, 2);
 });

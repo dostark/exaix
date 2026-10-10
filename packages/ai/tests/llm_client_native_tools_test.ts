@@ -5,12 +5,12 @@
  * @architectural-layer AI
  * @related-files [packages/ai/src/llm_client.ts, packages/ai/src/types.ts]
  */
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { McpToolName } from "@exaix/core";
 import type { IBlueprintFrontmatter } from "@exaix/schemas";
 import { LlmClient } from "../src/llm_client.ts";
 import { ProviderRegistry } from "../src/provider_registry.ts";
-import type { IModelOptions, IModelProvider } from "../src/types.ts";
+import type { IModelOptions, IModelProvider, IProviderAssistantReplay, IProviderToolRound } from "../src/types.ts";
 import type { IGenerateResult, IProviderToolCall } from "@exaix/ai/providers";
 import { ContextBudgetExceededError } from "@exaix/core/errors";
 import type { PromptBudgetAllocator } from "@exaix/core";
@@ -26,10 +26,25 @@ const role: IBlueprintFrontmatter = {
   capabilities: [],
 };
 
+/** The complete assistant content a compatible provider returns for these calls, kept verbatim for replay. */
+function openAiReplay(calls: IProviderToolCall[]): IProviderAssistantReplay {
+  return {
+    provider: "openai-chat",
+    assistantContent: null,
+    toolCalls: calls.map((call) => ({
+      id: call.id,
+      type: "function",
+      function: { name: call.name, arguments: JSON.stringify(call.input) },
+    })),
+  };
+}
+
 class NativeProvider implements IModelProvider {
   id = "openai-compatible-test-model-v1";
   calls: Array<{ prompt: string; options?: IModelOptions }> = [];
   toolCalls?: IProviderToolCall[];
+  /** False models a response whose assistant content the provider did not return. */
+  carriesReplay = true;
   content = "";
   costStatus?: "estimated" | "tracked" | "unknown";
 
@@ -38,6 +53,7 @@ class NativeProvider implements IModelProvider {
     return Promise.resolve({
       content: this.content,
       toolCalls: this.toolCalls,
+      ...(this.toolCalls && this.carriesReplay ? { nativeAssistantReplay: openAiReplay(this.toolCalls) } : {}),
       usage: { promptTokens: 8, completionTokens: 3, totalTokens: 11 },
       model: "test-model",
       provider: "openai-compatible-test",
@@ -105,12 +121,17 @@ Deno.test("LlmClient native conversation preserves initial context and returns o
   provider.content = "The file is clean.";
   const secondSnapshot = {
     ...nativeConversation,
-    turns: [{
-      toolUseId: "call-17",
-      toolName: McpToolName.READ_FILE,
-      toolInput: { path: "src/a.ts" },
-      toolResultContent: "source text",
-      toolResultIsError: false,
+    turns: [],
+    rounds: [{
+      calls: [{
+        toolUseId: "call-17",
+        index: 0,
+        toolName: McpToolName.READ_FILE,
+        toolInput: { path: "src/a.ts" },
+        toolResultContent: "source text",
+        toolResultIsError: false,
+      }],
+      assistant: openAiReplay([{ id: "call-17", name: McpToolName.READ_FILE, input: { path: "src/a.ts" } }]),
     }],
   };
   const final = await client.reasonNextAction({
@@ -127,7 +148,12 @@ Deno.test("LlmClient native conversation preserves initial context and returns o
   });
   assertEquals(final.done, true);
   assertEquals(provider.calls[1].prompt, provider.calls[0].prompt);
-  assertEquals(provider.calls[1].options?.nativeConversation?.turns.length, 1);
+  assertEquals(provider.calls[1].options?.nativeConversation?.turns.length, 0);
+  assertEquals(provider.calls[1].options?.nativeConversation?.rounds?.length, 1);
+  assertEquals(
+    provider.calls[1].options?.nativeConversation?.initialPromptSections,
+    nativeConversation.initialPromptSections,
+  );
   assertEquals(provider.calls[1].options?.effort, "high");
   assertStringIncludes(provider.calls[1].options?.nativeConversation?.roundInstruction ?? "", "Iteration: 2 of 4");
   assertEquals(provider.calls[1].options?.traceId, "trace-dynamic-1");
@@ -365,4 +391,140 @@ Deno.test("[phase203.dynamic] the dynamic native call omits toolChoice only when
   const plain = new NativeProvider();
   await callOnce(plain);
   assertEquals(plain.calls[0].options?.toolChoice, { type: "auto", disable_parallel_tool_use: true });
+});
+
+/** One completed round of a single call, joined to its result, as the decision path appends it. */
+function roundOf(id: string, result: string): IProviderToolRound {
+  return {
+    calls: [{
+      toolUseId: id,
+      index: 0,
+      toolName: McpToolName.READ_FILE,
+      toolInput: { path: "src/a.ts" },
+      toolResultContent: result,
+      toolResultIsError: false,
+    }],
+    assistant: openAiReplay([{ id, name: McpToolName.READ_FILE, input: { path: "src/a.ts" } }]),
+  };
+}
+
+const CHARACTER_TOKENIZER = {
+  countTokens: (text: string) => Promise.resolve(text.length),
+  countTokensBatch: (texts: string[]) => Promise.resolve(texts.map((text) => text.length)),
+};
+
+Deno.test("LlmClient refuses a native tool decision without its replayable assistant content", async () => {
+  const provider = new NativeProvider();
+  provider.toolCalls = [{ id: "call-31", name: McpToolName.READ_FILE, input: { path: "src/a.ts" } }];
+  provider.carriesReplay = false;
+  const client = new LlmClient(undefined, provider);
+  const tools = [{ name: McpToolName.READ_FILE, description: "Read", inputSchema: {} }];
+  const nativeConversation = await client.createNativeConversation({
+    agentRole: role,
+    stepObjective: "Inspect",
+    originalInput: "Inspect src/a.ts",
+    availableTools: tools,
+  });
+  await assertRejects(
+    () =>
+      client.reasonNextAction({
+        agent_role: role,
+        stepObjective: "Inspect",
+        accumulatedContext: "Inspect src/a.ts",
+        availableTools: tools,
+        iteration: 1,
+        maxIterations: 2,
+        nativeToolsEnabled: true,
+        nativeConversation,
+      }),
+    Error,
+    "no replayable assistant content",
+  );
+});
+
+Deno.test("LlmClient refuses a native response with neither a call nor final content", async () => {
+  const provider = new NativeProvider();
+  provider.content = "   ";
+  const client = new LlmClient(undefined, provider);
+  const tools = [{ name: McpToolName.READ_FILE, description: "Read", inputSchema: {} }];
+  const nativeConversation = await client.createNativeConversation({
+    agentRole: role,
+    stepObjective: "Inspect",
+    originalInput: "Inspect src/a.ts",
+    availableTools: tools,
+  });
+  await assertRejects(
+    () =>
+      client.reasonNextAction({
+        agent_role: role,
+        stepObjective: "Inspect",
+        accumulatedContext: "Inspect src/a.ts",
+        availableTools: tools,
+        iteration: 2,
+        maxIterations: 4,
+        nativeToolsEnabled: true,
+        nativeConversation,
+      }),
+    Error,
+    "no tool call or final content",
+  );
+});
+
+Deno.test("LlmClient measures replayed rounds in the loop-history section before generation", async () => {
+  const provider = new NativeProvider();
+  provider.content = "done";
+  const client = new LlmClient(undefined, provider, undefined, undefined, undefined, CHARACTER_TOKENIZER);
+  const tools = [{ name: McpToolName.READ_FILE, description: "Read", inputSchema: {} }];
+  const nativeConversation = await client.createNativeConversation({
+    agentRole: role,
+    stepObjective: "Inspect",
+    originalInput: "Inspect src/a.ts",
+    availableTools: tools,
+  });
+  const round = roundOf("call-41", "source text");
+  await client.reasonNextAction({
+    agent_role: role,
+    stepObjective: "Inspect",
+    accumulatedContext: "Inspect src/a.ts",
+    availableTools: tools,
+    iteration: 2,
+    maxIterations: 4,
+    nativeToolsEnabled: true,
+    nativeConversation: { ...nativeConversation, rounds: [round] },
+  });
+  const measured = provider.calls[0].options?.nativeConversation?.measurement;
+  assert(measured !== undefined && measured.sections.loopHistory >= JSON.stringify([round]).length);
+});
+
+Deno.test("LlmClient rejects replayed rounds that overflow the loop-history section before generation", async () => {
+  const provider = new NativeProvider();
+  const allocator = {
+    allocate: () =>
+      Promise.resolve({
+        model: "test-model",
+        totalBudgetTokens: 100_000,
+        safetyBufferTokens: 0,
+        sections: { system: 100_000, plan: 100_000, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: 100 },
+      }),
+  } as Pick<PromptBudgetAllocator, "allocate">;
+  const client = new LlmClient(undefined, provider, undefined, undefined, undefined, CHARACTER_TOKENIZER, allocator);
+  const tools = [{ name: McpToolName.READ_FILE, description: "Read", inputSchema: {} }];
+  const nativeConversation = await client.createNativeConversation({
+    agentRole: role,
+    stepObjective: "Inspect",
+    originalInput: "Inspect src/a.ts",
+    availableTools: tools,
+  });
+  await assertRejects(() =>
+    client.reasonNextAction({
+      agent_role: role,
+      stepObjective: "Inspect",
+      accumulatedContext: "Inspect src/a.ts",
+      availableTools: tools,
+      iteration: 2,
+      maxIterations: 4,
+      nativeToolsEnabled: true,
+      nativeConversation: { ...nativeConversation, rounds: [roundOf("call-42", "x".repeat(500))] },
+    }), ContextBudgetExceededError);
+  assertEquals(provider.calls.length, 0);
 });

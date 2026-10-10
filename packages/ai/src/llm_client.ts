@@ -172,7 +172,7 @@ export class LlmClient implements ILlmClient {
     ];
     const initialPrompt = initialPromptSections.map((section) => section.text).join("");
     return await this.measureNativeSnapshot(
-      { initialPrompt, initialPromptSections, turns: [] },
+      { initialPrompt, initialPromptSections, turns: [], rounds: [] },
       params.agentRole.model ?? this.defaultModel,
       params.availableTools,
       false,
@@ -187,9 +187,11 @@ export class LlmClient implements ILlmClient {
     outputTokens = 0,
     traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<INativeConversationSnapshot> {
+    const roundsText = JSON.stringify(snapshot.rounds ?? []);
     const sections = [
       ...(snapshot.initialPromptSections ?? [{ section: PromptBudgetSection.SYSTEM, text: snapshot.initialPrompt }]),
       ...(snapshot.turns.length ? [{ section: "loopHistory" as const, text: JSON.stringify(snapshot.turns) }] : []),
+      ...(snapshot.rounds?.length ? [{ section: "loopHistory" as const, text: roundsText }] : []),
       ...(snapshot.roundInstruction !== undefined
         ? [{ section: "loopHistory" as const, text: snapshot.roundInstruction }]
         : []),
@@ -209,6 +211,8 @@ export class LlmClient implements ILlmClient {
           ? { thinkingBlocks: turn.thinkingBlocks.map(({ thinking, signature }) => ({ thinking, signature })) }
           : {}),
       })),
+      // Rounds project as the same JSON text the loop-history section measures.
+      ...(snapshot.rounds?.length ? { rounds: JSON.parse(roundsText) } : {}),
       ...(snapshot.roundInstruction !== undefined ? { roundInstruction: snapshot.roundInstruction } : {}),
       tools: tools.map((tool) => ({
         name: tool.name,
@@ -350,6 +354,9 @@ export class LlmClient implements ILlmClient {
     ) {
       throw new Error("Native dynamic decision returned an unknown or malformed tool call");
     }
+    if (result.nativeAssistantReplay === undefined) {
+      throw new Error("Native dynamic decision returned no replayable assistant content");
+    }
     return {
       done: false,
       tool: matchingTool.name as McpToolName,
@@ -357,6 +364,7 @@ export class LlmClient implements ILlmClient {
       provider: result.provider,
       model: result.model,
       nativeToolCall: { ...call, name: matchingTool.name },
+      nativeAssistantReplay: result.nativeAssistantReplay,
       ...this.modelMetadata(result),
     };
   }

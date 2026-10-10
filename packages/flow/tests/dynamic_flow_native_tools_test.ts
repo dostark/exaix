@@ -31,8 +31,8 @@ import type { IAgentExecutionResult } from "@exaix/execution";
 import { ProviderFactory, ProviderFactoryError } from "@exaix/ai";
 import { ProviderRegistry } from "@exaix/ai";
 import { TracedProvider } from "@exaix/ai";
-import type { IModelOptions, IModelProvider, ToolArgs } from "@exaix/ai";
-import type { IGenerateResult } from "@exaix/ai/providers";
+import type { IModelOptions, IModelProvider, IProviderAssistantReplay, ToolArgs } from "@exaix/ai";
+import type { IGenerateResult, IProviderToolCall } from "@exaix/ai/providers";
 import type { IFlowEventPayload } from "@exaix/flow";
 
 class FlowAgent implements IAgentExecutor {
@@ -55,17 +55,31 @@ class DynamicMcp implements IMcpClient, IToolManifestResolver {
   }
 }
 
+const FLOW_CALL: IProviderToolCall = { id: "flow-call-1", name: McpToolName.READ_FILE, input: { path: "src/a.ts" } };
+
+/** The complete assistant content a compatible provider returns for these calls, kept verbatim for replay. */
+function openAiReplay(calls: IProviderToolCall[]): IProviderAssistantReplay {
+  return {
+    provider: "openai-chat",
+    assistantContent: null,
+    toolCalls: calls.map((call) => ({
+      id: call.id,
+      type: "function",
+      function: { name: call.name, arguments: JSON.stringify(call.input) },
+    })),
+  };
+}
+
 class DynamicNativeProvider implements IModelProvider {
   readonly id = "dynamic-flow-test-model";
   calls: Array<{ prompt: string; options?: IModelOptions }> = [];
+  constructor(private readonly firstCalls: IProviderToolCall[] = [FLOW_CALL]) {}
   generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
     this.calls.push({ prompt, options });
     const isFirst = this.calls.length === 1;
     return Promise.resolve({
       content: isFirst ? "" : "File reviewed",
-      ...(isFirst
-        ? { toolCalls: [{ id: "flow-call-1", name: McpToolName.READ_FILE, input: { path: "src/a.ts" } }] }
-        : {}),
+      ...(isFirst ? { toolCalls: this.firstCalls, nativeAssistantReplay: openAiReplay(this.firstCalls) } : {}),
       usage: { promptTokens: 12, completionTokens: 4, totalTokens: 16 },
       costStatus: "unknown",
       model: "dynamic-flow-test-model",
@@ -233,7 +247,10 @@ for (const useModelResolver of [false, true]) {
       assertEquals(provider.calls.length, 2);
       assertEquals(provider.calls[0].options?.tools?.map((tool) => tool.name), [McpToolName.READ_FILE]);
       assertEquals(provider.calls[0].options?.nativeConversation?.turns.length, 0);
-      assertEquals(provider.calls[1].options?.nativeConversation?.turns[0].toolUseId, "flow-call-1");
+      assertEquals(provider.calls[1].options?.nativeConversation?.turns.length, 0);
+      assertEquals(provider.calls[1].options?.nativeConversation?.rounds?.[0].calls[0].toolUseId, "flow-call-1");
+      assertEquals(provider.calls[1].options?.nativeConversation?.rounds?.[0].assistant, openAiReplay([FLOW_CALL]));
+      assertEquals(provider.calls[0].options?.toolChoice, { type: "auto", disable_parallel_tool_use: true });
       assertEquals(provider.calls[0].options?.traceId, "trace-flow-dynamic");
       assertEquals(provider.calls[0].options?.effort, useModelResolver ? "medium" : "high");
       const completed = flowEvents.find(({ event }) => event === "dynamic_step_completed");
@@ -337,3 +354,43 @@ for (const useModelResolver of [false, true]) {
     }
   });
 }
+
+Deno.test("FlowRunner refuses a native response with two calls before any tool effect", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  const originalCreateByName = ProviderFactory.createByName;
+  const provider = new DynamicNativeProvider([FLOW_CALL, { ...FLOW_CALL, id: "flow-call-2" }]);
+  const mcp = new DynamicMcp();
+  try {
+    const config = createMockConfig(tempDir, {
+      execution: { native_tools_enabled: true, milestone_streaming_enabled: DEFAULT_MILESTONE_STREAMING_ENABLED },
+      ai: {
+        provider: "mock",
+        model: "test",
+        timeout_ms: 30000,
+        mock: { strategy: MockStrategy.RECORDED, fixtures_dir: tempDir },
+      },
+    });
+    writeRole(tempDir);
+    ProviderFactory.createByName = () => Promise.resolve(provider);
+    const runner = new FlowRunner({
+      agentExecutor: new FlowAgent(),
+      eventLogger: { log: () => {} },
+      llmEventLogger: new EventLogger({ db }),
+      config,
+      db,
+      dynamicModeTools: DYNAMIC_MODE_TOOLS,
+      dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+      mcpClient: mcp,
+    });
+    await assertRejects(
+      () => runner.execute(dynamicFlow() as IFlow, { userPrompt: "Review src/a.ts", traceId: "trace-two-calls" }),
+      Error,
+      "multiple tool calls",
+    );
+    assertEquals(provider.calls.length, 1);
+    assertEquals(mcp.calls.length, 0);
+  } finally {
+    ProviderFactory.createByName = originalCreateByName;
+    await cleanup();
+  }
+});

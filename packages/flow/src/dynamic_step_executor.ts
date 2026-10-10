@@ -29,8 +29,7 @@ import {
 } from "@exaix/core";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { ILlmClient, INativeConversationSnapshot, ToolArgs } from "@exaix/ai";
-import type { IProviderToolCall } from "@exaix/ai/providers";
-import type { IProviderTurn } from "@exaix/ai";
+import type { IProviderToolRound } from "@exaix/ai";
 import type { ProviderCostStatus } from "@exaix/ai/providers";
 import type { IMcpClient } from "@exaix/mcp";
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
@@ -234,14 +233,7 @@ export class DynamicStepExecutor {
       );
       if (denialText !== undefined) {
         context = this.appendObservation(context, decision.tool, denialText);
-        nativeConversation = this.appendNativeTurn(
-          nativeConversation,
-          decision.nativeToolCall,
-          decision.tool,
-          decision.args ?? {},
-          denialText,
-          true,
-        );
+        nativeConversation = this.appendNativeRound(nativeConversation, decision, decision.tool, denialText, true);
         continue;
       }
 
@@ -279,14 +271,7 @@ export class DynamicStepExecutor {
 
       // Feed observation back into context for next iteration
       context = this.appendObservation(context, decision.tool, toolResult);
-      nativeConversation = this.appendNativeTurn(
-        nativeConversation,
-        decision.nativeToolCall,
-        decision.tool,
-        decision.args ?? {},
-        toolResult,
-        false,
-      );
+      nativeConversation = this.appendNativeRound(nativeConversation, decision, decision.tool, toolResult, false);
     }
 
     // Max iterations reached — return with what we have
@@ -345,26 +330,31 @@ export class DynamicStepExecutor {
     return `${context}\n\n[Tool: ${tool}]\n${result}`;
   }
 
-  private appendNativeTurn(
+  /** Appends the call as a singleton round. LlmClient refuses a call without its
+   *  assistant content before any effect. */
+  private appendNativeRound(
     conversation: Opt<INativeConversationSnapshot, Reason.OptionalInput>,
-    call: Opt<IProviderToolCall, Reason.OptionalInput>,
+    decision: Awaited<ReturnType<ILlmClient["reasonNextAction"]>>,
     tool: McpToolName,
-    args: ToolArgs,
     result: string,
     isError: boolean,
   ): INativeConversationSnapshot | undefined {
-    if (!conversation || !call) return conversation;
-    const turn: IProviderTurn = {
-      toolUseId: call.id,
-      toolName: tool,
-      toolInput: args,
-      toolResultContent: result,
-      toolResultIsError: isError,
-      ...(call.reasoningContent !== undefined ? { reasoningContent: call.reasoningContent } : {}),
-      ...(call.thoughtSignature !== undefined ? { thoughtSignature: call.thoughtSignature } : {}),
-      ...(call.thinkingBlocks !== undefined ? { thinkingBlocks: call.thinkingBlocks } : {}),
+    const call = decision.nativeToolCall;
+    const assistant = decision.nativeAssistantReplay;
+    if (!conversation || !call || !assistant) return conversation;
+    const round: IProviderToolRound = {
+      calls: [{
+        toolUseId: call.id,
+        index: 0,
+        toolName: tool,
+        toolInput: decision.args ?? {},
+        ...(call.thoughtSignature !== undefined ? { thoughtSignature: call.thoughtSignature } : {}),
+        toolResultContent: result,
+        toolResultIsError: isError,
+      }],
+      assistant,
     };
-    return { ...conversation, turns: [...conversation.turns, turn] };
+    return { ...conversation, turns: [], rounds: [...(conversation.rounds ?? []), round] };
   }
 
   private addModelUsage(
