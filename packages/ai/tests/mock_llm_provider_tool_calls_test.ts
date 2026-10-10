@@ -10,12 +10,12 @@
  * @related-files [packages/ai/src/providers/mock_llm_provider.ts, packages/ai/src/provider_factory.ts, packages/execution/src/planning_tool_loop.ts]
  */
 
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
 import { MockStrategy, ProviderType } from "@exaix/core";
 import { ProviderRegistry } from "../src/provider_registry.ts";
 import { ensureProviderRegistryInitialized } from "../src/provider_factory.ts";
 import type { IProviderToolCall } from "../src/providers/common.ts";
-import type { IProviderTurn } from "../src/types.ts";
+import type { IProviderToolRound, IProviderTurn } from "../src/types.ts";
 import type { JSONValue } from "@exaix/core";
 import {
   hashPrompt,
@@ -244,5 +244,224 @@ Deno.test("[security] recorded mock cost rejects malformed or negative prices at
     } finally {
       await Deno.remove(dir, { recursive: true });
     }
+  }
+});
+
+// Grouped round replay: the artifact a replayed call returns, the round expectations, and the
+// request's parallel flag.
+
+const ROUND_CALL_SITE = { scenarioId: "plan-tools", stepId: "round-2", callIndex: 1 };
+
+/** A completed round of read calls, as the planning loop replays it on the next request. */
+function completedRound(calls: Array<{ id: string; path: string; result: string }>): IProviderToolRound {
+  return {
+    calls: calls.map((call, index) => ({
+      toolUseId: call.id,
+      index,
+      toolName: "read_file",
+      toolInput: { path: call.path },
+      toolResultContent: call.result,
+      toolResultIsError: false,
+    })),
+    assistant: {
+      provider: "openai-chat",
+      assistantContent: null,
+      toolCalls: calls.map((call) => ({
+        id: call.id,
+        type: "function",
+        function: { name: "read_file", arguments: JSON.stringify({ path: call.path }) },
+      })),
+    },
+  };
+}
+
+const THREE_READS = [
+  { id: "toolu_a", path: "src/a.ts", result: '{"content":"MARK-A"}' },
+  { id: "toolu_b", path: "src/b.ts", result: '{"content":"MARK-B"}' },
+  { id: "toolu_c", path: "src/c.ts", result: '{"content":"MARK-C"}' },
+];
+
+function roundExpectation(
+  calls: Array<{ id: string; index: number; path: string; marker: string }>,
+): NonNullable<IRecordedResponse["expectedInput"]> {
+  return {
+    priorRoundCalls: calls.map((call) => ({
+      toolUseId: call.id,
+      index: call.index,
+      toolName: "read_file",
+      input: { path: call.path },
+      resultIncludes: call.marker,
+    })),
+  };
+}
+
+function roundFinalRecording(expectedInput: IRecordedResponse["expectedInput"]): IRecordedResponse {
+  return {
+    promptHash: "stale-hash-drift-is-tolerated",
+    promptPreview: "planning round 2",
+    response: "the plan",
+    model: "mock:gpt-5.2-pro",
+    tokens: { input: 100, output: 10 },
+    recordedAt: "2026-09-23T00:00:00.000Z",
+    callSite: ROUND_CALL_SITE,
+    expectedInput,
+  };
+}
+
+Deno.test("[mock toolCalls] a replayed call returns the assistant artifact the provider sent, in wire shape", async () => {
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, {
+    recordings: [{ ...roundOneRecording(), toolCalls: [TOOL_CALL] }],
+  });
+  const result = await provider.generate(PROMPT, { callSite: ROUND_ONE_CALL_SITE, tools: READ_TOOLS });
+
+  assertEquals(result.nativeAssistantReplay?.provider, "openai-chat");
+  assertEquals(result.nativeAssistantReplay?.provider === "openai-chat" ? result.nativeAssistantReplay.toolCalls : [], [
+    { id: "toolu_01", type: "function", function: { name: "read_file", arguments: '{"path":"src/main.ts"}' } },
+  ]);
+});
+
+Deno.test("[mock toolCalls] the registered mock declares grouped round replay alongside native tools", () => {
+  ensureProviderRegistryInitialized();
+  const metadata = ProviderRegistry.getProviderMetadata(ProviderType.MOCK);
+  assertEquals(metadata?.supportsParallelToolReplay, true);
+  assertEquals(metadata?.supportsNativeConversation, undefined);
+});
+
+Deno.test("[recorded_mock] priorRoundCalls passes when the replayed round matches every call, in order", async () => {
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, {
+    recordings: [roundFinalRecording(roundExpectation([
+      { id: "toolu_a", index: 0, path: "src/a.ts", marker: "MARK-A" },
+      { id: "toolu_b", index: 1, path: "src/b.ts", marker: "MARK-B" },
+      { id: "toolu_c", index: 2, path: "src/c.ts", marker: "MARK-C" },
+    ]))],
+  });
+  const result = await provider.generate("round two prompt", {
+    callSite: ROUND_CALL_SITE,
+    priorRound: completedRound(THREE_READS),
+  });
+  assertEquals(result.content, "the plan");
+});
+
+Deno.test("[recorded_mock] priorRoundCalls names the first call whose result misses its marker", async () => {
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, {
+    recordings: [roundFinalRecording(roundExpectation([
+      { id: "toolu_a", index: 0, path: "src/a.ts", marker: "MARK-A" },
+      { id: "toolu_b", index: 1, path: "src/b.ts", marker: "MARK-MISSING" },
+      { id: "toolu_c", index: 2, path: "src/c.ts", marker: "MARK-C" },
+    ]))],
+  });
+  const error = await assertRejects(
+    () => provider.generate("round two prompt", { callSite: ROUND_CALL_SITE, priorRound: completedRound(THREE_READS) }),
+    MockLLMError,
+  );
+  assertStringIncludes(error.message, "round call 1 (toolu_b)");
+  assertStringIncludes(error.message, "MARK-MISSING");
+});
+
+Deno.test("[recorded_mock] priorRoundCalls fails on a round of a different length", async () => {
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, {
+    recordings: [roundFinalRecording(roundExpectation([
+      { id: "toolu_a", index: 0, path: "src/a.ts", marker: "MARK-A" },
+      { id: "toolu_b", index: 1, path: "src/b.ts", marker: "MARK-B" },
+    ]))],
+  });
+  await assertRejects(
+    () => provider.generate("round two prompt", { callSite: ROUND_CALL_SITE, priorRound: completedRound(THREE_READS) }),
+    MockLLMError,
+    "the replayed round has 3 calls, expected 2",
+  );
+});
+
+Deno.test("[recorded_mock] priorRoundCalls checks the exact input each call carried", async () => {
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, {
+    recordings: [roundFinalRecording(roundExpectation([
+      { id: "toolu_a", index: 0, path: "src/other.ts", marker: "MARK-A" },
+      { id: "toolu_b", index: 1, path: "src/b.ts", marker: "MARK-B" },
+      { id: "toolu_c", index: 2, path: "src/c.ts", marker: "MARK-C" },
+    ]))],
+  });
+  await assertRejects(
+    () => provider.generate("round two prompt", { callSite: ROUND_CALL_SITE, priorRound: completedRound(THREE_READS) }),
+    MockLLMError,
+    "round call 0 (toolu_a)",
+  );
+});
+
+Deno.test("[recorded_mock] priorRoundArtifactIds checks the replayed assistant artifact's call ids in order", async () => {
+  const passing = new MockLLMProvider(MockStrategy.RECORDED, {
+    recordings: [roundFinalRecording({ priorRoundArtifactIds: ["toolu_a", "toolu_b", "toolu_c"] })],
+  });
+  assertEquals(
+    (await passing.generate("p", { callSite: ROUND_CALL_SITE, priorRound: completedRound(THREE_READS) })).content,
+    "the plan",
+  );
+
+  const failing = new MockLLMProvider(MockStrategy.RECORDED, {
+    recordings: [roundFinalRecording({ priorRoundArtifactIds: ["toolu_c", "toolu_b", "toolu_a"] })],
+  });
+  await assertRejects(
+    () => failing.generate("p", { callSite: ROUND_CALL_SITE, priorRound: completedRound(THREE_READS) }),
+    MockLLMError,
+    "assistant artifact",
+  );
+});
+
+Deno.test("[recorded_mock] expectedParallelDisabled checks the request's disable flag, both ways", async () => {
+  const off = new MockLLMProvider(MockStrategy.RECORDED, {
+    recordings: [roundFinalRecording({ expectedParallelDisabled: true })],
+  });
+  assertEquals(
+    (await off.generate("p", {
+      callSite: ROUND_CALL_SITE,
+      toolChoice: { type: "auto", disable_parallel_tool_use: true },
+    })).content,
+    "the plan",
+  );
+
+  const auto = new MockLLMProvider(MockStrategy.RECORDED, {
+    recordings: [roundFinalRecording({ expectedParallelDisabled: false })],
+  });
+  assertEquals(
+    (await auto.generate("p", { callSite: ROUND_CALL_SITE, toolChoice: { type: "auto" } })).content,
+    "the plan",
+  );
+
+  await assertRejects(
+    () =>
+      auto.generate("p", { callSite: ROUND_CALL_SITE, toolChoice: { type: "auto", disable_parallel_tool_use: true } }),
+    MockLLMError,
+    "parallel",
+  );
+});
+
+Deno.test("[recorded_mock] a legacy priorTurnResult expectation checks the round's joined results when only a round replays", async () => {
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, {
+    recordings: [roundFinalRecording({ priorTurnResultIncludes: ["MARK-A", "MARK-C"] })],
+  });
+  assertEquals(
+    (await provider.generate("p", { callSite: ROUND_CALL_SITE, priorRound: completedRound(THREE_READS) })).content,
+    "the plan",
+  );
+});
+
+Deno.test("[recorded_mock] malformed priorRoundCalls and artifact fields are rejected at fixture load", async () => {
+  const bad: Array<IRecordedResponse["expectedInput"] | Record<string, JSONValue>> = [
+    { priorRoundCalls: [{ toolUseId: "toolu_a" }] },
+    { priorRoundCalls: "toolu_a" },
+    { priorRoundArtifactIds: [1] },
+    { expectedParallelDisabled: "yes" },
+  ];
+  for (const expectedInput of bad) {
+    const dir = await writeFixture(JSON.parse(JSON.stringify({
+      promptHash: "h",
+      promptPreview: "p",
+      response: "x",
+      model: "m",
+      tokens: { input: 1, output: 1 },
+      recordedAt: "2026-09-23T00:00:00.000Z",
+      callSite: ROUND_CALL_SITE,
+      expectedInput,
+    })));
+    assertThrows(() => new MockLLMProvider(MockStrategy.RECORDED, { fixtureDir: dir }), MockLLMError);
   }
 });

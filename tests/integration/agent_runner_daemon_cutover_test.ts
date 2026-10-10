@@ -51,10 +51,13 @@ import type { JSONValue } from "@exaix/core/types";
 import { PortalKnowledgeService } from "@exaix/portal/knowledge";
 import { buildPortalKnowledgeSummary } from "@exaix/request";
 import {
+  assertDaemonPidIsDead,
   bootRealDaemon,
   daemonConfigSections,
+  type IDaemonBootResult,
   type IRunningDaemon,
   migrateDaemonWorkspace,
+  REQUEST_FAILURE_ACTIONS,
   REQUEST_OUTCOME_ACTIONS,
   writeDaemonConfigWithMockAi,
 } from "./helpers/daemon_config.ts";
@@ -1304,10 +1307,25 @@ function aliasCutoverRound(
           { id: "toolu_p201_glob_probe", name: "glob", input: { pattern: "../*.txt" } },
           { id: "toolu_p201_read_probe", name: "Read", input: { file_path: outsideFile } },
         ],
+        // Grouped replay carries both denials in the replayed round, not in the prompt transcript.
         expectedInput: {
-          promptIncludes: [`tool="glob" round="1">\n"${CONFINEMENT_DENIAL}"`],
+          priorRoundCalls: [
+            {
+              toolUseId: "toolu_p201_glob_probe",
+              index: 0,
+              toolName: "glob",
+              input: { pattern: "../*.txt" },
+              resultIncludes: CONFINEMENT_DENIAL,
+            },
+            {
+              toolUseId: "toolu_p201_read_probe",
+              index: 1,
+              toolName: "Read",
+              input: { file_path: outsideFile },
+              resultIncludes: CONFINEMENT_DENIAL,
+            },
+          ],
           promptExcludes: [ESCAPE_NAME_SENTINEL, ESCAPE_CONTENT_SENTINEL],
-          priorTurnResultIncludes: [CONFINEMENT_DENIAL],
           priorTurnResultExcludes: [ESCAPE_NAME_SENTINEL, ESCAPE_CONTENT_SENTINEL],
         },
       };
@@ -1822,3 +1840,363 @@ Deno.test({
     }
   },
 });
+
+// Grouped round replay over a real daemon. Round one reads three portal files in one response.
+// The final request must replay all three calls whole. The final fixture is the strict observer
+// inside the daemon subprocess. It fails the run unless the received round matches it exactly.
+
+const ROUND_202_SCENARIO = "phase202";
+const ROUND_202_FILES = ["a", "b", "c"] as const;
+const ROUND_202_CALL_IDS = ["toolu_202_a", "toolu_202_b", "toolu_202_c"] as const;
+const ROUND_202_MARKER_PREFIX = "EXAIX_P202_MARKER_";
+const ROUND_202_REFUSAL = "tool call limit reached for this round; call skipped";
+const ROUND_202_NEVER_READ = "EXAIX_P202_NEVER_READ_MARKER";
+
+/** The planning configurations the cutover boots, one real daemon each.
+ *  The `missing-marker` case is the canary. Its final fixture expects a result the round never returned. */
+type Round202Mode = "auto" | "off" | "cap-one" | "concurrency-one" | "planning-disabled" | "missing-marker";
+
+/** Positions of the three calls the policy lets execute. Refused positions get the refusal. */
+function round202Executed(mode: Round202Mode): number[] {
+  if (mode === "off" || mode === "cap-one") return [0];
+  if (mode === "planning-disabled") return [];
+  return [0, 1, 2];
+}
+
+function round202PlanBody(observed: readonly string[]): string {
+  return "<thought>I read the portal files through the planning tool loop.</thought>\n\n" +
+    "<content>\n" +
+    "{\n" +
+    '  "subject": "Grouped round replay cutover",\n' +
+    '  "description": "The planning round read these markers: ' + observed.join(", ") + '.",\n' +
+    '  "steps": [\n' +
+    '    { "step": 1, "title": "Inspect the round", "description": "The round carried each observed marker." },\n' +
+    '    { "step": 2, "title": "Commit plan", "description": "Finalize the plan from the received round." }\n' +
+    "  ]\n" +
+    "}\n" +
+    "</content>";
+}
+
+/** The planning configuration: the tools table, and the planning block when tools are on. */
+function writeRound202Config(
+  configPath: string,
+  root: string,
+  portalDir: string,
+  fixturesDir: string,
+  mode: Round202Mode,
+): void {
+  const planning = mode === "planning-disabled" ? ["[planning]", "tools_enabled = false", ""] : [
+    "[planning]",
+    "tools_enabled = true",
+    "max_tool_rounds = 2",
+    "max_tool_result_tokens = 2000",
+    ...(mode === "cap-one" ? ["max_tool_calls_per_round = 1"] : []),
+    "",
+  ];
+  const tools = mode === "off"
+    ? ['parallel_calls = "off"']
+    : mode === "concurrency-one"
+    ? ["max_concurrent_calls = 1"]
+    : [];
+  const cfg = [
+    ...daemonConfigSections(root, ""),
+    "",
+    "[ai]",
+    'provider = "mock"',
+    'model = "test"',
+    "",
+    "[ai.mock]",
+    'strategy = "recorded"',
+    `fixtures_dir = "${fixturesDir}"`,
+    "timeout_ms = 30000",
+    "",
+    "[quality_gate]",
+    "enabled = false",
+    "",
+    "[agents]",
+    'default_model = "cutover-mock"',
+    "",
+    "[models.cutover-mock]",
+    'provider = "mock"',
+    'model = "test"',
+    "timeout_ms = 30000",
+    "",
+    ...planning,
+    ...(tools.length > 0 ? ["[tools]", ...tools, ""] : []),
+    "[[portals]]",
+    'alias = "cutover-portal"',
+    `target_path = "${portalDir}"`,
+  ];
+  Deno.writeTextFileSync(configPath, cfg.join("\n"));
+}
+
+/** Writes the recorded fixtures. Explore (callIndex 0) returns the three reads. The final round
+ *  (callIndex 1) states the exact round it expects, and the policy's flag. */
+async function writeRound202Fixtures(
+  fixturesDir: string,
+  markers: readonly string[],
+  mode: Round202Mode,
+): Promise<void> {
+  await Deno.mkdir(fixturesDir, { recursive: true });
+  const recordedAt = "2026-10-10T00:00:00.000Z";
+  const executed = round202Executed(mode);
+  const plan = round202PlanBody(executed.map((index) => markers[index]));
+  const callSite = (callIndex: number) => ({ scenarioId: ROUND_202_SCENARIO, stepId: "planning", callIndex });
+  if (mode === "planning-disabled") {
+    await Deno.writeTextFile(
+      join(fixturesDir, "single-call.json"),
+      JSON.stringify(
+        {
+          promptHash: "phase202-single-call",
+          promptPreview: "single planning call",
+          response: plan,
+          model: "cutover-mock",
+          tokens: { input: 1000, output: 300 },
+          recordedAt,
+          callSite: callSite(0),
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+  await Deno.writeTextFile(
+    join(fixturesDir, "explore-round.json"),
+    JSON.stringify(
+      {
+        promptHash: "phase202-explore-round",
+        promptPreview: "planning exploration round",
+        response: "",
+        model: "cutover-mock",
+        tokens: { input: 1000, output: 0 },
+        recordedAt,
+        callSite: callSite(0),
+        toolCalls: ROUND_202_FILES.map((file, index) => ({
+          id: ROUND_202_CALL_IDS[index],
+          name: "read_file",
+          input: { path: `src/${file}.ts` },
+        })),
+        // The exploration request carries the policy's tool choice. The final request is toolChoice none.
+        expectedInput: { expectedParallelDisabled: mode === "off" },
+      },
+      null,
+      2,
+    ),
+  );
+  const resultFor = (index: number): string => {
+    if (mode === "missing-marker" && index === 1) return ROUND_202_NEVER_READ;
+    return executed.includes(index) ? markers[index] : ROUND_202_REFUSAL;
+  };
+  await Deno.writeTextFile(
+    join(fixturesDir, "final-round.json"),
+    JSON.stringify(
+      {
+        promptHash: "phase202-final-round",
+        promptPreview: "final planning round",
+        response: plan,
+        model: "cutover-mock",
+        tokens: { input: 1000, output: 300 },
+        recordedAt,
+        callSite: callSite(1),
+        expectedInput: {
+          priorRoundCalls: ROUND_202_FILES.map((file, index) => ({
+            toolUseId: ROUND_202_CALL_IDS[index],
+            index,
+            toolName: "read_file",
+            input: { path: `src/${file}.ts` },
+            resultIncludes: resultFor(index),
+          })),
+          priorRoundArtifactIds: [...ROUND_202_CALL_IDS],
+        },
+      },
+      null,
+      2,
+    ),
+  );
+}
+
+interface IRound202Run {
+  traceId: string;
+  markers: readonly string[];
+  rows: IPlanningCutoverRow[];
+  planText: string;
+  boot: IDaemonBootResult;
+}
+
+/** Boots a real daemon with one planning configuration and injects the request.
+ *  Returns the trace-scoped rows, the written plan, the seeded markers, and the teardown result. */
+async function bootRound202Run(tempDir: string, mode: Round202Mode): Promise<IRound202Run> {
+  const configPath = join(tempDir, "exa.config.toml");
+  const portalDir = join(tempDir, "fixture-portal");
+  const fixturesDir = join(tempDir, "fixtures");
+  const markers = ROUND_202_FILES.map((_, index) =>
+    `${ROUND_202_MARKER_PREFIX}${index}_${crypto.randomUUID().slice(0, 8)}`
+  );
+  await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+  ROUND_202_FILES.forEach((file, index) => {
+    Deno.writeTextFileSync(join(portalDir, "src", `${file}.ts`), `export const ${file} = "${markers[index]}";\n`);
+  });
+  await writeRound202Fixtures(fixturesDir, markers, mode);
+  writeRound202Config(configPath, tempDir, portalDir, fixturesDir, mode);
+  await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+  await Deno.copyFile(
+    join(REPO_ROOT, "Blueprints", "Agents", "mock-agent.md"),
+    join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
+  );
+
+  const traceId = crypto.randomUUID();
+  const requestPath = join(tempDir, "Workspace", "Requests", `r-${traceId.slice(0, 8)}.md`);
+  const boot = await bootRealDaemon(configPath, {
+    midFlight: () => {
+      Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
+      Deno.mkdirSync(join(tempDir, "Workspace", "Plans"), { recursive: true });
+      Deno.writeTextFileSync(
+        requestPath,
+        "---\n" +
+          `trace_id: "${traceId}"\n` +
+          `created: "${new Date().toISOString()}"\n` +
+          "status: pending\n" +
+          "priority: normal\n" +
+          "agent_role: mock-agent\n" +
+          "portal: cutover-portal\n" +
+          `scenario_id: "${ROUND_202_SCENARIO}"\n` +
+          'step_id: "planning"\n' +
+          "source: cli\n" +
+          'created_by: "test@example.com"\n' +
+          'subject: "Grouped round replay cutover"\n' +
+          "---\n\n" +
+          "# Request\n\n" +
+          "Read the three portal files and produce a plan.\n",
+      );
+    },
+    // A request outcome ends the wait, success or failure. A failed run must return and fail the test.
+    waitForAfterInject: async () => {
+      const rows = await readPlanningCutoverActivity(configPath, traceId);
+      return rows.some((r) => REQUEST_OUTCOME_ACTIONS.includes(r.action_type));
+    },
+  });
+  return {
+    traceId,
+    markers,
+    rows: await readPlanningCutoverActivity(configPath, traceId),
+    planText: readPlanPaths(tempDir),
+    boot,
+  };
+}
+
+/** The first written plan's text in a run's workspace, or empty when none was written. */
+function readPlanPaths(tempDir: string): string {
+  const plans = [...Deno.readDirSync(join(tempDir, "Workspace", "Plans"))];
+  return plans.length > 0 ? Deno.readTextFileSync(join(tempDir, "Workspace", "Plans", plans[0].name)) : "";
+}
+
+interface IRound202ToolPayload {
+  tool: string;
+  phase: string;
+  resultSummary: string;
+}
+
+/** Asserts a tool-mode run. Every position is journaled. Executed positions carry their markers.
+ *  Refused positions carry the refusal. The plan was written from the round. */
+function assertRound202Outcome(run: IRound202Run, mode: Round202Mode): void {
+  const executed = round202Executed(mode);
+  const payloads = run.rows
+    .filter((r) => r.action_type === "dynamic_tool_call")
+    .map((r) => JSON.parse(r.payload) as IRound202ToolPayload);
+  assertEquals(payloads.length, ROUND_202_FILES.length, "each of the three calls is journaled");
+  assertEquals(payloads.every((p) => p.phase === "planning" && p.tool === "read_file"), true);
+  ROUND_202_FILES.forEach((_, index) => {
+    const summary = payloads[index].resultSummary;
+    if (executed.includes(index)) {
+      assert(summary.includes(run.markers[index]), `call ${index} must carry its marker, got ${summary}`);
+    } else {
+      assert(summary.includes(ROUND_202_REFUSAL), `call ${index} must be refused, got ${summary}`);
+    }
+  });
+
+  const completed = run.rows.find((r) => r.action_type === "planning.tools.completed");
+  const aborted = run.rows.find((r) => r.action_type === "planning.tools.aborted");
+  assert(completed, `a planning.tools.completed row must exist. aborted with ${aborted?.payload ?? "no abort row"}`);
+  const completedPayload = JSON.parse(completed!.payload) as { rounds: number; toolCalls: number };
+  assertEquals(completedPayload.rounds, 2);
+  assertEquals(completedPayload.toolCalls, executed.length, "only the executed positions count as tool calls");
+
+  assertEquals(run.rows.some((r) => r.action_type === "planning.tools.skipped"), false);
+  for (const index of executed) {
+    assert(run.planText.includes(run.markers[index]), `the plan must carry marker ${index}`);
+  }
+  for (const index of ROUND_202_FILES.map((_, i) => i).filter((i) => !executed.includes(i))) {
+    assert(!run.planText.includes(run.markers[index]), `the plan must not carry refused marker ${index}`);
+  }
+}
+
+/** Every case below boots its own real daemon, and proves the boot's process is gone afterwards. */
+function round202Test(
+  name: string,
+  mode: Round202Mode,
+  body: (run: IRound202Run) => void,
+): void {
+  Deno.test({
+    name: `[phase202-round-replay] ${name}`,
+    ignore: Deno.env.get("CI") === "true",
+    sanitizeOps: false,
+    sanitizeResources: false,
+    async fn() {
+      const tempDir = await Deno.makeTempDir({ prefix: `phase202-round-replay-${mode}-` });
+      try {
+        const run = await bootRound202Run(tempDir, mode);
+        assertDaemonPidIsDead(run.boot.pid);
+        body(run);
+      } finally {
+        await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+      }
+    },
+  });
+}
+
+round202Test(
+  "default auto replays the three-call round whole and the plan carries every received marker",
+  "auto",
+  (run) => assertRound202Outcome(run, "auto"),
+);
+
+round202Test(
+  "off alone executes one of three calls, refuses the other two, and the exploration request asks for one call per response",
+  "off",
+  (run) => assertRound202Outcome(run, "off"),
+);
+
+round202Test(
+  "auto with planning.max_tool_calls_per_round=1 executes one call and sends no parallel flag",
+  "cap-one",
+  (run) => assertRound202Outcome(run, "cap-one"),
+);
+
+round202Test(
+  "auto with tools.max_concurrent_calls=1 executes all three calls: concurrency does not change serial dispatch yet",
+  "concurrency-one",
+  (run) => assertRound202Outcome(run, "concurrency-one"),
+);
+
+round202Test(
+  "planning disabled is single-call: no planning tool rows, and the plan is still written",
+  "planning-disabled",
+  (run) => {
+    assertEquals(run.rows.some((r) => r.action_type === "dynamic_tool_call"), false);
+    assertEquals(run.rows.some((r) => r.action_type.startsWith("planning.tools.")), false);
+    assert(run.planText.length > 0, "the single-call plan must be written");
+  },
+);
+
+round202Test(
+  "canary: an expected result the round never returned fails the daemon's request, and no plan is written",
+  "missing-marker",
+  (run) => {
+    assertEquals(run.planText, "", "the strict observer must refuse to let the plan finish");
+    assert(
+      run.rows.some((r) => [...PLANNING_END_EVENTS, ...REQUEST_FAILURE_ACTIONS].includes(r.action_type)),
+      `the failed run must journal an end or failure row. got ${JSON.stringify(run.rows.map((r) => r.action_type))}`,
+    );
+  },
+);

@@ -29,6 +29,7 @@ interface CapturedBody {
   messages: Array<{ role: string; content: string | null }>;
   tools?: CapturedTool[];
   tool_choice?: CapturedToolChoice;
+  parallel_tool_calls?: boolean;
   usage?: { include: boolean };
   models?: string[];
   provider?: Record<string, JSONValue>;
@@ -245,4 +246,23 @@ Deno.test("OpenRouter measureInputTokens counts the replayed round exactly as th
   } finally {
     scripted.restore();
   }
+});
+
+const ONE_TOOL: IModelOptions["tools"] = [{
+  name: "read_file",
+  description: "Read one file",
+  inputSchema: { type: "object" },
+}];
+
+Deno.test("[openrouter policy] an off hint with tools sends the top-level parallel_tool_calls false", async () => {
+  const body = await capturedBodyOf({
+    tools: ONE_TOOL,
+    toolChoice: { type: "auto", disable_parallel_tool_use: true },
+  });
+  assertEquals(body.parallel_tool_calls, false);
+});
+
+Deno.test("[openrouter policy] auto sends no parallel_tool_calls field, so the API default applies", async () => {
+  const body = await capturedBodyOf({ tools: ONE_TOOL, toolChoice: { type: "auto" } });
+  assertEquals(body.parallel_tool_calls, undefined);
 });

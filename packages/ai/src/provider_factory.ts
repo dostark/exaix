@@ -671,6 +671,8 @@ export function initializeRegistry(): void {
       // The mock replays recorded toolCalls, so native-tools gates admit it; a
       // recording without toolCalls stays a plain text response (isComplete).
       supportsNativeTools: true,
+      // The mock replays a recorded round whole, so the planning loop groups its calls.
+      supportsParallelToolReplay: true,
     };
     ProviderRegistry.registerWithMetadata(DEFAULTS.PROVIDER_MOCK, new MockProviderFactory(), mockMetadata);
   }

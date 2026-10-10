@@ -17,7 +17,9 @@
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import { withEnv } from "@exaix/testing";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
-import { type JSONValue, ProviderType } from "@exaix/core";
+import { type JSONValue, ProviderType, ToolsRoundMode } from "@exaix/core";
+import type { IToolsRoundPolicy } from "@exaix/schemas";
+import type { JSONObject } from "@exaix/ai/types.ts";
 import { type IPromptBudget, PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
 import { OpenAICompatibleProviderFactory } from "@exaix/ai-openai/src/compatible_factory.ts";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
@@ -29,6 +31,47 @@ import {
   runPlanningRound,
   wireFamilyFor,
 } from "../helpers/native_tool_round_harness.ts";
+
+/** The parallel-call flags a captured request carries: a top-level field, and a tool choice's disable flag. */
+interface IWireFlags {
+  topLevel: JSONValue | undefined;
+  disable: JSONValue | undefined;
+}
+
+const NO_WIRE_FLAGS: IWireFlags = { topLevel: undefined, disable: undefined };
+
+/** The flags the off policy puts on the exploration request, per provider preset. Gemini and DeepSeek
+ *  have no parallel field, so the loop's local enforcement is their only control. */
+const OFF_EXPLORATION_FLAGS: Record<string, IWireFlags> = {
+  google: NO_WIRE_FLAGS,
+  anthropic: { topLevel: undefined, disable: true },
+  openai: { topLevel: false, disable: undefined },
+  openrouter: { topLevel: false, disable: undefined },
+  deepseek: NO_WIRE_FLAGS,
+};
+
+/** The flags one captured request carries on the wire, read from its parsed body. */
+function wireFlagsOf(request: IWireRequest): IWireFlags {
+  const body: JSONObject = JSON.parse(JSON.stringify(request));
+  const choice = body.tool_choice;
+  const disable = typeof choice === "object" && choice !== null && !Array.isArray(choice)
+    ? choice.disable_parallel_tool_use
+    : undefined;
+  return { topLevel: body.parallel_tool_calls, disable };
+}
+
+/** A round policy for one mode, with the caps the grouped loop reads. */
+function roundPolicy(mode: ToolsRoundMode, executionCap: number): IToolsRoundPolicy {
+  return {
+    mode,
+    executionCap,
+    concurrency: 1,
+    maxResponseCalls: 64,
+    maxArgumentBytes: 65536,
+    maxReplayBytes: 1048576,
+    resultTokenCap: 2000,
+  };
+}
 
 const TWO_CALLS: IWireCall[] = [
   { id: "toolu_a", name: "read_file", input: { path: "a.ts" } },
@@ -122,6 +165,49 @@ for (const preset of LLM_TEST_PRESETS) {
         });
         assertEquals(family.replayedAssistant(run.requests[1]!), round.assistant);
         assertEquals(family.replayedResults(run.requests[1]!), [RESULT_A]);
+      });
+    },
+  });
+
+  Deno.test({
+    name: name("the off policy puts the family's one-call flag on the exploration request, and none on the final"),
+    ignore: !preset.groupedReplay,
+    fn: async () => {
+      await withEnv({ [keyEnv]: "test-key" }, async () => {
+        const family = wireFamilyFor(resolveLlmBinding(preset.spec).adapter);
+        const run = await runBoundRound({
+          spec: preset.spec,
+          apiKeyEnv: keyEnv,
+          responses: [family.roundResponse(TWO_CALLS, modelId).body, family.finalResponse("plan", modelId)],
+          maxRounds: 2,
+          portalRoot: PORTAL_ROOT,
+          traceId: `trace-round-${preset.id}-off`,
+          toolsRoundPolicy: () => roundPolicy(ToolsRoundMode.OFF, 1),
+        });
+        assertEquals(wireFlagsOf(run.requests[0]!), OFF_EXPLORATION_FLAGS[preset.id], `${preset.id} exploration flags`);
+        assertEquals(wireFlagsOf(run.requests[1]!), NO_WIRE_FLAGS, "the final request is toolChoice none");
+      });
+    },
+  });
+
+  Deno.test({
+    name: name("the auto policy sends no parallel flag on the captured exploration or final request"),
+    ignore: !preset.groupedReplay,
+    fn: async () => {
+      await withEnv({ [keyEnv]: "test-key" }, async () => {
+        const family = wireFamilyFor(resolveLlmBinding(preset.spec).adapter);
+        const run = await runBoundRound({
+          spec: preset.spec,
+          apiKeyEnv: keyEnv,
+          responses: [family.roundResponse(TWO_CALLS, modelId).body, family.finalResponse("plan", modelId)],
+          maxRounds: 2,
+          portalRoot: PORTAL_ROOT,
+          traceId: `trace-round-${preset.id}-auto`,
+          toolsRoundPolicy: () => roundPolicy(ToolsRoundMode.AUTO, 4),
+        });
+        assertEquals(wireFlagsOf(run.requests[0]!), NO_WIRE_FLAGS, `${preset.id} exploration flags`);
+        assertEquals(wireFlagsOf(run.requests[1]!), NO_WIRE_FLAGS, "the final request is toolChoice none");
+        assertEquals(run.registry.calls, ["read_file:@fixture/a.ts", "read_file:@fixture/b.ts"]);
       });
     },
   });

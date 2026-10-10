@@ -41,6 +41,12 @@ export interface IRealDaemonBootOptions {
   waitForAfterInject?: () => boolean | Promise<boolean>;
 }
 
+/** The booted daemon's process id, and how it ended once the teardown awaited its exit. */
+export interface IDaemonBootResult {
+  pid: number;
+  exit: IDaemonExit;
+}
+
 /** Repo root, from `tests/integration/helpers/` — the source of `migrations/` and `deno.json`. */
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
 
@@ -310,9 +316,12 @@ function daemonReadySince(journalPath: string, afterRowid: number): boolean {
 /**
  * Boots the real daemon and waits for its `daemon.ready` event.
  * Then runs the optional mid-flight input and waits for its effect.
- * Finally sends SIGTERM. Migrates the workspace first (see {@link migrateDaemonWorkspace}).
+ * Finally sends SIGTERM and awaits the exit on every path. Migrates the workspace first (see {@link migrateDaemonWorkspace}).
  */
-export async function bootRealDaemon(configPath: string, options: IRealDaemonBootOptions = {}): Promise<void> {
+export async function bootRealDaemon(
+  configPath: string,
+  options: IRealDaemonBootOptions = {},
+): Promise<IDaemonBootResult> {
   const workspaceRoot = dirname(configPath);
   await migrateDaemonWorkspace(workspaceRoot);
   const journalPath = join(workspaceRoot, ".exa", "journal.db");
@@ -332,6 +341,7 @@ export async function bootRealDaemon(configPath: string, options: IRealDaemonBoo
     env: { EXA_CONFIG_PATH: configPath, EXA_TEST_MODE: "1", ...options.extraEnv },
   }).spawn();
   const exited = watchChildExit(proc);
+  let exit: IDaemonExit = { code: null, stderrTail: "" };
   try {
     await waitForDaemonEvent(() => daemonReadySince(journalPath, readyBaseline), exited, "daemon.ready");
     const daemon: IRunningDaemon = {
@@ -345,6 +355,7 @@ export async function bootRealDaemon(configPath: string, options: IRealDaemonBoo
     try {
       Deno.kill(proc.pid, "SIGTERM");
     } catch { /* already dead */ }
-    await exited;
+    exit = await exited;
   }
+  return { pid: proc.pid, exit };
 }

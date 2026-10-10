@@ -19,7 +19,7 @@ import { PlanningToolLoop } from "@exaix/execution";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
-import type { IBindingSpec } from "@exaix/schemas";
+import type { IBindingSpec, IToolsRoundPolicy } from "@exaix/schemas";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { ITool, IToolRegistry, IToolResult, JSONValue, Opt, Reason } from "@exaix/core/types";
 import type { IModelProvider, JSONObject } from "@exaix/ai/types.ts";
@@ -84,6 +84,8 @@ export interface IPlanningRoundOptions {
   baseOptions?: IModelOptions;
   promptBudget?: IPromptBudget;
   measureInputTokens?: IModelProvider["measureInputTokens"];
+  /** The tool-round policy read on each model turn. Absent, the loop's own caps and auto apply. */
+  toolsRoundPolicy?: () => IToolsRoundPolicy;
 }
 
 /** The adapter a binding resolves to. Google, Anthropic and the OpenAI chat shape cover every adapter. */
@@ -263,6 +265,7 @@ export async function runPlanningRound(
     providerId: provider.id,
     generate: (prompt: string, opts: IModelOptions): Promise<IGenerateResult> => provider.generate(prompt, opts),
     measureInputTokens: options.measureInputTokens,
+    toolsRoundPolicy: options.toolsRoundPolicy,
   });
   const result = await loop.run({
     prompt: "Plan the change.",
@@ -289,6 +292,7 @@ export async function runBoundRound(options: {
   maxRounds: number;
   portalRoot: string;
   traceId: string;
+  toolsRoundPolicy?: () => IToolsRoundPolicy;
 }): Promise<IBoundRoundRun> {
   const { provider } = await createLlmProvider(options.spec);
   const scripted = scriptedFetch(options.responses);
@@ -299,6 +303,7 @@ export async function runBoundRound(options: {
       portalRoot: options.portalRoot,
       traceId: options.traceId,
       baseOptions: options.baseOptions,
+      toolsRoundPolicy: options.toolsRoundPolicy,
     });
     return { ...run, requests: scripted.requests };
   } finally {

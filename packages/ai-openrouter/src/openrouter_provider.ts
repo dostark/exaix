@@ -10,6 +10,7 @@
 
 import {
   buildOpenAiMessages,
+  disablesParallelToolUse,
   extractOpenAIAssistantReplay,
   extractOpenAIContent,
   extractOpenAIToolCalls,
@@ -77,6 +78,8 @@ interface OpenRouterRequestBody {
   usage?: { include: boolean };
   tools?: OpenAiWireToolDefinition[];
   tool_choice?: OpenAiWireToolChoice;
+  /** Off asks for one call per response. Auto omits the field, so the API default applies. */
+  parallel_tool_calls?: boolean;
 }
 
 interface OpenRouterProviderBody {
@@ -154,6 +157,7 @@ export class OpenRouterProvider extends BaseProvider {
     if (options?.stop !== undefined) body.stop = options.stop;
     if (options?.tools !== undefined) body.tools = options.tools.map(mapToolDefinitionOpenAI);
     if (options?.toolChoice !== undefined) body.tool_choice = mapToolChoiceOpenAI(options.toolChoice);
+    if (options?.tools?.length && disablesParallelToolUse(options.toolChoice)) body.parallel_tool_calls = false;
 
     if (this.routing) {
       if (this.routing.models !== undefined) {

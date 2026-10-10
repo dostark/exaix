@@ -14,7 +14,14 @@
 import { assertNoNativeConversation } from "../provider_registry.ts";
 import { MockStrategy, ProviderType } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
-import type { ICallSite, IModelOptions, IModelProvider, IProviderTurn } from "../types.ts";
+import type {
+  ICallSite,
+  IModelOptions,
+  IModelProvider,
+  IProviderAssistantReplay,
+  IProviderToolRound,
+  IProviderTurn,
+} from "../types.ts";
 import type { IGenerateResult, IProviderToolCall } from "./common.ts";
 import {
   DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD,
@@ -25,6 +32,7 @@ import {
 import { ToolName } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { validateJudgeResponse } from "./judge_response_contract.ts";
+import { disablesParallelToolUse } from "../provider_common_utils.ts";
 
 // Types and Interfaces
 
@@ -63,13 +71,30 @@ export interface IRecordedResponse {
   expectedInput?: IRecordedInputExpectation;
 }
 
+/** One call of a replayed round: its id, position, tool and exact input.
+ *  Its result must include a substring. */
+export interface IRecordedRoundCall {
+  toolUseId: string;
+  index: number;
+  toolName: string;
+  input: Record<string, JSONValue>;
+  resultIncludes: string;
+}
+
 /** Substrings the incoming prompt and prior-turn tool result must include or exclude.
- *  A required prior-turn substring fails when the call carries no priorTurn. */
+ *  A prior-turn substring is checked against the priorTurn result. A replayed round checks its joined results.
+ *  A required substring fails when neither is present. */
 export interface IRecordedInputExpectation {
   promptIncludes?: string[];
   promptExcludes?: string[];
   priorTurnResultIncludes?: string[];
   priorTurnResultExcludes?: string[];
+  /** The replayed round's calls, exactly and in order: count, ids, positions, tools, inputs and results. */
+  priorRoundCalls?: IRecordedRoundCall[];
+  /** The tool-use ids of the assistant artifact the round replays, exactly and in order. */
+  priorRoundArtifactIds?: string[];
+  /** Whether the request must disable parallel tool calls (true) or must not (false). */
+  expectedParallelDisabled?: boolean;
 }
 
 /** A replayed recording: the recorded text response plus any native tool calls it carried. */
@@ -158,6 +183,9 @@ const INPUT_EXPECTATION_KEYS: readonly (keyof IRecordedInputExpectation)[] = [
   "promptExcludes",
   "priorTurnResultIncludes",
   "priorTurnResultExcludes",
+  "priorRoundCalls",
+  "priorRoundArtifactIds",
+  "expectedParallelDisabled",
 ];
 
 // Custom Error Type
@@ -258,11 +286,39 @@ function expectedInputValidationError(value: Opt<JSONValue, Reason.OptionalInput
     if (!(INPUT_EXPECTATION_KEYS as readonly string[]).includes(key)) {
       return `expectedInput has unknown field "${key}"`;
     }
-    if (!Array.isArray(entry) || !entry.every((item) => typeof item === "string")) {
-      return `expectedInput.${key} must be an array of strings`;
-    }
+    const error = expectationFieldError(key, entry);
+    if (error) return error;
   }
   return null;
+}
+
+/** Validates one expectedInput field by its contract. Returns a failure or null when well formed. */
+function expectationFieldError(key: string, entry: JSONValue): string | null {
+  if (key === "expectedParallelDisabled") {
+    return typeof entry === "boolean" ? null : `expectedInput.${key} must be a boolean`;
+  }
+  if (key === "priorRoundCalls") return roundCallsFieldError(entry);
+  return Array.isArray(entry) && entry.every((item) => typeof item === "string")
+    ? null
+    : `expectedInput.${key} must be an array of strings`;
+}
+
+/** True when a priorRoundCalls entry carries every field a round call needs. */
+function isCompleteRoundCall(item: JSONValue): boolean {
+  if (typeof item !== "object" || item === null || Array.isArray(item)) return false;
+  const { toolUseId, toolName, resultIncludes, index, input } = item;
+  return typeof toolUseId === "string" && typeof toolName === "string" && typeof resultIncludes === "string" &&
+    typeof index === "number" && Number.isInteger(index) && index >= 0 &&
+    typeof input === "object" && input !== null && !Array.isArray(input);
+}
+
+/** Validates the priorRoundCalls field: an array of complete round-call objects. */
+function roundCallsFieldError(entry: JSONValue): string | null {
+  if (!Array.isArray(entry)) return "expectedInput.priorRoundCalls must be an array of round calls";
+  const position = entry.findIndex((item) => !isCompleteRoundCall(item));
+  return position === -1
+    ? null
+    : `expectedInput.priorRoundCalls[${position}] needs toolUseId, index, toolName, input and resultIncludes`;
 }
 
 /** The prior-turn tool result as text. Rich content blocks are serialized. */
@@ -284,11 +340,107 @@ function substringMismatch(
   return present === undefined ? null : `${label} includes the excluded "${present}"`;
 }
 
-/** Enforces a recording's expectedInput against the actual prompt and priorTurn. */
+/** The text of one tool result, for an include or exclude substring. */
+function resultContentText(content: string | readonly object[]): string {
+  return typeof content === "string" ? content : JSON.stringify(content);
+}
+
+/** The joined results of a replayed round, in call order. */
+function roundResultsText(round: IProviderToolRound): string {
+  return round.calls.map((call) => resultContentText(call.toolResultContent)).join("\n");
+}
+
+/** The prior-turn check: a priorTurn result when present, else the replayed round's results. */
+function priorResultMismatch(
+  expected: IRecordedInputExpectation,
+  options: Opt<IModelOptions, Reason.OptionalInput>,
+): string | null {
+  if (options?.priorTurn) {
+    return substringMismatch(
+      "priorTurn result",
+      priorTurnResultText(options.priorTurn),
+      expected.priorTurnResultIncludes,
+      expected.priorTurnResultExcludes,
+    );
+  }
+  if (options?.priorRound) {
+    return substringMismatch(
+      "priorRound result",
+      roundResultsText(options.priorRound),
+      expected.priorTurnResultIncludes,
+      expected.priorTurnResultExcludes,
+    );
+  }
+  return (expected.priorTurnResultIncludes ?? []).length > 0 ? "the call has no priorTurn tool result" : null;
+}
+
+/** The replayed round's calls against the expectation: count first, then each call in order. */
+function roundCallsMismatch(
+  expected: readonly IRecordedRoundCall[],
+  round: Opt<IProviderToolRound, Reason.OptionalInput>,
+): string | null {
+  if (!round) return "the call replays no round";
+  if (round.calls.length !== expected.length) {
+    return `the replayed round has ${round.calls.length} calls, expected ${expected.length}`;
+  }
+  for (const [position, want] of expected.entries()) {
+    const got = round.calls[position];
+    const label = `round call ${position} (${want.toolUseId})`;
+    if (got.toolUseId !== want.toolUseId || got.index !== want.index || got.toolName !== want.toolName) {
+      return `${label} does not match: got id ${got.toolUseId}, index ${got.index}, tool ${got.toolName}`;
+    }
+    if (JSON.stringify(got.toolInput) !== JSON.stringify(want.input)) return `${label} carried a different input`;
+    const resultError = substringMismatch(`${label} result`, resultContentText(got.toolResultContent), [
+      want.resultIncludes,
+    ]);
+    if (resultError) return resultError;
+  }
+  return null;
+}
+
+/** The tool-use ids an assistant artifact carries, in order. */
+function assistantToolUseIds(replay: IProviderAssistantReplay): string[] {
+  if (replay.provider === "google") return [];
+  if (replay.provider === "anthropic") {
+    return replay.blocks.filter((block) => block.type === "tool_use").map((block) => String(block.id));
+  }
+  return replay.toolCalls.map((call) => String(call.id));
+}
+
+/** The artifact check: the replayed assistant artifact carries exactly the expected call ids. */
+function artifactIdsMismatch(
+  expectedIds: readonly string[],
+  round: Opt<IProviderToolRound, Reason.OptionalInput>,
+): string | null {
+  if (!round) return "the call replays no round, so there is no assistant artifact";
+  const actual = assistantToolUseIds(round.assistant);
+  return JSON.stringify(actual) === JSON.stringify(expectedIds)
+    ? null
+    : `the replayed assistant artifact carries ${JSON.stringify(actual)}, expected ${JSON.stringify(expectedIds)}`;
+}
+
+/** The assistant artifact a recorded tool round carries, in the OpenAI Chat wire shape. */
+function assistantArtifactOf(toolCalls: IProviderToolCall[]): IProviderAssistantReplay {
+  return {
+    provider: "openai-chat",
+    assistantContent: null,
+    toolCalls: toolCalls.map((call) => ({
+      id: call.id,
+      type: "function",
+      function: { name: call.name, arguments: JSON.stringify(call.input) },
+    })),
+  };
+}
+
+const PARALLEL_DISABLED_REQUIRED = "the request must disable parallel tool calls";
+const PARALLEL_DISABLED_FORBIDDEN = "the request must keep parallel tool calls enabled";
+
+/** Enforces a recording's expectedInput against the actual prompt, request options, and replayed
+ *  priorTurn or priorRound. */
 function assertExpectedInput(
   recording: IRecordedResponse,
   prompt: string,
-  priorTurn: Opt<IProviderTurn, Reason.OptionalInput>,
+  options: Opt<IModelOptions, Reason.OptionalInput>,
   where: string,
 ): void {
   const expected = recording.expectedInput;
@@ -298,17 +450,22 @@ function assertExpectedInput(
   };
   const promptError = substringMismatch("prompt", prompt, expected.promptIncludes, expected.promptExcludes);
   if (promptError) fail(promptError);
-  if (!priorTurn) {
-    if ((expected.priorTurnResultIncludes ?? []).length > 0) fail("the call has no priorTurn tool result");
-    return;
+  const priorError = priorResultMismatch(expected, options);
+  if (priorError) fail(priorError);
+  if (expected.priorRoundCalls) {
+    const roundError = roundCallsMismatch(expected.priorRoundCalls, options?.priorRound);
+    if (roundError) fail(roundError);
   }
-  const resultError = substringMismatch(
-    "priorTurn result",
-    priorTurnResultText(priorTurn),
-    expected.priorTurnResultIncludes,
-    expected.priorTurnResultExcludes,
-  );
-  if (resultError) fail(resultError);
+  if (expected.priorRoundArtifactIds) {
+    const artifactError = artifactIdsMismatch(expected.priorRoundArtifactIds, options?.priorRound);
+    if (artifactError) fail(artifactError);
+  }
+  if (expected.expectedParallelDisabled !== undefined) {
+    const disabled = disablesParallelToolUse(options?.toolChoice);
+    if (disabled !== expected.expectedParallelDisabled) {
+      fail(expected.expectedParallelDisabled ? PARALLEL_DISABLED_REQUIRED : PARALLEL_DISABLED_FORBIDDEN);
+    }
+  }
 }
 
 function recordedErrorValidationError(error: Opt<unknown, Reason.OptionalInput>): string | null {
@@ -551,7 +708,7 @@ export class MockLLMProvider implements IModelProvider {
       },
       model: "mock-model",
       provider: this.id,
-      ...(toolCalls !== undefined ? { toolCalls } : {}),
+      ...(toolCalls !== undefined ? { toolCalls, nativeAssistantReplay: assistantArtifactOf(toolCalls) } : {}),
       ...(recordedCost !== undefined ? { cost_usd: recordedCost } : {}),
     };
   }
@@ -563,7 +720,7 @@ export class MockLLMProvider implements IModelProvider {
    *  for calls without options.callSite. */
   private generateRecorded(prompt: string, options: Opt<IModelOptions, Reason.OptionalInput>): IRecordedReplay {
     if (options?.callSite) {
-      return this.generateRecordedByCallSite(prompt, options.callSite, options.priorTurn, options.responseContract);
+      return this.generateRecordedByCallSite(prompt, options.callSite, options, options.responseContract);
     }
 
     const hash = this.hashPrompt(prompt);
@@ -571,7 +728,7 @@ export class MockLLMProvider implements IModelProvider {
     // Try exact hash match first
     const recording = this.recordings.find((r) => r.promptHash === hash);
     if (recording) {
-      assertExpectedInput(recording, prompt, options?.priorTurn, `prompt hash ${hash}`);
+      assertExpectedInput(recording, prompt, options, `prompt hash ${hash}`);
       return { response: recording.response, toolCalls: recording.toolCalls, cost_usd: recording.cost_usd };
     }
 
@@ -580,7 +737,7 @@ export class MockLLMProvider implements IModelProvider {
       prompt.startsWith(r.promptPreview) || r.promptPreview.startsWith(prompt)
     );
     if (previewMatch) {
-      assertExpectedInput(previewMatch, prompt, options?.priorTurn, `prompt preview "${previewMatch.promptPreview}"`);
+      assertExpectedInput(previewMatch, prompt, options, `prompt preview "${previewMatch.promptPreview}"`);
       return { response: previewMatch.response, toolCalls: previewMatch.toolCalls, cost_usd: previewMatch.cost_usd };
     }
 
@@ -619,7 +776,7 @@ export class MockLLMProvider implements IModelProvider {
   private generateRecordedByCallSite(
     prompt: string,
     callSite: ICallSite,
-    priorTurn: Opt<IProviderTurn, Reason.OptionalInput>,
+    options: Opt<IModelOptions, Reason.OptionalInput>,
     responseContract: Opt<IModelOptions["responseContract"], Reason.OptionalInput>,
   ): IRecordedReplay {
     const key = callSiteKey(callSite);
@@ -636,7 +793,7 @@ export class MockLLMProvider implements IModelProvider {
             `it still represents the current prompt.`,
         );
       }
-      assertExpectedInput(recording, prompt, priorTurn, `call site ${describeCallSite(callSite)}`);
+      assertExpectedInput(recording, prompt, options, `call site ${describeCallSite(callSite)}`);
       if (recording.error) {
         throw new MockLLMError(
           `Recorded provider failure at call site ${describeCallSite(callSite)}: ${recording.error}`,
