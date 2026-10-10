@@ -104,7 +104,7 @@ Deno.test("compatible transport suppresses raw response debug events", async () 
   }
 });
 
-Deno.test("compatible tool parsing accepts exactly one bounded object argument payload", async () => {
+Deno.test("compatible tool parsing accepts each bounded object argument payload, in order", async () => {
   const oneCall = (argumentsText: string) => ({
     choices: [{
       message: {
@@ -135,9 +135,5 @@ Deno.test("compatible tool parsing accepts exactly one bounded object argument p
     type: "function",
     function: { name: "read_file", arguments: "{}" },
   });
-  await assertRejects(
-    () => Promise.resolve().then(() => extractOpenAICompatibleToolCalls(twoCalls, 64)),
-    Error,
-    "one tool call",
-  );
+  assertEquals(extractOpenAICompatibleToolCalls(twoCalls, 64)?.map((call) => call.id), ["call_1", "call_2"]);
 });

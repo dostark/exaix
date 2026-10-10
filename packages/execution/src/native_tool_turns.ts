@@ -29,14 +29,7 @@ import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import type { ITool, IToolResult, JSONValue } from "@exaix/core/types";
 import { ProviderType, ToolName } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
-
-/** Ceilings applied to one provider response before any tool effect. Fixed until the resolved
- *  tools.* configuration supplies them. */
-export interface INativeRoundLimits {
-  maxResponseCalls: number;
-  maxArgumentBytes: number;
-  maxRoundReplayBytes: number;
-}
+import type { INativeRoundLimits } from "@exaix/ai/native_round_limits.ts";
 
 /** One tool result, identified by the call id it answers. */
 export interface IRoundOutcome {
@@ -101,16 +94,6 @@ export function providerSupportsNativeTools(providerId: Opt<string, Reason.Optio
 export function providerSupportsNativeConversation(providerId: Opt<string, Reason.OptionalContext>): boolean {
   return ProviderRegistry.getMetadataForInstance(providerId)?.supportsNativeConversation === true;
 }
-
-const FIXED_MAX_RESPONSE_CALLS = 64;
-const FIXED_MAX_ARGUMENT_BYTES = 65536;
-const FIXED_MAX_ROUND_REPLAY_BYTES = 1048576;
-
-export const FIXED_NATIVE_ROUND_LIMITS: INativeRoundLimits = {
-  maxResponseCalls: FIXED_MAX_RESPONSE_CALLS,
-  maxArgumentBytes: FIXED_MAX_ARGUMENT_BYTES,
-  maxRoundReplayBytes: FIXED_MAX_ROUND_REPLAY_BYTES,
-};
 
 /** True when a provider replays a whole completed round (every assistant part and result). */
 export function providerSupportsParallelToolReplay(providerId: Opt<string, Reason.OptionalContext>): boolean {
@@ -225,7 +208,8 @@ function isOpenAiFamilyReplay(replay: IProviderAssistantReplay): replay is Extra
   IProviderAssistantReplay,
   { provider: OpenAiFamilyReplayProvider }
 > {
-  return replay.provider === ProviderType.OPENAI || replay.provider === ProviderType.OPENROUTER;
+  return replay.provider === ProviderType.OPENAI || replay.provider === ProviderType.OPENROUTER ||
+    replay.provider === ProviderType.OPENAI_CHAT;
 }
 
 /** The replay content a byte ceiling measures. OpenAI-family carriers count in full. */

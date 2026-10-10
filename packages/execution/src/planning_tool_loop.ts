@@ -58,13 +58,13 @@ import {
   buildPriorTurn,
   buildToolRound,
   enrichPortalPathParam,
-  FIXED_NATIVE_ROUND_LIMITS,
   type IRoundOutcome,
   providerRoundCallCount,
   providerSupportsNativeConversation,
   providerSupportsParallelToolReplay,
   validateProviderRound,
 } from "./native_tool_turns.ts";
+import { FIXED_NATIVE_ROUND_LIMITS } from "@exaix/ai/native_round_limits.ts";
 import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
 
 export interface IPlanningToolLoopDeps {
@@ -136,6 +136,7 @@ interface IRoundHistory {
   priorRound: Opt<IProviderToolRound, Reason.OptionalInput>;
   priorRoundNumber: number;
   nativeTurns: IProviderTurn[];
+  nativeRounds: IProviderToolRound[];
 }
 
 /** Inputs for one generate request, before the replay mode is applied. */
@@ -147,6 +148,7 @@ interface IRoundRequest {
   isFinalRound: boolean;
   callSite: Opt<ICallSite, Reason.TraceAbsent>;
   nativeConversationEnabled: boolean;
+  groupedRounds: boolean;
 }
 
 /** The outcome of one round's calls, before the round is replayed. */
@@ -253,13 +255,12 @@ export class PlanningToolLoop {
     const basePrompt = options.maxRounds === 1
       ? options.prompt
       : `${options.prompt}\n\n${PLANNING_TOOLS_UNTRUSTED_DATA_NOTICE}`;
-    // A native-conversation provider owns turns[] instead of the text transcript/priorTurn.
+    // A native-conversation provider owns its snapshot instead of the text transcript/priorTurn.
     const nativeConversationEnabled = options.maxRounds > 1 &&
       providerSupportsNativeConversation(this.deps.providerId);
-    // A grouped-replay provider keeps older rounds in the text transcript.
-    // It replays only the latest round, whole.
-    const parallelReplayEnabled = options.maxRounds > 1 && !nativeConversationEnabled &&
-      providerSupportsParallelToolReplay(this.deps.providerId);
+    // A grouped-replay provider validates each round whole before any call executes. A native-conversation
+    // one keeps every completed round in its snapshot. Any other grouped provider replays only the latest round.
+    const parallelReplayEnabled = options.maxRounds > 1 && providerSupportsParallelToolReplay(this.deps.providerId);
 
     const history: IRoundHistory = {
       transcript: "",
@@ -269,6 +270,7 @@ export class PlanningToolLoop {
       priorRound: undefined,
       priorRoundNumber: 0,
       nativeTurns: [],
+      nativeRounds: [],
     };
     let finalRoundIndex = options.maxRounds;
     let guardrailForced = false;
@@ -284,6 +286,7 @@ export class PlanningToolLoop {
         isFinalRound,
         callSite: options.nextCallSite(),
         nativeConversationEnabled,
+        groupedRounds: parallelReplayEnabled,
       });
 
       if (options.promptBudget) {
@@ -349,14 +352,7 @@ export class PlanningToolLoop {
     if (request.nativeConversationEnabled) {
       return {
         roundPrompt: request.basePrompt,
-        roundOptions: this.buildNativeRoundOptions(
-          request.baseOptions,
-          request.allowedToolDefs,
-          history.nativeTurns,
-          request.basePrompt,
-          request.isFinalRound,
-          request.callSite,
-        ),
+        roundOptions: this.buildNativeRoundOptions(history, request),
       };
     }
     return {
@@ -386,7 +382,8 @@ export class PlanningToolLoop {
     nativeConversationEnabled: boolean,
   ): void {
     if (nativeConversationEnabled) {
-      if (executed.lastTurn) history.nativeTurns.push(executed.lastTurn);
+      if (validated !== undefined) history.nativeRounds.push(buildToolRound(validated, executed.outcomes));
+      else if (executed.lastTurn) history.nativeTurns.push(executed.lastTurn);
     } else if (validated !== undefined) {
       // Age the superseded round into the transcript, tagged with its real round.
       if (history.priorRound !== undefined) {
@@ -501,30 +498,28 @@ export class PlanningToolLoop {
   }
 
   /** The prompt stays frozen every round — control lives in nativeConversation.roundInstruction. */
-  private buildNativeRoundOptions(
-    base: IModelOptions,
-    toolDefs: IToolDefinition[],
-    turns: readonly IProviderTurn[],
-    initialPrompt: string,
-    isFinalRound: boolean,
-    callSite: Opt<ICallSite, Reason.TraceAbsent>,
-  ): IModelOptions {
-    const withCallSite: IModelOptions = { ...base, ...(callSite ? { callSite } : {}) };
-    const roundInstruction = isFinalRound
+  private buildNativeRoundOptions(history: IRoundHistory, request: IRoundRequest): IModelOptions {
+    const withCallSite: IModelOptions = {
+      ...request.baseOptions,
+      ...(request.callSite ? { callSite: request.callSite } : {}),
+    };
+    const hasHistory = history.nativeTurns.length > 0 || history.nativeRounds.length > 0;
+    const roundInstruction = request.isFinalRound
       ? PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION
-      : turns.length > 0
+      : hasHistory
       ? PLANNING_TOOLS_CONTINUE_ROUND_INSTRUCTION
       : undefined;
+    const roundFields = roundInstruction ? { roundInstruction } : {};
+    const initialPrompt = request.basePrompt;
     return {
       ...withCallSite,
-      ...(isFinalRound
-        ? { toolChoice: { type: TOOL_CHOICE_TYPE_NONE } }
-        : { tools: toolDefs, toolChoice: { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: true } }),
-      nativeConversation: {
-        initialPrompt,
-        turns: [...turns],
-        ...(roundInstruction ? { roundInstruction } : {}),
-      },
+      ...(request.isFinalRound ? { toolChoice: { type: TOOL_CHOICE_TYPE_NONE } } : {
+        tools: request.allowedToolDefs,
+        toolChoice: { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: true },
+      }),
+      nativeConversation: request.groupedRounds
+        ? { initialPrompt, turns: [], rounds: [...history.nativeRounds], ...roundFields }
+        : { initialPrompt, turns: [...history.nativeTurns], ...roundFields },
     };
   }
 

@@ -8,7 +8,12 @@
  */
 import { z } from "zod";
 import { ProviderProtocolError } from "@exaix/ai/errors.ts";
-import { type IModelOptions, TOOL_CHOICE_TYPE_NONE } from "@exaix/ai/types.ts";
+import {
+  type IModelOptions,
+  type INativeConversationSnapshot,
+  type JSONObject,
+  TOOL_CHOICE_TYPE_NONE,
+} from "@exaix/ai/types.ts";
 import { type JSONValue, ProviderType } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { CompatibleChatConfig } from "@exaix/schemas";
@@ -19,6 +24,7 @@ import {
   type OpenAIResponse,
   type TokenMap,
 } from "@exaix/ai/provider_common_utils.ts";
+import { FIXED_NATIVE_ROUND_LIMITS } from "@exaix/ai/native_round_limits.ts";
 import { planStructuredOutput, validateStructuredOutput } from "./compatible_structured_output.ts";
 import type { StructuredOutputMode, StructuredOutputModeReason } from "@exaix/ai/providers";
 
@@ -29,6 +35,9 @@ const DEFAULT_STRUCTURED_OUTPUT_PROFILE = OPENAI_PROFILE;
 const OPENAI_TOOL_REASONING_EFFORT = "none";
 
 const tokenCount = z.number().int().nonnegative();
+const JSON_OBJECT = z.custom<JSONObject>((value) =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+);
 const CompatibleResponseSchema = z.object({
   model: z.string().min(1),
   choices: z.array(z.object({
@@ -36,12 +45,13 @@ const CompatibleResponseSchema = z.object({
       role: z.literal("assistant"),
       content: z.string().nullable(),
       reasoning_content: z.string().optional(),
+      reasoning_details: z.array(JSON_OBJECT).optional(),
       refusal: z.string().nullable().optional(),
       tool_calls: z.array(z.object({
         id: z.string().min(1),
         type: z.literal("function"),
         function: z.object({ name: z.string().min(1), arguments: z.string() }),
-      })).max(1).optional(),
+      })).max(FIXED_NATIVE_ROUND_LIMITS.maxResponseCalls).optional(),
     }),
     finish_reason: z.enum(["stop", "tool_calls"]),
   })).length(1),
@@ -71,7 +81,7 @@ export function createCompatibleChatRequestInit(
   profile?: Opt<CompatibleChatConfig["profile"], Reason.OptionalContext>,
 ): ICompatibleChatRequestInit {
   const snapshot = options?.nativeConversation;
-  const ids = snapshot?.turns.map((turn) => turn.toolUseId) ?? [];
+  const ids = replayedCallIds(snapshot);
   if (
     options?.stream || ids.some((id) => !id.trim()) || new Set(ids).size !== ids.length ||
     (snapshot && prompt !== snapshot.initialPrompt) ||
@@ -163,23 +173,19 @@ export function validateCompatibleResponse(
   const response = parsed.data;
   const { message, finish_reason } = response.choices[0];
   const calls = message.tool_calls ?? [];
-  if (message.refusal || (calls.length === 1) !== (finish_reason === "tool_calls")) {
+  if (message.refusal || (calls.length > 0) !== (finish_reason === "tool_calls")) {
     throw new ProviderProtocolError("Invalid compatible response completion", providerId);
   }
   if (calls.length === 0 && !message.content?.trim()) {
     throw new ProviderProtocolError("Compatible response has no final content", providerId);
   }
-  const call = calls[0];
-  if (call) {
-    const advertised = options?.tools?.some((tool) => tool.name === call.function.name);
-    const consumed = options?.nativeConversation?.turns.some((turn) => turn.toolUseId === call.id);
-    if (!advertised || consumed || options?.toolChoice?.type === TOOL_CHOICE_TYPE_NONE) {
-      throw new ProviderProtocolError("Invalid compatible tool call", providerId);
-    }
-    extractOpenAICompatibleToolCalls(response, maxArgumentBytes, providerId);
+  const argumentLimit = Math.min(maxArgumentBytes, FIXED_NATIVE_ROUND_LIMITS.maxArgumentBytes);
+  if (calls.length > 0) {
+    validateCompatibleCalls(calls, options, providerId);
+    extractOpenAICompatibleToolCalls(response, argumentLimit, providerId);
   }
   validateCompatibleUsage(response.usage, providerId);
-  if (!call && options?.jsonSchema) {
+  if (calls.length === 0 && options?.jsonSchema) {
     let normalized: JSONValue;
     try {
       normalized = validateStructuredOutput(
@@ -196,6 +202,35 @@ export function validateCompatibleResponse(
     response.choices[0].message.content = JSON.stringify(normalized);
   }
   return response;
+}
+
+/** Every call id the snapshot already replays, from legacy turns and from completed rounds. */
+function replayedCallIds(snapshot: Opt<INativeConversationSnapshot, Reason.OptionalInput>): string[] {
+  return [
+    ...(snapshot?.turns.map((turn) => turn.toolUseId) ?? []),
+    ...(snapshot?.rounds ?? []).flatMap((round) => round.calls.map((entry) => entry.toolUseId)),
+  ];
+}
+
+/** Refuses the whole round when a call names no advertised tool, reuses an id, or appears under tool
+ *  choice NONE. Validation finishes before any call of the round can execute. */
+function validateCompatibleCalls(
+  calls: ReadonlyArray<{ id: string; function: { name: string } }>,
+  options: Opt<IModelOptions, Reason.OptionalInput>,
+  providerId: string,
+): void {
+  if (options?.toolChoice?.type === TOOL_CHOICE_TYPE_NONE) {
+    throw new ProviderProtocolError("Invalid compatible tool call", providerId);
+  }
+  const replayed = new Set(replayedCallIds(options?.nativeConversation));
+  const seen = new Set<string>();
+  for (const call of calls) {
+    const advertised = options?.tools?.some((tool) => tool.name === call.function.name) ?? false;
+    if (!advertised || replayed.has(call.id) || seen.has(call.id)) {
+      throw new ProviderProtocolError("Invalid compatible tool call", providerId);
+    }
+    seen.add(call.id);
+  }
 }
 
 function validateCompatibleUsage(usage: z.infer<typeof CompatibleResponseSchema>["usage"], providerId: string): void {

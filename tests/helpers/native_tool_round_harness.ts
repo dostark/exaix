@@ -20,8 +20,9 @@ import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IBindingSpec } from "@exaix/schemas";
+import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { ITool, IToolRegistry, IToolResult, JSONValue, Opt, Reason } from "@exaix/core/types";
-import type { JSONObject } from "@exaix/ai/types.ts";
+import type { IModelProvider, JSONObject } from "@exaix/ai/types.ts";
 import { createLlmProvider } from "./llm_bindings.ts";
 
 /** One tool call of a scripted round. Gemini calls have no id, so their id is only used to join results. */
@@ -54,19 +55,35 @@ export type IWireRequest = IGeminiRequest | IAnthropicRequest | IChatRequest;
 
 /** The adapter-specific wire shape of one family of providers. */
 export interface IWireFamily {
-  roundResponse(calls: readonly IWireCall[]): IWireRound;
-  finalResponse(text: string): JSONObject;
+  /** The model is the id the fixture reports, so a provider that prices by returned model matches the request. */
+  roundResponse(calls: readonly IWireCall[], model: string): IWireRound;
+  finalResponse(text: string, model: string): JSONObject;
   /** The assistant turn of the follow-up request: the second message of the conversation. */
   replayedAssistant(request: IWireRequest): JSONValue;
   /** The content of each result the follow-up request carries, in order. */
   replayedResults(request: IWireRequest): string[];
 }
 
-/** What a bound round returns: the registry that recorded the reads, every request sent, and the final text. */
-export interface IBoundRoundRun {
+/** What a planning run returns: the registry that recorded the reads, and the final text. */
+export interface IPlanningRoundRun {
   registry: RecordingToolRegistry;
-  requests: IWireRequest[];
   final: string;
+}
+
+/** A planning run against a bound provider, with every request its scripted transport received. */
+export interface IBoundRoundRun extends IPlanningRoundRun {
+  requests: IWireRequest[];
+}
+
+/** The inputs of one planning run. A budget and a measurement are set when a test measures each round. */
+export interface IPlanningRoundOptions {
+  modelId: string;
+  maxRounds: number;
+  portalRoot: string;
+  traceId: string;
+  baseOptions?: IModelOptions;
+  promptBudget?: IPromptBudget;
+  measureInputTokens?: IModelProvider["measureInputTokens"];
 }
 
 /** The adapter a binding resolves to. Google, Anthropic and the OpenAI chat shape cover every adapter. */
@@ -155,13 +172,14 @@ const REASONING_DETAILS: JSONObject[] = [
 ];
 
 const CHAT_FAMILY: IWireFamily = {
-  roundResponse(calls) {
+  roundResponse(calls, model) {
     const toolCalls = calls.map((call): JSONObject => ({
       id: call.id,
       type: "function",
       function: { name: call.name, arguments: JSON.stringify(call.input) },
     }));
     const message: JSONObject = {
+      role: "assistant",
       content: TEXT_PREAMBLE,
       reasoning_content: "Read both first.",
       reasoning_details: REASONING_DETAILS,
@@ -169,17 +187,17 @@ const CHAT_FAMILY: IWireFamily = {
     };
     return {
       body: {
-        model: "chat-test",
-        choices: [{ message }],
+        model,
+        choices: [{ message, finish_reason: "tool_calls" }],
         usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
       },
       assistant: { role: "assistant", ...message },
     };
   },
-  finalResponse(text) {
+  finalResponse(text, model) {
     return {
-      model: "chat-test",
-      choices: [{ message: { content: text } }],
+      model,
+      choices: [{ message: { role: "assistant", content: text }, finish_reason: "stop" }],
       usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
     };
   },
@@ -229,6 +247,39 @@ export class RecordingToolRegistry implements IToolRegistry {
   }
 }
 
+/** Runs PlanningToolLoop over a built provider, generating every round through that provider. */
+export async function runPlanningRound(
+  provider: IModelProvider,
+  options: IPlanningRoundOptions,
+): Promise<IPlanningRoundRun> {
+  const registry = new RecordingToolRegistry(options.portalRoot);
+  const loop = new PlanningToolLoop({
+    toolRegistry: registry,
+    tokenizer: {
+      countTokens: (t: string) => Promise.resolve(Math.ceil(t.length / 4)),
+      countTokensBatch: (ts: string[]) => Promise.resolve(ts.map((t) => Math.ceil(t.length / 4))),
+    },
+    modelId: options.modelId,
+    providerId: provider.id,
+    generate: (prompt: string, opts: IModelOptions): Promise<IGenerateResult> => provider.generate(prompt, opts),
+    measureInputTokens: options.measureInputTokens,
+  });
+  const result = await loop.run({
+    prompt: "Plan the change.",
+    baseOptions: options.baseOptions ?? {},
+    nextCallSite: () => ({ scenarioId: "native-round", stepId: "replay", callIndex: 0 }),
+    portalAlias: "fixture",
+    portalRoot: options.portalRoot,
+    allowedTools: new Set(["read_file"]),
+    maxRounds: options.maxRounds,
+    maxToolResultTokens: 2000,
+    maxToolCallsPerRound: 10,
+    traceId: options.traceId,
+    promptBudget: options.promptBudget,
+  });
+  return { registry, final: result.final.content };
+}
+
 /** Binds the spec's provider, scripts its HTTP, and runs the planning loop with that provider id. */
 export async function runBoundRound(options: {
   spec: IBindingSpec;
@@ -242,30 +293,14 @@ export async function runBoundRound(options: {
   const { provider } = await createLlmProvider(options.spec);
   const scripted = scriptedFetch(options.responses);
   try {
-    const registry = new RecordingToolRegistry(options.portalRoot);
-    const loop = new PlanningToolLoop({
-      toolRegistry: registry,
-      tokenizer: {
-        countTokens: (t: string) => Promise.resolve(Math.ceil(t.length / 4)),
-        countTokensBatch: (ts: string[]) => Promise.resolve(ts.map((t) => Math.ceil(t.length / 4))),
-      },
+    const run = await runPlanningRound(provider, {
       modelId: options.spec.service_model_id ?? "",
-      providerId: provider.id,
-      generate: (prompt: string, opts: IModelOptions): Promise<IGenerateResult> => provider.generate(prompt, opts),
-    });
-    const result = await loop.run({
-      prompt: "Plan the change.",
-      baseOptions: options.baseOptions ?? {},
-      nextCallSite: () => ({ scenarioId: "native-round", stepId: "replay", callIndex: 0 }),
-      portalAlias: "fixture",
-      portalRoot: options.portalRoot,
-      allowedTools: new Set(["read_file"]),
       maxRounds: options.maxRounds,
-      maxToolResultTokens: 2000,
-      maxToolCallsPerRound: 10,
+      portalRoot: options.portalRoot,
       traceId: options.traceId,
+      baseOptions: options.baseOptions,
     });
-    return { registry, requests: scripted.requests, final: result.final.content };
+    return { ...run, requests: scripted.requests };
   } finally {
     scripted.restore();
     ProviderRegistry.clear();

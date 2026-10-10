@@ -42,8 +42,8 @@ export interface ILlmTestPreset {
   spec: IBindingSpec;
   /** Whether the provider's boot registration declares grouped round replay. */
   groupedReplay: boolean;
-  /** Set when grouped replay is not yet available, naming the phase-202 step that adds it. */
-  pendingReplay?: string;
+  /** False when the provider refuses a tool name it did not advertise, so an alias call is refused. Defaults to true. */
+  acceptsToolAliases?: boolean;
 }
 
 /** The operator override for every live-provider test, in the phase-204 --bind syntax. */
@@ -65,8 +65,8 @@ export const LLM_TEST_PRESETS: readonly ILlmTestPreset[] = [
   {
     id: "deepseek",
     spec: { service: "deepseek", service_model_id: "deepseek-v4-pro" },
-    groupedReplay: false,
-    pendingReplay: "openai-chat grouped replay lands in phase-202 step 4",
+    groupedReplay: true,
+    acceptsToolAliases: false,
   },
 ];
 

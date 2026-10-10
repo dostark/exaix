@@ -93,7 +93,7 @@ export interface IProviderTurn {
 export type JSONObject = Record<string, JSONValue>;
 
 /** Providers whose replayed assistant content uses the OpenAI Chat Completions shape. */
-export type OpenAiFamilyReplayProvider = "openai" | "openrouter";
+export type OpenAiFamilyReplayProvider = "openai" | "openrouter" | "openai-chat";
 
 /** Complete assistant content of one provider response, kept verbatim for replay.
  *  Google keeps every model part in original order, including text and signatures.

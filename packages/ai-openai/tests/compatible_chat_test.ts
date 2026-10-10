@@ -317,8 +317,8 @@ Deno.test("compatible response validation rejects invalid protocol before return
         finish_reason: "tool_calls",
       },
       {
-        name: "multiple calls",
-        message: { role: "assistant", content: null, tool_calls: [call, { ...call, id: "call-2" }] },
+        name: "duplicate call id",
+        message: { role: "assistant", content: null, tool_calls: [call, call] },
         finish_reason: "tool_calls",
       },
       {

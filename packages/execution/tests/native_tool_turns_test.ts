@@ -14,10 +14,10 @@ import {
   buildPriorTurn,
   buildToolRound,
   enrichPortalPathParam,
-  type INativeRoundLimits,
   providerSupportsNativeTools,
   validateProviderRound,
 } from "../src/native_tool_turns.ts";
+import type { INativeRoundLimits } from "@exaix/ai/native_round_limits.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { ITool, IToolResult } from "@exaix/core/types";
 import type { IProviderToolCall } from "@exaix/ai/providers";

@@ -448,7 +448,10 @@ const OPENAI_MESSAGE_ROLE_USER = "user";
  *  original tool_calls array. One tool message follows for each id, in call order. */
 function openAiRoundMessages(round: IProviderToolRound): OpenAiChatMessage[] {
   const replay = round.assistant;
-  if (replay.provider !== ProviderType.OPENAI && replay.provider !== ProviderType.OPENROUTER) {
+  if (
+    replay.provider !== ProviderType.OPENAI && replay.provider !== ProviderType.OPENROUTER &&
+    replay.provider !== ProviderType.OPENAI_CHAT
+  ) {
     throw new Error("An OpenAI-family request can only replay an OpenAI-family round");
   }
   return [
@@ -634,7 +637,8 @@ export function extractOpenAIAssistantReplay(
   };
 }
 
-/** Strict serial parser for the compatible profile: reject malformed, oversized, or parallel calls before execution. */
+/** Strict parser for compatible tool calls. Each call's arguments must fit the byte limit and parse as one
+ *  JSON object. A malformed call fails the whole round, so none of its calls executes. Undefined without calls. */
 export function extractOpenAICompatibleToolCalls(
   response: OpenAIResponse,
   maxArgumentBytes: number,
@@ -642,32 +646,29 @@ export function extractOpenAICompatibleToolCalls(
 ): IProviderToolCall[] | undefined {
   const rawCalls = response.choices?.[0]?.message?.tool_calls;
   if (!rawCalls || rawCalls.length === 0) return undefined;
-  if (rawCalls.length !== 1) {
-    throw new ProviderProtocolError("Compatible response must contain at most one tool call", providerId);
-  }
-  const call = rawCalls[0];
-  if (new TextEncoder().encode(call.function.arguments).byteLength > maxArgumentBytes) {
-    throw new ProviderProtocolError("Compatible tool arguments exceed configured byte limit", providerId);
-  }
-  let input: Record<string, JSONValue>;
-  try {
-    const parsed = JSON.parse(call.function.arguments);
-    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new Error("Expected JSON object");
+  const reasoningContent = response.choices?.[0]?.message?.reasoning_content;
+  return rawCalls.map((call): IProviderToolCall => {
+    if (new TextEncoder().encode(call.function.arguments).byteLength > maxArgumentBytes) {
+      throw new ProviderProtocolError("Compatible tool arguments exceed configured byte limit", providerId);
     }
-    input = parsed as Record<string, JSONValue>;
-  } catch {
-    throw new ProviderProtocolError("Compatible tool arguments contain malformed JSON", providerId);
-  }
-  return [{
-    id: call.id,
-    name: call.function.name,
-    input: input as Record<string, JSONValue>,
-    type: "function",
-    ...(response.choices?.[0]?.message?.reasoning_content !== undefined
-      ? { reasoningContent: response.choices[0].message.reasoning_content }
-      : {}),
-  }];
+    let input: Record<string, JSONValue>;
+    try {
+      const parsed = JSON.parse(call.function.arguments);
+      if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("Expected JSON object");
+      }
+      input = parsed as Record<string, JSONValue>;
+    } catch {
+      throw new ProviderProtocolError("Compatible tool arguments contain malformed JSON", providerId);
+    }
+    return {
+      id: call.id,
+      name: call.function.name,
+      input,
+      type: "function",
+      ...(reasoningContent !== undefined ? { reasoningContent } : {}),
+    };
+  });
 }
 
 /** Token mapper for Google response shape */

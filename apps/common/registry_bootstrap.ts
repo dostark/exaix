@@ -94,6 +94,7 @@ function registerConcreteProviders(): void {
     const compatibleMetadata: IProviderMetadata = {
       ...OPENAI_CHAT_PROVIDER_METADATA,
       capabilities: [...OPENAI_CHAT_PROVIDER_METADATA.capabilities],
+      supportsParallelToolReplay: true,
     };
     ProviderRegistry.registerWithMetadata(
       PROVIDER_OPENAI_CHAT,

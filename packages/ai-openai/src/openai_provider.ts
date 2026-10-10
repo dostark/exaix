@@ -201,10 +201,8 @@ export class OpenAIProvider extends BaseProvider {
           }
           : {}),
         extractor: extractOpenAIContent,
-        ...(this.compatible ? {} : {
-          assistantReplayExtractor: (response: OpenAIResponse) =>
-            extractOpenAIAssistantReplay(response, PROVIDER_OPENAI),
-        }),
+        assistantReplayExtractor: (response: OpenAIResponse) =>
+          extractOpenAIAssistantReplay(response, this.compatible ? ProviderType.OPENAI_CHAT : PROVIDER_OPENAI),
         toolCallExtractor: this.compatible
           ? (response) =>
             extractOpenAICompatibleToolCalls(
