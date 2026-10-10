@@ -36,21 +36,6 @@ class StubProvider implements IModelProvider {
   }
 }
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/** Polls `check` until it returns true or `maxMs` elapses — a fixed sleep for "N ticks of a
- *  10ms interval" assumes a quiet event loop; under full-suite parallel load a tick's async
- *  work can take longer than the interval, so this waits for the real observable effect. */
-async function pollUntil(check: () => boolean | Promise<boolean>, maxMs: number, intervalMs = 20): Promise<void> {
-  const deadline = Date.now() + maxMs;
-  while (Date.now() < deadline) {
-    if (await check()) return;
-    await delay(intervalMs);
-  }
-}
-
 Deno.test("the real maintenance loop invokes reflection; a synthesized learning is observable after one tick", async () => {
   const { config, db, cleanup } = await initTestDbService();
   try {
@@ -94,6 +79,19 @@ Deno.test("the real maintenance loop invokes reflection; a synthesized learning 
       proposalWriter: extractor,
       logger,
     });
+    // The loop awaits this call, and the cycle-completed event is journaled inside it. Settling in `finally`
+    // ends the wait on success and on failure. The assertions below then report which one happened.
+    let settleCycle: () => void = () => {};
+    const cycleSettled = new Promise<void>((resolve) => (settleCycle = resolve));
+    const observedReflection = {
+      runReflectionCycle: async () => {
+        try {
+          return await reflection.runReflectionCycle();
+        } finally {
+          settleCycle();
+        }
+      },
+    };
 
     const maintenance = await initializeMemoryAutoApprovalMaintenance({
       notificationService: castAny<Pick<INotificationService, "notifyPendingDigestIfNeeded">>({
@@ -106,17 +104,11 @@ Deno.test("the real maintenance loop invokes reflection; a synthesized learning 
       }),
       logger,
       intervalMs: 10,
-      reflectionService: reflection,
+      reflectionService: observedReflection,
     });
 
-    // Both the pending write and the cycle-completed journal event must be observed — a tick's
-    // async work does not guarantee they land in the same order every run.
-    await pollUntil(
-      async () =>
-        (await extractor.listPending()).length >= 1 &&
-        db.getActivitiesByActionType(DomainEventType.MemoryReflectionCycleCompleted).length >= 1,
-      5000,
-    );
+    // The first reflection cycle has finished, with its pending write and its journal event.
+    await cycleSettled;
     maintenance.stop();
 
     // The synthesized learning is observable in Memory/Pending after a tick. The loop ticks
@@ -129,7 +121,8 @@ Deno.test("the real maintenance loop invokes reflection; a synthesized learning 
       `expected the synthesized learning among pending: ${JSON.stringify(pending.map((p) => p.learning.title))}`,
     );
 
-    // The reflection cycle is journalled with its counts.
+    // The reflection cycle is journalled with its counts. Journal writes are batched, so flush before reading.
+    await db.waitForFlush();
     const events = db.getActivitiesByActionType(DomainEventType.MemoryReflectionCycleCompleted);
     assertEquals(events.length >= 1, true);
     const payload = JSON.parse(events[0].payload);
