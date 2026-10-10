@@ -123,7 +123,6 @@ import { GitService } from "@exaix/git";
 import { HnswVectorIndex } from "@exaix/memory";
 import { buildConfirmationInterceptor, ToolRegistry } from "@exaix/tool-runtime";
 import type { IApplicationContext } from "@exaix/core/types";
-import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { DEFAULT_MCP_AGENT_ROLE_ID, DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS } from "@exaix/mcp";
 import type { LocalToolDispatcher } from "@exaix/mcp/server";
 import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
@@ -133,6 +132,7 @@ import { SessionBriefReader } from "@exaix/session/session_brief_reader.ts";
 import { SessionReturnWatcher } from "./src/session_return_watcher.ts";
 import { HeadlessSessionLauncher } from "./src/headless_session_launcher.ts";
 import { createOnReconciledHandler } from "./src/on_reconciled_dispatcher.ts";
+import { PlanFileHandler } from "./src/plan_file_handler.ts";
 import {
   createCodeChangesDelegateAdapter,
   SessionDelegationCoordinator,
@@ -1401,42 +1401,10 @@ if (import.meta.main) {
     });
 
     // Start file watcher for approved plans (Workspace/Active)
+    const planFileHandler = new PlanFileHandler(executionLoop, watcherLogger);
     const planWatcher = new FileWatcher(
       config,
-      async (event) => {
-        // Only process plan files (_plan.md suffix)
-        if (!event.path.includes("_plan.md")) {
-          return;
-        }
-
-        watcherLogger.info(DomainEventType.PlanDetected, event.path, {
-          size: event.content.length,
-        });
-
-        // Delegate execution to ExecutionLoop
-        // It handles parsing, validation, execution, reporting, and lifecycle management (success/failure)
-        const result = await executionLoop.processTask(event.path);
-
-        if (result.success) {
-          watcherLogger.info(
-            "plan.execution_managed",
-            event.path,
-            toSafeJson({
-              trace_id: result.traceId,
-              status: "completed",
-            }) as LogMetadata,
-          );
-        } else {
-          watcherLogger.error(
-            "plan.execution_managed_failure",
-            event.path,
-            toSafeJson({
-              trace_id: result.traceId,
-              error: result.error,
-            }) as LogMetadata,
-          );
-        }
-      },
+      (event) => planFileHandler.handle(event),
       { customWatchPath: activePath, db: dbService }, // Custom watch path
     );
 

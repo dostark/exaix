@@ -645,6 +645,8 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 | `DaemonFileDetected`                     | `file.detected`                               | Daemon                          |
 | `PlanGenerated`                          | `plan.generated`                              | Plan                            |
 | `PlanDetected`                           | `plan.detected`                               | Plan                            |
+| `PlanExecutionManaged`                   | `plan.execution_managed`                      | Plan                            |
+| `PlanExecutionManagedFailure`            | `plan.execution_managed_failure`              | Plan                            |
 | `ShutdownWatchersStopped`                | `shutdown.watchers_stopped`                   | Daemon                          |
 | `ShutdownAutoApprovalStopped`            | `shutdown.auto_approval_stopped`              | Daemon                          |
 | `ShutdownDatabaseClosed`                 | `shutdown.database_closed`                    | Daemon                          |

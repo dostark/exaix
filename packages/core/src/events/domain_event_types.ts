@@ -1103,6 +1103,8 @@ export const DomainEventType = {
   DaemonFileDetected: "file.detected",
   PlanGenerated: "plan.generated",
   PlanDetected: "plan.detected",
+  PlanExecutionManaged: "plan.execution_managed",
+  PlanExecutionManagedFailure: "plan.execution_managed_failure",
   ShutdownWatchersStopped: "shutdown.watchers_stopped",
   ShutdownAutoApprovalStopped: "shutdown.auto_approval_stopped",
   ShutdownDatabaseClosed: "shutdown.database_closed",
