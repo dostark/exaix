@@ -13,7 +13,10 @@ import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import type { IModelProvider, IProviderTurn } from "@exaix/ai/types.ts";
 import { EventLogger } from "@exaix/core/logger";
+import { ConfigService } from "@exaix/core/config";
+import { type IToolsRoundPolicy, toolsRoundPolicyReader } from "@exaix/schemas";
 import { PlanExecutor } from "@exaix/core/planning";
+import { ToolsRoundLoop, ToolsRoundMode } from "@exaix/core";
 import {
   AGENT_EVENT_EXECUTION_COMPLETED,
   AGENT_EVENT_EXECUTION_FAILED,
@@ -621,6 +624,35 @@ Deno.test("text-mode ReAct keeps the prior action and tool result in the next tu
     assertStringIncludes(prompts[1], "PORTAL README SENTINEL");
   } finally {
     composer.dispose();
+    await cleanup();
+  }
+});
+
+Deno.test("[react policy] the composer hands its tool-round reader to the ReAct adapter, which reads the live config each turn", async () => {
+  const { config, db, cleanup } = await setup();
+  const configDir = await Deno.makeTempDir({ prefix: "composer-round-policy-" });
+  try {
+    const configPath = join(configDir, "exa.config.toml");
+    const withMode = (mode: string) =>
+      `[system]\nroot = "."\nversion = "1.0.0"\nlog_level = "info"\n\n[tools]\nparallel_calls = "${mode}"\n`;
+    await Deno.writeTextFile(configPath, withMode("off"));
+    const service = new ConfigService(configPath);
+    const composer = new AgentComposer({
+      config,
+      db,
+      logger: new EventLogger({ db }),
+      pathResolver: new PathResolver(config),
+      permissions: new PortalPermissionsService(config.portals),
+      toolsRoundPolicy: toolsRoundPolicyReader({ config: service }, ToolsRoundLoop.REACT),
+    });
+    const adapter = (composer as never as { reActAdapter: { getToolsRoundPolicy(): IToolsRoundPolicy } }).reActAdapter;
+
+    assertEquals(adapter.getToolsRoundPolicy().mode, ToolsRoundMode.OFF);
+    await Deno.writeTextFile(configPath, withMode("auto"));
+    service.reload();
+    assertEquals(adapter.getToolsRoundPolicy().mode, ToolsRoundMode.AUTO);
+  } finally {
+    await Deno.remove(configDir, { recursive: true });
     await cleanup();
   }
 });

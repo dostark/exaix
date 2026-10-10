@@ -1414,6 +1414,18 @@ export enum SwapClass {
   RESTART = "restart",
 }
 
+/** Native tool-round mode. Off runs one call per response. Auto keeps the provider default. */
+export enum ToolsRoundMode {
+  AUTO = "auto",
+  OFF = "off",
+}
+
+/** The two native loops that read the resolved tool-round policy. */
+export enum ToolsRoundLoop {
+  PLANNING = "planning",
+  REACT = "react",
+}
+
 /**
  * Provenance source for a config value — where it was resolved from.
  */

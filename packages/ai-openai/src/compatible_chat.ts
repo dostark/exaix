@@ -146,7 +146,8 @@ function applyProfileOptions(
 ): void {
   const isDeepSeek: boolean = profile === "deepseek";
   if (!options?.tools?.length) delete body.tool_choice;
-  if (options?.tools?.length && !isDeepSeek) body.parallel_tool_calls = false;
+  // The base request carries the off hint. DeepSeek has no such field, so it never sends one.
+  if (isDeepSeek) delete body.parallel_tool_calls;
   if (isDeepSeek && options?.thinking !== undefined) {
     body.thinking = { type: options.thinking ? "enabled" : "disabled" };
   }

@@ -34,6 +34,7 @@ interface CapturedBody {
   model: string;
   messages: CapturedOpenAiMessage[];
   tools?: CapturedOpenAiTool[];
+  parallel_tool_calls?: boolean;
   tool_choice?: "auto" | "none" | "required" | { type: "function"; function: { name: string } };
   max_completion_tokens?: number;
   max_tokens?: number;
@@ -381,4 +382,19 @@ Deno.test("a priorRound refuses another provider's replay carrier", () => {
     assistant: { provider: "anthropic", blocks: [] },
   };
   assertThrows(() => sentMessages({ priorRound: anthropicRound }));
+});
+
+const ONE_TOOL = [{ name: "read_file", description: "Read one file", inputSchema: { type: "object" } }];
+
+Deno.test("[openai policy] an off hint with tools sends the top-level parallel_tool_calls false", () => {
+  const body = capturedBodyOf({
+    tools: ONE_TOOL,
+    toolChoice: { type: "auto", disable_parallel_tool_use: true },
+  });
+  assertEquals(body.parallel_tool_calls, false);
+});
+
+Deno.test("[openai policy] auto sends no parallel_tool_calls field, so the API default applies", () => {
+  const body = capturedBodyOf({ tools: ONE_TOOL, toolChoice: { type: "auto" } });
+  assertEquals(body.parallel_tool_calls, undefined);
 });

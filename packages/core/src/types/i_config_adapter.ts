@@ -15,6 +15,8 @@ export interface IConfigAdapter {
   get<T = unknown>(key: string): T | undefined;
   /** Read only a non-NULL Config DB override, without falling back to a registry default. */
   getOverride?<T = unknown>(key: string): T | undefined;
+  /** Every non-NULL Config DB override, read as one snapshot so a policy resolves from one state. */
+  listOverrides?(): ReadonlyArray<{ key: string; value: string | number | boolean | null; swap_class: string }>;
   /** Whether the adapter is in direct (offline) or daemon mode. */
   readonly mode: ConfigAdapterMode;
 }

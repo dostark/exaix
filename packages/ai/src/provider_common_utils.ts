@@ -390,9 +390,13 @@ export function mapToolDefinitionOpenAI(tool: IToolDefinition): OpenAiWireToolDe
 /** OpenAI's wire-format `tool_choice`, mapped from IToolChoice. */
 export type OpenAiWireToolChoice = "auto" | "none" | "required" | { type: "function"; function: { name: string } };
 
-/** Map IToolChoice to OpenAI's wire-format tool_choice. `disable_parallel_tool_use`
- *  has no equivalent within `tool_choice` itself and is intentionally NOT wired to
- *  the unrelated top-level `parallel_tool_calls` request field. */
+/** True when the loop asked for one call per response through `disable_parallel_tool_use`. */
+export function disablesParallelToolUse(choice: Opt<IToolChoice, Reason.OptionalInput>): boolean {
+  return choice !== undefined && choice.type !== TOOL_CHOICE_TYPE_NONE && choice.disable_parallel_tool_use === true;
+}
+
+/** Map IToolChoice to OpenAI's wire-format tool_choice. The disable flag has no equivalent here.
+ *  The request body carries it as top-level parallel_tool_calls false instead. */
 export function mapToolChoiceOpenAI(choice: IToolChoice): OpenAiWireToolChoice {
   switch (choice.type) {
     case "auto":
@@ -584,6 +588,8 @@ export function createOpenAIChatCompletionsRequestInit(
       stop: options?.stop,
       tools: options?.tools?.map(mapToolDefinitionOpenAI),
       tool_choice: options?.toolChoice ? mapToolChoiceOpenAI(options.toolChoice) : undefined,
+      // Off asks for one call per response. Auto omits the field, so the API default applies.
+      parallel_tool_calls: options?.tools?.length && disablesParallelToolUse(options.toolChoice) ? false : undefined,
     }),
   };
 }

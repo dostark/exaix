@@ -38,6 +38,7 @@ import {
   enrichPortalPathParam,
   providerSupportsNativeConversation,
   providerSupportsNativeTools,
+  TOOL_CALL_LIMIT_MESSAGE,
 } from "../native_tool_turns.ts";
 import { GuardrailBlockedError } from "@exaix/core/planning";
 import { parse as parseToml } from "@std/toml";
@@ -54,6 +55,7 @@ import {
   DEFAULT_AGENT_MAX_ITERATIONS,
   EXECUTION_HEARTBEAT_INTERVAL_MS,
   LOOP_HISTORY_BUDGET_THRESHOLD,
+  PLANNING_TOOL_RESULT_TRUNCATED_SUFFIX,
   REACT_CALLING_TOOL_PREFIX,
   REACT_DEFAULT_MAX_TOKENS,
   REACT_DEFAULT_TEMPERATURE,
@@ -66,7 +68,10 @@ import {
   RESPONSE_STOP_REASON_MAX_TOKENS,
   STREAMING_EVENT_HEARTBEAT,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
+  ToolsRoundLoop,
+  ToolsRoundMode,
 } from "@exaix/core";
+import { defaultToolsRoundPolicy, type IToolsRoundPolicy } from "@exaix/schemas";
 import type { IModelCallOptions } from "@exaix/schemas";
 import type { IContextBudgetManagerInput } from "../context/context_budget_manager.ts";
 import type { IContextSegment } from "../context/context_segment.ts";
@@ -402,11 +407,16 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     nativeToolsPriorTurn?: Opt<IProviderTurn, Reason.OptionalInput>,
     nativeToolsUsed = false,
     nativePreferredTool?: Opt<string, Reason.OptionalInput>,
+    parallelMode: ToolsRoundMode = ToolsRoundMode.AUTO,
   ): GeneratedOptions {
     const base = Object.assign({
       temperature: REACT_DEFAULT_TEMPERATURE,
       max_tokens: REACT_DEFAULT_MAX_TOKENS,
     }, this.callOptions) as GeneratedOptions;
+    // Off asks for one call per response. Auto sends no parallel flag, so the provider default applies.
+    const parallel: { disable_parallel_tool_use?: boolean } = parallelMode === ToolsRoundMode.OFF
+      ? { disable_parallel_tool_use: true }
+      : {};
     if (nativeToolsUsed && nativeToolDefinitions) {
       base.tools = nativeToolDefinitions;
       // A provider that cannot honor an explicit tool_choice still receives the tool list.
@@ -417,15 +427,15 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         // PGAP-3: a detected preferred tool forces tool_choice: {type: "tool", name: "..."}.
         // That entry replaces the unconstrained {type: "any"} for a targeted-edit task.
         if (forcedChoiceRefused) {
-          base.toolChoice = { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: true };
+          base.toolChoice = { type: TOOL_CHOICE_TYPE_AUTO, ...parallel };
           base.nativeToolChoiceMode = TOOL_CHOICE_TYPE_AUTO;
         } else if (nativePreferredTool && !nativeToolsPriorTurn) {
-          base.toolChoice = { type: "tool" as const, name: nativePreferredTool, disable_parallel_tool_use: true };
+          base.toolChoice = { type: "tool" as const, name: nativePreferredTool, ...parallel };
           base.nativeToolChoiceMode = "forced";
         } else {
           base.toolChoice = nativeToolsPriorTurn
-            ? { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: true }
-            : { type: "any" as const, disable_parallel_tool_use: true };
+            ? { type: TOOL_CHOICE_TYPE_AUTO, ...parallel }
+            : { type: "any" as const, ...parallel };
           base.nativeToolChoiceMode = nativeToolsPriorTurn ? TOOL_CHOICE_TYPE_AUTO : "any";
         }
       }
@@ -483,7 +493,10 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   }
 
   /** Executes one ReAct iteration; returns accumulated metrics and, if the loop should terminate early, a finished result. */
-  private async prepareIterationPrompt(params: IIterationParams): Promise<{
+  private async prepareIterationPrompt(
+    params: IIterationParams,
+    parallelMode: ToolsRoundMode,
+  ): Promise<{
     prompt: string;
     initialPrompt?: string;
     initialSections: INativePromptSection[];
@@ -533,6 +546,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       nativeToolsPriorTurn,
       nativeToolsUsed,
       nativePreferredTool,
+      parallelMode,
     );
     generateOptions.traceId = context.trace_id;
     if (params.nativeConversationEnabled && nativeToolsUsed && initialPrompt !== undefined) {
@@ -612,6 +626,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       nativeToolsUsed,
       nativeToolsPriorTurn,
     } = params;
+    // One policy per model turn: the request hint, the cap and the result cap all come from it.
+    const policy = this.roundPolicy();
     if (this.executor.guardrailRunner?.hasBlockingViolation(context.trace_id)) {
       throw new GuardrailBlockedError(
         context.trace_id,
@@ -621,6 +637,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
     const { prompt, initialPrompt, initialSections, generateOptions, aciSection } = await this.prepareIterationPrompt(
       params,
+      policy.mode,
     );
     await this.preflightNativeConversationBudget(
       blueprint,
@@ -717,14 +734,16 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let allActionsSucceeded = true;
     for (let a = 0; a < parsed.actions.length; a++) {
       const action = this.canonicalizeAction(parsed.actions[a], context.trace_id, response.provider, response.model);
-      const execResult = await this.executeTool(action, options);
+      // A native response past the policy cap executes nothing. Each extra call replays as an error result.
+      const withinCap = this.withinNativeCap(nativeToolsUsed, a, policy.executionCap);
+      const execResult = await this.attemptAction(action, options, withinCap);
       allActionsSucceeded &&= execResult.success === true;
       this.recordWrittenFile(action, execResult, writtenFiles);
 
       const toolResultContent = execResult.success
         ? JSON.stringify(execResult.data ?? {})
         : (execResult.error ?? "Unknown error");
-      newToolCallCount++;
+      newToolCallCount += Number(withinCap);
 
       const toolCallLine = `${REACT_CALLING_TOOL_PREFIX}${action.tool}(${JSON.stringify(action.params)})`;
       history.push({ role: ReActRole.ACTION, content: toolCallLine });
@@ -735,19 +754,14 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         : resultEntry;
       history.push({ role: ReActRole.RESULT, content: truncatedResult });
 
-      await this.executor.logDynamicToolCall?.(
-        context.trace_id,
-        action.tool,
-        action.params,
-        toolResultContent.slice(0, REACT_TOOL_RESULT_SUMMARY_MAX),
-        i,
-      );
+      await this.journalAction(context, action, toolResultContent, i, withinCap);
 
       if (nativeToolsUsed && parsed.nativeToolCalls?.[a]) {
-        lastPriorTurn = this.buildPriorTurn(
-          parsed.nativeToolCalls[a],
-          execResult as never,
-        );
+        const turn = this.buildPriorTurn(parsed.nativeToolCalls[a], execResult as never);
+        lastPriorTurn = {
+          ...turn,
+          toolResultContent: this.capResultTokens(String(turn.toolResultContent), policy.resultTokenCap),
+        };
         completedNativeConversationTurns.push(lastPriorTurn);
       }
     }
@@ -849,6 +863,49 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
   private shouldFinishActionTurn(isComplete: boolean, allActionsSucceeded: boolean): boolean {
     return isComplete && allActionsSucceeded;
+  }
+
+  /** Text ReAct has no cap. A native response may execute only the calls its policy cap admits. */
+  private withinNativeCap(nativeToolsUsed: boolean, position: number, executionCap: number): boolean {
+    return !nativeToolsUsed || position < executionCap;
+  }
+
+  /** Executes one action, or returns the cap refusal without touching the tool. */
+  private async attemptAction(
+    action: IReActAction,
+    options: IAgentExecutionOptions,
+    withinCap: boolean,
+  ): Promise<IToolExecutionResult> {
+    return withinCap ? await this.executeTool(action, options) : { success: false, error: TOOL_CALL_LIMIT_MESSAGE };
+  }
+
+  /** Journals an executed call. A call refused by the cap never reached a tool, so it is not journaled. */
+  private async journalAction(
+    context: IExecutionContext,
+    action: IReActAction,
+    toolResultContent: string,
+    iteration: number,
+    withinCap: boolean,
+  ): Promise<void> {
+    if (!withinCap) return;
+    await this.executor.logDynamicToolCall?.(
+      context.trace_id,
+      action.tool,
+      action.params,
+      toolResultContent.slice(0, REACT_TOOL_RESULT_SUMMARY_MAX),
+      iteration,
+    );
+  }
+
+  /** The tool-round policy for this model turn. Static callers without a reader get schema defaults. */
+  private roundPolicy(): IToolsRoundPolicy {
+    return this.executor.getToolsRoundPolicy?.() ?? defaultToolsRoundPolicy(ToolsRoundLoop.REACT);
+  }
+
+  /** Caps one native tool result to the policy's token cap, with the chars-per-token estimate ReAct budgets with. */
+  private capResultTokens(text: string, maxTokens: number): string {
+    const maxChars = maxTokens * TOKEN_ESTIMATION_CHARS_PER_TOKEN;
+    return text.length <= maxChars ? text : text.slice(0, maxChars) + PLANNING_TOOL_RESULT_TRUNCATED_SUFFIX;
   }
 
   /** Parses the provider response into thought, actions, and completion state.

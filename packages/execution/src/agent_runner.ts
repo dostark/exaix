@@ -19,7 +19,13 @@ import { COMPLEXITY_SOURCE_DEFAULT, EffortResolver, ProviderRegistry, resolvePro
 import type { IEffortResolution, IEffortResolutionSignals, IEffortResolver, TaskComplexitySource } from "@exaix/ai";
 import { buildAgentEffortResolvedPayload } from "./effort_resolution_payload.ts";
 import { type IProjectedCallOptions, projectResolvedCallOptions } from "@exaix/ai";
-import type { EffortDeclaration, EffortTier, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
+import {
+  type EffortDeclaration,
+  type EffortTier,
+  type ModelSize,
+  type ThinkingDeclaration,
+  toolsRoundPolicyReader,
+} from "@exaix/schemas";
 import { toSafeJson } from "@exaix/core/types";
 import type { IToolRegistryFactory } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
@@ -104,7 +110,7 @@ import { DomainEventType } from "@exaix/core/events";
 import type { IRetryContext, IRetryPolicy, IRetryPolicyConfig, IRetryResult } from "@exaix/core/request";
 import type { IRecordingLane, Opt, Reason } from "@exaix/core/types";
 import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
-import { FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION } from "@exaix/core";
+import { FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION, ToolsRoundLoop } from "@exaix/core";
 
 export interface ISelectedModelIdentity {
   provider: string;
@@ -1158,6 +1164,7 @@ export class AgentRunner implements IAgentRunner {
     const loop = new PlanningToolLoop({
       toolRegistry: registry,
       tokenizer: this.config!.tokenizer!,
+      toolsRoundPolicy: toolsRoundPolicyReader(this.config!.context!, ToolsRoundLoop.PLANNING),
       modelId: this.selectedModelId(),
       generate: (prompt, options) =>
         this.runGeneration(

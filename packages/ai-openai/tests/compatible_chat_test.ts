@@ -977,3 +977,40 @@ Deno.test("compatible request builder keeps DeepSeek enabled and disabled thinki
   assertEquals(thinking("openai", false), undefined);
   assertEquals(thinking("openai", true), undefined);
 });
+
+Deno.test("[compatible policy] auto sends no parallel_tool_calls for the OpenAI and local-test profiles", async () => {
+  for (const profile of ["openai", "local-test"] as const) {
+    let requestBody: IFixtureChatRequest | undefined;
+    const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
+      requestBody = await request.json();
+      return Response.json({
+        model: "requested-model",
+        choices: [{ message: { role: "assistant", content: "done" }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 10, completion_tokens: 2, total_tokens: 12 },
+      });
+    });
+    const endpoint = `http://127.0.0.1:${(server.addr as Deno.NetAddr).port}/v1/chat/completions`;
+    try {
+      const provider = new OpenAIProvider({
+        apiKey: "fixture-key",
+        model: "requested-model",
+        baseUrl: endpoint,
+        compatible: {
+          profile,
+          endpoint,
+          allow_insecure_loopback: true,
+          max_response_bytes: 4096,
+          max_tool_argument_bytes: 512,
+          max_history_bytes: 4096,
+        },
+      });
+      await provider.generate("prompt", {
+        tools: [{ name: "read_file", description: "Read a file", inputSchema: { type: "object" } }],
+        toolChoice: { type: "auto" },
+      });
+      assertEquals(requestBody?.parallel_tool_calls, undefined, profile);
+    } finally {
+      await server.shutdown();
+    }
+  }
+});

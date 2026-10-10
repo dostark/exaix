@@ -17,6 +17,7 @@
 
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
+import { ConfigService } from "@exaix/core/config";
 import { AgentRunner } from "@exaix/execution";
 import type { IAgentRunnerConfig, IBlueprint, IParsedRequest } from "@exaix/execution";
 import type { IApplicationContext, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
@@ -607,5 +608,131 @@ Deno.test("[AgentRunner planning tools] an empty final round falls back to one s
     assertEquals(completed?.traceId, "trace-7");
   } finally {
     fixture.cleanup();
+  }
+});
+
+/** A real config file: planning tools on, one portal, and the tools round policy under test. */
+function policyConfigToml(portalRoot: string, parallelCalls: string, maxRounds: number): string {
+  return [
+    "[system]",
+    'root = "."',
+    'version = "1.0.0"',
+    'log_level = "info"',
+    "",
+    "[planning]",
+    "tools_enabled = true",
+    `max_tool_rounds = ${maxRounds}`,
+    "max_tool_result_tokens = 2000",
+    "max_tool_calls_per_round = 3",
+    "",
+    "[tools]",
+    `parallel_calls = "${parallelCalls}"`,
+    "",
+    "[[portals]]",
+    'alias = "myportal"',
+    `target_path = "${portalRoot}"`,
+    'agents_allowed = ["*"]',
+    'operations = ["read"]',
+    "",
+  ].join("\n");
+}
+
+function threeReads(): IGenerateResult {
+  return makeGenerateResult("", {
+    toolCalls: [
+      { id: "t1", name: "read_file", input: { path: "src/a.ts" } },
+      { id: "t2", name: "read_file", input: { path: "src/a.ts" } },
+      { id: "t3", name: "read_file", input: { path: "src/a.ts" } },
+    ],
+  });
+}
+
+Deno.test("[AgentRunner planning tools][policy] tools.parallel_calls off from a real ConfigService runs one call of three and refuses two", async () => {
+  registerProviders();
+  const fixture = makePortalFixture();
+  const configDir = await Deno.makeTempDir({ prefix: "agent-runner-policy-" });
+  try {
+    const configPath = join(configDir, "exa.config.toml");
+    await Deno.writeTextFile(configPath, policyConfigToml(fixture.root, "off", 2));
+    const service = new ConfigService(configPath);
+    const provider = new ScriptedProvider(NATIVE_PROVIDER_ID, [
+      threeReads(),
+      makeGenerateResult("<thought>t</thought><content>plan marker-content</content>"),
+    ]);
+    const registry = new StubToolRegistry(fixture.root);
+    const runner = new AgentRunner(
+      provider,
+      {
+        context: { config: service } as never,
+        selectedModel: { provider: NATIVE_PROVIDER_ID, model: "test-model" },
+        tokenizer: stubTokenizer,
+        plannerToolRegistryFactory: { createToolRegistry: () => registry },
+      } satisfies IAgentRunnerConfig,
+    );
+    const request: IParsedRequest = {
+      userPrompt: "do it",
+      context: {},
+      portal: "myportal",
+      traceId: "trace-policy-off",
+    };
+
+    await runner.run(blueprint, request, undefined);
+
+    assertEquals(registry.calls.length, 1);
+    assertEquals(provider.calls[0].options?.toolChoice, { type: "auto", disable_parallel_tool_use: true });
+  } finally {
+    fixture.cleanup();
+    await Deno.remove(configDir, { recursive: true });
+  }
+});
+
+Deno.test("[AgentRunner planning tools][policy] a tools.parallel_calls change reloaded from the config file applies from the next round", async () => {
+  registerProviders();
+  const fixture = makePortalFixture();
+  const configDir = await Deno.makeTempDir({ prefix: "agent-runner-policy-reload-" });
+  try {
+    const configPath = join(configDir, "exa.config.toml");
+    await Deno.writeTextFile(configPath, policyConfigToml(fixture.root, "auto", 3));
+    const service = new ConfigService(configPath);
+    class ReloadingProvider extends ScriptedProvider {
+      override generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
+        // The change lands while round one is in flight, so round two reads it and round one does not.
+        if (this.calls.length === 0) {
+          Deno.writeTextFileSync(configPath, policyConfigToml(fixture.root, "off", 3));
+          service.reload();
+        }
+        return super.generate(prompt, options);
+      }
+    }
+    const provider = new ReloadingProvider(NATIVE_PROVIDER_ID, [
+      threeReads(),
+      threeReads(),
+      makeGenerateResult("<thought>t</thought><content>plan marker-content</content>"),
+    ]);
+    const registry = new StubToolRegistry(fixture.root);
+    const runner = new AgentRunner(
+      provider,
+      {
+        context: { config: service } as never,
+        selectedModel: { provider: NATIVE_PROVIDER_ID, model: "test-model" },
+        tokenizer: stubTokenizer,
+        plannerToolRegistryFactory: { createToolRegistry: () => registry },
+      } satisfies IAgentRunnerConfig,
+    );
+    const request: IParsedRequest = {
+      userPrompt: "do it",
+      context: {},
+      portal: "myportal",
+      traceId: "trace-policy-reload",
+    };
+
+    await runner.run(blueprint, request, undefined);
+
+    assertEquals(provider.calls[0].options?.toolChoice, { type: "auto" });
+    assertEquals(provider.calls[1].options?.toolChoice, { type: "auto", disable_parallel_tool_use: true });
+    assertEquals(registry.calls.length, 4, "round one runs three calls under auto, round two runs one under off");
+  } finally {
+    fixture.cleanup();
+    await Deno.remove(configDir, { recursive: true });
   }
 });

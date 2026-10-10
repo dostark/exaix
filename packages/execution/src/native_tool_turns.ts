@@ -111,6 +111,10 @@ function functionCallOf(part: JSONObject): JSONObject | undefined {
 }
 
 const MISMATCHED_ASSISTANT_PARTS_MESSAGE = "Tool round assistant parts do not match its calls";
+/** The error result a call receives when the round policy cap has no slot for it. */
+export const TOOL_CALL_LIMIT_MESSAGE = "tool call limit reached for this round; call skipped";
+const CALL_CEILING_MESSAGE = "Tool round exceeds the accepted call ceiling";
+const ARGUMENT_CEILING_MESSAGE = "Tool call arguments exceed the byte ceiling";
 
 /** Validates one call's id, name and argument bytes. A non-object input is refused per call. */
 function validateCallEntry(
@@ -125,7 +129,7 @@ function validateCallEntry(
   if (seenIds.has(call.id)) throw new ProviderProtocolError("Tool call id is duplicated in the round", provider);
   seenIds.add(call.id);
   if (utf8Bytes(JSON.stringify(call.input) ?? "") > limits.maxArgumentBytes) {
-    throw new ProviderProtocolError("Tool call arguments exceed the byte ceiling", provider);
+    throw new ProviderProtocolError(ARGUMENT_CEILING_MESSAGE, provider);
   }
   const isObject = typeof call.input === "object" && call.input !== null && !Array.isArray(call.input);
   return isObject && call.rawArguments === undefined
@@ -219,15 +223,28 @@ function replayPayload(replay: IProviderAssistantReplay): readonly JSONObject[] 
   return replay;
 }
 
+/** Refuses a response over the call ceiling, or an argument over the byte ceiling, before any call executes.
+ *  Used where no grouped validation runs. */
+export function assertRoundWithinBounds(
+  calls: readonly IProviderToolCall[],
+  limits: INativeRoundLimits,
+  provider: string,
+): void {
+  if (calls.length > limits.maxResponseCalls) throw new ProviderProtocolError(CALL_CEILING_MESSAGE, provider);
+  for (const call of calls) {
+    if (utf8Bytes(JSON.stringify(call.input) ?? "") > limits.maxArgumentBytes) {
+      throw new ProviderProtocolError(ARGUMENT_CEILING_MESSAGE, provider);
+    }
+  }
+}
+
 /** Validates one provider response before any tool effect. Throws a protocol error when the round
  *  cannot be replayed exactly. An input that is not a JSON object is refused per call instead. */
 export function validateProviderRound(result: IGenerateResult, limits: INativeRoundLimits): IValidatedProviderRound {
   const provider = result.provider;
   const calls = roundCalls(result);
   if (calls.length === 0) throw new ProviderProtocolError("Tool round has no calls", provider);
-  if (calls.length > limits.maxResponseCalls) {
-    throw new ProviderProtocolError("Tool round exceeds the accepted call ceiling", provider);
-  }
+  if (calls.length > limits.maxResponseCalls) throw new ProviderProtocolError(CALL_CEILING_MESSAGE, provider);
   const replay = result.nativeAssistantReplay;
   if (replay === undefined) throw new ProviderProtocolError("Tool round has no replayable assistant content", provider);
   if (utf8Bytes(JSON.stringify(replayPayload(replay))) > limits.maxRoundReplayBytes) {

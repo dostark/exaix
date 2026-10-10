@@ -19,6 +19,7 @@ import {
   SwapClass,
   TaskType,
   ToolName,
+  ToolsRoundMode,
 } from "./enums.ts";
 import { configurable } from "../config/registry.ts";
 import { PortalKnowledgeInclusion } from "./portal.ts";
@@ -3154,6 +3155,81 @@ export const DEFAULT_TOOLS_STRICT_PARAMS = configurable({
   default: false,
   type: ConfigValueType.BOOLEAN,
   description: "Reject unknown tool parameters instead of journaling and continuing",
+  swap: SwapClass.HOT,
+});
+
+/** Native tool-round mode for planning and ReAct. `off` runs one call per response and asks the provider for one. */
+export const DEFAULT_TOOLS_PARALLEL_CALLS: ToolsRoundMode = configurable({
+  key: "tools.parallel_calls",
+  default: ToolsRoundMode.AUTO,
+  type: ConfigValueType.STRING,
+  description: "Native parallel tool calls: auto keeps the provider default, off runs one call per response",
+  swap: SwapClass.HOT,
+});
+
+/** Tool calls one ReAct native response may execute. Calls past the cap receive an error result. */
+export const DEFAULT_TOOLS_MAX_CALLS_PER_TURN: number = configurable({
+  key: "tools.max_calls_per_turn",
+  default: 4,
+  type: ConfigValueType.NUMBER,
+  description: "Tool calls a ReAct native response may execute; extra calls receive an error result",
+  min: 1,
+  max: 20,
+  swap: SwapClass.HOT,
+});
+
+/** Calls allowed in flight at once. Dispatch stays sequential until the parallel scheduler lands. */
+export const DEFAULT_TOOLS_MAX_CONCURRENT_CALLS: number = configurable({
+  key: "tools.max_concurrent_calls",
+  default: 4,
+  type: ConfigValueType.NUMBER,
+  description: "Tool calls allowed in flight at once in a native round",
+  min: 1,
+  max: 8,
+  swap: SwapClass.HOT,
+});
+
+/** Tool calls one provider response may carry. Validated before any call executes. */
+export const DEFAULT_TOOLS_MAX_RESPONSE_CALLS: number = configurable({
+  key: "tools.max_response_calls",
+  default: 64,
+  type: ConfigValueType.NUMBER,
+  description: "Tool calls one provider response may carry before any call executes",
+  min: 1,
+  max: 128,
+  swap: SwapClass.HOT,
+});
+
+/** UTF-8 bytes of one tool call's original argument text. Larger calls are refused before execution. */
+export const DEFAULT_TOOLS_MAX_CALL_ARGUMENT_BYTES: number = configurable({
+  key: "tools.max_call_argument_bytes",
+  default: 65536,
+  type: ConfigValueType.NUMBER,
+  description: "UTF-8 bytes of one tool call's arguments before the call is refused",
+  min: 1024,
+  max: 1048576,
+  swap: SwapClass.HOT,
+});
+
+/** UTF-8 bytes of one round's assistant content and results, replayed to the provider. */
+export const DEFAULT_TOOLS_MAX_ROUND_REPLAY_BYTES: number = configurable({
+  key: "tools.max_round_replay_bytes",
+  default: 1048576,
+  type: ConfigValueType.NUMBER,
+  description: "UTF-8 bytes one tool round may replay, counting assistant content and results",
+  min: 16384,
+  max: 16777216,
+  swap: SwapClass.HOT,
+});
+
+/** Token cap on one ReAct tool result before it is replayed. */
+export const DEFAULT_TOOLS_MAX_RESULT_TOKENS: number = configurable({
+  key: "tools.max_result_tokens",
+  default: 2048,
+  type: ConfigValueType.NUMBER,
+  description: "Token cap on one ReAct tool result before it is replayed",
+  min: 128,
+  max: 16384,
   swap: SwapClass.HOT,
 });
 

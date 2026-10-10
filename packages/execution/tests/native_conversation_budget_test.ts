@@ -6,7 +6,7 @@
  * @related-files [packages/execution/src/strategies/react_loop_strategy.ts]
  */
 
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { ReActLoopStrategy } from "../src/strategies/react_loop_strategy.ts";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
@@ -141,7 +141,8 @@ Deno.test("native snapshot budget counts tool schema and stops before a generati
         measuredTurns.push(snapshot.turns.length);
         if (snapshot.turns.length) {
           assertEquals(snapshot.turns.length, 1);
-          assertStringIncludes(String(snapshot.turns[0].toolResultContent), resultText);
+          // The full result replays only when it fits tools.max_result_tokens. A larger one is capped.
+          assertEquals(String(snapshot.turns[0].toolResultContent).includes(resultText), !hugeResult);
           assertEquals(snapshot.turns[0].reasoningContent, reasoning);
         }
         return realMeasurement.measureInputTokens(prompt, opts);

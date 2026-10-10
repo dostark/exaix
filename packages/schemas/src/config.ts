@@ -18,7 +18,7 @@ import {
 import { BindingCatalogSchema, BindingsTableSchema } from "./model_binding.ts";
 import { MCPConfigSchema } from "./mcp.ts";
 import * as DEFAULTS from "@exaix/core";
-import { ProviderType, TaskType, TokenizerBackend } from "@exaix/core";
+import { ProviderType, TaskType, TokenizerBackend, ToolsRoundMode } from "@exaix/core";
 import {
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
   DEFAULT_AI_RETRY_MAX_ATTEMPTS,
@@ -98,6 +98,20 @@ function c(key: string): z.ZodDefault<z.ZodNumber> {
   if (min !== undefined) s = s.min(min);
   if (max !== undefined) s = s.max(max);
   return s.default(def as number);
+}
+
+/** Builds a z.number().int() schema from the registered bounds, with its default. Fractions and NaN fail. */
+function cInt(key: string): z.ZodDefault<z.ZodNumber> {
+  const { min, max, default: def } = resolveConfigurableBounds(key);
+  let s: z.ZodNumber = z.number().int();
+  if (min !== undefined) s = s.min(min);
+  if (max !== undefined) s = s.max(max);
+  return s.default(def as number);
+}
+
+/** True when a response ceiling admits every call a configured cap can execute. */
+export function responseCallsCoverCaps(maxResponseCalls: number, caps: readonly number[]): boolean {
+  return caps.every((cap) => maxResponseCalls >= cap);
 }
 
 /** Builds a z.number() schema with only min/max bounds (no default), for nested provider-override schemas inside z.record(). */
@@ -237,6 +251,14 @@ export const DEFAULT_MODEL_PRESETS: Record<string, ModelPreset> = {
 
 export const ToolsConfigSchema = z.object({
   strict_params: z.boolean().default(DEFAULTS.DEFAULT_TOOLS_STRICT_PARAMS),
+  // Native tool-round policy read by the planning and ReAct loops on each model turn.
+  parallel_calls: z.enum(ToolsRoundMode).default(DEFAULTS.DEFAULT_TOOLS_PARALLEL_CALLS),
+  max_calls_per_turn: cInt("tools.max_calls_per_turn"),
+  max_concurrent_calls: cInt("tools.max_concurrent_calls"),
+  max_response_calls: cInt("tools.max_response_calls"),
+  max_call_argument_bytes: cInt("tools.max_call_argument_bytes"),
+  max_round_replay_bytes: cInt("tools.max_round_replay_bytes"),
+  max_result_tokens: cInt("tools.max_result_tokens"),
   // Network capability control
   fetch_url: z.object({
     enabled: z.boolean().default(false),
@@ -1024,6 +1046,18 @@ const ConfigObjectSchema = z.object({
 }).superRefine((data, ctx: z.RefinementCtx) => {
   // Type assertion to avoid circular reference
   const configData = data as z.infer<typeof ConfigSchema>;
+
+  // The response ceiling must admit every call the configured loop caps can execute.
+  const toolsCaps = [configData.tools?.max_calls_per_turn, configData.planning?.max_tool_calls_per_round]
+    .filter((cap): cap is number => cap !== undefined);
+  if (configData.tools && !responseCallsCoverCaps(configData.tools.max_response_calls, toolsCaps)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `tools.max_response_calls (${configData.tools.max_response_calls}) must be at least the loop caps ` +
+        `tools.max_calls_per_turn and planning.max_tool_calls_per_round`,
+      path: ["tools", "max_response_calls"],
+    });
+  }
 
   // `paths.flows` = the bare "Flows" resolves to an empty catalog (a stale legacy default), so it's rejected here.
   // Deliberately narrow: only this exact stale value is refused; other bare subfolder names remain a legitimate operator choice.

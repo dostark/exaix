@@ -306,3 +306,13 @@ Deno.test("GoogleProvider.attemptGenerate: a one-call priorRound and the same ca
   });
   assertEquals(groupedBody, legacyBody);
 });
+
+Deno.test("GoogleProvider sends no parallel-disable field, even when the loop asks for one", async () => {
+  const body = await capturedBodyOf({
+    tools: [{ name: "read_file", description: "Read one file", inputSchema: { type: "object" } }],
+    toolChoice: { type: "auto", disable_parallel_tool_use: true },
+  });
+  const serialized = JSON.stringify(body);
+  assertEquals(serialized.includes("parallel"), false);
+  assertEquals(serialized.includes("disable_parallel_tool_use"), false);
+});

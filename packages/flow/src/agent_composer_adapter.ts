@@ -21,7 +21,7 @@ import type { IRunCliDelegateProcess } from "@exaix/execution";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import type { IFlowStepRequest } from "./flow_runner.ts";
 import type { IDatabaseService, JSONValue } from "@exaix/core";
-import { ConfigValueType, ExecutionStrategyName, SwapClass } from "@exaix/core";
+import { ConfigValueType, ExecutionStrategyName, SwapClass, ToolsRoundLoop } from "@exaix/core";
 import { configurable } from "@exaix/core/config";
 import type {
   IApplicationContext,
@@ -55,7 +55,13 @@ import {
 import { strategyLane } from "./contracts/flow_recording_context.ts";
 import { buildSharedNamespacePrompt } from "./shared_namespace_prompt.ts";
 import { FlowWriteAuthorization, type IFlowWriteAuthorization } from "./flow_write_authorization.ts";
-import type { EffortDeclaration, IFixedModelClient, SessionTool, ThinkingDeclaration } from "@exaix/schemas";
+import {
+  type EffortDeclaration,
+  type IFixedModelClient,
+  type SessionTool,
+  type ThinkingDeclaration,
+  toolsRoundPolicyReader,
+} from "@exaix/schemas";
 import type { TaskComplexity } from "@exaix/core";
 import type { IAgentExecutionOptionsInput, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
@@ -355,6 +361,9 @@ export class AgentComposerAdapter {
       contextPort,
       trustedAgentRoles,
       effortResolver,
+      ...(applicationContext
+        ? { toolsRoundPolicy: toolsRoundPolicyReader(applicationContext, ToolsRoundLoop.REACT) }
+        : {}),
       ...(boundResolution.cliDelegateBinding ? { cliDelegateBinding: boundResolution.cliDelegateBinding } : {}),
       ...(this.orchestratorDeps.cliDelegateRun ? { cliDelegateRun: this.orchestratorDeps.cliDelegateRun } : {}),
       ...(boundResolution.fixedClient ? { options: { fixedClient: boundResolution.fixedClient } } : {}),

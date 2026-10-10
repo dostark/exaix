@@ -31,6 +31,7 @@ import type { ITokenizer } from "@exaix/core/func";
 import type { ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
+import type { IToolsRoundPolicy } from "@exaix/schemas";
 import { ContextBudgetExceededError } from "@exaix/core/errors";
 import {
   DomainEventType,
@@ -51,9 +52,10 @@ import {
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import { canonicalizeForRegistry, PathSecurity } from "@exaix/tool-runtime";
-import { ToolCallEntryPoint, ToolName } from "@exaix/core";
+import { ToolCallEntryPoint, ToolName, ToolsRoundMode } from "@exaix/core";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import {
+  assertRoundWithinBounds,
   buildNativeToolDefinitions,
   buildPriorTurn,
   buildToolRound,
@@ -62,9 +64,10 @@ import {
   providerRoundCallCount,
   providerSupportsNativeConversation,
   providerSupportsParallelToolReplay,
+  TOOL_CALL_LIMIT_MESSAGE,
   validateProviderRound,
 } from "./native_tool_turns.ts";
-import { FIXED_NATIVE_ROUND_LIMITS } from "@exaix/ai/native_round_limits.ts";
+import { FIXED_NATIVE_ROUND_LIMITS, type INativeRoundLimits } from "@exaix/ai/native_round_limits.ts";
 import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
 
 export interface IPlanningToolLoopDeps {
@@ -83,6 +86,9 @@ export interface IPlanningToolLoopDeps {
   providerId?: string;
   /** Measures a native-conversation round's real input tokens for the pre-flight budget check. */
   measureInputTokens?: IModelProvider["measureInputTokens"];
+  /** Reads the resolved tool-round policy once per model turn. Absent, the run's own caps apply
+   *  and auto sends no parallel flag. */
+  toolsRoundPolicy?: () => IToolsRoundPolicy;
 }
 
 export interface IPlanningToolLoopOptions {
@@ -101,7 +107,7 @@ export interface IPlanningToolLoopOptions {
   allowedTools: ReadonlySet<string>;
   maxRounds: number;
   maxToolResultTokens: number;
-  /** Calls executed per round; the rest are answered with an error result. */
+  /** Calls executed per round when no toolsRoundPolicy reader is given. The rest get an error result. */
   maxToolCallsPerRound: number;
   traceId: string;
   /** AgentRunner's already-computed prompt budget for this request — checked before every
@@ -149,6 +155,7 @@ interface IRoundRequest {
   callSite: Opt<ICallSite, Reason.TraceAbsent>;
   nativeConversationEnabled: boolean;
   groupedRounds: boolean;
+  parallelMode: ToolsRoundMode;
 }
 
 /** The outcome of one round's calls, before the round is replayed. */
@@ -166,6 +173,22 @@ function executableCall(call: IValidatedRoundCall): IProviderToolCall {
   return {
     ...call.originalCall,
     rawArguments: call.originalCall.rawArguments ?? JSON.stringify(call.originalCall.input),
+  };
+}
+
+/** Off asks the provider for one call per response. Auto sends no parallel flag, so the provider default applies. */
+function autoToolChoice(mode: ToolsRoundMode): IToolChoice {
+  return mode === ToolsRoundMode.OFF
+    ? { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: true }
+    : { type: TOOL_CHOICE_TYPE_AUTO };
+}
+
+/** The ceilings one round is validated against, from the policy resolved for its turn. */
+function roundLimitsOf(policy: IToolsRoundPolicy): INativeRoundLimits {
+  return {
+    maxResponseCalls: policy.maxResponseCalls,
+    maxArgumentBytes: policy.maxArgumentBytes,
+    maxRoundReplayBytes: policy.maxReplayBytes,
   };
 }
 
@@ -194,7 +217,6 @@ const CONFINEMENT_DENIED_MESSAGE = "Access denied: path is outside the request p
 const GUARDRAIL_BLOCKED_MESSAGE = "blocked by guardrail";
 /** Journal target and `phase` payload value that mark planning-call tool rows. */
 const PLANNING_LOG_PHASE = "planning";
-const TOOL_CALL_LIMIT_MESSAGE = "tool call limit reached for this round; call skipped";
 const INVALID_TOOL_ARGUMENTS_MESSAGE = "tool call arguments are not a valid JSON object; call skipped";
 
 /** True when a search_files pattern is absolute or has a `..` segment. */
@@ -278,6 +300,12 @@ export class PlanningToolLoop {
     for (let round = 1; round <= finalRoundIndex; round++) {
       progress.rounds = round;
       const isFinalRound = round === finalRoundIndex;
+      const policy = this.roundPolicy(options);
+      const roundOptions: IPlanningToolLoopOptions = {
+        ...canonicalOptions,
+        maxToolCallsPerRound: policy.executionCap,
+        maxToolResultTokens: policy.resultTokenCap,
+      };
       const request = this.buildRoundRequest(history, {
         basePrompt,
         baseOptions: options.baseOptions,
@@ -287,6 +315,7 @@ export class PlanningToolLoop {
         callSite: options.nextCallSite(),
         nativeConversationEnabled,
         groupedRounds: parallelReplayEnabled,
+        parallelMode: policy.mode,
       });
 
       if (options.promptBudget) {
@@ -324,10 +353,12 @@ export class PlanningToolLoop {
         }, options.traceId);
       }
 
-      // A grouped round is validated whole before any call of it executes.
-      const validated = parallelReplayEnabled ? validateProviderRound(response, FIXED_NATIVE_ROUND_LIMITS) : undefined;
+      // A grouped round is validated whole, and a legacy round is bounded, before any call of it executes.
+      const limits = roundLimitsOf(policy);
+      if (!parallelReplayEnabled) assertRoundWithinBounds(response.toolCalls ?? [], limits, response.provider);
+      const validated = parallelReplayEnabled ? validateProviderRound(response, limits) : undefined;
       const calls = validated ? validated.calls.map(executableCall) : (response.toolCalls ?? []);
-      const executed = await this.executeRoundCalls(calls, canonicalOptions, round, progress, {
+      const executed = await this.executeRoundCalls(calls, roundOptions, round, progress, {
         provider: response.provider,
         model: response.model,
       });
@@ -345,6 +376,19 @@ export class PlanningToolLoop {
   }
 
   /** Builds one generate request in the replay mode the provider needs. */
+  /** The policy for one model turn. Without a reader, the run's own caps apply with auto. */
+  private roundPolicy(options: IPlanningToolLoopOptions): IToolsRoundPolicy {
+    return this.deps.toolsRoundPolicy?.() ?? {
+      mode: ToolsRoundMode.AUTO,
+      executionCap: options.maxToolCallsPerRound,
+      concurrency: 1,
+      maxResponseCalls: FIXED_NATIVE_ROUND_LIMITS.maxResponseCalls,
+      maxArgumentBytes: FIXED_NATIVE_ROUND_LIMITS.maxArgumentBytes,
+      maxReplayBytes: FIXED_NATIVE_ROUND_LIMITS.maxRoundReplayBytes,
+      resultTokenCap: options.maxToolResultTokens,
+    };
+  }
+
   private buildRoundRequest(
     history: IRoundHistory,
     request: IRoundRequest,
@@ -362,14 +406,7 @@ export class PlanningToolLoop {
         request.maxRounds,
         request.isFinalRound,
       ),
-      roundOptions: this.buildRoundOptions(
-        request.baseOptions,
-        request.allowedToolDefs,
-        { priorTurn: history.priorTurn, priorRound: history.priorRound },
-        request.isFinalRound,
-        request.maxRounds,
-        request.callSite,
-      ),
+      roundOptions: this.buildRoundOptions(request, { priorTurn: history.priorTurn, priorRound: history.priorRound }),
     };
   }
 
@@ -473,24 +510,23 @@ export class PlanningToolLoop {
   }
 
   private buildRoundOptions(
-    base: IModelOptions,
-    toolDefs: IToolDefinition[],
+    request: IRoundRequest,
     replay: {
       priorTurn: Opt<IProviderTurn, Reason.OptionalInput>;
       priorRound: Opt<IProviderToolRound, Reason.OptionalInput>;
     },
-    isFinalRound: boolean,
-    maxRounds: number,
-    callSite: Opt<ICallSite, Reason.TraceAbsent>,
   ): IModelOptions {
-    const withCallSite: IModelOptions = { ...base, ...(callSite ? { callSite } : {}) };
-    if (maxRounds === 1) return withCallSite;
-    const toolChoice: IToolChoice = isFinalRound
+    const withCallSite: IModelOptions = {
+      ...request.baseOptions,
+      ...(request.callSite ? { callSite: request.callSite } : {}),
+    };
+    if (request.maxRounds === 1) return withCallSite;
+    const toolChoice: IToolChoice = request.isFinalRound
       ? { type: TOOL_CHOICE_TYPE_NONE }
-      : { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: true };
+      : autoToolChoice(request.parallelMode);
     return {
       ...withCallSite,
-      tools: toolDefs,
+      tools: request.allowedToolDefs,
       toolChoice,
       ...(replay.priorTurn ? { priorTurn: replay.priorTurn } : {}),
       ...(replay.priorRound ? { priorRound: replay.priorRound } : {}),
@@ -515,7 +551,7 @@ export class PlanningToolLoop {
       ...withCallSite,
       ...(request.isFinalRound ? { toolChoice: { type: TOOL_CHOICE_TYPE_NONE } } : {
         tools: request.allowedToolDefs,
-        toolChoice: { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: true },
+        toolChoice: autoToolChoice(request.parallelMode),
       }),
       nativeConversation: request.groupedRounds
         ? { initialPrompt, turns: [], rounds: [...history.nativeRounds], ...roundFields }

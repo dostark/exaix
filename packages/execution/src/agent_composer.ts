@@ -72,6 +72,7 @@ import type {
   EffortDeclaration,
   EffortTier,
   IModelIntent,
+  IToolsRoundPolicy,
   ModelSize,
   SessionTool,
   ThinkingDeclaration,
@@ -193,6 +194,8 @@ export interface IAgentComposerDeps {
   cliDelegateRun?: Opt<IRunCliDelegateProcess, Reason.TestOverride>;
   /** Resolves the pinned skill revisions of a plan step. Absent only for callers that never pin skills. */
   skills?: Opt<ISkillsService, Reason.OptionalDependency>;
+  /** Reads the resolved tool-round policy for each ReAct model turn. Absent uses the schema defaults. */
+  toolsRoundPolicy?: () => IToolsRoundPolicy;
 }
 
 /** Explicit binary mapping for the supported cli-delegate session tools. Anything else
@@ -326,6 +329,7 @@ export class AgentComposer {
           promptMaxChars: this.config.agents?.aci_doc_prompt_max_chars,
         },
         maxIterations: this.config.agents?.max_iterations,
+        toolsRoundPolicy: deps.toolsRoundPolicy,
       },
     );
     if (deps.options?.guardrailRunner) {

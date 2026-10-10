@@ -10,6 +10,7 @@ import { assertEquals } from "@std/assert";
 import { ReActLoopStrategy } from "../src/strategies/react_loop_strategy.ts";
 import type { NativeToolChoiceMode } from "../src/strategies/react_loop_strategy.ts";
 import type { IReActLoopExecutor } from "../src/react_loop_adapter.ts";
+import { ToolsRoundMode } from "@exaix/core";
 
 const dummyExecutor: IReActLoopExecutor = {} as never;
 
@@ -23,6 +24,7 @@ interface MockGenerateOptions {
   tools?: MockToolDef[];
   toolChoice?: { type: string; name?: string };
   nativeToolChoiceMode?: NativeToolChoiceMode;
+  parallelFlagPresent?: boolean;
 }
 
 interface MockPriorTurn {
@@ -182,4 +184,54 @@ Deno.test("targeted-edit pattern does NOT match 'read config file'", () => {
 
 Deno.test("targeted-edit pattern does NOT match 'list directory contents'", () => {
   assertEquals(TARGETED_EDIT_PATTERN.test("List directory contents"), false);
+});
+
+interface IToolChoiceView {
+  type: string;
+  name?: string;
+  disable_parallel_tool_use?: boolean;
+}
+
+interface IBuildOptionsView {
+  buildNativeGenerateOptions(
+    toolDefinitions: MockToolDef[],
+    priorTurn: MockPriorTurn | undefined,
+    nativeToolsUsed: boolean,
+    preferredTool: string | undefined,
+    parallelMode: ToolsRoundMode,
+  ): { toolChoice?: IToolChoiceView };
+}
+
+const DEFS: MockToolDef[] = [{ name: "patch_file", description: "Patch", inputSchema: { type: "object" } }];
+const PRIOR: MockPriorTurn = {
+  toolUseId: "call_1",
+  toolName: "read_file",
+  toolInput: {},
+  toolResultContent: "ok",
+  toolResultIsError: false,
+};
+
+function hintsOf(mode: ToolsRoundMode): Array<IToolChoiceView | undefined> {
+  const view = new ReActLoopStrategy(dummyExecutor) as never as IBuildOptionsView;
+  return [
+    view.buildNativeGenerateOptions(DEFS, undefined, true, "patch_file", mode).toolChoice,
+    view.buildNativeGenerateOptions(DEFS, PRIOR, true, undefined, mode).toolChoice,
+    view.buildNativeGenerateOptions(DEFS, undefined, true, undefined, mode).toolChoice,
+  ];
+}
+
+Deno.test("[react policy] off adds the disable hint to every native toolChoice branch", () => {
+  assertEquals(hintsOf(ToolsRoundMode.OFF), [
+    { type: "tool", name: "patch_file", disable_parallel_tool_use: true },
+    { type: "auto", disable_parallel_tool_use: true },
+    { type: "any", disable_parallel_tool_use: true },
+  ]);
+});
+
+Deno.test("[react policy] auto sends no parallel flag in any native toolChoice branch", () => {
+  assertEquals(hintsOf(ToolsRoundMode.AUTO), [
+    { type: "tool", name: "patch_file" },
+    { type: "auto" },
+    { type: "any" },
+  ]);
 });

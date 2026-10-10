@@ -12,11 +12,12 @@ import type { JSONValue } from "@exaix/core";
 import type { IEventBusService } from "@exaix/core/observability";
 import type { IEventLogger } from "@exaix/core/logger";
 import { ActorType, AGENT_GENERATION_COMPLETED, DEFAULT_MCP_AGENT_ROLE_ID, RunnerKind } from "@exaix/core";
-import { DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS } from "@exaix/core";
+import { DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS, ToolsRoundLoop } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IAgentPromptAssembledReactPayload } from "@exaix/core/events";
 import type { IChangesetCostSource, IChangesetResult } from "@exaix/schemas/agent_composer.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
+import { defaultToolsRoundPolicy, type IToolsRoundPolicy } from "@exaix/schemas";
 import type { IToolRegistry } from "@exaix/core/types";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { ITokenizer } from "@exaix/core/func";
@@ -40,6 +41,8 @@ export interface IReActLoopExecutor {
   validateReviewResult(result: JSONValue): IChangesetResult;
   parseAgentResponse(response: string, context: IOutputParserContext, startTime: number): IChangesetResult;
   toolRegistry?: Opt<IToolRegistry, Reason.OptionalDependency>;
+  /** The round policy for the next model turn. Optional, since test doubles need not implement it. */
+  getToolsRoundPolicy?(): IToolsRoundPolicy;
   logGeneration(
     traceId: string,
     agentRole: string,
@@ -93,6 +96,8 @@ export interface IReActLoopAdapterOptions {
   aci?: IReActLoopAdapterAciOptions;
   /** The configured agents.max_iterations. Absent falls back to the compile-time default. */
   maxIterations?: number;
+  /** Reads the resolved tool-round policy for each model turn. Absent uses the schema defaults. */
+  toolsRoundPolicy?: () => IToolsRoundPolicy;
 }
 
 /** Adapter that implements IReActLoopExecutor by composing AgentComposer's services.
@@ -104,6 +109,7 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
   public readonly aciDocsEnabled: boolean;
   public readonly aciDocPromptMaxChars: number;
   public readonly maxIterations?: number;
+  private readonly toolsRoundPolicy?: () => IToolsRoundPolicy;
 
   constructor(
     private outputParser: OutputParser,
@@ -117,6 +123,12 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
     this.aciDocsEnabled = options?.aci?.enabled ?? false;
     this.aciDocPromptMaxChars = options?.aci?.promptMaxChars ?? DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS;
     this.maxIterations = options?.maxIterations;
+    this.toolsRoundPolicy = options?.toolsRoundPolicy;
+  }
+
+  /** The tool-round policy for the next model turn, read fresh from the configured source. */
+  getToolsRoundPolicy(): IToolsRoundPolicy {
+    return this.toolsRoundPolicy?.() ?? defaultToolsRoundPolicy(ToolsRoundLoop.REACT);
   }
 
   get contextBudgetManager(): IContextBudgetManager | undefined {

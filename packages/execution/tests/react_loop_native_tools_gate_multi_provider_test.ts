@@ -17,7 +17,7 @@
  * ]
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { ReActLoopStrategy } from "../src/strategies/react_loop_strategy.ts";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
@@ -35,7 +35,9 @@ import {
   SecurityMode,
 } from "@exaix/core";
 import { createMockLogger, makeGenerateResult } from "@exaix/testing";
-import type { ITool } from "@exaix/core/types";
+import type { ITool, JSONValue } from "@exaix/core/types";
+import type { IToolsRoundPolicy } from "@exaix/schemas";
+import { PLANNING_TOOL_RESULT_TRUNCATED_SUFFIX, ToolsRoundMode } from "@exaix/core";
 
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
 
@@ -508,7 +510,7 @@ Deno.test(
 
     await strategy.execute(testBlueprint, targetedEditContext(), nativeOptions(["patch_file"]));
 
-    assertEquals(calls[0].options?.toolChoice, { type: "auto", disable_parallel_tool_use: true });
+    assertEquals(calls[0].options?.toolChoice, { type: "auto" });
     assertEquals(toolChoiceModeOf(calls[0].options), "auto");
     assertEquals(calls[0].options?.thinking, true);
   },
@@ -525,11 +527,7 @@ Deno.test(
 
     await strategy.execute(testBlueprint, targetedEditContext(), nativeOptions(["patch_file"]));
 
-    assertEquals(calls[0].options?.toolChoice, {
-      type: "tool",
-      name: "patch_file",
-      disable_parallel_tool_use: true,
-    });
+    assertEquals(calls[0].options?.toolChoice, { type: "tool", name: "patch_file" });
     assertEquals(toolChoiceModeOf(calls[0].options), "forced");
   },
 );
@@ -545,7 +543,7 @@ Deno.test(
       testContext,
       nativeOptions(["read_file"]),
     );
-    assertEquals(plain.calls[0].options?.toolChoice, { type: "any", disable_parallel_tool_use: true });
+    assertEquals(plain.calls[0].options?.toolChoice, { type: "any" });
     assertEquals(toolChoiceModeOf(plain.calls[0].options), "any");
 
     const forced = makeRecordingProvider();
@@ -554,11 +552,7 @@ Deno.test(
       targetedEditContext(),
       nativeOptions(["patch_file"]),
     );
-    assertEquals(forced.calls[0].options?.toolChoice, {
-      type: "tool",
-      name: "patch_file",
-      disable_parallel_tool_use: true,
-    });
+    assertEquals(forced.calls[0].options?.toolChoice, { type: "tool", name: "patch_file" });
     assertEquals(toolChoiceModeOf(forced.calls[0].options), "forced");
   },
 );
@@ -584,5 +578,193 @@ Deno.test(
 
     assertEquals(calls[0].options?.tools?.map((tool) => tool.name), ["read_file"]);
     assertEquals("toolChoice" in (calls[0].options ?? {}), false);
+  },
+);
+
+function roundPolicy(mode: ToolsRoundMode, executionCap: number): IToolsRoundPolicy {
+  return {
+    mode,
+    executionCap,
+    concurrency: 1,
+    maxResponseCalls: 64,
+    maxArgumentBytes: 65536,
+    maxReplayBytes: 1048576,
+    resultTokenCap: 2048,
+  };
+}
+
+/** A native executor that reads its round policy from the given reader and records every execution. */
+function policyExecutor(getPolicy: () => IToolsRoundPolicy, executed: string[]): ReActExecutor {
+  const base = makeTrackingExecutor({ count: 0 }, READ_TOOL_FOR_POLICY);
+  return {
+    ...base,
+    getToolsRoundPolicy: getPolicy,
+    toolRegistry: {
+      ...base.toolRegistry!,
+      execute: (_name: string, params: Record<string, JSONValue>) => {
+        executed.push(String(params.path));
+        return Promise.resolve({ success: true, data: { value: "policy-ok" } });
+      },
+    },
+  };
+}
+
+const READ_TOOL_FOR_POLICY: ITool = {
+  name: "read_file",
+  description: "Read one file",
+  parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+};
+
+/** One response carrying three reads, then a completed answer, on the grouped openai-chat fixture. */
+async function runThreeReads(
+  policy: IToolsRoundPolicy,
+  executed: string[] = [],
+  maxToolCalls = 10,
+): Promise<{ calls: Array<{ options?: IModelOptions }> }> {
+  ProviderRegistry.clear();
+  ProviderRegistry.registerWithMetadata("openai-chat", new MockProviderFactory(), {
+    name: "openai-chat",
+    description: "Compatible fixture",
+    capabilities: ["chat", "tools"],
+    costTier: ProviderCostTier.LOCAL,
+    pricingTier: PricingTier.LOCAL,
+    strengths: [],
+    supportsNativeTools: true,
+    supportsNativeConversation: true,
+    chatFormat: "openai",
+  });
+  const calls: Array<{ options?: IModelOptions }> = [];
+  const provider: IModelProvider = {
+    id: "openai-chat-policy-fixture",
+    measureInputTokens: () =>
+      Promise.resolve({
+        totalTokens: 100,
+        tokenSource: "tokenizer_estimate",
+        sections: { system: 100, plan: 0, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: 0 },
+      }),
+    generate(_prompt, options) {
+      calls.push({ options });
+      if (calls.length === 1) {
+        return Promise.resolve({
+          content: "",
+          toolCalls: ["call_1", "call_2", "call_3"].map((id) => ({
+            id,
+            name: "read_file",
+            input: { path: "README.md" },
+            type: "function",
+          })),
+          usage: { promptTokens: 5, completionTokens: 2, totalTokens: 7 },
+          model: "policy-model",
+          provider: "openai-chat",
+          costStatus: "unknown",
+        });
+      }
+      const response = makeGenerateResult(`${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`);
+      delete response.cost_usd;
+      return Promise.resolve({ ...response, costStatus: "unknown" });
+    },
+  };
+  const strategy = new ReActLoopStrategy(policyExecutor(() => policy, executed), provider);
+  await strategy.execute(testBlueprint, testContext, { ...makeOptions(true), max_tool_calls: maxToolCalls });
+  return { calls };
+}
+
+Deno.test("[react policy] off alone executes one of three native calls and replays each refusal", {
+  sanitizeOps: false,
+  sanitizeResources: false,
+}, async () => {
+  const executed: string[] = [];
+  const { calls } = await runThreeReads(roundPolicy(ToolsRoundMode.OFF, 1), executed);
+
+  assertEquals(executed.length, 1);
+  const turns = calls[1].options?.nativeConversation?.turns ?? [];
+  assertEquals(turns.map((turn) => turn.toolResultIsError), [false, true, true]);
+  assertStringIncludes(String(turns[1].toolResultContent), "tool call limit reached");
+});
+
+Deno.test("[react policy] auto executes every native call up to the loop cap and sends no refusal", {
+  sanitizeOps: false,
+  sanitizeResources: false,
+}, async () => {
+  const executed: string[] = [];
+  const { calls } = await runThreeReads(roundPolicy(ToolsRoundMode.AUTO, 4), executed);
+
+  assertEquals(executed.length, 3);
+  const turns = calls[1].options?.nativeConversation?.turns ?? [];
+  assertEquals(turns.map((turn) => turn.toolResultIsError), [false, false, false]);
+});
+
+Deno.test("[react policy] a native tool result is capped to the policy result tokens before it is replayed", {
+  sanitizeOps: false,
+  sanitizeResources: false,
+}, async () => {
+  const RESULT_TOKEN_CAP = 128;
+  const oversized = "x".repeat(5000);
+  ProviderRegistry.clear();
+  ProviderRegistry.registerWithMetadata("openai-chat", new MockProviderFactory(), {
+    name: "openai-chat",
+    description: "Compatible fixture",
+    capabilities: ["chat", "tools"],
+    costTier: ProviderCostTier.LOCAL,
+    pricingTier: PricingTier.LOCAL,
+    strengths: [],
+    supportsNativeTools: true,
+    supportsNativeConversation: true,
+    chatFormat: "openai",
+  });
+  const calls: Array<{ options?: IModelOptions }> = [];
+  const provider: IModelProvider = {
+    id: "openai-chat-cap-fixture",
+    measureInputTokens: () =>
+      Promise.resolve({
+        totalTokens: 100,
+        tokenSource: "tokenizer_estimate",
+        sections: { system: 100, plan: 0, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: 0 },
+      }),
+    generate(_prompt, options) {
+      calls.push({ options });
+      if (calls.length === 1) {
+        return Promise.resolve({
+          content: "",
+          toolCalls: [{ id: "call_big", name: "read_file", input: { path: "README.md" }, type: "function" }],
+          usage: { promptTokens: 5, completionTokens: 2, totalTokens: 7 },
+          model: "policy-model",
+          provider: "openai-chat",
+          costStatus: "unknown",
+        });
+      }
+      const response = makeGenerateResult(`${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`);
+      delete response.cost_usd;
+      return Promise.resolve({ ...response, costStatus: "unknown" });
+    },
+  };
+  const base = makeTrackingExecutor({ count: 0 }, READ_TOOL_FOR_POLICY);
+  const executor: ReActExecutor = {
+    ...base,
+    getToolsRoundPolicy: () => ({ ...roundPolicy(ToolsRoundMode.AUTO, 4), resultTokenCap: RESULT_TOKEN_CAP }),
+    toolRegistry: {
+      ...base.toolRegistry!,
+      execute: () => Promise.resolve({ success: true, data: { value: oversized } }),
+    },
+  };
+  const strategy = new ReActLoopStrategy(executor, provider);
+  await strategy.execute(testBlueprint, testContext, makeOptions(true));
+
+  const replayed = String(calls[1].options?.nativeConversation?.turns[0].toolResultContent);
+  assertEquals(replayed.length <= RESULT_TOKEN_CAP * 4 + PLANNING_TOOL_RESULT_TRUNCATED_SUFFIX.length, true);
+  assertStringIncludes(replayed, PLANNING_TOOL_RESULT_TRUNCATED_SUFFIX);
+});
+
+Deno.test(
+  "[react policy] the whole-run tool-call allowance refuses a native response of three calls before any executes",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    const executed: string[] = [];
+    await assertRejects(
+      () => runThreeReads(roundPolicy(ToolsRoundMode.AUTO, 4), executed, 2),
+      Error,
+      "Exceeded maximum tool calls",
+    );
+    assertEquals(executed.length, 0);
   },
 );

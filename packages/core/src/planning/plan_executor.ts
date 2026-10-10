@@ -22,7 +22,7 @@ import { SafeSubprocess } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { ConfidenceScorer } from "@exaix/execution";
-import { DEFAULT_AMENDMENT_THRESHOLD, ExecutionStatus, SecurityMode } from "@exaix/core";
+import { DEFAULT_AMENDMENT_THRESHOLD, ExecutionStatus, SecurityMode, ToolsRoundLoop } from "@exaix/core";
 import {
   ACTIVITY_ACTOR_AGENT,
   AMENDMENT_ARTIFACTS_DIR,
@@ -48,6 +48,7 @@ import {
 } from "@exaix/execution";
 import type { IEffortResolver } from "@exaix/ai";
 import { PromptBudgetAllocator } from "@exaix/core";
+import { toolsRoundPolicyReader } from "@exaix/schemas";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { PlanAmendmentService } from "./plan_amendment_service.ts";
 import { PlanAmendmentGate } from "./plan_amendment_gate.ts";
@@ -362,6 +363,9 @@ export class PlanExecutor {
       : undefined;
 
     return new AgentComposer({
+      ...(this.options.context
+        ? { toolsRoundPolicy: toolsRoundPolicyReader(this.options.context, ToolsRoundLoop.REACT) }
+        : {}),
       config: executionConfig,
       db: this.db as DatabaseService,
       logger: this.logger,

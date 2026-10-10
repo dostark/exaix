@@ -18,7 +18,7 @@ import type { IGenerateResult } from "@exaix/ai/providers";
 import { type INativeInputMeasurement, ProviderRegistry } from "@exaix/ai";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import type { ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
-import { PlanningToolLoopStopReason, PricingTier, ProviderCostTier } from "@exaix/core";
+import { PlanningToolLoopStopReason, PricingTier, ProviderCostTier, ToolsRoundMode } from "@exaix/core";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
@@ -416,14 +416,25 @@ Deno.test("[planning_tool_loop][native] a round exceeding the caller's prompt bu
   }
 });
 
-Deno.test("[planning_tool_loop] exploration rounds use toolChoice auto with parallel disabled, never any/tool", async () => {
+Deno.test("[planning_tool_loop] off exploration rounds use toolChoice auto with parallel disabled, never any/tool", async () => {
   const registry = new StubToolRegistry([fixtureTool("read_file")], {
     read_file: () => ({ success: true, data: {} }),
   });
   const round1 = makeGenerateResult("", { toolCalls: [{ id: "t1", name: "read_file", input: { path: "a.ts" } }] });
   const round2 = makeGenerateResult("<thought>t</thought><content>plan</content>");
   const generate = new ScriptedGenerate([round1, round2]);
-  const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate }));
+  const off = {
+    mode: ToolsRoundMode.OFF,
+    executionCap: 1,
+    concurrency: 1,
+    maxResponseCalls: 64,
+    maxArgumentBytes: 65536,
+    maxReplayBytes: 1048576,
+    resultTokenCap: 2000,
+  };
+  const loop = new PlanningToolLoop(
+    makeDeps({ toolRegistry: registry, generate: generate.generate, toolsRoundPolicy: () => off }),
+  );
 
   await loop.run(makeOptions({ maxRounds: 2 }));
 
