@@ -20,6 +20,7 @@ import { join } from "@std/path";
 import { OllamaProvider } from "@exaix/ai-ollama";
 import { AnthropicProvider } from "@exaix/ai-anthropic";
 import { OpenAIProvider } from "@exaix/ai-openai";
+import { createLiveDeepSeekProvider } from "../../../../tests/helpers/live_deepseek_provider.ts";
 import { GoogleProvider } from "@exaix/ai-google";
 import {
   CliDelegateModelProvider,
@@ -40,12 +41,14 @@ import {
   castAny,
   createMinimalExecutionMemory,
   ENV_ANTHROPIC_API_KEY,
+  ENV_DEEPSEEK_API_KEY,
   ENV_GOOGLE_API_KEY,
   ENV_OPENAI_API_KEY,
   getTestLlmModel,
   getTestLlmProvider,
   initTestDbService,
   loadRepoSkillCatalog,
+  TEST_LLM_PROVIDER_DEEPSEEK,
 } from "@exaix/testing";
 import { EvaluationCategory, ProviderType } from "@exaix/core";
 import type { IMemoryCostRouter, ISkillsService } from "@exaix/core/types";
@@ -66,13 +69,15 @@ const testJudgeModel = Deno.env.get("EXA_EVAL_LLM_MODEL") ??
   JUDGE_MODEL_BY_PROVIDER[testJudgeProvider as ProviderType];
 
 /** The env var name carrying the real API key for a given provider's own factory/tests. */
-const API_KEY_ENV_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
+const API_KEY_ENV_BY_PROVIDER: Partial<Record<string, string>> = {
+  [TEST_LLM_PROVIDER_DEEPSEEK]: ENV_DEEPSEEK_API_KEY,
   [ProviderType.ANTHROPIC]: ENV_ANTHROPIC_API_KEY,
   [ProviderType.OPENAI]: ENV_OPENAI_API_KEY,
   [ProviderType.GOOGLE]: ENV_GOOGLE_API_KEY,
 };
 
-function buildTestProvider(provider: string, model: string): IModelProvider {
+async function buildTestProvider(provider: string, model: string): Promise<IModelProvider> {
+  if (provider === TEST_LLM_PROVIDER_DEEPSEEK) return await createLiveDeepSeekProvider();
   if (provider === ProviderType.OLLAMA) return new OllamaProvider({ model, timeoutMs: 300_000 });
   if (
     provider === ProviderType.CLAUDE_CLI || provider === ProviderType.CODEX_CLI ||
@@ -202,7 +207,7 @@ Deno.test({
         portals: [],
         mcp: {},
       });
-      const provider = buildTestProvider(testProvider, testModel);
+      const provider = await buildTestProvider(testProvider, testModel);
       const costRouter = castAny<IMemoryCostRouter>({
         isRemoteAllowed: () => Promise.resolve(true),
         recordOperation: () => Promise.resolve(),
@@ -266,7 +271,7 @@ Deno.test({
         "extraction and judge providers must differ",
       );
       assertExists(testJudgeModel, `no default judge model for provider ${testJudgeProvider}`);
-      const judge = buildTestProvider(testJudgeProvider, testJudgeModel);
+      const judge = await buildTestProvider(testJudgeProvider, testJudgeModel);
       const judgeInput = {
         summary: execution.summary,
         lessons_learned: execution.lessons_learned ?? [],

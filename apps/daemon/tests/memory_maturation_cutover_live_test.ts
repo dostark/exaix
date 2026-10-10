@@ -22,6 +22,7 @@ import { createStubConfig, createStubDisplay, createStubGit, loadRepoSkillCatalo
 import { OllamaProvider } from "@exaix/ai-ollama";
 import { AnthropicProvider } from "@exaix/ai-anthropic";
 import { OpenAIProvider } from "@exaix/ai-openai";
+import { createLiveDeepSeekProvider } from "../../../tests/helpers/live_deepseek_provider.ts";
 import { GoogleProvider } from "@exaix/ai-google";
 import {
   CliDelegateModelProvider,
@@ -53,11 +54,13 @@ import {
   createMinimalExecutionMemory,
   createSampleLearning,
   ENV_ANTHROPIC_API_KEY,
+  ENV_DEEPSEEK_API_KEY,
   ENV_GOOGLE_API_KEY,
   ENV_OPENAI_API_KEY,
   getTestLlmModel,
   getTestLlmProvider,
   initTestDbService,
+  TEST_LLM_PROVIDER_DEEPSEEK,
 } from "@exaix/testing";
 import { ProviderType } from "@exaix/core";
 import type { IApplicationContext, IMemoryCostRouter, ISkillsService } from "@exaix/core/types";
@@ -68,13 +71,15 @@ const testProvider = getTestLlmProvider();
 const testModel = getTestLlmModel();
 
 /** The env var name carrying the real API key for a given provider's own factory/tests. */
-const API_KEY_ENV_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
+const API_KEY_ENV_BY_PROVIDER: Partial<Record<string, string>> = {
+  [TEST_LLM_PROVIDER_DEEPSEEK]: ENV_DEEPSEEK_API_KEY,
   [ProviderType.ANTHROPIC]: ENV_ANTHROPIC_API_KEY,
   [ProviderType.OPENAI]: ENV_OPENAI_API_KEY,
   [ProviderType.GOOGLE]: ENV_GOOGLE_API_KEY,
 };
 
-function buildTestProvider(provider: string, model: string): IModelProvider {
+async function buildTestProvider(provider: string, model: string): Promise<IModelProvider> {
+  if (provider === TEST_LLM_PROVIDER_DEEPSEEK) return await createLiveDeepSeekProvider();
   if (provider === ProviderType.OLLAMA) return new OllamaProvider({ model, timeoutMs: 300_000 });
   if (
     provider === ProviderType.CLAUDE_CLI || provider === ProviderType.CODEX_CLI ||
@@ -144,7 +149,7 @@ Deno.test({
         },
       });
       const logger = new EventLogger({ db });
-      const provider = buildTestProvider(testProvider, testModel);
+      const provider = await buildTestProvider(testProvider, testModel);
 
       // The real cost router decides remotely-gated operations from real budget state; the
       // extraction strategy gate below is forced open so the live path is exercised even on
@@ -156,6 +161,7 @@ Deno.test({
       const realInstructions = await loadPolicyInstructions();
       const skillsService = castAny<ISkillsService>({
         recordSubmission: () => Promise.resolve(),
+        currentConfigGeneration: () => "static",
         getSkill: (skillId: string) =>
           Promise.resolve(skillId === POLICY_SKILL_ID ? { skill_id: skillId, instructions: realInstructions } : null),
       });

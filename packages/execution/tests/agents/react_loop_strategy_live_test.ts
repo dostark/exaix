@@ -19,8 +19,8 @@
  *   this test isolates ReActLoopStrategy's own tool-use, comprehension, and termination
  *   contract against a real model as cheaply and directly as possible. Provider and model
  *   are overridable via EXA_TEST_LLM_PROVIDER/EXA_TEST_LLM_MODEL (@exaix/testing), so this
- *   same test can be pointed at Anthropic, OpenAI, or Google without editing source —
- *   defaults to Anthropic, gated on whichever provider's own API key is actually required.
+ *   same test can be pointed at the DeepSeek API (default), Anthropic, OpenAI, or Google without
+ *   editing source. Gated on whichever provider's own API key is actually required.
  * @architectural-layer Services (test)
  * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/execution/tests/agents/react_loop_strategy_test.ts, packages/ai/tests/provider_endpoint_regression_test.ts]
  */
@@ -30,16 +30,19 @@ import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import { AnthropicProvider } from "@exaix/ai-anthropic";
 import { OpenAIProvider } from "@exaix/ai-openai";
+import { createLiveDeepSeekProvider } from "../../../../tests/helpers/live_deepseek_provider.ts";
 import { GoogleProvider } from "@exaix/ai-google";
 import { ExecutionStrategyName, ProviderType, REACT_STATUS_COMPLETE, SecurityMode, ToolName } from "@exaix/core";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import {
   ENV_ANTHROPIC_API_KEY,
+  ENV_DEEPSEEK_API_KEY,
   ENV_GOOGLE_API_KEY,
   ENV_OPENAI_API_KEY,
   getTestLlmModel,
   getTestLlmProvider,
+  TEST_LLM_PROVIDER_DEEPSEEK,
 } from "@exaix/testing";
 import type { JSONValue } from "@exaix/core/types";
 import { bestSubstringSimilarity } from "../../../../tests/helpers/fuzzy_string_match.ts";
@@ -63,17 +66,19 @@ const testProvider = getTestLlmProvider();
 const testModel = getTestLlmModel();
 
 /** The env var name carrying the real API key for a given provider's own factory/tests. */
-const API_KEY_ENV_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
+const API_KEY_ENV_BY_PROVIDER: Partial<Record<string, string>> = {
+  [TEST_LLM_PROVIDER_DEEPSEEK]: ENV_DEEPSEEK_API_KEY,
   [ProviderType.ANTHROPIC]: ENV_ANTHROPIC_API_KEY,
   [ProviderType.OPENAI]: ENV_OPENAI_API_KEY,
   [ProviderType.GOOGLE]: ENV_GOOGLE_API_KEY,
 };
 
 function resolveApiKeyEnvVar(provider: string): string {
-  return API_KEY_ENV_BY_PROVIDER[provider as ProviderType] ?? ENV_ANTHROPIC_API_KEY;
+  return API_KEY_ENV_BY_PROVIDER[provider] ?? ENV_ANTHROPIC_API_KEY;
 }
 
-function buildTestProvider(provider: string, model: string, apiKey: string): IModelProvider {
+async function buildTestProvider(provider: string, model: string, apiKey: string): Promise<IModelProvider> {
+  if (provider === TEST_LLM_PROVIDER_DEEPSEEK) return await createLiveDeepSeekProvider();
   switch (provider as ProviderType) {
     case ProviderType.OPENAI:
       return new OpenAIProvider({ apiKey, model });
@@ -156,7 +161,7 @@ Deno.test({
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {
-    const provider = buildTestProvider(testProvider, testModel, Deno.env.get(testApiKeyEnvVar)!);
+    const provider = await buildTestProvider(testProvider, testModel, Deno.env.get(testApiKeyEnvVar)!);
 
     let generateCallCount = 0;
     const countingProvider = {

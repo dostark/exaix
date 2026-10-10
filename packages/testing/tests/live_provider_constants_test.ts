@@ -8,7 +8,15 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { ENV_TEST_LLM_MODEL, ENV_TEST_LLM_PROVIDER, getTestLlmModel, withEnv } from "@exaix/testing";
+import {
+  DEEPSEEK_PINNED_MODEL,
+  ENV_TEST_LLM_MODEL,
+  ENV_TEST_LLM_PROVIDER,
+  getTestLlmModel,
+  getTestLlmProvider,
+  TEST_LLM_PROVIDER_DEEPSEEK,
+  withEnv,
+} from "@exaix/testing";
 
 Deno.test("getTestLlmModel selects a compatible CLI model when only the provider is overridden", async () => {
   const expectedModels = {
@@ -25,4 +33,17 @@ Deno.test("getTestLlmModel selects a compatible CLI model when only the provider
       () => assertEquals(getTestLlmModel(), model),
     );
   }
+});
+
+Deno.test("live-provider tests default to the DeepSeek API with its pinned model", async () => {
+  await withEnv(
+    {
+      [ENV_TEST_LLM_PROVIDER]: null,
+      [ENV_TEST_LLM_MODEL]: null,
+    },
+    () => {
+      assertEquals(getTestLlmProvider(), TEST_LLM_PROVIDER_DEEPSEEK);
+      assertEquals(getTestLlmModel(), DEEPSEEK_PINNED_MODEL);
+    },
+  );
 });
