@@ -787,6 +787,40 @@ Deno.test("[planning_tool_loop][integration] a real EventLogger journals dynamic
   }
 });
 
+Deno.test("[planning_tool_loop][integration] with a per-round cap of one, the refused second call is journaled with the limit message and never counted as executed", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {
+      read_file: (p) => ({ success: true, data: { content: `contents of ${p.path}` } }),
+    });
+    const round1 = makeGenerateResult("", {
+      toolCalls: [
+        { id: "t1", name: "read_file", input: { path: "a.ts" } },
+        { id: "t2", name: "read_file", input: { path: "b.ts" } },
+      ],
+    });
+    const round2 = makeGenerateResult("<thought>t</thought><content>plan</content>");
+    const generate = new ScriptedGenerate([round1, round2]);
+    const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate, logger }));
+    const traceId = crypto.randomUUID();
+
+    const result = await loop.run(makeOptions({ maxRounds: 2, maxToolCallsPerRound: 1, traceId }));
+    await db.waitForFlush();
+
+    assertEquals(registry.calls.map((c) => c.params.path), ["@myportal/a.ts"]);
+    assertEquals(result.toolCalls, 1);
+
+    const toolCallRows = db.getActivitiesByTrace(traceId)
+      .filter((r) => r.action_type === DomainEventType.AgentDynamicToolCall);
+    const summaries = toolCallRows.map((r) => (JSON.parse(r.payload) as { resultSummary: string }).resultSummary);
+    assertEquals(toolCallRows.length, 2);
+    assertEquals(summaries.filter((s) => s.includes("tool call limit")).length, 1);
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("[planning_tool_loop][integration] a round that throws journals one planning.tools.aborted row with the partial totals and trace id, then rethrows", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
