@@ -140,7 +140,7 @@ export class CircuitBreakerProvider implements IModelProvider {
       halfOpenSuccessThreshold: 2,
     },
   ) {
-    this.id = ProviderRegistry.getMetadataForInstance(inner.id)?.supportsNativeConversation === true
+    this.id = ProviderRegistry.getMetadataForInstance(inner.id)?.compatibleCallPolicy === true
       ? inner.id
       : `circuit-breaker-${inner.id}`;
     this.measureInputTokens = inner.measureInputTokens?.bind(inner);

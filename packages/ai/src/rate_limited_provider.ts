@@ -83,7 +83,7 @@ export class RateLimitedProvider implements IModelProvider {
     public readonly inner: IModelProvider,
     private limits: IRateLimitConfig,
   ) {
-    this.compatible = ProviderRegistry.getMetadataForInstance(inner.id)?.supportsNativeConversation === true;
+    this.compatible = ProviderRegistry.getMetadataForInstance(inner.id)?.compatibleCallPolicy === true;
     // local-test and self-hosted carry no verified price, so their usage stays unpriced.
     this.compatibleUnpriced = this.compatible &&
       OPENAI_COMPATIBLE_UNPRICED_PROFILES.includes(inner.callCapabilities?.profile ?? "");

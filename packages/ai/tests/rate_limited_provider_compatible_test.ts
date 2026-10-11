@@ -25,7 +25,7 @@ Deno.test("compatible rate limiting preserves identity/options and journals unkn
     pricingTier: PricingTier.LOCAL,
     strengths: [],
     supportsNativeTools: true,
-    supportsNativeConversation: true,
+    compatibleCallPolicy: true,
   });
   let forwarded: IModelOptions | undefined;
   const inner: IModelProvider = {
@@ -171,7 +171,7 @@ Deno.test("[phase203.rate-limit] a self-hosted call under default limits succeed
     pricingTier: PricingTier.LOCAL,
     strengths: [],
     supportsNativeTools: true,
-    supportsNativeConversation: true,
+    compatibleCallPolicy: true,
   });
   let budgetChecks = 0;
   let unpricedRecords = 0;

@@ -50,6 +50,8 @@ export interface IProviderMetadata {
   chatFormat?: ChatFormat;
   /** True only when this provider accepts an invocation-local complete native conversation. */
   supportsNativeConversation?: boolean;
+  /** True only for OpenAI-compatible transports. Their calls use the compatible call policy: an unpriced local profile, or a monetary reservation for a priced one. */
+  compatibleCallPolicy?: boolean;
   /** True only when generate() replays a whole completed round: every original assistant part and
    *  every tool result in order (IModelOptions.priorRound). Set by real boot registration. */
   supportsParallelToolReplay?: boolean;

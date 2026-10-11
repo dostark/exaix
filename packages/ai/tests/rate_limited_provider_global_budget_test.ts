@@ -62,7 +62,7 @@ function registerCompatible(): void {
     pricingTier: PricingTier.LOCAL,
     strengths: [],
     supportsNativeTools: true,
-    supportsNativeConversation: true,
+    compatibleCallPolicy: true,
   });
 }
 

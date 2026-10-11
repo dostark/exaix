@@ -48,6 +48,7 @@ export const OPENAI_CHAT_PROVIDER_METADATA = {
   strengths: ["coding"],
   supportsNativeTools: true,
   supportsNativeConversation: true,
+  compatibleCallPolicy: true,
   chatFormat: "openai",
 } as const;
 

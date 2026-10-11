@@ -81,6 +81,7 @@ function registerConcreteProviders(): void {
       capabilities: [...OPENAI_PROVIDER_METADATA.capabilities],
       pricingTier: PricingTier.MEDIUM,
       supportsNativeTools: true,
+      supportsNativeConversation: true,
       supportsParallelToolReplay: true,
     };
     ProviderRegistry.registerWithMetadata(
