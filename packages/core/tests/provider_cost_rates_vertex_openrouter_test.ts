@@ -43,8 +43,9 @@ Deno.test("PROVIDER_* constants alias the new enum members", () => {
   assertEquals(PROVIDER_OPENROUTER, ProviderType.OPENROUTER);
 });
 
-Deno.test("COST_RATE_VERTEX matches the Google rate; OpenRouter is an unmetered sentinel", () => {
-  assertEquals(COST_RATE_VERTEX, COST_RATE_GOOGLE);
+Deno.test("COST_RATE_GOOGLE is the gemini-3.8-flash output rate; COST_RATE_VERTEX keeps its own; OpenRouter is an unmetered sentinel", () => {
+  assertEquals(COST_RATE_GOOGLE, 0.00375);
+  assertEquals(COST_RATE_VERTEX, 0.0025);
   assertEquals(COST_RATE_OPENROUTER, 0);
 });
 

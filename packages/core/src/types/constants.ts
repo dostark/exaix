@@ -1567,17 +1567,19 @@ export const COST_RATE_ANTHROPIC: number = configurable({
   max: 1,
   swap: SwapClass.RESTART,
 });
-// Google gemini-2.5-flash (Vertex AI): $2.50/1M output → $0.0025/1K
+// Google AI API gemini-3.8-flash, standard paid tier: $3.75/1M output → $0.00375/1K.
+// The rate doubles on 2027-01-01 to $7.50/1M output.
 export const COST_RATE_GOOGLE: number = configurable({
   key: "cost_tracking.rate_google",
-  default: 0.0025,
+  default: 0.00375,
   type: ConfigValueType.NUMBER,
   description: "USD cost per 1K tokens for google provider",
   min: 0,
   max: 1,
   swap: SwapClass.RESTART,
 });
-// Vertex AI bills Gemini at the same output rate as the Google AI API.
+// Vertex AI default gemini-2.5-flash: $2.50/1M output → $0.0025/1K.
+// Vertex does not follow the Google AI rate, because its default model is older.
 export const COST_RATE_VERTEX: number = configurable({
   key: "cost_tracking.rate_vertex",
   default: 0.0025,

@@ -155,18 +155,18 @@ Deno.test({
 });
 
 Deno.test({
-  name: "getModelPricing returns the current gemini-flash-latest rates with their official source",
+  name: "getModelPricing returns the gemini-3.8-flash standard rates with their official source",
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
     setupProviders();
     const registry = new DefaultModelRegistry(stubHealthChecker());
-    const pricing = await registry.getModelPricing("google", "gemini-flash-latest");
+    const pricing = await registry.getModelPricing("google", "gemini-3.8-flash");
     assertEquals(pricing.provenance, "static");
-    assertEquals(pricing.inputPerMtok, 0.5);
-    assertEquals(pricing.outputPerMtok, 3.0);
+    assertEquals(pricing.inputPerMtok, 0.75);
+    assertEquals(pricing.outputPerMtok, 3.75);
     assertExists(pricing.verifiedAt);
-    assertEquals(pricing.sourceUrl, "https://cloud.google.com/vertex-ai/generative-ai/pricing/");
+    assertEquals(pricing.sourceUrl, "https://ai.google.dev/gemini-api/docs/pricing");
   },
 });
 

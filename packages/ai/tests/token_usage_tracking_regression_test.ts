@@ -49,7 +49,7 @@ Deno.test("[regression] Token usage logged at info level with cost calculation",
   assertEquals(result?.total_tokens, TEST_TOTAL_TOKENS_GOOGLE);
   assertEquals(result?.model, TEST_MODEL_GOOGLE);
 
-  // Verify cost calculation (Google rate = 0.0025 per 1000 tokens)
+  // Verify cost calculation (Google rate = 0.00375 per 1000 tokens, gemini-3.8-flash output)
   const expectedCost = (TEST_TOTAL_TOKENS_GOOGLE / 1000) * COST_RATE_GOOGLE;
   assertEquals(result?.cost_usd, expectedCost);
 });
