@@ -433,7 +433,11 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         if (forcedChoiceRefused) {
           base.toolChoice = { type: TOOL_CHOICE_TYPE_AUTO, ...parallel };
           base.nativeToolChoiceMode = TOOL_CHOICE_TYPE_AUTO;
-        } else if (nativePreferredTool && !nativeToolsPriorTurn) {
+        } else if (
+          nativePreferredTool && !nativeToolsPriorTurn &&
+          nativeToolDefinitions.some((tool) => tool.name === nativePreferredTool)
+        ) {
+          // A forced choice must name a tool in the list, or strict upstreams reject the request.
           base.toolChoice = { type: "tool" as const, name: nativePreferredTool, ...parallel };
           base.nativeToolChoiceMode = "forced";
         } else {

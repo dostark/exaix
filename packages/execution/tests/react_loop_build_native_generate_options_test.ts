@@ -103,6 +103,29 @@ Deno.test("buildNativeGenerateOptions records mode 'any' when no preferred tool 
   assertEquals(options.nativeToolChoiceMode, "any");
 });
 
+Deno.test("buildNativeGenerateOptions never forces a preferred tool that is not among the offered tools", () => {
+  const strategy = new ReActLoopStrategy(dummyExecutor);
+  const typed = strategy as never as {
+    buildNativeGenerateOptions(
+      toolDefinitions?: MockToolDef[],
+      priorTurn?: MockPriorTurn,
+      nativeToolsUsed?: boolean,
+      preferredTool?: string,
+    ): MockGenerateOptions;
+  };
+
+  const options = typed.buildNativeGenerateOptions(
+    [{ name: "read_file", description: "Read", inputSchema: { type: "object" } }],
+    undefined,
+    true,
+    "patch_file",
+  );
+
+  assertEquals(options.toolChoice?.type, "any");
+  assertEquals(options.toolChoice?.name, undefined);
+  assertEquals(options.nativeToolChoiceMode, "any");
+});
+
 Deno.test("buildNativeGenerateOptions records no mode when native tools are inactive", () => {
   const strategy = new ReActLoopStrategy(dummyExecutor);
   const typed = strategy as never as {
