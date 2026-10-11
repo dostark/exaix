@@ -40,6 +40,7 @@ import {
   LIVE_ANTHROPIC_MODEL,
   LIVE_MODEL,
   LIVE_OPENAI_MODEL,
+  LIVE_OPENROUTER_MODEL,
   type LiveProvider,
   readTraceRows,
   seedConfigOverride,
@@ -182,6 +183,16 @@ const OPENAI_PERMISSIONS = [
   "--allow-ffi",
   "--allow-net=api.openai.com,127.0.0.1",
 ];
+/** The OpenRouter profile calls its API host. The loopback fixture still serves embeddings on 127.0.0.1. */
+const OPENROUTER_PERMISSIONS = [
+  "--allow-read",
+  "--allow-write",
+  "--allow-env",
+  "--allow-run",
+  "--allow-sys",
+  "--allow-ffi",
+  "--allow-net=openrouter.ai,127.0.0.1",
+];
 const LIVE_UNEXPECTED_CHAT = "chat must not reach the loopback fixture in a live run";
 const FLOW_ID = "compat-probe";
 export const FILE_NAMES = ["a", "b", "c"] as const;
@@ -251,10 +262,11 @@ function bootEnv(setup: IRoundSetup): Record<string, string> {
   return { ...fixtureKey, ...setup.extraEnv };
 }
 
-/** The agent's model reference: the fixture or DeepSeek over openai-chat, or Anthropic's or OpenAI's own provider. */
+/** The agent's model reference: the fixture, DeepSeek, or the named direct live provider. */
 function modelRefFor(setup: IRoundSetup): string {
   if (!setup.live) return `openai-chat:${FIXTURE_MODEL}`;
   if (setup.liveProvider === "anthropic") return `anthropic:${LIVE_ANTHROPIC_MODEL}`;
+  if (setup.liveProvider === "openrouter") return `openrouter:${setup.liveModel ?? LIVE_OPENROUTER_MODEL}`;
   return setup.liveProvider === "openai"
     ? `openai:${setup.liveModel ?? LIVE_OPENAI_MODEL}`
     : `openai-chat:${LIVE_MODEL}`;
@@ -264,6 +276,7 @@ function modelRefFor(setup: IRoundSetup): string {
 function permissionsFor(setup: IRoundSetup): string[] {
   if (!setup.live) return COMPAT_PERMISSIONS;
   if (setup.liveProvider === "anthropic") return ANTHROPIC_PERMISSIONS;
+  if (setup.liveProvider === "openrouter") return OPENROUTER_PERMISSIONS;
   return setup.liveProvider === "openai" ? OPENAI_PERMISSIONS : LIVE_PERMISSIONS;
 }
 

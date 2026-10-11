@@ -42,7 +42,7 @@ export interface ICompatibleFixture {
 }
 
 /** The live provider a daemon run calls. */
-export type LiveProvider = "deepseek" | "anthropic" | "openai";
+export type LiveProvider = "deepseek" | "anthropic" | "openai" | "openrouter";
 
 /** The options that shape the compatible-profile daemon config. */
 export interface ICompatibleConfigOptions {
@@ -59,7 +59,7 @@ export interface ICompatibleConfigOptions {
   live?: boolean;
   /** Names the live provider when `live` is set. Unset means DeepSeek. */
   liveProvider?: LiveProvider;
-  /** Names the OpenAI model for a live OpenAI run. Unset means LIVE_OPENAI_MODEL. */
+  /** Names the model for a live OpenAI or OpenRouter run. Unset means that provider's live default. */
   liveModel?: string;
 }
 
@@ -92,6 +92,10 @@ export const LIVE_ANTHROPIC_MODEL = Deno.env.get("EXA_TEST_ANTHROPIC_MODEL") ?? 
 /** Defaults to GPT-6 Luna. EXA_TEST_OPENAI_MODEL picks another OpenAI model for one live run. */
 export const LIVE_OPENAI_MODEL = Deno.env.get("EXA_TEST_OPENAI_MODEL") ?? "gpt-6-luna";
 export const OPENAI_KEY_ENV = "OPENAI_API_KEY";
+/** The OpenRouter live leg's model. It is cheap, tool-capable, and returns reasoning details by default. */
+/** EXA_TEST_OPENROUTER_MODEL picks another OpenRouter model for one live run. */
+export const LIVE_OPENROUTER_MODEL = Deno.env.get("EXA_TEST_OPENROUTER_MODEL") ?? "inclusionai/ling-3.0-flash";
+export const OPENROUTER_KEY_ENV = "OPENROUTER_API_KEY";
 /** The OpenAI thinking case's model. Its effort is set high, so the case runs reasoning together with tool calls. */
 export const LIVE_OPENAI_THINKING_MODEL = "gpt-6-sol";
 const FIXTURE_TIMEOUT_MS = 10000;
@@ -212,12 +216,15 @@ export function writeCompatibleConfig(
   const tools = options.toolsLines?.length ? ["[tools]", ...options.toolsLines, ""] : [];
   const anthropic = options.live === true && options.liveProvider === "anthropic";
   const openai = options.live === true && options.liveProvider === "openai";
-  const directProvider = anthropic ? "anthropic" : openai ? "openai" : undefined;
+  const openrouter = options.live === true && options.liveProvider === "openrouter";
+  const directProvider = anthropic ? "anthropic" : openai ? "openai" : openrouter ? "openrouter" : undefined;
   if (directProvider && options.flowBinding) throw new Error(`The ${directProvider} live leg has no Flow binding.`);
   const model = anthropic
     ? LIVE_ANTHROPIC_MODEL
     : openai
     ? (options.liveModel ?? LIVE_OPENAI_MODEL)
+    : openrouter
+    ? (options.liveModel ?? LIVE_OPENROUTER_MODEL)
     : options.live
     ? LIVE_MODEL
     : FIXTURE_MODEL;

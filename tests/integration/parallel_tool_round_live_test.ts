@@ -19,7 +19,14 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { REQUEST_SUCCESS_ACTIONS } from "./helpers/daemon_config.ts";
-import { LIVE_KEY_ENV, LIVE_OPENAI_THINKING_MODEL, OPENAI_KEY_ENV, payloadOf } from "./helpers/compatible_daemon.ts";
+import {
+  type ITraceRow,
+  LIVE_KEY_ENV,
+  LIVE_OPENAI_THINKING_MODEL,
+  OPENAI_KEY_ENV,
+  OPENROUTER_KEY_ENV,
+  payloadOf,
+} from "./helpers/compatible_daemon.ts";
 import {
   FILE_NAMES,
   type ITerminalPayload,
@@ -38,6 +45,7 @@ const liveEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && (Deno.env.get(LIVE_
 const ANTHROPIC_KEY_ENV = "ANTHROPIC_API_KEY";
 const anthropicEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && (Deno.env.get(ANTHROPIC_KEY_ENV) ?? "") !== "";
 const openaiEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && (Deno.env.get(OPENAI_KEY_ENV) ?? "") !== "";
+const openrouterEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && (Deno.env.get(OPENROUTER_KEY_ENV) ?? "") !== "";
 /** A live model must batch at least two calls in one response for the override to be observable. */
 const MINIMUM_BATCH = 2;
 /** The shipped planning cap is three. A live model may list a directory before its three reads, so this case allows eight. */
@@ -46,6 +54,21 @@ const LIVE_PLANNING_CALLS_PER_ROUND = 8;
 const DESCRIBED_RESULT_CHARS = 60;
 /** The calls a failure message lists, so a long ReAct run stays readable. */
 const DESCRIBED_CALLS = 8;
+
+/** The calls each model response asked for, and how many executed. Refused calls are journaled too. */
+function callsPerResponse(rows: ITraceRow[]): { requested: number; executed: number }[] {
+  const responses: { requested: number; executed: number }[] = [];
+  for (const row of rows) {
+    if (row.action_type === "llm.call.completed") responses.push({ requested: 0, executed: 0 });
+    const current = responses.at(-1);
+    if (!current) continue;
+    for (const call of toolRows([row])) {
+      current.requested++;
+      if (!call.resultSummary.includes(REFUSAL)) current.executed++;
+    }
+  }
+  return responses;
+}
 
 /** Each journaled call's tool and the start of its result, for a failure message that says what the model did. */
 function describeCalls(calls: IToolSummaryPayload[]): string {
@@ -322,6 +345,77 @@ Deno.test({
   async fn() {
     const { fixture, markers, rows } = await runReactRound({ live: true, liveProvider: "openai", toolsLines: [] });
     assertEquals(fixture.bodies.length, 0, "chat must reach OpenAI, not the loopback fixture");
+    assert(
+      rows.some((row) => row.action_type === "execution.completed"),
+      `the execution did not complete: ${journalFailure(rows)}; calls: ${describeCalls(toolRows(rows))}`,
+    );
+    const results = toolRows(rows).map((call) => call.resultSummary).join("\n");
+    assert(markers.some((marker) => results.includes(marker)), "no execution tool result carried a marker");
+  },
+});
+
+Deno.test({
+  name:
+    "[phase202-cutover][live][openrouter] planning replays a three-file batch through the OpenRouter provider, reading every file",
+  ignore: !openrouterEnabled,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const { fixture, markers, rows } = await runPlanningRound({
+      live: true,
+      liveProvider: "openrouter",
+      toolsLines: [],
+      maxCallsPerRound: LIVE_PLANNING_CALLS_PER_ROUND,
+    });
+    assertEquals(fixture.bodies.length, 0, "chat must reach OpenRouter, not the loopback fixture");
+    assert(
+      payloadOf<ITerminalPayload>(rows, "planning.tools.completed") !== undefined,
+      `the planning round did not complete: ${journalFailure(rows)}; ${journalActions(rows)}`,
+    );
+    const calls = toolRows(rows);
+    assert(calls.length >= FILE_NAMES.length, `the round journaled ${calls.length} calls: ${journalActions(rows)}`);
+    assert(calls.every((call) => !call.resultSummary.includes(REFUSAL)), "the auto default refuses no call");
+    for (const marker of markers) {
+      assert(calls.some((call) => call.resultSummary.includes(marker)), `no tool result carried ${marker}`);
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "[phase202-cutover][live][openrouter] planning with parallel calls off executes one call even when the route batches several",
+  ignore: !openrouterEnabled,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const { fixture, rows } = await runPlanningRound({
+      live: true,
+      liveProvider: "openrouter",
+      toolsLines: [],
+      dbOverride: { key: "tools.parallel_calls", value: "off" },
+    });
+    assertEquals(fixture.bodies.length, 0, "chat must reach OpenRouter, not the loopback fixture");
+    const responses = callsPerResponse(rows);
+    assert(
+      responses.some((response) => response.requested >= MINIMUM_BATCH),
+      `no response batched, so the override is untested: ${journalActions(rows)}`,
+    );
+    assert(
+      responses.every((response) => response.executed <= 1),
+      `a response executed more than one call: ${JSON.stringify(responses)}`,
+    );
+  },
+});
+
+Deno.test({
+  name:
+    "[phase202-cutover][live][openrouter] ReAct native reads files through an OpenRouter execution after plan approval, and completes",
+  ignore: !openrouterEnabled,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const { fixture, markers, rows } = await runReactRound({ live: true, liveProvider: "openrouter", toolsLines: [] });
+    assertEquals(fixture.bodies.length, 0, "chat must reach OpenRouter, not the loopback fixture");
     assert(
       rows.some((row) => row.action_type === "execution.completed"),
       `the execution did not complete: ${journalFailure(rows)}; calls: ${describeCalls(toolRows(rows))}`,
