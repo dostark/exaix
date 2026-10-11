@@ -46,19 +46,23 @@ export interface IProviderTestSuiteConfig<T> {
   apiKeyValue: string;
   /** Additional headers to verify (optional) */
   additionalHeaders?: Record<string, string>;
-  /** How the provider maps stop sequences in request body */
-  stopSequenceKey?: string;
+  /** How the provider maps stop sequences in request body. Null when the provider has no stop-sequence field. */
+  stopSequenceKey?: string | null;
 }
 
-// OpenAI response format
-export const openaiResponseConfig: IProviderResponseConfig = {
-  wrapResponse: (text: string) => ({ choices: [{ message: { content: text } }] }),
+// OpenAI Responses API format
+export const openaiResponsesResponseConfig: IProviderResponseConfig = {
+  wrapResponse: (text: string) => ({
+    status: "completed",
+    output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text }] }],
+  }),
   createUsage: (prompt: number, completion: number) => ({
-    usage: { prompt_tokens: prompt, completion_tokens: completion, total_tokens: prompt + completion },
+    usage: { input_tokens: prompt, output_tokens: completion, total_tokens: prompt + completion },
   }),
   createFullResponse: (text: string, prompt: number, completion: number) => ({
-    choices: [{ message: { content: text } }],
-    usage: { prompt_tokens: prompt, completion_tokens: completion, total_tokens: prompt + completion },
+    status: "completed",
+    output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text }] }],
+    usage: { input_tokens: prompt, output_tokens: completion, total_tokens: prompt + completion },
   }),
 };
 
@@ -237,7 +241,7 @@ export function testProviderOptionsMapping<
   name: string,
   createProvider: (options?: JSONObject, logger?: EventLogger) => T,
   responseConfig: IProviderResponseConfig,
-  stopSequenceKey: string = "stop",
+  stopSequenceKey: string | null = "stop",
 ): void {
   Deno.test(`${name} - options mapping`, async () => {
     const provider = createProvider({ apiKey: "test-key" });
@@ -258,14 +262,18 @@ export function testProviderOptionsMapping<
       const temp = body.temperature ?? body.generationConfig?.temperature;
       // OpenAI serializes max_completion_tokens (current field, Anthropic/Llama still use
       // max_tokens, Google uses generationConfig.maxOutputTokens).
-      const maxTokens = body.max_tokens ?? body.max_completion_tokens ?? body.generationConfig?.maxOutputTokens;
+      const maxTokens = body.max_tokens ?? body.max_completion_tokens ?? body.max_output_tokens ??
+        body.generationConfig?.maxOutputTokens;
       const topP = body.top_p ?? body.generationConfig?.topP;
-      const stopSeqs = body[stopSequenceKey] ?? body.generationConfig?.stopSequences;
 
       assert(temp === 0.5 || temp === undefined, `temperature must be 0.5 or legitimately omitted, got ${temp}`);
       assertEquals(maxTokens, 100);
       assert(topP === 0.9 || topP === undefined, `top_p must be 0.9 or legitimately omitted, got ${topP}`);
-      assertEquals(stopSeqs, ["STOP"]);
+      // A provider with no stop-sequence field is not asserted on the stop option.
+      if (stopSequenceKey !== null) {
+        const stopSeqs = body[stopSequenceKey] ?? body.generationConfig?.stopSequences;
+        assertEquals(stopSeqs, ["STOP"]);
+      }
     } finally {
       restore();
     }
@@ -367,7 +375,7 @@ export function registerProviderTests<
     config.name,
     config.createProvider,
     config.responseConfig,
-    config.stopSequenceKey || "stop",
+    config.stopSequenceKey === undefined ? "stop" : config.stopSequenceKey,
   );
   testProviderTokenUsage(config.name, config.createProvider, config.responseConfig);
   testProviderRetryOn429(config.name, config.createProvider, config.responseConfig);

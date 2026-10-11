@@ -29,6 +29,9 @@ export const DEFAULT_OPENAI_ENDPOINT: string = configurable({
   description: "API endpoint URL for openai provider",
   swap: SwapClass.RESTART,
 });
+/** The Responses endpoint sits beside the Chat Completions endpoint on the same host. */
+export const OPENAI_CHAT_COMPLETIONS_PATH = "/chat/completions";
+export const OPENAI_RESPONSES_PATH = "/responses";
 export const DEFAULT_OPENAI_EMBED_BASE_URL = "https://api.openai.com/v1";
 export const DEFAULT_OPENAI_EMBED_CHUNK_SIZE = 8000;
 export const DEFAULT_OPENAI_TIMEOUT_MS: number = configurable({

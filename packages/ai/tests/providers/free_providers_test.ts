@@ -28,25 +28,30 @@ Deno.test("OpenAIProvider sends correct payload and returns content for default 
     capturedBody = init?.body ? JSON.parse(init.body as string) : null;
 
     const body = JSON.stringify({
-      choices: [{ message: { content: `Hello from ${modelDisplay}` } }],
-      usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 },
+      status: "completed",
+      output: [{
+        type: "message",
+        role: "assistant",
+        content: [{ type: "output_text", text: `Hello from ${modelDisplay}` }],
+      }],
+      usage: { input_tokens: 1, output_tokens: 2, total_tokens: 3 },
     });
 
     return Promise.resolve(new Response(body, { status: 200, headers: { "Content-Type": "application/json" } }));
   }) as () => Promise<Response>;
 
   try {
-    const provider = new OpenAIProvider({ apiKey: "test-key", model, baseUrl: "https://api.test" });
+    const provider = new OpenAIProvider({ apiKey: "test-key", model, baseUrl: "https://api.test/v1/chat/completions" });
     const res = await provider.generate("Test prompt", { temperature: 0.1, max_tokens: 50 });
 
     assertEquals(res.content, `Hello from ${modelDisplay}`);
-    // OpenAIProvider uses the provided baseUrl verbatim (caller may provide full endpoint)
-    assertEquals(capturedUrl, "https://api.test");
+    // The Responses endpoint sits beside the configured chat completions endpoint.
+    assertEquals(capturedUrl, "https://api.test/v1/responses");
 
     assertExists(capturedBody);
     const bodyObj = capturedBody as JSONObject;
     assertEquals(bodyObj.model, model);
-    assertExists(bodyObj.messages);
+    assertExists(bodyObj.input);
   } finally {
     globalThis.fetch = originalFetch;
   }

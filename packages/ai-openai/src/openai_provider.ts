@@ -1,9 +1,10 @@
 /**
  * @module OpenAIPackageProvider
  * @path packages/ai-openai/src/openai_provider.ts
- * @description OpenAI GPT provider implementation owned by the @exaix/ai-openai package.
+ * @description OpenAI provider. Calls to OpenAI itself use the Responses API. OpenAI-compatible servers (the openai-chat
+ *   adapter) keep the Chat Completions wire, because most of them implement only that.
  * @architectural-layer AI
- * @related-files [packages/ai-openai/src/openai_factory.ts, packages/ai-openai/src/openai_provider.ts]
+ * @related-files [packages/ai-openai/src/openai_factory.ts, packages/ai-openai/src/compatible_chat.ts, packages/ai/src/openai_responses_wire.ts]
  */
 
 import {
@@ -12,18 +13,16 @@ import {
   DEFAULT_OPENAI_RETRY_BACKOFF_MS,
   DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
   DEFAULT_OPENAI_TIMEOUT_MS,
-  PROVIDER_OPENAI,
+  OPENAI_CHAT_COMPLETIONS_PATH,
+  OPENAI_RESPONSES_PATH,
 } from "./constants.ts";
 import {
   COMPATIBLE_REDIRECT_POLICY,
-  createOpenAIChatCompletionsRequestInit,
   extractOpenAIAssistantReplay,
   extractOpenAICompatibleToolCalls,
   extractOpenAIContent,
-  extractOpenAIToolCalls,
   type OpenAIResponse,
   performProviderCall,
-  tokenMapperOpenAI,
 } from "@exaix/ai/provider_common_utils.ts";
 import { BaseProvider, type IBaseProviderOptions, type IGenerateResult } from "@exaix/ai/providers";
 import type { IModelOptions } from "@exaix/ai/types.ts";
@@ -31,7 +30,21 @@ import { assertSupportedCallOptions, type IProviderCallCapabilities } from "@exa
 import type { CompatibleChatConfig } from "@exaix/schemas";
 import type { IModelPricing, IModelPricingLookup, Opt, Reason } from "@exaix/core/types";
 import { createCompatibleChatRequestInit, mapCompatibleUsage, validateCompatibleResponse } from "./compatible_chat.ts";
-import { type INativeInputMeasurement, measureOpenAiChatProjection, priceCompatibleUsage } from "@exaix/ai";
+import {
+  type INativeInputMeasurement,
+  measureOpenAiChatProjection,
+  measureOpenAiResponsesProjection,
+  priceCompatibleUsage,
+} from "@exaix/ai";
+import {
+  assertResponsesNotFailed,
+  createOpenAIResponsesRequestInit,
+  extractResponsesAssistantReplay,
+  extractResponsesContent,
+  extractResponsesToolCalls,
+  type IResponsesResponse,
+  tokenMapperResponses,
+} from "@exaix/ai/openai_responses_wire.ts";
 import { AiTokenEstimatorTokenizer, type ITokenizer } from "@exaix/core/func";
 import {
   type JSONValue,
@@ -57,8 +70,19 @@ class CompatibleRequestTimeoutError extends Error {
   }
 }
 
+/** The /v1/responses URL on the host of the configured Chat Completions endpoint. */
+function responsesEndpointFor(chatEndpoint: string): string {
+  if (!chatEndpoint.endsWith(OPENAI_CHAT_COMPLETIONS_PATH)) {
+    throw new Error(
+      `OpenAI Responses calls need a chat completions endpoint ending in ${OPENAI_CHAT_COMPLETIONS_PATH}`,
+    );
+  }
+  return `${chatEndpoint.slice(0, -OPENAI_CHAT_COMPLETIONS_PATH.length)}${OPENAI_RESPONSES_PATH}`;
+}
+
 /**
- * OpenAIProvider implements IModelProvider for OpenAI-compatible GPT models.
+ * OpenAIProvider implements IModelProvider for OpenAI GPT models. Native calls use the Responses API. Compatible
+ * servers, configured with a profile, use Chat Completions.
  */
 export class OpenAIProvider extends BaseProvider {
   readonly callCapabilities?: IProviderCallCapabilities;
@@ -115,9 +139,21 @@ export class OpenAIProvider extends BaseProvider {
     prompt: string,
     options?: Opt<IModelOptions, Reason.OptionalInput>,
   ): Promise<INativeInputMeasurement> {
-    const request = this.compatible
-      ? createCompatibleChatRequestInit("", this.model, prompt, options, this.compatibleConfig?.profile).init
-      : createOpenAIChatCompletionsRequestInit("", this.model, prompt, options);
+    if (!this.compatible) {
+      const projection = JSON.parse(
+        createOpenAIResponsesRequestInit("", this.model, prompt, options).body as string,
+      ) as Record<string, JSONValue>;
+      return await measureOpenAiResponsesProjection(
+        this.tokenizer,
+        this.model,
+        projection.input as JSONValue[],
+        projection.tools ?? [],
+        prompt,
+        options,
+      );
+    }
+    const request =
+      createCompatibleChatRequestInit("", this.model, prompt, options, this.compatibleConfig?.profile).init;
     const projection = JSON.parse(request.body as string) as Record<string, JSONValue>;
     return await measureOpenAiChatProjection(
       this.tokenizer,
@@ -169,66 +205,67 @@ export class OpenAIProvider extends BaseProvider {
     }
   }
 
-  protected override async attemptGenerate(
+  /** One call to /v1/responses on OpenAI. The reply's output items are kept so the next round can replay them. */
+  private async attemptResponsesGenerate(
     prompt: string,
     options?: Opt<IModelOptions, Reason.OptionalInput>,
   ): Promise<IGenerateResult> {
-    if (this.callCapabilities) assertSupportedCallOptions(options, this.callCapabilities);
-    const callOptions = options;
-    const compatibleRequest = this.compatible
-      ? createCompatibleChatRequestInit(this.apiKey, this.model, prompt, callOptions, this.compatibleConfig?.profile)
-      : undefined;
-    const result = await performProviderCall<OpenAIResponse>(
-      this.baseUrl,
-      compatibleRequest?.init ?? createOpenAIChatCompletionsRequestInit(this.apiKey, this.model, prompt, callOptions),
+    return await performProviderCall<IResponsesResponse>(
+      responsesEndpointFor(this.baseUrl),
+      createOpenAIResponsesRequestInit(this.apiKey, this.model, prompt, options),
       {
         id: this.id,
-        maxAttempts: this.compatible ? 1 : this.maxRetries,
+        maxAttempts: this.maxRetries,
         backoffBaseMs: this.retryDelayMs,
-        timeoutMs: this.compatible ? undefined : this.timeoutMs,
+        timeoutMs: this.timeoutMs,
         logger: this.logger,
-        tokenMapper: this.compatible ? mapCompatibleUsage : tokenMapperOpenAI(this.model),
-        ...(this.compatible
-          ? {
-            responseValidator: (response: OpenAIResponse) =>
-              validateCompatibleResponse(
-                response,
-                this.id,
-                this.compatibleConfig!.max_tool_argument_bytes,
-                callOptions,
-                this.compatibleConfig!.profile,
-              ),
-          }
-          : {}),
-        extractor: extractOpenAIContent,
-        assistantReplayExtractor: (response: OpenAIResponse) =>
-          extractOpenAIAssistantReplay(response, this.compatible ? ProviderType.OPENAI_CHAT : PROVIDER_OPENAI),
-        toolCallExtractor: this.compatible
-          ? (response) =>
-            extractOpenAICompatibleToolCalls(
-              response,
-              this.compatibleConfig!.max_tool_argument_bytes,
-              this.id,
-            )
-          : extractOpenAIToolCalls,
-        ...(this.compatible
-          ? {
-            maxResponseBytes: this.compatibleConfig?.max_response_bytes,
-            maxRequestBytes: this.compatibleConfig?.max_history_bytes,
-            exposeRemoteErrorText: false,
-            logResponseBody: false,
-            redirectBehavior: COMPATIBLE_REDIRECT_POLICY,
-          }
-          : {}),
+        tokenMapper: tokenMapperResponses(this.model),
+        extractor: extractResponsesContent,
+        toolCallExtractor: extractResponsesToolCalls,
+        assistantReplayExtractor: extractResponsesAssistantReplay,
+        responseValidator: (response) => {
+          assertResponsesNotFailed(response, this.id);
+          return response;
+        },
       },
     );
-    if (!this.compatibleConfig) return result;
-    const profile = this.compatibleConfig.profile;
+  }
+
+  /** One call to an OpenAI-compatible server over Chat Completions, under the profile's request and reply rules. */
+  private async attemptCompatibleGenerate(
+    prompt: string,
+    options?: Opt<IModelOptions, Reason.OptionalInput>,
+  ): Promise<IGenerateResult> {
+    const config = this.compatibleConfig!;
+    const compatibleRequest = createCompatibleChatRequestInit(this.apiKey, this.model, prompt, options, config.profile);
+    const result = await performProviderCall<OpenAIResponse>(
+      this.baseUrl,
+      compatibleRequest.init,
+      {
+        id: this.id,
+        maxAttempts: 1,
+        backoffBaseMs: this.retryDelayMs,
+        logger: this.logger,
+        tokenMapper: mapCompatibleUsage,
+        responseValidator: (response: OpenAIResponse) =>
+          validateCompatibleResponse(response, this.id, config.max_tool_argument_bytes, options, config.profile),
+        extractor: extractOpenAIContent,
+        assistantReplayExtractor: (response: OpenAIResponse) =>
+          extractOpenAIAssistantReplay(response, ProviderType.OPENAI_CHAT),
+        toolCallExtractor: (response: OpenAIResponse) =>
+          extractOpenAICompatibleToolCalls(response, config.max_tool_argument_bytes, this.id),
+        maxResponseBytes: config.max_response_bytes,
+        maxRequestBytes: config.max_history_bytes,
+        exposeRemoteErrorText: false,
+        logResponseBody: false,
+        redirectBehavior: COMPATIBLE_REDIRECT_POLICY,
+      },
+    );
     const pricing = await this.getCompatiblePricing(result.model);
     return {
       ...result,
-      ...priceCompatibleUsage(profile, result.model, result.usage, pricing),
-      ...(compatibleRequest?.structuredOutputMode
+      ...priceCompatibleUsage(config.profile, result.model, result.usage, pricing),
+      ...(compatibleRequest.structuredOutputMode
         ? {
           structuredOutputMode: compatibleRequest.structuredOutputMode,
           ...(compatibleRequest.structuredOutputModeReason
@@ -237,5 +274,15 @@ export class OpenAIProvider extends BaseProvider {
         }
         : {}),
     };
+  }
+
+  protected override async attemptGenerate(
+    prompt: string,
+    options?: Opt<IModelOptions, Reason.OptionalInput>,
+  ): Promise<IGenerateResult> {
+    if (this.callCapabilities) assertSupportedCallOptions(options, this.callCapabilities);
+    return this.compatible
+      ? await this.attemptCompatibleGenerate(prompt, options)
+      : await this.attemptResponsesGenerate(prompt, options);
   }
 }
