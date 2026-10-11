@@ -182,3 +182,21 @@ Deno.test("[model_tool_round_docs] the TOOLS and CODE_STYLE replay sections cite
   }
   assertStringIncludes(sectionOf(codeStyle, CODE_STYLE_HEADING), "thoughtSignature");
 });
+
+/** One documented per-loop guarantee, the file whose test proves it, and a fragment of that test's title. */
+const ENFORCEMENT_TESTS = [
+  ["packages/execution/tests/react_native_round_security_test.ts", "a ReAct response over the response ceiling"],
+  ["packages/execution/tests/react_native_round_security_test.ts", "a ReAct response that reuses an earlier turn id"],
+  ["packages/execution/tests/native_tool_round_security_test.ts", "reuses an earlier round id executes no tool"],
+  ["packages/execution/tests/native_tool_round_security_test.ts", "push it over the replay ceiling"],
+  ["packages/execution/tests/native_tool_turns_test.ts", "exactly at the replay ceiling"],
+] as const;
+
+Deno.test("[model_tool_round_docs] the User Guide names the limits each loop enforces, and tests prove them", async () => {
+  const section = sectionOf(await readDoc("docs/Exaix_User_Guide.md"), GUIDE_HEADING).replace(/\s+/g, " ");
+  assertStringIncludes(section, "The response, argument and replay limits apply to both loops.");
+  assertStringIncludes(section, "reuses a call id from an earlier round");
+  for (const [path, titleFragment] of ENFORCEMENT_TESTS) {
+    assertStringIncludes(await Deno.readTextFile(new URL(path, REPO_ROOT)), titleFragment, `${path} lacks its test`);
+  }
+});

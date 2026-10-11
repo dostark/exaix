@@ -747,11 +747,11 @@ Emission site map (post-progress-streaming gap remediation):
 
 The `exactl watch` command renders milestone events (`type: "milestone"`) with:
 
-| Element                 | Rendering                                                                                               |
-| ----------------------- | ------------------------------------------------------------------------------------------------------- |
-| **Stage indicator**     | Milestone type string (e.g., `flow.step.started`) and summary                                           |
-| **Progress hint**       | `[N/M label]` suffix when `progressHint` is present (e.g., `[2/5 Build feature]`)                       |
-| **Attention indicator** | Bold yellow with `⚠ ATTENTION` prefix when `requiresAttention` is `true`, followed by `attentionReason` |
+| Element                 | Rendering                                                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Stage indicator**     | Milestone type string (e.g., `flow.step.started`) and summary                                                                               |
+| **Progress hint**       | `[N/M label]` suffix when `progressHint` is present (e.g., `[2/5 Build feature]`)                                                           |
+| **Attention indicator** | Bold yellow with an `ATTENTION` prefix, led by the warning sign (U+26A0), when `requiresAttention` is `true`, followed by `attentionReason` |
 
 Example output:
 

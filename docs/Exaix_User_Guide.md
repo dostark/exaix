@@ -5396,6 +5396,11 @@ Each limit has a default and bounds. A value outside the bounds is rejected when
 Config DB overrides of the `tools.*` keys above take precedence over the TOML values. Exaix reads the policy before
 each model turn, so a change applies from the next turn.
 
+The response, argument and replay limits apply to both loops. A response that breaks one, or that reuses a call id from
+an earlier round, is refused before any call runs. A round whose assistant content and results together exceed the
+replay limit stops the loop before the next model call, and no result is dropped. A call that the loop cap refuses is
+journaled with the limit message, in both loops.
+
 Under `auto`, the planning loop runs up to `planning.max_tool_calls_per_round` calls per round, and ReAct runs up to
 `tools.max_calls_per_turn`. Under `off`, both caps are one. Exaix enforces the cap itself, so a provider that ignores the
 parallel flag still executes at most one call per response.
