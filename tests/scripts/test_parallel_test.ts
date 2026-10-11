@@ -242,6 +242,8 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "packages/ai/tests/provider_factory_test.ts",
   "packages/ai/tests/provider_factory_binding_test.ts",
   "packages/ai/tests/provider_factory_compatible_config_test.ts",
+  "packages/ai/tests/providers/mock_strict_env_test.ts",
+  "tests/scenario_framework/tests/unit/strict_scoped_per_step_test.ts",
 ];
 
 Deno.test("SEQUENTIAL_FILES matches the required isolation files and order", () => {
@@ -275,6 +277,8 @@ Deno.test("provider factory environment writers run in isolated processes", () =
     "packages/ai/tests/provider_factory_test.ts",
     "packages/ai/tests/provider_factory_binding_test.ts",
     "packages/ai/tests/provider_factory_compatible_config_test.ts",
+    "packages/ai/tests/providers/mock_strict_env_test.ts",
+    "tests/scenario_framework/tests/unit/strict_scoped_per_step_test.ts",
   ];
   for (const file of files) {
     const entry = SEQUENTIAL_TESTS.find((test) => test.file === file);

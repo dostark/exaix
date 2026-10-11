@@ -57,9 +57,9 @@ export interface IRequestTuning {
 }
 
 /** The smallest budget_tokens the API accepts for manual extended thinking. */
-export const MANUAL_THINKING_MIN_BUDGET = 1024;
+const MANUAL_THINKING_MIN_BUDGET = 1024;
 /** Room kept above a manual thinking budget, because max_tokens must exceed budget_tokens. */
-export const MANUAL_THINKING_ANSWER_HEADROOM = 1024;
+const MANUAL_THINKING_ANSWER_HEADROOM = 1024;
 
 const RULES: Readonly<Record<string, IAnthropicModelRules>> = {
   "claude-haiku-5-5": {
@@ -95,7 +95,7 @@ export function anthropicModelRules(model: string): IAnthropicModelRules | undef
 }
 
 /** The thinking field a request carries. `thinking` is the caller's flag after the config default. */
-export function thinkingFieldFor(
+function thinkingFieldFor(
   thinking: Opt<boolean, Reason.OptionalInput>,
   rules: Opt<IAnthropicModelRules, Reason.OptionalContext>,
   budget: number,

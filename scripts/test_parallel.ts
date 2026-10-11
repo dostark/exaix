@@ -325,6 +325,9 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
   { file: "packages/ai/tests/provider_factory_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "packages/ai/tests/provider_factory_binding_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "packages/ai/tests/provider_factory_compatible_config_test.ts", reasons: [IsolationReason.processEnv] },
+  // These files set or clear MOCK_STRICT on the shared process, which the strict wiring test reads.
+  { file: "packages/ai/tests/providers/mock_strict_env_test.ts", reasons: [IsolationReason.processEnv] },
+  { file: "tests/scenario_framework/tests/unit/strict_scoped_per_step_test.ts", reasons: [IsolationReason.processEnv] },
 ];
 
 /** Derived so the Parallel Batch's `--ignore` list is unchanged. Content and order come from SEQUENTIAL_TESTS. */

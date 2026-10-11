@@ -101,6 +101,28 @@ interface IActivityRow {
 }
 
 /** Journaled `config.updated` rows for `tools.strict_params`. The daemon writes one per hot-applied value. */
+/** A pending mock-agent request file. The extra lines come before the `source` field, in the given order. */
+function mockAgentRequest(traceId: string, subject: string, body: string, extraFields: readonly string[] = []): string {
+  return [
+    "---",
+    `trace_id: "${traceId}"`,
+    `created: "${new Date().toISOString()}"`,
+    "status: pending",
+    "priority: normal",
+    "agent_role: mock-agent",
+    ...extraFields,
+    "source: cli",
+    'created_by: "test@example.com"',
+    `subject: "${subject}"`,
+    "---",
+    "",
+    "# Request",
+    "",
+    body,
+    "",
+  ].join("\n");
+}
+
 async function countStrictUpdates(configPath: string): Promise<number> {
   const configService = new ConfigService(configPath);
   const db = new DatabaseService(configService.getAll());
@@ -176,21 +198,7 @@ Deno.test({
           Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
           Deno.writeTextFileSync(
             requestPath,
-            `---
-trace_id: "${traceId}"
-created: "${new Date().toISOString()}"
-status: pending
-priority: normal
-agent_role: mock-agent
-source: cli
-created_by: "test@example.com"
-subject: "Phase 180 cutover test request"
----
-
-# Request
-
-Add a hello world function.
-`,
+            mockAgentRequest(traceId, "Phase 180 cutover test request", "Add a hello world function."),
           );
         },
         waitForAfterInject: async () => {
@@ -247,21 +255,7 @@ Deno.test({
           Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
           Deno.writeTextFileSync(
             requestPath,
-            `---
-trace_id: "${traceId}"
-created: "${new Date().toISOString()}"
-status: pending
-priority: normal
-agent_role: mock-agent
-source: cli
-created_by: "test@example.com"
-subject: "context-budget cutover test request"
----
-
-# Request
-
-Add a hello world function.
-`,
+            mockAgentRequest(traceId, "context-budget cutover test request", "Add a hello world function."),
           );
         },
         waitForAfterInject: async () => {
@@ -1114,21 +1108,16 @@ async function bootPlanningToolsCutoverRun(
       Deno.mkdirSync(join(tempDir, "Workspace", "Plans"), { recursive: true });
       Deno.writeTextFileSync(
         requestPath,
-        "---\n" +
-          `trace_id: "${traceId}"\n` +
-          `created: "${new Date().toISOString()}"\n` +
-          "status: pending\n" +
-          "priority: normal\n" +
-          "agent_role: mock-agent\n" +
-          "portal: cutover-portal\n" +
-          'scenario_id: "phase199"\n' +
-          'step_id: "planning"\n' +
-          "source: cli\n" +
-          'created_by: "test@example.com"\n' +
-          'subject: "Phase 199 planning tools cutover"\n' +
-          "---\n\n" +
-          "# Request\n\n" +
-          "Inspect the portal target file and produce a plan.\n",
+        mockAgentRequest(
+          traceId,
+          "Phase 199 planning tools cutover",
+          "Inspect the portal target file and produce a plan.",
+          [
+            "portal: cutover-portal",
+            'scenario_id: "phase199"',
+            'step_id: "planning"',
+          ],
+        ),
       );
     },
     waitForAfterInject: async () => {
@@ -1407,19 +1396,16 @@ async function bootAliasCutoverRun(
       Deno.mkdirSync(join(tempDir, "Workspace", "Plans"), { recursive: true });
       Deno.writeTextFileSync(
         join(tempDir, "Workspace", "Requests", `r-${traceId.slice(0, 8)}.md`),
-        "---\n" +
-          `trace_id: "${traceId}"\n` +
-          `created: "${new Date().toISOString()}"\n` +
-          "status: pending\n" +
-          "priority: normal\n" +
-          "agent_role: mock-agent\n" +
-          "portal: cutover-portal\n" +
-          `scenario_id: "${PHASE201_SCENARIO}"\n` +
-          'step_id: "planning"\n' +
-          "source: cli\n" +
-          'created_by: "test@example.com"\n' +
-          'subject: "Phase 201 tool alias cutover"\n' +
-          "---\n\n# Request\n\nInspect the portal target file and produce a plan.\n",
+        mockAgentRequest(
+          traceId,
+          "Phase 201 tool alias cutover",
+          "Inspect the portal target file and produce a plan.",
+          [
+            "portal: cutover-portal",
+            `scenario_id: "${PHASE201_SCENARIO}"`,
+            'step_id: "planning"',
+          ],
+        ),
       );
     },
     waitForAfterInject: async () => {
@@ -1617,13 +1603,11 @@ Deno.test({
         await Deno.mkdir(requestDir, { recursive: true });
         await Deno.writeTextFile(
           join(requestDir, `strict-${index}-${traceId.slice(0, 8)}.md`),
-          "---\n" +
-            `trace_id: "${traceId}"\n` +
-            `created: "${new Date().toISOString()}"\n` +
-            "status: pending\npriority: normal\nagent_role: mock-agent\nportal: cutover-portal\n" +
-            `scenario_id: "${scenarioId}"\nstep_id: "planning"\n` +
-            'source: cli\ncreated_by: "test@example.com"\nsubject: "strict CLI cutover"\n' +
-            "---\n\n# Request\n\nInspect the portal target file and produce a plan.\n",
+          mockAgentRequest(traceId, "strict CLI cutover", "Inspect the portal target file and produce a plan.", [
+            "portal: cutover-portal",
+            `scenario_id: "${scenarioId}"`,
+            'step_id: "planning"',
+          ]),
         );
         let rows: IPlanningCutoverRow[] = [];
         await daemon.until(async () => {
@@ -2053,21 +2037,11 @@ async function bootRound202Run(tempDir: string, mode: Round202Mode): Promise<IRo
       Deno.mkdirSync(join(tempDir, "Workspace", "Plans"), { recursive: true });
       Deno.writeTextFileSync(
         requestPath,
-        "---\n" +
-          `trace_id: "${traceId}"\n` +
-          `created: "${new Date().toISOString()}"\n` +
-          "status: pending\n" +
-          "priority: normal\n" +
-          "agent_role: mock-agent\n" +
-          "portal: cutover-portal\n" +
-          `scenario_id: "${ROUND_202_SCENARIO}"\n` +
-          'step_id: "planning"\n' +
-          "source: cli\n" +
-          'created_by: "test@example.com"\n' +
-          'subject: "Grouped round replay cutover"\n' +
-          "---\n\n" +
-          "# Request\n\n" +
-          "Read the three portal files and produce a plan.\n",
+        mockAgentRequest(traceId, "Grouped round replay cutover", "Read the three portal files and produce a plan.", [
+          "portal: cutover-portal",
+          `scenario_id: "${ROUND_202_SCENARIO}"`,
+          'step_id: "planning"',
+        ]),
       );
     },
     // A request outcome ends the wait, success or failure. A failed run must return and fail the test.

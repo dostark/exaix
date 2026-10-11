@@ -14,7 +14,7 @@
 
 import ts from "typescript";
 import { walk } from "@std/fs";
-import { Opt, Reason } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface ISecurityNamingViolation {
   path: string;
