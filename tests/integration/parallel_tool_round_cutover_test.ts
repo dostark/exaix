@@ -66,6 +66,39 @@ Deno.test({
 });
 
 Deno.test({
+  name: "[phase202-cutover] native OpenAI Responses planning sends no parallel flag under the auto default",
+  ignore: CI_SKIP,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const { fixture, rows } = await runPlanningRound({ live: false, toolsLines: [], responsesFixture: true });
+    assertEquals(fixture.bodies.length, 2, "one exploration request and one final request");
+    assertEquals(fixture.bodies[0].parallel_tool_calls, undefined, "auto sends no parallel flag");
+    const completed = payloadOf<ITerminalPayload>(rows, "planning.tools.completed");
+    assertEquals(completed?.toolCalls, FILE_NAMES.length, "auto executes every returned call");
+  },
+});
+
+Deno.test({
+  name:
+    "[phase202-cutover] native OpenAI Responses planning with parallel calls off sends parallel_tool_calls false and executes one call",
+  ignore: CI_SKIP,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const { fixture, rows } = await runPlanningRound({
+      live: false,
+      toolsLines: [],
+      responsesFixture: true,
+      dbOverride: { key: "tools.parallel_calls", value: "off" },
+    });
+    assertEquals(fixture.bodies[0].parallel_tool_calls, false, "the off override reaches the Responses request");
+    const executed = toolRows(rows).filter((call) => !call.resultSummary.includes(REFUSAL));
+    assertEquals(executed.length, 1, "one call executes; the rest are refused");
+  },
+});
+
+Deno.test({
   name:
     "[phase202-cutover] a Config DB override of tools.parallel_calls=off reaches the planning round over a TOML auto",
   ignore: CI_SKIP,

@@ -42,7 +42,10 @@ import {
   LIVE_OPENAI_MODEL,
   LIVE_OPENROUTER_MODEL,
   type LiveProvider,
+  OPENAI_KEY_ENV,
   readTraceRows,
+  responsesTextCompletion,
+  responsesToolCallCompletion,
   seedConfigOverride,
   startCompatibleFixture,
   textCompletion,
@@ -91,6 +94,8 @@ export interface IPlanningRoundOptions {
   maxCallsPerRound?: number;
   /** Overrides planning.max_tool_rounds for this round. Unset keeps the cutover's two rounds. */
   maxToolRounds?: number;
+  /** Runs the native OpenAI Responses provider against the loopback fixture. Only valid when `live` is unset. */
+  responsesFixture?: boolean;
 }
 
 export interface IReactRoundOptions {
@@ -259,14 +264,21 @@ function respondFor(
 /** The environment a daemon boots with. The fixture key is set only where the fixture serves chat. */
 function bootEnv(setup: IRoundSetup): Record<string, string> {
   const fixtureKey: Record<string, string> = setup.live ? {} : { [FIXTURE_API_KEY_ENV]: FIXTURE_API_KEY };
-  return { ...fixtureKey, ...setup.extraEnv };
+  // The native provider is billable, so the paid guard needs its opt-in.
+  // The endpoint is loopback and the child may reach only loopback, so nothing billable can leave the machine.
+  const nativeKey: Record<string, string> = setup.config.responsesFixture === true
+    ? { [OPENAI_KEY_ENV]: FIXTURE_API_KEY, EXA_TEST_ENABLE_PAID_LLM: "1" }
+    : {};
+  return { ...fixtureKey, ...nativeKey, ...setup.extraEnv };
 }
 
 /** The agent's model reference: the fixture, DeepSeek, or the named direct live provider. */
 function modelRefFor(setup: IRoundSetup): string {
+  if (setup.config.responsesFixture === true) return `openai:${FIXTURE_MODEL}`;
   if (!setup.live) return `openai-chat:${FIXTURE_MODEL}`;
   if (setup.liveProvider === "anthropic") return `anthropic:${LIVE_ANTHROPIC_MODEL}`;
   if (setup.liveProvider === "openrouter") return `openrouter:${setup.liveModel ?? LIVE_OPENROUTER_MODEL}`;
+  if (setup.liveProvider === "openai-chat") return `openai-chat:${setup.liveModel ?? LIVE_OPENAI_MODEL}`;
   return setup.liveProvider === "openai"
     ? `openai:${setup.liveModel ?? LIVE_OPENAI_MODEL}`
     : `openai-chat:${LIVE_MODEL}`;
@@ -277,7 +289,9 @@ function permissionsFor(setup: IRoundSetup): string[] {
   if (!setup.live) return COMPAT_PERMISSIONS;
   if (setup.liveProvider === "anthropic") return ANTHROPIC_PERMISSIONS;
   if (setup.liveProvider === "openrouter") return OPENROUTER_PERMISSIONS;
-  return setup.liveProvider === "openai" ? OPENAI_PERMISSIONS : LIVE_PERMISSIONS;
+  return setup.liveProvider === "openai" || setup.liveProvider === "openai-chat"
+    ? OPENAI_PERMISSIONS
+    : LIVE_PERMISSIONS;
 }
 
 /** Boots one real daemon for a round, then tears down the fixture and the temporary root. */
@@ -315,10 +329,13 @@ async function runRound(setup: IRoundSetup): Promise<IRoundRun> {
 /** Boots a planning request. The optional Config DB override is seeded before the boot. */
 export function runPlanningRound(options: IPlanningRoundOptions): Promise<IRoundRun> {
   const markers = FILE_NAMES.map((name) => marker(name.toUpperCase()));
-  const script = (index: number): Record<string, JSONValue> =>
-    index === 0
-      ? toolCallCompletion(FILE_NAMES.map((name, i) => ({ id: PLANNING_CALL_IDS[i], path: `src/${name}.ts` })))
-      : textCompletion(planContent(markers));
+  const calls = FILE_NAMES.map((name, i) => ({ id: PLANNING_CALL_IDS[i], path: `src/${name}.ts` }));
+  const script = (index: number): Record<string, JSONValue> => {
+    if (options.responsesFixture === true) {
+      return index === 0 ? responsesToolCallCompletion(calls) : responsesTextCompletion(planContent(markers));
+    }
+    return index === 0 ? toolCallCompletion(calls) : textCompletion(planContent(markers));
+  };
   return runRound({
     prefix: "phase202-cutover-planning-",
     live: options.live,
@@ -334,6 +351,7 @@ export function runPlanningRound(options: IPlanningRoundOptions): Promise<IRound
       toolsLines: options.toolsLines,
       maxCallsPerRound: options.maxCallsPerRound,
       maxToolRounds: options.maxToolRounds,
+      responsesFixture: options.responsesFixture,
     },
     role: "compat-agent",
     dbOverride: options.dbOverride,

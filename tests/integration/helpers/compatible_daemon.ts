@@ -42,7 +42,10 @@ export interface ICompatibleFixture {
 }
 
 /** The live provider a daemon run calls. */
-export type LiveProvider = "deepseek" | "anthropic" | "openai" | "openrouter";
+export type LiveProvider = "deepseek" | "anthropic" | "openai" | "openrouter" | "openai-chat";
+
+/** The remote compatible profile a live run names. */
+export type LiveCompatibleProfile = "openai" | "deepseek";
 
 /** The options that shape the compatible-profile daemon config. */
 export interface ICompatibleConfigOptions {
@@ -61,6 +64,8 @@ export interface ICompatibleConfigOptions {
   liveProvider?: LiveProvider;
   /** Names the model for a live OpenAI or OpenRouter run. Unset means that provider's live default. */
   liveModel?: string;
+  /** Points the native OpenAI provider at the loopback fixture, which answers Responses requests. */
+  responsesFixture?: boolean;
 }
 
 /** The effort and thinking an agent blueprint declares. Unset keeps the blueprint default. */
@@ -133,6 +138,39 @@ export function textCompletion(content: string): Record<string, JSONValue> {
   };
 }
 
+/** A Responses reply that carries one assistant text message. */
+export function responsesTextCompletion(content: string): Record<string, JSONValue> {
+  return {
+    model: FIXTURE_MODEL,
+    status: "completed",
+    output: [{
+      type: "message",
+      id: "msg_fixture",
+      role: "assistant",
+      status: "completed",
+      content: [{ type: "output_text", text: content, annotations: [] }],
+    }],
+    usage: { input_tokens: 40, output_tokens: 20, total_tokens: 60 },
+  };
+}
+
+/** A Responses reply that carries the given function calls. Each call's arguments are a JSON string. */
+export function responsesToolCallCompletion(calls: Array<{ id: string; path: string }>): Record<string, JSONValue> {
+  return {
+    model: FIXTURE_MODEL,
+    status: "completed",
+    output: calls.map((call) => ({
+      type: "function_call",
+      id: `fc_${call.id}`,
+      call_id: call.id,
+      name: "read_file",
+      arguments: JSON.stringify({ path: call.path }),
+      status: "completed",
+    })),
+    usage: { input_tokens: 50, output_tokens: 10, total_tokens: 60 },
+  };
+}
+
 /** A chat-completion response that carries the given tool calls. */
 export function toolCallCompletion(
   calls: Array<{ id: string; path: string; portal?: string }>,
@@ -185,9 +223,9 @@ function liveBinding(): string[] {
   return ["[bindings.default]", 'service = "deepseek"', `model = "${LIVE_CANONICAL_MODEL}"`, ""];
 }
 
-/** The compatible-profile lines. The fixture profile names its loopback endpoint. DeepSeek takes its profile default. */
-function compatibleLines(port: number, model: string, live: boolean): string[] {
-  return live ? ['profile = "deepseek"', `model = "${model}"`] : [
+/** The compatible-profile lines. The fixture profile names its loopback endpoint. A live run names its remote profile. */
+function compatibleLines(port: number, model: string, live: boolean, liveProfile: LiveCompatibleProfile): string[] {
+  return live ? [`profile = "${liveProfile}"`, `model = "${model}"`] : [
     'profile = "local-test"',
     `endpoint = "http://127.0.0.1:${port}/v1/chat/completions"`,
     `model = "${model}"`,
@@ -217,7 +255,17 @@ export function writeCompatibleConfig(
   const anthropic = options.live === true && options.liveProvider === "anthropic";
   const openai = options.live === true && options.liveProvider === "openai";
   const openrouter = options.live === true && options.liveProvider === "openrouter";
-  const directProvider = anthropic ? "anthropic" : openai ? "openai" : openrouter ? "openrouter" : undefined;
+  const openaiChat = options.live === true && options.liveProvider === "openai-chat";
+  const nativeFixture = options.live !== true && options.responsesFixture === true;
+  const directProvider = anthropic
+    ? "anthropic"
+    : openai
+    ? "openai"
+    : openrouter
+    ? "openrouter"
+    : nativeFixture
+    ? "openai"
+    : undefined;
   if (directProvider && options.flowBinding) throw new Error(`The ${directProvider} live leg has no Flow binding.`);
   const model = anthropic
     ? LIVE_ANTHROPIC_MODEL
@@ -225,6 +273,8 @@ export function writeCompatibleConfig(
     ? (options.liveModel ?? LIVE_OPENAI_MODEL)
     : openrouter
     ? (options.liveModel ?? LIVE_OPENROUTER_MODEL)
+    : openaiChat
+    ? (options.liveModel ?? LIVE_OPENAI_MODEL)
     : options.live
     ? LIVE_MODEL
     : FIXTURE_MODEL;
@@ -247,10 +297,13 @@ export function writeCompatibleConfig(
     `provider = "${directProvider ?? "openai-chat"}"`,
     `model = "${model}"`,
     `timeout_ms = ${timeoutMs}`,
+    // The native provider takes its base URL from the model entry, so the loopback fixture is named here.
+    ...(nativeFixture ? [`base_url = "http://127.0.0.1:${port}/v1/chat/completions"`] : []),
     "",
-    ...(directProvider
-      ? []
-      : ["[models.compat-agent.compatible]", ...compatibleLines(port, model, options.live === true)]),
+    ...(directProvider ? [] : [
+      "[models.compat-agent.compatible]",
+      ...compatibleLines(port, model, options.live === true, openaiChat ? "openai" : "deepseek"),
+    ]),
     "",
     "[quality_gate]",
     "enabled = false",
