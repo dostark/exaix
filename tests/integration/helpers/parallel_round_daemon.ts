@@ -32,12 +32,14 @@ import {
   FIXTURE_API_KEY,
   FIXTURE_API_KEY_ENV,
   FIXTURE_MODEL,
+  type IAgentIntent,
   type ICompatibleConfigOptions,
   type ICompatibleFixture,
   type IFixtureBody,
   type ITraceRow,
   LIVE_ANTHROPIC_MODEL,
   LIVE_MODEL,
+  LIVE_OPENAI_MODEL,
   type LiveProvider,
   readTraceRows,
   seedConfigOverride,
@@ -78,10 +80,16 @@ export interface IPlanningRoundOptions {
   live: boolean;
   /** The live provider when `live` is set. Unset means DeepSeek. */
   liveProvider?: LiveProvider;
+  /** The OpenAI model when the live provider is OpenAI. Unset means LIVE_OPENAI_MODEL. */
+  liveModel?: string;
+  /** The effort and thinking the agent declares for this round. Unset keeps the blueprint default. */
+  intent?: IAgentIntent;
   toolsLines: string[];
   dbOverride?: IConfigOverride;
   /** Overrides planning.max_tool_calls_per_round for this round. Unset keeps the shipped default. */
   maxCallsPerRound?: number;
+  /** Overrides planning.max_tool_rounds for this round. Unset keeps the cutover's two rounds. */
+  maxToolRounds?: number;
 }
 
 export interface IReactRoundOptions {
@@ -120,6 +128,8 @@ interface IRoundSetup {
   prefix: string;
   live: boolean;
   liveProvider?: LiveProvider;
+  liveModel?: string;
+  intent?: IAgentIntent;
   files: Record<string, string>;
   markers: string[];
   respond: (index: number, body: IFixtureBody) => Record<string, JSONValue>;
@@ -161,6 +171,16 @@ const ANTHROPIC_PERMISSIONS = [
   "--allow-sys",
   "--allow-ffi",
   "--allow-net=api.anthropic.com,127.0.0.1",
+];
+/** The OpenAI profile calls its API host. The loopback fixture still serves embeddings on 127.0.0.1. */
+const OPENAI_PERMISSIONS = [
+  "--allow-read",
+  "--allow-write",
+  "--allow-env",
+  "--allow-run",
+  "--allow-sys",
+  "--allow-ffi",
+  "--allow-net=api.openai.com,127.0.0.1",
 ];
 const LIVE_UNEXPECTED_CHAT = "chat must not reach the loopback fixture in a live run";
 const FLOW_ID = "compat-probe";
@@ -231,16 +251,20 @@ function bootEnv(setup: IRoundSetup): Record<string, string> {
   return { ...fixtureKey, ...setup.extraEnv };
 }
 
-/** The agent's model reference: the fixture or DeepSeek over openai-chat, or Anthropic's own provider. */
+/** The agent's model reference: the fixture or DeepSeek over openai-chat, or Anthropic's or OpenAI's own provider. */
 function modelRefFor(setup: IRoundSetup): string {
   if (!setup.live) return `openai-chat:${FIXTURE_MODEL}`;
-  return setup.liveProvider === "anthropic" ? `anthropic:${LIVE_ANTHROPIC_MODEL}` : `openai-chat:${LIVE_MODEL}`;
+  if (setup.liveProvider === "anthropic") return `anthropic:${LIVE_ANTHROPIC_MODEL}`;
+  return setup.liveProvider === "openai"
+    ? `openai:${setup.liveModel ?? LIVE_OPENAI_MODEL}`
+    : `openai-chat:${LIVE_MODEL}`;
 }
 
 /** The child process permissions: loopback for the fixture, and the named live provider's host when live. */
 function permissionsFor(setup: IRoundSetup): string[] {
   if (!setup.live) return COMPAT_PERMISSIONS;
-  return setup.liveProvider === "anthropic" ? ANTHROPIC_PERMISSIONS : LIVE_PERMISSIONS;
+  if (setup.liveProvider === "anthropic") return ANTHROPIC_PERMISSIONS;
+  return setup.liveProvider === "openai" ? OPENAI_PERMISSIONS : LIVE_PERMISSIONS;
 }
 
 /** Boots one real daemon for a round, then tears down the fixture and the temporary root. */
@@ -255,9 +279,10 @@ async function runRound(setup: IRoundSetup): Promise<IRoundRun> {
       ...setup.config,
       live: setup.live,
       liveProvider: setup.liveProvider,
+      liveModel: setup.liveModel,
     });
     if (setup.dbOverride) seedConfigOverride(root, setup.dbOverride.key, setup.dbOverride.value);
-    await writeCompatAgent(root, setup.role, ["read_file"], modelRefFor(setup));
+    await writeCompatAgent(root, setup.role, ["read_file"], modelRefFor(setup), setup.intent);
     const ctx: IRoundContext = { root, configPath, traceId: crypto.randomUUID() };
     if (setup.prepare) await setup.prepare(ctx);
     const boot = await bootRealDaemon(configPath, {
@@ -285,6 +310,8 @@ export function runPlanningRound(options: IPlanningRoundOptions): Promise<IRound
     prefix: "phase202-cutover-planning-",
     live: options.live,
     liveProvider: options.liveProvider,
+    liveModel: options.liveModel,
+    intent: options.intent,
     files: portalFiles(markers),
     markers,
     respond: respondFor(options.live, script),
@@ -293,6 +320,7 @@ export function runPlanningRound(options: IPlanningRoundOptions): Promise<IRound
       nativeTools: false,
       toolsLines: options.toolsLines,
       maxCallsPerRound: options.maxCallsPerRound,
+      maxToolRounds: options.maxToolRounds,
     },
     role: "compat-agent",
     dbOverride: options.dbOverride,

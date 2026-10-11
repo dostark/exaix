@@ -42,7 +42,7 @@ export interface ICompatibleFixture {
 }
 
 /** The live provider a daemon run calls. */
-export type LiveProvider = "deepseek" | "anthropic";
+export type LiveProvider = "deepseek" | "anthropic" | "openai";
 
 /** The options that shape the compatible-profile daemon config. */
 export interface ICompatibleConfigOptions {
@@ -51,12 +51,22 @@ export interface ICompatibleConfigOptions {
   /** Lines of the `[tools]` table. Empty leaves every key at its default. */
   toolsLines?: string[];
   maxCallsPerRound?: number;
+  /** Overrides planning.max_tool_rounds. Unset keeps the two exploration rounds the cutover uses. */
+  maxToolRounds?: number;
   /** Adds the catalog service and the default binding that the Flow path resolves its provider through. */
   flowBinding?: boolean;
   /** Sends chat to the DeepSeek API through its profile instead of the loopback fixture. */
   live?: boolean;
   /** Names the live provider when `live` is set. Unset means DeepSeek. */
   liveProvider?: LiveProvider;
+  /** Names the OpenAI model for a live OpenAI run. Unset means LIVE_OPENAI_MODEL. */
+  liveModel?: string;
+}
+
+/** The effort and thinking an agent blueprint declares. Unset keeps the blueprint default. */
+export interface IAgentIntent {
+  effort?: string;
+  thinking?: boolean;
 }
 
 /** One trace-scoped journal row. */
@@ -78,6 +88,12 @@ export const LIVE_KEY_ENV = "DEEPSEEK_API_KEY";
 /** The Anthropic live leg's model. The Anthropic provider reads its key from ANTHROPIC_API_KEY. */
 /** Defaults to Haiku 5.5. EXA_TEST_ANTHROPIC_MODEL picks another Claude model for one live run. */
 export const LIVE_ANTHROPIC_MODEL = Deno.env.get("EXA_TEST_ANTHROPIC_MODEL") ?? "claude-haiku-5-5";
+/** The OpenAI live leg's model. The ordinary OpenAI provider reads its key from OPENAI_API_KEY. */
+/** Defaults to GPT-6 Luna. EXA_TEST_OPENAI_MODEL picks another OpenAI model for one live run. */
+export const LIVE_OPENAI_MODEL = Deno.env.get("EXA_TEST_OPENAI_MODEL") ?? "gpt-6-luna";
+export const OPENAI_KEY_ENV = "OPENAI_API_KEY";
+/** The OpenAI thinking case's model. Its effort is set high, so the case runs reasoning together with tool calls. */
+export const LIVE_OPENAI_THINKING_MODEL = "gpt-6-sol";
 const FIXTURE_TIMEOUT_MS = 10000;
 const LIVE_TIMEOUT_MS = 120000;
 const EMBEDDING_DIMENSIONS = 768;
@@ -187,7 +203,7 @@ export function writeCompatibleConfig(
     ? [
       "[planning]",
       "tools_enabled = true",
-      "max_tool_rounds = 2",
+      `max_tool_rounds = ${options.maxToolRounds ?? 2}`,
       "max_tool_result_tokens = 2000",
       ...(options.maxCallsPerRound !== undefined ? [`max_tool_calls_per_round = ${options.maxCallsPerRound}`] : []),
       "",
@@ -195,8 +211,16 @@ export function writeCompatibleConfig(
     : [];
   const tools = options.toolsLines?.length ? ["[tools]", ...options.toolsLines, ""] : [];
   const anthropic = options.live === true && options.liveProvider === "anthropic";
-  if (anthropic && options.flowBinding) throw new Error("The Anthropic live leg has no Flow binding.");
-  const model = anthropic ? LIVE_ANTHROPIC_MODEL : options.live ? LIVE_MODEL : FIXTURE_MODEL;
+  const openai = options.live === true && options.liveProvider === "openai";
+  const directProvider = anthropic ? "anthropic" : openai ? "openai" : undefined;
+  if (directProvider && options.flowBinding) throw new Error(`The ${directProvider} live leg has no Flow binding.`);
+  const model = anthropic
+    ? LIVE_ANTHROPIC_MODEL
+    : openai
+    ? (options.liveModel ?? LIVE_OPENAI_MODEL)
+    : options.live
+    ? LIVE_MODEL
+    : FIXTURE_MODEL;
   const timeoutMs = options.live ? LIVE_TIMEOUT_MS : FIXTURE_TIMEOUT_MS;
   const binding = options.flowBinding ? (options.live ? liveBinding() : fixtureBinding(port)) : [];
   const lines = [
@@ -213,11 +237,13 @@ export function writeCompatibleConfig(
     'default_model = "compat-agent"',
     "",
     "[models.compat-agent]",
-    `provider = "${anthropic ? "anthropic" : "openai-chat"}"`,
+    `provider = "${directProvider ?? "openai-chat"}"`,
     `model = "${model}"`,
     `timeout_ms = ${timeoutMs}`,
     "",
-    ...(anthropic ? [] : ["[models.compat-agent.compatible]", ...compatibleLines(port, model, options.live === true)]),
+    ...(directProvider
+      ? []
+      : ["[models.compat-agent.compatible]", ...compatibleLines(port, model, options.live === true)]),
     "",
     "[quality_gate]",
     "enabled = false",
@@ -273,6 +299,7 @@ export async function writeCompatAgent(
   role: string,
   permittedTools: string[],
   modelRef: string = `openai-chat:${FIXTURE_MODEL}`,
+  intent: IAgentIntent = {},
 ): Promise<void> {
   const dir = join(root, "Blueprints", "Agents");
   await Deno.mkdir(dir, { recursive: true });
@@ -291,6 +318,8 @@ export async function writeCompatAgent(
       'version: "1.0.0"',
       'description: "Compatible-profile cutover fixture"',
       "default_skills: []",
+      ...(intent.effort !== undefined ? [`effort: ${intent.effort}`] : []),
+      ...(intent.thinking !== undefined ? [`thinking: ${intent.thinking}`] : []),
       `permitted_tools: [${permittedTools.map((tool) => `"${tool}"`).join(", ")}]`,
       "---",
       "Read the requested files and report what they contain.",

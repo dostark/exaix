@@ -19,7 +19,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { REQUEST_SUCCESS_ACTIONS } from "./helpers/daemon_config.ts";
-import { LIVE_KEY_ENV, payloadOf } from "./helpers/compatible_daemon.ts";
+import { LIVE_KEY_ENV, LIVE_OPENAI_THINKING_MODEL, OPENAI_KEY_ENV, payloadOf } from "./helpers/compatible_daemon.ts";
 import {
   FILE_NAMES,
   type ITerminalPayload,
@@ -37,6 +37,7 @@ const PAID_OPT_IN_ENV = "EXA_TEST_ENABLE_PAID_LLM";
 const liveEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && (Deno.env.get(LIVE_KEY_ENV) ?? "") !== "";
 const ANTHROPIC_KEY_ENV = "ANTHROPIC_API_KEY";
 const anthropicEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && (Deno.env.get(ANTHROPIC_KEY_ENV) ?? "") !== "";
+const openaiEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && (Deno.env.get(OPENAI_KEY_ENV) ?? "") !== "";
 /** A live model must batch at least two calls in one response for the override to be observable. */
 const MINIMUM_BATCH = 2;
 /** The shipped planning cap is three. A live model may list a directory before its three reads, so this case allows eight. */
@@ -249,5 +250,83 @@ Deno.test({
       rows.some((row) => row.action_type === "execution.completed"),
       `the execution did not complete: ${journalFailure(rows)}; calls: ${describeCalls(toolRows(rows))}`,
     );
+  },
+});
+
+Deno.test({
+  name:
+    "[phase202-cutover][live][openai] planning replays a three-file batch through the ordinary OpenAI provider, reading every file",
+  ignore: !openaiEnabled,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const { fixture, markers, rows } = await runPlanningRound({
+      live: true,
+      liveProvider: "openai",
+      toolsLines: [],
+      maxCallsPerRound: LIVE_PLANNING_CALLS_PER_ROUND,
+    });
+    assertEquals(fixture.bodies.length, 0, "chat must reach OpenAI, not the loopback fixture");
+    assert(
+      rows.some((row) => REQUEST_SUCCESS_ACTIONS.includes(row.action_type)),
+      `the request did not complete: ${journalFailure(rows)}; ${journalActions(rows)}`,
+    );
+    const calls = toolRows(rows);
+    assert(calls.length >= FILE_NAMES.length, `the round journaled ${calls.length} calls: ${journalActions(rows)}`);
+    assert(calls.every((call) => !call.resultSummary.includes(REFUSAL)), "the auto default refuses no call");
+    for (const marker of markers) {
+      assert(calls.some((call) => call.resultSummary.includes(marker)), `no tool result carried ${marker}`);
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "[phase202-cutover][live][openai-thinking] planning replays a three-file batch on GPT-6 Sol at high effort, reasoning and calling tools together",
+  ignore: !openaiEnabled,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const { fixture, markers, rows } = await runPlanningRound({
+      live: true,
+      liveProvider: "openai",
+      liveModel: LIVE_OPENAI_THINKING_MODEL,
+      intent: { effort: "high", thinking: true },
+      // One exploration round may list a directory before the reads, so the thinking case gets room for a second.
+      maxToolRounds: 4,
+      toolsLines: [],
+      maxCallsPerRound: LIVE_PLANNING_CALLS_PER_ROUND,
+    });
+    assertEquals(fixture.bodies.length, 0, "chat must reach OpenAI, not the loopback fixture");
+    assert(
+      rows.some((row) => REQUEST_SUCCESS_ACTIONS.includes(row.action_type)),
+      `the request did not complete: ${journalFailure(rows)}; ${journalActions(rows)}`,
+    );
+    const effort = payloadOf<{ effort?: string; model?: string }>(rows, "agent.effort_resolved");
+    assertEquals(effort?.effort, "high", "the round resolves to high effort");
+    assertEquals(effort?.model, LIVE_OPENAI_THINKING_MODEL, "the round runs on the thinking model");
+    const calls = toolRows(rows);
+    assert(calls.length >= FILE_NAMES.length, `the round journaled ${calls.length} calls: ${journalActions(rows)}`);
+    for (const marker of markers) {
+      assert(calls.some((call) => call.resultSummary.includes(marker)), `no tool result carried ${marker}`);
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "[phase202-cutover][live][openai] ReAct native reads files through an OpenAI execution after plan approval, and completes",
+  ignore: !openaiEnabled,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const { fixture, markers, rows } = await runReactRound({ live: true, liveProvider: "openai", toolsLines: [] });
+    assertEquals(fixture.bodies.length, 0, "chat must reach OpenAI, not the loopback fixture");
+    assert(
+      rows.some((row) => row.action_type === "execution.completed"),
+      `the execution did not complete: ${journalFailure(rows)}; calls: ${describeCalls(toolRows(rows))}`,
+    );
+    const results = toolRows(rows).map((call) => call.resultSummary).join("\n");
+    assert(markers.some((marker) => results.includes(marker)), "no execution tool result carried a marker");
   },
 });

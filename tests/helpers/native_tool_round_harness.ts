@@ -50,8 +50,12 @@ export interface IChatRequest {
   messages: Array<{ role: string; content?: JSONValue; tool_call_id?: string }>;
 }
 
+export interface IResponsesRequest {
+  input: JSONObject[];
+}
+
 /** Any follow-up request a wire family reads back. */
-export type IWireRequest = IGeminiRequest | IAnthropicRequest | IChatRequest;
+export type IWireRequest = IGeminiRequest | IAnthropicRequest | IChatRequest | IResponsesRequest;
 
 /** The adapter-specific wire shape of one family of providers. */
 export interface IWireFamily {
@@ -88,10 +92,11 @@ export interface IPlanningRoundOptions {
   toolsRoundPolicy?: () => IToolsRoundPolicy;
 }
 
-/** The adapter a binding resolves to. Google, Anthropic and the OpenAI chat shape cover every adapter. */
+/** The adapter a binding resolves to. OpenAI itself uses the Responses shape. Compatible servers keep Chat Completions. */
 export function wireFamilyFor(adapter: string): IWireFamily {
   if (adapter === "google") return GEMINI_FAMILY;
   if (adapter === "anthropic") return ANTHROPIC_FAMILY;
+  if (adapter === "openai") return RESPONSES_FAMILY;
   return CHAT_FAMILY;
 }
 
@@ -211,6 +216,52 @@ const CHAT_FAMILY: IWireFamily = {
       .slice(2)
       .filter((message) => message.role === "tool")
       .map((message) => textOf(message.content));
+  },
+};
+
+/** The /v1/responses shape. A round's output items are the assistant turn, and each result is a function_call_output. */
+const RESPONSES_FAMILY: IWireFamily = {
+  roundResponse(calls, model) {
+    const output: JSONObject[] = [
+      { type: "reasoning", id: "rs_round", summary: [], encrypted_content: "ENC-round" },
+      ...calls.map((call): JSONObject => ({
+        type: "function_call",
+        id: `fc_${call.id}`,
+        call_id: call.id,
+        name: call.name,
+        arguments: JSON.stringify(call.input),
+        status: "completed",
+      })),
+    ];
+    return {
+      body: { model, status: "completed", output, usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } },
+      assistant: output,
+    };
+  },
+  finalResponse(text, model) {
+    return {
+      model,
+      status: "completed",
+      output: [{
+        type: "message",
+        id: "msg_final",
+        role: "assistant",
+        status: "completed",
+        content: [{ type: "output_text", text, annotations: [] }],
+      }],
+      usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+    };
+  },
+  replayedAssistant(request) {
+    // The round instruction is a user control message, not replayed assistant content.
+    return (request as IResponsesRequest).input.slice(1).filter((item) =>
+      item.type !== "function_call_output" && item.role !== "user"
+    );
+  },
+  replayedResults(request) {
+    return (request as IResponsesRequest).input
+      .filter((item) => item.type === "function_call_output")
+      .map((item) => textOf(item.output));
   },
 };
 
