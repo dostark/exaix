@@ -156,7 +156,7 @@ export class ConfigCommands extends BaseCommand {
     const modelMap: Record<string, string> = {
       openai: "gpt-5-mini",
       anthropic: "claude-sonnet-4",
-      google: "gemini-flash-latest",
+      google: "gemini-3.8-flash",
       ollama: "llama3.2",
     };
     if (modelMap[provider]) {

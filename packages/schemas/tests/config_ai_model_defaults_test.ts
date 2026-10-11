@@ -60,18 +60,18 @@ Deno.test("[config.ai-models] neither section keeps the historical Google defaul
   const config = parse({});
 
   assertEquals(config.models.default.provider, "google");
-  assertEquals(config.models.default.model, "gemini-flash-latest");
+  assertEquals(config.models.default.model, "gemini-3.8-flash");
   assertEquals(config.models.fast.provider, "google");
 });
 
 Deno.test("[config.ai-models] an explicit [models] table always wins over [ai]", () => {
   const config = parse({
     ai: { provider: "ollama" },
-    models: { default: { provider: "google", model: "gemini-flash-latest" } },
+    models: { default: { provider: "google", model: "gemini-3.8-flash" } },
   });
 
   assertEquals(config.models.default.provider, "google");
-  assertEquals(config.models.default.model, "gemini-flash-latest");
+  assertEquals(config.models.default.model, "gemini-3.8-flash");
 });
 
 Deno.test("[config.ai-models] ai.timeout_ms is inherited by the derived default", () => {

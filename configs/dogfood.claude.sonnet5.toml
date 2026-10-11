@@ -15,18 +15,18 @@ memory = "Memory"
 # that key — Google here (GOOGLE_API_KEY).
 [ai]
 provider = "google"
-model = "gemini-flash-latest"
+model = "gemini-3.8-flash"
 
 # The daemon resolves its analysis provider via `agents.default_model` → `[models.<name>]`,
 # NOT the `[ai]` block above (which is only a fallback). Pin the named models explicitly.
 [models.default]
 provider = "google"
-model = "gemini-flash-latest"
+model = "gemini-3.8-flash"
 timeout_ms = 60000
 
 [models.fast]
 provider = "google"
-model = "gemini-flash-latest"
+model = "gemini-3.8-flash"
 timeout_ms = 60000
 
 [agents]

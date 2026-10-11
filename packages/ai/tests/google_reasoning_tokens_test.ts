@@ -3,7 +3,7 @@
  * @path packages/ai/tests/google_reasoning_tokens_test.ts
  * @description Phase 167 Step 12 — RED-first test. Gemini's real API response includes
  * usageMetadata.thoughtsTokenCount when the model does internal reasoning — for
- * DEFAULT_GOOGLE_MODEL ("gemini-flash-latest", a 2.5+-class model), dynamic thinking is
+ * DEFAULT_GOOGLE_MODEL ("gemini-3.8-flash"), dynamic thinking is
  * enabled BY DEFAULT (no explicit thinkingConfig required), so this field is already present
  * in live responses, not merely a hypothetical opt-in surface (verified against official
  * Google documentation: "Gemini 2.5 Flash defaults to a dynamic thinking budget").
@@ -24,7 +24,7 @@ import { tokenMapperGoogle } from "@exaix/ai/provider_common_utils.ts";
 const TEST_PROVIDER_ID = "google";
 
 Deno.test("[GoogleReasoningTokens] tokenMapperGoogle maps real usageMetadata.thoughtsTokenCount into TokenMap.reasoning_tokens", () => {
-  const mapper = tokenMapperGoogle("gemini-flash-latest");
+  const mapper = tokenMapperGoogle("gemini-3.8-flash");
   const mockResponse = {
     usageMetadata: {
       promptTokenCount: 150,
@@ -44,7 +44,7 @@ Deno.test("[GoogleReasoningTokens] tokenMapperGoogle maps real usageMetadata.tho
 });
 
 Deno.test("[GoogleReasoningTokens] a response with no thoughtsTokenCount maps reasoning_tokens to undefined, not 0", () => {
-  const mapper = tokenMapperGoogle("gemini-flash-latest");
+  const mapper = tokenMapperGoogle("gemini-3.8-flash");
   const mockResponse = {
     usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5, totalTokenCount: 15 },
   };

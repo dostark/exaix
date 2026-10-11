@@ -27,7 +27,7 @@ steps:
   - id: write-google-overlay
     type: write-file
     path: .exa/run-input/google.json
-    content: '{"schema":1,"bindings":{"flow:binding-live-api/step:answer":{"service":"google","model":"google/gemini-flash-latest"}}}'
+    content: '{"schema":1,"bindings":{"flow:binding-live-api/step:answer":{"service":"google","model":"google/gemini-3.8-flash"}}}'
     output_criteria:
       - id: overlay-written
         kind: command-exit-code
@@ -62,7 +62,7 @@ steps:
       - path: service
         value: google
       - path: service_model_id
-        value: gemini-flash-latest
+        value: gemini-3.8-flash
       - path: sources.service.layer
         value: run
     output_criteria:
@@ -76,7 +76,7 @@ steps:
     trace_scoped: true
     payload_equals:
       - path: model
-        value: gemini-flash-latest
+        value: gemini-3.8-flash
     output_criteria:
       - id: google-api-returned
         kind: command-exit-code

@@ -194,7 +194,7 @@ export function calculateCost(provider: string, totalTokens: number): number {
     [PROVIDER_MOCK]: COST_RATE_MOCK,
   };
 
-  // Extract provider name from id (e.g., "google-gemini-2.0-flash-exp" -> "google")
+  // Extract provider name from id (e.g., "google-gemini-3.8-flash" -> "google")
   const providerKey = provider.split("-")[0].toLowerCase(); // This assumes provider constants are lowercase strings
   const rate = rates[providerKey] ?? 0;
   return rate * (totalTokens / TOKENS_PER_COST_UNIT);

@@ -16,7 +16,7 @@ import { googleResponseConfig, registerProviderTests, spyFetch } from "../helper
 registerProviderTests<{ id: string; generate: (prompt: string) => Promise<IGenerateResult> }>({
   name: "GoogleProvider",
   createProvider: (options, logger) => new GoogleProvider({ apiKey: "test-key", ...options, logger }),
-  defaultId: "google-gemini-flash-latest",
+  defaultId: "google-gemini-3.8-flash",
   responseConfig: googleResponseConfig,
   apiKeyHeader: "Content-Type",
   apiKeyValue: "application/json",
@@ -26,7 +26,7 @@ registerProviderTests<{ id: string; generate: (prompt: string) => Promise<IGener
 // Google-specific tests
 
 Deno.test("GoogleProvider - generate URL", async () => {
-  const provider = new GoogleProvider({ apiKey: "test-key", model: "gemini-3-pro" });
+  const provider = new GoogleProvider({ apiKey: "test-key", model: "gemini-3.8-flash" });
 
   const { spy: fetchSpy, restore } = spyFetch(googleResponseConfig.wrapResponse("ok"));
 
@@ -34,7 +34,7 @@ Deno.test("GoogleProvider - generate URL", async () => {
     await provider.generate("Hi");
     const call = fetchSpy.calls[0];
     const url = call.args[0] as string;
-    assertStringIncludes(url, "gemini-3-pro:generateContent");
+    assertStringIncludes(url, "gemini-3.8-flash:generateContent");
     assertStringIncludes(url, "key=test-key");
   } finally {
     restore();

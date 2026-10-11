@@ -271,12 +271,12 @@ cheapest = ["ollama"]
 
 #### 2.4.3 Provider Comparison
 
-| Provider      | Best For                         | Recommended Model | Cost |
-| ------------- | -------------------------------- | ----------------- | ---- |
-| **Anthropic** | Complex reasoning, large context | `claude-opus-4.5` | $$$  |
-| **OpenAI**    | General purpose, speed           | `gpt-5.2-pro`     | $$   |
-| **Google**    | Long context, multimodal         | `gemini-3-pro`    | $$   |
-| **Ollama**    | Privacy, zero cost, offline      | `llama3.2`        | Free |
+| Provider      | Best For                         | Recommended Model  | Cost |
+| ------------- | -------------------------------- | ------------------ | ---- |
+| **Anthropic** | Complex reasoning, large context | `claude-opus-4.5`  | $$$  |
+| **OpenAI**    | General purpose, speed           | `gpt-5.2-pro`      | $$   |
+| **Google**    | Long context, multimodal         | `gemini-3.8-flash` | $$   |
+| **Ollama**    | Privacy, zero cost, offline      | `llama3.2`         | Free |
 
 #### 2.4.4 Enterprise Providers (Vertex AI, OpenRouter)
 
@@ -2667,7 +2667,7 @@ from `backTo` to the gate. See [Advanced Flow Controls](#advanced-flow-controls)
 | `reviewer`   | openai:gpt-4o-mini      | Code review and quality           |
 | `architect`  | anthropic:claude-opus   | System design and architecture    |
 | `researcher` | openai:gpt-5            | Research and analysis             |
-| `gemini`     | google:gemini-3-flash   | Multimodal AI with fast responses |
+| `gemini`     | google:gemini-3.8-flash | Multimodal AI with fast responses |
 | `mock`       | mock:test-model         | Testing and CI/CD                 |
 
 **Blueprint File Structure:**
@@ -4788,7 +4788,7 @@ The live tests bind their provider and model with `EXA_TEST_BIND`. Three other v
 | `EXA_TEST_OPENAI_API_KEY`  | API key for the manual OpenAI integration tests. Those tests skip when it is unset.                                                   | Non-empty string                                                                        | `export EXA_TEST_OPENAI_API_KEY="sk-…"`                                     |
 | `EXA_TEST_LLM_MODEL`       | Model ID for the `packages/ai` provider tests (`free_providers_test.ts`, `openai_shim_retry_test.ts`). Default `gpt-5-mini`.          | Model ID string                                                                         | `export EXA_TEST_LLM_MODEL=gpt-5-mini`                                      |
 
-**Live-test defaults:** The ReAct, memory maturation and extractor live tests use the DeepSeek preset (`deepseek-v4-pro`). They are reported as ignored unless `DEEPSEEK_API_KEY` is set. The native-round replay test uses the Google preset (`gemini-3-flash`) by default. It runs only with `EXA_TEST_ENABLE_PAID_LLM=1` and `GOOGLE_API_KEY`.
+**Live-test defaults:** The ReAct, memory maturation and extractor live tests use the DeepSeek preset (`deepseek-v4-pro`). They are reported as ignored unless `DEEPSEEK_API_KEY` is set. The native-round replay test uses the DeepSeek preset by default. Set `EXA_TEST_BIND` to select the Google preset (`gemini-3.8-flash`) instead. It runs only with `EXA_TEST_ENABLE_PAID_LLM=1` and `GOOGLE_API_KEY`.
 
 **CI Safety:** In test or CI mode, the daemon refuses to boot a billable provider unless `EXA_TEST_ENABLE_PAID_LLM=1`. Configured fallback chains are exempt. Test mode is set by `EXA_TEST_MODE` or `EXA_TEST_CLI_MODE=1`. CI mode is set by `EXA_CI_MODE`, or by `CI` when `EXA_CI_MODE` is unset. Never set `EXA_TEST_ENABLE_PAID_LLM=1` in CI jobs unless the run is on a trusted branch with properly stored secrets.
 

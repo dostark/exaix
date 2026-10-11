@@ -87,9 +87,9 @@ Deno.test(
 );
 
 Deno.test(
-  "[configuring] DEFAULT_AI_MODEL still exports (value unchanged)",
+  "[configuring] DEFAULT_AI_MODEL still exports (value pinned to gemini-3.8-flash)",
   () => {
-    assertEquals(DEFAULT_AI_MODEL, "gemini-flash-latest");
+    assertEquals(DEFAULT_AI_MODEL, "gemini-3.8-flash");
   },
 );
 

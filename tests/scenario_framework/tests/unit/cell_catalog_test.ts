@@ -383,7 +383,7 @@ Deno.test("[phase203.cell_catalog] the planning-live presets keep their configs,
       tool: "exactl",
       config: "configs/planning-live.google.toml",
       provider: "google",
-      model: "gemini-flash-latest",
+      model: "gemini-3.8-flash",
       requires_bin: "true",
     },
     {

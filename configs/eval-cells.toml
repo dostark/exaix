@@ -99,13 +99,13 @@ model = "openai/gpt-5.6-terra"
 tool = "exactl"
 config = "configs/google-no-delegate.toml"
 provider = "google"
-model = "gemini-flash-latest"
+model = "gemini-3.8-flash"
 requires_bin = "true"
 requires_key = "GOOGLE_API_KEY"
 native_tools = true
 
 [tool.exactl-google.bindings.default]
-model = "google/gemini-flash-latest"
+model = "google/gemini-3.8-flash"
 
 # Phase 203 Step 8: OpenRouter needs no new TOML file, because the binding selects the service.
 # OpenRouter's model ids equal the canonical ids, so the binding reuses the config's own model.
@@ -281,7 +281,7 @@ requires_key = "OPENAI_API_KEY"
 tool = "exactl"
 config = "configs/planning-live.google.toml"
 provider = "google"
-model = "gemini-flash-latest"
+model = "gemini-3.8-flash"
 requires_key = "GOOGLE_API_KEY"
 
 [tool.planning-live-openrouter]

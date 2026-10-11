@@ -12,7 +12,7 @@ import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/c
 
 export const DEFAULT_GOOGLE_MODEL: string = configurable({
   key: "google.model",
-  default: "gemini-flash-latest",
+  default: "gemini-3.8-flash",
   type: ConfigValueType.STRING,
   description: "Default model identifier for google provider",
   swap: SwapClass.RESTART,

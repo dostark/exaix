@@ -28,12 +28,12 @@ function getErrorName(error: any): string {
 }
 
 Deno.test({
-  name: "[regression] GoogleProvider: Verify gemini-flash-latest works with v1beta",
+  name: "[regression] GoogleProvider: Verify gemini-3.8-flash works with v1beta",
   ignore: !Deno.env.get(TEST_CONSTANTS.ENV_GOOGLE_API_KEY),
   fn: async () => {
     const provider = new GoogleProvider({
       apiKey: Deno.env.get(TEST_CONSTANTS.ENV_GOOGLE_API_KEY)!,
-      model: DEFAULT_GOOGLE_MODEL, // gemini-flash-latest
+      model: DEFAULT_GOOGLE_MODEL, // gemini-3.8-flash
     });
 
     let timeoutId: ReturnType<typeof setTimeout> | undefined;

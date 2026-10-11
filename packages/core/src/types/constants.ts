@@ -841,7 +841,7 @@ export const DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS: number = configurable({
 });
 export const DEFAULT_AI_MODEL: string = configurable({
   key: "ai.model",
-  default: "gemini-flash-latest",
+  default: "gemini-3.8-flash",
   type: ConfigValueType.STRING,
   description: "Default AI model identifier",
   swap: SwapClass.RESTART,
@@ -931,7 +931,7 @@ export const DEFAULT_MOCK_MODEL: string = configurable({
 export const DEFAULT_MOCK_STRATEGY = MockStrategy.RECORDED;
 export const DEFAULT_FAST_MODEL_NAME: string = configurable({
   key: "ai.fast_model",
-  default: "gemini-flash-latest",
+  default: "gemini-3.8-flash",
   type: ConfigValueType.STRING,
   description: "Model name used for fast inference provider requests",
   swap: SwapClass.RESTART,

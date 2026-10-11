@@ -97,7 +97,7 @@ The llm-judge criterion dispatches to different providers via the `EXA_LLM_PROVI
 | -------------- | ------------------ | -------------------- | ------------------ | ----------------------------------------------- |
 | Anthropic      | `anthropic`        | `ANTHROPIC_API_KEY`  | `claude-haiku-5-5` | `https://api.anthropic.com/v1/messages`         |
 | OpenAI         | `openai`           | `OPENAI_API_KEY`     | `gpt-4o-mini`      | `https://api.openai.com/v1/chat/completions`    |
-| Google Gemini  | `google`           | `GOOGLE_API_KEY`     | `gemini-2.0-flash` | `https://generativelanguage.googleapis.com/...` |
+| Google Gemini  | `google`           | `GOOGLE_API_KEY`     | `gemini-3.8-flash` | `https://generativelanguage.googleapis.com/...` |
 | OpenRouter     | `openrouter`       | `OPENROUTER_API_KEY` | `openrouter/auto`  | `https://openrouter.ai/api/v1/chat/completions` |
 | Ollama (local) | `ollama`           | _(none)_             | `llama3`           | `http://127.0.0.1:11434/api/generate`           |
 
@@ -112,7 +112,7 @@ exactl eval run --pack eval-edge-cases
 # Example: test with Google Gemini
 export EXA_LLM_PROVIDER=google
 export GOOGLE_API_KEY="..."
-export EXA_LLM_MODEL=gemini-1.5-flash
+export EXA_LLM_MODEL=gemini-3.8-flash
 exactl eval run --pack eval-smoke
 ```
 
@@ -403,7 +403,7 @@ deno run -A scripts/setup_sandbox.ts \
 # deno run -A scripts/setup_sandbox.ts \
 #   --dir "$EXAIX_VALIDATION_ROOT" \
 #   --provider "google" \
-#   --model "gemini-1.5-flash"
+#   --model "gemini-3.8-flash"
 
 # Export sandbox paths
 export PATH="$EXAIX_VALIDATION_ROOT/bin:$PATH"

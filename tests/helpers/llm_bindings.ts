@@ -50,7 +50,7 @@ export interface ILlmTestPreset {
 export const EXA_TEST_BIND_ENV = "EXA_TEST_BIND";
 
 export const LLM_TEST_PRESETS: readonly ILlmTestPreset[] = [
-  { id: "google", spec: { service: "google", service_model_id: "gemini-3-flash" }, groupedReplay: true },
+  { id: "google", spec: { service: "google", service_model_id: "gemini-3.8-flash" }, groupedReplay: true },
   {
     id: "anthropic",
     spec: { service: "anthropic", service_model_id: "claude-haiku-5-5" },
@@ -77,7 +77,7 @@ const LIVE_PRESET_ID = "deepseek";
  *  the way an operator catalog entry does, so the resolver validates them like any other model. */
 const TEST_CATALOG_MODELS = [
   // Pinned, not a latest alias: the phase-202 live replay leg names this exact model.
-  { service: "google", canonical: "google/gemini-3-flash", serviceModelId: "gemini-3-flash" },
+  { service: "google", canonical: "google/gemini-3.8-flash", serviceModelId: "gemini-3.8-flash" },
   {
     service: "anthropic",
     canonical: "anthropic/claude-haiku-5-5",

@@ -10,16 +10,16 @@ memory = "Memory"
 
 [ai]
 provider = "google"
-model = "gemini-flash-latest"
+model = "gemini-3.8-flash"
 
 [models.default]
 provider = "google"
-model = "gemini-flash-latest"
+model = "gemini-3.8-flash"
 timeout_ms = 60000
 
 [models.fast]
 provider = "google"
-model = "gemini-flash-latest"
+model = "gemini-3.8-flash"
 timeout_ms = 60000
 
 [agents]

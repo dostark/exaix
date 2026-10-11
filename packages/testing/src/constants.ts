@@ -307,7 +307,7 @@ export const ENV_TEST_ENABLE_PAID_LLM_VALUE = "1";
 export const TOKEN_METRICS_TEST_PROMPT = "Say OK";
 
 // Model names for integration testing
-export const TOKEN_METRICS_MODEL_GOOGLE = "gemini-2.5-flash";
+export const TOKEN_METRICS_MODEL_GOOGLE = "gemini-3.8-flash";
 export const TOKEN_METRICS_MODEL_OPENAI = "gpt-4o-mini";
 export const TOKEN_METRICS_MODEL_ANTHROPIC = "claude-3-5-haiku-20241022";
 

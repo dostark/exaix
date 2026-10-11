@@ -6,7 +6,7 @@
  *
  *   The first live nightly run failed on `Requires net access to
  *   "generativelanguage.googleapis.com:443"`. `@exaix/ai-google` is a shipped provider,
- *   `gemini-flash-latest` is a default model in the registry floor, and `ProviderSelector` will
+ *   `gemini-3.8-flash` is a default model in the registry floor, and `ProviderSelector` will
  *   choose it — but `DAEMON_DEFAULT_NET_HOSTS` listed only Anthropic, OpenAI and local Ollama. The
  *   daemon did not refuse on policy; it crashed the step with a permission error, and the request
  *   failed several layers from the cause. OpenRouter was missing for the same reason.
