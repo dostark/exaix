@@ -637,13 +637,13 @@ function policyConfigToml(portalRoot: string, parallelCalls: string, maxRounds: 
   ].join("\n");
 }
 
-function threeReads(): IGenerateResult {
+function threeReads(idPrefix = "t"): IGenerateResult {
   return makeGenerateResult("", {
-    toolCalls: [
-      { id: "t1", name: "read_file", input: { path: "src/a.ts" } },
-      { id: "t2", name: "read_file", input: { path: "src/a.ts" } },
-      { id: "t3", name: "read_file", input: { path: "src/a.ts" } },
-    ],
+    toolCalls: [1, 2, 3].map((index) => ({
+      id: `${idPrefix}${index}`,
+      name: "read_file",
+      input: { path: "src/a.ts" },
+    })),
   });
 }
 
@@ -705,8 +705,8 @@ Deno.test("[AgentRunner planning tools][policy] a tools.parallel_calls change re
       }
     }
     const provider = new ReloadingProvider(NATIVE_PROVIDER_ID, [
-      threeReads(),
-      threeReads(),
+      threeReads("first-"),
+      threeReads("second-"),
       makeGenerateResult("<thought>t</thought><content>plan marker-content</content>"),
     ]);
     const registry = new StubToolRegistry(fixture.root);

@@ -55,9 +55,9 @@ function result(toolCalls: IProviderToolCall[] | undefined, content = ""): IGene
   };
 }
 
-function calls(count: number): IProviderToolCall[] {
+function calls(count: number, idPrefix = "call"): IProviderToolCall[] {
   return Array.from({ length: count }, (_, index) => ({
-    id: `call-${index}`,
+    id: `${idPrefix}-${index}`,
     name: "read_file",
     input: { path: `file-${index}.ts` },
   }));
@@ -152,7 +152,11 @@ Deno.test("[planning tools policy] a policy change applies from the next round, 
   const registry = new RecordingRegistry();
   const policies = [policy(ToolsRoundMode.OFF, 1), policy(ToolsRoundMode.AUTO, 3), policy(ToolsRoundMode.AUTO, 3)];
   let reads = 0;
-  const generate = new ScriptedGenerate([result(calls(1)), result(calls(3)), result(undefined, "plan")]);
+  const generate = new ScriptedGenerate([
+    result(calls(1, "first")),
+    result(calls(3, "second")),
+    result(undefined, "plan"),
+  ]);
   await loop(generate, registry, () => policies[reads++]).run(options({ maxRounds: 3 }));
 
   assertEquals(reads, 3);

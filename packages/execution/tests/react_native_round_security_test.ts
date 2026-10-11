@@ -237,3 +237,21 @@ Deno.test("a ReAct ceiling change applies from the next turn", NO_SANITIZE, asyn
   );
   assertEquals(executed, ["@test/a.md", "@test/b.md"]);
 });
+
+Deno.test("[security] a ReAct response that reuses an earlier turn id executes no tool", NO_SANITIZE, async () => {
+  const executed: string[] = [];
+  await assertRejects(
+    () =>
+      runScripted(
+        [
+          toolResponse([readCall("call_1", "a.md"), readCall("call_2", "b.md")]),
+          toolResponse([readCall("call_3", "c.md"), readCall("call_1", "d.md")]),
+        ],
+        [policyOf({})],
+        executed,
+      ),
+    Error,
+    "earlier round",
+  );
+  assertEquals(executed, ["@test/a.md", "@test/b.md"]);
+});

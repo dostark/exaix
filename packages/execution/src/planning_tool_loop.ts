@@ -74,7 +74,7 @@ import {
   TOOL_CALL_LIMIT_MESSAGE,
   validateProviderRound,
 } from "./native_tool_turns.ts";
-import { FIXED_NATIVE_ROUND_LIMITS } from "@exaix/ai/native_round_limits.ts";
+import { FIXED_NATIVE_ROUND_LIMITS, type INativeRoundLimits } from "@exaix/ai/native_round_limits.ts";
 import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
 
 export interface IPlanningToolLoopDeps {
@@ -150,6 +150,8 @@ interface IRoundHistory {
   priorRoundNumber: number;
   nativeTurns: IProviderTurn[];
   nativeRounds: IProviderToolRound[];
+  /** Call ids of every executed round. A later round may not reuse one. */
+  consumedIds: Set<string>;
 }
 
 /** Inputs for one generate request, before the replay mode is applied. */
@@ -291,6 +293,7 @@ export class PlanningToolLoop {
       priorRoundNumber: 0,
       nativeTurns: [],
       nativeRounds: [],
+      consumedIds: new Set(),
     };
     let finalRoundIndex = options.maxRounds;
     let guardrailForced = false;
@@ -362,14 +365,13 @@ export class PlanningToolLoop {
 
       // A grouped round is validated whole, and a legacy round is bounded, before any call of it executes.
       const limits = roundLimitsOf(policy);
-      if (!parallelReplayEnabled) assertRoundWithinBounds(response.toolCalls ?? [], limits, response.provider);
-      const validated = parallelReplayEnabled ? validateProviderRound(response, limits) : undefined;
+      const validated = this.admitRound(response, limits, history.consumedIds, parallelReplayEnabled);
       const calls = validated ? validated.calls.map(executableCall) : (response.toolCalls ?? []);
       const executed = await this.executeRoundCalls(calls, roundOptions, round, progress, {
         provider: response.provider,
         model: response.model,
       });
-      this.recordRound(history, round, executed, validated, nativeConversationEnabled);
+      this.recordRound(history, round, { executed, validated, limits }, nativeConversationEnabled);
 
       if (executed.guardrailBlocked) {
         guardrailForced = true;
@@ -383,6 +385,19 @@ export class PlanningToolLoop {
   }
 
   /** Builds one generate request in the replay mode the provider needs. */
+  /** Refuses a round that breaks the ceilings or reuses an id, before any call runs. A grouped provider gets
+   *  its round validated whole. */
+  private admitRound(
+    response: IGenerateResult,
+    limits: INativeRoundLimits,
+    earlierIds: ReadonlySet<string>,
+    grouped: boolean,
+  ): Opt<IValidatedProviderRound, Reason.OptionalInput> {
+    if (grouped) return validateProviderRound(response, limits, earlierIds);
+    assertRoundWithinBounds(response.toolCalls ?? [], limits, response.provider, earlierIds);
+    return undefined;
+  }
+
   /** The policy for one model turn. Without a reader, the run's own caps apply with auto. */
   private roundPolicy(options: IPlanningToolLoopOptions): IToolsRoundPolicy {
     return this.deps.toolsRoundPolicy?.() ?? {
@@ -421,19 +436,24 @@ export class PlanningToolLoop {
   private recordRound(
     history: IRoundHistory,
     round: number,
-    executed: IExecutedRound,
-    validated: Opt<IValidatedProviderRound, Reason.OptionalInput>,
+    result: {
+      executed: IExecutedRound;
+      validated: Opt<IValidatedProviderRound, Reason.OptionalInput>;
+      limits: INativeRoundLimits;
+    },
     nativeConversationEnabled: boolean,
   ): void {
+    const { executed, validated, limits } = result;
+    for (const outcome of executed.outcomes) history.consumedIds.add(outcome.toolUseId);
     if (nativeConversationEnabled) {
-      if (validated !== undefined) history.nativeRounds.push(buildToolRound(validated, executed.outcomes));
+      if (validated !== undefined) history.nativeRounds.push(buildToolRound(validated, executed.outcomes, limits));
       else if (executed.lastTurn) history.nativeTurns.push(executed.lastTurn);
     } else if (validated !== undefined) {
       // Age the superseded round into the transcript, tagged with its real round.
       if (history.priorRound !== undefined) {
         history.transcript += this.buildRoundTranscript(history.priorRound, history.priorRoundNumber);
       }
-      history.priorRound = buildToolRound(validated, executed.outcomes);
+      history.priorRound = buildToolRound(validated, executed.outcomes, limits);
       history.priorRoundNumber = round;
     } else {
       history.transcript += executed.transcript;

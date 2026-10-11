@@ -30,12 +30,13 @@ globalThis.addEventListener("unload", () => Deno.removeSync(PORTAL_ROOT, { recur
 
 class RecordingRegistry implements IToolRegistry {
   calls: Array<{ name: string; params: Record<string, JSONValue> }> = [];
+  resultData: JSONValue = { ok: true };
   getTools(): ITool[] {
     return [{ name: "read_file", description: "Read", parameters: { type: "object", properties: {} } }];
   }
   execute(name: string, params: Record<string, JSONValue>): Promise<IToolResult> {
     this.calls.push({ name, params });
-    return Promise.resolve({ success: true, data: { ok: true } });
+    return Promise.resolve({ success: true, data: this.resultData });
   }
   getBaseDir(): string {
     return "/tmp/native-round-security";
@@ -278,4 +279,56 @@ Deno.test("[security] a response with thousands of calls executes nothing, group
     ProviderProtocolError,
   );
   assertEquals(grouped.calls.length, 0);
+});
+
+/** The assistant replay each provider family returns for these calls. */
+const ASSISTANT_REPLAYS: Record<string, (calls: IProviderToolCall[]) => IProviderAssistantReplay> = {
+  google: (calls) => ({
+    provider: "google",
+    parts: calls.map((call) => ({ functionCall: { name: call.name, args: call.input } })),
+  }),
+  anthropic: (calls) => ({
+    provider: "anthropic",
+    blocks: calls.map((call) => ({ type: "tool_use", id: call.id, name: call.name, input: call.input })),
+  }),
+  openai: (calls) => carrier(calls.map((call) => ({ id: call.id, args: JSON.stringify(call.input) }))),
+};
+
+function groupedResponse(family: string, calls: IProviderToolCall[]): IGenerateResult {
+  return response(calls, ASSISTANT_REPLAYS[family](calls));
+}
+
+for (const family of Object.keys(ASSISTANT_REPLAYS)) {
+  Deno.test(`[security] a ${family} round that reuses an earlier round id executes no tool`, async () => {
+    registerGroupedProvider();
+    const registry = new RecordingRegistry();
+    const generate = new ScriptedGenerate([
+      groupedResponse(family, [readCall("a", "a.ts"), readCall("b", "b.ts")]),
+      groupedResponse(family, [readCall("a", "c.ts"), readCall("d", "c.ts")]),
+    ]);
+    await assertRejects(
+      () => loop(generate, registry, policy(), GROUPED_PROVIDER_ID).run({ ...options(), maxRounds: 3 }),
+      ProviderProtocolError,
+      "earlier round",
+    );
+    assertEquals(registry.calls.length, 2, "only the first round executed");
+    assertEquals(generate.calls.length, 2);
+  });
+}
+
+Deno.test("[security] a round whose results push it over the replay ceiling aborts before the next generate", async () => {
+  registerGroupedProvider();
+  const registry = new RecordingRegistry();
+  registry.resultData = "x".repeat(6000);
+  const generate = new ScriptedGenerate([
+    groupedResponse("openai", [readCall("a", "a.ts")]),
+    response([], undefined),
+  ]);
+  await assertRejects(
+    () => loop(generate, registry, policy({ maxReplayBytes: 2000 }), GROUPED_PROVIDER_ID).run(options()),
+    ProviderProtocolError,
+    "replay ceiling",
+  );
+  assertEquals(registry.calls.length, 1);
+  assertEquals(generate.calls.length, 1, "no further provider call is made");
 });

@@ -10,11 +10,13 @@
 
 import { assertEquals, assertThrows } from "@std/assert";
 import {
+  assertRoundWithinBounds,
   buildNativeToolDefinitions,
   buildPriorTurn,
   buildToolRound,
   enrichPortalPathParam,
   providerSupportsNativeTools,
+  roundReplayBytes,
   validateProviderRound,
 } from "../src/native_tool_turns.ts";
 import type { INativeRoundLimits } from "@exaix/ai/native_round_limits.ts";
@@ -22,6 +24,7 @@ import type { IGenerateResult } from "@exaix/ai/providers";
 import type { ITool, IToolResult } from "@exaix/core/types";
 import type { IProviderToolCall } from "@exaix/ai/providers";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
+import { ProviderProtocolError } from "@exaix/ai/errors.ts";
 import { ProviderCostTier } from "@exaix/core";
 import { PricingTier } from "@exaix/core";
 
@@ -193,7 +196,11 @@ Deno.test("[native_tool_turns][round] validateProviderRound keeps original calls
 });
 
 Deno.test("[native_tool_turns][round] buildToolRound joins three calls to their outcomes by id and index", () => {
-  const round = buildToolRound(validateProviderRound(threeCallGoogleResponse(), ROUND_LIMITS), THREE_CALL_OUTCOMES);
+  const round = buildToolRound(
+    validateProviderRound(threeCallGoogleResponse(), ROUND_LIMITS),
+    THREE_CALL_OUTCOMES,
+    ROUND_LIMITS,
+  );
   assertEquals(round.calls.map((entry) => entry.toolUseId), ["call-1", "call-2", "call-3"]);
   assertEquals(round.calls.map((entry) => entry.toolName), ["read_file", "read_file", "list_directory"]);
   assertEquals(round.calls.map((entry) => entry.toolResultContent), ["A-CONTENT", "B-CONTENT", "DIR-CONTENT"]);
@@ -203,19 +210,19 @@ Deno.test("[native_tool_turns][round] buildToolRound joins three calls to their 
 
 Deno.test("[native_tool_turns][round] buildToolRound refuses a missing outcome instead of guessing by array index", () => {
   const round = validateProviderRound(threeCallGoogleResponse(), ROUND_LIMITS);
-  assertThrows(() => buildToolRound(round, THREE_CALL_OUTCOMES.slice(0, 2)));
+  assertThrows(() => buildToolRound(round, THREE_CALL_OUTCOMES.slice(0, 2), ROUND_LIMITS));
 });
 
 Deno.test("[native_tool_turns][round] buildToolRound refuses an extra outcome for an id the round never requested", () => {
   const round = validateProviderRound(threeCallGoogleResponse(), ROUND_LIMITS);
   const extra = [...THREE_CALL_OUTCOMES, { toolUseId: "call-9", toolResultContent: "X", toolResultIsError: false }];
-  assertThrows(() => buildToolRound(round, extra));
+  assertThrows(() => buildToolRound(round, extra, ROUND_LIMITS));
 });
 
 Deno.test("[native_tool_turns][round] buildToolRound refuses a duplicate outcome for one id", () => {
   const round = validateProviderRound(threeCallGoogleResponse(), ROUND_LIMITS);
   const duplicate = [...THREE_CALL_OUTCOMES, THREE_CALL_OUTCOMES[0]];
-  assertThrows(() => buildToolRound(round, duplicate));
+  assertThrows(() => buildToolRound(round, duplicate, ROUND_LIMITS));
 });
 
 Deno.test("[native_tool_turns][round] a refused signed call still gets one ordered error result and keeps its signature", () => {
@@ -225,7 +232,7 @@ Deno.test("[native_tool_turns][round] a refused signed call still gets one order
     THREE_CALL_OUTCOMES[1],
     THREE_CALL_OUTCOMES[2],
   ];
-  const built = buildToolRound(round, outcomes);
+  const built = buildToolRound(round, outcomes, ROUND_LIMITS);
   assertEquals(built.calls[0].toolResultIsError, true);
   assertEquals(built.calls[0].thoughtSignature, "sig-a");
   assertEquals(built.calls.length, 3);
@@ -284,6 +291,7 @@ Deno.test("[native_tool_turns][round] buildToolRound replays an alias call under
   const built = buildToolRound(
     validateProviderRound(response, ROUND_LIMITS),
     [{ toolUseId: "toolu_alias", toolResultContent: "RESULT", toolResultIsError: false }],
+    ROUND_LIMITS,
   );
   assertEquals(built.calls[0].toolName, "Read");
   assertEquals(built.calls[0].toolUseId, "toolu_alias");
@@ -327,4 +335,41 @@ Deno.test("[native_tool_turns][round] validateProviderRound rejects an Anthropic
   const response = twoCallAnthropicResponse();
   response.toolCalls![0] = { ...response.toolCalls![0], input: { path: "z.txt" } };
   assertThrows(() => validateProviderRound(response, ROUND_LIMITS));
+});
+
+Deno.test("[native_tool_turns][round] validateProviderRound refuses an id that an earlier round already used", () => {
+  const earlier = new Set(["call-2"]);
+  assertThrows(
+    () => validateProviderRound(threeCallGoogleResponse(), ROUND_LIMITS, earlier),
+    ProviderProtocolError,
+    "earlier round",
+  );
+});
+
+Deno.test("[native_tool_turns][round] validateProviderRound accepts ids that no earlier round used", () => {
+  const round = validateProviderRound(threeCallGoogleResponse(), ROUND_LIMITS, new Set(["call-9"]));
+  assertEquals(round.calls.length, 3);
+});
+
+Deno.test("[native_tool_turns][round] assertRoundWithinBounds refuses an id that an earlier round already used", () => {
+  const calls = [{ id: "call-1", name: "read_file", input: { path: "a.ts" } }];
+  assertThrows(
+    () => assertRoundWithinBounds(calls, ROUND_LIMITS, "openai", new Set(["call-1"])),
+    ProviderProtocolError,
+    "earlier round",
+  );
+});
+
+Deno.test("[native_tool_turns][round] buildToolRound sends a round exactly at the replay ceiling", () => {
+  const round = validateProviderRound(threeCallGoogleResponse(), ROUND_LIMITS);
+  const unbounded = buildToolRound(round, THREE_CALL_OUTCOMES, ROUND_LIMITS);
+  const exact = { ...ROUND_LIMITS, maxRoundReplayBytes: roundReplayBytes(unbounded) };
+  assertEquals(buildToolRound(round, THREE_CALL_OUTCOMES, exact).calls.length, 3);
+});
+
+Deno.test("[native_tool_turns][round] buildToolRound refuses a round one byte over the replay ceiling, keeping every result", () => {
+  const round = validateProviderRound(threeCallGoogleResponse(), ROUND_LIMITS);
+  const unbounded = buildToolRound(round, THREE_CALL_OUTCOMES, ROUND_LIMITS);
+  const tight = { ...ROUND_LIMITS, maxRoundReplayBytes: roundReplayBytes(unbounded) - 1 };
+  assertThrows(() => buildToolRound(round, THREE_CALL_OUTCOMES, tight), ProviderProtocolError, "replay ceiling");
 });

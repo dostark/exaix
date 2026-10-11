@@ -118,11 +118,19 @@ export const TOOL_CALL_LIMIT_MESSAGE = "tool call limit reached for this round; 
 const CALL_CEILING_MESSAGE = "Tool round exceeds the accepted call ceiling";
 const ARGUMENT_CEILING_MESSAGE = "Tool call arguments exceed the byte ceiling";
 
-/** Refuses a call with an empty id or name, or with an id that the round already used. */
-function assertCallIdentity(call: IProviderToolCall, seenIds: Set<string>, provider: string): void {
+const NO_EARLIER_IDS: ReadonlySet<string> = new Set();
+
+/** Refuses a call with an empty id or name, or with an id that any round already used. */
+function assertCallIdentity(
+  call: IProviderToolCall,
+  seenIds: Set<string>,
+  earlierIds: ReadonlySet<string>,
+  provider: string,
+): void {
   if (call.id.trim() === "") throw new ProviderProtocolError("Tool call id is empty", provider);
   if (call.name.trim() === "") throw new ProviderProtocolError("Tool call name is empty", provider);
   if (seenIds.has(call.id)) throw new ProviderProtocolError("Tool call id is duplicated in the round", provider);
+  if (earlierIds.has(call.id)) throw new ProviderProtocolError("Tool call id was used by an earlier round", provider);
   seenIds.add(call.id);
 }
 
@@ -147,10 +155,11 @@ function validateCallEntry(
   call: IProviderToolCall,
   index: number,
   seenIds: Set<string>,
+  earlierIds: ReadonlySet<string>,
   limits: INativeRoundLimits,
   provider: string,
 ): IValidatedRoundCall {
-  assertCallIdentity(call, seenIds, provider);
+  assertCallIdentity(call, seenIds, earlierIds, provider);
   assertArgumentWithinBounds(call, limits, provider);
   const isObject = typeof call.input === "object" && call.input !== null && !Array.isArray(call.input);
   return isObject && call.rawArguments === undefined
@@ -250,18 +259,23 @@ export function assertRoundWithinBounds(
   calls: readonly IProviderToolCall[],
   limits: INativeRoundLimits,
   provider: string,
+  earlierIds: ReadonlySet<string> = NO_EARLIER_IDS,
 ): void {
   if (calls.length > limits.maxResponseCalls) throw new ProviderProtocolError(CALL_CEILING_MESSAGE, provider);
   const seenIds = new Set<string>();
   for (const call of calls) {
-    assertCallIdentity(call, seenIds, provider);
+    assertCallIdentity(call, seenIds, earlierIds, provider);
     assertArgumentWithinBounds(call, limits, provider);
   }
 }
 
 /** Validates one provider response before any tool effect. Throws a protocol error when the round
  *  cannot be replayed exactly. An input that is not a JSON object is refused per call instead. */
-export function validateProviderRound(result: IGenerateResult, limits: INativeRoundLimits): IValidatedProviderRound {
+export function validateProviderRound(
+  result: IGenerateResult,
+  limits: INativeRoundLimits,
+  earlierIds: ReadonlySet<string> = NO_EARLIER_IDS,
+): IValidatedProviderRound {
   const provider = result.provider;
   const calls = roundCalls(result);
   if (calls.length === 0) throw new ProviderProtocolError("Tool round has no calls", provider);
@@ -272,14 +286,24 @@ export function validateProviderRound(result: IGenerateResult, limits: INativeRo
     throw new ProviderProtocolError("Tool round assistant content exceeds the replay ceiling", provider);
   }
   const seenIds = new Set<string>();
-  const validated = calls.map((call, index) => validateCallEntry(call, index, seenIds, limits, provider));
+  const validated = calls.map((call, index) => validateCallEntry(call, index, seenIds, earlierIds, limits, provider));
   assertCallsMatchReplay(calls, replay, provider);
   return { calls: validated, assistant: replay };
 }
 
+/** UTF-8 bytes that replaying one round costs: its assistant content plus every result. */
+export function roundReplayBytes(round: IProviderToolRound): number {
+  const results = round.calls.reduce((sum, entry) => sum + utf8Bytes(JSON.stringify(entry.toolResultContent)), 0);
+  return utf8Bytes(JSON.stringify(replayPayload(round.assistant))) + results;
+}
+
 /** Joins each validated call to exactly one outcome by id. Missing, extra or duplicate outcomes
  *  are invariant errors, never an index-based guess. */
-export function buildToolRound(round: IValidatedProviderRound, outcomes: readonly IRoundOutcome[]): IProviderToolRound {
+export function buildToolRound(
+  round: IValidatedProviderRound,
+  outcomes: readonly IRoundOutcome[],
+  limits: INativeRoundLimits,
+): IProviderToolRound {
   if (round.calls.length === 0) throw new Error("A tool round with no calls cannot be built");
   const byId = new Map<string, IRoundOutcome>();
   for (const outcome of outcomes) {
@@ -304,5 +328,9 @@ export function buildToolRound(round: IValidatedProviderRound, outcomes: readonl
       toolResultIsError: outcome.toolResultIsError,
     };
   });
-  return { calls, assistant: round.assistant };
+  const built: IProviderToolRound = { calls, assistant: round.assistant };
+  if (roundReplayBytes(built) > limits.maxRoundReplayBytes) {
+    throw new ProviderProtocolError("Tool round with its results exceeds the replay ceiling", round.assistant.provider);
+  }
+  return built;
 }

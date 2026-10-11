@@ -748,7 +748,10 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       );
     }
 
-    this.assertNativeRoundAdmitted(nativeToolsUsed, parsed.nativeToolCalls, policy, response.provider);
+    this.assertNativeRoundAdmitted(nativeToolsUsed, parsed.nativeToolCalls, policy, {
+      provider: response.provider,
+      earlierIds: this.consumedCallIds(params.nativeConversationTurns, nativeToolsPriorTurn),
+    });
 
     const maxToolCalls = options.max_tool_calls ?? 100;
     if (
@@ -906,9 +909,21 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     nativeToolsUsed: boolean,
     calls: Opt<IProviderToolCall[], Reason.OptionalInput>,
     policy: IToolsRoundPolicy,
-    provider: string,
+    context: { provider: string; earlierIds: ReadonlySet<string> },
   ): void {
-    if (nativeToolsUsed) assertRoundWithinBounds(calls ?? [], roundLimitsOf(policy), provider);
+    if (nativeToolsUsed) {
+      assertRoundWithinBounds(calls ?? [], roundLimitsOf(policy), context.provider, context.earlierIds);
+    }
+  }
+
+  /** Call ids of the turns already replayed to the provider. A later response may not reuse one. */
+  private consumedCallIds(
+    turns: readonly IProviderTurn[],
+    priorTurn: Opt<IProviderTurn, Reason.OptionalInput>,
+  ): ReadonlySet<string> {
+    const ids = new Set(turns.map((turn) => turn.toolUseId));
+    if (priorTurn !== undefined) ids.add(priorTurn.toolUseId);
+    return ids;
   }
 
   /** Text ReAct has no cap. A native response may execute only the calls its policy cap admits. */
