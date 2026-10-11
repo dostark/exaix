@@ -70,10 +70,11 @@ import {
   providerRoundCallCount,
   providerSupportsNativeConversation,
   providerSupportsParallelToolReplay,
+  roundLimitsOf,
   TOOL_CALL_LIMIT_MESSAGE,
   validateProviderRound,
 } from "./native_tool_turns.ts";
-import { FIXED_NATIVE_ROUND_LIMITS, type INativeRoundLimits } from "@exaix/ai/native_round_limits.ts";
+import { FIXED_NATIVE_ROUND_LIMITS } from "@exaix/ai/native_round_limits.ts";
 import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
 
 export interface IPlanningToolLoopDeps {
@@ -187,15 +188,6 @@ function autoToolChoice(mode: ToolsRoundMode): IToolChoice {
   return mode === ToolsRoundMode.OFF
     ? { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: true }
     : { type: TOOL_CHOICE_TYPE_AUTO };
-}
-
-/** The ceilings one round is validated against, from the policy resolved for its turn. */
-function roundLimitsOf(policy: IToolsRoundPolicy): INativeRoundLimits {
-  return {
-    maxResponseCalls: policy.maxResponseCalls,
-    maxArgumentBytes: policy.maxArgumentBytes,
-    maxRoundReplayBytes: policy.maxReplayBytes,
-  };
 }
 
 /** Tool call parameter names the confinement guard checks — every string value under these

@@ -30,6 +30,7 @@ import type { ITool, IToolResult, JSONValue } from "@exaix/core/types";
 import { ProviderType, ToolName } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { INativeRoundLimits } from "@exaix/ai/native_round_limits.ts";
+import type { IToolsRoundPolicy } from "@exaix/schemas";
 
 /** One tool result, identified by the call id it answers. */
 export interface IRoundOutcome {
@@ -117,6 +118,30 @@ export const TOOL_CALL_LIMIT_MESSAGE = "tool call limit reached for this round; 
 const CALL_CEILING_MESSAGE = "Tool round exceeds the accepted call ceiling";
 const ARGUMENT_CEILING_MESSAGE = "Tool call arguments exceed the byte ceiling";
 
+/** Refuses a call with an empty id or name, or with an id that the round already used. */
+function assertCallIdentity(call: IProviderToolCall, seenIds: Set<string>, provider: string): void {
+  if (call.id.trim() === "") throw new ProviderProtocolError("Tool call id is empty", provider);
+  if (call.name.trim() === "") throw new ProviderProtocolError("Tool call name is empty", provider);
+  if (seenIds.has(call.id)) throw new ProviderProtocolError("Tool call id is duplicated in the round", provider);
+  seenIds.add(call.id);
+}
+
+/** Refuses an argument over the byte ceiling. */
+function assertArgumentWithinBounds(call: IProviderToolCall, limits: INativeRoundLimits, provider: string): void {
+  if (utf8Bytes(JSON.stringify(call.input) ?? "") > limits.maxArgumentBytes) {
+    throw new ProviderProtocolError(ARGUMENT_CEILING_MESSAGE, provider);
+  }
+}
+
+/** The round ceilings that one policy sets for a model turn. */
+export function roundLimitsOf(policy: IToolsRoundPolicy): INativeRoundLimits {
+  return {
+    maxResponseCalls: policy.maxResponseCalls,
+    maxArgumentBytes: policy.maxArgumentBytes,
+    maxRoundReplayBytes: policy.maxReplayBytes,
+  };
+}
+
 /** Validates one call's id, name and argument bytes. A non-object input is refused per call. */
 function validateCallEntry(
   call: IProviderToolCall,
@@ -125,13 +150,8 @@ function validateCallEntry(
   limits: INativeRoundLimits,
   provider: string,
 ): IValidatedRoundCall {
-  if (call.id.trim() === "") throw new ProviderProtocolError("Tool call id is empty", provider);
-  if (call.name.trim() === "") throw new ProviderProtocolError("Tool call name is empty", provider);
-  if (seenIds.has(call.id)) throw new ProviderProtocolError("Tool call id is duplicated in the round", provider);
-  seenIds.add(call.id);
-  if (utf8Bytes(JSON.stringify(call.input) ?? "") > limits.maxArgumentBytes) {
-    throw new ProviderProtocolError(ARGUMENT_CEILING_MESSAGE, provider);
-  }
+  assertCallIdentity(call, seenIds, provider);
+  assertArgumentWithinBounds(call, limits, provider);
   const isObject = typeof call.input === "object" && call.input !== null && !Array.isArray(call.input);
   return isObject && call.rawArguments === undefined
     ? { id: call.id, index, originalCall: call, executionInput: call.input }
@@ -224,18 +244,18 @@ function replayPayload(replay: IProviderAssistantReplay): readonly JSONObject[] 
   return replay;
 }
 
-/** Refuses a response over the call ceiling, or an argument over the byte ceiling, before any call executes.
- *  Used where no grouped validation runs. */
+/** Refuses a response over the call or argument ceiling, or with an empty or repeated id.
+ *  The refusal comes before any call executes. Used where no grouped validation runs. */
 export function assertRoundWithinBounds(
   calls: readonly IProviderToolCall[],
   limits: INativeRoundLimits,
   provider: string,
 ): void {
   if (calls.length > limits.maxResponseCalls) throw new ProviderProtocolError(CALL_CEILING_MESSAGE, provider);
+  const seenIds = new Set<string>();
   for (const call of calls) {
-    if (utf8Bytes(JSON.stringify(call.input) ?? "") > limits.maxArgumentBytes) {
-      throw new ProviderProtocolError(ARGUMENT_CEILING_MESSAGE, provider);
-    }
+    assertCallIdentity(call, seenIds, provider);
+    assertArgumentWithinBounds(call, limits, provider);
   }
 }
 

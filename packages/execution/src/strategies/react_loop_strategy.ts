@@ -33,11 +33,13 @@ import {
   ToolName,
 } from "@exaix/core";
 import {
+  assertRoundWithinBounds,
   buildNativeToolDefinitions,
   buildPriorTurn,
   enrichPortalPathParam,
   providerSupportsNativeConversation,
   providerSupportsNativeTools,
+  roundLimitsOf,
   TOOL_CALL_LIMIT_MESSAGE,
 } from "../native_tool_turns.ts";
 import { GuardrailBlockedError } from "@exaix/core/planning";
@@ -746,6 +748,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       );
     }
 
+    this.assertNativeRoundAdmitted(nativeToolsUsed, parsed.nativeToolCalls, policy, response.provider);
+
     const maxToolCalls = options.max_tool_calls ?? 100;
     if (toolCallCount + parsed.actions.length > maxToolCalls) {
       throw new AgentExecutionError(
@@ -893,6 +897,16 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
   private shouldFinishActionTurn(isComplete: boolean, allActionsSucceeded: boolean): boolean {
     return isComplete && allActionsSucceeded;
+  }
+
+  /** Refuses a native response that breaks the round ceilings of this turn, before any call runs. */
+  private assertNativeRoundAdmitted(
+    nativeToolsUsed: boolean,
+    calls: Opt<IProviderToolCall[], Reason.OptionalInput>,
+    policy: IToolsRoundPolicy,
+    provider: string,
+  ): void {
+    if (nativeToolsUsed) assertRoundWithinBounds(calls ?? [], roundLimitsOf(policy), provider);
   }
 
   /** Text ReAct has no cap. A native response may execute only the calls its policy cap admits. */
