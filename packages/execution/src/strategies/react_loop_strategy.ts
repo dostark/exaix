@@ -751,7 +751,9 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     this.assertNativeRoundAdmitted(nativeToolsUsed, parsed.nativeToolCalls, policy, response.provider);
 
     const maxToolCalls = options.max_tool_calls ?? 100;
-    if (toolCallCount + parsed.actions.length > maxToolCalls) {
+    if (
+      toolCallCount + this.admittedCallCount(nativeToolsUsed, parsed.actions.length, policy.executionCap) > maxToolCalls
+    ) {
       throw new AgentExecutionError(
         `Exceeded maximum tool calls (${maxToolCalls})`,
         AgentExecutionErrorType.EXECUTION_ERROR,
@@ -912,6 +914,11 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   /** Text ReAct has no cap. A native response may execute only the calls its policy cap admits. */
   private withinNativeCap(nativeToolsUsed: boolean, position: number, executionCap: number): boolean {
     return !nativeToolsUsed || position < executionCap;
+  }
+
+  /** Calls of a response that can execute. The whole-run allowance counts these, not the refused extras. */
+  private admittedCallCount(nativeToolsUsed: boolean, requested: number, executionCap: number): number {
+    return nativeToolsUsed ? Math.min(requested, executionCap) : requested;
   }
 
   /** Executes one action, or returns the cap refusal without touching the tool. */

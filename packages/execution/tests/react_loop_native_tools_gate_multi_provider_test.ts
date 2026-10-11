@@ -821,3 +821,16 @@ Deno.test(
     assertEquals(executed.length, 0);
   },
 );
+
+Deno.test(
+  "[react policy] off with a small allowance executes one of three native calls and refuses two",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    const executed: string[] = [];
+    const { calls } = await runThreeReads(roundPolicy(ToolsRoundMode.OFF, 1), executed, 2);
+
+    assertEquals(executed.length, 1);
+    const turns = calls[1].options?.nativeConversation?.turns ?? [];
+    assertEquals(turns.map((turn) => turn.toolResultIsError), [false, true, true]);
+  },
+);
