@@ -23,6 +23,7 @@ import {
   type ITraceRow,
   LIVE_KEY_ENV,
   LIVE_OPENAI_THINKING_MODEL,
+  type LiveProvider,
   OPENAI_KEY_ENV,
   OPENROUTER_KEY_ENV,
   payloadOf,
@@ -50,6 +51,8 @@ const openrouterEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && (Deno.env.get
 const MINIMUM_BATCH = 2;
 /** The shipped planning cap is three. A live model may list a directory before its three reads, so this case allows eight. */
 const LIVE_PLANNING_CALLS_PER_ROUND = 8;
+/** Tool rounds for a live batch case. Two rounds leave one tool round, which a model may spend on a directory listing. */
+const LIVE_TOOL_ROUNDS = 4;
 /** Characters of each call's result shown in a failure message. */
 const DESCRIBED_RESULT_CHARS = 60;
 /** The calls a failure message lists, so a long ReAct run stays readable. */
@@ -68,6 +71,38 @@ function callsPerResponse(rows: ITraceRow[]): { requested: number; executed: num
     }
   }
   return responses;
+}
+
+/** Shows the off override by comparing two runs.
+ *  The auto run must batch, or the override is untested. The off run must execute at most one call per response.
+ *  The model may list a directory before it reads, so both runs get four rounds, like the thinking case. */
+async function assertParallelOffOverride(liveProvider: LiveProvider, liveModel?: string): Promise<void> {
+  const baseline = await runPlanningRound({
+    live: true,
+    liveProvider,
+    liveModel,
+    toolsLines: [],
+    maxToolRounds: LIVE_TOOL_ROUNDS,
+  });
+  assertEquals(baseline.fixture.bodies.length, 0, `chat must reach ${liveProvider}, not the loopback fixture`);
+  assert(
+    callsPerResponse(baseline.rows).some((response) => response.requested >= MINIMUM_BATCH),
+    `the auto run never batched, so the off override is untested: ${journalActions(baseline.rows)}`,
+  );
+  const off = await runPlanningRound({
+    live: true,
+    liveProvider,
+    liveModel,
+    toolsLines: [],
+    maxToolRounds: LIVE_TOOL_ROUNDS,
+    dbOverride: { key: "tools.parallel_calls", value: "off" },
+  });
+  assertEquals(off.fixture.bodies.length, 0, `chat must reach ${liveProvider}, not the loopback fixture`);
+  const responses = callsPerResponse(off.rows);
+  assert(
+    responses.every((response) => response.executed <= 1),
+    `a response executed more than one call under off: ${JSON.stringify(responses)}`,
+  );
 }
 
 /** Each journaled call's tool and the start of its result, for a failure message that says what the model did. */
@@ -198,33 +233,12 @@ Deno.test({
 
 Deno.test({
   name:
-    "[phase202-cutover][live][anthropic] a Config DB override of tools.parallel_calls=off runs one call of a batch and refuses the rest",
+    "[phase202-cutover][live][anthropic] a Config DB override of tools.parallel_calls=off keeps every response to one executed call",
   ignore: !anthropicEnabled,
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const { fixture, rows } = await runPlanningRound({
-      live: true,
-      liveProvider: "anthropic",
-      toolsLines: [],
-      dbOverride: { key: "tools.parallel_calls", value: "off" },
-    });
-    assertEquals(fixture.bodies.length, 0, "chat must reach Anthropic, not the loopback fixture");
-    const calls = toolRows(rows);
-    assert(
-      calls.length >= MINIMUM_BATCH,
-      `the Anthropic model returned fewer than ${MINIMUM_BATCH} calls, so the override cannot show: ${
-        journalActions(rows)
-      }`,
-    );
-    const completed = payloadOf<ITerminalPayload>(rows, "planning.tools.completed");
-    assertEquals(completed?.toolCalls, 1, "one call executes under off");
-    const refused = calls.filter((call) => call.resultSummary.includes(REFUSAL));
-    assertEquals(
-      refused.length,
-      calls.length - 1,
-      `every call past the first is refused; journaled: ${describeCalls(calls)}`,
-    );
+    await assertParallelOffOverride("anthropic");
   },
 });
 
@@ -300,6 +314,43 @@ Deno.test({
     for (const marker of markers) {
       assert(calls.some((call) => call.resultSummary.includes(marker)), `no tool result carried ${marker}`);
     }
+  },
+});
+
+Deno.test({
+  name:
+    "[phase202-cutover][live][openai-chat] planning replays a three-file batch through the OpenAI chat-completions profile, reading every file",
+  ignore: !openaiEnabled,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const { fixture, markers, rows } = await runPlanningRound({
+      live: true,
+      liveProvider: "openai-chat",
+      toolsLines: [],
+      maxCallsPerRound: LIVE_PLANNING_CALLS_PER_ROUND,
+    });
+    assertEquals(fixture.bodies.length, 0, "chat must reach OpenAI, not the loopback fixture");
+    assert(
+      payloadOf<ITerminalPayload>(rows, "planning.tools.completed") !== undefined,
+      `the planning round did not complete: ${journalFailure(rows)}; ${journalActions(rows)}`,
+    );
+    const calls = toolRows(rows);
+    assert(calls.length >= FILE_NAMES.length, `the round journaled ${calls.length} calls: ${journalActions(rows)}`);
+    assert(calls.every((call) => !call.resultSummary.includes(REFUSAL)), "the auto default refuses no call");
+    for (const marker of markers) {
+      assert(calls.some((call) => call.resultSummary.includes(marker)), `no tool result carried ${marker}`);
+    }
+  },
+});
+
+Deno.test({
+  name: "[phase202-cutover][live][openai] planning with parallel calls off executes at most one call per response",
+  ignore: !openaiEnabled,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    await assertParallelOffOverride("openai", LIVE_OPENAI_THINKING_MODEL);
   },
 });
 
