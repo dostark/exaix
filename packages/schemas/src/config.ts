@@ -526,13 +526,13 @@ const ConfigObjectSchema = z.object({
     default_model: "claude-haiku-5-5",
     max_tokens_default: 4096,
   }),
-  /** Google Vertex AI provider options (service-account auth, regional endpoints) */
+  /** Google Vertex AI provider options (service-account auth, global or regional endpoints) */
   ai_vertex: z.object({
     service_account_env: z.string().default("VERTEX_AI_SERVICE_ACCOUNT"),
-    region: z.string().default("us-central1"),
+    region: z.string().default("global"),
   }).optional().default({
     service_account_env: "VERTEX_AI_SERVICE_ACCOUNT",
-    region: "us-central1",
+    region: "global",
   }),
   /** OpenRouter unified-gateway provider options (API key + ranking headers + routing). */
   ai_openrouter: z.object({

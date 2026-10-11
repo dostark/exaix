@@ -28,7 +28,7 @@ Deno.test("[ConfigSchema] applies ai_vertex / ai_openrouter defaults when omitte
   const result = ConfigSchema.safeParse(baseConfig());
   assertEquals(result.success, true);
   if (result.success) {
-    assertEquals(result.data.ai_vertex.region, "us-central1");
+    assertEquals(result.data.ai_vertex.region, "global");
     assertEquals(result.data.ai_vertex.service_account_env, "VERTEX_AI_SERVICE_ACCOUNT");
     assertEquals(result.data.ai_openrouter.site_name, "Exaix");
     assertEquals(result.data.ai_openrouter.api_key_env, "OPENROUTER_API_KEY");
