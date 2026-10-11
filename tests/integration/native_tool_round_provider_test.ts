@@ -26,6 +26,7 @@ import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.
 import { createLlmProvider, LLM_TEST_PRESETS, llmKeyEnv, resolveLlmBinding } from "../helpers/llm_bindings.ts";
 import {
   type IWireCall,
+  type IWireFamily,
   type IWireRequest,
   runBoundRound,
   runPlanningRound,
@@ -84,6 +85,14 @@ const ALIAS_CALLS: IWireCall[] = [
 ];
 const RESULT_A = '{"content":"BODY-@fixture/a.ts"}';
 const RESULT_B = '{"content":"BODY-@fixture/b.ts"}';
+const RESULT_C = '{"content":"BODY-@fixture/c.ts"}';
+const RESULT_D = '{"content":"BODY-@fixture/d.ts"}';
+const SECOND_ROUND_CALLS: IWireCall[] = [
+  { id: "toolu_c", name: "read_file", input: { path: "c.ts" } },
+  { id: "toolu_d", name: "read_file", input: { path: "d.ts" } },
+];
+/** Presets whose snapshot keeps every completed round. The others replay only the latest round natively. */
+const FULL_CONVERSATION_PRESETS = ["openai", "openrouter", "deepseek"];
 const PORTAL_ROOT = Deno.makeTempDirSync({ prefix: "native-tool-round-provider-" });
 const LOCAL_MODEL = "compat-fixture-v1";
 const LOCAL_BUDGET: IPromptBudget = {
@@ -106,6 +115,23 @@ for (const preset of LLM_TEST_PRESETS) {
   const keyEnv = llmKeyEnv(preset.spec)!;
   const modelId = preset.spec.service_model_id ?? "";
   const name = (scenario: string) => `[native_tool_round][${preset.id}] ${scenario}`;
+
+  /** Registers one grouped-replay case. The body gets the wire family of the bound provider. */
+  const groupedCase = (scenario: string, body: (family: IWireFamily) => Promise<void>) =>
+    Deno.test({
+      name: name(scenario),
+      ignore: !preset.groupedReplay,
+      fn: () => withEnv({ [keyEnv]: "test-key" }, () => body(wireFamilyFor(resolveLlmBinding(preset.spec).adapter))),
+    });
+  const runPreset = (traceSuffix: string, responses: JSONObject[], maxRounds: number) =>
+    runBoundRound({
+      spec: preset.spec,
+      apiKeyEnv: keyEnv,
+      responses,
+      maxRounds,
+      portalRoot: PORTAL_ROOT,
+      traceId: `trace-round-${preset.id}-${traceSuffix}`,
+    });
 
   Deno.test({
     name: name("the boot registration declares grouped replay for the bound provider"),
@@ -146,6 +172,32 @@ for (const preset of LLM_TEST_PRESETS) {
       });
     },
   });
+
+  groupedCase(
+    "two completed rounds reach the third request once, with every result and no duplicate exchange",
+    async (family) => {
+      const first = family.roundResponse(TWO_CALLS, modelId);
+      const second = family.roundResponse(SECOND_ROUND_CALLS, modelId);
+      const run = await runPreset("two-rounds", [first.body, second.body, family.finalResponse("plan", modelId)], 3);
+      assertEquals(run.registry.calls.length, 4);
+      assertEquals(run.requests.length, 3);
+      const third = run.requests[2]!;
+      const exchanges = family.replayedExchanges(third);
+      const full = FULL_CONVERSATION_PRESETS.includes(preset.id);
+      assertEquals(
+        exchanges.map((exchange) => exchange.assistant),
+        full ? [first.assistant, second.assistant] : [second.assistant],
+      );
+      assertEquals(
+        exchanges.map((exchange) => exchange.results),
+        full ? [[RESULT_A, RESULT_B], [RESULT_C, RESULT_D]] : [[RESULT_C, RESULT_D]],
+      );
+      const wire = JSON.stringify(third);
+      for (const marker of ["BODY-@fixture/a.ts", "BODY-@fixture/b.ts", "BODY-@fixture/c.ts", "BODY-@fixture/d.ts"]) {
+        assertEquals(wire.split(marker).length - 1, 1, `${marker} reaches the third request exactly once`);
+      }
+    },
+  );
 
   Deno.test({
     name: name("a one-call round replays an exact golden follow-up"),

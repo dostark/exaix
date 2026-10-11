@@ -57,6 +57,12 @@ export interface IResponsesRequest {
 /** Any follow-up request a wire family reads back. */
 export type IWireRequest = IGeminiRequest | IAnthropicRequest | IChatRequest | IResponsesRequest;
 
+/** One replayed exchange: an assistant turn and the results that answer it, in order. */
+export interface IWireExchange {
+  assistant: JSONValue;
+  results: string[];
+}
+
 /** The adapter-specific wire shape of one family of providers. */
 export interface IWireFamily {
   /** The model is the id the fixture reports, so a provider that prices by returned model matches the request. */
@@ -66,6 +72,8 @@ export interface IWireFamily {
   replayedAssistant(request: IWireRequest): JSONValue;
   /** The content of each result the follow-up request carries, in order. */
   replayedResults(request: IWireRequest): string[];
+  /** Every exchange the request replays natively, oldest first. */
+  replayedExchanges(request: IWireRequest): IWireExchange[];
 }
 
 /** What a planning run returns: the registry that recorded the reads, and the final text. */
@@ -145,6 +153,21 @@ const GEMINI_FAMILY: IWireFamily = {
       .filter((part) => part.functionResponse !== undefined)
       .map((part) => textOf(asObject(asObject(part.functionResponse).response).content));
   },
+  replayedExchanges(request) {
+    const exchanges: IWireExchange[] = [];
+    for (const content of (request as IGeminiRequest).contents.slice(1)) {
+      if (content.role === "model") {
+        exchanges.push({ assistant: content, results: [] });
+        continue;
+      }
+      const answered = content.parts
+        .map((part) => asObject(part))
+        .filter((part) => part.functionResponse !== undefined)
+        .map((part) => textOf(asObject(asObject(part.functionResponse).response).content));
+      exchanges.at(-1)?.results.push(...answered);
+    }
+    return exchanges;
+  },
 };
 
 const ANTHROPIC_FAMILY: IWireFamily = {
@@ -170,6 +193,23 @@ const ANTHROPIC_FAMILY: IWireFamily = {
       .map((block) => asObject(block))
       .filter((block) => block.type === "tool_result")
       .map((block) => textOf(block.content));
+  },
+  replayedExchanges(request) {
+    const exchanges: IWireExchange[] = [];
+    for (const message of (request as IAnthropicRequest).messages.slice(1)) {
+      if (message.role === "assistant") {
+        exchanges.push({ assistant: message, results: [] });
+        continue;
+      }
+      const answered = Array.isArray(message.content)
+        ? message.content
+          .map((block) => asObject(block))
+          .filter((block) => block.type === "tool_result")
+          .map((block) => textOf(block.content))
+        : [];
+      exchanges.at(-1)?.results.push(...answered);
+    }
+    return exchanges;
   },
 };
 
@@ -217,6 +257,14 @@ const CHAT_FAMILY: IWireFamily = {
       .filter((message) => message.role === "tool")
       .map((message) => textOf(message.content));
   },
+  replayedExchanges(request) {
+    const exchanges: IWireExchange[] = [];
+    for (const message of (request as IChatRequest).messages.slice(1)) {
+      if (message.role === "assistant") exchanges.push({ assistant: message, results: [] });
+      else if (message.role === "tool") exchanges.at(-1)?.results.push(textOf(message.content));
+    }
+    return exchanges;
+  },
 };
 
 /** The /v1/responses shape. A round's output items are the assistant turn, and each result is a function_call_output. */
@@ -262,6 +310,20 @@ const RESPONSES_FAMILY: IWireFamily = {
     return (request as IResponsesRequest).input
       .filter((item) => item.type === "function_call_output")
       .map((item) => textOf(item.output));
+  },
+  replayedExchanges(request) {
+    const exchanges: IWireExchange[] = [];
+    for (const item of (request as IResponsesRequest).input.slice(1)) {
+      if (item.role === "user") continue;
+      if (item.type === "function_call_output") {
+        exchanges.at(-1)?.results.push(textOf(item.output));
+        continue;
+      }
+      const current = exchanges.at(-1);
+      if (current === undefined || current.results.length > 0) exchanges.push({ assistant: [item], results: [] });
+      else if (Array.isArray(current.assistant)) current.assistant.push(item);
+    }
+    return exchanges;
   },
 };
 

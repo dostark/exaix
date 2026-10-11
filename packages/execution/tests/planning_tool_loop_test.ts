@@ -1320,6 +1320,178 @@ Deno.test("[planning_tool_loop][parallel-replay] a three-call replayed round exa
   }
 });
 
+const NATIVE_REPLAY_PROVIDER_ID = "native-two-round-fixture";
+
+function registerNativeReplayProvider(): void {
+  ProviderRegistry.clear();
+  ProviderRegistry.registerWithMetadata(NATIVE_REPLAY_PROVIDER_ID, new MockProviderFactory(), {
+    name: NATIVE_REPLAY_PROVIDER_ID,
+    description: "Native conversation grouped-replay fixture",
+    capabilities: ["chat", "tools"],
+    costTier: ProviderCostTier.LOCAL,
+    pricingTier: PricingTier.LOCAL,
+    strengths: [],
+    supportsNativeTools: true,
+    supportsNativeConversation: true,
+    supportsParallelToolReplay: true,
+    chatFormat: "openai",
+  });
+}
+
+/** A two-call Gemini-shaped round over the given paths, with its own call ids. */
+function groupedRound(ids: [string, string], paths: [string, string]): IGenerateResult {
+  return makeGenerateResult("", {
+    toolCalls: [
+      { id: ids[0], name: "read_file", input: { path: paths[0] } },
+      { id: ids[1], name: "read_file", input: { path: paths[1] } },
+    ],
+    nativeAssistantReplay: {
+      provider: "google",
+      parts: paths.map((path) => ({ functionCall: { name: "read_file", args: { path } } })),
+    },
+  });
+}
+
+function twoRoundScript(): ScriptedGenerate {
+  return new ScriptedGenerate([
+    groupedRound(["call-1", "call-2"], ["a.ts", "b.ts"]),
+    groupedRound(["call-3", "call-4"], ["c.ts", "d.ts"]),
+    makeGenerateResult("<thought>t</thought><content>plan</content>"),
+  ]);
+}
+
+function twoRoundRegistry(): StubToolRegistry {
+  return new StubToolRegistry([fixtureTool("read_file")], {
+    read_file: (params) => ({ success: true, data: { content: `CONTENT-${params.path}` } }),
+  });
+}
+
+Deno.test("[planning_tool_loop][two-rounds] a native conversation carries both rounds once, in order, with the initial prompt unchanged", async () => {
+  registerNativeReplayProvider();
+  try {
+    const generate = twoRoundScript();
+    const loop = new PlanningToolLoop(
+      makeDeps({
+        toolRegistry: twoRoundRegistry(),
+        generate: generate.generate,
+        providerId: NATIVE_REPLAY_PROVIDER_ID,
+      }),
+    );
+
+    await loop.run(makeOptions({ maxRounds: 3, allowedTools: new Set(["read_file"]) }));
+
+    assertEquals(generate.calls.length, 3);
+    const snapshot = generate.calls[2].options.nativeConversation;
+    assertExists(snapshot);
+    assertEquals(snapshot.turns, []);
+    const rounds = snapshot.rounds ?? [];
+    assertEquals(rounds.map((round) => round.calls.map((entry) => entry.toolUseId)), [
+      ["call-1", "call-2"],
+      ["call-3", "call-4"],
+    ]);
+    assertEquals(rounds.map((round) => round.calls.map((entry) => entry.toolResultContent)), [
+      ['{"content":"CONTENT-@myportal/a.ts"}', '{"content":"CONTENT-@myportal/b.ts"}'],
+      ['{"content":"CONTENT-@myportal/c.ts"}', '{"content":"CONTENT-@myportal/d.ts"}'],
+    ]);
+    assertEquals(snapshot.initialPrompt, generate.calls[0].prompt, "the initial prompt is not rewritten");
+    assertEquals(generate.calls[2].options.priorRound, undefined, "a snapshot never duplicates its rounds");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[planning_tool_loop][two-rounds] a grouped provider without a native conversation replays only the latest round and ages the older one once", async () => {
+  registerParallelReplayProvider();
+  try {
+    const generate = twoRoundScript();
+    const loop = new PlanningToolLoop(
+      makeDeps({
+        toolRegistry: twoRoundRegistry(),
+        generate: generate.generate,
+        providerId: PARALLEL_REPLAY_PROVIDER_ID,
+      }),
+    );
+
+    await loop.run(makeOptions({ maxRounds: 3, allowedTools: new Set(["read_file"]) }));
+
+    const third = generate.calls[2];
+    assertEquals(third.options.priorRound?.calls.map((entry) => entry.toolUseId), ["call-3", "call-4"]);
+    const olderResult = "CONTENT-@myportal/a.ts";
+    assertEquals(third.prompt.split(olderResult).length - 1, 1, "the older round appears once, as transcript text");
+    assertEquals(third.prompt.includes("CONTENT-@myportal/c.ts"), false, "the latest round is replayed natively only");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+/** Measures each request as 50 tokens per replayed round, so the budget decides at the second round. */
+function measureRounds(
+  perRound: number,
+): (prompt: string, options: IModelOptions) => Promise<INativeInputMeasurement> {
+  return (_prompt, options) => {
+    const rounds = options.nativeConversation?.rounds?.length ?? 0;
+    const total = rounds * perRound;
+    return Promise.resolve({
+      totalTokens: total,
+      sections: { system: 0, plan: 0, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: total },
+      tokenSource: "tokenizer_estimate",
+    });
+  };
+}
+
+function twoRoundBudget(totalBudgetTokens: number): IPromptBudget {
+  return { ...REPLAY_BUDGET, totalBudgetTokens };
+}
+
+Deno.test("[planning_tool_loop][two-rounds] two rounds exactly at the budget are sent", async () => {
+  registerNativeReplayProvider();
+  try {
+    const generate = twoRoundScript();
+    const loop = new PlanningToolLoop(makeDeps({
+      toolRegistry: twoRoundRegistry(),
+      generate: generate.generate,
+      providerId: NATIVE_REPLAY_PROVIDER_ID,
+      measureInputTokens: measureRounds(50),
+    }));
+
+    await loop.run(makeOptions({
+      maxRounds: 3,
+      allowedTools: new Set(["read_file"]),
+      promptBudget: twoRoundBudget(100),
+    }));
+
+    assertEquals(generate.calls.length, 3, "two rounds at the limit are within budget");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[planning_tool_loop][two-rounds] two rounds one token over the budget are refused before the third generate", async () => {
+  registerNativeReplayProvider();
+  try {
+    const generate = twoRoundScript();
+    const loop = new PlanningToolLoop(makeDeps({
+      toolRegistry: twoRoundRegistry(),
+      generate: generate.generate,
+      providerId: NATIVE_REPLAY_PROVIDER_ID,
+      measureInputTokens: measureRounds(50),
+    }));
+
+    await assertRejects(
+      () =>
+        loop.run(makeOptions({
+          maxRounds: 3,
+          allowedTools: new Set(["read_file"]),
+          promptBudget: twoRoundBudget(99),
+        })),
+      ContextBudgetExceededError,
+    );
+    assertEquals(generate.calls.length, 2, "the over-budget request must not reach generate()");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
 Deno.test("[planning_tool_loop] a refused round journals agent.response_refused with its stop reason", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
