@@ -5368,6 +5368,70 @@ back to one single-call plan instead of repeating the loop. If a round throws, t
 `planning.tools.aborted` event with the rounds, tool calls and tokens spent before the failure, then
 re-raises the error.
 
+### Parallel tool calls
+
+A model response can ask for several tools at once. `tools.parallel_calls` decides how many of those calls Exaix
+runs. The setting applies to the native ReAct loop and to the planning tool loop.
+
+| Mode             | Behaviour                                                                                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `auto` (default) | Keeps the provider default. Exaix sends no parallel flag, and each response runs up to its loop cap.                                                         |
+| `off`            | Asks the provider for one call per response, where the provider accepts that flag. Exaix runs at most one call per response either way and refuses the rest. |
+
+Each limit has a default and bounds. A value outside the bounds is rejected when the config loads.
+
+| Key                                 | Default | Min   | Max      | Effect                                                                                           |
+| ----------------------------------- | ------- | ----- | -------- | ------------------------------------------------------------------------------------------------ |
+| `tools.parallel_calls`              | `auto`  | -     | -        | `auto` or `off`, as described above.                                                             |
+| `tools.max_calls_per_turn`          | 4       | 1     | 20       | Calls one ReAct native response may run in `auto`. Extra calls receive an error result.          |
+| `tools.max_concurrent_calls`        | 4       | 1     | 8        | Stored in the round policy. Calls do not overlap in this phase.                                  |
+| `tools.max_response_calls`          | 64      | 1     | 128      | Calls one response may carry. It must be at least both loop caps, or the config is rejected.     |
+| `tools.max_call_argument_bytes`     | 65536   | 1024  | 1048576  | Argument bytes allowed for one call. A round with a larger call is refused before any call runs. |
+| `tools.max_round_replay_bytes`      | 1048576 | 16384 | 16777216 | Bytes one round may replay, counting assistant content and results together.                     |
+| `tools.max_result_tokens`           | 2048    | 128   | 16384    | Token cap on one ReAct tool result before it is replayed.                                        |
+| `planning.max_tool_rounds`          | 2       | 1     | 10       | Generate rounds in the planning loop, including the final round with no tools.                   |
+| `planning.max_tool_result_tokens`   | 2000    | 256   | 50000    | Token cap on one planning tool result before it is replayed.                                     |
+| `planning.max_tool_calls_per_round` | 3       | 1     | 20       | Calls the planning loop runs per round in `auto`. Extra calls receive an error result.           |
+
+Config DB overrides of the `tools.*` keys above take precedence over the TOML values. Exaix reads the policy before
+each model turn, so a change applies from the next turn.
+
+Under `auto`, the planning loop runs up to `planning.max_tool_calls_per_round` calls per round, and ReAct runs up to
+`tools.max_calls_per_turn`. Under `off`, both caps are one. Exaix enforces the cap itself, so a provider that ignores the
+parallel flag still executes at most one call per response.
+
+A native ReAct loop needs `[execution] native_tools_enabled = true`. The planning tool loop needs
+`[planning] tools_enabled = true`. Both need a provider that supports native tool calls.
+
+This phase runs calls one after another, in the order the model returned them. Batch dispatch and overlapping
+calls are not available yet.
+
+A serial Flow dynamic step asks for one call per decision. A response with more than one call is rejected with an
+error.
+
+Example: keep the default. This fragment is part of a full configuration.
+
+```toml
+[tools]
+parallel_calls = "auto"
+```
+
+Example: one call per response.
+
+```toml
+[tools]
+parallel_calls = "off"
+```
+
+Example: a planning loop with four rounds and three calls per round.
+
+```toml
+[planning]
+tools_enabled = true
+max_tool_rounds = 4
+max_tool_calls_per_round = 3
+```
+
 ## 8. Model Context Protocol (MCP) Server
 
 Exaix includes a built-in MCP server, allowing generic AI clients (like Claude Desktop or IDE extensions) to interact with your workspace using standardized tools.

@@ -464,6 +464,11 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 
 ### Event Types by Domain
 
+`dynamic_tool_call` is journaled once for each call a model requests in the planning and ReAct loops. A refused call also
+journals one row, and its `resultSummary` carries the refusal. The row count is therefore not the executed count.
+`planning.tools.completed` reports `toolCalls`, which counts the calls within the round cap. No batch event exists yet.
+Typed batch and call payloads for parallel dispatch are not available yet. Until then, each call journals one row.
+
 | Enum Member                              | String Value                                  | Domain                          |
 | ---------------------------------------- | --------------------------------------------- | ------------------------------- |
 | `FlowStepExecuted`                       | `flow.step.executed`                          | Flow                            |
@@ -535,6 +540,7 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 | `PlanningToolLoopCompleted`              | `planning.tools.completed`                    | Planning                        |
 | `PlanningToolLoopAborted`                | `planning.tools.aborted`                      | Planning                        |
 | `PlanningToolsSkipped`                   | `planning.tools.skipped`                      | Planning                        |
+| `AgentDynamicToolCall`                   | `dynamic_tool_call`                           | Agent                           |
 | `RequestProcessStarted`                  | `request.process.started`                     | Request                         |
 | `RequestProcessing`                      | `request.processing`                          | Request                         |
 | `RequestSkipped`                         | `request.skipped`                             | Request                         |

@@ -108,7 +108,7 @@ Deno.test("Architecture native tool-calling section describes the compatible cal
       "ProviderFactoryError.reasonCode",
       "llmEventLogger",
       "__COMPAT_FIXTURE_PORT__",
-      "Parallel tool-call batches are not supported",
+      "Parallel dispatch is not available yet",
     ]
   ) {
     assertStringIncludes(native, token);

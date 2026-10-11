@@ -1332,6 +1332,17 @@ export and declare whether it is distinct or add it to the shared-operation tabl
 
 ---
 
+## 18. Native Tool-Round Replay {#native-tool-round-replay}
+
+A provider response that carries tool calls replays as one round. Code that builds or reads a round follows these rules:
+
+- Store the response's assistant artifacts in their original order, as one unit. Do not rebuild them from the canonical calls.
+- A per-call provider signature, such as Gemini's `thoughtSignature`, stays on the call that carries it. The replay keeps that call first and returns the other calls as transcript blocks.
+- Dispatch runs the calls in the order the model returned them. Replay bytes and dispatch order are separate concerns.
+- Enforce the cap before a call runs. A refused call still gets a result, in its original position.
+
+Tests: `packages/execution/tests/planning_tool_loop_test.ts` and `packages/ai-google/tests/google_provider_tools_request_test.ts`.
+
 ## Footer — Agent Knowledge Base
 
 - **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)
