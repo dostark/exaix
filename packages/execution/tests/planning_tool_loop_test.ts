@@ -1195,6 +1195,32 @@ Deno.test("[planning_tool_loop][openai-round] a malformed argument string gets i
   }
 });
 
+Deno.test("[planning_tool_loop][openai-round] an invalid-argument refusal is not counted as an executed call", async () => {
+  registerParallelReplayProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {
+      read_file: (params) => ({ success: true, data: { content: `CONTENT-${params.path}` } }),
+    });
+    const generate = new ScriptedGenerate([
+      makeGenerateResult("", {
+        toolCalls: [{ id: "call-1", name: "read_file", input: { path: "a.ts" } }],
+        nativeAssistantReplay: OPENAI_MALFORMED_CARRIER,
+      }),
+      makeGenerateResult("<thought>t</thought><content>plan</content>"),
+    ]);
+    const loop = new PlanningToolLoop(
+      makeDeps({ toolRegistry: registry, generate: generate.generate, providerId: PARALLEL_REPLAY_PROVIDER_ID }),
+    );
+
+    const result = await loop.run(makeOptions({ maxRounds: 2, allowedTools: new Set(["read_file"]) }));
+
+    assertEquals(registry.calls.length, 1);
+    assertEquals(result.toolCalls, 1, "the refused call is not an executed call");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
 Deno.test("[planning_tool_loop][openai-round] a round whose only call is malformed is replayed, not treated as a final answer", async () => {
   registerParallelReplayProvider();
   try {

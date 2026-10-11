@@ -384,7 +384,6 @@ export class PlanningToolLoop {
     throw new Error("PlanningToolLoop.run: exited without a final response");
   }
 
-  /** Builds one generate request in the replay mode the provider needs. */
   /** Refuses a round that breaks the ceilings or reuses an id, before any call runs. A grouped provider gets
    *  its round validated whole. */
   private admitRound(
@@ -411,6 +410,7 @@ export class PlanningToolLoop {
     };
   }
 
+  /** Builds one generate request in the replay mode the provider needs. */
   private buildRoundRequest(
     history: IRoundHistory,
     request: IRoundRequest,
@@ -514,12 +514,16 @@ export class PlanningToolLoop {
     for (let i = 0; i < calls.length; i++) {
       const call = calls[i];
       const withinCap = i < options.maxToolCallsPerRound;
-      const outcome = withinCap
-        ? call.rawArguments !== undefined
-          ? this.refuseCall(call, round, options, INVALID_TOOL_ARGUMENTS_MESSAGE)
-          : await this.executeCall(call, options, round, { ...identity, modelCallId: call.id })
-        : this.refuseCall(call, round, options, TOOL_CALL_LIMIT_MESSAGE);
-      if (withinCap) progress.toolCalls++;
+      const executes = withinCap && call.rawArguments === undefined;
+      const outcome = executes
+        ? await this.executeCall(call, options, round, { ...identity, modelCallId: call.id })
+        : this.refuseCall(
+          call,
+          round,
+          options,
+          withinCap ? INVALID_TOOL_ARGUMENTS_MESSAGE : TOOL_CALL_LIMIT_MESSAGE,
+        );
+      if (executes) progress.toolCalls++;
       guardrailBlocked ||= outcome.guardrailBlocked;
       outcomes.push({
         toolUseId: outcome.turn.toolUseId,

@@ -125,6 +125,13 @@ Deno.test({
   },
 });
 
+/** Every returned ReAct position is journaled: the first executes and the second carries the refusal. */
+function assertFirstExecutedSecondRefused(rows: Parameters<typeof toolRows>[0]): void {
+  const calls = toolRows(rows);
+  assertEquals(calls.length, 2, "every position is journaled, executed or refused");
+  assertEquals(calls.map((call) => call.resultSummary.includes(REFUSAL)), [false, true]);
+}
+
 Deno.test({
   name:
     "[phase202-cutover] ReAct native under tools.parallel_calls=off executes one of two calls and sends the one-call flag",
@@ -139,7 +146,7 @@ Deno.test({
     assertEquals(toolMessages(replay).map((message) => message.id), ["REACT_CALL_A", "REACT_CALL_B"]);
     assert(toolMessages(replay)[0].content.includes(markers[0]), "the executed call carries its marker");
     assert(toolMessages(replay)[1].content.includes(REFUSAL), "the second call is refused, and replayed as refused");
-    assertEquals(toolRows(rows).length, 1, "only the executed call is journaled as a tool call");
+    assertFirstExecutedSecondRefused(rows);
     assert(rows.some((row) => row.action_type === "execution.completed"));
   },
 });
@@ -157,7 +164,7 @@ Deno.test({
     const replay = fixture.bodies[2];
     assert(toolMessages(replay)[0].content.includes(markers[0]));
     assert(toolMessages(replay)[1].content.includes(REFUSAL));
-    assertEquals(toolRows(rows).length, 1);
+    assertFirstExecutedSecondRefused(rows);
     assert(rows.some((row) => row.action_type === "execution.completed"));
   },
 });

@@ -647,11 +647,15 @@ function roundPolicy(mode: ToolsRoundMode, executionCap: number): IToolsRoundPol
 }
 
 /** A native executor that reads its round policy from the given reader and records every execution. */
-function policyExecutor(getPolicy: () => IToolsRoundPolicy, executed: string[]): ReActExecutor {
+function policyExecutor(getPolicy: () => IToolsRoundPolicy, executed: string[], journal: string[] = []): ReActExecutor {
   const base = makeTrackingExecutor({ count: 0 }, READ_TOOL_FOR_POLICY);
   return {
     ...base,
     getToolsRoundPolicy: getPolicy,
+    logDynamicToolCall: (_traceId, _tool, _params, resultSummary) => {
+      journal.push(resultSummary);
+      return Promise.resolve();
+    },
     toolRegistry: {
       ...base.toolRegistry!,
       execute: (_name: string, params: Record<string, JSONValue>) => {
@@ -673,7 +677,8 @@ async function runThreeReads(
   policy: IToolsRoundPolicy,
   executed: string[] = [],
   maxToolCalls = 10,
-): Promise<{ calls: Array<{ options?: IModelOptions }> }> {
+  journal: string[] = [],
+): Promise<{ calls: Array<{ options?: IModelOptions }>; toolCalls: number }> {
   ProviderRegistry.clear();
   ProviderRegistry.registerWithMetadata("openai-chat", new MockProviderFactory(), {
     name: "openai-chat",
@@ -717,9 +722,12 @@ async function runThreeReads(
       return Promise.resolve({ ...response, costStatus: "unknown" });
     },
   };
-  const strategy = new ReActLoopStrategy(policyExecutor(() => policy, executed), provider);
-  await strategy.execute(testBlueprint, testContext, { ...makeOptions(true), max_tool_calls: maxToolCalls });
-  return { calls };
+  const strategy = new ReActLoopStrategy(policyExecutor(() => policy, executed, journal), provider);
+  const result = await strategy.execute(testBlueprint, testContext, {
+    ...makeOptions(true),
+    max_tool_calls: maxToolCalls,
+  });
+  return { calls, toolCalls: result.tool_calls };
 }
 
 Deno.test("[react policy] off alone executes one of three native calls and replays each refusal", {
@@ -832,5 +840,20 @@ Deno.test(
     assertEquals(executed.length, 1);
     const turns = calls[1].options?.nativeConversation?.turns ?? [];
     assertEquals(turns.map((turn) => turn.toolResultIsError), [false, true, true]);
+  },
+);
+
+Deno.test(
+  "[react policy] a call refused by the cap is journaled with the limit message and not counted",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    const executed: string[] = [];
+    const journal: string[] = [];
+    const { toolCalls } = await runThreeReads(roundPolicy(ToolsRoundMode.OFF, 1), executed, 10, journal);
+
+    assertEquals(executed.length, 1);
+    assertEquals(journal.length, 3, "every returned call leaves a journal row");
+    assertEquals(journal.filter((summary) => summary.includes("tool call limit reached")).length, 2);
+    assertEquals(toolCalls, 1, "only the executed call counts");
   },
 );

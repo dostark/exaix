@@ -793,7 +793,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         : resultEntry;
       history.push({ role: ReActRole.RESULT, content: truncatedResult });
 
-      await this.journalAction(context, action, toolResultContent, i, withinCap);
+      await this.journalAction(context, action, toolResultContent, i);
 
       if (nativeToolsUsed && parsed.nativeToolCalls?.[a]) {
         const turn = this.buildPriorTurn(parsed.nativeToolCalls[a], execResult as never);
@@ -945,15 +945,13 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     return withinCap ? await this.executeTool(action, options) : { success: false, error: TOOL_CALL_LIMIT_MESSAGE };
   }
 
-  /** Journals an executed call. A call refused by the cap never reached a tool, so it is not journaled. */
+  /** Journals a call with its result. A call refused by the cap carries the limit message as its result. */
   private async journalAction(
     context: IExecutionContext,
     action: IReActAction,
     toolResultContent: string,
     iteration: number,
-    withinCap: boolean,
   ): Promise<void> {
-    if (!withinCap) return;
     await this.executor.logDynamicToolCall?.(
       context.trace_id,
       action.tool,
