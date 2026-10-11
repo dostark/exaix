@@ -148,7 +148,7 @@ export class OpenRouterProvider extends BaseProvider {
   ): OpenRouterRequestBody {
     const body: OpenRouterRequestBody = {
       model: this.model,
-      messages: buildOpenAiMessages(prompt, options?.priorTurn, undefined, options?.priorRound),
+      messages: buildOpenAiMessages(prompt, options?.priorTurn, options?.nativeConversation, options?.priorRound),
       usage: { include: true },
     };
     if (options?.max_tokens !== undefined) body.max_tokens = options.max_tokens;

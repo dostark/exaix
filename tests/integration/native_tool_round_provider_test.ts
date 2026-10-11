@@ -272,6 +272,18 @@ Deno.test({
 
 Deno.test({
   name:
+    "[native_tool_round][openrouter] the boot registration declares native conversation, so a ReAct turn replays every earlier turn",
+  fn: () =>
+    withEnv({ OPENROUTER_API_KEY: "test-key" }, async () => {
+      const preset = LLM_TEST_PRESETS.find((candidate) => candidate.id === "openrouter");
+      const { provider } = await createLlmProvider(preset!.spec);
+      assertEquals(ProviderRegistry.getMetadataForInstance(provider.id)?.supportsNativeConversation, true);
+      ProviderRegistry.clear();
+    }),
+});
+
+Deno.test({
+  name:
     "[native_tool_round][openai-chat local fixture] a registered planning loop replays each completed round whole and measures it",
   fn: () =>
     withEnv({ EXA_COMPAT_TEST_API_KEY: "local-fixture-key" }, async () => {

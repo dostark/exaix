@@ -152,6 +152,8 @@ function registerConcreteProviders(): void {
       // tool-incapable underlying model with native_tools_enabled surfaces as an
       // OpenRouter-side API error, not a silent Exaix-side failure.
       supportsNativeTools: true,
+      // Native conversation keeps each earlier round in the request, so ReAct does not loop on lost history.
+      supportsNativeConversation: true,
       supportsParallelToolReplay: true,
     };
     ProviderRegistry.registerWithMetadata(
