@@ -18,6 +18,27 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 202 (Parallel Tool Calls, Replay and Policy)
+
+### Added
+
+- `tools.parallel_calls` (`auto` or `off`) and the `tools.max_calls_per_turn`, `tools.max_response_calls`, `tools.max_call_argument_bytes`, `tools.max_round_replay_bytes` and `tools.max_result_tokens` config keys control how many tool calls one model response may run (see [Parallel tool calls](Exaix_User_Guide.md#parallel-tool-calls)).
+- `tools.max_concurrent_calls` is accepted and stored, and calls still run one after another.
+- A response that carries several tool calls is replayed to the provider as one round, with its assistant content, reasoning and signatures kept, for Google, Anthropic, OpenAI, OpenRouter and the OpenAI-compatible profiles including DeepSeek.
+- A change to a `tools.*` key in the config database applies from the next model turn, including inside a running ReAct execution.
+
+### Changed
+
+- The OpenAI-compatible profiles accept a response with several tool calls, where they refused it before.
+- Under `auto`, planning and ReAct no longer send a one-call-per-response flag to the provider.
+- Under `off`, Exaix asks the provider for one call per response where the provider has a flag, and runs one call per response either way, with an error result for each extra call.
+- A tool call refused by the per-response cap is journaled with its limit message in both loops, and the planning tool-call count covers executed calls only.
+- The native OpenAI provider now uses the Responses API, and a custom endpoint must end in `/chat/completions`.
+
+### Security
+
+- A response with too many calls, an oversized argument, an empty or repeated call id, or a round too large to replay is refused before any call runs, in both loops.
+
 ## Unreleased — Phase 205 (Advanced Flow Runtime and Blueprints)
 
 ### Added
