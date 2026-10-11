@@ -61,6 +61,7 @@ export function buildPriorTurn(toolCall: IProviderToolCall, result: IToolResult)
     ...(toolCall.thoughtSignature !== undefined ? { thoughtSignature: toolCall.thoughtSignature } : {}),
     ...(toolCall.thinkingBlocks !== undefined ? { thinkingBlocks: toolCall.thinkingBlocks } : {}),
     ...(toolCall.reasoningContent !== undefined ? { reasoningContent: toolCall.reasoningContent } : {}),
+    ...(toolCall.responseItems !== undefined ? { responseItems: toolCall.responseItems } : {}),
   };
 }
 

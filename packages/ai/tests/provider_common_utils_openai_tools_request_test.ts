@@ -247,6 +247,19 @@ Deno.test(
 );
 
 Deno.test(
+  "createOpenAIChatCompletionsRequestInit treats the gpt-6 family as reasoning models: tools force reasoning_effort:none and temperature is omitted (gpt-6-luna rejects function tools at any other effort)",
+  () => {
+    const body = capturedBodyOf({
+      effort: "high",
+      temperature: 0.1,
+      tools: [{ name: "write_file", description: "write", inputSchema: { type: "object" } }],
+    }, "gpt-6-luna");
+    assertEquals(body.reasoning_effort, "none");
+    assertEquals(body.temperature, undefined);
+  },
+);
+
+Deno.test(
   "createOpenAIChatCompletionsRequestInit passes options.effort through as reasoning_effort on reasoning models when no tools are present",
   () => {
     const body = capturedBodyOf({ effort: "high" }, "gpt-5.6-terra");

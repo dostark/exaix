@@ -13,9 +13,6 @@ import { LlamaProvider, OllamaProvider } from "@exaix/ai-ollama";
 
 import { createTestConfig } from "./helpers/test_config.ts";
 
-// Note: We can't easily test OpenAIShim directly as it's not exported,
-// but we test it via the ModelFactory if needed
-
 Deno.test("Phase 2: OllamaProvider ignores EXA_OLLAMA_RETRY_MAX env var", async () => {
   await withEnv({ EXA_OLLAMA_RETRY_MAX: "99" }, () => {
     const provider = new OllamaProvider({

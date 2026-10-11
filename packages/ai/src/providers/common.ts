@@ -7,7 +7,7 @@
  */
 
 import type { JSONValue } from "@exaix/core";
-import type { IModelProvider, IProviderAssistantReplay } from "../types.ts";
+import type { IModelProvider, IProviderAssistantReplay, JSONObject } from "../types.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export type ProviderCostStatus = "estimated" | "tracked" | "unknown";
@@ -78,6 +78,8 @@ export interface IProviderToolCall {
   /** OpenAI reasoning content (`reasoning_content`) accompanying the tool call — must be
    *  echoed back on the replayed assistant message for multi-turn continuity. */
   reasoningContent?: string;
+  /** The Responses API output items of the reply that made this call, kept verbatim. Set only for calls from /v1/responses. */
+  responseItems?: readonly JSONObject[];
   /** Original argument text when it is not valid JSON. Set only on replayed rounds: the call is
    *  refused without execution and its original text stays in the assistant carrier. */
   rawArguments?: string;

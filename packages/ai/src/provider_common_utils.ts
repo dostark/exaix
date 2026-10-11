@@ -414,7 +414,7 @@ export function mapToolChoiceOpenAI(choice: IToolChoice): OpenAiWireToolChoice {
 /** OpenAI's tool-result message `content` field is a plain string. Anthropic's
  *  IProviderTurn.toolResultContent may be a string OR rich content blocks; stringify
  *  the rich-block case rather than dropping it. */
-function stringifyOpenAiToolResultContent(content: string | ReadonlyArray<JSONObject>): string {
+export function stringifyOpenAiToolResultContent(content: string | ReadonlyArray<JSONObject>): string {
   return typeof content === "string" ? content : JSON.stringify(content);
 }
 
@@ -544,11 +544,11 @@ export function buildOpenAiMessages(
   return messages;
 }
 
-/** OpenAI's o-series and gpt-5.x reasoning models reject a non-default
+/** OpenAI's o-series, gpt-5.x and gpt-6 reasoning models reject a non-default
  *  `temperature`/`top_p` with a 400 invalid_request_error; only `gpt-4o` ("o" for
  *  omni, not o-series) and earlier models are unaffected. Matched by name prefix. */
-function isOpenAiReasoningModel(model: string): boolean {
-  return /^(o\d|gpt-5)/.test(model);
+export function isOpenAiReasoningModel(model: string): boolean {
+  return /^(o\d|gpt-[5-9])/.test(model);
 }
 
 /** OpenAI's `reasoning_effort` value that disables reasoning entirely — the only value

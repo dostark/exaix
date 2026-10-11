@@ -87,6 +87,8 @@ export interface IProviderTurn {
   thinkingBlocks?: IThinkingReplayBlock[];
   /** OpenAI reasoning content replayed with tool-call outputs. */
   reasoningContent?: string;
+  /** The Responses API output items of the reply that made this call. The call's own item is replayed with its output. */
+  responseItems?: readonly JSONObject[];
 }
 
 /** JSON object record used for replayed provider content (not `any`). */
@@ -111,6 +113,8 @@ export type IProviderAssistantReplay =
     reasoningDetails?: readonly JSONObject[];
     /** The original tool_calls array, arguments kept as the model sent them. */
     toolCalls: readonly JSONObject[];
+    /** The Responses API output items in their original order, replayed verbatim. Set only for replies from /v1/responses. */
+    responseItems?: readonly JSONObject[];
   };
 
 /** One tool call of a validated round. Invalid inputs never become execution parameters. */

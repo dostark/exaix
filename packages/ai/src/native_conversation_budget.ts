@@ -66,9 +66,36 @@ export async function measureOpenAiChatProjection(
   prompt: string,
   options: Opt<IModelOptions, Reason.OptionalInput>,
 ): Promise<INativeInputMeasurement> {
+  const history = options?.nativeConversation || options?.priorRound
+    ? messages.slice(1, 1 + replayedOpenAiMessageCount(options))
+    : [];
+  return await measureReplayedProjection(tokenizer, model, { messages, tools }, history, prompt, options);
+}
+
+/** Measures one OpenAI Responses projection as dispatched. The leading user prompt is the first input item, so the
+ *  replayed history is every item after it. */
+export async function measureOpenAiResponsesProjection(
+  tokenizer: ITokenizer,
+  model: string,
+  input: JSONValue[],
+  tools: JSONValue,
+  prompt: string,
+  options: Opt<IModelOptions, Reason.OptionalInput>,
+): Promise<INativeInputMeasurement> {
+  const history = options?.nativeConversation || options?.priorRound ? input.slice(1) : [];
+  return await measureReplayedProjection(tokenizer, model, { messages: input, tools }, history, prompt, options);
+}
+
+async function measureReplayedProjection(
+  tokenizer: ITokenizer,
+  model: string,
+  projection: JSONValue,
+  history: JSONValue[],
+  prompt: string,
+  options: Opt<IModelOptions, Reason.OptionalInput>,
+): Promise<INativeInputMeasurement> {
   const snapshot = options?.nativeConversation;
-  const history = snapshot || options?.priorRound ? messages.slice(1, 1 + replayedOpenAiMessageCount(options)) : [];
-  return await measureNativeConversation(tokenizer, model, { messages, tools }, [
+  return await measureNativeConversation(tokenizer, model, projection, [
     ...(snapshot?.initialPromptSections ?? [{ section: PromptBudgetSection.SYSTEM, text: prompt }]),
     ...(history.length ? [{ section: PromptBudgetSection.LOOP_HISTORY, text: JSON.stringify(history) }] : []),
   ]);
