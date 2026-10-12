@@ -13,7 +13,10 @@
  * ]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists } from "@std/assert";
+import { ProviderRegistry } from "@exaix/ai";
+import { PricingTier } from "@exaix/core";
+import { GOOGLE_PROVIDER_METADATA } from "../src/constants.ts";
 import { GoogleProvider } from "../src/google_provider.ts";
 import type { JSONValue } from "@exaix/core";
 
@@ -240,6 +243,63 @@ Deno.test("GoogleProvider.attemptGenerate with priorRound replays every original
   assertEquals(contents[2].parts[0].functionResponse?.name, "read_file");
   assertEquals(contents[2].parts[0].functionResponse?.response.content, "A-CONTENT");
   assertEquals(contents[2].parts[1].functionResponse?.response.content, "B-CONTENT");
+});
+
+/** Registers Google as the boot does, so the native-conversation gate admits the test provider. */
+function registerGoogleNativeMetadata(): void {
+  ProviderRegistry.clear();
+  ProviderRegistry.registerWithMetadata("google", null as never, {
+    ...GOOGLE_PROVIDER_METADATA,
+    capabilities: [...GOOGLE_PROVIDER_METADATA.capabilities],
+    pricingTier: PricingTier.LOW,
+    supportsNativeTools: true,
+    supportsParallelToolReplay: true,
+    supportsNativeConversation: true,
+    supportsNativeRoundReplay: true,
+  });
+}
+
+/** A native conversation whose completed rounds are the grouped round above, in order. */
+function nativeRoundsOptions(rounds: number): Parameters<GoogleProvider["generate"]>[1] {
+  const base = groupedRoundOptions();
+  const round = base?.priorRound;
+  if (round === undefined) throw new Error("the grouped round fixture is missing");
+  return {
+    tools: base?.tools,
+    toolChoice: { type: "auto" },
+    nativeConversation: { initialPrompt: "test prompt", turns: [], rounds: Array(rounds).fill(round) },
+  };
+}
+
+Deno.test("GoogleProvider.attemptGenerate with nativeConversation replays a completed round as one model turn and one grouped functionResponse message", async () => {
+  registerGoogleNativeMetadata();
+  const body = await capturedBodyOf(nativeRoundsOptions(1));
+  const contents = body.contents ?? [];
+  assertEquals(contents.length, 3);
+  assertEquals(contents[1].role, "model");
+  assertEquals(contents[1].parts as JSONValue[], GOOGLE_ROUND_PARTS);
+  assertEquals(contents[2].role, "user");
+  assertEquals(contents[2].parts.length, 2);
+  assertEquals(contents[2].parts[0].functionResponse?.response.content, "A-CONTENT");
+  assertEquals(contents[2].parts[1].functionResponse?.response.content, "B-CONTENT");
+});
+
+Deno.test("GoogleProvider.attemptGenerate with nativeConversation replays two completed rounds in order before the next call", async () => {
+  registerGoogleNativeMetadata();
+  const body = await capturedBodyOf(nativeRoundsOptions(2));
+  const contents = body.contents ?? [];
+  assertEquals(contents.length, 5);
+  assertEquals(contents[1].role, "model");
+  assertEquals(contents[3].role, "model");
+  assertEquals(contents[3].parts as JSONValue[], GOOGLE_ROUND_PARTS);
+});
+
+Deno.test("GoogleProvider.measureInputTokens counts the replayed rounds of a native conversation", async () => {
+  const provider = new GoogleProvider({ apiKey: "test-key" });
+  const bare = await provider.measureInputTokens!("test prompt", { toolChoice: { type: "auto" } });
+  const replayed = await provider.measureInputTokens!("test prompt", nativeRoundsOptions(1));
+  assert(replayed.sections.loopHistory > 0, "a replayed round is loop history");
+  assert(replayed.totalTokens > bare.totalTokens, "the replayed rounds add to the total");
 });
 
 Deno.test("GoogleProvider.attemptGenerate with priorRound asks for a text answer after the grouped functionResponses when tool choice is none", async () => {

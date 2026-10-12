@@ -14,9 +14,11 @@ import { PlanActionSchema } from "@exaix/schemas/plan_schema.ts";
 import type {
   IModelProvider,
   INativeConversationSnapshot,
+  IProviderToolRound,
   IProviderTurn,
   IToolChoice,
   IToolDefinition,
+  IValidatedProviderRound,
 } from "@exaix/ai/types.ts";
 import { TOOL_CHOICE_TYPE_AUTO } from "@exaix/ai/types.ts";
 import { PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
@@ -36,11 +38,15 @@ import {
   assertRoundWithinBounds,
   buildNativeToolDefinitions,
   buildPriorTurn,
+  buildToolRound,
   enrichPortalPathParam,
+  type IRoundOutcome,
   providerSupportsNativeConversation,
+  providerSupportsNativeRoundReplay,
   providerSupportsNativeTools,
   roundLimitsOf,
   TOOL_CALL_LIMIT_MESSAGE,
+  validateProviderRound,
 } from "../native_tool_turns.ts";
 import { GuardrailBlockedError } from "@exaix/core/planning";
 import { parse as parseToml } from "@std/toml";
@@ -170,6 +176,8 @@ interface IIterationParams {
   nativeConversationInitialPrompt?: string;
   nativeConversationInitialSections?: readonly INativePromptSection[];
   nativeConversationTurns: IProviderTurn[];
+  /** Completed rounds of a provider that replays whole rounds, carried beside the per-call turns. */
+  nativeConversationRounds?: readonly IProviderToolRound[];
   nativePreferredTool?: Opt<string, Reason.OptionalInput>;
   pinnedSkills?: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>;
 }
@@ -195,6 +203,7 @@ interface IIterationResult {
   nativeConversationInitialPrompt?: string;
   nativeConversationInitialSections?: readonly INativePromptSection[];
   nativeConversationTurns?: IProviderTurn[];
+  nativeConversationRounds?: IProviderToolRound[];
   done: boolean;
   result?: IChangesetResult;
 }
@@ -249,6 +258,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let nativeConversationInitialPrompt: string | undefined;
     let nativeConversationInitialSections: readonly INativePromptSection[] | undefined;
     let nativeConversationTurns: IProviderTurn[] = [];
+    let nativeConversationRounds: IProviderToolRound[] = [];
     let nativeToolDefinitions: IToolDefinition[] | undefined;
     let nativeToolsUsed = false;
     if (useNativeTools) {
@@ -295,6 +305,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         nativeConversationInitialPrompt,
         nativeConversationInitialSections,
         nativeConversationTurns,
+        nativeConversationRounds,
         nativePreferredTool,
         pinnedSkills: skills,
       });
@@ -310,6 +321,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       nativeConversationInitialSections = iterResult.nativeConversationInitialSections ??
         nativeConversationInitialSections;
       nativeConversationTurns = iterResult.nativeConversationTurns ?? nativeConversationTurns;
+      nativeConversationRounds = iterResult.nativeConversationRounds ?? nativeConversationRounds;
       if (iterResult.done) {
         return iterResult.result!;
       }
@@ -581,11 +593,14 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     );
     generateOptions.traceId = context.trace_id;
     if (params.nativeConversationEnabled && nativeToolsUsed && initialPrompt !== undefined) {
+      const rounds = params.nativeConversationRounds ?? [];
+      const hasHistory = params.nativeConversationTurns.length > 0 || rounds.length > 0;
       generateOptions.nativeConversation = {
         initialPrompt,
         initialPromptSections: params.nativeConversationInitialSections ?? initialSections,
         turns: params.nativeConversationTurns,
-        ...(params.nativeConversationTurns.length > 0
+        ...(rounds.length > 0 ? { rounds } : {}),
+        ...(hasHistory
           ? {
             roundInstruction: `Iteration ${
               i + 1
@@ -750,8 +765,20 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
     this.assertNativeRoundAdmitted(nativeToolsUsed, parsed.nativeToolCalls, policy, {
       provider: response.provider,
-      earlierIds: this.consumedCallIds(params.nativeConversationTurns, nativeToolsPriorTurn),
+      earlierIds: this.consumedCallIds(
+        params.nativeConversationTurns,
+        nativeToolsPriorTurn,
+        params.nativeConversationRounds,
+      ),
     });
+
+    const groupedRound = this.groupedRoundFor(
+      nativeToolsUsed,
+      params.nativeConversationEnabled,
+      response,
+      policy,
+      this.consumedCallIds(params.nativeConversationTurns, nativeToolsPriorTurn, params.nativeConversationRounds),
+    );
 
     const maxToolCalls = options.max_tool_calls ?? 100;
     if (
@@ -770,6 +797,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let newToolCallCount = toolCallCount;
     let lastPriorTurn = nativeToolsPriorTurn;
     const completedNativeConversationTurns = [...params.nativeConversationTurns];
+    const roundOutcomes: IRoundOutcome[] = [];
     let allActionsSucceeded = true;
     for (let a = 0; a < parsed.actions.length; a++) {
       const action = this.canonicalizeAction(parsed.actions[a], context.trace_id, response.provider, response.model);
@@ -801,9 +829,21 @@ export class ReActLoopStrategy implements IExecutionStrategy {
           ...turn,
           toolResultContent: this.capResultTokens(String(turn.toolResultContent), policy.resultTokenCap),
         };
-        completedNativeConversationTurns.push(lastPriorTurn);
+        this.recordNativeCall(
+          completedNativeConversationTurns,
+          roundOutcomes,
+          groupedRound !== undefined,
+          lastPriorTurn,
+        );
       }
     }
+
+    const completedNativeConversationRounds = this.nextNativeRounds(
+      params.nativeConversationRounds,
+      groupedRound,
+      roundOutcomes,
+      policy,
+    );
 
     if (this.shouldFinishActionTurn(parsed.isComplete, allActionsSucceeded)) {
       const result = this.finishLoop(
@@ -833,6 +873,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         nativeConversationInitialPrompt: initialPrompt,
         nativeConversationInitialSections: params.nativeConversationInitialSections ?? initialSections,
         nativeConversationTurns: completedNativeConversationTurns,
+        nativeConversationRounds: completedNativeConversationRounds,
         done: true,
         result,
       };
@@ -850,6 +891,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       nativeConversationInitialPrompt: initialPrompt,
       nativeConversationInitialSections: params.nativeConversationInitialSections ?? initialSections,
       nativeConversationTurns: completedNativeConversationTurns,
+      nativeConversationRounds: completedNativeConversationRounds,
       done: false,
     };
   }
@@ -920,10 +962,56 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   private consumedCallIds(
     turns: readonly IProviderTurn[],
     priorTurn: Opt<IProviderTurn, Reason.OptionalInput>,
+    rounds: readonly IProviderToolRound[] = [],
   ): ReadonlySet<string> {
     const ids = new Set(turns.map((turn) => turn.toolUseId));
     if (priorTurn !== undefined) ids.add(priorTurn.toolUseId);
+    for (const round of rounds) for (const call of round.calls) ids.add(call.toolUseId);
     return ids;
+  }
+
+  /** A provider that replays whole rounds gets its response validated as one round, before any call runs. */
+  private groupedRoundFor(
+    nativeToolsUsed: boolean,
+    nativeConversationEnabled: boolean,
+    response: IGenerateResult,
+    policy: IToolsRoundPolicy,
+    earlierIds: ReadonlySet<string>,
+  ): Opt<IValidatedProviderRound, Reason.OptionalInput> {
+    if (!nativeToolsUsed || !nativeConversationEnabled || !providerSupportsNativeRoundReplay(this.provider!.id)) {
+      return undefined;
+    }
+    return validateProviderRound(response, roundLimitsOf(policy), earlierIds);
+  }
+
+  /** A per-call turn joins the conversation, or the call's outcome joins the round it completes. */
+  private recordNativeCall(
+    completedTurns: IProviderTurn[],
+    outcomes: IRoundOutcome[],
+    grouped: boolean,
+    turn: IProviderTurn,
+  ): void {
+    if (!grouped) {
+      completedTurns.push(turn);
+      return;
+    }
+    outcomes.push({
+      toolUseId: turn.toolUseId,
+      toolResultContent: turn.toolResultContent,
+      toolResultIsError: turn.toolResultIsError,
+    });
+  }
+
+  /** The rounds a native conversation carries after this response: the prior ones, then this one if grouped. */
+  private nextNativeRounds(
+    prior: Opt<readonly IProviderToolRound[], Reason.OptionalInput>,
+    grouped: Opt<IValidatedProviderRound, Reason.OptionalInput>,
+    outcomes: readonly IRoundOutcome[],
+    policy: IToolsRoundPolicy,
+  ): IProviderToolRound[] {
+    const rounds = [...(prior ?? [])];
+    if (grouped !== undefined) rounds.push(buildToolRound(grouped, outcomes, roundLimitsOf(policy)));
+    return rounds;
   }
 
   /** Text ReAct has no cap. A native response may execute only the calls its policy cap admits. */

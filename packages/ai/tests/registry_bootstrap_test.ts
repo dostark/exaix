@@ -35,6 +35,15 @@ Deno.test("bootstrapProviderRegistry registers Solo-tier providers (incl. OpenRo
   assertEquals(ProviderRegistry.getSupportedProviders(), supported);
 });
 
+Deno.test("[google-native] Google declares native conversation and whole-round replay", () => {
+  ProviderRegistry.clear();
+  bootstrapProviderRegistry();
+
+  const google = ProviderRegistry.getProviderMetadata("google");
+  assertEquals(google?.supportsNativeConversation, true);
+  assertEquals(google?.supportsNativeRoundReplay, true);
+});
+
 Deno.test("[step4] isAggregator: openrouter true; anthropic/openai/google/ollama absent (§5.7.2)", () => {
   ProviderRegistry.clear();
   bootstrapProviderRegistry();

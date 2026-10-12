@@ -102,6 +102,11 @@ export function providerSupportsParallelToolReplay(providerId: Opt<string, Reaso
   return ProviderRegistry.getMetadataForInstance(providerId)?.supportsParallelToolReplay === true;
 }
 
+/** True when a native conversation replays each completed round whole, so parallel calls stay signed. */
+export function providerSupportsNativeRoundReplay(providerId: Opt<string, Reason.OptionalContext>): boolean {
+  return ProviderRegistry.getMetadataForInstance(providerId)?.supportsNativeRoundReplay === true;
+}
+
 function utf8Bytes(text: string): number {
   return new TextEncoder().encode(text).byteLength;
 }

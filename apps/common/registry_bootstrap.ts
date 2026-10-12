@@ -130,6 +130,8 @@ function registerConcreteProviders(): void {
       pricingTier: PricingTier.LOW,
       supportsNativeTools: true,
       supportsParallelToolReplay: true,
+      supportsNativeConversation: true,
+      supportsNativeRoundReplay: true,
     };
     ProviderRegistry.registerWithMetadata(
       PROVIDER_GOOGLE,

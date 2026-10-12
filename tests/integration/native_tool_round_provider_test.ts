@@ -92,7 +92,7 @@ const SECOND_ROUND_CALLS: IWireCall[] = [
   { id: "toolu_d", name: "read_file", input: { path: "d.ts" } },
 ];
 /** Presets whose snapshot keeps every completed round. The others replay only the latest round natively. */
-const FULL_CONVERSATION_PRESETS = ["openai", "openrouter", "deepseek"];
+const FULL_CONVERSATION_PRESETS = ["openai", "openrouter", "deepseek", "google"];
 const PORTAL_ROOT = Deno.makeTempDirSync({ prefix: "native-tool-round-provider-" });
 const LOCAL_MODEL = "compat-fixture-v1";
 const LOCAL_BUDGET: IPromptBudget = {

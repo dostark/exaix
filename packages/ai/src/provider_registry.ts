@@ -55,6 +55,9 @@ export interface IProviderMetadata {
   /** True only when generate() replays a whole completed round: every original assistant part and
    *  every tool result in order (IModelOptions.priorRound). Set by real boot registration. */
   supportsParallelToolReplay?: boolean;
+  /** True only when a native conversation replays each completed round whole, with the round's
+   *  assistant parts verbatim. Set by real boot registration for providers that need it. */
+  supportsNativeRoundReplay?: boolean;
 }
 
 /** True when a provider's metadata marks it as potentially billable: a paid/freemium cost tier,
