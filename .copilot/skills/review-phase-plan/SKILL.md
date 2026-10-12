@@ -24,12 +24,22 @@ topics: [
 ]
 qwen_skill: review-phase-plan
 ---
+
 ```text
 Key points
 
 - PRE-implementation analysis — no code exists yet. Make the plan SAFE to implement.
 - Read the plan, then every source file it references, verifying assumptions against
   reality. Supplied documents are context — use them.
+- **A claim about unreadable code is `⛔ UNVERIFIED`, never a finding.** If the plan
+  depends on an uninitialized submodule, STOP: get `git submodule update --init <name>`
+  run, or record every claim about that submodule as unverifiable and do NOT adjudicate
+  the design question it underpins. A review of code you cannot read is guesswork.
+- **An edition-tier plan needs the BUILD graph, not the tier map.** Whenever a plan
+  asserts edition-gated behavior, read `scripts/ci.ts` `editionConfigs`, the root
+  `deno.json` `workspace` members + `imports`, and the edition's own `deno.json`. A tier
+  mapping proves ELIGIBILITY; only the build graph proves a RUNTIME EXISTS. One `sed` of
+  `scripts/ci.ts` is the difference between a tier-label gap and a "this cannot ship" gap.
 - Classify gaps by severity and write them INTO the plan (appended), plus Amendments.
 - Phase 2 architectural alignment & necessity is MANDATORY for every plan: does it fill
   a real gap or duplicate existing infrastructure? Redundancy lives in the NEGATIVE
@@ -77,6 +87,12 @@ Do / Don't
   handlers, the canonical catalog/schema/registry (e.g. `DomainEventType`), same-domain
   components by capability grep.
 - ✅ Read every cited source file — never trust the plan's description.
+- ✅ Check `git submodule status` FIRST. An uninitialized submodule the plan depends on is a
+  blocking prerequisite, not a note: initialize it (or report the review as unable to
+  adjudicate that subsystem) before writing any finding about it.
+- ✅ Read the edition build graph (`scripts/ci.ts` `editionConfigs`, root `deno.json`
+  `workspace`/`imports`) before accepting any edition-tier claim — prove the runtime
+  exists, not just that the tier maps.
 - ✅ Follow every input/output data-flow chain end-to-end.
 - ✅ Check constructor signatures of newly injected dependencies.
 - ✅ Verify Zod `.default()` on every optional new field.
@@ -127,6 +143,12 @@ Do / Don't
 - ❌ Accept hardcoded thresholds/timeouts — named constants.
 - ❌ Skip event payload typing.
 - ❌ Register trivial gaps as full entries — fix in-place, note in "In-Place Fixes".
+- ❌ Accept an edition-tier claim from the capability map alone — `isCapabilityEligible`
+  proves the tier ranks, never that the artifact has a runtime to run in.
+- ❌ Trust a green `deno check` as proof the tree is complete — Deno SKIPS unresolvable
+  workspace members with a warning, so exit 0 can hide an uninitialized submodule.
+- ❌ Treat "the plan says X is reused by construction" as verified when X lives in code you
+  have not read.
 
 Related: #plan; #remediate-plan-gaps (closes what this finds); #next-steps; #review-phase-code;
 #commit; test-development.
@@ -152,6 +174,39 @@ table, detailed entries, Pre-Implementation Actions list.
 
 Read the whole plan (version, status, goals, metrics, every step + sub-sections, every
 path/symbol/field/constant). Read supplied documents as ground truth; note conflicts.
+
+**Readability gate (run before anything else).** Run `git submodule status`. For every
+submodule the plan cites or edits:
+
+- **Initialized** → proceed.
+- **Uninitialized** (`-<sha>` prefix, empty directory) → this is a blocking prerequisite.
+  Either get `git submodule update --init <name>` run (it needs the edition's repository
+  access, so ask rather than assume), or continue with a hard rule: every finding,
+  resolution, and Pre-Implementation Action touching that submodule is `⛔ UNVERIFIED`, and
+  you do NOT adjudicate the design question it underpins. Record the prerequisite as a 🔴
+  gap in its own right.
+
+Why this gate exists: a review that assesses a plan's Team/Enterprise mechanism while the
+Team/Enterprise source is unreadable produces confident, wrong verdicts. Findings about
+_presence_ (paths, names, constructor claims) look verified because the plan supplied them;
+findings about _mechanism_ silently become assumptions. Treat "I cannot read the subsystem"
+as the first finding, not a caveat.
+
+**Edition-tier gate (only when the plan asserts edition-gated behavior).** Before reviewing
+any tier claim, read the build graph, not the tier map:
+
+```bash
+sed -n '/editionConfigs/,/^  };/p' scripts/ci.ts     # entry point + --config per edition
+grep -n 'path = ' .gitmodules                        # the edition submodule names
+grep -n 'exaix-team\|exaix-enterprise' deno.json      # workspace members + import map
+```
+
+`CAPABILITY_EDITION` + `isCapabilityEligible` prove only that a tier _ranks high enough_.
+They never prove the artifact that ships the feature exists, is built, or can import the
+seam the plan reuses. A plan whose mechanism is "edition X reuses edition Y's seam"
+requires proof that X's build can resolve Y's package — check the workspace members and the
+edition's own `deno.json`. If the edition's entry point is a placeholder, its runtime
+criteria are unsatisfiable no matter how correct the tier mapping is.
 
 ### Phase 2 — Architectural Alignment & Necessity Check
 
@@ -180,6 +235,13 @@ BEFORE verifying source. Failure → 🟡 Feasibility (or recommend cancellation
    ratio → 🟡 + simpler alternative or postponement.
    A "should not proceed" conclusion → 🟡 Feasibility with
    `Resolution: "Recommend cancellation — see Phase 2 findings"`, written into the doc.
+1. **Delivery-vehicle check** (mandatory when the plan gates on an edition, feature flag,
+   or optional module): name the exact artifact and command that will exercise the new
+   behavior, and prove that artifact exists and can reach the code. "Edition X enables it"
+   is not an answer — identify the binary, the entry point, and the runtime selector (for
+   example an edition env var), then confirm the entry point is a real runtime rather than
+   a placeholder. If no such artifact exists, every runtime Success Criterion in the plan is
+   🔴 Critical (internally contradictory), because no step can satisfy it.
 
 ### Phase 2A — Interface Verification (codebase-level)
 
