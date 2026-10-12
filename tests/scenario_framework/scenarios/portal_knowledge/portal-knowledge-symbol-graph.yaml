@@ -1,6 +1,8 @@
 schema_version: "1.0.0"
 id: "portal-knowledge-symbol-graph"
 title: "Portal Knowledge — Enterprise symbol-level dependency graph"
+# Proves both directions in one run: the flag-on portal must persist
+# symbol_references_symbol edges, and the flag-off portal must not.
 pack: "portal_knowledge"
 tags: ["smoke", "portal", "knowledge", "enterprise", "symbol-graph"]
 request_fixture: "fixtures/requests/portal_knowledge/portal_knowledge_symbol_graph.md"
