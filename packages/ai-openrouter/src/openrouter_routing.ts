@@ -8,9 +8,12 @@
  * asks OpenRouter to route only to providers that support every parameter. An operator value always wins.
  */
 
+import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
-import { OPENROUTER_SESSION_ID_MAX_CHARS } from "./constants.ts";
+import { OPENROUTER_HINT_PARAMETERS, OPENROUTER_SESSION_ID_MAX_CHARS } from "./constants.ts";
+import { hasReasoningOption } from "./openrouter_reasoning.ts";
+import type { IOpenRouterModelEntry } from "./openrouter_model_capabilities.ts";
 
 /** Body fields that a route can silently drop unless `provider.require_parameters` is true. */
 export interface IOpenRouterRoutedFeatures {
@@ -18,6 +21,9 @@ export interface IOpenRouterRoutedFeatures {
   response_format?: Record<string, JSONValue>;
   reasoning?: Record<string, JSONValue>;
 }
+
+/** A body whose hint fields can be dropped. Each hint is optional on the wire. */
+export type IOpenRouterHintTarget = { [Hint in (typeof OPENROUTER_HINT_PARAMETERS)[number]]?: JSONValue };
 
 /** The routing fields that the policy reads and writes on the body. */
 export interface IOpenRouterPolicyTarget extends IOpenRouterRoutedFeatures {
@@ -40,4 +46,24 @@ export function applyRequireParameters(body: IOpenRouterPolicyTarget): void {
 export function applySessionKey(body: IOpenRouterPolicyTarget, traceId: Opt<string, Reason.TraceAbsent>): void {
   if (!traceId || traceId.length > OPENROUTER_SESSION_ID_MAX_CHARS || body.provider?.order !== undefined) return;
   body.session_id = traceId;
+}
+
+/** True when the call carries a feature or a hint whose support depends on the model's own entry. */
+export function needsCapabilityEntry(options: Opt<IModelOptions, Reason.OptionalInput>): boolean {
+  return (options?.tools?.length ?? 0) > 0 || options?.jsonSchema !== undefined || hasReasoningOption(options) ||
+    options?.temperature !== undefined || options?.top_p !== undefined || options?.stop !== undefined;
+}
+
+/**
+ * Drops each hint that the model's entry does not list.
+ * An unlisted hint can remove every route when `require_parameters` is true.
+ */
+export function dropUnlistedHints(
+  body: IOpenRouterHintTarget,
+  entry: Opt<IOpenRouterModelEntry, Reason.OptionalContext>,
+): void {
+  if (!entry) return;
+  for (const hint of OPENROUTER_HINT_PARAMETERS) {
+    if (!entry.supportedParameters.includes(hint)) delete body[hint];
+  }
 }

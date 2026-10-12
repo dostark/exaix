@@ -22,14 +22,19 @@ import {
 } from "@exaix/ai/provider_common_utils.ts";
 import { type IOpenRouterResponse, tokenMapperOpenRouter } from "./openrouter_reported_cost.ts";
 import { mapOpenRouterError, OpenRouterRoutingError } from "./openrouter_errors.ts";
-import { applyRequireParameters, applySessionKey } from "./openrouter_routing.ts";
+import {
+  applyRequireParameters,
+  applySessionKey,
+  dropUnlistedHints,
+  needsCapabilityEntry,
+} from "./openrouter_routing.ts";
 import {
   estimatorModelFor,
   type IOpenRouterCapabilitySource,
   type IOpenRouterModelEntry,
 } from "./openrouter_model_capabilities.ts";
 import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
-import { hasReasoningOption, reasoningFor } from "./openrouter_reasoning.ts";
+import { reasoningFor } from "./openrouter_reasoning.ts";
 import { extractOpenRouterContent, extractOpenRouterFinishReason } from "./openrouter_response.ts";
 import {
   applyJsonModeInstruction,
@@ -201,6 +206,7 @@ export class OpenRouterProvider extends BaseProvider {
       messages: buildOpenAiMessages(prompt, options?.priorTurn, options?.nativeConversation, options?.priorRound),
     };
     applyRequestOptions(body, options);
+    dropUnlistedHints(body, entry);
     const reasoning = reasoningFor(options, entry);
     if (reasoning) body.reasoning = reasoning;
     if (plan) {
@@ -220,11 +226,11 @@ export class OpenRouterProvider extends BaseProvider {
     return options?.jsonSchema ? planOpenRouterOutput(options.jsonSchema, this.id) : undefined;
   }
 
-  /** The model's capability entry, fetched only when the call carries tools or a reasoning control. */
+  /** The model's capability entry, fetched only when the call carries a feature or a hint that depends on it. */
   private async lookupEntry(
     options: Opt<IModelOptions, Reason.AbstractBoundary>,
   ): Promise<Opt<IOpenRouterModelEntry, Reason.OptionalContext>> {
-    if (!this.capabilities || !(options?.tools?.length || hasReasoningOption(options))) return undefined;
+    if (!this.capabilities || !needsCapabilityEntry(options)) return undefined;
     return await this.capabilities.getEntry(this.model, options?.traceId);
   }
 
