@@ -21,7 +21,7 @@ import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 const TOKEN = "test-dogfood-bearer-secret";
 const PORTAL_ALIAS = "test-portal";
 
-function makeKnowledge(): IPortalKnowledge {
+function makeKnowledge(withSymbolEdge = false): IPortalKnowledge {
   return {
     portal: PORTAL_ALIAS,
     gatheredAt: new Date().toISOString(),
@@ -39,7 +39,12 @@ function makeKnowledge(): IPortalKnowledge {
     packages: undefined,
     techStack: { primaryLanguage: "typescript" },
     symbolMap: [],
-    relationships: [{ from: "main.ts", to: "util.ts", kind: "file_imports_file_internal" }],
+    relationships: [
+      { from: "main.ts", to: "util.ts", kind: "file_imports_file_internal" },
+      ...(withSymbolEdge
+        ? [{ from: "main.ts#run", to: "util.ts#helper", kind: "symbol_references_symbol" as const }]
+        : []),
+    ],
     stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
     metadata: { durationMs: 0, mode: PortalAnalysisMode.STANDARD, filesScanned: 0, filesRead: 0 },
   };
@@ -353,6 +358,36 @@ Deno.test("[DogfoodContextServer] cold (undefined) cached knowledge returns empt
     assertEquals(JSON.parse((relResult.content[0] as { text: string }).text), []);
     const depResult = await client.callTool(ToolName.WHO_DEPENDS_ON, { path: "util.ts" });
     assertEquals(JSON.parse((depResult.content[0] as { text: string }).text), []);
+  } finally {
+    await client.close();
+    await handle.close("completed");
+  }
+});
+
+Deno.test("[DogfoodContextServer] query_relationships forwards the symbol-level edge kind", async () => {
+  const handle = await startDogfoodContextServer(baseDeps({ knowledge: makeKnowledge(true) }));
+  const client = new ExternalMcpClient();
+  try {
+    await client.connect(new URL(handle.url), { bearerToken: TOKEN });
+
+    // The input schema must accept the kind, or the call is rejected before the handler runs.
+    const result = await client.callTool(ToolName.QUERY_RELATIONSHIPS, {
+      from: "main.ts#run",
+      kind: "symbol_references_symbol",
+    });
+
+    assertEquals(JSON.parse((result.content[0] as { text: string }).text), [
+      { from: "main.ts#run", to: "util.ts#helper", kind: "symbol_references_symbol" },
+    ]);
+
+    // The file-level kind must stay reachable from the same surface.
+    const fileResult = await client.callTool(ToolName.QUERY_RELATIONSHIPS, {
+      from: "main.ts",
+      kind: "file_imports_file_internal",
+    });
+    assertEquals(JSON.parse((fileResult.content[0] as { text: string }).text), [
+      { from: "main.ts", to: "util.ts", kind: "file_imports_file_internal" },
+    ]);
   } finally {
     await client.close();
     await handle.close("completed");

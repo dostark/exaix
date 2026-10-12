@@ -932,3 +932,48 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] command-output-not-contains fai
     await Deno.remove(workspaceRoot, { recursive: true });
   }
 });
+
+Deno.test("[ScenarioFrameworkAssertionsEvidence] text-not-contains fails on a present string and passes on an absent one", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-assert-notcontains-" });
+  try {
+    await Deno.writeTextFile(join(workspaceRoot, "artifact.json"), '{"kind": "symbol_references_symbol"}');
+
+    const present = await evaluateCriterion({
+      criterion: {
+        id: "must-be-absent",
+        kind: CriterionKind.TEXT_NOT_CONTAINS,
+        path: "artifact.json",
+        not_contains: "symbol_references_symbol",
+      },
+      phase: CriterionPhase.OUTPUT,
+      workspaceRoot,
+    });
+    assertEquals(present.status, CriterionStatus.FAILED, "a present string must fail the negation");
+
+    const absent = await evaluateCriterion({
+      criterion: {
+        id: "other-string-absent",
+        kind: CriterionKind.TEXT_NOT_CONTAINS,
+        path: "artifact.json",
+        not_contains: "file_imports_file_internal",
+      },
+      phase: CriterionPhase.OUTPUT,
+      workspaceRoot,
+    });
+    assertEquals(absent.status, CriterionStatus.PASSED, "an absent string must pass");
+
+    const missingFile = await evaluateCriterion({
+      criterion: {
+        id: "missing-file",
+        kind: CriterionKind.TEXT_NOT_CONTAINS,
+        path: "does-not-exist.json",
+        not_contains: "anything",
+      },
+      phase: CriterionPhase.OUTPUT,
+      workspaceRoot,
+    });
+    assertEquals(missingFile.status, CriterionStatus.FAILED, "a missing file must not pass vacuously");
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});

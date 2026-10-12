@@ -392,20 +392,31 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     ) {
       const referenceExtractor = this._symbolReferenceExtractorRegistry.getForLanguage(primaryLanguage);
       if (referenceExtractor !== EMPTY_SYMBOL_REFERENCE_EXTRACTOR) {
-        // Resolve the language's import specifiers first, so the extractor can
-        // narrow a reference to a file the source really imports.
-        const resolver = this._symbolFileResolverRegistry.getForLanguage(primaryLanguage);
-        const resolvedEdges = await resolver.resolveFileEdges(portalPath, sourceFiles);
-        // The merged array is the extractor's input and the persisted value.
-        const mergedEdges = mergeRelationships([relationships ?? [], resolvedEdges]);
-        const symbolEdges = await referenceExtractor.extractReferences(portalPath, sourceFiles, {
-          primaryLanguage,
-          knownSymbols: symbolMap,
-          fileImportEdges: mergedEdges,
-        });
-        symbolEdgeCount = symbolEdges.length;
-        if (symbolEdges.length > 0 || resolvedEdges.length > 0) {
-          relationships = mergeRelationships([mergedEdges, symbolEdges]);
+        // The pass is additive.
+        // A failure therefore degrades to the file-import graph.
+        // It must not discard a snapshot the earlier pass produced.
+        try {
+          // Resolve the language's import specifiers first, so the extractor can
+          // narrow a reference to a file the source really imports.
+          const resolver = this._symbolFileResolverRegistry.getForLanguage(primaryLanguage);
+          const resolvedEdges = await resolver.resolveFileEdges(portalPath, sourceFiles);
+          // The merged array is the extractor's input and the persisted value.
+          const mergedEdges = mergeRelationships([relationships ?? [], resolvedEdges]);
+          const symbolEdges = await referenceExtractor.extractReferences(portalPath, sourceFiles, {
+            primaryLanguage,
+            knownSymbols: symbolMap,
+            fileImportEdges: mergedEdges,
+          });
+          symbolEdgeCount = symbolEdges.length;
+          if (symbolEdges.length > 0 || resolvedEdges.length > 0) {
+            relationships = mergeRelationships([mergedEdges, symbolEdges]);
+          }
+        } catch (error) {
+          console.warn(
+            `[PortalKnowledgeService] symbol reference pass failed for ${portalAlias} and was skipped: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
         }
       }
     }

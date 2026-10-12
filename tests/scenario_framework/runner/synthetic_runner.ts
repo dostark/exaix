@@ -550,6 +550,10 @@ export async function runSyntheticScenario(
       executeStep: async ({ step }) => {
         const resolvedStep = resolveTrajectorySourceStep(step, stepRowidWindows);
 
+        // Per-step config overrides apply immediately before the step runs, so one
+        // scenario can flip a feature flag between two analyses.
+        await applyStepConfigOverrides(options.workspaceRoot, [resolvedStep]);
+
         const start = await currentMaxRowid(options.workspaceRoot);
         const outcome = await executeSyntheticStep({
           scenarioId: loadedScenario.scenario.id,
@@ -694,6 +698,39 @@ export async function seedWorkspaceConfig(workspaceRoot: string, frameworkHome: 
     const resolved = expandInString(template, { FRAMEWORK_HOME: frameworkHome, WORKSPACE_ROOT: workspaceRoot });
     await Deno.writeTextFile(destination, resolved);
   } catch { /* framework config absent in this checkout */ }
+}
+
+/** Names the config overrides a single step needs, so one scenario can
+ *  exercise both a flag-on and a flag-off analysis. */
+export const STEP_CONFIG_OVERRIDES_ENV = "EXAIX_STEP_CONFIG_OVERRIDES";
+
+/**
+ * Applies the config overrides a single step declares in its `env`.
+ *
+ * It runs immediately before that step so a flag can differ between steps. A
+ * malformed payload throws, because silently skipping it would turn a negative
+ * assertion into a vacuous pass.
+ */
+export async function applyStepConfigOverrides(
+  workspaceRoot: string,
+  steps: ReadonlyArray<{ env?: { [key: string]: string } }>,
+): Promise<void> {
+  const merged: { [key: string]: WorkspaceConfigValue } = {};
+  let declared = false;
+  for (const step of steps) {
+    const raw = step.env?.[STEP_CONFIG_OVERRIDES_ENV];
+    if (!raw) continue;
+    try {
+      Object.assign(merged, JSON.parse(raw) as { [key: string]: WorkspaceConfigValue });
+      declared = true;
+    } catch (error) {
+      throw new Error(
+        `${STEP_CONFIG_OVERRIDES_ENV} is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+  if (!declared) return;
+  await applyWorkspaceConfigOverrides(workspaceRoot, merged);
 }
 
 /**

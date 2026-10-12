@@ -9,9 +9,10 @@
 import { assert, assertEquals } from "@std/assert";
 import { PortalAnalysisMode } from "@exaix/core";
 import type { IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
-import { PortalKnowledgeService } from "@exaix/portal/knowledge";
+import { loadKnowledge, PortalKnowledgeService, saveKnowledge } from "@exaix/portal/knowledge";
 import type { IPortalKnowledgeRelationship } from "@exaix/schemas/portal_knowledge.ts";
 import {
+  createDefaultSymbolFileResolverRegistry,
   createDefaultSymbolReferenceExtractorRegistry,
   EMPTY_SYMBOL_REFERENCE_EXTRACTOR,
   type ISymbolReferenceExtractor,
@@ -269,6 +270,206 @@ Deno.test("[PortalKnowledgeService] [regression] the flag off reproduces the sam
       (first.relationships ?? []).some((e) => e.kind === "symbol_references_symbol"),
       false,
     );
+  } finally {
+    await Deno.remove(portalRoot, { recursive: true });
+  }
+});
+
+Deno.test("[PortalKnowledgeService] a throwing reference extractor degrades to file-import edges only", async () => {
+  const registry = createDefaultSymbolReferenceExtractorRegistry();
+  registry.register("typescript", {
+    extractReferences: () => Promise.reject(new Error("extractor exploded")),
+  });
+
+  const service = new PortalKnowledgeService({
+    config: makeConfig({ enableSymbolLevelDependencyGraph: true }),
+    memoryBank: makeFakeMemoryBank(),
+    symbolReferenceExtractorRegistry: registry,
+  });
+
+  const portalRoot = await Deno.makeTempDir({ prefix: "exa_symref_throw_" });
+  try {
+    await Deno.writeTextFile(`${portalRoot}/main.ts`, 'import { util } from "./util.ts";\nutil();\n');
+    await Deno.writeTextFile(`${portalRoot}/util.ts`, "export function util() {}\n");
+
+    const knowledge = await service.analyze("throws", portalRoot, PortalAnalysisMode.STANDARD);
+
+    // The pass is additive: a failure must not discard the file-import graph.
+    const edges = knowledge.relationships ?? [];
+    assertEquals(
+      edges.some((e) => e.kind === "file_imports_file_internal"),
+      true,
+      `the file-import edges must survive, got ${JSON.stringify(edges)}`,
+    );
+    assertEquals(
+      edges.some((e) => e.kind === "symbol_references_symbol"),
+      false,
+      "a failed reference pass must not fabricate symbol edges",
+    );
+  } finally {
+    await Deno.remove(portalRoot, { recursive: true });
+  }
+});
+
+Deno.test("[PortalKnowledgeService] a throwing file resolver degrades to file-import edges only", async () => {
+  const registry = createDefaultSymbolReferenceExtractorRegistry();
+  registry.register("typescript", {
+    extractReferences: () =>
+      Promise.resolve([
+        { from: "main.ts#x", to: "util.ts#util", kind: "symbol_references_symbol" as const },
+      ]),
+  });
+  const resolverRegistry = createDefaultSymbolFileResolverRegistry();
+  resolverRegistry.register("typescript", {
+    resolveFileEdges: () => Promise.reject(new Error("resolver exploded")),
+  });
+
+  const service = new PortalKnowledgeService({
+    config: makeConfig({ enableSymbolLevelDependencyGraph: true }),
+    memoryBank: makeFakeMemoryBank(),
+    symbolReferenceExtractorRegistry: registry,
+    symbolFileResolverRegistry: resolverRegistry,
+  });
+
+  const portalRoot = await Deno.makeTempDir({ prefix: "exa_symref_rethrow_" });
+  try {
+    await Deno.writeTextFile(`${portalRoot}/main.ts`, 'import { util } from "./util.ts";\nutil();\n');
+    await Deno.writeTextFile(`${portalRoot}/util.ts`, "export function util() {}\n");
+
+    const knowledge = await service.analyze("throws-resolver", portalRoot, PortalAnalysisMode.STANDARD);
+    const edges = knowledge.relationships ?? [];
+    assertEquals(edges.some((e) => e.kind === "file_imports_file_internal"), true);
+    assertEquals(edges.some((e) => e.kind === "symbol_references_symbol"), false);
+  } finally {
+    await Deno.remove(portalRoot, { recursive: true });
+  }
+});
+
+Deno.test("[PortalKnowledgeService] turning the flag off after an enabled run leaves no symbol edges persisted", async () => {
+  // The adversarial case for the gate: a portal already carrying symbol edges is
+  // re-analyzed with the flag off. Stale edges must not survive the rewrite.
+  const registry = createDefaultSymbolReferenceExtractorRegistry();
+  registry.register("typescript", {
+    extractReferences: () =>
+      Promise.resolve([
+        { from: "main.ts#run", to: "util.ts#util", kind: "symbol_references_symbol" as const },
+      ]),
+  });
+  const resolverRegistry = createDefaultSymbolFileResolverRegistry();
+  resolverRegistry.register("typescript", {
+    resolveFileEdges: () =>
+      Promise.resolve([
+        { from: "main.ts", to: "util.ts", kind: "file_imports_file_internal" as const },
+      ]),
+  });
+
+  const portalRoot = await Deno.makeTempDir({ prefix: "exa_symref_flip_" });
+  const projectsDir = await Deno.makeTempDir({ prefix: "exa_symref_flip_proj_" });
+  const alias = "flip-portal";
+  try {
+    await Deno.writeTextFile(`${portalRoot}/main.ts`, 'import { util } from "./util.ts";\nutil();\n');
+    await Deno.writeTextFile(`${portalRoot}/util.ts`, "export function util() {}\n");
+
+    const enabled = new PortalKnowledgeService({
+      config: makeConfig({ enableSymbolLevelDependencyGraph: true }),
+      memoryBank: makeFakeMemoryBank(),
+      symbolReferenceExtractorRegistry: registry,
+      symbolFileResolverRegistry: resolverRegistry,
+    });
+    const withEdges = await enabled.analyze(alias, portalRoot, PortalAnalysisMode.STANDARD);
+    assert(
+      (withEdges.relationships ?? []).some((e) => e.kind === "symbol_references_symbol"),
+      "the enabled run must produce symbol edges for this test to mean anything",
+    );
+    await saveKnowledge(alias, withEdges, null, projectsDir);
+
+    const disabled = new PortalKnowledgeService({
+      config: makeConfig({ enableSymbolLevelDependencyGraph: false }),
+      memoryBank: makeFakeMemoryBank(),
+      symbolReferenceExtractorRegistry: registry,
+      symbolFileResolverRegistry: resolverRegistry,
+    });
+    const withoutEdges = await disabled.analyze(alias, portalRoot, PortalAnalysisMode.STANDARD);
+    assertEquals(
+      (withoutEdges.relationships ?? []).some((e) => e.kind === "symbol_references_symbol"),
+      false,
+      "the disabled run must not re-derive symbol edges",
+    );
+
+    await saveKnowledge(alias, withoutEdges, null, projectsDir);
+    const reloaded = await loadKnowledge(alias, projectsDir);
+    assert(reloaded !== null);
+    assertEquals(
+      (reloaded!.relationships ?? []).some((e) => e.kind === "symbol_references_symbol"),
+      false,
+      "no stale symbol edge may survive the rewrite",
+    );
+  } finally {
+    await Deno.remove(portalRoot, { recursive: true });
+    await Deno.remove(projectsDir, { recursive: true });
+  }
+});
+
+Deno.test("[PortalKnowledgeService] the portal.analyzed payload carries the symbol edge count", async () => {
+  /** The subset of the event payload this test reads. */
+  interface IAnalyzedPayload {
+    symbolEdgeCount?: number;
+  }
+  const payloads: Array<{ action: string; data?: IAnalyzedPayload }> = [];
+  const evLogger = {
+    info: (action: string, _trace: string, data?: IAnalyzedPayload) => {
+      payloads.push({ action, ...(data ? { data } : {}) });
+      return Promise.resolve();
+    },
+    warn: () => Promise.resolve(),
+    log: () => Promise.resolve(),
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+  };
+
+  const registry = createDefaultSymbolReferenceExtractorRegistry();
+  registry.register("typescript", {
+    extractReferences: () =>
+      Promise.resolve([
+        { from: "main.ts#run", to: "util.ts#util", kind: "symbol_references_symbol" as const },
+      ]),
+  });
+
+  const enabled = new PortalKnowledgeService({
+    config: makeConfig({ enableSymbolLevelDependencyGraph: true }),
+    memoryBank: makeFakeMemoryBank(),
+    symbolReferenceExtractorRegistry: registry,
+    evLogger: evLogger as never,
+  });
+
+  const portalRoot = await Deno.makeTempDir({ prefix: "exa_symref_payload_" });
+  try {
+    await Deno.writeTextFile(`${portalRoot}/main.ts`, 'import { util } from "./util.ts";\nutil();\n');
+    await Deno.writeTextFile(`${portalRoot}/util.ts`, "export function util() {}\n");
+
+    const knowledge = await enabled.analyze("payload", portalRoot, PortalAnalysisMode.STANDARD);
+    const analyzed = payloads.find((p) => p.action === "portal.analyzed");
+    assert(analyzed !== undefined, "portal.analyzed must be logged");
+    const persistedCount = (knowledge.relationships ?? []).filter((e) => e.kind === "symbol_references_symbol").length;
+    assertEquals(
+      analyzed!.data?.symbolEdgeCount,
+      persistedCount,
+      "the payload count must match what was persisted, not merely be present",
+    );
+    assert(persistedCount > 0, "the enabled run must persist symbol edges for this assertion to mean anything");
+
+    // The flag off must omit the field rather than report a misleading zero.
+    payloads.length = 0;
+    const disabled = new PortalKnowledgeService({
+      config: makeConfig({ enableSymbolLevelDependencyGraph: false }),
+      memoryBank: makeFakeMemoryBank(),
+      symbolReferenceExtractorRegistry: registry,
+      evLogger: evLogger as never,
+    });
+    await disabled.analyze("payload-off", portalRoot, PortalAnalysisMode.STANDARD);
+    const offPayload = payloads.find((p) => p.action === "portal.analyzed");
+    assertEquals(offPayload?.data?.symbolEdgeCount, undefined, "an unrun pass must not report a count");
   } finally {
     await Deno.remove(portalRoot, { recursive: true });
   }

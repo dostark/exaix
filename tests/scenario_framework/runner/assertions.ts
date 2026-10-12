@@ -174,6 +174,7 @@ type IFileExistsCriterion = Extract<ICriterion, { kind: CriterionKind.FILE_EXIST
 type IFileFoundCriterion = Extract<ICriterion, { kind: CriterionKind.FILE_FOUND }>;
 type IFileNotExistsCriterion = Extract<ICriterion, { kind: CriterionKind.FILE_NOT_EXISTS }>;
 type ITextContainsCriterion = Extract<ICriterion, { kind: CriterionKind.TEXT_CONTAINS }>;
+type ITextNotContainsCriterion = Extract<ICriterion, { kind: CriterionKind.TEXT_NOT_CONTAINS }>;
 type IJsonPathExistsCriterion = Extract<ICriterion, { kind: CriterionKind.JSON_PATH_EXISTS }>;
 type IJsonPathEqualsCriterion = Extract<ICriterion, { kind: CriterionKind.JSON_PATH_EQUALS }>;
 type IJsonPathEqualsAnyCriterion = Extract<ICriterion, { kind: CriterionKind.JSON_PATH_EQUALS_ANY }>;
@@ -240,6 +241,8 @@ export async function evaluateCriterion(
       return evaluateEnvVarPresentCriterion(options);
     case CriterionKind.TEXT_MATCHES:
       return await evaluateTextMatchesCriterion(options);
+    case CriterionKind.TEXT_NOT_CONTAINS:
+      return await evaluateTextNotContainsCriterion(options);
     case CriterionKind.VERSION_EQUALS:
       return await evaluateVersionEqualsCriterion(options);
     case CriterionKind.VERSION_GTE:
@@ -517,6 +520,36 @@ async function evaluateTextContainsCriterion(
     message: `expected text in ${criterion.path}: ${criterion.contains}`,
     expectedValue: criterion.contains,
     observedValue: content,
+    evidenceRefs: buildEvidenceRefs(options.workspaceRoot, criterion.path),
+  });
+}
+
+/** Assert that a forbidden string does NOT appear in a file. The negation of
+ *  `text-contains`, so absence is a real assertion rather than an unmatched pattern. */
+async function evaluateTextNotContainsCriterion(
+  options: IEvaluateCriterionOptions,
+): Promise<ICriterionResult> {
+  const criterion = options.criterion as ITextNotContainsCriterion;
+  if (!criterion.path) {
+    return buildFailedResult(options, {
+      message: "text-not-contains criterion has no path (no file_pattern to resolve it)",
+    });
+  }
+  const content = await safeReadTextFile(criterionBase(options), criterion.path);
+
+  if (content === null) {
+    return buildFailedResult(options, {
+      message: `text file not found: ${criterion.path}`,
+      evidenceRefs: buildEvidenceRefs(options.workspaceRoot, criterion.path),
+    });
+  }
+
+  if (!content.includes(criterion.not_contains)) {
+    return buildPassedResult(options, buildEvidenceRefs(options.workspaceRoot, criterion.path));
+  }
+
+  return buildFailedResult(options, {
+    message: `expected text NOT to appear in ${criterion.path}: ${criterion.not_contains}`,
     evidenceRefs: buildEvidenceRefs(options.workspaceRoot, criterion.path),
   });
 }

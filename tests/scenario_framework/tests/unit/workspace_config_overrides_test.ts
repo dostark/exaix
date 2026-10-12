@@ -11,7 +11,11 @@ import { assert, assertEquals } from "@std/assert";
 import { parse } from "@std/toml";
 import { join } from "@std/path";
 import { WorkspaceConfigOverridesSchema } from "../../schema/scenario_schema.ts";
-import { applyWorkspaceConfigOverrides } from "../../runner/synthetic_runner.ts";
+import {
+  applyStepConfigOverrides,
+  applyWorkspaceConfigOverrides,
+  STEP_CONFIG_OVERRIDES_ENV,
+} from "../../runner/synthetic_runner.ts";
 import { patchWorkspaceConfig, renderTomlValue, splitConfigPath } from "../../runner/workspace_config_overrides.ts";
 
 const BASE = `# Framework template
@@ -161,4 +165,52 @@ Deno.test("[workspace_config] the scenario schema accepts and validates the over
 
   const rejected = WorkspaceConfigOverridesSchema.safeParse({ "bad key with spaces": 1 });
   assertEquals(rejected.success, false);
+});
+
+Deno.test("[workspace_config] a step's escaped overrides apply to the sandbox config", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "ws-step-cfg-" });
+  try {
+    await Deno.writeTextFile(join(dir, "exa.config.toml"), BASE);
+
+    // Applied one step at a time, so the value can flip between steps.
+    await applyStepConfigOverrides(dir, [
+      { env: { [STEP_CONFIG_OVERRIDES_ENV]: '{"portal_knowledge.enable_symbol_level_dependency_graph": true}' } },
+    ]);
+    let parsed = parse(await Deno.readTextFile(join(dir, "exa.config.toml"))) as {
+      portal_knowledge: { enable_symbol_level_dependency_graph: boolean; default_mode: string };
+    };
+    assertEquals(parsed.portal_knowledge.enable_symbol_level_dependency_graph, true);
+    assertEquals(parsed.portal_knowledge.default_mode, "standard");
+
+    await applyStepConfigOverrides(dir, [
+      { env: { [STEP_CONFIG_OVERRIDES_ENV]: '{"portal_knowledge.enable_symbol_level_dependency_graph": false}' } },
+    ]);
+    parsed = parse(await Deno.readTextFile(join(dir, "exa.config.toml"))) as typeof parsed;
+    assertEquals(parsed.portal_knowledge.enable_symbol_level_dependency_graph, false, "the flag must flip back off");
+
+    // A step without the key leaves the config untouched.
+    await applyStepConfigOverrides(dir, [{ env: {} }]);
+    parsed = parse(await Deno.readTextFile(join(dir, "exa.config.toml"))) as typeof parsed;
+    assertEquals(parsed.portal_knowledge.enable_symbol_level_dependency_graph, false);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("[workspace_config] a malformed step override fails loudly instead of silently skipping", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "ws-step-bad-" });
+  try {
+    await Deno.writeTextFile(join(dir, "exa.config.toml"), BASE);
+    let threw = false;
+    try {
+      await applyStepConfigOverrides(dir, [
+        { env: { [STEP_CONFIG_OVERRIDES_ENV]: "{not json" } },
+      ]);
+    } catch {
+      threw = true;
+    }
+    assertEquals(threw, true, "a malformed override must not pass silently");
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
 });

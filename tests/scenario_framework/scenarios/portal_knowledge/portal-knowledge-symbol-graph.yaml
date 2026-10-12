@@ -18,19 +18,35 @@ portals:
     source_path: "$FRAMEWORK_HOME/fixtures/portals/go_symbol_reference"
     target_path: "$WORKSPACE_ROOT/go-symbol-ref"
     git_init: true
+  # The negative leg gets its OWN portal, so its flag-off analysis cannot
+  # overwrite the flag-on knowledge.json the assertions below read.
+  - alias: "go-symbol-off"
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/go_symbol_reference"
+    target_path: "$WORKSPACE_ROOT/go-symbol-off"
+    git_init: true
 steps:
-  # ── Step 1: register the Go fixture as a portal ─────────────────────────
+  # ── Step 1: register both portals ───────────────────────────────────────
   - id: "register-portal"
     type: "exactl"
     command: "portal"
     args: ["add", "$WORKSPACE_ROOT/go-symbol-ref", "go-symbol-ref"]
     output_criteria:
       - id: "portal-add-exit-code"
-        score_weight: 0.1
+        score_weight: 0.05
         kind: "command-exit-code"
         equals: 0
 
-  # ── Step 2: analyze it with the symbol graph enabled ────────────────────
+  - id: "register-portal-off"
+    type: "exactl"
+    command: "portal"
+    args: ["add", "$WORKSPACE_ROOT/go-symbol-off", "go-symbol-off"]
+    output_criteria:
+      - id: "portal-add-off-exit-code"
+        score_weight: 0.05
+        kind: "command-exit-code"
+        equals: 0
+
+  # ── Step 2: the flag-on analysis ────────────────────────────────────────
   - id: "analyze-portal"
     type: "exactl"
     command: "portal"
@@ -38,17 +54,16 @@ steps:
     timeout_sec: 180
     output_criteria:
       - id: "analyze-exit-code"
-        score_weight: 0.1
+        score_weight: 0.05
         kind: "command-exit-code"
         equals: 0
 
-  # ── Step 3: assert the persisted symbol-level edges ─────────────────────
-  # The Go primary language proves the Team extended-language extractors were reached.
-  - id: "validate-symbol-graph"
+  # ── Step 3: assert the symbol-level edges the flag-on run persisted ─────
+  - id: "validate-flag-on"
     type: "json-assert"
     output_criteria:
       - id: "primary-language-is-go"
-        score_weight: 0.1
+        score_weight: 0.05
         kind: "json-path-equals"
         target_file: "Memory/Projects/go-symbol-ref/knowledge.json"
         path: "$.techStack.primaryLanguage"
@@ -62,25 +77,71 @@ steps:
         equals: "standard"
 
       - id: "symbol-edges-persisted"
-        score_weight: 0.2
+        score_weight: 0.15
         kind: "text-contains"
         path: "Memory/Projects/go-symbol-ref/knowledge.json"
         contains: "\"kind\": \"symbol_references_symbol\""
 
-      - id: "file-edges-still-present"
-        score_weight: 0.15
-        kind: "text-contains"
-        path: "Memory/Projects/go-symbol-ref/knowledge.json"
-        contains: "\"kind\": \"file_imports_file_internal\""
-
       - id: "composite-endpoint-format"
-        score_weight: 0.2
+        score_weight: 0.15
         kind: "text-contains"
         path: "Memory/Projects/go-symbol-ref/knowledge.json"
         contains: "main.go#Run"
 
       - id: "cross-package-reference-resolved"
-        score_weight: 0.2
+        score_weight: 0.15
         kind: "text-contains"
         path: "Memory/Projects/go-symbol-ref/knowledge.json"
         contains: "helper/helper.go#Double"
+
+      - id: "file-edges-still-present"
+        score_weight: 0.1
+        kind: "text-contains"
+        path: "Memory/Projects/go-symbol-ref/knowledge.json"
+        contains: "\"kind\": \"file_imports_file_internal\""
+
+  # ── Step 4: the flag-off analysis runs against its own portal ───────────
+  # The escaped env key is the per-step config override the runner applies before
+  # this command, so the gate is exercised in the same live run, not assumed.
+  - id: "analyze-flag-off"
+    type: "exactl"
+    command: "portal"
+    args: ["analyze", "go-symbol-off", "--mode", "standard"]
+    timeout_sec: 180
+    env:
+      EXAIX_STEP_CONFIG_OVERRIDES: '{"portal_knowledge.enable_symbol_level_dependency_graph": false}'
+    output_criteria:
+      - id: "flag-off-exit-code"
+        score_weight: 0.05
+        kind: "command-exit-code"
+        equals: 0
+
+  # ── Step 5: assert the flag-off run stayed at the file level ────────────
+  - id: "validate-flag-off"
+    type: "json-assert"
+    output_criteria:
+      # The same Go fixture must still analyze, so the negative leg is a real run
+      # and not a vacuous failure.
+      - id: "flag-off-primary-language-is-go"
+        score_weight: 0.05
+        kind: "json-path-equals"
+        target_file: "Memory/Projects/go-symbol-off/knowledge.json"
+        path: "$.techStack.primaryLanguage"
+        equals: "go"
+
+      # The Go symbol map still resolves, so the flag-off leg analyzed real files
+      # rather than failing early and passing vacuously.
+      - id: "flag-off-symbol-map-present"
+        score_weight: 0.15
+        kind: "text-contains"
+        path: "Memory/Projects/go-symbol-off/knowledge.json"
+        contains: "\"name\": \"Double\""
+
+      # Symbol-edge absence in the persisted file. The same string is asserted
+      # PRESENT in the flag-on file above, so this pair is a real discrimination
+      # rather than a pattern that never matches anywhere.
+      - id: "flag-off-symbol-edge-string-absent"
+        score_weight: 0.15
+        kind: "text-not-contains"
+        path: "Memory/Projects/go-symbol-off/knowledge.json"
+        not_contains: "\"kind\": \"symbol_references_symbol\""

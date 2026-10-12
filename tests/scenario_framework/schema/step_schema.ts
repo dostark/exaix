@@ -48,6 +48,7 @@ export enum CriterionKind {
   FILE_FOUND = "file-found",
   FILE_NOT_EXISTS = "file-not-exists",
   TEXT_CONTAINS = "text-contains",
+  TEXT_NOT_CONTAINS = "text-not-contains",
   JSON_PATH_EXISTS = "json-path-exists",
   JSON_PATH_EQUALS = "json-path-equals",
   JSON_PATH_EQUALS_ANY = "json-path-equals-any",
@@ -149,6 +150,16 @@ const TextContainsCriterionSchema = BaseCriterionSchema.extend({
   path: z.string().optional(),
   contains: NON_EMPTY_STRING,
   similarity_threshold: z.number().min(0).max(1).optional(),
+}).strict();
+
+/** The negation of `text-contains`.
+ *  It lets a scenario assert that a file does NOT carry a value.
+ *  Without it, absence needs a pattern that never matches.
+ *  Such a pattern passes whether or not the feature is gated. */
+const TextNotContainsCriterionSchema = BaseCriterionSchema.extend({
+  kind: z.literal(CriterionKind.TEXT_NOT_CONTAINS),
+  path: z.string().optional(),
+  not_contains: NON_EMPTY_STRING,
 }).strict();
 
 const JsonPathExistsCriterionSchema = BaseCriterionSchema.extend({
@@ -364,6 +375,7 @@ export const CriterionSchema = z.discriminatedUnion("kind", [
   FileFoundCriterionSchema,
   FileNotExistsCriterionSchema,
   TextContainsCriterionSchema,
+  TextNotContainsCriterionSchema,
   JsonPathExistsCriterionSchema,
   JsonPathEqualsCriterionSchema,
   JsonPathEqualsAnyCriterionSchema,
@@ -436,6 +448,9 @@ export const ScenarioStepSchema = z.object({
    *  workspace root. `$WORKTREE` resolves to the scenario's newest execution worktree, so
    *  scenarios never hardcode deep `.exa/worktrees/...` globs. */
   cwd: z.string().min(1).optional(),
+  /** Step subprocess env.
+   *  A key with the escape prefix may carry a JSON value.
+   *  The runner applies it as a workspace-config override for that step. */
   env: z.record(z.string(), z.string()).optional(),
   /** Matrix-cell scoping: when present, this step only runs for cells whose `tool` is in this
    *  list — every other cell skips it entirely (removed before execution, not no-opped).

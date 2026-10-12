@@ -21,7 +21,7 @@ import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { queryRelationships, type RelationshipEdgeKind, whoDependsOn } from "@exaix/portal/knowledge";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { ToolName } from "@exaix/core";
+import { SYMBOL_REFERENCE_EDGE_KIND, ToolName } from "@exaix/core";
 import type { IContextQueryCompletedPayload, IContextQueryDeniedPayload } from "@exaix/core/events";
 import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
@@ -81,7 +81,13 @@ type DogfoodContextHttpResponse = Response;
 type DogfoodContextHttpResponsePromise = Promise<DogfoodContextHttpResponse>;
 
 const ALLOWED_HTTP_METHODS = new Set(["GET", "POST", "DELETE"]);
-const RELATIONSHIP_EDGE_KINDS = ["layer_contains_file", "file_imports_file_internal"] as const;
+/** Every persisted edge kind, plus the derived layer edge. The symbol kind comes
+ *  from the shared constant so it cannot drift from the schema. */
+const RELATIONSHIP_EDGE_KINDS = [
+  "layer_contains_file",
+  "file_imports_file_internal",
+  SYMBOL_REFERENCE_EDGE_KIND,
+] as const;
 
 async function sha256Hex(text: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
