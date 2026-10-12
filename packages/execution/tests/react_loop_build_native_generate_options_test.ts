@@ -11,8 +11,35 @@ import { ReActLoopStrategy } from "../src/strategies/react_loop_strategy.ts";
 import type { NativeToolChoiceMode } from "../src/strategies/react_loop_strategy.ts";
 import type { IReActLoopExecutor } from "../src/react_loop_adapter.ts";
 import { ToolsRoundMode } from "@exaix/core";
+import { OpenRouterProvider } from "@exaix/ai-openrouter";
 
 const dummyExecutor: IReActLoopExecutor = {} as never;
+
+Deno.test("fix(qwen-tool-choice): OpenRouter Qwen exploration uses auto while named non-thinking calls remain forced", () => {
+  const provider = new OpenRouterProvider({ apiKey: "fixture-key", model: "qwen/qwen3.7-flash" });
+  const strategy = new ReActLoopStrategy(dummyExecutor, provider);
+  const typed = strategy as never as {
+    callOptions: { thinking: boolean };
+    buildNativeGenerateOptions(
+      toolDefinitions: MockToolDef[],
+      priorTurn: undefined,
+      nativeToolsUsed: boolean,
+      preferredTool?: string,
+    ): MockGenerateOptions;
+  };
+  const tools = [{ name: "read_file", description: "Read", inputSchema: { type: "object" } }];
+  typed.callOptions = { thinking: false };
+  const exploration = typed.buildNativeGenerateOptions(tools, undefined, true);
+  assertEquals(exploration.toolChoice?.type, "auto");
+  assertEquals(exploration.nativeToolChoiceMode, "auto");
+  assertEquals(exploration.tools, tools);
+  const named = typed.buildNativeGenerateOptions(tools, undefined, true, "read_file");
+  assertEquals(named.toolChoice, { type: "tool", name: "read_file" });
+  typed.callOptions = { thinking: true };
+  const thinking = typed.buildNativeGenerateOptions(tools, undefined, true, "read_file");
+  assertEquals(thinking.toolChoice?.type, "auto");
+  assertEquals(thinking.tools, tools);
+});
 
 interface MockToolDef {
   name: string;

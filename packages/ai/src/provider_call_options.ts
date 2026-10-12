@@ -23,6 +23,8 @@ export interface IProviderCallCapabilities {
   readonly supportsForcedToolChoiceWithThinking?: boolean;
   /** False when the target refuses a forced tool_choice in every thinking mode. Absent means true. */
   readonly supportsForcedToolChoice?: boolean;
+  /** False when the target refuses the unconstrained any tool_choice. Absent means true. */
+  readonly supportsAnyToolChoice?: boolean;
 }
 
 export interface IProjectedCallOptions {

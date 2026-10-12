@@ -37,6 +37,7 @@ import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
 import { reasoningFor } from "./openrouter_reasoning.ts";
 import { extractOpenRouterContent, extractOpenRouterFinishReason } from "./openrouter_response.ts";
 import { applyCacheControl, type IOpenRouterChatMessage } from "./openrouter_cache_control.ts";
+import { openrouterCallCapabilities } from "./openrouter_call_capabilities.ts";
 import {
   applyJsonModeInstruction,
   completeStructuredOutput,
@@ -45,7 +46,7 @@ import {
 } from "./openrouter_structured_output.ts";
 import type { OPENROUTER_QUANTIZATIONS } from "@exaix/schemas";
 import { BaseProvider, type IBaseProviderOptions, type IGenerateResult } from "@exaix/ai/providers";
-import type { IStructuredOutputPlan } from "@exaix/ai";
+import type { IProviderCallCapabilities, IStructuredOutputPlan } from "@exaix/ai";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import { type INativeInputMeasurement, measureOpenAiChatProjection } from "@exaix/ai";
 import { AiTokenEstimatorTokenizer, type ITokenizer } from "@exaix/core/func";
@@ -163,6 +164,7 @@ export class OpenRouterProvider extends BaseProvider {
   private readonly tokenizer: ITokenizer;
   private readonly capabilities?: IOpenRouterCapabilitySource;
   private readonly cacheControl: boolean;
+  readonly callCapabilities: IProviderCallCapabilities;
 
   constructor(options: OpenRouterProviderOptions) {
     super({
@@ -179,6 +181,7 @@ export class OpenRouterProvider extends BaseProvider {
     this.tokenizer = options.tokenizer ?? new AiTokenEstimatorTokenizer();
     this.capabilities = options.capabilities;
     this.cacheControl = options.cacheControl ?? true;
+    this.callCapabilities = openrouterCallCapabilities(this.model);
   }
 
   /** Measures the request exactly as dispatched: the serialized body, with its prompt, replayed history and tools. */

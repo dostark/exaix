@@ -80,6 +80,9 @@ export const OPENROUTER_CACHE_CONTROL_FAMILIES = {
   "qwen/": null,
 } as const;
 
+/** Model-id prefix of the Qwen routes. The Qwen tool-calling guide refuses `required` and forced choice with thinking on. */
+export const OPENROUTER_QWEN_MODEL_PREFIX = "qwen/";
+
 /** The finish reason that means the response ended at the token limit. */
 export const OPENROUTER_FINISH_REASON_LENGTH = "length";
 
