@@ -4146,6 +4146,7 @@ max_files_to_read     = 50        # Hard cap across all strategies
 staleness_hours       = 168       # Fallback TTL for non-git portals or when HEAD can't be resolved (default: 1 week)
 use_llm_inference     = true      # Allow LLM calls in deep mode
 ignore_patterns       = ["node_modules", ".git", "dist", "build"]
+enable_symbol_level_dependency_graph = false  # Enterprise only: symbol-level reference edges (opt-in)
 ```
 
 **Where is it stored?**
@@ -4158,11 +4159,14 @@ inspect them directly or via `exactl portal knowledge <alias> --json`.
 The portal knowledge pipeline produces a `symbolMap` — a ranked index of exported
 symbols. The languages available depend on edition:
 
-| Edition | Languages                                                             |
-| ------- | --------------------------------------------------------------------- |
-| Solo    | TypeScript, JavaScript (via `deno doc`), **Python** (via tree-sitter) |
-| Team    | Solo baseline + extended set: Rust, Go, Java (via tree-sitter)        |
-| None    | All other languages yield an empty map (fail-soft, no error)          |
+| Edition    | Languages                                                                                          |
+| ---------- | -------------------------------------------------------------------------------------------------- |
+| Solo       | TypeScript, JavaScript (via `deno doc`), **Python** (via tree-sitter)                              |
+| Team       | Solo baseline + extended set: Rust, Go, Java (via tree-sitter)                                     |
+| Enterprise | Same as Team, plus symbol-level reference edges when `enable_symbol_level_dependency_graph = true` |
+| None       | All other languages yield an empty map (fail-soft, no error)                                       |
+
+**Symbol-level reference edges** (`query_symbol_references`) answer "who calls this symbol" rather than "which file imports which file". They are opt-in and Enterprise only, and the artifact that delivers them is the **Team build run with `EXAIX_EDITION=enterprise`** — the separate `build:enterprise` binary is still a scaffold with no runtime, so a green `build:enterprise` does not mean this feature works. Matching is name-and-scope based rather than semantic, and it resolves only against the capped symbol map, so treat the graph as a useful subset rather than a complete call graph. The tool is visible to every paid-edition MCP client and returns an empty list, not an error, on a portal analyzed without the symbol graph.
 
 Python extraction uses a local tree-sitter WASM grammar — no network access, no
 native code (`--allow-ffi` not required). Extended-language extractors (Team)

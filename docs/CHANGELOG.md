@@ -363,6 +363,18 @@
   [Exaix_Evaluation.md](Exaix_Evaluation.md) §19 for the full metric methodology and its
   keyword-only/no-embedding scope boundary.
 
+## Unreleased — Phase 178 (Symbol-Level Dependency Graph)
+
+### Added
+
+- The `portal_knowledge.enable_symbol_level_dependency_graph` config key turns on symbol-level reference edges for the Enterprise edition, so an agent can ask which symbols call or reference a symbol rather than which file imports which file (see [Operational Procedures](Exaix_User_Guide.md#5-operational-procedures)).
+- The `query_symbol_references` tool returns those edges, in both directions, from a portal's cached knowledge. It is available to every paid-edition MCP client and returns an empty list, not an error, when the analysis did not collect symbol edges.
+
+### Changed
+
+- Portal knowledge analysis can resolve a Go, Java, or Rust portal's imports and call sites when the symbol graph is enabled. The separate Enterprise build is still a scaffold with no runtime, so run the Team build with `EXAIX_EDITION=enterprise` to use it.
+- A `knowledge.json` written by a newer build no longer fails to load on an unrecognized relationship kind. Only the affected edges are dropped; a genuinely invalid snapshot is still ignored.
+
 ## Unreleased — Phase 176 (Dogfood Context Management Refinement)
 
 ### Added

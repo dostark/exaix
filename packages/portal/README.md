@@ -66,6 +66,12 @@ Portal Mount
   → KnowledgePersistence.save()             → Memory/Projects/{alias}/knowledge.json
 ```
 
+### Symbol-level dependency graph (Enterprise)
+
+An Enterprise-only, opt-in pass adds `symbol_references_symbol` edges beside the file-import edges. It is gated by `CAP_SYMBOL_LEVEL_DEPENDENCY_GRAPH` and owned by `EnterpriseSymbolGraphModule`, which registers the Go, Java, and Rust file resolvers and reference extractors. Endpoints are `<file>#<symbolName>` composite keys; build and read them with the exported `encodeSymbolRef` and `decodeSymbolRef`. Enable it with `enable_symbol_level_dependency_graph = true` under `[portal_knowledge]`, and run the Team build with `EXAIX_EDITION=enterprise`. Matching is name-and-scope based rather than semantic, and it can only resolve against the capped `symbolMap`, so the graph is a subset.
+
+`loadKnowledge` tolerates a snapshot carrying an edge kind this build does not know: it drops only those edges and preserves every other field. Genuinely invalid input still resolves to `null`.
+
 ## Analysis Modes
 
 | Mode       | Strategies run    | LLM Needed | `quick_scan_limit` applies |
