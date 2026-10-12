@@ -7,7 +7,7 @@
  * @architectural-layer AI-OpenRouter
  */
 import { assertEquals } from "@std/assert";
-import { tokenMapperOpenRouter } from "../src/openrouter_reported_cost.ts";
+import { reportedCostCredits, tokenMapperOpenRouter } from "../src/openrouter_reported_cost.ts";
 
 Deno.test("tokenMapperOpenRouter reads usage.cost as the reported cost", () => {
   const mapper = tokenMapperOpenRouter("openrouter/some-model");
@@ -137,4 +137,9 @@ Deno.test("a usage object recorded from the live API maps every field", () => {
     upstream_inference_cost: 6.67e-07,
     cache_discount: undefined,
   });
+});
+
+Deno.test("reportedCostCredits reads usage.cost as OpenRouter credits, and is undefined when the field is absent", () => {
+  assertEquals(reportedCostCredits({ prompt_tokens: 1, completion_tokens: 1, cost: 0.0123 }), 0.0123);
+  assertEquals(reportedCostCredits({ prompt_tokens: 1, completion_tokens: 1 }), undefined);
 });

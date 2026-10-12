@@ -4,7 +4,8 @@
  * @description Phase 135 Step 2 (F6/G9) — a dedicated OpenRouter token mapper that
  *   reads the authoritative usage.cost from the response (returned when the request
  *   carries usage:{include:true}) instead of the internal blended calculateCost
- *   estimate. cost_usd is left undefined when the response omits usage.cost.
+ *   estimate. cost_usd is left undefined when the response omits usage.cost. The usage guide
+ *   states that cost is in credits. The shared TokenMap field keeps its name for now.
  * @architectural-layer AI-OpenRouter
  * @dependencies [@exaix/ai/provider_common_utils]
  * @related-files [packages/ai-openrouter/src/openrouter_provider.ts, packages/core/src/cost/cost_tracker.ts]
@@ -52,6 +53,11 @@ export interface IOpenRouterResponse extends Omit<Omit<OpenAIResponse, "usage">,
   choices?: IOpenRouterChoice[];
 }
 
+/** The reported cost in OpenRouter credits, or undefined when the response omits it. No estimate is made. */
+export function reportedCostCredits(usage: IOpenRouterUsage): number | undefined {
+  return typeof usage.cost === "number" ? usage.cost : undefined;
+}
+
 /** Maps reported usage cost without estimating a fallback when it is absent. */
 export function tokenMapperOpenRouter(
   model: string,
@@ -65,7 +71,7 @@ export function tokenMapperOpenRouter(
       completion_tokens: d.usage.completion_tokens,
       total_tokens: totalTokens,
       model: d.model ?? model,
-      cost_usd: typeof d.usage.cost === "number" ? d.usage.cost : undefined,
+      cost_usd: reportedCostCredits(d.usage),
       reasoning_tokens: d.usage.completion_tokens_details?.reasoning_tokens,
       cache_read_tokens: d.usage.prompt_tokens_details?.cached_tokens,
       cache_creation_tokens: d.usage.prompt_tokens_details?.cache_write_tokens,
