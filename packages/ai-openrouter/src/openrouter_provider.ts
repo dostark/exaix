@@ -270,7 +270,7 @@ export class OpenRouterProvider extends BaseProvider {
     const reasoning = reasoningFor(options, entry);
     if (reasoning) body.reasoning = reasoning;
     if (plan) {
-      body.response_format = plan.responseFormat;
+      if (plan.responseFormat !== undefined) body.response_format = plan.responseFormat;
       if (plan.promptInstruction) applyJsonModeInstruction(messages, prompt, plan.promptInstruction, this.id);
     }
     body.messages = applyCacheControl(messages, this.model, this.cacheControl);
@@ -306,7 +306,7 @@ export class OpenRouterProvider extends BaseProvider {
   }
 
   /** Sends the strongest request first. A route that refuses a forced tool choice gets one auto retry.
-   *  A route that refuses json_schema gets one json_object retry. A refusal after the last retry is thrown. */
+   *  A route that refuses json_schema gets one prompt-only retry. A refusal after the last retry is thrown. */
   protected override async attemptGenerate(
     prompt: string,
     options?: Opt<IModelOptions, Reason.AbstractBoundary>,

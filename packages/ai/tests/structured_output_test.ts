@@ -239,14 +239,14 @@ Deno.test("planStructuredOutput picks OpenAI strict json_schema mode for a stric
   );
   assertEquals(plan.mode, "json_schema");
   assertEquals(plan.reason, undefined);
-  assertEquals(plan.responseFormat.type, "json_schema");
+  assertEquals(plan.responseFormat?.type, "json_schema");
 });
 
 Deno.test("planStructuredOutput falls back to json_object for OpenAI on a non-strict-representable schema", () => {
   const plan = planStructuredOutput("openai", getPlanJsonSchema());
   assertEquals(plan.mode, "json_object");
   assertEquals(plan.reason, "schema_not_strict_representable");
-  assertEquals(plan.responseFormat.type, "json_object");
+  assertEquals(plan.responseFormat?.type, "json_object");
   assertEquals(typeof plan.promptInstruction === "string" && plan.promptInstruction.includes("json"), true);
 });
 
@@ -276,7 +276,7 @@ Deno.test("planStructuredOutput always uses json_object mode for DeepSeek, even 
   );
   assertEquals(plan.mode, "json_object");
   assertEquals(plan.reason, undefined);
-  assertEquals(plan.responseFormat.type, "json_object");
+  assertEquals(plan.responseFormat?.type, "json_object");
 });
 
 Deno.test("[phase203.structured] self-hosted takes the json_object branch on a strict-representable schema", () => {
@@ -291,7 +291,7 @@ Deno.test("[phase203.structured] self-hosted takes the json_object branch on a s
   );
   assertEquals(plan.mode, "json_object");
   assertEquals(plan.reason, undefined);
-  assertEquals(plan.responseFormat.type, "json_object");
+  assertEquals(plan.responseFormat?.type, "json_object");
   assertEquals(typeof plan.promptInstruction === "string" && plan.promptInstruction.includes("json"), true);
 });
 

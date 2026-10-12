@@ -5,13 +5,14 @@
  * @architectural-layer AI
  * @dependencies ["@exaix/ai", "@exaix/core"]
  * @description Structured output for the OpenRouter request. A schema plans a strict json_schema response
- * format first. A route that refuses it gets one json_object retry with the schema in the prompt. The final
- * reply is validated locally, so the caller gets schema-valid JSON or a typed error, never free text.
+ * format first. OpenRouter documents json_schema only, so a schema that json_schema cannot represent, or a route
+ * that refuses it, gets the schema in the prompt with no response format. The final reply is validated locally,
+ * so the caller gets schema-valid JSON or a typed error, never free text.
  */
 
 import {
   type IStructuredOutputPlan,
-  planJsonObjectOutput,
+  planPromptSchemaOutput,
   planStructuredOutput,
   type StructuredOutputProfile,
   validateStructuredOutput,
@@ -37,7 +38,8 @@ function failureText(error: Error | string): string {
 /** Plans the strongest response format for the schema. An unsupported schema fails before any fetch. */
 export function planOpenRouterOutput(schema: Record<string, JSONValue>, providerId: string): IStructuredOutputPlan {
   try {
-    return planStructuredOutput(OPENROUTER_STRUCTURED_OUTPUT_PROFILE, schema);
+    const plan = planStructuredOutput(OPENROUTER_STRUCTURED_OUTPUT_PROFILE, schema);
+    return plan.mode === "json_object" ? planPromptSchemaOutput(schema, plan.reason) : plan;
   } catch (error) {
     throw new ProviderProtocolError(`Unsupported structured-output schema: ${failureText(error as Error)}`, providerId);
   }
@@ -45,10 +47,10 @@ export function planOpenRouterOutput(schema: Record<string, JSONValue>, provider
 
 /** The one retry plan for a route that refused json_schema. There is no weaker mode after it. */
 export function planRouteFallback(schema: Record<string, JSONValue>): IStructuredOutputPlan {
-  return planJsonObjectOutput(schema, "route_refused_json_schema");
+  return planPromptSchemaOutput(schema, "route_refused_json_schema");
 }
 
-/** Adds the json_object instruction to the message that carries the caller's prompt. */
+/** Adds the schema instruction to the message that carries the caller's prompt. */
 export function applyJsonModeInstruction(
   messages: OpenAiChatMessage[],
   prompt: string,
