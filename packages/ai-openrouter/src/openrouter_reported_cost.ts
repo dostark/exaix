@@ -24,9 +24,16 @@ export interface IOpenRouterUsage {
   completion_tokens_details?: { reasoning_tokens?: number };
 }
 
+/** One OpenRouter choice: the OpenAI shape plus the finish reasons that the OpenAI type omits. */
+export type IOpenRouterChoice = NonNullable<OpenAIResponse["choices"]>[number] & {
+  finish_reason?: string | null;
+  native_finish_reason?: string | null;
+};
+
 /** OpenRouter response — the OpenAI shape (choices/…) with the cost-carrying usage. */
-export interface IOpenRouterResponse extends Omit<OpenAIResponse, "usage"> {
+export interface IOpenRouterResponse extends Omit<Omit<OpenAIResponse, "usage">, "choices"> {
   usage?: IOpenRouterUsage;
+  choices?: IOpenRouterChoice[];
 }
 
 /** Maps reported usage cost without estimating a fallback when it is absent. */

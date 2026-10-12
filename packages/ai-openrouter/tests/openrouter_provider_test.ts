@@ -12,7 +12,6 @@ import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/
 import { ProviderType } from "@exaix/core";
 import { AuthenticationError, ConnectionError } from "@exaix/ai/providers";
 import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
-import type { IModelProvider } from "@exaix/ai/types.ts";
 import {
   type IOpenRouterModelEntry,
   OPENROUTER_DEFAULT_SITE_NAME,
@@ -86,11 +85,38 @@ Deno.test("OPENROUTER_PROVIDER_METADATA describes the openrouter provider", () =
   assert(OPENROUTER_PROVIDER_METADATA.capabilities.includes("multi-model"));
 });
 
-Deno.test("OpenRouterProvider metadata advertises no unimplemented capabilities", () => {
-  const provider: IModelProvider = new OpenRouterProvider({ apiKey: "sk-test", model: "openai/gpt-4" });
-  const capabilities = OPENROUTER_PROVIDER_METADATA.capabilities as readonly string[];
-  if (capabilities.includes("streaming")) {
-    assertEquals(typeof provider.generateStream, "function");
+Deno.test("each capability that the provider metadata declares produces its request field for a supporting model", async () => {
+  const supportingEntry: IOpenRouterModelEntry = {
+    id: "qwen/qwen3.7-flash",
+    supportedParameters: ["reasoning", "tools"],
+    reasoning: { mandatory: false, supportedEfforts: ["high", "low"], supportsMaxTokens: false },
+  };
+  const bodyFor = async (
+    options: Record<string, string | boolean>,
+  ): Promise<{ reasoning?: Record<string, string | boolean> }> => {
+    let sent: { reasoning?: Record<string, string | boolean> } = {};
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+      sent = JSON.parse((init?.body as string) ?? "{}");
+      return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
+    }) as typeof fetch;
+    try {
+      const provider = new OpenRouterProvider({
+        apiKey: "sk-test",
+        model: "qwen/qwen3.7-flash",
+        capabilities: { getEntry: () => Promise.resolve(supportingEntry) },
+      });
+      await provider.generate("hi", options);
+      return sent;
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  };
+  if (OPENROUTER_PROVIDER_METADATA.supportsEffort) {
+    assertEquals((await bodyFor({ effort: "high" })).reasoning, { effort: "high" });
+  }
+  if (OPENROUTER_PROVIDER_METADATA.supportsThinking) {
+    assertEquals((await bodyFor({ thinking: false })).reasoning, { enabled: false });
   }
 });
 

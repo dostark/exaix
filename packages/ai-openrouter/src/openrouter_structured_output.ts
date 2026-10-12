@@ -20,7 +20,8 @@ import { ProviderProtocolError } from "@exaix/ai/errors.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { OpenAiChatMessage } from "@exaix/ai/provider_common_utils.ts";
 import type { JSONValue } from "@exaix/core";
-import { OPENROUTER_ERROR_FIELD_MAX_CHARS } from "./constants.ts";
+import { OPENROUTER_ERROR_FIELD_MAX_CHARS, OPENROUTER_FINISH_REASON_LENGTH } from "./constants.ts";
+import { OpenRouterTruncationError } from "./openrouter_errors.ts";
 
 const OPENROUTER_STRUCTURED_OUTPUT_PROFILE: StructuredOutputProfile = "openai";
 const JSON_MODE_INSTRUCTION_SEPARATOR = "\n\n";
@@ -77,6 +78,14 @@ export function completeStructuredOutput(
       validateStructuredOutput(result.content, schema, OPENROUTER_STRUCTURED_OUTPUT_PROFILE),
     );
   } catch (error) {
+    if (result.stop_reason === OPENROUTER_FINISH_REASON_LENGTH) {
+      throw new OpenRouterTruncationError(
+        providerId,
+        result.usage.completionTokens,
+        result.usage.reasoningTokens,
+        true,
+      );
+    }
     throw new ProviderProtocolError(
       `Structured output failed schema validation: ${failureText(error as Error)}`,
       providerId,

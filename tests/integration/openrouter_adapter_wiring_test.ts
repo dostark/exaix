@@ -11,6 +11,7 @@
 
 import { assertEquals } from "@std/assert";
 import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
+import type { IModelOptions } from "@exaix/ai/types.ts";
 import { PricingTier } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
@@ -284,24 +285,35 @@ const TOOL_INCAPABLE_MODEL = "nvidia/switchyard";
 interface IRoutedFetch {
   chatCalls: number;
   modelsCalls: number;
+  chatBodies: Array<{ reasoning?: { effort?: string; enabled?: boolean } }>;
   restore: () => void;
 }
 
 function routeFetch(modelsResponse: () => Response, chatResponse: () => Response): IRoutedFetch {
   const origFetch = globalThis.fetch;
-  const routed: IRoutedFetch = { chatCalls: 0, modelsCalls: 0, restore: () => (globalThis.fetch = origFetch) };
-  globalThis.fetch = ((input: string | URL | Request) => {
+  const routed: IRoutedFetch = {
+    chatCalls: 0,
+    modelsCalls: 0,
+    chatBodies: [],
+    restore: () => (globalThis.fetch = origFetch),
+  };
+  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
     if (String(input).endsWith("/models")) {
       routed.modelsCalls++;
       return Promise.resolve(modelsResponse());
     }
     routed.chatCalls++;
+    routed.chatBodies.push(JSON.parse((init?.body as string) ?? "{}"));
     return Promise.resolve(chatResponse());
   }) as typeof fetch;
   return routed;
 }
 
-async function runToolRequest(model: string, modelsResponse: () => Response): Promise<{
+async function runToolRequest(
+  model: string,
+  modelsResponse: () => Response,
+  callOptions: IModelOptions = { tools: [{ name: "read_file", inputSchema: { type: "object" } }] },
+): Promise<{
   routed: IRoutedFetch;
   thrown: Error | undefined;
   failedPayload: { providerReasonCode?: string } | undefined;
@@ -331,7 +343,7 @@ async function runToolRequest(model: string, modelsResponse: () => Response): Pr
         });
         const provider = await ProviderFactory.create(config, db, new EventLogger({ db }));
         try {
-          await provider.generate("hi", { tools: [{ name: "read_file", inputSchema: { type: "object" } }] });
+          await provider.generate("hi", callOptions);
         } catch (error) {
           thrown = error as Error;
         }
@@ -382,5 +394,36 @@ Deno.test({
     assertEquals(result.routed.chatCalls, 1);
     assertEquals(result.lookupPayload?.reason, "http_error");
     assertEquals(result.lookupPayload?.status, 500);
+  },
+});
+
+Deno.test({
+  name:
+    "[integration] a resolved high effort reaches the wire body as reasoning.effort high through a factory-built provider for a model that lists it",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const result = await runToolRequest(
+      "~deepseek/deepseek-flash-latest",
+      () => new Response(MODELS_FIXTURE, { status: 200 }),
+      { effort: "high" },
+    );
+    assertEquals(result.thrown, undefined);
+    assertEquals(result.routed.chatBodies[0]?.reasoning, { effort: "high" });
+  },
+});
+
+Deno.test({
+  name: "[integration] an effort that the model does not list is not sent, and the call still succeeds",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const result = await runToolRequest(
+      "~deepseek/deepseek-flash-latest",
+      () => new Response(MODELS_FIXTURE, { status: 200 }),
+      { effort: "medium" },
+    );
+    assertEquals(result.thrown, undefined);
+    assertEquals(result.routed.chatBodies[0]?.reasoning, undefined);
   },
 });

@@ -20,6 +20,7 @@ import {
   OpenRouterProvider,
   OpenRouterProviderFactory,
   OpenRouterRoutingError,
+  OpenRouterTruncationError,
   PROVIDER_OPENROUTER,
 } from "@exaix/ai-openrouter";
 
@@ -226,4 +227,43 @@ Deno.test("measureInputTokens counts the json_object instruction", async () => {
   const without = await provider().measureInputTokens("list files", {});
   const withInstruction = await provider().measureInputTokens("list files", optionsFor(RECORD_SCHEMA));
   assert(withInstruction.totalTokens > without.totalTokens);
+});
+
+const chatFinishing = (content: string, finishReason: string): IReply => ({
+  status: 200,
+  body: JSON.stringify({
+    choices: [{ message: { content }, finish_reason: finishReason }],
+    usage: {
+      prompt_tokens: 5,
+      completion_tokens: 1500,
+      total_tokens: 1505,
+      completion_tokens_details: { reasoning_tokens: 900 },
+    },
+  }),
+});
+
+Deno.test("a structured reply cut off at the token limit throws the truncation error, not a validation error", async () => {
+  await withReplies([chatFinishing('{"files":["a.txt","b.t', "length")], async (bodies) => {
+    const error = await assertRejects(
+      () => provider().generate("list files", optionsFor(STRICT_SCHEMA)),
+      OpenRouterTruncationError,
+    );
+    assertStringIncludes(error.message, "max_tokens");
+    assertStringIncludes(error.message, "reasoning_tokens=900");
+    assertEquals(bodies.length, 1);
+  });
+});
+
+Deno.test("a complete structured reply is accepted even when the finish reason is length", async () => {
+  await withReplies([chatFinishing(VALID_JSON, "length")], async () => {
+    const result = await provider().generate("list files", optionsFor(STRICT_SCHEMA));
+    assertEquals(JSON.parse(result.content), { files: ["a.txt", "b.txt"], count: 2 });
+    assertEquals(result.stop_reason, "length");
+  });
+});
+
+Deno.test("a schema-invalid structured reply that finished normally stays a validation error", async () => {
+  await withReplies([chatFinishing(JSON.stringify({ files: "a.txt" }), "stop")], async () => {
+    await assertRejects(() => provider().generate("list files", optionsFor(STRICT_SCHEMA)), ProviderProtocolError);
+  });
 });

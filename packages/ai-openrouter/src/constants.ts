@@ -70,13 +70,16 @@ export const DEFAULT_OPENROUTER_CAPABILITY_CACHE_TTL_MS: number = configurable({
   swap: SwapClass.HOT,
 });
 
+/** The finish reason that means the response ended at the token limit. */
+export const OPENROUTER_FINISH_REASON_LENGTH = "length";
+
 /** The `supported_parameters` entry that marks a model as able to take tool definitions. */
 export const OPENROUTER_TOOLS_PARAMETER = "tools";
 
-/** Ceiling for the models endpoint body. The live catalog was 0.75 MB for 458 models on 2026-10-12. */
+/** Ceiling for the models endpoint body. The full catalog is under 1 MB. */
 export const OPENROUTER_CAPABILITY_MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
 
-/** Wait before a failed capability lookup is tried again, so each call does not wait on a dead endpoint. */
+/** Minimum gap between capability lookups after a failure. */
 export const OPENROUTER_CAPABILITY_FAILURE_BACKOFF_MS = 60_000;
 
 /** HTTP statuses that the OpenRouter error mapper branches on, beyond the shared 401, 403 and 429. */

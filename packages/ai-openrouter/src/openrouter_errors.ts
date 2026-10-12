@@ -89,11 +89,37 @@ export class OpenRouterRoutingError extends ModelProviderError {
 export class OpenRouterRateLimitError extends RateLimitError {
   readonly retryAfterMs?: number;
 
-  constructor(provider: string, message: string, retryAfterMs: Opt<number, Reason.OptionalContext>) {
+  constructor(provider: string, message: string, retryAfterMs?: Opt<number, Reason.OptionalContext>) {
     super(provider, message);
     this.name = "OpenRouterRateLimitError";
     this.retryAfterMs = retryAfterMs;
     Object.setPrototypeOf(this, OpenRouterRateLimitError.prototype);
+  }
+}
+
+/** The response ended at the token limit. The cap was spent before an answer began, or the answer is incomplete. */
+export class OpenRouterTruncationError extends ModelProviderError {
+  readonly completionTokens: Opt<number, Reason.OptionalContext>;
+  readonly reasoningTokens: Opt<number, Reason.OptionalContext>;
+
+  constructor(
+    provider: string,
+    completionTokens?: Opt<number, Reason.OptionalContext>,
+    reasoningTokens?: Opt<number, Reason.OptionalContext>,
+    hadPartialContent = false,
+  ) {
+    super(
+      `OpenRouter response was cut off at the max_tokens limit ${
+        hadPartialContent ? "before the answer was complete" : "with no content"
+      } (finish_reason=length, ` +
+        `completion_tokens=${completionTokens ?? "unknown"}, reasoning_tokens=${reasoningTokens ?? "unknown"}). ` +
+        `Raise max_tokens or lower the reasoning effort.`,
+      provider,
+    );
+    this.name = "OpenRouterTruncationError";
+    this.completionTokens = completionTokens;
+    this.reasoningTokens = reasoningTokens;
+    Object.setPrototypeOf(this, OpenRouterTruncationError.prototype);
   }
 }
 

@@ -12,7 +12,6 @@ import {
   buildOpenAiMessages,
   disablesParallelToolUse,
   extractOpenAIAssistantReplay,
-  extractOpenAIContent,
   extractOpenAIToolCalls,
   mapToolChoiceOpenAI,
   mapToolDefinitionOpenAI,
@@ -24,8 +23,10 @@ import {
 import { type IOpenRouterResponse, tokenMapperOpenRouter } from "./openrouter_reported_cost.ts";
 import { mapOpenRouterError, OpenRouterRoutingError } from "./openrouter_errors.ts";
 import { applyRequireParameters, applySessionKey } from "./openrouter_routing.ts";
-import type { IOpenRouterCapabilitySource } from "./openrouter_model_capabilities.ts";
+import type { IOpenRouterCapabilitySource, IOpenRouterModelEntry } from "./openrouter_model_capabilities.ts";
 import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
+import { hasReasoningOption, reasoningFor } from "./openrouter_reasoning.ts";
+import { extractOpenRouterContent, extractOpenRouterFinishReason } from "./openrouter_response.ts";
 import {
   applyJsonModeInstruction,
   completeStructuredOutput,
@@ -190,6 +191,7 @@ export class OpenRouterProvider extends BaseProvider {
     prompt: string,
     options?: Opt<IModelOptions, Reason.AbstractBoundary>,
     plan: Opt<IStructuredOutputPlan, Reason.OptionalContext> = this.planOutput(options),
+    entry?: Opt<IOpenRouterModelEntry, Reason.OptionalContext>,
   ): OpenRouterRequestBody {
     const body: OpenRouterRequestBody = {
       model: this.model,
@@ -197,6 +199,8 @@ export class OpenRouterProvider extends BaseProvider {
       usage: { include: true },
     };
     applyRequestOptions(body, options);
+    const reasoning = reasoningFor(options, entry);
+    if (reasoning) body.reasoning = reasoning;
     if (plan) {
       body.response_format = plan.responseFormat;
       if (plan.promptInstruction) applyJsonModeInstruction(body.messages, prompt, plan.promptInstruction, this.id);
@@ -214,11 +218,20 @@ export class OpenRouterProvider extends BaseProvider {
     return options?.jsonSchema ? planOpenRouterOutput(options.jsonSchema, this.id) : undefined;
   }
 
+  /** The model's capability entry, fetched only when the call carries tools or a reasoning control. */
+  private async lookupEntry(
+    options: Opt<IModelOptions, Reason.AbstractBoundary>,
+  ): Promise<Opt<IOpenRouterModelEntry, Reason.OptionalContext>> {
+    if (!this.capabilities || !(options?.tools?.length || hasReasoningOption(options))) return undefined;
+    return await this.capabilities.getEntry(this.model, options?.traceId);
+  }
+
   /** Refuses a tool-using request when the model's entry exists and lists no `tools` support. */
-  private async assertToolsSupported(options: Opt<IModelOptions, Reason.AbstractBoundary>): Promise<void> {
-    if (!this.capabilities || !options?.tools?.length) return;
-    const entry = await this.capabilities.getEntry(this.model, options.traceId);
-    if (entry && !entry.supportedParameters.includes(OPENROUTER_TOOLS_PARAMETER)) {
+  private assertToolsSupported(
+    options: Opt<IModelOptions, Reason.AbstractBoundary>,
+    entry: Opt<IOpenRouterModelEntry, Reason.OptionalContext>,
+  ): void {
+    if (options?.tools?.length && entry && !entry.supportedParameters.includes(OPENROUTER_TOOLS_PARAMETER)) {
       throw new ProviderCallPolicyError("unsupported_call_option", PROVIDER_OPENROUTER);
     }
   }
@@ -228,24 +241,26 @@ export class OpenRouterProvider extends BaseProvider {
     prompt: string,
     options?: Opt<IModelOptions, Reason.AbstractBoundary>,
   ): Promise<IGenerateResult> {
-    await this.assertToolsSupported(options);
+    const entry = await this.lookupEntry(options);
+    this.assertToolsSupported(options, entry);
     const plan = this.planOutput(options);
     try {
-      return await this.sendRequest(prompt, options, plan);
+      return await this.sendRequest(prompt, options, plan, entry);
     } catch (error) {
       if (!options?.jsonSchema || plan?.mode !== "json_schema" || !(error instanceof OpenRouterRoutingError)) {
         throw error;
       }
     }
-    return await this.sendRequest(prompt, options, planRouteFallback(options.jsonSchema));
+    return await this.sendRequest(prompt, options, planRouteFallback(options.jsonSchema), entry);
   }
 
   private async sendRequest(
     prompt: string,
     options: Opt<IModelOptions, Reason.AbstractBoundary>,
     plan: Opt<IStructuredOutputPlan, Reason.OptionalContext>,
+    entry: Opt<IOpenRouterModelEntry, Reason.OptionalContext>,
   ): Promise<IGenerateResult> {
-    const body = this.buildRequestBody(prompt, options, plan);
+    const body = this.buildRequestBody(prompt, options, plan, entry);
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${this.apiKey}`,
@@ -265,7 +280,8 @@ export class OpenRouterProvider extends BaseProvider {
       logger: this.logger,
       tokenMapper: tokenMapperOpenRouter(this.model),
       errorMapper: mapOpenRouterError,
-      extractor: extractOpenAIContent,
+      extractor: (response) => extractOpenRouterContent(response, this.id),
+      stopReasonExtractor: extractOpenRouterFinishReason,
       toolCallExtractor: extractOpenAIToolCalls,
       assistantReplayExtractor: (response) => extractOpenAIAssistantReplay(response, PROVIDER_OPENROUTER),
     });
