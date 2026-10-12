@@ -73,18 +73,23 @@ export const DEFAULT_OPENROUTER_CAPABILITY_CACHE_TTL_MS: number = configurable({
 /** Sampling and parallel-call hints that are best effort. A model that does not list one never receives it. */
 export const OPENROUTER_HINT_PARAMETERS = ["temperature", "top_p", "stop", "parallel_tool_calls"] as const;
 
-/** Breakpoint limits by model prefix. Null means the provider docs specify no numeric limit. */
-export const OPENROUTER_CACHE_CONTROL_FAMILIES = {
-  "anthropic/": 4,
-  "google/gemini": null,
-  "qwen/": null,
-} as const;
-
-/** Model-id prefix of the Qwen routes. The Qwen tool-calling guide refuses `required` and forced choice with thinking on. */
-export const OPENROUTER_QWEN_MODEL_PREFIX = "qwen/";
+/** Explicit cache_control breakpoints, as the prompt-caching guide documents them (checked 2026-10-12). Anthropic Claude
+ *  and Google Gemini are listed by family. The Alibaba models are listed one by one. */
+export const OPENROUTER_EXPLICIT_CACHE_PREFIXES = ["anthropic/claude", "google/gemini"] as const;
+export const OPENROUTER_EXPLICIT_CACHE_MODELS = [
+  "deepseek/deepseek-v3.2",
+  "qwen/qwen3-max",
+  "qwen/qwen-plus",
+  "qwen/qwen3.6-plus",
+  "qwen/qwen3-coder-plus",
+  "qwen/qwen3-coder-flash",
+] as const;
 
 /** The finish reason that means the response ended at the token limit. */
 export const OPENROUTER_FINISH_REASON_LENGTH = "length";
+
+/** Reasoning efforts from the least reasoning to the most. Picks the lowest tier that a model lists. */
+export const OPENROUTER_EFFORT_ORDER = ["minimal", "low", "medium", "high", "xhigh", "max"] as const;
 
 /** The `supported_parameters` entry that marks a model as able to take tool definitions. */
 export const OPENROUTER_TOOLS_PARAMETER = "tools";

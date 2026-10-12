@@ -108,11 +108,7 @@ Deno.test("a schema that is not strict-representable sends json_object with the 
   await withReplies([chat('{"a":"x"}')], async (bodies) => {
     const result = await provider().generate("list files", optionsFor(RECORD_SCHEMA));
     assertEquals(bodies[0].response_format, { type: "json_object" });
-    assertEquals(bodies[0].messages.at(-1)?.content, [{
-      type: "text",
-      text: `list files\n\n${jsonModeInstruction(RECORD_SCHEMA)}`,
-      cache_control: { type: "ephemeral" },
-    }]);
+    assertEquals(bodies[0].messages.at(-1)?.content, `list files\n\n${jsonModeInstruction(RECORD_SCHEMA)}`);
     assertEquals(result.structuredOutputMode, "json_object");
     assertEquals(result.structuredOutputModeReason, "schema_not_strict_representable");
   });
@@ -124,11 +120,7 @@ Deno.test("a routing refusal of json_schema retries once with json_object and re
     assertEquals(bodies.length, 2);
     assertEquals(bodies[0].response_format?.type, "json_schema");
     assertEquals(bodies[1].response_format, { type: "json_object" });
-    assertEquals(bodies[1].messages.at(-1)?.content, [{
-      type: "text",
-      text: `list files\n\n${jsonModeInstruction(STRICT_SCHEMA)}`,
-      cache_control: { type: "ephemeral" },
-    }]);
+    assertEquals(bodies[1].messages.at(-1)?.content, `list files\n\n${jsonModeInstruction(STRICT_SCHEMA)}`);
     assertEquals(result.structuredOutputMode, "json_object");
     assertEquals(result.structuredOutputModeReason, "route_refused_json_schema");
   });
@@ -216,11 +208,7 @@ Deno.test("with a native conversation the json_object instruction goes into the 
   try {
     await withReplies([chat('{"a":"x"}')], async (bodies) => {
       await provider().generate("list files", optionsFor(RECORD_SCHEMA, { nativeConversation }));
-      assertEquals(bodies[0].messages[0].content, [{
-        type: "text",
-        text: `list files\n\n${jsonModeInstruction(RECORD_SCHEMA)}`,
-        cache_control: { type: "ephemeral" },
-      }]);
+      assertEquals(bodies[0].messages[0].content, `list files\n\n${jsonModeInstruction(RECORD_SCHEMA)}`);
       assertEquals(bodies[0].messages.at(-1)?.content, "Continue.");
     });
   } finally {

@@ -78,9 +78,17 @@ Deno.test('OpenRouterProvider.buildRequestBody maps IToolChoice {type:auto} to "
   assertEquals(body.tool_choice, "auto");
 });
 
-Deno.test('OpenRouterProvider.buildRequestBody maps IToolChoice {type:any} to "required" (identical to OpenAI)', async () => {
-  const body = await capturedBodyOf({ toolChoice: { type: "any" } });
-  assertEquals(body.tool_choice, "required");
+Deno.test("OpenRouterProvider.buildRequestBody sends IToolChoice {type:any} as the named function when one tool is offered", async () => {
+  const body = await capturedBodyOf({ toolChoice: { type: "any" }, tools: [OR_READ_TOOL] });
+  assertEquals(body.tool_choice, { type: "function", function: { name: OR_READ_TOOL.name } });
+});
+
+Deno.test('OpenRouterProvider.buildRequestBody sends IToolChoice {type:any} as "auto" when several tools are offered', async () => {
+  const body = await capturedBodyOf({
+    toolChoice: { type: "any" },
+    tools: [OR_READ_TOOL, { ...OR_READ_TOOL, name: "list_directory" }],
+  });
+  assertEquals(body.tool_choice, "auto");
 });
 
 Deno.test("OpenRouterProvider.buildRequestBody maps IToolChoice {type:tool,name} to {type:function,function:{name}} (identical to OpenAI)", async () => {

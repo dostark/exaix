@@ -25,6 +25,8 @@ import { ProviderFactory, setProviderRegistryBootstrap } from "@exaix/ai/provide
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 
 const OPENROUTER_MODEL = "qwen/qwen3.7-flash";
+// A model the prompt-caching guide documents for explicit breakpoints.
+const CACHE_LISTED_MODEL = "qwen/qwen3-max";
 const OPENROUTER_TEST_ENV: Record<string, string | null> = {
   OPENROUTER_API_KEY: "sk-or-test",
   EXA_TEST_ENABLE_PAID_LLM: "1",
@@ -441,6 +443,7 @@ async function journaledUsage(
   responseModel: string,
   sentMessages: JSONValue[] = [],
   cacheControl: boolean = true,
+  configModel: string = OPENROUTER_MODEL,
 ): Promise<Array<Record<string, JSONValue>>> {
   const { db, tempDir, cleanup } = await initTestDbService();
   const origFetch = globalThis.fetch;
@@ -463,7 +466,7 @@ async function journaledUsage(
       async () => {
         const config = ConfigSchema.parse({
           system: { root: tempDir },
-          ai: { provider: PROVIDER_OPENROUTER, model: OPENROUTER_MODEL },
+          ai: { provider: PROVIDER_OPENROUTER, model: configModel },
           ai_openrouter: { cache_control: cacheControl },
         });
         const provider = await ProviderFactory.create(config, db, new EventLogger({ db }));
@@ -533,8 +536,8 @@ Deno.test({
     const disabled: JSONValue[] = [];
     const enabled: JSONValue[] = [];
     const usage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
-    await journaledUsage(usage, OPENROUTER_MODEL, disabled, false);
-    await journaledUsage(usage, OPENROUTER_MODEL, enabled, true);
+    await journaledUsage(usage, CACHE_LISTED_MODEL, disabled, false, CACHE_LISTED_MODEL);
+    await journaledUsage(usage, CACHE_LISTED_MODEL, enabled, true, CACHE_LISTED_MODEL);
     assertEquals(disabled, [{ role: "user", content: "hi" }]);
     assertEquals(enabled, [{
       role: "user",
@@ -556,13 +559,15 @@ Deno.test({
         total_tokens: 1020,
         prompt_tokens_details: { cached_tokens: 700 },
       },
-      OPENROUTER_MODEL,
+      CACHE_LISTED_MODEL,
       messages,
+      true,
+      CACHE_LISTED_MODEL,
     );
     assertEquals(messages, [{
       role: "user",
       content: [{ type: "text", text: "hi", cache_control: { type: "ephemeral" } }],
     }]);
-    assertEquals(events.some((event) => event.cache_read_tokens === 700 && event.model === OPENROUTER_MODEL), true);
+    assertEquals(events.some((event) => event.cache_read_tokens === 700 && event.model === CACHE_LISTED_MODEL), true);
   },
 });

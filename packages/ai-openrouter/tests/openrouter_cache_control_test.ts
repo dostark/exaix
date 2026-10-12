@@ -19,6 +19,7 @@ import { OPENROUTER_PROVIDER_METADATA, OpenRouterProviderFactory, PROVIDER_OPENR
 
 const PROMPT = "Stable prompt prefix";
 const QWEN_MODEL = "qwen/qwen3.7-flash";
+const CACHED_MODEL = "qwen/qwen3-max";
 const CACHE_PART = { type: "text", text: PROMPT, cache_control: { type: "ephemeral" } } as const;
 
 interface ICapturedBody {
@@ -55,16 +56,17 @@ async function capturedBody(
   }
 }
 
-for (const model of ["anthropic/claude-sonnet-4", "google/gemini-2.5-flash", QWEN_MODEL]) {
+for (const model of ["anthropic/claude-sonnet-4", "google/gemini-2.5-flash", "deepseek/deepseek-v3.2", CACHED_MODEL]) {
   Deno.test(`${model} gets cache_control on the first message's last text part`, async () => {
     assertEquals((await capturedBody(model)).messages, [{ role: "user", content: [CACHE_PART] }]);
   });
 }
 
-Deno.test("[regression] another model keeps string content and no cache_control", async () => {
-  const model = "openai/gpt-4o-mini";
-  assertEquals(await capturedBody(model), { model, messages: [{ role: "user", content: PROMPT }] });
-});
+for (const model of [QWEN_MODEL, "deepseek/deepseek-flash-latest", "openai/gpt-4o-mini", "vendor/unlisted-model"]) {
+  Deno.test(`${model} is not in the documented explicit-caching list and gets no breakpoint`, async () => {
+    assertEquals((await capturedBody(model)).messages, [{ role: "user", content: PROMPT }]);
+  });
+}
 
 Deno.test("with a native conversation only messages[0] gets the breakpoint, and replayed rounds are unchanged", async () => {
   const toolCalls = [{ id: "call-1", type: "function", function: { name: "read_file", arguments: "{}" } }];
@@ -93,8 +95,8 @@ Deno.test("with a native conversation only messages[0] gets the breakpoint, and 
   };
   const before = structuredClone(snapshot);
   const options: IModelOptions = { nativeConversation: snapshot };
-  const baseline = await capturedBody(QWEN_MODEL, false, options);
-  const first = await capturedBody(QWEN_MODEL, true, options);
+  const baseline = await capturedBody(CACHED_MODEL, false, options);
+  const first = await capturedBody(CACHED_MODEL, true, options);
   assertEquals(first.messages[0], { role: "user", content: [CACHE_PART] });
   assertEquals(first.messages.slice(1), baseline.messages.slice(1));
   assertEquals(first.messages[1], {
@@ -104,12 +106,12 @@ Deno.test("with a native conversation only messages[0] gets the breakpoint, and 
     reasoning_details: reasoning,
     tool_calls: toolCalls,
   });
-  assertEquals(await capturedBody(QWEN_MODEL, true, options), first);
+  assertEquals(await capturedBody(CACHED_MODEL, true, options), first);
   assertEquals(snapshot, before);
 });
 
-Deno.test("cache_control false sends no breakpoint for every listed family", async () => {
-  for (const model of ["anthropic/claude-sonnet-4", "google/gemini-2.5-flash", QWEN_MODEL]) {
+Deno.test("cache_control false sends no breakpoint for any model", async () => {
+  for (const model of ["anthropic/claude-sonnet-4", "google/gemini-2.5-flash", CACHED_MODEL, "vendor/unlisted-model"]) {
     assertEquals((await capturedBody(model, false)).messages, [{ role: "user", content: PROMPT }]);
   }
 });
@@ -123,9 +125,9 @@ Deno.test("measureInputTokens counts the part array", async () => {
     },
     countTokensBatch: (texts: string[]) => Promise.resolve(texts.map((text) => text.length)),
   };
-  const provider = new OpenRouterProvider({ apiKey: "sk-test", model: QWEN_MODEL, tokenizer });
+  const provider = new OpenRouterProvider({ apiKey: "sk-test", model: CACHED_MODEL, tokenizer });
   const measurement = await provider.measureInputTokens(PROMPT);
-  const wire = await capturedBody(QWEN_MODEL);
+  const wire = await capturedBody(CACHED_MODEL);
   const messages = [{ role: "user", content: [CACHE_PART] }];
   assertEquals(wire.messages, messages);
   const projection = JSON.stringify({ messages, tools: [] });
@@ -134,13 +136,13 @@ Deno.test("measureInputTokens counts the part array", async () => {
 });
 
 Deno.test("the cache projection leaves empty messages and leading replay messages unchanged", () => {
-  assertEquals(applyCacheControl([], QWEN_MODEL, true), []);
+  assertEquals(applyCacheControl([], CACHED_MODEL, true), []);
   const replay: OpenAiChatMessage[] = [{ role: "assistant", content: null, tool_calls: [] }];
-  assertEquals(applyCacheControl(replay, QWEN_MODEL, true), [{ role: "assistant", content: null, tool_calls: [] }]);
+  assertEquals(applyCacheControl(replay, CACHED_MODEL, true), [{ role: "assistant", content: null, tool_calls: [] }]);
 });
 
 Deno.test("the cache projection preserves the input messages", () => {
   const messages: OpenAiChatMessage[] = [{ role: "user", content: PROMPT }];
-  assertEquals(applyCacheControl(messages, QWEN_MODEL, true), [{ role: "user", content: [CACHE_PART] }]);
+  assertEquals(applyCacheControl(messages, CACHED_MODEL, true), [{ role: "user", content: [CACHE_PART] }]);
   assertEquals(messages, [{ role: "user", content: PROMPT }]);
 });

@@ -37,7 +37,6 @@ import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
 import { reasoningFor } from "./openrouter_reasoning.ts";
 import { extractOpenRouterContent, extractOpenRouterFinishReason } from "./openrouter_response.ts";
 import { applyCacheControl, type IOpenRouterChatMessage } from "./openrouter_cache_control.ts";
-import { openrouterCallCapabilities } from "./openrouter_call_capabilities.ts";
 import {
   applyJsonModeInstruction,
   completeStructuredOutput,
@@ -46,8 +45,15 @@ import {
 } from "./openrouter_structured_output.ts";
 import type { OPENROUTER_QUANTIZATIONS } from "@exaix/schemas";
 import { BaseProvider, type IBaseProviderOptions, type IGenerateResult } from "@exaix/ai/providers";
-import type { IProviderCallCapabilities, IStructuredOutputPlan } from "@exaix/ai";
-import type { IModelOptions } from "@exaix/ai/types.ts";
+import type { IStructuredOutputPlan } from "@exaix/ai";
+import {
+  type IModelOptions,
+  type IToolChoice,
+  TOOL_CHOICE_TYPE_ANY,
+  TOOL_CHOICE_TYPE_AUTO,
+  TOOL_CHOICE_TYPE_NONE,
+  TOOL_CHOICE_TYPE_TOOL,
+} from "@exaix/ai/types.ts";
 import { type INativeInputMeasurement, measureOpenAiChatProjection } from "@exaix/ai";
 import { AiTokenEstimatorTokenizer, type ITokenizer } from "@exaix/core/func";
 import type { JSONValue } from "@exaix/core";
@@ -117,6 +123,38 @@ type OpenRouterProviderBody = NonNullable<IOpenRouterRouting["provider"]> & {
   data_collection?: OpenRouterDataCollection;
 };
 
+/** One request to try, with the plan it carries. */
+interface IRouteAttempt {
+  options: Opt<IModelOptions, Reason.AbstractBoundary>;
+  plan: Opt<IStructuredOutputPlan, Reason.OptionalContext>;
+}
+
+/** The tool choice that goes on the wire. OpenRouter documents auto, none and a named function.
+ *  A required choice becomes the named function when one tool is offered. Several tools give auto. */
+function wireToolChoice(choice: IToolChoice, tools: IModelOptions["tools"]): IToolChoice {
+  if (choice.type !== TOOL_CHOICE_TYPE_ANY) return choice;
+  const parallel = choice.disable_parallel_tool_use;
+  if (tools?.length === 1) {
+    return { type: TOOL_CHOICE_TYPE_TOOL, name: tools[0].name, disable_parallel_tool_use: parallel };
+  }
+  return { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: parallel };
+}
+
+/** A forced tool choice is one that names a tool on the wire. Auto and none are never retried. */
+function isForcedToolChoice(options: IModelOptions): boolean {
+  if (options.toolChoice === undefined) return false;
+  return wireToolChoice(options.toolChoice, options.tools).type === TOOL_CHOICE_TYPE_TOOL;
+}
+
+/** The same request with auto in place of the forced choice, keeping the parallel-call setting. */
+function withAutoToolChoice(options: IModelOptions): IModelOptions {
+  const choice = options.toolChoice;
+  const disable = choice !== undefined && choice.type !== TOOL_CHOICE_TYPE_NONE
+    ? choice.disable_parallel_tool_use
+    : undefined;
+  return { ...options, toolChoice: { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: disable } };
+}
+
 /** Copies the sampling, stop and tool options that map one to one onto the OpenAI-shaped body. */
 function applyRequestOptions(
   body: OpenRouterRequestBody,
@@ -127,7 +165,9 @@ function applyRequestOptions(
   if (options?.top_p !== undefined) body.top_p = options.top_p;
   if (options?.stop !== undefined) body.stop = options.stop;
   if (options?.tools !== undefined) body.tools = options.tools.map(mapToolDefinitionOpenAI);
-  if (options?.toolChoice !== undefined) body.tool_choice = mapToolChoiceOpenAI(options.toolChoice);
+  if (options?.toolChoice !== undefined) {
+    body.tool_choice = mapToolChoiceOpenAI(wireToolChoice(options.toolChoice, options.tools));
+  }
   if (options?.tools?.length && disablesParallelToolUse(options.toolChoice)) body.parallel_tool_calls = false;
 }
 
@@ -164,7 +204,6 @@ export class OpenRouterProvider extends BaseProvider {
   private readonly tokenizer: ITokenizer;
   private readonly capabilities?: IOpenRouterCapabilitySource;
   private readonly cacheControl: boolean;
-  readonly callCapabilities: IProviderCallCapabilities;
 
   constructor(options: OpenRouterProviderOptions) {
     super({
@@ -181,7 +220,6 @@ export class OpenRouterProvider extends BaseProvider {
     this.tokenizer = options.tokenizer ?? new AiTokenEstimatorTokenizer();
     this.capabilities = options.capabilities;
     this.cacheControl = options.cacheControl ?? true;
-    this.callCapabilities = openrouterCallCapabilities(this.model);
   }
 
   /** Measures the request exactly as dispatched: the serialized body, with its prompt, replayed history and tools. */
@@ -258,7 +296,8 @@ export class OpenRouterProvider extends BaseProvider {
     }
   }
 
-  /** Sends the strongest plan first. A route that refuses json_schema gets one json_object retry, and no weaker mode. */
+  /** Sends the strongest request first. A route that refuses a forced tool choice gets one auto retry.
+   *  A route that refuses json_schema gets one json_object retry. A refusal after the last retry is thrown. */
   protected override async attemptGenerate(
     prompt: string,
     options?: Opt<IModelOptions, Reason.AbstractBoundary>,
@@ -266,14 +305,20 @@ export class OpenRouterProvider extends BaseProvider {
     const entry = await this.lookupEntry(options);
     this.assertToolsSupported(options, entry);
     const plan = this.planOutput(options);
-    try {
-      return await this.sendRequest(prompt, options, plan, entry);
-    } catch (error) {
-      if (!options?.jsonSchema || plan?.mode !== "json_schema" || !(error instanceof OpenRouterRoutingError)) {
-        throw error;
+    const attempts: IRouteAttempt[] = [{ options, plan }];
+    if (options && isForcedToolChoice(options)) attempts.push({ options: withAutoToolChoice(options), plan });
+    if (options?.jsonSchema && plan?.mode === "json_schema") {
+      attempts.push({ options: attempts[attempts.length - 1].options, plan: planRouteFallback(options.jsonSchema) });
+    }
+    for (const attempt of attempts.slice(0, -1)) {
+      try {
+        return await this.sendRequest(prompt, attempt.options, attempt.plan, entry);
+      } catch (error) {
+        if (!(error instanceof OpenRouterRoutingError)) throw error;
       }
     }
-    return await this.sendRequest(prompt, options, planRouteFallback(options.jsonSchema), entry);
+    const last = attempts[attempts.length - 1];
+    return await this.sendRequest(prompt, last.options, last.plan, entry);
   }
 
   private async sendRequest(
