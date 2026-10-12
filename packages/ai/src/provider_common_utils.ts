@@ -39,6 +39,7 @@ import { DEFAULT_AI_RETRY_BACKOFF_BASE_MS, DEFAULT_AI_RETRY_MAX_ATTEMPTS, PROVID
 import {
   COST_RATE_ANTHROPIC,
   COST_RATE_GOOGLE,
+  COST_RATE_GOOGLE_INPUT,
   COST_RATE_MOCK,
   COST_RATE_OLLAMA,
   COST_RATE_OPENAI,
@@ -142,9 +143,8 @@ export type GoogleUsageMetadata = {
   promptTokenCount: number;
   candidatesTokenCount: number;
   totalTokenCount?: number;
-  /** Real Gemini API field, present when the model does internal reasoning (2.5+-class
-   *  models default to dynamic thinking). With the Gemini API, candidatesTokenCount already
-   *  includes thoughtsTokenCount — a subset, not additional. */
+  /** Present when the model does internal reasoning. The Gemini API counts thoughts apart from
+   *  candidatesTokenCount, and totalTokenCount = prompt + thoughts + candidates. Thoughts bill at the output rate. */
   thoughtsTokenCount?: number;
 };
 
@@ -195,6 +195,13 @@ export type AnthropicResponse = {
     input?: Record<string, JSONValue>;
   }>;
 };
+
+/**
+ * Google bills input and output at different rates. Thinking tokens are passed as output tokens.
+ */
+export function calculateGoogleCost(promptTokens: number, outputTokens: number): number {
+  return (promptTokens * COST_RATE_GOOGLE_INPUT + outputTokens * COST_RATE_GOOGLE) / TOKENS_PER_COST_UNIT;
+}
 
 /**
  * Calculate cost for token usage based on provider
@@ -723,7 +730,8 @@ export function tokenMapperGoogle(model: string): ResponseTokenMapper<GoogleResp
 
     const totalTokens = d.usageMetadata.totalTokenCount ??
       (d.usageMetadata.promptTokenCount + d.usageMetadata.candidatesTokenCount);
-    const cost = providerId ? calculateCost(providerId, totalTokens) : undefined;
+    const outputTokens = d.usageMetadata.candidatesTokenCount + (d.usageMetadata.thoughtsTokenCount ?? 0);
+    const cost = providerId ? calculateGoogleCost(d.usageMetadata.promptTokenCount, outputTokens) : undefined;
 
     return {
       prompt_tokens: d.usageMetadata.promptTokenCount,

@@ -1603,12 +1603,22 @@ export const COST_RATE_ANTHROPIC: number = configurable({
   swap: SwapClass.RESTART,
 });
 // Google AI API gemini-3.8-flash, standard paid tier: $3.75/1M output → $0.00375/1K.
-// The rate doubles on 2027-01-01 to $7.50/1M output.
+// The rate doubles on 2027-01-01 to $7.50/1M output. Thinking tokens bill at this output rate too.
 export const COST_RATE_GOOGLE: number = configurable({
   key: "cost_tracking.rate_google",
   default: 0.00375,
   type: ConfigValueType.NUMBER,
-  description: "USD cost per 1K tokens for google provider",
+  description: "USD cost per 1K output tokens for google provider",
+  min: 0,
+  max: 1,
+  swap: SwapClass.RESTART,
+});
+// Google AI API gemini-3.8-flash, standard paid tier: $0.75/1M input → $0.00075/1K.
+export const COST_RATE_GOOGLE_INPUT: number = configurable({
+  key: "cost_tracking.rate_google_input",
+  default: 0.00075,
+  type: ConfigValueType.NUMBER,
+  description: "USD cost per 1K input tokens for google provider",
   min: 0,
   max: 1,
   swap: SwapClass.RESTART,
