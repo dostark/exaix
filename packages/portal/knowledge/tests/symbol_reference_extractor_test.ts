@@ -301,6 +301,9 @@ Deno.test("[PortalKnowledgeService] a throwing reference extractor degrades to f
       true,
       `the file-import edges must survive, got ${JSON.stringify(edges)}`,
     );
+    // The Go multi-file repair lives in the Team extractor, so this parent-side
+    // containment behaviour must stay exactly as it was.
+    assertEquals(knowledge.portal, "throws");
     assertEquals(
       edges.some((e) => e.kind === "symbol_references_symbol"),
       false,

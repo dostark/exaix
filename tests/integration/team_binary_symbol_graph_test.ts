@@ -167,3 +167,63 @@ Deno.test({
     }
   },
 });
+
+/** A realistic multi-file Go project.
+ *  One package is split across two files.
+ *  A second package is reached by module path. */
+async function writeRealisticGoProject(): Promise<string> {
+  const root = await Deno.makeTempDir({ prefix: "exa_realistic_go_" });
+  await Deno.writeTextFile(join(root, "go.mod"), "module example.com/realistic\n\ngo 1.22\n");
+  await Deno.writeTextFile(
+    join(root, "format.go"),
+    'package main\n\n// Format renders a value.\nfunc Format(v float64) string {\n\treturn "v"\n}\n',
+  );
+  await Deno.writeTextFile(
+    join(root, "service.go"),
+    "package main\n\n// Render calls Format from the SAME package but ANOTHER file.\nfunc Render(v float64) string {\n\treturn Format(v)\n}\n",
+  );
+  await Deno.mkdir(join(root, "src"), { recursive: true });
+  await Deno.writeTextFile(
+    join(root, "src", "report.go"),
+    'package src\n\nimport "example.com/realistic"\n\n// Report calls Format across packages.\nfunc Report(v float64) string {\n\treturn realistic.Format(v)\n}\n',
+  );
+  return root;
+}
+
+Deno.test({
+  name: "[team-binary] the compiled binary answers who-calls across files of one package and across packages",
+  ignore: !(await binaryExists()),
+  fn: async () => {
+    const workspaceRoot = await Deno.makeTempDir({ prefix: "exa_team_bin_multi_" });
+    const portalRoot = await writeRealisticGoProject();
+    const alias = "realistic-go";
+    try {
+      await Deno.writeTextFile(join(workspaceRoot, "config.toml"), configToml(workspaceRoot));
+      assertEquals(await runTeamBinary(workspaceRoot, EDITION_ENTERPRISE, ["portal", "add", portalRoot, alias]), 0);
+      assertEquals(
+        await runTeamBinary(workspaceRoot, EDITION_ENTERPRISE, ["portal", "analyze", alias, "--mode", "standard"]),
+        0,
+      );
+
+      const knowledge = JSON.parse(
+        await Deno.readTextFile(join(workspaceRoot, "Memory", "Projects", alias, "knowledge.json")),
+      ) as { relationships?: Array<{ from: string; to: string; kind: string }> };
+      const symbolEdges = (knowledge.relationships ?? []).filter((e) => e.kind === SYMBOL_KIND);
+      const pairs = symbolEdges.map((e) => `${e.from}->${e.to}`).sort();
+
+      // Same-package, different-file call. This is the dominant real Go layout.
+      assert(
+        pairs.includes("service.go#Render->format.go#Format"),
+        `expected the same-package cross-file edge, got ${JSON.stringify(pairs)}`,
+      );
+      // Cross-package call through a module path.
+      assert(
+        pairs.includes("src/report.go#Report->format.go#Format"),
+        `expected the cross-package edge, got ${JSON.stringify(pairs)}`,
+      );
+    } finally {
+      await Deno.remove(workspaceRoot, { recursive: true });
+      await Deno.remove(portalRoot, { recursive: true });
+    }
+  },
+});

@@ -395,6 +395,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
         // The pass is additive.
         // A failure therefore degrades to the file-import graph.
         // It must not discard a snapshot the earlier pass produced.
+        // A Go package spread over several files is the case that first proved this.
         try {
           // Resolve the language's import specifiers first, so the extractor can
           // narrow a reference to a file the source really imports.
