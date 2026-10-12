@@ -19,6 +19,25 @@ export function zodToJsonSchema(schema: z.ZodTypeAny): Record<string, JSONValue>
   return walkSchema(schema);
 }
 
+const ZOD_MIN_LENGTH_CHECK = "min_length";
+const ZOD_MAX_LENGTH_CHECK = "max_length";
+
+/** A Zod length check on an array, read from its internal check list. */
+interface IZodLengthCheck {
+  _zod: { def: { check?: string; minimum?: number; maximum?: number } };
+}
+
+/** The `.min()` and `.max()` of a Zod array as JSON Schema `minItems` and `maxItems`. */
+function arrayBounds(schema: z.ZodTypeAny): Record<string, JSONValue> {
+  const bounds: Record<string, JSONValue> = {};
+  const def = schema._zod.def as { checks?: readonly IZodLengthCheck[] };
+  for (const check of def.checks ?? []) {
+    if (check._zod.def.check === ZOD_MIN_LENGTH_CHECK) bounds.minItems = check._zod.def.minimum ?? 0;
+    if (check._zod.def.check === ZOD_MAX_LENGTH_CHECK) bounds.maxItems = check._zod.def.maximum ?? 0;
+  }
+  return bounds;
+}
+
 function walkObject(schema: z.ZodObject<z.ZodRawShape>): Record<string, JSONValue> {
   const shape = schema.shape as Record<string, z.ZodTypeAny>;
   const required: string[] = [];
@@ -60,7 +79,7 @@ function walkSchema(schema: z.ZodTypeAny): Record<string, JSONValue> {
   }
 
   if (schema instanceof z.ZodArray) {
-    return { type: "array", items: walkSchema(schema.element as z.ZodTypeAny) };
+    return { type: "array", items: walkSchema(schema.element as z.ZodTypeAny), ...arrayBounds(schema) };
   }
 
   if (schema instanceof z.ZodString) {

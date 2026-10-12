@@ -383,3 +383,9 @@ Deno.test("planStructuredOutput json_object result is the planJsonObjectOutput r
     planJsonObjectOutput(original, "schema_not_strict_representable"),
   );
 });
+
+Deno.test("validateStructuredOutput rejects a plan whose steps array is empty", () => {
+  assertThrows(() =>
+    validateStructuredOutput(JSON.stringify({ description: "d", steps: [] }), getPlanJsonSchema(), "openai")
+  );
+});

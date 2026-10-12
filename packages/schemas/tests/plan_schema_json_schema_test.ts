@@ -7,6 +7,9 @@
 import type { JSONValue } from "@exaix/core";
 import { assertEquals, assertThrows } from "@std/assert";
 import { getPlanJsonSchema, PlanSchema } from "../src/plan_schema.ts";
+import { zodToJsonSchema } from "../src/json_schema_adapter.ts";
+import { z } from "zod";
+import { DEFAULT_QUERY_LIMIT } from "@exaix/core";
 import { validateStructuredOutput } from "@exaix/ai";
 
 Deno.test("fix(plan-schema): structured plan validation preserves JSON values in tool parameters", () => {
@@ -40,4 +43,17 @@ Deno.test("getPlanJsonSchema has a properties.steps entry", () => {
   const props = schema.properties as Record<string, JSONValue>;
   assertEquals(props !== undefined, true);
   assertEquals((props.steps as Record<string, JSONValue>) !== undefined, true);
+});
+
+Deno.test("zodToJsonSchema carries array minimum and maximum lengths as minItems and maxItems", () => {
+  const schema = zodToJsonSchema(z.array(z.string()).min(2).max(5));
+  assertEquals(schema.minItems, 2);
+  assertEquals(schema.maxItems, 5);
+});
+
+Deno.test("getPlanJsonSchema tells the model that steps holds one to the query limit of entries", () => {
+  const properties = getPlanJsonSchema().properties as Record<string, JSONValue>;
+  const steps = properties.steps as Record<string, JSONValue>;
+  assertEquals(steps.minItems, 1);
+  assertEquals(steps.maxItems, DEFAULT_QUERY_LIMIT);
 });
