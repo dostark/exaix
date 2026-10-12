@@ -33,12 +33,14 @@ import { makeGenerateResult } from "@exaix/testing";
 import {
   PLANNING_TOOL_CALL_OVERHEAD_TOKENS,
   PLANNING_TOOLS_CONTINUE_ROUND_INSTRUCTION,
+  PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION,
   PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION,
   PLANNING_TOOLS_UNTRUSTED_DATA_NOTICE,
 } from "@exaix/core";
 import { createCoreToolSchemas, readOnlyEditorTools } from "@exaix/tool-runtime";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import { ContextBudgetExceededError } from "@exaix/core/errors";
+import { ProviderProtocolError } from "@exaix/ai/errors.ts";
 
 // Test doubles
 
@@ -130,6 +132,36 @@ function makeOptions(overrides: Partial<IPlanningToolLoopOptions> = {}): IPlanni
 }
 
 // Round protocol
+
+Deno.test("fix(planning-tools): an early draft receives one bounded final schema round on both replay paths", async () => {
+  const jsonSchema = { type: "object", properties: { title: { type: "string" } }, required: ["title"] };
+  for (const native of [false, true]) {
+    if (native) registerNativeConversationProvider();
+    else ProviderRegistry.clear();
+    try {
+      const generate = new ScriptedGenerate([
+        makeGenerateResult("Unvalidated planning draft"),
+        makeGenerateResult('{"title":"Final plan"}'),
+      ]);
+      const result = await new PlanningToolLoop(makeDeps({
+        modelId: native ? NATIVE_PROVIDER_ID : "gpt-4",
+        toolRegistry: new StubToolRegistry([fixtureTool("read_file")]),
+        generate: generate.generate,
+      })).run(makeOptions({ maxRounds: 4, baseOptions: { jsonSchema } }));
+
+      assertEquals(generate.calls.length, 2, "finalization must stay within the round budget");
+      assertEquals(generate.calls[0].options.jsonSchema, undefined);
+      assertEquals(generate.calls[0].options.tools?.map((tool) => tool.name), ["read_file"]);
+      assertEquals(generate.calls[1].options.jsonSchema, jsonSchema);
+      assertEquals(generate.calls[1].options.toolChoice?.type, "none");
+      assertEquals(result.final.content, '{"title":"Final plan"}');
+      assertEquals(result.rounds, 2);
+      assertEquals(result.toolCalls, 0);
+    } finally {
+      ProviderRegistry.clear();
+    }
+  }
+});
 
 Deno.test("[naming][planning_tool_loop] native renames preserve the read-only catalog boundary", async () => {
   const allowedTools = new Set(readOnlyEditorTools().map((tool) => tool.name));
@@ -261,7 +293,17 @@ function registerNativeConversationProvider(): void {
   });
 }
 
-Deno.test("[planning_tool_loop][native] round 1 carries no priorTurn/transcript — an empty turns snapshot and no roundInstruction", async () => {
+Deno.test("[planning_tool_loop] round 1 of a multi-round loop tells the model to read before it plans", async () => {
+  const response = makeGenerateResult("<thought>t</thought><content>plan</content>");
+  const generate = new ScriptedGenerate([response]);
+  const loop = new PlanningToolLoop(makeDeps({ generate: generate.generate }));
+
+  await loop.run(makeOptions({ maxRounds: 3 }));
+
+  assert(generate.calls[0].prompt.includes(PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION));
+});
+
+Deno.test("[planning_tool_loop][native] round 1 carries no priorTurn/transcript and the explore roundInstruction", async () => {
   registerNativeConversationProvider();
   try {
     const response = makeGenerateResult("<thought>t</thought><content>plan</content>");
@@ -272,7 +314,7 @@ Deno.test("[planning_tool_loop][native] round 1 carries no priorTurn/transcript 
 
     const roundOptions = generate.calls[0].options;
     assertEquals(roundOptions.nativeConversation?.turns, []);
-    assertEquals(roundOptions.nativeConversation?.roundInstruction, undefined);
+    assertEquals(roundOptions.nativeConversation?.roundInstruction, PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION);
     assertEquals(roundOptions.priorTurn, undefined);
     assert(roundOptions.nativeConversation?.initialPrompt.includes(PLANNING_TOOLS_UNTRUSTED_DATA_NOTICE));
   } finally {
@@ -1538,4 +1580,38 @@ Deno.test("[planning_tool_loop] a refused round journals agent.response_refused 
   } finally {
     await cleanup();
   }
+});
+
+Deno.test("[planning_tool_loop] a final round whose reply fails its output schema is generated once more", async () => {
+  const response = makeGenerateResult("<thought>t</thought><content>plan</content>");
+  let calls = 0;
+  const generate = (_prompt: string, _options: IModelOptions): Promise<IGenerateResult> => {
+    calls++;
+    if (calls === 1) {
+      return Promise.reject(new ProviderProtocolError("Structured output failed schema validation", "openrouter"));
+    }
+    return Promise.resolve(response);
+  };
+  const loop = new PlanningToolLoop(makeDeps({ generate }));
+
+  const result = await loop.run(makeOptions({ maxRounds: 1, baseOptions: { jsonSchema: { type: "object" } } }));
+
+  assertEquals(calls, 2);
+  assertEquals(result.final, response);
+});
+
+Deno.test("[planning_tool_loop] any other failure of a final round is not retried", async () => {
+  let calls = 0;
+  const generate = (_prompt: string, _options: IModelOptions): Promise<IGenerateResult> => {
+    calls++;
+    return Promise.reject(new Error("transport failed"));
+  };
+  const loop = new PlanningToolLoop(makeDeps({ generate }));
+
+  await assertRejects(
+    () => loop.run(makeOptions({ maxRounds: 1, baseOptions: { jsonSchema: { type: "object" } } })),
+    Error,
+    "transport failed",
+  );
+  assertEquals(calls, 1);
 });

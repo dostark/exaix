@@ -25,6 +25,7 @@ import { TOOL_CHOICE_TYPE_AUTO, TOOL_CHOICE_TYPE_NONE } from "@exaix/ai/types.ts
 import type { IGenerateResult, IProviderToolCall } from "@exaix/ai/providers";
 import type { INativeInputMeasurement } from "@exaix/ai";
 import type { IModelProvider } from "@exaix/ai/types.ts";
+import { ProviderProtocolError } from "@exaix/ai/errors.ts";
 import type { ICallSite } from "@exaix/ai/types.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ITokenizer } from "@exaix/core/func";
@@ -45,6 +46,7 @@ import {
   PLANNING_TOOL_RESULT_TAG,
   PLANNING_TOOL_RESULT_TRUNCATED_SUFFIX,
   PLANNING_TOOLS_CONTINUE_ROUND_INSTRUCTION,
+  PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION,
   PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION,
   PLANNING_TOOLS_UNTRUSTED_DATA_NOTICE,
   PlanningToolLoopStopReason,
@@ -323,7 +325,7 @@ export class PlanningToolLoop {
         await this.preflightBudget(request.roundPrompt, request.roundOptions, options.promptBudget, options.traceId);
       }
 
-      const response = await this.deps.generate(request.roundPrompt, request.roundOptions);
+      const response = await this.generateRound(request.roundPrompt, request.roundOptions, isFinalRound);
       if (response.stop_reason === RESPONSE_STOP_REASON_REFUSAL) {
         // A refused round carries no content, so the loop ends without a plan. The journal says why.
         void this.deps.logger?.warn(AGENT_EVENT_RESPONSE_REFUSED, this.deps.modelId, {
@@ -353,6 +355,11 @@ export class PlanningToolLoop {
         ? providerRoundCallCount(response)
         : (response.toolCalls?.length ?? 0);
       if (roundCallCount === 0) {
+        if (options.baseOptions.jsonSchema) {
+          // Exploration can return a draft. Finalize it once under the output schema before returning a plan.
+          finalRoundIndex = Math.min(finalRoundIndex, round + 1);
+          continue;
+        }
         return this.finish({
           response,
           rounds: round,
@@ -478,6 +485,20 @@ export class PlanningToolLoop {
       .join("");
   }
 
+  /** One provider call for the round. A final reply that fails its output schema gets one more attempt. */
+  private async generateRound(
+    roundPrompt: string,
+    roundOptions: IModelOptions,
+    isFinalRound: boolean,
+  ): Promise<IGenerateResult> {
+    try {
+      return await this.deps.generate(roundPrompt, roundOptions);
+    } catch (error) {
+      if (!isFinalRound || !(error instanceof ProviderProtocolError)) throw error;
+      return await this.deps.generate(roundPrompt, roundOptions);
+    }
+  }
+
   private buildLegacyRoundPrompt(
     basePrompt: string,
     transcript: string,
@@ -486,7 +507,8 @@ export class PlanningToolLoop {
   ): string {
     if (!(maxRounds > 1)) return basePrompt;
     const roundPrompt: string = basePrompt + transcript;
-    return isFinalRound ? `${roundPrompt}\n\n${PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION}` : roundPrompt;
+    if (isFinalRound) return `${roundPrompt}\n\n${PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION}`;
+    return transcript.length === 0 ? `${roundPrompt}\n\n${PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION}` : roundPrompt;
   }
 
   private finalStopReason(response: IGenerateResult, guardrailForced: boolean): PlanningToolLoopStopReason {
@@ -549,6 +571,7 @@ export class PlanningToolLoop {
   ): IModelOptions {
     const withCallSite: IModelOptions = {
       ...request.baseOptions,
+      jsonSchema: request.isFinalRound ? request.baseOptions.jsonSchema : undefined,
       ...(request.callSite ? { callSite: request.callSite } : {}),
     };
     if (request.maxRounds === 1) return withCallSite;
@@ -568,6 +591,7 @@ export class PlanningToolLoop {
   private buildNativeRoundOptions(history: IRoundHistory, request: IRoundRequest): IModelOptions {
     const withCallSite: IModelOptions = {
       ...request.baseOptions,
+      jsonSchema: request.isFinalRound ? request.baseOptions.jsonSchema : undefined,
       ...(request.callSite ? { callSite: request.callSite } : {}),
     };
     const hasHistory = history.nativeTurns.length > 0 || history.nativeRounds.length > 0;
@@ -575,7 +599,7 @@ export class PlanningToolLoop {
       ? PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION
       : hasHistory
       ? PLANNING_TOOLS_CONTINUE_ROUND_INSTRUCTION
-      : undefined;
+      : PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION;
     const roundFields = roundInstruction ? { roundInstruction } : {};
     const initialPrompt = request.basePrompt;
     return {

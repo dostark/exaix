@@ -4037,6 +4037,11 @@ export const PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION =
 export const PLANNING_TOOLS_CONTINUE_ROUND_INSTRUCTION =
   "Continue with the next permitted tool call, or return your final answer if you have enough information.";
 
+/** Sent on the first exploration round, where the base prompt otherwise asks for the plan at once. */
+export const PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION =
+  "This turn is for reading only. Ignore the <content> format above and write no plan yet. " +
+  "Call a permitted read-only tool now.";
+
 /** Appended to a planning tool_result (or transcript block) truncated to fit
  *  `planning.max_tool_result_tokens` — signals to the model that content was cut, not that
  *  the tool call failed or the file legitimately ends there. */

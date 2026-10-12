@@ -9,7 +9,7 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
-import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX } from "@exaix/core";
+import { PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION, REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX } from "@exaix/core";
 import { setupGitRepo } from "@exaix/git/testing";
 import { bootRealDaemon, daemonConfigSections } from "./helpers/daemon_config.ts";
 
@@ -530,15 +530,18 @@ Deno.test({
       assertEquals(observedRequests.every((entry) => entry.authorization === "Bearer local-fixture-key"), true);
       const first = observedRequests[0].body;
       const final = observedRequests[1].body;
-      assertEquals(first.response_format?.type, "json_object");
+      assertEquals(first.response_format, undefined);
       assertEquals(first.tool_choice, "auto");
       assert(first.tools?.some((tool) => tool.type === "function" && tool.function?.name === "read_file"));
       assertEquals(first.tools?.some((tool) => tool.function?.name === "write_file"), false);
-      assert(first.messages?.[0]?.content?.includes("Respond with a single json object matching the supplied schema."));
+      const firstMessages = JSON.stringify(first.messages);
+      assert(firstMessages.includes(PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION));
+      assertEquals(firstMessages.includes("Respond with a single json object matching the supplied schema."), false);
       assertEquals(final.response_format?.type, "json_object");
       assertEquals(final.tools, undefined);
       assertEquals(final.tool_choice, undefined);
-      assertEquals(final.messages?.[0]?.content, first.messages?.[0]?.content);
+      // The frozen base prompt is unchanged. Only the final round appends its JSON-mode instruction.
+      assert(final.messages?.[0]?.content?.startsWith(first.messages?.[0]?.content ?? "\0"));
       const replayedTool = final.messages?.find((message) => message.role === "tool");
       assertEquals(replayedTool?.tool_call_id, "phase155-planning-read-1");
       assert(replayedTool?.content?.includes(marker));
@@ -553,16 +556,15 @@ Deno.test({
       const completedPayload = JSON.parse(completed.payload) as { rounds: number; toolCalls: number };
       assertEquals(completedPayload.rounds, 2);
       assertEquals(completedPayload.toolCalls, 1);
-      const structuredCalls = rows.filter((row) => row.action_type === "llm.call.completed");
-      assertEquals(structuredCalls.length, 2);
-      for (const call of structuredCalls) {
-        const payload = JSON.parse(call.payload) as {
-          structured_output_mode?: string;
-          structured_output_mode_reason?: string;
-        };
-        assertEquals(payload.structured_output_mode, "json_object");
-        assertEquals(payload.structured_output_mode_reason, "schema_not_strict_representable");
-      }
+      const llmCalls = rows.filter((row) => row.action_type === "llm.call.completed");
+      assertEquals(llmCalls.length, 2);
+      const [explorationCall, finalCall] = llmCalls.map((row) =>
+        JSON.parse(row.payload) as { structured_output_mode?: string; structured_output_mode_reason?: string }
+      );
+      // Exploration carries no output schema. Only the final round is structured.
+      assertEquals(explorationCall.structured_output_mode, undefined);
+      assertEquals(finalCall.structured_output_mode, "json_object");
+      assertEquals(finalCall.structured_output_mode_reason, "schema_not_strict_representable");
       const plansDir = join(root, "Workspace", "Plans");
       const planFile = [...Deno.readDirSync(plansDir)].find((entry) => entry.isFile && entry.name.endsWith(".md"));
       assert(planFile);

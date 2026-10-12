@@ -219,7 +219,7 @@ Deno.test("[AgentRunner planning tools] tools_enabled + native provider + readab
   }
 });
 
-Deno.test("[AgentRunner planning tools][native] a native-conversation provider drives PlanningToolLoop with a frozen prompt and an accumulating turns snapshot, jsonSchema preserved", async () => {
+Deno.test("[AgentRunner planning tools][native] a native-conversation provider explores with a frozen prompt and applies jsonSchema on the final round", async () => {
   registerProviders();
   const fixture = makePortalFixture();
   try {
@@ -251,7 +251,7 @@ Deno.test("[AgentRunner planning tools][native] a native-conversation provider d
       "the native prompt must stay frozen across rounds",
     );
     assertEquals(provider.calls[0].options?.nativeConversation?.turns, []);
-    assertEquals(provider.calls[0].options?.jsonSchema, jsonSchema);
+    assertEquals(provider.calls[0].options?.jsonSchema, undefined, "tool exploration must not require a final plan");
     const finalTurns = provider.calls[1].options?.nativeConversation?.turns;
     assertEquals(finalTurns?.length, 1);
     assertEquals(finalTurns?.[0].toolUseId, "t1");
