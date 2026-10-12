@@ -11,7 +11,42 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { buildFullPlanText, type IPlanStep } from "../../src/planning/mod.ts";
+import { buildFullPlanText, type IPlanStep, PlanExecutor } from "../../src/planning/mod.ts";
+import { createMockConfig, initTestDbService, makeGenerateResult } from "@exaix/testing";
+import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
+import { join } from "@std/path";
+import { REPORT_GENERATION_MAX_TOKENS } from "@exaix/core";
+
+Deno.test("fix(plan-executor): the bounded execution report disables optional thinking", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  const calls: Array<IModelOptions | undefined> = [];
+  const provider: IModelProvider = {
+    id: "mock",
+    generate: (_prompt, options) => {
+      calls.push(options);
+      return Promise.resolve(makeGenerateResult("Execution report"));
+    },
+  };
+  try {
+    const executor: PlanExecutor = new PlanExecutor(createMockConfig(tempDir), provider, db, tempDir, undefined, {
+      enableGit: false,
+      generateReport: true,
+    });
+    const result = await executor.execute(join(tempDir, "plan.md"), {
+      trace_id: crypto.randomUUID(),
+      request_id: "bounded-report",
+      agent_role: "senior-coder",
+      frontmatter: {},
+      steps: [],
+    });
+    assertEquals(result.report, "Execution report");
+    assertEquals(calls.length, 1);
+    assertEquals(calls[0]?.max_tokens, REPORT_GENERATION_MAX_TOKENS);
+    assertEquals(calls[0]?.thinking, false);
+  } finally {
+    await cleanup();
+  }
+});
 
 Deno.test("buildFullPlanText: concatenates a single step's title and content", () => {
   const steps: IPlanStep[] = [

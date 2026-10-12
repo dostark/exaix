@@ -755,6 +755,7 @@ export class PlanExecutor {
     const result = await this.llmProvider.generate(prompt, {
       temperature: REPORT_GENERATION_TEMPERATURE,
       max_tokens: REPORT_GENERATION_MAX_TOKENS,
+      thinking: false,
     });
     return result.content;
   }
