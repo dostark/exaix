@@ -227,3 +227,98 @@ Deno.test({
     }
   },
 });
+
+/** A TS/Python fixture pair sharing one call-chain shape. */
+const SCRIPTED_FIXTURES: Array<{
+  label: string;
+  files: { [path: string]: string };
+  expected: string[];
+}> = [
+  {
+    label: "typescript",
+    files: {
+      "src/core.ts": "export function ship(v: number): number {\n  return v * 2;\n}\n",
+      "src/deep.ts":
+        'import { ship } from "./core.ts";\n\nexport function level3(v: number): number {\n  return ship(v) + 1;\n}\n\nexport function level2(v: number): number {\n  return level3(v) * 2;\n}\n',
+      "src/sibling.ts":
+        'import { level2 } from "./deep.ts";\n\nexport function level1(v: number): number {\n  return level2(v) + 3;\n}\n',
+      "src/remote.ts":
+        'import { ship } from "./core.ts";\n\nexport function remote(v: number): number {\n  return ship(v);\n}\n',
+    },
+    expected: [
+      "src/deep.ts#level2->src/deep.ts#level3",
+      "src/deep.ts#level3->src/core.ts#ship",
+      "src/remote.ts#remote->src/core.ts#ship",
+      "src/sibling.ts#level1->src/deep.ts#level2",
+    ],
+  },
+  {
+    label: "python",
+    files: {
+      "app/core.py": "def ship(v):\n    return v * 2\n",
+      "app/deep.py":
+        "from app.core import ship\n\ndef level3(v):\n    return ship(v) + 1\n\ndef level2(v):\n    return level3(v) * 2\n",
+      "app/sibling.py": "from app.deep import level2\n\ndef level1(v):\n    return level2(v) + 3\n",
+      "app/remote.py": "from app.core import ship\n\ndef remote(v):\n    return ship(v)\n",
+    },
+    expected: [
+      "app/deep.py#level2->app/deep.py#level3",
+      "app/deep.py#level3->app/core.py#ship",
+      "app/remote.py#remote->app/core.py#ship",
+      "app/sibling.py#level1->app/deep.py#level2",
+    ],
+  },
+];
+
+for (const fixture of SCRIPTED_FIXTURES) {
+  Deno.test({
+    name: `[team-binary] the compiled binary answers who-calls for ${fixture.label}`,
+    ignore: !(await binaryExists()),
+    fn: async () => {
+      const workspaceRoot = await Deno.makeTempDir({ prefix: `exa_team_bin_${fixture.label}_` });
+      const portalRoot = await Deno.makeTempDir({ prefix: `exa_team_portal_${fixture.label}_` });
+      const alias = `scripted-${fixture.label}`;
+      try {
+        for (const [relative, content] of Object.entries(fixture.files)) {
+          await Deno.mkdir(join(portalRoot, relative, ".."), { recursive: true });
+          await Deno.writeTextFile(join(portalRoot, relative), content);
+        }
+        await Deno.writeTextFile(join(workspaceRoot, "config.toml"), configToml(workspaceRoot));
+        assertEquals(await runTeamBinary(workspaceRoot, EDITION_ENTERPRISE, ["portal", "add", portalRoot, alias]), 0);
+        assertEquals(
+          await runTeamBinary(workspaceRoot, EDITION_ENTERPRISE, ["portal", "analyze", alias, "--mode", "standard"]),
+          0,
+        );
+
+        const knowledge = JSON.parse(
+          await Deno.readTextFile(join(workspaceRoot, "Memory", "Projects", alias, "knowledge.json")),
+        ) as { relationships?: Array<{ from: string; to: string; kind: string }> };
+        const pairs = (knowledge.relationships ?? [])
+          .filter((e) => e.kind === SYMBOL_KIND)
+          .map((e) => `${e.from}->${e.to}`)
+          .sort();
+
+        assertEquals(pairs, fixture.expected, `${fixture.label}: the persisted reference edges must match`);
+
+        // The gate must hold for these languages too.
+        const teamPairs = await (async () => {
+          const teamAlias = `${alias}-team`;
+          await Deno.writeTextFile(join(workspaceRoot, "config.toml"), configToml(workspaceRoot));
+          assertEquals(await runTeamBinary(workspaceRoot, EDITION_TEAM, ["portal", "add", portalRoot, teamAlias]), 0);
+          assertEquals(
+            await runTeamBinary(workspaceRoot, EDITION_TEAM, ["portal", "analyze", teamAlias, "--mode", "standard"]),
+            0,
+          );
+          const teamKnowledge = JSON.parse(
+            await Deno.readTextFile(join(workspaceRoot, "Memory", "Projects", teamAlias, "knowledge.json")),
+          ) as { relationships?: Array<{ kind: string }> };
+          return (teamKnowledge.relationships ?? []).filter((e) => e.kind === SYMBOL_KIND);
+        })();
+        assertEquals(teamPairs, [], `${fixture.label}: team edition must emit no symbol edge`);
+      } finally {
+        await Deno.remove(workspaceRoot, { recursive: true });
+        await Deno.remove(portalRoot, { recursive: true });
+      }
+    },
+  });
+}

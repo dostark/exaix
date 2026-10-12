@@ -2385,6 +2385,10 @@ export const ANALYSIS_TASK_TYPE_VERBS: Record<string, string> = {
  *  Its endpoints are `<file>#<symbolName>` composite keys. */
 export const SYMBOL_REFERENCE_EDGE_KIND = "symbol_references_symbol";
 
+/** Marks the default export a TS/JS `import x from "y"` clause binds.
+ *  A named import records the imported symbol name instead. */
+export const TS_JS_DEFAULT_IMPORT_MARKER = "default";
+
 /** Joins the parts of a composite edge key used for deduplication.
  *  It is a separator that cannot occur in a portal-relative path or symbol name. */
 export const EDGE_DEDUP_KEY_SEPARATOR = "\u0000";

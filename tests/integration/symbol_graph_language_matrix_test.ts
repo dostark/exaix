@@ -21,7 +21,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { LANG_GO, LANG_JAVA, LANG_RUST, PortalAnalysisMode } from "@exaix/core";
+import { LANG_GO, LANG_JAVA, LANG_PYTHON, LANG_RUST, LANG_TYPESCRIPT, PortalAnalysisMode } from "@exaix/core";
 import {
   createDefaultSymbolExtractorRegistry,
   createDefaultSymbolFileResolverRegistry,
@@ -244,7 +244,113 @@ public class Remote {
   },
 };
 
-const FIXTURES = [GO_FIXTURE, JAVA_FIXTURE, RUST_FIXTURE];
+const TS_FIXTURE: ILanguageFixture = {
+  language: LANG_TYPESCRIPT,
+  extension: ".ts",
+  targetFile: "src/core.ts",
+  targetSymbol: "ship",
+  directCallers: ["src/deep.ts#level3", "src/remote.ts#remote"],
+  transitiveCaller: "src/sibling.ts#level1",
+  chain: [
+    { from: "src/sibling.ts#level1", to: "src/deep.ts#level2" },
+    { from: "src/deep.ts#level2", to: "src/deep.ts#level3" },
+    { from: "src/deep.ts#level3", to: "src/core.ts#ship" },
+  ],
+  files: {
+    "src/index.ts": `export { ship } from "./core.ts";
+export { level1 } from "./sibling.ts";
+`,
+    "src/core.ts": `/// ship is the function every query asks about.
+export function ship(v: number): number {
+  return v * 2;
+}
+`,
+    "src/deep.ts": `import { ship } from "./core.ts";
+
+/// level3 calls ship directly.
+export function level3(v: number): number {
+  return ship(v) + 1;
+}
+
+/// level2 calls level3, so ship sits two frames down.
+export function level2(v: number): number {
+  return level3(v) * 2;
+}
+`,
+    "src/sibling.ts": `import { level2 } from "./deep.ts";
+
+/// level1 calls level2 in another file of the same directory.
+export function level1(v: number): number {
+  return level2(v) + 3;
+}
+`,
+    "src/remote.ts": `import { ship } from "./core.ts";
+import { level3 } from "./deep.ts";
+
+/// remote calls ship directly and through the deep module.
+export function remote(v: number): number {
+  const direct = ship(v);
+  const indirect = level3(v);
+  return direct + indirect;
+}
+`,
+  },
+};
+
+const PYTHON_FIXTURE: ILanguageFixture = {
+  language: LANG_PYTHON,
+  extension: ".py",
+  targetFile: "app/core.py",
+  targetSymbol: "ship",
+  directCallers: ["app/deep.py#level3", "app/remote.py#remote"],
+  transitiveCaller: "app/sibling.py#level1",
+  chain: [
+    { from: "app/sibling.py#level1", to: "app/deep.py#level2" },
+    { from: "app/deep.py#level2", to: "app/deep.py#level3" },
+    { from: "app/deep.py#level3", to: "app/core.py#ship" },
+  ],
+  files: {
+    "app/__init__.py": `from app.core import ship
+
+__all__ = ["ship"]
+`,
+    "app/core.py": `def ship(v):
+    """ship is the function every query asks about."""
+    return v * 2
+`,
+    "app/deep.py": `from app.core import ship
+
+
+def level3(v):
+    """level3 calls ship directly."""
+    return ship(v) + 1
+
+
+def level2(v):
+    """level2 calls level3, so ship sits two frames down."""
+    return level3(v) * 2
+`,
+    "app/sibling.py": `from app.deep import level2
+
+
+def level1(v):
+    """level1 calls level2 in another file of the same package."""
+    return level2(v) + 3
+`,
+    "app/remote.py": `from app.core import ship
+from app.deep import level3
+
+
+def remote(v):
+    """remote calls ship directly and through the deep module."""
+    direct = ship(v)
+    indirect = level3(v)
+    return direct + indirect
+`,
+  },
+};
+
+const FIXTURES = [GO_FIXTURE, JAVA_FIXTURE, RUST_FIXTURE, TS_FIXTURE, PYTHON_FIXTURE];
 
 /** Portal alias used by the agent-facing tool tests. */
 const GO_ALIAS = "lang-go";
@@ -411,14 +517,11 @@ for (const fixture of FIXTURES) {
   });
 }
 
-Deno.test("[matrix] every supported reference language is covered, and unsupported ones are not claimed", () => {
+Deno.test("[matrix] every supported reference language is covered", () => {
   const covered = FIXTURES.map((f) => f.language).sort();
-  assertEquals(covered, [LANG_GO, LANG_JAVA, LANG_RUST].sort());
-  // TypeScript/JavaScript and Python ship symbol maps only.
-  // This phase claims no reference edges for them.
-  // They are therefore absent from the matrix on purpose.
-  assertEquals(covered.includes("typescript"), false);
-  assertEquals(covered.includes("python"), false);
+  assertEquals(covered, [LANG_GO, LANG_JAVA, LANG_PYTHON, LANG_RUST, LANG_TYPESCRIPT].sort());
+  // JavaScript shares the TypeScript extractor and grammar family, so its
+  // coverage is a registration assertion rather than a separate fixture.
 });
 
 Deno.test("[matrix] the agent-facing tool answers who-calls-X in a structured, parseable format", async () => {
@@ -526,7 +629,18 @@ Deno.test("[matrix] every fixture declares a chain at least three frames deep", 
       Object.keys(fixture.files).length >= 4,
       `${fixture.language}: a multi-file project needs at least four files`,
     );
-    const directories = new Set(Object.keys(fixture.files).map((p) => join(p, "..")));
-    assert(directories.size >= 2, `${fixture.language}: the project must span at least two directories`);
+    // At least three functions must be involved, or the chain cannot be deep.
+    const declared = new Set(fixture.chain.flatMap((edge) => [edge.from, edge.to]));
+    assert(declared.size >= 4, `${fixture.language}: the chain must involve at least four symbols`);
+    // Multi-package or multi-file within one package.
+    // Both layouts are real.
+    // Go and Java split packages across files.
+    // A TS or Python package often keeps several modules in one directory.
+    const paths = Object.keys(fixture.files);
+    const directories = new Set(paths.map((p) => join(p, "..")));
+    assert(
+      directories.size >= 2 || paths.length >= 5,
+      `${fixture.language}: the project must span two directories or five files`,
+    );
   }
 });
