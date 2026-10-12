@@ -102,6 +102,10 @@ export interface IReactRoundOptions {
   live: boolean;
   /** The live provider when `live` is set. Unset means DeepSeek. */
   liveProvider?: LiveProvider;
+  /** Selects the model for this live round. Unset keeps the provider's live default. */
+  liveModel?: string;
+  /** Sets the agent's reasoning intent for planning and execution. */
+  intent?: IAgentIntent;
   toolsLines: string[];
   /** Makes the scripted planning response empty, so the planning request fails and writes no plan. */
   planFails?: boolean;
@@ -374,6 +378,8 @@ export function runReactRound(options: IReactRoundOptions): Promise<IRoundRun> {
     prefix: "phase202-cutover-react-",
     live: options.live,
     liveProvider: options.liveProvider,
+    liveModel: options.liveModel,
+    intent: options.intent,
     files: portalFiles(markers),
     markers,
     respond: respondFor(options.live, script),

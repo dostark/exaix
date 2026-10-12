@@ -20,6 +20,12 @@
 import { assert, assertEquals } from "@std/assert";
 import { REQUEST_SUCCESS_ACTIONS } from "./helpers/daemon_config.ts";
 import {
+  assertMatrixEnvironment,
+  liveMatrixEnabled,
+  MATRIX_MODELS,
+  saveMatrixEvidence,
+} from "./helpers/openrouter_live_matrix.ts";
+import {
   type ITraceRow,
   LIVE_KEY_ENV,
   LIVE_OPENAI_THINKING_MODEL,
@@ -57,6 +63,127 @@ const LIVE_TOOL_ROUNDS = 4;
 const DESCRIBED_RESULT_CHARS = 60;
 /** The calls a failure message lists, so a long ReAct run stays readable. */
 const DESCRIBED_CALLS = 8;
+
+/** Records completion and usage rows without retaining prompt, reply or tool-result text. */
+async function saveOpenRouterRound(model: string, kind: string, rows: ITraceRow[]): Promise<void> {
+  await saveMatrixEvidence(`${kind}-${model}`, {
+    model,
+    kind,
+    unsetKeys: ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "DEEPSEEK_API_KEY"],
+    terminalActions: rows.filter((row: ITraceRow) =>
+      REQUEST_SUCCESS_ACTIONS.includes(row.action_type) ||
+      ["execution.completed", "execution.failed", "request.failed"].includes(row.action_type)
+    ).map((row: ITraceRow) => row.action_type),
+    completions: rows.filter((row: ITraceRow) => row.action_type === "llm.call.completed").map((row: ITraceRow) =>
+      JSON.parse(row.payload)
+    ),
+    responses: callsPerResponse(rows),
+    planningGates: rows.filter((row: ITraceRow) =>
+      ["planning.tools.skipped", "planning.tools.started", "planning.tools.completed"].includes(row.action_type)
+    ).map((row: ITraceRow) => ({ action: row.action_type, payload: JSON.parse(row.payload) })),
+    reasoningIntent: rows.filter((row: ITraceRow) => row.action_type === "agent.effort_resolved").map((
+      row: ITraceRow,
+    ) => JSON.parse(row.payload)),
+    failure: rows.some((row: ITraceRow) =>
+        ["execution.failed", "request.failed", "llm.call.failed"].includes(row.action_type)
+      )
+      ? journalFailure(rows)
+      : null,
+  });
+}
+
+for (const model of MATRIX_MODELS) {
+  Deno.test({
+    name: `[live][openrouter][phase211] planning replays a batch on ${model}`,
+    ignore: !liveMatrixEnabled(),
+    sanitizeOps: false,
+    sanitizeResources: false,
+    async fn() {
+      assertMatrixEnvironment();
+      const { fixture, markers, rows } = await runPlanningRound({
+        live: true,
+        liveProvider: "openrouter",
+        liveModel: model,
+        intent: { thinking: false },
+        toolsLines: [],
+        maxCallsPerRound: LIVE_PLANNING_CALLS_PER_ROUND,
+        maxToolRounds: LIVE_TOOL_ROUNDS,
+      });
+      await saveOpenRouterRound(model, "planning", rows);
+      assertEquals(fixture.bodies.length, 0, "the live chat reached the fixture");
+      assert(rows.some((row: ITraceRow) => REQUEST_SUCCESS_ACTIONS.includes(row.action_type)), journalFailure(rows));
+      const calls: IToolSummaryPayload[] = toolRows(rows);
+      for (const marker of markers) {
+        assert(
+          calls.some((call: IToolSummaryPayload) => call.resultSummary.includes(marker)),
+          "a planned file was not read",
+        );
+      }
+      assert(
+        callsPerResponse(rows).some((round) => round.requested >= MINIMUM_BATCH),
+        "the model did not replay a batch",
+      );
+    },
+  });
+}
+
+async function assertOpenRouterReact(model: string, label: string): Promise<void> {
+  assertMatrixEnvironment();
+  let round: Awaited<ReturnType<typeof runReactRound>>;
+  try {
+    round = await runReactRound({
+      live: true,
+      liveProvider: "openrouter",
+      liveModel: model,
+      intent: { thinking: false },
+      toolsLines: [],
+    });
+  } catch (error) {
+    await saveMatrixEvidence(`${label}-${model}`, {
+      model,
+      kind: label,
+      runnerFailed: true,
+      errorType: error instanceof Error ? error.name : "non_error_throw",
+      failure: (error instanceof Error ? error.message : String(error)).slice(0, 240),
+    });
+    throw error;
+  }
+  const { fixture, markers, rows } = round;
+  await saveOpenRouterRound(model, label, rows);
+  assertEquals(fixture.bodies.length, 0, "the live chat reached the fixture");
+  assert(
+    rows.some((row: ITraceRow) =>
+      row.action_type === "llm.call.started" && JSON.parse(row.payload).model.includes(model)
+    ),
+    "the selected model never ran",
+  );
+  assert(rows.some((row: ITraceRow) => row.action_type === "execution.completed"), journalFailure(rows));
+  assert(
+    toolRows(rows).some((call: IToolSummaryPayload) =>
+      markers.some((marker: string) => call.resultSummary.includes(marker))
+    ),
+    "the execution read no seeded file",
+  );
+}
+
+for (const model of MATRIX_MODELS) {
+  Deno.test({
+    name: `[live][openrouter][phase211] ReAct completes on ${model}`,
+    ignore: !liveMatrixEnabled(),
+    sanitizeOps: false,
+    sanitizeResources: false,
+    fn: () => assertOpenRouterReact(model, "react"),
+  });
+}
+for (const repeat of [1, 2, 3, 4]) {
+  Deno.test({
+    name: `[live][openrouter][phase211] Ling ReAct repeat ${repeat} completes`,
+    ignore: !liveMatrixEnabled(),
+    sanitizeOps: false,
+    sanitizeResources: false,
+    fn: () => assertOpenRouterReact(MATRIX_MODELS[0], `react-repeat-${repeat}`),
+  });
+}
 
 /** The calls each model response asked for, and how many executed. Refused calls are journaled too. */
 function callsPerResponse(rows: ITraceRow[]): { requested: number; executed: number }[] {
