@@ -93,12 +93,12 @@ Deno.test('OpenRouterProvider.buildRequestBody maps IToolChoice {type:none} to "
   assertEquals(body.tool_choice, "none");
 });
 
-Deno.test("OpenRouterProvider.buildRequestBody: existing routing/usage.include fields coexist with tools unaffected", async () => {
+Deno.test("OpenRouterProvider.buildRequestBody: routing fields coexist with tools and the body has no deprecated usage flag", async () => {
   const body = await capturedBodyOf(
     { tools: [{ name: "write_file", inputSchema: { type: "object" } }], toolChoice: { type: "auto" } },
     { routing: { models: ["fallback-model"] } },
   );
-  assertEquals(body.usage, { include: true });
+  assertEquals(body.usage, undefined);
   assertEquals(body.models, ["fallback-model"]);
   assertEquals(body.provider, { require_parameters: true });
   assertExists(body.tools);
@@ -109,7 +109,7 @@ Deno.test("[regression] OpenRouterProvider.buildRequestBody without tools omits 
   const body = await capturedBodyOf({});
   assertEquals(body.tools, undefined);
   assertEquals(body.tool_choice, undefined);
-  assertEquals(body.usage, { include: true });
+  assertEquals(body.usage, undefined);
 });
 
 const OR_READ_TOOL = {

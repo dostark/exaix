@@ -69,6 +69,10 @@ export type TokenMap = {
    *  completion_tokens, billed as output, not additional). undefined when the provider/
    *  model doesn't report one — never 0 for "no reasoning happened". */
   reasoning_tokens?: number;
+  /** What a BYOK upstream provider charged. Set only by providers that report it. */
+  upstream_inference_cost?: number;
+  /** Savings from prompt caching, as the provider reports them. Set only by providers that report it. */
+  cache_discount?: number;
 };
 
 type ResponseTokenMapper<T> = (data: T, providerId?: string) => TokenMap | undefined;

@@ -12,7 +12,7 @@
 import { assertEquals } from "@std/assert";
 import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
 import type { IModelOptions } from "@exaix/ai/types.ts";
-import { PricingTier } from "@exaix/core";
+import { type JSONValue, PricingTier } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
 import { type Config, ConfigSchema } from "@exaix/schemas";
@@ -425,5 +425,89 @@ Deno.test({
     );
     assertEquals(result.thrown, undefined);
     assertEquals(result.routed.chatBodies[0]?.reasoning, undefined);
+  },
+});
+
+async function journaledUsage(
+  usage: Record<string, JSONValue>,
+  responseModel: string,
+): Promise<Array<Record<string, JSONValue>>> {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = (() =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({ model: responseModel, choices: [{ message: { content: "ok" } }], usage }),
+        { status: 200 },
+      ),
+    )) as typeof fetch;
+  registerOpenRouter();
+  try {
+    await withEnv(
+      {
+        OPENROUTER_API_KEY: "sk-or-test",
+        EXA_TEST_ENABLE_PAID_LLM: "1",
+        EXA_LLM_PROVIDER: null,
+        EXA_LLM_MODEL: null,
+        EXA_LLM_BASE_URL: null,
+        EXA_LLM_ENDPOINT: null,
+      },
+      async () => {
+        const provider = await ProviderFactory.create(openRouterConfig(tempDir), db, new EventLogger({ db }));
+        await provider.generate("hi");
+      },
+    );
+    await db.waitForFlush();
+    const rows = await db.preparedAll<IActivityRow>("SELECT action_type, payload FROM activity WHERE action_type = ?", [
+      DomainEventType.LlmUsageRecorded,
+    ]);
+    return rows.map((row) => JSON.parse(row.payload) as Record<string, JSONValue>);
+  } finally {
+    globalThis.fetch = origFetch;
+    setProviderRegistryBootstrap(undefined);
+    ProviderRegistry.clear();
+    await cleanup();
+  }
+}
+
+Deno.test({
+  name: "[integration] a reply with cached tokens journals llm.usage with cache_read_tokens, and the resolved model",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const events = await journaledUsage(
+      {
+        prompt_tokens: 1000,
+        completion_tokens: 20,
+        cost: 0.0003,
+        prompt_tokens_details: { cached_tokens: 700, cache_write_tokens: 0 },
+      },
+      "qwen/qwen3.7-flash-20260727",
+    );
+    assertEquals(events.some((event) => event.cache_read_tokens === 700), true);
+    assertEquals(events.every((event) => event.model === "qwen/qwen3.7-flash-20260727"), true);
+  },
+});
+
+Deno.test({
+  name: "[integration] a BYOK reply journals llm.usage with upstream_inference_cost and the cache discount",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const events = await journaledUsage(
+      {
+        prompt_tokens: 100,
+        completion_tokens: 10,
+        cost: 0,
+        is_byok: true,
+        cost_details: { upstream_inference_cost: 0.0007 },
+        cache_discount: 0.0001,
+      },
+      "qwen/qwen3.7-flash",
+    );
+    assertEquals(
+      events.some((event) => event.upstream_inference_cost === 0.0007 && event.cache_discount === 0.0001),
+      true,
+    );
   },
 });

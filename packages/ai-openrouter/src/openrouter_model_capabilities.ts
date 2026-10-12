@@ -21,6 +21,7 @@ import {
   DEFAULT_OPENROUTER_CAPABILITY_CACHE_TTL_MS,
   OPENROUTER_CAPABILITY_FAILURE_BACKOFF_MS,
   OPENROUTER_CAPABILITY_MAX_RESPONSE_BYTES,
+  OPENROUTER_TOKENIZER_MODEL_MAP,
 } from "./constants.ts";
 
 /** What the provider needs to know about one model before it sends a request. */
@@ -115,6 +116,17 @@ function toEntry(entry: CatalogEntry): IOpenRouterModelEntry {
       : {}),
     ...(entry.architecture?.tokenizer ? { tokenizer: entry.architecture.tokenizer } : {}),
   };
+}
+
+/** The estimator model that counts tokens for this model, or the configured id when no family maps. */
+export function estimatorModelFor(
+  entry: Opt<IOpenRouterModelEntry, Reason.OptionalContext>,
+  configuredModel: string,
+): string {
+  const family = entry?.tokenizer;
+  return family !== undefined && Object.hasOwn(OPENROUTER_TOKENIZER_MODEL_MAP, family)
+    ? OPENROUTER_TOKENIZER_MODEL_MAP[family]
+    : configuredModel;
 }
 
 interface ISnapshot {

@@ -364,3 +364,50 @@ Deno.test("an empty tools array does not consult the capability source", async (
   const result = await generateWithCapabilities(entryWith([]), { tools: [] });
   assertEquals(result.lookups, 0);
 });
+
+async function resultForUsage(usage: Record<string, number | Record<string, number>>, responseModel?: string) {
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = (() =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({
+          ...(responseModel ? { model: responseModel } : {}),
+          choices: [{ message: { content: "ok" } }],
+          usage,
+        }),
+        { status: 200 },
+      ),
+    )) as typeof fetch;
+  try {
+    return await new OpenRouterProvider({ apiKey: "sk-test", model: "vendor/configured" }).generate("hi");
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+}
+
+Deno.test("a reply with usage.cost is tracked and carries the reported cost and the resolved model", async () => {
+  const result = await resultForUsage(
+    { prompt_tokens: 10, completion_tokens: 5, cost: 0.0004 },
+    "vendor/resolved-20261012",
+  );
+  assertEquals(result.costStatus, "tracked");
+  assertEquals(result.cost_usd, 0.0004);
+  assertEquals(result.model, "vendor/resolved-20261012");
+});
+
+Deno.test("a reply without usage.cost has an unknown cost status and no cost", async () => {
+  const result = await resultForUsage({ prompt_tokens: 10, completion_tokens: 5 });
+  assertEquals(result.costStatus, "unknown");
+  assertEquals(result.cost_usd, undefined);
+  assertEquals(result.model, "vendor/configured");
+});
+
+Deno.test("cache tokens from the response reach the generate result usage", async () => {
+  const result = await resultForUsage({
+    prompt_tokens: 1000,
+    completion_tokens: 20,
+    prompt_tokens_details: { cached_tokens: 700, cache_write_tokens: 100 },
+  });
+  assertEquals(result.usage.cacheReadTokens, 700);
+  assertEquals(result.usage.cacheCreationTokens, 100);
+});

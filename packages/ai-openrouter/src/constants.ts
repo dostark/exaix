@@ -117,8 +117,18 @@ export const PROVIDER_OPENROUTER_STRENGTHS = ["model-variety", "auto-fallback", 
 export const PROVIDER_OPENROUTER_COST_TIER = ProviderCostTier.PAID;
 
 export const OPENROUTER_CONTEXT_WINDOW = 200_000;
-/** Reference routing price in USD per million tokens. */
+/** Ranking estimate for provider selection, not a price. The cost tracker rate is a separate zero sentinel. */
 export const OPENROUTER_COST_PER_MTok = 3;
+
+/**
+ * Estimator model for each OpenRouter tokenizer family that has a matching estimator tokenizer.
+ * Every other family keeps the configured model id, and the estimator falls back to characters per token.
+ */
+export const OPENROUTER_TOKENIZER_MODEL_MAP: Readonly<Record<string, string>> = {
+  GPT: "gpt-4o",
+  Claude: "claude-sonnet-4",
+  Gemini: "gemini-2.5-flash",
+};
 
 export const OPENROUTER_PROVIDER_METADATA = {
   name: PROVIDER_OPENROUTER,

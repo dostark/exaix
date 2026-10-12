@@ -16,12 +16,28 @@ export interface IOpenRouterUsage {
   prompt_tokens: number;
   completion_tokens: number;
   total_tokens?: number;
-  /** USD cost OpenRouter reports when usage:{include:true} was requested. */
+  /** Cost that OpenRouter reports on every response, in OpenRouter credits. */
   cost?: number;
+  is_byok?: boolean;
+  /** Cache read and write counts. Both are subsets of prompt_tokens. */
+  prompt_tokens_details?: {
+    cached_tokens?: number;
+    cache_write_tokens?: number;
+    audio_tokens?: number;
+    video_tokens?: number;
+  };
+  cost_details?: {
+    /** What the upstream provider charged. Under BYOK it is the only cost. */
+    upstream_inference_cost?: number;
+    upstream_inference_prompt_cost?: number;
+    upstream_inference_completions_cost?: number;
+  };
+  /** Savings from prompt caching. Present only when a cache was used. */
+  cache_discount?: number;
   /** OpenRouter is an OpenAI-compatible gateway that passes an upstream reasoning model's
    *  (o1/o3/gpt-5, gemini-thinking, etc.) reasoning-token breakdown through verbatim. A
    *  SUBSET of completion_tokens (billed as output, not additional). */
-  completion_tokens_details?: { reasoning_tokens?: number };
+  completion_tokens_details?: { reasoning_tokens?: number; image_tokens?: number; audio_tokens?: number };
 }
 
 /** One OpenRouter choice: the OpenAI shape plus the finish reasons that the OpenAI type omits. */
@@ -48,9 +64,13 @@ export function tokenMapperOpenRouter(
       prompt_tokens: d.usage.prompt_tokens,
       completion_tokens: d.usage.completion_tokens,
       total_tokens: totalTokens,
-      model,
+      model: d.model ?? model,
       cost_usd: typeof d.usage.cost === "number" ? d.usage.cost : undefined,
       reasoning_tokens: d.usage.completion_tokens_details?.reasoning_tokens,
+      cache_read_tokens: d.usage.prompt_tokens_details?.cached_tokens,
+      cache_creation_tokens: d.usage.prompt_tokens_details?.cache_write_tokens,
+      upstream_inference_cost: d.usage.cost_details?.upstream_inference_cost,
+      cache_discount: d.usage.cache_discount,
     };
   };
 }

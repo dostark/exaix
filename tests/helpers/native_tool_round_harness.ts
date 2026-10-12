@@ -327,12 +327,18 @@ const RESPONSES_FAMILY: IWireFamily = {
   },
 };
 
-/** Serves scripted bodies in order and records every request body it receives. */
+/** A body-less request to this path is a capability lookup, not a scripted model call. */
+const MODELS_CATALOG_PATH = "/models";
+
+/** Serves scripted bodies in order and records every model request body it receives. */
 export function scriptedFetch(bodies: JSONObject[]): { requests: IWireRequest[]; restore: () => void } {
   const requests: IWireRequest[] = [];
   const original = globalThis.fetch;
   let index = 0;
-  globalThis.fetch = (_input: string | Request | URL, init?: Opt<RequestInit, Reason.AbstractBoundary>) => {
+  globalThis.fetch = (input: string | Request | URL, init?: Opt<RequestInit, Reason.AbstractBoundary>) => {
+    if (init?.body === undefined && String(input).endsWith(MODELS_CATALOG_PATH)) {
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    }
     requests.push(JSON.parse((init?.body as string) ?? "{}"));
     const body = bodies[index++];
     return Promise.resolve(

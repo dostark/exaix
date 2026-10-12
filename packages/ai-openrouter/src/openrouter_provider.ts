@@ -23,7 +23,11 @@ import {
 import { type IOpenRouterResponse, tokenMapperOpenRouter } from "./openrouter_reported_cost.ts";
 import { mapOpenRouterError, OpenRouterRoutingError } from "./openrouter_errors.ts";
 import { applyRequireParameters, applySessionKey } from "./openrouter_routing.ts";
-import type { IOpenRouterCapabilitySource, IOpenRouterModelEntry } from "./openrouter_model_capabilities.ts";
+import {
+  estimatorModelFor,
+  type IOpenRouterCapabilitySource,
+  type IOpenRouterModelEntry,
+} from "./openrouter_model_capabilities.ts";
 import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
 import { hasReasoningOption, reasoningFor } from "./openrouter_reasoning.ts";
 import { extractOpenRouterContent, extractOpenRouterFinishReason } from "./openrouter_response.ts";
@@ -92,8 +96,6 @@ interface OpenRouterRequestBody {
   stop?: string[];
   models?: string[];
   provider?: OpenRouterProviderBody;
-  /** Requests OpenRouter's reported usage cost in the response. */
-  usage?: { include: boolean };
   tools?: OpenAiWireToolDefinition[];
   tool_choice?: OpenAiWireToolChoice;
   /** Off asks for one call per response. Auto omits the field, so the API default applies. */
@@ -176,9 +178,10 @@ export class OpenRouterProvider extends BaseProvider {
     options?: Opt<IModelOptions, Reason.AbstractBoundary>,
   ): Promise<INativeInputMeasurement> {
     const projection = JSON.parse(JSON.stringify(this.buildRequestBody(prompt, options))) as Record<string, JSONValue>;
+    const entry = await this.capabilities?.getEntry(this.model, options?.traceId);
     return await measureOpenAiChatProjection(
       this.tokenizer,
-      this.model,
+      estimatorModelFor(entry, this.model),
       projection.messages as JSONValue[],
       projection.tools ?? [],
       prompt,
@@ -196,7 +199,6 @@ export class OpenRouterProvider extends BaseProvider {
     const body: OpenRouterRequestBody = {
       model: this.model,
       messages: buildOpenAiMessages(prompt, options?.priorTurn, options?.nativeConversation, options?.priorRound),
-      usage: { include: true },
     };
     applyRequestOptions(body, options);
     const reasoning = reasoningFor(options, entry);
@@ -285,6 +287,7 @@ export class OpenRouterProvider extends BaseProvider {
       toolCallExtractor: extractOpenAIToolCalls,
       assistantReplayExtractor: (response) => extractOpenAIAssistantReplay(response, PROVIDER_OPENROUTER),
     });
-    return plan && options?.jsonSchema ? completeStructuredOutput(result, options.jsonSchema, plan, this.id) : result;
+    const priced: IGenerateResult = { ...result, costStatus: result.cost_usd === undefined ? "unknown" : "tracked" };
+    return plan && options?.jsonSchema ? completeStructuredOutput(priced, options.jsonSchema, plan, this.id) : priced;
   }
 }
