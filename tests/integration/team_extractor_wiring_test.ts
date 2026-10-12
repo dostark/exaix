@@ -14,7 +14,8 @@ import {
 } from "@exaix/portal/knowledge";
 import type { ICapabilityModule, ISeamRegistryPlaceholder } from "@exaix/core/composer";
 import { PortalExtractorsModule } from "@exaix-team/portal-extractors";
-import { registerCapabilitySeamHooks } from "../../apps/daemon/src/bootstrap_team.ts";
+import { paidEditionCapabilityModules, registerCapabilitySeamHooks } from "../../apps/daemon/src/bootstrap_team.ts";
+import { EDITION_ENTERPRISE, EDITION_TEAM } from "@exaix/core";
 
 Deno.test("[Team] PortalExtractorsModule registers Rust/Go/Java extractors", () => {
   const registry = new SymbolExtractorRegistry();
@@ -92,4 +93,14 @@ Deno.test("[Team] registerCapabilitySeamHooks skips the reference hook when no r
 
   assertEquals(count, 0);
   assertEquals(called, 0, "an absent registry must keep the feature inert");
+});
+
+Deno.test("[Enterprise] paidEditionCapabilityModules adds the symbol graph module only for enterprise", () => {
+  const enterpriseNames = paidEditionCapabilityModules(EDITION_ENTERPRISE).map((m) => m.constructor.name);
+  const teamNames = paidEditionCapabilityModules(EDITION_TEAM).map((m) => m.constructor.name);
+
+  assertEquals(enterpriseNames.includes("EnterpriseSymbolGraphModule"), true);
+  assertEquals(enterpriseNames.includes("PortalExtractorsModule"), true);
+  assertEquals(teamNames.includes("EnterpriseSymbolGraphModule"), false);
+  assertEquals(teamNames.includes("PortalExtractorsModule"), true);
 });

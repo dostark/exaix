@@ -12,7 +12,7 @@
  */
 
 import type { IArchitectureLayer, IPortalKnowledge } from "@exaix/schemas";
-import { SYMBOL_REF_ID_SEPARATOR } from "@exaix/core";
+import { EDGE_DEDUP_KEY_SEPARATOR, SYMBOL_REF_ID_SEPARATOR } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export type RelationshipEdgeKind =
@@ -24,6 +24,18 @@ export interface IRelationshipEdge {
   from: string;
   to: string;
   kind: RelationshipEdgeKind;
+}
+
+/** A persisted edge kind. `layer_contains_file` is derived, never stored. */
+export type PersistedRelationshipEdgeKind =
+  | "file_imports_file_internal"
+  | "symbol_references_symbol";
+
+/** An edge that can be persisted in `IPortalKnowledge.relationships`. */
+export interface IPersistedRelationshipEdge {
+  from: string;
+  to: string;
+  kind: PersistedRelationshipEdgeKind;
 }
 
 /** The edge kind `traverseModuleDependencies` walks.
@@ -59,6 +71,31 @@ function edgesFromLayer(layer: IArchitectureLayer): IRelationshipEdge[] {
 
 /** Derives `layer_contains_file` edges from `layers` and each `packages[].layers` entry —
  *  never persisted; always freshly computed from whatever knowledge is passed in. */
+/**
+ * Merges edge arrays into one list, deduplicated on `from`, `to`, and `kind`.
+ *
+ * The first occurrence wins, so the Solo builder's ordering is preserved.
+ * A later array can only add edges the earlier ones did not already carry.
+ * Callers reuse the returned array as the persisted relationships.
+ * They also pass it as the reference extractor input.
+ * One array therefore serves both roles.
+ */
+export function mergeRelationships(
+  edgeGroups: ReadonlyArray<ReadonlyArray<IPersistedRelationshipEdge>>,
+): IPersistedRelationshipEdge[] {
+  const seen = new Set<string>();
+  const merged: IPersistedRelationshipEdge[] = [];
+  for (const group of edgeGroups) {
+    for (const edge of group) {
+      const key = `${edge.from}${EDGE_DEDUP_KEY_SEPARATOR}${edge.to}${EDGE_DEDUP_KEY_SEPARATOR}${edge.kind}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(edge);
+    }
+  }
+  return merged;
+}
+
 export function deriveLayerContainsFileEdges(knowledge: IPortalKnowledge): IRelationshipEdge[] {
   const edges: IRelationshipEdge[] = [];
   for (const layer of knowledge.layers) {

@@ -53,12 +53,18 @@ export {
   decodeSymbolRef,
   deriveLayerContainsFileEdges,
   encodeSymbolRef,
+  mergeRelationships,
   MODULE_DEPENDENCY_EDGE_KIND,
   queryRelationships,
   traverseModuleDependencies,
   whoDependsOn,
 } from "./relationship_query.ts";
-export type { IRelationshipEdge, RelationshipEdgeKind } from "./relationship_query.ts";
+export type {
+  IPersistedRelationshipEdge,
+  IRelationshipEdge,
+  PersistedRelationshipEdgeKind,
+  RelationshipEdgeKind,
+} from "./relationship_query.ts";
 export { ArchitectureInferrer, buildFallbackOverview } from "./architecture_inferrer.ts";
 export type { IArchitectureInferrerInput, IArchitectureValidator } from "./architecture_inferrer.ts";
 export { GitHistoryAnalyzer } from "./git_history_analyzer.ts";

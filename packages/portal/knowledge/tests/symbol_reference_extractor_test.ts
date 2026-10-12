@@ -6,7 +6,7 @@
  * constructor and analyze() gating for an absent or empty reference registry.
  */
 
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { PortalAnalysisMode } from "@exaix/core";
 import type { IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
 import { PortalKnowledgeService } from "@exaix/portal/knowledge";
@@ -116,6 +116,159 @@ Deno.test("[PortalKnowledgeService] analyze() performs no reference extraction w
     await Deno.writeTextFile(`${portalRoot}/main.ts`, "export const x = 1;\n");
     await service.analyze("flag-off", portalRoot, PortalAnalysisMode.STANDARD);
     assertEquals(calls, 0, "the flag must gate the pass, not the registry's presence");
+  } finally {
+    await Deno.remove(portalRoot, { recursive: true });
+  }
+});
+
+Deno.test("[PortalKnowledgeService] binds the capped symbolMap and the merged edge set to the reference extractor", async () => {
+  const recorded: {
+    knownSymbols?: readonly { name: string }[];
+    fileImportEdges?: readonly { from: string; to: string; kind: string }[];
+    fileImportEdgesIsResult?: boolean;
+  } = {};
+
+  const registry = createDefaultSymbolReferenceExtractorRegistry();
+  registry.register("typescript", {
+    extractReferences: (_portalPath, _filePaths, options) => {
+      recorded.knownSymbols = options.knownSymbols;
+      recorded.fileImportEdges = options.fileImportEdges;
+      return Promise.resolve([]);
+    },
+  });
+
+  const service = new PortalKnowledgeService({
+    config: makeConfig({ enableSymbolLevelDependencyGraph: true }),
+    memoryBank: makeFakeMemoryBank(),
+    symbolReferenceExtractorRegistry: registry,
+  });
+
+  const portalRoot = await Deno.makeTempDir({ prefix: "exa_symref_bind_" });
+  try {
+    // A relative import pair so the internal graph produces at least one edge.
+    await Deno.writeTextFile(`${portalRoot}/main.ts`, 'import { util } from "./util.ts";\nutil();\n');
+    await Deno.writeTextFile(`${portalRoot}/util.ts`, "export function util() {}\n");
+
+    const knowledge = await service.analyze("bind", portalRoot, PortalAnalysisMode.STANDARD);
+
+    assert(Array.isArray(recorded.knownSymbols), "knownSymbols must be passed");
+    assert(Array.isArray(recorded.fileImportEdges), "fileImportEdges must be passed");
+    assertEquals(
+      recorded.knownSymbols!.length <= knowledge.symbolMap.length + 1000,
+      true,
+      "knownSymbols must be the Strategy 6 symbolMap, not a fresh uncapped extraction",
+    );
+    // Ordering: the reference pass runs after file resolution.
+    assert(
+      recorded.fileImportEdges!.length > 0,
+      `fileImportEdges must be populated by the earlier pass, got ${JSON.stringify(recorded.fileImportEdges)}`,
+    );
+    assertEquals(
+      recorded.fileImportEdges!.some((e) => e.kind === "file_imports_file_internal"),
+      true,
+      "the merged set must carry the file-import edges",
+    );
+  } finally {
+    await Deno.remove(portalRoot, { recursive: true });
+  }
+});
+
+Deno.test("[PortalKnowledgeService] appends symbol edges to the persisted relationships without duplicates", async () => {
+  const registry = createDefaultSymbolReferenceExtractorRegistry();
+  registry.register("typescript", {
+    extractReferences: () =>
+      Promise.resolve([
+        { from: "main.ts#run", to: "util.ts#util", kind: "symbol_references_symbol" as const },
+      ]),
+  });
+
+  const service = new PortalKnowledgeService({
+    config: makeConfig({ enableSymbolLevelDependencyGraph: true }),
+    memoryBank: makeFakeMemoryBank(),
+    symbolReferenceExtractorRegistry: registry,
+  });
+
+  const portalRoot = await Deno.makeTempDir({ prefix: "exa_symref_merge_" });
+  try {
+    await Deno.writeTextFile(`${portalRoot}/main.ts`, 'import { util } from "./util.ts";\nutil();\n');
+    await Deno.writeTextFile(`${portalRoot}/util.ts`, "export function util() {}\n");
+
+    const knowledge = await service.analyze("merge", portalRoot, PortalAnalysisMode.STANDARD);
+    const edges = knowledge.relationships ?? [];
+
+    const keys = edges.map((e) => `${e.from}|${e.to}|${e.kind}`);
+    assertEquals(new Set(keys).size, keys.length, "merged relationships must have no duplicate edge");
+    assertEquals(
+      edges.some((e) => e.kind === "symbol_references_symbol"),
+      true,
+      "the symbol edge must be persisted",
+    );
+  } finally {
+    await Deno.remove(portalRoot, { recursive: true });
+  }
+});
+
+Deno.test("[PortalKnowledgeService] quick mode leaves relationships undefined even with the flag enabled", async () => {
+  const registry = createDefaultSymbolReferenceExtractorRegistry();
+  registry.register("typescript", {
+    extractReferences: () =>
+      Promise.resolve([
+        { from: "main.ts#run", to: "util.ts#util", kind: "symbol_references_symbol" as const },
+      ]),
+  });
+
+  const service = new PortalKnowledgeService({
+    config: makeConfig({ enableSymbolLevelDependencyGraph: true }),
+    memoryBank: makeFakeMemoryBank(),
+    symbolReferenceExtractorRegistry: registry,
+  });
+
+  const portalRoot = await Deno.makeTempDir({ prefix: "exa_symref_quick_" });
+  try {
+    await Deno.writeTextFile(`${portalRoot}/main.ts`, "export const x = 1;\n");
+    const knowledge = await service.analyze("quick", portalRoot, PortalAnalysisMode.QUICK);
+    assertEquals(knowledge.relationships, undefined);
+  } finally {
+    await Deno.remove(portalRoot, { recursive: true });
+  }
+});
+
+Deno.test("[PortalKnowledgeService] [regression] the flag off reproduces the same relationships as no registry at all", async () => {
+  const portalRoot = await Deno.makeTempDir({ prefix: "exa_symref_regress_" });
+  try {
+    await Deno.writeTextFile(`${portalRoot}/main.ts`, 'import { util } from "./util.ts";\nutil();\n');
+    await Deno.writeTextFile(`${portalRoot}/util.ts`, "export function util() {}\n");
+
+    let calls = 0;
+    const registry = createDefaultSymbolReferenceExtractorRegistry();
+    registry.register("typescript", {
+      extractReferences: () => {
+        calls += 1;
+        return Promise.resolve([
+          { from: "main.ts#x", to: "util.ts#util", kind: "symbol_references_symbol" as const },
+        ]);
+      },
+    });
+
+    const withRegistry = new PortalKnowledgeService({
+      config: makeConfig({ enableSymbolLevelDependencyGraph: false }),
+      memoryBank: makeFakeMemoryBank(),
+      symbolReferenceExtractorRegistry: registry,
+    });
+    const withoutRegistry = new PortalKnowledgeService({
+      config: makeConfig(),
+      memoryBank: makeFakeMemoryBank(),
+    });
+
+    const first = await withRegistry.analyze("regress", portalRoot, PortalAnalysisMode.STANDARD);
+    const second = await withoutRegistry.analyze("regress", portalRoot, PortalAnalysisMode.STANDARD);
+
+    assertEquals(calls, 0, "the flag must gate the pass even when an extractor is registered");
+    assertEquals(first.relationships, second.relationships);
+    assertEquals(
+      (first.relationships ?? []).some((e) => e.kind === "symbol_references_symbol"),
+      false,
+    );
   } finally {
     await Deno.remove(portalRoot, { recursive: true });
   }

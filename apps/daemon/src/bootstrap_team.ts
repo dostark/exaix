@@ -10,7 +10,7 @@
 
 import { VotingCapabilityModule, VotingConsensusService } from "@exaix-team/voting";
 import { HitlCapabilityModule } from "@exaix-team/hitl";
-import { PortalExtractorsModule } from "@exaix-team/portal-extractors";
+import { EnterpriseSymbolGraphModule, PortalExtractorsModule } from "@exaix-team/portal-extractors";
 import {
   AdapterRegistry,
   AnthropicCatalogAdapter,
@@ -40,7 +40,7 @@ import type { TeamComposer } from "@exaix-team/team-composer";
 import { CAP_VOTING, CAPABILITY_EDITION } from "@exaix/core/composer";
 import type { ICapabilityModule, ISeamRegistryPlaceholder } from "@exaix/core/composer";
 import type { ISymbolExtractorRegistry, ISymbolReferenceExtractorRegistry } from "@exaix/portal/knowledge";
-import { EDITION_TEAM } from "@exaix/core";
+import { EDITION_ENTERPRISE, EDITION_TEAM } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export interface ITeamCapabilityOptions {
@@ -246,6 +246,21 @@ export function registerCapabilitySeamHooks(
   return referenceRegistrations;
 }
 
+/**
+ * Builds the paid-edition capability modules for one edition string.
+ *
+ * The Team extractor module is always present for a paid edition.
+ * The Enterprise symbol graph module appears only for the enterprise string.
+ * Keeping the decision here makes it testable without a daemon boot.
+ */
+export function paidEditionCapabilityModules(edition: string): ICapabilityModule[] {
+  const modules: ICapabilityModule[] = [new PortalExtractorsModule()];
+  if (edition === EDITION_ENTERPRISE) {
+    modules.push(new EnterpriseSymbolGraphModule());
+  }
+  return modules;
+}
+
 /** Registers Team capability modules after FlowRunner construction. */
 export function registerTeamCapabilities(
   agentExecutorAdapter: AgentComposerAdapter,
@@ -274,8 +289,9 @@ export function registerTeamCapabilities(
   const votingModule = new VotingCapabilityModule(votingService, logger);
   composer.registerCapabilityModule(votingModule);
 
-  const portalExtractorsModule = new PortalExtractorsModule();
-  composer.registerCapabilityModule(portalExtractorsModule);
+  for (const module of paidEditionCapabilityModules(edition)) {
+    composer.registerCapabilityModule(module);
+  }
 
   const stepRegistry = flowRunner.getStepHandlerRegistry();
   const installed = registerFlowCapabilityModules(edition, composer.getModules(), stepRegistry);

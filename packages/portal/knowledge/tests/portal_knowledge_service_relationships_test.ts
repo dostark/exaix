@@ -14,6 +14,8 @@ import { join } from "@std/path";
 import {
   type IKnowledgeInvalidationStrategy,
   type IKnowledgeValidityCheck,
+  type IPersistedRelationshipEdge,
+  mergeRelationships,
   PortalKnowledgeService,
 } from "@exaix/portal/knowledge";
 import { KnowledgeAnalysisMode, KnowledgeValidityReason, PortalAnalysisMode } from "@exaix/core";
@@ -205,4 +207,35 @@ Deno.test("[PortalKnowledgeService] _revalidateStaleCache merges relationships f
 
   const merged = Reflect.get(service, "_cache").get("test-portal") as IPortalKnowledge;
   assertEquals(merged.relationships, previousRelationships);
+});
+
+Deno.test("[mergeRelationships] preserves a Solo-only edge array byte-for-byte", () => {
+  const solo: IPersistedRelationshipEdge[] = [
+    { from: "a.ts", to: "b.ts", kind: "file_imports_file_internal" },
+    { from: "b.ts", to: "c.ts", kind: "file_imports_file_internal" },
+  ];
+
+  assertEquals(mergeRelationships([solo]), solo);
+  assertEquals(mergeRelationships([solo, []]), solo);
+});
+
+Deno.test("[mergeRelationships] yields exactly one edge when two builders emit the same (from,to,kind)", () => {
+  const solo: IPersistedRelationshipEdge[] = [{ from: "a.ts", to: "b.ts", kind: "file_imports_file_internal" }];
+  const resolver: IPersistedRelationshipEdge[] = [
+    { from: "a.ts", to: "b.ts", kind: "file_imports_file_internal" },
+    { from: "a.ts", to: "c.ts", kind: "file_imports_file_internal" },
+  ];
+
+  const merged = mergeRelationships([solo, resolver]);
+
+  assertEquals(merged.length, 2);
+  assertEquals(merged[0], solo[0]);
+  assertEquals(merged[1], resolver[1]);
+});
+
+Deno.test("[mergeRelationships] keeps symbol edges distinct from file edges on the same endpoints", () => {
+  const fileEdge: IPersistedRelationshipEdge = { from: "a.ts", to: "b.ts", kind: "file_imports_file_internal" };
+  const symbolEdge: IPersistedRelationshipEdge = { from: "a.ts", to: "b.ts", kind: "symbol_references_symbol" };
+
+  assertEquals(mergeRelationships([[fileEdge], [symbolEdge]]), [fileEdge, symbolEdge]);
 });

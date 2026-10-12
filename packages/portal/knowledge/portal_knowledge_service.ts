@@ -19,6 +19,7 @@ import { computeAdaptiveSampleSize, detectPatterns, selectSampleFiles } from "./
 import { ArchitectureInferrer, type IArchitectureValidator } from "./architecture_inferrer.ts";
 import { AstAnalyzer } from "./ast_analyzer.ts";
 import { InternalImportGraphBuilder } from "./internal_import_graph.ts";
+import { mergeRelationships } from "./relationship_query.ts";
 import type { IDocCommandRunner } from "./symbol_extractor.ts";
 import { createDefaultSymbolExtractorRegistry, type ISymbolExtractorRegistry } from "./symbol_extractor_registry.ts";
 import {
@@ -359,7 +360,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
         portalPath,
         internalGraphEntrypoints,
       );
-      relationships = internalGraphResult.edges;
+      relationships = mergeRelationships([internalGraphResult.edges]);
       if (internalGraphResult.droppedOutOfBounds.length > 0) {
         console.warn(
           `[PortalKnowledgeService] dropped ${internalGraphResult.droppedOutOfBounds.length} internal-import specifier(s) resolving outside the portal root for ${portalAlias}`,
@@ -377,20 +378,23 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     // Symbol-level reference pass. Enterprise only and opt-in. It runs after the
     // file-import pass, so the extractor receives resolved edges. An empty
     // registry or an unset flag skips the pass entirely.
+    let symbolEdgeCount: number | undefined;
     if (
       resolvedMode !== PortalAnalysisMode.QUICK &&
       this._config.enableSymbolLevelDependencyGraph === true
     ) {
       const referenceExtractor = this._symbolReferenceExtractorRegistry.getForLanguage(primaryLanguage);
       if (referenceExtractor !== EMPTY_SYMBOL_REFERENCE_EXTRACTOR) {
-        const sourceFiles = fileList.filter((f) => sourceExtensions.some((ext) => f.endsWith(ext)));
+        // The merged array is the extractor's input and the persisted value.
+        const mergedEdges = relationships ?? [];
         const symbolEdges = await referenceExtractor.extractReferences(portalPath, sourceFiles, {
           primaryLanguage,
           knownSymbols: symbolMap,
-          fileImportEdges: relationships ?? [],
+          fileImportEdges: mergedEdges,
         });
+        symbolEdgeCount = symbolEdges.length;
         if (symbolEdges.length > 0) {
-          relationships = [...(relationships ?? []), ...symbolEdges];
+          relationships = mergeRelationships([mergedEdges, symbolEdges]);
         }
       }
     }
@@ -492,6 +496,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
         mode: resolvedMode,
         filesScanned: fileList.length,
         durationMs: knowledge.metadata.durationMs,
+        ...(symbolEdgeCount !== undefined ? { symbolEdgeCount } : {}),
       });
     }
 
