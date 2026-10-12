@@ -41,6 +41,10 @@ export interface ICapabilityModule {
    *  with the app's ISymbolReferenceExtractorRegistry. */
   registerSymbolReferenceExtractors?(registry: ISeamRegistryPlaceholder): void;
 
+  /** Register symbol file resolvers (Enterprise symbol-level graph), called
+   *  with the app's ISymbolFileResolverRegistry. */
+  registerSymbolFileResolvers?(registry: ISeamRegistryPlaceholder): void;
+
   /** Register a guardrail runner (Team/Enterprise guardrail enforcement), called with
    *  the app's IGuardrailRunnerRegistry.
    * @remarks Registry defined when the guardrail seam is added. */

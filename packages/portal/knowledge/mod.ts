@@ -36,11 +36,16 @@ export {
 export { loadKnowledge, saveKnowledge } from "./knowledge_persistence.ts";
 export { buildPortalKnowledgeConfig, type PortalKnowledgeConfigSection } from "./portal_knowledge_config.ts";
 export {
+  createDefaultSymbolFileResolverRegistry,
   createDefaultSymbolReferenceExtractorRegistry,
+  EMPTY_SYMBOL_FILE_RESOLVER,
   EMPTY_SYMBOL_REFERENCE_EXTRACTOR,
+  type ISymbolFileResolver,
+  type ISymbolFileResolverRegistry,
   type ISymbolReferenceExtractor,
   type ISymbolReferenceExtractorOptions,
   type ISymbolReferenceExtractorRegistry,
+  SymbolFileResolverRegistry,
   SymbolReferenceExtractorRegistry,
 } from "./symbol_reference_extractor.ts";
 export { GitHeadResolver } from "./git_head_resolver.ts";

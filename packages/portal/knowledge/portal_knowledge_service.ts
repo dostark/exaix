@@ -23,8 +23,10 @@ import { mergeRelationships } from "./relationship_query.ts";
 import type { IDocCommandRunner } from "./symbol_extractor.ts";
 import { createDefaultSymbolExtractorRegistry, type ISymbolExtractorRegistry } from "./symbol_extractor_registry.ts";
 import {
+  createDefaultSymbolFileResolverRegistry,
   createDefaultSymbolReferenceExtractorRegistry,
   EMPTY_SYMBOL_REFERENCE_EXTRACTOR,
+  type ISymbolFileResolverRegistry,
   type ISymbolReferenceExtractorRegistry,
 } from "./symbol_reference_extractor.ts";
 import { GitHeadResolver, type IGitHeadResolver } from "./git_head_resolver.ts";
@@ -82,6 +84,8 @@ export interface IPortalKnowledgeServiceOptions {
    *  It is empty by default, so the reference pass is skipped.
    *  A paid edition registers an extractor through the composer seam. */
   symbolReferenceExtractorRegistry?: ISymbolReferenceExtractorRegistry;
+  /** Per-language file resolver for the symbol reference pass. */
+  symbolFileResolverRegistry?: ISymbolFileResolverRegistry;
   gitHeadResolver?: IGitHeadResolver;
   gitServiceFactory?: IGitServiceFactory;
   invalidationStrategy?: IKnowledgeInvalidationStrategy;
@@ -146,6 +150,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   private readonly _symbolRunner: IDocCommandRunner | undefined;
   private readonly _symbolExtractorRegistry: ISymbolExtractorRegistry;
   private readonly _symbolReferenceExtractorRegistry: ISymbolReferenceExtractorRegistry;
+  private readonly _symbolFileResolverRegistry: ISymbolFileResolverRegistry;
   private readonly _gitHeadResolver: IGitHeadResolver;
   private readonly _invalidationStrategy: IKnowledgeInvalidationStrategy;
   private readonly _embeddingProvider?: IEmbeddingProvider;
@@ -190,6 +195,8 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
       createDefaultSymbolExtractorRegistry(this._symbolRunner);
     this._symbolReferenceExtractorRegistry = optionsWithDefaults.symbolReferenceExtractorRegistry ??
       createDefaultSymbolReferenceExtractorRegistry();
+    this._symbolFileResolverRegistry = options.symbolFileResolverRegistry ??
+      createDefaultSymbolFileResolverRegistry();
     this._gitHeadResolver = optionsWithDefaults.gitHeadResolver ??
       new GitHeadResolver(optionsWithDefaults.gitServiceFactory);
     this._invalidationStrategy = optionsWithDefaults.invalidationStrategy ?? new KnowledgeInvalidationStrategy(
@@ -385,15 +392,19 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     ) {
       const referenceExtractor = this._symbolReferenceExtractorRegistry.getForLanguage(primaryLanguage);
       if (referenceExtractor !== EMPTY_SYMBOL_REFERENCE_EXTRACTOR) {
+        // Resolve the language's import specifiers first, so the extractor can
+        // narrow a reference to a file the source really imports.
+        const resolver = this._symbolFileResolverRegistry.getForLanguage(primaryLanguage);
+        const resolvedEdges = await resolver.resolveFileEdges(portalPath, sourceFiles);
         // The merged array is the extractor's input and the persisted value.
-        const mergedEdges = relationships ?? [];
+        const mergedEdges = mergeRelationships([relationships ?? [], resolvedEdges]);
         const symbolEdges = await referenceExtractor.extractReferences(portalPath, sourceFiles, {
           primaryLanguage,
           knownSymbols: symbolMap,
           fileImportEdges: mergedEdges,
         });
         symbolEdgeCount = symbolEdges.length;
-        if (symbolEdges.length > 0) {
+        if (symbolEdges.length > 0 || resolvedEdges.length > 0) {
           relationships = mergeRelationships([mergedEdges, symbolEdges]);
         }
       }

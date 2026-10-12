@@ -43,6 +43,46 @@ export interface ISymbolReferenceExtractorRegistry {
   getForLanguage(language: string): ISymbolReferenceExtractor;
 }
 
+/** Resolves a language's import specifiers into portal-relative file edges. */
+export interface ISymbolFileResolver {
+  /** Returns `file_imports_file_internal` edges for the supplied files. */
+  resolveFileEdges(
+    portalPath: string,
+    filePaths: string[],
+  ): Promise<IPortalKnowledgeRelationship[]>;
+}
+
+/** Selects an `ISymbolFileResolver` by language. */
+export interface ISymbolFileResolverRegistry {
+  register(language: string, resolver: ISymbolFileResolver): void;
+  /** Never returns `undefined`.
+   *  An unregistered language resolves to a no-op. */
+  getForLanguage(language: string): ISymbolFileResolver;
+}
+
+/** A no-op resolver: returns no edges for any language. */
+export const EMPTY_SYMBOL_FILE_RESOLVER: ISymbolFileResolver = {
+  resolveFileEdges: () => Promise.resolve([]),
+};
+
+/** Map-backed file-resolver registry keyed by lower-cased language name. */
+export class SymbolFileResolverRegistry implements ISymbolFileResolverRegistry {
+  private readonly resolvers = new Map<string, ISymbolFileResolver>();
+
+  register(language: string, resolver: ISymbolFileResolver): void {
+    this.resolvers.set(language.toLowerCase(), resolver);
+  }
+
+  getForLanguage(language: string): ISymbolFileResolver {
+    return this.resolvers.get(language.toLowerCase()) ?? EMPTY_SYMBOL_FILE_RESOLVER;
+  }
+}
+
+/** Builds the default (empty) file-resolver registry. */
+export function createDefaultSymbolFileResolverRegistry(): ISymbolFileResolverRegistry {
+  return new SymbolFileResolverRegistry();
+}
+
 /** A no-op extractor: returns no edges for any language. */
 export const EMPTY_SYMBOL_REFERENCE_EXTRACTOR: ISymbolReferenceExtractor = {
   extractReferences: () => Promise.resolve([]),
