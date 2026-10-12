@@ -151,6 +151,7 @@ export class LlmAnalyzer {
       const genResult = await this.provider.generate(prompt, {
         temperature: 0,
         max_tokens: 1500,
+        thinking: false,
         jsonSchema: getRequestAnalysisCoreJsonSchema(),
       });
       raw = genResult.content;
@@ -173,6 +174,7 @@ export class LlmAnalyzer {
         const refinedResult2 = await this.provider.generate(reviewPrompt, {
           temperature: 0,
           max_tokens: 1500,
+          thinking: false,
           jsonSchema: getRequestAnalysisCoreJsonSchema(),
         });
         const refinedResult = this.validator.parseAndValidate(refinedResult2.content, RequestAnalysisCoreSchema);

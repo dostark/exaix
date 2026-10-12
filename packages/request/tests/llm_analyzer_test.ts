@@ -64,6 +64,27 @@ function createCapturingProvider(responseJson: string): { provider: IModelProvid
 
 // Tests
 
+Deno.test("[LlmAnalyzer] classification requests disable optional thinking on both passes", async () => {
+  const options: Array<IModelOptions | undefined> = [];
+  const provider: IModelProvider = {
+    id: "classification-capturing",
+    generate: (_prompt: string, callOptions?: IModelOptions): Promise<IGenerateResult> => {
+      options.push(callOptions);
+      return Promise.resolve({
+        content: validAnalysisJson,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "classification-mock",
+        provider: "mock",
+        cost_usd: 0,
+      });
+    },
+  };
+  await new LlmAnalyzer(provider, createOutputValidator({ autoRepair: false })).analyze("Add unit tests.", {});
+  assertEquals(options.length, 2);
+  assertEquals(options.map((value: IModelOptions | undefined) => value?.thinking), [false, false]);
+  assertEquals(options.map((value: IModelOptions | undefined) => value?.max_tokens), [1500, 1500]);
+});
+
 Deno.test("[LlmAnalyzer] parses valid LLM JSON response into IRequestAnalysis", async () => {
   const provider = new MockProvider(validAnalysisJson);
   const validator = createOutputValidator({ autoRepair: false });
