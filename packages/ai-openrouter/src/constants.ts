@@ -88,9 +88,6 @@ export const OPENROUTER_EXPLICIT_CACHE_MODELS = [
 /** The finish reason that means the response ended at the token limit. */
 export const OPENROUTER_FINISH_REASON_LENGTH = "length";
 
-/** The reasoning effort that the reasoning guide documents as disabling reasoning. */
-export const OPENROUTER_EFFORT_NONE = "none";
-
 /** Reasoning efforts from the least reasoning to the most. Picks the lowest tier that a model lists. */
 export const OPENROUTER_EFFORT_ORDER = ["minimal", "low", "medium", "high", "xhigh", "max"] as const;
 

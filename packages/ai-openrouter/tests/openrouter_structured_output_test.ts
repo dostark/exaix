@@ -104,24 +104,24 @@ Deno.test("a strict-representable schema sends response_format json_schema with 
   });
 });
 
-Deno.test("a schema that is not strict-representable sends no response_format and puts the schema in the prompt", async () => {
+Deno.test("a schema that is not strict-representable sends json_object with the instruction and its reason", async () => {
   await withReplies([chat('{"a":"x"}')], async (bodies) => {
     const result = await provider().generate("list files", optionsFor(RECORD_SCHEMA));
-    assertEquals(bodies[0].response_format, undefined);
+    assertEquals(bodies[0].response_format, { type: "json_object" });
     assertEquals(bodies[0].messages.at(-1)?.content, `list files\n\n${jsonModeInstruction(RECORD_SCHEMA)}`);
-    assertEquals(result.structuredOutputMode, "prompt_schema");
+    assertEquals(result.structuredOutputMode, "json_object");
     assertEquals(result.structuredOutputModeReason, "schema_not_strict_representable");
   });
 });
 
-Deno.test("a routing refusal of json_schema retries once with no response_format and reports route_refused_json_schema", async () => {
+Deno.test("a routing refusal of json_schema retries once with json_object and reports route_refused_json_schema", async () => {
   await withReplies([routingRefusal(), chat(VALID_JSON)], async (bodies) => {
     const result = await provider().generate("list files", optionsFor(STRICT_SCHEMA));
     assertEquals(bodies.length, 2);
     assertEquals(bodies[0].response_format?.type, "json_schema");
-    assertEquals(bodies[1].response_format, undefined);
+    assertEquals(bodies[1].response_format, { type: "json_object" });
     assertEquals(bodies[1].messages.at(-1)?.content, `list files\n\n${jsonModeInstruction(STRICT_SCHEMA)}`);
-    assertEquals(result.structuredOutputMode, "prompt_schema");
+    assertEquals(result.structuredOutputMode, "json_object");
     assertEquals(result.structuredOutputModeReason, "route_refused_json_schema");
   });
 });
@@ -133,7 +133,7 @@ Deno.test("a routing refusal of both modes fails closed with OpenRouterRoutingEr
   });
 });
 
-Deno.test("a refused prompt-schema request is not retried, because there is no weaker mode", async () => {
+Deno.test("a refused json_object plan is not retried, because there is no weaker mode", async () => {
   await withReplies([routingRefusal()], async (bodies) => {
     await assertRejects(() => provider().generate("list files", optionsFor(RECORD_SCHEMA)), OpenRouterRoutingError);
     assertEquals(bodies.length, 1);

@@ -54,13 +54,8 @@ Deno.test("a thinking budget is sent as reasoning.max_tokens only when the model
   assertEquals(reasoningFor({ thinking_budget: 512 }, undefined), undefined);
 });
 
-Deno.test("thinking false is sent as effort none where the model lists none", () => {
-  const withNone = entry({ mandatory: false, supportedEfforts: ["high", "none"], supportsMaxTokens: false });
-  assertEquals(reasoningFor({ thinking: false }, withNone), { effort: "none" });
-});
-
-Deno.test("thinking false on an optional model that lists no none sends no reasoning control, never enabled false", () => {
-  assertEquals(reasoningFor({ thinking: false }, NEITHER), undefined);
+Deno.test("thinking false is sent as reasoning.enabled false unless reasoning is mandatory", () => {
+  assertEquals(reasoningFor({ thinking: false }, NEITHER), { enabled: false });
   assertEquals(reasoningFor({ thinking: false }, MANDATORY), undefined);
   assertEquals(reasoningFor({ thinking: false }, entry()), undefined);
   assertEquals(reasoningFor({ thinking: false }, undefined), undefined);

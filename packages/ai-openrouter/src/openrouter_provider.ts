@@ -123,15 +123,6 @@ type OpenRouterProviderBody = NonNullable<IOpenRouterRouting["provider"]> & {
   data_collection?: OpenRouterDataCollection;
 };
 
-/** OpenRouter replays reasoning through reasoning_details only. The shared builder also writes reasoning_content. */
-function withoutReasoningContent(messages: OpenAiChatMessage[]): OpenAiChatMessage[] {
-  return messages.map((message) => {
-    if (message.role !== "assistant" || message.reasoning_content === undefined) return message;
-    const { reasoning_content: _omitted, ...replay } = message;
-    return replay;
-  });
-}
-
 /** One request to try, with the plan it carries. */
 interface IRouteAttempt {
   options: Opt<IModelOptions, Reason.AbstractBoundary>;
@@ -255,12 +246,12 @@ export class OpenRouterProvider extends BaseProvider {
     plan: Opt<IStructuredOutputPlan, Reason.OptionalContext> = this.planOutput(options),
     entry?: Opt<IOpenRouterModelEntry, Reason.OptionalContext>,
   ): OpenRouterRequestBody {
-    const messages: OpenAiChatMessage[] = withoutReasoningContent(buildOpenAiMessages(
+    const messages: OpenAiChatMessage[] = buildOpenAiMessages(
       prompt,
       options?.priorTurn,
       options?.nativeConversation,
       options?.priorRound,
-    ));
+    );
     const body: OpenRouterRequestBody = {
       model: this.model,
       messages,
@@ -270,7 +261,7 @@ export class OpenRouterProvider extends BaseProvider {
     const reasoning = reasoningFor(options, entry);
     if (reasoning) body.reasoning = reasoning;
     if (plan) {
-      if (plan.responseFormat !== undefined) body.response_format = plan.responseFormat;
+      body.response_format = plan.responseFormat;
       if (plan.promptInstruction) applyJsonModeInstruction(messages, prompt, plan.promptInstruction, this.id);
     }
     body.messages = applyCacheControl(messages, this.model, this.cacheControl);
@@ -306,7 +297,7 @@ export class OpenRouterProvider extends BaseProvider {
   }
 
   /** Sends the strongest request first. A route that refuses a forced tool choice gets one auto retry.
-   *  A route that refuses json_schema gets one prompt-only retry. A refusal after the last retry is thrown. */
+   *  A route that refuses json_schema gets one json_object retry. A refusal after the last retry is thrown. */
   protected override async attemptGenerate(
     prompt: string,
     options?: Opt<IModelOptions, Reason.AbstractBoundary>,

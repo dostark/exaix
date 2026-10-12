@@ -101,7 +101,7 @@ Deno.test("a reasoning-off hint with a temperature on a model that lists no temp
     { temperature: 0, max_tokens: 100, thinking: false },
     entryListing("reasoning", "max_tokens"),
   );
-  assertEquals(body.reasoning, undefined);
+  assertEquals(body.reasoning, { enabled: false });
   assertEquals(body.temperature, undefined);
 });
 

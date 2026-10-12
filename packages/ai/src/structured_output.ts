@@ -25,9 +25,8 @@ export type StructuredOutputProfile = "openai" | "deepseek" | "local-test" | "se
 export interface IStructuredOutputPlan {
   mode: StructuredOutputMode;
   reason?: StructuredOutputModeReason;
-  /** Absent in prompt_schema mode, where the schema travels only in the prompt. */
-  responseFormat?: Record<string, JSONValue>;
-  /** Appended to the prompt in json_object and prompt_schema modes (the literal word "json" must appear). */
+  responseFormat: Record<string, JSONValue>;
+  /** Appended to the prompt only in json_object mode (the literal word "json" must appear). */
   promptInstruction?: string;
 }
 
@@ -320,25 +319,8 @@ export function planJsonObjectOutput(
     mode: "json_object",
     ...(reason !== undefined ? { reason } : {}),
     responseFormat: { type: "json_object" },
-    promptInstruction: schemaPromptInstruction(schema),
+    promptInstruction: `${STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION}\nJSON schema: ${JSON.stringify(schema)}`,
   };
-}
-
-/** The prompt-only plan: no response format is sent. The schema travels in the prompt and the reply is validated locally. */
-export function planPromptSchemaOutput(
-  schema: Record<string, JSONValue>,
-  reason?: Opt<StructuredOutputModeReason, Reason.OptionalContext>,
-): IStructuredOutputPlan {
-  assertSupportedJsonSchema(schema);
-  return {
-    mode: "prompt_schema",
-    ...(reason !== undefined ? { reason } : {}),
-    promptInstruction: schemaPromptInstruction(schema),
-  };
-}
-
-function schemaPromptInstruction(schema: Record<string, JSONValue>): string {
-  return `${STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION}\nJSON schema: ${JSON.stringify(schema)}`;
 }
 
 /** Validates content against the ORIGINAL schema, after reversing strict mode's null strip. */
