@@ -6,14 +6,14 @@
  * @dependencies ["@exaix/ai", "@exaix/core"]
  * @description Maps the run's effort, thinking budget and thinking switch to the OpenRouter reasoning object.
  * A control is sent only in a form that the model's own capability entry accepts. An unsupported control is
- * dropped, except that thinking off on a model whose reasoning is mandatory is sent as its lowest listed effort.
+ * dropped. Thinking off is sent as effort none where the model lists it, or as its lowest listed effort when reasoning is mandatory.
  */
 
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IOpenRouterModelEntry } from "./openrouter_model_capabilities.ts";
-import { OPENROUTER_EFFORT_ORDER } from "./constants.ts";
+import { OPENROUTER_EFFORT_NONE, OPENROUTER_EFFORT_ORDER } from "./constants.ts";
 
 type ReasoningOptions = Pick<IModelOptions, "effort" | "thinking" | "thinking_budget">;
 
@@ -36,10 +36,13 @@ export function reasoningFor(
     return { max_tokens: options.thinking_budget };
   }
   if (options?.thinking === false) {
-    if (!reasoning.mandatory) return { enabled: false };
-    // Reasoning cannot be turned off, so the least reasoning the model accepts stands in for thinking off.
-    const lowest = OPENROUTER_EFFORT_ORDER.find((effort) => reasoning.supportedEfforts.includes(effort));
-    return lowest ? { effort: lowest } : undefined;
+    if (reasoning.mandatory) {
+      // Reasoning cannot be turned off, so the least reasoning the model accepts stands in for thinking off.
+      const lowest = OPENROUTER_EFFORT_ORDER.find((effort) => reasoning.supportedEfforts.includes(effort));
+      return lowest ? { effort: lowest } : undefined;
+    }
+    // The guide documents effort none as the disable. An unlisted none sends nothing rather than a guessed field.
+    return reasoning.supportedEfforts.includes(OPENROUTER_EFFORT_NONE) ? { effort: OPENROUTER_EFFORT_NONE } : undefined;
   }
   return undefined;
 }

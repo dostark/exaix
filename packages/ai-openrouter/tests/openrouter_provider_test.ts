@@ -89,7 +89,7 @@ Deno.test("each capability that the provider metadata declares produces its requ
   const supportingEntry: IOpenRouterModelEntry = {
     id: "qwen/qwen3.7-flash",
     supportedParameters: ["reasoning", "tools"],
-    reasoning: { mandatory: false, supportedEfforts: ["high", "low"], supportsMaxTokens: false },
+    reasoning: { mandatory: false, supportedEfforts: ["high", "low", "none"], supportsMaxTokens: false },
   };
   const bodyFor = async (
     options: Record<string, string | boolean>,
@@ -116,7 +116,7 @@ Deno.test("each capability that the provider metadata declares produces its requ
     assertEquals((await bodyFor({ effort: "high" })).reasoning, { effort: "high" });
   }
   if (OPENROUTER_PROVIDER_METADATA.supportsThinking) {
-    assertEquals((await bodyFor({ thinking: false })).reasoning, { enabled: false });
+    assertEquals((await bodyFor({ thinking: false })).reasoning, { effort: "none" });
   }
 });
 
