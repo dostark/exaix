@@ -13,7 +13,7 @@ import { GitService } from "@exaix/git";
 import { EventLogger } from "@exaix/core/logger";
 import { ProviderFactory } from "@exaix/ai";
 import { FlowLoader } from "@exaix/flow";
-import { ActivityActor, DEFAULT_PROJECTS_MEMORY_PATH, EDITION_SOLO, EDITION_TEAM, ExaPathDefaults } from "@exaix/core";
+import { ActivityActor, DEFAULT_PROJECTS_MEMORY_PATH, EDITION_SOLO, ExaPathDefaults } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -32,21 +32,21 @@ import { FlowValidatorImpl } from "@exaix/flow";
 import { ContextCardGenerator } from "@exaix/core/context";
 import { PortalService } from "@exaix/portal";
 import {
+  buildPortalKnowledgeConfig,
   createDefaultSymbolExtractorRegistry,
+  createDefaultSymbolReferenceExtractorRegistry,
   type ISymbolExtractorRegistry,
+  type ISymbolReferenceExtractorRegistry,
   PortalKnowledgeService,
 } from "@exaix/portal/knowledge";
 import { RequestService } from "@exaix/request";
 import { PlanService } from "@exaix/core/planning";
 import { PlanAmendmentGate, PlanAmendmentService } from "@exaix/core/planning";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
-import { SoloComposer } from "@exaix/core/composer";
+import { createEditionComposer, fillPortalKnowledgeSeams } from "./portal_seams_bootstrap.ts";
 import { DefaultModelRegistry } from "@exaix/model-registry";
 import type { IProviderHealthChecker } from "@exaix/ai";
-// Type-only imports are erased at compile time, so referencing @exaix-team/* types here is
-// safe even though a Solo build must never reference team modules at runtime — those load
-// dynamically only inside editionType !== "solo" branches below.
-import type { TeamComposer } from "@exaix-team/team-composer";
+// Team types live in portal_seams_bootstrap, which imports them dynamically.
 import type { HitlPolicyEvaluator } from "@exaix-team/hitl";
 
 // Adapters
@@ -167,15 +167,8 @@ export async function initializeServices(
     // Edition-aware composer — Team edition additionally registers Team-only
     // capability modules and bootstraps Team-only providers (Vertex AI).
     const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
-    let _editionComposer: SoloComposer | TeamComposer;
-    if (editionType === EDITION_TEAM) {
-      // Dynamic import keeps @exaix-team/* out of the Solo build (edition separation).
-      const { bootstrapTeamProviders, TeamComposer } = await import("@exaix-team/team-composer");
-      bootstrapTeamProviders();
-      _editionComposer = new TeamComposer();
-    } else {
-      _editionComposer = new SoloComposer();
-    }
+    // Dynamic import keeps @exaix-team/* out of the Solo build (edition separation).
+    const _editionComposer = await createEditionComposer(editionType);
     const displayLogger = new EventLogger({ db: dbLocal });
     // Reading the journal or printing config needs no model.
     // Build the provider defensively, so a failed credential degrades only the provider.
@@ -217,31 +210,16 @@ export async function initializeServices(
     const contextCards = new ContextCardGenerator(cfg);
 
     const validatorLocal = new OutputValidator();
-    const portalKnowledgeConfig: IPortalKnowledgeConfig = {
-      autoAnalyzeOnMount: cfg.portal_knowledge.auto_analyze_on_mount,
-      defaultMode: cfg.portal_knowledge.default_mode,
-      quickScanLimit: cfg.portal_knowledge.quick_scan_limit,
-      maxFilesToRead: cfg.portal_knowledge.max_files_to_read,
-      staleness: cfg.portal_knowledge.staleness_hours,
-      useLlmInference: cfg.portal_knowledge.use_llm_inference,
-      ignorePatterns: cfg.portal_knowledge.ignore_patterns,
-      relevanceSearchEmbeddingEnabled: cfg.portal_knowledge.relevance_search_embedding_enabled ?? false,
-      maxPatternDetectorSampleSize: cfg.portal_knowledge.max_pattern_detector_sample_size,
-      minPatternDetectorSampleSize: cfg.portal_knowledge.min_pattern_detector_sample_size,
-      enableAstAnalysis: cfg.portal_knowledge.enable_ast_analysis,
-      enableTestExecution: cfg.portal_knowledge.enable_test_execution,
-      enableVulnerabilityScan: cfg.portal_knowledge.enable_vulnerability_scan,
-      enableGitHistoryAnalysis: cfg.portal_knowledge.enable_git_history_analysis,
-      gitHistoryCommitLimit: cfg.portal_knowledge.git_history_commit_limit,
-      gitHistorySince: cfg.portal_knowledge.git_history_since,
-    };
+    const portalKnowledgeConfig: IPortalKnowledgeConfig = buildPortalKnowledgeConfig(cfg.portal_knowledge);
 
     const symbolRegistry: ISymbolExtractorRegistry = createDefaultSymbolExtractorRegistry();
+    const symbolReferenceRegistry: ISymbolReferenceExtractorRegistry = createDefaultSymbolReferenceExtractorRegistry();
     const portalKnowledge = new PortalKnowledgeService({
       config: portalKnowledgeConfig,
       memoryBank,
       provider: providerLocal,
       symbolExtractorRegistry: symbolRegistry,
+      symbolReferenceExtractorRegistry: symbolReferenceRegistry,
       gitServiceFactory: {
         createGitService(repoPath: string, traceId: string) {
           return new GitService({ config: cfg, repoPath, traceId });
@@ -251,6 +229,13 @@ export async function initializeServices(
       createVectorIndex: () => new HnswVectorIndex(),
       projectsDir: join(cfg.system.root!, cfg.paths.memory!, DEFAULT_PROJECTS_MEMORY_PATH),
     });
+
+    // Fill the paid-edition seams that portal analysis uses.
+    // The CLI registered no capability module before this step.
+    // Extended-language extractors were therefore absent from every analyze run.
+    if (editionType !== EDITION_SOLO) {
+      await fillPortalKnowledgeSeams(_editionComposer, { symbolRegistry, symbolReferenceRegistry });
+    }
 
     // Create HITL policy evaluator if Team/Enterprise edition. Dynamic import keeps
     // @exaix-team/hitl out of the Solo build (edition separation).

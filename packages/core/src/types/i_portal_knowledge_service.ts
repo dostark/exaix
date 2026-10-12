@@ -55,6 +55,9 @@ export interface IPortalKnowledgeConfig {
   gitHistoryCommitLimit?: number;
   /** Git since filter (e.g. "1.year", "30.days"). Default: "1.year". */
   gitHistorySince?: string;
+  /** Whether to run the symbol-level reference pass. Enterprise only and
+   *  opt-in: the default `false` keeps Solo and Team behaviour unchanged. */
+  enableSymbolLevelDependencyGraph?: boolean;
 }
 
 /** One scored, provenance-labelled context candidate. `source` is a portal-relative

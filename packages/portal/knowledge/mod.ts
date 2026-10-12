@@ -34,6 +34,15 @@ export {
   SymbolExtractorRegistry,
 } from "./symbol_extractor_registry.ts";
 export { loadKnowledge, saveKnowledge } from "./knowledge_persistence.ts";
+export { buildPortalKnowledgeConfig, type PortalKnowledgeConfigSection } from "./portal_knowledge_config.ts";
+export {
+  createDefaultSymbolReferenceExtractorRegistry,
+  EMPTY_SYMBOL_REFERENCE_EXTRACTOR,
+  type ISymbolReferenceExtractor,
+  type ISymbolReferenceExtractorOptions,
+  type ISymbolReferenceExtractorRegistry,
+  SymbolReferenceExtractorRegistry,
+} from "./symbol_reference_extractor.ts";
 export { GitHeadResolver } from "./git_head_resolver.ts";
 export type { IGitHeadResolver } from "./git_head_resolver.ts";
 export { AstAnalyzer } from "./ast_analyzer.ts";

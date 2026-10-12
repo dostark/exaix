@@ -106,6 +106,29 @@ Deno.test("[ConfigSchema] auto_analyze_on_mount defaults to false when the key i
   }
 });
 
+Deno.test("[ConfigSchema] enable_symbol_level_dependency_graph defaults to false and accepts true", () => {
+  const omitted = ConfigSchema.safeParse({
+    ...baseConfig(),
+    portal_knowledge: { default_mode: "standard" },
+  });
+  assertEquals(omitted.success, true);
+  if (omitted.success) {
+    assertEquals(omitted.data.portal_knowledge!.enable_symbol_level_dependency_graph, false);
+  }
+
+  const enabled = ConfigSchema.safeParse({
+    ...baseConfig(),
+    portal_knowledge: {
+      default_mode: "standard",
+      enable_symbol_level_dependency_graph: true,
+    },
+  });
+  assertEquals(enabled.success, true);
+  if (enabled.success) {
+    assertEquals(enabled.data.portal_knowledge!.enable_symbol_level_dependency_graph, true);
+  }
+});
+
 Deno.test("[ConfigSchema] rejects invalid default_mode value", () => {
   const result = ConfigSchema.safeParse({
     ...baseConfig(),

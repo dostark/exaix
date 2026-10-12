@@ -38,14 +38,18 @@ import type { IEventLogger } from "@exaix/core/logger";
 import type { AgentComposerAdapter, FlowRunner } from "@exaix/flow";
 import type { TeamComposer } from "@exaix-team/team-composer";
 import { CAP_VOTING, CAPABILITY_EDITION } from "@exaix/core/composer";
-import type { ISeamRegistryPlaceholder } from "@exaix/core/composer";
-import type { ISymbolExtractorRegistry } from "@exaix/portal/knowledge";
+import type { ICapabilityModule, ISeamRegistryPlaceholder } from "@exaix/core/composer";
+import type { ISymbolExtractorRegistry, ISymbolReferenceExtractorRegistry } from "@exaix/portal/knowledge";
 import { EDITION_TEAM } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export interface ITeamCapabilityOptions {
   edition: string;
   hitlPolicyEvaluator?: Opt<IHitlPolicyEvaluator, Reason.OptionalDependency>;
+  /** Symbol-reference registry for the Enterprise symbol-level graph.
+   *  It is optional, so an existing caller stays source-compatible.
+   *  When absent, the reference pass is skipped. */
+  symbolReferenceRegistry?: ISymbolReferenceExtractorRegistry;
 }
 
 /** Runtime dependencies the Team model-registry provider closes over. */
@@ -216,6 +220,32 @@ export async function loadBenchmarkFloor(
   }
 }
 
+/**
+ * Invokes each module's symbol-extractor hooks with the app's registries.
+ *
+ * The reference registry reaches a module by object identity.
+ * A module therefore cannot hold a copy the service never sees.
+ * Returns how many modules received a reference registry.
+ */
+export function registerCapabilitySeamHooks(
+  modules: Iterable<ICapabilityModule>,
+  registries: {
+    symbolRegistry: ISymbolExtractorRegistry;
+    symbolReferenceRegistry?: ISymbolReferenceExtractorRegistry;
+  },
+): number {
+  const { symbolRegistry, symbolReferenceRegistry } = registries;
+  let referenceRegistrations = 0;
+  for (const module of modules) {
+    module.registerSymbolExtractors?.(symbolRegistry as ISeamRegistryPlaceholder);
+    if (symbolReferenceRegistry) {
+      module.registerSymbolReferenceExtractors?.(symbolReferenceRegistry as ISeamRegistryPlaceholder);
+      referenceRegistrations += 1;
+    }
+  }
+  return referenceRegistrations;
+}
+
 /** Registers Team capability modules after FlowRunner construction. */
 export function registerTeamCapabilities(
   agentExecutorAdapter: AgentComposerAdapter,
@@ -225,7 +255,7 @@ export function registerTeamCapabilities(
   symbolRegistry: ISymbolExtractorRegistry,
   options: ITeamCapabilityOptions,
 ): ReadonlySet<string> {
-  const { edition, hitlPolicyEvaluator } = options;
+  const { edition, hitlPolicyEvaluator, symbolReferenceRegistry } = options;
   // Assert the capability-to-edition mapping is consistent at wiring time
   if (CAPABILITY_EDITION[CAP_VOTING] !== EDITION_TEAM) {
     throw new Error(
@@ -249,8 +279,6 @@ export function registerTeamCapabilities(
 
   const stepRegistry = flowRunner.getStepHandlerRegistry();
   const installed = registerFlowCapabilityModules(edition, composer.getModules(), stepRegistry);
-  for (const module of composer.getModules()) {
-    module.registerSymbolExtractors?.(symbolRegistry as ISeamRegistryPlaceholder);
-  }
+  registerCapabilitySeamHooks(composer.getModules(), { symbolRegistry, symbolReferenceRegistry });
   return installed;
 }

@@ -882,6 +882,8 @@ const ConfigObjectSchema = z.object({
       .default(DEFAULTS.GIT_HISTORY_COMMIT_LIMIT),
     /** Git since filter (e.g. "1.year", "30.days"). */
     git_history_since: z.string().optional().default(DEFAULTS.GIT_HISTORY_SINCE),
+    /** Whether to run the Enterprise symbol-level reference pass (opt-in, default false). */
+    enable_symbol_level_dependency_graph: z.boolean().optional().default(false),
     /** Inclusion strategy: "summary" (today's HNSW/text summary) or "adaptive" (request-scored core + relevant entries). */
     inclusion: z.nativeEnum(PortalKnowledgeInclusion).optional()
       .default(DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_INCLUSION as PortalKnowledgeInclusion),
@@ -910,6 +912,7 @@ const ConfigObjectSchema = z.object({
     enable_git_history_analysis: true,
     git_history_commit_limit: DEFAULTS.GIT_HISTORY_COMMIT_LIMIT,
     git_history_since: DEFAULTS.GIT_HISTORY_SINCE,
+    enable_symbol_level_dependency_graph: false,
     inclusion: DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_INCLUSION as PortalKnowledgeInclusion,
     core_max_tokens: DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_CORE_MAX_TOKENS,
     relevant_max_entries: DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_RELEVANT_MAX_ENTRIES,

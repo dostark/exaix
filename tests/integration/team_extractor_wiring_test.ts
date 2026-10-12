@@ -7,9 +7,14 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { SymbolExtractorRegistry } from "@exaix/portal/knowledge";
-import type { ISeamRegistryPlaceholder } from "@exaix/core/composer";
+import {
+  createDefaultSymbolReferenceExtractorRegistry,
+  type ISymbolReferenceExtractorRegistry,
+  SymbolExtractorRegistry,
+} from "@exaix/portal/knowledge";
+import type { ICapabilityModule, ISeamRegistryPlaceholder } from "@exaix/core/composer";
 import { PortalExtractorsModule } from "@exaix-team/portal-extractors";
+import { registerCapabilitySeamHooks } from "../../apps/daemon/src/bootstrap_team.ts";
 
 Deno.test("[Team] PortalExtractorsModule registers Rust/Go/Java extractors", () => {
   const registry = new SymbolExtractorRegistry();
@@ -48,4 +53,43 @@ Deno.test("[Team] PortalExtractorsModule registers Rust/Go/Java extractors", () 
     "Object",
     "Unregistered language should get EMPTY_SYMBOL_EXTRACTOR (Object literal)",
   );
+});
+
+Deno.test("[Team] registerCapabilitySeamHooks forwards the reference registry by object identity", () => {
+  const symbolRegistry = new SymbolExtractorRegistry();
+  const referenceRegistry = createDefaultSymbolReferenceExtractorRegistry();
+  const seen: Array<ISymbolReferenceExtractorRegistry | undefined> = [];
+
+  const module: ICapabilityModule = {
+    registerSymbolReferenceExtractors: (registry) => {
+      seen.push(registry as ISymbolReferenceExtractorRegistry);
+    },
+  };
+
+  const count = registerCapabilitySeamHooks([module], {
+    symbolRegistry,
+    symbolReferenceRegistry: referenceRegistry,
+  });
+
+  assertEquals(count, 1);
+  assertEquals(
+    seen[0] === referenceRegistry,
+    true,
+    "the module must receive the same registry instance the service holds, not a copy",
+  );
+});
+
+Deno.test("[Team] registerCapabilitySeamHooks skips the reference hook when no registry is supplied", () => {
+  const symbolRegistry = new SymbolExtractorRegistry();
+  let called = 0;
+  const module: ICapabilityModule = {
+    registerSymbolReferenceExtractors: () => {
+      called += 1;
+    },
+  };
+
+  const count = registerCapabilitySeamHooks([module], { symbolRegistry });
+
+  assertEquals(count, 0);
+  assertEquals(called, 0, "an absent registry must keep the feature inert");
 });

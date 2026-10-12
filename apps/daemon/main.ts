@@ -98,12 +98,15 @@ import { SkillsService } from "@exaix/core/skills";
 import { FlowLoaderAdapter } from "../../apps/common/adapters/flow_loader_adapter.ts";
 import { MemoryBankAdapter } from "../../apps/common/adapters/memory_bank_adapter.ts";
 import {
+  buildPortalKnowledgeConfig,
   createDefaultSymbolExtractorRegistry,
+  createDefaultSymbolReferenceExtractorRegistry,
   type ISymbolExtractorRegistry,
+  type ISymbolReferenceExtractorRegistry,
   PortalKnowledgeService,
 } from "@exaix/portal/knowledge";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
-import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/types";
+import type { IPortalKnowledgeConfig } from "@exaix/core/types";
 import { createConfigReloadHandler, createDbWatcherHandler, getMaxOverrideId } from "@exaix/core/config";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
 import { createFlowEventLogger } from "./src/flow_event_logger_adapter.ts";
@@ -629,33 +632,18 @@ if (import.meta.main) {
 
     // Initialize Portal Knowledge Service
     const pkCfg = config.portal_knowledge;
-    const portalKnowledgeConfig: IPortalKnowledgeConfig = {
-      autoAnalyzeOnMount: pkCfg.auto_analyze_on_mount,
-      defaultMode: pkCfg.default_mode as PortalAnalysisMode,
-      quickScanLimit: pkCfg.quick_scan_limit,
-      maxFilesToRead: pkCfg.max_files_to_read,
-      ignorePatterns: pkCfg.ignore_patterns,
-      staleness: pkCfg.staleness_hours,
-      useLlmInference: pkCfg.use_llm_inference,
-      relevanceSearchEmbeddingEnabled: pkCfg.relevance_search_embedding_enabled ?? false,
-      maxPatternDetectorSampleSize: pkCfg.max_pattern_detector_sample_size,
-      minPatternDetectorSampleSize: pkCfg.min_pattern_detector_sample_size,
-      enableAstAnalysis: pkCfg.enable_ast_analysis,
-      enableTestExecution: pkCfg.enable_test_execution,
-      enableVulnerabilityScan: pkCfg.enable_vulnerability_scan,
-      enableGitHistoryAnalysis: pkCfg.enable_git_history_analysis,
-      gitHistoryCommitLimit: pkCfg.git_history_commit_limit,
-      gitHistorySince: pkCfg.git_history_since,
-    };
+    const portalKnowledgeConfig: IPortalKnowledgeConfig = buildPortalKnowledgeConfig(pkCfg);
     // Solo registers TS/JS and Python extractors; Team composition adds
     // extended-language extractors through its hook.
     const symbolRegistry: ISymbolExtractorRegistry = createDefaultSymbolExtractorRegistry();
+    const symbolReferenceRegistry: ISymbolReferenceExtractorRegistry = createDefaultSymbolReferenceExtractorRegistry();
     const portalKnowledge = new PortalKnowledgeService({
       config: portalKnowledgeConfig,
       memoryBank,
       embeddingProvider,
       createVectorIndex: () => new HnswVectorIndex(),
       symbolExtractorRegistry: symbolRegistry,
+      symbolReferenceExtractorRegistry: symbolReferenceRegistry,
       projectsDir: join(config.system.root, config.paths.memory, DEFAULT_PROJECTS_MEMORY_PATH),
     });
 
@@ -841,7 +829,7 @@ if (import.meta.main) {
     // Team supplies live validation and auto-admission through IResolutionStrategy;
     // Solo intentionally supplies no strategy.
     let resolutionStrategy: Opt<IResolutionStrategy, Reason.OptionalDependency>;
-    if (editionType === EDITION_TEAM) {
+    if (editionType === EDITION_TEAM || editionType === EDITION_ENTERPRISE) {
       const bt = await import("./src/bootstrap_team.ts");
       const { buildTeamResolutionStrategy, buildRefreshScheduler, loadBenchmarkFloor } = bt;
       resolutionStrategy = buildTeamResolutionStrategy(modelRegistry, config, logger);
@@ -935,7 +923,7 @@ if (import.meta.main) {
     // Team composition provides dynamic-step dispatch; initialization failure
     // degrades to execution without dynamic steps.
     let mcpClient: LocalToolDispatcher | undefined;
-    if (editionType === EDITION_TEAM) {
+    if (editionType === EDITION_TEAM || editionType === EDITION_ENTERPRISE) {
       mcpClient = await buildTeamMcpClient(context, portalPermissions, logger);
     }
 
@@ -1173,7 +1161,7 @@ if (import.meta.main) {
         flowRunner,
         _editionComposer as TeamComposer,
         symbolRegistry,
-        { edition: editionType, hitlPolicyEvaluator },
+        { edition: editionType, hitlPolicyEvaluator, symbolReferenceRegistry },
       );
       for (const capability of installed) installedFlowCapabilities.add(capability);
     }

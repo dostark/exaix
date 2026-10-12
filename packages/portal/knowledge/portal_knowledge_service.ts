@@ -21,6 +21,11 @@ import { AstAnalyzer } from "./ast_analyzer.ts";
 import { InternalImportGraphBuilder } from "./internal_import_graph.ts";
 import type { IDocCommandRunner } from "./symbol_extractor.ts";
 import { createDefaultSymbolExtractorRegistry, type ISymbolExtractorRegistry } from "./symbol_extractor_registry.ts";
+import {
+  createDefaultSymbolReferenceExtractorRegistry,
+  EMPTY_SYMBOL_REFERENCE_EXTRACTOR,
+  type ISymbolReferenceExtractorRegistry,
+} from "./symbol_reference_extractor.ts";
 import { GitHeadResolver, type IGitHeadResolver } from "./git_head_resolver.ts";
 import { GitHistoryAnalyzer } from "./git_history_analyzer.ts";
 import { LicenseDetector } from "./license_detector.ts";
@@ -72,6 +77,10 @@ export interface IPortalKnowledgeServiceOptions {
   runner?: IDocCommandRunner;
   /** Per-language symbol-extractor registry; defaults to TS/JS only. */
   symbolExtractorRegistry?: ISymbolExtractorRegistry;
+  /** Per-language symbol-reference registry.
+   *  It is empty by default, so the reference pass is skipped.
+   *  A paid edition registers an extractor through the composer seam. */
+  symbolReferenceExtractorRegistry?: ISymbolReferenceExtractorRegistry;
   gitHeadResolver?: IGitHeadResolver;
   gitServiceFactory?: IGitServiceFactory;
   invalidationStrategy?: IKnowledgeInvalidationStrategy;
@@ -135,6 +144,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   private readonly _evLogger?: IEventLogger;
   private readonly _symbolRunner: IDocCommandRunner | undefined;
   private readonly _symbolExtractorRegistry: ISymbolExtractorRegistry;
+  private readonly _symbolReferenceExtractorRegistry: ISymbolReferenceExtractorRegistry;
   private readonly _gitHeadResolver: IGitHeadResolver;
   private readonly _invalidationStrategy: IKnowledgeInvalidationStrategy;
   private readonly _embeddingProvider?: IEmbeddingProvider;
@@ -177,6 +187,8 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     // Default-wire the TS/JS extractor; a paid edition injects a registry with more languages.
     this._symbolExtractorRegistry = optionsWithDefaults.symbolExtractorRegistry ??
       createDefaultSymbolExtractorRegistry(this._symbolRunner);
+    this._symbolReferenceExtractorRegistry = optionsWithDefaults.symbolReferenceExtractorRegistry ??
+      createDefaultSymbolReferenceExtractorRegistry();
     this._gitHeadResolver = optionsWithDefaults.gitHeadResolver ??
       new GitHeadResolver(optionsWithDefaults.gitServiceFactory);
     this._invalidationStrategy = optionsWithDefaults.invalidationStrategy ?? new KnowledgeInvalidationStrategy(
@@ -305,12 +317,14 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     // unrecognized languages.
     let symbolMap: IPortalKnowledge["symbolMap"] = [];
     let symbolSourceFilesScanned: number | undefined;
+    // Language-scoped source selection, shared by Strategy 6 and the reference pass
+    // so both provably operate on the same file set.
+    const sourceExtensions = LANGUAGE_SOURCE_EXTENSIONS[primaryLanguage] ?? TS_JS_EXTENSIONS;
+    const sourceFiles = fileList.filter((f) => sourceExtensions.some((ext) => f.endsWith(ext)));
     if (resolvedMode !== PortalAnalysisMode.QUICK) {
       // Select the extractor by primary language: TS/JS → deno-doc extractor, other
       // languages → registered extractor (Solo: Python; Team: extended set) or no-op.
       const extractor = this._symbolExtractorRegistry.getForLanguage(primaryLanguage);
-      const sourceExtensions = LANGUAGE_SOURCE_EXTENSIONS[primaryLanguage] ?? TS_JS_EXTENSIONS;
-      const sourceFiles = fileList.filter((f) => sourceExtensions.some((ext) => f.endsWith(ext)));
       symbolSourceFilesScanned = sourceFiles.length;
       symbolMap = await extractor.extractSymbols(portalPath, sourceFiles, {
         primaryLanguage,
@@ -357,6 +371,27 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
             internalGraphEntrypoints.length - internalGraphResult.truncatedEntrypointCount
           } of ${internalGraphEntrypoints.length} entrypoint(s) for ${portalAlias}; relationships is incomplete for the remaining ${internalGraphResult.truncatedEntrypointCount}`,
         );
+      }
+    }
+
+    // Symbol-level reference pass. Enterprise only and opt-in. It runs after the
+    // file-import pass, so the extractor receives resolved edges. An empty
+    // registry or an unset flag skips the pass entirely.
+    if (
+      resolvedMode !== PortalAnalysisMode.QUICK &&
+      this._config.enableSymbolLevelDependencyGraph === true
+    ) {
+      const referenceExtractor = this._symbolReferenceExtractorRegistry.getForLanguage(primaryLanguage);
+      if (referenceExtractor !== EMPTY_SYMBOL_REFERENCE_EXTRACTOR) {
+        const sourceFiles = fileList.filter((f) => sourceExtensions.some((ext) => f.endsWith(ext)));
+        const symbolEdges = await referenceExtractor.extractReferences(portalPath, sourceFiles, {
+          primaryLanguage,
+          knownSymbols: symbolMap,
+          fileImportEdges: relationships ?? [],
+        });
+        if (symbolEdges.length > 0) {
+          relationships = [...(relationships ?? []), ...symbolEdges];
+        }
       }
     }
 
