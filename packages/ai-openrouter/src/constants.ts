@@ -60,6 +60,25 @@ export const X_TITLE_HEADER = "X-Title";
 export const OPENROUTER_DEFAULT_SITE_NAME = "Exaix";
 export const OPENROUTER_DEFAULT_SITE_URL = "https://exaix.dev";
 
+export const DEFAULT_OPENROUTER_CAPABILITY_CACHE_TTL_MS: number = configurable({
+  key: "openrouter.capability_cache_ttl_ms",
+  default: 3_600_000,
+  type: ConfigValueType.NUMBER,
+  description: "How long the per-model capability snapshot from the OpenRouter models endpoint stays fresh",
+  min: 60_000,
+  max: 86_400_000,
+  swap: SwapClass.HOT,
+});
+
+/** The `supported_parameters` entry that marks a model as able to take tool definitions. */
+export const OPENROUTER_TOOLS_PARAMETER = "tools";
+
+/** Ceiling for the models endpoint body. The live catalog was 0.75 MB for 458 models on 2026-10-12. */
+export const OPENROUTER_CAPABILITY_MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
+
+/** Wait before a failed capability lookup is tried again, so each call does not wait on a dead endpoint. */
+export const OPENROUTER_CAPABILITY_FAILURE_BACKOFF_MS = 60_000;
+
 /** HTTP statuses that the OpenRouter error mapper branches on, beyond the shared 401, 403 and 429. */
 export const OPENROUTER_HTTP_STATUS = {
   PAYMENT_REQUIRED: 402,

@@ -330,7 +330,7 @@ export async function handleProviderResponse<T>(
 }
 
 /** Reads a response stream with an optional hard byte ceiling, independent of its headers. */
-async function readResponseText(
+export async function readResponseText(
   response: Response,
   maxBytes: Opt<number, Reason.OptionalInput>,
   id: string,

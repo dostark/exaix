@@ -10,5 +10,6 @@
 export * from "./src/constants.ts";
 export * from "./src/openrouter_provider.ts";
 export * from "./src/openrouter_errors.ts";
+export * from "./src/openrouter_model_capabilities.ts";
 export * from "./src/openrouter_factory.ts";
 export * from "./src/openrouter_reported_cost.ts";

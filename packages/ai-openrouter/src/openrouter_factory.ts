@@ -12,7 +12,13 @@ import { AbstractKeyBasedProviderFactory } from "@exaix/ai/factories/abstract_pr
 import { ProviderFactoryError } from "@exaix/ai/errors.ts";
 import { getApiKeyWithOptionalPersistence } from "@exaix/ai/provider_api_key.ts";
 import type { IModelProvider, IResolvedProviderOptions } from "@exaix/ai/types.ts";
-import { DEFAULT_OPENROUTER_API_KEY_ENV, PROVIDER_OPENROUTER } from "./constants.ts";
+import {
+  DEFAULT_OPENROUTER_API_KEY_ENV,
+  DEFAULT_OPENROUTER_ENDPOINT,
+  DEFAULT_OPENROUTER_TIMEOUT_MS,
+  PROVIDER_OPENROUTER,
+} from "./constants.ts";
+import { deriveOpenRouterModelsUrl, OpenRouterModelCapabilities } from "./openrouter_model_capabilities.ts";
 import { OpenRouterProvider } from "./openrouter_provider.ts";
 
 export class OpenRouterProviderFactory extends AbstractKeyBasedProviderFactory {
@@ -30,13 +36,21 @@ export class OpenRouterProviderFactory extends AbstractKeyBasedProviderFactory {
       );
     }
 
+    const id = this.generateId(PROVIDER_OPENROUTER, options.model, options.id);
     return new OpenRouterProvider({
       apiKey,
       model: options.model,
       baseUrl: options.baseUrl,
-      id: this.generateId(PROVIDER_OPENROUTER, options.model, options.id),
+      id,
       logger: options.logger,
       timeoutMs: options.timeoutMs,
+      capabilities: new OpenRouterModelCapabilities({
+        apiKey,
+        modelsUrl: deriveOpenRouterModelsUrl(options.baseUrl || DEFAULT_OPENROUTER_ENDPOINT),
+        providerId: id,
+        timeoutMs: options.timeoutMs || DEFAULT_OPENROUTER_TIMEOUT_MS,
+        logger: options.logger,
+      }),
       siteName: openrouterConfig?.site_name,
       siteUrl: openrouterConfig?.site_url,
       routing: openrouterConfig?.routing,

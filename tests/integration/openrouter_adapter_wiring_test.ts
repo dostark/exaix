@@ -10,6 +10,7 @@
  */
 
 import { assertEquals } from "@std/assert";
+import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
 import { PricingTier } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
@@ -23,6 +24,13 @@ import { ProviderFactory, setProviderRegistryBootstrap } from "@exaix/ai/provide
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 
 const OPENROUTER_MODEL = "qwen/qwen3.7-flash";
+const MODELS_FIXTURE = await Deno.readTextFile(
+  new URL("../../packages/ai-openrouter/tests/fixtures/openrouter_models_fixture.json", import.meta.url),
+);
+
+function answerModelsRequest(input: string | URL | Request): Response | undefined {
+  return String(input).endsWith("/models") ? new Response(MODELS_FIXTURE, { status: 200 }) : undefined;
+}
 
 function registerOpenRouter(): void {
   ProviderRegistry.clear();
@@ -122,7 +130,9 @@ async function wireProviderBlock(
   const { db, tempDir, cleanup } = await initTestDbService();
   const origFetch = globalThis.fetch;
   let sent: { provider?: IWireProvider } = {};
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+    const catalog = answerModelsRequest(input);
+    if (catalog) return Promise.resolve(catalog);
     sent = JSON.parse((init?.body as string) ?? "{}");
     return Promise.resolve(
       new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] }), { status: 200 }),
@@ -201,7 +211,9 @@ async function analyzeThroughFactory(
   const { db, tempDir, cleanup } = await initTestDbService();
   const origFetch = globalThis.fetch;
   const sentFormats: string[] = [];
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+    const catalog = answerModelsRequest(input);
+    if (catalog) return Promise.resolve(catalog);
     const sent = JSON.parse((init?.body as string) ?? "{}") as { response_format?: { type: string } };
     sentFormats.push(sent.response_format?.type ?? "none");
     return Promise.resolve(
@@ -264,5 +276,111 @@ Deno.test({
     const result = await analyzeThroughFactory("Sure, here is the analysis you asked for.");
     assertEquals(result.firstGoal === "Add unit tests", false);
     assertEquals(result.failedTypes, ["ProviderProtocolError"]);
+  },
+});
+
+const TOOL_INCAPABLE_MODEL = "nvidia/switchyard";
+
+interface IRoutedFetch {
+  chatCalls: number;
+  modelsCalls: number;
+  restore: () => void;
+}
+
+function routeFetch(modelsResponse: () => Response, chatResponse: () => Response): IRoutedFetch {
+  const origFetch = globalThis.fetch;
+  const routed: IRoutedFetch = { chatCalls: 0, modelsCalls: 0, restore: () => (globalThis.fetch = origFetch) };
+  globalThis.fetch = ((input: string | URL | Request) => {
+    if (String(input).endsWith("/models")) {
+      routed.modelsCalls++;
+      return Promise.resolve(modelsResponse());
+    }
+    routed.chatCalls++;
+    return Promise.resolve(chatResponse());
+  }) as typeof fetch;
+  return routed;
+}
+
+async function runToolRequest(model: string, modelsResponse: () => Response): Promise<{
+  routed: IRoutedFetch;
+  thrown: Error | undefined;
+  failedPayload: { providerReasonCode?: string } | undefined;
+  lookupPayload: { reason?: string; status?: number } | undefined;
+}> {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  const routed = routeFetch(
+    modelsResponse,
+    () => new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] }), { status: 200 }),
+  );
+  registerOpenRouter();
+  try {
+    let thrown: Error | undefined;
+    await withEnv(
+      {
+        OPENROUTER_API_KEY: "sk-or-test",
+        EXA_TEST_ENABLE_PAID_LLM: "1",
+        EXA_LLM_PROVIDER: null,
+        EXA_LLM_MODEL: null,
+        EXA_LLM_BASE_URL: null,
+        EXA_LLM_ENDPOINT: null,
+      },
+      async () => {
+        const config = ConfigSchema.parse({
+          system: { root: tempDir },
+          ai: { provider: PROVIDER_OPENROUTER, model },
+        });
+        const provider = await ProviderFactory.create(config, db, new EventLogger({ db }));
+        try {
+          await provider.generate("hi", { tools: [{ name: "read_file", inputSchema: { type: "object" } }] });
+        } catch (error) {
+          thrown = error as Error;
+        }
+      },
+    );
+    await db.waitForFlush();
+    const rows = await db.preparedAll<IActivityRow>("SELECT action_type, payload FROM activity");
+    const payloadOf = (action: string) => {
+      const row = rows.find((candidate) => candidate.action_type === action);
+      return row ? JSON.parse(row.payload) : undefined;
+    };
+    return {
+      routed,
+      thrown,
+      failedPayload: payloadOf(DomainEventType.LlmCallFailed),
+      lookupPayload: payloadOf(DomainEventType.OpenRouterCapabilityLookupFailed),
+    };
+  } finally {
+    routed.restore();
+    setProviderRegistryBootstrap(undefined);
+    ProviderRegistry.clear();
+    await cleanup();
+  }
+}
+
+Deno.test({
+  name:
+    "[integration] a factory-built provider refuses a tool-using request for a tool-incapable stubbed model and journals llm.call.failed with providerReasonCode unsupported_call_option",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const result = await runToolRequest(TOOL_INCAPABLE_MODEL, () => new Response(MODELS_FIXTURE, { status: 200 }));
+    assertEquals(result.thrown instanceof ProviderCallPolicyError, true);
+    assertEquals(result.routed.chatCalls, 0);
+    assertEquals(result.routed.modelsCalls, 1);
+    assertEquals(result.failedPayload?.providerReasonCode, "unsupported_call_option");
+  },
+});
+
+Deno.test({
+  name:
+    "[integration] a failed capability lookup does not refuse the call and journals openrouter.capability_lookup.failed",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const result = await runToolRequest(TOOL_INCAPABLE_MODEL, () => new Response("down", { status: 500 }));
+    assertEquals(result.thrown, undefined);
+    assertEquals(result.routed.chatCalls, 1);
+    assertEquals(result.lookupPayload?.reason, "http_error");
+    assertEquals(result.lookupPayload?.status, 500);
   },
 });

@@ -24,6 +24,8 @@ import {
 import { type IOpenRouterResponse, tokenMapperOpenRouter } from "./openrouter_reported_cost.ts";
 import { mapOpenRouterError, OpenRouterRoutingError } from "./openrouter_errors.ts";
 import { applyRequireParameters, applySessionKey } from "./openrouter_routing.ts";
+import type { IOpenRouterCapabilitySource } from "./openrouter_model_capabilities.ts";
+import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
 import {
   applyJsonModeInstruction,
   completeStructuredOutput,
@@ -46,6 +48,7 @@ import {
   HTTP_REFERER_HEADER,
   OPENROUTER_DEFAULT_SITE_NAME,
   OPENROUTER_DEFAULT_SITE_URL,
+  OPENROUTER_TOOLS_PARAMETER,
   PROVIDER_OPENROUTER,
   X_TITLE_HEADER,
 } from "./constants.ts";
@@ -136,6 +139,8 @@ export type OpenRouterProviderOptions = IBaseProviderOptions & {
   /** Control-surface passthrough: serialized into the request body alongside model/messages. */
   routing?: IOpenRouterRouting;
   tokenizer?: ITokenizer;
+  /** Per-model capability lookup. Absent means no capability check, so a direct construction never fetches. */
+  capabilities?: IOpenRouterCapabilitySource;
 };
 
 /**
@@ -146,6 +151,7 @@ export class OpenRouterProvider extends BaseProvider {
   private readonly siteUrl: string;
   private readonly routing?: IOpenRouterRouting;
   private readonly tokenizer: ITokenizer;
+  private readonly capabilities?: IOpenRouterCapabilitySource;
 
   constructor(options: OpenRouterProviderOptions) {
     super({
@@ -160,6 +166,7 @@ export class OpenRouterProvider extends BaseProvider {
     this.siteUrl = options.siteUrl ?? OPENROUTER_DEFAULT_SITE_URL;
     this.routing = options.routing;
     this.tokenizer = options.tokenizer ?? new AiTokenEstimatorTokenizer();
+    this.capabilities = options.capabilities;
   }
 
   /** Measures the request exactly as dispatched: the serialized body, with its prompt, replayed history and tools. */
@@ -207,11 +214,21 @@ export class OpenRouterProvider extends BaseProvider {
     return options?.jsonSchema ? planOpenRouterOutput(options.jsonSchema, this.id) : undefined;
   }
 
+  /** Refuses a tool-using request when the model's entry exists and lists no `tools` support. */
+  private async assertToolsSupported(options: Opt<IModelOptions, Reason.AbstractBoundary>): Promise<void> {
+    if (!this.capabilities || !options?.tools?.length) return;
+    const entry = await this.capabilities.getEntry(this.model, options.traceId);
+    if (entry && !entry.supportedParameters.includes(OPENROUTER_TOOLS_PARAMETER)) {
+      throw new ProviderCallPolicyError("unsupported_call_option", PROVIDER_OPENROUTER);
+    }
+  }
+
   /** Sends the strongest plan first. A route that refuses json_schema gets one json_object retry, and no weaker mode. */
   protected override async attemptGenerate(
     prompt: string,
     options?: Opt<IModelOptions, Reason.AbstractBoundary>,
   ): Promise<IGenerateResult> {
+    await this.assertToolsSupported(options);
     const plan = this.planOutput(options);
     try {
       return await this.sendRequest(prompt, options, plan);

@@ -11,8 +11,10 @@
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { ProviderType } from "@exaix/core";
 import { AuthenticationError, ConnectionError } from "@exaix/ai/providers";
+import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import {
+  type IOpenRouterModelEntry,
   OPENROUTER_DEFAULT_SITE_NAME,
   OPENROUTER_DEFAULT_SITE_URL,
   OPENROUTER_PROVIDER_METADATA,
@@ -261,4 +263,78 @@ Deno.test("OpenRouterProvider sends no metadata opt-in header, because no consum
   } finally {
     globalThis.fetch = origFetch;
   }
+});
+
+const TOOL = { name: "read_file", inputSchema: { type: "object" } };
+
+function capabilitySource(
+  entry: IOpenRouterModelEntry | undefined,
+): { getEntry: () => Promise<IOpenRouterModelEntry | undefined>; calls: () => number } {
+  let calls = 0;
+  return {
+    getEntry: () => {
+      calls++;
+      return Promise.resolve(entry);
+    },
+    calls: () => calls,
+  };
+}
+
+async function generateWithCapabilities(
+  entry: IOpenRouterModelEntry | undefined,
+  options: { tools?: Array<typeof TOOL> },
+): Promise<{ chatFetches: number; lookups: number; error?: Error }> {
+  let chatFetches = 0;
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = (() => {
+    chatFetches++;
+    return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
+  }) as typeof fetch;
+  const source = capabilitySource(entry);
+  try {
+    const provider = new OpenRouterProvider({ apiKey: "sk-test", model: "qwen/qwen3.7-flash", capabilities: source });
+    try {
+      await provider.generate("hi", options);
+      return { chatFetches, lookups: source.calls() };
+    } catch (error) {
+      return { chatFetches, lookups: source.calls(), error: error as Error };
+    }
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+}
+
+const entryWith = (supportedParameters: string[]): IOpenRouterModelEntry => ({
+  id: "qwen/qwen3.7-flash",
+  supportedParameters,
+});
+
+Deno.test("a tool-using request on a model without tools throws ProviderCallPolicyError before the chat fetch", async () => {
+  const result = await generateWithCapabilities(entryWith(["response_format"]), { tools: [TOOL] });
+  assertEquals(result.chatFetches, 0);
+  assert(result.error instanceof ProviderCallPolicyError);
+  assertEquals(result.error.reasonCode, "unsupported_call_option");
+});
+
+Deno.test("a tool-using request on a model with tools is not refused", async () => {
+  const result = await generateWithCapabilities(entryWith(["tools"]), { tools: [TOOL] });
+  assertEquals(result.error, undefined);
+  assertEquals(result.chatFetches, 1);
+});
+
+Deno.test("an unknown model is not refused", async () => {
+  const result = await generateWithCapabilities(undefined, { tools: [TOOL] });
+  assertEquals(result.error, undefined);
+  assertEquals(result.chatFetches, 1);
+});
+
+Deno.test("a request without tools never consults the capability source", async () => {
+  const result = await generateWithCapabilities(entryWith([]), {});
+  assertEquals(result.lookups, 0);
+  assertEquals(result.chatFetches, 1);
+});
+
+Deno.test("an empty tools array does not consult the capability source", async () => {
+  const result = await generateWithCapabilities(entryWith([]), { tools: [] });
+  assertEquals(result.lookups, 0);
 });

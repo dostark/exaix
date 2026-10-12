@@ -377,6 +377,16 @@ export interface IModelRegistryRefreshFailedPayload {
   detail: string;
 }
 
+/** Why an OpenRouter per-model capability lookup failed. The call then proceeds without capability data. */
+export type OpenRouterCapabilityLookupFailureReason = "http_error" | "parse_error" | "timeout" | "size_limit";
+
+/** Typed payload for openrouter.capability_lookup.failed events. It never carries the key or the response body. */
+export interface IOpenRouterCapabilityLookupFailedPayload {
+  model: string;
+  reason: OpenRouterCapabilityLookupFailureReason;
+  status?: number;
+}
+
 /** Typed payload for model.benchmark.refreshed events; `outcome` reuses the refresh-outcome union (success/parse_error/http_error), previous scores stay intact on failure. */
 export interface IModelBenchmarkRefreshedPayload {
   benchmark: string;
@@ -1144,6 +1154,7 @@ export const DomainEventType = {
   ModelCatalogRefreshed: "model.catalog.refreshed",
   ModelPricingRefreshed: "model.pricing.refreshed",
   ModelRegistryRefreshFailed: "model.registry.refresh.failed",
+  OpenRouterCapabilityLookupFailed: "openrouter.capability_lookup.failed",
   ModelRouteSelected: "model.route.selected",
   ModelBenchmarkRefreshed: "model.benchmark.refreshed",
   ModelBenchmarkMissing: "model.benchmark.missing",
