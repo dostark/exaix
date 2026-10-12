@@ -300,6 +300,18 @@ Deno.test("json_object instruction overrides prompt-level wrapper tags so the re
   assertEquals(STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION.includes("first character"), true);
 });
 
+Deno.test("fix(structured-output): JSON mode supplies the original schema to the model", () => {
+  const original = schema({
+    type: "object",
+    properties: { coverage: { type: "object", additionalProperties: { type: "number" } } },
+    required: ["coverage"],
+  });
+  for (const plan of [planJsonObjectOutput(original), planStructuredOutput("deepseek", original)]) {
+    assertEquals(plan.promptInstruction?.includes(JSON.stringify(original)), true);
+    assertEquals(plan.promptInstruction?.startsWith(STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION), true);
+  }
+});
+
 Deno.test("validateStructuredOutput accepts a valid real plan through both profiles", () => {
   const validPlan = { title: "T", description: "d", steps: [{ step: 1, title: "s", description: "d" }] };
   for (const profile of ["openai", "deepseek"] as const) {
@@ -308,8 +320,8 @@ Deno.test("validateStructuredOutput accepts a valid real plan through both profi
   }
 });
 
-Deno.test("validateStructuredOutput rejects a plan whose action params value is non-string, through both profiles", () => {
-  const badPlan = {
+Deno.test("validateStructuredOutput preserves numeric JSON action parameters through both profiles", () => {
+  const validPlan = {
     title: "T",
     description: "d",
     steps: [{
@@ -320,7 +332,7 @@ Deno.test("validateStructuredOutput rejects a plan whose action params value is 
     }],
   };
   for (const profile of ["openai", "deepseek"] as const) {
-    assertThrows(() => validateStructuredOutput(JSON.stringify(badPlan), getPlanJsonSchema(), profile));
+    assertEquals(validateStructuredOutput(JSON.stringify(validPlan), getPlanJsonSchema(), profile), validPlan);
   }
 });
 
@@ -353,7 +365,7 @@ Deno.test("planJsonObjectOutput returns json_object mode with the instruction an
   assertEquals(plan.mode, "json_object");
   assertEquals(plan.reason, "route_refused_json_schema");
   assertEquals(plan.responseFormat, { type: "json_object" });
-  assertEquals(plan.promptInstruction, STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION);
+  assertEquals(plan.promptInstruction?.startsWith(STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION), true);
 });
 
 Deno.test("planJsonObjectOutput omits the reason when none is given", () => {

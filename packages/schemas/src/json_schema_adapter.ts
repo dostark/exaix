@@ -9,7 +9,7 @@
  * @architectural-layer Shared
  * @related-files [packages/schemas/src/plan_schema.ts, packages/schemas/src/request_analysis.ts]
  */
-import type { JSONValue } from "@exaix/core";
+import { type JSONValue, JSONValueSchema } from "@exaix/core";
 import { z } from "zod";
 
 /** Only handles the schema shapes used in this codebase (ZodObject, ZodArray, ZodString,
@@ -35,6 +35,9 @@ function walkObject(schema: z.ZodObject<z.ZodRawShape>): Record<string, JSONValu
 }
 
 function walkSchema(schema: z.ZodTypeAny): Record<string, JSONValue> {
+  // Parsed JSON already enforces this recursive value contract without restricting its primitive types.
+  if (schema === JSONValueSchema) return {};
+
   if (schema instanceof z.ZodPipe) {
     // .transform()/.pipe() — describe the pre-transform input shape.
     return walkSchema(schema.in as z.ZodTypeAny);

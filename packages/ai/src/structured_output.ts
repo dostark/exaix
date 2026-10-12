@@ -319,7 +319,7 @@ export function planJsonObjectOutput(
     mode: "json_object",
     ...(reason !== undefined ? { reason } : {}),
     responseFormat: { type: "json_object" },
-    promptInstruction: STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION,
+    promptInstruction: `${STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION}\nJSON schema: ${JSON.stringify(schema)}`,
   };
 }
 

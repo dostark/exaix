@@ -31,6 +31,11 @@ const STRICT_SCHEMA: Record<string, JSONValue> = {
   additionalProperties: false,
 };
 const RECORD_SCHEMA: Record<string, JSONValue> = { type: "object", additionalProperties: { type: "string" } };
+
+/** The json_object instruction, which carries the schema the planner appends for the model. */
+function jsonModeInstruction(schema: Record<string, JSONValue>): string {
+  return `${STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION}\nJSON schema: ${JSON.stringify(schema)}`;
+}
 const VALID_JSON = JSON.stringify({ files: ["a.txt", "b.txt"], count: 2 });
 
 interface IWireMessage {
@@ -105,7 +110,7 @@ Deno.test("a schema that is not strict-representable sends json_object with the 
     assertEquals(bodies[0].response_format, { type: "json_object" });
     assertEquals(bodies[0].messages.at(-1)?.content, [{
       type: "text",
-      text: `list files\n\n${STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION}`,
+      text: `list files\n\n${jsonModeInstruction(RECORD_SCHEMA)}`,
       cache_control: { type: "ephemeral" },
     }]);
     assertEquals(result.structuredOutputMode, "json_object");
@@ -121,7 +126,7 @@ Deno.test("a routing refusal of json_schema retries once with json_object and re
     assertEquals(bodies[1].response_format, { type: "json_object" });
     assertEquals(bodies[1].messages.at(-1)?.content, [{
       type: "text",
-      text: `list files\n\n${STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION}`,
+      text: `list files\n\n${jsonModeInstruction(STRICT_SCHEMA)}`,
       cache_control: { type: "ephemeral" },
     }]);
     assertEquals(result.structuredOutputMode, "json_object");
@@ -213,7 +218,7 @@ Deno.test("with a native conversation the json_object instruction goes into the 
       await provider().generate("list files", optionsFor(RECORD_SCHEMA, { nativeConversation }));
       assertEquals(bodies[0].messages[0].content, [{
         type: "text",
-        text: `list files\n\n${STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION}`,
+        text: `list files\n\n${jsonModeInstruction(RECORD_SCHEMA)}`,
         cache_control: { type: "ephemeral" },
       }]);
       assertEquals(bodies[0].messages.at(-1)?.content, "Continue.");

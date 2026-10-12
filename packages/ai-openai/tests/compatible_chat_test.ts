@@ -907,11 +907,12 @@ Deno.test("compatible chat falls back to json_object mode and instruction text f
 });
 
 Deno.test("json_object instruction stays on the user prompt after a prior tool turn", () => {
+  const schema = {
+    type: "object",
+    properties: { params: { type: "object", additionalProperties: { type: "string" } } },
+  };
   const request = createCompatibleChatRequestInit("key", "model", "final prompt", {
-    jsonSchema: {
-      type: "object",
-      properties: { params: { type: "object", additionalProperties: { type: "string" } } },
-    },
+    jsonSchema: schema,
     priorTurn: {
       toolUseId: "read-1",
       toolName: "read_file",
@@ -929,7 +930,7 @@ Deno.test("json_object instruction stays on the user prompt after a prior tool t
   assertEquals(body.messages[2].role, "user");
   assertEquals(
     body.messages[2].content,
-    `final prompt\n\n${STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION}`,
+    `final prompt\n\n${STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION}\nJSON schema: ${JSON.stringify(schema)}`,
   );
 });
 
