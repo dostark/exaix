@@ -110,6 +110,7 @@ Provider selection is configured in `exa.config.toml`. See the Provider Strategy
 - **Vertex token refresh** is hardened: concurrent refreshes are deduplicated into a single token exchange, the exchange is timeout-bounded, the token response is schema-validated, and an early-refresh skew margin is applied. Service-account credentials are env-only and never logged; the token endpoint is restricted to `*.googleapis.com`.
 - **OpenRouter ships in Solo (all editions)** — registered unconditionally in `apps/common/registry_bootstrap.ts` (BYO `OPENROUTER_API_KEY`). Edition decision D5b/D-providers: gating an independently-free, BYO-key aggregator adds no value.
 - **OpenRouter is intentionally unmetered** — pricing varies per underlying sub-model, so the inline `IGenerateResult.cost_usd` is informational; authoritative spend is recorded by `CostTracker`, keyed on `ProviderType`. Vertex bills at the Google output rate.
+- **OpenRouter modes, routing and caching** are described in [packages/ai-openrouter/README.md](../ai-openrouter/README.md).
 - Neither provider implements streaming yet, so their capability metadata does not advertise `streaming`.
 
 ## See Also
@@ -119,5 +120,5 @@ Provider selection is configured in `exa.config.toml`. See the Provider Strategy
 - [@exaix/ai-openai](../../packages/ai-openai/) — OpenAI/GPT provider implementation
 - [@exaix/ai-google](../../packages/ai-google/) — Google/Gemini provider implementation
 - [@exaix-team/ai-vertex](../../exaix-team/packages/ai-vertex/) — Google Vertex AI provider (service-account auth, regional quotas)
-- [@exaix/ai-openrouter](../../packages/ai-openrouter/) — OpenRouter unified-gateway provider
+- [@exaix/ai-openrouter](../../packages/ai-openrouter/README.md) — OpenRouter unified-gateway provider (modes, routing, caching)
 - [@exaix/ai-ollama](../../packages/ai-ollama/) — Ollama provider implementation

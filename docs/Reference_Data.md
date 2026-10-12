@@ -663,6 +663,7 @@ Typed batch and call payloads for parallel dispatch are not available yet. Until
 | `LlmCallCompleted`                       | `llm.call.completed`                          | LLM                             |
 | `LlmCallFailed`                          | `llm.call.failed`                             | LLM                             |
 | `LlmUsageRecorded`                       | `llm.usage`                                   | LLM                             |
+| `OpenRouterCapabilityLookupFailed`       | `openrouter.capability_lookup.failed`         | LLM                             |
 | `ChildRunSpawned` _(reserved)_           | `child_run.spawned`                           | Reserved (delegated child runs) |
 | `ChildRunCompleted` _(reserved)_         | `child_run.completed`                         | Reserved (delegated child runs) |
 | `ResourceLockAcquired` _(reserved)_      | `resource_lock.acquired`                      | Reserved (concurrency policies) |

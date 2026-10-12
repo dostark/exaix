@@ -321,8 +321,29 @@ site_url = "https://exaix.dev"
 
 [models.openrouter]
 provider = "openrouter"
-model = "anthropic/claude-3-opus"   # any model from openrouter.ai/models
+model = "~deepseek/deepseek-flash-latest"   # a floating alias; any model from openrouter.ai/models works
 ```
+
+How Exaix uses OpenRouter:
+
+- **Model capabilities.** Exaix reads each model's entry from `/api/v1/models`. A request with tools to a model that lists no tool support is refused before any chat call. If the catalog lookup fails, the call is not refused, and `openrouter.capability_lookup.failed` is journaled.
+- **`require_parameters`.** A request that carries tools, a response format or reasoning sends `provider.require_parameters: true`. OpenRouter then routes only to providers that accept every field. To turn it off, set `[ai_openrouter.routing.provider] require_parameters = false`.
+- **Structured output.** A schema that `json_schema` can represent strictly uses `json_schema`. Any other schema uses `json_object`, with the schema in the prompt. If a route refuses `json_schema`, Exaix retries once with `json_object`. Every reply is validated locally, and an invalid reply fails closed.
+- **Thinking.** With thinking off, Exaix sends `reasoning.enabled: false` for models whose reasoning is optional. A model whose reasoning cannot be turned off receives its lowest listed effort. A response cut off at the token limit raises a typed truncation error.
+- **Prompt caching.** Exaix adds `cache_control` breakpoints only for the models that OpenRouter's prompt-caching guide lists. To turn breakpoints off, set `[ai_openrouter] cache_control = false`. On some routes a cache write costs more than a plain input token, so a one-shot prompt can cost more.
+- **Routing.** `[ai_openrouter.routing]` passes through up to three fallback `models`, and the `provider` fields `order`, `only`, `ignore`, `sort`, `allow_fallbacks`, `quantizations`, `max_price`, `zdr` and `data_collection`.
+- **Replay.** Replayed assistant messages carry `reasoning_details` unchanged. `reasoning_content` is not sent.
+- **Cost.** `usage.cost` is read as OpenRouter credits.
+
+The adapter's modules are listed in [packages/ai-openrouter/README.md](../packages/ai-openrouter/README.md).
+
+Per-model caveats:
+
+- Tool support depends on the model's catalog entry, not on OpenRouter.
+- A model with mandatory reasoning, such as `z-ai/glm-5.3-flash`, cannot turn reasoning off.
+- A model that lists reasoning but no effort levels receives `enabled: false` when thinking is off.
+- `qwen/qwen3.7-flash` is not in the caching list, so it receives no breakpoint.
+- A floating alias such as `~deepseek/deepseek-flash-latest` can resolve to a different model over time. The response records the resolved model id.
 
 #### 2.4.5 Provider Strategy
 
@@ -4856,10 +4877,7 @@ does not need to call a tool.
 - **Live-verified**: Anthropic, OpenAI, and Google. Real API calls confirm provider-enforced
   tool selection end-to-end. Google's live verification was confirmed with a standard paid-tier
   run returning `"serviceTier": "standard"` (25 dynamic tool call rows, total cost `$0.1211575`).
-- **Code-complete, pending live verification**: OpenRouter. Serialization is
-  implemented and unit-tested (`supportsNativeTools: true` is registered), but
-  has not yet been proven against a real API call in this environment. Enabling this on
-  OpenRouter today uses tested-but-not-yet-live-proven functionality.
+- **OpenRouter live status: partly verified.** The Phase 211 live matrix ran five models. In the final run, request analysis passed five of six cases, and planning and ReAct passed 13 of 14. Two cases remain open: the Qwen request-analysis case and one Ling ReAct repeat. A live OpenRouter cutover cell has not run yet.
 - **OpenRouter caveat**: tool support depends on the specific model OpenRouter routes
   to, not on OpenRouter itself — check that a model's `supported_parameters` includes
   `tools` via OpenRouter's `/api/v1/models` endpoint before relying on native tool

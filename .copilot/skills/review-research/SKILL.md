@@ -69,7 +69,7 @@ Phase 3 — PLAN (roadmap)
      reliability) > Medium (features/moderate) > Low (polish/minor) > Documentation
      (always last).
  12. The final sub-phase MUST be a Documentation Update: docs/Exaix_User_Guide.md,
-     docs/Building_with_AI_Agents.md, subsystem README.
+     subsystem README.
 
 Phase 4 — ARTIFACTS (deliverables)
  13. Templates in appropriate templates/ dirs: frontmatter metadata, overview,

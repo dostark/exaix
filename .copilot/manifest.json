@@ -423,7 +423,7 @@
       "scope": "dev",
       "title": "Remediate Plan Gaps Skill (#remediate-plan-gaps)",
       "short_summary": "Edits phase planning documents to close gaps identified by review-phase-plan, then re-runs tests and bumps the document version.",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "topics": [
         "planning",
         "gap-analysis",
