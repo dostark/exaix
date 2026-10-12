@@ -32,6 +32,7 @@ const EXPECTED_CORE_TOOL_NAMES = [
   "query_relationships",
   "find_dependents",
   "query_symbols",
+  "query_symbol_references",
   "get_module_dependencies",
   "remember_fact",
   "search_memory",

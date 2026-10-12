@@ -2381,6 +2381,10 @@ export const ANALYSIS_TASK_TYPE_VERBS: Record<string, string> = {
 
 // Portal Knowledge
 
+/** The persisted relationship kind for a symbol-level reference edge.
+ *  Its endpoints are `<file>#<symbolName>` composite keys. */
+export const SYMBOL_REFERENCE_EDGE_KIND = "symbol_references_symbol";
+
 /** Joins the parts of a composite edge key used for deduplication.
  *  It is a separator that cannot occur in a portal-relative path or symbol name. */
 export const EDGE_DEDUP_KEY_SEPARATOR = "\u0000";
@@ -3941,6 +3945,7 @@ export const DEFAULT_OTEL_EXPORT_HEADERS_ENV = "OTEL_EXPORTER_OTLP_HEADERS";
  *  planning LLM call can never call, since only the read-only catalog is offered to it. */
 export const PLANNING_TOOLS_EXCLUDED: readonly string[] = [
   ToolName.LIST_AVAILABLE_TOOLS,
+  ToolName.QUERY_SYMBOL_REFERENCES,
 ];
 
 /** Read-only exploration tools for the planning LLM call. OFF = single-call (today's
@@ -4098,6 +4103,11 @@ export const SHARED_TOOL_OPERATIONS: readonly ISharedToolOperation[] = [
     canonical: ToolName.QUERY_SYMBOLS,
     toolNameMember: "QUERY_SYMBOLS",
     mcpToolNameMember: "PORTAL_SYMBOLS",
+  },
+  {
+    canonical: ToolName.QUERY_SYMBOL_REFERENCES,
+    toolNameMember: "QUERY_SYMBOL_REFERENCES",
+    mcpToolNameMember: "QUERY_SYMBOL_REFERENCES",
   },
 ];
 

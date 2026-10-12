@@ -12,13 +12,13 @@
  */
 
 import type { IArchitectureLayer, IPortalKnowledge } from "@exaix/schemas";
-import { EDGE_DEDUP_KEY_SEPARATOR, SYMBOL_REF_ID_SEPARATOR } from "@exaix/core";
+import { EDGE_DEDUP_KEY_SEPARATOR, SYMBOL_REF_ID_SEPARATOR, type SYMBOL_REFERENCE_EDGE_KIND } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export type RelationshipEdgeKind =
   | "layer_contains_file"
   | "file_imports_file_internal"
-  | "symbol_references_symbol";
+  | typeof SYMBOL_REFERENCE_EDGE_KIND;
 
 export interface IRelationshipEdge {
   from: string;
@@ -29,7 +29,7 @@ export interface IRelationshipEdge {
 /** A persisted edge kind. `layer_contains_file` is derived, never stored. */
 export type PersistedRelationshipEdgeKind =
   | "file_imports_file_internal"
-  | "symbol_references_symbol";
+  | typeof SYMBOL_REFERENCE_EDGE_KIND;
 
 /** An edge that can be persisted in `IPortalKnowledge.relationships`. */
 export interface IPersistedRelationshipEdge {

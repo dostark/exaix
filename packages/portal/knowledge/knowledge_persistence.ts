@@ -14,6 +14,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { type IPortalKnowledge, PortalKnowledgeSchema } from "@exaix/schemas";
 
+import { SYMBOL_REFERENCE_EDGE_KIND } from "@exaix/core";
 import type { IMemoryBankService } from "@exaix/core/types";
 import type { IPattern } from "@exaix/schemas";
 
@@ -75,7 +76,14 @@ export async function saveKnowledge(
   }
 }
 
-/** Returns `null` if missing or invalid. */
+/**
+ * Returns `null` when the file is missing or genuinely invalid.
+ *
+ * A snapshot written by a newer build may carry a relationship kind this build
+ * does not know. Only that edge is dropped, and a warning names the count.
+ * The tolerance covers `relationships[].kind` alone.
+ * Any other invalid field still resolves to `null`.
+ */
 export async function loadKnowledge(
   portalAlias: string,
   projectsDir: string,
@@ -87,13 +95,66 @@ export async function loadKnowledge(
   } catch {
     return null;
   }
+
+  let parsed: JSONValue;
   try {
-    const parsed: JSONValue = JSON.parse(raw) as JSONValue;
-    const result = PortalKnowledgeSchema.safeParse(parsed);
-    return result.success ? result.data : null;
+    parsed = JSON.parse(raw) as JSONValue;
   } catch {
     return null;
   }
+
+  const strict = PortalKnowledgeSchema.safeParse(parsed);
+  if (strict.success) return strict.data;
+
+  const tolerated = tolerateUnknownRelationshipKinds(parsed);
+  if (tolerated) {
+    console.warn(
+      `[knowledge_persistence] dropped an unrecognized relationship kind in ${knowledgePath}`,
+    );
+    return tolerated;
+  }
+
+  console.warn(`[knowledge_persistence] ${knowledgePath} is invalid and was ignored`);
+  return null;
+}
+
+/** Every relationship kind this build can persist. */
+const KNOWN_RELATIONSHIP_KINDS: readonly string[] = [
+  "file_imports_file_internal",
+  SYMBOL_REFERENCE_EDGE_KIND,
+];
+
+/**
+ * Re-parses after replacing each relationship kind with a known one.
+ *
+ * That proves every other field is valid before any edge is dropped.
+ * Only edges whose kind is unknown are removed.
+ * Returns `undefined` when the snapshot is invalid for any other reason.
+ */
+function tolerateUnknownRelationshipKinds(parsed: JSONValue): IPortalKnowledge | undefined {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return undefined;
+  const record = parsed as Record<string, JSONValue>;
+  const relationships = record.relationships;
+  if (!Array.isArray(relationships)) return undefined;
+  if (!relationships.every((edge) => typeof edge === "object" && edge !== null && !Array.isArray(edge))) {
+    return undefined;
+  }
+
+  const withPlaceholderKinds: JSONValue = {
+    ...record,
+    relationships: relationships.map((edge) => ({
+      ...(edge as Record<string, JSONValue>),
+      kind: KNOWN_RELATIONSHIP_KINDS[0],
+    })),
+  };
+  const validated = PortalKnowledgeSchema.safeParse(withPlaceholderKinds);
+  if (!validated.success) return undefined;
+
+  const kept = relationships.filter((edge) =>
+    KNOWN_RELATIONSHIP_KINDS.includes((edge as Record<string, JSONValue>).kind as string)
+  ) as IPortalKnowledge["relationships"];
+
+  return { ...validated.data, relationships: kept } as IPortalKnowledge;
 }
 
 async function _isSafeToWrite(filePath: string): Promise<boolean> {

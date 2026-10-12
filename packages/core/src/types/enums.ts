@@ -142,6 +142,7 @@ export enum ToolName {
   QUERY_RELATIONSHIPS = "query_relationships",
   WHO_DEPENDS_ON = "find_dependents",
   QUERY_SYMBOLS = "query_symbols",
+  QUERY_SYMBOL_REFERENCES = "query_symbol_references",
   GET_MODULE_DEPENDENCIES = "get_module_dependencies",
   REMEMBER_FACT = "remember_fact",
   SEARCH_MEMORY = "search_memory",
@@ -520,6 +521,7 @@ export enum McpToolName {
   CONFIG_GET_PROVENANCE = "exaix_config_get_provenance",
   CONFIG_APPLY = "exaix_config_apply",
   PORTAL_SYMBOLS = "query_symbols",
+  QUERY_SYMBOL_REFERENCES = "query_symbol_references",
 }
 
 /**

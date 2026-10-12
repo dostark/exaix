@@ -625,6 +625,51 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     parallel_safe: true,
     remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
+  {
+    name: McpToolName.QUERY_SYMBOL_REFERENCES,
+    kind: ToolKind.MCP_DOMAIN,
+    category: ToolCategory.DOMAIN,
+    dynamic_mode_allowed: true,
+    requires_human_approval: false,
+    docs_visible: true,
+    source_ref: "exaix-team/packages/mcp-server/portal_knowledge_tools.ts",
+    description:
+      "List symbol-level reference edges (who calls this symbol, or what it calls) previously extracted from a portal's codebase by 'portal analyze'. Read-only; safe for dynamic execution. These edges exist only when the analysis enabled the Enterprise symbol graph, so an empty list is the normal answer for a Solo or Team analysis and is not an error. Use to find call sites or type usage rather than file imports. Pass a symbol endpoint as '<file>#<name>' or a bare file path, and optionally choose a direction or cap the result count. Returns an error if the portal has not been analyzed yet — run 'portal analyze' first. Returns an array of reference edges with composite '<file>#<symbolName>' endpoints.",
+    input_schema: {
+      type: "object",
+      properties: {
+        portal: { type: "string", description: "Portal alias to query" },
+        symbol: {
+          type: "string",
+          description: "Symbol endpoint to query, either '<file>#<name>' or a bare file path",
+        },
+        direction: {
+          type: "string",
+          enum: ["references", "referenced_by"],
+          description: "references lists outgoing edges; referenced_by lists incoming edges",
+        },
+        limit: { type: "number", description: "Maximum edges to return" },
+      },
+      required: ["portal", "symbol"],
+    },
+    output_schema: {
+      type: JsonSchemaType.ARRAY,
+      description: "Symbol-level reference edges",
+      items: {
+        type: "object",
+        properties: {
+          from: { type: "string" },
+          to: { type: "string" },
+          kind: { type: "string" },
+        },
+      },
+    },
+    error_types: ["INVALID_ARGS", "EXECUTION_FAILED"],
+    idempotent: true,
+    side_effect_scope: ToolSideEffectScope.NONE,
+    parallel_safe: true,
+    remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
+  },
   // Config tools
   {
     name: McpToolName.CONFIG_GET,

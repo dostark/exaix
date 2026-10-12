@@ -515,6 +515,10 @@ export class ToolRegistry implements IToolRegistry {
     );
     this.executors.set(ToolName.WHO_DEPENDS_ON, (p) => this.whoDependsOnTool(str(p.path)));
     this.executors.set(
+      ToolName.QUERY_SYMBOL_REFERENCES,
+      (p) => this.querySymbolReferencesTool(str(p.symbol), optStr(p.direction), optStr(p.limit)),
+    );
+    this.executors.set(
       ToolName.REMEMBER_FACT,
       (p) => this.rememberFactTool(str(p.content), p.tags ? strArr(p.tags) : undefined),
     );
@@ -815,6 +819,26 @@ export class ToolRegistry implements IToolRegistry {
     }
     const knowledge = await portalKnowledgeService.getOrAnalyze(portal.alias, portal.path);
     return this.formatSuccess(whoDependsOn(knowledge, path) as unknown as JSONValue);
+  }
+
+  /** Lists symbol-level reference edges for the current portal, filtered by kind.
+   *  It is read-only and scoped to the current portal, matching the other graph tools. */
+  private async querySymbolReferencesTool(
+    symbol: string,
+    direction?: Opt<string, Reason.QueryFilter>,
+    limit?: Opt<string, Reason.QueryFilter>,
+  ): Promise<IToolResult> {
+    const resolved = await this.resolveGraphToolKnowledge("query_symbol_references");
+    if (!("knowledge" in resolved)) return { success: false, error: resolved.error };
+
+    const inbound = direction === "referenced_by";
+    const edges = inbound ? whoDependsOn(resolved.knowledge, symbol) : queryRelationships(resolved.knowledge, symbol);
+    const symbolEdges = edges.filter((edge) => edge.kind === "symbol_references_symbol");
+    const capped = typeof limit === "string" && Number.isSafeInteger(Number(limit))
+      ? symbolEdges.slice(0, Number(limit))
+      : symbolEdges;
+
+    return this.formatSuccess(capped as unknown as JSONValue);
   }
 
   /** Model identity for graph-tool result token counting — the bare configured AI model name.

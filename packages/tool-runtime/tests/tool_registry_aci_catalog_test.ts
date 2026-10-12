@@ -35,15 +35,16 @@ const EXPECTED_SCOPES: Record<string, ToolSideEffectScope> = {
   query_relationships: ToolSideEffectScope.NONE,
   find_dependents: ToolSideEffectScope.NONE,
   query_symbols: ToolSideEffectScope.NONE,
+  query_symbol_references: ToolSideEffectScope.NONE,
   get_module_dependencies: ToolSideEffectScope.NONE,
   remember_fact: ToolSideEffectScope.SYSTEM,
   search_memory: ToolSideEffectScope.NONE,
   list_available_tools: ToolSideEffectScope.NONE,
 };
 
-Deno.test("[ToolRegistryAciCatalog] createCoreToolSchemas returns exactly the 21 named ReAct tools", () => {
+Deno.test("[ToolRegistryAciCatalog] createCoreToolSchemas returns exactly the 22 named ReAct tools", () => {
   const tools = createCoreToolSchemas();
-  assertEquals(tools.length, 21);
+  assertEquals(tools.length, 22);
   assertEquals(new Set(tools.map((t) => t.name)), new Set(Object.keys(EXPECTED_SCOPES)));
 });
 
@@ -65,7 +66,7 @@ Deno.test("[ToolRegistryAciCatalog] every tool renders a non-empty ACI fragment"
   const allIds = tools.map((t) => t.name);
   const result = renderAciDocFragments(tools, allIds, 1_000_000);
   assertEquals(result.invalidToolIds, [], "no tool's aciDoc should be rejected as invalid");
-  assertEquals(result.fragmentCount, 21);
+  assertEquals(result.fragmentCount, 22);
   assertEquals(result.truncated, false);
   for (const toolId of allIds) {
     assert(result.text.includes(toolId), `rendered ACI text is missing a fragment for ${toolId}`);

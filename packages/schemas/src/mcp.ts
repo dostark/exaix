@@ -216,6 +216,14 @@ export const PortalSymbolsToolArgsSchema = z.object({
   agent_role: z.string().min(1, MCP_ERR_AGENT_ROLE_REQUIRED).default(DEFAULT_MCP_AGENT_ROLE_ID),
 });
 
+export const QuerySymbolReferencesToolArgsSchema = z.object({
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
+  symbol: z.string().min(1, "Symbol or file path required"),
+  direction: z.enum(["references", "referenced_by"]).optional().default("references"),
+  limit: z.number().int().positive().default(DEFAULT_QUERY_LIMIT),
+  agent_role: z.string().min(1, MCP_ERR_AGENT_ROLE_REQUIRED).default(DEFAULT_MCP_AGENT_ROLE_ID),
+});
+
 // Union type for all tool arguments
 export type MCPToolArgs =
   | z.infer<typeof ReadFileToolArgsSchema>
@@ -236,7 +244,8 @@ export type MCPToolArgs =
   | z.infer<typeof CreateDirectoryToolArgsSchema>
   | z.infer<typeof RunCommandToolArgsSchema>
   | z.infer<typeof SearchFilesToolArgsSchema>
-  | z.infer<typeof PortalSymbolsToolArgsSchema>;
+  | z.infer<typeof PortalSymbolsToolArgsSchema>
+  | z.infer<typeof QuerySymbolReferencesToolArgsSchema>;
 
 // MCP Response Schemas
 

@@ -634,6 +634,46 @@ export function createCoreToolSchemas(
       },
     },
     {
+      name: ToolName.QUERY_SYMBOL_REFERENCES,
+      description:
+        "List symbol-level reference edges (who calls this symbol, or what it calls) from the current portal's knowledge graph. Reads only the last cached analysis — never triggers a new one. These edges exist only when the portal was analyzed with the Enterprise symbol graph enabled, so an empty list is the normal answer for a Solo or Team analysis. Use when you need call-site or type-usage edges rather than file import edges. Returns an array of edges (from, to, kind) in data, where each endpoint is '<file>#<symbolName>', or an error if no cached knowledge exists for this portal.",
+      parameters: {
+        type: "object",
+        properties: {
+          symbol: {
+            type: "string",
+            description: "Symbol endpoint to query, either '<file>#<name>' or a bare file path",
+          },
+          direction: {
+            type: "string",
+            enum: ["references", "referenced_by"],
+            description: "references lists outgoing edges; referenced_by lists incoming edges",
+          },
+          limit: {
+            type: "number",
+            description: "Maximum edges to return",
+          },
+        },
+        required: ["symbol"],
+      },
+      sideEffectScope: ToolSideEffectScope.NONE,
+      aciDoc: {
+        summary: "Lists symbol-level reference edges from the portal's knowledge graph.",
+        when_to_use: "Use to find who references a symbol, or which symbols it references, without reading files.",
+        when_not_to_use:
+          "Do not use for file import edges — that's get_module_dependencies. Do not use if no 'portal analyze' has run for this portal. Do not expect results from a Solo or Team analysis, which never emits symbol edges.",
+        example: {
+          input: { symbol: "src/helper.ts#format", direction: "referenced_by" },
+          output: '{"data":[{"from":"src/main.ts#run","to":"src/helper.ts#format","kind":"symbol_references_symbol"}]}',
+          rationale: "Finds every call site of one helper without opening any file.",
+        },
+        anti_example: {
+          input: { symbol: "src/helper.ts#format", direction: "callers" },
+          why_wrong: "direction accepts only 'references' or 'referenced_by' — 'callers' fails validation.",
+        },
+      },
+    },
+    {
       name: ToolName.QUERY_SYMBOLS,
       description:
         "List cached AST symbols (functions, classes, interfaces, consts, types, enums) from the current portal's knowledge graph, ranked by connectivity. Reads only the last cached analysis — never triggers a new one. Use when you need to discover exported symbols by name, kind, or file without reading files directly. Optionally filter by a case-insensitive name substring, exact kind, or exact portal-relative file. For module-to-module import edges use get_module_dependencies instead. Returns an array of symbol records (name, kind, file, signature, doc, pageRankScore) in data.symbols, capped at 50 and possibly truncated (data.truncated), or an error if no cached knowledge exists for this portal.",

@@ -10,7 +10,7 @@
  */
 
 import { z } from "zod";
-import { SystemCommand } from "@exaix/core";
+import { SYMBOL_REFERENCE_EDGE_KIND, SystemCommand } from "@exaix/core";
 
 // Sub-schemas
 
@@ -162,7 +162,7 @@ export const PortalKnowledgeRelationshipSchema = z.object({
   /** Edge kind — one of the two persisted kinds. */
   kind: z.union([
     z.literal("file_imports_file_internal"),
-    z.literal("symbol_references_symbol"),
+    z.literal(SYMBOL_REFERENCE_EDGE_KIND),
   ]),
 });
 
