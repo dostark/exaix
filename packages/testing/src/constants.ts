@@ -285,12 +285,12 @@ export const TEST_TOTAL_TOKENS_ANTHROPIC = 40;
 
 // Test model names for regression testing
 export const TEST_MODEL_GOOGLE = "gemini-pro";
-export const TEST_MODEL_ANTHROPIC = "claude-3-7-sonnet-20250219";
+export const TEST_MODEL_ANTHROPIC = "claude-sonnet-5";
 
 // Test provider IDs for regression testing
 export const TEST_PROVIDER_ID_GOOGLE = "google-gemini-pro";
 export const TEST_PROVIDER_ID_OPENAI = "openai-gpt-4o-mini";
-export const TEST_PROVIDER_ID_ANTHROPIC = "anthropic-claude-3-7-sonnet-20250219";
+export const TEST_PROVIDER_ID_ANTHROPIC = "anthropic-claude-sonnet-5";
 
 // Test provider IDs for error cases
 export const TEST_PROVIDER_ID_GOOGLE_ERROR = "google-test";

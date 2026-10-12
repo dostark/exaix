@@ -20,7 +20,7 @@ import type { IProviderHealthChecker } from "@exaix/ai";
 import { ProviderRegistry } from "@exaix/ai";
 import { getDefaultModels } from "@exaix/schemas";
 import { RegistryNotImplementedError } from "./errors.ts";
-import { STATIC_OVERLAY } from "./static_overlay.ts";
+import { STATIC_CONTEXT_WINDOWS, STATIC_OVERLAY } from "./static_overlay.ts";
 import { mtokToPer1k } from "./cost_units.ts";
 
 export class DefaultModelRegistry implements IModelRegistry {
@@ -77,6 +77,8 @@ export class DefaultModelRegistry implements IModelRegistry {
     const overlayKey = `${provider}:${model}`;
     const overlay = STATIC_OVERLAY[overlayKey];
     if (overlay?.contextWindow !== undefined) return Promise.resolve(overlay.contextWindow);
+    const listed = STATIC_CONTEXT_WINDOWS[overlayKey];
+    if (listed !== undefined) return Promise.resolve(listed);
     const meta = ProviderRegistry.getProviderMetadata(provider);
     return Promise.resolve(meta?.contextWindow ?? 0);
   }

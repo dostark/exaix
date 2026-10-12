@@ -238,7 +238,9 @@ Deno.test({
       "openai:gpt-4o-mini": 128_000,
       "openai:gpt-4o": 128_000,
       "anthropic:claude-sonnet-5": 1_000_000,
-      "anthropic:claude-3-7-sonnet": 200_000,
+      "openai:gpt-5.6-terra": 1_050_000,
+      "openai:gpt-5-mini": 400_000,
+      "anthropic:claude-opus-5": 1_000_000,
       "google:gemini-2.5-flash": 1_000_000,
     };
 

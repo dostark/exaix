@@ -67,13 +67,6 @@ export const STATIC_OVERLAY: StaticOverlay = {
     verifiedAt: VERIFIED_AT_TIMESTAMP,
     sourceUrl: "https://anthropic.com/pricing/",
   },
-  "anthropic:claude-3-7-sonnet": {
-    inputPerMtok: 3.00,
-    outputPerMtok: 15.00,
-    contextWindow: 200_000,
-    verifiedAt: VERIFIED_AT_TIMESTAMP,
-    sourceUrl: "https://anthropic.com/pricing/",
-  },
   "google:gemini-2.5-flash": {
     inputPerMtok: 0.075,
     outputPerMtok: 0.30,
@@ -90,6 +83,14 @@ export const STATIC_OVERLAY: StaticOverlay = {
     verifiedAt: Date.UTC(2026, 9, 11),
     sourceUrl: "https://ai.google.dev/gemini-api/docs/pricing",
   },
+};
+
+/** Context windows of current models, from the OpenRouter catalog on 2026-10-12. Kept apart from
+ *  STATIC_OVERLAY, so a window row never reports static pricing. */
+export const STATIC_CONTEXT_WINDOWS: Readonly<Record<string, number>> = {
+  "openai:gpt-5.6-terra": 1_050_000,
+  "openai:gpt-5-mini": 400_000,
+  "anthropic:claude-opus-5": 1_000_000,
 };
 
 /** Look up a "provider:model" overlay entry for curated defaults omitted by list endpoints. */

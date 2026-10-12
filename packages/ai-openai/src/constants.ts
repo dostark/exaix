@@ -69,7 +69,7 @@ export const PROVIDER_OPENAI_STRENGTHS = ["general", "creative", "complex"] as c
 export const PROVIDER_OPENAI_COST_TIER = ProviderCostTier.PAID;
 
 /** Capability metadata — context window (tokens). */
-export const OPENAI_CONTEXT_WINDOW = 128_000;
+export const OPENAI_CONTEXT_WINDOW = 1_050_000;
 /** Capability metadata — reference price in USD per 1M tokens (routing constraint). */
 export const OPENAI_COST_PER_MTok = 2.5;
 

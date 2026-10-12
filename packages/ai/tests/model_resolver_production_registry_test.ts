@@ -38,8 +38,8 @@ Deno.test("[132.18] booted provider metadata carries capability fields per the p
   bootstrapProviderRegistry();
   try {
     const cases: Array<{ provider: string; contextWindow: number; supportsThinking: boolean }> = [
-      { provider: "anthropic", contextWindow: 200000, supportsThinking: true },
-      { provider: "openai", contextWindow: 128000, supportsThinking: true },
+      { provider: "anthropic", contextWindow: 1000000, supportsThinking: true },
+      { provider: "openai", contextWindow: 1050000, supportsThinking: true },
       { provider: "google", contextWindow: 1000000, supportsThinking: true },
       { provider: "ollama", contextWindow: 8192, supportsThinking: false },
       { provider: "openrouter", contextWindow: 200000, supportsThinking: true },
