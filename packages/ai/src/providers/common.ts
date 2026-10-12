@@ -14,8 +14,9 @@ export type ProviderCostStatus = "estimated" | "tracked" | "unknown";
 
 /** Which wire structured-output contract a compatible provider used for this call. */
 export type StructuredOutputMode = "json_schema" | "json_object";
-/** Why json_object mode was chosen over strict json_schema mode, when applicable. */
-export type StructuredOutputModeReason = "schema_not_strict_representable";
+/** Why json_object mode was chosen over strict json_schema mode, when applicable.
+ *  The second value means the route refused json_schema and the call fell back once. */
+export type StructuredOutputModeReason = "schema_not_strict_representable" | "route_refused_json_schema";
 
 /**
  * Result of a model provider generate call.

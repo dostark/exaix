@@ -22,10 +22,17 @@ import {
   performProviderCall,
 } from "@exaix/ai/provider_common_utils.ts";
 import { type IOpenRouterResponse, tokenMapperOpenRouter } from "./openrouter_reported_cost.ts";
-import { mapOpenRouterError } from "./openrouter_errors.ts";
+import { mapOpenRouterError, OpenRouterRoutingError } from "./openrouter_errors.ts";
 import { applyRequireParameters, applySessionKey } from "./openrouter_routing.ts";
+import {
+  applyJsonModeInstruction,
+  completeStructuredOutput,
+  planOpenRouterOutput,
+  planRouteFallback,
+} from "./openrouter_structured_output.ts";
 import type { OPENROUTER_QUANTIZATIONS } from "@exaix/schemas";
 import { BaseProvider, type IBaseProviderOptions, type IGenerateResult } from "@exaix/ai/providers";
+import type { IStructuredOutputPlan } from "@exaix/ai";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import { type INativeInputMeasurement, measureOpenAiChatProjection } from "@exaix/ai";
 import { AiTokenEstimatorTokenizer, type ITokenizer } from "@exaix/core/func";
@@ -93,17 +100,33 @@ interface OpenRouterRequestBody {
   session_id?: string;
 }
 
-interface OpenRouterProviderBody {
-  order?: string[];
-  only?: string[];
-  ignore?: string[];
-  sort?: OpenRouterSortStrategy;
-  require_parameters?: boolean;
-  allow_fallbacks?: boolean;
-  quantizations?: OpenRouterQuantization[];
-  max_price?: { prompt?: number; completion?: number; request?: number; image?: number };
+type OpenRouterProviderBody = NonNullable<IOpenRouterRouting["provider"]> & {
   zdr?: boolean;
   data_collection?: OpenRouterDataCollection;
+};
+
+/** Copies the sampling, stop and tool options that map one to one onto the OpenAI-shaped body. */
+function applyRequestOptions(
+  body: OpenRouterRequestBody,
+  options: Opt<IModelOptions, Reason.AbstractBoundary>,
+): void {
+  if (options?.max_tokens !== undefined) body.max_tokens = options.max_tokens;
+  if (options?.temperature !== undefined) body.temperature = options.temperature;
+  if (options?.top_p !== undefined) body.top_p = options.top_p;
+  if (options?.stop !== undefined) body.stop = options.stop;
+  if (options?.tools !== undefined) body.tools = options.tools.map(mapToolDefinitionOpenAI);
+  if (options?.toolChoice !== undefined) body.tool_choice = mapToolChoiceOpenAI(options.toolChoice);
+  if (options?.tools?.length && disablesParallelToolUse(options.toolChoice)) body.parallel_tool_calls = false;
+}
+
+/** Copies the operator's routing block, fallback models and privacy flags onto the body. */
+function applyRouting(body: OpenRouterRequestBody, routing: Opt<IOpenRouterRouting, Reason.OptionalContext>): void {
+  if (!routing) return;
+  if (routing.models !== undefined) body.models = routing.models;
+  const rp: OpenRouterProviderBody = routing.provider ? { ...routing.provider } : {};
+  if (routing.zdr !== undefined) rp.zdr = routing.zdr;
+  if (routing.data_collection !== undefined) rp.data_collection = routing.data_collection;
+  if (Object.keys(rp).length > 0) body.provider = rp;
 }
 
 /** Options for OpenRouterProvider. `siteName`/`siteUrl` populate OpenRouter ranking headers. */
@@ -159,42 +182,53 @@ export class OpenRouterProvider extends BaseProvider {
   private buildRequestBody(
     prompt: string,
     options?: Opt<IModelOptions, Reason.AbstractBoundary>,
+    plan: Opt<IStructuredOutputPlan, Reason.OptionalContext> = this.planOutput(options),
   ): OpenRouterRequestBody {
     const body: OpenRouterRequestBody = {
       model: this.model,
       messages: buildOpenAiMessages(prompt, options?.priorTurn, options?.nativeConversation, options?.priorRound),
       usage: { include: true },
     };
-    if (options?.max_tokens !== undefined) body.max_tokens = options.max_tokens;
-    if (options?.temperature !== undefined) body.temperature = options.temperature;
-    if (options?.top_p !== undefined) body.top_p = options.top_p;
-    if (options?.stop !== undefined) body.stop = options.stop;
-    if (options?.tools !== undefined) body.tools = options.tools.map(mapToolDefinitionOpenAI);
-    if (options?.toolChoice !== undefined) body.tool_choice = mapToolChoiceOpenAI(options.toolChoice);
-    if (options?.tools?.length && disablesParallelToolUse(options.toolChoice)) body.parallel_tool_calls = false;
-
-    if (this.routing) {
-      if (this.routing.models !== undefined) {
-        body.models = this.routing.models;
-      }
-      const rp: OpenRouterProviderBody = this.routing.provider ? { ...this.routing.provider } : {};
-      if (this.routing.zdr !== undefined) rp.zdr = this.routing.zdr;
-      if (this.routing.data_collection !== undefined) rp.data_collection = this.routing.data_collection;
-      if (Object.keys(rp).length > 0) {
-        body.provider = rp;
-      }
+    applyRequestOptions(body, options);
+    if (plan) {
+      body.response_format = plan.responseFormat;
+      if (plan.promptInstruction) applyJsonModeInstruction(body.messages, prompt, plan.promptInstruction, this.id);
     }
+    applyRouting(body, this.routing);
     applyRequireParameters(body);
     applySessionKey(body, options?.traceId);
 
     return body;
   }
 
+  private planOutput(
+    options?: Opt<IModelOptions, Reason.AbstractBoundary>,
+  ): Opt<IStructuredOutputPlan, Reason.OptionalContext> {
+    return options?.jsonSchema ? planOpenRouterOutput(options.jsonSchema, this.id) : undefined;
+  }
+
+  /** Sends the strongest plan first. A route that refuses json_schema gets one json_object retry, and no weaker mode. */
   protected override async attemptGenerate(
     prompt: string,
     options?: Opt<IModelOptions, Reason.AbstractBoundary>,
   ): Promise<IGenerateResult> {
-    const body = this.buildRequestBody(prompt, options);
+    const plan = this.planOutput(options);
+    try {
+      return await this.sendRequest(prompt, options, plan);
+    } catch (error) {
+      if (!options?.jsonSchema || plan?.mode !== "json_schema" || !(error instanceof OpenRouterRoutingError)) {
+        throw error;
+      }
+    }
+    return await this.sendRequest(prompt, options, planRouteFallback(options.jsonSchema));
+  }
+
+  private async sendRequest(
+    prompt: string,
+    options: Opt<IModelOptions, Reason.AbstractBoundary>,
+    plan: Opt<IStructuredOutputPlan, Reason.OptionalContext>,
+  ): Promise<IGenerateResult> {
+    const body = this.buildRequestBody(prompt, options, plan);
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${this.apiKey}`,
@@ -202,7 +236,7 @@ export class OpenRouterProvider extends BaseProvider {
       [X_TITLE_HEADER]: this.siteName,
     };
 
-    return await performProviderCall<IOpenRouterResponse>(this.baseUrl, {
+    const result = await performProviderCall<IOpenRouterResponse>(this.baseUrl, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
@@ -218,5 +252,6 @@ export class OpenRouterProvider extends BaseProvider {
       toolCallExtractor: extractOpenAIToolCalls,
       assistantReplayExtractor: (response) => extractOpenAIAssistantReplay(response, PROVIDER_OPENROUTER),
     });
+    return plan && options?.jsonSchema ? completeStructuredOutput(result, options.jsonSchema, plan, this.id) : result;
   }
 }

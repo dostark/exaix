@@ -12,6 +12,7 @@
 import { z } from "zod";
 import { type JSONValue, OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE } from "@exaix/core";
 import type { StructuredOutputMode, StructuredOutputModeReason } from "./providers/common.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 import {
   STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION,
   STRUCTURED_OUTPUT_SCHEMA_MAX_BYTES,
@@ -305,9 +306,18 @@ export function planStructuredOutput(
       },
     };
   }
+  return planJsonObjectOutput(schema, strictProfile ? "schema_not_strict_representable" : undefined);
+}
+
+/** The json_object plan: the schema travels in the prompt and the reply is validated locally. */
+export function planJsonObjectOutput(
+  schema: Record<string, JSONValue>,
+  reason?: Opt<StructuredOutputModeReason, Reason.OptionalContext>,
+): IStructuredOutputPlan {
+  assertSupportedJsonSchema(schema);
   return {
     mode: "json_object",
-    ...(strictProfile ? { reason: "schema_not_strict_representable" as const } : {}),
+    ...(reason !== undefined ? { reason } : {}),
     responseFormat: { type: "json_object" },
     promptInstruction: STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION,
   };

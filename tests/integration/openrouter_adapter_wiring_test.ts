@@ -15,6 +15,9 @@ import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
 import { type Config, ConfigSchema } from "@exaix/schemas";
 import { createMockConfig, initTestDbService, withEnv } from "@exaix/testing";
+import { createOutputValidator } from "@exaix/tool-runtime";
+import { LlmAnalyzer } from "@exaix/request";
+import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { OPENROUTER_PROVIDER_METADATA, OpenRouterProviderFactory, PROVIDER_OPENROUTER } from "@exaix/ai-openrouter";
 import { ProviderFactory, setProviderRegistryBootstrap } from "@exaix/ai/provider_factory.ts";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
@@ -171,5 +174,95 @@ Deno.test({
   sanitizeOps: false,
   async fn() {
     assertEquals(await wireProviderBlock({ require_parameters: false }), { require_parameters: false });
+  },
+});
+
+const VALID_ANALYSIS = JSON.stringify({
+  goals: [{ description: "Add unit tests", explicit: true, priority: 1 }],
+  requirements: [{ description: "Cover all public methods", confidence: 0.9, type: "functional", explicit: true }],
+  constraints: ["No new dependencies"],
+  acceptanceCriteria: ["All tests pass"],
+  ambiguities: [],
+  actionabilityScore: 80,
+  complexity: RequestAnalysisComplexity.MEDIUM,
+  taskType: RequestTaskType.TEST,
+  tags: ["test"],
+  referencedFiles: ["src/user_service.ts"],
+});
+
+interface IActivityRow {
+  action_type: string;
+  payload: string;
+}
+
+async function analyzeThroughFactory(
+  reply: string,
+): Promise<{ firstGoal: string; sentFormats: string[]; failedTypes: string[] }> {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  const origFetch = globalThis.fetch;
+  const sentFormats: string[] = [];
+  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+    const sent = JSON.parse((init?.body as string) ?? "{}") as { response_format?: { type: string } };
+    sentFormats.push(sent.response_format?.type ?? "none");
+    return Promise.resolve(
+      new Response(JSON.stringify({ choices: [{ message: { content: reply } }] }), { status: 200 }),
+    );
+  }) as typeof fetch;
+  registerOpenRouter();
+  try {
+    let firstGoal = "";
+    await withEnv(
+      {
+        OPENROUTER_API_KEY: "sk-or-test",
+        EXA_TEST_ENABLE_PAID_LLM: "1",
+        EXA_LLM_PROVIDER: null,
+        EXA_LLM_MODEL: null,
+        EXA_LLM_BASE_URL: null,
+        EXA_LLM_ENDPOINT: null,
+      },
+      async () => {
+        const provider = await ProviderFactory.create(openRouterConfig(tempDir), db, new EventLogger({ db }));
+        const analyzer = new LlmAnalyzer(provider, createOutputValidator({ autoRepair: false }));
+        const analysis = await analyzer.analyze("Please tidy the repository", undefined);
+        firstGoal = analysis.goals[0]?.description ?? "";
+      },
+    );
+    await db.waitForFlush();
+    const rows = await db.preparedAll<IActivityRow>(
+      "SELECT action_type, payload FROM activity WHERE action_type = ?",
+      [DomainEventType.LlmCallFailed],
+    );
+    const failedTypes = rows.map((row) => (JSON.parse(row.payload) as { error_type?: string }).error_type ?? "");
+    return { firstGoal, sentFormats, failedTypes };
+  } finally {
+    setProviderRegistryBootstrap(undefined);
+    ProviderRegistry.clear();
+    globalThis.fetch = origFetch;
+    await cleanup();
+  }
+}
+
+Deno.test({
+  name:
+    "[integration] LlmAnalyzer.analyze through a factory-built OpenRouter provider sends response_format and returns the LLM analysis for a schema-valid reply",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const result = await analyzeThroughFactory(VALID_ANALYSIS);
+    assertEquals(result.firstGoal, "Add unit tests");
+    assertEquals(result.sentFormats.length > 0 && result.sentFormats.every((format) => format !== "none"), true);
+    assertEquals(result.failedTypes, []);
+  },
+});
+
+Deno.test({
+  name:
+    "[integration] a schema-invalid reply makes LlmAnalyzer.analyze fall back and journals llm.call.failed with error_type ProviderProtocolError",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const result = await analyzeThroughFactory("Sure, here is the analysis you asked for.");
+    assertEquals(result.firstGoal === "Add unit tests", false);
+    assertEquals(result.failedTypes, ["ProviderProtocolError"]);
   },
 });

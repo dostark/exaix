@@ -14,6 +14,7 @@ import { PlanAdapter } from "@exaix/core/planning";
 import {
   assertSupportedJsonSchema,
   isStrictRepresentable,
+  planJsonObjectOutput,
   planStructuredOutput,
   stripIntroducedNulls,
   toStrictSchema,
@@ -342,4 +343,31 @@ Deno.test("a validateStructuredOutput result parses through the real PlanAdapter
   const plan = new PlanAdapter().parse(JSON.stringify(normalized));
   assertEquals(plan.title, "T");
   assertEquals(plan.steps?.[0].actions?.[0].tool, "read_file");
+});
+
+Deno.test("planJsonObjectOutput returns json_object mode with the instruction and the given reason", () => {
+  const plan = planJsonObjectOutput(
+    schema({ type: "object", properties: { a: { type: "string" } } }),
+    "route_refused_json_schema",
+  );
+  assertEquals(plan.mode, "json_object");
+  assertEquals(plan.reason, "route_refused_json_schema");
+  assertEquals(plan.responseFormat, { type: "json_object" });
+  assertEquals(plan.promptInstruction, STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION);
+});
+
+Deno.test("planJsonObjectOutput omits the reason when none is given", () => {
+  assertEquals("reason" in planJsonObjectOutput(schema({ type: "object" })), false);
+});
+
+Deno.test("planJsonObjectOutput rejects an unsupported schema keyword", () => {
+  assertThrows(() => planJsonObjectOutput(schema({ type: "string", pattern: "^a" })), UnsupportedJsonSchemaError);
+});
+
+Deno.test("planStructuredOutput json_object result is the planJsonObjectOutput result for the same reason", () => {
+  const original = getPlanJsonSchema();
+  assertEquals(
+    planStructuredOutput("openai", original),
+    planJsonObjectOutput(original, "schema_not_strict_representable"),
+  );
 });
