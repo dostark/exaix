@@ -29,6 +29,7 @@ import type { IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/typ
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { PortalAnalysisMode } from "@exaix/core";
 import { EnterpriseSymbolGraphModule, PortalExtractorsModule } from "@exaix-team/portal-extractors";
+import { initializeServices } from "../../apps/exactl/src/init.ts";
 import { createDefaultSymbolExtractorRegistry } from "@exaix/portal/knowledge";
 import type { ISeamRegistryPlaceholder } from "@exaix/core/composer";
 
@@ -178,4 +179,72 @@ Deno.test("[cutover] the flag off reproduces the relationships of a Team-style r
 Deno.test("[cutover] the phase's Enterprise edition constant is the one the module asserts", () => {
   // Guards the delivery-vehicle decision: the module is wired only for this string.
   assertEquals(EDITION_ENTERPRISE, "enterprise");
+});
+
+/** A workspace config that enables the Enterprise symbol graph. */
+function enterpriseConfigToml(root: string): string {
+  return `
+[system]
+root = "${root}"
+log_level = "error"
+
+[paths]
+runtime = "./.exa"
+memory = "Memory"
+workspace = "Workspace"
+flows = "Workspace/Flows"
+blueprints = "Blueprints"
+
+[agents]
+default_model = "mock:test"
+
+[models."mock:test"]
+provider = "mock"
+model = "test"
+
+[portal_knowledge]
+default_mode = "standard"
+enable_symbol_level_dependency_graph = true
+`;
+}
+
+Deno.test("[cutover] the real exactl composition root reaches the symbol graph when EXAIX_EDITION=enterprise", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "exa_cutover_root_" });
+  const alias = "go-reference-cli-root";
+  const originalEdition = Deno.env.get("EXAIX_EDITION");
+  try {
+    const configPath = join(workspaceRoot, "config.toml");
+    await Deno.writeTextFile(configPath, enterpriseConfigToml(workspaceRoot));
+
+    // The CLI composition root: edition selection, composer, and registry wiring.
+    Deno.env.set("EXAIX_EDITION", EDITION_ENTERPRISE);
+    const services = await initializeServices({ configPath });
+
+    assert(services.success, "the exactl composition root must initialize");
+    assert(services.portalKnowledge !== undefined, "portalKnowledge must be wired");
+
+    // The config builder threaded the flag into the service config.
+    assertEquals(
+      services.portalKnowledgeConfig?.enableSymbolLevelDependencyGraph,
+      true,
+      "buildPortalKnowledgeConfig must carry the flag from the CLI config",
+    );
+
+    const knowledge = await services.portalKnowledge.analyze(alias, GO_PORTAL, PortalAnalysisMode.STANDARD);
+    const edges = symbolEdges(knowledge);
+
+    assert(
+      edges.length > 0,
+      `the CLI root must reach the symbol extractors, got ${JSON.stringify(knowledge.relationships)}`,
+    );
+    assertEquals(
+      edges.some((e) => e.to === "helper/helper.go#Double"),
+      true,
+      `expected the Run -> Double edge through the CLI root, got ${JSON.stringify(edges)}`,
+    );
+  } finally {
+    if (originalEdition === undefined) Deno.env.delete("EXAIX_EDITION");
+    else Deno.env.set("EXAIX_EDITION", originalEdition);
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
 });

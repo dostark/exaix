@@ -100,8 +100,10 @@ import { MemoryBankAdapter } from "../../apps/common/adapters/memory_bank_adapte
 import {
   buildPortalKnowledgeConfig,
   createDefaultSymbolExtractorRegistry,
+  createDefaultSymbolFileResolverRegistry,
   createDefaultSymbolReferenceExtractorRegistry,
   type ISymbolExtractorRegistry,
+  type ISymbolFileResolverRegistry,
   type ISymbolReferenceExtractorRegistry,
   PortalKnowledgeService,
 } from "@exaix/portal/knowledge";
@@ -637,6 +639,7 @@ if (import.meta.main) {
     // extended-language extractors through its hook.
     const symbolRegistry: ISymbolExtractorRegistry = createDefaultSymbolExtractorRegistry();
     const symbolReferenceRegistry: ISymbolReferenceExtractorRegistry = createDefaultSymbolReferenceExtractorRegistry();
+    const symbolFileResolverRegistry: ISymbolFileResolverRegistry = createDefaultSymbolFileResolverRegistry();
     const portalKnowledge = new PortalKnowledgeService({
       config: portalKnowledgeConfig,
       memoryBank,
@@ -644,6 +647,7 @@ if (import.meta.main) {
       createVectorIndex: () => new HnswVectorIndex(),
       symbolExtractorRegistry: symbolRegistry,
       symbolReferenceExtractorRegistry: symbolReferenceRegistry,
+      symbolFileResolverRegistry: symbolFileResolverRegistry,
       projectsDir: join(config.system.root, config.paths.memory, DEFAULT_PROJECTS_MEMORY_PATH),
     });
 
@@ -1161,7 +1165,12 @@ if (import.meta.main) {
         flowRunner,
         _editionComposer as TeamComposer,
         symbolRegistry,
-        { edition: editionType, hitlPolicyEvaluator, symbolReferenceRegistry },
+        {
+          edition: editionType,
+          hitlPolicyEvaluator,
+          symbolReferenceRegistry,
+          symbolFileResolverRegistry,
+        },
       );
       for (const capability of installed) installedFlowCapabilities.add(capability);
     }

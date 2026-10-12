@@ -34,8 +34,10 @@ import { PortalService } from "@exaix/portal";
 import {
   buildPortalKnowledgeConfig,
   createDefaultSymbolExtractorRegistry,
+  createDefaultSymbolFileResolverRegistry,
   createDefaultSymbolReferenceExtractorRegistry,
   type ISymbolExtractorRegistry,
+  type ISymbolFileResolverRegistry,
   type ISymbolReferenceExtractorRegistry,
   PortalKnowledgeService,
 } from "@exaix/portal/knowledge";
@@ -214,12 +216,14 @@ export async function initializeServices(
 
     const symbolRegistry: ISymbolExtractorRegistry = createDefaultSymbolExtractorRegistry();
     const symbolReferenceRegistry: ISymbolReferenceExtractorRegistry = createDefaultSymbolReferenceExtractorRegistry();
+    const symbolFileResolverRegistry: ISymbolFileResolverRegistry = createDefaultSymbolFileResolverRegistry();
     const portalKnowledge = new PortalKnowledgeService({
       config: portalKnowledgeConfig,
       memoryBank,
       provider: providerLocal,
       symbolExtractorRegistry: symbolRegistry,
       symbolReferenceExtractorRegistry: symbolReferenceRegistry,
+      symbolFileResolverRegistry: symbolFileResolverRegistry,
       gitServiceFactory: {
         createGitService(repoPath: string, traceId: string) {
           return new GitService({ config: cfg, repoPath, traceId });
@@ -234,7 +238,11 @@ export async function initializeServices(
     // The CLI registered no capability module before this step.
     // Extended-language extractors were therefore absent from every analyze run.
     if (editionType !== EDITION_SOLO) {
-      await fillPortalKnowledgeSeams(_editionComposer, { symbolRegistry, symbolReferenceRegistry });
+      await fillPortalKnowledgeSeams(_editionComposer, {
+        symbolRegistry,
+        symbolReferenceRegistry,
+        symbolFileResolverRegistry,
+      }, editionType);
     }
 
     // Create HITL policy evaluator if Team/Enterprise edition. Dynamic import keeps

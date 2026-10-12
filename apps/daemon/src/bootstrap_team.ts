@@ -39,7 +39,11 @@ import type { AgentComposerAdapter, FlowRunner } from "@exaix/flow";
 import type { TeamComposer } from "@exaix-team/team-composer";
 import { CAP_VOTING, CAPABILITY_EDITION } from "@exaix/core/composer";
 import type { ICapabilityModule, ISeamRegistryPlaceholder } from "@exaix/core/composer";
-import type { ISymbolExtractorRegistry, ISymbolReferenceExtractorRegistry } from "@exaix/portal/knowledge";
+import type {
+  ISymbolExtractorRegistry,
+  ISymbolFileResolverRegistry,
+  ISymbolReferenceExtractorRegistry,
+} from "@exaix/portal/knowledge";
 import { EDITION_ENTERPRISE, EDITION_TEAM } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -50,6 +54,8 @@ export interface ITeamCapabilityOptions {
    *  It is optional, so an existing caller stays source-compatible.
    *  When absent, the reference pass is skipped. */
   symbolReferenceRegistry?: ISymbolReferenceExtractorRegistry;
+  /** Symbol file-resolver registry for the same pass. */
+  symbolFileResolverRegistry?: ISymbolFileResolverRegistry;
 }
 
 /** Runtime dependencies the Team model-registry provider closes over. */
@@ -232,15 +238,19 @@ export function registerCapabilitySeamHooks(
   registries: {
     symbolRegistry: ISymbolExtractorRegistry;
     symbolReferenceRegistry?: ISymbolReferenceExtractorRegistry;
+    symbolFileResolverRegistry?: ISymbolFileResolverRegistry;
   },
 ): number {
-  const { symbolRegistry, symbolReferenceRegistry } = registries;
+  const { symbolRegistry, symbolReferenceRegistry, symbolFileResolverRegistry } = registries;
   let referenceRegistrations = 0;
   for (const module of modules) {
     module.registerSymbolExtractors?.(symbolRegistry as ISeamRegistryPlaceholder);
     if (symbolReferenceRegistry) {
       module.registerSymbolReferenceExtractors?.(symbolReferenceRegistry as ISeamRegistryPlaceholder);
       referenceRegistrations += 1;
+    }
+    if (symbolFileResolverRegistry) {
+      module.registerSymbolFileResolvers?.(symbolFileResolverRegistry as ISeamRegistryPlaceholder);
     }
   }
   return referenceRegistrations;
@@ -270,7 +280,7 @@ export function registerTeamCapabilities(
   symbolRegistry: ISymbolExtractorRegistry,
   options: ITeamCapabilityOptions,
 ): ReadonlySet<string> {
-  const { edition, hitlPolicyEvaluator, symbolReferenceRegistry } = options;
+  const { edition, hitlPolicyEvaluator, symbolReferenceRegistry, symbolFileResolverRegistry } = options;
   // Assert the capability-to-edition mapping is consistent at wiring time
   if (CAPABILITY_EDITION[CAP_VOTING] !== EDITION_TEAM) {
     throw new Error(
@@ -295,6 +305,10 @@ export function registerTeamCapabilities(
 
   const stepRegistry = flowRunner.getStepHandlerRegistry();
   const installed = registerFlowCapabilityModules(edition, composer.getModules(), stepRegistry);
-  registerCapabilitySeamHooks(composer.getModules(), { symbolRegistry, symbolReferenceRegistry });
+  registerCapabilitySeamHooks(composer.getModules(), {
+    symbolRegistry,
+    symbolReferenceRegistry,
+    symbolFileResolverRegistry,
+  });
   return installed;
 }
