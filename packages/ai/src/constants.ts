@@ -127,3 +127,12 @@ export const PROVIDER_HEALTH_CHECK_TIMEOUT_MS = 5000;
 export const PROVIDER_ID_MOCK_PREFIX = "mock-";
 export const PROVIDER_ID_MOCK_DEFAULT_STRATEGY = "recorded";
 export const PROVIDER_ID_MOCK_PATTERN_STRATEGY = "pattern";
+
+/** Supported-JSON-Schema-subset bounds for the compatible structured-output contract —
+ *  rejected before any Zod conversion is attempted. */
+export const STRUCTURED_OUTPUT_SCHEMA_MAX_BYTES = 64 * 1024;
+export const STRUCTURED_OUTPUT_SCHEMA_MAX_NESTING = 64;
+/** json_object mode requires the literal word "json" somewhere in the conversation. */
+export const STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION =
+  "Respond with a single json object matching the supplied schema. This overrides any earlier instruction to " +
+  "use <content> or other wrapper tags. The first character of your reply must be {. No prose, no markdown fence.";

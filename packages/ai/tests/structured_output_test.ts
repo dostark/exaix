@@ -1,11 +1,11 @@
 /**
- * @module CompatibleStructuredOutputTest
- * @path packages/ai-openai/tests/compatible_structured_output_test.ts
+ * @module StructuredOutputTest
+ * @path packages/ai/tests/structured_output_test.ts
  * @description Exercises the supported JSON-Schema subset check, OpenAI strict-mode
  *   normalization round trip, and DeepSeek json-mode dispatch against the real plan schema.
  * @architectural-layer Tests
- * @dependencies [@exaix/ai-openai, @exaix/schemas]
- * @related-files [packages/ai-openai/src/compatible_structured_output.ts]
+ * @dependencies [@exaix/ai, @exaix/schemas]
+ * @related-files [packages/ai/src/structured_output.ts]
  */
 import { assertEquals, assertThrows } from "@std/assert";
 import type { JSONValue } from "@exaix/core";
@@ -19,7 +19,7 @@ import {
   toStrictSchema,
   UnsupportedJsonSchemaError,
   validateStructuredOutput,
-} from "../src/compatible_structured_output.ts";
+} from "../src/structured_output.ts";
 import { STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION } from "../src/constants.ts";
 
 const schema = (body: Record<string, JSONValue>): Record<string, JSONValue> => body;

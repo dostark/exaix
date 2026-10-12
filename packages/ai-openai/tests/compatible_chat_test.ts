@@ -16,7 +16,7 @@ import { withEnv } from "@exaix/testing/helpers/env.ts";
 import { OpenAICompatibleProviderFactory } from "../src/compatible_factory.ts";
 import { OpenAIProvider } from "../src/openai_provider.ts";
 import { createCompatibleChatRequestInit } from "../src/compatible_chat.ts";
-import { STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION } from "../src/constants.ts";
+import { STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION } from "@exaix/ai/constants.ts";
 import { TracedProvider } from "@exaix/ai/traced_provider.ts";
 import { createMockLogger } from "@exaix/testing";
 

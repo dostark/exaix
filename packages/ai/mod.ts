@@ -43,3 +43,4 @@ export * from "./src/bindings/model_binding_service.ts";
 export * from "./src/native_conversation_budget.ts";
 export * from "./src/provider_call_options.ts";
 export * from "./src/compatible_usage.ts";
+export * from "./src/structured_output.ts";

@@ -12,4 +12,3 @@ export * from "./src/openai_factory.ts";
 export * from "./src/compatible_factory.ts";
 export * from "./src/openai_embedding_client.ts";
 export * from "./src/constants.ts";
-export * from "./src/compatible_structured_output.ts";

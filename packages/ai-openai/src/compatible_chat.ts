@@ -26,7 +26,7 @@ import {
   type TokenMap,
 } from "@exaix/ai/provider_common_utils.ts";
 import { FIXED_NATIVE_ROUND_LIMITS } from "@exaix/ai/native_round_limits.ts";
-import { planStructuredOutput, validateStructuredOutput } from "./compatible_structured_output.ts";
+import { planStructuredOutput, validateStructuredOutput } from "@exaix/ai/structured_output.ts";
 import type { StructuredOutputMode, StructuredOutputModeReason } from "@exaix/ai/providers";
 
 /** Structured-output dispatch treats an absent profile (the local-test fixture calling

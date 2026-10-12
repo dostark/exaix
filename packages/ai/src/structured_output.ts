@@ -1,17 +1,17 @@
 /**
- * @module CompatibleStructuredOutput
- * @path packages/ai-openai/src/compatible_structured_output.ts
+ * @module StructuredOutput
+ * @path packages/ai/src/structured_output.ts
  * @description Provider-owned structured-output contract for OpenAI-compatible profiles: a
  *   supported JSON-Schema subset check, OpenAI strict-schema normalization (with a matching
  *   response-side null-stripping round trip), DeepSeek's json-mode dispatch, and local
  *   validation of the model's final JSON against the caller's original schema.
  * @architectural-layer AI
  * @dependencies [zod]
- * @related-files [packages/ai-openai/src/compatible_chat.ts, packages/core/src/planning/plan_adapter.ts]
+ * @related-files [packages/ai-openai/src/compatible_chat.ts, packages/ai-openrouter/src/openrouter_provider.ts, packages/core/src/planning/plan_adapter.ts]
  */
 import { z } from "zod";
 import { type JSONValue, OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE } from "@exaix/core";
-import type { StructuredOutputMode, StructuredOutputModeReason } from "@exaix/ai/providers";
+import type { StructuredOutputMode, StructuredOutputModeReason } from "./providers/common.ts";
 import {
   STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION,
   STRUCTURED_OUTPUT_SCHEMA_MAX_BYTES,
