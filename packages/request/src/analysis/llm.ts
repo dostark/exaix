@@ -3,7 +3,7 @@
  * @path packages/request/src/analysis/llm.ts
  * @description LLM-powered request analysis strategy. Sends a structured prompt
  * to an `IModelProvider` and validates the JSON response against
- * `RequestAnalysisSchema` via `IOutputValidator`. Falls back to a minimal
+ * `RequestAnalysisCoreSchema` via `IOutputValidator`. Falls back to a minimal
  * safe `IRequestAnalysis` on any failure so callers never receive an exception.
  * @architectural-layer Services
  * @related-files [packages/request/src/analysis/analyzer.ts]
@@ -12,18 +12,16 @@
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "@exaix/tool-runtime";
 import {
-  getRequestAnalysisJsonSchema,
+  getRequestAnalysisCoreJsonSchema,
   type IRequestAnalysis,
   RequestAnalysisComplexity,
-  RequestAnalysisSchema,
+  RequestAnalysisCoreSchema,
   RequestTaskType,
 } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
 import type { IRequestAnalysisContext } from "@exaix/core/types";
 import { ANALYZER_VERSION } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
-
-const RequestAnalysisCoreSchema = RequestAnalysisSchema.omit({ metadata: true });
 
 // Analysis prompt template
 
@@ -153,7 +151,7 @@ export class LlmAnalyzer {
       const genResult = await this.provider.generate(prompt, {
         temperature: 0,
         max_tokens: 1500,
-        jsonSchema: getRequestAnalysisJsonSchema(),
+        jsonSchema: getRequestAnalysisCoreJsonSchema(),
       });
       raw = genResult.content;
     } catch {
@@ -175,7 +173,7 @@ export class LlmAnalyzer {
         const refinedResult2 = await this.provider.generate(reviewPrompt, {
           temperature: 0,
           max_tokens: 1500,
-          jsonSchema: getRequestAnalysisJsonSchema(),
+          jsonSchema: getRequestAnalysisCoreJsonSchema(),
         });
         const refinedResult = this.validator.parseAndValidate(refinedResult2.content, RequestAnalysisCoreSchema);
         if (refinedResult.success && refinedResult.value) {

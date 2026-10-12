@@ -12,7 +12,8 @@
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
-import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
+import type { JSONValue } from "@exaix/core";
 import { createOutputValidator, type IOutputSchemaName, type IOutputValidator } from "@exaix/tool-runtime";
 import { LlmAnalyzer } from "@exaix/request";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
@@ -244,4 +245,32 @@ Deno.test("[LlmAnalyzer] includes high-impact ambiguity in prompt for ambiguous 
 
   // Prompt should reference the IRequestAnalysis schema fields
   assertStringIncludes(capturedPrompt().toLowerCase(), "ambiguit");
+});
+
+Deno.test("[LlmAnalyzer] passes the core JSON schema, without metadata, on both generate calls", async () => {
+  const schemas: Array<Record<string, JSONValue> | undefined> = [];
+  const provider: IModelProvider = {
+    id: "schema-capturing",
+    generate: async (_prompt: string, options?: IModelOptions): Promise<IGenerateResult> => {
+      schemas.push(options?.jsonSchema);
+      await Promise.resolve();
+      return {
+        content: validAnalysisJson,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "schema-capturing-mock",
+        provider: "mock",
+        cost_usd: 0,
+      };
+    },
+  };
+  const analyzer = new LlmAnalyzer(provider, createOutputValidator({ autoRepair: false }));
+  await analyzer.analyze("Add unit tests for UserService.", {});
+
+  assertEquals(schemas.length, 2);
+  for (const schema of schemas) {
+    const properties = (schema?.properties ?? {}) as Record<string, JSONValue>;
+    assertEquals("metadata" in properties, false);
+    assertEquals("goals" in properties, true);
+    assertEquals(((schema?.required ?? []) as string[]).includes("metadata"), false);
+  }
 });

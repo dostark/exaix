@@ -6,7 +6,7 @@
  */
 import type { JSONValue } from "@exaix/core";
 import { assertEquals } from "@std/assert";
-import { getRequestAnalysisJsonSchema } from "../src/request_analysis.ts";
+import { getRequestAnalysisCoreJsonSchema, getRequestAnalysisJsonSchema } from "../src/request_analysis.ts";
 
 Deno.test("getRequestAnalysisJsonSchema returns an object with type: object", () => {
   const schema = getRequestAnalysisJsonSchema();
@@ -20,4 +20,20 @@ Deno.test("getRequestAnalysisJsonSchema has properties with goals and requiremen
   assertEquals(props !== undefined, true);
   assertEquals((props.goals as Record<string, JSONValue>) !== undefined, true);
   assertEquals((props.requirements as Record<string, JSONValue>) !== undefined, true);
+});
+
+Deno.test("getRequestAnalysisCoreJsonSchema omits metadata from properties and required", () => {
+  const schema = getRequestAnalysisCoreJsonSchema() as {
+    properties: Record<string, JSONValue>;
+    required?: string[];
+  };
+  assertEquals("metadata" in schema.properties, false);
+  assertEquals((schema.required ?? []).includes("metadata"), false);
+});
+
+Deno.test("getRequestAnalysisCoreJsonSchema keeps every other property of the full schema", () => {
+  const full = getRequestAnalysisJsonSchema() as { properties: Record<string, JSONValue> };
+  const core = getRequestAnalysisCoreJsonSchema() as { properties: Record<string, JSONValue> };
+  const expected = Object.keys(full.properties).filter((name) => name !== "metadata").sort();
+  assertEquals(Object.keys(core.properties).sort(), expected);
 });
