@@ -102,7 +102,6 @@ Deno.test("with a native conversation only messages[0] gets the breakpoint, and 
   assertEquals(first.messages[1], {
     role: "assistant",
     content: null,
-    reasoning_content: "Replay reasoning",
     reasoning_details: reasoning,
     tool_calls: toolCalls,
   });

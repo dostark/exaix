@@ -123,6 +123,15 @@ type OpenRouterProviderBody = NonNullable<IOpenRouterRouting["provider"]> & {
   data_collection?: OpenRouterDataCollection;
 };
 
+/** OpenRouter replays reasoning through reasoning_details only. The shared builder also writes reasoning_content. */
+function withoutReasoningContent(messages: OpenAiChatMessage[]): OpenAiChatMessage[] {
+  return messages.map((message) => {
+    if (message.role !== "assistant" || message.reasoning_content === undefined) return message;
+    const { reasoning_content: _omitted, ...replay } = message;
+    return replay;
+  });
+}
+
 /** One request to try, with the plan it carries. */
 interface IRouteAttempt {
   options: Opt<IModelOptions, Reason.AbstractBoundary>;
@@ -246,12 +255,12 @@ export class OpenRouterProvider extends BaseProvider {
     plan: Opt<IStructuredOutputPlan, Reason.OptionalContext> = this.planOutput(options),
     entry?: Opt<IOpenRouterModelEntry, Reason.OptionalContext>,
   ): OpenRouterRequestBody {
-    const messages: OpenAiChatMessage[] = buildOpenAiMessages(
+    const messages: OpenAiChatMessage[] = withoutReasoningContent(buildOpenAiMessages(
       prompt,
       options?.priorTurn,
       options?.nativeConversation,
       options?.priorRound,
-    );
+    ));
     const body: OpenRouterRequestBody = {
       model: this.model,
       messages,

@@ -215,7 +215,6 @@ Deno.test("OpenRouter replays a priorRound after the prompt with reasoning detai
     assertEquals(messages[1], {
       role: "assistant",
       content: "I will read both files.",
-      reasoning_content: "Read both first.",
       reasoning_details: OR_REASONING_DETAILS,
       tool_calls: OR_TOOL_CALLS,
     });
