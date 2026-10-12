@@ -43,6 +43,10 @@ export interface IPlanValidation {
   testPaths: string[];
   planErrors: string[];
   changedFiles: string[];
+  /** Staged files of the plan's code submodules, by repository-relative path.
+   *  It is optional and defaults to none.
+   *  A paid-edition step keeps its source in a submodule. */
+  submoduleStagedFiles?: string[];
   /** Ledger tokens of the step's `⚠️ deferred` items (optional; default none). */
   deferredTokens?: string[];
   /** Symbols found in the plan doc's Reachability Ledger table (optional; default none). */
@@ -541,9 +545,18 @@ export function validateCommitMsg(
     // Surface any structural errors from parsing the plan step verbatim.
     for (const e of pv.planErrors) errors.push(`Plan traceability: ${e}`);
 
-    const changed = new Set(pv.changedFiles);
+    const changed = new Set([...pv.changedFiles, ...(pv.submoduleStagedFiles ?? [])]);
+    /** A plan path may carry its submodule prefix (`exaix-team/x`), while the
+     *  submodule reports `x`. Accept either form. */
+    const isChanged = (path: string): boolean => {
+      if (changed.has(path)) return true;
+      for (const sub of PLAN_CODE_SUBMODULES) {
+        if (path.startsWith(`${sub}/`) && changed.has(path.slice(sub.length + 1))) return true;
+      }
+      return false;
+    };
     for (const path of pv.criteriaPaths) {
-      if (!changed.has(path)) {
+      if (!isChanged(path)) {
         errors.push(
           `Plan traceability: success-criterion module "${path}" is not among this commit's changed files — ` +
             `either it is not actually implemented here or the criterion is unfairly marked done.`,
@@ -551,7 +564,7 @@ export function validateCommitMsg(
       }
     }
     for (const path of pv.testPaths) {
-      if (!changed.has(path)) {
+      if (!isChanged(path)) {
         errors.push(
           `Plan traceability: planned-test module "${path}" is not among this commit's changed files — ` +
             `the test is marked done ✅ but its file was not committed.`,
@@ -583,6 +596,45 @@ export function validateCommitMsg(
 }
 
 /** The staged (`--cached`) changed-file paths, repo-root-relative, or [] on failure. */
+/** Submodules whose committed files a phase plan may reference.
+ *  The path is repository-relative, for example `exaix-team/packages/x/src/y.ts`. */
+const PLAN_CODE_SUBMODULES = ["exaix-team", "exaix-enterprise"];
+
+/**
+ * Changed files of every code submodule the parent is committing.
+ *
+ * A paid-edition plan step keeps its source in a submodule.
+ * Those paths must satisfy the plan's arrow-path check as well.
+ * A staged diff comes first, then the submodule's own last commit.
+ * The pointer in this commit is what ships that committed work.
+ */
+async function getSubmoduleStagedFiles(submodulePaths: readonly string[]): Promise<string[]> {
+  const files: string[] = [];
+  for (const sub of submodulePaths) {
+    const staged = await gitNameOnly(["diff", "--cached", "--name-only"], sub);
+    const head = staged.length > 0 ? staged : await gitNameOnly(["show", "--name-only", "--format=", "HEAD"], sub);
+    files.push(...head);
+  }
+  return files;
+}
+
+/** Reads newline-separated paths from one git command in `sub`. */
+async function gitNameOnly(args: string[], sub: string): Promise<string[]> {
+  try {
+    const output = await new Deno.Command("git", {
+      args: ["-C", sub, ...args],
+      env: { LD_LIBRARY_PATH: "" },
+      stdout: "piped",
+      stderr: "null",
+    }).output();
+    const text = new TextDecoder().decode(output.stdout).trim();
+    return text ? text.split("\n").map((f) => f.trim()).filter((f) => f.length > 0) : [];
+  } catch (_e) {
+    // An uninitialized submodule cannot contribute files.
+    return [];
+  }
+}
+
 async function getStagedFiles(): Promise<string[]> {
   try {
     const output = await new Deno.Command("git", {
@@ -784,6 +836,11 @@ if (import.meta.main) {
     // Plan-step traceability: only engaged when the commit carries a `plan:` field.
     const planRef = parsePlanField(text);
     const planValidation = planRef ? await resolvePlanValidation(planRef, stagedFiles) : undefined;
+    if (planValidation) {
+      // A paid-edition step keeps its source in a submodule, so include those
+      // staged files in the plan's arrow-path check.
+      planValidation.submoduleStagedFiles = await getSubmoduleStagedFiles(PLAN_CODE_SUBMODULES);
+    }
 
     const mergeCommit = await isGitMergeCommit();
     const { success, errors } = validateCommitMsg(text, {

@@ -734,6 +734,41 @@ plan: exaix-dev-docs/planning/phase-134.md#6`;
     assertEquals(result.success, true, result.errors?.join(", "));
   });
 
+  it("accepts a criterion whose module is staged in a code submodule", () => {
+    const result = validateCommitMsg(baseMsg, {
+      changedFileCount: 6,
+      planValidation: {
+        criteriaPaths: ["exaix-team/packages/portal-extractors/src/go_symbol_reference_extractor.ts"],
+        testPaths: ["exaix-team/packages/portal-extractors/tests/go_symbol_reference_extractor_test.ts"],
+        planErrors: [],
+        changedFiles: ["exaix-team"],
+        submoduleStagedFiles: [
+          "packages/portal-extractors/src/go_symbol_reference_extractor.ts",
+          "packages/portal-extractors/tests/go_symbol_reference_extractor_test.ts",
+        ],
+      },
+    });
+    assertEquals(result.success, true, result.errors?.join(", "));
+  });
+
+  it("still blocks a submodule path that is not staged in that submodule", () => {
+    const result = validateCommitMsg(baseMsg, {
+      changedFileCount: 6,
+      planValidation: {
+        criteriaPaths: ["exaix-team/packages/portal-extractors/src/go_symbol_reference_extractor.ts"],
+        testPaths: [],
+        planErrors: [],
+        changedFiles: ["exaix-team"],
+        submoduleStagedFiles: ["packages/portal-extractors/mod.ts"],
+      },
+    });
+    assertEquals(result.success, false);
+    assertEquals(
+      result.errors.some((e) => e.includes("go_symbol_reference_extractor.ts")),
+      true,
+    );
+  });
+
   it("blocks when a criterion's source module is NOT among the changed files", () => {
     const result = validateCommitMsg(baseMsg, {
       changedFileCount: 6,

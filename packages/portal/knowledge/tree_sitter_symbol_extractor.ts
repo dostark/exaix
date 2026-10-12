@@ -44,12 +44,16 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
   protected abstract extractImports(source: string): string[];
 
   private _initPromise: Promise<void> | null = null;
-  private _parser: Parser | null = null;
-  private _query: Query | null = null;
+  /** Shared parser instance. A subclass may reuse it for its own query. */
+  protected _parser: Parser | null = null;
+  /** The compiled query from `scmQuerySource()`. */
+  protected _query: Query | null = null;
 
   // Initialization (lazy, once)
 
-  private ensureInitialized(): Promise<void> {
+  /** Initializes the parser and query once.
+   *  A subclass calls this before it reads `_parser` or `_query` directly. */
+  protected ensureInitialized(): Promise<void> {
     if (this._initPromise) return this._initPromise;
     this._initPromise = this._doInit();
     return this._initPromise;
@@ -151,6 +155,30 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
   // Helpers
 
   /**
+   * Reads one portal file under the shared containment and byte bounds.
+   *
+   * No parse happens here, so a caller that needs the raw text can reuse it.
+   * A language file resolver uses this to read import declarations.
+   * Returns `undefined` when the path escapes the root or cannot be read.
+   */
+  protected async readPortalFile(
+    portalRoot: string,
+    file: string,
+  ): Promise<string | undefined> {
+    const fullPath = resolve(join(portalRoot, file));
+    if (!fullPath.startsWith(portalRoot)) return undefined;
+    try {
+      const stat = await Deno.stat(fullPath);
+      if (!stat.isFile) return undefined;
+      if (stat.size > SYMBOL_EXTRACT_MAX_FILE_BYTES) return undefined;
+      return await Deno.readTextFile(fullPath);
+    } catch (_fileErr) {
+      // Fail-soft: skip unreadable or race-condition files silently.
+      return undefined;
+    }
+  }
+
+  /**
    * Reads and parses one portal file under the shared security and size bounds.
    *
    * Returns `undefined` when the path escapes the portal root.
@@ -164,7 +192,10 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
   protected async parsePortalFile(
     portalRoot: string,
     file: string,
-  ): Promise<{ content: string; tree: NonNullable<ReturnType<Parser["parse"]>> } | undefined> {
+  ): Promise<
+    | { content: string; tree: NonNullable<ReturnType<Parser["parse"]>> }
+    | undefined
+  > {
     const fullPath = resolve(join(portalRoot, file));
     if (!fullPath.startsWith(portalRoot)) return undefined;
 
@@ -182,7 +213,9 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
 
     const tree = this._parser!.parse(content);
     if (!tree) return undefined;
-    if (this._countNodes(tree.rootNode) > SYMBOL_EXTRACT_MAX_NODES) return undefined;
+    if (this._countNodes(tree.rootNode) > SYMBOL_EXTRACT_MAX_NODES) {
+      return undefined;
+    }
 
     return { content, tree };
   }

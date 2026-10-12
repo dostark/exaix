@@ -24,6 +24,10 @@
 import type { Opt, Reason } from "@exaix/core/types";
 import { type IOwningRepo, type IPlanRef, parsePlanField, resolveOwningRepo } from "./check_commit_msg.ts";
 
+/** Submodules whose committed files a phase plan may reference by their own
+ *  repository-relative path. */
+const PLAN_CODE_SUBMODULES = ["exaix-team", "exaix-enterprise"];
+
 /** Run a git command in `cwd`; return trimmed stdout (empty on failure). */
 async function git(args: string[], cwd?: Opt<string, Reason.OptionalContext>): Promise<string> {
   try {
@@ -84,7 +88,18 @@ function preflightErrors(r: IResolved): string[] {
   return [];
 }
 
-/** Commit the submodule (if any) then the parent pointer + code, using the same message. */
+/** Submodules that may hold a plan step's code instead of the parent repo. */
+async function codeSubmodulesWithStagedChanges(): Promise<string[]> {
+  const staged: string[] = [];
+  for (const sub of PLAN_CODE_SUBMODULES) {
+    const files = await git(["diff", "--cached", "--name-only"], sub);
+    if (files.length > 0) staged.push(sub);
+  }
+  return staged;
+}
+
+/** Commit the plan-doc submodule, then any code submodule, then the parent
+ *  pointer + code, all with the same message. */
 async function performCommits(msgFile: string, repo: IOwningRepo): Promise<boolean> {
   if (repo.submodule) {
     const subCommit = await runGitInherit(["commit", "-F", msgFile], repo.submodule);
@@ -92,6 +107,11 @@ async function performCommits(msgFile: string, repo: IOwningRepo): Promise<boole
     // Stage the pointer bump in the parent so it matches the new submodule HEAD.
     const staged = await runGitInherit(["add", repo.submodule]);
     if (!staged) return false;
+  }
+  for (const sub of await codeSubmodulesWithStagedChanges()) {
+    const applied = await runGitInherit(["commit", "-F", msgFile], sub);
+    if (!applied) return false;
+    if (!await runGitInherit(["add", sub])) return false;
   }
   return await runGitInherit(["commit", "-F", msgFile]);
 }

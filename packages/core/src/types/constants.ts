@@ -28,8 +28,14 @@ export const OPENAI_COMPATIBLE_LOCAL_PROFILE = "local-test";
 /** A service the operator hosts. Its catalog declares the endpoint and the model. */
 export const OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE = "self-hosted";
 export const OPENAI_COMPATIBLE_PROFILE_DEFAULTS = {
-  openai: { model: "gpt-6-luna", endpoint: "https://api.openai.com/v1/chat/completions" },
-  deepseek: { model: "deepseek-v4-pro", endpoint: "https://api.deepseek.com/v1/chat/completions" },
+  openai: {
+    model: "gpt-6-luna",
+    endpoint: "https://api.openai.com/v1/chat/completions",
+  },
+  deepseek: {
+    model: "deepseek-v4-pro",
+    endpoint: "https://api.deepseek.com/v1/chat/completions",
+  },
   "local-test": { model: "compat-fixture-v1", endpoint: undefined },
   // A self-hosted service pins nothing, so this entry carries no default.
   "self-hosted": { model: undefined, endpoint: undefined },
@@ -239,13 +245,33 @@ export const DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 /** Daemon env keys overlaid onto the allowlist child env for a verification check. */
-export const VERIFICATION_DENO_ENV_KEYS: readonly string[] = ["DENO_DIR", "DENO_NO_UPDATE_CHECK", "XDG_CACHE_HOME"];
+export const VERIFICATION_DENO_ENV_KEYS: readonly string[] = [
+  "DENO_DIR",
+  "DENO_NO_UPDATE_CHECK",
+  "XDG_CACHE_HOME",
+];
 /** Whole-host or in-place-mutation flags rejected in a verification check's args. */
-export const VERIFICATION_FORBIDDEN_ARGS: readonly string[] = ["-A", "--allow-all", "--fix"];
+export const VERIFICATION_FORBIDDEN_ARGS: readonly string[] = [
+  "-A",
+  "--allow-all",
+  "--fix",
+];
 /** Deno permission short flags (`-A`, `-R`, ...). Rejected alone or in a cluster, since they have no scoped form. */
-export const VERIFICATION_PERMISSION_SHORT_FLAGS: readonly string[] = ["A", "R", "W", "N", "E", "S", "I", "P"];
+export const VERIFICATION_PERMISSION_SHORT_FLAGS: readonly string[] = [
+  "A",
+  "R",
+  "W",
+  "N",
+  "E",
+  "S",
+  "I",
+  "P",
+];
 /** Flags that load permissions from the worktree config, which model-written code can edit. */
-export const VERIFICATION_PERMISSION_SET_FLAGS: readonly string[] = ["-P", "--permission-set"];
+export const VERIFICATION_PERMISSION_SET_FLAGS: readonly string[] = [
+  "-P",
+  "--permission-set",
+];
 /** Prefix of a long permission flag. A verification check accepts it only with a non-empty `=<values>` list. */
 export const VERIFICATION_ALLOW_FLAG_PREFIX = "--allow-";
 /** Extra characters read past `output_max_chars` so a secret cut at the read boundary is still redacted whole. */
@@ -1033,7 +1059,12 @@ export const DEFAULT_GIT_BRANCH_PREFIX_PATTERN: string = configurable({
   description: "Regex pattern for allowed git branch prefixes",
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_GIT_ALLOWED_PREFIXES = ["feature/", "bugfix/", "hotfix/", "chore/"];
+export const DEFAULT_GIT_ALLOWED_PREFIXES = [
+  "feature/",
+  "bugfix/",
+  "hotfix/",
+  "chore/",
+];
 export const DEFAULT_GIT_STATUS_TIMEOUT_MS: number = configurable({
   key: "git.status_timeout_ms",
   default: 10000,
@@ -1202,7 +1233,11 @@ export const TOKEN_ESTIMATION_MAX_TOKENS = 2000;
 // Prompt Budgeting
 
 /** Provider ID prefixes that identify local/self-hosted LLM providers. */
-export const LOCAL_PROVIDER_PREFIXES = ["ollama:", "lmstudio:", "local:"] as const;
+export const LOCAL_PROVIDER_PREFIXES = [
+  "ollama:",
+  "lmstudio:",
+  "local:",
+] as const;
 
 /** Conservative fallback context window for local models when model-specific window is unknown. */
 export const LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32_768;
@@ -1735,13 +1770,15 @@ export const DEFAULT_MEMORY_REMOTE_BUDGET_USD: number = configurable({
   max: 100,
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_PROVIDER_STRATEGY_FALLBACK_ENABLED: boolean = configurable({
-  key: "provider_strategy.fallback_enabled",
-  default: true,
-  type: ConfigValueType.BOOLEAN,
-  description: "Whether to fall back to alternative providers on failure",
-  swap: SwapClass.RESTART,
-});
+export const DEFAULT_PROVIDER_STRATEGY_FALLBACK_ENABLED: boolean = configurable(
+  {
+    key: "provider_strategy.fallback_enabled",
+    default: true,
+    type: ConfigValueType.BOOLEAN,
+    description: "Whether to fall back to alternative providers on failure",
+    swap: SwapClass.RESTART,
+  },
+);
 export const DEFAULT_PROVIDER_STRATEGY_FALLBACK_CHAINS = {
   "balanced": ["openai", "anthropic", "google"],
   "fast": ["google", "openai"],
@@ -2344,6 +2381,17 @@ export const ANALYSIS_TASK_TYPE_VERBS: Record<string, string> = {
 
 // Portal Knowledge
 
+/** Per-pass cap on symbol-reference edges (DoS bound). */
+export const DEFAULT_SYMBOL_REFERENCE_EDGE_LIMIT: number = configurable({
+  key: "portal_knowledge.symbol_reference_edge_limit",
+  default: 2000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum symbol_references_symbol edges emitted per analysis pass",
+  min: 1,
+  max: 1_000_000,
+  swap: SwapClass.RESTART,
+});
+
 /** Separator joining a portal-relative file path and a symbol name.
  *  It forms one `symbol_references_symbol` edge endpoint (`<file>#<symbolName>`).
  *  This is a format constant, not a tunable.
@@ -2602,7 +2650,14 @@ export const LANGUAGE_SOURCE_EXTENSIONS: Record<string, readonly string[]> = {
 };
 
 /** Default extension set (TS/JS) used when a language has no LANGUAGE_SOURCE_EXTENSIONS entry. */
-export const TS_JS_EXTENSIONS: readonly string[] = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
+export const TS_JS_EXTENSIONS: readonly string[] = [
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
+];
 
 /** Per-file byte cap for tree-sitter symbol extraction; larger files are skipped (DoS bound). */
 export const SYMBOL_EXTRACT_MAX_FILE_BYTES: number = configurable({
@@ -3495,7 +3550,11 @@ export const BINDING_RUN_FILE_RETENTION_DAYS: number = configurable({
 export const BINDING_RUN_FILE_PRUNE_INTERVAL_MS = 86_400_000;
 
 /** Filesystem event kinds that indicate a (re)written file worth processing. */
-export const FS_WRITE_EVENT_KINDS: ReadonlySet<string> = new Set(["create", "modify", "rename"]);
+export const FS_WRITE_EVENT_KINDS: ReadonlySet<string> = new Set([
+  "create",
+  "modify",
+  "rename",
+]);
 
 /** Cost-record provider prefix for a delegated (human-run) session tool. */
 export const SESSION_COST_PROVIDER_PREFIX = "session:";
@@ -3876,7 +3935,9 @@ export const DEFAULT_OTEL_EXPORT_HEADERS_ENV = "OTEL_EXPORTER_OTLP_HEADERS";
 /** Tool names excluded from `readOnlyEditorTools()`'s NONE-scope filter even though they
  *  themselves are NONE-scope. `list_available_tools` would advertise write tools the
  *  planning LLM call can never call, since only the read-only catalog is offered to it. */
-export const PLANNING_TOOLS_EXCLUDED: readonly string[] = [ToolName.LIST_AVAILABLE_TOOLS];
+export const PLANNING_TOOLS_EXCLUDED: readonly string[] = [
+  ToolName.LIST_AVAILABLE_TOOLS,
+];
 
 /** Read-only exploration tools for the planning LLM call. OFF = single-call (today's
  *  behavior) — AgentRunner.run reads this live per request, so it is SwapClass.HOT. */
@@ -3974,26 +4035,66 @@ export interface ISharedToolOperation {
  *  It also requires a row for every value present in both enums.
  *  Classify any new unmatched export in review. */
 export const SHARED_TOOL_OPERATIONS: readonly ISharedToolOperation[] = [
-  { canonical: ToolName.READ_FILE, toolNameMember: "READ_FILE", mcpToolNameMember: "READ_FILE" },
-  { canonical: ToolName.WRITE_FILE, toolNameMember: "WRITE_FILE", mcpToolNameMember: "WRITE_FILE" },
-  { canonical: ToolName.RUN_COMMAND, toolNameMember: "RUN_COMMAND", mcpToolNameMember: "RUN_COMMAND" },
-  { canonical: ToolName.LIST_DIRECTORY, toolNameMember: "LIST_DIRECTORY", mcpToolNameMember: "LIST_DIRECTORY" },
-  { canonical: ToolName.SEARCH_FILES, toolNameMember: "SEARCH_FILES", mcpToolNameMember: "SEARCH_FILES" },
+  {
+    canonical: ToolName.READ_FILE,
+    toolNameMember: "READ_FILE",
+    mcpToolNameMember: "READ_FILE",
+  },
+  {
+    canonical: ToolName.WRITE_FILE,
+    toolNameMember: "WRITE_FILE",
+    mcpToolNameMember: "WRITE_FILE",
+  },
+  {
+    canonical: ToolName.RUN_COMMAND,
+    toolNameMember: "RUN_COMMAND",
+    mcpToolNameMember: "RUN_COMMAND",
+  },
+  {
+    canonical: ToolName.LIST_DIRECTORY,
+    toolNameMember: "LIST_DIRECTORY",
+    mcpToolNameMember: "LIST_DIRECTORY",
+  },
+  {
+    canonical: ToolName.SEARCH_FILES,
+    toolNameMember: "SEARCH_FILES",
+    mcpToolNameMember: "SEARCH_FILES",
+  },
   {
     canonical: ToolName.CREATE_DIRECTORY,
     toolNameMember: "CREATE_DIRECTORY",
     mcpToolNameMember: "CREATE_DIRECTORY",
   },
-  { canonical: ToolName.PATCH_FILE, toolNameMember: "PATCH_FILE", mcpToolNameMember: "PATCH_FILE" },
-  { canonical: ToolName.DELETE_FILE, toolNameMember: "DELETE_FILE", mcpToolNameMember: "DELETE_FILE" },
-  { canonical: ToolName.MOVE_FILE, toolNameMember: "MOVE_FILE", mcpToolNameMember: "MOVE_FILE" },
+  {
+    canonical: ToolName.PATCH_FILE,
+    toolNameMember: "PATCH_FILE",
+    mcpToolNameMember: "PATCH_FILE",
+  },
+  {
+    canonical: ToolName.DELETE_FILE,
+    toolNameMember: "DELETE_FILE",
+    mcpToolNameMember: "DELETE_FILE",
+  },
+  {
+    canonical: ToolName.MOVE_FILE,
+    toolNameMember: "MOVE_FILE",
+    mcpToolNameMember: "MOVE_FILE",
+  },
   {
     canonical: ToolName.GIT_CREATE_BRANCH,
     toolNameMember: "GIT_CREATE_BRANCH",
     mcpToolNameMember: "GIT_CREATE_BRANCH",
   },
-  { canonical: ToolName.GIT_COMMIT, toolNameMember: "GIT_COMMIT", mcpToolNameMember: "GIT_COMMIT" },
-  { canonical: ToolName.QUERY_SYMBOLS, toolNameMember: "QUERY_SYMBOLS", mcpToolNameMember: "PORTAL_SYMBOLS" },
+  {
+    canonical: ToolName.GIT_COMMIT,
+    toolNameMember: "GIT_COMMIT",
+    mcpToolNameMember: "GIT_COMMIT",
+  },
+  {
+    canonical: ToolName.QUERY_SYMBOLS,
+    toolNameMember: "QUERY_SYMBOLS",
+    mcpToolNameMember: "PORTAL_SYMBOLS",
+  },
 ];
 
 /** Allowed first tokens of a `<verb>_<object>` tool name (`exaix` is the MCP-only
@@ -4020,4 +4121,7 @@ export const TOOL_NAME_VERBS: readonly string[] = [
 
 /** Parameters every portal-scoped tool accepts implicitly (the portal and agent-role context).
  *  Checks of a tool's declared parameter keys exclude them. */
-export const TOOL_AUTH_ONLY_PARAMS: readonly string[] = ["portal", "agent_role"];
+export const TOOL_AUTH_ONLY_PARAMS: readonly string[] = [
+  "portal",
+  "agent_role",
+];
