@@ -36,6 +36,7 @@ import {
 import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
 import { reasoningFor } from "./openrouter_reasoning.ts";
 import { extractOpenRouterContent, extractOpenRouterFinishReason } from "./openrouter_response.ts";
+import { applyCacheControl, type IOpenRouterChatMessage } from "./openrouter_cache_control.ts";
 import {
   applyJsonModeInstruction,
   completeStructuredOutput,
@@ -90,11 +91,10 @@ export interface IOpenRouterRouting {
   data_collection?: OpenRouterDataCollection;
 }
 
-/** Serialization shape; messages and tools reuse the byte-compatible OpenAI
- *  Chat Completions contract. */
+/** OpenRouter messages add cache breakpoints to the OpenAI Chat Completions contract. Tools keep the shared wire shape. */
 interface OpenRouterRequestBody {
   model: string;
-  messages: OpenAiChatMessage[];
+  messages: IOpenRouterChatMessage[];
   max_tokens?: number;
   temperature?: number;
   top_p?: number;
@@ -149,6 +149,8 @@ export type OpenRouterProviderOptions = IBaseProviderOptions & {
   tokenizer?: ITokenizer;
   /** Per-model capability lookup. Absent means no capability check, so a direct construction never fetches. */
   capabilities?: IOpenRouterCapabilitySource;
+  /** Enables an explicit cache breakpoint on a supported model's initial prompt. */
+  cacheControl?: boolean;
 };
 
 /**
@@ -160,6 +162,7 @@ export class OpenRouterProvider extends BaseProvider {
   private readonly routing?: IOpenRouterRouting;
   private readonly tokenizer: ITokenizer;
   private readonly capabilities?: IOpenRouterCapabilitySource;
+  private readonly cacheControl: boolean;
 
   constructor(options: OpenRouterProviderOptions) {
     super({
@@ -175,6 +178,7 @@ export class OpenRouterProvider extends BaseProvider {
     this.routing = options.routing;
     this.tokenizer = options.tokenizer ?? new AiTokenEstimatorTokenizer();
     this.capabilities = options.capabilities;
+    this.cacheControl = options.cacheControl ?? true;
   }
 
   /** Measures the request exactly as dispatched: the serialized body, with its prompt, replayed history and tools. */
@@ -201,9 +205,15 @@ export class OpenRouterProvider extends BaseProvider {
     plan: Opt<IStructuredOutputPlan, Reason.OptionalContext> = this.planOutput(options),
     entry?: Opt<IOpenRouterModelEntry, Reason.OptionalContext>,
   ): OpenRouterRequestBody {
+    const messages: OpenAiChatMessage[] = buildOpenAiMessages(
+      prompt,
+      options?.priorTurn,
+      options?.nativeConversation,
+      options?.priorRound,
+    );
     const body: OpenRouterRequestBody = {
       model: this.model,
-      messages: buildOpenAiMessages(prompt, options?.priorTurn, options?.nativeConversation, options?.priorRound),
+      messages,
     };
     applyRequestOptions(body, options);
     dropUnlistedHints(body, entry);
@@ -211,8 +221,9 @@ export class OpenRouterProvider extends BaseProvider {
     if (reasoning) body.reasoning = reasoning;
     if (plan) {
       body.response_format = plan.responseFormat;
-      if (plan.promptInstruction) applyJsonModeInstruction(body.messages, prompt, plan.promptInstruction, this.id);
+      if (plan.promptInstruction) applyJsonModeInstruction(messages, prompt, plan.promptInstruction, this.id);
     }
+    body.messages = applyCacheControl(messages, this.model, this.cacheControl);
     applyRouting(body, this.routing);
     applyRequireParameters(body);
     applySessionKey(body, options?.traceId);

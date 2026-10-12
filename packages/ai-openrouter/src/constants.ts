@@ -73,6 +73,13 @@ export const DEFAULT_OPENROUTER_CAPABILITY_CACHE_TTL_MS: number = configurable({
 /** Sampling and parallel-call hints that are best effort. A model that does not list one never receives it. */
 export const OPENROUTER_HINT_PARAMETERS = ["temperature", "top_p", "stop", "parallel_tool_calls"] as const;
 
+/** Breakpoint limits by model prefix. Null means the provider docs specify no numeric limit. */
+export const OPENROUTER_CACHE_CONTROL_FAMILIES = {
+  "anthropic/": 4,
+  "google/gemini": null,
+  "qwen/": null,
+} as const;
+
 /** The finish reason that means the response ended at the token limit. */
 export const OPENROUTER_FINISH_REASON_LENGTH = "length";
 

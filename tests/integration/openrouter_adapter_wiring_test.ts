@@ -25,6 +25,14 @@ import { ProviderFactory, setProviderRegistryBootstrap } from "@exaix/ai/provide
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 
 const OPENROUTER_MODEL = "qwen/qwen3.7-flash";
+const OPENROUTER_TEST_ENV: Record<string, string | null> = {
+  OPENROUTER_API_KEY: "sk-or-test",
+  EXA_TEST_ENABLE_PAID_LLM: "1",
+  EXA_LLM_PROVIDER: null,
+  EXA_LLM_MODEL: null,
+  EXA_LLM_BASE_URL: null,
+  EXA_LLM_ENDPOINT: null,
+};
 const MODELS_FIXTURE = await Deno.readTextFile(
   new URL("../../packages/ai-openrouter/tests/fixtures/openrouter_models_fixture.json", import.meta.url),
 );
@@ -431,29 +439,34 @@ Deno.test({
 async function journaledUsage(
   usage: Record<string, JSONValue>,
   responseModel: string,
+  sentMessages: JSONValue[] = [],
+  cacheControl: boolean = true,
 ): Promise<Array<Record<string, JSONValue>>> {
   const { db, tempDir, cleanup } = await initTestDbService();
   const origFetch = globalThis.fetch;
-  globalThis.fetch = (() =>
-    Promise.resolve(
+  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+    const catalog = answerModelsRequest(input);
+    if (catalog) return Promise.resolve(catalog);
+    const body = JSON.parse(String(init?.body)) as { messages: JSONValue[] };
+    sentMessages.push(...body.messages);
+    return Promise.resolve(
       new Response(
         JSON.stringify({ model: responseModel, choices: [{ message: { content: "ok" } }], usage }),
         { status: 200 },
       ),
-    )) as typeof fetch;
+    );
+  }) as typeof fetch;
   registerOpenRouter();
   try {
     await withEnv(
-      {
-        OPENROUTER_API_KEY: "sk-or-test",
-        EXA_TEST_ENABLE_PAID_LLM: "1",
-        EXA_LLM_PROVIDER: null,
-        EXA_LLM_MODEL: null,
-        EXA_LLM_BASE_URL: null,
-        EXA_LLM_ENDPOINT: null,
-      },
+      OPENROUTER_TEST_ENV,
       async () => {
-        const provider = await ProviderFactory.create(openRouterConfig(tempDir), db, new EventLogger({ db }));
+        const config = ConfigSchema.parse({
+          system: { root: tempDir },
+          ai: { provider: PROVIDER_OPENROUTER, model: OPENROUTER_MODEL },
+          ai_openrouter: { cache_control: cacheControl },
+        });
+        const provider = await ProviderFactory.create(config, db, new EventLogger({ db }));
         await provider.generate("hi");
       },
     );
@@ -509,5 +522,47 @@ Deno.test({
       events.some((event) => event.upstream_inference_cost === 0.0007 && event.cache_discount === 0.0001),
       true,
     );
+  },
+});
+
+Deno.test({
+  name: "[integration] a parsed config with ai_openrouter.cache_control=false reaches the wire body with no breakpoint",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const disabled: JSONValue[] = [];
+    const enabled: JSONValue[] = [];
+    const usage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+    await journaledUsage(usage, OPENROUTER_MODEL, disabled, false);
+    await journaledUsage(usage, OPENROUTER_MODEL, enabled, true);
+    assertEquals(disabled, [{ role: "user", content: "hi" }]);
+    assertEquals(enabled, [{
+      role: "user",
+      content: [{ type: "text", text: "hi", cache_control: { type: "ephemeral" } }],
+    }]);
+  },
+});
+
+Deno.test({
+  name: "[integration] a stubbed reply with cached_tokens for a qwen/ model journals llm.usage with cache_read_tokens",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const messages: JSONValue[] = [];
+    const events = await journaledUsage(
+      {
+        prompt_tokens: 1000,
+        completion_tokens: 20,
+        total_tokens: 1020,
+        prompt_tokens_details: { cached_tokens: 700 },
+      },
+      OPENROUTER_MODEL,
+      messages,
+    );
+    assertEquals(messages, [{
+      role: "user",
+      content: [{ type: "text", text: "hi", cache_control: { type: "ephemeral" } }],
+    }]);
+    assertEquals(events.some((event) => event.cache_read_tokens === 700 && event.model === OPENROUTER_MODEL), true);
   },
 });

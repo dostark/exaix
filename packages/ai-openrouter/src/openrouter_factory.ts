@@ -54,6 +54,7 @@ export class OpenRouterProviderFactory extends AbstractKeyBasedProviderFactory {
       siteName: openrouterConfig?.site_name,
       siteUrl: openrouterConfig?.site_url,
       routing: openrouterConfig?.routing,
+      cacheControl: openrouterConfig?.cache_control,
     });
   }
 }

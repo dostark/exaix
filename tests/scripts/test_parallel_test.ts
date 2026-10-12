@@ -180,6 +180,10 @@ Deno.test("test_output_parse is the single source and test_parallel re-exports t
 /** The expected Batch-2 file list. Order is authoritative. */
 const EXPECTED_SEQUENTIAL_FILES = [
   "apps/exactl/tests/exactl_all_test.ts",
+  "tests/integration/openrouter_adapter_wiring_test.ts",
+  "tests/integration/parallel_tool_round_cutover_test.ts",
+  "apps/daemon/tests/dogfood_context_child_query_test.ts",
+  "apps/daemon/tests/headless_session_launcher_test.ts",
   "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
   "tests/security/calibration_sandbox_security_test.ts",
   "tests/scenario_framework/tests/portal_knowledge_strategies_scenario_test.ts",
@@ -274,6 +278,7 @@ Deno.test("fix(test-runner): catalog overlay environment writers run in isolated
 
 Deno.test("provider factory environment writers run in isolated processes", () => {
   const files = [
+    "tests/integration/openrouter_adapter_wiring_test.ts",
     "packages/ai/tests/provider_factory_test.ts",
     "packages/ai/tests/provider_factory_binding_test.ts",
     "packages/ai/tests/provider_factory_compatible_config_test.ts",
@@ -284,6 +289,24 @@ Deno.test("provider factory environment writers run in isolated processes", () =
     const entry = SEQUENTIAL_TESTS.find((test) => test.file === file);
     assert(entry?.reasons.includes(IsolationReason.processEnv), `${file} needs process environment isolation`);
   }
+});
+
+Deno.test("dogfood MCP child launches and their PATH writer run in isolated processes", () => {
+  const files = [
+    "apps/daemon/tests/dogfood_context_child_query_test.ts",
+    "apps/daemon/tests/headless_session_launcher_test.ts",
+  ];
+  for (const file of files) {
+    const entry = SEQUENTIAL_TESTS.find((test) => test.file === file);
+    assert(entry?.reasons.includes(IsolationReason.processEnv), `${file} needs process environment isolation`);
+  }
+});
+
+Deno.test("native tool round cutover boots run in isolated processes", () => {
+  const entry = SEQUENTIAL_TESTS.find((test) => test.file === "tests/integration/parallel_tool_round_cutover_test.ts");
+  assert(entry, "real daemon cutover boots need an isolated batch entry");
+  assert(entry.reasons.includes(IsolationReason.moduleCache), "real daemon boots need module cache isolation");
+  assert(entry.reasons.includes(IsolationReason.pressure), "real daemon boots need pressure isolation");
 });
 
 Deno.test("only the dist/bin writers are marked serializedOutput and the egress-dependent files are marked network", () => {

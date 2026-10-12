@@ -38,3 +38,22 @@ Deno.test("quantizations accept every documented value and reject an unknown one
   assertEquals(all.success && all.data.ai_openrouter?.routing?.provider?.quantizations, [...OPENROUTER_QUANTIZATIONS]);
   assertEquals(parseProvider({ quantizations: ["fp7"] }).success, false);
 });
+
+Deno.test("cache_control defaults to true, and false parses", () => {
+  for (const input of [{ system: { root: "/tmp/x" } }, { system: { root: "/tmp/x" }, ai_openrouter: {} }]) {
+    assertEquals(ConfigSchema.parse(input).ai_openrouter?.cache_control, true);
+  }
+  assertEquals(
+    ConfigSchema.parse({ system: { root: "/tmp/x" }, ai_openrouter: { cache_control: false } })
+      .ai_openrouter?.cache_control,
+    false,
+  );
+});
+
+Deno.test("cache_control rejects a non-boolean value", () => {
+  assertEquals(
+    ConfigSchema.safeParse({ system: { root: "/tmp/x" }, ai_openrouter: { cache_control: "false" } })
+      .success,
+    false,
+  );
+});

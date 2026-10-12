@@ -555,6 +555,7 @@ const ConfigObjectSchema = z.object({
     api_key_env: z.string().default("OPENROUTER_API_KEY"),
     site_name: z.string().default("Exaix"),
     site_url: z.string().url().default("https://exaix.dev"),
+    cache_control: z.boolean().default(true),
     /** Control-surface passthrough: model fallbacks, provider routing, privacy settings. */
     routing: z.object({
       models: z.array(z.string()).max(3).optional(),
@@ -581,6 +582,7 @@ const ConfigObjectSchema = z.object({
     api_key_env: "OPENROUTER_API_KEY",
     site_name: "Exaix",
     site_url: "https://exaix.dev",
+    cache_control: true,
   }),
   /** MCP (Model Context Protocol) server configuration */
   mcp: MCPConfigSchema.optional().default({
