@@ -47,6 +47,39 @@ const ScenarioPinListSchema = z.array(ScenarioPinSchema).min(1).superRefine((pin
   }
 });
 
+/** Maximum number of override keys a scenario may patch, to keep one scenario bounded. */
+const WORKSPACE_CONFIG_MAX_KEYS = 50;
+/** Maximum entries in one override array value. */
+const WORKSPACE_CONFIG_MAX_ARRAY_ITEMS = 100;
+
+/** A dotted config path. A segment is a bare key or a quoted key, so
+ *  `models."mock:test".provider` is reachable. */
+const WORKSPACE_CONFIG_KEY_PATTERN =
+  /^(?:[A-Za-z0-9_-]+|"[A-Za-z0-9_.:\/-]+")(?:\.(?:[A-Za-z0-9_-]+|"[A-Za-z0-9_.:\/-]+"))*$/;
+
+/** Scalar and array values a scenario may write into the sandbox config. */
+const WorkspaceConfigValueSchema = z.union([
+  z.string(),
+  z.number().finite(),
+  z.boolean(),
+  z.array(z.union([z.string(), z.number().finite(), z.boolean()])).max(WORKSPACE_CONFIG_MAX_ARRAY_ITEMS),
+]);
+
+/** Dotted-key overrides for the sandbox workspace config. */
+export const WorkspaceConfigOverridesSchema = z.record(
+  z.string().min(1).regex(WORKSPACE_CONFIG_KEY_PATTERN, "must be a dotted TOML key path"),
+  WorkspaceConfigValueSchema,
+).refine(
+  (overrides) => Object.keys(overrides).length <= WORKSPACE_CONFIG_MAX_KEYS,
+  { message: `at most ${WORKSPACE_CONFIG_MAX_KEYS} override keys are allowed` },
+);
+
+/** One override value as written into the sandbox config. */
+export type WorkspaceConfigValue = z.infer<typeof WorkspaceConfigValueSchema>;
+
+/** Dotted-key overrides for the sandbox workspace config. */
+export type WorkspaceConfigOverrides = z.infer<typeof WorkspaceConfigOverridesSchema>;
+
 const NON_EMPTY_STRING = z.string().min(1);
 
 export const ScenarioSchema = z.object({
@@ -85,6 +118,10 @@ export const ScenarioSchema = z.object({
    *  fails; absent (default) is additive and byte-identical to pre-gating scoring. */
   scoring: z.nativeEnum(ScoringMode).optional(),
   edition: z.enum(["solo", "team", "enterprise"]).optional(),
+  /** Dotted-key overrides patched into the sandbox `exa.config.toml` after seeding.
+   *  A scenario that needs a non-default config value states it here.
+   *  The shared framework config then stays untouched for every other pack. */
+  workspace_config: WorkspaceConfigOverridesSchema.optional(),
   description: z.string().min(1).optional(),
   risk: z.string().min(1).optional(),
   ci_profile: z.string().min(1).optional(),

@@ -261,6 +261,7 @@ await new Command()
             maxStepTimeoutSec: options.maxStepTimeout,
             operatorOverlays: options.overlay ?? [],
             operatorBinds: options.bind ?? [],
+            ...(entry.workspace_config ? { workspaceConfigOverrides: entry.workspace_config } : {}),
             ...(entry.pack === "persona_response_eval"
               ? {
                 env: {

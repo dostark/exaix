@@ -18,6 +18,8 @@ import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, Step
 import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./evidence_collector.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { gitServiceFor } from "./git_helpers.ts";
+import { patchWorkspaceConfig } from "./workspace_config_overrides.ts";
+import type { WorkspaceConfigValue } from "../schema/scenario_schema.ts";
 import { composeGated, computeStepScore, computeSuiteScore, type IStepScoreInput, ScoringMode } from "./scoring.ts";
 import { type IRunScenarioInModeResult, runScenarioInMode } from "./modes.ts";
 import { type ILoadedScenario, loadScenarioFromYamlFile } from "./scenario_loader.ts";
@@ -113,6 +115,10 @@ export interface IRunSyntheticScenarioOptions {
   operatorOverlays?: string[];
   /** Operator `--bind` specs, in the order given. Applied after every operator overlay. */
   operatorBinds?: string[];
+  /** Scenario `workspace_config` overrides, patched into the sandbox config after
+   *  it is seeded. They keep a scenario's non-default config out of the shared
+   *  framework template, which every other pack also reads. */
+  workspaceConfigOverrides?: { [key: string]: WorkspaceConfigValue };
 }
 
 export interface IRunSyntheticScenarioResult {
@@ -355,6 +361,7 @@ export async function runSyntheticScenario(
   await seedWorkspaceCatalogs(options.workspaceRoot, REPO_ROOT);
   await seedPortalFixtures(options.workspaceRoot, REPO_ROOT);
   await seedWorkspaceConfig(options.workspaceRoot, options.frameworkHome);
+  await applyWorkspaceConfigOverrides(options.workspaceRoot, options.workspaceConfigOverrides);
   const portalBaselines = await capturePortalBaselines(options.workspaceRoot);
 
   // Baseline for artefact correlation: scenarios in a pack share one sandbox workspace, so
@@ -687,6 +694,28 @@ export async function seedWorkspaceConfig(workspaceRoot: string, frameworkHome: 
     const resolved = expandInString(template, { FRAMEWORK_HOME: frameworkHome, WORKSPACE_ROOT: workspaceRoot });
     await Deno.writeTextFile(destination, resolved);
   } catch { /* framework config absent in this checkout */ }
+}
+
+/**
+ * Patches a scenario's config overrides into the sandbox workspace config.
+ *
+ * The patch runs even when the config already existed, so an operator-supplied
+ * `--workspace` receives the scenario's declared values too. An absent config is
+ * left alone, because the scenario cannot patch a file it did not seed.
+ */
+export async function applyWorkspaceConfigOverrides(
+  workspaceRoot: string,
+  overrides: Opt<{ [key: string]: WorkspaceConfigValue }, Reason.OptionalInput>,
+): Promise<void> {
+  if (!overrides || Object.keys(overrides).length === 0) return;
+  const configPath = join(workspaceRoot, WORKSPACE_CONFIG_FILE);
+  let content: string;
+  try {
+    content = await Deno.readTextFile(configPath);
+  } catch {
+    return; // no seeded config: nothing to patch, and not this scenario's failure
+  }
+  await Deno.writeTextFile(configPath, patchWorkspaceConfig(content, overrides));
 }
 
 /** Git identity used for the initial commit in a staged fixture portal (mirrors the swe_tasks

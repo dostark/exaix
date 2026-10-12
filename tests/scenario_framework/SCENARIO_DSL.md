@@ -57,6 +57,7 @@ catalog: { models: { "mock/mock-model": { model_provider: mock } } } # entries b
 pin: [{ selector: default, fields: [service], reason: capability-gate, note: "why it is frozen" }] # (§2.3)
 scoring: "gated" # opt-in: zero the suite when a class:security criterion fails
 edition: "team" # solo | team | enterprise — filters by EXAIX_EDITION
+workspace_config: { portal_knowledge.enable_symbol_level_dependency_graph: true } # dotted config overrides (§2.0)
 description: "Why this scenario exists"
 risk: "What could go wrong / what it guards"
 ci_profile: "ci-core"
@@ -71,6 +72,26 @@ metadata: { owner: "team-x", created_at: "2026-08-06T00:00:00Z" }
 - `mode_support` must include at least one of `auto` / `step` / `manual-checkpoint`.
 - `scoring: gated` zeroes the whole suite if any `class: security` criterion fails
   (Harness-Bench security semantics) — absent means additive, byte-identical to pre-gating.
+
+### 2.0 Workspace config overrides
+
+A scenario that needs a non-default config value declares it in `workspace_config`
+instead of editing the shared `exa.config.toml`:
+
+```yaml
+edition: "enterprise"
+workspace_config:
+  portal_knowledge.enable_symbol_level_dependency_graph: true
+  portal_knowledge.default_mode: "standard"
+```
+
+The runner patches these keys into the sandbox config after seeding. Keys are TOML
+paths, and a quoted segment reaches a key that contains a dot or a colon
+(`models."mock:test".provider`). Values are strings, numbers, booleans, or arrays of
+those. An existing key is replaced in place and a missing key is appended to its
+table, so comments and key order survive. The patch runs even for an
+operator-supplied `--workspace`, so a run under test matches the scenario's declared
+values, and an absent config file is left alone.
 
 ### 2.1 Portals
 
