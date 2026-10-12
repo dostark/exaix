@@ -100,6 +100,7 @@ Deno.test("OpenRouterProvider.buildRequestBody: existing routing/usage.include f
   );
   assertEquals(body.usage, { include: true });
   assertEquals(body.models, ["fallback-model"]);
+  assertEquals(body.provider, { require_parameters: true });
   assertExists(body.tools);
   assertEquals(body.tool_choice, "auto");
 });

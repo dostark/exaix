@@ -79,6 +79,22 @@ export interface IPortalConfig {
   created?: string;
 }
 
+/** Quantization levels that the OpenRouter provider-selection guide lists for `provider.quantizations`. */
+export const OPENROUTER_QUANTIZATIONS = [
+  "int4",
+  "int8",
+  "fp4",
+  "mxfp4",
+  "nvfp4",
+  "fp6",
+  "fp8",
+  "mxfp8",
+  "fp16",
+  "bf16",
+  "fp32",
+  "unknown",
+] as const;
+
 export type Config = z.infer<typeof ConfigSchema>;
 
 // Helper to get current working directory safely
@@ -547,6 +563,10 @@ const ConfigObjectSchema = z.object({
         only: z.array(z.string()).optional(),
         ignore: z.array(z.string()).optional(),
         sort: z.enum(["throughput", "latency", "cost"]).optional(),
+        /** Absent means the provider sends true whenever the request carries tools, a response format or reasoning. */
+        require_parameters: z.boolean().optional(),
+        allow_fallbacks: z.boolean().optional(),
+        quantizations: z.array(z.enum(OPENROUTER_QUANTIZATIONS)).optional(),
         max_price: z.object({
           prompt: z.number().nonnegative().optional(),
           completion: z.number().nonnegative().optional(),

@@ -13,7 +13,7 @@ import { assertEquals } from "@std/assert";
 import { PricingTier } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
-import type { Config } from "@exaix/schemas";
+import { type Config, ConfigSchema } from "@exaix/schemas";
 import { createMockConfig, initTestDbService, withEnv } from "@exaix/testing";
 import { OPENROUTER_PROVIDER_METADATA, OpenRouterProviderFactory, PROVIDER_OPENROUTER } from "@exaix/ai-openrouter";
 import { ProviderFactory, setProviderRegistryBootstrap } from "@exaix/ai/provider_factory.ts";
@@ -106,5 +106,70 @@ Deno.test({
       globalThis.fetch = origFetch;
       await cleanup();
     }
+  },
+});
+
+interface IWireProvider {
+  require_parameters?: boolean;
+}
+
+async function wireProviderBlock(
+  operatorRouting: Record<string, boolean> | undefined,
+): Promise<IWireProvider | undefined> {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  const origFetch = globalThis.fetch;
+  let sent: { provider?: IWireProvider } = {};
+  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+    sent = JSON.parse((init?.body as string) ?? "{}");
+    return Promise.resolve(
+      new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] }), { status: 200 }),
+    );
+  }) as typeof fetch;
+  registerOpenRouter();
+  try {
+    const config = ConfigSchema.parse({
+      system: { root: tempDir },
+      ai: { provider: PROVIDER_OPENROUTER, model: OPENROUTER_MODEL },
+      ai_openrouter: operatorRouting ? { routing: { provider: operatorRouting } } : {},
+    });
+    await withEnv(
+      {
+        OPENROUTER_API_KEY: "sk-or-test",
+        EXA_TEST_ENABLE_PAID_LLM: "1",
+        EXA_LLM_PROVIDER: null,
+        EXA_LLM_MODEL: null,
+        EXA_LLM_BASE_URL: null,
+        EXA_LLM_ENDPOINT: null,
+      },
+      async () => {
+        const provider = await ProviderFactory.create(config, db, new EventLogger({ db }));
+        await provider.generate("hi", { tools: [{ name: "read_file", inputSchema: { type: "object" } }] });
+      },
+    );
+    return sent.provider;
+  } finally {
+    setProviderRegistryBootstrap(undefined);
+    ProviderRegistry.clear();
+    globalThis.fetch = origFetch;
+    await cleanup();
+  }
+}
+
+Deno.test({
+  name: "[integration] a ProviderFactory-built provider sends require_parameters true for a tool request by default",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    assertEquals(await wireProviderBlock(undefined), { require_parameters: true });
+  },
+});
+
+Deno.test({
+  name:
+    "[integration] a parsed config with routing.provider.require_parameters=false reaches the wire body through ProviderFactory",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    assertEquals(await wireProviderBlock({ require_parameters: false }), { require_parameters: false });
   },
 });

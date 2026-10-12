@@ -23,6 +23,8 @@ import {
 } from "@exaix/ai/provider_common_utils.ts";
 import { type IOpenRouterResponse, tokenMapperOpenRouter } from "./openrouter_reported_cost.ts";
 import { mapOpenRouterError } from "./openrouter_errors.ts";
+import { applyRequireParameters, applySessionKey } from "./openrouter_routing.ts";
+import type { OPENROUTER_QUANTIZATIONS } from "@exaix/schemas";
 import { BaseProvider, type IBaseProviderOptions, type IGenerateResult } from "@exaix/ai/providers";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import { type INativeInputMeasurement, measureOpenAiChatProjection } from "@exaix/ai";
@@ -44,6 +46,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 export type OpenRouterSortStrategy = "throughput" | "latency" | "cost";
 export type OpenRouterDataCollection = "allow" | "deny";
+export type OpenRouterQuantization = (typeof OPENROUTER_QUANTIZATIONS)[number];
 
 /** OpenRouter passthrough for provider routing, fallback models, and privacy. */
 export interface IOpenRouterRouting {
@@ -53,6 +56,9 @@ export interface IOpenRouterRouting {
     only?: string[];
     ignore?: string[];
     sort?: OpenRouterSortStrategy;
+    require_parameters?: boolean;
+    allow_fallbacks?: boolean;
+    quantizations?: OpenRouterQuantization[];
     max_price?: {
       prompt?: number;
       completion?: number;
@@ -81,6 +87,10 @@ interface OpenRouterRequestBody {
   tool_choice?: OpenAiWireToolChoice;
   /** Off asks for one call per response. Auto omits the field, so the API default applies. */
   parallel_tool_calls?: boolean;
+  response_format?: Record<string, JSONValue>;
+  reasoning?: Record<string, JSONValue>;
+  /** Sticky routing key. OpenRouter ignores it when a manual provider order is set. */
+  session_id?: string;
 }
 
 interface OpenRouterProviderBody {
@@ -88,6 +98,9 @@ interface OpenRouterProviderBody {
   only?: string[];
   ignore?: string[];
   sort?: OpenRouterSortStrategy;
+  require_parameters?: boolean;
+  allow_fallbacks?: boolean;
+  quantizations?: OpenRouterQuantization[];
   max_price?: { prompt?: number; completion?: number; request?: number; image?: number };
   zdr?: boolean;
   data_collection?: OpenRouterDataCollection;
@@ -171,6 +184,8 @@ export class OpenRouterProvider extends BaseProvider {
         body.provider = rp;
       }
     }
+    applyRequireParameters(body);
+    applySessionKey(body, options?.traceId);
 
     return body;
   }
