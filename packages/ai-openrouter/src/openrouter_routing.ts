@@ -42,7 +42,8 @@ export function applyRequireParameters(body: IOpenRouterPolicyTarget): void {
   body.provider = { ...body.provider, require_parameters: true };
 }
 
-/** Sends the trace id as the sticky session key, except when a manual order disables sticky routing. */
+/** Sends the trace id as the sticky session key. The prompt-caching guide documents session_id as at most 256
+ *  characters, sticky for 10 minutes of inactivity. A manual provider order disables sticky routing, so no key is sent. */
 export function applySessionKey(body: IOpenRouterPolicyTarget, traceId: Opt<string, Reason.TraceAbsent>): void {
   if (!traceId || traceId.length > OPENROUTER_SESSION_ID_MAX_CHARS || body.provider?.order !== undefined) return;
   body.session_id = traceId;
