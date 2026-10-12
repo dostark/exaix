@@ -622,7 +622,7 @@ function configProvider(configRelPath: string): string {
 }
 
 Deno.test(
-  "[regression] fix-bug-null-guard's from_catalog form selects the same six cell ids as its prior hand-listed form",
+  "[regression] fix-bug-null-guard's from_catalog form keeps the six prior cell ids as its first six",
   async () => {
     const scenario = ScenarioSchema.parse(parseYaml(await Deno.readTextFile(FIX_BUG_NULL_GUARD_PATH)));
     const matrix = scenario.matrix;
@@ -635,16 +635,19 @@ Deno.test(
       "exactl-native",
       "exactl-openai",
       "exactl-google",
+      "exactl-openrouter-deepseek-flash",
     ]);
 
     const catalog = await loadCellCatalog(CELL_CATALOG_PATH);
     const resolved = resolveCatalogCells(catalog, matrix.from_catalog!);
+    // The six prior cells keep their order. The OpenRouter DeepSeek cell follows them.
+    const prior = resolved.slice(0, PRIOR_HAND_LISTED_CELLS.length);
 
     // The history cell id is `${tool}-${config provider}`. The regression is equal ids,
     // not equal `provider:` text.
     const idOf = (cell: IMatrixCell) => `${cell.tool}-${configProvider(cell.config)}`;
-    assertEquals(resolved.map(idOf), PRIOR_HAND_LISTED_CELLS.map(idOf));
-    assertEquals(resolved.map(idOf), [
+    assertEquals(prior.map(idOf), PRIOR_HAND_LISTED_CELLS.map(idOf));
+    assertEquals(prior.map(idOf), [
       "claude-code-claude-cli",
       "codex-codex-cli",
       "opencode-opencode-cli",
@@ -654,39 +657,53 @@ Deno.test(
     ]);
 
     // The declared predicates and configs survive the migration unchanged.
-    assertEquals(resolved.map((cell) => cell.config), PRIOR_HAND_LISTED_CELLS.map((cell) => cell.config));
+    assertEquals(prior.map((cell) => cell.config), PRIOR_HAND_LISTED_CELLS.map((cell) => cell.config));
     assertEquals(
-      resolved.map((cell) => cell.requires_bin),
+      prior.map((cell) => cell.requires_bin),
       PRIOR_HAND_LISTED_CELLS.map((cell) => cell.requires_bin),
     );
     assertEquals(
-      resolved.map((cell) => cell.requires_key),
+      prior.map((cell) => cell.requires_key),
       PRIOR_HAND_LISTED_CELLS.map((cell) => cell.requires_key),
     );
   },
 );
+
+Deno.test("[phase211.matrix] fix-bug-null-guard expands to a cell set that includes exactl-openrouter-deepseek-flash", async () => {
+  const scenario = ScenarioSchema.parse(parseYaml(await Deno.readTextFile(FIX_BUG_NULL_GUARD_PATH)));
+  const matrix = scenario.matrix;
+  assert(matrix, "fix-bug-null-guard must declare a matrix");
+  const catalog = await loadCellCatalog(CELL_CATALOG_PATH);
+  const resolved = resolveCatalogCells(catalog, matrix.from_catalog!);
+
+  const openrouter = resolved.filter((cell) => cell.config === "configs/openrouter-no-delegate.toml");
+  assertEquals(openrouter.length, 1, "the OpenRouter DeepSeek cell is selected exactly once");
+  assertEquals(openrouter[0].tool, "exactl");
+  assertEquals(openrouter[0].provider, "openrouter");
+  assertEquals(openrouter[0].requires_key, "OPENROUTER_API_KEY");
+});
 
 Deno.test("[matrix] the resolved catalog cells expand into runnable groups with the same predicates", async () => {
   const scenario = ScenarioSchema.parse(parseYaml(await Deno.readTextFile(FIX_BUG_NULL_GUARD_PATH)));
   const catalog = await loadCellCatalog(CELL_CATALOG_PATH);
   const resolved: IMatrixBlock = { cells: resolveCatalogCells(catalog, scenario.matrix!.from_catalog!) };
 
-  // Three API cells gate on a key. Three CLI cells gate on a binary. With every binary
+  // Four API cells gate on a key. Three CLI cells gate on a binary. With every binary
   // present, only the API cells are skipped.
   const withoutKeys = expandMatrix(scenario.steps, resolved, { env: {}, binOnPath: () => true });
-  assertEquals(withoutKeys.length, 6);
+  assertEquals(withoutKeys.length, 7);
   assertEquals(
     withoutKeys.filter((run) => run.status === "skip").map((run) => run.cell.provider),
-    ["anthropic", "openai", "google"],
+    ["anthropic", "openai", "google", "openrouter"],
   );
 
-  // With every binary and key present all six resolved cells run.
+  // With every binary and key present all seven resolved cells run.
   const withKeys = expandMatrix(scenario.steps, resolved, {
-    env: { ANTHROPIC_API_KEY: "k", OPENAI_API_KEY: "k", GOOGLE_API_KEY: "k" },
+    env: { ANTHROPIC_API_KEY: "k", OPENAI_API_KEY: "k", GOOGLE_API_KEY: "k", OPENROUTER_API_KEY: "k" },
     binOnPath: () => true,
     configBaseDir: REPO_ROOT,
   });
-  assertEquals(withKeys.filter((run) => run.status === "run").length, 6);
+  assertEquals(withKeys.filter((run) => run.status === "run").length, 7);
 
   // --cell narrows the matrix to one API cell, which keeps the tool its preset declares.
   const selected = expandMatrix(scenario.steps, resolved, {

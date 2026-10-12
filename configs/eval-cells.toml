@@ -123,6 +123,16 @@ native_tools = true
 service = "openrouter"
 model = "anthropic/claude-sonnet-5"
 
+# The OpenRouter provider on its own config, with no binding. Phase 211 Step 10 (Q26).
+[tool.exactl-openrouter-deepseek-flash]
+tool = "exactl"
+config = "configs/openrouter-no-delegate.toml"
+provider = "openrouter"
+model = "~deepseek/deepseek-flash-latest"
+requires_bin = "true"
+requires_key = "OPENROUTER_API_KEY"
+native_tools = true
+
 [tool.opencode-laguna-free]
 tool = "opencode-laguna-free"
 config = "configs/opencode-laguna-free.toml"

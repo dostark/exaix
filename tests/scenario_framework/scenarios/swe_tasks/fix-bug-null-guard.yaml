@@ -13,14 +13,20 @@ portals:
     git_init: true
 mode_support: ["auto"]
 matrix:
-  # Preset names from configs/eval-cells.toml. The six resolved cells are the same six this
+  # Preset names from configs/eval-cells.toml. The first six resolved cells are the six this
   # scenario used to hand-list: claude-code, codex, opencode, exactl-native, exactl-openai
   # and exactl-google. Their cell ids are unchanged, so history attribution stays comparable.
-  # OpenRouter is deliberately absent (Phase 153 Step 5 Tier B, Pre-Gap-Analysis GAP-2):
-  # no OPENROUTER_API_KEY is provisioned in this environment. Add an `openrouter` preset to
-  # the catalog and name it here once a credential exists — tracked as an explicit
-  # follow-up, not silently folded into this scenario's coverage.
-  from_catalog: ["claude-code", "codex", "opencode", "exactl-native", "exactl-openai", "exactl-google"]
+  # The OpenRouter DeepSeek cell follows them (Phase 211 Step 10). It is skipped when
+  # OPENROUTER_API_KEY is unset.
+  from_catalog: [
+    "claude-code",
+    "codex",
+    "opencode",
+    "exactl-native",
+    "exactl-openai",
+    "exactl-google",
+    "exactl-openrouter-deepseek-flash",
+  ]
 steps:
   - id: "patch-blueprint-capability"
     type: "patch-blueprint"

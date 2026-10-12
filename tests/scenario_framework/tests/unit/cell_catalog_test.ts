@@ -325,6 +325,24 @@ Deno.test("[phase203.cell_catalog] exactl-openrouter selects the openrouter serv
   assertEquals(cell.requires_key, "OPENROUTER_API_KEY");
 });
 
+Deno.test("[phase211.cell_catalog] exactl-openrouter-deepseek-flash runs the OpenRouter config on the DeepSeek alias with no binding", async () => {
+  const catalog = await loadCellCatalog(CATALOG_PATH);
+  const preset = catalog.presets["exactl-openrouter-deepseek-flash"]!;
+  assertEquals(preset.tool, "exactl");
+  assertEquals(preset.config, "configs/openrouter-no-delegate.toml");
+  assertEquals(preset.provider, "openrouter");
+  assertEquals(preset.model, "~deepseek/deepseek-flash-latest");
+  assertEquals(preset.requires_bin, "true");
+  assertEquals(preset.requires_key, "OPENROUTER_API_KEY");
+  assertEquals(preset.native_tools, true);
+  assertEquals(preset.bindings, undefined);
+
+  const [cell] = resolveCatalogCells(catalog, ["exactl-openrouter-deepseek-flash"]);
+  assertEquals(cell.provider, "openrouter");
+  assertEquals(cell.requires_key, "OPENROUTER_API_KEY");
+  assertEquals(cell.bindings, undefined);
+});
+
 Deno.test("[phase203.cell_catalog] the planning-live presets keep their configs, models and opt-ins", async () => {
   const catalog = await loadCellCatalog(CATALOG_PATH);
   const expected: Array<{
