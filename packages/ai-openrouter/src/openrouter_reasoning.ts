@@ -6,13 +6,14 @@
  * @dependencies ["@exaix/ai", "@exaix/core"]
  * @description Maps the run's effort, thinking budget and thinking switch to the OpenRouter reasoning object.
  * A control is sent only in a form that the model's own capability entry accepts. An unsupported control is
- * dropped, never remapped to a nearby value.
+ * dropped, except that thinking off on a model whose reasoning is mandatory is sent as its lowest listed effort.
  */
 
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IOpenRouterModelEntry } from "./openrouter_model_capabilities.ts";
+import { OPENROUTER_EFFORT_ORDER } from "./constants.ts";
 
 type ReasoningOptions = Pick<IModelOptions, "effort" | "thinking" | "thinking_budget">;
 
@@ -34,6 +35,11 @@ export function reasoningFor(
   if (options?.thinking_budget !== undefined && reasoning.supportsMaxTokens) {
     return { max_tokens: options.thinking_budget };
   }
-  if (options?.thinking === false && !reasoning.mandatory) return { enabled: false };
+  if (options?.thinking === false) {
+    if (!reasoning.mandatory) return { enabled: false };
+    // Reasoning cannot be turned off, so the least reasoning the model accepts stands in for thinking off.
+    const lowest = OPENROUTER_EFFORT_ORDER.find((effort) => reasoning.supportedEfforts.includes(effort));
+    return lowest ? { effort: lowest } : undefined;
+  }
   return undefined;
 }

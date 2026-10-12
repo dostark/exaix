@@ -114,3 +114,15 @@ Deno.test("a response without reasoning is accepted", async () => {
   const body = await capturedBody({}, EFFORTS);
   assertEquals(body.reasoning, undefined);
 });
+
+Deno.test("a mandatory-reasoning model gets its lowest listed effort when thinking is off", () => {
+  const glm = entry({ mandatory: true, supportedEfforts: ["max", "high", "low"], supportsMaxTokens: false });
+  assertEquals(reasoningFor({ thinking: false }, glm), { effort: "low" });
+});
+
+Deno.test("the lowest effort follows tier order, not the order the model lists", () => {
+  const unordered = entry({ mandatory: true, supportedEfforts: ["medium", "high", "low"], supportsMaxTokens: false });
+  assertEquals(reasoningFor({ thinking: false }, unordered), { effort: "low" });
+  const minimal = entry({ mandatory: true, supportedEfforts: ["low", "minimal"], supportsMaxTokens: false });
+  assertEquals(reasoningFor({ thinking: false }, minimal), { effort: "minimal" });
+});
