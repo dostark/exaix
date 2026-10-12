@@ -35,12 +35,22 @@ interface IPlanningToolCallFixture {
   input: Record<string, JSONValue>;
 }
 
+/** Same shape as the mock provider's IRecordedRoundCall. */
+interface IRoundCallExpectationFixture {
+  toolUseId: string;
+  index: number;
+  toolName: string;
+  input: Record<string, JSONValue>;
+  resultIncludes: string;
+}
+
 /** Same shape as the mock provider's IRecordedInputExpectation. */
 interface IInputExpectationFixture {
   promptIncludes?: string[];
   promptExcludes?: string[];
   priorTurnResultIncludes?: string[];
   priorTurnResultExcludes?: string[];
+  priorRoundCalls?: IRoundCallExpectationFixture[];
 }
 
 /** Outside-portal sentinels for alias-path-escape. The YAML asserts these exact strings. */
@@ -129,13 +139,21 @@ function roundPlan(): { calls: IPlanningToolCallFixture[]; expectedInput?: IInpu
   }
   if (mode === "alias-path-escape") {
     const sentinels = [ESCAPE_NAME_SENTINEL, ESCAPE_CONTENT_SENTINEL];
+    const probes: IPlanningToolCallFixture[] = [
+      { id: "toolu_p201_glob_probe", name: "glob", input: { pattern: "../*.txt" } },
+      { id: "toolu_p201_read_probe", name: "Read", input: { file_path: escapeFile } },
+    ];
     return {
-      calls: [
-        { id: "toolu_p201_glob_probe", name: "glob", input: { pattern: "../*.txt" } },
-        { id: "toolu_p201_read_probe", name: "Read", input: { file_path: escapeFile } },
-      ],
+      calls: probes,
       expectedInput: {
-        promptIncludes: [`tool="glob" round="1">\n"${CONFINEMENT_DENIAL}"`],
+        // A grouped-replay provider sends the round whole, so each probe is checked as a round call.
+        priorRoundCalls: probes.map((probe, index) => ({
+          toolUseId: probe.id,
+          index,
+          toolName: probe.name,
+          input: probe.input,
+          resultIncludes: CONFINEMENT_DENIAL,
+        })),
         promptExcludes: sentinels,
         priorTurnResultIncludes: [CONFINEMENT_DENIAL],
         priorTurnResultExcludes: sentinels,
