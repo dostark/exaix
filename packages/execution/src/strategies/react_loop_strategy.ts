@@ -20,7 +20,7 @@ import type {
 } from "@exaix/ai/types.ts";
 import { TOOL_CHOICE_TYPE_AUTO } from "@exaix/ai/types.ts";
 import { PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
-import type { INativePromptSection, IProviderCallCapabilities } from "@exaix/ai";
+import type { INativePromptSection } from "@exaix/ai";
 import { PromptBudgetAllocator, SkillSubmissionKind } from "@exaix/core";
 import type { IProviderToolCall } from "@exaix/ai/providers";
 import type { IGenerateResult } from "@exaix/ai/providers";
@@ -132,15 +132,6 @@ const REACT_WRITE_TOOLS: ReadonlySet<string> = new Set<string>([
 /** Executes an agentic loop: the LLM generates actions, ToolRegistry runs them, until the task completes. */
 /** Which native tool-choice branch produced this iteration's options. */
 export type NativeToolChoiceMode = "forced" | "any" | "auto";
-
-/** A target refuses a forced choice outright, or only while thinking is on. */
-function refusesForcedToolChoice(
-  capabilities: Opt<IProviderCallCapabilities, Reason.OptionalContext>,
-  thinkingOn: boolean,
-): boolean {
-  return capabilities?.supportsForcedToolChoice === false ||
-    (thinkingOn && capabilities?.supportsForcedToolChoiceWithThinking === false);
-}
 
 export /** Internal type for dynamically-built provider.generate() options. */
 interface GeneratedOptions {
@@ -436,7 +427,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       const capabilities = this.provider?.callCapabilities;
       // An unset flag counts as thinking on: DeepSeek models think by default, and only they declare the thinking-only refusal.
       const thinkingOn = this.callOptions?.thinking !== false;
-      const forcedChoiceRefused = refusesForcedToolChoice(capabilities, thinkingOn);
+      const forcedChoiceRefused = capabilities?.supportsForcedToolChoice === false ||
+        (thinkingOn && capabilities?.supportsForcedToolChoiceWithThinking === false);
       if (capabilities?.supportsToolChoice !== false) {
         // PGAP-3: a detected preferred tool forces tool_choice: {type: "tool", name: "..."}.
         // That entry replaces the unconstrained {type: "any"} for a targeted-edit task.
@@ -451,12 +443,10 @@ export class ReActLoopStrategy implements IExecutionStrategy {
           base.toolChoice = { type: "tool" as const, name: nativePreferredTool, ...parallel };
           base.nativeToolChoiceMode = "forced";
         } else {
-          // A target that refuses the any choice receives auto in its place.
-          const autoChoice = Boolean(nativeToolsPriorTurn) || capabilities?.supportsAnyToolChoice === false;
-          base.toolChoice = autoChoice
+          base.toolChoice = nativeToolsPriorTurn
             ? { type: TOOL_CHOICE_TYPE_AUTO, ...parallel }
             : { type: "any" as const, ...parallel };
-          base.nativeToolChoiceMode = autoChoice ? TOOL_CHOICE_TYPE_AUTO : "any";
+          base.nativeToolChoiceMode = nativeToolsPriorTurn ? TOOL_CHOICE_TYPE_AUTO : "any";
         }
       }
       // One-line diagnostic of the native toolChoice branch chosen.
@@ -1297,7 +1287,9 @@ ${REACT_SUMMARY_PREFIX}[What was done]`;
     } else {
       prompt += `
 
-When you are finished, output "${REACT_STATUS_COMPLETE}" followed by "${REACT_SUMMARY_PREFIX}[summary]".`;
+When you are finished, output "${REACT_STATUS_COMPLETE}" followed by "${REACT_SUMMARY_PREFIX}[summary]".
+Do not repeat a tool call whose result is already in the history.
+The plan step is finished once every file it names has been read. Then stop calling tools and output the status line.`;
     }
 
     sections?.push(

@@ -56,3 +56,28 @@ Deno.test("buildPrompt with skipToolProse omits FORMAT and TOML but keeps AVAILA
   assertEquals(promptWithProse.includes("FORMAT:"), true);
   assertEquals(promptWithProse.includes("```toml"), true);
 });
+
+Deno.test("buildPrompt with skipToolProse tells the model not to repeat a finished tool call", () => {
+  const strategy = new ReActLoopStrategy(dummyExecutor());
+  const typed = strategy as never as {
+    buildPrompt(
+      blueprint: { name: string; capabilities: string[] },
+      context: { trace_id: string; request: string; plan: string; portal: string },
+      options: { agent_role: string; portal: string; permitted_tools?: string[] },
+      history: Array<{ role: string; content: string }>,
+      skipToolProse?: boolean,
+    ): string;
+  };
+
+  const prompt = typed.buildPrompt(
+    { name: "test", capabilities: ["write"] },
+    { trace_id: "t1", request: "req", plan: "plan", portal: "p" },
+    { agent_role: "i", portal: "p" },
+    [],
+    true,
+  );
+
+  assertEquals(prompt.includes("Do not repeat a tool call whose result is already in the history."), true);
+  assertEquals(prompt.includes("every file it names has been read"), true);
+  assertEquals(prompt.includes("stop calling tools"), true);
+});
