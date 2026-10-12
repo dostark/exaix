@@ -13,7 +13,9 @@ import { assertEquals } from "@std/assert";
 import { PortalAnalysisMode } from "@exaix/core";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import {
+  decodeSymbolRef,
   deriveLayerContainsFileEdges,
+  encodeSymbolRef,
   queryRelationships,
   traverseModuleDependencies,
   whoDependsOn,
@@ -213,4 +215,74 @@ Deno.test("traverseModuleDependencies: sorts each hop's edges by from then to, a
   ]);
   assertEquals(traverseModuleDependencies(knowledge, "unknown.ts", 3), []);
   assertEquals(traverseModuleDependencies(knowledge, "z.ts", 3), []);
+});
+
+Deno.test("encodeSymbolRef/decodeSymbolRef: round-trips a file and name pair", () => {
+  const ref = encodeSymbolRef("packages/foo/bar.go", "Helper");
+  assertEquals(ref, "packages/foo/bar.go#Helper");
+  assertEquals(decodeSymbolRef(ref), { file: "packages/foo/bar.go", name: "Helper" });
+});
+
+Deno.test("decodeSymbolRef: returns undefined when no separator is present", () => {
+  assertEquals(decodeSymbolRef("packages/foo/bar.go"), undefined);
+  assertEquals(decodeSymbolRef(""), undefined);
+});
+
+Deno.test("decodeSymbolRef: splits on the last separator, attributing a trailing name segment to the name", () => {
+  assertEquals(decodeSymbolRef(encodeSymbolRef("src/a.go", "Helper")), {
+    file: "src/a.go",
+    name: "Helper",
+  });
+  assertEquals(decodeSymbolRef("src/a.go#Weird#"), { file: "src/a.go#Weird", name: "" });
+  assertEquals(decodeSymbolRef("src/a.go#WeirdName"), { file: "src/a.go", name: "WeirdName" });
+});
+
+Deno.test("decodeSymbolRef: never throws on separators in both halves, and documents the attribution", () => {
+  // Ambiguous by construction, because file paths never contain the separator in practice.
+  // The last-separator split attributes the trailing segment to the name.
+  // The contract is total rather than injective, so it always decodes.
+  const decoded = decodeSymbolRef("src/a#b.go#Weird#Name");
+  assertEquals(decoded, { file: "src/a#b.go#Weird", name: "Name" });
+});
+
+Deno.test("decodeSymbolRef: returns undefined for a leading separator", () => {
+  assertEquals(decodeSymbolRef("#Helper"), undefined);
+});
+
+Deno.test("decodeSymbolRef: an empty name decodes to an empty string rather than undefined", () => {
+  assertEquals(decodeSymbolRef("src/a.go#"), { file: "src/a.go", name: "" });
+});
+
+Deno.test("traverseModuleDependencies: never returns a symbol_references_symbol edge and never emits a composite node", () => {
+  const knowledge = makeKnowledge({
+    relationships: [
+      { from: "a.ts", to: "b.ts", kind: "file_imports_file_internal" },
+      { from: "b.ts", to: encodeSymbolRef("c.ts", "Helper"), kind: "symbol_references_symbol" },
+      { from: encodeSymbolRef("b.ts", "Helper"), to: "c.ts", kind: "symbol_references_symbol" },
+    ],
+  });
+
+  const edges = traverseModuleDependencies(knowledge, "a.ts", 5);
+
+  assertEquals(edges, [
+    { from: "a.ts", to: "b.ts", kind: "file_imports_file_internal" },
+  ]);
+  for (const edge of edges) {
+    assertEquals(edge.kind, "file_imports_file_internal");
+    assertEquals(edge.to.includes("#"), false);
+  }
+});
+
+Deno.test("traverseModuleDependencies: is unchanged for file-only knowledge with no symbol edges", () => {
+  const knowledge = makeKnowledge({
+    relationships: [
+      { from: "a.ts", to: "b.ts", kind: "file_imports_file_internal" },
+      { from: "b.ts", to: "c.ts", kind: "file_imports_file_internal" },
+    ],
+  });
+
+  assertEquals(traverseModuleDependencies(knowledge, "a.ts", 2), [
+    { from: "a.ts", to: "b.ts", kind: "file_imports_file_internal" },
+    { from: "b.ts", to: "c.ts", kind: "file_imports_file_internal" },
+  ]);
 });

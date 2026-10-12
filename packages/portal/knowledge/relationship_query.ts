@@ -2,23 +2,55 @@
  * @module RelationshipQuery
  * @path packages/portal/knowledge/relationship_query.ts
  * @description Relationship-traversal query surface: combines the persisted
- * `file_imports_file_internal` edges (`IPortalKnowledge.relationships`) with
- * `layer_contains_file` edges derived on demand from `layers`/`packages[].layers`
- * (never persisted — zero-cost derivation, so it can't go stale). Pure, in-memory
- * traversal only; no new storage engine or database.
+ * `file_imports_file_internal` and `symbol_references_symbol` edges
+ * (`IPortalKnowledge.relationships`) with `layer_contains_file` edges derived on
+ * demand from `layers`/`packages[].layers` (never persisted — zero-cost derivation,
+ * so it can't go stale). Pure, in-memory traversal only; no new storage engine or
+ * database.
  * @architectural-layer Portal
  * @related-files [packages/portal/knowledge/portal_knowledge_service.ts, packages/schemas/src/portal_knowledge.ts]
  */
 
 import type { IArchitectureLayer, IPortalKnowledge } from "@exaix/schemas";
+import { SYMBOL_REF_ID_SEPARATOR } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export type RelationshipEdgeKind = "layer_contains_file" | "file_imports_file_internal";
+export type RelationshipEdgeKind =
+  | "layer_contains_file"
+  | "file_imports_file_internal"
+  | "symbol_references_symbol";
 
 export interface IRelationshipEdge {
   from: string;
   to: string;
   kind: RelationshipEdgeKind;
+}
+
+/** The edge kind `traverseModuleDependencies` walks.
+ *  Symbol-level edges are not module dependencies.
+ *  A BFS over them would fabricate hops through composite keys. */
+export const MODULE_DEPENDENCY_EDGE_KIND = "file_imports_file_internal" as const;
+
+/** Builds a `symbol_references_symbol` endpoint (`<file>#<symbolName>`).
+ *  This is the only sanctioned way to construct a composite key.
+ *  Never concatenate the separator directly. */
+export function encodeSymbolRef(file: string, name: string): string {
+  return `${file}${SYMBOL_REF_ID_SEPARATOR}${name}`;
+}
+
+/**
+ * Reads a `symbol_references_symbol` endpoint.
+ *
+ * Splits on the LAST separator and attributes the tail to the name.
+ * A name that itself contains a separator therefore still decodes.
+ * File paths never contain the separator in practice, so the contract is total.
+ * A separator on both sides decodes without throwing.
+ * Returns `undefined` when no separator is present, or when nothing precedes it.
+ */
+export function decodeSymbolRef(ref: string): { file: string; name: string } | undefined {
+  const index = ref.lastIndexOf(SYMBOL_REF_ID_SEPARATOR);
+  if (index <= 0) return undefined;
+  return { file: ref.slice(0, index), name: ref.slice(index + SYMBOL_REF_ID_SEPARATOR.length) };
 }
 
 function edgesFromLayer(layer: IArchitectureLayer): IRelationshipEdge[] {
@@ -58,15 +90,22 @@ export function whoDependsOn(knowledge: IPortalKnowledge, path: string): IRelati
   return allEdges(knowledge).filter((edge) => edge.to === path);
 }
 
-/** Breadth-first traverses persisted `file_imports_file_internal` edges forward from `from`,
- *  up to `maxDepth` hops. Each node is visited at most once, so cycles terminate naturally;
- *  each hop's edges are sorted by `from` then `to` for deterministic output. */
+/**
+ * Breadth-first traverses persisted `file_imports_file_internal` edges forward.
+ *
+ * Each node is visited at most once, so cycles terminate naturally.
+ * Each hop's edges are sorted by `from` then `to` for deterministic output.
+ * `kind` defaults to the module-dependency edge kind.
+ * A symbol-level edge is therefore never walked.
+ */
 export function traverseModuleDependencies(
   knowledge: IPortalKnowledge,
   from: string,
   maxDepth: number,
+  kind: RelationshipEdgeKind = MODULE_DEPENDENCY_EDGE_KIND,
 ): IRelationshipEdge[] {
-  const fileEdges = (knowledge.relationships ?? []) as IRelationshipEdge[];
+  const fileEdges = ((knowledge.relationships ?? []) as IRelationshipEdge[])
+    .filter((edge) => edge.kind === kind);
   const visited = new Set<string>([from]);
   const result: IRelationshipEdge[] = [];
   let frontier = [from];

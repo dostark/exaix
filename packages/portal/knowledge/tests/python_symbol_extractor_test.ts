@@ -82,6 +82,37 @@ Deno.test(
 // PageRank ranking test
 
 Deno.test(
+  "[PythonSymbolExtractor] extractSymbols output is byte-stable across repeated runs (guards the shared parse-extraction refactor)",
+  async () => {
+    const files = fixtureFiles();
+    const options = { primaryLanguage: "python", allFilePaths: files };
+    const first = await new PythonSymbolExtractor().extractSymbols(FIXTURE_DIR, files, options);
+    const second = await new PythonSymbolExtractor().extractSymbols(FIXTURE_DIR, files, options);
+
+    // The shared parse step must not perturb names, kinds, files, or the ranked order.
+    assertEquals(second, first);
+    assertEquals(
+      first.map((s) => s.name),
+      [
+        "greet",
+        "calculate_sum",
+        "Calculator",
+        "add",
+        "multiply",
+        "MAX_VALUE",
+        "DEFAULT_TIMEOUT",
+        "double",
+        "THE_ANSWER",
+      ],
+      "the parser-boundary refactor must not change extraction or ranking",
+    );
+    for (const symbol of first) {
+      assert(typeof symbol.pageRankScore === "number", `${symbol.name} must carry a pageRankScore`);
+    }
+  },
+);
+
+Deno.test(
   "[PythonSymbolExtractor] ranks symbols by cross-file import count and caps at DEFAULT_SYMBOL_MAP_LIMIT",
   async () => {
     const extractor = new PythonSymbolExtractor();

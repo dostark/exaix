@@ -2344,6 +2344,12 @@ export const ANALYSIS_TASK_TYPE_VERBS: Record<string, string> = {
 
 // Portal Knowledge
 
+/** Separator joining a portal-relative file path and a symbol name.
+ *  It forms one `symbol_references_symbol` edge endpoint (`<file>#<symbolName>`).
+ *  This is a format constant, not a tunable.
+ *  Use `encodeSymbolRef` or `decodeSymbolRef` to build or read a composite key. */
+export const SYMBOL_REF_ID_SEPARATOR = "#";
+
 /** Maximum files to scan in quick mode. */
 export const DEFAULT_QUICK_SCAN_LIMIT: number = configurable({
   key: "portal_knowledge.quick_scan_limit",

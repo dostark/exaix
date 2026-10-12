@@ -41,7 +41,10 @@ export type { IAstDiagnostics } from "./ast_analyzer.ts";
 export { InternalImportGraphBuilder } from "./internal_import_graph.ts";
 export type { IDroppedInternalImport, IInternalImportGraphResult } from "./internal_import_graph.ts";
 export {
+  decodeSymbolRef,
   deriveLayerContainsFileEdges,
+  encodeSymbolRef,
+  MODULE_DEPENDENCY_EDGE_KIND,
   queryRelationships,
   traverseModuleDependencies,
   whoDependsOn,

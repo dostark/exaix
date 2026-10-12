@@ -14,6 +14,7 @@ import {
   DependencyInfoSchema,
   FileSignificanceSchema,
   MonorepoPackageSchema,
+  PortalKnowledgeRelationshipSchema,
   PortalKnowledgeSchema,
   SymbolEntrySchema,
 } from "@exaix/schemas";
@@ -250,6 +251,42 @@ Deno.test("[PortalKnowledgeSchema] accepts optional headCommitSha and fullAnalys
     fullAnalysis: true,
   });
   assertEquals(result.success, true);
+});
+
+Deno.test("[PortalKnowledgeRelationshipSchema] accepts both persisted edge kinds", () => {
+  const fileEdge = PortalKnowledgeRelationshipSchema.safeParse({
+    from: "src/a.ts",
+    to: "src/b.ts",
+    kind: "file_imports_file_internal",
+  });
+  assertEquals(fileEdge.success, true);
+
+  const symbolEdge = PortalKnowledgeRelationshipSchema.safeParse({
+    from: "src/a.ts",
+    to: "src/b.ts#Helper",
+    kind: "symbol_references_symbol",
+  });
+  assertEquals(symbolEdge.success, true);
+});
+
+Deno.test("[PortalKnowledgeRelationshipSchema] rejects an unknown edge kind", () => {
+  const result = PortalKnowledgeRelationshipSchema.safeParse({
+    from: "src/a.ts",
+    to: "src/b.ts",
+    kind: "calls_function",
+  });
+  assertEquals(result.success, false);
+});
+
+Deno.test("[PortalKnowledgeRelationshipSchema] still rejects an empty from or to", () => {
+  assertEquals(
+    PortalKnowledgeRelationshipSchema.safeParse({
+      from: "",
+      to: "src/b.ts",
+      kind: "symbol_references_symbol",
+    }).success,
+    false,
+  );
 });
 
 Deno.test("[PortalKnowledgeSchema] rejects missing required fields", () => {

@@ -16,6 +16,7 @@ import {
   CAP_MODEL_REGISTRY_LIVE,
   CAP_MODEL_ROUTING_RIGOR,
   CAP_OTEL_EXPORT,
+  CAP_SYMBOL_LEVEL_DEPENDENCY_GRAPH,
   CAP_VOTING,
   CAPABILITY_EDITION,
   isCapabilityAvailable,
@@ -47,6 +48,7 @@ Deno.test("capabilities: all expected capability IDs are defined", () => {
   assertEquals(CAP_MODEL_ROUTING_RIGOR, "model_routing_rigor");
   assertEquals(CAP_MODEL_REGISTRY_GOVERNANCE, "model_registry_governance");
   assertEquals(CAP_OTEL_EXPORT, "otel_export");
+  assertEquals(CAP_SYMBOL_LEVEL_DEPENDENCY_GRAPH, "symbol_level_dependency_graph");
 });
 
 Deno.test("capabilities: each capability maps to the correct edition tier", () => {
@@ -58,6 +60,14 @@ Deno.test("capabilities: each capability maps to the correct edition tier", () =
   assertEquals(CAPABILITY_EDITION[CAP_MODEL_ROUTING_RIGOR], EDITION_TEAM);
   assertEquals(CAPABILITY_EDITION[CAP_MODEL_REGISTRY_GOVERNANCE], EDITION_ENTERPRISE);
   assertEquals(CAPABILITY_EDITION[CAP_OTEL_EXPORT], EDITION_TEAM);
+  assertEquals(CAPABILITY_EDITION[CAP_SYMBOL_LEVEL_DEPENDENCY_GRAPH], EDITION_ENTERPRISE);
+});
+
+Deno.test("capabilities: symbol-level dependency graph is Enterprise-only", () => {
+  assertEquals(isCapabilityEligible(CAP_SYMBOL_LEVEL_DEPENDENCY_GRAPH, EDITION_ENTERPRISE), true);
+  assertEquals(isCapabilityEligible(CAP_SYMBOL_LEVEL_DEPENDENCY_GRAPH, EDITION_TEAM), false);
+  assertEquals(isCapabilityEligible(CAP_SYMBOL_LEVEL_DEPENDENCY_GRAPH, "solo"), false);
+  assertEquals(isCapabilityEligible(CAP_SYMBOL_LEVEL_DEPENDENCY_GRAPH, undefined), false);
 });
 
 Deno.test("capabilities: OpenRouter is NOT a Team-gated capability (Solo per D5b)", () => {

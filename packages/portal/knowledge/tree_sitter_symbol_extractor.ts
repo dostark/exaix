@@ -108,29 +108,12 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
     for (const file of files) {
       if (Date.now() - startTime >= SYMBOL_EXTRACT_TIMEOUT_MS) break;
 
-      const fullPath = resolve(join(portalRoot, file));
-      if (!fullPath.startsWith(portalRoot)) continue;
+      const parsed = await this.parsePortalFile(portalRoot, file);
+      if (!parsed) continue;
 
-      let content: string;
-      try {
-        const stat = await Deno.stat(fullPath);
-        if (!stat.isFile) continue;
-        if (stat.size > SYMBOL_EXTRACT_MAX_FILE_BYTES) continue;
-        content = await Deno.readTextFile(fullPath);
-      } catch (_fileErr) {
-        // Fail-soft: skip unreadable or race-condition files silently.
-        // In a debug-logging context, _fileErr contains the OS error.
-        continue;
-      }
+      fileImportTargets[file] = this.extractImports(parsed.content);
 
-      const tree = this._parser!.parse(content);
-      if (!tree) continue;
-      const nodeCount = this._countNodes(tree.rootNode);
-      if (nodeCount > SYMBOL_EXTRACT_MAX_NODES) continue;
-
-      fileImportTargets[file] = this.extractImports(content);
-
-      const matches = this._query!.matches(tree.rootNode);
+      const matches = this._query!.matches(parsed.tree.rootNode);
       for (const match of matches) {
         const symbols = this.processMatch(match, file);
         allSymbols.push(...symbols);
@@ -166,6 +149,43 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
   }
 
   // Helpers
+
+  /**
+   * Reads and parses one portal file under the shared security and size bounds.
+   *
+   * Returns `undefined` when the path escapes the portal root.
+   * It also returns `undefined` for a non-regular or unreadable file.
+   * A file over a byte or node bound is skipped as well.
+   *
+   * A language file resolver or a reference extractor reuses this method.
+   * That keeps the containment and bounds rules in exactly one place.
+   * `portalRoot` must already be resolved.
+   */
+  protected async parsePortalFile(
+    portalRoot: string,
+    file: string,
+  ): Promise<{ content: string; tree: NonNullable<ReturnType<Parser["parse"]>> } | undefined> {
+    const fullPath = resolve(join(portalRoot, file));
+    if (!fullPath.startsWith(portalRoot)) return undefined;
+
+    let content: string;
+    try {
+      const stat = await Deno.stat(fullPath);
+      if (!stat.isFile) return undefined;
+      if (stat.size > SYMBOL_EXTRACT_MAX_FILE_BYTES) return undefined;
+      content = await Deno.readTextFile(fullPath);
+    } catch (_fileErr) {
+      // Fail-soft: skip unreadable or race-condition files silently.
+      // In a debug-logging context, _fileErr contains the OS error.
+      return undefined;
+    }
+
+    const tree = this._parser!.parse(content);
+    if (!tree) return undefined;
+    if (this._countNodes(tree.rootNode) > SYMBOL_EXTRACT_MAX_NODES) return undefined;
+
+    return { content, tree };
+  }
 
   /** Recursively count syntax nodes in the tree. The `child` callback
    * returns a node-like object or null — only non-null values recurse. */
