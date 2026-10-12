@@ -72,6 +72,16 @@ export type TokenMap = {
 };
 
 type ResponseTokenMapper<T> = (data: T, providerId?: string) => TokenMap | undefined;
+
+/** Lets one provider replace the shared error for a non-2xx response.
+ *  `fallback` is the shared classifier's error. Return it unchanged to keep it. */
+export type ProviderErrorMapper = (
+  status: number,
+  headers: Headers,
+  bodyText: string,
+  fallback: Error,
+) => Error;
+
 export const COMPATIBLE_REDIRECT_POLICY: RequestRedirect = "error";
 
 // Provider Response Interfaces
@@ -237,41 +247,55 @@ function classifyProviderError(
   return new ModelProviderError(message, id);
 }
 
+/** Builds the typed error for a non-2xx response. A provider mapper may replace the shared classification. */
+function buildProviderHttpError(
+  response: Response,
+  bodyText: string,
+  id: string,
+  policy: { exposeRemoteErrorText?: boolean; errorMapper?: ProviderErrorMapper },
+): Error {
+  // Include HTTP status code in messages so tests can assert on it (e.g. "HTTP 503").
+  let message = policy.exposeRemoteErrorText === false
+    ? `HTTP ${response.status}`
+    : `HTTP ${response.status} ${response.statusText}`;
+  let errorType: string | undefined;
+  try {
+    const error = JSON.parse(bodyText);
+    errorType = error.error?.type ?? undefined;
+    const remoteMsg = error.error?.message ?? error.message ?? undefined;
+    if (remoteMsg && policy.exposeRemoteErrorText !== false) {
+      // Surface the machine-readable error type alongside the human message —
+      // it is the contract the API documents (e.g. "invalid_request_error").
+      message = errorType
+        ? `HTTP ${response.status} ${errorType}: ${remoteMsg}`
+        : `HTTP ${response.status} ${remoteMsg}`;
+    }
+  } catch {
+    // ignore JSON parse errors and fallback to statusText
+  }
+  const classified = classifyProviderError(
+    response.status,
+    policy.exposeRemoteErrorText === false ? undefined : errorType,
+    message,
+    id,
+  );
+  return policy.errorMapper ? policy.errorMapper(response.status, response.headers, bodyText, classified) : classified;
+}
+
 export async function handleProviderResponse<T>(
   response: Response,
   id: string,
   logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   tokenMapper?: Opt<ResponseTokenMapper<T>, Reason.OptionalDependency>,
-  policy: { maxResponseBytes?: number; exposeRemoteErrorText?: boolean; responseValidator?: (data: T) => T } = {},
+  policy: {
+    maxResponseBytes?: number;
+    exposeRemoteErrorText?: boolean;
+    responseValidator?: (data: T) => T;
+    errorMapper?: ProviderErrorMapper;
+  } = {},
 ): Promise<T> {
   const bodyText = await readResponseText(response, policy.maxResponseBytes, id);
-  if (!response.ok) {
-    // Include HTTP status code in messages so tests can assert on it (e.g. "HTTP 503").
-    let message = policy.exposeRemoteErrorText === false
-      ? `HTTP ${response.status}`
-      : `HTTP ${response.status} ${response.statusText}`;
-    let errorType: string | undefined;
-    try {
-      const error = JSON.parse(bodyText);
-      errorType = error.error?.type ?? undefined;
-      const remoteMsg = error.error?.message ?? error.message ?? undefined;
-      if (remoteMsg && policy.exposeRemoteErrorText !== false) {
-        // Surface the machine-readable error type alongside the human message —
-        // it is the contract the API documents (e.g. "invalid_request_error").
-        message = errorType
-          ? `HTTP ${response.status} ${errorType}: ${remoteMsg}`
-          : `HTTP ${response.status} ${remoteMsg}`;
-      }
-    } catch {
-      // ignore JSON parse errors and fallback to statusText
-    }
-    throw classifyProviderError(
-      response.status,
-      policy.exposeRemoteErrorText === false ? undefined : errorType,
-      message,
-      id,
-    );
-  }
+  if (!response.ok) throw buildProviderHttpError(response, bodyText, id, policy);
 
   let data: T;
   try {
@@ -838,6 +862,7 @@ export async function fetchJsonWithRetries<T>(
     requestSignal,
     redirectBehavior,
     responseValidator,
+    errorMapper,
   }: {
     id: string;
     maxAttempts?: number;
@@ -850,6 +875,7 @@ export async function fetchJsonWithRetries<T>(
     requestSignal?: AbortSignal;
     redirectBehavior?: RequestRedirect;
     responseValidator?: (data: T) => T;
+    errorMapper?: ProviderErrorMapper;
   },
 ): Promise<T> {
   // Use the withRetry helper to centralize retry/backoff semantics
@@ -873,6 +899,7 @@ export async function fetchJsonWithRetries<T>(
         maxResponseBytes,
         exposeRemoteErrorText,
         responseValidator,
+        errorMapper,
       });
       if (timeoutId) clearTimeout(timeoutId);
       return data;
@@ -914,6 +941,7 @@ export async function performProviderCall<T>(
     maxRequestBytes,
     redirectBehavior,
     responseValidator,
+    errorMapper,
   }: {
     id: string;
     maxAttempts?: number;
@@ -935,6 +963,8 @@ export async function performProviderCall<T>(
     maxRequestBytes?: number;
     redirectBehavior?: RequestRedirect;
     responseValidator?: (data: T) => T;
+    /** Maps a non-2xx response to a provider-specific error. Absent, the shared classifier's error is thrown. */
+    errorMapper?: ProviderErrorMapper;
   },
 ): Promise<IGenerateResult> {
   if (maxRequestBytes !== undefined && typeof fetchOptions.body === "string") {
@@ -954,6 +984,7 @@ export async function performProviderCall<T>(
     requestSignal: fetchOptions.signal ?? undefined,
     redirectBehavior,
     responseValidator,
+    errorMapper,
   });
   // Debug-level dump of the raw response body: content extraction strips parts of
   // it (e.g. thinking blocks), so investigating a live-provider issue needs the

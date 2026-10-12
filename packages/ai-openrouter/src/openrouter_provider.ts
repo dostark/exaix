@@ -22,6 +22,7 @@ import {
   performProviderCall,
 } from "@exaix/ai/provider_common_utils.ts";
 import { type IOpenRouterResponse, tokenMapperOpenRouter } from "./openrouter_reported_cost.ts";
+import { mapOpenRouterError } from "./openrouter_errors.ts";
 import { BaseProvider, type IBaseProviderOptions, type IGenerateResult } from "@exaix/ai/providers";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import { type INativeInputMeasurement, measureOpenAiChatProjection } from "@exaix/ai";
@@ -197,6 +198,7 @@ export class OpenRouterProvider extends BaseProvider {
       timeoutMs: this.timeoutMs,
       logger: this.logger,
       tokenMapper: tokenMapperOpenRouter(this.model),
+      errorMapper: mapOpenRouterError,
       extractor: extractOpenAIContent,
       toolCallExtractor: extractOpenAIToolCalls,
       assistantReplayExtractor: (response) => extractOpenAIAssistantReplay(response, PROVIDER_OPENROUTER),

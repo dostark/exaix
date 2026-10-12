@@ -13,7 +13,7 @@
  */
 
 import { assert, assertEquals, assertRejects } from "@std/assert";
-import { handleProviderResponse } from "../src/provider_common_utils.ts";
+import { handleProviderResponse, type ProviderErrorMapper as ErrorMapper } from "../src/provider_common_utils.ts";
 import {
   AuthenticationError,
   ConnectionError,
@@ -111,4 +111,70 @@ Deno.test("[anthropic-errors] a body without a typed error still classifies by H
     () => handleProviderResponse(plain, PROVIDER_ID),
     ConnectionError,
   );
+});
+
+const MAPPER_PROVIDER_ID = "mapper-test";
+
+function plainErrorResponse(status: number): Response {
+  return new Response(JSON.stringify({ error: { message: `status ${status} detail` } }), {
+    status,
+    headers: { "Retry-After": "9" },
+  });
+}
+
+async function thrownBy(response: Response, errorMapper?: ErrorMapper): Promise<Error> {
+  try {
+    await handleProviderResponse(response, MAPPER_PROVIDER_ID, undefined, undefined, { errorMapper });
+  } catch (error) {
+    return error as Error;
+  }
+  throw new Error("handleProviderResponse did not throw for an error response");
+}
+
+Deno.test("[regression] without errorMapper, 401, 404, 429, 500 and 503 throw the same class and message as before", async () => {
+  const expected: Array<[number, string, string]> = [
+    [401, "AuthenticationError", "HTTP 401 status 401 detail"],
+    [404, "ModelProviderError", "HTTP 404 status 404 detail"],
+    [429, "RateLimitError", "HTTP 429 status 429 detail"],
+    [500, "ConnectionError", `Connection failed for provider '${MAPPER_PROVIDER_ID}': HTTP 500 status 500 detail`],
+    [503, "ConnectionError", `Connection failed for provider '${MAPPER_PROVIDER_ID}': HTTP 503 status 503 detail`],
+  ];
+  for (const [status, name, message] of expected) {
+    const err = await thrownBy(plainErrorResponse(status));
+    assertEquals([err.name, err.message], [name, message], `status ${status}`);
+  }
+});
+
+Deno.test("errorMapper receives the status, headers, body text and the shared fallback, and its return value is thrown", async () => {
+  const seen: Array<{ status: number; retryAfter: string | null; body: string; fallbackName: string }> = [];
+  const custom = new ModelProviderError("mapped", MAPPER_PROVIDER_ID);
+  const err = await thrownBy(plainErrorResponse(429), (status, headers, bodyText, fallback) => {
+    seen.push({ status, retryAfter: headers.get("Retry-After"), body: bodyText, fallbackName: fallback.name });
+    return custom;
+  });
+  assertEquals(err, custom);
+  assertEquals(seen, [{
+    status: 429,
+    retryAfter: "9",
+    body: JSON.stringify({ error: { message: "status 429 detail" } }),
+    fallbackName: "RateLimitError",
+  }]);
+});
+
+Deno.test("errorMapper is not called for a 2xx response", async () => {
+  let calls = 0;
+  const data = await handleProviderResponse<{ ok: boolean }>(
+    new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    MAPPER_PROVIDER_ID,
+    undefined,
+    undefined,
+    {
+      errorMapper: (_status, _headers, _bodyText, fallback) => {
+        calls++;
+        return fallback;
+      },
+    },
+  );
+  assertEquals(data, { ok: true });
+  assertEquals(calls, 0);
 });

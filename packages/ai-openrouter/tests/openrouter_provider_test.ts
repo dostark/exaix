@@ -10,14 +10,16 @@
 
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { ProviderType } from "@exaix/core";
-import { AuthenticationError } from "@exaix/ai/providers";
+import { AuthenticationError, ConnectionError } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import {
   OPENROUTER_DEFAULT_SITE_NAME,
   OPENROUTER_DEFAULT_SITE_URL,
   OPENROUTER_PROVIDER_METADATA,
+  OpenRouterBillingError,
   OpenRouterProvider,
   OpenRouterProviderFactory,
+  OpenRouterRoutingError,
 } from "@exaix/ai-openrouter";
 
 const OPENAI_RESPONSE = JSON.stringify({
@@ -187,6 +189,75 @@ Deno.test("[openrouter] routing block omitted when not configured", async () => 
     assertEquals(body.model, "openai/gpt-4o");
     assertEquals(body.models, undefined);
     assertEquals(body.provider, undefined);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+const RETRY_DELAY_MS = 1;
+
+async function countFetchesForStatus(
+  status: number,
+  body: string,
+): Promise<{ calls: number; error: Error }> {
+  let calls = 0;
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = (() => {
+    calls++;
+    return Promise.resolve(new Response(body, { status }));
+  }) as typeof fetch;
+  try {
+    const provider = new OpenRouterProvider({ apiKey: "sk-test", model: "openai/gpt-4", retryDelayMs: RETRY_DELAY_MS });
+    try {
+      await provider.generate("hi");
+    } catch (error) {
+      return { calls, error: error as Error };
+    }
+    throw new Error("generate did not throw");
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+}
+
+Deno.test("OpenRouterProvider fetches a routing 404 once and throws the typed routing error", async () => {
+  const { calls, error } = await countFetchesForStatus(
+    404,
+    JSON.stringify({ error: { code: 404, message: "No endpoints found that can handle the requested parameters." } }),
+  );
+  assertEquals(calls, 1);
+  assert(error instanceof OpenRouterRoutingError);
+});
+
+Deno.test("OpenRouterProvider fetches a 402 once and throws the typed billing error", async () => {
+  const { calls, error } = await countFetchesForStatus(
+    402,
+    JSON.stringify({ error: { code: 402, message: "Insufficient credits" } }),
+  );
+  assertEquals(calls, 1);
+  assert(error instanceof OpenRouterBillingError);
+});
+
+Deno.test("OpenRouterProvider retries a 503 even when the message names routing requirements (Q10)", async () => {
+  const { calls, error } = await countFetchesForStatus(
+    503,
+    JSON.stringify({ error: { code: 503, message: "No provider meets the routing requirements" } }),
+  );
+  assert(calls > 1, `a 503 must be retried, got ${calls} fetch(es)`);
+  assert(error instanceof ConnectionError);
+});
+
+Deno.test("OpenRouterProvider sends no metadata opt-in header, because no consumer reads openrouter_metadata", async () => {
+  let headers = new Headers();
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+    headers = new Headers(init?.headers);
+    return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
+  }) as typeof fetch;
+  try {
+    const provider = new OpenRouterProvider({ apiKey: "sk-test", model: "openai/gpt-4" });
+    await provider.generate("hi");
+    assertEquals(headers.get("X-OpenRouter-Metadata"), null);
+    assertEquals(headers.get("X-OpenRouter-Experimental-Metadata"), null);
   } finally {
     globalThis.fetch = origFetch;
   }

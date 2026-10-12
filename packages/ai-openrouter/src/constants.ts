@@ -60,6 +60,28 @@ export const X_TITLE_HEADER = "X-Title";
 export const OPENROUTER_DEFAULT_SITE_NAME = "Exaix";
 export const OPENROUTER_DEFAULT_SITE_URL = "https://exaix.dev";
 
+/** HTTP statuses that the OpenRouter error mapper branches on, beyond the shared 401, 403 and 429. */
+export const OPENROUTER_HTTP_STATUS = {
+  PAYMENT_REQUIRED: 402,
+  NOT_FOUND: 404,
+  REQUEST_TIMEOUT: 408,
+  BAD_GATEWAY: 502,
+  SERVICE_UNAVAILABLE: 503,
+} as const;
+
+/** Message fragment OpenRouter returns when no endpoint can serve the requested parameters. */
+export const OPENROUTER_ROUTING_REFUSAL_PATTERN = /no endpoints found/i;
+
+/** The 402 limit source that OpenRouter documents as safe to retry after a wait. */
+export const OPENROUTER_IN_FLIGHT_BUDGET_LIMIT_SOURCE = "openrouter_in_flight_budget";
+
+/** Cap on each upstream error string copied into a message. */
+export const OPENROUTER_ERROR_FIELD_MAX_CHARS = 300;
+
+/** Cap on a parsed Retry-After wait, so a hostile header cannot park a caller. */
+export const OPENROUTER_RETRY_AFTER_MAX_MS = 3_600_000;
+export const OPENROUTER_MS_PER_SECOND = 1000;
+
 /** Default environment variable holding the OpenRouter API key. */
 export const DEFAULT_OPENROUTER_API_KEY_ENV = "OPENROUTER_API_KEY";
 
