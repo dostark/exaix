@@ -2381,6 +2381,10 @@ export const ANALYSIS_TASK_TYPE_VERBS: Record<string, string> = {
 
 // Portal Knowledge
 
+/** Joins the parts of a composite edge key used for deduplication.
+ *  It is a separator that cannot occur in a portal-relative path or symbol name. */
+export const EDGE_DEDUP_KEY_SEPARATOR = "\u0000";
+
 /** Per-pass cap on symbol-reference edges (DoS bound). */
 export const DEFAULT_SYMBOL_REFERENCE_EDGE_LIMIT: number = configurable({
   key: "portal_knowledge.symbol_reference_edge_limit",
