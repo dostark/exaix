@@ -605,27 +605,30 @@ export function createCoreToolSchemas(
     {
       name: ToolName.WHO_DEPENDS_ON,
       description:
-        "List relationship edges pointing INTO a file path in the current portal's knowledge graph — the reverse of query_relationships. Use before changing or removing a file's exports, to find every file that imports it internally. Returns an array of edge records in data, or an error if no portal-knowledge service is available or the current execution root is not a configured portal.",
+        "List relationship edges pointing INTO a file path or a symbol in the current portal's knowledge graph — the reverse of query_relationships. Pass '<file>#<symbolName>' to answer \"who calls this function or uses this type\" from the symbol-level graph; pass a bare file path to find every file that imports it internally. Use before changing or removing a symbol's or a file's exports. Prefer this over search_text for call-graph questions: a text search cannot scope a name to one file, and across a large portal the same name recurs, so it reports unrelated matches. Returns an array of edge records in data, or an error if no portal-knowledge service is available or the current execution root is not a configured portal.",
       parameters: {
         type: "object",
         properties: {
           path: {
             type: "string",
-            description: "A portal-relative file path to find dependents of",
+            description:
+              "A portal-relative file path, or a '<file>#<symbolName>' symbol endpoint such as 'src/util.ts#format', to find dependents of",
           },
         },
         required: ["path"],
       },
       sideEffectScope: ToolSideEffectScope.NONE,
       aciDoc: {
-        summary: "Lists relationship edges pointing into a file path — the files that depend on it.",
-        when_to_use: "Use before changing or removing a file's exports, to find every file that imports it internally.",
+        summary:
+          "Lists relationship edges pointing into a file path or a '<file>#<symbol>' endpoint — the files or symbols that depend on it.",
+        when_to_use:
+          "Use before changing or removing a symbol's or a file's exports. Use to answer \"who calls this function\" without reading files, which a text search cannot scope to one file.",
         when_not_to_use:
-          "Do not use to list what a file itself imports — that's the forward direction, use query_relationships instead.",
+          "Do not use to list what a file itself imports — that's the forward direction, use query_relationships instead. Do not use search_text for a call-graph question; it matches the name anywhere in the portal.",
         example: {
-          input: { path: "util.ts" },
-          output: '[{"from":"main.ts","to":"util.ts","kind":"file_imports_file_internal"}]',
-          rationale: "Finds every file that imports util.ts before changing its exported signature.",
+          input: { path: "src/util.ts#format" },
+          output: '[{"from":"src/main.ts#run","to":"src/util.ts#format","kind":"symbol_references_symbol"}]',
+          rationale: "Finds every call site of one symbol before changing its signature.",
         },
         anti_example: {
           input: {},
