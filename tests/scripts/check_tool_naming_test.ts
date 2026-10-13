@@ -129,7 +129,7 @@ Deno.test("[naming] a catalog exposing a retired native name or an unknown name 
 });
 
 Deno.test("[naming] every row of SHARED_TOOL_OPERATIONS resolves to the same string in ToolName and McpToolName", () => {
-  assertEquals(SHARED_TOOL_OPERATIONS.length, 12);
+  assertEquals(SHARED_TOOL_OPERATIONS.length, 13);
   assertEquals(findSharedOperationViolations(SHARED_TOOL_OPERATIONS, ToolName, McpToolName), []);
 });
 
