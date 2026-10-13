@@ -961,7 +961,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   /** Call ids of the turns already replayed to the provider. A later response may not reuse one. */
   private consumedCallIds(
     turns: readonly IProviderTurn[],
-    priorTurn: Opt<IProviderTurn, Reason.OptionalInput>,
+    priorTurn?: Opt<IProviderTurn, Reason.OptionalInput>,
     rounds: readonly IProviderToolRound[] = [],
   ): ReadonlySet<string> {
     const ids = new Set(turns.map((turn) => turn.toolUseId));
