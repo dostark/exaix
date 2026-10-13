@@ -146,7 +146,7 @@ Deno.test("[AgentRunner.previewPrompt] dropped segments contribute zero final to
 
 Deno.test("[AgentRunner.previewPrompt] selected model pricing produces a prompt-only estimate", async () => {
   const runner = new AgentRunner(new MockProvider(WELL_FORMED_RESPONSE), {
-    selectedModel: { provider: "openai", model: "gpt-4o-mini" },
+    selectedModel: { provider: "openai", model: "gpt-6-luna" },
   });
 
   const preview = await runner.previewPrompt(
