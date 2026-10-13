@@ -7,6 +7,7 @@
  * inference, persistence, and knowledge service.
  */
 
+export { MODULE_DEPENDENCY_EDGE_KIND } from "@exaix/core";
 export { TreeSitterSymbolExtractor } from "./tree_sitter_symbol_extractor.ts";
 export { PythonSymbolExtractor } from "./python_symbol_extractor.ts";
 export * from "./symbol_extraction_constants.ts";
@@ -59,7 +60,6 @@ export {
   deriveLayerContainsFileEdges,
   encodeSymbolRef,
   mergeRelationships,
-  MODULE_DEPENDENCY_EDGE_KIND,
   queryRelationships,
   traverseModuleDependencies,
   whoDependsOn,

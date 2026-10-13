@@ -360,9 +360,13 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     // enableAstAnalysis since this is a logically separate pass.
     let relationships: IPortalKnowledge["relationships"];
     if (resolvedMode !== PortalAnalysisMode.QUICK) {
-      const internalGraphEntrypoints = keyFiles
+      const declaredEntrypoints = keyFiles
         .filter((kf) => kf.role === "entrypoint")
         .map((kf) => kf.path);
+      // A portal whose files carry no conventional entrypoint name still has a
+      // real import graph. Fall back to the language's own source files, which
+      // the builder already caps, instead of reporting no edges at all.
+      const internalGraphEntrypoints = declaredEntrypoints.length > 0 ? declaredEntrypoints : sourceFiles;
       const internalGraphResult = await this._internalImportGraphBuilder.build(
         portalPath,
         internalGraphEntrypoints,

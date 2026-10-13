@@ -13,15 +13,22 @@
  * and transitive call chains. It does **not** claim semantic binding, dynamic
  * dispatch, interface satisfaction, or callback registration, so those forms are
  * deliberately not asserted here. Languages with reference support are Go, Java,
- * and Rust. TypeScript/JavaScript and Python ship symbol maps but no reference
- * extractor, so this phase makes no "who calls X" claim for them.
+ * Rust, TypeScript, JavaScript, and Python.
  *
  * @architectural-layer Test
  */
 
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { LANG_GO, LANG_JAVA, LANG_PYTHON, LANG_RUST, LANG_TYPESCRIPT, PortalAnalysisMode } from "@exaix/core";
+import {
+  LANG_GO,
+  LANG_JAVA,
+  LANG_JAVASCRIPT,
+  LANG_PYTHON,
+  LANG_RUST,
+  LANG_TYPESCRIPT,
+  PortalAnalysisMode,
+} from "@exaix/core";
 import {
   createDefaultSymbolExtractorRegistry,
   createDefaultSymbolFileResolverRegistry,
@@ -350,7 +357,68 @@ def remote(v):
   },
 };
 
-const FIXTURES = [GO_FIXTURE, JAVA_FIXTURE, RUST_FIXTURE, TS_FIXTURE, PYTHON_FIXTURE];
+/** JavaScript uses the same extractor family as TypeScript but a different language key. */
+const JAVASCRIPT_FIXTURE: ILanguageFixture = {
+  language: LANG_JAVASCRIPT,
+  extension: ".js",
+  targetFile: "src/core.js",
+  targetSymbol: "ship",
+  directCallers: ["src/deep.js#level3", "src/remote.js#remote"],
+  transitiveCaller: "src/sibling.js#level1",
+  chain: [
+    { from: "src/sibling.js#level1", to: "src/deep.js#level2" },
+    { from: "src/deep.js#level2", to: "src/deep.js#level3" },
+    { from: "src/deep.js#level3", to: "src/core.js#ship" },
+  ],
+  files: {
+    "src/index.js": `export { ship } from "./core.js";
+export { level1 } from "./sibling.js";
+`,
+    "src/core.js": `/// ship is the function every query asks about.
+export function ship(v) {
+  return v * 2;
+}
+`,
+    "src/deep.js": `import { ship } from "./core.js";
+
+/// level3 calls ship directly.
+export function level3(v) {
+  return ship(v) + 1;
+}
+
+/// level2 calls level3, so ship sits two frames down.
+export function level2(v) {
+  return level3(v) * 2;
+}
+`,
+    "src/sibling.js": `import { level2 } from "./deep.js";
+
+/// level1 calls level2 in another file of the same directory.
+export function level1(v) {
+  return level2(v) + 3;
+}
+`,
+    "src/remote.js": `import { ship } from "./core.js";
+import { level3 } from "./deep.js";
+
+/// remote calls ship directly and through the deep module.
+export function remote(v) {
+  const direct = ship(v);
+  const indirect = level3(v);
+  return direct + indirect;
+}
+`,
+  },
+};
+
+const FIXTURES = [
+  GO_FIXTURE,
+  JAVA_FIXTURE,
+  RUST_FIXTURE,
+  TS_FIXTURE,
+  JAVASCRIPT_FIXTURE,
+  PYTHON_FIXTURE,
+];
 
 /** Portal alias used by the agent-facing tool tests. */
 const GO_ALIAS = "lang-go";
@@ -519,9 +587,10 @@ for (const fixture of FIXTURES) {
 
 Deno.test("[matrix] every supported reference language is covered", () => {
   const covered = FIXTURES.map((f) => f.language).sort();
-  assertEquals(covered, [LANG_GO, LANG_JAVA, LANG_PYTHON, LANG_RUST, LANG_TYPESCRIPT].sort());
-  // JavaScript shares the TypeScript extractor and grammar family, so its
-  // coverage is a registration assertion rather than a separate fixture.
+  assertEquals(
+    covered,
+    [LANG_GO, LANG_JAVA, LANG_JAVASCRIPT, LANG_PYTHON, LANG_RUST, LANG_TYPESCRIPT].sort(),
+  );
 });
 
 Deno.test("[matrix] the agent-facing tool answers who-calls-X in a structured, parseable format", async () => {

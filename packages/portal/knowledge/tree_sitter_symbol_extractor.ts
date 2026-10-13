@@ -220,18 +220,28 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
     return { content, tree };
   }
 
-  /** Recursively count syntax nodes in the tree. The `child` callback
-   * returns a node-like object or null — only non-null values recurse. */
-  private _countNodes(
+  /**
+   * Counts syntax nodes with an explicit stack.
+   *
+   * The count is an upper bound.
+   * It stops once the ceiling is passed.
+   * A recursive walk cannot be used here.
+   * A deeply nested file would overflow the call stack first.
+   * The bound would then become the crash.
+   */
+  protected _countNodes(
     node: { childCount: number; child: (i: number) => unknown },
   ): number {
-    let count = 1;
-    for (let i = 0; i < node.childCount; i++) {
-      const child = node.child(i);
-      if (child) {
-        count += this._countNodes(
-          child as { childCount: number; child: (i: number) => unknown },
-        );
+    type NodeLike = { childCount: number; child: (i: number) => unknown };
+    let count = 0;
+    const stack: NodeLike[] = [node as NodeLike];
+    while (stack.length > 0) {
+      const current = stack.pop()!;
+      count += 1;
+      if (count > SYMBOL_EXTRACT_MAX_NODES) return count;
+      for (let i = 0; i < current.childCount; i++) {
+        const child = current.child(i);
+        if (child) stack.push(child as NodeLike);
       }
     }
     return count;

@@ -146,25 +146,58 @@ Deno.test({
   },
 });
 
+const ENTERPRISE_BINARY = join(REPO_ROOT, "dist", "bin", `exaix-enterprise-${Deno.build.target}`);
+
 Deno.test({
-  name: "[team-binary] the delivery vehicle is the Team artifact, and no enterprise artifact ships the feature",
+  name: "[team-binary] the delivery vehicle is the Team artifact, and the enterprise artifact ships no feature",
   ignore: !(await binaryExists()),
   fn: async () => {
-    // GAP-14: the isolated Enterprise build is a scaffold.
-    // A binary there must not be mistaken for the delivery vehicle.
-    // The Team artifact is therefore the one asserted to exist.
+    // GAP-14: the isolated Enterprise workspace is a scaffold. It cannot import
+    // the Team-owned extractor seam, so it cannot deliver this feature. This test
+    // holds that down instead of leaving it as prose.
     assert(await binaryExists(), "the Team artifact must be the built delivery vehicle");
-    const enterpriseBinary = join(REPO_ROOT, "dist", "bin", `exaix-enterprise-${Deno.build.target}`);
+
     let enterprisePresent = false;
     try {
-      enterprisePresent = (await Deno.stat(enterpriseBinary)).isFile;
+      enterprisePresent = (await Deno.stat(ENTERPRISE_BINARY)).isFile;
     } catch {
       enterprisePresent = false;
     }
-    if (enterprisePresent) {
-      // If it exists, it must not be the thing under test: this test reads only the Team path.
-      assert(TEAM_BINARY !== enterpriseBinary);
+
+    if (!enterprisePresent) {
+      console.warn(
+        "[team-binary] no enterprise artifact present; build it with `deno run -A scripts/ci.ts build --edition enterprise -c` to check the boundary",
+      );
+      return;
     }
+
+    // The two artifacts must stay distinct.
+    // The enterprise one must not expose the analysis command.
+    assert(TEAM_BINARY !== ENTERPRISE_BINARY);
+    const probe = new Deno.Command(ENTERPRISE_BINARY, {
+      args: ["portal", "analyze", "anything"],
+      stdout: "piped",
+      stderr: "piped",
+      env: { ...Deno.env.toObject(), EXAIX_EDITION: EDITION_ENTERPRISE },
+    });
+    const { stdout, stderr } = await probe.output();
+    const output = new TextDecoder().decode(stdout) + new TextDecoder().decode(stderr);
+
+    assert(
+      /scaffold|no feature work/i.test(output),
+      `the enterprise artifact must still report itself as a scaffold, got: ${output.slice(0, 200)}`,
+    );
+
+    // The Team binary, by contrast, does accept the analysis command.
+    const teamProbe = new Deno.Command(TEAM_BINARY, {
+      args: ["--version"],
+      stdout: "piped",
+      stderr: "piped",
+      env: { ...Deno.env.toObject(), EXAIX_EDITION: EDITION_ENTERPRISE, EXA_LLM_PROVIDER: "mock" },
+    });
+    const teamOut = await teamProbe.output();
+    const teamText = new TextDecoder().decode(teamOut.stdout) + new TextDecoder().decode(teamOut.stderr);
+    assert(/exactl/i.test(teamText), `the Team artifact must be the real CLI, got: ${teamText.slice(0, 200)}`);
   },
 });
 
@@ -250,6 +283,23 @@ const SCRIPTED_FIXTURES: Array<{
       "src/deep.ts#level3->src/core.ts#ship",
       "src/remote.ts#remote->src/core.ts#ship",
       "src/sibling.ts#level1->src/deep.ts#level2",
+    ],
+  },
+  {
+    label: "javascript",
+    files: {
+      "src/core.js": "export function ship(v) {\n  return v * 2;\n}\n",
+      "src/deep.js":
+        'import { ship } from "./core.js";\n\nexport function level3(v) {\n  return ship(v) + 1;\n}\n\nexport function level2(v) {\n  return level3(v) * 2;\n}\n',
+      "src/sibling.js":
+        'import { level2 } from "./deep.js";\n\nexport function level1(v) {\n  return level2(v) + 3;\n}\n',
+      "src/remote.js": 'import { ship } from "./core.js";\n\nexport function remote(v) {\n  return ship(v);\n}\n',
+    },
+    expected: [
+      "src/deep.js#level2->src/deep.js#level3",
+      "src/deep.js#level3->src/core.js#ship",
+      "src/remote.js#remote->src/core.js#ship",
+      "src/sibling.js#level1->src/deep.js#level2",
     ],
   },
   {

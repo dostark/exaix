@@ -12,7 +12,12 @@
  */
 
 import type { IArchitectureLayer, IPortalKnowledge } from "@exaix/schemas";
-import { EDGE_DEDUP_KEY_SEPARATOR, SYMBOL_REF_ID_SEPARATOR, type SYMBOL_REFERENCE_EDGE_KIND } from "@exaix/core";
+import {
+  EDGE_DEDUP_KEY_SEPARATOR,
+  MODULE_DEPENDENCY_EDGE_KIND,
+  SYMBOL_REF_ID_SEPARATOR,
+  type SYMBOL_REFERENCE_EDGE_KIND,
+} from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export type RelationshipEdgeKind =
@@ -41,8 +46,6 @@ export interface IPersistedRelationshipEdge {
 /** The edge kind `traverseModuleDependencies` walks.
  *  Symbol-level edges are not module dependencies.
  *  A BFS over them would fabricate hops through composite keys. */
-export const MODULE_DEPENDENCY_EDGE_KIND = "file_imports_file_internal" as const;
-
 /** Builds a `symbol_references_symbol` endpoint (`<file>#<symbolName>`).
  *  This is the only sanctioned way to construct a composite key.
  *  Never concatenate the separator directly. */

@@ -2385,6 +2385,9 @@ export const ANALYSIS_TASK_TYPE_VERBS: Record<string, string> = {
  *  Its endpoints are `<file>#<symbolName>` composite keys. */
 export const SYMBOL_REFERENCE_EDGE_KIND = "symbol_references_symbol";
 
+/** The persisted relationship kind for a file-to-file internal import edge. */
+export const MODULE_DEPENDENCY_EDGE_KIND = "file_imports_file_internal";
+
 /** Marks the default export a TS/JS `import x from "y"` clause binds.
  *  A named import records the imported symbol name instead. */
 export const TS_JS_DEFAULT_IMPORT_MARKER = "default";
@@ -2743,6 +2746,7 @@ export const DEFAULT_IGNORE_PATTERNS: string[] = [
 
 /** Well-known entrypoint file names used for priority-first traversal and key-file identification. */
 export const PORTAL_ENTRYPOINT_NAMES: string[] = [
+  // TypeScript and JavaScript
   "main.ts",
   "main.js",
   "mod.ts",
@@ -2753,6 +2757,20 @@ export const PORTAL_ENTRYPOINT_NAMES: string[] = [
   "app.js",
   "server.ts",
   "server.js",
+  // Python.
+  // Without these a Python portal reports no entrypoint.
+  // The import graph then has nothing to trace and yields no edges.
+  "main.py",
+  "app.py",
+  "cli.py",
+  "manage.py",
+  "server.py",
+  "__init__.py",
+  // Go, Java, and Rust share the same convention.
+  "main.go",
+  "Main.java",
+  "main.rs",
+  "lib.rs",
 ];
 
 /** Config file extensions used for config file identification. */

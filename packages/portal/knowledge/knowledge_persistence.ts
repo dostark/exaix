@@ -14,7 +14,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { type IPortalKnowledge, PortalKnowledgeSchema } from "@exaix/schemas";
 
-import { SYMBOL_REFERENCE_EDGE_KIND } from "@exaix/core";
+import { MODULE_DEPENDENCY_EDGE_KIND, SYMBOL_REFERENCE_EDGE_KIND } from "@exaix/core";
 import type { IMemoryBankService } from "@exaix/core/types";
 import type { IPattern } from "@exaix/schemas";
 
@@ -120,7 +120,7 @@ export async function loadKnowledge(
 
 /** Every relationship kind this build can persist. */
 const KNOWN_RELATIONSHIP_KINDS: readonly string[] = [
-  "file_imports_file_internal",
+  MODULE_DEPENDENCY_EDGE_KIND,
   SYMBOL_REFERENCE_EDGE_KIND,
 ];
 
