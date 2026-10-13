@@ -130,6 +130,14 @@ function startFixture(
       }
       return completion({ content: "Both modules were read." }, "stop", 60);
     }
+    // The planning tool phase offers read-only tools and no response format. Execution offers write_file.
+    const planningToolPhase = !body.response_format && (body.tools?.length ?? 0) > 0 &&
+      !body.tools?.some((tool) => tool.function?.name === "write_file");
+    if (!dynamicFlow && planningToolPhase && variant !== "invalid-plan") {
+      return hasToolResult
+        ? completion({ content: "The portal file was read." }, "stop", 50)
+        : completion(toolCall(PLANNING_CALL_ID, PORTAL_MARKER_PATH), "tool_calls", 50);
+    }
     if (body.response_format) {
       if (variant === "invalid-plan" && (hasToolResult || !body.tools?.length)) {
         return completion({ content: JSON.stringify({ title: "Schema-invalid plan" }) }, "stop", 60);
@@ -239,15 +247,20 @@ Deno.test({
 
       assert(observed.length >= 4, `fixture saw ${observed.length} requests`);
       assertEquals(observed.every((entry) => entry.authorization === `Bearer ${FIXTURE_KEY}`), true);
-      const planningFirst = observed.find((entry) => entry.body.response_format);
-      assert(planningFirst?.body.tools?.some((tool) => tool.function?.name === "read_file"));
-      assertEquals(planningFirst?.body.tools?.some((tool) => tool.function?.name === "write_file"), false);
+      const offersTool = (entry: IObservedRequest, name: string) =>
+        entry.body.tools?.some((tool) => tool.function?.name === name) === true;
+      // Planning reads files first, with no response format. It ends in a call with the format and no tools.
+      const planningFirst = observed.find((entry) => !entry.body.response_format && offersTool(entry, "read_file"));
+      assert(planningFirst);
+      assertEquals(offersTool(planningFirst, "write_file"), false);
+      const planningFinal = observed.find((entry) => entry.body.response_format);
+      assertEquals(planningFinal?.body.tools?.length ?? 0, 0);
       const replays = observed.flatMap((entry) => (entry.body.messages ?? []).filter((m) => m.role === "tool"));
       assertEquals(
         new Set(replays.map((message) => message.tool_call_id)),
         new Set([PLANNING_CALL_ID, EXECUTION_CALL_ID]),
       );
-      const execFirst = observed.find((entry) => !entry.body.response_format && entry.body.tools?.length);
+      const execFirst = observed.find((entry) => !entry.body.response_format && offersTool(entry, "write_file"));
       assertEquals(execFirst?.body.tool_choice, "required");
       const execReplay = observed.find((entry) =>
         !entry.body.response_format && (entry.body.messages ?? []).some((m) => m.tool_call_id === EXECUTION_CALL_ID)
