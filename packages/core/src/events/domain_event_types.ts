@@ -343,6 +343,15 @@ export interface IModelRetiredPayload {
   last_seen_at: number;
 }
 
+/** Typed payload for model.retirement.due events — a selected model is past or near its provider's expiration date. */
+export interface IModelRetirementDuePayload {
+  provider: string;
+  model: string;
+  expiration_date: string;
+  /** Whole days until the expiration date. Negative once it has passed. */
+  days_remaining: number;
+}
+
 /** Typed payload for model.catalog.refreshed events. */
 export interface IModelCatalogRefreshedPayload {
   provider: string;
@@ -1151,6 +1160,7 @@ export const DomainEventType = {
   ModelCostDivergence: "model.cost.divergence",
   ModelAdmitted: "model.admitted",
   ModelRetired: "model.retired",
+  ModelRetirementDue: "model.retirement.due",
   ModelCatalogRefreshed: "model.catalog.refreshed",
   ModelPricingRefreshed: "model.pricing.refreshed",
   ModelRegistryRefreshFailed: "model.registry.refresh.failed",
