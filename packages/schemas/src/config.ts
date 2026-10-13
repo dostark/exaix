@@ -568,6 +568,7 @@ const ConfigObjectSchema = z.object({
         require_parameters: z.boolean().optional(),
         allow_fallbacks: z.boolean().optional(),
         quantizations: z.array(z.enum(OPENROUTER_QUANTIZATIONS)).optional(),
+        /** Prompt and completion prices are in dollars per million tokens, as in the OpenRouter provider selection guide. */
         max_price: z.object({
           prompt: z.number().nonnegative().optional(),
           completion: z.number().nonnegative().optional(),
