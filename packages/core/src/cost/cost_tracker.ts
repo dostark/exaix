@@ -23,6 +23,7 @@ import {
   COST_BUDGET_REASON_PRICING_UNAVAILABLE,
   COST_RATE_ANTHROPIC,
   COST_RATE_GOOGLE,
+  COST_RATE_GOOGLE_INPUT,
   COST_RATE_LLAMACPP,
   COST_RATE_MOCK,
   COST_RATE_OLLAMA,
@@ -248,7 +249,7 @@ export class CostTracker implements ICostTracker {
       return { cost: computed, source: "registry_computed" };
     }
     // Legacy blended estimate (library-compat path).
-    return { cost: this.estimateCost(provider, tokens, options.model), source: null };
+    return { cost: this.estimateCost(provider, tokens, options.model, options.promptTokens), source: null };
   }
 
   async recordUnpricedGeneration(
@@ -751,10 +752,20 @@ export class CostTracker implements ICostTracker {
     return results;
   }
 
-  private estimateCost(provider: string, tokens: number, model?: Opt<string, Reason.OptionalInput>): number {
+  private estimateCost(
+    provider: string,
+    tokens: number,
+    model?: Opt<string, Reason.OptionalInput>,
+    promptTokens = 0,
+  ): number {
     const rates = CostTracker.getCostRates(this.config);
     const modelKey = model ? `${provider}:${model}` : provider;
     const rate = rates[modelKey] ?? rates[provider] ?? 0;
+    if (provider === ProviderType.GOOGLE) {
+      // Gemini bills prompt tokens at the input rate. Answer and thinking tokens share the output rate.
+      const inputTokens = Math.min(promptTokens, tokens);
+      return (inputTokens * COST_RATE_GOOGLE_INPUT + (tokens - inputTokens) * rate) / TOKENS_PER_COST_UNIT;
+    }
     return rate * (tokens / TOKENS_PER_COST_UNIT);
   }
 
