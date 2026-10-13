@@ -135,6 +135,7 @@ export type SequentialTest = z.input<typeof SequentialTestSchema>;
 export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
   { file: "apps/exactl/tests/exactl_all_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "tests/integration/openrouter_adapter_wiring_test.ts", reasons: [IsolationReason.processEnv] },
+  { file: "tests/integration/openrouter_live_matrix_security_test.ts", reasons: [IsolationReason.processEnv] },
   {
     file: "tests/integration/parallel_tool_round_cutover_test.ts",
     reasons: [IsolationReason.moduleCache, IsolationReason.pressure],

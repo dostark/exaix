@@ -181,6 +181,7 @@ Deno.test("test_output_parse is the single source and test_parallel re-exports t
 const EXPECTED_SEQUENTIAL_FILES = [
   "apps/exactl/tests/exactl_all_test.ts",
   "tests/integration/openrouter_adapter_wiring_test.ts",
+  "tests/integration/openrouter_live_matrix_security_test.ts",
   "tests/integration/parallel_tool_round_cutover_test.ts",
   "apps/daemon/tests/dogfood_context_child_query_test.ts",
   "apps/daemon/tests/headless_session_launcher_test.ts",
@@ -279,6 +280,7 @@ Deno.test("fix(test-runner): catalog overlay environment writers run in isolated
 Deno.test("provider factory environment writers run in isolated processes", () => {
   const files = [
     "tests/integration/openrouter_adapter_wiring_test.ts",
+    "tests/integration/openrouter_live_matrix_security_test.ts",
     "packages/ai/tests/provider_factory_test.ts",
     "packages/ai/tests/provider_factory_binding_test.ts",
     "packages/ai/tests/provider_factory_compatible_config_test.ts",
