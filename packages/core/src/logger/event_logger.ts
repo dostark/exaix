@@ -18,6 +18,10 @@ import { EventBusService } from "../observability/event_bus_service.ts";
 import type { IEventBusService } from "../observability/event_bus_service.ts";
 import {
   BYTES_PER_KB,
+  CONSOLE_CONTROL_ESCAPE_RADIX,
+  CONSOLE_CONTROL_ESCAPE_WIDTH,
+  CONSOLE_CONTROL_SHORT_ESCAPES,
+  CONSOLE_PAYLOAD_VALUE_MAX_CHARS,
   DEFAULT_LOG_MAX_FILES,
   DEFAULT_LOG_MAX_SIZE_MB,
   SHARED_DEFAULT_ICONS,
@@ -107,6 +111,18 @@ const DEFAULT_ICONS: Record<LogLevel, string> = {
 
 /** Cached user identity to avoid repeated git calls */
 let cachedUserIdentity: string | null = null;
+
+/** Escape untrusted console fields without changing journal values. */
+function formatConsoleValue(value: string): string {
+  const escaped = value.replace(/\p{Cc}/gu, (character) =>
+    CONSOLE_CONTROL_SHORT_ESCAPES[character] ??
+      `\\u${
+        character.charCodeAt(0).toString(CONSOLE_CONTROL_ESCAPE_RADIX).padStart(CONSOLE_CONTROL_ESCAPE_WIDTH, "0")
+      }`);
+  return escaped.length > CONSOLE_PAYLOAD_VALUE_MAX_CHARS
+    ? `${escaped.slice(0, CONSOLE_PAYLOAD_VALUE_MAX_CHARS)} [truncated; original length: ${value.length}]`
+    : escaped;
+}
 
 // Output Implementations
 
@@ -498,7 +514,9 @@ export class EventLogger implements IEventLogger {
     const prefix = this.prefix ? this.prefix + " " : "";
 
     // Build main message line
-    const mainLine = `${timestamp}${icon} ${event.action}: ${event.target}`;
+    const mainLine = `${timestamp}${icon} ${formatConsoleValue(event.action)}: ${
+      formatConsoleValue(String(event.target))
+    }`;
 
     // Select appropriate console method
     const consoleFn = level === LogLevel.ERROR
@@ -515,7 +533,7 @@ export class EventLogger implements IEventLogger {
     if (event.payload && Object.keys(event.payload).length > 0) {
       for (const [key, value] of Object.entries(event.payload)) {
         const valueStr = typeof value === "object" ? JSON.stringify(value) : String(value);
-        consoleFn(`   ${key}: ${valueStr}`);
+        consoleFn(`   ${formatConsoleValue(key)}: ${formatConsoleValue(valueStr)}`);
       }
     }
   }

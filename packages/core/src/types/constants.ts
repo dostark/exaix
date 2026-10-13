@@ -1834,6 +1834,17 @@ export const DEFAULT_SUBPROCESS_TIMEOUT_MS: number = configurable({
 });
 
 // Logging Defaults
+/** Maximum console characters per escaped event field before the length marker. */
+export const CONSOLE_PAYLOAD_VALUE_MAX_CHARS = 2_000;
+/** Radix and width for console Unicode control-character escapes. */
+export const CONSOLE_CONTROL_ESCAPE_RADIX = 16;
+export const CONSOLE_CONTROL_ESCAPE_WIDTH = 4;
+/** Readable console escapes for common whitespace controls. */
+export const CONSOLE_CONTROL_SHORT_ESCAPES: Readonly<Record<string, string>> = {
+  "\n": "\\n",
+  "\r": "\\r",
+  "\t": "\\t",
+};
 export const DEFAULT_LOG_LEVEL: string = configurable({
   key: "logging.level",
   default: LogLevel.INFO as string,
