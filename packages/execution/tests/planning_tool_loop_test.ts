@@ -1615,3 +1615,19 @@ Deno.test("[planning_tool_loop] any other failure of a final round is not retrie
   );
   assertEquals(calls, 1);
 });
+
+Deno.test("[planning_tool_loop] a second schema failure of the final round is thrown after exactly two calls", async () => {
+  let calls = 0;
+  const generate = (_prompt: string, _options: IModelOptions): Promise<IGenerateResult> => {
+    calls++;
+    return Promise.reject(new ProviderProtocolError("Structured output failed schema validation", "openrouter"));
+  };
+  const loop = new PlanningToolLoop(makeDeps({ generate }));
+
+  await assertRejects(
+    () => loop.run(makeOptions({ maxRounds: 1, baseOptions: { jsonSchema: { type: "object" } } })),
+    ProviderProtocolError,
+    "failed schema validation",
+  );
+  assertEquals(calls, 2);
+});
