@@ -160,6 +160,10 @@ periodically as a standalone sweep across the whole `exaix-dev-docs/planning/` c
 1. An explicit `⚠️ deferred (<reason>)` / `🗄️ Postponed` / `❌ Cancelled` item does not by
    itself block a `✅ Complete` verdict — it is an accepted, ledger-tracked exception.
    Note the caveat in the corrected header instead of hiding it.
+   A live criterion that failed and was accepted by decision has the same standing: rewrite its
+   `- [ ]` to `- ⚠️ accepted <date>: <text>`, cite the evidence file with no `→` arrow, keep or add
+   its Reachability Ledger row as `⚠️ accepted`, and list it in the header caveat and in the
+   registry's not-fully-closed table. Never tick it `✅` and never leave a bare `- [ ]`.
 1. When a doc uses neither GFM checkboxes nor `### Step N` headings to track completion
    (e.g. a docs convention that predates the `### Step N` era), do not guess
    from indirect signals — leave the header untouched and say so.
