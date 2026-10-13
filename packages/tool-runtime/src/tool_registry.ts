@@ -761,7 +761,9 @@ export class ToolRegistry implements IToolRegistry {
       return { success: false, error: "query_relationships: current execution root is not a configured portal" };
     }
     const knowledge = await portalKnowledgeService.getOrAnalyze(portal.alias, portal.path);
-    return this.formatSuccess(queryRelationships(knowledge, from, kind) as unknown as JSONValue);
+    return this.formatSuccess(
+      queryRelationships(knowledge, this.stripPortalQualifier(from), kind) as unknown as JSONValue,
+    );
   }
 
   /** Captures a lightweight execution-scoped note into the per-trace execution memory store; traceId is the registry's own, never agent-supplied. */
@@ -808,6 +810,22 @@ export class ToolRegistry implements IToolRegistry {
     return Promise.resolve(this.formatSuccess(catalog as unknown as JSONValue));
   }
 
+  /**
+   * Strips a leading `@<alias>/` portal qualifier from a graph query target.
+   *
+   * A portal-qualified path is idiomatic in this codebase.
+   * Every model tested prefixed its endpoint that way.
+   * The knowledge graph stores portal-relative keys.
+   * The qualifier must therefore be removed.
+   * Otherwise the lookup answers empty and the caller concludes the graph holds nothing.
+   */
+  private stripPortalQualifier(target: string): string {
+    const portal = this.currentPortal();
+    if (!portal) return target;
+    const prefix = `@${portal.alias}/`;
+    return target.startsWith(prefix) ? target.slice(prefix.length) : target;
+  }
+
   private async whoDependsOnTool(path: string): Promise<IToolResult> {
     const portalKnowledgeService = this.applicationContext?.portalKnowledge;
     if (!portalKnowledgeService) {
@@ -818,7 +836,7 @@ export class ToolRegistry implements IToolRegistry {
       return { success: false, error: "find_dependents: current execution root is not a configured portal" };
     }
     const knowledge = await portalKnowledgeService.getOrAnalyze(portal.alias, portal.path);
-    return this.formatSuccess(whoDependsOn(knowledge, path) as unknown as JSONValue);
+    return this.formatSuccess(whoDependsOn(knowledge, this.stripPortalQualifier(path)) as unknown as JSONValue);
   }
 
   /** Lists symbol-level reference edges for the current portal, filtered by kind.

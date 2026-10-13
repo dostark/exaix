@@ -444,3 +444,59 @@ Deno.test("[tool-selection] a decided query_relationships call answers the forwa
     await Deno.remove(portalRoot, { recursive: true });
   }
 });
+
+Deno.test("[tool-selection] a portal-qualified '@alias/path' endpoint still resolves", async () => {
+  // Every frontier model tested prefixed the endpoint with the portal alias,
+  // as in '@probe/core/core.go#Ship'. Portal-qualified paths are idiomatic in
+  // this codebase, so the tool must accept that form rather than answer empty.
+  const symbolCase = CASES[0];
+  const portalRoot = await writeProject(symbolCase.files);
+  const alias = "sel-qualified";
+  try {
+    const knowledge = await analyzeCase(portalRoot, alias);
+    const config = createMockConfig(portalRoot, {
+      portals: [{
+        alias,
+        target_path: portalRoot,
+        default_branch: "main",
+        agents_allowed: ["*"],
+        operations: [],
+      }],
+    });
+    const service: IPortalKnowledgeService = {
+      analyze: () => Promise.resolve(knowledge),
+      getOrAnalyze: () => Promise.resolve(knowledge),
+      isStale: () => Promise.resolve(false),
+      updateKnowledge: () => Promise.resolve(knowledge),
+      getRelevantContext: () => Promise.resolve(undefined),
+      queryContext: () => Promise.resolve({ status: "unavailable", reason: "disabled", items: [] } as never),
+      loadCachedKnowledge: () => Promise.resolve(knowledge),
+    };
+    const registry = new ToolRegistry({
+      config,
+      baseDir: portalRoot,
+      context: {
+        portalKnowledge: service,
+        config: { get: () => config, getAll: () => config },
+      } as never,
+    });
+
+    for (const qualified of [`@${alias}/${symbolCase.targetRef}`, symbolCase.targetRef]) {
+      const result = await registry.execute(ToolName.WHO_DEPENDS_ON, { path: qualified });
+      assertEquals(result.success, true, `${qualified}: the query must succeed`);
+      const records = (result.data ?? []) as Array<{ from: string }>;
+      assert(
+        records.length > 0,
+        `${qualified}: expected the callers, got an empty result. A model that receives nothing falls back to a text search.`,
+      );
+      for (const caller of symbolCase.directCallers) {
+        assert(
+          records.some((r) => r.from === caller),
+          `${qualified}: ${caller} must be reported`,
+        );
+      }
+    }
+  } finally {
+    await Deno.remove(portalRoot, { recursive: true });
+  }
+});

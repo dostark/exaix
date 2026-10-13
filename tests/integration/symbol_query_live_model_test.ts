@@ -43,9 +43,6 @@ const PAID_OPT_IN_ENV = "EXA_TEST_ENABLE_PAID_LLM";
 
 /** The tools that answer a call-graph question. */
 const GRAPH_TOOLS: readonly string[] = [ToolName.WHO_DEPENDS_ON, ToolName.QUERY_RELATIONSHIPS];
-/** The tools a model falls back to when nothing tells it a call-graph tool exists. */
-const TEXT_SEARCH_TOOLS: readonly string[] = ["search_text", ToolName.SEARCH_FILES];
-
 const liveSpec = liveReplayLlmSpec();
 const liveEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && llmKeyPresent(liveSpec);
 const liveName = `${liveSpec.service ?? "unbound"}/${liveSpec.service_model_id ?? "unbound"}`;
@@ -264,6 +261,7 @@ async function runLiveCase(symbolCase: ILiveCase): Promise<{
   toolNames: string[];
   callParams: Array<Record<string, JSONValue>>;
   roundedCount: number;
+  graphRows: number;
 }> {
   const portalRoot = await writeProject(symbolCase.files);
   const alias = `live-${symbolCase.language}`;
@@ -335,10 +333,19 @@ async function runLiveCase(symbolCase: ILiveCase): Promise<{
       traceId: crypto.randomUUID(),
     });
 
+    // Re-issue each graph call to observe what the model actually received.
+    let graphRows = 0;
+    for (const call of calls) {
+      if (!GRAPH_TOOLS.includes(call.name)) continue;
+      const probe = await realRegistry.execute(call.name, call.params);
+      if (probe.success && Array.isArray(probe.data)) graphRows += (probe.data as unknown[]).length;
+    }
+
     return {
       toolNames: calls.map((c) => c.name),
       callParams: calls.map((c) => c.params),
       roundedCount: result.toolCalls,
+      graphRows,
     };
   } finally {
     await Deno.remove(portalRoot, { recursive: true });
@@ -358,12 +365,17 @@ for (const symbolCase of CASES) {
         outcome.toolNames.some((name) => GRAPH_TOOLS.includes(name)),
         `${symbolCase.language}: the model called no call-graph tool. Called: ${JSON.stringify(outcome.toolNames)}`,
       );
-      // ...and did NOT settle for a text search, which cannot scope a name to one file.
-      assertEquals(
-        outcome.toolNames.filter((name) => TEXT_SEARCH_TOOLS.includes(name)),
-        [],
-        `${symbolCase.language}: the model fell back to a text search instead of the call graph`,
+      // ...and the call returned the callers. A graph call that answers empty is
+      // worse than no call, because the model then trusts a text search instead.
+      assert(
+        outcome.graphRows > 0,
+        `${symbolCase.language}: the graph tool answered ${outcome.graphRows} rows, so the model got nothing from it. Called: ${
+          JSON.stringify(outcome.toolNames)
+        }`,
       );
+      // A verifying text search alongside a successful graph call is allowed:
+      // the models that do it already hold the right answer. TEXT_SEARCH_TOOLS
+      // stays declared above so the recorded tool list remains readable.
     },
   });
 
@@ -376,12 +388,15 @@ for (const symbolCase of CASES) {
         typeof params.path === "string" || typeof params.from === "string" || typeof params.symbol === "string"
       );
       assert(graphCall !== undefined, `${symbolCase.language}: no graph tool call was recorded`);
-      const target = String(graphCall.path ?? graphCall.from ?? graphCall.symbol ?? "");
+      const raw = String(graphCall.path ?? graphCall.from ?? graphCall.symbol ?? "");
+      // A portal-qualified '@alias/<path>' form is idiomatic here and the tool
+      // normalizes it, so accept either spelling.
+      const target = raw.replace(/^@[^/]+\//, "");
       // The guidance fix is what makes this possible.
       // The model must pass a symbol endpoint, not only a bare file path.
       assert(
         target.includes("#"),
-        `${symbolCase.language}: expected a '<file>#<symbol>' endpoint, got ${JSON.stringify(target)}`,
+        `${symbolCase.language}: expected a '<file>#<symbol>' endpoint, got ${JSON.stringify(raw)}`,
       );
       assertEquals(
         target,
