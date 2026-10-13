@@ -99,9 +99,19 @@ Assertion sensitivity — a test that cannot fail is worse than no test
     5. **Assertions true by construction** — `Array.isArray` on a declared array, a
        disjunction satisfied by either branch, `!== undefined` on a non-optional return.
        One exact assertion over three vague ones.
-    6. **A name/docstring that outruns the body** — a header claiming coverage of
+    6. **A fixture that tests only the convenient layout** — every fixture gave a Go
+       package exactly one file, so same-package cross-file resolution was never
+       exercised and a defect that dropped those edges survived a fully green suite.
+       A fixture must exercise the DOMINANT real-world layout, not the smallest one that
+       compiles: multiple files per package or module, a call chain at least three
+       frames deep, and at least one cross-boundary call. Ask of each fixture "what
+       real-world shape would this still pass on?" — if the answer is "a shape users do
+       not have", add the shape they do. Corollary: a fixture path must not collide with
+       the traversal ignore list (`DEFAULT_IGNORE_PATTERNS` includes `target`, `dist`,
+       `build`, `vendor`), or discovery silently skips it.
+    7. **A name/docstring that outruns the body** — a header claiming coverage of
        FlowRunner in a file importing none. The name is a claim; honour it or rename.
-    7. **A proxy assertion that passes while the claimed property is violated** — a claim
+    8. **A proxy assertion that passes while the claimed property is violated** — a claim
        about ORDER, BYTE-IDENTITY, or a STRICT
        REDUCTION must assert exactly that property, not a
        surrogate (a character multiset survives order changes; a non-zero drop count
