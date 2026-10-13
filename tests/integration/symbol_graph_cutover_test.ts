@@ -18,77 +18,28 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { EDITION_ENTERPRISE } from "@exaix/core";
 import {
-  createDefaultSymbolFileResolverRegistry,
   createDefaultSymbolReferenceExtractorRegistry,
   loadKnowledge,
   mergeRelationships,
   PortalKnowledgeService,
   saveKnowledge,
 } from "@exaix/portal/knowledge";
-import type { IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
-import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { PortalAnalysisMode } from "@exaix/core";
-import { EnterpriseSymbolGraphModule, PortalExtractorsModule } from "@exaix-team/portal-extractors";
 import { initializeServices } from "../../apps/exactl/src/init.ts";
-import { createDefaultSymbolExtractorRegistry } from "@exaix/portal/knowledge";
-import type { ISeamRegistryPlaceholder } from "@exaix/core/composer";
+import {
+  enterpriseRegistries,
+  fakeMemoryBank,
+  symbolEdges,
+  symbolGraphServiceConfig,
+} from "./helpers/symbol_graph_harness.ts";
 
 const GO_PORTAL = join(
   Deno.cwd(),
   "exaix-team/packages/portal-extractors/tests/fixtures/go_reference_portal",
 );
 
-function serviceConfig(enableSymbolGraph: boolean): IPortalKnowledgeConfig {
-  return {
-    autoAnalyzeOnMount: false,
-    defaultMode: PortalAnalysisMode.STANDARD,
-    quickScanLimit: 200,
-    maxFilesToRead: 50,
-    ignorePatterns: [".git"],
-    staleness: 168,
-    useLlmInference: false,
-    relevanceSearchEmbeddingEnabled: false,
-    enableAstAnalysis: false,
-    enableTestExecution: false,
-    enableVulnerabilityScan: false,
-    enableGitHistoryAnalysis: false,
-    enableSymbolLevelDependencyGraph: enableSymbolGraph,
-  };
-}
-
-function fakeMemoryBank(): IMemoryBankService {
-  return {
-    getProjectMemory: () => Promise.resolve(null),
-    createProjectMemory: () => Promise.resolve(undefined),
-    updateProjectMemory: () => Promise.resolve(undefined),
-    listProjectMemories: () => Promise.resolve([]),
-  } as Partial<IMemoryBankService> as IMemoryBankService;
-}
-
-/** The registries as the Enterprise composition root fills them.
- *  The Team extractor module supplies the declarations the reference pass reads.
- *  Without it the symbol map is empty and no reference can resolve. */
-function enterpriseRegistries() {
-  const symbolRegistry = createDefaultSymbolExtractorRegistry();
-  const referenceRegistry = createDefaultSymbolReferenceExtractorRegistry();
-  const fileResolverRegistry = createDefaultSymbolFileResolverRegistry();
-
-  const teamModule = new PortalExtractorsModule();
-  teamModule.registerSymbolExtractors(symbolRegistry as ISeamRegistryPlaceholder);
-
-  const enterpriseModule = new EnterpriseSymbolGraphModule();
-  enterpriseModule.registerSymbolReferenceExtractors(referenceRegistry as ISeamRegistryPlaceholder);
-  enterpriseModule.registerSymbolFileResolvers(fileResolverRegistry as ISeamRegistryPlaceholder);
-
-  return { symbolRegistry, referenceRegistry, fileResolverRegistry };
-}
-
 function enterpriseRegistry() {
   return enterpriseRegistries().referenceRegistry;
-}
-
-function symbolEdges(knowledge: IPortalKnowledge) {
-  return (knowledge.relationships ?? []).filter((e) => e.kind === "symbol_references_symbol");
 }
 
 Deno.test("[cutover] an Enterprise-enabled analysis produces persisted Go symbol edges", async () => {
@@ -96,7 +47,7 @@ Deno.test("[cutover] an Enterprise-enabled analysis produces persisted Go symbol
   const alias = "go-reference-enterprise";
   try {
     const service = new PortalKnowledgeService({
-      config: serviceConfig(true),
+      config: symbolGraphServiceConfig(true),
       memoryBank: fakeMemoryBank(),
       ...(() => {
         const r = enterpriseRegistries();
@@ -136,7 +87,7 @@ Deno.test("[cutover] the same analysis with the flag off produces zero symbol ed
   const alias = "go-reference-flag-off";
   try {
     const service = new PortalKnowledgeService({
-      config: serviceConfig(false),
+      config: symbolGraphServiceConfig(false),
       memoryBank: fakeMemoryBank(),
       symbolReferenceExtractorRegistry: enterpriseRegistry(),
     });
@@ -156,12 +107,12 @@ Deno.test("[cutover] the same analysis with the flag off produces zero symbol ed
 Deno.test("[cutover] the flag off reproduces the relationships of a Team-style run", async () => {
   const alias = "go-reference-compare";
   const teamStyle = new PortalKnowledgeService({
-    config: serviceConfig(false),
+    config: symbolGraphServiceConfig(false),
     memoryBank: fakeMemoryBank(),
     symbolReferenceExtractorRegistry: createDefaultSymbolReferenceExtractorRegistry(),
   });
   const enterpriseFlagOff = new PortalKnowledgeService({
-    config: serviceConfig(false),
+    config: symbolGraphServiceConfig(false),
     memoryBank: fakeMemoryBank(),
     symbolReferenceExtractorRegistry: enterpriseRegistry(),
   });

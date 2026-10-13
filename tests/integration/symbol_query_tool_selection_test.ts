@@ -29,19 +29,10 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { PortalAnalysisMode, ToolName } from "@exaix/core";
-import { readOnlyEditorTools, ToolRegistry } from "@exaix/tool-runtime";
-import {
-  createDefaultSymbolExtractorRegistry,
-  createDefaultSymbolFileResolverRegistry,
-  createDefaultSymbolReferenceExtractorRegistry,
-  PortalKnowledgeService,
-} from "@exaix/portal/knowledge";
-import type { IPortalKnowledgeService, IToolResult } from "@exaix/core/types";
-import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import type { ISeamRegistryPlaceholder } from "@exaix/core/composer";
-import { EnterpriseSymbolGraphModule, PortalExtractorsModule } from "@exaix-team/portal-extractors";
-import { createMockConfig } from "@exaix/testing";
+import { ToolName } from "@exaix/core";
+import { readOnlyEditorTools } from "@exaix/tool-runtime";
+import type { IToolResult } from "@exaix/core/types";
+import { analyzeWithEnterpriseSymbolGraph, buildSymbolToolRegistry } from "./helpers/symbol_graph_harness.ts";
 
 /** One language's project, its query target, and the callers a correct tool finds. */
 interface ISymbolQueryCase {
@@ -215,46 +206,6 @@ async function writeProject(files: { [path: string]: string }): Promise<string> 
   return root;
 }
 
-/** Analyses a case with the Enterprise composition the delivery vehicle uses. */
-async function analyzeCase(portalRoot: string, alias: string): Promise<IPortalKnowledge> {
-  const symbolRegistry = createDefaultSymbolExtractorRegistry();
-  const referenceRegistry = createDefaultSymbolReferenceExtractorRegistry();
-  const resolverRegistry = createDefaultSymbolFileResolverRegistry();
-  const teamModule = new PortalExtractorsModule();
-  teamModule.registerSymbolExtractors(symbolRegistry as ISeamRegistryPlaceholder);
-  const enterpriseModule = new EnterpriseSymbolGraphModule();
-  enterpriseModule.registerSymbolReferenceExtractors(referenceRegistry as ISeamRegistryPlaceholder);
-  enterpriseModule.registerSymbolFileResolvers(resolverRegistry as ISeamRegistryPlaceholder);
-
-  const service = new PortalKnowledgeService({
-    config: {
-      autoAnalyzeOnMount: false,
-      defaultMode: PortalAnalysisMode.STANDARD,
-      quickScanLimit: 200,
-      maxFilesToRead: 50,
-      ignorePatterns: [".git"],
-      staleness: 168,
-      useLlmInference: false,
-      relevanceSearchEmbeddingEnabled: false,
-      enableAstAnalysis: false,
-      enableTestExecution: false,
-      enableVulnerabilityScan: false,
-      enableGitHistoryAnalysis: false,
-      enableSymbolLevelDependencyGraph: true,
-    },
-    memoryBank: {
-      getProjectMemory: () => Promise.resolve(null),
-      createProjectMemory: () => Promise.resolve(undefined),
-      updateProjectMemory: () => Promise.resolve(undefined),
-      listProjectMemories: () => Promise.resolve([]),
-    } as never,
-    symbolExtractorRegistry: symbolRegistry,
-    symbolReferenceExtractorRegistry: referenceRegistry,
-    symbolFileResolverRegistry: resolverRegistry,
-  });
-  return await service.analyze(alias, portalRoot, PortalAnalysisMode.STANDARD);
-}
-
 // ── Layer 1: the tool must be OFFERED, with guidance a model can act on ──────
 
 Deno.test("[tool-selection] the planning catalog offers the symbol-query tools", () => {
@@ -311,7 +262,7 @@ for (const symbolCase of CASES) {
     const portalRoot = await writeProject(symbolCase.files);
     const alias = `sel-${symbolCase.language}`;
     try {
-      const knowledge = await analyzeCase(portalRoot, alias);
+      const knowledge = await analyzeWithEnterpriseSymbolGraph(portalRoot, alias);
       const symbolEdges = (knowledge.relationships ?? []).filter(
         (e) => e.kind === "symbol_references_symbol",
       );
@@ -322,32 +273,7 @@ for (const symbolCase of CASES) {
       );
 
       // Drive the real registry, with the composite key a correct tool call carries.
-      const config = createMockConfig(portalRoot, {
-        portals: [{
-          alias,
-          target_path: portalRoot,
-          default_branch: "main",
-          agents_allowed: ["*"],
-          operations: [],
-        }],
-      });
-      const service: IPortalKnowledgeService = {
-        analyze: () => Promise.resolve(knowledge),
-        getOrAnalyze: () => Promise.resolve(knowledge),
-        isStale: () => Promise.resolve(false),
-        updateKnowledge: () => Promise.resolve(knowledge),
-        getRelevantContext: () => Promise.resolve(undefined),
-        queryContext: () => Promise.resolve({ status: "unavailable", reason: "disabled", items: [] } as never),
-        loadCachedKnowledge: () => Promise.resolve(knowledge),
-      };
-      const registry = new ToolRegistry({
-        config,
-        baseDir: portalRoot,
-        context: {
-          portalKnowledge: service,
-          config: { get: () => config, getAll: () => config },
-        } as never,
-      });
+      const registry = buildSymbolToolRegistry(knowledge, portalRoot, alias);
 
       const result: IToolResult = await registry.execute(ToolName.WHO_DEPENDS_ON, {
         path: symbolCase.targetRef,
@@ -396,33 +322,8 @@ Deno.test("[tool-selection] a decided query_relationships call answers the forwa
   const portalRoot = await writeProject(symbolCase.files);
   const alias = "sel-forward";
   try {
-    const knowledge = await analyzeCase(portalRoot, alias);
-    const config = createMockConfig(portalRoot, {
-      portals: [{
-        alias,
-        target_path: portalRoot,
-        default_branch: "main",
-        agents_allowed: ["*"],
-        operations: [],
-      }],
-    });
-    const service: IPortalKnowledgeService = {
-      analyze: () => Promise.resolve(knowledge),
-      getOrAnalyze: () => Promise.resolve(knowledge),
-      isStale: () => Promise.resolve(false),
-      updateKnowledge: () => Promise.resolve(knowledge),
-      getRelevantContext: () => Promise.resolve(undefined),
-      queryContext: () => Promise.resolve({ status: "unavailable", reason: "disabled", items: [] } as never),
-      loadCachedKnowledge: () => Promise.resolve(knowledge),
-    };
-    const registry = new ToolRegistry({
-      config,
-      baseDir: portalRoot,
-      context: {
-        portalKnowledge: service,
-        config: { get: () => config, getAll: () => config },
-      } as never,
-    });
+    const knowledge = await analyzeWithEnterpriseSymbolGraph(portalRoot, alias);
+    const registry = buildSymbolToolRegistry(knowledge, portalRoot, alias);
 
     // "deep/deep.go#Middle" calls Ship, so its out-edges are the answer.
     const caller = symbolCase.directCallers[0];
@@ -453,33 +354,8 @@ Deno.test("[tool-selection] a portal-qualified '@alias/path' endpoint still reso
   const portalRoot = await writeProject(symbolCase.files);
   const alias = "sel-qualified";
   try {
-    const knowledge = await analyzeCase(portalRoot, alias);
-    const config = createMockConfig(portalRoot, {
-      portals: [{
-        alias,
-        target_path: portalRoot,
-        default_branch: "main",
-        agents_allowed: ["*"],
-        operations: [],
-      }],
-    });
-    const service: IPortalKnowledgeService = {
-      analyze: () => Promise.resolve(knowledge),
-      getOrAnalyze: () => Promise.resolve(knowledge),
-      isStale: () => Promise.resolve(false),
-      updateKnowledge: () => Promise.resolve(knowledge),
-      getRelevantContext: () => Promise.resolve(undefined),
-      queryContext: () => Promise.resolve({ status: "unavailable", reason: "disabled", items: [] } as never),
-      loadCachedKnowledge: () => Promise.resolve(knowledge),
-    };
-    const registry = new ToolRegistry({
-      config,
-      baseDir: portalRoot,
-      context: {
-        portalKnowledge: service,
-        config: { get: () => config, getAll: () => config },
-      } as never,
-    });
+    const knowledge = await analyzeWithEnterpriseSymbolGraph(portalRoot, alias);
+    const registry = buildSymbolToolRegistry(knowledge, portalRoot, alias);
 
     for (const qualified of [`@${alias}/${symbolCase.targetRef}`, symbolCase.targetRef]) {
       const result = await registry.execute(ToolName.WHO_DEPENDS_ON, { path: qualified });

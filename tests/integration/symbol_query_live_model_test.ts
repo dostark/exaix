@@ -21,23 +21,15 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { PortalAnalysisMode, ToolName } from "@exaix/core";
+import { ToolName } from "@exaix/core";
 import { PlanningToolLoop } from "@exaix/execution";
 import { readOnlyEditorTools, ToolRegistry } from "@exaix/tool-runtime";
-import {
-  createDefaultSymbolExtractorRegistry,
-  createDefaultSymbolFileResolverRegistry,
-  createDefaultSymbolReferenceExtractorRegistry,
-  PortalKnowledgeService,
-} from "@exaix/portal/knowledge";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { IPortalKnowledgeService, ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
-import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import type { ISeamRegistryPlaceholder } from "@exaix/core/composer";
-import { EnterpriseSymbolGraphModule, PortalExtractorsModule } from "@exaix-team/portal-extractors";
 import { createMockConfig } from "@exaix/testing";
 import { createLlmProvider, liveReplayLlmSpec, llmKeyPresent } from "../helpers/llm_bindings.ts";
+import { analyzeWithEnterpriseSymbolGraph } from "./helpers/symbol_graph_harness.ts";
 
 const PAID_OPT_IN_ENV = "EXA_TEST_ENABLE_PAID_LLM";
 
@@ -204,45 +196,6 @@ async function writeProject(files: { [path: string]: string }): Promise<string> 
   return root;
 }
 
-/** Analyses the project with the Enterprise composition the delivery vehicle uses. */
-async function analyze(portalRoot: string, alias: string): Promise<IPortalKnowledge> {
-  const symbolRegistry = createDefaultSymbolExtractorRegistry();
-  const referenceRegistry = createDefaultSymbolReferenceExtractorRegistry();
-  const resolverRegistry = createDefaultSymbolFileResolverRegistry();
-  new PortalExtractorsModule().registerSymbolExtractors(symbolRegistry as ISeamRegistryPlaceholder);
-  const enterpriseModule = new EnterpriseSymbolGraphModule();
-  enterpriseModule.registerSymbolReferenceExtractors(referenceRegistry as ISeamRegistryPlaceholder);
-  enterpriseModule.registerSymbolFileResolvers(resolverRegistry as ISeamRegistryPlaceholder);
-
-  const service = new PortalKnowledgeService({
-    config: {
-      autoAnalyzeOnMount: false,
-      defaultMode: PortalAnalysisMode.STANDARD,
-      quickScanLimit: 200,
-      maxFilesToRead: 50,
-      ignorePatterns: [".git"],
-      staleness: 168,
-      useLlmInference: false,
-      relevanceSearchEmbeddingEnabled: false,
-      enableAstAnalysis: false,
-      enableTestExecution: false,
-      enableVulnerabilityScan: false,
-      enableGitHistoryAnalysis: false,
-      enableSymbolLevelDependencyGraph: true,
-    },
-    memoryBank: {
-      getProjectMemory: () => Promise.resolve(null),
-      createProjectMemory: () => Promise.resolve(undefined),
-      updateProjectMemory: () => Promise.resolve(undefined),
-      listProjectMemories: () => Promise.resolve([]),
-    } as never,
-    symbolExtractorRegistry: symbolRegistry,
-    symbolReferenceExtractorRegistry: referenceRegistry,
-    symbolFileResolverRegistry: resolverRegistry,
-  });
-  return await service.analyze(alias, portalRoot, PortalAnalysisMode.STANDARD);
-}
-
 /** The catalog text the model is shown, so a prompt can describe the tools honestly. */
 function toolCatalogPrompt(): string {
   const lines = readOnlyEditorTools().map((tool: ITool) => {
@@ -266,7 +219,7 @@ async function runLiveCase(symbolCase: ILiveCase): Promise<{
   const portalRoot = await writeProject(symbolCase.files);
   const alias = `live-${symbolCase.language}`;
   try {
-    const knowledge = await analyze(portalRoot, alias);
+    const knowledge = await analyzeWithEnterpriseSymbolGraph(portalRoot, alias);
     const symbolEdges = (knowledge.relationships ?? []).filter(
       (e) => e.kind === "symbol_references_symbol",
     );

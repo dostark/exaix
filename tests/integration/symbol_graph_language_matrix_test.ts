@@ -30,20 +30,14 @@ import {
   PortalAnalysisMode,
 } from "@exaix/core";
 import {
-  createDefaultSymbolExtractorRegistry,
-  createDefaultSymbolFileResolverRegistry,
-  createDefaultSymbolReferenceExtractorRegistry,
   mergeRelationships,
   PortalKnowledgeService,
   queryRelationships,
   saveKnowledge,
   whoDependsOn,
 } from "@exaix/portal/knowledge";
-import type { IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import type { ISeamRegistryPlaceholder } from "@exaix/core/composer";
-import { EnterpriseSymbolGraphModule, PortalExtractorsModule } from "@exaix-team/portal-extractors";
-import { QuerySymbolReferencesTool } from "../../exaix-team/packages/mcp-server/portal_knowledge_tools.ts";
+import { QuerySymbolReferencesTool } from "@exaix-team/mcp-server";
 import {
   createPermissionsService,
   createToolContext,
@@ -51,6 +45,12 @@ import {
   getFirstTextContent,
   withToolPermissionTest,
 } from "@exaix/mcp/testing";
+import {
+  enterpriseRegistries,
+  fakeMemoryBank,
+  symbolEdges,
+  symbolGraphServiceConfig,
+} from "./helpers/symbol_graph_harness.ts";
 
 /** One language's fixture: its files, and the call chain the query must find. */
 interface ILanguageFixture {
@@ -432,49 +432,6 @@ async function writeFixture(fixture: ILanguageFixture): Promise<string> {
   return root;
 }
 
-function serviceConfig(): IPortalKnowledgeConfig {
-  return {
-    autoAnalyzeOnMount: false,
-    defaultMode: PortalAnalysisMode.STANDARD,
-    quickScanLimit: 200,
-    maxFilesToRead: 50,
-    ignorePatterns: [".git"],
-    staleness: 168,
-    useLlmInference: false,
-    relevanceSearchEmbeddingEnabled: false,
-    enableAstAnalysis: false,
-    enableTestExecution: false,
-    enableVulnerabilityScan: false,
-    enableGitHistoryAnalysis: false,
-    enableSymbolLevelDependencyGraph: true,
-  };
-}
-
-function fakeMemoryBank(): IMemoryBankService {
-  return {
-    getProjectMemory: () => Promise.resolve(null),
-    createProjectMemory: () => Promise.resolve(undefined),
-    updateProjectMemory: () => Promise.resolve(undefined),
-    listProjectMemories: () => Promise.resolve([]),
-  } as Partial<IMemoryBankService> as IMemoryBankService;
-}
-
-/** The registries as the Enterprise composition root fills them. */
-function enterpriseRegistries() {
-  const symbolRegistry = createDefaultSymbolExtractorRegistry();
-  const referenceRegistry = createDefaultSymbolReferenceExtractorRegistry();
-  const fileResolverRegistry = createDefaultSymbolFileResolverRegistry();
-  const teamModule = new PortalExtractorsModule();
-  teamModule.registerSymbolExtractors(symbolRegistry as ISeamRegistryPlaceholder);
-  const enterpriseModule = new EnterpriseSymbolGraphModule();
-  enterpriseModule.registerSymbolReferenceExtractors(referenceRegistry as ISeamRegistryPlaceholder);
-  // The reference extractor narrows a reference by resolved import edges.
-  // The file resolvers must also be registered.
-  // Without them, nothing cross-file can resolve.
-  enterpriseModule.registerSymbolFileResolvers(fileResolverRegistry as ISeamRegistryPlaceholder);
-  return { symbolRegistry, referenceRegistry, fileResolverRegistry };
-}
-
 /** Analyzes one fixture through the real service and returns the stored knowledge. */
 async function analyzeFixture(
   fixture: ILanguageFixture,
@@ -482,7 +439,7 @@ async function analyzeFixture(
   const portalRoot = await writeFixture(fixture);
   const { symbolRegistry, referenceRegistry, fileResolverRegistry } = enterpriseRegistries();
   const service = new PortalKnowledgeService({
-    config: serviceConfig(),
+    config: symbolGraphServiceConfig(),
     memoryBank: fakeMemoryBank(),
     symbolExtractorRegistry: symbolRegistry,
     symbolReferenceExtractorRegistry: referenceRegistry,
@@ -494,10 +451,6 @@ async function analyzeFixture(
     PortalAnalysisMode.STANDARD,
   );
   return { knowledge, portalRoot };
-}
-
-function symbolEdges(knowledge: IPortalKnowledge) {
-  return (knowledge.relationships ?? []).filter((e) => e.kind === "symbol_references_symbol");
 }
 
 function pairs(knowledge: IPortalKnowledge): string[] {
