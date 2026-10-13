@@ -135,17 +135,15 @@ export function whoDependsOn(knowledge: IPortalKnowledge, path: string): IRelati
  *
  * Each node is visited at most once, so cycles terminate naturally.
  * Each hop's edges are sorted by `from` then `to` for deterministic output.
- * `kind` defaults to the module-dependency edge kind.
- * A symbol-level edge is therefore never walked.
+ * Only the module-dependency edge kind is walked, so a symbol-level edge never is.
  */
 export function traverseModuleDependencies(
   knowledge: IPortalKnowledge,
   from: string,
   maxDepth: number,
-  kind: RelationshipEdgeKind = MODULE_DEPENDENCY_EDGE_KIND,
 ): IRelationshipEdge[] {
   const fileEdges = ((knowledge.relationships ?? []) as IRelationshipEdge[])
-    .filter((edge) => edge.kind === kind);
+    .filter((edge) => edge.kind === MODULE_DEPENDENCY_EDGE_KIND);
   const visited = new Set<string>([from]);
   const result: IRelationshipEdge[] = [];
   let frontier = [from];
