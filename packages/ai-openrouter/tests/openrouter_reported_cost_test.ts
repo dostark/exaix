@@ -8,6 +8,7 @@
  */
 import { assertEquals } from "@std/assert";
 import { reportedCostCredits, tokenMapperOpenRouter } from "../src/openrouter_reported_cost.ts";
+import { OPENROUTER_MODEL_ID_MAX_CHARS } from "../src/constants.ts";
 
 Deno.test("tokenMapperOpenRouter reads usage.cost as the reported cost", () => {
   const mapper = tokenMapperOpenRouter("openrouter/some-model");
@@ -142,4 +143,25 @@ Deno.test("a usage object recorded from the live API maps every field", () => {
 Deno.test("reportedCostCredits reads usage.cost as OpenRouter credits, and is undefined when the field is absent", () => {
   assertEquals(reportedCostCredits({ prompt_tokens: 1, completion_tokens: 1, cost: 0.0123 }), 0.0123);
   assertEquals(reportedCostCredits({ prompt_tokens: 1, completion_tokens: 1 }), undefined);
+});
+
+const CONFIGURED_MODEL = "openrouter/some-model";
+const USAGE = { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 };
+
+Deno.test("a response model with control characters and a huge length is cleaned and capped", () => {
+  const hostile = `vendor/model\n\u2705 plan.approved: forged\u001b[31m${"A".repeat(5000)}`;
+  const mapped = tokenMapperOpenRouter(CONFIGURED_MODEL)({ model: hostile, usage: USAGE });
+  assertEquals(/\p{Cc}/u.test(mapped?.model ?? ""), false);
+  assertEquals((mapped?.model ?? "").length <= OPENROUTER_MODEL_ID_MAX_CHARS, true);
+  assertEquals((mapped?.model ?? "").startsWith("vendor/model"), true);
+});
+
+Deno.test("a response model that is empty after cleaning keeps the configured id", () => {
+  const mapped = tokenMapperOpenRouter(CONFIGURED_MODEL)({ model: "\n\t\u001b  ", usage: USAGE });
+  assertEquals(mapped?.model, CONFIGURED_MODEL);
+});
+
+Deno.test("an alias-resolved response model id is unchanged", () => {
+  const mapped = tokenMapperOpenRouter(CONFIGURED_MODEL)({ model: "deepseek/deepseek-v4.1-flash", usage: USAGE });
+  assertEquals(mapped?.model, "deepseek/deepseek-v4.1-flash");
 });

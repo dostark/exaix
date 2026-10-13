@@ -11,6 +11,8 @@
  * @related-files [packages/ai-openrouter/src/openrouter_provider.ts, packages/core/src/cost/cost_tracker.ts]
  */
 import type { OpenAIResponse, TokenMap } from "@exaix/ai";
+import { OPENROUTER_MODEL_ID_MAX_CHARS } from "./constants.ts";
+import { cleanUpstreamText } from "./openrouter_upstream_text.ts";
 
 /** OpenRouter usage block — OpenAI-shaped plus the reported `cost` (usage accounting). */
 export interface IOpenRouterUsage {
@@ -70,7 +72,7 @@ export function tokenMapperOpenRouter(
       prompt_tokens: d.usage.prompt_tokens,
       completion_tokens: d.usage.completion_tokens,
       total_tokens: totalTokens,
-      model: d.model ?? model,
+      model: cleanUpstreamText(d.model, OPENROUTER_MODEL_ID_MAX_CHARS) ?? model,
       cost_usd: reportedCostCredits(d.usage),
       reasoning_tokens: d.usage.completion_tokens_details?.reasoning_tokens,
       cache_read_tokens: d.usage.prompt_tokens_details?.cached_tokens,

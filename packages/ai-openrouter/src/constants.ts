@@ -118,6 +118,9 @@ export const OPENROUTER_IN_FLIGHT_BUDGET_LIMIT_SOURCE = "openrouter_in_flight_bu
 /** Cap on each upstream error string copied into a message. */
 export const OPENROUTER_ERROR_FIELD_MAX_CHARS = 300;
 
+/** Cap on the model id that a response reports, before it reaches the usage record. */
+export const OPENROUTER_MODEL_ID_MAX_CHARS = 200;
+
 /** Longest session key that OpenRouter accepts for sticky routing. */
 export const OPENROUTER_SESSION_ID_MAX_CHARS = 256;
 

@@ -28,6 +28,7 @@ import {
   OPENROUTER_ROUTING_REFUSAL_PATTERN,
   PROVIDER_OPENROUTER,
 } from "./constants.ts";
+import { cleanUpstreamText } from "./openrouter_upstream_text.ts";
 
 /** Budget fields that OpenRouter reports on a 402 or on a spent-budget 403. */
 export interface IOpenRouterBillingDetail {
@@ -42,7 +43,6 @@ export interface IOpenRouterBillingDetail {
 
 const RETRY_AFTER_HEADER = "Retry-After";
 const DIGITS_ONLY = /^\d+$/;
-const CONTROL_CHARACTERS = /\p{Cc}/gu;
 const HTTP_BAD_REQUEST = 400;
 
 /** Insufficient credits or a spent budget. Retrying the same request cannot succeed. */
@@ -162,9 +162,7 @@ interface IErrorDetail {
 }
 
 function cleanField(value: Opt<string | number, Reason.OptionalInput>): string | undefined {
-  if (value === undefined) return undefined;
-  const cleaned = String(value).replace(CONTROL_CHARACTERS, " ").trim().slice(0, OPENROUTER_ERROR_FIELD_MAX_CHARS);
-  return cleaned.length > 0 ? cleaned : undefined;
+  return cleanUpstreamText(value, OPENROUTER_ERROR_FIELD_MAX_CHARS);
 }
 
 function isPresent(markers: Array<z.infer<typeof UpstreamMarker>>): boolean {
