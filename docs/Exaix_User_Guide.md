@@ -4877,7 +4877,7 @@ does not need to call a tool.
 - **Live-verified**: Anthropic, OpenAI, and Google. Real API calls confirm provider-enforced
   tool selection end-to-end. Google's live verification was confirmed with a standard paid-tier
   run returning `"serviceTier": "standard"` (25 dynamic tool call rows, total cost `$0.1211575`).
-- **OpenRouter live status: partly verified.** The Phase 211 live matrix ran five models. In the final run, request analysis passed five of six cases, and planning and ReAct passed 13 of 14. Two cases remain open and are accepted as known failures: the Qwen request-analysis case and one Ling ReAct repeat. The scenario cutover ran on 2026-10-12: the fix-bug cell passed with score 0.986, and a kept-sandbox run on `deepseek/deepseek-v4.1-flash` journaled 33 `dynamic_tool_call` rows (score 0.998). The planning marker cell passed with score 1.000.
+- **OpenRouter live status: partly verified.** The OpenRouter live matrix ran five models. In the final run, request analysis passed five of six cases, and planning and ReAct passed 13 of 14. Two cases remain open and are accepted as known failures: the Qwen request-analysis case and one Ling ReAct repeat. The scenario cutover ran on 2026-10-12: the fix-bug cell passed with score 0.986, and a kept-sandbox run on `deepseek/deepseek-v4.1-flash` journaled 33 `dynamic_tool_call` rows (score 0.998). The planning marker cell passed with score 1.000.
 - **OpenRouter caveat**: tool support depends on the specific model OpenRouter routes
   to, not on OpenRouter itself — check that a model's `supported_parameters` includes
   `tools` via OpenRouter's `/api/v1/models` endpoint before relying on native tool

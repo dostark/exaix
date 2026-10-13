@@ -79,7 +79,7 @@ const PYTHON_MODULE_FILES: readonly string[] = ["__init__.py", "mod.py", "main.p
  * `from a.b import c` and `import a.b` both contribute `a.b`. A relative import
  * keeps its leading dots so the resolver can walk up from the importing file.
  */
-export function parsePythonImportSpecifiers(source: string): string[] {
+function parsePythonImportSpecifiers(source: string): string[] {
   const specifiers: string[] = [];
   for (const match of source.matchAll(/^\s*from\s+([.\w]+)\s+import\s+/gm)) {
     if (match[1] && match[1] !== ".") specifiers.push(match[1]);

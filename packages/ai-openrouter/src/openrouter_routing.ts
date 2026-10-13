@@ -32,7 +32,7 @@ export interface IOpenRouterPolicyTarget extends IOpenRouterRoutedFeatures {
 }
 
 /** True when the body asks for tools, a response format or reasoning. An empty tool list is not a feature. */
-export function carriesRoutedFeature(body: IOpenRouterRoutedFeatures): boolean {
+function carriesRoutedFeature(body: IOpenRouterRoutedFeatures): boolean {
   return (body.tools?.length ?? 0) > 0 || body.response_format !== undefined || body.reasoning !== undefined;
 }
 

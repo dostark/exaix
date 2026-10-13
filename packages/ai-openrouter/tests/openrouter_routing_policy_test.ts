@@ -13,7 +13,8 @@ import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { JSONValue } from "@exaix/core";
 import { OpenRouterProvider } from "../src/openrouter_provider.ts";
 import type { IOpenRouterRouting } from "../src/openrouter_provider.ts";
-import { carriesRoutedFeature } from "../src/openrouter_routing.ts";
+import { applyRequireParameters } from "../src/openrouter_routing.ts";
+import type { IOpenRouterPolicyTarget } from "../src/openrouter_routing.ts";
 import { OPENROUTER_SESSION_ID_MAX_CHARS } from "../src/constants.ts";
 
 interface ICapturedBody {
@@ -75,12 +76,16 @@ Deno.test("allow_fallbacks and quantizations are serialized unchanged", async ()
   assertEquals(body.provider, { allow_fallbacks: false, quantizations: ["fp8", "bf16"] });
 });
 
-Deno.test("carriesRoutedFeature reads tools, response_format and reasoning from the final body", () => {
-  assertEquals(carriesRoutedFeature({}), false);
-  assertEquals(carriesRoutedFeature({ tools: [] }), false);
-  assertEquals(carriesRoutedFeature({ tools: [{}] }), true);
-  assertEquals(carriesRoutedFeature({ response_format: { type: "json_object" } }), true);
-  assertEquals(carriesRoutedFeature({ reasoning: { effort: "high" } }), true);
+Deno.test("require_parameters is set when the final body carries tools, response_format or reasoning", () => {
+  const required = (body: IOpenRouterPolicyTarget) => {
+    applyRequireParameters(body);
+    return body.provider?.require_parameters === true;
+  };
+  assertEquals(required({}), false);
+  assertEquals(required({ tools: [] }), false);
+  assertEquals(required({ tools: [{}] }), true);
+  assertEquals(required({ response_format: { type: "json_object" } }), true);
+  assertEquals(required({ reasoning: { effort: "high" } }), true);
 });
 
 Deno.test("a trace id with no provider.order is sent as the sticky session key", async () => {
