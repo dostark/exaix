@@ -367,12 +367,16 @@
 
 ### Added
 
-- The `portal_knowledge.enable_symbol_level_dependency_graph` config key turns on symbol-level reference edges for the Enterprise edition, so an agent can ask which symbols call or reference a symbol rather than which file imports which file (see [Operational Procedures](Exaix_User_Guide.md#5-operational-procedures)).
+- The `portal_knowledge.enable_symbol_level_dependency_graph` config key turns on symbol-level reference edges for the Enterprise edition, so an agent can ask which symbols call or reference a symbol rather than which file imports which file (see [Portal Knowledge Gathering](Exaix_User_Guide.md#portal-knowledge-gathering)).
 - The `query_symbol_references` tool returns those edges, in both directions, from a portal's cached knowledge. It is available to every paid-edition MCP client and returns an empty list, not an error, when the analysis did not collect symbol edges.
+- The Solo-tier `find_dependents` tool answers a symbol question when you pass a `<file>#<symbol>` endpoint, so "who calls this function" works without the MCP surface.
 
 ### Changed
 
-- Portal knowledge analysis can resolve a Go, Java, or Rust portal's imports and call sites when the symbol graph is enabled. The separate Enterprise build is still a scaffold with no runtime, so run the Team build with `EXAIX_EDITION=enterprise` to use it.
+- Portal knowledge analysis can resolve a Go, Java, Rust, TypeScript, JavaScript, or Python portal's imports and call sites when the symbol graph is enabled. The separate Enterprise build is still a scaffold with no runtime, so run the Team build with `EXAIX_EDITION=enterprise` to use it.
+- `portal analyze` reports how many symbol-level edges it extracted, so an empty symbol graph is visible rather than silent.
+- `find_dependents` and `query_relationships` accept a portal-qualified `@<alias>/<path>` endpoint as well as a portal-relative one.
+- A Python portal now produces file-level import edges, so `query_relationships` answers for Python where it previously returned nothing.
 - A `knowledge.json` written by a newer build no longer fails to load on an unrecognized relationship kind. Only the affected edges are dropped; a genuinely invalid snapshot is still ignored.
 
 ## Unreleased — Phase 176 (Dogfood Context Management Refinement)
