@@ -8,7 +8,7 @@
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
 import { ProviderCostTier } from "@exaix/core/types";
 import { type IProviderHealthChecker, type IProviderMetadata, ProviderRegistry } from "@exaix/ai";
-import { DefaultModelRegistry, mtokToPer1k, RegistryNotImplementedError } from "@exaix/model-registry";
+import { DefaultModelRegistry, mtokToPer1k, RegistryNotImplementedError, STATIC_OVERLAY } from "@exaix/model-registry";
 
 function createMockProvider(name: string, overrides: Partial<IProviderMetadata> = {}): IProviderMetadata {
   return {
@@ -70,8 +70,8 @@ Deno.test({
     setupProviders();
     const registry = new DefaultModelRegistry(stubHealthChecker());
 
-    const overlayCost = await registry.getModelCost("openai", "gpt-4o-mini");
-    assertEquals(overlayCost, 0.15);
+    const overlayCost = await registry.getModelCost("openai", "gpt-6-luna");
+    assertEquals(overlayCost, 0.10);
 
     const metadataCost = await registry.getModelCost("test-openai", "test-model");
     assertEquals(metadataCost, 1.0);
@@ -89,8 +89,8 @@ Deno.test({
     setupProviders();
     const registry = new DefaultModelRegistry(stubHealthChecker());
 
-    const overlayWindow = await registry.getContextWindow("openai", "gpt-4o-mini");
-    assertEquals(overlayWindow, 128_000);
+    const overlayWindow = await registry.getContextWindow("anthropic", "claude-sonnet-5");
+    assertEquals(overlayWindow, 1_000_000);
 
     const unknownWindow = await registry.getContextWindow("unknown", "nonexistent");
     assertEquals(unknownWindow, 0);
@@ -105,11 +105,11 @@ Deno.test({
     setupProviders();
     const registry = new DefaultModelRegistry(stubHealthChecker());
 
-    const overlayPricing = await registry.getModelPricing("openai", "gpt-4o-mini");
+    const overlayPricing = await registry.getModelPricing("openai", "gpt-6-luna");
     assertEquals(overlayPricing.provenance, "static");
     assertExists(overlayPricing.verifiedAt);
     assertExists(overlayPricing.sourceUrl);
-    assertEquals(overlayPricing.inputPerMtok, 0.15);
+    assertEquals(overlayPricing.inputPerMtok, 0.10);
 
     const unknownPricing = await registry.getModelPricing("unknown", "nonexistent");
     assertEquals(unknownPricing.provenance, "unknown");
@@ -235,19 +235,28 @@ Deno.test({
     const registry = new DefaultModelRegistry(stubHealthChecker());
 
     const expectedWindows: Record<string, number> = {
-      "openai:gpt-4o-mini": 128_000,
-      "openai:gpt-4o": 128_000,
       "anthropic:claude-sonnet-5": 1_000_000,
       "openai:gpt-5.6-terra": 1_050_000,
       "openai:gpt-5-mini": 400_000,
       "anthropic:claude-opus-5": 1_000_000,
-      "google:gemini-2.5-flash": 1_000_000,
     };
 
     for (const [key, window] of Object.entries(expectedWindows)) {
       const [provider, model] = key.split(":");
       const contextWindow = await registry.getContextWindow(provider, model);
       assertEquals(contextWindow, window, `Context window mismatch for ${key}`);
+    }
+  },
+});
+
+Deno.test({
+  name: "retired models have no static overlay rows, so their pricing and windows are not reported",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: () => {
+    const retiredKeys = ["openai:gpt-4o-mini", "openai:gpt-4o", "google:gemini-2.5-flash"];
+    for (const key of retiredKeys) {
+      assertEquals(STATIC_OVERLAY[key], undefined, `Retired overlay row still present: ${key}`);
     }
   },
 });

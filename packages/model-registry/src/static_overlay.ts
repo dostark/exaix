@@ -29,20 +29,6 @@ export type StaticOverlay = Record<string, IOverlayEntry>;
 const VERIFIED_AT_TIMESTAMP = 1_720_000_000_000;
 
 export const STATIC_OVERLAY: StaticOverlay = {
-  "openai:gpt-4o-mini": {
-    inputPerMtok: 0.15,
-    outputPerMtok: 0.60,
-    contextWindow: 128_000,
-    verifiedAt: VERIFIED_AT_TIMESTAMP,
-    sourceUrl: "https://openai.com/api/pricing/",
-  },
-  "openai:gpt-4o": {
-    inputPerMtok: 2.50,
-    outputPerMtok: 10.00,
-    contextWindow: 128_000,
-    verifiedAt: VERIFIED_AT_TIMESTAMP,
-    sourceUrl: "https://openai.com/api/pricing/",
-  },
   // Short-context rates only. Prompts over 272K input tokens cost more.
   "openai:gpt-6-luna": {
     inputPerMtok: 0.10,
@@ -66,13 +52,6 @@ export const STATIC_OVERLAY: StaticOverlay = {
     contextWindow: 1_000_000,
     verifiedAt: VERIFIED_AT_TIMESTAMP,
     sourceUrl: "https://anthropic.com/pricing/",
-  },
-  "google:gemini-2.5-flash": {
-    inputPerMtok: 0.075,
-    outputPerMtok: 0.30,
-    contextWindow: 1_000_000,
-    verifiedAt: VERIFIED_AT_TIMESTAMP,
-    sourceUrl: "https://cloud.google.com/vertex-ai/generative-ai/pricing/",
   },
   // `gemini-3.8-flash` on the Google AI API, standard paid tier, text.
   // The rates apply through 2026-12-31 and double on 2027-01-01 (see sourceUrl).
