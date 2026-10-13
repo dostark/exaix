@@ -20,7 +20,7 @@ constraints:
 output_requirements:
   - All named gaps resolved in the planning document
   - Document version bumped
-  - Status updated to Gap Remediation In Progress
+  - Status set to Ready for implementation when every gap is closed, otherwise to Gap Remediation In Progress
   - Documentation update step added if interfaces/schemas changed
 quality_criteria:
   - name: scope_discipline

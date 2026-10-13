@@ -11,7 +11,7 @@ scope: dev
 title: "Remediate Plan Gaps Skill (#remediate-plan-gaps)"
 description: Consumes review-phase-plan gap findings and edits plan step definitions to close each gap — re-runs tests and bumps version
 short_summary: "Edits phase planning documents to close gaps identified by review-phase-plan, then re-runs tests and bumps the document version."
-version: "1.0.1"
+version: "1.1.0"
 topics: ["planning", "gap-analysis", "remediation", "tdd", "documentation"]
 qwen_skill: remediate-plan-gaps
 ---
@@ -25,6 +25,11 @@ Key points
   imprecise resolution, but stay in the gap's scope.
 - After remediation: re-run the planned tests (they must still pass or be updated), bump
   the document version, and update the Status line.
+- Status follows the gaps. Every gap closed: `status: READY_FOR_IMPLEMENTATION`, Status
+  line "✅ Ready for implementation", and the Pre-Gap verdict "✅ READY TO IMPLEMENT". Any
+  gap still open: `status: GAP_REMEDIATION_IN_PROGRESS` and "🚧 Gap Remediation In
+  Progress". An ordering dependency on another phase is not an open gap. Name it in the
+  Status line.
 - Interfaces or schemas changed? Add a documentation update step as the final step (§3D).
 - Work gaps in severity order: 🔴 → 🔒 → 🟡 → 🟠 → 🔵.
 
@@ -39,7 +44,9 @@ Do / Don't
 - ✅ Read each gap entry and its Resolution before editing.
 - ✅ Scope edits to exactly what the gap resolution requires.
 - ✅ Re-run all planned tests after each edit.
-- ✅ Bump the version and set Status to "🚧 Gap Remediation In Progress".
+- ✅ Bump the version. Set Status to "✅ Ready for implementation" when every gap is closed,
+  or to "🚧 Gap Remediation In Progress" while any gap is open.
+- ❌ Leave "Gap Remediation In Progress" on a plan whose gaps are all closed.
 - ✅ Add a documentation update step (§3D) if interfaces or schemas changed.
 - ❌ Add new analysis or gaps — only close existing ones.
 - ❌ Change steps with no open gaps.
@@ -87,7 +94,16 @@ Severity order; per gap:
 ### Phase 4 — Finalize
 
 1. Bump the document version (e.g. 1.2 → 1.3).
-1. Set Status to `🚧 Gap Remediation In Progress`.
+1. Count the open gaps. A gap is open while its Resolution is unapplied, its Pre-Implementation
+   Action is `⛔ UNVERIFIED` or `⏳ DEFERRED-TO-IMPLEMENTATION`, or a decision it needs is
+   unmade.
+   - No open gap: set frontmatter `status: READY_FOR_IMPLEMENTATION`, the Status line to
+     `✅ Ready for implementation`, and the Pre-Gap verdict heading to
+     `✅ READY TO IMPLEMENT`.
+   - Any open gap: set frontmatter `status: GAP_REMEDIATION_IN_PROGRESS` and the Status line
+     to `🚧 Gap Remediation In Progress`, and list the open gaps.
+   - A step that waits for another phase's task is not an open gap when that task is in the
+     other plan. Name the dependency in the Status line.
 1. Interfaces or schemas changed? Ensure a §3D documentation step is final.
 1. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts exaix-dev-docs/planning/<doc>`.
    Re-ran with `--fix`? Immediately re-verify every `# step-manifest` yaml fence still
@@ -104,5 +120,5 @@ Use `#commit`. Type: `fix`. Fields: `what:`, `rationale:`, `tests:`, `who:`, `im
 1. Gaps closed (count by severity).
 1. Steps edited, and what changed in each.
 1. Confirmation that planned tests pass.
-1. Version bump and Status update.
+1. Version bump and Status update (ready, or the open gaps that keep it in remediation).
 1. Commit payload.
