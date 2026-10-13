@@ -22,6 +22,11 @@ provider = "anthropic"
 model = "claude-sonnet-5"
 timeout_ms = 60000
 
+# Adaptive thinking on, so the live loop replays thinking blocks between iterations.
+[ai_anthropic]
+max_tokens_default = 8192
+thinking_default = true
+
 [agents]
 default_model = "default"
 
