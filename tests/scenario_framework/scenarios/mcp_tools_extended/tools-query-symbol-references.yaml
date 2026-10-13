@@ -1,0 +1,158 @@
+schema_version: "1.0.0"
+# Asserts query_symbol_references end to end through the real MCP server: it refuses before the
+# portal has ever been analyzed, then serves the persisted symbol edges from knowledge.json.
+# Who calls a symbol and what a symbol calls are both answered from the same edge list. File
+# import edges are never returned. This is the scenario that tests/eval/tool_eval_parity_test.ts
+# requires every docs-visible tool to carry (entity:<tool-name>).
+id: "tools-query-symbol-references"
+title: "Domain tool — query_symbol_references serves a portal's persisted symbol edges"
+pack: "mcp_tools_extended"
+tags: ["domain", "subsystem:tools", "entity:query_symbol_references"]
+request_fixture: "fixtures/requests/mcp_tools_extended/exaix_create_request.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-portal"
+    type: "run-script"
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$REPO_ROOT/deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
+    output_criteria:
+      - id: "portal-ready"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.2
+
+  # A reused sandbox may hold the knowledge.json that a prior run wrote below. Clearing it keeps
+  # the "not yet analyzed" step deterministic whatever the run history.
+  - id: "clean-knowledge-fixture"
+    type: "remove-files"
+    name: "Clear any knowledge.json left over from a prior run of this scenario"
+    args: ["Memory/Projects/tools/knowledge.json"]
+
+  - id: "not-yet-analyzed"
+    type: "run-script"
+    name: "query_symbol_references refuses before the portal has ever been analyzed"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$REPO_ROOT/deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "query_symbol_references"
+      - '{"portal":"tools","agent_role":"tools-eval","symbol":"src/greet.ts#greet"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "not-analyzed-error-surfaced"
+        kind: "command-output-contains"
+        contains: ["has not been analyzed", "\"isError\": true", "\"success\": false"]
+        score_weight: 0.8
+
+  # Two callers of one symbol, one call from main, and one file import edge. The import edge
+  # must never appear in a symbol answer.
+  - id: "write-knowledge-fixture"
+    type: "write-file"
+    name: "Seed Memory/Projects/tools/knowledge.json with symbol and file edges"
+    path: "Memory/Projects/tools/knowledge.json"
+    content: |
+      {
+        "portal": "tools",
+        "gatheredAt": "2026-01-01T00:00:00.000Z",
+        "version": 1,
+        "architectureOverview": "A tiny fixture portal used to exercise MCP tools end to end.",
+        "layers": [],
+        "keyFiles": [],
+        "conventions": [],
+        "dependencies": [],
+        "techStack": { "primaryLanguage": "typescript" },
+        "symbolMap": [],
+        "relationships": [
+          { "from": "src/main.ts#main", "to": "src/greet.ts#greet", "kind": "symbol_references_symbol" },
+          { "from": "src/other.ts#helper", "to": "src/greet.ts#greet", "kind": "symbol_references_symbol" },
+          { "from": "src/main.ts", "to": "src/greet.ts", "kind": "file_imports_file_internal" }
+        ],
+        "stats": { "totalFiles": 3, "totalDirectories": 2, "extensionDistribution": { ".ts": 3 } },
+        "metadata": { "durationMs": 5, "mode": "standard", "filesScanned": 3, "filesRead": 3 }
+      }
+    output_criteria:
+      - id: "knowledge-fixture-written"
+        kind: "file-found"
+        path_pattern: "Memory/Projects/tools/knowledge.json"
+        score_weight: 0.2
+
+  - id: "who-calls-greet"
+    type: "run-script"
+    name: "referenced_by returns every caller of a symbol and no file import edge"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$REPO_ROOT/deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "query_symbol_references"
+      - '{"portal":"tools","agent_role":"tools-eval","symbol":"src/greet.ts#greet","direction":"referenced_by"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "both-callers-returned"
+        kind: "command-output-contains"
+        contains: ["src/main.ts#main", "src/other.ts#helper", "\"success\": true"]
+        score_weight: 1.0
+      - id: "file-import-edge-excluded"
+        kind: "command-output-not-contains"
+        not_contains: ["file_imports_file_internal"]
+        score_weight: 0.6
+
+  - id: "what-does-main-call"
+    type: "run-script"
+    name: "references is the default direction and returns what a symbol calls"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$REPO_ROOT/deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "query_symbol_references"
+      - '{"portal":"tools","agent_role":"tools-eval","symbol":"src/main.ts#main"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "callee-returned"
+        kind: "command-output-contains"
+        contains: ["src/greet.ts#greet", "\"success\": true"]
+        score_weight: 0.8
+
+  - id: "limit-caps-the-answer"
+    type: "run-script"
+    name: "limit caps the number of edges returned"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$REPO_ROOT/deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "query_symbol_references"
+      - '{"portal":"tools","agent_role":"tools-eval","symbol":"src/greet.ts#greet","direction":"referenced_by","limit":1}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "first-caller-kept"
+        kind: "command-output-contains"
+        contains: ["src/main.ts#main"]
+        score_weight: 0.6
+      - id: "second-caller-dropped"
+        kind: "command-output-not-contains"
+        not_contains: ["src/other.ts#helper"]
+        score_weight: 0.4
