@@ -82,6 +82,7 @@ export const OPENAI_COMPATIBLE_MAX_HISTORY_BYTES: number = configurable({
 
 // HTTP Status Codes
 export const HTTP_UNAUTHORIZED = 401;
+export const HTTP_PAYMENT_REQUIRED = 402;
 export const HTTP_FORBIDDEN = 403;
 export const HTTP_TOO_MANY_REQUESTS = 429;
 export const HTTP_SERVER_ERROR = 500;

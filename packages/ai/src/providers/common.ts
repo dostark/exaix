@@ -114,6 +114,24 @@ export class ModelProviderError extends Error {
   }
 }
 
+/** A billing failure that cannot succeed by retrying the same request. */
+export class BillingError extends ModelProviderError {
+  constructor(message: string, provider: string) {
+    super(message, provider);
+    this.name = "BillingError";
+    Object.setPrototypeOf(this, BillingError.prototype);
+  }
+}
+
+/** A provider response that stopped at its output limit without a usable answer. */
+export class ProviderTruncationError extends ModelProviderError {
+  constructor(message: string, provider: string) {
+    super(message, provider);
+    this.name = "ProviderTruncationError";
+    Object.setPrototypeOf(this, ProviderTruncationError.prototype);
+  }
+}
+
 /**
  * Error thrown when connection to the model provider fails.
  */

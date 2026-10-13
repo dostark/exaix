@@ -12,8 +12,10 @@
 import { z } from "zod";
 import {
   AuthenticationError,
+  BillingError,
   ConnectionError,
   ModelProviderError,
+  ProviderTruncationError,
   RateLimitError,
   TimeoutError,
 } from "@exaix/ai/providers";
@@ -46,7 +48,7 @@ const DIGITS_ONLY = /^\d+$/;
 const HTTP_BAD_REQUEST = 400;
 
 /** Insufficient credits or a spent budget. Retrying the same request cannot succeed. */
-export class OpenRouterBillingError extends ModelProviderError {
+export class OpenRouterBillingError extends BillingError {
   readonly limitSource?: string;
   readonly limitUsd?: number;
   readonly spendUsd?: number;
@@ -98,7 +100,7 @@ export class OpenRouterRateLimitError extends RateLimitError {
 }
 
 /** The response ended at the token limit. The cap was spent before an answer began, or the answer is incomplete. */
-export class OpenRouterTruncationError extends ModelProviderError {
+export class OpenRouterTruncationError extends ProviderTruncationError {
   readonly completionTokens: Opt<number, Reason.OptionalContext>;
   readonly reasoningTokens: Opt<number, Reason.OptionalContext>;
 

@@ -12,9 +12,10 @@
  * ]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import { OpenAIProvider } from "../src/openai_provider.ts";
 import { createOpenAIResponsesRequestInit } from "@exaix/ai/openai_responses_wire.ts";
+import { ProviderTruncationError } from "@exaix/ai/providers";
 import type { IModelOptions, IProviderToolResultEntry, JSONObject } from "@exaix/ai/types.ts";
 import type { JSONValue } from "@exaix/core";
 import { PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
@@ -99,6 +100,46 @@ function resultFor(toolUseId: string, content: string): IProviderToolResultEntry
     toolResultIsError: false,
   };
 }
+
+Deno.test("OpenAIProvider rejects an empty incomplete Responses reply once with the shared truncation class", async () => {
+  const scripted = scriptFetch([{
+    status: "incomplete",
+    incomplete_details: { reason: "max_output_tokens" },
+    output: [REASONING_ITEM],
+  }]);
+  try {
+    const provider = new OpenAIProvider({ apiKey: "fixture-key", model: REASONING_MODEL, maxRetries: 3 });
+    const error = await assertRejects(
+      () => provider.generate("Read the file.", { tools: [READ_TOOL], max_tokens: 1000 }),
+      ProviderTruncationError,
+    );
+    assertEquals(error.provider, provider.id);
+    assertEquals(scripted.sent.length, 1);
+    assertEquals(scripted.sent[0].url, RESPONSES_URL);
+    assertEquals(error.message.includes("incomplete_details.reason=max_output_tokens"), true);
+  } finally {
+    scripted.restore();
+  }
+});
+
+Deno.test("OpenAIProvider preserves incomplete text and function-call output instead of throwing truncation", async () => {
+  const scripted = scriptFetch([
+    { ...FINAL_REPLY, status: "incomplete", incomplete_details: { reason: "max_output_tokens" } },
+    { ...TOOL_ROUND_REPLY, status: "incomplete", incomplete_details: { reason: "max_output_tokens" } },
+  ]);
+  try {
+    const provider = new OpenAIProvider({ apiKey: "fixture-key", model: REASONING_MODEL });
+    const text = await provider.generate("Summarize.");
+    assertEquals(text.content, "Both files read.");
+    const calls = await provider.generate("Read both files.", { tools: [READ_TOOL] });
+    assertEquals(calls.toolCalls?.map((call) => call.id), ["call_a", "call_b"]);
+    assert(calls.nativeAssistantReplay?.provider === "openai");
+    assertEquals(calls.nativeAssistantReplay.responseItems, TOOL_ROUND_REPLY.output);
+    assertEquals(scripted.sent.length, 2);
+  } finally {
+    scripted.restore();
+  }
+});
 
 Deno.test("an OpenAI reasoning model with tools calls /v1/responses and keeps every output item for replay", async () => {
   const scripted = scriptFetch([TOOL_ROUND_REPLY]);

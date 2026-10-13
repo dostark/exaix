@@ -12,6 +12,7 @@ import { ProviderProtocolError } from "./errors.ts";
 import type { EffortTier } from "@exaix/schemas";
 import {
   AuthenticationError,
+  BillingError,
   ConnectionError,
   type IGenerateResult,
   type IProviderToolCall,
@@ -53,7 +54,13 @@ import {
   PROVIDER_OPENAI_CHAT,
   TOKENS_PER_COST_UNIT,
 } from "@exaix/core";
-import { HTTP_FORBIDDEN, HTTP_TOO_MANY_REQUESTS, HTTP_UNAUTHORIZED, ProviderType } from "@exaix/core";
+import {
+  HTTP_FORBIDDEN,
+  HTTP_PAYMENT_REQUIRED,
+  HTTP_TOO_MANY_REQUESTS,
+  HTTP_UNAUTHORIZED,
+  ProviderType,
+} from "@exaix/core";
 import { type Opt, type Reason, type SafeJsonInput, toSafeJson } from "@exaix/core/types";
 
 export type TokenMap = {
@@ -223,15 +230,14 @@ export function calculateCost(provider: string, totalTokens: number): number {
   return rate * (totalTokens / TOKENS_PER_COST_UNIT);
 }
 
-/** Maps a provider error response to the retry-semantics-bearing error class. The
- *  body's documented error type wins over the HTTP status, so a transient
- *  overloaded_error/rate_limit_error stays retryable under a surprising status. */
+/** A 402 is always a billing failure. Other statuses prefer the body's documented error type. */
 function classifyProviderError(
   status: number,
   errorType: Opt<string, Reason.OptionalContext>,
   message: string,
   id: string,
 ): Error {
+  if (status === HTTP_PAYMENT_REQUIRED) return new BillingError(message, id);
   if (errorType === "authentication_error" || errorType === "permission_error") {
     return new AuthenticationError(id, message);
   }
