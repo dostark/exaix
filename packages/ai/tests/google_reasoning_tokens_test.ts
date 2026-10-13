@@ -9,8 +9,8 @@
  * Google documentation: "Gemini 2.5 Flash defaults to a dynamic thinking budget").
  * GoogleUsageMetadata only declares promptTokenCount/candidatesTokenCount/totalTokenCount —
  * the real thinking-token count is dropped at parse time. With the Gemini API,
- * candidatesTokenCount already INCLUDES thinking tokens (a subset, not additional), so total
- * accounting is unaffected — this is purely a dropped-visibility gap. Verifies
+ * candidatesTokenCount EXCLUDES thinking tokens, and totalTokenCount = prompt + thoughts +
+ * candidates, so thinking tokens are a separate, billed part of the total. Verifies
  * tokenMapperGoogle maps the real field into TokenMap.reasoning_tokens, and that a response
  * with no thoughtsTokenCount (thinking produced no tokens, or an endpoint that omits it)
  * produces undefined, not 0.
@@ -29,7 +29,7 @@ Deno.test("[GoogleReasoningTokens] tokenMapperGoogle maps real usageMetadata.tho
     usageMetadata: {
       promptTokenCount: 150,
       candidatesTokenCount: 2340,
-      totalTokenCount: 2490,
+      totalTokenCount: 4538,
       thoughtsTokenCount: 2048,
     },
   };
@@ -37,10 +37,9 @@ Deno.test("[GoogleReasoningTokens] tokenMapperGoogle maps real usageMetadata.tho
   const result = mapper(mockResponse, TEST_PROVIDER_ID);
 
   assertEquals(result?.reasoning_tokens, 2048);
-  // With the Gemini API, candidatesTokenCount already includes thinking tokens — total
-  // accounting is unaffected by capturing the breakdown.
+  // candidatesTokenCount excludes thinking tokens, and totalTokenCount includes them.
   assertEquals(result?.completion_tokens, 2340);
-  assertEquals(result?.total_tokens, 2490);
+  assertEquals(result?.total_tokens, 4538);
 });
 
 Deno.test("[GoogleReasoningTokens] a response with no thoughtsTokenCount maps reasoning_tokens to undefined, not 0", () => {
