@@ -52,6 +52,7 @@ const EDITED_SINCE_BASELINE = new Set([
   "remediate-plan-gaps",
   "review-phase-plan",
   "review-research",
+  "self-improvement",
   "test-development",
 ]);
 const EDITED_PREFIX_CHARS = 200;
