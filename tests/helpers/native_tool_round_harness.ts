@@ -105,6 +105,7 @@ export function wireFamilyFor(adapter: string): IWireFamily {
   if (adapter === "google") return GEMINI_FAMILY;
   if (adapter === "anthropic") return ANTHROPIC_FAMILY;
   if (adapter === "openai") return RESPONSES_FAMILY;
+  if (adapter === "openrouter") return OPENROUTER_FAMILY;
   return CHAT_FAMILY;
 }
 
@@ -264,6 +265,17 @@ const CHAT_FAMILY: IWireFamily = {
       else if (message.role === "tool") exchanges.at(-1)?.results.push(textOf(message.content));
     }
     return exchanges;
+  },
+};
+
+/** OpenRouter replays `reasoning_details` only, so the replayed assistant carries no `reasoning_content`. */
+const OPENROUTER_FAMILY: IWireFamily = {
+  ...CHAT_FAMILY,
+  roundResponse(calls, model) {
+    const round = CHAT_FAMILY.roundResponse(calls, model);
+    const assistant = { ...asObject(round.assistant) };
+    delete assistant.reasoning_content;
+    return { ...round, assistant };
   },
 };
 
