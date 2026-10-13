@@ -223,6 +223,7 @@ Deno.test("[openrouter] routing block omitted when not configured", async () => 
 });
 
 const RETRY_DELAY_MS = 1;
+const OPENROUTER_MAX_RETRIES = 3;
 
 async function countFetchesForStatus(
   status: number,
@@ -235,7 +236,12 @@ async function countFetchesForStatus(
     return Promise.resolve(new Response(body, { status }));
   }) as typeof fetch;
   try {
-    const provider = new OpenRouterProvider({ apiKey: "sk-test", model: "openai/gpt-4", retryDelayMs: RETRY_DELAY_MS });
+    const provider = new OpenRouterProvider({
+      apiKey: "sk-test",
+      model: "openai/gpt-4",
+      retryDelayMs: RETRY_DELAY_MS,
+      maxRetries: OPENROUTER_MAX_RETRIES,
+    });
     try {
       await provider.generate("hi");
     } catch (error) {
@@ -270,7 +276,7 @@ Deno.test("OpenRouterProvider retries a 503 even when the message names routing 
     503,
     JSON.stringify({ error: { code: 503, message: "No provider meets the routing requirements" } }),
   );
-  assert(calls > 1, `a 503 must be retried, got ${calls} fetch(es)`);
+  assertEquals(calls, OPENROUTER_MAX_RETRIES, "a 503 is retried exactly maxRetries times");
   assert(error instanceof ConnectionError);
 });
 

@@ -4,6 +4,7 @@
   "imports": {
     "@std/assert": "jsr:@std/assert@^1.0.19",
     "@std/testing/mock": "jsr:@std/testing@^1.0.18/mock",
+    "@std/testing/time": "jsr:@std/testing@^1.0.18/time",
     "@exaix/ai": "./mod.ts",
     "@exaix/ai/providers": "./src/providers/mod.ts",
     "@exaix/ai/": "./src/",

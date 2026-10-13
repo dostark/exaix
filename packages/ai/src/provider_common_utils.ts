@@ -6,7 +6,7 @@
  * @related-files [packages/ai/src/providers.ts, packages/ai/src/types.ts, packages/ai/src/providers/common.ts]
  */
 import type { IEventLogger } from "@exaix/core/logger";
-import { DomainEventType } from "@exaix/core/events";
+import { DomainEventType, type IProviderRetryScheduledPayload } from "@exaix/core/events";
 import { ProviderProtocolError } from "./errors.ts";
 
 import type { EffortTier } from "@exaix/schemas";
@@ -17,6 +17,8 @@ import {
   type IProviderToolCall,
   ModelProviderError,
   RateLimitError,
+  retryAfterMsOf,
+  TransportError,
   withRetry,
 } from "./providers/common.ts";
 import {
@@ -858,6 +860,59 @@ function collectThinkingBlocksBefore(
   return blocks.length > 0 ? { thinkingBlocks: blocks } : undefined;
 }
 
+/** The raw fetch response, before handleProviderResponse reads its status and body. */
+interface IProviderFetchOutcome {
+  response: Response;
+}
+
+/** One fetch. A compatible-endpoint redirect becomes a protocol error, and any other TypeError a retryable TransportError. */
+async function fetchWithTypedFailure(
+  url: string,
+  init: RequestInit,
+  id: string,
+  redirectBehavior: Opt<RequestRedirect, Reason.OptionalInput>,
+): Promise<IProviderFetchOutcome> {
+  try {
+    return { response: await fetch(url, init) };
+  } catch (fetchError) {
+    if (
+      redirectBehavior === COMPATIBLE_REDIRECT_POLICY && fetchError instanceof TypeError &&
+      /redirect/i.test(fetchError.message)
+    ) {
+      throw new ProviderProtocolError("Compatible endpoint redirect is not allowed", id);
+    }
+    // fetch rejects with a TypeError for a transport failure.
+    if (fetchError instanceof TypeError) throw new TransportError(id, fetchError.message);
+    throw fetchError;
+  }
+}
+
+/** Journals a retry that the provider layer is about to wait for. A failed write never fails the provider call. */
+async function journalScheduledRetry(
+  logger: IEventLogger,
+  id: string,
+  traceId: Opt<string, Reason.TraceAbsent>,
+  maxAttempts: number,
+  attempt: number,
+  delayMs: number,
+  error: Error,
+): Promise<void> {
+  const retryAfterMs = retryAfterMsOf(error);
+  const payload: IProviderRetryScheduledPayload = {
+    provider: id,
+    attempt,
+    max_attempts: maxAttempts,
+    delay_ms: delayMs,
+    error_type: error.constructor.name,
+    ...(retryAfterMs !== undefined ? { retry_after_ms: retryAfterMs } : {}),
+  };
+  try {
+    await logger.warn(DomainEventType.ProviderRetryScheduled, id, { ...payload }, traceId);
+  } catch {
+    // never fail the provider call because retry logging failed
+  }
+}
+
 /** Perform fetch with retries/backoff and timeout, and handle provider responses. */
 export async function fetchJsonWithRetries<T>(
   url: string,
@@ -875,12 +930,18 @@ export async function fetchJsonWithRetries<T>(
     redirectBehavior,
     responseValidator,
     errorMapper,
+    traceId,
+    logRetries = true,
   }: {
     id: string;
     maxAttempts?: number;
     backoffBaseMs?: number;
     timeoutMs?: number;
     logger?: IEventLogger;
+    /** The request trace id, passed to the retry event so the journal can join it to the request. */
+    traceId?: string;
+    /** False keeps retries out of the journal, for the compatible branch whose contract is one terminal event. */
+    logRetries?: boolean;
     tokenMapper?: (d: T, providerId?: string) => TokenMap | undefined;
     maxResponseBytes?: number;
     exposeRemoteErrorText?: boolean;
@@ -901,11 +962,16 @@ export async function fetchJsonWithRetries<T>(
       : undefined;
 
     try {
-      const response = await fetch(url, {
-        ...fetchOptions,
-        ...(redirectBehavior !== undefined ? { redirect: redirectBehavior } : {}),
-        signal,
-      });
+      const { response } = await fetchWithTypedFailure(
+        url,
+        {
+          ...fetchOptions,
+          ...(redirectBehavior !== undefined ? { redirect: redirectBehavior } : {}),
+          signal,
+        },
+        id,
+        redirectBehavior,
+      );
       // Let handleProviderResponse inspect status, parse JSON and throw typed errors
       const data = await handleProviderResponse<T>(response, id, logger, tokenMapper, {
         maxResponseBytes,
@@ -917,18 +983,20 @@ export async function fetchJsonWithRetries<T>(
       return data;
     } catch (err) {
       if (timeoutId) clearTimeout(timeoutId);
-      if (
-        redirectBehavior === COMPATIBLE_REDIRECT_POLICY && err instanceof TypeError && /redirect/i.test(err.message)
-      ) {
-        throw new ProviderProtocolError("Compatible endpoint redirect is not allowed", id);
-      }
       // Rethrow to allow withRetry to decide whether to retry
       throw err;
     }
   };
 
   // Use withRetry defined in providers/common.ts
-  return await withRetry(attemptFn, { maxRetries: maxAttempts, baseDelayMs: backoffBaseMs, signal: requestSignal });
+  return await withRetry(attemptFn, {
+    maxRetries: maxAttempts,
+    baseDelayMs: backoffBaseMs,
+    signal: requestSignal,
+    onRetry: logger && logRetries
+      ? (attempt, delayMs, error) => journalScheduledRetry(logger, id, traceId, maxAttempts, attempt, delayMs, error)
+      : undefined,
+  });
 }
 
 /** Perform a provider call: fetch JSON with retries, then extract textual content
@@ -954,12 +1022,18 @@ export async function performProviderCall<T>(
     redirectBehavior,
     responseValidator,
     errorMapper,
+    traceId,
+    logRetries,
   }: {
     id: string;
     maxAttempts?: number;
     backoffBaseMs?: number;
     timeoutMs?: number;
     logger?: IEventLogger;
+    /** The request trace id, passed to the retry event. */
+    traceId?: string;
+    /** False keeps retries out of the journal, for the compatible branch whose contract is one terminal event. */
+    logRetries?: boolean;
     tokenMapper?: (d: T, providerId?: string) => TokenMap | undefined;
     extractor?: (d: T) => string;
     stopReasonExtractor?: (d: T) => string | undefined;
@@ -997,6 +1071,8 @@ export async function performProviderCall<T>(
     redirectBehavior,
     responseValidator,
     errorMapper,
+    traceId,
+    logRetries,
   });
   // Debug-level dump of the raw response body: content extraction strips parts of
   // it (e.g. thinking blocks), so investigating a live-provider issue needs the

@@ -205,17 +205,20 @@ export class AnthropicProvider extends BaseProvider {
     };
 
     try {
-      return await this.postMessages(requestBody);
+      return await this.postMessages(requestBody, options);
     } catch (error) {
       // If a model rejects a deprecated tuning parameter with HTTP 400, strip and retry once.
       if (!(error instanceof Error)) throw error;
       const strippedBody = stripRejectedParameter(requestBody, error);
       if (!strippedBody) throw error;
-      return await this.postMessages(strippedBody);
+      return await this.postMessages(strippedBody, options);
     }
   }
 
-  private async postMessages(requestBody: AnthropicRequestBody): Promise<IGenerateResult> {
+  private async postMessages(
+    requestBody: AnthropicRequestBody,
+    options?: Opt<IModelOptions, Reason.OptionalInput>,
+  ): Promise<IGenerateResult> {
     // Debug-level dump of the exact outbound JSON body, validated against the Messages API
     // request contract, so a live-provider failure (malformed request, unexpected 4xx) can be
     // diagnosed from the log without a separate network capture tool.
@@ -237,8 +240,10 @@ export class AnthropicProvider extends BaseProvider {
         "anthropic-version": this.apiVersion,
       },
       body: JSON.stringify(requestBody),
+      ...(options?.requestSignal ? { signal: options.requestSignal } : {}),
     }, {
       id: this.id,
+      traceId: options?.traceId,
       maxAttempts: this.maxRetries,
       backoffBaseMs: this.retryDelayMs,
       timeoutMs: this.timeoutMs,

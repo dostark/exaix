@@ -215,6 +215,7 @@ export class OpenAIProvider extends BaseProvider {
       createOpenAIResponsesRequestInit(this.apiKey, this.model, prompt, options),
       {
         id: this.id,
+        traceId: options?.traceId,
         maxAttempts: this.maxRetries,
         backoffBaseMs: this.retryDelayMs,
         timeoutMs: this.timeoutMs,
@@ -243,7 +244,9 @@ export class OpenAIProvider extends BaseProvider {
       compatibleRequest.init,
       {
         id: this.id,
-        maxAttempts: 1,
+        traceId: options?.traceId,
+        maxAttempts: this.maxRetries,
+        logRetries: false,
         backoffBaseMs: this.retryDelayMs,
         logger: this.logger,
         tokenMapper: mapCompatibleUsage,

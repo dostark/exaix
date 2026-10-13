@@ -856,6 +856,15 @@ export const DEFAULT_AI_RETRY_BACKOFF_BASE_MS: number = configurable({
   max: 10_000,
   swap: SwapClass.HOT,
 });
+export const DEFAULT_AI_RETRY_AFTER_MAX_MS: number = configurable({
+  key: "ai.retry.retry_after_max_ms",
+  default: 60_000,
+  type: ConfigValueType.NUMBER,
+  description: "Longest wait in milliseconds that a provider Retry-After value can impose before an AI retry",
+  min: 1000,
+  max: 3_600_000,
+  swap: SwapClass.HOT,
+});
 export const DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS: number = configurable({
   key: "ai.retry.timeout_per_request_ms",
   default: 30000,

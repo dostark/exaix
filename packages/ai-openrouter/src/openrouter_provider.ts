@@ -348,8 +348,10 @@ export class OpenRouterProvider extends BaseProvider {
       method: "POST",
       headers,
       body: JSON.stringify(body),
+      ...(options?.requestSignal ? { signal: options.requestSignal } : {}),
     }, {
       id: this.id,
+      traceId: options?.traceId,
       maxAttempts: this.maxRetries,
       backoffBaseMs: this.retryDelayMs,
       timeoutMs: this.timeoutMs,

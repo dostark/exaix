@@ -352,6 +352,18 @@ export interface IModelRetirementDuePayload {
   days_remaining: number;
 }
 
+/** Typed payload for provider.retry.scheduled events: the provider layer will retry a failed call. */
+export interface IProviderRetryScheduledPayload {
+  provider: string;
+  /** The attempt that just failed, starting at 1. */
+  attempt: number;
+  max_attempts: number;
+  /** The wait before the next attempt, after the backoff and any Retry-After value. */
+  delay_ms: number;
+  error_type: string;
+  retry_after_ms?: number;
+}
+
 /** Typed payload for model.catalog.refreshed events. */
 export interface IModelCatalogRefreshedPayload {
   provider: string;
@@ -1161,6 +1173,7 @@ export const DomainEventType = {
   ModelAdmitted: "model.admitted",
   ModelRetired: "model.retired",
   ModelRetirementDue: "model.retirement.due",
+  ProviderRetryScheduled: "provider.retry.scheduled",
   ModelCatalogRefreshed: "model.catalog.refreshed",
   ModelPricingRefreshed: "model.pricing.refreshed",
   ModelRegistryRefreshFailed: "model.registry.refresh.failed",

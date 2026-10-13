@@ -14,7 +14,7 @@
  */
 
 import type { ICallSite, IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
-import type { IGenerateResult } from "@exaix/ai/providers";
+import { type IGenerateResult, ModelProviderError } from "@exaix/ai/providers";
 import { COMPLEXITY_SOURCE_DEFAULT, EffortResolver, ProviderRegistry, resolveProviderType } from "@exaix/ai";
 import type { IEffortResolution, IEffortResolutionSignals, IEffortResolver, TaskComplexitySource } from "@exaix/ai";
 import { buildAgentEffortResolvedPayload } from "./effort_resolution_payload.ts";
@@ -441,8 +441,12 @@ export class AgentRunner implements IAgentRunner {
     this.effortResolver = this.config?.effortResolver ?? new EffortResolver();
     this.skillsService = ctx?.skills || this.config?.skillsService;
     this.disableSkills = this.config?.disableSkills ?? false;
+    // The provider layer owns HTTP retries, so a classified provider error is final here.
+    const providerErrorsAreFinal = { isPermanent: (error: Error) => error instanceof ModelProviderError };
     this.retryPolicy = this.config?.retryPolicyInstance ||
-      (this.config?.retryPolicy ? createRetryPolicy(this.config.retryPolicy) : createLLMRetryPolicy());
+      (this.config?.retryPolicy
+        ? createRetryPolicy(this.config.retryPolicy, providerErrorsAreFinal)
+        : createLLMRetryPolicy(providerErrorsAreFinal));
     this.outputValidator = this.config?.outputValidatorInstance || createOutputValidator({ autoRepair: true });
 
     // Set up retry logging

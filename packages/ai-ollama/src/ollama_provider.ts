@@ -13,8 +13,15 @@ import {
   DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS,
   DEFAULT_OLLAMA_TIMEOUT_MS,
 } from "./constants.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 import { fetchJsonWithRetries, type OllamaResponse } from "@exaix/ai/provider_common_utils.ts";
-import { ConnectionError, type IGenerateResult, ModelProviderError, TimeoutError } from "@exaix/ai/providers";
+import {
+  ConnectionError,
+  type IGenerateResult,
+  ModelProviderError,
+  TimeoutError,
+  TransportError,
+} from "@exaix/ai/providers";
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 
 export interface IOllamaProviderOptions {
@@ -37,7 +44,7 @@ export class OllamaProvider implements IModelProvider {
     this.id = options.id ?? `ollama-${this.defaultModel}`;
   }
 
-  async generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
+  async generate(prompt: string, options?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
     try {
       const data = await fetchJsonWithRetries<OllamaResponse>(
         `${this.baseUrl}/api/generate`,
@@ -82,16 +89,16 @@ export class OllamaProvider implements IModelProvider {
         cost_usd: 0,
       };
     } catch (error) {
+      if (error instanceof TransportError) {
+        throw new ConnectionError(this.id, `Failed to connect to Ollama at ${this.baseUrl}. Is Ollama running?`);
+      }
+
       if (error instanceof ModelProviderError) {
         throw error;
       }
 
       if (error instanceof Error && error.name === "AbortError") {
         throw new TimeoutError(this.id, this.timeoutMs);
-      }
-
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        throw new ConnectionError(this.id, `Failed to connect to Ollama at ${this.baseUrl}. Is Ollama running?`);
       }
 
       throw new ModelProviderError(
