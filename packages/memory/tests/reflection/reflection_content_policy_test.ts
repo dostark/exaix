@@ -4,7 +4,8 @@
  * @description Verifies the reflection prompt loads the real Step 1 content-curation skill by explicit skill_id and includes it in the synthesis prompt; a low-value entry restating portal-knowledge structural facts is pruned while a genuine architectural-decision entry is retained.
  * @architectural-layer Tests
  */
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
+import { z } from "zod";
 import type { IModelProvider } from "@exaix/ai";
 import type { IMemoryBankService, IMemoryEmbeddingService } from "@exaix/core/types";
 import type { IReflectionSkills } from "@exaix/memory/reflection/memory_reflection_service.ts";
@@ -83,6 +84,102 @@ function embedding(): IMemoryEmbeddingService {
     getStats: () => Promise.resolve({ total: 0, generated_at: "" }),
   });
 }
+
+Deno.test("fix(reflection): the prompt advertises the validated output schema and its field limits", async () => {
+  const { config, db, cleanup } = await initTestDbService();
+  try {
+    const bank = new MemoryBankService(config);
+    await bank.initGlobalMemory();
+    await bank.addGlobalLearning(createSampleLearning({ id: crypto.randomUUID(), status: MemoryStatus.APPROVED }));
+    const provider = new CapturingProvider(JSON.stringify({ actions: [] }));
+    const reflection = new MemoryReflectionService({
+      provider,
+      skillsService: skillsService(),
+      memoryBank: bank,
+      embeddingService: embedding(),
+      proposalWriter: new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank)),
+    });
+
+    await reflection.runReflectionCycle();
+
+    const schemaText = provider.prompt.split("OUTPUT JSON SCHEMA:\n")[1]?.split("\n\n")[0];
+    assertExists(schemaText, "The model must receive the actual output constraints before the untrusted memories.");
+    const schema = JSON.parse(schemaText);
+    assertEquals(schema.properties.actions.maxItems, 50);
+    const variants = schema.properties.actions.items.oneOf;
+    const synthesis = variants.find((variant: { properties: { action: { const: string } } }) =>
+      variant.properties.action.const === "synthesise"
+    );
+    const prune = variants.find((variant: { properties: { action: { const: string } } }) =>
+      variant.properties.action.const === "prune"
+    );
+    assertEquals(synthesis.properties.title.maxLength, 100);
+    assertEquals(synthesis.properties.description.maxLength, 2_000);
+    assertEquals(synthesis.properties.source_ids.minItems, 2);
+    assertEquals(synthesis.properties.tags.maxItems, 10);
+    assertEquals(synthesis.properties.quality_score.minimum, 0);
+    assertEquals(synthesis.properties.quality_score.maximum, 1);
+    assertEquals(prune.properties.reason.maxLength, 500);
+    assertEquals(provider.calls, 1);
+    assertStringIncludes(provider.prompt, SKILL_INSTRUCTIONS.slice(0, 80));
+    assertStringIncludes(provider.prompt, "<untrusted_memories>");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("fix(reflection): [security] synthesis titles accept the boundary and reject overflow before writing", async (t) => {
+  for (const length of [100, 101]) {
+    await t.step(`title length ${length}`, async () => {
+      const { config, db, cleanup } = await initTestDbService();
+      try {
+        const bank = new MemoryBankService(config);
+        await bank.initGlobalMemory();
+        const sources = [
+          createSampleLearning({ id: crypto.randomUUID(), status: MemoryStatus.APPROVED }),
+          createSampleLearning({ id: crypto.randomUUID(), status: MemoryStatus.APPROVED }),
+        ];
+        for (const source of sources) await bank.addGlobalLearning(source);
+        const writer = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
+        const title = "x".repeat(length);
+        const provider = new CapturingProvider(JSON.stringify({
+          actions: [{
+            action: "synthesise",
+            source_ids: sources.map((source) => source.id),
+            title,
+            description: "Use bounded retries for temporary integration failures.",
+            category: LearningCategory.INSIGHT,
+            tags: [],
+            quality_score: 0.8,
+          }],
+        }));
+        const reflection = new MemoryReflectionService({
+          provider,
+          skillsService: skillsService(),
+          memoryBank: bank,
+          embeddingService: embedding(),
+          proposalWriter: writer,
+        });
+
+        if (length === 100) {
+          const result = await reflection.runReflectionCycle();
+          assertEquals(result.synthesised_count, 1);
+          assertEquals((await writer.listPending())[0].learning.title, title);
+        } else {
+          await assertRejects(() => reflection.runReflectionCycle(), z.ZodError);
+          assertEquals((await writer.listPending()).length, 0);
+        }
+        assertEquals(provider.calls, 1);
+        assertEquals((await bank.getGlobalMemory())?.learnings.map((learning) => learning.status), [
+          MemoryStatus.APPROVED,
+          MemoryStatus.APPROVED,
+        ]);
+      } finally {
+        await cleanup();
+      }
+    });
+  }
+});
 
 Deno.test("synthesis prompt includes the Step 1 content-curation skill instructions by explicit skill_id", async () => {
   const { config, db, cleanup } = await initTestDbService();

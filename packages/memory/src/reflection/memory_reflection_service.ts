@@ -258,9 +258,9 @@ export class MemoryReflectionService {
       quality_score: learning.quality_score ?? 0,
     }));
     const related = relatedPairs.map(([a, b]) => [a.id, b.id]);
-    return `Propose memory consolidation actions as JSON matching {"actions":[...]}, where each action is one of:
-{"action":"synthesise","source_ids":[2+ ids],"title":string,"description":string,"category":"pattern|anti-pattern|decision|insight|troubleshooting","tags":string[],"quality_score":number}
-{"action":"prune","target_id":string,"reason":string}
+    return `Propose memory consolidation actions as JSON that strictly matches this schema. Return JSON only.
+OUTPUT JSON SCHEMA:
+${JSON.stringify(z.toJSONSchema(ReflectionResponseSchema))}
 
 Synthesise only when two or more learnings express one thing at a higher level of abstraction; prefer the listed related pairs as synthesis sources. Prune only entries that merely restate structural facts derivable from source code (imports, symbol locations, file organization) or are stale/redundant; never prune genuine architectural decisions, patterns, or do's/don'ts with rationale.
 
