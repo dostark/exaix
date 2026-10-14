@@ -8,7 +8,7 @@
  */
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
-import { ExecutionStrategyName, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
+import { ExecutionStrategyName, FlowStepExecutionMode, FlowStepType, type JSONValue } from "@exaix/core";
 import { getCriteriaByNames } from "@exaix/core/evaluation";
 import { FlowSchema, type IFlow, type IFlowStep } from "@exaix/schemas/flow.ts";
 
@@ -134,7 +134,7 @@ function key(lane: string, callIndex: number): string {
 }
 
 function judgeError(call: IExpectedCall, response: string, gate: IFlowStep): string | null {
-  let parsed: { criteriaScores?: Record<string, { score?: number }>; feedback?: unknown; suggestions?: unknown };
+  let parsed: { criteriaScores?: Record<string, { score?: number }>; feedback?: JSONValue; suggestions?: JSONValue };
   try {
     parsed = JSON.parse(response);
   } catch {

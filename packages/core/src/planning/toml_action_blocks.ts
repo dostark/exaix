@@ -26,15 +26,15 @@ export interface ITomlActionBlockExtraction {
 }
 
 interface IParsedTomlActionRoot {
-  tool?: unknown;
-  description?: unknown;
-  params?: unknown;
+  tool?: string;
+  description?: string;
+  params?: Record<string, JSONValue>;
 }
 
 function parseActionBlock(markerNumber: number, tomlBody: string): IPlanAction {
-  let parsed: unknown;
+  let parsed: JSONValue;
   try {
-    parsed = parseToml(tomlBody);
+    parsed = parseToml(tomlBody) as JSONValue;
   } catch (error) {
     throw new Error(
       `TOML_BLOCK:${markerNumber} contains invalid TOML: ${error instanceof Error ? error.message : String(error)}`,

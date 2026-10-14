@@ -16,7 +16,7 @@ import { parse as parseYamlRaw } from "@std/yaml";
 import { parseFrontmatter } from "./helpers/parse_frontmatter.ts";
 import { RequestSchema } from "@exaix/schemas/request.ts";
 import { BlueprintResolver, RequestProcessor } from "@exaix/request";
-import { RequestKind } from "@exaix/core";
+import { type JSONObject, RequestKind } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import {
   CONTEXT_FIXTURE_PATH,
@@ -587,24 +587,29 @@ const FM_SLICE_RE = /^---\s*\n([\s\S]*?)\n---\s*\n?/;
 /** Production-split mechanics (mirrors exactl handler's splitFileFrontmatter and the
  *  watcher-shared `---` slice: raw parseYaml cast to IRequestFrontmatter, NO read-time
  *  schema validation) applied to a generated request file. */
-function productionFrontmatterOf(generatedFile: string): Record<string, unknown> {
+function productionFrontmatterOf(generatedFile: string): JSONObject {
   const content = Deno.readTextFileSync(generatedFile); // tests may sync-read for slicing parity
   const fmSlice = content.match(FM_SLICE_RE);
   assertExists(fmSlice, "generated file must carry frontmatter");
-  return parseYamlRaw(fmSlice[1]) as Record<string, unknown>;
+  return parseYamlRaw(fmSlice[1]) as JSONObject;
+}
+
+/** Minimal status-manager stub: the admission branch only needs `updateStatus`. */
+interface IStatusManagerStub {
+  updateStatus(): Promise<void>;
 }
 
 /** Drives the REAL RequestProcessor.getRequestKindOrFail branch logic via prototype
  *  binding with only the failure-path collaborator stubbed — the consumer-contract
  *  oracle whose absence let GAP-1 hide behind writer-side schema greens. */
-async function admissionKindOf(frontmatter: Record<string, unknown>): Promise<RequestKind | null> {
+async function admissionKindOf(frontmatter: JSONObject): Promise<RequestKind | null> {
   const proc = Object.create(RequestProcessor.prototype) as {
-    statusManager: unknown;
+    statusManager: IStatusManagerStub;
   };
   proc.statusManager = { updateStatus: async () => {} };
   const kind = await (proc as never as {
     getRequestKindOrFail(args: {
-      frontmatter: Record<string, unknown>;
+      frontmatter: JSONObject;
       filePath: string;
       traceLogger: IEventLogger;
     }): Promise<RequestKind | null>;

@@ -256,6 +256,15 @@ function validateGrepArguments(args: string[]): { valid: boolean; reason?: strin
 
 // ToolRegistry Implementation
 
+/**
+ * Converts a tool-result value into a JSONValue with a JSON round-trip.
+ * Tool handlers build typed objects not assignable to JSONValue.
+ * This normalizes them once at the registry boundary.
+ */
+function toJsonValue<T>(value: T): JSONValue {
+  return JSON.parse(JSON.stringify(value) ?? "null") as JSONValue;
+}
+
 export class ToolRegistry implements IToolRegistry {
   private config: Config;
   private logger?: IEventLogger;
@@ -437,7 +446,7 @@ export class ToolRegistry implements IToolRegistry {
     return {
       id: crypto.randomUUID(),
       toolName,
-      args: params as Record<string, unknown>,
+      args: params,
       stepId: "tool:" + crypto.randomUUID(),
       traceId: this.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID,
       reason,
@@ -628,7 +637,7 @@ export class ToolRegistry implements IToolRegistry {
     if (this.resultValidator && context.result) {
       const failure = this.resultValidator.validateEnvelope(
         toolName,
-        context.result as unknown as Record<string, JSONValue>,
+        toJsonValue(context.result),
       );
       if (failure) {
         const remediationPolicy = this.resolveRemediationPolicy(toolName);
@@ -648,7 +657,7 @@ export class ToolRegistry implements IToolRegistry {
                   success: false,
                   error: `Tool '${toolName}' not implemented`,
                 };
-                return retryResult as unknown as JSONValue;
+                return toJsonValue(retryResult);
               },
               toolMetadata: remediationMetadata,
             },
@@ -657,7 +666,16 @@ export class ToolRegistry implements IToolRegistry {
           await this.reportValidationOutcome(toolName, remediationPolicy, remediationResult);
 
           if (remediationResult.outcome === "passed") {
-            return remediationResult.remediatedResult as unknown as IToolResult;
+            const remediated = remediationResult.remediatedResult;
+            if (remediated === null || typeof remediated !== "object" || Array.isArray(remediated)) {
+              return { success: false, error: "Remediation produced a non-object result" };
+            }
+            const envelope = remediated as { [key: string]: JSONValue };
+            return {
+              success: envelope.success === true,
+              data: envelope.data,
+              error: typeof envelope.error === "string" ? envelope.error : undefined,
+            };
           }
         } else {
           await this.reportValidationOutcome(toolName, this.getFallbackValidationPolicy(toolName), {
@@ -762,7 +780,7 @@ export class ToolRegistry implements IToolRegistry {
     }
     const knowledge = await portalKnowledgeService.getOrAnalyze(portal.alias, portal.path);
     return this.formatSuccess(
-      queryRelationships(knowledge, this.stripPortalQualifier(from), kind) as unknown as JSONValue,
+      toJsonValue(queryRelationships(knowledge, this.stripPortalQualifier(from), kind)),
     );
   }
 
@@ -790,7 +808,7 @@ export class ToolRegistry implements IToolRegistry {
     }
     const portal = this.currentPortal();
     const results = await memoryService.search(query, { portal: portal?.alias, limit });
-    return this.formatSuccess(results as unknown as JSONValue);
+    return this.formatSuccess(toJsonValue(results));
   }
 
   /** Read-only discovery: return the catalog of registered tools with their functional
@@ -807,7 +825,7 @@ export class ToolRegistry implements IToolRegistry {
         description: t.nativeDescription ?? t.description,
         parameters: t.parameters,
       }));
-    return Promise.resolve(this.formatSuccess(catalog as unknown as JSONValue));
+    return Promise.resolve(this.formatSuccess(toJsonValue(catalog)));
   }
 
   /**
@@ -836,7 +854,7 @@ export class ToolRegistry implements IToolRegistry {
       return { success: false, error: "find_dependents: current execution root is not a configured portal" };
     }
     const knowledge = await portalKnowledgeService.getOrAnalyze(portal.alias, portal.path);
-    return this.formatSuccess(whoDependsOn(knowledge, this.stripPortalQualifier(path)) as unknown as JSONValue);
+    return this.formatSuccess(toJsonValue(whoDependsOn(knowledge, this.stripPortalQualifier(path))));
   }
 
   /** Lists symbol-level reference edges for the current portal, filtered by kind.
@@ -856,7 +874,7 @@ export class ToolRegistry implements IToolRegistry {
       ? symbolEdges.slice(0, Number(limit))
       : symbolEdges;
 
-    return this.formatSuccess(capped as unknown as JSONValue);
+    return this.formatSuccess(toJsonValue(capped));
   }
 
   /** Model identity for graph-tool result token counting — the bare configured AI model name.
@@ -1004,7 +1022,7 @@ export class ToolRegistry implements IToolRegistry {
       ranked.slice(0, effectiveLimit),
     );
     const { records, truncated: recordsDropped } = await this.boundGraphResult(shortened);
-    return this.formatSuccess({ symbols: records, truncated: docsShortened || recordsDropped } as unknown as JSONValue);
+    return this.formatSuccess(toJsonValue({ symbols: records, truncated: docsShortened || recordsDropped }));
   }
 
   /** Validates path/depth before any cache lookup; returns the effective depth or an error. */
@@ -1039,7 +1057,7 @@ export class ToolRegistry implements IToolRegistry {
     const edges = traverseModuleDependencies(resolved.knowledge, validated.path, validated.depth)
       .slice(0, MAX_GRAPH_TOOL_RESULTS);
     const { records, truncated } = await this.boundGraphResult(edges);
-    return this.formatSuccess({ edges: records, truncated } as unknown as JSONValue);
+    return this.formatSuccess(toJsonValue({ edges: records, truncated }));
   }
 
   /**
@@ -1363,7 +1381,7 @@ export class ToolRegistry implements IToolRegistry {
    * Format tool result for error
    * @private
    */
-  private formatError(error: unknown, context?: Opt<string, Reason.OptionalContext>): IToolResult {
+  private formatError<T>(error: T, context?: Opt<string, Reason.OptionalContext>): IToolResult {
     const normalizedError = error instanceof Error ? error : String(error);
 
     // Handle path security errors

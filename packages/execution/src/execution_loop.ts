@@ -955,9 +955,9 @@ export class ExecutionLoop {
     let match: RegExpExecArray | null;
 
     while ((match = codeBlockRegex.exec(planContent)) !== null) {
-      let parsed: unknown;
+      let parsed: JSONValue;
       try {
-        parsed = parseToml(match[1]);
+        parsed = parseToml(match[1]) as JSONValue;
       } catch {
         // Not valid TOML — cannot be an executable action.
         continue;
@@ -965,8 +965,10 @@ export class ExecutionLoop {
 
       // Only a block that declares a string `tool` is an action candidate. Blocks without
       // one (prose, config snippets) are not actions and stay skipped.
-      if (parsed === null || typeof parsed !== "object" || !("tool" in parsed)) continue;
-      const candidate = parsed as { tool?: unknown; params?: unknown; description?: unknown };
+      if (
+        parsed === null || typeof parsed !== "object" || Array.isArray(parsed) || !("tool" in parsed)
+      ) continue;
+      const candidate = parsed as Record<string, JSONValue>;
       if (typeof candidate.tool !== "string") continue;
 
       const validated = PlanActionSchema.safeParse({

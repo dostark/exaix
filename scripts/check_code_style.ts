@@ -539,7 +539,7 @@ const LAYER_LEAK_EXEMPT = new Set([
  *  4. If the constructor identifier matches an imported value from a
  *     different domain package, flag it.
  */
-function checkLayerLeaks(filePath: string, sourceText: string, repoPath: string): void {
+function checkLayerLeaks(sourceFile: ts.SourceFile, repoPath: string): void {
   if (!repoPath.startsWith("packages/")) return;
   if (repoPath.includes("/tests/") || repoPath.includes("/testing/") || repoPath.endsWith("_test.ts")) return;
   if (LAYER_LEAK_EXEMPT.has(repoPath)) return;
@@ -547,8 +547,6 @@ function checkLayerLeaks(filePath: string, sourceText: string, repoPath: string)
   const pkgMatch = repoPath.match(/^packages\/([^/]+)/);
   if (!pkgMatch) return;
   const myPackage = pkgMatch[1];
-
-  const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true);
 
   // ── Step 1: collect imported names from domain packages ──
   const imported = new Map<string, { specifier: string; line: number }>();
@@ -605,7 +603,7 @@ function checkLayerLeaks(filePath: string, sourceText: string, repoPath: string)
   for (const name of newNames) {
     const info = imported.get(name);
     if (!info) continue;
-    const location = `${filePath}:${info.line}`;
+    const location = `${sourceFile.fileName}:${info.line}`;
     const prefix = convertWarnings ? "ERROR" : "WARN";
     console.log(
       `${prefix} [concrete-cross-domain] ${location} – ` +
@@ -642,7 +640,7 @@ function checkLayerLeaks(filePath: string, sourceText: string, repoPath: string)
   // ── Step 5: remaining names are constant-like → flag ──
   if (imported.size === 0) return;
   for (const [name, info] of imported) {
-    const location = `${filePath}:${info.line}`;
+    const location = `${sourceFile.fileName}:${info.line}`;
     const prefix = convertWarnings ? "ERROR" : "WARN";
     console.log(
       `${prefix} [layer-constant-leak] ${location} – ` +
@@ -1150,35 +1148,56 @@ function checkCommentDiscipline(repoPath: string, lines: string[], templateLiter
   flushLineRun();
 }
 
+/**
+ * Collects the 1-based line numbers that lie inside a template literal.
+ * The parsed AST supplies the ranges, not a backtick count.
+ * A backtick in a regex, string, or comment can no longer flip the state.
+ */
+function collectTemplateLiteralLines(sourceFile: ts.SourceFile): Set<number> {
+  const lines = new Set<number>();
+  function visit(node: ts.Node): void {
+    if (ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+      const startLine = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+      const endLine = sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1;
+      for (let line = startLine; line <= endLine; line++) lines.add(line);
+      return;
+    }
+    ts.forEachChild(node, visit);
+  }
+  ts.forEachChild(sourceFile, visit);
+  return lines;
+}
+
+/**
+ * True for a line that is only a `//`, `/*`, or `*` comment.
+ * Code-shape rules then do not read comment prose as code.
+ */
+function isCommentOnlyLine(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*");
+}
+
 async function checkFile(path: string) {
   const repoPath = path.startsWith(REPO_ROOT + "/") ? path.slice(REPO_ROOT.length + 1) : path;
   const text = await Deno.readTextFile(path);
   const lines = text.split(/\r?\n/);
 
+  // Single parse per file: the layer-leak check and the template-literal line
+  // ranges both read from this SourceFile.
+  const sourceFile = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true);
+
   // AST-based layer-aware constant import check (supersedes the old regex rule)
-  checkLayerLeaks(path, text, repoPath);
+  checkLayerLeaks(sourceFile, repoPath);
 
   checkCommentDates(repoPath, text);
   checkTestFileName(repoPath);
 
-  const templateLiteralLines = new Set<number>();
-  let templateLiteralState = false;
-  for (let idx = 0; idx < lines.length; idx++) {
-    const line = lines[idx];
-    const backtickCount = (line.replace(/\\`/g, "").match(/`/g) || []).length;
-    if (backtickCount % 2 !== 0) {
-      templateLiteralState = !templateLiteralState;
-    }
-    if (templateLiteralState) {
-      templateLiteralLines.add(idx + 1);
-    }
-  }
+  const templateLiteralLines = collectTemplateLiteralLines(sourceFile);
 
   checkCommentDiscipline(repoPath, lines, templateLiteralLines);
 
   let inMultiLineComment = false;
   let inMultiLineImport = false;
-  let inTemplateLiteral = false;
   let inTypeDeclaration = false;
   let protectedBraceCount = 0;
   let functionalCodeLineNum = -1;
@@ -1255,13 +1274,8 @@ async function checkFile(path: string) {
       continue;
     }
 
-    // Handle template literals (backticks)
-    const backtickCount = (line.replace(/\\`/g, "").match(/`/g) || []).length;
-    if (backtickCount % 2 !== 0) {
-      inTemplateLiteral = !inTemplateLiteral;
-    }
-    if (inTemplateLiteral) {
-      templateLiteralLines.add(idx + 1);
+    // Skip content inside template literals (AST-derived line ranges)
+    if (templateLiteralLines.has(idx + 1)) {
       continue;
     }
 
@@ -1278,7 +1292,7 @@ async function checkFile(path: string) {
       }
       continue;
     }
-    const isImportStart = (/^\s*import\b/.test(line) && !/^\s*import(\.|\s*\()/.test(line)) ||
+    const isImportStart = (/^\s*import\b/.test(line) && !/^\s*import(\.|\s*\(|\s*:)/.test(line)) ||
       /^\s*export\s+\*\s+from\b/.test(line) ||
       /^\s*export\s+{[^}]*}\s+from\b/.test(line) ||
       /^\s*export\s+type\s+{[^}]*}\s+from\b/.test(line);
@@ -1989,6 +2003,12 @@ async function checkFile(path: string) {
 
     lines.forEach((line, idx) => {
       if (templateLiteralLines.has(idx + 1) && rule.name !== "test-inline-multiline-fixture") {
+        return;
+      }
+      if (
+        (rule.name === "import-inside-statement" || rule.name === "dynamic-import") &&
+        isCommentOnlyLine(line)
+      ) {
         return;
       }
       const lineToTest = ["explicit-unknown", "explicit-unknown-array", "index-signature-unknown"].includes(rule.name)

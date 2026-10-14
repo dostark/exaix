@@ -9,6 +9,10 @@ import { dirname, fromFileUrl, join } from "@std/path";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
 
+// Assembled at runtime so this test file is not itself flagged by the double-cast rule
+// it exercises.
+const CAST_PHRASE = ["as", "unknown", "as"].join(" ");
+
 async function runCheckCodeStyle(filePath: string): Promise<{ code: number; output: string }> {
   const command = new Deno.Command(Deno.execPath(), {
     args: ["run", "--config=deno.json", "-A", "scripts/check_code_style.ts", filePath],
@@ -786,4 +790,78 @@ export function run(): number {
   const result = await runCheckCodeStyle(filePath);
 
   assertEquals(result.output.includes("[decorative-comment]"), false, result.output);
+});
+
+Deno.test("check_code_style does not exempt lines after a backtick inside a regex literal", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "backtick_regex_mask.ts");
+  const lines = [
+    "/**",
+    " * @module TempBacktickRegexMask",
+    " * @path backtick_regex_mask.ts",
+    " * @description Temporary fixture: a regex backtick must not mask later lines.",
+    " */",
+    "",
+    'const stripBackticks = (s: string): string => s.replace(/[\\$`]/g, "");',
+    `const value = input ${CAST_PHRASE} Target;`,
+    "",
+  ];
+  await Deno.writeTextFile(filePath, lines.join("\n"));
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertEquals(result.code, 1, result.output);
+  assertStringIncludes(result.output, "[double-cast]");
+  assertStringIncludes(result.output, `${filePath}:8`);
+});
+
+Deno.test("check_code_style exempts text inside a real multi-line template literal", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "template_text.ts");
+  const lines = [
+    "/**",
+    " * @module TempTemplateText",
+    " * @path template_text.ts",
+    " * @description Temporary fixture: template text is not code.",
+    " */",
+    "",
+    "export const guidance = `",
+    `  Never write ${CAST_PHRASE} in code;`,
+    "  narrow the type at the boundary instead.",
+    "`;",
+    "",
+  ];
+  await Deno.writeTextFile(filePath, lines.join("\n"));
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertEquals(result.code, 0, result.output);
+  assertEquals(result.output.includes("[double-cast]"), false, result.output);
+});
+
+Deno.test("check_code_style is not fooled by comment, escaped-string, or nested template backticks", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "backtick_forms.ts");
+  const lines = [
+    "/**",
+    " * @module TempBacktickForms",
+    " * @path backtick_forms.ts",
+    " * @description Temporary fixture: backtick forms must not mask later lines.",
+    " */",
+    "",
+    "// A comment that mentions a single backtick `",
+    'export const escaped = "a \\` b";',
+    "const nested = `",
+    "  outer ${`inner`} text",
+    "`;",
+    `const value = input ${CAST_PHRASE} Target;`,
+    "",
+  ];
+  await Deno.writeTextFile(filePath, lines.join("\n"));
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertEquals(result.code, 1, result.output);
+  assertStringIncludes(result.output, "[double-cast]");
+  assertStringIncludes(result.output, `${filePath}:12`);
 });

@@ -58,6 +58,12 @@ export interface IPlanValidation {
   planSync?: PlanSyncStatus;
 }
 
+/** Owning repo of a plan-doc path: the submodule dir + in-submodule path, or the parent. */
+export interface IOwningRepo {
+  submodule?: string;
+  relPath: string;
+}
+
 /** Standard conventional commit types. */
 const VALID_TYPES = [
   "feat",
@@ -708,12 +714,6 @@ async function submodulePaths(): Promise<string[]> {
     .map((l) => l.trim().split(/\s+/)[1])
     .filter((p): p is string => Boolean(p))
     .sort((a, b) => b.length - a.length);
-}
-
-/** Owning repo of a plan-doc path: the submodule dir + in-submodule path, or the parent. */
-export interface IOwningRepo {
-  submodule?: string;
-  relPath: string;
 }
 
 export async function resolveOwningRepo(docPath: string): Promise<IOwningRepo> {

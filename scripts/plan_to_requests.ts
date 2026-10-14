@@ -28,6 +28,13 @@ interface FrontmatterFields {
   plan_context_ref?: string;
 }
 
+export interface IRelevantConstraints {
+  /** Filtered `### Constraints` bullets sharing a token with the step slice. */
+  constraints: string[];
+  /** Filtered `### Design Decisions` bullets sharing a token with the step slice. */
+  designDecisions: string[];
+}
+
 /** Diagnostics that abort generation before any request file is written. */
 const FATAL_DIAGNOSTIC_CODES = new Set<PhaseStepDiagnosticCode>(["no_steps", "duplicate_step_number"]);
 /** Diagnostics surfaced as a non-fatal warning — matches the script's pre-Phase-174 behavior
@@ -154,13 +161,6 @@ const BACKTICK_TOKEN_REGEX = /`([^`\n]+)`/g;
 const PATH_TOKEN_REGEX = /[A-Za-z0-9_][A-Za-z0-9_\-./]*\.(?:ts|md|json|toml|yaml|yml|sh)/g;
 const TOKEN_TRIM_PATTERN = /^[\s.,:'"()[\]\\]+|[\s.,:'"()[\]\\]+$/g;
 
-export interface IRelevantConstraints {
-  /** Filtered `### Constraints` bullets sharing a token with the step slice. */
-  constraints: string[];
-  /** Filtered `### Design Decisions` bullets sharing a token with the step slice. */
-  designDecisions: string[];
-}
-
 /**
  * Slices `content` from the `## Executive Summary` h2 boundary to the next heading of
  * level ≤ 2, then bounds it to the bold "The Problem / The Solution / The Goal"
@@ -252,15 +252,18 @@ export function extractRelevantConstraints(content: string, stepSectionText: str
   };
 }
 
-function buildRequestFile(
-  planSlug: string,
-  stepNumber: number,
-  manifest: StepManifest | null,
-  sectionText: string,
-  content?: Opt<string, Reason.OptionalInput>,
-  contextPointer?: Opt<string, Reason.OptionalInput>,
-  planContextRef?: Opt<string, Reason.OptionalInput>,
-): string {
+interface IBuildRequestFileArgs {
+  planSlug: string;
+  stepNumber: number;
+  manifest: StepManifest | null;
+  sectionText: string;
+  content?: Opt<string, Reason.OptionalInput>;
+  contextPointer?: Opt<string, Reason.OptionalInput>;
+  planContextRef?: Opt<string, Reason.OptionalInput>;
+}
+
+function buildRequestFile(args: IBuildRequestFileArgs): string {
+  const { planSlug, stepNumber, manifest, sectionText, content, contextPointer, planContextRef } = args;
   const agentRole = manifest?.agent_role ?? "senior-coder";
   const skills = manifest?.skills;
   const portal = manifest?.portal ?? "exaix-self";
@@ -404,15 +407,15 @@ async function main(): Promise<void> {
     const manifest = step.manifest;
     const fileName = `${planSlug}-step-${step.stepNumber}.md`;
     const filePath = join(outDir, fileName);
-    const requestContent = buildRequestFile(
+    const requestContent = buildRequestFile({
       planSlug,
-      step.stepNumber,
+      stepNumber: step.stepNumber,
       manifest,
-      step.sectionText,
+      sectionText: step.sectionText,
       content,
       contextPointer,
       planContextRef,
-    );
+    });
 
     if (dryRun) {
       console.log(
