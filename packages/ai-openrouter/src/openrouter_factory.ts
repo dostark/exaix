@@ -78,6 +78,8 @@ export class OpenRouterProviderFactory extends AbstractKeyBasedProviderFactory {
       timeoutMs: Math.min(options.timeoutMs || DEFAULT_OPENROUTER_TIMEOUT_MS, OPENROUTER_MODEL_INFO_TIMEOUT_MS),
       logger: options.logger,
     });
+    // A lookup that modelInfo built earlier has no journal until a provider supplies one.
+    if (options.logger) this.modelLookup.attachLogger(options.logger);
     return new OpenRouterProvider({
       apiKey,
       model: options.model,

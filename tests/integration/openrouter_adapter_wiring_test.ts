@@ -31,6 +31,7 @@ import { ProviderFactory, setProviderRegistryBootstrap } from "@exaix/ai/provide
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 
 const OPENROUTER_MODEL = "qwen/qwen3.7-flash";
+const LOOKUP_BACKOFF_PASSED_MS = 120_000;
 // A model the prompt-caching guide documents for explicit breakpoints.
 const CACHE_LISTED_MODEL = "qwen/qwen3-max";
 const OPENROUTER_TEST_ENV: Record<string, string | null> = {
@@ -670,5 +671,44 @@ Deno.test({
       content: [{ type: "text", text: "hi", cache_control: { type: "ephemeral" } }],
     }]);
     assertEquals(events.some((event) => event.cache_read_tokens === 700 && event.model === CACHE_LISTED_MODEL), true);
+  },
+});
+
+Deno.test({
+  name:
+    "[integration] after the registry bootstrap and one provider creation, a failing models endpoint journals openrouter.capability_lookup.failed",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const { db, tempDir, cleanup } = await initTestDbService();
+    const clockOffset = { ms: 0 };
+    const realNow = Date.now;
+    using _clock = stub(Date, "now", () => realNow() + clockOffset.ms);
+    using _fetchStub = stub(globalThis, "fetch", () => Promise.resolve(new Response("down", { status: 500 })));
+    ProviderRegistry.clear();
+    try {
+      bootstrapProviderRegistry();
+      await withEnv(OPENROUTER_TEST_ENV, async () => {
+        const metadata = ProviderRegistry.getProviderMetadata(PROVIDER_OPENROUTER);
+        assert(metadata?.modelInfo);
+        assertEquals(await metadata.modelInfo(OPENROUTER_MODEL), undefined);
+        await db.waitForFlush();
+        assertEquals(
+          (await db.getActivitiesByActionTypeSafe(DomainEventType.OpenRouterCapabilityLookupFailed)).length,
+          0,
+        );
+
+        await ProviderFactory.create(openRouterConfig(tempDir), db, new EventLogger({ db }));
+        clockOffset.ms += LOOKUP_BACKOFF_PASSED_MS;
+        assertEquals(await metadata.modelInfo(OPENROUTER_MODEL), undefined);
+        await db.waitForFlush();
+        const rows = await db.getActivitiesByActionTypeSafe(DomainEventType.OpenRouterCapabilityLookupFailed);
+        assertEquals(rows.length, 1);
+        assertEquals(JSON.parse(rows[0].payload ?? "{}").model, OPENROUTER_MODEL);
+      });
+    } finally {
+      ProviderRegistry.clear();
+      await cleanup();
+    }
   },
 });

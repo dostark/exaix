@@ -12,7 +12,8 @@ import { assert, assertEquals } from "@std/assert";
 import { stub } from "@std/testing/mock";
 import { ExaPathDefaults, LogLevel, ProviderType, SecureCredentialStore } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
-import { withEnv } from "@exaix/testing";
+import { createMockLogger, withEnv } from "@exaix/testing";
+import { DomainEventType } from "@exaix/core/events";
 import { type Config, ConfigSchema } from "@exaix/schemas";
 import { OpenRouterProvider, OpenRouterProviderFactory } from "@exaix/ai-openrouter";
 
@@ -69,6 +70,7 @@ const FACTORY_MODEL = "vendor/specific-model";
 const FACTORY_CONTEXT_WINDOW = 262_144;
 const FACTORY_MODELS_URL = "https://catalog.example/api/v1/models";
 const MODEL_INFO_BOUND_MS = 5_000;
+const LOOKUP_BACKOFF_PASSED_MS = 120_000;
 const TEST_DEADLINE_TOLERANCE_MS = 1_000;
 const FACTORY_CATALOG = {
   data: [
@@ -228,9 +230,7 @@ Deno.test("modelInfo returns undefined within OPENROUTER_MODEL_INFO_TIMEOUT_MS w
 });
 
 Deno.test("OpenRouterProviderFactory reads api_key_env from config", async () => {
-  Deno.env.delete("OPENROUTER_API_KEY");
-  Deno.env.set("CUSTOM_OR_KEY", "sk-zzz");
-  try {
+  await withEnv({ OPENROUTER_API_KEY: null, CUSTOM_OR_KEY: "sk-zzz" }, async () => {
     const config = makeConfig({
       ai_openrouter: { api_key_env: "CUSTOM_OR_KEY", site_name: "Exaix", site_url: "https://exaix.dev" },
     });
@@ -242,7 +242,26 @@ Deno.test("OpenRouterProviderFactory reads api_key_env from config", async () =>
       config,
     });
     assert(provider instanceof OpenRouterProvider);
-  } finally {
-    Deno.env.delete("CUSTOM_OR_KEY");
-  }
+  });
+});
+
+Deno.test("a lookup first built by modelInfo journals openrouter.capability_lookup.failed after create() supplies a logger", async () => {
+  const clockOffset = { ms: 0 };
+  const realNow = Date.now;
+  using _clock = stub(Date, "now", () => realNow() + clockOffset.ms);
+  using _fetchStub = stub(globalThis, "fetch", () => Promise.resolve(new Response("down", { status: 500 })));
+  await withEnv({ OPENROUTER_API_KEY: "sk-test" }, async () => {
+    const factory = new OpenRouterProviderFactory();
+    assertEquals(await factory.modelInfo(FACTORY_MODEL), undefined);
+    const logger = createMockLogger();
+    await factory.create({
+      provider: ProviderType.OPENROUTER,
+      model: FACTORY_MODEL,
+      timeoutMs: 60_000,
+      logger,
+    });
+    clockOffset.ms += LOOKUP_BACKOFF_PASSED_MS;
+    assertEquals(await factory.modelInfo(FACTORY_MODEL), undefined);
+    assertEquals(logger.warn.calls.map((call) => call.args[0]), [DomainEventType.OpenRouterCapabilityLookupFailed]);
+  });
 });

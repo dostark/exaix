@@ -163,12 +163,19 @@ export class OpenRouterModelCapabilities implements IOpenRouterCapabilitySource 
   private readonly failureBackoffMs: number;
   private readonly maxResponseBytes: number;
   private readonly now: () => number;
+  private logger: IEventLogger | undefined;
 
   constructor(private readonly options: IOpenRouterModelCapabilitiesOptions) {
+    this.logger = options.logger;
     this.ttlMs = options.ttlMs ?? DEFAULT_OPENROUTER_CAPABILITY_CACHE_TTL_MS;
     this.failureBackoffMs = options.failureBackoffMs ?? OPENROUTER_CAPABILITY_FAILURE_BACKOFF_MS;
     this.maxResponseBytes = options.maxResponseBytes ?? OPENROUTER_CAPABILITY_MAX_RESPONSE_BYTES;
     this.now = options.now ?? Date.now;
+  }
+
+  /** Supplies the journal to a lookup built without one. An existing logger stays. */
+  attachLogger(logger: IEventLogger): void {
+    this.logger ??= logger;
   }
 
   async getEntry(model: string, traceId?: Opt<string, Reason.TraceAbsent>): Promise<IOpenRouterModelEntry | undefined> {
@@ -256,7 +263,7 @@ export class OpenRouterModelCapabilities implements IOpenRouterCapabilitySource 
       reason: failure.reason,
       ...(failure.status !== undefined ? { status: failure.status } : {}),
     };
-    await this.options.logger?.warn(
+    await this.logger?.warn(
       DomainEventType.OpenRouterCapabilityLookupFailed,
       this.options.providerId,
       { ...payload },

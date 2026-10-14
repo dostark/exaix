@@ -11,6 +11,7 @@
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { ProviderType } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+import { withEnv } from "@exaix/testing";
 import { AuthenticationError, ConnectionError } from "@exaix/ai/providers";
 import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
 import {
@@ -72,13 +73,14 @@ Deno.test("OpenRouterProviderFactory.create returns a provider when an API key i
 });
 
 Deno.test("OpenRouterProviderFactory.create throws when the API key is missing", async () => {
-  Deno.env.delete("OPENROUTER_API_KEY");
-  const factory = new OpenRouterProviderFactory();
-  await assertRejects(
-    () => factory.create({ provider: ProviderType.OPENROUTER, model: "anthropic/claude-3-opus", timeoutMs: 60_000 }),
-    Error,
-    "OPENROUTER_API_KEY",
-  );
+  await withEnv({ OPENROUTER_API_KEY: null }, async () => {
+    const factory = new OpenRouterProviderFactory();
+    await assertRejects(
+      () => factory.create({ provider: ProviderType.OPENROUTER, model: "anthropic/claude-3-opus", timeoutMs: 60_000 }),
+      Error,
+      "OPENROUTER_API_KEY",
+    );
+  });
 });
 
 Deno.test("OPENROUTER_PROVIDER_METADATA has no supportsThinking, supportsEffort, contextWindow or costPerMtok", () => {

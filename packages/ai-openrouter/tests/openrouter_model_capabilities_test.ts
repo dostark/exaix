@@ -325,3 +325,33 @@ Deno.test("the models URL is derived from the configured chat completions endpoi
   assertEquals(deriveOpenRouterModelsUrl("https://proxy.example/v1/"), "https://proxy.example/v1/models");
   assertEquals(deriveOpenRouterModelsUrl("https://proxy.example/v1"), "https://proxy.example/v1/models");
 });
+
+Deno.test("attachLogger supplies a logger to a lookup that has none", async () => {
+  const { restore } = stubFetch(() => new Response("no", { status: 500 }));
+  try {
+    const { lookup, clock } = makeLookup({ logger: undefined });
+    const logger = createMockLogger();
+    assertEquals(await lookup.getEntry("qwen/qwen3.7-flash"), undefined);
+    lookup.attachLogger(logger);
+    clock.now += BACKOFF_MS + 1;
+    assertEquals(await lookup.getEntry("qwen/qwen3.7-flash"), undefined);
+    assertEquals(lastFailure(logger).action, DomainEventType.OpenRouterCapabilityLookupFailed);
+    assertEquals(logger.warn.calls.length, 1);
+  } finally {
+    restore();
+  }
+});
+
+Deno.test("attachLogger does not replace an existing logger", async () => {
+  const { restore } = stubFetch(() => new Response("no", { status: 500 }));
+  try {
+    const { lookup, logger: original } = makeLookup();
+    const replacement = createMockLogger();
+    lookup.attachLogger(replacement);
+    assertEquals(await lookup.getEntry("qwen/qwen3.7-flash"), undefined);
+    assertEquals(original.warn.calls.length, 1);
+    assertEquals(replacement.warn.calls.length, 0);
+  } finally {
+    restore();
+  }
+});
