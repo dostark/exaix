@@ -261,6 +261,7 @@ export class GoogleProvider extends BaseProvider {
       id: this.id,
       traceId: options?.traceId,
       maxAttempts: this.maxRetries,
+      retryAfterMaxMs: this.retryAfterMaxMs,
       backoffBaseMs: this.retryDelayMs,
       timeoutMs: this.timeoutMs,
       logger: this.logger,

@@ -9,7 +9,7 @@
 
 import { type AiConfig, AiConfigSchema, type Config, ConfigSchema } from "@exaix/schemas";
 
-import { ExaPathDefaults, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import { DEFAULT_AI_RETRY_AFTER_MAX_MS, ExaPathDefaults, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import { AnalysisMode } from "@exaix/core/request";
 import {
   ConfidenceAssessmentLevel,
@@ -90,6 +90,7 @@ export function createTestConfig(aiConfig?: Partial<AiConfig>): Config {
       max_attempts: 3,
       backoff_base_ms: 1000,
       timeout_per_request_ms: 30000,
+      retry_after_max_ms: DEFAULT_AI_RETRY_AFTER_MAX_MS,
     },
     ai_anthropic: {
       api_version: "2023-06-01",

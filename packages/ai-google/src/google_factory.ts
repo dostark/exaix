@@ -24,6 +24,7 @@ export class GoogleProviderFactory extends AbstractKeyBasedProviderFactory {
       model: options.model,
       id: this.generateId(PROVIDER_GOOGLE, options.model, options.id),
       logger: options.logger,
+      retryAfterMaxMs: options.config?.ai_retry?.retry_after_max_ms,
     });
   }
 }

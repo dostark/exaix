@@ -20,6 +20,7 @@ import { MCPConfigSchema } from "./mcp.ts";
 import * as DEFAULTS from "@exaix/core";
 import { ProviderType, TaskType, TokenizerBackend, ToolsRoundMode } from "@exaix/core";
 import {
+  DEFAULT_AI_RETRY_AFTER_MAX_MS,
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
   DEFAULT_AI_RETRY_MAX_ATTEMPTS,
   DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS,
@@ -508,6 +509,7 @@ const ConfigObjectSchema = z.object({
     max_attempts: c("ai.retry.max_attempts"),
     backoff_base_ms: c("ai.retry.backoff_base_ms"),
     timeout_per_request_ms: c("ai.retry.timeout_per_request_ms"),
+    retry_after_max_ms: c("ai.retry.retry_after_max_ms"),
     providers: z.record(
       z.string(),
       z.object({
@@ -519,6 +521,7 @@ const ConfigObjectSchema = z.object({
     max_attempts: DEFAULT_AI_RETRY_MAX_ATTEMPTS,
     backoff_base_ms: DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
     timeout_per_request_ms: DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS,
+    retry_after_max_ms: DEFAULT_AI_RETRY_AFTER_MAX_MS,
   }),
   /** AI timeout configuration */
   ai_timeout: z.object({

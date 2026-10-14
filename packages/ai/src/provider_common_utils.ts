@@ -939,6 +939,7 @@ export async function fetchJsonWithRetries<T>(
     errorMapper,
     traceId,
     logRetries = true,
+    retryAfterMaxMs,
   }: {
     id: string;
     maxAttempts?: number;
@@ -949,6 +950,8 @@ export async function fetchJsonWithRetries<T>(
     traceId?: string;
     /** False keeps retries out of the journal, for the compatible branch whose contract is one terminal event. */
     logRetries?: boolean;
+    /** Longest Retry-After wait in milliseconds. Absent, the registered default cap applies. */
+    retryAfterMaxMs?: number;
     tokenMapper?: (d: T, providerId?: string) => TokenMap | undefined;
     maxResponseBytes?: number;
     exposeRemoteErrorText?: boolean;
@@ -1000,6 +1003,7 @@ export async function fetchJsonWithRetries<T>(
     maxRetries: maxAttempts,
     baseDelayMs: backoffBaseMs,
     signal: requestSignal,
+    retryAfterMaxMs,
     onRetry: logger && logRetries
       ? (attempt, delayMs, error) => journalScheduledRetry(logger, id, traceId, maxAttempts, attempt, delayMs, error)
       : undefined,
@@ -1047,6 +1051,7 @@ export async function performProviderCall<T>(
     errorMapper,
     traceId,
     logRetries,
+    retryAfterMaxMs,
   }: {
     id: string;
     maxAttempts?: number;
@@ -1057,6 +1062,8 @@ export async function performProviderCall<T>(
     traceId?: string;
     /** False keeps retries out of the journal, for the compatible branch whose contract is one terminal event. */
     logRetries?: boolean;
+    /** Longest Retry-After wait in milliseconds. Absent, the registered default cap applies. */
+    retryAfterMaxMs?: number;
     tokenMapper?: (d: T, providerId?: string) => TokenMap | undefined;
     extractor?: (d: T) => string;
     stopReasonExtractor?: (d: T) => string | undefined;
@@ -1099,6 +1106,7 @@ export async function performProviderCall<T>(
     errorMapper,
     traceId,
     logRetries,
+    retryAfterMaxMs,
   });
   // Debug-level dump of the raw response body: content extraction strips parts of
   // it (e.g. thinking blocks), so investigating a live-provider issue needs the

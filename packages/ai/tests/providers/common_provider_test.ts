@@ -113,6 +113,22 @@ Deno.test("withRetry - a retryAfterMs over the cap waits the cap", async () => {
   }
 });
 
+Deno.test("withRetry - caps a Retry-After value at retryAfterMaxMs when it is supplied", async () => {
+  const time = new FakeTime();
+  try {
+    const retryAfterMaxMs = 2_000;
+    const probe = failsOnceThenSucceeds(retryAfterMaxMs * 10);
+    const result = withRetry(probe.fn, { maxRetries: 2, baseDelayMs: 1, retryAfterMaxMs });
+    await time.tickAsync(retryAfterMaxMs - 1);
+    assertEquals(probe.calls(), 1);
+    await time.tickAsync(1);
+    assertEquals(await result, "ok");
+    assertEquals(probe.calls(), 2);
+  } finally {
+    time.restore();
+  }
+});
+
 Deno.test("withRetry - an abort during a Retry-After wait rejects at once", async () => {
   const time = new FakeTime();
   try {

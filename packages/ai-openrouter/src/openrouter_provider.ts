@@ -220,8 +220,10 @@ export class OpenRouterProvider extends BaseProvider {
       defaultModel: DEFAULT_OPENROUTER_MODEL,
       defaultEndpoint: options.baseUrl || DEFAULT_OPENROUTER_ENDPOINT,
       defaultTimeout: options.timeoutMs || DEFAULT_OPENROUTER_TIMEOUT_MS,
-      defaultRetryDelay: options.retryDelayMs || DEFAULT_OPENROUTER_RETRY_BACKOFF_MS,
-      defaultMaxRetries: options.maxRetries || DEFAULT_OPENROUTER_RETRY_MAX_ATTEMPTS,
+      defaultRetryDelay: options.config?.ai_retry?.providers?.[PROVIDER_OPENROUTER]?.backoff_base_ms ||
+        DEFAULT_OPENROUTER_RETRY_BACKOFF_MS,
+      defaultMaxRetries: options.config?.ai_retry?.providers?.[PROVIDER_OPENROUTER]?.max_attempts ||
+        DEFAULT_OPENROUTER_RETRY_MAX_ATTEMPTS,
     }, PROVIDER_OPENROUTER);
     this.siteName = options.siteName ?? OPENROUTER_DEFAULT_SITE_NAME;
     this.siteUrl = options.siteUrl ?? OPENROUTER_DEFAULT_SITE_URL;
@@ -353,6 +355,7 @@ export class OpenRouterProvider extends BaseProvider {
       id: this.id,
       traceId: options?.traceId,
       maxAttempts: this.maxRetries,
+      retryAfterMaxMs: this.retryAfterMaxMs,
       backoffBaseMs: this.retryDelayMs,
       timeoutMs: this.timeoutMs,
       logger: this.logger,

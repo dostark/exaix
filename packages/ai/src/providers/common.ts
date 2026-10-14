@@ -91,6 +91,8 @@ export interface IWithRetryOptions {
   maxRetries: number;
   baseDelayMs: number;
   signal?: AbortSignal;
+  /** Longest wait that a Retry-After value can impose. Absent, DEFAULT_AI_RETRY_AFTER_MAX_MS applies. */
+  retryAfterMaxMs?: number;
   onRetry?: (attempt: number, delayMs: number, error: Error) => void | Promise<void>;
 }
 
@@ -238,10 +240,7 @@ export function retryAfterMsOf(error: Error): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
-/**
- * Retries a promise-returning function with exponential backoff (maxRetries, baseDelayMs).
- * A provider's Retry-After value replaces a shorter backoff, capped at DEFAULT_AI_RETRY_AFTER_MAX_MS.
- */
+/** Retries with exponential backoff. A Retry-After value replaces a shorter backoff, up to the retryAfterMaxMs cap. */
 export async function withRetry<T>(fn: () => Promise<T>, options: IWithRetryOptions): Promise<T> {
   let lastError: Error | null = null;
   for (let i = 0; i < options.maxRetries; i++) {
@@ -258,7 +257,7 @@ export async function withRetry<T>(fn: () => Promise<T>, options: IWithRetryOpti
         const retryAfter = retryAfterMsOf(err);
         const delay = retryAfter === undefined
           ? backoff
-          : Math.max(backoff, Math.min(retryAfter, DEFAULT_AI_RETRY_AFTER_MAX_MS));
+          : Math.max(backoff, Math.min(retryAfter, options.retryAfterMaxMs ?? DEFAULT_AI_RETRY_AFTER_MAX_MS));
         await options.onRetry?.(i + 1, delay, err);
         await waitForRetry(delay, options.signal);
       }

@@ -84,6 +84,7 @@ export class OpenRouterProviderFactory extends AbstractKeyBasedProviderFactory {
       baseUrl: options.baseUrl,
       id,
       logger: options.logger,
+      config: options.config,
       timeoutMs: options.timeoutMs,
       capabilities: this.modelLookup,
       siteName: openrouterConfig?.site_name,
