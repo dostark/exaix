@@ -42,6 +42,57 @@ function setupProviders(): void {
   ProviderRegistry.registerWithMetadata("test-google", null as never, createMockProvider("test-google"));
 }
 
+Deno.test("getModelCost reads the per-model price and preserves a zero catalog price", async () => {
+  using _metadataStub = stub(ProviderRegistry, "getProviderMetadata", () =>
+    createMockProvider("catalog", {
+      modelInfo: (model) => Promise.resolve({ inputPerMtok: model === "free" ? 0 : 0.02 }),
+    }));
+  const registry = new DefaultModelRegistry(stubHealthChecker());
+  assertEquals(await registry.getModelCost("catalog", "paid"), 0.02);
+  assertEquals(await registry.getModelCost("catalog", "free"), 0);
+});
+
+Deno.test("an unknown price falls back to the provider value even after a rejected lookup", async () => {
+  for (const modelInfo of [() => Promise.resolve(undefined), () => Promise.reject(new Error("offline"))]) {
+    using _metadataStub = stub(
+      ProviderRegistry,
+      "getProviderMetadata",
+      () => createMockProvider("catalog", { modelInfo }),
+    );
+    assertEquals(await new DefaultModelRegistry(stubHealthChecker()).getModelCost("catalog", "model"), 1);
+  }
+});
+
+Deno.test("getModelCapability and getProviderModels report the per-model window, cost and false capability flags", async () => {
+  setupProviders();
+  try {
+    const metadata = ProviderRegistry.getProviderMetadata("test-openai");
+    assert(metadata);
+    metadata.supportsThinking = true;
+    metadata.supportsEffort = true;
+    metadata.modelInfo = () =>
+      Promise.resolve({ contextWindow: 262_144, inputPerMtok: 0.02, supportsThinking: false, supportsEffort: false });
+    const registry = new DefaultModelRegistry(stubHealthChecker());
+    assertEquals(await registry.getModelCapability("test-openai", "model"), {
+      minContextWindow: 262_144,
+      maxCostPerMillionTokens: 0.02,
+      supportsThinking: false,
+      supportsEffort: false,
+    });
+    const entries = await registry.getProviderModels("test-openai");
+    assertEquals(entries[0].contextWindow, 262_144);
+    assertEquals(entries[0].costPer1kTokens, 0.00002);
+    assertEquals(entries[0].capabilities.supportsEffort, false);
+    assertEquals((await registry.getModelsByCapability({ minContextWindow: 200_000 })).map((entry) => entry.provider), [
+      "test-openai",
+    ]);
+    assertEquals(await registry.getModelsByCapability({ supportsThinking: true }), []);
+    assertEquals((await registry.getModelPricing("test-openai", "model")).provenance, "endpoint");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
 Deno.test("getContextWindow reads modelInfo when the overlay has no row", async () => {
   const models: string[] = [];
   const modelInfo: IProviderModelInfo = { contextWindow: 262_144 };

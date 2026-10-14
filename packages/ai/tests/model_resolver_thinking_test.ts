@@ -16,6 +16,7 @@ import { createStubCostTracker, createStubHealthChecker } from "./helpers/servic
 import { ModelResolver } from "../src/model_resolver.ts";
 import type { IModelIntent } from "@exaix/schemas";
 import { createTestConfig } from "./helpers/test_config.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 function registerProvider(
   name: string,
@@ -36,7 +37,7 @@ function registerProvider(
   });
 }
 
-function makeResolver(logger?: ReturnType<typeof createMockEventLogger>): ModelResolver {
+function makeResolver(logger?: Opt<ReturnType<typeof createMockEventLogger>, Reason.OptionalContext>): ModelResolver {
   return new ModelResolver(
     new DefaultRoutingStrategy(ProviderRegistry, createStubCostTracker(), createStubHealthChecker()),
     createTestConfig(),
@@ -44,6 +45,29 @@ function makeResolver(logger?: ReturnType<typeof createMockEventLogger>): ModelR
     logger ?? createMockEventLogger(),
   );
 }
+
+Deno.test("thinking constraints use model capabilities instead of the opposite provider flags", async () => {
+  ProviderRegistry.clear();
+  try {
+    registerProvider("basic", { supportsThinking: true });
+    registerProvider("thinker", { supportsThinking: false });
+    const basic = ProviderRegistry.getProviderMetadata("basic");
+    const thinker = ProviderRegistry.getProviderMetadata("thinker");
+    if (!basic || !thinker) throw new Error("fixture metadata missing");
+    basic.modelInfo = () => Promise.resolve({ supportsThinking: false });
+    thinker.modelInfo = () => Promise.resolve({ supportsThinking: true });
+    const logger = createMockEventLogger();
+    const result = await makeResolver(logger).resolve({ thinking: true });
+    assertEquals(result.provider, "thinker");
+    assertEquals(result.options?.thinking, true);
+    assertEquals(
+      logger.events.find((event) => event.action === "model.resolved")?.payload?.reason,
+      "thinking_constrained",
+    );
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
 
 Deno.test("[step132.1][thinking] selects thinking-capable provider when thinking:true", async () => {
   const { cleanup } = await initTestDbService();

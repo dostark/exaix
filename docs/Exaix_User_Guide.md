@@ -334,7 +334,8 @@ How Exaix uses OpenRouter:
 - **Prompt caching.** Exaix adds `cache_control` breakpoints only for the models that OpenRouter's prompt-caching guide lists. To turn breakpoints off, set `[ai_openrouter] cache_control = false`. On some routes a cache write costs more than a plain input token, so a one-shot prompt can cost more.
 - **Routing.** `[ai_openrouter.routing]` passes through up to three fallback `models`, and the `provider` fields `order`, `only`, `ignore`, `sort`, `allow_fallbacks`, `quantizations`, `max_price`, `zdr` and `data_collection`.
 - **Replay.** Replayed assistant messages carry `reasoning_details` unchanged. `reasoning_content` is not sent.
-- **Cost.** `usage.cost` is read as OpenRouter credits.
+- **Selection.** Price ranking, size presets, thinking and effort use the selected model's catalog data before provider-level values. An unknown price cannot win "cheapest" over a known price. Catalog failures use the provider-level fallback.
+- **Cost.** `usage.cost` is read as OpenRouter credits. When it is absent, ReAct can estimate the cost from measured tokens and the model's catalog prices. The estimate stays labeled `predicted`. Prompt previews use the catalog input price without inventing output tokens.
 
 The adapter's modules are listed in [packages/ai-openrouter/README.md](../packages/ai-openrouter/README.md).
 

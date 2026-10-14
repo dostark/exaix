@@ -11,12 +11,38 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { ProviderType, TaskComplexity } from "@exaix/core";
-import { EffortResolver } from "@exaix/ai";
+import { PricingTier, ProviderCostTier, ProviderType, TaskComplexity } from "@exaix/core";
+import { EffortResolver, type IProviderMetadata, resolveProviderMetadata } from "@exaix/ai";
 import type { IEffortDeclarationPair, IEffortResolutionSignals } from "@exaix/ai";
 import type { EffortTier } from "@exaix/schemas";
 
 const resolver = new EffortResolver();
+
+for (const reasoning of [true, false]) {
+  Deno.test(
+    reasoning ? "a model whose entry lists reasoning gets thinking" : "a model without reasoning does not",
+    async () => {
+      const metadata: IProviderMetadata = {
+        name: ProviderType.OPENROUTER,
+        description: "Catalog fixture",
+        capabilities: ["chat"],
+        strengths: [],
+        costTier: ProviderCostTier.PAID,
+        pricingTier: PricingTier.MEDIUM,
+        supportsThinking: !reasoning,
+        modelInfo: () => Promise.resolve({ supportsThinking: reasoning }),
+      };
+      const resolvedMetadata = await resolveProviderMetadata(metadata, "vendor/model");
+      const result = resolve({ thinking: "auto" }, {
+        taskComplexity: TaskComplexity.COMPLEX,
+        providerType: ProviderType.OPENROUTER,
+        model: "vendor/model",
+        providerSupportsThinking: resolvedMetadata.supportsThinking === true,
+      });
+      assertEquals(result.thinking, reasoning ? true : undefined);
+    },
+  );
+}
 
 function baseSignals(overrides: Partial<IEffortResolutionSignals> = {}): IEffortResolutionSignals {
   return {

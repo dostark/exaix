@@ -4,17 +4,17 @@
  * @description Phase 132 Step 1 — validates context-window default resolution in ModelResolver:
  *   resolves with default model size when no size specified.
  */
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { PricingTier, ProviderCostTier } from "@exaix/core";
 import { HealthStatus } from "@exaix/core/types";
-import type { IModelEntry, IModelRegistry } from "@exaix/core/types";
+import type { IModelEntry, IModelRegistry, Opt, Reason } from "@exaix/core/types";
 import { initTestDbService } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
 import { ProviderRegistry } from "../src/provider_registry.ts";
 import { MockProviderFactory } from "../src/factories/mock_factory.ts";
 import { DefaultRoutingStrategy } from "../src/routing/default_routing_strategy.ts";
 import { createStubCostTracker, createStubHealthChecker } from "./helpers/service_stubs.ts";
-import { ModelResolver } from "../src/model_resolver.ts";
+import { ModelResolver, resolvePresetFromSize } from "../src/model_resolver.ts";
 import { createTestConfig } from "./helpers/test_config.ts";
 
 function registerProvider(name: string): void {
@@ -29,7 +29,10 @@ function registerProvider(name: string): void {
   });
 }
 
-function makeResolver(logger?: ReturnType<typeof createMockEventLogger>, registry?: IModelRegistry): ModelResolver {
+function makeResolver(
+  logger?: Opt<ReturnType<typeof createMockEventLogger>, Reason.OptionalContext>,
+  registry?: Opt<IModelRegistry, Reason.OptionalDependency>,
+): ModelResolver {
   return new ModelResolver(
     new DefaultRoutingStrategy(ProviderRegistry, createStubCostTracker(), createStubHealthChecker()),
     createTestConfig(),
@@ -38,6 +41,47 @@ function makeResolver(logger?: ReturnType<typeof createMockEventLogger>, registr
     registry,
   );
 }
+
+Deno.test("a size preset filters OpenRouter by its per-model context window, cost and thinking", async () => {
+  ProviderRegistry.clear();
+  try {
+    registerProvider("openrouter");
+    const metadata = ProviderRegistry.getProviderMetadata("openrouter");
+    if (!metadata) throw new Error("fixture metadata missing");
+    const profile = { M: { min_context_window: 200_000, max_cost_per_mtok: 1, supports_thinking: true } };
+    metadata.costPerMtok = 3;
+    metadata.supportsThinking = false;
+    metadata.modelInfo = () => Promise.resolve({ contextWindow: 262_144, inputPerMtok: 0.02, supportsThinking: true });
+    assertEquals((await resolvePresetFromSize("M", profile)).provider, "openrouter");
+    metadata.modelInfo = () => Promise.resolve({ contextWindow: 8192, inputPerMtok: 0.02, supportsThinking: true });
+    await assertRejects(() => Promise.resolve(resolvePresetFromSize("M", profile)), Error, "min_context_window");
+    metadata.modelInfo = () => Promise.resolve({ contextWindow: 262_144, inputPerMtok: 2, supportsThinking: true });
+    await assertRejects(() => Promise.resolve(resolvePresetFromSize("M", profile)), Error, "max_cost_per_mtok");
+    metadata.modelInfo = () => Promise.resolve({ contextWindow: 262_144, inputPerMtok: 0, supportsThinking: false });
+    await assertRejects(() => Promise.resolve(resolvePresetFromSize("M", profile)), Error, "thinking");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("an unknown window passes the preset filter after the lookup rejects", async () => {
+  ProviderRegistry.clear();
+  try {
+    registerProvider("openrouter");
+    const metadata = ProviderRegistry.getProviderMetadata("openrouter");
+    if (!metadata) throw new Error("fixture metadata missing");
+    metadata.contextWindow = undefined;
+    metadata.modelInfo = () => Promise.reject(new Error("catalog unavailable"));
+    assertEquals(
+      (await resolvePresetFromSize("M", {
+        M: { min_context_window: 200_000, max_cost_per_mtok: 1, supports_thinking: false },
+      })).provider,
+      "openrouter",
+    );
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
 
 Deno.test("[step132.1][context_window] resolves with default model size when no size specified", async () => {
   const { cleanup } = await initTestDbService();

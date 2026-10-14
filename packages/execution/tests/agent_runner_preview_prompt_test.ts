@@ -10,7 +10,9 @@
  * @related-files [packages/execution/src/agent_runner.ts, packages/schemas/src/prompt_budget.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertAlmostEquals, assertEquals } from "@std/assert";
+import { stub } from "@std/testing/mock";
+import { ProviderRegistry } from "@exaix/ai";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import {
   AgentRunner,
@@ -22,9 +24,32 @@ import {
   type IContextSegment,
   type IParsedRequest,
 } from "@exaix/execution";
-import { PromptBudgetAllocator } from "@exaix/core";
+import { PricingTier, PromptBudgetAllocator, ProviderCostTier } from "@exaix/core";
 
 const WELL_FORMED_RESPONSE = "<thought>ok</thought><content>done</content>";
+
+Deno.test("AgentRunner preview uses the selected model's catalog price without inventing output tokens", async () => {
+  const models: string[] = [];
+  using _metadataStub = stub(ProviderRegistry, "getMetadataForInstance", () => ({
+    name: "openrouter",
+    description: "Catalog fixture",
+    capabilities: ["chat"],
+    strengths: [],
+    costTier: ProviderCostTier.PAID,
+    pricingTier: PricingTier.MEDIUM,
+    modelInfo: (model) => {
+      models.push(model);
+      return Promise.resolve({ inputPerMtok: 3, outputPerMtok: 15 });
+    },
+  }));
+  const runner = new AgentRunner(new MockProvider(WELL_FORMED_RESPONSE), {
+    selectedModel: { provider: "rate-limited-openrouter-vendor-model", model: "vendor/catalog-model" },
+  });
+  const preview = await runner.previewPrompt({ systemPrompt: "System" }, { userPrompt: "Task", context: {} });
+  assert(preview.totalTokenEstimate > 0);
+  assertAlmostEquals(preview.estimatedCostUsd ?? -1, preview.totalTokenEstimate * 0.000003);
+  assertEquals(models, ["vendor/catalog-model"]);
+});
 
 Deno.test("[AgentRunner.previewPrompt] returns a per-segment breakdown matching constructPrompt's own assembly (no forked logic)", async () => {
   // Record the exact stages prepare() receives on the constructPrompt path, so the

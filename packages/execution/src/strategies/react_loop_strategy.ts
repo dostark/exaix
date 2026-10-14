@@ -88,6 +88,7 @@ import type { IContextSegment } from "../context/context_segment.ts";
 import type { IReActLoopExecutor } from "../react_loop_adapter.ts";
 import { ContextBudgetExceededError } from "@exaix/core/errors";
 import { computeRegistryPredictedCost } from "../registry_computed_cost.ts";
+import { ProviderRegistry, readProviderModelInfo } from "@exaix/ai";
 import type { IPinnedSkillPrompt } from "../skill_pin_transport.ts";
 import {
   calculateAciDocBudgetChars,
@@ -619,16 +620,21 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     options: IAgentExecutionOptions,
     generateDurationMs: number,
   ): Promise<number | undefined> {
-    const registryCostUsd = response.costStatus === undefined
+    const metadata = ProviderRegistry.getMetadataForInstance(this.provider?.id) ??
+      ProviderRegistry.getMetadataForInstance(response.provider);
+    const canPredict = response.costStatus === undefined ||
+      (response.costStatus === "unknown" && metadata?.isAggregator === true);
+    const price = canPredict ? await readProviderModelInfo(metadata, response.model) : undefined;
+    const registryCostUsd = canPredict
       ? computeRegistryPredictedCost(response.provider, response.model, {
         promptTokens: response.usage.promptTokens,
         completionTokens: response.usage.completionTokens,
         cacheReadTokens: response.usage.cacheReadTokens,
         cacheCreationTokens: response.usage.cacheCreationTokens,
-      })
+      }, price)
       : undefined;
     const costUsd = response.costStatus === "unknown"
-      ? undefined
+      ? registryCostUsd
       : response.costStatus !== undefined
       ? response.cost_usd
       : registryCostUsd ?? response.cost_usd ?? 0;

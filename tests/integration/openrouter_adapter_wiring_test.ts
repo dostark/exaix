@@ -16,11 +16,13 @@ import { DefaultModelRegistry } from "@exaix/model-registry";
 import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { Opt, Reason } from "@exaix/core/types";
-import { type JSONValue, PricingTier } from "@exaix/core";
+import { type JSONValue, PricingTier, ProviderCostTier } from "@exaix/core";
+import { ModelResolver } from "@exaix/ai";
+import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
-import { type Config, ConfigSchema } from "@exaix/schemas";
-import { createMockConfig, initTestDbService, withEnv } from "@exaix/testing";
+import { type Config, ConfigSchema, getDefaultModels } from "@exaix/schemas";
+import { createMockConfig, createMockLogger, initTestDbService, withEnv } from "@exaix/testing";
 import { createOutputValidator } from "@exaix/tool-runtime";
 import { LlmAnalyzer } from "@exaix/request";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
@@ -42,6 +44,53 @@ const OPENROUTER_TEST_ENV: Record<string, string | null> = {
 const MODELS_FIXTURE = await Deno.readTextFile(
   new URL("../../packages/ai-openrouter/tests/fixtures/openrouter_models_fixture.json", import.meta.url),
 );
+
+Deno.test("[integration] after the bootstrap, ModelResolver ranks OpenRouter by the models-endpoint price", async () => {
+  const urls: string[] = [];
+  using _fetchStub = stub(globalThis, "fetch", (input) => {
+    urls.push(String(input));
+    return Promise.resolve(
+      Response.json({
+        data: [{ id: getDefaultModels().openrouter, pricing: { prompt: "0.00000002", completion: "0.00000006" } }],
+      }),
+    );
+  });
+  ProviderRegistry.clear();
+  try {
+    bootstrapProviderRegistry();
+    const metadata = ProviderRegistry.getProviderMetadata(PROVIDER_OPENROUTER);
+    assert(metadata);
+    metadata.capabilities.push("catalog-ranking-fixture");
+    ProviderRegistry.registerWithMetadata("competitor", new MockProviderFactory(), {
+      name: "competitor",
+      description: "Catalog ranking fixture",
+      capabilities: ["chat", "catalog-ranking-fixture"],
+      costTier: ProviderCostTier.PAID,
+      pricingTier: PricingTier.MEDIUM,
+      strengths: [],
+      costPerMtok: 1,
+    });
+    await withEnv({ OPENROUTER_API_KEY: "sk-or-test", EXA_MODEL_PRESET_OVERRIDE: null }, async () => {
+      const resolver = new ModelResolver(
+        {
+          selectProvider: () => Promise.resolve("competitor"),
+          selectProviderForTask: () => Promise.resolve("competitor"),
+        },
+        ConfigSchema.parse({ system: { root: "/tmp/catalog-ranking-test" } }),
+        { checkProvider: () => Promise.resolve(true) },
+        createMockLogger(),
+      );
+      const resolved = await resolver.resolve({
+        characteristics: ["cheapest"],
+        required_capabilities: ["catalog-ranking-fixture"],
+      });
+      assertEquals(resolved.provider, PROVIDER_OPENROUTER);
+      assertEquals(urls, ["https://openrouter.ai/api/v1/models"]);
+    });
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
 
 Deno.test("[integration] after the registry bootstrap, DefaultModelRegistry returns the models-endpoint context_length for an OpenRouter model", async () => {
   const urls: string[] = [];

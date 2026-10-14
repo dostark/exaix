@@ -15,6 +15,7 @@ export * from "./src/provider_factory.ts";
 export * from "./src/traced_provider.ts";
 export * from "./src/recording_lane_provider.ts";
 export * from "./src/provider_registry.ts";
+export * from "./src/provider_model_info.ts";
 export * from "./src/provider_selector.ts";
 export * from "./src/routing/provider_routing_strategy.ts";
 export * from "./src/routing/default_routing_strategy.ts";

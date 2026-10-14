@@ -7,6 +7,11 @@ then optional provider model metadata, then provider-level metadata. OpenRouter'
 provider metadata can read its cached models endpoint, with a five-second request
 limit. Lookup failure uses the provider-level fallback.
 
+Capability profiles and model entries also read per-model thinking, effort and input
+prices before provider-level values. Static prices retain precedence. Catalog prices
+have `endpoint` provenance, while unavailable prices stay `unknown`. Cheapest routing
+orders known prices ahead of unknown prices.
+
 ## Source Files
 
 - `src/default_model_registry.ts` — `DefaultModelRegistry`, the 13-method `IModelRegistry` floor

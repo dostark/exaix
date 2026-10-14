@@ -37,6 +37,7 @@ import {
 import { createMockLogger, makeGenerateResult } from "@exaix/testing";
 import type { ITool, JSONValue } from "@exaix/core/types";
 import type { IToolsRoundPolicy } from "@exaix/schemas";
+import type { Opt, Reason } from "@exaix/core/types";
 import { PLANNING_TOOL_RESULT_TRUNCATED_SUFFIX, ToolsRoundMode } from "@exaix/core";
 
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
@@ -75,8 +76,8 @@ function makeOptions(nativeToolsEnabled: boolean): IAgentExecutionOptions {
  *  (react_loop_strategy.ts:170-171: `this.executor.toolRegistry?.getTools() ?? []`). */
 function makeTrackingExecutor(
   getToolsCalls: { count: number },
-  tool?: ITool,
-  generationRecords?: Array<{ costUsd?: number; costSource?: string }>,
+  tool?: Opt<ITool, Reason.OptionalInput>,
+  generationRecords?: Opt<Array<{ costUsd?: number; costSource?: string }>, Reason.OptionalContext>,
 ): ReActExecutor {
   return {
     logAgentOutput: () => Promise.resolve(),
@@ -104,6 +105,49 @@ function makeTrackingExecutor(
   };
 }
 
+for (const status of ["unknown", "tracked"] as const) {
+  Deno.test(`OpenRouter ${status} usage uses catalog prediction only when usage.cost is missing`, async () => {
+    ProviderRegistry.clear();
+    let lookups = 0;
+    ProviderRegistry.registerWithMetadata("openrouter", new MockProviderFactory(), {
+      name: "openrouter",
+      description: "Catalog fixture",
+      capabilities: ["chat"],
+      strengths: [],
+      costTier: ProviderCostTier.PAID,
+      pricingTier: PricingTier.MEDIUM,
+      isAggregator: true,
+      modelInfo: () => {
+        lookups++;
+        return Promise.resolve({ inputPerMtok: 3, outputPerMtok: 15 });
+      },
+    });
+    try {
+      const records: Array<{ costUsd?: number; costSource?: string }> = [];
+      const provider: IModelProvider = {
+        id: "rate-limited-openrouter-vendor-model",
+        generate: () =>
+          Promise.resolve({
+            content: `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`,
+            usage: { promptTokens: 1_000_000, completionTokens: 1_000_000, totalTokens: 2_000_000 },
+            model: "vendor/catalog-model",
+            provider: "openrouter",
+            costStatus: status,
+            ...(status === "tracked" ? { cost_usd: 0.123 } : {}),
+          }),
+      };
+      const result = await new ReActLoopStrategy(makeTrackingExecutor({ count: 0 }, undefined, records), provider)
+        .execute(testBlueprint, testContext, makeOptions(false));
+      assertEquals(result.usage?.cost_usd, status === "tracked" ? 0.123 : 18);
+      assertEquals(result.usage?.cost_source, "predicted");
+      assertEquals(records[0], { costUsd: status === "tracked" ? 0.123 : 18, costSource: "predicted" });
+      assertEquals(lookups, status === "tracked" ? 0 : 1);
+    } finally {
+      ProviderRegistry.clear();
+    }
+  });
+}
+
 /** Provider that immediately completes the ReAct loop on its first generate() call. */
 function makeCompleteProvider(id: string): IModelProvider {
   return {
@@ -111,6 +155,45 @@ function makeCompleteProvider(id: string): IModelProvider {
     generate: () => Promise.resolve(makeGenerateResult(`${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`)),
   };
 }
+
+Deno.test("[security] compatible unknown-cost policy is preserved even when a catalog price or overlay exists", async () => {
+  ProviderRegistry.clear();
+  let lookups = 0;
+  ProviderRegistry.registerWithMetadata("openai-chat", new MockProviderFactory(), {
+    name: "openai-chat",
+    description: "Compatible fixture",
+    capabilities: ["chat"],
+    strengths: [],
+    costTier: ProviderCostTier.LOCAL,
+    pricingTier: PricingTier.LOCAL,
+    compatibleCallPolicy: true,
+    modelInfo: () => {
+      lookups++;
+      return Promise.resolve({ inputPerMtok: 3, outputPerMtok: 15 });
+    },
+  });
+  try {
+    const records: Array<{ costUsd?: number; costSource?: string }> = [];
+    const provider: IModelProvider = {
+      id: "openai-chat-compatible-fixture",
+      generate: () =>
+        Promise.resolve({
+          content: `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`,
+          usage: { promptTokens: 100, completionTokens: 100, totalTokens: 200 },
+          provider: "anthropic",
+          model: "claude-sonnet-5",
+          costStatus: "unknown",
+        }),
+    };
+    const result = await new ReActLoopStrategy(makeTrackingExecutor({ count: 0 }, undefined, records), provider)
+      .execute(testBlueprint, testContext, makeOptions(false));
+    assertEquals(result.usage?.cost_usd, null);
+    assertEquals(records, [{ costUsd: undefined, costSource: "unknown" }]);
+    assertEquals(lookups, 0);
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
 
 Deno.test("ordinary ReAct providers retain the legacy omitted-cost and journal payload defaults", async () => {
   const records: Array<{ costUsd?: number; costSource?: string }> = [];
@@ -425,7 +508,7 @@ function registerToolChoiceProvider(): void {
 }
 
 /** Provider that records every generate() call and completes the loop on the first one. */
-function makeRecordingProvider(callCapabilities?: IModelProvider["callCapabilities"]): {
+function makeRecordingProvider(callCapabilities?: Opt<IModelProvider["callCapabilities"], Reason.OptionalContext>): {
   provider: IModelProvider;
   calls: Array<{ prompt: string; options?: IModelOptions }>;
 } {
@@ -453,7 +536,7 @@ function nativeOptions(permittedTools: string[]): IAgentExecutionOptions {
 }
 
 /** nativeToolChoiceMode rides on the strategy's options object but is not wire IModelOptions. */
-function toolChoiceModeOf(options?: IModelOptions): string | undefined {
+function toolChoiceModeOf(options?: Opt<IModelOptions, Reason.OptionalInput>): string | undefined {
   return (options as { nativeToolChoiceMode?: string } | undefined)?.nativeToolChoiceMode;
 }
 

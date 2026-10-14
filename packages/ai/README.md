@@ -105,6 +105,12 @@ Vertex AI (`@exaix-team/ai-vertex`) is Team+ only. **OpenRouter ships in Solo (a
 
 Provider selection is configured in `exa.config.toml`. See the Provider Strategy Guide for detailed configuration options, cost-based routing, and health-aware fallback chains.
 
+`IProviderMetadata.modelInfo(model)` supplies optional per-model context, price,
+thinking and effort data. `readProviderModelInfo` handles unavailable catalogs, and
+`resolveProviderMetadata` applies provider fallbacks without changing the registered
+metadata. `ModelResolver` uses the selected model's values for cost scoring, thinking
+constraints and size presets. Unknown prices rank behind known prices for "cheapest".
+
 ### Vertex AI & OpenRouter notes
 
 - **Vertex token refresh** is hardened: concurrent refreshes are deduplicated into a single token exchange, the exchange is timeout-bounded, the token response is schema-validated, and an early-refresh skew margin is applied. Service-account credentials are env-only and never logged; the token endpoint is restricted to `*.googleapis.com`.
