@@ -4,11 +4,461 @@
     "test": ["**/tests/**", "**/*_test.ts", "**/*_test.tsx", "**/*.test.ts"],
     "fixture": ["tests/scenario_framework/fixtures/**", "**/tests/fixtures/**"]
   },
+  "ignore": [
+    { "glob": "**/.git/**", "reason": "Version-control metadata." },
+    { "glob": "**/node_modules/**", "reason": "Installed dependencies." },
+    {
+      "glob": "**/check_code_style.ts",
+      "reason": "Self-exemption: the checker's own rule regexes and messages trip its rules."
+    },
+    {
+      "glob": "**/scenario_framework/fixtures/**",
+      "reason": "Fixture scope: fixtures intentionally contain violation shapes."
+    },
+    { "glob": "**/dist/**", "reason": "Build output." },
+    { "glob": "**/coverage/**", "reason": "Coverage output." },
+    { "glob": "**/.copilot/**", "reason": "Agent guidance, not production code." }
+  ],
   "tagVocabulary": {
     "type-safety": { "description": "Rules that keep type evidence (CODE_STYLE.md 1)." },
+    "imports": { "description": "Import shape and placement rules (CODE_STYLE.md 3)." },
+    "magic-values": { "description": "No magic numbers or strings (CODE_STYLE.md 2)." },
+    "module-structure": { "description": "Module headers and placement (CODE_STYLE.md 7)." },
+    "complexity": { "description": "Function and method size limits (CODE_STYLE.md 11)." },
+    "comments": { "description": "Comment discipline (CODE_STYLE.md 16)." },
+    "scripts": { "description": "Utility script headers (CODE_STYLE.md 12)." },
+    "test-quality": { "description": "Rules on test code and fixtures." },
+    "boundary": { "description": "Cross-boundary import rules." },
+    "tui": { "description": "TUI isolation boundary (CODE_STYLE.md 8)." },
+    "cli": { "description": "CLI isolation boundary (CODE_STYLE.md 9)." },
+    "package": { "description": "Package structure and purity." },
+    "edition": { "description": "Edition tier import boundary." },
+    "di": { "description": "Dependency injection and interfaces (CODE_STYLE.md 5)." },
     "deslop": { "description": "Rule idea taken from maharshi365/deslop or dmmulroy/anti-slop." }
   },
   "rules": {
+    "explicit-any-array": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety"]
+    },
+    "explicit-unknown": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety"],
+      "limits": "Reads line text after stripping strings and comments, so imported aliases are not resolved."
+    },
+    "explicit-unknown-array": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety"]
+    },
+    "unknown-type-alias": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety"]
+    },
+    "promise-response-alias": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety"]
+    },
+    "promise-response-return": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety"]
+    },
+    "ts-suppression-pragmas": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety"]
+    },
+    "deno-lint-no-explicit-any": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety"]
+    },
+    "explicit-any-cast": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety"]
+    },
+    "typeof-cast": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety"],
+      "options": { "allowedTargets": ["globalThis.fetch"] }
+    },
+    "record-any": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety"]
+    },
+    "record-unknown": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety"]
+    },
+    "index-signature-unknown": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety"]
+    },
+    "import-inside-statement": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#import-statements",
+      "tags": ["imports"]
+    },
+    "dynamic-import": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#import-statements",
+      "tags": ["imports"],
+      "exclusionCodes": {
+        "REQUIRED_FOR_TEST": "Dynamic import is required for test setup or mocking.",
+        "PLUGINS": "Dynamic import is necessary for plugin or runtime extension loading.",
+        "RUNTIME_REGISTRY": "Dynamic import is required at runtime for provider registry initialization."
+      }
+    },
+    "inline-type-import": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#import-statements",
+      "tags": ["imports"]
+    },
+    "re-export-imported": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#import-statements",
+      "tags": ["imports"],
+      "exclude": ["**/mod.ts", "**/index.ts", "src/services/core/db.ts"],
+      "reason": "Entrypoints and the compatibility shim legitimately re-export; the code keeps the isTestingCompatibilityShim call."
+    },
+    "package-entrypoint-root-src-reexport": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#import-statements",
+      "tags": ["imports", "package"],
+      "include": ["packages/**/mod.ts", "packages/**/index.ts"]
+    },
+    "no-interface-rename-on-import": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#import-statements",
+      "tags": ["imports", "di"]
+    },
+    "import-placement": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": ["imports", "module-structure"],
+      "limits": "Line-based; a multi-line type re-export can be read as a type definition."
+    },
+    "magic-union-type": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#no-magic-values",
+      "tags": ["magic-values"]
+    },
+    "module-header": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": ["module-structure"]
+    },
+    "module-header-tag": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": ["module-structure"]
+    },
+    "exported-interface-naming": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#di-and-interfaces",
+      "tags": ["di"]
+    },
+    "exported-interface-placement": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#di-and-interfaces",
+      "tags": ["di", "module-structure"]
+    },
+    "max-params": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#complexity-rules",
+      "tags": ["complexity", "module-structure"],
+      "options": { "max": 7 }
+    },
+    "long-comment": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#comment-discipline",
+      "tags": ["comments"],
+      "options": { "maxLines": 3 }
+    },
+    "ephemeral-comment": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#comment-discipline",
+      "tags": ["comments"]
+    },
+    "decorative-comment": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#comment-discipline",
+      "tags": ["comments"]
+    },
+    "edition-conditional-outside-composer": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#edition-tier-boundary",
+      "tags": ["edition", "boundary"],
+      "exclude": [
+        "**/check_code_style.ts",
+        "**/check_no_edition_conditionals.ts",
+        "exaix-enterprise/**",
+        "scripts/ci.ts",
+        "exaix-team/**",
+        "**/src/composer/**",
+        "apps/daemon/**",
+        "apps/exactl/**",
+        "apps/common/**",
+        "tests/scenario_framework/runner/modes.ts",
+        "scripts/test_parallel.ts"
+      ]
+    },
+    "edition-leak": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#edition-tier-boundary",
+      "tags": ["edition", "boundary"],
+      "limits": "Reads source text; check:edition-graph is its resolved-graph double check.",
+      "options": {
+        "soloTier": 0,
+        "teamTier": 1,
+        "enterpriseTier": 2,
+        "soloPrefixes": ["packages/", "apps/"],
+        "teamPrefixes": ["exaix-team/"],
+        "enterprisePrefixes": ["exaix-enterprise/"],
+        "teamAppPaths": ["apps/daemon/src/bootstrap_team.ts"]
+      }
+    },
+    "script-shebang": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#utility-scripts",
+      "tags": ["scripts"],
+      "include": ["scripts/**"]
+    },
+    "script-usage": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#utility-scripts",
+      "tags": ["scripts"],
+      "include": ["scripts/**"]
+    },
+    "script-placement": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#utility-scripts",
+      "tags": ["scripts"]
+    },
+    "tui-boundary-cli": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#tui-boundaries",
+      "tags": ["boundary", "tui"]
+    },
+    "tui-boundary-services": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#tui-boundaries",
+      "tags": ["boundary", "tui"]
+    },
+    "tui-boundary-config": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#tui-boundaries",
+      "tags": ["boundary", "tui"]
+    },
+    "tui-boundary-helpers": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#tui-boundaries",
+      "tags": ["boundary", "tui"]
+    },
+    "core-boundary-tui-helpers": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#tui-boundaries",
+      "tags": ["boundary", "tui", "package"]
+    },
+    "cli-boundary-services": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#cli-boundaries",
+      "tags": ["boundary", "cli"]
+    },
+    "cli-boundary-config": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#cli-boundaries",
+      "tags": ["boundary", "cli"]
+    },
+    "core-boundary-cli-helpers": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#cli-boundaries",
+      "tags": ["boundary", "cli", "package"]
+    },
+    "package-boundary": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": ["package", "boundary"]
+    },
+    "package-src-boundary": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": ["package", "boundary"]
+    },
+    "package-related-files-boundary": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": ["package", "boundary"]
+    },
+    "package-subpath-promotion": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": ["package", "boundary"]
+    },
+    "package-testing-import": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "test",
+      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
+      "tags": ["package", "test-quality"]
+    },
+    "package-canonical-import": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": ["package", "imports"]
+    },
+    "package-instantiates-event-logger": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#package-module-purity",
+      "tags": ["package", "di"]
+    },
+    "package-concrete-logger-type": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#package-module-purity",
+      "tags": ["package", "di"]
+    },
+    "package-uses-config-reader": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#package-module-purity",
+      "tags": ["package", "di"]
+    },
+    "test-inline-multiline-fixture": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "test",
+      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
+      "tags": ["test-quality"],
+      "options": { "minLines": 7 },
+      "exclusionCodes": {
+        "SMALL_FIXTURE_OK": "Fixture is under the 7-line threshold and inlining improves test clarity.",
+        "FIXTURE_READABILITY": "Inline fixture is more readable and maintainable in this context."
+      }
+    },
+    "concrete-cross-domain": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#layer-aware-constant-imports",
+      "tags": ["boundary", "di"]
+    },
+    "layer-constant-leak": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#layer-aware-constant-imports",
+      "tags": ["boundary"],
+      "limits": "AST-based over this file only; dynamic imports and re-exports are not followed."
+    },
     "exaix/no-chained-type-assertions": {
       "engine": "plugin",
       "severity": "error",

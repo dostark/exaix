@@ -25,7 +25,7 @@
  */
 
 import { parse } from "@std/flags";
-import { editionTierOfPath } from "./check_code_style.ts";
+import { EDITION_TIERS, editionTierOfPath } from "./check_code_style.ts";
 
 /** A single resolved runtime edge in the module graph, reduced to what the gate needs. */
 export interface IGraphEdge {
@@ -58,8 +58,8 @@ export function findStaticEditionLeaks(edges: IGraphEdge[]): IStaticEditionLeak[
   const leaks: IStaticEditionLeak[] = [];
   for (const edge of edges) {
     if (edge.isDynamic) continue; // edition-gated dynamic load — the sanctioned exception
-    const fromTier = editionTierOfPath(edge.from);
-    const toTier = editionTierOfPath(edge.to);
+    const fromTier = editionTierOfPath(edge.from, EDITION_TIERS);
+    const toTier = editionTierOfPath(edge.to, EDITION_TIERS);
     if (fromTier === null || toTier === null) continue; // untiered endpoint
     if (toTier > fromTier) {
       leaks.push({ ...edge, fromTier, toTier });

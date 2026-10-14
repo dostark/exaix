@@ -238,8 +238,8 @@ domain boundaries — low-level values that belong behind the service that owns 
 ## Exclusion Comments
 
 Warnings (not errors) may be suppressed with a `// style-exclude:<CODE> - <rationale>` comment
-on the line immediately above the flagged line. Valid codes are listed in
-`scripts/style_warning_exclusions.json`. Errors cannot be suppressed this way.
+on the line immediately above the flagged line. Valid codes are listed in each rule's
+`exclusionCodes` entry in `scripts/config/style_rule_catalog.json`. Errors cannot be suppressed this way.
 
 ---
 

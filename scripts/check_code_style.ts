@@ -10,23 +10,95 @@
 
 import ts from "typescript";
 import { walk } from "@std/fs";
-import { dirname, fromFileUrl, join, normalize } from "@std/path";
+import { dirname, fromFileUrl, globToRegExp, join, normalize } from "@std/path";
+import { z } from "zod";
+import {
+  classifyPath,
+  type ICatalog,
+  type JsonValue,
+  parseCatalog,
+  ruleSettings,
+  type ScriptRuleSchemas,
+} from "@exaix/lint-rules";
+import styleRuleCatalog from "./config/style_rule_catalog.json" with { type: "json" };
 
 const REPO_ROOT = normalize(join(dirname(fromFileUrl(import.meta.url)), ".."));
-const EXCLUSION_DICT_PATH = join(dirname(fromFileUrl(import.meta.url)), "style_warning_exclusions.json");
-let exclusionDict: Record<string, Record<string, { reason: string }>> = {};
-try {
-  exclusionDict = JSON.parse(Deno.readTextFileSync(EXCLUSION_DICT_PATH));
-} catch {
-  exclusionDict = {};
+
+/** Option schemas for the script rules that read catalog options. */
+const SCRIPT_RULE_SCHEMAS: ScriptRuleSchemas = {
+  "max-params": z.object({ max: z.number().int().positive().default(7) }).strict(),
+  "long-comment": z.object({ maxLines: z.number().int().positive().default(3) }).strict(),
+  "test-inline-multiline-fixture": z.object({ minLines: z.number().int().positive().default(7) }).strict(),
+  "typeof-cast": z.object({ allowedTargets: z.array(z.string()).default(["globalThis.fetch"]) }).strict(),
+  "edition-leak": z.object({
+    soloTier: z.number().int().default(0),
+    teamTier: z.number().int().default(1),
+    enterpriseTier: z.number().int().default(2),
+    soloPrefixes: z.array(z.string()).default(["packages/", "apps/"]),
+    teamPrefixes: z.array(z.string()).default(["exaix-team/"]),
+    enterprisePrefixes: z.array(z.string()).default(["exaix-enterprise/"]),
+    teamAppPaths: z.array(z.string()).default(["apps/daemon/src/bootstrap_team.ts"]),
+  }).strict(),
+};
+
+const CATALOG: ICatalog = parseCatalog(styleRuleCatalog, { scriptRuleSchemas: SCRIPT_RULE_SCHEMAS });
+
+/** `style-exclude:CODE` reasons, read from each rule's `exclusionCodes` catalog entry. */
+const exclusionDict: Record<string, Record<string, { reason: string }>> = Object.fromEntries(
+  Object.entries(CATALOG.rules)
+    .filter(([, entry]) => entry.exclusionCodes)
+    .map(([id, entry]) => [
+      id,
+      Object.fromEntries(
+        Object.entries(entry.exclusionCodes ?? {}).map(([code, reason]) => [code, { reason }]),
+      ),
+    ]),
+);
+
+/** Walker skip list, from the catalog `ignore` globs (each carries a reason). */
+const IGNORE_GLOBS = (CATALOG.ignore ?? []).map((entry) =>
+  globToRegExp(entry.glob, { extended: true, globstar: true })
+);
+
+const GLOB_CACHE = new Map<string, RegExp>();
+
+function globRegex(glob: string): RegExp {
+  let regex = GLOB_CACHE.get(glob);
+  if (!regex) {
+    regex = globToRegExp(glob, { extended: true, globstar: true });
+    GLOB_CACHE.set(glob, regex);
+  }
+  return regex;
 }
+
+function matchesAnyGlob(repoPath: string, globs: string[]): boolean {
+  return globs.some((glob) => globRegex(glob).test(repoPath));
+}
+
+/** Resolves a rule's effective severity for a path, or null when the rule does not apply. */
+function ruleEnabled(catalog: ICatalog, ruleName: string, repoPath: string): "error" | "warn" | null {
+  const settings = ruleSettings(catalog, ruleName);
+  if (settings.severity === "off") return null;
+  const pathClass = classifyPath(repoPath, catalog.scopes);
+  if (pathClass === "fixture") return null;
+  if (settings.scope === "test" && pathClass !== "test") return null;
+  if (settings.scope === "prod" && pathClass !== "prod") return null;
+  if (settings.include && !matchesAnyGlob(repoPath, settings.include)) return null;
+  if (settings.exclude && matchesAnyGlob(repoPath, settings.exclude)) return null;
+  if (settings.severity === "warn" && ruleName === "dynamic-import" && strictImports) return "error";
+  return settings.severity;
+}
+
+/** Catalog option values the rules array reads, so no threshold stays a literal. */
+const TYPEOF_ALLOWED_TARGETS = ruleSettings(CATALOG, "typeof-cast").options.allowedTargets ?? [];
+const TYPEOF_ALLOWED_PATTERN = (Array.isArray(TYPEOF_ALLOWED_TARGETS) ? TYPEOF_ALLOWED_TARGETS : [])
+  .map((target) => String(target).replace(/\./g, "\\."))
+  .join("|");
 
 interface Rule {
   name: string;
   regex: RegExp;
   message: string;
-  severity: "error" | "warn";
-  pathFilter?: (path: string) => boolean;
 }
 
 interface ITestingShimExportInfo {
@@ -183,39 +255,52 @@ function isGuardedEditionDynamicImport(repoPath: string, line: string, preceding
     precededByEditionGuard(precedingLines);
 }
 
-/** Edition tier of a repo path. Higher number = higher (more restricted) tier. */
-const EDITION_TIER_SOLO = 0;
-const EDITION_TIER_TEAM = 1;
-const EDITION_TIER_ENTERPRISE = 2;
+/** Edition tier prefixes, read from the `edition-leak` catalog entry. */
+interface IEditionTiers {
+  readonly soloTier: number;
+  readonly teamTier: number;
+  readonly enterpriseTier: number;
+  readonly soloPrefixes: string[];
+  readonly teamPrefixes: string[];
+  readonly enterprisePrefixes: string[];
+  readonly teamAppPaths: string[];
+}
+
+function stringListOption(value: JsonValue, fallback: string[]): string[] {
+  return Array.isArray(value) ? value.map((item) => String(item)) : fallback;
+}
+
+const EDITION_TIER_OPTIONS = ruleSettings(CATALOG, "edition-leak").options;
+
+export const EDITION_TIERS: IEditionTiers = {
+  soloTier: Number(EDITION_TIER_OPTIONS.soloTier ?? 0),
+  teamTier: Number(EDITION_TIER_OPTIONS.teamTier ?? 1),
+  enterpriseTier: Number(EDITION_TIER_OPTIONS.enterpriseTier ?? 2),
+  soloPrefixes: stringListOption(EDITION_TIER_OPTIONS.soloPrefixes, ["packages/", "apps/"]),
+  teamPrefixes: stringListOption(EDITION_TIER_OPTIONS.teamPrefixes, ["exaix-team/"]),
+  enterprisePrefixes: stringListOption(EDITION_TIER_OPTIONS.enterprisePrefixes, ["exaix-enterprise/"]),
+  teamAppPaths: stringListOption(EDITION_TIER_OPTIONS.teamAppPaths, ["apps/daemon/src/bootstrap_team.ts"]),
+};
 
 /**
- * Team-edition modules that physically live under root's `apps/` (edition glue), so they
- * are Team-tier despite the `apps/` prefix and may statically import `@exaix-team/*`. Loaded
- * only in the Team branch via a dynamic import guarded by an `editionType` check, so it never
- * enters a Solo build. (The former Team-only standalone app that lived here, apps/mcp-server/,
- * now lives entirely inside exaix-team/apps/mcp-server/ and needs no exception of its own.)
+ * Edition tier of a repo path. Higher number = higher (more restricted) tier.
+ * `tiers` defaults to the catalog's `edition-leak` options, so callers share one source.
  */
-const TEAM_TIER_APP_PATHS = [
-  "apps/daemon/src/bootstrap_team.ts",
-];
-
-export function editionTierOfPath(repoPath: string): number | null {
-  if (repoPath.startsWith("exaix-enterprise/")) return EDITION_TIER_ENTERPRISE;
-  if (repoPath.startsWith("exaix-team/")) return EDITION_TIER_TEAM;
-  if (TEAM_TIER_APP_PATHS.some((p) => repoPath === p || repoPath.startsWith(p))) {
-    return EDITION_TIER_TEAM;
-  }
-  if (repoPath.startsWith("packages/") || repoPath.startsWith("apps/")) return EDITION_TIER_SOLO;
+export function editionTierOfPath(repoPath: string, tiers: IEditionTiers = EDITION_TIERS): number | null {
+  if (tiers.enterprisePrefixes.some((prefix) => repoPath.startsWith(prefix))) return tiers.enterpriseTier;
+  if (tiers.teamPrefixes.some((prefix) => repoPath.startsWith(prefix))) return tiers.teamTier;
+  if (tiers.teamAppPaths.some((prefix) => repoPath === prefix || repoPath.startsWith(prefix))) return tiers.teamTier;
+  if (tiers.soloPrefixes.some((prefix) => repoPath.startsWith(prefix))) return tiers.soloTier;
   return null; // scripts/, tests/, etc. — not an edition-tiered module
 }
 
 /** Edition tier of an import specifier, or null when it is not edition-tiered. */
 function editionTierOfSpecifier(specifier: string): number | null {
   if (/(^|\/)exaix-enterprise(\/|$)|^@exaix-enterprise(\/|$)/.test(specifier)) {
-    return EDITION_TIER_ENTERPRISE;
+    return EDITION_TIERS.enterpriseTier;
   }
   if (/(^|\/)exaix-team(\/|$)|^@exaix-team(\/|$)/.test(specifier)) {
-    return EDITION_TIER_TEAM;
+    return EDITION_TIERS.teamTier;
   }
   return null;
 }
@@ -667,7 +752,6 @@ const rules: Rule[] = [
     regex: /^\s+.*(?<!typeof\s+)import\s*\(/,
     message:
       "Use of import() inside other statements (e.g., if, function, loop) is prohibited. All imports must be at the top level.",
-    severity: "error" as const,
   },
   {
     name: "dynamic-import",
@@ -675,7 +759,6 @@ const rules: Rule[] = [
     regex: /(?<!typeof\s+)\bimport\s*\(/,
     message:
       "Dynamic import statements (import(...)) are discouraged. If used, document the rationale in a comment above the import.",
-    severity: convertWarnings || strictImports ? ("error" as const) : ("warn" as const),
   },
   {
     name: "inline-type-import",
@@ -687,7 +770,6 @@ const rules: Rule[] = [
     regex: /(?<!typeof\s+)import\s*\(\s*["'][^"']+["']\s*\)\s*\.\s*\w/,
     message: 'Inline type imports (e.g. `import("./foo.ts").IFoo` inside a type annotation) are prohibited. ' +
       'Declare an explicit `import type { IFoo } from "./foo.ts"` at the top of the file.',
-    severity: "error" as const,
   },
   {
     name: "test-inline-multiline-fixture",
@@ -695,14 +777,11 @@ const rules: Rule[] = [
       /^\s*(?:const|let|var)\s+(?:markdown|yaml|json|input|payload|text|content)\s*=\s*(?:[A-Za-z_$][\w$]*\s*)?`[^`]*$/,
     message:
       "Avoid inline multiline structured text fixtures in test files. Move YAML, markdown, JSON, or other multi-line test inputs into a package-local fixture under tests/fixtures/ and load them from the test file.",
-    severity: "warn" as const,
-    pathFilter: (path: string) => path.includes("/tests/") || path.endsWith(".test.ts") || path.endsWith("_test.ts"),
   },
   {
     name: "explicit-any-array",
     regex: /:\s*any\[\]/,
     message: "Using 'any[]' as a type is forbidden; use a specific type instead.",
-    severity: "error" as const,
   },
   {
     name: "explicit-unknown",
@@ -710,71 +789,59 @@ const rules: Rule[] = [
     // Uses lookbehind for catch and matches various terminators
     regex: /(?<!catch\s*\(\s*[a-zA-Z_$]\w*\s*):\s*unknown\b(?!\s*\[)/,
     message: "Using 'unknown' as an explicit type is forbidden; name the shape with an interface or type alias.",
-    severity: "error" as const,
   },
   {
     name: "explicit-unknown-array",
     regex: /:\s*unknown\[\]/,
     message: "Using 'unknown[]' as a type is forbidden; use a specific type instead.",
-    severity: "error" as const,
   },
   {
     name: "unknown-type-alias",
     regex: /^\s*(?:export\s+)?type\s+[A-Za-z_$][\w$]*\s*=\s*unknown\s*;/,
     message:
       "Type aliases that rename raw 'unknown' are prohibited; define a real shape or narrow from 'unknown' where needed.",
-    severity: "error" as const,
   },
   {
     name: "promise-response-alias",
     regex: /^\s*(?:export\s+)?type\s+[A-Za-z_$][\w$]*\s*=\s*(?:\([^\)]*\)\s*=>\s*)?Promise\s*<\s*Response\s*>\s*;/,
     message: "Type aliases that mask 'Promise<Response>' are prohibited; define a specific response type instead.",
-    severity: "error" as const,
   },
   {
     name: "ts-suppression-pragmas",
     regex: /@ts-(?:ignore|expect-error|nocheck)/,
     message:
       "TypeScript suppression pragmas (e.g. @ts-ignore, @ts-expect-error, @ts-nocheck) are prohibited; fix the underlying type error instead.",
-    severity: "error" as const,
   },
   {
     name: "deno-lint-no-explicit-any",
     regex: /\/\/\s*deno-lint-ignore\s+no-explicit-any/,
     message: "Using '// deno-lint-ignore no-explicit-any' is not allowed; address the typing issue explicitly.",
-    severity: "error" as const,
   },
   {
     name: "explicit-any-cast",
     regex: /\bas\s+any\b/,
     message: "Casting to 'any' (e.g. 'foo as any') is forbidden.",
-    severity: "error" as const,
-    pathFilter: (path: string) => !path.includes("/tests/") && !path.endsWith(".test.ts") && !path.endsWith("_test.ts"),
   },
   {
     name: "typeof-cast",
-    regex: /\bas\s+typeof\s+(?!globalThis\.fetch\b)([a-zA-Z_]\w*)\s+(?!\&)/,
+    regex: new RegExp(`\\bas\\s+typeof\\s+(?!(?:${TYPEOF_ALLOWED_PATTERN})\\b)([a-zA-Z_]\\w*)\\s+(?!\\&)`),
     message:
       "Casting via 'as typeof <var>' is treated as an 'any' escape and is forbidden. Exceptions: 'as typeof globalThis.fetch' in tests, and intersection types like 'as typeof Deno & {...}'.",
-    severity: "error" as const,
   },
   {
     name: "record-any",
     regex: /Record<\s*string\s*,\s*any\s*>/,
     message: "'Record<string, any>' is weak and prohibited; define a more specific type.",
-    severity: "error" as const,
   },
   {
     name: "record-unknown",
     regex: /Record<\s*string\s*,\s*unknown\s*>/,
     message: "'Record<string, unknown>' is prohibited; define a specific interface or type alias instead.",
-    severity: "error" as const,
   },
   {
     name: "index-signature-unknown",
     regex: /\{\s*\[\s*key\s*:\s*string\s*\]\s*:\s*unknown\s*\}/,
     message: "'{ [key: string]: unknown }' is prohibited; define a specific interface describing the expected shape.",
-    severity: "error" as const,
   },
   {
     name: "promise-response-return",
@@ -782,28 +849,18 @@ const rules: Rule[] = [
     regex: /:\s*Promise\s*<\s*Response\s*>/,
     message:
       "'Promise<Response>' as return type is too weak; define a specific interface describing the expected response shape.",
-    severity: "error" as const,
   },
   {
     name: "re-export-imported",
     regex: /^\s*export\s+.*from\s+['"]|^\s*export\s+\*\s+from/,
     message:
       "Re-exporting entities from other modules (e.g., 'export { ... } from ...' or 'export * from ...') is prohibited. Each module must only export entities it defines.",
-    severity: "error" as const,
-    pathFilter: (path: string) =>
-      !path.endsWith("/mod.ts") &&
-      !path.endsWith("/index.ts") &&
-      !isTestingCompatibilityShim(path) &&
-      path !== "src/services/core/db.ts",
   },
   {
     name: "package-entrypoint-root-src-reexport",
     regex: /from\s+['"](?:src\/|(\.\.\/)+src\/)/,
     message:
       "Package entrypoints must not re-export entities directly from repo retired 'src/*' paths. Use package-local public exports instead.",
-    severity: "error" as const,
-    pathFilter: (path: string) =>
-      path.startsWith("packages/") && (path.endsWith("/mod.ts") || path.endsWith("/index.ts")),
   },
   {
     name: "magic-union-type",
@@ -814,8 +871,6 @@ const rules: Rule[] = [
     regex: /^(?!\s*(?:export\s+)?type\s+).*"\w+"\s*\|\s*"\w+"/,
     message:
       "Avoid magic string unions (e.g., '\"a\" | \"b\"'). Define a TypeScript 'enum' in packages/core/src/types/enums.ts or use a shared named union type instead.",
-    severity: "error" as const,
-    pathFilter: (path: string) => !path.includes("/tests/") && !path.endsWith(".test.ts") && !path.endsWith("_test.ts"),
   },
   // NOTE: the former [mit-team-import] regex rule (packages/ must not import packages-team/)
   // is superseded by the [edition-leak] check in checkFile(), which enforces the full tier
@@ -831,24 +886,51 @@ const rules: Rule[] = [
     regex: /EXAIX_EDITION|\bedition\s*(?:===?|!==?)/,
     message:
       "Edition conditionals (edition === / EXAIX_EDITION) are only allowed inside the edition composer. Move edition-selection logic to the composer, or check the composer for inadvertent edition branching in core code.",
-    severity: "error" as const,
-    pathFilter: (path: string) =>
-      !path.includes("/tests/") &&
-      !path.endsWith(".test.ts") &&
-      !path.endsWith("_test.ts") &&
-      !path.endsWith("check_code_style.ts") &&
-      !path.endsWith("check_no_edition_conditionals.ts") &&
-      !path.startsWith("exaix-enterprise/") &&
-      !path.endsWith("scripts/ci.ts") &&
-      !path.startsWith("exaix-team/") &&
-      !path.includes("/src/composer/") &&
-      !path.startsWith("apps/daemon/") &&
-      !path.startsWith("apps/exactl/") &&
-      !path.startsWith("apps/common/") &&
-      !path.startsWith("tests/scenario_framework/runner/modes.ts") &&
-      !path.endsWith("scripts/test_parallel.ts"),
   },
 ];
+
+/** Script rule ids implemented as inline checks (not in the `rules` array). */
+const INLINE_SCRIPT_RULE_IDS = [
+  "no-interface-rename-on-import",
+  "import-placement",
+  "module-header",
+  "module-header-tag",
+  "exported-interface-naming",
+  "exported-interface-placement",
+  "max-params",
+  "long-comment",
+  "ephemeral-comment",
+  "decorative-comment",
+  "edition-leak",
+  "script-shebang",
+  "script-usage",
+  "script-placement",
+  "tui-boundary-cli",
+  "tui-boundary-services",
+  "tui-boundary-config",
+  "tui-boundary-helpers",
+  "core-boundary-tui-helpers",
+  "cli-boundary-services",
+  "cli-boundary-config",
+  "core-boundary-cli-helpers",
+  "package-boundary",
+  "package-src-boundary",
+  "package-related-files-boundary",
+  "package-subpath-promotion",
+  "package-testing-import",
+  "package-canonical-import",
+  "package-instantiates-event-logger",
+  "package-concrete-logger-type",
+  "package-uses-config-reader",
+  "concrete-cross-domain",
+  "layer-constant-leak",
+];
+
+/** Every script rule id the checker implements: the `rules` array plus the inline checks. */
+export const IMPLEMENTED_SCRIPT_RULE_IDS: ReadonlySet<string> = new Set([
+  ...rules.map((rule) => rule.name),
+  ...INLINE_SCRIPT_RULE_IDS,
+]);
 
 let errorCount = 0;
 let warnCount = 0;
@@ -930,8 +1012,6 @@ function stripQuotedStringsAndComments(line: string): string {
 
   return result;
 }
-
-const IN_MODULE_COMMENT_LINE_LIMIT = 3;
 
 // Matches a run of 4+ repeated separator/decoration characters anywhere on a comment
 // line — pure banner lines ("// ====...") and text wrapped in dashes ("// ── Foo ──...")
@@ -1038,15 +1118,20 @@ function checkCommentDates(repoPath: string, text: string): void {
 // Evaluates one already-closed comment (a block comment or a run of consecutive
 // `//` lines) against the length and ephemeral-reference rules. Never called for
 // the module's own leading header comment — that block is governed by §7 instead.
-function evaluateInModuleComment(repoPath: string, startLine: number, commentLines: string[]): void {
+function evaluateInModuleComment(
+  repoPath: string,
+  startLine: number,
+  commentLines: string[],
+  maxLines: number,
+): void {
   if (commentLines.length === 0) return;
 
-  if (commentLines.length > IN_MODULE_COMMENT_LINE_LIMIT) {
+  if (commentLines.length > maxLines) {
     reportCommentViolation(
       "long-comment",
       repoPath,
       startLine,
-      `Comment spans ${commentLines.length} lines, more than the ${IN_MODULE_COMMENT_LINE_LIMIT}-line limit for in-module comments. Shorten it to the one non-obvious fact a reader needs, or move a longer explanation into the module's own documentation.`,
+      `Comment spans ${commentLines.length} lines, more than the ${maxLines}-line limit for in-module comments. Shorten it to the one non-obvious fact a reader needs, or move a longer explanation into the module's own documentation.`,
     );
   }
 
@@ -1077,7 +1162,12 @@ function evaluateInModuleComment(repoPath: string, startLine: number, commentLin
 
 // Scans comments past the module header for length, ephemeral-history, and decoration rules.
 // Calendar dates are scanned separately because their ban also applies to headers and inline comments.
-function checkCommentDiscipline(repoPath: string, lines: string[], templateLiteralLines: Set<number>): void {
+function checkCommentDiscipline(
+  repoPath: string,
+  lines: string[],
+  templateLiteralLines: Set<number>,
+  maxLines: number,
+): void {
   let pastHeader = false;
   let inBlock = false;
   let blockStartLine = -1;
@@ -1086,7 +1176,7 @@ function checkCommentDiscipline(repoPath: string, lines: string[], templateLiter
   let lineRunLines: string[] = [];
 
   const flushLineRun = () => {
-    if (pastHeader) evaluateInModuleComment(repoPath, lineRunStartLine, lineRunLines);
+    if (pastHeader) evaluateInModuleComment(repoPath, lineRunStartLine, lineRunLines, maxLines);
     lineRunStartLine = -1;
     lineRunLines = [];
   };
@@ -1105,7 +1195,7 @@ function checkCommentDiscipline(repoPath: string, lines: string[], templateLiter
       blockLines.push(rawLine);
       if (trimmed.includes("*/")) {
         inBlock = false;
-        if (pastHeader) evaluateInModuleComment(repoPath, blockStartLine, blockLines);
+        if (pastHeader) evaluateInModuleComment(repoPath, blockStartLine, blockLines, maxLines);
         blockLines = [];
       }
       continue;
@@ -1119,7 +1209,7 @@ function checkCommentDiscipline(repoPath: string, lines: string[], templateLiter
     if (trimmed.startsWith("/*")) {
       flushLineRun();
       if (trimmed.includes("*/")) {
-        if (pastHeader) evaluateInModuleComment(repoPath, lineNum, [rawLine]);
+        if (pastHeader) evaluateInModuleComment(repoPath, lineNum, [rawLine], maxLines);
       } else {
         inBlock = true;
         blockStartLine = lineNum;
@@ -1172,9 +1262,17 @@ function isCommentOnlyLine(line: string): boolean {
 }
 
 async function checkFile(path: string) {
-  const repoPath = path.startsWith(REPO_ROOT + "/") ? path.slice(REPO_ROOT.length + 1) : path;
   const text = await Deno.readTextFile(path);
+  checkFileFromText(path, text, CATALOG);
+}
+
+/** Runs every style check over one source unit, with `catalog` supplying the settings. */
+function checkFileFromText(path: string, text: string, catalog: ICatalog): void {
+  const repoPath = path.startsWith(REPO_ROOT + "/") ? path.slice(REPO_ROOT.length + 1) : path;
   const lines = text.split(/\r?\n/);
+  const maxParams = Number(ruleSettings(catalog, "max-params").options.max ?? 7);
+  const longCommentMaxLines = Number(ruleSettings(catalog, "long-comment").options.maxLines ?? 3);
+  const minFixtureLines = Number(ruleSettings(catalog, "test-inline-multiline-fixture").options.minLines ?? 7);
 
   // Single parse per file: the layer-leak check and the template-literal line
   // ranges both read from this SourceFile.
@@ -1188,7 +1286,7 @@ async function checkFile(path: string) {
 
   const templateLiteralLines = collectTemplateLiteralLines(sourceFile);
 
-  checkCommentDiscipline(repoPath, lines, templateLiteralLines);
+  checkCommentDiscipline(repoPath, lines, templateLiteralLines, longCommentMaxLines);
 
   let inMultiLineComment = false;
   let inMultiLineImport = false;
@@ -1614,9 +1712,9 @@ async function checkFile(path: string) {
       }
 
       if (closingIdx !== -1) {
-        if (currentParamCount >= 7) {
+        if (currentParamCount >= maxParams) {
           console.log(
-            `ERROR [max-params] ${path}:${paramListStartLine} – Methods and functions must not exceed 7 parameters (found ${
+            `ERROR [max-params] ${path}:${paramListStartLine} – Methods and functions must not exceed ${maxParams} parameters (found ${
               currentParamCount + 1
             }). Refactor to use a parameter object.`,
           );
@@ -1649,9 +1747,9 @@ async function checkFile(path: string) {
         }
 
         if (closingIdx !== -1) {
-          if (currentParamCount >= 7) {
+          if (currentParamCount >= maxParams) {
             console.log(
-              `ERROR [max-params] ${path}:${paramListStartLine} – Methods and functions must not exceed 7 parameters (found ${
+              `ERROR [max-params] ${path}:${paramListStartLine} – Methods and functions must not exceed ${maxParams} parameters (found ${
                 currentParamCount + 1
               }). Refactor to use a parameter object.`,
             );
@@ -1975,7 +2073,7 @@ async function checkFile(path: string) {
 
       const shouldWarn = closed &&
         !containsInterpolation &&
-        lineCount >= 7 &&
+        lineCount >= minFixtureLines &&
         firstNonEmptyLine !== null &&
         (firstNonEmptyLine.startsWith("---") || firstNonEmptyLine.startsWith("#"));
 
@@ -1990,10 +2088,9 @@ async function checkFile(path: string) {
   }
 
   rules.forEach((rule) => {
-    // Skip rule if path does not match rule's pathFilter
-    if (rule.pathFilter && !rule.pathFilter(repoPath)) {
-      return;
-    }
+    const severity = ruleEnabled(catalog, rule.name, repoPath);
+    if (!severity) return;
+    if (rule.name === "re-export-imported" && isTestingCompatibilityShim(repoPath)) return;
 
     lines.forEach((line, idx) => {
       if (templateLiteralLines.has(idx + 1) && rule.name !== "test-inline-multiline-fixture") {
@@ -2013,7 +2110,7 @@ async function checkFile(path: string) {
       let exclusionRationale = null;
       // For warnings only, check for exclusion comment above
       if (
-        rule.severity === "warn" &&
+        severity === "warn" &&
         (rule.regex.test(lineToTest) ||
           (rule.name === "test-inline-multiline-fixture" && multilineFixtureWarnLines.has(idx + 1)))
       ) {
@@ -2032,7 +2129,7 @@ async function checkFile(path: string) {
         }
         if (multilineFixtureWarnLines.has(idx + 1)) {
           const location = `${path}:${idx + 1}`;
-          const actualSeverity = convertWarnings ? "error" : rule.severity;
+          const actualSeverity = convertWarnings ? "error" : severity;
           const prefix = actualSeverity === "error" ? "ERROR" : "WARN";
           if (!masked || showAllWarnings) {
             let msg = `${prefix} [${rule.name}] ${location} – ${rule.message}`;
@@ -2064,7 +2161,7 @@ async function checkFile(path: string) {
         ) {
           return;
         }
-        if (rule.severity === "warn") {
+        if (severity === "warn") {
           // Check for exclusion comment above
           if (masked && !showAllWarnings) {
             return;
@@ -2079,10 +2176,10 @@ async function checkFile(path: string) {
           }
         }
         const location = `${path}:${idx + 1}`;
-        const actualSeverity = convertWarnings ? "error" : rule.severity;
+        const actualSeverity = convertWarnings ? "error" : severity;
         const prefix = actualSeverity === "error" ? "ERROR" : "WARN";
         let msg = `${prefix} [${rule.name}] ${location} – ${rule.message}`;
-        if (rule.severity === "warn" && exclusionDict[rule.name]) {
+        if (severity === "warn" && exclusionDict[rule.name]) {
           msg += `\n  Possible exclusion codes: ${Object.keys(exclusionDict[rule.name]).join(", ")}`;
         }
         if (masked) {
@@ -2096,6 +2193,44 @@ async function checkFile(path: string) {
       }
     });
   });
+}
+
+export interface IFinding {
+  readonly severity: "error" | "warn";
+  readonly rule: string;
+  readonly file: string;
+  readonly line: number;
+  readonly message: string;
+}
+
+const FINDING_LINE = /^(ERROR|WARN) \[([^\]]+)\] (.*):(\d+) – (.*)$/;
+
+/** Runs every style check over one source unit and returns findings, without printing. */
+export function checkSource(repoPath: string, text: string, catalog: ICatalog): IFinding[] {
+  const captured: string[] = [];
+  const originalLog = console.log;
+  const savedErrors = errorCount;
+  const savedWarnings = warnCount;
+  console.log = (...args: unknown[]) => {
+    captured.push(args.map((arg) => String(arg)).join(" "));
+  };
+  try {
+    checkFileFromText(repoPath, text, catalog);
+  } finally {
+    console.log = originalLog;
+    errorCount = savedErrors;
+    warnCount = savedWarnings;
+  }
+  return captured
+    .map((line) => line.match(FINDING_LINE))
+    .filter((match): match is RegExpMatchArray => match !== null)
+    .map((match) => ({
+      severity: match[1] === "ERROR" ? "error" : "warn",
+      rule: match[2],
+      file: match[3],
+      line: Number(match[4]),
+      message: match[5],
+    }));
 }
 
 async function main() {
@@ -2116,12 +2251,7 @@ async function main() {
               includeDirs: false,
               exts: [".ts", ".tsx"],
               followSymlinks: false,
-              skip: [
-                /[/\\]\.git[/\\]/,
-                /[/\\]node_modules[/\\]/,
-                /check_code_style\.ts$/,
-                /[/\\]scenario_framework[/\\]fixtures[/\\]/,
-              ],
+              skip: IGNORE_GLOBS,
             })
           ) {
             await checkFile(entry.path);
@@ -2137,22 +2267,9 @@ async function main() {
         includeDirs: false,
         exts: [".ts", ".tsx"],
         followSymlinks: false,
-        skip: [
-          /[/\\]\.git[/\\]/,
-          /[/\\]node_modules[/\\]/,
-          /check_code_style\.ts$/,
-          /[/\\]scenario_framework[/\\]fixtures[/\\]/,
-        ],
+        skip: IGNORE_GLOBS,
       })
     ) {
-      // skip generated code or scripts if necessary
-      if (
-        entry.path.includes("/dist/") ||
-        entry.path.includes("/coverage/") ||
-        entry.path.includes("/.copilot/")
-      ) {
-        continue;
-      }
       if (!entry.isFile) {
         continue;
       }

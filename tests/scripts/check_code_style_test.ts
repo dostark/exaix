@@ -9,10 +9,6 @@ import { dirname, fromFileUrl, join } from "@std/path";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
 
-// Assembled at runtime so this test file is not itself flagged by the double-cast rule
-// it exercises.
-const CAST_PHRASE = ["as", "unknown", "as"].join(" ");
-
 async function runCheckCodeStyle(filePath: string): Promise<{ code: number; output: string }> {
   const command = new Deno.Command(Deno.execPath(), {
     args: ["run", "--config=deno.json", "-A", "scripts/check_code_style.ts", filePath],
@@ -803,7 +799,7 @@ Deno.test("check_code_style does not exempt lines after a backtick inside a rege
     " */",
     "",
     'const stripBackticks = (s: string): string => s.replace(/[\\$`]/g, "");',
-    `const value = input ${CAST_PHRASE} Target;`,
+    "const value: unknown = {};",
     "",
   ];
   await Deno.writeTextFile(filePath, lines.join("\n"));
@@ -811,7 +807,7 @@ Deno.test("check_code_style does not exempt lines after a backtick inside a rege
   const result = await runCheckCodeStyle(filePath);
 
   assertEquals(result.code, 1, result.output);
-  assertStringIncludes(result.output, "[double-cast]");
+  assertStringIncludes(result.output, "[explicit-unknown]");
   assertStringIncludes(result.output, `${filePath}:8`);
 });
 
@@ -826,8 +822,8 @@ Deno.test("check_code_style exempts text inside a real multi-line template liter
     " */",
     "",
     "export const guidance = `",
-    `  Never write ${CAST_PHRASE} in code;`,
-    "  narrow the type at the boundary instead.",
+    "  Never write unknown in code;",
+    "  name the shape at the boundary instead.",
     "`;",
     "",
   ];
@@ -836,7 +832,7 @@ Deno.test("check_code_style exempts text inside a real multi-line template liter
   const result = await runCheckCodeStyle(filePath);
 
   assertEquals(result.code, 0, result.output);
-  assertEquals(result.output.includes("[double-cast]"), false, result.output);
+  assertEquals(result.output.includes("[explicit-unknown]"), false, result.output);
 });
 
 Deno.test("check_code_style is not fooled by comment, escaped-string, or nested template backticks", async () => {
@@ -854,7 +850,7 @@ Deno.test("check_code_style is not fooled by comment, escaped-string, or nested 
     "const nested = `",
     "  outer ${`inner`} text",
     "`;",
-    `const value = input ${CAST_PHRASE} Target;`,
+    "const value: unknown = {};",
     "",
   ];
   await Deno.writeTextFile(filePath, lines.join("\n"));
@@ -862,6 +858,6 @@ Deno.test("check_code_style is not fooled by comment, escaped-string, or nested 
   const result = await runCheckCodeStyle(filePath);
 
   assertEquals(result.code, 1, result.output);
-  assertStringIncludes(result.output, "[double-cast]");
+  assertStringIncludes(result.output, "[explicit-unknown]");
   assertStringIncludes(result.output, `${filePath}:12`);
 });
