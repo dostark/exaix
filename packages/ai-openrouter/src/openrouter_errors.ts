@@ -133,6 +133,7 @@ const UpstreamNumber = z.number().optional().catch(undefined);
 /** Documented fields plus the routing markers seen on live 404 bodies. Markers are read for presence only. */
 const OpenRouterErrorEnvelopeSchema = z.object({
   error: z.object({
+    code: z.number().int().optional().catch(undefined),
     message: UpstreamString,
     metadata: z.object({
       error_type: UpstreamString,
@@ -151,6 +152,15 @@ const OpenRouterErrorEnvelopeSchema = z.object({
     }).optional().catch(undefined),
   }),
 });
+
+/** Reject an error envelope even when the gateway has already sent successful HTTP headers. */
+export function validateOpenRouterResponse<T>(response: T, providerId: string): T {
+  const parsed = OpenRouterErrorEnvelopeSchema.safeParse(response);
+  if (!parsed.success) return response;
+  const fallback = new ModelProviderError("OpenRouter returned an error body with HTTP 200", providerId);
+  if (parsed.data.error.code === undefined) throw fallback;
+  throw mapOpenRouterError(parsed.data.error.code, new Headers(), JSON.stringify(response), fallback);
+}
 
 interface IErrorDetail {
   message?: string;

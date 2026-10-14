@@ -9,7 +9,8 @@
 
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import type { JSONValue } from "@exaix/core";
-import { OpenRouterProvider, OpenRouterTruncationError } from "@exaix/ai-openrouter";
+import { OpenRouterBillingError, OpenRouterProvider, OpenRouterTruncationError } from "@exaix/ai-openrouter";
+import { ModelProviderError } from "@exaix/ai/providers";
 
 function reply(
   choice: Record<string, JSONValue>,
@@ -98,4 +99,43 @@ Deno.test("a response without a finish reason keeps working and has no stop_reas
     assertEquals(result.content, "ok");
     assertEquals(result.stop_reason, undefined);
   });
+});
+
+Deno.test("fix(openrouter): an HTTP 200 error body throws the mapped billing error instead of an empty answer", async () => {
+  const body = JSON.stringify({
+    id: "gen-fixture",
+    error: { code: 402, message: "Credits exhausted", metadata: { limit_source: "account" } },
+  });
+  await run(body, async (provider, fetches) => {
+    const error = await assertRejects(() => provider.generate("hi"), OpenRouterBillingError);
+    assertStringIncludes(error.message, "Credits exhausted");
+    assertEquals(error.limitSource, "account");
+    assertEquals(fetches(), 1);
+  });
+});
+
+Deno.test("fix(openrouter): an HTTP 200 error retains the sanitized provider reason without raw metadata", async () => {
+  const body = JSON.stringify({
+    error: {
+      code: 400,
+      message: "Tool definitions required",
+      metadata: { error_type: "invalid_request", provider_name: "Fixture", raw: "private-upstream-data" },
+    },
+  });
+  await run(body, async (provider, fetches) => {
+    const error = await assertRejects(() => provider.generate("hi"), ModelProviderError);
+    assertStringIncludes(error.message, "Tool definitions required");
+    assertStringIncludes(error.message, "provider=Fixture");
+    assertEquals(error.message.includes("private-upstream-data"), false);
+    assertEquals(fetches(), 1);
+  });
+});
+
+Deno.test("fix(openrouter): an HTTP 200 error without a valid code still fails explicitly", async () => {
+  for (const code of [undefined, "invalid", 200, 999, 402.5]) {
+    await run(JSON.stringify({ error: { code, message: "Upstream failure" } }), async (provider, fetches) => {
+      await assertRejects(() => provider.generate("hi"), ModelProviderError, "HTTP 200");
+      assertEquals(fetches(), 1);
+    });
+  }
 });

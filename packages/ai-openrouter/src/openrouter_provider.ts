@@ -21,7 +21,7 @@ import {
   performProviderCall,
 } from "@exaix/ai/provider_common_utils.ts";
 import { type IOpenRouterResponse, tokenMapperOpenRouter } from "./openrouter_reported_cost.ts";
-import { mapOpenRouterError, OpenRouterRoutingError } from "./openrouter_errors.ts";
+import { mapOpenRouterError, OpenRouterRoutingError, validateOpenRouterResponse } from "./openrouter_errors.ts";
 import {
   applyRequireParameters,
   applySessionKey,
@@ -358,6 +358,7 @@ export class OpenRouterProvider extends BaseProvider {
       logger: this.logger,
       tokenMapper: tokenMapperOpenRouter(this.model),
       errorMapper: mapOpenRouterError,
+      responseValidator: (response) => validateOpenRouterResponse(response, this.id),
       extractor: (response) => extractOpenRouterContent(response, this.id),
       stopReasonExtractor: extractOpenRouterFinishReason,
       toolCallExtractor: extractOpenAIToolCalls,
