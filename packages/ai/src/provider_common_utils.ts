@@ -47,6 +47,7 @@ import {
   COST_RATE_OLLAMA,
   COST_RATE_OPENAI,
   PROVIDER_ANTHROPIC,
+  PROVIDER_EVENT_REQUEST_DEBUG_DUMP,
   PROVIDER_EVENT_RESPONSE_DEBUG_DUMP,
   PROVIDER_GOOGLE,
   PROVIDER_OLLAMA,
@@ -1005,6 +1006,22 @@ export async function fetchJsonWithRetries<T>(
   });
 }
 
+/** Record the parsed request body without including transport headers. */
+function journalProviderRequest(
+  logger: IEventLogger,
+  id: string,
+  body: string,
+  traceId: Opt<string, Reason.TraceAbsent>,
+): void {
+  let requestBody: JSONValue;
+  try {
+    requestBody = JSON.parse(body);
+  } catch {
+    return;
+  }
+  void logger.debug(PROVIDER_EVENT_REQUEST_DEBUG_DUMP, id, { provider: id, request_body: requestBody }, traceId);
+}
+
 /** Perform a provider call: fetch JSON with retries, then extract textual content
  *  using the provided extractor. */
 export async function performProviderCall<T>(
@@ -1063,6 +1080,9 @@ export async function performProviderCall<T>(
     if (new TextEncoder().encode(fetchOptions.body).byteLength > maxRequestBytes) {
       throw new ProviderProtocolError("Request exceeds configured byte limit", id);
     }
+  }
+  if (logger && logResponseBody !== false && typeof fetchOptions.body === "string") {
+    journalProviderRequest(logger, id, fetchOptions.body, traceId);
   }
   const data = await fetchJsonWithRetries<T>(url, fetchOptions, {
     id,

@@ -89,6 +89,8 @@ export interface IBoundRoundRun extends IPlanningRoundRun {
 
 /** The inputs of one planning run. A budget and a measurement are set when a test measures each round. */
 export interface IPlanningRoundOptions {
+  /** The request to plan. Absent, the shared fixture asks for a generic change. */
+  prompt?: string;
   modelId: string;
   maxRounds: number;
   portalRoot: string;
@@ -399,7 +401,7 @@ export async function runPlanningRound(
     toolsRoundPolicy: options.toolsRoundPolicy,
   });
   const result = await loop.run({
-    prompt: "Plan the change.",
+    prompt: options.prompt ?? "Plan the change.",
     baseOptions: options.baseOptions ?? {},
     nextCallSite: () => ({ scenarioId: "native-round", stepId: "replay", callIndex: 0 }),
     portalAlias: "fixture",

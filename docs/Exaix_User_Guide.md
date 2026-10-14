@@ -5946,6 +5946,16 @@ FAILED_TRACE=$(exactl journal --filter action_type=request.failed --tail 1 --for
 exactl journal --filter trace_id=$FAILED_TRACE
 ```
 
+For provider request diagnostics, set `log_level = "debug"` in your existing `[system]`
+configuration table and restart the daemon. The journal then records parsed request bodies
+under `provider.request_debug_dump`. The default info level filters these events. Request
+headers are excluded; request bodies can contain prompts and tool results. Providers using
+the compatible profile suppress both request and response body dumps.
+
+```bash
+exactl journal --filter action_type=provider.request_debug_dump --tail 10 --format json
+```
+
 **Security Auditing:**
 
 ```bash

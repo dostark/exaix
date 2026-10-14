@@ -7,6 +7,8 @@
  * (toolChoice none), carrying every tool result forward — the most recent as IProviderTurn,
  * earlier ones as capped transcript blocks. Confines every tool path to the request portal
  * and screens tool results through an optional IGuardrailRunner before they reach the model.
+ * A live OpenRouter Claude Haiku final round accepted replayed results without tool definitions.
+ * Native snapshots therefore keep the final round tool-less. Legacy replay retains definitions with toolChoice none.
  * @architectural-layer Services
  * @related-files ["packages/execution/src/agent_runner.ts", "packages/execution/src/native_tool_turns.ts", "packages/execution/src/strategies/react_loop_strategy.ts"]
  */

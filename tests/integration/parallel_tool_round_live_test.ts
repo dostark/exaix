@@ -18,6 +18,12 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
+import { ConfigSchema } from "@exaix/schemas/config.ts";
+import { resolveToolsRoundPolicy } from "@exaix/schemas/tools_round_policy.ts";
+import { ToolsRoundLoop } from "@exaix/core";
+import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
+import { createLlmProvider } from "../helpers/llm_bindings.ts";
+import { runPlanningRound as runNativePlanningRound } from "../helpers/native_tool_round_harness.ts";
 import { REQUEST_SUCCESS_ACTIONS } from "./helpers/daemon_config.ts";
 import {
   assertMatrixEnvironment,
@@ -27,8 +33,10 @@ import {
 } from "./helpers/openrouter_live_matrix.ts";
 import {
   type ITraceRow,
+  LIVE_ANTHROPIC_MODEL,
   LIVE_KEY_ENV,
   LIVE_OPENAI_THINKING_MODEL,
+  LIVE_OPENROUTER_MODEL,
   type LiveProvider,
   OPENAI_KEY_ENV,
   OPENROUTER_KEY_ENV,
@@ -46,6 +54,7 @@ import {
   runReactRound,
   toolRows,
 } from "./helpers/parallel_round_daemon.ts";
+import { assertAndRecordParallelOffOverride, type IParallelResponseCounts } from "./helpers/parallel_off_override.ts";
 
 const PAID_OPT_IN_ENV = "EXA_TEST_ENABLE_PAID_LLM";
 const liveEnabled = Deno.env.get(PAID_OPT_IN_ENV) === "1" && (Deno.env.get(LIVE_KEY_ENV) ?? "") !== "";
@@ -200,10 +209,8 @@ function callsPerResponse(rows: ITraceRow[]): { requested: number; executed: num
   return responses;
 }
 
-/** Shows the off override by comparing two runs.
- *  The auto run must batch, or the override is untested. The off run must execute at most one call per response.
- *  The model may list a directory before it reads, so both runs get four rounds, like the thinking case. */
-async function assertParallelOffOverride(liveProvider: LiveProvider, liveModel?: string): Promise<void> {
+/** Compare both runs and record an unexercised override when the baseline never batches. */
+async function assertParallelOffOverride(liveProvider: LiveProvider, liveModel: string): Promise<void> {
   const baseline = await runPlanningRound({
     live: true,
     liveProvider,
@@ -212,10 +219,6 @@ async function assertParallelOffOverride(liveProvider: LiveProvider, liveModel?:
     maxToolRounds: LIVE_TOOL_ROUNDS,
   });
   assertEquals(baseline.fixture.bodies.length, 0, `chat must reach ${liveProvider}, not the loopback fixture`);
-  assert(
-    callsPerResponse(baseline.rows).some((response) => response.requested >= MINIMUM_BATCH),
-    `the auto run never batched, so the off override is untested: ${journalActions(baseline.rows)}`,
-  );
   const off = await runPlanningRound({
     live: true,
     liveProvider,
@@ -225,12 +228,78 @@ async function assertParallelOffOverride(liveProvider: LiveProvider, liveModel?:
     dbOverride: { key: "tools.parallel_calls", value: "off" },
   });
   assertEquals(off.fixture.bodies.length, 0, `chat must reach ${liveProvider}, not the loopback fixture`);
-  const responses = callsPerResponse(off.rows);
-  assert(
-    responses.every((response) => response.executed <= 1),
-    `a response executed more than one call under off: ${JSON.stringify(responses)}`,
+  await assertAndRecordParallelOffOverride(
+    liveModel,
+    liveProvider,
+    callsPerResponse(baseline.rows),
+    callsPerResponse(off.rows),
+    saveMatrixEvidence,
   );
 }
+
+Deno.test({
+  name: "[live][openrouter] the parallel-off guard records whether the live model exercised the override",
+  ignore: !openrouterEnabled,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    assertMatrixEnvironment();
+    await assertParallelOffOverride("openrouter", LIVE_OPENROUTER_MODEL);
+  },
+});
+
+Deno.test({
+  name: "[live][openrouter] a single read records override not exercised while the off response stays bounded",
+  ignore: !openrouterEnabled,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    assertMatrixEnvironment();
+    const root = await Deno.makeTempDir({ prefix: "parallel-off-single-read-" });
+    try {
+      const { provider } = await createLlmProvider({ service: "openrouter", service_model_id: LIVE_OPENROUTER_MODEL });
+      const originalGenerate = provider.generate.bind(provider);
+      const config = ConfigSchema.parse({ system: { root }, tools: { parallel_calls: "off" } });
+      const offPolicy = resolveToolsRoundPolicy(config, undefined, ToolsRoundLoop.PLANNING, 1);
+      const runs: IParallelResponseCounts[][] = [];
+      for (const off of [false, true]) {
+        const counts: IParallelResponseCounts[] = [];
+        provider.generate = async (prompt, options) => {
+          const response = await originalGenerate(prompt, options);
+          counts.push({ requested: response.toolCalls?.length ?? 0, executed: 0 });
+          return response;
+        };
+        const run = await runNativePlanningRound(provider, {
+          modelId: LIVE_OPENROUTER_MODEL,
+          maxRounds: 2,
+          portalRoot: root,
+          traceId: `single-read-${off}`,
+          prompt: "Read a.ts exactly once with read_file, then summarize its contents. This is the only file needed.",
+          baseOptions: { max_tokens: 1024, thinking: false },
+          ...(off ? { toolsRoundPolicy: () => offPolicy } : {}),
+        });
+        assertEquals(run.registry.calls.length, 1, "the planning loop must execute the single requested read");
+        assertEquals(counts.reduce((sum, response) => sum + response.requested, 0), 1);
+        assert(run.final.trim().length > 0, "the live planning run must finish with text");
+        runs.push(counts.map(({ requested }) => ({ requested, executed: requested })));
+      }
+      await assertAndRecordParallelOffOverride(
+        LIVE_OPENROUTER_MODEL,
+        "openrouter",
+        runs[0],
+        runs[1],
+        async (label, record) => {
+          assert(typeof record === "object" && record !== null && !Array.isArray(record));
+          assertEquals(record.status, "override not exercised");
+          await saveMatrixEvidence(`${label}-single-read`, record);
+        },
+      );
+    } finally {
+      ProviderRegistry.clear();
+      await Deno.remove(root, { recursive: true });
+    }
+  },
+});
 
 /** Each journaled call's tool and the start of its result, for a failure message that says what the model did. */
 function describeCalls(calls: IToolSummaryPayload[]): string {
@@ -365,7 +434,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    await assertParallelOffOverride("anthropic");
+    await assertParallelOffOverride("anthropic", LIVE_ANTHROPIC_MODEL);
   },
 });
 
