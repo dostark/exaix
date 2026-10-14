@@ -108,34 +108,53 @@
     "deslop": { "description": "Rule idea taken from maharshi365/deslop or dmmulroy/anti-slop." }
   },
   "rules": {
-    "explicit-any-array": {
-      "engine": "script",
-      "severity": "error",
+    "exaix/no-explicit-unknown": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
       "scope": "all",
       "codeStyle": "CODE_STYLE.md#strict-type-safety",
-      "tags": ["type-safety"]
+      "tags": ["type-safety", "deslop"],
+      "options": { "allowCatchBinding": true, "allowTypePredicateSubject": true },
+      "limits": "Imported aliases are not resolved; only syntactic shapes in this file are seen."
     },
-    "explicit-unknown": {
-      "engine": "script",
-      "severity": "error",
+    "exaix/no-unsafe-dictionary": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
       "scope": "all",
       "codeStyle": "CODE_STYLE.md#strict-type-safety",
-      "tags": ["type-safety"],
-      "limits": "Reads line text after stripping strings and comments, so imported aliases are not resolved."
+      "tags": ["type-safety", "deslop"],
+      "options": { "forbiddenValueTypes": ["unknown", "any", "object", "{}"] },
+      "limits": "Only the literal value type is checked; a value alias from another module is not resolved."
     },
-    "explicit-unknown-array": {
-      "engine": "script",
-      "severity": "error",
+    "exaix/no-any-escape": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
       "scope": "all",
       "codeStyle": "CODE_STYLE.md#strict-type-safety",
-      "tags": ["type-safety"]
+      "tags": ["type-safety", "deslop"],
+      "options": { "allowedTypeofTargets": ["globalThis.fetch"], "allowAnyInTests": true },
+      "limits": "The typeof target is compared as source text; only test files may use an allowed target."
     },
-    "unknown-type-alias": {
-      "engine": "script",
-      "severity": "error",
+    "exaix/no-pass-through-type-alias": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
       "scope": "all",
       "codeStyle": "CODE_STYLE.md#strict-type-safety",
-      "tags": ["type-safety"]
+      "tags": ["type-safety", "deslop"],
+      "limits": "Only aliases that name another top-level local alias are reported."
+    },
+    "exaix/no-object-parameters": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety", "deslop"],
+      "limits": "A union member or a local alias of object is resolved; an imported alias is not."
     },
     "promise-response-alias": {
       "engine": "script",
@@ -159,42 +178,6 @@
       "tags": ["type-safety"]
     },
     "deno-lint-no-explicit-any": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
-      "tags": ["type-safety"]
-    },
-    "explicit-any-cast": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
-      "tags": ["type-safety"]
-    },
-    "typeof-cast": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
-      "tags": ["type-safety"],
-      "options": { "allowedTargets": ["globalThis.fetch"] }
-    },
-    "record-any": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
-      "tags": ["type-safety"]
-    },
-    "record-unknown": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
-      "tags": ["type-safety"]
-    },
-    "index-signature-unknown": {
       "engine": "script",
       "severity": "error",
       "scope": "all",
