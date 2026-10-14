@@ -64,7 +64,7 @@ function judgeFlow(): IFlow {
     execution_mode: FlowStepExecutionMode.DECLARED,
     dependsOn: [],
     input: { source: "request", transform: "passthrough" },
-  }] as object as IFlowStep[];
+  }] as never as IFlowStep[];
   return {
     id: "judge-flow",
     name: "Judge Flow",

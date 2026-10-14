@@ -109,7 +109,7 @@ Deno.test("FlowRunner: two declared steps of one flow, same role, resolve differ
         input: { source: "request", transform: "passthrough" },
         effort: "high",
       },
-    ] as object as IFlowStep[];
+    ] as never as IFlowStep[];
     const flow: IFlow = {
       id: "effort-flow",
       name: "Effort Flow",

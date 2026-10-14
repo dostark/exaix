@@ -31,6 +31,7 @@
     "./packages/flow",
     "./packages/session",
     "./packages/model-registry",
+    "./packages/lint-rules",
     "./apps/daemon",
     "./apps/exactl",
     "./apps/tui",
@@ -88,7 +89,8 @@
     "coverage:lcov": "mkdir -p coverage && deno coverage coverage/ --include='^file://.*/(src|packages)/' --exclude='test\\.(ts|js)$' --lcov --output=coverage/lcov.info",
     "coverage:with-llama": "deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts --with-llama",
     "bench": "deno bench --allow-all tests/benchmarks/",
-    "lint": "deno lint --rules-include=explicit-module-boundary-types --rules-exclude=no-import-prefix tests/ packages/ exaix-team/ apps/",
+    "lint": "EXAIX_LINT_RULES= deno lint --rules-include=explicit-module-boundary-types --rules-exclude=no-import-prefix tests/ packages/ exaix-team/ apps/",
+    "bench:lint-rules": "deno run -A scripts/bench_lint_rules.ts",
     "fmt": "deno fmt tests/ docs/ packages/ exaix-team/ apps/",
     "fmt:check": "deno fmt --check tests/ docs/ packages/ exaix-team/ apps/",
     "cache": "deno cache apps/daemon/main.ts apps/exactl/main.ts exaix-team/apps/mcp-server/main.ts apps/tui/main.ts",
@@ -293,6 +295,8 @@
     "@exaix/request/": "./packages/request/src/",
     "@exaix/flow": "./packages/flow/mod.ts",
     "@exaix/flow/": "./packages/flow/src/",
+    "@exaix/lint-rules": "./packages/lint-rules/mod.ts",
+    "@exaix/lint-rules/": "./packages/lint-rules/src/",
     "@exaix/app-exactl/exactl": "./apps/exactl/src/exactl.ts",
     "@exaix-team/voting": "./exaix-team/packages/voting/mod.ts",
     "@exaix-team/voting/": "./exaix-team/packages/voting/src/",
@@ -314,6 +318,9 @@
     "tests/scenario_framework/fixtures/"
   ],
   "lint": {
+    "plugins": [
+      "./scripts/config/exaix_lint_plugin.ts"
+    ],
     "exclude": [
       "tests/scenario_framework/fixtures/"
     ]

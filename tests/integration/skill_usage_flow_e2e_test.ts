@@ -81,7 +81,7 @@ Deno.test("[skill usage] each flow step's model call records a row with the flow
       version: "1.0",
       output: { from: "step-b" as never, format: FlowOutputFormat.MARKDOWN },
       settings: { maxParallelism: 1, failFast: true, includeRequestCriteria: false },
-      steps: [step("step-a", []), step("step-b", ["step-a"])] as object as IFlowStep[],
+      steps: [step("step-a", []), step("step-b", ["step-a"])] as never as IFlowStep[],
     };
     const traceId = crypto.randomUUID();
     await runner.execute(flow, { userPrompt: "Do the thing", traceId, requestId: crypto.randomUUID() });

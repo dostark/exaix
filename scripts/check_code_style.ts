@@ -759,12 +759,6 @@ const rules: Rule[] = [
     severity: "error" as const,
   },
   {
-    name: "double-cast",
-    regex: /as\s+unknown\s+as/,
-    message: "Do not use double casting '... as unknown as ...'; use proper narrowing instead.",
-    severity: "error" as const,
-  },
-  {
     name: "record-any",
     regex: /Record<\s*string\s*,\s*any\s*>/,
     message: "'Record<string, any>' is weak and prohibited; define a more specific type.",

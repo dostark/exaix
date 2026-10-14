@@ -46,7 +46,7 @@ function makeCapturingResolver(
       captured.push(intent);
       return Promise.resolve(selected);
     },
-  } as object as ModelResolver;
+  } as never as ModelResolver;
   return { resolver, captured };
 }
 
@@ -191,7 +191,7 @@ Deno.test("AgentComposer preserves a pre-generation factory rejection and record
     config.system.root = testDir;
     config.portals = [{ alias: "TestPortal", target_path: testDir, operations: [] }] as never;
     const failure = new ProviderFactoryError("Compatible profile is not qualified", "profile_mismatch");
-    const resolver = { resolve: () => Promise.reject(failure) } as object as ModelResolver;
+    const resolver = { resolve: () => Promise.reject(failure) } as never as ModelResolver;
     const { strategyRegistry, getCallOptions } = makeStubStrategy();
     composer = new AgentComposer({
       config,

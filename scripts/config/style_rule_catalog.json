@@ -1,0 +1,22 @@
+{
+  "version": "1",
+  "scopes": {
+    "test": ["**/tests/**", "**/*_test.ts", "**/*_test.tsx", "**/*.test.ts"],
+    "fixture": ["tests/scenario_framework/fixtures/**", "**/tests/fixtures/**"]
+  },
+  "tagVocabulary": {
+    "type-safety": { "description": "Rules that keep type evidence (CODE_STYLE.md 1)." },
+    "deslop": { "description": "Rule idea taken from maharshi365/deslop or dmmulroy/anti-slop." }
+  },
+  "rules": {
+    "exaix/no-chained-type-assertions": {
+      "engine": "plugin",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety", "deslop"],
+      "limits": "Imported aliases are not resolved; only syntactic assertions in this file are seen.",
+      "options": { "allowPartialMockInTests": true, "allowNeverAnyMockInTests": true }
+    }
+  }
+}

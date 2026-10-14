@@ -41,7 +41,6 @@ deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 | `[deno-lint-no-explicit-any]` | error    | §1                   | `// deno-lint-ignore no-explicit-any` comment               |
 | `[explicit-any-cast]`         | error    | §1                   | `as any` cast (production files only)                       |
 | `[typeof-cast]`               | error    | §1                   | `as typeof <var>` cast (except `globalThis.fetch` in tests) |
-| `[double-cast]`               | error    | §1                   | `as unknown as` double cast                                 |
 | `[record-any]`                | error    | §1                   | `Record<string, any>` type                                  |
 | `[record-unknown]`            | error    | §1                   | `Record<string, unknown>` type                              |
 | `[index-signature-unknown]`   | error    | §1                   | `{ [key: string]: unknown }` index signature                |

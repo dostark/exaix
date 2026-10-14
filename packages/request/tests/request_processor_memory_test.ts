@@ -136,7 +136,7 @@ Deno.test(
 
     const failingService = {
       enhanceRequest: () => Promise.reject(new Error("Memory service exploded")),
-    } as Pick<SessionMemoryService, "enhanceRequest"> as SessionMemoryService;
+    } as never as SessionMemoryService;
 
     try {
       const context: IApplicationContext = {

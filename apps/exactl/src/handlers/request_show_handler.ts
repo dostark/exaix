@@ -171,7 +171,7 @@ export class RequestShowHandler extends BaseCommand {
     for (const { sourceKey, targetKey } of optionalFields) {
       const value = frontmatter[sourceKey];
       if (value) {
-        (metadata as object as Record<string, string | boolean | number>)[targetKey] = value;
+        Object.assign(metadata, { [targetKey]: value });
       }
     }
   }

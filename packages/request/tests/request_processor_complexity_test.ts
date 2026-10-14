@@ -31,7 +31,7 @@ interface IRequestProcessorTest {
 type ProcessorAccessor = { [K in keyof IRequestProcessorTest]: IRequestProcessorTest[K] };
 
 function getTaskComplexityClassifier(processor: RequestProcessor): ITaskComplexityClassifier {
-  const accessor = (processor as object) as ProcessorAccessor;
+  const accessor = processor as never as ProcessorAccessor;
   return accessor["taskComplexityClassifier"];
 }
 

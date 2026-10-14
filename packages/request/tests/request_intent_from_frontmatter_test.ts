@@ -19,7 +19,7 @@ interface IRequestProcessorStatic {
 }
 
 function intentFrom(frontmatter: Partial<IRequestFrontmatter>): Partial<IModelIntent> {
-  const accessor = (RequestProcessor as object) as IRequestProcessorStatic;
+  const accessor = RequestProcessor as never as IRequestProcessorStatic;
   return accessor.requestIntentFromFrontmatter(frontmatter as IRequestFrontmatter);
 }
 
