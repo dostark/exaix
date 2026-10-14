@@ -334,8 +334,8 @@ How Exaix uses OpenRouter:
 - **Prompt caching.** Exaix adds `cache_control` breakpoints only for the models that OpenRouter's prompt-caching guide lists. To turn breakpoints off, set `[ai_openrouter] cache_control = false`. On some routes a cache write costs more than a plain input token, so a one-shot prompt can cost more.
 - **Routing.** `[ai_openrouter.routing]` passes through up to three fallback `models`, and the `provider` fields `order`, `only`, `ignore`, `sort`, `allow_fallbacks`, `quantizations`, `max_price`, `zdr` and `data_collection`.
 - **Replay.** Replayed assistant messages carry `reasoning_details` unchanged. `reasoning_content` is not sent.
-- **Selection.** Price ranking, size presets, thinking and effort use the selected model's catalog data before provider-level values. An unknown price cannot win "cheapest" over a known price. Catalog failures use the provider-level fallback.
-- **Cost.** `usage.cost` is read as OpenRouter credits. When it is absent, ReAct can estimate the cost from measured tokens and the model's catalog prices. The estimate stays labeled `predicted`. Prompt previews use the catalog input price without inventing output tokens.
+- **Selection.** Price ranking, size presets, thinking and effort use the selected model's catalog data before provider-level values. An unknown price cannot win "cheapest" over a known price. For OpenRouter, an unavailable catalog leaves the price, window and reasoning capability unknown; no global model guesses are supplied. Unknown windows and costs pass size-preset filters, while unknown prices rank behind known prices for "cheapest".
+- **Cost.** `usage.cost` is retained as reported USD, including a reported zero. When it is absent, ReAct can estimate the cost from measured tokens and the model's catalog prices. The estimate stays labeled `predicted`. Prompt previews use the catalog input price without inventing output tokens.
 
 The adapter's modules are listed in [packages/ai-openrouter/README.md](../packages/ai-openrouter/README.md).
 
@@ -4549,43 +4549,56 @@ exactl request show <request-id> --show-context
 
 ### 6.4 Retry & Recovery
 
-Agents automatically retry failed operations with intelligent backoff.
-
-#### Retry Behavior
-
-| Attempt | Wait Time  | With Jitter |
-| ------- | ---------- | ----------- |
-| 1       | 1 second   | 0.5-1.5s    |
-| 2       | 2 seconds  | 1.0-3.0s    |
-| 3       | 4 seconds  | 2.0-6.0s    |
-| 4       | 8 seconds  | 4.0-12.0s   |
-| 5       | 16 seconds | 8.0-24.0s   |
+Provider transport retries have one owner: the shared fetch layer. The base provider
+makes one attempt, so the retry budget is not multiplied by nested loops.
+`max_attempts` includes the first request. A sustained HTTP 503 therefore makes at
+most that many transport attempts. Rate-limit, connection and timeout errors are
+retryable; HTTP 503 stays retryable.
 
 #### Configuration
 
+For example, set the Anthropic provider's retry budget and request timeout:
+
 ```toml
-[agents.retry]
-maxAttempts = 5
-initialDelay = 1000      # ms
-maxDelay = 60000         # ms
-backoffMultiplier = 2.0
-jitterFactor = 0.5
-retryableErrors = [
-  "rate_limit_exceeded",
-  "service_unavailable",
-  "timeout",
-  "connection_reset"
-]
+[ai_retry.providers.anthropic]
+max_attempts = 3
+backoff_base_ms = 1000
+
+[ai_timeout.providers]
+anthropic = 30000
 ```
 
-#### Non-Retryable Errors
+Anthropic, Google and OpenAI/compatible providers read their per-provider retry
+settings at construction. OpenRouter currently uses its own constructor defaults.
+The global `ai_retry.max_attempts` field also controls fallback-chain provider
+creation; it is not a universal transport override.
 
-Some errors are not retried:
+The first retry waits one base delay, the second waits twice that delay, and later
+retries continue exponentially. When an error carries a parsed Retry-After value,
+its contribution is capped at 60,000 ms and the longer of that value and the
+exponential backoff is used. The backoff itself can exceed that cap. Cancellation
+interrupts the wait.
 
-- Authentication failures
-- Invalid input/schema errors
-- Permission denied
-- Resource not found
+The registered key `ai.retry.retry_after_max_ms` describes this cap. The retry loop
+currently reads its 60,000 ms default constant; changing the stored key does not
+yet change the runtime wait. See the [configuration reference](Reference_Data.md#ai-provider-retry-configuration).
+
+#### Non-Retryable Errors and Diagnostics
+
+- `BillingError` means HTTP 402. It is terminal; check the provider account or budget.
+- Authentication, invalid-request, permission and routing errors are terminal.
+- `ProviderTruncationError` identifies an empty incomplete OpenAI Responses reply.
+  Raise the output budget or reduce reasoning effort. Partial text or tool calls
+  remain available. OpenRouter has its own subclass of this shared error.
+- Compatible-provider errors keep their sanitized status and allowlisted reason
+  details; remote error text and raw request/response dumps are suppressed.
+
+When logging is enabled, `provider.retry.scheduled` records each failed attempt
+before its retry wait, with the provider, attempt limit, delay and error type.
+The compatible branch suppresses these intermediate events and keeps one terminal
+event. Native provider request bodies can appear in the debug event
+`provider.request_debug_dump`. It contains the parsed body and can include prompt
+content; transport headers are excluded. Console payloads escape control characters.
 
 ### 6.5 Structured Output Validation
 
@@ -5385,6 +5398,13 @@ guardrail runner when one is configured, and are confined to the request portal'
 absolute, cross-portal, symlinked, or `../`-escaping path is rejected with a
 `security.path_access_denied` event. `search_files` also rejects a `pattern` containing `..`
 segments or an absolute prefix and never lists a path outside its search root.
+
+**Final-round contract.** A native conversation keeps the original prompt and completed
+assistant/tool-result rounds, omits tool definitions on the final request, and sets
+`toolChoice: none`. Tools are never executed on that round. The legacy replay path
+keeps its tool definitions with `toolChoice: none`. A completed Anthropic Haiku request
+through OpenRouter confirmed the native contract; the unit checks cover each native
+provider. Empty or refused responses do not establish that the contract was accepted.
 
 **Failure handling.** If the final round returns no text (some providers ignore `toolChoice: none`),
 the loop records `planning.tools.completed` with `stopReason: "empty_final"` and the request falls

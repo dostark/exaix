@@ -78,16 +78,42 @@ graph TB
 
 ## Provider Components
 
-| Component                  | Responsibility                        | Source                                                            |
-| -------------------------- | ------------------------------------- | ----------------------------------------------------------------- |
-| `ProviderFactory`          | Registry and instance creation        | `src/provider_factory.ts:ProviderFactory`                         |
-| `BaseProvider`             | Common logic and error handling       | `src/providers/base_provider.ts:BaseProvider`                     |
-| `IProviderDefaults`        | Per-provider defaults interface       | `@exaix/core/types/provider_defaults.ts:IProviderDefaults`        |
-| `ProviderDefaultsRegistry` | Runtime registry of provider defaults | `@exaix/core/types/provider_defaults.ts:ProviderDefaultsRegistry` |
-| `createMockProvider`       | Deterministic testing                 | `@exaix/testing/src/helpers/mock_provider.ts:createMockProvider`  |
-| `EmbeddingProvider`        | Embedding model abstraction           | `src/embeddings/embedding_provider.ts`                            |
-| `EmbeddingProviderFactory` | Embedding provider instantiation      | `src/embeddings/embedding_provider_factory.ts`                    |
-| `CostTracker`              | Token and cost validation             | `@exaix/core/cost/cost_tracker.ts:CostTracker`                    |
+| Component                  | Responsibility                               | Source                                                            |
+| -------------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
+| `ProviderFactory`          | Registry and instance creation               | `src/provider_factory.ts:ProviderFactory`                         |
+| `BaseProvider`             | One generation attempt; no retry loop        | `src/providers/base_provider.ts:BaseProvider`                     |
+| `IProviderMetadata`        | Provider metadata and optional model catalog | `src/provider_registry.ts:IProviderMetadata`                      |
+| `BillingError`             | Terminal HTTP 402 classification             | `src/providers/common.ts:BillingError`                            |
+| `ProviderTruncationError`  | Empty incomplete Responses reply             | `src/providers/common.ts:ProviderTruncationError`                 |
+| `IProviderDefaults`        | Per-provider defaults interface              | `@exaix/core/types/provider_defaults.ts:IProviderDefaults`        |
+| `ProviderDefaultsRegistry` | Runtime registry of provider defaults        | `@exaix/core/types/provider_defaults.ts:ProviderDefaultsRegistry` |
+| `createMockProvider`       | Deterministic testing                        | `@exaix/testing/src/helpers/mock_provider.ts:createMockProvider`  |
+| `EmbeddingProvider`        | Embedding model abstraction                  | `src/embeddings/embedding_provider.ts`                            |
+| `EmbeddingProviderFactory` | Embedding provider instantiation             | `src/embeddings/embedding_provider_factory.ts`                    |
+| `CostTracker`              | Token and cost validation                    | `@exaix/core/cost/cost_tracker.ts:CostTracker`                    |
+
+### Retry and error contract
+
+`BaseProvider.generate` makes one attempt. `fetchJsonWithRetries` in
+`src/provider_common_utils.ts` owns transport retries through `withRetry` in
+`src/providers/common.ts`. `maxRetries` is the total number of attempts, including
+the first call. HTTP 503 remains retryable. The compatible branch uses the same
+loop and suppresses intermediate retry events to retain one terminal event.
+
+When an error carries `retryAfterMs`, the delay is
+`max(exponential backoff, min(retryAfterMs, 60000))`. Cancellation interrupts the
+wait. The cap is registered as `ai.retry.retry_after_max_ms`, but `withRetry`
+currently reads the exported default constant. Runtime overrides of this key are
+not wired. See [provider retry configuration](../../docs/Reference_Data.md#ai-provider-retry-configuration).
+
+`BillingError` identifies a non-retryable HTTP 402. `ProviderTruncationError`
+identifies an empty incomplete OpenAI Responses reply. Partial text or tool calls
+remain usable. OpenRouter's billing and truncation errors inherit the shared
+classes. Compatible-provider errors retain their sanitized detail policy.
+
+`provider.retry.scheduled` is emitted at warn level before each wait when retry
+logging is enabled. Its trace-correlated payload records the provider, failed
+attempt, attempt limit, chosen delay, error type, and optional Retry-After value.
 
 ## Edition Availability
 
@@ -109,13 +135,17 @@ Provider selection is configured in `exa.config.toml`. See the Provider Strategy
 thinking and effort data. `readProviderModelInfo` handles unavailable catalogs, and
 `resolveProviderMetadata` applies provider fallbacks without changing the registered
 metadata. `ModelResolver` uses the selected model's values for cost scoring, thinking
-constraints and size presets. Unknown prices rank behind known prices for "cheapest".
+constraints and size presets. `DefaultModelRegistry` also exposes the selected
+model's context, capability and split-price data, after any static overlay.
+Unknown prices rank behind known prices for "cheapest". Unknown windows and costs
+pass the permissive size-preset filters. OpenRouter supplies no provider-wide
+thinking, effort, window or ranking-price defaults.
 
 ### Vertex AI & OpenRouter notes
 
 - **Vertex token refresh** is hardened: concurrent refreshes are deduplicated into a single token exchange, the exchange is timeout-bounded, the token response is schema-validated, and an early-refresh skew margin is applied. Service-account credentials are env-only and never logged; the token endpoint is restricted to `*.googleapis.com`.
 - **OpenRouter ships in Solo (all editions)** — registered unconditionally in `apps/common/registry_bootstrap.ts` (BYO `OPENROUTER_API_KEY`). Edition decision D5b/D-providers: gating an independently-free, BYO-key aggregator adds no value.
-- **OpenRouter is intentionally unmetered** — pricing varies per underlying sub-model, so the inline `IGenerateResult.cost_usd` is informational; authoritative spend is recorded by `CostTracker`, keyed on `ProviderType`. Vertex bills at the Google output rate.
+- **OpenRouter cost** — reported `usage.cost` is retained in USD, including zero. The cost tracker keeps its zero fallback sentinel rather than inventing a flat model price. When reported cost is absent, ReAct can price measured tokens from a static overlay or model catalog and labels that result `predicted`. Prompt previews estimate input cost without inventing output tokens. Compatible-provider unknown costs keep their separate policy.
 - **OpenRouter modes, routing and caching** are described in [packages/ai-openrouter/README.md](../ai-openrouter/README.md).
 - Neither provider implements streaming yet, so their capability metadata does not advertise `streaming`.
 

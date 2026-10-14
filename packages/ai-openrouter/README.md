@@ -12,7 +12,7 @@ Setup, the configuration keys and the per-model caveats are in the [Exaix User G
 - **Prompt caching.** `cache_control` breakpoints go only to the models in OpenRouter's prompt-caching guide. `[ai_openrouter] cache_control = false` turns them off.
 - **Routing.** `provider.require_parameters` is sent as `true` when a request carries tools, a response format or reasoning. A trace id is sent as the sticky session key when no `provider.order` is set.
 - **Replay.** Replayed assistant messages carry `reasoning_details` unchanged. `reasoning_content` is not sent.
-- **Cost.** `usage.cost` is read as OpenRouter credits.
+- **Cost.** `usage.cost` is retained as reported USD, including zero. When it is absent, the shared execution layer can compute a `predicted` cost from catalog prices; it does not invent a provider-wide model price.
 
 ## Request fields
 
@@ -57,7 +57,7 @@ Every field that the provider sends to the chat completions endpoint has one row
 | `src/openrouter_structured_output.ts`  | `json_schema` and `json_object` planning                               |
 | `src/openrouter_cache_control.ts`      | `cache_control` breakpoints for the listed models                      |
 | `src/openrouter_routing.ts`            | Routing policy, `require_parameters` and the session key               |
-| `src/openrouter_reported_cost.ts`      | Reads `usage.cost` as credits                                          |
+| `src/openrouter_reported_cost.ts`      | Maps reported `usage.cost` to USD                                      |
 | `src/openrouter_response.ts`           | Content, tool-call and finish-reason extraction                        |
 | `src/openrouter_errors.ts`             | Maps an error response to one typed error                              |
 | `src/constants.ts`                     | Provider metadata, effort order, caching list and limits               |
