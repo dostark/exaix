@@ -10,6 +10,7 @@
  */
 
 import { extractOpenAIContent } from "@exaix/ai/provider_common_utils.ts";
+import { RESPONSE_STOP_REASON_REFUSAL } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { OPENROUTER_FINISH_REASON_LENGTH } from "./constants.ts";
 import { OpenRouterTruncationError } from "./openrouter_errors.ts";
@@ -30,7 +31,9 @@ export function extractOpenRouterContent(response: IOpenRouterResponse, provider
   return content;
 }
 
-/** Why generation ended, as OpenRouter reports it. Absent when the route does not say. */
+/** Preserve native refusals for callers that journal them. Other reasons retain the normalized gateway value. */
 export function extractOpenRouterFinishReason(response: IOpenRouterResponse): Opt<string, Reason.OptionalContext> {
-  return response.choices?.[0]?.finish_reason ?? undefined;
+  const choice = response.choices?.[0];
+  if (choice?.native_finish_reason === RESPONSE_STOP_REASON_REFUSAL) return RESPONSE_STOP_REASON_REFUSAL;
+  return choice?.finish_reason ?? undefined;
 }

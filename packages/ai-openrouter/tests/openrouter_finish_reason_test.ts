@@ -75,6 +75,37 @@ Deno.test("a stop finish returns stop_reason stop", async () => {
   });
 });
 
+Deno.test("fix(openrouter): a native refusal behind content_filter keeps the canonical refusal stop reason", async () => {
+  const body = JSON.stringify({
+    choices: [{
+      message: { role: "assistant", content: null, refusal: null, reasoning: null },
+      finish_reason: "content_filter",
+      native_finish_reason: "refusal",
+    }],
+  });
+  await run(body, async (provider, fetches) => {
+    const result = await provider.generate("Plan the change.");
+    assertEquals(result.stop_reason, "refusal");
+    assertEquals(result.content, "");
+    assertEquals(fetches(), 1);
+  });
+});
+
+Deno.test("fix(openrouter): content_filter without a native refusal keeps its original stop reason", async () => {
+  for (const nativeReason of [undefined, null, "moderation"]) {
+    await run(
+      reply({
+        message: { content: "" },
+        finish_reason: "content_filter",
+        ...(nativeReason === undefined ? {} : { native_finish_reason: nativeReason }),
+      }),
+      async (provider) => {
+        assertEquals((await provider.generate("hi")).stop_reason, "content_filter");
+      },
+    );
+  }
+});
+
 Deno.test("a tool_calls finish with empty content is not an error", async () => {
   const toolCalls = [{ id: "call_1", type: "function", function: { name: "read_file", arguments: '{"path":"a"}' } }];
   const body = reply({ message: { content: null, tool_calls: toolCalls }, finish_reason: "tool_calls" });
