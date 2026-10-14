@@ -108,6 +108,38 @@
     "deslop": { "description": "Rule idea taken from maharshi365/deslop or dmmulroy/anti-slop." }
   },
   "rules": {
+    "exaix/require-safety-comment": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "scope": "prod",
+      "optIn": true,
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety", "deslop"],
+      "options": { "markers": ["SAFETY"] },
+      "limits": "Only non-const assertions in production files are checked."
+    },
+    "exaix/no-runtime-typeof": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "scope": "prod",
+      "optIn": true,
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety", "deslop"],
+      "options": { "allowInTypeGuards": true },
+      "limits": "An existence probe against \"undefined\" is allowed."
+    },
+    "exaix/no-conditional-empty-object-spread": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "scope": "prod",
+      "optIn": true,
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety", "deslop"],
+      "limits": "Only a conditional with an empty object branch is checked."
+    },
     "exaix/no-explicit-unknown": {
       "engine": "plugin",
       "severity": "off",
