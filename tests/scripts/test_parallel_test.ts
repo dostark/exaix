@@ -42,6 +42,15 @@ Deno.test("resolveReporter defaults to pretty output", () => {
   assertEquals(resolveReporter([]), "pretty");
 });
 
+Deno.test("fix(test-runner): live memory maturation uses the serial network lane", () => {
+  const file = "apps/daemon/tests/memory_maturation_cutover_live_test.ts";
+  assert(SEQUENTIAL_FILES.includes(file), "live provider work must be excluded from the CPU-pressure batch");
+  const entry = SEQUENTIAL_TESTS.find((test) => test.file === file);
+  assert(entry, "the live test needs an isolation entry");
+  assert(entry.reasons.includes(IsolationReason.pressure));
+  assertEquals(entry.network, true, "the live provider must retain real network access");
+});
+
 Deno.test("resolveReporter accepts equals-form reporter flag", () => {
   assertEquals(resolveReporter(["--reporter=dot"]), "dot");
 });
@@ -186,6 +195,7 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "tests/integration/parallel_tool_round_cutover_test.ts",
   "apps/daemon/tests/dogfood_context_child_query_test.ts",
   "apps/daemon/tests/headless_session_launcher_test.ts",
+  "apps/daemon/tests/memory_maturation_cutover_live_test.ts",
   "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
   "tests/security/calibration_sandbox_security_test.ts",
   "tests/scenario_framework/tests/portal_knowledge_strategies_scenario_test.ts",
@@ -317,6 +327,7 @@ Deno.test("only the dist/bin writers are marked serializedOutput and the egress-
   assertEquals(serialized, ["tests/infra/build_test.ts", "tests/infra/exactl_edition_build_test.ts"]);
   const network = SEQUENTIAL_TESTS.filter((test) => test.network).map((test) => test.file);
   assertEquals(network, [
+    "apps/daemon/tests/memory_maturation_cutover_live_test.ts",
     "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
     "tests/security/calibration_sandbox_security_test.ts",
     "apps/daemon/tests/deploy_workspace_test.ts",
