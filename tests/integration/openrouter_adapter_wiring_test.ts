@@ -92,7 +92,7 @@ Deno.test("[integration] after the bootstrap, ModelResolver ranks OpenRouter by 
   }
 });
 
-Deno.test("[integration] after the registry bootstrap, DefaultModelRegistry returns the models-endpoint context_length for an OpenRouter model", async () => {
+Deno.test("[integration] bootstrapped OpenRouter returns the catalog context window and keeps an absent model unknown", async () => {
   const urls: string[] = [];
   using _fetchStub = stub(globalThis, "fetch", (input) => {
     urls.push(String(input));
@@ -104,7 +104,7 @@ Deno.test("[integration] after the registry bootstrap, DefaultModelRegistry retu
     await withEnv({ OPENROUTER_API_KEY: "sk-or-test" }, async () => {
       const registry = new DefaultModelRegistry({ checkProvider: () => Promise.resolve(true) });
       assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, OPENROUTER_MODEL), 1_000_000);
-      assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, "nobody/absent"), 200_000);
+      assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, "nobody/absent"), 0);
     });
     assertEquals(urls, ["https://openrouter.ai/api/v1/models"]);
   } finally {
@@ -112,7 +112,7 @@ Deno.test("[integration] after the registry bootstrap, DefaultModelRegistry retu
   }
 });
 
-Deno.test("[integration] Solo returns the provider context window after a bounded OpenRouter catalog timeout", async () => {
+Deno.test("[integration] Solo returns an unknown window after a bounded OpenRouter catalog timeout", async () => {
   const deadlineWithToleranceMs = 6_000;
   const signals: AbortSignal[] = [];
   using _fetchStub = stub(globalThis, "fetch", (_input, init) => {
@@ -129,9 +129,9 @@ Deno.test("[integration] Solo returns the provider context window after a bounde
     await withEnv({ OPENROUTER_API_KEY: "sk-or-test" }, async () => {
       const registry = new DefaultModelRegistry({ checkProvider: () => Promise.resolve(true) });
       const started = performance.now();
-      assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, OPENROUTER_MODEL), 200_000);
+      assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, OPENROUTER_MODEL), 0);
       assert(performance.now() - started < deadlineWithToleranceMs);
-      assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, OPENROUTER_MODEL), 200_000);
+      assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, OPENROUTER_MODEL), 0);
     });
     assertEquals(signals.length, 1);
     assertEquals(signals[0].aborted, true);

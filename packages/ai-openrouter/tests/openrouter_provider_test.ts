@@ -10,6 +10,7 @@
 
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { ProviderType } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 import { AuthenticationError, ConnectionError } from "@exaix/ai/providers";
 import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
 import {
@@ -32,7 +33,7 @@ Deno.test("OpenRouterProvider.generate posts to the gateway with auth + ranking 
   let capturedUrl = "";
   let headers = new Headers();
   const origFetch = globalThis.fetch;
-  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
     capturedUrl = String(input);
     headers = new Headers(init?.headers);
     return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
@@ -80,12 +81,18 @@ Deno.test("OpenRouterProviderFactory.create throws when the API key is missing",
   );
 });
 
+Deno.test("OPENROUTER_PROVIDER_METADATA has no supportsThinking, supportsEffort, contextWindow or costPerMtok", () => {
+  for (const field of ["supportsThinking", "supportsEffort", "contextWindow", "costPerMtok"]) {
+    assertEquals(Object.hasOwn(OPENROUTER_PROVIDER_METADATA, field), false, field);
+  }
+});
+
 Deno.test("OPENROUTER_PROVIDER_METADATA describes the openrouter provider", () => {
   assertEquals(OPENROUTER_PROVIDER_METADATA.name, "openrouter");
   assert(OPENROUTER_PROVIDER_METADATA.capabilities.includes("multi-model"));
 });
 
-Deno.test("each capability that the provider metadata declares produces its request field for a supporting model", async () => {
+Deno.test("each capability that a model declares produces its request field without provider-wide flags", async () => {
   const supportingEntry: IOpenRouterModelEntry = {
     id: "qwen/qwen3.7-flash",
     supportedParameters: ["reasoning", "tools"],
@@ -96,7 +103,7 @@ Deno.test("each capability that the provider metadata declares produces its requ
   ): Promise<{ reasoning?: Record<string, string | boolean> }> => {
     let sent: { reasoning?: Record<string, string | boolean> } = {};
     const origFetch = globalThis.fetch;
-    globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+    globalThis.fetch = ((_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
       sent = JSON.parse((init?.body as string) ?? "{}");
       return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
     }) as typeof fetch;
@@ -112,12 +119,8 @@ Deno.test("each capability that the provider metadata declares produces its requ
       globalThis.fetch = origFetch;
     }
   };
-  if (OPENROUTER_PROVIDER_METADATA.supportsEffort) {
-    assertEquals((await bodyFor({ effort: "high" })).reasoning, { effort: "high" });
-  }
-  if (OPENROUTER_PROVIDER_METADATA.supportsThinking) {
-    assertEquals((await bodyFor({ thinking: false })).reasoning, { enabled: false });
-  }
+  assertEquals((await bodyFor({ effort: "high" })).reasoning, { effort: "high" });
+  assertEquals((await bodyFor({ thinking: false })).reasoning, { enabled: false });
 });
 
 Deno.test("OpenRouterProvider.generate maps a 401 to AuthenticationError", async () => {
@@ -134,7 +137,7 @@ Deno.test("OpenRouterProvider.generate maps a 401 to AuthenticationError", async
 Deno.test("[openrouter] routing block serialized into request body", async () => {
   let capturedBody = "";
   const origFetch = globalThis.fetch;
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
     capturedBody = String(init?.body ?? "");
     return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
   }) as typeof fetch;
@@ -171,7 +174,7 @@ Deno.test("[openrouter] routing block serialized into request body", async () =>
 Deno.test("[openrouter] routing block serializes max_price into request body", async () => {
   let capturedBody = "";
   const origFetch = globalThis.fetch;
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
     capturedBody = String(init?.body ?? "");
     return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
   }) as typeof fetch;
@@ -201,7 +204,7 @@ Deno.test("[openrouter] routing block serializes max_price into request body", a
 Deno.test("[openrouter] routing block omitted when not configured", async () => {
   let capturedBody = "";
   const origFetch = globalThis.fetch;
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
     capturedBody = String(init?.body ?? "");
     return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
   }) as typeof fetch;
@@ -283,7 +286,7 @@ Deno.test("OpenRouterProvider retries a 503 even when the message names routing 
 Deno.test("OpenRouterProvider sends no metadata opt-in header, because no consumer reads openrouter_metadata", async () => {
   let headers = new Headers();
   const origFetch = globalThis.fetch;
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
     headers = new Headers(init?.headers);
     return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
   }) as typeof fetch;
@@ -371,7 +374,10 @@ Deno.test("an empty tools array does not consult the capability source", async (
   assertEquals(result.lookups, 0);
 });
 
-async function resultForUsage(usage: Record<string, number | Record<string, number>>, responseModel?: string) {
+async function resultForUsage(
+  usage: Record<string, number | Record<string, number>>,
+  responseModel?: Opt<string, Reason.OptionalInput>,
+) {
   const origFetch = globalThis.fetch;
   globalThis.fetch = (() =>
     Promise.resolve(

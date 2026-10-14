@@ -1,17 +1,13 @@
 /**
  * @module ModelResolverProductionRegistryTest
  * @path packages/ai/tests/model_resolver_production_registry_test.ts
- * @description Phase 132 GAP-1 remediation (132.18) — the production provider
- *   capability metadata (supportsThinking / supportsEffort / contextWindow /
- *   costPerMtok) must be populated on real registered providers so that
- *   ModelResolver's preset and thinking paths work at daemon runtime instead of
- *   silently resolving every size intent to mock or throwing.
+ * @description Verifies direct-provider metadata and OpenRouter catalog wiring reach production model resolution.
  * @architectural-layer AI
  * @dependencies [@std/assert, @exaix/testing, @exaix/schemas]
  * @related-files [apps/common/registry_bootstrap.ts, packages/model-registry/src/default_model_registry.ts, packages/ai/src/model_resolver.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertExists } from "@std/assert";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
 import { DEFAULT_MODEL_PRESETS, getDefaultModels } from "@exaix/schemas";
 import type { Config } from "@exaix/schemas";
@@ -33,7 +29,7 @@ function makeProductionResolver(registry: DefaultModelRegistry): ModelResolver {
   );
 }
 
-Deno.test("[132.18] booted provider metadata carries capability fields per the plan table", () => {
+Deno.test("booted direct providers retain metadata while OpenRouter exposes a per-model catalog", () => {
   ProviderRegistry.clear();
   bootstrapProviderRegistry();
   try {
@@ -42,7 +38,6 @@ Deno.test("[132.18] booted provider metadata carries capability fields per the p
       { provider: "openai", contextWindow: 1050000, supportsThinking: true },
       { provider: "google", contextWindow: 1000000, supportsThinking: true },
       { provider: "ollama", contextWindow: 8192, supportsThinking: false },
-      { provider: "openrouter", contextWindow: 200000, supportsThinking: true },
     ];
     for (const c of cases) {
       const meta = ProviderRegistry.getProviderMetadata(c.provider);
@@ -51,6 +46,12 @@ Deno.test("[132.18] booted provider metadata carries capability fields per the p
       assertEquals(meta!.supportsThinking, c.supportsThinking, `${c.provider} supportsThinking`);
       assertEquals(typeof meta!.supportsEffort, "boolean", `${c.provider} supportsEffort`);
       assertEquals(typeof meta!.costPerMtok, "number", `${c.provider} costPerMtok`);
+    }
+    const openrouter = ProviderRegistry.getProviderMetadata("openrouter");
+    assertExists(openrouter);
+    assertEquals(typeof openrouter.modelInfo, "function");
+    for (const field of ["supportsThinking", "supportsEffort", "contextWindow", "costPerMtok"]) {
+      assertEquals(Object.hasOwn(openrouter, field), false, `openrouter ${field}`);
     }
   } finally {
     ProviderRegistry.clear();

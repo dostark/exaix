@@ -16,6 +16,7 @@ import { DefaultRoutingStrategy } from "../src/routing/default_routing_strategy.
 import { createStubCostTracker, createStubHealthChecker } from "./helpers/service_stubs.ts";
 import { ModelResolver, resolvePresetFromSize } from "../src/model_resolver.ts";
 import { createTestConfig } from "./helpers/test_config.ts";
+import { OPENROUTER_PROVIDER_METADATA } from "@exaix/ai-openrouter";
 
 function registerProvider(name: string): void {
   ProviderRegistry.registerWithMetadata(name, new MockProviderFactory(), {
@@ -144,3 +145,34 @@ Deno.test("[step132.1][context_window] overflow bumps size tier and emits contex
     await cleanup();
   }
 });
+
+for (const available of [true, false]) {
+  Deno.test(
+    available
+      ? "a size preset still selects OpenRouter after the deletion, with the lookup available"
+      : "with the lookup unavailable, OpenRouter passes the window filter as unknown",
+    async () => {
+      ProviderRegistry.clear();
+      try {
+        let contextWindow = 262_144;
+        const profile = { M: { min_context_window: 250_000, max_cost_per_mtok: 1, supports_thinking: true } };
+        ProviderRegistry.registerWithMetadata("openrouter", new MockProviderFactory(), {
+          ...OPENROUTER_PROVIDER_METADATA,
+          capabilities: [...OPENROUTER_PROVIDER_METADATA.capabilities],
+          pricingTier: PricingTier.MEDIUM,
+          modelInfo: () =>
+            available
+              ? Promise.resolve({ contextWindow, inputPerMtok: 0.02, supportsThinking: true })
+              : Promise.reject(new Error("catalog unavailable")),
+        });
+        assertEquals((await resolvePresetFromSize("M", profile)).provider, "openrouter");
+        if (available) {
+          contextWindow = 8192;
+          await assertRejects(() => resolvePresetFromSize("M", profile), Error, "min_context_window");
+        }
+      } finally {
+        ProviderRegistry.clear();
+      }
+    },
+  );
+}

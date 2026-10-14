@@ -17,6 +17,7 @@ import { ModelResolver } from "../src/model_resolver.ts";
 import { createTestConfig } from "./helpers/test_config.ts";
 import { DefaultModelRegistry } from "@exaix/model-registry";
 import { DEFAULT_MODEL_PRESETS } from "@exaix/schemas";
+import { OPENROUTER_PROVIDER_METADATA } from "@exaix/ai-openrouter";
 
 function registerProvider(
   name: string,
@@ -219,5 +220,21 @@ Deno.test("[step132.1][characteristics] unknown characteristic is ignored", asyn
     assertEquals(result.provider, "fallback");
   } finally {
     await cleanup();
+  }
+});
+
+Deno.test("with the constants deleted and the lookup unavailable, OpenRouter is not ranked as free", async () => {
+  ProviderRegistry.clear();
+  try {
+    ProviderRegistry.registerWithMetadata("openrouter", new MockProviderFactory(), {
+      ...OPENROUTER_PROVIDER_METADATA,
+      capabilities: [...OPENROUTER_PROVIDER_METADATA.capabilities],
+      pricingTier: PricingTier.MEDIUM,
+      modelInfo: () => Promise.reject(new Error("catalog unavailable")),
+    });
+    registerProvider("priced", { costPerMtok: 5 });
+    assertEquals((await makeResolver().resolve({ characteristics: ["cheapest"] })).provider, "priced");
+  } finally {
+    ProviderRegistry.clear();
   }
 });
