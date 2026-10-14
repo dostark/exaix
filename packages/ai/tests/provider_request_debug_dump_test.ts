@@ -96,6 +96,24 @@ Deno.test("[request-dump] performProviderCall journals the request body at debug
   });
 });
 
+Deno.test("[request-dump] the response debug dump carries the request trace id", async () => {
+  await withDebugJournal(async ({ db, call }) => {
+    await call();
+    await db.waitForFlush();
+    const dumps = db.getActivitiesByTrace(TRACE_ID).filter((row) =>
+      row.action_type === PROVIDER_EVENT_REQUEST_DEBUG_DUMP || row.action_type === PROVIDER_EVENT_RESPONSE_DEBUG_DUMP
+    );
+    assertEquals(
+      dumps.map((row) => row.action_type).sort(),
+      [
+        PROVIDER_EVENT_REQUEST_DEBUG_DUMP,
+        PROVIDER_EVENT_RESPONSE_DEBUG_DUMP,
+      ].sort(),
+    );
+    assertEquals(new Set(dumps.map((row) => row.trace_id)), new Set([TRACE_ID]));
+  });
+});
+
 Deno.test("[request-dump] the compatible branch journals no request body", async () => {
   await withDebugJournal(async ({ db, call }) => {
     await call({}, false);

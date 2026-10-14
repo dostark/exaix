@@ -1115,7 +1115,7 @@ export async function performProviderCall<T>(
     void logger.debug(PROVIDER_EVENT_RESPONSE_DEBUG_DUMP, id, {
       provider: id,
       response_body: toSafeJson(data as SafeJsonInput) ?? {},
-    });
+    }, traceId);
   }
   const content = extractor
     ? extractor(data)
