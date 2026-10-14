@@ -326,7 +326,7 @@ model = "~deepseek/deepseek-flash-latest"   # a floating alias; any model from o
 
 How Exaix uses OpenRouter:
 
-- **Model capabilities.** Exaix reads each model's entry from `/api/v1/models`. A request with tools to a model that lists no tool support is refused before any chat call. If the catalog lookup fails, the call is not refused, and `openrouter.capability_lookup.failed` is journaled.
+- **Model capabilities.** Exaix reads each model's entry from `/api/v1/models`. A request with tools to a model that lists no tool support is refused before any chat call. If the catalog lookup fails, the call is not refused, and `openrouter.capability_lookup.failed` is journaled. A failure before the first OpenRouter provider is created is not journaled, because the registry bootstrap has no logger. Journaling starts when a provider is created with one.
 - **Context window.** The Solo model registry uses the model's catalog context window after any static override. Providers created by the same factory share the catalog cache. Catalog requests have a five-second limit, separate from the generation timeout. If the lookup is unavailable, the registry uses the provider-level fallback. Metadata reads do not save environment credentials.
 - **`require_parameters`.** A request that carries tools, a response format or reasoning sends `provider.require_parameters: true`. OpenRouter then routes only to providers that accept every field. To turn it off, set `[ai_openrouter.routing.provider] require_parameters = false`.
 - **Structured output.** A schema that `json_schema` can represent strictly uses `json_schema`. Any other schema uses `json_object`, with the schema in the prompt. If a route refuses `json_schema`, Exaix retries once with `json_object`. Every reply is validated locally, and an invalid reply fails closed.
@@ -4568,20 +4568,30 @@ backoff_base_ms = 1000
 anthropic = 30000
 ```
 
-Anthropic, Google and OpenAI/compatible providers read their per-provider retry
-settings at construction. OpenRouter currently uses its own constructor defaults.
-The global `ai_retry.max_attempts` field also controls fallback-chain provider
-creation; it is not a universal transport override.
+Anthropic, OpenRouter and the OpenAI-compatible providers read their per-provider
+retry settings (`ai_retry.providers.<provider>`) at construction. The Google and
+native OpenAI factories do not pass the configuration to their providers, so their
+`ai_retry.providers.<name>` blocks do not apply through `ProviderFactory`. They
+use their package defaults and receive only the Retry-After cap. The global
+`ai_retry.max_attempts` field also controls fallback-chain provider creation; it
+is not a universal transport override.
 
 The first retry waits one base delay, the second waits twice that delay, and later
 retries continue exponentially. When an error carries a parsed Retry-After value,
-its contribution is capped at 60,000 ms and the longer of that value and the
-exponential backoff is used. The backoff itself can exceed that cap. Cancellation
-interrupts the wait.
+its contribution is capped at `ai_retry.retry_after_max_ms` (default 60,000 ms)
+and the longer of that value and the exponential backoff is used. The backoff
+itself can exceed that cap. Cancellation interrupts the wait.
 
-The registered key `ai.retry.retry_after_max_ms` describes this cap. The retry loop
-currently reads its 60,000 ms default constant; changing the stored key does not
-yet change the runtime wait. See the [configuration reference](Reference_Data.md#ai-provider-retry-configuration).
+Only OpenRouter errors carry a parsed Retry-After value today. A 429 reply from
+Anthropic, Google or OpenAI uses plain exponential backoff.
+
+```toml
+[ai_retry]
+retry_after_max_ms = 30000
+```
+
+The cap is read when a provider is constructed, and it reaches every provider
+that `ProviderFactory` builds. See the [configuration reference](Reference_Data.md#ai-provider-retry-configuration).
 
 #### Non-Retryable Errors and Diagnostics
 

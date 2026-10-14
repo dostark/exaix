@@ -797,20 +797,24 @@ Provider transport retries run in the shared fetch layer. The attempt limit incl
 the first request. The compatible branch shares the retry loop and suppresses
 intermediate retry events.
 
-| Registered key                | Default   | Range              | Runtime behavior                                                                                              |
-| ----------------------------- | --------- | ------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `ai.retry.retry_after_max_ms` | 60,000 ms | 1,000–3,600,000 ms | Registered cap metadata. The retry loop currently reads the default constant; stored overrides are not wired. |
+| Registered key                | Default   | Range              | Runtime behavior                                                                                                     |
+| ----------------------------- | --------- | ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `ai.retry.retry_after_max_ms` | 60,000 ms | 1,000–3,600,000 ms | Set as `ai_retry.retry_after_max_ms`. Caps the Retry-After contribution to a retry delay for every provider factory. |
 
 Per-provider retry budgets and delays use `ai_retry.providers.<provider>`;
 provider timeouts use `ai_timeout.providers.<provider>`. Provider constructors
-retain their own defaults when an override is absent. The global
+retain their own defaults when an override is absent. `ai_retry.providers.openrouter`
+applies to OpenRouter. The Google and native OpenAI factories do not pass the
+configuration to their providers, so their per-provider blocks do not apply through
+`ProviderFactory`. They receive only the Retry-After cap. The global
 `ai_retry.max_attempts` field controls fallback-chain creation rather than acting
 as a universal transport override.
 
 For errors carrying `retryAfterMs`, the scheduled delay is the greater of the
 exponential backoff and the capped Retry-After value. The cap applies to the
 Retry-After contribution; it does not cap a longer exponential backoff. Waits are
-abortable.
+abortable. Only OpenRouter errors carry `retryAfterMs`. A 429 reply from Anthropic,
+Google or OpenAI uses plain exponential backoff.
 
 `provider.retry.scheduled` has payload fields `provider`, `attempt` (the failed
 attempt, starting at 1), `max_attempts`, `delay_ms`, `error_type`, and optional

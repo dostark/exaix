@@ -101,10 +101,10 @@ the first call. HTTP 503 remains retryable. The compatible branch uses the same
 loop and suppresses intermediate retry events to retain one terminal event.
 
 When an error carries `retryAfterMs`, the delay is
-`max(exponential backoff, min(retryAfterMs, 60000))`. Cancellation interrupts the
-wait. The cap is registered as `ai.retry.retry_after_max_ms`, but `withRetry`
-currently reads the exported default constant. Runtime overrides of this key are
-not wired. See [provider retry configuration](../../docs/Reference_Data.md#ai-provider-retry-configuration).
+`max(exponential backoff, min(retryAfterMs, cap))`. The cap is
+`ai_retry.retry_after_max_ms` (default 60000), which `BaseProvider` resolves at
+construction and passes to `withRetry` as `retryAfterMaxMs`. Cancellation interrupts
+the wait. Only OpenRouter errors carry `retryAfterMs`. See [provider retry configuration](../../docs/Reference_Data.md#ai-provider-retry-configuration).
 
 `BillingError` identifies a non-retryable HTTP 402. `ProviderTruncationError`
 identifies an empty incomplete OpenAI Responses reply. Partial text or tool calls
