@@ -143,10 +143,12 @@ function registerConcreteProviders(): void {
   // OpenRouter ships in Solo (all editions) per edition decision D5b/D-providers:
   // a BYO-key, independently-free aggregator — gating it adds no value.
   if (!supported.includes(PROVIDER_OPENROUTER)) {
+    const factory = new OpenRouterProviderFactory();
     const openrouterMetadata: IProviderMetadata = {
       ...OPENROUTER_PROVIDER_METADATA,
       capabilities: [...OPENROUTER_PROVIDER_METADATA.capabilities],
       pricingTier: PricingTier.MEDIUM,
+      modelInfo: (model) => factory.modelInfo(model),
       // OpenRouter is an aggregator reseller — the native admission path and the
       // native_first route policy read this flag.
       isAggregator: true,
@@ -160,7 +162,7 @@ function registerConcreteProviders(): void {
     };
     ProviderRegistry.registerWithMetadata(
       PROVIDER_OPENROUTER,
-      new OpenRouterProviderFactory(),
+      factory,
       openrouterMetadata,
     );
   }

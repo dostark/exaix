@@ -100,6 +100,12 @@ export const OPENROUTER_CAPABILITY_MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
 /** Minimum gap between capability lookups after a failure. */
 export const OPENROUTER_CAPABILITY_FAILURE_BACKOFF_MS = 60_000;
 
+/** Bounds catalog reads independently of the generation timeout. */
+export const OPENROUTER_MODEL_INFO_TIMEOUT_MS = 5_000;
+
+/** Converts catalog prices per token to prices per million tokens. */
+export const OPENROUTER_TOKENS_PER_MTOK = 1_000_000;
+
 /** HTTP statuses that the OpenRouter error mapper branches on, beyond the shared 401, 403 and 429. */
 export const OPENROUTER_HTTP_STATUS = {
   PAYMENT_REQUIRED: 402,

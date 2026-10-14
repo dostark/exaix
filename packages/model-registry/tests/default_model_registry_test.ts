@@ -6,8 +6,14 @@
  *   against Phase 132 inline constants.
  */
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
+import { stub } from "@std/testing/mock";
 import { ProviderCostTier } from "@exaix/core/types";
-import { type IProviderHealthChecker, type IProviderMetadata, ProviderRegistry } from "@exaix/ai";
+import {
+  type IProviderHealthChecker,
+  type IProviderMetadata,
+  type IProviderModelInfo,
+  ProviderRegistry,
+} from "@exaix/ai";
 import { DefaultModelRegistry, mtokToPer1k, RegistryNotImplementedError, STATIC_OVERLAY } from "@exaix/model-registry";
 
 function createMockProvider(name: string, overrides: Partial<IProviderMetadata> = {}): IProviderMetadata {
@@ -35,6 +41,62 @@ function setupProviders(): void {
   ProviderRegistry.registerWithMetadata("test-openai", null as never, createMockProvider("test-openai"));
   ProviderRegistry.registerWithMetadata("test-google", null as never, createMockProvider("test-google"));
 }
+
+Deno.test("getContextWindow reads modelInfo when the overlay has no row", async () => {
+  const models: string[] = [];
+  const modelInfo: IProviderModelInfo = { contextWindow: 262_144 };
+  using _metadataStub = stub(ProviderRegistry, "getProviderMetadata", () =>
+    createMockProvider("catalog", {
+      modelInfo: (model) => {
+        models.push(model);
+        return Promise.resolve(modelInfo);
+      },
+    }));
+  const registry = new DefaultModelRegistry(stubHealthChecker());
+  assertEquals(await registry.getContextWindow("catalog", "specific-model"), 262_144);
+  assertEquals(models, ["specific-model"]);
+});
+
+Deno.test("getContextWindow prefers both static sources without calling modelInfo", async () => {
+  let calls = 0;
+  using _metadataStub = stub(ProviderRegistry, "getProviderMetadata", () =>
+    createMockProvider("anthropic", {
+      modelInfo: () => {
+        calls++;
+        return Promise.resolve({ contextWindow: 1 });
+      },
+    }));
+  const registry = new DefaultModelRegistry(stubHealthChecker());
+  assertEquals(await registry.getContextWindow("anthropic", "claude-sonnet-5"), 1_000_000);
+  assertEquals(await registry.getContextWindow("anthropic", "claude-opus-5"), 1_000_000);
+  assertEquals(calls, 0);
+});
+
+Deno.test("a modelInfo rejection falls back to the provider value", async () => {
+  let calls = 0;
+  using _metadataStub = stub(ProviderRegistry, "getProviderMetadata", () =>
+    createMockProvider("catalog", {
+      modelInfo: () => {
+        calls++;
+        return Promise.reject(new Error("catalog unavailable"));
+      },
+    }));
+  assertEquals(await new DefaultModelRegistry(stubHealthChecker()).getContextWindow("catalog", "model"), 32_000);
+  assertEquals(calls, 1);
+});
+
+Deno.test("getContextWindow falls back for absent catalog entries and keeps a defined zero", async () => {
+  for (const info of [undefined, {}, { contextWindow: 0 }]) {
+    using _metadataStub = stub(ProviderRegistry, "getProviderMetadata", () =>
+      createMockProvider("catalog", {
+        modelInfo: () => Promise.resolve(info),
+      }));
+    assertEquals(
+      await new DefaultModelRegistry(stubHealthChecker()).getContextWindow("catalog", "model"),
+      info?.contextWindow ?? 32_000,
+    );
+  }
+});
 
 Deno.test({
   name: "getModelsByCapability filters registered providers by profile predicate",

@@ -11,6 +11,7 @@
 import { assert, assertEquals, assertFalse } from "@std/assert";
 import { createMockLogger } from "@exaix/testing";
 import { DomainEventType } from "@exaix/core/events";
+import type { Opt, Reason } from "@exaix/core/types";
 import {
   deriveOpenRouterModelsUrl,
   type IOpenRouterModelCapabilitiesOptions,
@@ -33,7 +34,7 @@ interface IFetchProbe {
 function stubFetch(respond: () => Response | Promise<Response>): { probe: IFetchProbe; restore: () => void } {
   const origFetch = globalThis.fetch;
   const probe: IFetchProbe = { calls: 0, urls: [], authorization: [] };
-  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = (async (input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     probe.calls++;
     probe.urls.push(String(input));
     probe.authorization.push(new Headers(init?.headers).get("Authorization"));
@@ -62,6 +63,61 @@ function makeLookup(
 }
 
 const ok = (): Response => new Response(FIXTURE, { status: 200 });
+
+Deno.test("pricing.prompt and pricing.completion are parsed per million tokens", async () => {
+  const { restore } = stubFetch(() =>
+    Response.json({
+      data: [{ id: "priced/model", pricing: { prompt: "0.000003", completion: "0.000015" } }, {
+        id: "free/model",
+        pricing: { prompt: "0", completion: "0" },
+      }],
+    })
+  );
+  try {
+    const { lookup } = makeLookup();
+    assertEquals(await lookup.getEntry("priced/model"), {
+      id: "priced/model",
+      supportedParameters: [],
+      pricing: { inputPerMtok: 3, outputPerMtok: 15 },
+    });
+    assertEquals(await lookup.getEntry("free/model"), {
+      id: "free/model",
+      supportedParameters: [],
+      pricing: { inputPerMtok: 0, outputPerMtok: 0 },
+    });
+  } finally {
+    restore();
+  }
+});
+
+Deno.test("[security] a non-numeric or negative price is ignored without dropping the model or its valid price", async () => {
+  for (const invalid of ["garbage", "-0.1", "NaN", "Infinity", "1e309", "1e303", "", " ", 0, false, {}, null]) {
+    const { restore } = stubFetch(() =>
+      Response.json({
+        data: [
+          { id: "invalid/input", context_length: 8000, pricing: { prompt: invalid, completion: "0.000001" } },
+          { id: "invalid/output", pricing: { prompt: "0.000002", completion: invalid } },
+        ],
+      })
+    );
+    try {
+      const { lookup } = makeLookup();
+      assertEquals(await lookup.getEntry("invalid/input"), {
+        id: "invalid/input",
+        contextLength: 8000,
+        supportedParameters: [],
+        pricing: { outputPerMtok: 1 },
+      });
+      assertEquals(await lookup.getEntry("invalid/output"), {
+        id: "invalid/output",
+        supportedParameters: [],
+        pricing: { inputPerMtok: 2 },
+      });
+    } finally {
+      restore();
+    }
+  }
+});
 
 Deno.test("a recorded models-endpoint fixture parses, with the capability fields", async () => {
   const { restore } = stubFetch(ok);

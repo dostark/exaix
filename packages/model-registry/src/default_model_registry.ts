@@ -3,7 +3,7 @@
  * @path packages/model-registry/src/default_model_registry.ts
  * @description Solo-tier floor implementation of IModelRegistry. Resolves all 13 methods
  *   using the ProviderRegistry, the static overlay, and
- *   zero network/DB access. Methods that belong to the Team+ tier throw RegistryNotImplementedError.
+ *   optional provider catalog metadata. Team-only methods throw RegistryNotImplementedError.
  * @architectural-layer ModelRegistry
  * @dependencies [@exaix/core/types, @exaix/ai, @exaix/schemas]
  * @related-files [packages/core/src/types/i_model_registry.ts, packages/ai/src/model_resolver.ts]
@@ -73,14 +73,20 @@ export class DefaultModelRegistry implements IModelRegistry {
     return Promise.resolve(meta?.costPerMtok ?? 0);
   }
 
-  getContextWindow(provider: string, model: string): Promise<number> {
+  async getContextWindow(provider: string, model: string): Promise<number> {
     const overlayKey = `${provider}:${model}`;
     const overlay = STATIC_OVERLAY[overlayKey];
-    if (overlay?.contextWindow !== undefined) return Promise.resolve(overlay.contextWindow);
+    if (overlay?.contextWindow !== undefined) return overlay.contextWindow;
     const listed = STATIC_CONTEXT_WINDOWS[overlayKey];
-    if (listed !== undefined) return Promise.resolve(listed);
+    if (listed !== undefined) return listed;
     const meta = ProviderRegistry.getProviderMetadata(provider);
-    return Promise.resolve(meta?.contextWindow ?? 0);
+    try {
+      const info = await meta?.modelInfo?.(model);
+      if (info?.contextWindow !== undefined) return info.contextWindow;
+    } catch {
+      // Catalog lookup failures use the provider-level fallback.
+    }
+    return meta?.contextWindow ?? 0;
   }
 
   getModelPricing(provider: string, model: string): Promise<IModelPricing> {

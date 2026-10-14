@@ -9,9 +9,13 @@
  * @related-files [packages/ai-openrouter/src/openrouter_provider.ts, packages/ai/src/provider_factory.ts, packages/ai/src/traced_provider.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
+import { stub } from "@std/testing/mock";
+import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
+import { DefaultModelRegistry } from "@exaix/model-registry";
 import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
 import type { IModelOptions } from "@exaix/ai/types.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 import { type JSONValue, PricingTier } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
@@ -38,6 +42,54 @@ const OPENROUTER_TEST_ENV: Record<string, string | null> = {
 const MODELS_FIXTURE = await Deno.readTextFile(
   new URL("../../packages/ai-openrouter/tests/fixtures/openrouter_models_fixture.json", import.meta.url),
 );
+
+Deno.test("[integration] after the registry bootstrap, DefaultModelRegistry returns the models-endpoint context_length for an OpenRouter model", async () => {
+  const urls: string[] = [];
+  using _fetchStub = stub(globalThis, "fetch", (input) => {
+    urls.push(String(input));
+    return Promise.resolve(new Response(MODELS_FIXTURE));
+  });
+  ProviderRegistry.clear();
+  try {
+    bootstrapProviderRegistry();
+    await withEnv({ OPENROUTER_API_KEY: "sk-or-test" }, async () => {
+      const registry = new DefaultModelRegistry({ checkProvider: () => Promise.resolve(true) });
+      assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, OPENROUTER_MODEL), 1_000_000);
+      assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, "nobody/absent"), 200_000);
+    });
+    assertEquals(urls, ["https://openrouter.ai/api/v1/models"]);
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[integration] Solo returns the provider context window after a bounded OpenRouter catalog timeout", async () => {
+  const deadlineWithToleranceMs = 6_000;
+  const signals: AbortSignal[] = [];
+  using _fetchStub = stub(globalThis, "fetch", (_input, init) => {
+    const signal = init?.signal;
+    assert(signal);
+    signals.push(signal);
+    return new Promise((_resolve, reject) =>
+      signal.addEventListener("abort", () => reject(signal.reason), { once: true })
+    );
+  });
+  ProviderRegistry.clear();
+  try {
+    bootstrapProviderRegistry();
+    await withEnv({ OPENROUTER_API_KEY: "sk-or-test" }, async () => {
+      const registry = new DefaultModelRegistry({ checkProvider: () => Promise.resolve(true) });
+      const started = performance.now();
+      assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, OPENROUTER_MODEL), 200_000);
+      assert(performance.now() - started < deadlineWithToleranceMs);
+      assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, OPENROUTER_MODEL), 200_000);
+    });
+    assertEquals(signals.length, 1);
+    assertEquals(signals[0].aborted, true);
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
 
 function answerModelsRequest(input: string | URL | Request): Response | undefined {
   return String(input).endsWith("/models") ? new Response(MODELS_FIXTURE, { status: 200 }) : undefined;
@@ -141,7 +193,7 @@ async function wireProviderBlock(
   const { db, tempDir, cleanup } = await initTestDbService();
   const origFetch = globalThis.fetch;
   let sent: { provider?: IWireProvider } = {};
-  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     const catalog = answerModelsRequest(input);
     if (catalog) return Promise.resolve(catalog);
     sent = JSON.parse((init?.body as string) ?? "{}");
@@ -222,7 +274,7 @@ async function analyzeThroughFactory(
   const { db, tempDir, cleanup } = await initTestDbService();
   const origFetch = globalThis.fetch;
   const sentFormats: string[] = [];
-  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     const catalog = answerModelsRequest(input);
     if (catalog) return Promise.resolve(catalog);
     const sent = JSON.parse((init?.body as string) ?? "{}") as { response_format?: { type: string } };
@@ -307,7 +359,7 @@ function routeFetch(modelsResponse: () => Response, chatResponse: () => Response
     chatBodies: [],
     restore: () => (globalThis.fetch = origFetch),
   };
-  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     if (String(input).endsWith("/models")) {
       routed.modelsCalls++;
       return Promise.resolve(modelsResponse());
@@ -447,7 +499,7 @@ async function journaledUsage(
 ): Promise<Array<Record<string, JSONValue>>> {
   const { db, tempDir, cleanup } = await initTestDbService();
   const origFetch = globalThis.fetch;
-  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     const catalog = answerModelsRequest(input);
     if (catalog) return Promise.resolve(catalog);
     const body = JSON.parse(String(init?.body)) as { messages: JSONValue[] };
