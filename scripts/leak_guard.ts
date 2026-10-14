@@ -110,13 +110,13 @@ export async function runLeakGuard(options: ILeakGuardOptions = {}): Promise<ILe
       if (relativePath === "scripts/leak_guard.ts") continue;
       if (relativePath.startsWith("exaix-dev-docs/")) continue;
       if (relativePath.startsWith(".copilot/docs/")) continue;
-      if (relativePath === "tests/scripts/check_edition_leak_import_test.ts") continue;
-      if (relativePath === "tests/scripts/check_prod_tests_import_test.ts") continue;
+      if (relativePath === "packages/lint-rules/tests/check_edition_leak_import_test.ts") continue;
+      if (relativePath === "packages/lint-rules/tests/check_prod_tests_import_test.ts") continue;
       if (relativePath === ".copilot/skills/edition-development/SKILL.md") continue;
       if (relativePath === "tests/fixtures/skills/dogfood_baseline.json") continue;
       if (relativePath === "deno.json") continue;
       if (relativePath === "CODE_STYLE.md") continue;
-      if (relativePath === "scripts/check_code_style.md") continue;
+      if (relativePath === "packages/lint-rules/docs/style_rules.md") continue;
 
       // Check 1: Leak paths in file content — flag only actual imports or
       // path-resolution references that would break or reveal structure in public code.

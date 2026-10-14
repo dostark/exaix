@@ -1,13 +1,13 @@
 /**
  * @module CheckCodeStyleCatalogEquivalenceTest
- * @path tests/scripts/check_code_style_catalog_equivalence_test.ts
+ * @path packages/lint-rules/tests/check_code_style_catalog_equivalence_test.ts
  * @description Locks the catalog-driven findings and proves catalog/code rule parity.
  */
 
 import { assertEquals } from "@std/assert";
 import { parseCatalog } from "@exaix/lint-rules";
-import { checkSource, IMPLEMENTED_SCRIPT_RULE_IDS } from "../../scripts/check_code_style.ts";
-import catalogJson from "../../scripts/config/style_rule_catalog.json" with { type: "json" };
+import { checkSource, IMPLEMENTED_SCRIPT_RULE_IDS } from "../src/exaix/check_code_style.ts";
+import catalogJson from "../../../scripts/config/style_rule_catalog.json" with { type: "json" };
 
 const PROD = "packages/x/src/a.ts";
 

@@ -1,15 +1,21 @@
 #!/usr/bin/env -S deno run -A
 /**
  * @module CheckMagicValues
- * @path scripts/check_magic_values.ts
+ * @path packages/lint-rules/src/exaix/check_magic_values.ts
  * @description Magic Value Detector — scans TypeScript sources using the compiler API
  * AST to find repeated string/number literals that should be extracted
  * into named constants or enums.
+ * @architectural-layer Tooling
+ * @dependencies [typescript, @std/fs, @std/path]
+ * @related-files [packages/lint-rules/src/exaix/check_code_style.ts]
  *
  * Usage:
- *   deno run -A scripts/check_magic_values.ts          # strings + numbers
- *   deno run -A scripts/check_magic_values.ts --no-numbers  # strings only
- *   deno run -A scripts/check_magic_values.ts --include-tests  # include tests
+ *   deno run -A packages/lint-rules/src/exaix/check_magic_values.ts          # strings + numbers
+ *   deno run -A packages/lint-rules/src/exaix/check_magic_values.ts --no-numbers  # strings only
+ *   deno run -A packages/lint-rules/src/exaix/check_magic_values.ts --include-tests  # include tests
+ *
+ * The repository root comes from `--root=` or the working directory. Run it from the
+ * repository root, as the `check:magic` task does.
  *
  * Thresholds (per-module / global):
  *   strings:  occurrences > 3  (local)  / > 5  (global)
@@ -18,7 +24,7 @@
 
 import ts from "typescript";
 import { walk } from "@std/fs";
-import { dirname, fromFileUrl, join, relative } from "@std/path";
+import { join, relative } from "@std/path";
 
 // CLI flags
 
@@ -52,7 +58,7 @@ if (args.has("--help") || args.has("-h")) {
   console.log(`Magic Value Detector
 
 Usage:
-  deno run -A scripts/check_magic_values.ts [options]
+  deno run -A packages/lint-rules/src/exaix/check_magic_values.ts [options]
 
 Options:
   --no-numbers, --strings-only  Skip number literal checks (strings only)
@@ -203,7 +209,13 @@ function isLikelyStructuralNumber(value: number): boolean {
   return false;
 }
 
-const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..");
+/** Resolves the repository root from `--root=` or the working directory. */
+function resolveRepoRoot(): string {
+  const rootArg = Deno.args.find((arg) => arg.startsWith("--root="));
+  return rootArg ? rootArg.slice("--root=".length) : Deno.cwd();
+}
+
+const REPO_ROOT = resolveRepoRoot();
 
 // Data structures
 
@@ -248,120 +260,70 @@ interface ValueAccumulator {
 /**
  * Should this literal be skipped (whitelisted or irrelevant context)?
  */
-function shouldSkip(node: ts.Node): boolean {
-  const parent = node.parent;
-  if (!parent) return true;
+function propertyNameOf(name: ts.Node): string {
+  if (ts.isIdentifier(name)) return name.text;
+  if (ts.isStringLiteral(name)) return name.text;
+  return "";
+}
 
-  // Skip property names in object literals: { foo: "bar" } — "foo" is a name
+/** True when a literal is a structural property/field name or a whitelisted metadata field. */
+function skipsAsStructuralLiteral(node: ts.Node, parent: ts.Node): boolean {
   if (ts.isPropertyAssignment(parent) && parent.name === node) return true;
   if (ts.isShorthandPropertyAssignment(parent) && parent.name === node) return true;
-
-  // Skip stdio mode literals in command options: { stdout: "piped" }
-  if (
-    ts.isStringLiteral(node) &&
-    node.text === "piped" &&
-    ts.isPropertyAssignment(parent) &&
-    parent.initializer === node
-  ) {
-    const propName = ts.isIdentifier(parent.name)
-      ? parent.name.text
-      : ts.isStringLiteral(parent.name)
-      ? parent.name.text
-      : "";
-    if (STDIO_PIPE_FIELD_NAMES.has(propName)) return true;
-  }
-
-  // Skip structural content type tags used by MCP payloads: { type: "text" }
-  if (
-    ts.isStringLiteral(node) &&
-    node.text === "text" &&
-    ts.isPropertyAssignment(parent) &&
-    parent.initializer === node
-  ) {
-    const propName = ts.isIdentifier(parent.name)
-      ? parent.name.text
-      : ts.isStringLiteral(parent.name)
-      ? parent.name.text
-      : "";
-    if (propName === "type") return true;
-  }
-
-  // Skip JSON-schema required field names: required: ["portal", "path", ...]
-  if (ts.isStringLiteral(node) && ts.isArrayLiteralExpression(parent)) {
-    const maybeRequiredProp = parent.parent;
-    if (ts.isPropertyAssignment(maybeRequiredProp) && maybeRequiredProp.initializer === parent) {
-      const propName = ts.isIdentifier(maybeRequiredProp.name)
-        ? maybeRequiredProp.name.text
-        : ts.isStringLiteral(maybeRequiredProp.name)
-        ? maybeRequiredProp.name.text
-        : "";
-      if (propName === "required") return true;
-      if (STRUCTURAL_STRING_ARRAY_PROPERTY_NAMES.has(propName)) return true;
-    }
-  }
-
-  // Skip metadata text fields commonly used in schema and UI definitions.
   if (ts.isStringLiteral(node) && ts.isPropertyAssignment(parent) && parent.initializer === node) {
-    const propName = ts.isIdentifier(parent.name)
-      ? parent.name.text
-      : ts.isStringLiteral(parent.name)
-      ? parent.name.text
-      : "";
+    const propName = propertyNameOf(parent.name);
+    if (node.text === "piped" && STDIO_PIPE_FIELD_NAMES.has(propName)) return true;
+    if (node.text === "text" && propName === "type") return true;
     if (STRUCTURAL_METADATA_PROPERTY_NAMES.has(propName)) return true;
   }
+  return false;
+}
 
-  // Skip enum member names
-  if (ts.isEnumMember(parent) && parent.name === node) return true;
-
-  // Skip enum member values (these are canonical definitions, not magic values)
-  if (ts.isEnumMember(parent) && parent.initializer === node) return true;
-
-  // Skip wait-state status literals — they are domain-specific enum-like values
-  if (ts.isStringLiteral(node) && WAIT_STATE_STATUS_LITERALS.has(node.text)) return true;
-
-  // Skip Zod enum array literal values: z.enum(["a", "b", ...])
-  // String literals inside an array that is the first arg of a .enum() call.
-  if (ts.isArrayLiteralExpression(parent)) {
-    const grandparent = parent.parent;
-    if (
-      ts.isCallExpression(grandparent) &&
-      grandparent.arguments.length > 0 &&
-      grandparent.arguments[0] === parent &&
-      ts.isPropertyAccessExpression(grandparent.expression) &&
-      grandparent.expression.name.text === "enum"
-    ) {
-      return true;
-    }
+/** True when a string is a structural array element (required fields, Zod enum members). */
+function skipsAsArrayElement(node: ts.Node, parent: ts.Node): boolean {
+  if (!ts.isStringLiteral(node) || !ts.isArrayLiteralExpression(parent)) return false;
+  const container = parent.parent;
+  if (ts.isPropertyAssignment(container) && container.initializer === parent) {
+    const propName = propertyNameOf(container.name);
+    if (propName === "required" || STRUCTURAL_STRING_ARRAY_PROPERTY_NAMES.has(propName)) return true;
   }
+  return ts.isCallExpression(container) &&
+    container.arguments.length > 0 &&
+    container.arguments[0] === parent &&
+    ts.isPropertyAccessExpression(container.expression) &&
+    container.expression.name.text === "enum";
+}
 
-  // Skip extracted constant declarations (UPPER_SNAKE_CASE = "value")
+/** True for enum members, wait-state status literals, and UPPER_SNAKE_CASE constant initializers. */
+function skipsAsEnumOrConstantLiteral(node: ts.Node, parent: ts.Node): boolean {
+  if (ts.isEnumMember(parent) && (parent.name === node || parent.initializer === node)) return true;
+  if (ts.isStringLiteral(node) && WAIT_STATE_STATUS_LITERALS.has(node.text)) return true;
   if (ts.isVariableDeclaration(parent) && parent.initializer === node) {
     const varName = ts.isIdentifier(parent.name) ? parent.name.text : "";
     if (ALL_CAPS_REGEX.test(varName)) return true;
   }
+  return false;
+}
 
-  // Skip key lookups by literal: map["default"], obj["status"]
+/** True for literals in syntax positions that are not values (keys, imports, decorators, JSX, types). */
+function skipsAsSyntaxLiteral(node: ts.Node, parent: ts.Node): boolean {
   if (ts.isElementAccessExpression(parent) && parent.argumentExpression === node) return true;
-
-  // Skip import paths and module specifiers
-  if (ts.isImportDeclaration(parent) || ts.isExportDeclaration(parent)) return true;
-  if (ts.isModuleDeclaration(parent)) return true;
-
-  // Skip decorator arguments (framework metadata)
+  if (ts.isImportDeclaration(parent) || ts.isExportDeclaration(parent) || ts.isModuleDeclaration(parent)) return true;
   if (ts.isDecorator(parent)) return true;
-
-  // Skip JSX attribute values
   if (ts.isJsxAttribute(parent) && parent.initializer === node) return true;
-
-  // Skip template expression parts
   if (ts.isTemplateLiteralToken(node)) return true;
-
-  // Skip type literal strings (e.g., literal type members in a union)
   if (ts.isLiteralTypeNode(parent)) return true;
-
-  // Skip keys of type index signatures
   if (ts.isIndexedAccessTypeNode(parent)) return true;
+  return false;
+}
 
+function shouldSkip(node: ts.Node): boolean {
+  const parent = node.parent;
+  if (!parent) return true;
+  if (skipsAsStructuralLiteral(node, parent)) return true;
+  if (skipsAsArrayElement(node, parent)) return true;
+  if (skipsAsEnumOrConstantLiteral(node, parent)) return true;
+  if (skipsAsSyntaxLiteral(node, parent)) return true;
   return false;
 }
 
@@ -383,6 +345,24 @@ function collectLiterals(
   ts.forEachChild(sourceFile, visit);
 }
 
+/** True for string literals that must not count (whitelist, short, caps, structural, test scaffolding). */
+function isSkippedStringLiteral(sourceFile: ts.SourceFile, val: string): boolean {
+  if (STRING_WHITELIST.has(val)) return true;
+  if (val.length < SHORT_STRING_MIN_LENGTH) return true;
+  if (ALL_CAPS_REGEX.test(val)) return true;
+  if (isLikelyStructuralString(val)) return true;
+  if (isTestFilePath(sourceFile.fileName) && /^(test|mock|fake|dummy)[-_]/i.test(val)) return true;
+  return false;
+}
+
+/** True for numeric literals that must not count (whitelist, NaN, small, structural). */
+function isSkippedNumericLiteral(num: number): boolean {
+  if (NUMBER_WHITELIST.has(num) || isNaN(num)) return true;
+  if (Math.abs(num) < MIN_NUMBER_THRESHOLD) return true;
+  if (isLikelyStructuralNumber(Math.abs(num))) return true;
+  return false;
+}
+
 function processLiteral(
   node: ts.StringLiteral | ts.NumericLiteral,
   sourceFile: ts.SourceFile,
@@ -394,37 +374,8 @@ function processLiteral(
   const kind: LiteralKind = ts.isStringLiteral(node) ? "string" : "number";
   const line = sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1;
 
-  // Whitelist checks
-  if (kind === "string") {
-    const val = node.text;
-
-    // Skip whitelisted values
-    if (STRING_WHITELIST.has(val)) return;
-
-    // Skip short strings (< 4 characters)
-    if (val.length < SHORT_STRING_MIN_LENGTH) return;
-
-    // Skip ALL CAPS strings (constant names, env vars like "EXA_ROOT")
-    if (ALL_CAPS_REGEX.test(val)) return;
-
-    // Skip structural identifiers unlikely to benefit from constant extraction.
-    if (isLikelyStructuralString(val)) return;
-
-    // Test scaffolding identifiers are often intentionally duplicated.
-    if (isTestFilePath(sourceFile.fileName) && /^(test|mock|fake|dummy)[-_]/i.test(val)) return;
-  } else {
-    const num = parseFloat(rawText);
-
-    // Skip whitelisted numbers and non-numeric values
-    if (NUMBER_WHITELIST.has(num) || isNaN(num)) return;
-
-    // Skip numbers below threshold (100) — small values are usually indices,
-    // counts, timeouts, or offsets that are intentionally inline.
-    if (Math.abs(num) < MIN_NUMBER_THRESHOLD) return;
-
-    // Skip common protocol/status/round values that are often conventional.
-    if (isLikelyStructuralNumber(Math.abs(num))) return;
-  }
+  if (kind === "string" && isSkippedStringLiteral(sourceFile, node.text)) return;
+  if (kind === "number" && isSkippedNumericLiteral(parseFloat(rawText))) return;
 
   const key = `${kind}:${rawText}`;
 
@@ -619,7 +570,10 @@ async function main(): Promise<void> {
         /[/\\]node_modules[/\\]/,
         /[/\\]dist[/\\]/,
         /[/\\]coverage[/\\]/,
+        // Self-tooling skip: the checkers' own literals are rule regexes and messages,
+        // not extractable magic values (mirrors check_code_style's catalog self-exemption).
         /check_magic_values\.ts$/,
+        /check_code_style\.ts$/,
       ],
     })
   ) {

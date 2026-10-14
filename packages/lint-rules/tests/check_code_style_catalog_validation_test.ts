@@ -1,12 +1,12 @@
 /**
  * @module CheckCodeStyleCatalogValidationTest
- * @path tests/scripts/check_code_style_catalog_validation_test.ts
+ * @path packages/lint-rules/tests/check_code_style_catalog_validation_test.ts
  * @description Validates the repository catalog with the shared loader and JSON-path errors.
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { CatalogError, type JsonValue, parseCatalog } from "@exaix/lint-rules";
-import catalogJson from "../../scripts/config/style_rule_catalog.json" with { type: "json" };
+import catalogJson from "../../../scripts/config/style_rule_catalog.json" with { type: "json" };
 
 function cloneCatalog(): Record<string, JsonValue> {
   return structuredClone(catalogJson) as Record<string, JsonValue>;

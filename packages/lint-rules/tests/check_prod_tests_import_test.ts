@@ -1,18 +1,18 @@
 /**
  * @module CheckProdTestsImportTest
- * @path tests/scripts/check_prod_tests_import_test.ts
+ * @path packages/lint-rules/tests/check_prod_tests_import_test.ts
  * @description Tests for the production-module → tests/ import guard in
- *   scripts/check_code_style.ts. Functional deployable modules (packages/,
+ *   packages/lint-rules/src/exaix/check_code_style.ts. Functional deployable modules (packages/,
  *   exaix-team/, apps/) must NOT depend on the tests/ folder — that is the
  *   layering violation that put EvalSqliteStore under tests/scenario_framework and
  *   broke a deployed exactl/daemon at module load. Test files themselves may import
  *   test helpers, so the guard excludes test files.
  * @architectural-layer Test
- * @related-files [scripts/check_code_style.ts]
+ * @related-files [packages/lint-rules/src/exaix/check_code_style.ts]
  */
 
 import { assertEquals } from "@std/assert";
-import { isProductionToTestsImport } from "../../scripts/check_code_style.ts";
+import { isProductionToTestsImport } from "../src/exaix/check_code_style.ts";
 
 Deno.test("[prod-tests-import] a packages/ module importing tests/ via a relative path is flagged", () => {
   assertEquals(

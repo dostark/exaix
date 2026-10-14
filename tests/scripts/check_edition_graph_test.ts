@@ -9,7 +9,7 @@
  *   The final case is an integration check: the real daemon graph must be clean, so the two
  *   gates agree.
  * @architectural-layer Test
- * @related-files [scripts/check_edition_graph.ts, scripts/check_code_style.ts]
+ * @related-files [scripts/check_edition_graph.ts, packages/lint-rules/src/exaix/check_code_style.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";

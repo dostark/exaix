@@ -1,28 +1,28 @@
 ---
 title: "check_code_style.ts — Error Tag Reference"
-description: Complete reference for all error and warning tags emitted by scripts/check_code_style.ts
+description: Complete reference for all error and warning tags emitted by packages/lint-rules/src/exaix/check_code_style.ts
 agent_priority: reference
 copilot_knowledge_base: true
 version: 1.0
 capabilities: [error_tags, boundary_rules, import_rules]
 links:
-  - "scripts/check_code_style.ts"
+  - "packages/lint-rules/src/exaix/check_code_style.ts"
   - "CODE_STYLE.md"
   - "ARCHITECTURE.md"
 ---
 
 # `check_code_style.ts` — Error Tag Reference
 
-This document is the companion reference for `scripts/check_code_style.ts`.
+This document is the companion reference for `packages/lint-rules/src/exaix/check_code_style.ts`.
 It lists every error and warning tag the script emits, the rule that governs
 it, and where to read the full definition.
 
 Run the checker:
 
 ```bash
-deno run -A scripts/check_code_style.ts          # scan whole repo
-deno run -A scripts/check_code_style.ts packages/ # scan a subtree
-deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
+deno run -A packages/lint-rules/src/exaix/check_code_style.ts          # scan whole repo
+deno run -A packages/lint-rules/src/exaix/check_code_style.ts packages/ # scan a subtree
+deno run -A packages/lint-rules/src/exaix/check_code_style.ts --convert-warnings-to-errors
 ```
 
 ---
@@ -67,7 +67,7 @@ deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 | -------------------- | -------- | ---- | ------------------------------------------------------------------ |
 | `[magic-union-type]` | error    | §2   | Inline string literal union (e.g. `"a" \| "b"`) in production code |
 
-> **Related:** [CODE_STYLE.md §2](../CODE_STYLE.md#no-magic-values) also covers
+> **Related:** [CODE_STYLE.md §2](../../../CODE_STYLE.md#no-magic-values) also covers
 > `configurable()` wrapping guidelines for tunable `DEFAULT_*` constants (in any
 > package) and the `check:config-keys` CI gate that prevents duplicate config
 > keys across all packages. Use `resolveConfigurableBounds(key)` in schemas
@@ -167,8 +167,8 @@ comments; the other checks exempt the module's own leading header comment.
 ## Package Boundaries
 
 These tags enforce that files under `packages/<name>/` remain self-contained.
-See [CODE_STYLE.md §4](../CODE_STYLE.md#package-test-boundaries) for the test
-boundary rules and [§13](../CODE_STYLE.md#package-module-purity) for the
+See [CODE_STYLE.md §4](../../../CODE_STYLE.md#package-test-boundaries) for the test
+boundary rules and [§13](../../../CODE_STYLE.md#package-module-purity) for the
 module purity rules.
 
 | Tag                                   | Severity | What it detects                                                                                |
@@ -231,7 +231,7 @@ domain boundaries — low-level values that belong behind the service that owns 
 **Exempt packages**: `@exaix/core/*`, `@exaix/schemas`, `@exaix/ai`, `@exaix/cli`, `@exaix/tui`,
 `@exaix/testing`.
 
-**Full rule and remediation**: [CODE_STYLE.md §15](../CODE_STYLE.md#layer-aware-constant-imports).
+**Full rule and remediation**: [CODE_STYLE.md §15](../../../CODE_STYLE.md#layer-aware-constant-imports).
 
 ---
 

@@ -7,8 +7,8 @@ version: 1.3
 capabilities: [linting_rules, naming_conventions, testing_patterns]
 links:
   - "packages/core/src/constants.ts"
-  - "scripts/check_code_style.ts"
-  - "scripts/check_code_style.md"
+  - "packages/lint-rules/src/exaix/check_code_style.ts"
+  - "packages/lint-rules/docs/style_rules.md"
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
 
@@ -124,14 +124,14 @@ checklists (pre‑commit, CI, etc.).
 
 ### Automated Enforcement
 
-A dedicated AST-based script (`scripts/check_magic_values.ts`) scans the entire
+A dedicated AST-based script (`packages/lint-rules/src/exaix/check_magic_values.ts`) scans the entire
 codebase using the TypeScript compiler API to detect repeated literals that
 should be extracted into named constants or enums. It is invoked as part of the
 pre-commit gates via `deno task check:magic` (or directly:
-`deno run -A scripts/check_magic_values.ts`).
+`deno run -A packages/lint-rules/src/exaix/check_magic_values.ts`).
 
 **Detection thresholds** (the script's actual defaults — keep this table in sync with
-`scripts/check_magic_values.ts` `--local-*-threshold` / `--global-*-threshold`):
+`packages/lint-rules/src/exaix/check_magic_values.ts` `--local-*-threshold` / `--global-*-threshold`):
 
 | Scope  | String literals | Number literals |
 | ------ | --------------- | --------------- |
@@ -370,7 +370,7 @@ import { setupGitRepo } from "../helpers/git_test_helper.ts";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 ```
 
-These rules are enforced in part by `scripts/check_code_style.ts` via the `[package-test-boundary]`, `[package-src-boundary]`, `[package-related-files-boundary]`, and `[package-testing-import]` error tags. The public testing-subpath import rule must be followed wherever a package exposes `@exaix/<package>/testing`.
+These rules are enforced in part by `packages/lint-rules/src/exaix/check_code_style.ts` via the `[package-test-boundary]`, `[package-src-boundary]`, `[package-related-files-boundary]`, and `[package-testing-import]` error tags. The public testing-subpath import rule must be followed wherever a package exposes `@exaix/<package>/testing`.
 
 - Barrel re-export violations from source are reported as `[src-barrel-re-export]`.
 
@@ -676,7 +676,7 @@ Exaix enforces a strict boundary between the Terminal User Interface (TUI) and t
 - **TUI-owned Helpers**: Utilities specifically for terminal rendering and interaction (e.g., keyboard handling, tree views, spinners) must reside in `packages/tui/src/helpers/`. These are private to the TUI and must not be imported by Core modules.
 - **Core-to-TUI Direction**: External callers may only invoke the TUI entry point (`apps/tui/main.ts` via `Deno.Command` subprocess) to launch the dashboard interface.
 
-These rules are enforced by `scripts/check_code_style.ts` via:
+These rules are enforced by `packages/lint-rules/src/exaix/check_code_style.ts` via:
 
 - `[tui-boundary-cli]`
 - `[tui-boundary-services]`
@@ -730,7 +730,7 @@ if (editionType === EDITION_TEAM) {
 interface into `packages/core/types/` and have both sides depend on the Solo home; when it needs a
 _value_, use the edition-gated dynamic import in the dispatch entry.
 
-Enforced by `scripts/check_code_style.ts` via `[edition-leak]` (supersedes the former
+Enforced by `packages/lint-rules/src/exaix/check_code_style.ts` via `[edition-leak]` (supersedes the former
 `[mit-team-import]` rule, which only covered `packages/` → Team).
 
 #### Why the static rule is the enforceable guarantee {#edition-static-guarantee}
@@ -788,9 +788,9 @@ Exaix enforces a strict boundary between the CLI command layer and core implemen
 
 These rules are enforced by:
 
-- `scripts/check_code_style.ts` — regex-based checks
+- `packages/lint-rules/src/exaix/check_code_style.ts` — regex-based checks
   (`[cli-boundary-services]`, `[cli-boundary-config]`, `[core-boundary-cli-helpers]`, etc.)
-- `scripts/check_magic_values.ts` — AST-based magic value detection
+- `packages/lint-rules/src/exaix/check_magic_values.ts` — AST-based magic value detection
   (`[MODULE]`, `[GLOBAL]` violation tags)
 
 ---
@@ -801,7 +801,7 @@ This file is the single authoritative source for code style. The following docum
 
 - [`AGENTS.md`](AGENTS.md) — delegates to this file for all style rules
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — links to this file for coding standards
-- [`scripts/check_code_style.md`](scripts/check_code_style.md) — companion reference for the code-style checker and boundary-oriented import rules
+- [`packages/lint-rules/docs/style_rules.md`](packages/lint-rules/docs/style_rules.md) — companion reference for the code-style checker and boundary-oriented import rules
 - [`.copilot/skills/exaix-development/SKILL.md`](.copilot/skills/exaix-development/SKILL.md)
 - [`.copilot/README.md`](.copilot/README.md)
 
@@ -923,7 +923,7 @@ constructor(private readonly config: Config) {}
 
 ### Automated enforcement
 
-`scripts/check_code_style.ts` enforces these rules for all files under
+`packages/lint-rules/src/exaix/check_code_style.ts` enforces these rules for all files under
 `packages/<name>/src/`, with two exemptions:
 
 - `packages/core/` — defines the runtime entities themselves
@@ -1204,7 +1204,7 @@ const tokens = Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
 
 ### Automated enforcement
 
-Two structural AST checks in `scripts/check_code_style.ts`. Both use the
+Two structural AST checks in `packages/lint-rules/src/exaix/check_code_style.ts`. Both use the
 TypeScript compiler API (no hardcoded symbol names):
 
 | Tag                       | Detects                                                                   |
@@ -1214,7 +1214,7 @@ TypeScript compiler API (no hardcoded symbol names):
 
 Both skip framework packages (`@exaix/core`, `@exaix/schemas`, `@exaix/ai`,
 `@exaix/cli`, `@exaix/tui`), same-package imports, and test files. See
-`scripts/check_code_style.md` for the full tag reference, current warning
+`packages/lint-rules/docs/style_rules.md` for the full tag reference, current warning
 counts, and per-file breakdown.
 
 ---
@@ -1291,7 +1291,7 @@ the next line already says.
 
 ### Automated enforcement
 
-`scripts/check_code_style.ts` scans every comment for calendar dates and
+`packages/lint-rules/src/exaix/check_code_style.ts` scans every comment for calendar dates and
 applies the remaining rules past a module's own header block:
 
 | Tag                    | Detects                                                                                                                                       |

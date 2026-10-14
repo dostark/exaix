@@ -16,8 +16,8 @@ import ts from "typescript";
 
 const CONSUMER_FILES = [
   "scripts/check_optional_params.ts",
-  "scripts/check_code_style.ts",
-  "scripts/check_magic_values.ts",
+  "packages/lint-rules/src/exaix/check_code_style.ts",
+  "packages/lint-rules/src/exaix/check_magic_values.ts",
   "scripts/check_unused_exports.ts",
   "tests/scripts/check_optional_params_bare_optional_test.ts",
 ] as const;

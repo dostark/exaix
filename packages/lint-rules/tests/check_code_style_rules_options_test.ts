@@ -1,13 +1,13 @@
 /**
  * @module CheckCodeStyleRulesOptionsTest
- * @path tests/scripts/check_code_style_rules_options_test.ts
+ * @path packages/lint-rules/tests/check_code_style_rules_options_test.ts
  * @description In-process `checkSource` cases proving catalog options drive rule behavior.
  */
 
 import { assertEquals } from "@std/assert";
 import { type ICatalog, type JsonValue, parseCatalog } from "@exaix/lint-rules";
-import { checkSource } from "../../scripts/check_code_style.ts";
-import catalogJson from "../../scripts/config/style_rule_catalog.json" with { type: "json" };
+import { checkSource } from "../src/exaix/check_code_style.ts";
+import catalogJson from "../../../scripts/config/style_rule_catalog.json" with { type: "json" };
 
 const PROD = "packages/x/src/a.ts";
 
