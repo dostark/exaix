@@ -18,11 +18,8 @@ export const GIT_EMPTY_SHA = "0000000000000000000000000000000000000000";
 export const GIT_REQUEST_BRANCH_PREFIX = "feat/request-";
 
 // Imported from @exaix/core (configurable in core's constants.ts — see check:config-keys)
-export const GIT_TIMEOUT_MS_MIN = 1000;
-export const GIT_TIMEOUT_MS_MAX = 60000;
 export const DEFAULT_GIT_BRANCH_PREFIX_PATTERN = "^(feature|bugfix|hotfix|chore)/";
 
-export const DEFAULT_GIT_ALLOWED_PREFIXES = ["feature/", "bugfix/", "hotfix/", "chore/"];
 export {
   DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES,
   DEFAULT_GIT_BRANCH_SUFFIX_LENGTH,

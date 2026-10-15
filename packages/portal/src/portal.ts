@@ -18,7 +18,7 @@ import {
   VerificationStatus,
 } from "@exaix/core";
 import type { IDisplayService, IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types";
-import { PORTAL_ALIAS_MAX_LENGTH } from "./constants.ts";
+import { PORTAL_ALIAS_MAX_LENGTH } from "@exaix/core";
 
 import { loadKnowledge, saveKnowledge } from "../knowledge/knowledge_persistence.ts";
 import type {

@@ -7,7 +7,7 @@
  * analysis, context, permissions, and persistence logic.
  */
 
-export { PORTAL_ALIAS_MAX_LENGTH } from "./src/constants.ts";
+export { PORTAL_ALIAS_MAX_LENGTH } from "@exaix/core";
 export {
   type IWorkspaceExecutionContext,
   WorkspaceExecutionContextBuilder,
