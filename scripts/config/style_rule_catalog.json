@@ -107,8 +107,28 @@
       "entrypointSuffixes": ["/mod.ts", "/index.ts"],
       "mainEntrypointSuffixes": ["/main.ts"],
       "scriptRoot": "scripts",
-      "walkSkipPatterns": ["\\.git", "node_modules", "\\.copilot", "\\.exa", "Blueprints", "Memory", "Workspace", "Portals", "coverage", "exaix-dev-docs", "exaix-enterprise", "tests/scenario_framework"],
-      "strictSkipPrefixes": ["packages/tui/", "apps/tui/", "exaix-team/", "packages/schemas/", "apps/daemon/src/", "apps/common/"],
+      "walkSkipPatterns": [
+        "\\.git",
+        "node_modules",
+        "\\.copilot",
+        "\\.exa",
+        "Blueprints",
+        "Memory",
+        "Workspace",
+        "Portals",
+        "coverage",
+        "exaix-dev-docs",
+        "exaix-enterprise",
+        "tests/scenario_framework"
+      ],
+      "strictSkipPrefixes": [
+        "packages/tui/",
+        "apps/tui/",
+        "exaix-team/",
+        "packages/schemas/",
+        "apps/daemon/src/",
+        "apps/common/"
+      ],
       "strictSkipSegments": ["/commands/", "/handlers/"]
     },
     "constantRestatement": {
@@ -136,6 +156,52 @@
     "deslop": { "description": "Rule idea taken from maharshi365/deslop or dmmulroy/anti-slop." }
   },
   "rules": {
+    "duplicate-constant": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "include": ["packages/**", "apps/**"],
+      "codeStyle": "CODE_STYLE.md#no-magic-values",
+      "tags": ["magic-values", "duplication", "deslop"],
+      "options": {
+        "namePattern": "^[A-Z][A-Z0-9_]*$",
+        "allow": [
+          {
+            "name": "GIT_CMD_STATUS",
+            "files": [
+              "packages/execution/src/strategies/cli_delegate_strategy.ts",
+              "packages/git/src/constants.ts"
+            ],
+            "reason": "The git package does not export its low-level subcommand strings, so the execution seam keeps its own."
+          },
+          {
+            "name": "REVIEWS_TABLE_SQL",
+            "files": [
+              "packages/git/testing/helpers/db.ts",
+              "packages/testing/src/helpers/init_db.ts"
+            ],
+            "reason": "The git test helpers keep their own schema text rather than depend on the shared testing package."
+          },
+          {
+            "name": "TEST_DEFAULT_BRANCH",
+            "files": [
+              "packages/git/testing/helpers/constants.ts",
+              "packages/testing/src/helpers/constants.ts"
+            ],
+            "reason": "The git test helpers keep their own branch default rather than depend on the shared testing package."
+          },
+          {
+            "name": "GIT_FLAG_UNTRACKED_FILES_ALL",
+            "files": [
+              "packages/execution/src/strategies/cli_delegate_strategy.ts",
+              "packages/git/src/constants.ts"
+            ],
+            "reason": "The git package does not export its low-level subcommand flags, so the execution seam keeps its own."
+          }
+        ]
+      },
+      "limits": "Compares top-level named constants with a static value; values from a call, identifier, or interpolation are out of scope."
+    },
     "duplicate-type": {
       "engine": "script",
       "severity": "error",
@@ -250,7 +316,10 @@
       "scope": "test",
       "codeStyle": "CODE_STYLE.md#package-test-boundaries",
       "tags": ["test-quality", "deslop"],
-      "options": { "methods": ["includes", "startsWith", "endsWith"], "assertFunctions": ["assert", "assertEquals", "assertStrictEquals"] },
+      "options": {
+        "methods": ["includes", "startsWith", "endsWith"],
+        "assertFunctions": ["assert", "assertEquals", "assertStrictEquals"]
+      },
       "limits": "Only a direct call subject is matched; a message argument does not clear the report."
     },
     "exaix/require-safety-comment": {

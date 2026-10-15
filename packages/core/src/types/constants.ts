@@ -4211,3 +4211,6 @@ export const ERROR_STDOUT_PREVIEW_MAX_CHARS = 2000;
 /** URL schemes the network grant accepts. */
 export const SCHEME_HTTPS = "https:";
 export const SCHEME_HTTP = "http:";
+
+/** Default debounce for file watchers. */
+export const DEFAULT_DEBOUNCE_MS = 100;

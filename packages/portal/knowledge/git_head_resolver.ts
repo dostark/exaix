@@ -7,6 +7,7 @@
  */
 
 import { join } from "@std/path";
+import { DEFAULT_DEBOUNCE_MS } from "@exaix/core";
 import type { IGitServiceFactory, Opt, Reason } from "@exaix/core/types";
 
 export interface IGitHeadResolver {
@@ -15,12 +16,10 @@ export interface IGitHeadResolver {
   startWatching(
     portalPath: string,
     onHeadChange: (newHash: string, prevHash: string) => void,
-    options?: { signal?: AbortSignal },
+    options?: Opt<{ signal?: AbortSignal }, Reason.CancellationOptional>,
   ): void;
   stopWatching(): void;
 }
-
-const DEFAULT_DEBOUNCE_MS = 100;
 
 export class GitHeadResolver implements IGitHeadResolver {
   constructor(private readonly gitServiceFactory?: Opt<IGitServiceFactory, Reason.OptionalDependency>) {}
