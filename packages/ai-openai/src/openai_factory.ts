@@ -25,7 +25,7 @@ export class OpenAIProviderFactory extends AbstractKeyBasedProviderFactory {
       baseUrl: options.baseUrl,
       id: this.generateId(PROVIDER_OPENAI, options.model, options.id),
       logger: options.logger,
-      retryAfterMaxMs: options.config?.ai_retry?.retry_after_max_ms,
+      config: options.config,
     });
   }
 }

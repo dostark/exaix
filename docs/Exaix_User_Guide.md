@@ -4568,13 +4568,11 @@ backoff_base_ms = 1000
 anthropic = 30000
 ```
 
-Anthropic, OpenRouter and the OpenAI-compatible providers read their per-provider
-retry settings (`ai_retry.providers.<provider>`) at construction. The Google and
-native OpenAI factories do not pass the configuration to their providers, so their
-`ai_retry.providers.<name>` blocks do not apply through `ProviderFactory`. They
-use their package defaults and receive only the Retry-After cap. The global
-`ai_retry.max_attempts` field also controls fallback-chain provider creation; it
-is not a universal transport override.
+Every provider that `ProviderFactory` builds reads its per-provider retry settings
+(`ai_retry.providers.<provider>`) at construction, and falls back to its package
+defaults when a block is absent. The global `ai_retry.max_attempts` field also
+controls fallback-chain provider creation; it is not a universal transport
+override.
 
 The first retry waits one base delay, the second waits twice that delay, and later
 retries continue exponentially. When an error carries a parsed Retry-After value,

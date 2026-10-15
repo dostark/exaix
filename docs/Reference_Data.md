@@ -804,9 +804,9 @@ intermediate retry events.
 Per-provider retry budgets and delays use `ai_retry.providers.<provider>`;
 provider timeouts use `ai_timeout.providers.<provider>`. Provider constructors
 retain their own defaults when an override is absent. `ai_retry.providers.openrouter`
-applies to OpenRouter. The Google and native OpenAI factories do not pass the
-configuration to their providers, so their per-provider blocks do not apply through
-`ProviderFactory`. They receive only the Retry-After cap. The global
+applies to OpenRouter, and the Google and native OpenAI blocks apply the same way.
+Those two factories also pass `ai_endpoints.<provider>` and
+`ai_timeout.providers.<provider>` to their providers. The global
 `ai_retry.max_attempts` field controls fallback-chain creation rather than acting
 as a universal transport override.
 
