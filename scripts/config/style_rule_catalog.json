@@ -230,7 +230,7 @@
       "codeStyle": "CODE_STYLE.md#strict-type-safety",
       "tags": ["type-safety", "deslop"],
       "options": { "forbiddenValueTypes": ["unknown", "any", "object", "{}"] },
-      "limits": "Only the literal value type is checked; a value alias from another module is not resolved."
+      "limits": "Local aliases and union members are resolved. Wrapper types, intersections, interfaces, mapped-type signatures, and generic alias expansion are not followed. Map<K, V> is checked; a generic constraint is allowed."
     },
     "exaix/no-any-escape": {
       "engine": "plugin",
@@ -258,7 +258,7 @@
       "scope": "all",
       "codeStyle": "CODE_STYLE.md#strict-type-safety",
       "tags": ["type-safety", "deslop"],
-      "limits": "A union member or a local alias of object is resolved; an imported alias is not."
+      "limits": "Only a direct object annotation is checked. A parameter with a default value, and a local alias of object, are not resolved."
     },
     "promise-response-alias": {
       "engine": "script",
