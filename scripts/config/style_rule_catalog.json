@@ -136,7 +136,7 @@
       "codeStyle": "packages/lint-rules/docs/style_guide.md#complexity-rules",
       "tags": ["complexity", "deslop"],
       "options": { "max": 15 },
-      "limits": "A SwitchCase counts only with a test, and a LogicalExpression only for '||' and '&&', matching scripts/measure_complexity.ts. Nested function bodies are excluded."
+      "limits": "A SwitchCase counts only with a test, and a LogicalExpression only for '||' and '&&'. Nested function bodies are excluded."
     },
     "exaix/max-class-size": {
       "engine": "plugin",

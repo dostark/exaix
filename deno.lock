@@ -65,7 +65,6 @@
     "npm:tree-sitter-python@*": "0.25.0",
     "npm:tree-sitter-python@0.25.0": "0.25.0",
     "npm:tree-sitter-rust@0.24.0": "0.24.0",
-    "npm:ts-morph@24.0.0": "24.0.0",
     "npm:typescript@6.0.3": "6.0.3",
     "npm:web-tree-sitter@0.26.12": "0.26.12",
     "npm:zod@4.4.3": "4.4.3",
@@ -280,14 +279,6 @@
         "zod"
       ]
     },
-    "@ts-morph/common@0.25.0": {
-      "integrity": "sha512-kMnZz+vGGHi4GoHnLmMhGNjm44kGtKUXGnOvrKmMwAuvNjM/PgKVGfUnL7IDvK7Jb2QQ82jq3Zmp04Gy+r3Dkg==",
-      "dependencies": [
-        "minimatch",
-        "path-browserify",
-        "tinyglobby"
-      ]
-    },
     "ai-token-estimator@1.7.1": {
       "integrity": "sha512-4li0kKJNgC9+DUdX5b4RCQQ+KXm46r9IK9Ya8NoLRzbiKpz996dOHwJMwuLb9rXu1zBXIEoawtS8u45We4zg3w=="
     },
@@ -299,9 +290,6 @@
       "dependencies": [
         "balanced-match"
       ]
-    },
-    "code-block-writer@13.0.3": {
-      "integrity": "sha512-Oofo0pq3IKnsFtuHqSF7TqBfr71aeyZDVJ0HpmqB7FBM2qEigL0iPONSCZSO9pE9dZTAxANe5XHG9Uy0YMv8cg=="
     },
     "cross-spawn@7.0.6": {
       "integrity": "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==",
@@ -415,13 +403,6 @@
         "node-gyp-build"
       ],
       "scripts": true
-    },
-    "ts-morph@24.0.0": {
-      "integrity": "sha512-2OAOg/Ob5yx9Et7ZX4CvTCc0UFoZHwLEJ+dpDPSUi5TgwwlTlX47w+iFRrEwzUZwYACjq83cgjS/Da50Ga37uw==",
-      "dependencies": [
-        "@ts-morph/common",
-        "code-block-writer"
-      ]
     },
     "typescript@6.0.3": {
       "integrity": "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==",
