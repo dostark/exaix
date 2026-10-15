@@ -112,7 +112,7 @@
       "engine": "plugin",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": ["type-safety", "deslop"],
       "options": { "separator": "--" },
       "limits": "Only ignores that name an exaix rule are checked."
@@ -133,7 +133,7 @@
       "severity": "error",
       "scope": "prod",
       "include": ["packages/*/src/**", "apps/*/src/**"],
-      "codeStyle": "CODE_STYLE.md#complexity-rules",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#complexity-rules",
       "tags": ["complexity", "deslop"],
       "options": { "max": 15 },
       "limits": "A SwitchCase counts only with a test, and a LogicalExpression only for '||' and '&&', matching scripts/measure_complexity.ts. Nested function bodies are excluded."
@@ -144,7 +144,7 @@
       "optIn": true,
       "reason": "Manual today: check:god-objects is a separate manual task, so the rule runs only when selected.",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#complexity-rules",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#complexity-rules",
       "tags": ["complexity", "module-structure"],
       "options": { "minClassLines": 200, "threshold": 60 },
       "limits": "Score is per class; a class under minClassLines is skipped before scoring."
@@ -185,7 +185,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
       "scope": "prod",
       "optIn": true,
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": ["type-safety", "deslop"],
       "options": { "markers": ["SAFETY"] },
       "limits": "Only non-const assertions in production files are checked."
@@ -196,7 +196,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
       "scope": "prod",
       "optIn": true,
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": ["type-safety", "deslop"],
       "options": { "allowInTypeGuards": true },
       "limits": "An existence probe against \"undefined\" is allowed."
@@ -207,7 +207,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
       "scope": "prod",
       "optIn": true,
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": ["type-safety", "deslop"],
       "limits": "Only a conditional with an empty object branch is checked."
     },
@@ -216,7 +216,7 @@
       "severity": "off",
       "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": ["type-safety", "deslop"],
       "options": { "allowCatchBinding": true, "allowTypePredicateSubject": true },
       "limits": "Imported aliases are not resolved; only syntactic shapes in this file are seen."
@@ -226,7 +226,7 @@
       "severity": "off",
       "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": ["type-safety", "deslop"],
       "options": { "forbiddenValueTypes": ["unknown", "any", "object", "{}"] },
       "limits": "Local aliases and union members are resolved. Wrapper types, intersections, interfaces, mapped-type signatures, and generic alias expansion are not followed. Map<K, V> is checked; a generic constraint is allowed."
@@ -236,7 +236,7 @@
       "severity": "off",
       "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": ["type-safety", "deslop"],
       "options": { "allowedTypeofTargets": ["globalThis.fetch"], "allowAnyInTests": true },
       "limits": "The typeof target is compared as source text; only test files may use an allowed target."
@@ -246,7 +246,7 @@
       "severity": "off",
       "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": ["type-safety", "deslop"],
       "limits": "Only aliases that name another top-level local alias are reported."
     },
@@ -255,7 +255,7 @@
       "severity": "off",
       "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": ["type-safety", "deslop"],
       "limits": "Only a direct object annotation is checked. A parameter with a default value, and a local alias of object, are not resolved."
     },
@@ -263,28 +263,28 @@
       "engine": "script",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": ["type-safety"]
     },
     "promise-response-return": {
       "engine": "script",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": ["type-safety"]
     },
     "ts-suppression-pragmas": {
       "engine": "script",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": ["type-safety"]
     },
     "deno-lint-no-explicit-any": {
       "engine": "script",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": ["type-safety"]
     },
     "import-inside-statement": {
@@ -384,7 +384,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#complexity-rules",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#complexity-rules",
       "tags": ["complexity", "module-structure"],
       "options": { "max": 7 }
     },
@@ -392,7 +392,7 @@
       "engine": "script",
       "severity": "warn",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#comment-discipline",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#comment-discipline",
       "tags": ["comments"],
       "options": { "maxLines": 3 }
     },
@@ -400,14 +400,14 @@
       "engine": "script",
       "severity": "warn",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#comment-discipline",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#comment-discipline",
       "tags": ["comments"]
     },
     "decorative-comment": {
       "engine": "script",
       "severity": "warn",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#comment-discipline",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#comment-discipline",
       "tags": ["comments"]
     },
     "edition-conditional-outside-composer": {
@@ -620,7 +620,7 @@
       "engine": "plugin",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": ["type-safety", "deslop"],
       "limits": "Imported aliases are not resolved; only syntactic assertions in this file are seen.",
       "options": { "allowPartialMockInTests": true, "allowNeverAnyMockInTests": true }
