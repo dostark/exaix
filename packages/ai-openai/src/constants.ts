@@ -11,8 +11,6 @@ import { ConfigValueType, SwapClass } from "@exaix/core";
 import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/core";
 
 /** URL schemes the compatible endpoint rules accept. */
-export const SCHEME_HTTPS = "https:";
-export const SCHEME_HTTP = "http:";
 
 export const DEFAULT_OPENAI_MODEL: string = configurable({
   key: "openai.model",

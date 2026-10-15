@@ -84,6 +84,7 @@ import {
   SESSION_SUBCMD_RUN,
 } from "@exaix/core";
 import { parseCliDelegateStreamTurn } from "./cli_delegate_stream_parser.ts";
+import { ERROR_STDOUT_PREVIEW_MAX_CHARS } from "@exaix/core";
 
 /** The subset of a parsed CLI-delegate outcome execute() actually consumes — satisfied by both claude's ICliDelegateTurnResult and opencode's IDelegateParsedReturn. */
 interface ICliDelegateParsedOutcome {
@@ -159,7 +160,6 @@ const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubpr
 const defaultWriteConfigFile: IWriteConfigFile = (path, content, options) => Deno.writeTextFile(path, content, options);
 
 /** Cap on how much of a failing CLI's raw stdout an error message quotes. */
-const ERROR_STDOUT_PREVIEW_MAX_CHARS = 2000;
 const CODEX_EVENT_THREAD_STARTED = "thread.started";
 const CodexThreadIdSchema = z.string().uuid();
 

@@ -4197,3 +4197,17 @@ export const TOOL_AUTH_ONLY_PARAMS: readonly string[] = [
   "portal",
   "agent_role",
 ];
+
+/** Hexadecimal rendering width and radix, shared by digest helpers. */
+export const HEX_RADIX = 16;
+export const HEX_BYTE_WIDTH = 2;
+
+/** Keyword that marks a journal line as an error. */
+export const ERR_KEYWORD = "error";
+
+/** Longest captured stderr preview shown for a failed delegate process. */
+export const ERROR_STDOUT_PREVIEW_MAX_CHARS = 2000;
+
+/** URL schemes the network grant accepts. */
+export const SCHEME_HTTPS = "https:";
+export const SCHEME_HTTP = "http:";

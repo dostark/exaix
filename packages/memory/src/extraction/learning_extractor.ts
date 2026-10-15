@@ -8,6 +8,7 @@
 import type { IExecutionMemory, IProposalLearning, IScratchpadEntry } from "@exaix/schemas/memory_bank.ts";
 import { ExecutionStatus, LANG_TYPESCRIPT, MemoryReferenceType } from "@exaix/core";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope } from "@exaix/core";
+import { ERR_KEYWORD } from "@exaix/core";
 
 /** Split out of MemoryExtractorService to keep that class's complexity in check. */
 export class LearningExtractor {
@@ -251,5 +252,3 @@ export class LearningExtractor {
     };
   }
 }
-
-const ERR_KEYWORD = "error";

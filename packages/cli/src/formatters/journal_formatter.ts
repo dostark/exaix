@@ -14,8 +14,8 @@ import type { IJournalFilterOptions } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 import { DataFormat } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
+import { ERR_KEYWORD } from "@exaix/core";
 
-const ERR_KEYWORD = "error";
 const COST_PRECISION = 6;
 
 export class JournalFormatter {

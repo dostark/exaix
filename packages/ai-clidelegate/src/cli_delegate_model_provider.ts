@@ -91,6 +91,7 @@ import { join } from "@std/path";
 import { DEFAULT_CLI_DELEGATE_TIMEOUT_MS } from "./constants.ts";
 import type { ICliDelegateProtocolBackend } from "./protocol_backend.ts";
 import { adaptOpencodePlanJson } from "./opencode_plan_schema_adapter.ts";
+import { ERROR_STDOUT_PREVIEW_MAX_CHARS } from "@exaix/core";
 
 /** Result of running the headless CLI subprocess (subset of SafeSubprocess.run's shape). */
 export interface ICliDelegateProcessResult {
@@ -157,7 +158,6 @@ function buildDelegateEnv(): Record<string, string> {
 const UNSET_LOG_LABEL = "none";
 
 /** Cap on how much of a failing CLI's raw stdout an error message quotes. */
-const ERROR_STDOUT_PREVIEW_MAX_CHARS = 2000;
 
 /** Tool identifiers compared at each of generate()'s three-way dispatch sites. */
 const TOOL_CLAUDE_CODE = SessionToolSchema.enum["claude-code"];

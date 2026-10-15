@@ -9,8 +9,7 @@
  * @related-files [packages/session/src/session_delegate_cycle_store.ts, packages/flow/src/step_handlers/session_delegate_cycle_step_handler.ts]
  */
 
-const HEX_RADIX = 16;
-const HEX_BYTE_WIDTH = 2;
+import { HEX_BYTE_WIDTH, HEX_RADIX } from "@exaix/core";
 
 /** sha256 hex digest of `content`, matching `/^[a-f0-9]{64}$/`. */
 export async function computePlanDigest(content: string): Promise<string> {
