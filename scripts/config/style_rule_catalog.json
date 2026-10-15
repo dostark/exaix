@@ -130,14 +130,13 @@
     },
     "exaix/max-cyclomatic-complexity": {
       "engine": "plugin",
-      "severity": "off",
-      "reason": "Deferred: the ESTree port over-counts versus measure_complexity.ts; parity is tracked in the Step 10 Reachability Ledger.",
+      "severity": "error",
       "scope": "prod",
       "include": ["packages/*/src/**", "apps/*/src/**"],
       "codeStyle": "CODE_STYLE.md#complexity-rules",
       "tags": ["complexity", "deslop"],
       "options": { "max": 15 },
-      "limits": "Counts one decision point per branch node; nested function bodies are excluded."
+      "limits": "A SwitchCase counts only with a test, and a LogicalExpression only for '||' and '&&', matching scripts/measure_complexity.ts. Nested function bodies are excluded."
     },
     "exaix/max-class-size": {
       "engine": "plugin",
