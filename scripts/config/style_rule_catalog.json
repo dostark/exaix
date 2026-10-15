@@ -108,6 +108,17 @@
     "deslop": { "description": "Rule idea taken from maharshi365/deslop or dmmulroy/anti-slop." }
   },
   "rules": {
+    "exaix/require-optional-wrapper": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Opt-in: the bare-optional check is a staged-file ratchet today, not a full-tree gate.",
+      "scope": "all",
+      "optIn": true,
+      "codeStyle": "CODE_STYLE.md#optional-parameters",
+      "tags": ["type-safety", "deslop"],
+      "options": { "wrapperType": "Opt" },
+      "limits": "Only function and method parameters are checked."
+    },
     "exaix/max-cyclomatic-complexity": {
       "engine": "plugin",
       "severity": "off",
