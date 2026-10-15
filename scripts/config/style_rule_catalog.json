@@ -114,7 +114,7 @@
       "reason": "Opt-in: the bare-optional check is a staged-file ratchet today, not a full-tree gate.",
       "scope": "all",
       "optIn": true,
-      "codeStyle": "CODE_STYLE.md#optional-parameters",
+      "codeStyle": "CODE_STYLE.md#optional-params",
       "tags": ["type-safety", "deslop"],
       "options": { "wrapperType": "Opt" },
       "limits": "Only function and method parameters are checked."
@@ -125,7 +125,7 @@
       "reason": "Deferred: the ESTree port over-counts versus measure_complexity.ts; parity is tracked in the Step 10 Reachability Ledger.",
       "scope": "prod",
       "include": ["packages/*/src/**", "apps/*/src/**"],
-      "codeStyle": "CODE_STYLE.md#function-size",
+      "codeStyle": "CODE_STYLE.md#complexity-rules",
       "tags": ["complexity", "deslop"],
       "options": { "max": 15 },
       "limits": "Counts one decision point per branch node; nested function bodies are excluded."
@@ -135,7 +135,7 @@
       "severity": "off",
       "reason": "Deferred: the test-assertion migration is tracked in the Step 8 Reachability Ledger.",
       "scope": "test",
-      "codeStyle": "CODE_STYLE.md#test-quality",
+      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
       "tags": ["test-quality", "deslop"],
       "options": { "methods": ["includes", "startsWith", "endsWith"], "assertFunctions": ["assert", "assertEquals", "assertStrictEquals"] },
       "limits": "Only a direct call subject is matched; a message argument does not clear the report."
@@ -375,7 +375,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#edition-tier-boundary",
+      "codeStyle": "CODE_STYLE.md#layer-aware-constant-imports",
       "tags": ["edition", "boundary"],
       "exclude": [
         "**/check_code_style.ts",
@@ -395,7 +395,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#edition-tier-boundary",
+      "codeStyle": "CODE_STYLE.md#layer-aware-constant-imports",
       "tags": ["edition", "boundary"],
       "limits": "Reads source text; check:edition-graph is its resolved-graph double check.",
       "options": {
