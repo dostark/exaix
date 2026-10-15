@@ -168,6 +168,10 @@ are:
 | `pre-push`                    | Regenerate `.copilot/manifest.json` (amends the commit only if it substantively changed), auto-push the `exaix-dev-docs` and `exaix-team` submodules first if their pointers changed, full type-check (packages/ + apps/ + tests/), security regression tests                                                                                  |
 | `pre-merge-commit`            | Regenerate `.copilot/manifest.json` before merge commits                                                                                                                                                                                                                                                                                       |
 
+`deno task lint` now also runs the `exaix` plugin from `@exaix/lint-rules`, configured by
+`scripts/config/style_rule_catalog.json`; `EXAIX_LINT_RULES` selects a subset locally, and
+the gate clears it so the pre-commit run always uses every enabled rule.
+
 The `pre-push` hook is the last gate before code leaves your machine, and it runs in this
 order: (1) regenerate `.copilot/manifest.json` — amends the current commit only if the
 regenerated manifest substantively changed (a `generated_at` timestamp-only diff is

@@ -82,6 +82,11 @@ Assertion sensitivity — a test that cannot fail is worse than no test
   make the implementation wrong, confirm the ASSERTION fails. Same for adding tests to
   already-working code — no natural RED, so the canary is the only evidence.
 
+  PREFERRED ASSERTION FORMS — prefer the subject-bearing `@std/assert` helper over a
+  boolean-wrapped call: `assertStringIncludes(s, x)` over `assertEquals(s.includes(x), true)`,
+  and `assertArrayIncludes(a, [x])` over `assertEquals(a.includes(x), true)`. A boolean wrap
+  hides the failing value, while the dedicated helper prints the subject.
+
   ANTI-PATTERN CATALOGUE — all shipped in this repo:
     1. **Restating a constant against itself** — `assertEquals(ToolErrorCode.NOT_FOUND,
        "NOT_FOUND")`. Passes whether a producer ever emits it. Assert the value is
