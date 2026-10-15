@@ -21,7 +21,7 @@ export { formatExecutionSummary } from "./src/bank/formatters.ts";
 export { buildFilesIndex, buildPatternsIndex, buildTagsIndex, writeIndices } from "./src/bank/index_builder.ts";
 
 export { cosineSimilarity, generateMockEmbedding, MemoryEmbeddingService } from "./src/embedding/memory_embedding.ts";
-export type { IEmbeddingSearchResult } from "./src/embedding/memory_embedding.ts";
+export type { IEmbeddingSearchResult } from "@exaix/core/types";
 export { HnswVectorIndex } from "./src/embedding/vector_index.ts";
 export type { IVectorIndexEntry, IVectorIndexSnapshot } from "./src/embedding/vector_index.ts";
 export { ProviderEmbeddingService } from "./src/embedding/provider_embedding_service.ts";

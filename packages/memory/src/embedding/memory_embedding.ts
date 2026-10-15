@@ -10,7 +10,7 @@ import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
-import type { IEmbeddableMemoryEntry, Opt, Reason } from "@exaix/core/types";
+import type { IEmbeddableMemoryEntry, IEmbeddingSearchResult, Opt, Reason } from "@exaix/core/types";
 import { MemoryType } from "@exaix/core";
 import { HnswVectorIndex } from "./vector_index.ts";
 import {
@@ -20,18 +20,6 @@ import {
   embeddableTitle,
   LEGACY_EMBEDDING_KIND,
 } from "./embeddable_entry.ts";
-
-/**
- * Embedding search result
- */
-export interface IEmbeddingSearchResult {
-  id: string;
-  title: string;
-  summary: string;
-  similarity: number;
-  /** Which memory kind the embedding was created from; absent on legacy index entries (treated as learning). */
-  kind?: MemoryType;
-}
 
 /** 64-dimensional mock embedding vector interface. */
 export interface IMemoryEmbeddingService {
