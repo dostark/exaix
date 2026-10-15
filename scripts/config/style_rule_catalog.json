@@ -139,6 +139,26 @@
       "options": { "max": 15 },
       "limits": "Counts one decision point per branch node; nested function bodies are excluded."
     },
+    "exaix/no-repeated-assert-call": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Deferred: activation waits on the test-assertion migration tracked in the Step 8 Reachability Ledger.",
+      "scope": "test",
+      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
+      "tags": ["test-quality", "deslop"],
+      "options": { "assertPrefix": "assert" },
+      "limits": "Only adjacent statements inside one block are compared; a non-block body is not scanned."
+    },
+    "exaix/no-constant-substring-assert": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Deferred: activation waits on the test-assertion migration tracked in the Step 8 Reachability Ledger.",
+      "scope": "test",
+      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
+      "tags": ["test-quality", "deslop"],
+      "options": { "constantPattern": "^[A-Z][A-Z0-9_]*$" },
+      "limits": "Only named imports are considered; a namespace or default import is not matched."
+    },
     "exaix/no-boolean-assert": {
       "engine": "plugin",
       "severity": "off",
