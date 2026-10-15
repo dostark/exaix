@@ -14,7 +14,7 @@ import { DEFAULT_NONE_LABEL, MODEL_COLUMN_LABEL } from "@exaix/core";
 import { isCapabilityEligible } from "@exaix/core/composer";
 import { BaseCommand } from "@exaix/cli/base.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { IFlowValidationResult, Opt, Reason } from "@exaix/core/types";
 import { BindingOverlaySchema, BindOneOffSchema, type IRunBindingsFile } from "@exaix/schemas";
 import {
   BINDING_OUTCOME_INVALID,
@@ -41,12 +41,6 @@ interface FlowBindingsOptions {
   json?: boolean;
   overlay?: string[];
   bind?: string[];
-}
-
-interface IFlowValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
 }
 
 export class FlowCommands extends BaseCommand {
