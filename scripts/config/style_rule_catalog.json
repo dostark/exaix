@@ -139,6 +139,17 @@
       "options": { "max": 15 },
       "limits": "Counts one decision point per branch node; nested function bodies are excluded."
     },
+    "exaix/max-class-size": {
+      "engine": "plugin",
+      "severity": "off",
+      "optIn": true,
+      "reason": "Manual today: check:god-objects is a separate manual task, so the rule runs only when selected.",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#complexity-rules",
+      "tags": ["complexity", "module-structure"],
+      "options": { "minClassLines": 200, "threshold": 60 },
+      "limits": "Score is per class; a class under minClassLines is skipped before scoring."
+    },
     "exaix/no-repeated-assert-call": {
       "engine": "plugin",
       "severity": "off",
