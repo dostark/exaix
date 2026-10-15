@@ -915,7 +915,10 @@ export async function resolvePresetFromSize(
 
   // Filter by context window
   const windowFiltered = candidates.filter(
-    (p) => p.metadata.contextWindow === undefined || p.metadata.contextWindow >= profile.min_context_window,
+    (p) =>
+      p.metadata.contextWindow === undefined
+        ? p.metadata.modelInfo !== undefined
+        : p.metadata.contextWindow >= profile.min_context_window,
   );
   if (windowFiltered.length === 0) {
     throw new Error(`No provider meets min_context_window ${profile.min_context_window} for size "${size}"`);

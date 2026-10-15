@@ -162,6 +162,31 @@ Deno.test({
   },
 });
 
+Deno.test("getModelsByCapability excludes a provider that declares no window and has no catalog", async () => {
+  ProviderRegistry.clear();
+  try {
+    ProviderRegistry.registerWithMetadata(
+      "silent",
+      null as never,
+      createMockProvider("silent", { contextWindow: undefined }),
+    );
+    ProviderRegistry.registerWithMetadata(
+      "catalog",
+      null as never,
+      createMockProvider("catalog", {
+        contextWindow: undefined,
+        modelInfo: () => Promise.reject(new Error("offline")),
+      }),
+    );
+    const providers = (await new DefaultModelRegistry(stubHealthChecker()).getModelsByCapability({
+      minContextWindow: 8192,
+    })).map((entry) => entry.provider);
+    assertEquals(providers, ["catalog"]);
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
 Deno.test({
   name: "getProviderModels returns overlay-enriched entries for a provider",
   sanitizeOps: false,

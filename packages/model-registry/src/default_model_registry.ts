@@ -36,7 +36,13 @@ export class DefaultModelRegistry implements IModelRegistry {
     const entries = await Promise.all(
       providers.map((p) => this.buildEntry(p.metadata.name, defaults[p.metadata.name] ?? p.metadata.name)),
     );
-    return entries.filter((entry) => this.matchesProfile(entry.capabilities, profile));
+    return entries.filter((entry) =>
+      this.matchesProfile(
+        entry.capabilities,
+        profile,
+        ProviderRegistry.getProviderMetadata(entry.provider)?.modelInfo !== undefined,
+      )
+    );
   }
 
   async getModelCapability(provider: string, model: string): Promise<ICapabilityProfile> {
@@ -151,10 +157,12 @@ export class DefaultModelRegistry implements IModelRegistry {
   private matchesProfile(
     meta: ICapabilityProfile,
     profile: ICapabilityProfile,
+    hasCatalog: boolean,
   ): boolean {
+    // An unknown window passes only for a provider whose catalog may be unavailable.
     if (
-      profile.minContextWindow !== undefined && meta.minContextWindow !== undefined &&
-      meta.minContextWindow < profile.minContextWindow
+      profile.minContextWindow !== undefined &&
+      (meta.minContextWindow ?? (hasCatalog ? Infinity : 0)) < profile.minContextWindow
     ) {
       return false;
     }

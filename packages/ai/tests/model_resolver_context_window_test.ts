@@ -84,6 +84,21 @@ Deno.test("an unknown window passes the preset filter after the lookup rejects",
   }
 });
 
+Deno.test("a provider that declares no window and has no catalog does not pass the preset filter", async () => {
+  ProviderRegistry.clear();
+  try {
+    registerProvider("silent");
+    const silent = ProviderRegistry.getProviderMetadata("silent");
+    if (!silent) throw new Error("fixture metadata missing");
+    silent.contextWindow = undefined;
+    registerProvider("declared");
+    const profile = { S: { min_context_window: 8192, max_cost_per_mtok: 1, supports_thinking: false } };
+    assertEquals((await resolvePresetFromSize("S", profile)).provider, "declared");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
 Deno.test("[step132.1][context_window] resolves with default model size when no size specified", async () => {
   const { cleanup } = await initTestDbService();
   try {
