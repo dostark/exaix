@@ -7,14 +7,14 @@
  * lifecycle events are correctly captured and routed to the persistent journal.
  */
 
-import { assertEquals, assertExists, assertMatch, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertMatch, assertNotMatch, assertStringIncludes } from "@std/assert";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
 import { ConsoleStream } from "@exaix/core";
 import { EventBusService } from "@exaix/core/observability";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
-import { STREAMING_EVENT_FLOW_STATUS, STREAMING_EVENT_TOOL_START } from "@exaix/core";
+import { CONSOLE_PAYLOAD_VALUE_MAX_CHARS, STREAMING_EVENT_FLOW_STATUS, STREAMING_EVENT_TOOL_START } from "@exaix/core";
 
 type ITestDb = Awaited<ReturnType<typeof initTestDbService>>["db"];
 type IEventLoggerOptions = ConstructorParameters<typeof EventLogger>[0];
@@ -141,6 +141,119 @@ Deno.test("EventLogger: should include payload values in console output", async 
 });
 
 // Log Level Tests
+
+Deno.test("EventLogger: a payload value with newline, carriage return and ESC prints on one line with the characters escaped", async () => {
+  await withEventLoggerTest(async ({ logger, logs }) => {
+    await logger.info("provider.failed", "model", { detail: "first\nforged\r\t\u001b[31m" });
+
+    assertEquals(logs.length, 2);
+    assertEquals(logs[1], "   detail: first\\nforged\\r\\t\\u001b[31m");
+    logs.forEach((line) => assertNotMatch(line, /\p{Cc}/u));
+  });
+});
+
+Deno.test("EventLogger: [security] every control character is escaped in payloads, actions, targets and keys", async () => {
+  await withEventLoggerTest(async ({ logger, logs }) => {
+    const controls = Array.from({ length: 160 }, (_, code) => String.fromCharCode(code))
+      .filter((character) => /\p{Cc}/u.test(character)).join("");
+    await logger.log({ action: controls, target: controls, payload: { [controls]: controls } });
+
+    assertEquals(logs.length, 2);
+    logs.forEach((line) => {
+      assertNotMatch(line, /\p{Cc}/u);
+      assertStringIncludes(line, "\\u0000");
+      assertStringIncludes(line, "\\u007f");
+      assertStringIncludes(line, "\\u0085");
+      assertStringIncludes(line, "\\u009f");
+    });
+  });
+});
+
+Deno.test("EventLogger: a target with a newline and ESC prints on one escaped line", async () => {
+  await withEventLoggerTest(async ({ logger, logs }) => {
+    await logger.info("model.resolved\r\t", "model\n\u001b[2J");
+
+    assertEquals(logs.length, 1);
+    assertStringIncludes(logs[0], "model.resolved\\r\\t: model\\n\\u001b[2J");
+    assertNotMatch(logs[0], /\p{Cc}/u);
+  });
+});
+
+Deno.test("EventLogger: a value over CONSOLE_PAYLOAD_VALUE_MAX_CHARS is cut with a length marker", async () => {
+  await withEventLoggerTest(async ({ logger, logs }) => {
+    const value = "x".repeat(CONSOLE_PAYLOAD_VALUE_MAX_CHARS + 1);
+    await logger.info("provider.response", "model", { detail: value });
+
+    assertEquals(
+      logs[1],
+      `   detail: ${"x".repeat(CONSOLE_PAYLOAD_VALUE_MAX_CHARS)} [truncated; original length: ${value.length}]`,
+    );
+  });
+});
+
+Deno.test("EventLogger: object values keep JSON serialization and the same length cap", async () => {
+  await withEventLoggerTest(async ({ logger, logs }) => {
+    const object = { nested: "text\n\r\u001b\u0085" };
+    const longObject = { nested: "x".repeat(CONSOLE_PAYLOAD_VALUE_MAX_CHARS + 1) };
+    const serialized = JSON.stringify(longObject);
+    await logger.info("provider.response", "model", { object, longObject });
+
+    assertEquals(logs[1], `   object: ${JSON.stringify(object).replace("\u0085", "\\u0085")}`);
+    assertEquals(
+      logs[2],
+      `   longObject: ${
+        serialized.slice(0, CONSOLE_PAYLOAD_VALUE_MAX_CHARS)
+      } [truncated; original length: ${serialized.length}]`,
+    );
+    logs.forEach((line) => assertNotMatch(line, /\p{Cc}/u));
+  });
+});
+
+Deno.test("EventLogger: the console cap applies to escaped values, actions, targets and keys", async () => {
+  await withEventLoggerTest(async ({ logger, logs }) => {
+    const value = "\n".repeat(CONSOLE_PAYLOAD_VALUE_MAX_CHARS + 1);
+    await logger.log({ action: value, target: value, payload: { [value]: value } });
+    const capped = `${"\\n".repeat(CONSOLE_PAYLOAD_VALUE_MAX_CHARS / 2)} [truncated; original length: ${value.length}]`;
+
+    assertStringIncludes(logs[0], `${capped}: ${capped}`);
+    assertEquals(logs[1], `   ${capped}: ${capped}`);
+    logs.forEach((line) => assertNotMatch(line, /\p{Cc}/u));
+  });
+});
+
+Deno.test("EventLogger: the journal row keeps the original value", async () => {
+  await withEventLoggerTest(async ({ db, logger }) => {
+    const value = `original\n\r\t\u001b${"x".repeat(CONSOLE_PAYLOAD_VALUE_MAX_CHARS + 1)}`;
+    const traceId = crypto.randomUUID();
+    const payload = { [value]: value, object: { nested: value } };
+    await logger.log({ action: value, target: value, payload, traceId });
+    await db.waitForFlush();
+
+    const activities = db.getActivitiesByTrace(traceId);
+    assertEquals(activities.length, 1);
+    assertEquals(activities[0].action_type, value);
+    assertEquals(activities[0].target, value);
+    assertEquals(JSON.parse(activities[0].payload), payload);
+  });
+});
+
+Deno.test("EventLogger: values at the cap and ordinary paths remain readable", async () => {
+  await withEventLoggerTest(async ({ logger, logs }) => {
+    const value = "x".repeat(CONSOLE_PAYLOAD_VALUE_MAX_CHARS);
+    await logger.info("provider.response", "model", {
+      detail: value,
+      path: 'C:\\folder\\file "quoted"',
+      empty: "",
+      absent: null,
+      count: 42,
+      enabled: true,
+    });
+
+    assertEquals(logs[1], `   detail: ${value}`);
+    assertEquals(logs[2], '   path: C:\\folder\\file "quoted"');
+    assertEquals(logs.slice(3), ["   empty: ", "   absent: null", "   count: 42", "   enabled: true"]);
+  });
+});
 
 Deno.test("EventLogger: should respect minLevel configuration", async () => {
   await withEventLoggerTest(async ({ logger, logs, restoreConsole }) => {

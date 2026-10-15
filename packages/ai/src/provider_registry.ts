@@ -14,6 +14,15 @@ type ProviderRegistryGlobal = typeof globalThis & {
   __exaixRegisteredProviderTypes?: string[];
 };
 
+/** Metadata for one model when the provider has a model catalog. */
+export interface IProviderModelInfo {
+  contextWindow?: number;
+  inputPerMtok?: number;
+  outputPerMtok?: number;
+  supportsThinking?: boolean;
+  supportsEffort?: boolean;
+}
+
 /** Metadata describing a provider's capabilities, used for selection and cost optimization. */
 export interface IProviderMetadata {
   /** Unique provider name */
@@ -42,6 +51,8 @@ export interface IProviderMetadata {
   costPerMtok?: number;
   /** Context window size in tokens (used for model size matching) */
   contextWindow?: number;
+  /** Optional per-model catalog data. Callers fall back when the lookup is unavailable. */
+  modelInfo?: (model: string) => Promise<IProviderModelInfo | undefined>;
   /** True when this provider is an aggregator reseller (e.g. OpenRouter) rather than a first-party host; skipped by native-admission and route-policy logic. */
   isAggregator?: boolean;
   /** True when generate() serializes IModelOptions.tools/toolChoice into a real API request; the capability gate reads this to pick native tool-calling vs the TOML-block prose convention (absent/undefined behaves as false). */

@@ -19,6 +19,45 @@ import { createStubCostTracker, createStubHealthChecker } from "./helpers/servic
 import { ModelResolver } from "../src/model_resolver.ts";
 import { createTestConfig } from "./helpers/test_config.ts";
 
+Deno.test("model.resolved keeps its payload fields when a catalog price changes the winner", async () => {
+  ProviderRegistry.clear();
+  try {
+    registerProvider("openrouter");
+    registerProvider("competitor");
+    const metadata = ProviderRegistry.getProviderMetadata("openrouter");
+    const competitor = ProviderRegistry.getProviderMetadata("competitor");
+    if (!metadata || !competitor) throw new Error("fixture metadata missing");
+    metadata.costPerMtok = 3;
+    metadata.modelInfo = () => Promise.resolve({ inputPerMtok: 0.02 });
+    competitor.costPerMtok = 1;
+    const logger = createMockEventLogger();
+    const resolver = new ModelResolver(
+      new DefaultRoutingStrategy(ProviderRegistry, createStubCostTracker(), createStubHealthChecker()),
+      createTestConfig(),
+      createStubHealthChecker(),
+      logger,
+    );
+    const selected = await resolver.resolve({ characteristics: ["cheapest"], trace_id: "catalog-routing-trace" });
+    assertEquals(selected.provider, "openrouter");
+    const event = logger.events.find((entry) => entry.action === "model.resolved");
+    assertEquals(Object.keys(event?.payload ?? {}).sort(), [
+      "candidate_providers",
+      "duration_ms",
+      "intent",
+      "reason",
+      "scores",
+      "selected",
+      "trace_id",
+    ]);
+    assertEquals(event?.payload?.candidate_providers, ["openrouter", "competitor"]);
+    assertEquals(event?.payload?.selected, { provider: "openrouter", model: "openrouter-model", attempt: 1 });
+    assertEquals(event?.payload?.reason, "characteristics_scored");
+    assertEquals(event?.payload?.trace_id, "catalog-routing-trace");
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
 function registerProvider(name: string): void {
   ProviderRegistry.registerWithMetadata(name, new MockProviderFactory(), {
     name,

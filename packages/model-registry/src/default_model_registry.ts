@@ -3,7 +3,7 @@
  * @path packages/model-registry/src/default_model_registry.ts
  * @description Solo-tier floor implementation of IModelRegistry. Resolves all 13 methods
  *   using the ProviderRegistry, the static overlay, and
- *   zero network/DB access. Methods that belong to the Team+ tier throw RegistryNotImplementedError.
+ *   optional provider catalog metadata. Team-only methods throw RegistryNotImplementedError.
  * @architectural-layer ModelRegistry
  * @dependencies [@exaix/core/types, @exaix/ai, @exaix/schemas]
  * @related-files [packages/core/src/types/i_model_registry.ts, packages/ai/src/model_resolver.ts]
@@ -17,7 +17,7 @@ import {
   type IRateLimitStatus,
 } from "@exaix/core/types";
 import type { IProviderHealthChecker } from "@exaix/ai";
-import { ProviderRegistry } from "@exaix/ai";
+import { ProviderRegistry, readProviderModelInfo } from "@exaix/ai";
 import { getDefaultModels } from "@exaix/schemas";
 import { RegistryNotImplementedError } from "./errors.ts";
 import { STATIC_CONTEXT_WINDOWS, STATIC_OVERLAY } from "./static_overlay.ts";
@@ -30,60 +30,73 @@ export class DefaultModelRegistry implements IModelRegistry {
     private healthChecker: IProviderHealthChecker,
   ) {}
 
-  getModelsByCapability(profile: ICapabilityProfile): Promise<IModelEntry[]> {
+  async getModelsByCapability(profile: ICapabilityProfile): Promise<IModelEntry[]> {
     const providers = ProviderRegistry.getAllProviders();
     const defaults = getDefaultModels();
-    return Promise.resolve(
-      providers
-        .filter((p) => this.matchesProfile(p.metadata, profile))
-        .map((p) => {
-          const model = defaults[p.metadata.name] ?? p.metadata.name;
-          return this.buildEntry(p.metadata.name, model);
-        }),
+    const entries = await Promise.all(
+      providers.map((p) => this.buildEntry(p.metadata.name, defaults[p.metadata.name] ?? p.metadata.name)),
+    );
+    return entries.filter((entry) =>
+      this.matchesProfile(
+        entry.capabilities,
+        profile,
+        ProviderRegistry.getProviderMetadata(entry.provider)?.modelInfo !== undefined,
+      )
     );
   }
 
-  getModelCapability(provider: string, _model: string): Promise<ICapabilityProfile> {
+  async getModelCapability(provider: string, model: string): Promise<ICapabilityProfile> {
     const meta = ProviderRegistry.getProviderMetadata(provider);
-    return Promise.resolve({
-      minContextWindow: meta?.contextWindow,
-      supportsThinking: meta?.supportsThinking,
-      supportsEffort: meta?.supportsEffort,
-      maxCostPerMillionTokens: meta?.costPerMtok,
-    });
+    const info = await readProviderModelInfo(meta, model);
+    const overlayKey = `${provider}:${model}`;
+    const overlay = STATIC_OVERLAY[overlayKey];
+    return {
+      minContextWindow: overlay?.contextWindow ?? STATIC_CONTEXT_WINDOWS[overlayKey] ?? info?.contextWindow ??
+        meta?.contextWindow,
+      supportsThinking: info?.supportsThinking ?? meta?.supportsThinking,
+      supportsEffort: info?.supportsEffort ?? meta?.supportsEffort,
+      maxCostPerMillionTokens: overlay?.inputPerMtok ?? info?.inputPerMtok ?? meta?.costPerMtok,
+    };
   }
 
-  getProviderModels(provider: string): Promise<IModelEntry[]> {
+  async getProviderModels(provider: string): Promise<IModelEntry[]> {
     const meta = ProviderRegistry.getProviderMetadata(provider);
     if (!meta) return Promise.resolve([]);
     const defaults = getDefaultModels();
     const model = defaults[meta.name] ?? meta.name;
-    return Promise.resolve([this.buildEntry(meta.name, model)]);
+    return [await this.buildEntry(meta.name, model)];
   }
 
   getAllProviders(): Promise<string[]> {
     return Promise.resolve(ProviderRegistry.getSupportedProviders());
   }
 
-  getModelCost(provider: string, model: string): Promise<number> {
+  async getModelCost(provider: string, model: string): Promise<number> {
     const overlayKey = `${provider}:${model}`;
     const overlay = STATIC_OVERLAY[overlayKey];
     if (overlay?.inputPerMtok !== undefined) return Promise.resolve(overlay.inputPerMtok);
     const meta = ProviderRegistry.getProviderMetadata(provider);
-    return Promise.resolve(meta?.costPerMtok ?? 0);
+    const info = await readProviderModelInfo(meta, model);
+    return info?.inputPerMtok ?? meta?.costPerMtok ?? 0;
   }
 
-  getContextWindow(provider: string, model: string): Promise<number> {
+  async getContextWindow(provider: string, model: string): Promise<number> {
     const overlayKey = `${provider}:${model}`;
     const overlay = STATIC_OVERLAY[overlayKey];
-    if (overlay?.contextWindow !== undefined) return Promise.resolve(overlay.contextWindow);
+    if (overlay?.contextWindow !== undefined) return overlay.contextWindow;
     const listed = STATIC_CONTEXT_WINDOWS[overlayKey];
-    if (listed !== undefined) return Promise.resolve(listed);
+    if (listed !== undefined) return listed;
     const meta = ProviderRegistry.getProviderMetadata(provider);
-    return Promise.resolve(meta?.contextWindow ?? 0);
+    try {
+      const info = await meta?.modelInfo?.(model);
+      if (info?.contextWindow !== undefined) return info.contextWindow;
+    } catch {
+      // Catalog lookup failures use the provider-level fallback.
+    }
+    return meta?.contextWindow ?? 0;
   }
 
-  getModelPricing(provider: string, model: string): Promise<IModelPricing> {
+  async getModelPricing(provider: string, model: string): Promise<IModelPricing> {
     const overlayKey = `${provider}:${model}`;
     const overlay = STATIC_OVERLAY[overlayKey];
     if (overlay) {
@@ -99,7 +112,17 @@ export class DefaultModelRegistry implements IModelRegistry {
         sourceUrl: overlay.sourceUrl,
       });
     }
-    return Promise.resolve({ provider, model, provenance: "unknown" as const });
+    const info = await readProviderModelInfo(ProviderRegistry.getProviderMetadata(provider), model);
+    if (info?.inputPerMtok !== undefined || info?.outputPerMtok !== undefined) {
+      return {
+        provider,
+        model,
+        inputPerMtok: info.inputPerMtok,
+        outputPerMtok: info.outputPerMtok,
+        provenance: "endpoint",
+      };
+    }
+    return { provider, model, provenance: "unknown" as const };
   }
 
   recordLatency(_provider: string, _model: string, _latencyMs: number): Promise<void> {
@@ -132,10 +155,15 @@ export class DefaultModelRegistry implements IModelRegistry {
   }
 
   private matchesProfile(
-    meta: { costPerMtok?: number; contextWindow?: number; supportsThinking?: boolean; supportsEffort?: boolean },
+    meta: ICapabilityProfile,
     profile: ICapabilityProfile,
+    hasCatalog: boolean,
   ): boolean {
-    if (profile.minContextWindow !== undefined && (meta.contextWindow ?? 0) < profile.minContextWindow) {
+    // An unknown window passes only for a provider whose catalog may be unavailable.
+    if (
+      profile.minContextWindow !== undefined &&
+      (meta.minContextWindow ?? (hasCatalog ? Infinity : 0)) < profile.minContextWindow
+    ) {
       return false;
     }
     if (profile.supportsThinking === true && meta.supportsThinking !== true) {
@@ -144,34 +172,24 @@ export class DefaultModelRegistry implements IModelRegistry {
     if (profile.supportsEffort === true && meta.supportsEffort !== true) {
       return false;
     }
-    if (profile.maxCostPerMillionTokens !== undefined && (meta.costPerMtok ?? 0) > profile.maxCostPerMillionTokens) {
+    if (
+      profile.maxCostPerMillionTokens !== undefined &&
+      (meta.maxCostPerMillionTokens ?? 0) > profile.maxCostPerMillionTokens
+    ) {
       return false;
     }
     return true;
   }
 
-  private buildEntry(provider: string, model: string): IModelEntry {
-    const overlayKey = `${provider}:${model}`;
-    const overlay = STATIC_OVERLAY[overlayKey];
-    const meta = ProviderRegistry.getProviderMetadata(provider);
-
-    const contextWindow = overlay?.contextWindow ??
-      meta?.contextWindow ??
-      0;
-
-    const costPerMtok = overlay?.inputPerMtok ?? meta?.costPerMtok ?? 0;
+  private async buildEntry(provider: string, model: string): Promise<IModelEntry> {
+    const capabilities = await this.getModelCapability(provider, model);
 
     return {
       provider,
       model,
-      capabilities: {
-        minContextWindow: contextWindow,
-        supportsThinking: meta?.supportsThinking,
-        supportsEffort: meta?.supportsEffort,
-        maxCostPerMillionTokens: costPerMtok,
-      },
-      contextWindow,
-      costPer1kTokens: mtokToPer1k(costPerMtok),
+      capabilities,
+      contextWindow: capabilities.minContextWindow ?? 0,
+      costPer1kTokens: mtokToPer1k(capabilities.maxCostPerMillionTokens ?? 0),
     };
   }
 }

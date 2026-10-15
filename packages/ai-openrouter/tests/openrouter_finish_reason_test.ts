@@ -9,7 +9,8 @@
 
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import type { JSONValue } from "@exaix/core";
-import { OpenRouterProvider, OpenRouterTruncationError } from "@exaix/ai-openrouter";
+import { OpenRouterBillingError, OpenRouterProvider, OpenRouterTruncationError } from "@exaix/ai-openrouter";
+import { ModelProviderError } from "@exaix/ai/providers";
 
 function reply(
   choice: Record<string, JSONValue>,
@@ -74,6 +75,37 @@ Deno.test("a stop finish returns stop_reason stop", async () => {
   });
 });
 
+Deno.test("fix(openrouter): a native refusal behind content_filter keeps the canonical refusal stop reason", async () => {
+  const body = JSON.stringify({
+    choices: [{
+      message: { role: "assistant", content: null, refusal: null, reasoning: null },
+      finish_reason: "content_filter",
+      native_finish_reason: "refusal",
+    }],
+  });
+  await run(body, async (provider, fetches) => {
+    const result = await provider.generate("Plan the change.");
+    assertEquals(result.stop_reason, "refusal");
+    assertEquals(result.content, "");
+    assertEquals(fetches(), 1);
+  });
+});
+
+Deno.test("fix(openrouter): content_filter without a native refusal keeps its original stop reason", async () => {
+  for (const nativeReason of [undefined, null, "moderation"]) {
+    await run(
+      reply({
+        message: { content: "" },
+        finish_reason: "content_filter",
+        ...(nativeReason === undefined ? {} : { native_finish_reason: nativeReason }),
+      }),
+      async (provider) => {
+        assertEquals((await provider.generate("hi")).stop_reason, "content_filter");
+      },
+    );
+  }
+});
+
 Deno.test("a tool_calls finish with empty content is not an error", async () => {
   const toolCalls = [{ id: "call_1", type: "function", function: { name: "read_file", arguments: '{"path":"a"}' } }];
   const body = reply({ message: { content: null, tool_calls: toolCalls }, finish_reason: "tool_calls" });
@@ -98,4 +130,43 @@ Deno.test("a response without a finish reason keeps working and has no stop_reas
     assertEquals(result.content, "ok");
     assertEquals(result.stop_reason, undefined);
   });
+});
+
+Deno.test("fix(openrouter): an HTTP 200 error body throws the mapped billing error instead of an empty answer", async () => {
+  const body = JSON.stringify({
+    id: "gen-fixture",
+    error: { code: 402, message: "Credits exhausted", metadata: { limit_source: "account" } },
+  });
+  await run(body, async (provider, fetches) => {
+    const error = await assertRejects(() => provider.generate("hi"), OpenRouterBillingError);
+    assertStringIncludes(error.message, "Credits exhausted");
+    assertEquals(error.limitSource, "account");
+    assertEquals(fetches(), 1);
+  });
+});
+
+Deno.test("fix(openrouter): an HTTP 200 error retains the sanitized provider reason without raw metadata", async () => {
+  const body = JSON.stringify({
+    error: {
+      code: 400,
+      message: "Tool definitions required",
+      metadata: { error_type: "invalid_request", provider_name: "Fixture", raw: "private-upstream-data" },
+    },
+  });
+  await run(body, async (provider, fetches) => {
+    const error = await assertRejects(() => provider.generate("hi"), ModelProviderError);
+    assertStringIncludes(error.message, "Tool definitions required");
+    assertStringIncludes(error.message, "provider=Fixture");
+    assertEquals(error.message.includes("private-upstream-data"), false);
+    assertEquals(fetches(), 1);
+  });
+});
+
+Deno.test("fix(openrouter): an HTTP 200 error without a valid code still fails explicitly", async () => {
+  for (const code of [undefined, "invalid", 200, 999, 402.5]) {
+    await run(JSON.stringify({ error: { code, message: "Upstream failure" } }), async (provider, fetches) => {
+      await assertRejects(() => provider.generate("hi"), ModelProviderError, "HTTP 200");
+      assertEquals(fetches(), 1);
+    });
+  }
 });

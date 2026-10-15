@@ -22,12 +22,14 @@ import {
   OPENROUTER_CAPABILITY_FAILURE_BACKOFF_MS,
   OPENROUTER_CAPABILITY_MAX_RESPONSE_BYTES,
   OPENROUTER_TOKENIZER_MODEL_MAP,
+  OPENROUTER_TOKENS_PER_MTOK,
 } from "./constants.ts";
 
 /** What the provider needs to know about one model before it sends a request. */
 export interface IOpenRouterModelEntry {
   id: string;
   contextLength?: number;
+  pricing?: { inputPerMtok?: number; outputPerMtok?: number };
   supportedParameters: readonly string[];
   reasoning?: {
     mandatory: boolean;
@@ -78,6 +80,10 @@ const ModelEntrySchema = z.object({
     supports_max_tokens: z.boolean().nullish(),
   }).nullish(),
   architecture: z.object({ tokenizer: z.string().nullish() }).nullish(),
+  pricing: z.object({
+    prompt: z.string().nullish().catch(undefined),
+    completion: z.string().nullish().catch(undefined),
+  }).nullish().catch(undefined),
 });
 
 const CatalogEnvelopeSchema = z.object({ data: z.array(z.json()) });
@@ -100,6 +106,8 @@ export function deriveOpenRouterModelsUrl(baseUrl: string): string {
 
 function toEntry(entry: CatalogEntry): IOpenRouterModelEntry {
   const reasoning = entry.reasoning;
+  const inputPerMtok = parsePrice(entry.pricing?.prompt);
+  const outputPerMtok = parsePrice(entry.pricing?.completion);
   return {
     id: entry.id,
     ...(entry.context_length != null ? { contextLength: entry.context_length } : {}),
@@ -115,7 +123,21 @@ function toEntry(entry: CatalogEntry): IOpenRouterModelEntry {
       }
       : {}),
     ...(entry.architecture?.tokenizer ? { tokenizer: entry.architecture.tokenizer } : {}),
+    ...(inputPerMtok !== undefined || outputPerMtok !== undefined
+      ? {
+        pricing: {
+          ...(inputPerMtok !== undefined ? { inputPerMtok } : {}),
+          ...(outputPerMtok !== undefined ? { outputPerMtok } : {}),
+        },
+      }
+      : {}),
   };
+}
+
+function parsePrice(value: Opt<string | null, Reason.OptionalInput>): number | undefined {
+  if (!value?.trim()) return undefined;
+  const price = Number(value) * OPENROUTER_TOKENS_PER_MTOK;
+  return Number.isFinite(price) && price >= 0 ? price : undefined;
 }
 
 /** The estimator model that counts tokens for this model, or the configured id when no family maps. */
@@ -141,12 +163,19 @@ export class OpenRouterModelCapabilities implements IOpenRouterCapabilitySource 
   private readonly failureBackoffMs: number;
   private readonly maxResponseBytes: number;
   private readonly now: () => number;
+  private logger: IEventLogger | undefined;
 
   constructor(private readonly options: IOpenRouterModelCapabilitiesOptions) {
+    this.logger = options.logger;
     this.ttlMs = options.ttlMs ?? DEFAULT_OPENROUTER_CAPABILITY_CACHE_TTL_MS;
     this.failureBackoffMs = options.failureBackoffMs ?? OPENROUTER_CAPABILITY_FAILURE_BACKOFF_MS;
     this.maxResponseBytes = options.maxResponseBytes ?? OPENROUTER_CAPABILITY_MAX_RESPONSE_BYTES;
     this.now = options.now ?? Date.now;
+  }
+
+  /** Supplies the journal to a lookup built without one. An existing logger stays. */
+  attachLogger(logger: IEventLogger): void {
+    this.logger ??= logger;
   }
 
   async getEntry(model: string, traceId?: Opt<string, Reason.TraceAbsent>): Promise<IOpenRouterModelEntry | undefined> {
@@ -234,7 +263,7 @@ export class OpenRouterModelCapabilities implements IOpenRouterCapabilitySource 
       reason: failure.reason,
       ...(failure.status !== undefined ? { status: failure.status } : {}),
     };
-    await this.options.logger?.warn(
+    await this.logger?.warn(
       DomainEventType.OpenRouterCapabilityLookupFailed,
       this.options.providerId,
       { ...payload },

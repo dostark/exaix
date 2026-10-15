@@ -13,6 +13,9 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
+import { stub } from "@std/testing/mock";
+import { PricingTier, ProviderCostTier } from "@exaix/core";
+import { ProviderRegistry } from "@exaix/ai";
 import { initTestDbService, REPO_ROOT } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
@@ -20,7 +23,8 @@ import { AgentComposer, StrategyRegistry } from "@exaix/execution";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
-import type { IResolvedModel, ModelResolver } from "@exaix/ai";
+import type { ModelResolver } from "@exaix/ai";
+import type { IResolvedModel } from "@exaix/schemas";
 import type { IModelIntent } from "@exaix/schemas";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 import { EFFORT_MAX_TOKENS } from "@exaix/ai";
@@ -30,7 +34,9 @@ import type { IChangesetResult } from "@exaix/schemas/agent_composer.ts";
 import { ProviderCallPolicyError, ProviderFactoryError } from "@exaix/ai/errors.ts";
 import { AGENT_EVENT_EXECUTION_FAILED } from "@exaix/core";
 
-function makeCapturingResolver(): {
+function makeCapturingResolver(
+  selected: IResolvedModel = { provider: "mock", model: "test", attempt: 1, options: {} as never },
+): {
   resolver: ModelResolver;
   captured: IModelIntent[];
 } {
@@ -38,7 +44,7 @@ function makeCapturingResolver(): {
   const resolver = {
     resolve: (intent: IModelIntent): Promise<IResolvedModel> => {
       captured.push(intent);
-      return Promise.resolve({ provider: "mock", model: "test", attempt: 1, options: {} as never });
+      return Promise.resolve(selected);
     },
   } as object as ModelResolver;
   return { resolver, captured };
@@ -385,3 +391,59 @@ Deno.test("AgentComposer.executeStep: a failsafe blueprint thinking false sends 
     await cleanup();
   }
 });
+
+for (const supportsThinking of [true, false]) {
+  Deno.test(`AgentComposer uses per-model thinking ${supportsThinking} for the selected model`, async () => {
+    const { db, cleanup } = await initTestDbService();
+    const { testDir, cleanup: dirCleanup } = await setup();
+    const models: string[] = [];
+    using _metadata = stub(ProviderRegistry, "getProviderMetadata", () => ({
+      name: "openrouter",
+      description: "fixture",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.PAID,
+      pricingTier: PricingTier.MEDIUM,
+      strengths: [],
+      supportsThinking: !supportsThinking,
+      modelInfo: (model: string) => {
+        models.push(model);
+        return Promise.resolve({ supportsThinking });
+      },
+    }));
+    try {
+      const config = createTestConfig();
+      config.system.root = testDir;
+      config.portals = [{ alias: "TestPortal", target_path: testDir, operations: [] }] as never;
+      const { resolver } = makeCapturingResolver({
+        provider: "openrouter",
+        model: "vendor/catalog-model",
+        attempt: 1,
+        options: {} as never,
+      });
+      const { strategyRegistry, getCallOptions } = makeStubStrategy();
+      const composer = new AgentComposer({
+        config,
+        db,
+        logger: new EventLogger({ db }),
+        pathResolver: new PathResolver(config),
+        permissions: new PortalPermissionsService(config.portals as never),
+        strategyRegistry,
+        modelResolver: resolver,
+        options: { requestDeclaration: { thinking: "auto" } },
+      });
+      try {
+        await composer.executeStep(makeContext(testDir), {
+          ...makeOptions("TestPortal"),
+          request_analysis: { complexity: RequestAnalysisComplexity.COMPLEX } as never,
+        });
+        assertEquals(getCallOptions()?.thinking, supportsThinking ? true : undefined);
+        assertEquals(models, ["vendor/catalog-model"]);
+      } finally {
+        composer.dispose();
+      }
+    } finally {
+      await dirCleanup();
+      await cleanup();
+    }
+  });
+}

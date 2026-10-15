@@ -256,9 +256,12 @@ export class GoogleProvider extends BaseProvider {
         tools: options?.tools ? [{ functionDeclarations: options.tools.map(mapToolDefinitionGoogle) }] : undefined,
         toolConfig: options?.toolChoice ? mapToolChoiceGoogle(options.toolChoice) : undefined,
       }),
+      ...(options?.requestSignal ? { signal: options.requestSignal } : {}),
     }, {
       id: this.id,
+      traceId: options?.traceId,
       maxAttempts: this.maxRetries,
+      retryAfterMaxMs: this.retryAfterMaxMs,
       backoffBaseMs: this.retryDelayMs,
       timeoutMs: this.timeoutMs,
       logger: this.logger,

@@ -27,6 +27,7 @@ import { isRetryable } from "./providers/common.ts";
 import type { IProviderHealthChecker, ISelectionCriteria } from "./provider_selector.ts";
 import type { IProviderMetadata } from "./provider_registry.ts";
 import { ProviderRegistry } from "./provider_registry.ts";
+import { resolveProviderMetadata } from "./provider_model_info.ts";
 import type { IProviderRoutingStrategy } from "./routing/provider_routing_strategy.ts";
 import type { IConsideredRouteInput, IResolutionStrategy } from "./i_resolution_strategy.ts";
 import type { ICapabilityProfile, IModelEntry, IModelRegistry, Opt, Reason } from "@exaix/core/types";
@@ -333,11 +334,12 @@ export class ModelResolver {
         const priced = await Promise.all(
           models.map(async (m) => ({
             entry: m,
-            provenance: (await registry.getModelPricing(m.provider, m.model)).provenance,
+            pricing: await registry.getModelPricing(m.provider, m.model),
           })),
         );
-        const known = priced.filter((p) => p.provenance !== "unknown").map((p) => p.entry);
-        if (known.length > 0) ordered = known;
+        const known = priced.filter((p) => p.pricing.provenance !== "unknown" && p.pricing.inputPerMtok !== undefined)
+          .map((p) => p.entry);
+        if (known.length > 0) ordered = known.sort((a, b) => a.costPer1kTokens - b.costPer1kTokens);
       }
       const first = ordered[0];
       const resolved: IResolvedModel = {
@@ -360,7 +362,7 @@ export class ModelResolver {
     }
 
     const presets = this.config.model_presets ?? DEFAULT_MODEL_PRESETS;
-    const resolved = resolvePresetFromSize(intent.model_size, presets);
+    const resolved = await resolvePresetFromSize(intent.model_size, presets);
     resolved.options = this.buildCallOptions(intent);
     resolved.attempt = 1;
     const providers = ProviderRegistry.getAllProviders();
@@ -423,7 +425,15 @@ export class ModelResolver {
     fallbackReason?: Opt<ModelResolutionReason, Reason.OptionalInput>,
   ): Promise<IResolvedModel | null> {
     const criteria = this.buildSelectionCriteria(intent);
-    const allProviders = ProviderRegistry.getAllProviders();
+    const allProviders = await Promise.all(
+      ProviderRegistry.getAllProviders().map(async (entry) => ({
+        ...entry,
+        metadata: await resolveProviderMetadata(
+          entry.metadata,
+          this.selectModelForProvider(entry.metadata.name, intent) ?? entry.metadata.name,
+        ),
+      })),
+    );
 
     const candidates = this.applyCapabilityFilter(allProviders, intent);
     if (candidates.length === 0) return null;
@@ -433,7 +443,7 @@ export class ModelResolver {
     // to the strategy when the hint cannot satisfy the intent.
     const preferredChosen = await this.tryPreferProvider(intent, candidates);
     const providerName = preferredChosen ?? await this.selector.selectProvider(criteria);
-    const providerMetadata = ProviderRegistry.getProviderMetadata(providerName);
+    const providerMetadata = candidates.find((entry) => entry.metadata.name === providerName)?.metadata;
     if (!providerMetadata) return null;
 
     const model = this.selectModelForProvider(providerName, intent);
@@ -721,9 +731,9 @@ export class ModelResolver {
     if (!characteristics?.length) return scores;
 
     const maxCost = Math.max(
-      ...candidates.map((p) => p.metadata.costPerMtok ?? 0),
+      ...candidates.flatMap((p) => p.metadata.costPerMtok === undefined ? [] : [p.metadata.costPerMtok]),
       1,
-    );
+    ) + 1;
 
     let bestScores: Record<string, number> = {};
     if (
@@ -747,7 +757,9 @@ export class ModelResolver {
         weightSum += CHARACTERISTIC_WEIGHT;
         switch (char) {
           case "cheapest":
-            totalScore += CHARACTERISTIC_WEIGHT * (1 - ((p.metadata.costPerMtok ?? 0) / maxCost));
+            totalScore += p.metadata.costPerMtok === undefined
+              ? 0
+              : CHARACTERISTIC_WEIGHT * (1 - (p.metadata.costPerMtok / maxCost));
             break;
           case "fastest":
             totalScore += CHARACTERISTIC_WEIGHT * 1;
@@ -884,20 +896,29 @@ export class ModelResolver {
 
 /** Resolves a model_size to a concrete provider by applying the preset profile's
  *  constraints (cost, context window, thinking) against registered providers. */
-export function resolvePresetFromSize(
+export async function resolvePresetFromSize(
   size: string,
   configPresets: Record<string, ModelPreset> = DEFAULT_MODEL_PRESETS,
-): IResolvedModel {
+): Promise<IResolvedModel> {
   const profile = configPresets[size];
   if (!profile) {
     throw new Error(`No preset profile found for model_size "${size}"`);
   }
 
-  const candidates = ProviderRegistry.getAllProviders();
+  const defaults = getDefaultModels();
+  const candidates = await Promise.all(
+    ProviderRegistry.getAllProviders().map(async (entry) => ({
+      ...entry,
+      metadata: await resolveProviderMetadata(entry.metadata, defaults[entry.metadata.name] ?? entry.metadata.name),
+    })),
+  );
 
   // Filter by context window
   const windowFiltered = candidates.filter(
-    (p) => (p.metadata.contextWindow ?? 0) >= profile.min_context_window,
+    (p) =>
+      p.metadata.contextWindow === undefined
+        ? p.metadata.modelInfo !== undefined
+        : p.metadata.contextWindow >= profile.min_context_window,
   );
   if (windowFiltered.length === 0) {
     throw new Error(`No provider meets min_context_window ${profile.min_context_window} for size "${size}"`);
@@ -905,7 +926,7 @@ export function resolvePresetFromSize(
 
   // Filter by cost
   const costFiltered = windowFiltered.filter(
-    (p) => (p.metadata.costPerMtok ?? 0) <= profile.max_cost_per_mtok || !p.metadata.costPerMtok,
+    (p) => p.metadata.costPerMtok === undefined || p.metadata.costPerMtok <= profile.max_cost_per_mtok,
   );
   if (costFiltered.length === 0) {
     throw new Error(`No provider meets max_cost_per_mtok ${profile.max_cost_per_mtok} for size "${size}"`);
@@ -921,6 +942,5 @@ export function resolvePresetFromSize(
   }
 
   const chosen = thinkingFiltered[0];
-  const defaults = getDefaultModels();
   return { provider: chosen.metadata.name, model: defaults[chosen.metadata.name] ?? chosen.metadata.name, attempt: 1 };
 }

@@ -372,6 +372,7 @@ Deno.test("[planning_tool_loop][native] the final round drops tools entirely and
     assertEquals(result.final.content, "<thought>t</thought><content>final plan</content>");
     const finalOptions = generate.calls[1].options;
     assertEquals(finalOptions.tools, undefined, "the final native round must not define tools");
+    assertEquals(finalOptions.toolChoice, { type: "none" }, "the final native round must disable tool use");
     assertEquals(finalOptions.nativeConversation?.roundInstruction, PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION);
   } finally {
     ProviderRegistry.clear();

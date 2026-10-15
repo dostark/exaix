@@ -12,7 +12,9 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
+import { isRetryable, ModelProviderError, ProviderTruncationError } from "@exaix/ai/providers";
 import {
+  assertResponsesNotFailed,
   createOpenAIResponsesRequestInit,
   extractResponsesAssistantReplay,
   extractResponsesContent,
@@ -45,6 +47,53 @@ const MESSAGE_ITEM: JSONObject = {
   status: "completed",
   content: [{ type: "output_text", text: "Writing the file.", annotations: [] }],
 };
+
+Deno.test("an incomplete reply with no output throws ProviderTruncationError naming max_output_tokens and the reason", () => {
+  for (const output of [undefined, [], [REASONING_ITEM], [{ ...MESSAGE_ITEM, content: [] }]]) {
+    const response = {
+      status: "incomplete",
+      incomplete_details: { reason: "max_output_tokens" },
+      output,
+    };
+    const error = assertThrows(() => assertResponsesNotFailed(response, "openai-fixture"), ProviderTruncationError);
+    assertEquals(error.provider, "openai-fixture");
+    assertEquals(error.message.includes("max_output_tokens"), true);
+    assertEquals(error.message.includes("incomplete_details.reason=max_output_tokens"), true);
+    assertEquals(error instanceof ModelProviderError, true);
+    assertEquals(isRetryable(error), false);
+  }
+});
+
+Deno.test("an incomplete reply without incomplete_details is still typed and names an unknown reason", () => {
+  for (const incomplete_details of [undefined, null, {}]) {
+    const error = assertThrows(
+      () => assertResponsesNotFailed({ status: "incomplete", incomplete_details }, "openai-fixture"),
+      ProviderTruncationError,
+    );
+    assertEquals(error.message.includes("incomplete_details.reason=unknown"), true);
+  }
+});
+
+Deno.test("an incomplete reply with text is returned, and a function call remains usable without text", () => {
+  for (
+    const testCase of [
+      { output: [MESSAGE_ITEM], text: "Writing the file." },
+      { output: [CALL_ITEM], text: "" },
+    ]
+  ) {
+    const response = { status: "incomplete", output: testCase.output };
+    assertResponsesNotFailed(response, "openai-fixture");
+    assertEquals(extractResponsesContent(response), testCase.text);
+  }
+});
+
+Deno.test("a completed reply is unchanged, including one without output", () => {
+  for (const output of [undefined, [], [MESSAGE_ITEM, CALL_ITEM]]) {
+    const response: IResponsesResponse = { status: "completed", output };
+    assertResponsesNotFailed(response, "openai-fixture");
+    assertEquals(extractResponsesContent(response), output?.includes(MESSAGE_ITEM) ? "Writing the file." : "");
+  }
+});
 
 /** One completed round whose assistant part is the Responses output, replayed verbatim. */
 function responsesRound(): IProviderToolRound {

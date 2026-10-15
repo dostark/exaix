@@ -12,7 +12,7 @@ import type { JSONValue } from "@exaix/core";
 import { PROVIDER_OPENAI } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { ProviderProtocolError } from "./errors.ts";
-import type { IProviderToolCall } from "./providers/common.ts";
+import { type IProviderToolCall, ProviderTruncationError } from "./providers/common.ts";
 import type {
   IModelOptions,
   IProviderAssistantReplay,
@@ -40,6 +40,7 @@ export interface IResponsesResponse {
   model?: string;
   status?: string;
   error?: { message?: string } | null;
+  incomplete_details?: { reason?: string } | null;
   output?: JSONObject[];
   usage?: {
     input_tokens: number;
@@ -68,6 +69,7 @@ const RESPONSE_ITEM_FUNCTION_CALL = "function_call";
 const RESPONSE_ITEM_MESSAGE = "message";
 const RESPONSE_PART_OUTPUT_TEXT = "output_text";
 const RESPONSE_STATUS_FAILED = "failed";
+const RESPONSE_STATUS_INCOMPLETE = "incomplete";
 const INPUT_ROLE_USER = "user";
 const INPUT_ITEM_FUNCTION_CALL_OUTPUT = "function_call_output";
 
@@ -175,10 +177,22 @@ export function tokenMapperResponses(
   };
 }
 
-/** Refuses a reply the API marked failed, so the failure is not read as an empty answer. */
+/** Refuses failed replies and incomplete replies without text or a function call. */
 export function assertResponsesNotFailed(response: IResponsesResponse, providerId: string): void {
-  if (response.status !== RESPONSE_STATUS_FAILED) return;
-  throw new ProviderProtocolError(response.error?.message ?? "The Responses request failed", providerId);
+  if (response.status === RESPONSE_STATUS_FAILED) {
+    throw new ProviderProtocolError(response.error?.message ?? "The Responses request failed", providerId);
+  }
+  if (
+    response.status === RESPONSE_STATUS_INCOMPLETE && extractResponsesContent(response) === "" &&
+    functionCallItems(response).length === 0
+  ) {
+    throw new ProviderTruncationError(
+      `OpenAI response is incomplete with no output (incomplete_details.reason=${
+        response.incomplete_details?.reason ?? "unknown"
+      }). Raise max_output_tokens or lower the reasoning effort.`,
+      providerId,
+    );
+  }
 }
 
 function responseItemsOf(replay: IProviderAssistantReplay): readonly JSONObject[] | undefined {

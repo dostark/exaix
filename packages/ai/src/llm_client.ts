@@ -31,6 +31,7 @@ import { ContextBudgetExceededError } from "@exaix/core/errors";
 import { PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
 import { measureNativeConversation } from "./native_conversation_budget.ts";
 import { EffortResolver } from "./effort_resolver.ts";
+import { readProviderModelInfo } from "./provider_model_info.ts";
 import { projectResolvedCallOptions } from "./provider_call_options.ts";
 import type { IEffortDeclarations } from "./effort_resolver.ts";
 import type { ProviderType } from "@exaix/core";
@@ -288,7 +289,7 @@ export class LlmClient implements ILlmClient {
     metadata: Opt<IProviderMetadata, Reason.OptionalContext>,
     nativeEnabled: boolean,
   ): Promise<IModelOptions | undefined> {
-    const options = this.projectCallOptions(
+    const options = await this.projectCallOptions(
       provider,
       metadata,
       params.agent_role,
@@ -417,14 +418,14 @@ export class LlmClient implements ILlmClient {
     };
   }
 
-  private projectCallOptions(
+  private async projectCallOptions(
     provider: IModelProvider,
     providerMetadata: Opt<IProviderMetadata, Reason.OptionalContext>,
     role: IBlueprintFrontmatter,
     flowStepEffort: Opt<EffortDeclaration, Reason.OptionalContext>,
     flowStepThinking: Opt<ThinkingDeclaration, Reason.OptionalContext>,
     requestOptions: Opt<IModelCallOptions, Reason.OptionalInput>,
-  ): IModelOptions | undefined {
+  ): Promise<IModelOptions | undefined> {
     if (
       !requestOptions && role.effort === undefined && role.thinking === undefined &&
       flowStepEffort === undefined && flowStepThinking === undefined
@@ -434,14 +435,16 @@ export class LlmClient implements ILlmClient {
       role: { effort: role.effort, thinking: role.thinking },
       flowStep: { effort: flowStepEffort, thinking: flowStepThinking },
     };
+    const model = LlmClient.parseModelString(role.model).model ?? this.defaultModel;
+    const modelInfo = await readProviderModelInfo(providerMetadata, model);
     const resolver = new EffortResolver();
     const resolution = resolver.resolve(declarations, {
       taskComplexity: TaskComplexity.MEDIUM,
       complexitySource: "default",
       modelSize: role.model_size,
       providerType: providerMetadata?.name as ProviderType | undefined,
-      model: provider.id,
-      providerSupportsThinking: provider.callCapabilities?.supportsThinking ??
+      model,
+      providerSupportsThinking: modelInfo?.supportsThinking ?? provider.callCapabilities?.supportsThinking ??
         providerMetadata?.supportsThinking === true,
       anthropicThinkingDefault: this.config?.ai_anthropic?.thinking_default,
       skillFloors: [],

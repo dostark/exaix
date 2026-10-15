@@ -67,9 +67,9 @@ export class RateLimitedProvider implements IModelProvider {
   public callsThisMinute = 0;
   public tokensThisHour = 0;
   public costThisDay = 0;
-  public windowStart = Date.now();
-  public hourStart = Date.now();
-  public dayStart = Date.now();
+  public windowStart: number = Date.now();
+  public hourStart: number = Date.now();
+  public dayStart: number = Date.now();
   private readonly compatible: boolean;
   private readonly compatibleUnpriced: boolean;
   private hasUnpricedRemoteUsage = false;

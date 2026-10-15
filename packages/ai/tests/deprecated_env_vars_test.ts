@@ -9,6 +9,7 @@
 
 import { assertEquals } from "@std/assert";
 import { withEnv } from "@exaix/testing";
+import { DEFAULT_AI_RETRY_AFTER_MAX_MS } from "@exaix/core";
 import { LlamaProvider, OllamaProvider } from "@exaix/ai-ollama";
 
 import { createTestConfig } from "./helpers/test_config.ts";
@@ -70,6 +71,7 @@ Deno.test("Phase 2: LlamaProvider uses config retry settings over defaults", () 
     max_attempts: 3,
     backoff_base_ms: 1000,
     timeout_per_request_ms: 30000,
+    retry_after_max_ms: DEFAULT_AI_RETRY_AFTER_MAX_MS,
     providers: {
       ollama: {
         max_attempts: 5,

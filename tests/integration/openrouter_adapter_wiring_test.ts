@@ -9,14 +9,20 @@
  * @related-files [packages/ai-openrouter/src/openrouter_provider.ts, packages/ai/src/provider_factory.ts, packages/ai/src/traced_provider.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
+import { stub } from "@std/testing/mock";
+import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
+import { DefaultModelRegistry } from "@exaix/model-registry";
 import { ProviderCallPolicyError } from "@exaix/ai/errors.ts";
 import type { IModelOptions } from "@exaix/ai/types.ts";
-import { type JSONValue, PricingTier } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
+import { type JSONValue, PricingTier, ProviderCostTier } from "@exaix/core";
+import { ModelResolver } from "@exaix/ai";
+import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
-import { type Config, ConfigSchema } from "@exaix/schemas";
-import { createMockConfig, initTestDbService, withEnv } from "@exaix/testing";
+import { type Config, ConfigSchema, getDefaultModels } from "@exaix/schemas";
+import { createMockConfig, createMockLogger, initTestDbService, withEnv } from "@exaix/testing";
 import { createOutputValidator } from "@exaix/tool-runtime";
 import { LlmAnalyzer } from "@exaix/request";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
@@ -25,6 +31,7 @@ import { ProviderFactory, setProviderRegistryBootstrap } from "@exaix/ai/provide
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 
 const OPENROUTER_MODEL = "qwen/qwen3.7-flash";
+const LOOKUP_BACKOFF_PASSED_MS = 120_000;
 // A model the prompt-caching guide documents for explicit breakpoints.
 const CACHE_LISTED_MODEL = "qwen/qwen3-max";
 const OPENROUTER_TEST_ENV: Record<string, string | null> = {
@@ -38,6 +45,101 @@ const OPENROUTER_TEST_ENV: Record<string, string | null> = {
 const MODELS_FIXTURE = await Deno.readTextFile(
   new URL("../../packages/ai-openrouter/tests/fixtures/openrouter_models_fixture.json", import.meta.url),
 );
+
+Deno.test("[integration] after the bootstrap, ModelResolver ranks OpenRouter by the models-endpoint price", async () => {
+  const urls: string[] = [];
+  using _fetchStub = stub(globalThis, "fetch", (input) => {
+    urls.push(String(input));
+    return Promise.resolve(
+      Response.json({
+        data: [{ id: getDefaultModels().openrouter, pricing: { prompt: "0.00000002", completion: "0.00000006" } }],
+      }),
+    );
+  });
+  ProviderRegistry.clear();
+  try {
+    bootstrapProviderRegistry();
+    const metadata = ProviderRegistry.getProviderMetadata(PROVIDER_OPENROUTER);
+    assert(metadata);
+    metadata.capabilities.push("catalog-ranking-fixture");
+    ProviderRegistry.registerWithMetadata("competitor", new MockProviderFactory(), {
+      name: "competitor",
+      description: "Catalog ranking fixture",
+      capabilities: ["chat", "catalog-ranking-fixture"],
+      costTier: ProviderCostTier.PAID,
+      pricingTier: PricingTier.MEDIUM,
+      strengths: [],
+      costPerMtok: 1,
+    });
+    await withEnv({ OPENROUTER_API_KEY: "sk-or-test", EXA_MODEL_PRESET_OVERRIDE: null }, async () => {
+      const resolver = new ModelResolver(
+        {
+          selectProvider: () => Promise.resolve("competitor"),
+          selectProviderForTask: () => Promise.resolve("competitor"),
+        },
+        ConfigSchema.parse({ system: { root: "/tmp/catalog-ranking-test" } }),
+        { checkProvider: () => Promise.resolve(true) },
+        createMockLogger(),
+      );
+      const resolved = await resolver.resolve({
+        characteristics: ["cheapest"],
+        required_capabilities: ["catalog-ranking-fixture"],
+      });
+      assertEquals(resolved.provider, PROVIDER_OPENROUTER);
+      assertEquals(urls, ["https://openrouter.ai/api/v1/models"]);
+    });
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[integration] bootstrapped OpenRouter returns the catalog context window and keeps an absent model unknown", async () => {
+  const urls: string[] = [];
+  using _fetchStub = stub(globalThis, "fetch", (input) => {
+    urls.push(String(input));
+    return Promise.resolve(new Response(MODELS_FIXTURE));
+  });
+  ProviderRegistry.clear();
+  try {
+    bootstrapProviderRegistry();
+    await withEnv({ OPENROUTER_API_KEY: "sk-or-test" }, async () => {
+      const registry = new DefaultModelRegistry({ checkProvider: () => Promise.resolve(true) });
+      assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, OPENROUTER_MODEL), 1_000_000);
+      assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, "nobody/absent"), 0);
+    });
+    assertEquals(urls, ["https://openrouter.ai/api/v1/models"]);
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[integration] Solo returns an unknown window after a bounded OpenRouter catalog timeout", async () => {
+  const deadlineWithToleranceMs = 6_000;
+  const signals: AbortSignal[] = [];
+  using _fetchStub = stub(globalThis, "fetch", (_input, init) => {
+    const signal = init?.signal;
+    assert(signal);
+    signals.push(signal);
+    return new Promise((_resolve, reject) =>
+      signal.addEventListener("abort", () => reject(signal.reason), { once: true })
+    );
+  });
+  ProviderRegistry.clear();
+  try {
+    bootstrapProviderRegistry();
+    await withEnv({ OPENROUTER_API_KEY: "sk-or-test" }, async () => {
+      const registry = new DefaultModelRegistry({ checkProvider: () => Promise.resolve(true) });
+      const started = performance.now();
+      assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, OPENROUTER_MODEL), 0);
+      assert(performance.now() - started < deadlineWithToleranceMs);
+      assertEquals(await registry.getContextWindow(PROVIDER_OPENROUTER, OPENROUTER_MODEL), 0);
+    });
+    assertEquals(signals.length, 1);
+    assertEquals(signals[0].aborted, true);
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
 
 function answerModelsRequest(input: string | URL | Request): Response | undefined {
   return String(input).endsWith("/models") ? new Response(MODELS_FIXTURE, { status: 200 }) : undefined;
@@ -141,7 +243,7 @@ async function wireProviderBlock(
   const { db, tempDir, cleanup } = await initTestDbService();
   const origFetch = globalThis.fetch;
   let sent: { provider?: IWireProvider } = {};
-  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     const catalog = answerModelsRequest(input);
     if (catalog) return Promise.resolve(catalog);
     sent = JSON.parse((init?.body as string) ?? "{}");
@@ -222,7 +324,7 @@ async function analyzeThroughFactory(
   const { db, tempDir, cleanup } = await initTestDbService();
   const origFetch = globalThis.fetch;
   const sentFormats: string[] = [];
-  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     const catalog = answerModelsRequest(input);
     if (catalog) return Promise.resolve(catalog);
     const sent = JSON.parse((init?.body as string) ?? "{}") as { response_format?: { type: string } };
@@ -307,7 +409,7 @@ function routeFetch(modelsResponse: () => Response, chatResponse: () => Response
     chatBodies: [],
     restore: () => (globalThis.fetch = origFetch),
   };
-  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     if (String(input).endsWith("/models")) {
       routed.modelsCalls++;
       return Promise.resolve(modelsResponse());
@@ -447,7 +549,7 @@ async function journaledUsage(
 ): Promise<Array<Record<string, JSONValue>>> {
   const { db, tempDir, cleanup } = await initTestDbService();
   const origFetch = globalThis.fetch;
-  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = ((input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     const catalog = answerModelsRequest(input);
     if (catalog) return Promise.resolve(catalog);
     const body = JSON.parse(String(init?.body)) as { messages: JSONValue[] };
@@ -569,5 +671,44 @@ Deno.test({
       content: [{ type: "text", text: "hi", cache_control: { type: "ephemeral" } }],
     }]);
     assertEquals(events.some((event) => event.cache_read_tokens === 700 && event.model === CACHE_LISTED_MODEL), true);
+  },
+});
+
+Deno.test({
+  name:
+    "[integration] after the registry bootstrap and one provider creation, a failing models endpoint journals openrouter.capability_lookup.failed",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const { db, tempDir, cleanup } = await initTestDbService();
+    const clockOffset = { ms: 0 };
+    const realNow = Date.now;
+    using _clock = stub(Date, "now", () => realNow() + clockOffset.ms);
+    using _fetchStub = stub(globalThis, "fetch", () => Promise.resolve(new Response("down", { status: 500 })));
+    ProviderRegistry.clear();
+    try {
+      bootstrapProviderRegistry();
+      await withEnv(OPENROUTER_TEST_ENV, async () => {
+        const metadata = ProviderRegistry.getProviderMetadata(PROVIDER_OPENROUTER);
+        assert(metadata?.modelInfo);
+        assertEquals(await metadata.modelInfo(OPENROUTER_MODEL), undefined);
+        await db.waitForFlush();
+        assertEquals(
+          (await db.getActivitiesByActionTypeSafe(DomainEventType.OpenRouterCapabilityLookupFailed)).length,
+          0,
+        );
+
+        await ProviderFactory.create(openRouterConfig(tempDir), db, new EventLogger({ db }));
+        clockOffset.ms += LOOKUP_BACKOFF_PASSED_MS;
+        assertEquals(await metadata.modelInfo(OPENROUTER_MODEL), undefined);
+        await db.waitForFlush();
+        const rows = await db.getActivitiesByActionTypeSafe(DomainEventType.OpenRouterCapabilityLookupFailed);
+        assertEquals(rows.length, 1);
+        assertEquals(JSON.parse(rows[0].payload ?? "{}").model, OPENROUTER_MODEL);
+      });
+    } finally {
+      ProviderRegistry.clear();
+      await cleanup();
+    }
   },
 });

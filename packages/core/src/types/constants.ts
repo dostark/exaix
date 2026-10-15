@@ -82,6 +82,7 @@ export const OPENAI_COMPATIBLE_MAX_HISTORY_BYTES: number = configurable({
 
 // HTTP Status Codes
 export const HTTP_UNAUTHORIZED = 401;
+export const HTTP_PAYMENT_REQUIRED = 402;
 export const HTTP_FORBIDDEN = 403;
 export const HTTP_TOO_MANY_REQUESTS = 429;
 export const HTTP_SERVER_ERROR = 500;
@@ -854,6 +855,15 @@ export const DEFAULT_AI_RETRY_BACKOFF_BASE_MS: number = configurable({
   description: "Base backoff delay in milliseconds for AI retries",
   min: 100,
   max: 10_000,
+  swap: SwapClass.HOT,
+});
+export const DEFAULT_AI_RETRY_AFTER_MAX_MS: number = configurable({
+  key: "ai.retry.retry_after_max_ms",
+  default: 60_000,
+  type: ConfigValueType.NUMBER,
+  description: "Longest wait in milliseconds that a provider Retry-After value can impose before an AI retry",
+  min: 1000,
+  max: 3_600_000,
   swap: SwapClass.HOT,
 });
 export const DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS: number = configurable({
@@ -1824,6 +1834,17 @@ export const DEFAULT_SUBPROCESS_TIMEOUT_MS: number = configurable({
 });
 
 // Logging Defaults
+/** Maximum console characters per escaped event field before the length marker. */
+export const CONSOLE_PAYLOAD_VALUE_MAX_CHARS = 2_000;
+/** Radix and width for console Unicode control-character escapes. */
+export const CONSOLE_CONTROL_ESCAPE_RADIX = 16;
+export const CONSOLE_CONTROL_ESCAPE_WIDTH = 4;
+/** Readable console escapes for common whitespace controls. */
+export const CONSOLE_CONTROL_SHORT_ESCAPES: Readonly<Record<string, string>> = {
+  "\n": "\\n",
+  "\r": "\\r",
+  "\t": "\\t",
+};
 export const DEFAULT_LOG_LEVEL: string = configurable({
   key: "logging.level",
   default: LogLevel.INFO as string,

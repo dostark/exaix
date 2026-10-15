@@ -14,8 +14,14 @@
  */
 
 import type { ICallSite, IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
-import type { IGenerateResult } from "@exaix/ai/providers";
-import { COMPLEXITY_SOURCE_DEFAULT, EffortResolver, ProviderRegistry, resolveProviderType } from "@exaix/ai";
+import { type IGenerateResult, ModelProviderError } from "@exaix/ai/providers";
+import {
+  COMPLEXITY_SOURCE_DEFAULT,
+  EffortResolver,
+  ProviderRegistry,
+  readProviderModelInfo,
+  resolveProviderType,
+} from "@exaix/ai";
 import type { IEffortResolution, IEffortResolutionSignals, IEffortResolver, TaskComplexitySource } from "@exaix/ai";
 import { buildAgentEffortResolvedPayload } from "./effort_resolution_payload.ts";
 import { type IProjectedCallOptions, projectResolvedCallOptions } from "@exaix/ai";
@@ -441,8 +447,12 @@ export class AgentRunner implements IAgentRunner {
     this.effortResolver = this.config?.effortResolver ?? new EffortResolver();
     this.skillsService = ctx?.skills || this.config?.skillsService;
     this.disableSkills = this.config?.disableSkills ?? false;
+    // The provider layer owns HTTP retries, so a classified provider error is final here.
+    const providerErrorsAreFinal = { isPermanent: (error: Error) => error instanceof ModelProviderError };
     this.retryPolicy = this.config?.retryPolicyInstance ||
-      (this.config?.retryPolicy ? createRetryPolicy(this.config.retryPolicy) : createLLMRetryPolicy());
+      (this.config?.retryPolicy
+        ? createRetryPolicy(this.config.retryPolicy, providerErrorsAreFinal)
+        : createLLMRetryPolicy(providerErrorsAreFinal));
     this.outputValidator = this.config?.outputValidatorInstance || createOutputValidator({ autoRepair: true });
 
     // Set up retry logging
@@ -553,7 +563,7 @@ export class AgentRunner implements IAgentRunner {
       effort: m.effort,
       thinking: m.thinking,
     })) ?? [];
-    const resolution = this.resolveEffortAndThinking(blueprint, request, agentRole, skillFloors);
+    const resolution = await this.resolveEffortAndThinking(blueprint, request, agentRole, skillFloors);
     const projection = projectResolvedCallOptions(resolution, {
       binding: { effort: request.bindingEffort, thinking: request.bindingThinking },
       role: { effort: blueprint.effort, thinking: blueprint.thinking },
@@ -666,24 +676,25 @@ export class AgentRunner implements IAgentRunner {
     );
   }
 
-  private resolveEffortAndThinking(
+  private async resolveEffortAndThinking(
     blueprint: IBlueprint,
     request: IParsedRequest,
     agentRole: string,
     skillFloors: ReadonlyArray<{ skillId: string; effort?: EffortTier; thinking?: boolean }>,
-  ): IEffortResolution {
+  ): Promise<IEffortResolution> {
     const selectedModel = this.selectedModelIdentity();
     const providerType = selectedModel.providerType ?? resolveProviderType(selectedModel.provider);
     const providerMetadata = providerType !== undefined
       ? ProviderRegistry.getProviderMetadata(providerType)
       : undefined;
+    const modelInfo = await readProviderModelInfo(providerMetadata, selectedModel.model);
     const signals: IEffortResolutionSignals = {
       taskComplexity: request.taskComplexity ?? TaskComplexity.MEDIUM,
       complexitySource: request.taskComplexitySource ?? COMPLEXITY_SOURCE_DEFAULT,
       modelSize: blueprint.modelSize,
       providerType,
       model: selectedModel.model,
-      providerSupportsThinking: this.modelProvider.callCapabilities?.supportsThinking ??
+      providerSupportsThinking: modelInfo?.supportsThinking ?? this.modelProvider.callCapabilities?.supportsThinking ??
         providerMetadata?.supportsThinking === true,
       anthropicThinkingDefault: this.config?.context?.config.get().ai_anthropic?.thinking_default,
       skillFloors,
@@ -1597,10 +1608,14 @@ export class AgentRunner implements IAgentRunner {
 
     const selectedModel = this.selectedModelIdentity();
     const totalTokenEstimate = segments.reduce((sum, segment) => sum + segment.resultingTokenEstimate, 0);
+    const modelInfo = await readProviderModelInfo(
+      ProviderRegistry.getMetadataForInstance(selectedModel.provider),
+      selectedModel.model,
+    );
     const estimatedCostUsd = computeRegistryPredictedCost(selectedModel.provider, selectedModel.model, {
       promptTokens: totalTokenEstimate,
       completionTokens: 0,
-    });
+    }, modelInfo);
 
     return {
       segments,

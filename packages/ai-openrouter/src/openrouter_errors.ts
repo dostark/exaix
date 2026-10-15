@@ -12,8 +12,10 @@
 import { z } from "zod";
 import {
   AuthenticationError,
+  BillingError,
   ConnectionError,
   ModelProviderError,
+  ProviderTruncationError,
   RateLimitError,
   TimeoutError,
 } from "@exaix/ai/providers";
@@ -46,7 +48,7 @@ const DIGITS_ONLY = /^\d+$/;
 const HTTP_BAD_REQUEST = 400;
 
 /** Insufficient credits or a spent budget. Retrying the same request cannot succeed. */
-export class OpenRouterBillingError extends ModelProviderError {
+export class OpenRouterBillingError extends BillingError {
   readonly limitSource?: string;
   readonly limitUsd?: number;
   readonly spendUsd?: number;
@@ -98,7 +100,7 @@ export class OpenRouterRateLimitError extends RateLimitError {
 }
 
 /** The response ended at the token limit. The cap was spent before an answer began, or the answer is incomplete. */
-export class OpenRouterTruncationError extends ModelProviderError {
+export class OpenRouterTruncationError extends ProviderTruncationError {
   readonly completionTokens: Opt<number, Reason.OptionalContext>;
   readonly reasoningTokens: Opt<number, Reason.OptionalContext>;
 
@@ -131,6 +133,7 @@ const UpstreamNumber = z.number().optional().catch(undefined);
 /** Documented fields plus the routing markers seen on live 404 bodies. Markers are read for presence only. */
 const OpenRouterErrorEnvelopeSchema = z.object({
   error: z.object({
+    code: z.number().int().optional().catch(undefined),
     message: UpstreamString,
     metadata: z.object({
       error_type: UpstreamString,
@@ -149,6 +152,15 @@ const OpenRouterErrorEnvelopeSchema = z.object({
     }).optional().catch(undefined),
   }),
 });
+
+/** Reject an error envelope even when the gateway has already sent successful HTTP headers. */
+export function validateOpenRouterResponse<T>(response: T, providerId: string): T {
+  const parsed = OpenRouterErrorEnvelopeSchema.safeParse(response);
+  if (!parsed.success) return response;
+  const fallback = new ModelProviderError("OpenRouter returned an error body with HTTP 200", providerId);
+  if (parsed.data.error.code === undefined) throw fallback;
+  throw mapOpenRouterError(parsed.data.error.code, new Headers(), JSON.stringify(response), fallback);
+}
 
 interface IErrorDetail {
   message?: string;

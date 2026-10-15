@@ -11,13 +11,13 @@ Implementation reference data — edition tables, component status, scenario pac
 | **Interface**       | CLI + TUI (7 views)                                                       | + Web UI                                                                                                                                              | + Enhanced TUI (9 views)                                                        |
 | **Audit Database**  | SQLite (embedded)                                                         | PostgreSQL (append-only)                                                                                                                              | PostgreSQL + immudb (WORM)                                                      |
 | **MCP Support**     | Client only                                                               | + Server mode                                                                                                                                         | + Custom tool development                                                       |
-| **LLM Providers**   | Ollama, OpenAI, Anthropic, Google, Vertex AI, OpenRouter                  | OpenRouter (Team+ tier)                                                                                                                               | + Azure OpenAI, AWS Bedrock                                                     |
+| **LLM Providers**   | Ollama, OpenAI, Anthropic, Google, OpenRouter                             | + Vertex AI                                                                                                                                           | + Azure OpenAI, AWS Bedrock                                                     |
 | **Memory Banks**    | Basic (file-based)                                                        | + Full-text search                                                                                                                                    | + Vector search, knowledge graphs                                               |
 | **Collaboration**   | Single user                                                               | Multi-user (unlimited)                                                                                                                                | + RBAC, department isolation                                                    |
 | **Compliance**      | ❌                                                                        | ❌                                                                                                                                                    | ✅ EU AI Act, HIPAA, SOX, ISO 27001                                             |
 | **Cost Management** | Basic logs                                                                | Per-user budgets, alerts                                                                                                                              | Forecasting, anomaly detection                                                  |
 | **Symbol Graph**    | File-import relationships only                                            | Inherits Solo                                                                                                                                         | + Symbol-level reference edges, opt-in (`enable_symbol_level_dependency_graph`) |
-| **Model Registry**  | Static offline model list, per-size curated lists (`exactl config model`) | + Live self-updating catalog, benchmark-driven `best` ranking, multi-route pricing, admission control, cost-source accuracy (`exactl models refresh`) | Inherits Team unchanged (planned) + governance layer                            |
+| **Model Registry**  | Static entries, per-model metadata, curated lists (`exactl config model`) | + Live self-updating catalog, benchmark-driven `best` ranking, multi-route pricing, admission control, cost-source accuracy (`exactl models refresh`) | Inherits Team unchanged (planned) + governance layer                            |
 
 ---
 
@@ -658,6 +658,7 @@ Typed batch and call payloads for parallel dispatch are not available yet. Until
 | `ShutdownAutoApprovalStopped`            | `shutdown.auto_approval_stopped`              | Daemon                          |
 | `ShutdownDatabaseClosed`                 | `shutdown.database_closed`                    | Daemon                          |
 | `SafeErrorInternalDetails`               | `safe_error.internal_details`                 | Error Handling                  |
+| `ProviderRetryScheduled`                 | `provider.retry.scheduled`                    | LLM                             |
 | `LlmProviderInitialized`                 | `llm.provider.initialized`                    | LLM                             |
 | `LlmCallStarted`                         | `llm.call.started`                            | LLM                             |
 | `LlmCallCompleted`                       | `llm.call.completed`                          | LLM                             |
@@ -789,6 +790,36 @@ ORDER BY provider, model;
 rejection was enabled.
 
 ---
+
+## AI Provider Retry Configuration
+
+Provider transport retries run in the shared fetch layer. The attempt limit includes
+the first request. The compatible branch shares the retry loop and suppresses
+intermediate retry events.
+
+| Registered key                | Default   | Range              | Runtime behavior                                                                                                     |
+| ----------------------------- | --------- | ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `ai.retry.retry_after_max_ms` | 60,000 ms | 1,000–3,600,000 ms | Set as `ai_retry.retry_after_max_ms`. Caps the Retry-After contribution to a retry delay for every provider factory. |
+
+Per-provider retry budgets and delays use `ai_retry.providers.<provider>`;
+provider timeouts use `ai_timeout.providers.<provider>`. Provider constructors
+retain their own defaults when an override is absent. `ai_retry.providers.openrouter`
+applies to OpenRouter, and the Google and native OpenAI blocks apply the same way.
+Those two factories also pass `ai_endpoints.<provider>` and
+`ai_timeout.providers.<provider>` to their providers. The global
+`ai_retry.max_attempts` field controls fallback-chain creation rather than acting
+as a universal transport override.
+
+For errors carrying `retryAfterMs`, the scheduled delay is the greater of the
+exponential backoff and the capped Retry-After value. The cap applies to the
+Retry-After contribution; it does not cap a longer exponential backoff. Waits are
+abortable. Only OpenRouter errors carry `retryAfterMs`. A 429 reply from Anthropic,
+Google or OpenAI uses plain exponential backoff.
+
+`provider.retry.scheduled` has payload fields `provider`, `attempt` (the failed
+attempt, starting at 1), `max_attempts`, `delay_ms`, `error_type`, and optional
+`retry_after_ms`. The request trace is carried by the event envelope. A failed
+journal write does not fail the provider request.
 
 ## Parsing & Schema Layer — Key Modules
 

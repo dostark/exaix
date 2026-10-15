@@ -17,6 +17,82 @@
 import { assertAlmostEquals, assertEquals } from "@std/assert";
 import { computeRegistryPredictedCost } from "../src/registry_computed_cost.ts";
 
+Deno.test("a per-model price gives a predicted cost with separate input and output rates", () => {
+  assertEquals(
+    computeRegistryPredictedCost("openrouter", "vendor/catalog-model", {
+      promptTokens: 1_000_000,
+      completionTokens: 1_000_000,
+    }, { inputPerMtok: 3, outputPerMtok: 15 }),
+    18,
+  );
+  assertEquals(
+    computeRegistryPredictedCost("openrouter", "vendor/free-model", {
+      promptTokens: 1_000_000,
+      completionTokens: 1_000_000,
+    }, { inputPerMtok: 0, outputPerMtok: 0 }),
+    0,
+  );
+  assertEquals(
+    computeRegistryPredictedCost("openrouter", "vendor/unpriced-model", {
+      promptTokens: 1_000_000,
+      completionTokens: 1_000_000,
+    }, {}),
+    undefined,
+  );
+});
+
+Deno.test("the static overlay takes precedence over a supplied catalog price", () => {
+  assertEquals(
+    computeRegistryPredictedCost("anthropic", "claude-sonnet-5", {
+      promptTokens: 1_000_000,
+      completionTokens: 1_000_000,
+    }, { inputPerMtok: 100, outputPerMtok: 100 }),
+    18,
+  );
+});
+
+Deno.test("partial catalog prices do not turn unpriced token usage into free usage", () => {
+  const model = "vendor/partial-price";
+  assertEquals(
+    computeRegistryPredictedCost("openrouter", model, {
+      promptTokens: 1_000_000,
+      completionTokens: 1,
+    }, { outputPerMtok: 15 }),
+    undefined,
+  );
+  assertEquals(
+    computeRegistryPredictedCost("openrouter", model, {
+      promptTokens: 1,
+      completionTokens: 1_000_000,
+    }, { inputPerMtok: 3 }),
+    undefined,
+  );
+  assertEquals(
+    computeRegistryPredictedCost("openrouter", model, {
+      promptTokens: 1_000_000,
+      completionTokens: 0,
+    }, { inputPerMtok: 3 }),
+    3,
+  );
+  assertEquals(
+    computeRegistryPredictedCost("openrouter", model, {
+      promptTokens: 0,
+      completionTokens: 1_000_000,
+    }, { outputPerMtok: 15 }),
+    15,
+  );
+  for (const cached of [{ cacheReadTokens: 1_000_000 }, { cacheCreationTokens: 1_000_000 }]) {
+    assertEquals(
+      computeRegistryPredictedCost("openrouter", model, {
+        promptTokens: 0,
+        completionTokens: 0,
+        ...cached,
+      }, { outputPerMtok: 15 }),
+      undefined,
+    );
+  }
+});
+
 Deno.test("[RegistryComputedPredictedCost] a known model's cost matches promptTokens*inputRate + completionTokens*outputRate, not the old flat rate", () => {
   // anthropic:claude-sonnet-5 in static_overlay.ts: inputPerMtok 3.00, outputPerMtok 15.00.
   const cost = computeRegistryPredictedCost("anthropic", "claude-sonnet-5", {

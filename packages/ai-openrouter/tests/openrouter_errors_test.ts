@@ -11,9 +11,11 @@ import { assert, assertEquals, assertFalse, assertStrictEquals } from "@std/asse
 import type { JSONValue } from "@exaix/core";
 import {
   AuthenticationError,
+  BillingError,
   ConnectionError,
   isRetryable,
   ModelProviderError,
+  ProviderTruncationError,
   RateLimitError,
   TimeoutError,
 } from "@exaix/ai/providers";
@@ -23,6 +25,7 @@ import {
   OpenRouterBillingError,
   OpenRouterGuardrailError,
   OpenRouterRoutingError,
+  OpenRouterTruncationError,
 } from "@exaix/ai-openrouter";
 import { mapOpenRouterError } from "../src/openrouter_errors.ts";
 
@@ -30,6 +33,31 @@ const PROVIDER_ID = "openrouter-test";
 const ROUTING_MESSAGE = "No endpoints found that can handle the requested parameters.";
 const RAW_SENTINEL = "RAW-UPSTREAM-PAYLOAD-SENTINEL";
 const FLAGGED_SENTINEL = "FLAGGED-USER-INPUT-SENTINEL";
+
+Deno.test("OpenRouterBillingError is a BillingError and preserves its message and billing fields", () => {
+  const detail = { limitSource: "key_limit", limitUsd: 5, spendUsd: 6, resetsAt: "fixture-reset", scope: "key" };
+  const error = new OpenRouterBillingError("fixture billing message", PROVIDER_ID, detail);
+  assert(error instanceof BillingError);
+  assertEquals(error.name, "OpenRouterBillingError");
+  assertEquals(error.message, "fixture billing message");
+  assertEquals(error.provider, PROVIDER_ID);
+  assertEquals([error.limitSource, error.limitUsd, error.spendUsd, error.resetsAt, error.scope], Object.values(detail));
+  assertEquals(isRetryable(error), false);
+});
+
+Deno.test("OpenRouterTruncationError is a ProviderTruncationError and preserves its token fields and message", () => {
+  const error = new OpenRouterTruncationError(PROVIDER_ID, 1000, 1000);
+  assert(error instanceof ProviderTruncationError);
+  assertEquals(error.name, "OpenRouterTruncationError");
+  assertEquals(error.provider, PROVIDER_ID);
+  assertEquals([error.completionTokens, error.reasoningTokens], [1000, 1000]);
+  assertEquals(
+    error.message,
+    "OpenRouter response was cut off at the max_tokens limit with no content " +
+      "(finish_reason=length, completion_tokens=1000, reasoning_tokens=1000). Raise max_tokens or lower the reasoning effort.",
+  );
+  assertEquals(isRetryable(error), false);
+});
 
 interface IEnvelopeInput {
   message?: string;

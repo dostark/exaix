@@ -3,7 +3,7 @@
  * @path packages/ai-openrouter/src/openrouter_factory.ts
  * @related-files ["packages/ai-openrouter/src/openrouter_provider.ts", "packages/ai-openrouter/src/constants.ts"]
  * @architectural-layer AI
- * @dependencies ["@exaix/ai", "@exaix/ai/types.ts"]
+ * @dependencies ["@exaix/ai", "@exaix/ai/types.ts", "@exaix/core"]
  * @description Factory for creating OpenRouter provider instances using API-key auth.
  * Honours the [ai_openrouter] config block (api_key_env, site_name, site_url).
  */
@@ -12,18 +12,52 @@ import { AbstractKeyBasedProviderFactory } from "@exaix/ai/factories/abstract_pr
 import { ProviderFactoryError } from "@exaix/ai/errors.ts";
 import { getApiKeyWithOptionalPersistence } from "@exaix/ai/provider_api_key.ts";
 import type { IModelProvider, IResolvedProviderOptions } from "@exaix/ai/types.ts";
+import type { IProviderModelInfo } from "@exaix/ai";
+import { SecureCredentialStore } from "@exaix/core";
 import {
   DEFAULT_OPENROUTER_API_KEY_ENV,
   DEFAULT_OPENROUTER_ENDPOINT,
   DEFAULT_OPENROUTER_TIMEOUT_MS,
+  OPENROUTER_MODEL_INFO_TIMEOUT_MS,
   PROVIDER_OPENROUTER,
 } from "./constants.ts";
-import { deriveOpenRouterModelsUrl, OpenRouterModelCapabilities } from "./openrouter_model_capabilities.ts";
+import {
+  deriveOpenRouterModelsUrl,
+  type IOpenRouterModelCapabilitiesOptions,
+  OpenRouterModelCapabilities,
+} from "./openrouter_model_capabilities.ts";
 import { OpenRouterProvider } from "./openrouter_provider.ts";
 
 export class OpenRouterProviderFactory extends AbstractKeyBasedProviderFactory {
+  private readonly lookups = new Map<string, OpenRouterModelCapabilities>();
+  private modelLookup: OpenRouterModelCapabilities | undefined;
+
   constructor() {
     super(DEFAULT_OPENROUTER_API_KEY_ENV);
+  }
+
+  /** Reads catalog metadata without persisting credentials or creating a provider. */
+  async modelInfo(model: string): Promise<IProviderModelInfo | undefined> {
+    if (!this.modelLookup) {
+      const apiKey = Deno.env.get(DEFAULT_OPENROUTER_API_KEY_ENV) ||
+        await SecureCredentialStore.get(DEFAULT_OPENROUTER_API_KEY_ENV);
+      if (!apiKey) return undefined;
+      this.modelLookup = this.lookupFor({
+        apiKey,
+        modelsUrl: deriveOpenRouterModelsUrl(DEFAULT_OPENROUTER_ENDPOINT),
+        providerId: PROVIDER_OPENROUTER,
+        timeoutMs: OPENROUTER_MODEL_INFO_TIMEOUT_MS,
+      });
+    }
+    const entry = await this.modelLookup.getEntry(model);
+    if (!entry) return undefined;
+    return {
+      ...(entry.contextLength !== undefined ? { contextWindow: entry.contextLength } : {}),
+      ...entry.pricing,
+      supportsThinking: entry.reasoning !== undefined || entry.supportedParameters.includes("reasoning"),
+      supportsEffort: (entry.reasoning?.supportedEfforts.length ?? 0) > 0 ||
+        entry.supportedParameters.includes("reasoning_effort"),
+    };
   }
 
   async create(options: IResolvedProviderOptions): Promise<IModelProvider> {
@@ -37,24 +71,37 @@ export class OpenRouterProviderFactory extends AbstractKeyBasedProviderFactory {
     }
 
     const id = this.generateId(PROVIDER_OPENROUTER, options.model, options.id);
+    this.modelLookup = this.lookupFor({
+      apiKey,
+      modelsUrl: deriveOpenRouterModelsUrl(options.baseUrl || DEFAULT_OPENROUTER_ENDPOINT),
+      providerId: id,
+      timeoutMs: Math.min(options.timeoutMs || DEFAULT_OPENROUTER_TIMEOUT_MS, OPENROUTER_MODEL_INFO_TIMEOUT_MS),
+      logger: options.logger,
+    });
+    // A lookup that modelInfo built earlier has no journal until a provider supplies one.
+    if (options.logger) this.modelLookup.attachLogger(options.logger);
     return new OpenRouterProvider({
       apiKey,
       model: options.model,
       baseUrl: options.baseUrl,
       id,
       logger: options.logger,
+      config: options.config,
       timeoutMs: options.timeoutMs,
-      capabilities: new OpenRouterModelCapabilities({
-        apiKey,
-        modelsUrl: deriveOpenRouterModelsUrl(options.baseUrl || DEFAULT_OPENROUTER_ENDPOINT),
-        providerId: id,
-        timeoutMs: options.timeoutMs || DEFAULT_OPENROUTER_TIMEOUT_MS,
-        logger: options.logger,
-      }),
+      capabilities: this.modelLookup,
       siteName: openrouterConfig?.site_name,
       siteUrl: openrouterConfig?.site_url,
       routing: openrouterConfig?.routing,
       cacheControl: openrouterConfig?.cache_control,
     });
+  }
+
+  private lookupFor(options: IOpenRouterModelCapabilitiesOptions): OpenRouterModelCapabilities {
+    let lookup = this.lookups.get(options.modelsUrl);
+    if (!lookup) {
+      lookup = new OpenRouterModelCapabilities(options);
+      this.lookups.set(options.modelsUrl, lookup);
+    }
+    return lookup;
   }
 }

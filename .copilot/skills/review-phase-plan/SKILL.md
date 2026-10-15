@@ -270,6 +270,11 @@ a core dependency → revision); ⚪ CLAIM-AMBIGUOUS. Trace constructor-injectio
 the signature + every `new X` batch of call-sites; verify param order/type/optionality.
 Phase 3 proves files/symbols exist; 2B proves the code WORKS THE WAY the plan thinks.
 
+Configuration claims need the same trace. For every config key or block the plan says reaches a
+component, name the schema field, the factory that passes it, and the consumer that reads it. Grep
+each one. Require a planned test that sets a non-default value through the real factory and
+observes the effect. A test must also name the observable and a fixture that can produce it.
+
 ### Phase 2C — Side-Effect Audit (codebase-level)
 
 Scan each touched method for: `Deno.env.get/set/delete` (request-time writes = gap;

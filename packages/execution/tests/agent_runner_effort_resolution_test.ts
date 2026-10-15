@@ -13,12 +13,15 @@
  */
 
 import { assertEquals } from "@std/assert";
+import { stub } from "@std/testing/mock";
+import { ProviderRegistry } from "@exaix/ai";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { AgentRunner } from "@exaix/execution";
 import type { IBlueprint, IParsedRequest } from "@exaix/execution";
-import { TaskComplexity } from "@exaix/core";
+import { PricingTier, ProviderCostTier, TaskComplexity } from "@exaix/core";
 
 const WELL_FORMED_RESPONSE = "<thought>ok</thought><content>done</content>";
 
@@ -29,7 +32,7 @@ function makeCapturingProvider(): {
   const options: IModelOptions[] = [];
   const provider: IModelProvider = {
     id: "capturing-mock",
-    generate(_prompt: string, opts?: IModelOptions): Promise<IGenerateResult> {
+    generate(_prompt: string, opts?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
       options.push(opts ?? {});
       return Promise.resolve({
         content: WELL_FORMED_RESPONSE,
@@ -46,7 +49,7 @@ function makeCapturingProvider(): {
 async function runResolved(
   blueprint: Partial<IBlueprint>,
   request: Partial<IParsedRequest>,
-  selectedModel?: { provider: string; model: string },
+  selectedModel?: Opt<{ provider: string; model: string }, Reason.OptionalContext>,
 ): Promise<IModelOptions[]> {
   const { provider, options } = makeCapturingProvider();
   const runner = new AgentRunner(provider, {
@@ -59,6 +62,26 @@ async function runResolved(
     undefined,
   );
   return options;
+}
+
+for (const supportsThinking of [true, false]) {
+  Deno.test(`[AgentRunner] auto thinking consumes the selected model's ${supportsThinking} catalog capability`, async () => {
+    using _metadataStub = stub(ProviderRegistry, "getProviderMetadata", () => ({
+      name: "openrouter",
+      description: "Catalog fixture",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.PAID,
+      pricingTier: PricingTier.MEDIUM,
+      strengths: [],
+      supportsThinking: !supportsThinking,
+      modelInfo: () => Promise.resolve({ supportsThinking }),
+    }));
+    const options = await runResolved({ thinking: "auto" }, { taskComplexity: TaskComplexity.COMPLEX }, {
+      provider: "openrouter",
+      model: "vendor/catalog-model",
+    });
+    assertEquals(options[0].thinking, supportsThinking ? true : undefined);
+  });
 }
 
 Deno.test("[AgentRunner] effort: auto + COMPLEX + claude-cli planning provider resolves to high at generate()", async () => {

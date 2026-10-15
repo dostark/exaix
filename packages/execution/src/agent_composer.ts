@@ -83,6 +83,7 @@ import {
   EFFORT_MAX_TOKENS,
   EffortResolver,
   ProviderRegistry,
+  readProviderModelInfo,
   resolveProviderType,
   taskComplexityFromAnalysis,
 } from "@exaix/ai";
@@ -539,12 +540,13 @@ export class AgentComposer {
   /** Resolves the execution call's declaration-time effort/thinking (GAP-3): request
    *  declaration wins over the blueprint's; TaskComplexity comes from the persisted
    *  request_analysis (the plan path may differ — Step 2's documented divergence). */
-  private resolveStepEffort(
+  private async resolveStepEffort(
     blueprint: IAgentFileBlueprint,
     options: IAgentExecutionOptions,
-  ): IEffortResolution {
+  ): Promise<IEffortResolution> {
     const providerType = resolveProviderType(blueprint.provider);
     const metadata = providerType !== undefined ? ProviderRegistry.getProviderMetadata(providerType) : undefined;
+    const modelInfo = await readProviderModelInfo(metadata, blueprint.model);
     const analysis = options.request_analysis as IRequestAnalysis | undefined;
     return this.effortResolver.resolve(
       {
@@ -558,7 +560,7 @@ export class AgentComposer {
         modelSize: blueprint.modelSize,
         providerType,
         model: blueprint.model,
-        providerSupportsThinking: this.provider?.callCapabilities?.supportsThinking ??
+        providerSupportsThinking: modelInfo?.supportsThinking ?? this.provider?.callCapabilities?.supportsThinking ??
           metadata?.supportsThinking === true,
         anthropicThinkingDefault: this.config.ai_anthropic?.thinking_default,
         skillFloors: this.options?.matchedSkillFloors ?? [],
@@ -840,7 +842,7 @@ export class AgentComposer {
     pinnedSkills: Opt<IPinnedSkillPrompt | null, Reason.OptionalContext>,
     strategyName: ExecutionStrategyName,
   ): Promise<void> {
-    const effortResolution = this.resolveStepEffort(blueprint, options);
+    const effortResolution = await this.resolveStepEffort(blueprint, options);
     const projection = projectResolvedCallOptions(effortResolution, {
       request: this.options?.requestDeclaration,
       role: { effort: blueprint.effort, thinking: blueprint.thinking },

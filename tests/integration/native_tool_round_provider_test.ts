@@ -133,6 +133,36 @@ for (const preset of LLM_TEST_PRESETS) {
       traceId: `trace-round-${preset.id}-${traceSuffix}`,
     });
 
+  if (["anthropic", "google", "openai", "openrouter"].includes(preset.id)) {
+    groupedCase(`the final planning request for ${preset.id} follows the decided tools contract`, async (family) => {
+      const first = family.roundResponse(ONE_CALL, modelId);
+      const run = await runPreset("final-contract", [first.body, family.finalResponse("final plan", modelId)], 2);
+      assertEquals(run.requests.length, 2);
+      assertEquals(run.registry.calls, ["read_file:@fixture/a.ts"]);
+      const finalRequest = run.requests[1]!;
+      const body: JSONObject = JSON.parse(JSON.stringify(finalRequest));
+      assertEquals(
+        body.tools,
+        preset.id === "anthropic"
+          ? [{
+            name: "read_file",
+            description: "Read a file",
+            input_schema: { type: "object", properties: { path: { type: "string" } } },
+          }]
+          : undefined,
+        "legacy Anthropic replay retains definitions; final snapshot rounds omit them",
+      );
+      assertEquals(
+        body.tool_choice,
+        preset.id === "anthropic" ? { type: "none" } : preset.id === "openrouter" ? "none" : undefined,
+      );
+      if (preset.id === "google") assertEquals(body.toolConfig, { functionCallingConfig: { mode: "NONE" } });
+      assertEquals(family.replayedAssistant(finalRequest), first.assistant);
+      assertEquals(family.replayedResults(finalRequest), [RESULT_A]);
+      assertEquals(run.final, "final plan");
+    });
+  }
+
   Deno.test({
     name: name("the boot registration declares grouped replay for the bound provider"),
     ignore: !preset.groupedReplay,

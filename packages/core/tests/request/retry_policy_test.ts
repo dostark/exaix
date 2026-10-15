@@ -343,3 +343,34 @@ Deno.test("[RetryPolicy] tracks timing correctly", async () => {
 
   assertGreater(result.totalTimeMs, 100);
 });
+
+Deno.test("[RetryPolicy] an error matched by isPermanent is not retried and does not raise temperature", async () => {
+  class FinalError extends Error {}
+  const temperatures: number[] = [];
+  const policy = new RetryPolicy(
+    { maxRetries: 3, initialDelayMs: 1, jitterFactor: 0, temperatureIncrement: 0.1, maxTemperature: 1 },
+    { isPermanent: (error) => error instanceof FinalError },
+  );
+  const result = await policy.execute(({ temperature }) => {
+    temperatures.push(temperature);
+    return Promise.reject(new FinalError("HTTP 503 rate limit try again"));
+  });
+  assertEquals(result.success, false);
+  assertEquals(result.totalAttempts, 1);
+  assertEquals(temperatures.length, 1);
+});
+
+Deno.test("[RetryPolicy] an error that isPermanent does not match is still retried", async () => {
+  class FinalError extends Error {}
+  let calls = 0;
+  const policy = new RetryPolicy(
+    { maxRetries: 3, initialDelayMs: 1, jitterFactor: 0 },
+    { isPermanent: (error) => error instanceof FinalError },
+  );
+  const result = await policy.execute(() => {
+    calls++;
+    return calls < 2 ? Promise.reject(new Error("rate limit")) : Promise.resolve("ok");
+  });
+  assertEquals(result.success, true);
+  assertEquals(calls, 2);
+});

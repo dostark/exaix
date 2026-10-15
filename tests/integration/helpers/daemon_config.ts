@@ -206,7 +206,7 @@ export function watchChildExit(proc: Deno.ChildProcess): Promise<IDaemonExit> {
 
 /** Max activity rowid in the workspace journal, or 0 when the DB or table is absent. Read
  *  before a boot so a repeated boot in one workspace waits for a NEW daemon.ready row. */
-function journalMaxRowid(journalPath: string): number {
+export function journalMaxRowid(journalPath: string): number {
   try {
     const db = new Database(journalPath, { readonly: true });
     try {

@@ -13,6 +13,7 @@
  */
 
 import { assert, assertEquals, assertRejects } from "@std/assert";
+import { BillingError } from "@exaix/ai/providers";
 import { handleProviderResponse, type ProviderErrorMapper as ErrorMapper } from "../src/provider_common_utils.ts";
 import {
   AuthenticationError,
@@ -23,6 +24,38 @@ import {
 } from "../src/providers/common.ts";
 
 const PROVIDER_ID = "anthropic-test";
+
+const BILLING_SENTINEL = "remote-billing-detail";
+Deno.test("a 402 body maps to BillingError for Anthropic, Google, OpenAI, OpenRouter, openai-chat and DeepSeek", async () => {
+  for (const provider of ["anthropic", "google", "openai", "openrouter", "openai-chat", "deepseek"]) {
+    const error = await assertRejects(
+      () => handleProviderResponse(anthropicErrorResponse(402, "api_error", BILLING_SENTINEL), provider),
+      BillingError,
+    );
+    assertEquals(error.provider, provider);
+    assertEquals(isRetryable(error), false);
+  }
+});
+
+Deno.test("the compatible branch message stays HTTP 402 for typed, plain and malformed remote bodies", async () => {
+  for (
+    const body of [
+      JSON.stringify({ error: { type: "api_error", message: BILLING_SENTINEL } }),
+      BILLING_SENTINEL,
+      "{",
+    ]
+  ) {
+    const error = await assertRejects(
+      () =>
+        handleProviderResponse(new Response(body, { status: 402 }), "openai-chat", undefined, undefined, {
+          exposeRemoteErrorText: false,
+        }),
+      BillingError,
+    );
+    assertEquals(error.message, "HTTP 402");
+    assertEquals(isRetryable(error), false);
+  }
+});
 
 function anthropicErrorResponse(status: number, errorType: string, message: string): Response {
   return new Response(

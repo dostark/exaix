@@ -149,10 +149,16 @@ constrained output. A done step does not prove an outcome — if an outcome can 
 every criterion passes, it needs its own trace + probe. A tracked limitation stays a gap if
 it prevents a required outcome.
 
+A step that relaxes a filter, guard or default (an unknown value passes, a missing field is
+allowed) needs a probe over every registered subject. List the providers, tools or roles from
+the real bootstrap and record which ones newly pass. A rule written for one subject usually
+applies to all of them.
+
 ### Phase 2 — Implementation Verification
 
 Every completed step: verify the implementation exists, the planned tests exist and pass,
-and each criterion is met against real code. Every incomplete step: check it wasn't
+and each criterion is met against real code. When a full-suite run listed failures, classify
+each one at the phase's base commit, not at HEAD without the latest step. Every incomplete step: check it wasn't
 implemented anyway with the plan un-updated (🔵 Conceptual).
 
 ### Phase 2a — Semantic Value Verification
@@ -255,7 +261,9 @@ Append using exactly:
 ## Post-Gap Analysis — <ISO date> — Verdict: ⚠️ GAPS FOUND / ✅ IMPLEMENTATION COMPLETE
 
 <!-- GAP-N numbering is scoped to THIS Post-Gap section; a pre-existing Pre-Gap section's
-     GAP-1..GAP-M is a separate numbering scope — do not renumber or continue it. -->
+     GAP-1..GAP-M is a separate numbering scope — do not renumber or continue it. When the doc
+     already has a Pre-Gap section, write this section's ids as PG-N (PG-1, "Remediate PG-1"),
+     so a grep for one id has one meaning. -->
 
 ### Required Outcome & Falsification Matrix
 

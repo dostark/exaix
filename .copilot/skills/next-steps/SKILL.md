@@ -89,6 +89,9 @@ RED phase
    4. Add the module-header JSDoc: `/** @module XxxTest @path tests/... @description ... */`.
    5. Write all planned tests importing the not-yet-existing source so `deno check`/`test`
       fails with TS2307.
+   5a. Right after writing the tests, run `deno task check:style` and read only the lines for the new
+       files, then stage them and run `deno task check:ste100-comments:staged`. Double casts, `Record<string,
+       unknown>` and comments over 20 words then surface now, not at the final CI check.
    6. Confirm RED: `deno test --allow-all <test-file>` errors.
 
 GREEN phase
@@ -120,7 +123,9 @@ VERIFY phase — value correctness, wiring, consumers, conventions
       parameter the step adds or relies on, grep the production call-site and confirm
       production supplies it. A test that injects the dependency proves nothing about
       production, and a caller that omits it leaves the feature dead.
-  12. Trace every new output field to a consumer. Zero readers = dead data. Wire check:
+  12. Trace every new output field and every configuration input to a consumer. Zero readers = dead data. For
+      each config key or block the step says reaches a component, grep the factory that passes it and test a
+      non-default value through the real factory. A key that is registered but never read is dead too. Wire check:
       PRESENCE ≠ PROPAGATION — a dependency name appearing in a call site is not wiring;
       verify the value actually flows and is read (storage proof ≠ consumption proof), and
       flag a STORED-BUT-NEVER-READ field.
@@ -170,6 +175,12 @@ REFACTOR + CI gates
       successfully. Fix failures with focused tests; rerun the required suite after
       fixes before marking the step complete. Reuse the passing result for the commit
       unless subsequent changes require another run.
+      A failure you want to call pre-existing must reproduce at the phase's base commit:
+      `git worktree add --detach <dir> <base-commit>`, run the test there, then remove the
+      worktree. Stashing only the current step proves nothing, because earlier steps of the
+      same phase stay in the tree. A step closed without a full run (for example by a user
+      instruction to use focused suites) may own the next full run's failures. Treat them as
+      its own until the base commit says otherwise, and record that commit in the validation note.
 
 Planning doc update
   22a. **Execute every test the step implements** before marking anything done.

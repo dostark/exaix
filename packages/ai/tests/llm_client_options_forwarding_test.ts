@@ -6,6 +6,11 @@
  * @related-files [packages/ai/src/llm_client.ts]
  */
 import { assertEquals } from "@std/assert";
+import { stub } from "@std/testing/mock";
+import { PricingTier, ProviderCostTier } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
+import { ProviderRegistry } from "../src/provider_registry.ts";
+import { EffortResolver } from "../src/effort_resolver.ts";
 import { LlmClient } from "../src/llm_client.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas";
 import type { IModelProvider } from "../src/types.ts";
@@ -36,7 +41,7 @@ let lastGenerateOptions: ICaptureOptions | undefined;
 
 const capturingProvider: IModelProvider = {
   id: "capture",
-  generate(_prompt: string, _options?: ICaptureOptions): Promise<IGenerateResult> {
+  generate(_prompt: string, _options?: Opt<ICaptureOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
     lastGenerateOptions = _options;
     return Promise.resolve({
       content: '{"reasoning":"done","action":{"type":"complete","output":"ok"}}',
@@ -92,3 +97,39 @@ Deno.test("[step132.5] reasonNextAction with no options field is backward compat
   });
   assertEquals(lastGenerateOptions, undefined);
 });
+
+for (const supportsThinking of [true, false]) {
+  Deno.test(`LlmClient uses per-model thinking ${supportsThinking} for the selected model`, async () => {
+    const models: string[] = [];
+    const observed: boolean[] = [];
+    using _metadata = stub(ProviderRegistry, "getMetadataForInstance", () => ({
+      name: "openrouter",
+      description: "fixture",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.PAID,
+      pricingTier: PricingTier.MEDIUM,
+      strengths: [],
+      supportsThinking: !supportsThinking,
+      modelInfo: (model: string) => {
+        models.push(model);
+        return Promise.resolve({ supportsThinking });
+      },
+    }));
+    const resolve = EffortResolver.prototype.resolve;
+    using _resolve = stub(EffortResolver.prototype, "resolve", function (declarations, signals) {
+      observed.push(signals.providerSupportsThinking);
+      return resolve.call(this, declarations, signals);
+    });
+    const client = new LlmClient(undefined, capturingProvider);
+    await client.reasonNextAction({
+      agent_role: { ...mockAgentRole, model: "openrouter:vendor/catalog-model", thinking: "auto" },
+      stepObjective: "test",
+      accumulatedContext: "",
+      availableTools: mockTools as never,
+      iteration: 1,
+      maxIterations: 3,
+    });
+    assertEquals(observed, [supportsThinking]);
+    assertEquals(models, ["vendor/catalog-model"]);
+  });
+}

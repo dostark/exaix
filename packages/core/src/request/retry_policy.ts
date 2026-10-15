@@ -60,6 +60,12 @@ export interface IRetryPolicy {
   setOnRetry(callback: RetryEventCallback): this;
 }
 
+/** Behavior hooks of a RetryPolicy that the plain config cannot hold. */
+export interface IRetryPolicyOptions {
+  /** True for an error that must not be retried, whatever its type name or message says. */
+  isPermanent?: (error: Error) => boolean;
+}
+
 /** Error types that should trigger a retry. */
 export const RETRYABLE_ERROR_TYPES: string[] = [
   "NetworkError",
@@ -135,9 +141,14 @@ export type IRetryPolicyConfig = z.infer<typeof RetryPolicyConfigSchema>;
 export class RetryPolicy implements IRetryPolicy {
   private config: IRetryPolicyConfig;
   private onRetry?: RetryEventCallback;
+  private readonly isPermanent?: (error: Error) => boolean;
 
-  constructor(config?: Opt<Partial<IRetryPolicyConfig>, Reason.SensibleDefault>) {
+  constructor(
+    config?: Opt<Partial<IRetryPolicyConfig>, Reason.SensibleDefault>,
+    options?: Opt<IRetryPolicyOptions, Reason.OptionalInput>,
+  ) {
     this.config = RetryPolicyConfigSchema.parse(config || {});
+    this.isPermanent = options?.isPermanent;
   }
 
   /**
@@ -270,6 +281,7 @@ export class RetryPolicy implements IRetryPolicy {
    * Check if an error should trigger a retry
    */
   isRetryable(error: Error): boolean {
+    if (this.isPermanent?.(error)) return false;
     const errorType = error.constructor.name;
     const errorMessage = error.message.toLowerCase();
 
@@ -308,14 +320,15 @@ export class RetryPolicy implements IRetryPolicy {
  */
 export function createRetryPolicy(
   config?: Opt<Partial<IRetryPolicyConfig>, Reason.FactoryPreset>,
+  options?: Opt<IRetryPolicyOptions, Reason.OptionalInput>,
 ): RetryPolicy {
-  return new RetryPolicy(config);
+  return new RetryPolicy(config, options);
 }
 
 /**
  * Create a RetryPolicy optimized for LLM operations
  */
-export function createLLMRetryPolicy(): RetryPolicy {
+export function createLLMRetryPolicy(options?: Opt<IRetryPolicyOptions, Reason.OptionalInput>): RetryPolicy {
   return new RetryPolicy({
     maxRetries: 3,
     initialDelayMs: 1000,
@@ -324,7 +337,7 @@ export function createLLMRetryPolicy(): RetryPolicy {
     jitterFactor: 0.2,
     temperatureIncrement: 0.1,
     maxTemperature: 1.2,
-  });
+  }, options);
 }
 
 /**

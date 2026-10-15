@@ -100,6 +100,12 @@ export const OPENROUTER_CAPABILITY_MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
 /** Minimum gap between capability lookups after a failure. */
 export const OPENROUTER_CAPABILITY_FAILURE_BACKOFF_MS = 60_000;
 
+/** Bounds catalog reads independently of the generation timeout. */
+export const OPENROUTER_MODEL_INFO_TIMEOUT_MS = 5_000;
+
+/** Converts catalog prices per token to prices per million tokens. */
+export const OPENROUTER_TOKENS_PER_MTOK = 1_000_000;
+
 /** HTTP statuses that the OpenRouter error mapper branches on, beyond the shared 401, 403 and 429. */
 export const OPENROUTER_HTTP_STATUS = {
   PAYMENT_REQUIRED: 402,
@@ -137,10 +143,6 @@ export const PROVIDER_OPENROUTER_CAPABILITIES = ["chat", "multi-model"] as const
 export const PROVIDER_OPENROUTER_STRENGTHS = ["model-variety", "auto-fallback", "unified-billing"] as const;
 export const PROVIDER_OPENROUTER_COST_TIER = ProviderCostTier.PAID;
 
-export const OPENROUTER_CONTEXT_WINDOW = 200_000;
-/** Ranking estimate for provider selection, not a price. The cost tracker rate is a separate zero sentinel. */
-export const OPENROUTER_COST_PER_MTok = 3;
-
 /**
  * Estimator model for each OpenRouter tokenizer family that has a matching estimator tokenizer.
  * Every other family keeps the configured model id, and the estimator falls back to characters per token.
@@ -157,10 +159,6 @@ export const OPENROUTER_PROVIDER_METADATA = {
   capabilities: PROVIDER_OPENROUTER_CAPABILITIES,
   costTier: PROVIDER_OPENROUTER_COST_TIER,
   strengths: PROVIDER_OPENROUTER_STRENGTHS,
-  supportsThinking: true,
-  supportsEffort: true,
-  contextWindow: OPENROUTER_CONTEXT_WINDOW,
-  costPerMtok: OPENROUTER_COST_PER_MTok,
 } as const;
 
 export const OPENROUTER_DEFAULTS: IProviderDefaults = {

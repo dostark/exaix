@@ -1,8 +1,16 @@
 # @exaix/model-registry
 
-Solo-tier Model Registry floor — an offline, zero-network, zero-DB implementation of
-`IModelRegistry` that resolves models using the `ProviderRegistry`, `MODEL_CONTEXT_WINDOWS`
-constants, and a static pricing overlay.
+Solo-tier Model Registry floor — an implementation of `IModelRegistry` that uses
+`ProviderRegistry`, static context windows, and a static pricing overlay without a
+database. Context-window reads prefer the static overlay, then static context windows,
+then optional provider model metadata, then provider-level metadata. OpenRouter's
+provider metadata can read its cached models endpoint, with a five-second request
+limit. Lookup failure uses the provider-level fallback.
+
+Capability profiles and model entries also read per-model thinking, effort and input
+prices before provider-level values. Static prices retain precedence. Catalog prices
+have `endpoint` provenance, while unavailable prices stay `unknown`. Cheapest routing
+orders known prices ahead of unknown prices.
 
 ## Source Files
 
@@ -14,8 +22,8 @@ constants, and a static pricing overlay.
 
 ## Dependencies
 
-- `@exaix/core/types` — `IModelRegistry`, `ICapabilityProfile`, `MODEL_CONTEXT_WINDOWS`
-- `@exaix/ai` — `ProviderRegistry`, `IProviderHealthChecker`
+- `@exaix/core/types` — `IModelRegistry`, `ICapabilityProfile`
+- `@exaix/ai` — `ProviderRegistry`, `IProviderHealthChecker`, provider model metadata
 - `@exaix/schemas` — `getDefaultModels`
 
 ## Tests

@@ -6,7 +6,7 @@
  * @related-files [packages/ai/src/providers/base_provider.ts, packages/ai/src/provider_common_utils.ts]
  */
 
-import type { JSONValue } from "@exaix/core";
+import { DEFAULT_AI_RETRY_AFTER_MAX_MS, type JSONValue } from "@exaix/core";
 import type { IModelProvider, IProviderAssistantReplay, JSONObject } from "../types.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -86,6 +86,16 @@ export interface IProviderToolCall {
   rawArguments?: string;
 }
 
+/** Options of withRetry. onRetry runs before each wait, so a caller can journal the scheduled retry. */
+export interface IWithRetryOptions {
+  maxRetries: number;
+  baseDelayMs: number;
+  signal?: AbortSignal;
+  /** Longest wait that a Retry-After value can impose. Absent, DEFAULT_AI_RETRY_AFTER_MAX_MS applies. */
+  retryAfterMaxMs?: number;
+  onRetry?: (attempt: number, delayMs: number, error: Error) => void | Promise<void>;
+}
+
 /** One Anthropic `thinking` content block that must be replayed verbatim in a tool-use
  *  turn. `signature` is the opaque verification token Anthropic returns and requires to be
  *  passed back unchanged (modified/dropped thinking blocks are rejected with an HTTP 400). */
@@ -106,6 +116,24 @@ export class ModelProviderError extends Error {
   }
 }
 
+/** A billing failure that cannot succeed by retrying the same request. */
+export class BillingError extends ModelProviderError {
+  constructor(message: string, provider: string) {
+    super(message, provider);
+    this.name = "BillingError";
+    Object.setPrototypeOf(this, BillingError.prototype);
+  }
+}
+
+/** A provider response that stopped at its output limit without a usable answer. */
+export class ProviderTruncationError extends ModelProviderError {
+  constructor(message: string, provider: string) {
+    super(message, provider);
+    this.name = "ProviderTruncationError";
+    Object.setPrototypeOf(this, ProviderTruncationError.prototype);
+  }
+}
+
 /**
  * Error thrown when connection to the model provider fails.
  */
@@ -114,6 +142,18 @@ export class ConnectionError extends ModelProviderError {
     super(`Connection failed for provider '${provider}': ${message}`, provider);
     this.name = "ConnectionError";
     Object.setPrototypeOf(this, ConnectionError.prototype);
+  }
+}
+
+/**
+ * Error thrown when fetch itself fails before any HTTP status arrives (DNS, refused or reset connection).
+ * It is a ConnectionError, so the retry rule treats it like a 5xx.
+ */
+export class TransportError extends ConnectionError {
+  constructor(provider: string, message: string) {
+    super(provider, message);
+    this.name = "TransportError";
+    Object.setPrototypeOf(this, TransportError.prototype);
   }
 }
 
@@ -194,11 +234,14 @@ export function isRetryable(error: Error): boolean {
   return true; // Generic errors (like network) are retryable
 }
 
-/** Retries a promise-returning function with exponential backoff (maxRetries, baseDelayMs). */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  options: { maxRetries: number; baseDelayMs: number; signal?: AbortSignal },
-): Promise<T> {
+/** The Retry-After wait that a provider error carries, or undefined when it carries none. */
+export function retryAfterMsOf(error: Error): number | undefined {
+  const value = (error as Error & { retryAfterMs?: number }).retryAfterMs;
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+/** Retries with exponential backoff. A Retry-After value replaces a shorter backoff, up to the retryAfterMaxMs cap. */
+export async function withRetry<T>(fn: () => Promise<T>, options: IWithRetryOptions): Promise<T> {
   let lastError: Error | null = null;
   for (let i = 0; i < options.maxRetries; i++) {
     if (options.signal?.aborted) throw new DOMException("Provider request aborted", PROVIDER_ABORT_ERROR_NAME);
@@ -210,7 +253,12 @@ export async function withRetry<T>(
       if (!isRetryable(err)) throw error;
       lastError = err;
       if (i < options.maxRetries - 1) {
-        const delay = options.baseDelayMs * Math.pow(2, i);
+        const backoff = options.baseDelayMs * Math.pow(2, i);
+        const retryAfter = retryAfterMsOf(err);
+        const delay = retryAfter === undefined
+          ? backoff
+          : Math.max(backoff, Math.min(retryAfter, options.retryAfterMaxMs ?? DEFAULT_AI_RETRY_AFTER_MAX_MS));
+        await options.onRetry?.(i + 1, delay, err);
         await waitForRetry(delay, options.signal);
       }
     }

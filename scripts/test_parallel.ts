@@ -133,6 +133,10 @@ export type SequentialTest = z.input<typeof SequentialTestSchema>;
 
 /** Containered Batch files with their isolation reasons. Order is authoritative and feeds the Parallel Batch's ignore list. */
 export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
+  {
+    file: "tests/scenario_framework/tests/unit/compiled_flow_fixture_test.ts",
+    reasons: [IsolationReason.processEnv, IsolationReason.moduleCache],
+  },
   { file: "apps/exactl/tests/exactl_all_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "tests/integration/openrouter_adapter_wiring_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "tests/integration/openrouter_live_matrix_security_test.ts", reasons: [IsolationReason.processEnv] },
@@ -142,6 +146,11 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
   },
   { file: "apps/daemon/tests/dogfood_context_child_query_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "apps/daemon/tests/headless_session_launcher_test.ts", reasons: [IsolationReason.processEnv] },
+  {
+    file: "apps/daemon/tests/memory_maturation_cutover_live_test.ts",
+    reasons: [IsolationReason.pressure],
+    network: true,
+  },
   {
     file: "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
     reasons: [IsolationReason.pressure],

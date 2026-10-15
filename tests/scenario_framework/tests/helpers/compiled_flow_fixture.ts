@@ -7,6 +7,7 @@
  */
 import { assert } from "@std/assert";
 import { join } from "@std/path";
+import { journalMaxRowid } from "../../../integration/helpers/daemon_config.ts";
 
 const REPO_ROOT = new URL("../../../../", import.meta.url).pathname;
 const READY_TIMEOUT_SECONDS = "30";
@@ -28,6 +29,7 @@ export async function startCompiledFlowDaemon(
   workspaceRoot: string,
   binaries: { cli: string; daemon: string },
 ): Promise<number> {
+  const readyBaseline: number = journalMaxRowid(join(workspaceRoot, ".exa", "journal.db"));
   const launched = await new Deno.Command("bash", {
     args: [
       "-c",
@@ -42,7 +44,16 @@ export async function startCompiledFlowDaemon(
   if (!launched.success || !/^[0-9]+$/.test(pid)) throw new Error("Compiled daemon launch failed");
   await Deno.writeTextFile(join(workspaceRoot, ".exa", "daemon.pid"), pid);
   const ready = await new Deno.Command(binaries.cli, {
-    args: ["journal", "wait", "--event", "daemon.ready", "--timeout", READY_TIMEOUT_SECONDS],
+    args: [
+      "journal",
+      "wait",
+      "--event",
+      "daemon.ready",
+      "--since-rowid",
+      String(readyBaseline),
+      "--timeout",
+      READY_TIMEOUT_SECONDS,
+    ],
     cwd: workspaceRoot,
     stdout: "inherit",
     stderr: "inherit",

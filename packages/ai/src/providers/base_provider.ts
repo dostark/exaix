@@ -10,11 +10,11 @@ import type { IEventLogger } from "@exaix/core/logger";
 import type { Opt, Reason } from "@exaix/core/types";
 
 import type { Config } from "@exaix/schemas";
-import { DEFAULT_MODEL_FALLBACK, DEFAULT_TIMEOUT_MS } from "@exaix/core";
+import { DEFAULT_AI_RETRY_AFTER_MAX_MS, DEFAULT_MODEL_FALLBACK, DEFAULT_TIMEOUT_MS } from "@exaix/core";
 
 import type { IModelOptions, IModelProvider } from "../types.ts";
 import { assertNoNativeConversation } from "../provider_registry.ts";
-import { type IGenerateResult, withRetry } from "./common.ts";
+import type { IGenerateResult } from "./common.ts";
 /**
  * Options for base provider.
  */
@@ -25,6 +25,8 @@ export interface IBaseProviderOptions {
   logger?: IEventLogger;
   retryDelayMs?: number;
   maxRetries?: number;
+  /** Longest Retry-After wait in milliseconds. Absent, `config.ai_retry.retry_after_max_ms` applies. */
+  retryAfterMaxMs?: number;
   baseUrl?: string;
   config?: Config;
   timeoutMs?: number;
@@ -51,6 +53,7 @@ export abstract class BaseProvider implements IModelProvider {
   protected readonly logger?: IEventLogger;
   protected readonly retryDelayMs: number;
   protected readonly maxRetries: number;
+  public readonly retryAfterMaxMs: number;
   public readonly timeoutMs: number;
 
   constructor(
@@ -64,6 +67,8 @@ export abstract class BaseProvider implements IModelProvider {
     this.baseUrl = options.baseUrl || options.defaultEndpoint || "";
     this.retryDelayMs = options.retryDelayMs || options.defaultRetryDelay || 100;
     this.maxRetries = options.maxRetries || options.defaultMaxRetries || 3;
+    this.retryAfterMaxMs = options.retryAfterMaxMs || options.config?.ai_retry?.retry_after_max_ms ||
+      DEFAULT_AI_RETRY_AFTER_MAX_MS;
     this.timeoutMs = options.timeoutMs || options.defaultTimeout || DEFAULT_TIMEOUT_MS;
   }
 
@@ -72,10 +77,8 @@ export abstract class BaseProvider implements IModelProvider {
    */
   async generate(prompt: string, options?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
     assertNoNativeConversation(this.id, options);
-    return await withRetry(
-      () => this.attemptGenerate(prompt, options),
-      { maxRetries: this.maxRetries, baseDelayMs: this.retryDelayMs, signal: options?.requestSignal },
-    );
+    // Retries belong to the shared fetch layer (fetchJsonWithRetries), so one call never retries twice.
+    return await this.attemptGenerate(prompt, options);
   }
 
   /**
