@@ -19,6 +19,7 @@ import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IApplicationContext, IPlanAmendmentGate, IPlanAmendmentService } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
+import type { IPlanAction } from "@exaix/schemas/plan_schema.ts";
 import { createNoopEventLogger, type IEventLogger } from "@exaix/core/logger";
 import { DomainEventType, type IEventJournalReader, type TDomainEventType } from "@exaix/core/events";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -142,12 +143,6 @@ export interface IExecutionResult {
   success: boolean;
   traceId?: string;
   error?: string;
-}
-
-export interface IPlanAction {
-  tool: string;
-  params: Record<string, JSONValue>;
-  description?: string;
 }
 
 export interface ITaskLease {

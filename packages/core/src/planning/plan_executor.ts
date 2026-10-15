@@ -143,12 +143,6 @@ export interface IPlanActionReport {
   error?: string;
 }
 
-export interface IPlanAction {
-  tool: string;
-  params: Record<string, JSONValue>;
-  description?: string;
-}
-
 /** Reads `tags` off a plan context's frontmatter for skill trigger matching (untyped JSON map;
  *  YAML admits either a list or a lone string). */
 function frontmatterTags(context: IPlanContext): string[] | undefined {
