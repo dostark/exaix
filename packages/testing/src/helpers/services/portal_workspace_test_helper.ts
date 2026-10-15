@@ -13,7 +13,8 @@ import { join } from "@std/path";
 import { PortalOperation } from "@exaix/core";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
-import { TEST_BLUEPRINTS_DIR, TEST_PORTAL_ALIAS, TEST_PORTAL_NAME } from "../constants.ts";
+import { TEST_BLUEPRINTS_DIR, TEST_PORTAL_ALIAS } from "../constants.ts";
+import { TEST_PORTAL_NAME } from "../../constants.ts";
 
 export async function setupPortalWorkspaceTestDirs(tempDir: string): Promise<{
   portalDir: string;

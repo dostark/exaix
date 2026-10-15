@@ -16,6 +16,7 @@
  */
 
 import { isAbsolute, join, relative } from "@std/path";
+import { RETURN_FILE } from "@exaix/session";
 import { assertBinaryAllowed, mergeDelegateEnv, sanitizeChildEnv } from "@exaix/session/supervised_launch.ts";
 import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
@@ -51,8 +52,6 @@ export interface IHeadlessSessionLauncherDeps {
    *  Override in tests whose mock stream never naturally closes. */
   drainIdleTimeoutMs?: Opt<number, Reason.OptionalDependency>;
 }
-
-const RETURN_FILE = "return.json";
 
 /**
  * Fire-and-forget: spawns the binary and synthesizes an abandoned return if it exits without writing one.
