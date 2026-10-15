@@ -75,13 +75,66 @@ Deno.test("an unknown package key is rejected", () => {
   assertEquals(result.unknownPackages, ["packages/ghost"]);
 });
 
-Deno.test("the committed ceilings file names only known rules and packages", async () => {
-  const ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "scripts/config/rule_ceilings.json")));
+interface ILintDiagnostic {
+  readonly code?: string;
+  readonly filename?: string;
+}
+
+interface ILintReport {
+  readonly diagnostics?: readonly ILintDiagnostic[];
+}
+
+/** The workspace package names (`packages/*` and `apps/*`). */
+async function workspacePackages(): Promise<string[]> {
   const denoJson = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json"))) as { workspace?: string[] };
-  const packages = (denoJson.workspace ?? [])
+  return (denoJson.workspace ?? [])
     .map((entry) => entry.replace(/^\.\//, ""))
     .filter((entry) => entry.startsWith("packages/") || entry.startsWith("apps/"));
-  const result = evaluateCeilings(ceilings, ceilings, RATCHETED_RULES, packages);
+}
+
+/** The workspace package a lint diagnostic belongs to, or null when it is outside one. */
+function packageOf(filename: string, root: string): string | null {
+  const path = filename.startsWith("file://") ? fromFileUrl(filename) : filename;
+  if (!path.startsWith(`${root}/`)) return null;
+  const parts = path.slice(root.length + 1).split("/");
+  if (parts.length >= 2 && (parts[0] === "packages" || parts[0] === "apps")) return `${parts[0]}/${parts[1]}`;
+  return null;
+}
+
+Deno.test("the committed ceilings file names only known rules and packages", async () => {
+  const ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "scripts/config/rule_ceilings.json")));
+  const result = evaluateCeilings(ceilings, ceilings, RATCHETED_RULES, await workspacePackages());
+  assertEquals(result.unknownRules, []);
+  assertEquals(result.unknownPackages, []);
+});
+
+Deno.test("the whole-tree counts match the committed ceilings", async () => {
+  const command = new Deno.Command(Deno.execPath(), {
+    args: ["lint", "--json"],
+    cwd: REPO_ROOT,
+    env: { EXAIX_LINT_RULES: RATCHETED_RULES.join(",") },
+    stdout: "piped",
+    stderr: "null",
+  });
+  const { stdout } = await command.output();
+  const report = JSON.parse(new TextDecoder().decode(stdout)) as ILintReport;
+
+  const knownPackages = await workspacePackages();
+  const counts: Record<string, Record<string, number>> = {};
+  for (const diagnostic of report.diagnostics ?? []) {
+    const code = diagnostic.code;
+    const filename = diagnostic.filename;
+    if (!code || !filename) continue;
+    const pkg = packageOf(filename, REPO_ROOT);
+    if (!pkg || !knownPackages.includes(pkg)) continue;
+    counts[code] ??= {};
+    counts[code][pkg] = (counts[code][pkg] ?? 0) + 1;
+  }
+
+  const ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "scripts/config/rule_ceilings.json")));
+  const result = evaluateCeilings(ceilings, counts, RATCHETED_RULES, knownPackages);
+  assertEquals(result.over, [], `a count rose above its ceiling: ${JSON.stringify(result.over)}`);
+  assertEquals(result.under, [], `a count fell; write the lower value back: ${JSON.stringify(result.under)}`);
   assertEquals(result.unknownRules, []);
   assertEquals(result.unknownPackages, []);
 });
