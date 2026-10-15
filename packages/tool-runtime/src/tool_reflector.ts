@@ -15,15 +15,7 @@ import { ToolReflectionIssueType, ToolReflectionSeverity } from "@exaix/core";
 import { JSONValueSchema, type LogMetadata, toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
-import type { Opt, Reason } from "@exaix/core/types";
-
-export interface IToolCall {
-  id: string;
-  name: string;
-  parameters: Record<string, JSONValue>;
-  purpose: string;
-  dependencies?: string[];
-}
+import type { IToolCall, IToolReflectorMetrics, Opt, Reason } from "@exaix/core/types";
 
 export interface IToolResult {
   callId: string;
@@ -47,17 +39,6 @@ export interface IToolReflectorConfig {
   verbose?: boolean;
   db?: IDatabaseService;
   logger?: IEventLogger;
-}
-
-export interface IToolReflectorMetrics {
-  totalCalls: number;
-  successfulCalls: number;
-  failedCalls: number;
-  totalRetries: number;
-  retryRate: number;
-  averageRetriesPerCall: number;
-  toolDistribution: Record<string, number>;
-  issueTypeDistribution: Record<string, number>;
 }
 
 // Reflection Schema

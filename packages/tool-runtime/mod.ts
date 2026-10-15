@@ -13,6 +13,8 @@ export * from "./src/aci_example_validator.ts";
 export * from "./src/tool_schemas.ts";
 export * from "./src/tool_call_canonicalizer.ts";
 export * from "./src/tool_reflector.ts";
+// The tool-call contract lives in @exaix/core/types, so re-export it for the package surface.
+export type { IToolCall, IToolReflectorMetrics } from "@exaix/core/types";
 export * from "./src/cli_confirmation_interceptor.ts";
 export * from "./src/notification_queue_confirmation_interceptor.ts";
 export * from "./src/confirmation_interceptor_factory.ts";
