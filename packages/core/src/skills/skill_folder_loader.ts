@@ -13,6 +13,7 @@
  */
 
 import { join } from "@std/path";
+import { REFERENCES_DIR, SIDECAR_FILE, SKILL_FILE } from "./constants.ts";
 import { parse as parseYaml } from "@std/yaml";
 import { SkillSidecarSchema } from "@exaix/schemas/skill_folder.ts";
 import type { IRuntimeSkill } from "@exaix/schemas/runtime_skill.ts";
@@ -50,9 +51,6 @@ import type {
 /** Event source id registered by the loader. */
 const SKILL_FOLDER_LOADER_SOURCE_ID = "skill-folder-loader";
 
-const SKILL_FILE = "SKILL.md";
-const SIDECAR_FILE = "exaix.yaml";
-const REFERENCES_DIR = "references";
 const IGNORED_ROOT_ENTRIES: readonly string[] = ["README.md", ".exa-skill-state"];
 const EXECUTABLE_DIRS: readonly string[] = ["scripts", "assets"];
 const LEGACY_SUFFIXES: readonly string[] = [".json", ".skill.md"];

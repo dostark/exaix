@@ -11,6 +11,7 @@
  */
 
 import { isAbsolute, join, relative, resolve } from "@std/path";
+import { LOCK_FILE, STATE_DIR } from "./constants.ts";
 import { exists } from "@std/fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import { z } from "zod";
@@ -149,8 +150,6 @@ const GENERATION_LENGTH = 16;
 const SKILLS_SUBDIR = "Skills";
 const LEARNED_SUBDIR = "learned";
 const PROJECT_SUBDIR = "project";
-const STATE_DIR = ".exa-skill-state";
-const LOCK_FILE = "lock";
 const STATIC_CONFIG_GENERATION = "static";
 const SYSTEM_AGENT_ROLE = "system";
 const PORTAL_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
