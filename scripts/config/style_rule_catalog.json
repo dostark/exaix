@@ -118,6 +118,7 @@
     }
   },
   "tagVocabulary": {
+    "duplication": { "description": "Rules that find restated or duplicated declarations" },
     "type-safety": { "description": "Rules that keep type evidence (CODE_STYLE.md 1)." },
     "imports": { "description": "Import shape and placement rules (CODE_STYLE.md 3)." },
     "magic-values": { "description": "No magic numbers or strings (CODE_STYLE.md 2)." },
@@ -135,6 +136,52 @@
     "deslop": { "description": "Rule idea taken from maharshi365/deslop or dmmulroy/anti-slop." }
   },
   "rules": {
+    "duplicate-type": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "include": ["packages/**", "apps/**"],
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": ["duplication", "deslop"],
+      "options": {
+        "minProperties": 2,
+        "allow": [
+          {
+            "name": "IOpenAIEmbeddingConfig",
+            "files": [
+              "packages/ai/src/providers/openai_embedding_client.ts",
+              "packages/ai-openai/src/openai_embedding_client.ts"
+            ],
+            "reason": "The ai copy exists to avoid a circular dependency between @exaix/ai and @exaix/ai-openai."
+          },
+          {
+            "name": "IValidationError",
+            "files": [
+              "packages/quality-gate/src/internal_types.ts",
+              "packages/tool-runtime/src/output_validator.ts"
+            ],
+            "reason": "The two packages have no dependency edge and validate independent shapes."
+          },
+          {
+            "name": "ICliDelegateProcessResult",
+            "files": [
+              "packages/ai-clidelegate/src/cli_delegate_model_provider.ts",
+              "packages/execution/src/strategies/cli_delegate_strategy.ts"
+            ],
+            "reason": "The two packages have no dependency edge and each owns its subprocess seam."
+          },
+          {
+            "name": "IToolResult",
+            "files": [
+              "packages/core/src/types/i_tool_reflector.ts",
+              "packages/tool-runtime/src/tool_reflector.ts"
+            ],
+            "reason": "Core exports a second IToolResult from i_tool_registry, so the reflector copy is not reachable through the core barrel."
+          }
+        ]
+      },
+      "limits": "Compares interface and object type alias members after whitespace normalization. Imported aliases are not resolved."
+    },
     "exaix/ignore-needs-reason": {
       "engine": "plugin",
       "severity": "error",
