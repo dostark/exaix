@@ -1,0 +1,5 @@
+{
+  "exaix/require-safety-comment": {},
+  "exaix/no-runtime-typeof": {},
+  "exaix/no-conditional-empty-object-spread": {}
+}
