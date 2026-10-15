@@ -11,7 +11,8 @@
 
 import { z } from "zod";
 import { SkillMatchSource, SkillRenderOutcome, SkillRootKind } from "@exaix/core";
-import { SKILL_NAME_MAX_LENGTH, SKILL_NAME_PATTERN } from "./skill_folder.ts";
+import { SKILL_NAME_PATTERN } from "./skill_folder.ts";
+import { SKILL_NAME_MAX_LENGTH } from "@exaix/shared";
 
 const SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/;
 const PIN_PATH_MAX_LENGTH = 512;

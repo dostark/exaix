@@ -7,6 +7,19 @@
  */
 
 import { join } from "@std/path";
+import {
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_ARCHIVE_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_PORTALS_PATH,
+  DEFAULT_REJECTED_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import * as DEFAULTS from "../types/constants.ts";
 
 export interface IExaPaths {
@@ -40,17 +53,17 @@ export interface IMemoryExecutionPaths {
 
 export function getDefaultPaths(_root: string): IExaPaths {
   return {
-    workspace: DEFAULTS.DEFAULT_WORKSPACE_PATH,
-    runtime: DEFAULTS.DEFAULT_RUNTIME_PATH,
-    memory: DEFAULTS.DEFAULT_MEMORY_PATH,
-    portals: DEFAULTS.DEFAULT_PORTALS_PATH,
-    blueprints: DEFAULTS.DEFAULT_BLUEPRINTS_PATH,
-    active: DEFAULTS.DEFAULT_ACTIVE_PATH,
-    archive: DEFAULTS.DEFAULT_ARCHIVE_PATH,
-    plans: DEFAULTS.DEFAULT_PLANS_PATH,
-    requests: DEFAULTS.DEFAULT_REQUESTS_PATH,
-    rejected: DEFAULTS.DEFAULT_REJECTED_PATH,
-    agents: DEFAULTS.DEFAULT_AGENTS_PATH,
+    workspace: DEFAULT_WORKSPACE_PATH,
+    runtime: DEFAULT_RUNTIME_PATH,
+    memory: DEFAULT_MEMORY_PATH,
+    portals: DEFAULT_PORTALS_PATH,
+    blueprints: DEFAULT_BLUEPRINTS_PATH,
+    active: DEFAULT_ACTIVE_PATH,
+    archive: DEFAULT_ARCHIVE_PATH,
+    plans: DEFAULT_PLANS_PATH,
+    requests: DEFAULT_REQUESTS_PATH,
+    rejected: DEFAULT_REJECTED_PATH,
+    agents: DEFAULT_AGENTS_PATH,
     flows: DEFAULTS.ExaPathDefaults.flows,
     waitStates: DEFAULTS.DEFAULT_WAIT_STATES_PATH,
     memoryProjects: DEFAULTS.ExaPathDefaults.memoryProjects,

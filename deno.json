@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "nodeModulesDir": "auto",
   "workspace": [
+    "./packages/shared",
     "./packages/schemas",
     "./packages/core",
     "./packages/ai",
@@ -167,7 +168,6 @@
     "build:enterprise": "deno run -A scripts/ci.ts build --edition enterprise",
     "ci:solo": "deno run -A scripts/ci.ts all --edition solo",
     "ci:team": "deno run -A scripts/ci.ts all --edition team",
-
     "dogfood": "deno run -A scripts/dogfood_daemon.ts start",
     "dogfood:stop": "deno run -A scripts/dogfood_daemon.ts stop",
     "dogfood:status": "deno run -A scripts/dogfood_daemon.ts status",
@@ -264,7 +264,6 @@
     "@exaix/core/security": "./packages/core/src/security/mod.ts",
     "@exaix/core/fs": "./packages/core/src/fs/mod.ts",
     "@exaix/core/health": "./packages/core/src/health/mod.ts",
-    "@exaix/core/": "./packages/core/src/",
     "@exaix/core/func": "./packages/core/src/func/mod.ts",
     "@exaix/core/parsing": "./packages/core/src/parsing/mod.ts",
     "@exaix/core/context": "./packages/core/src/context/mod.ts",
@@ -313,7 +312,9 @@
     "@exaix-team/model-registry-live": "./exaix-team/packages/model-registry-live/mod.ts",
     "@exaix-team/model-registry-live/": "./exaix-team/packages/model-registry-live/src/",
     "@exaix-team/otel-export": "./exaix-team/packages/otel-export/mod.ts",
-    "@exaix-team/otel-export/": "./exaix-team/packages/otel-export/src/"
+    "@exaix-team/otel-export/": "./exaix-team/packages/otel-export/src/",
+    "@exaix/shared": "./packages/shared/mod.ts",
+    "@exaix/shared/": "./packages/shared/src/"
   },
   "exclude": [
     "cov_profile",
@@ -357,7 +358,11 @@
     ]
   },
   "compilerOptions": {
-    "lib": ["deno.window", "deno.ns", "deno.unstable"],
+    "lib": [
+      "deno.window",
+      "deno.ns",
+      "deno.unstable"
+    ],
     "strict": true,
     "checkJs": false
   },

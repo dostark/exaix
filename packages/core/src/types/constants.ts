@@ -24,6 +24,28 @@ import {
 import { configurable } from "../config/registry.ts";
 import { PortalKnowledgeInclusion } from "./portal.ts";
 
+import {
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_ARCHIVE_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_EXECUTION_MEMORY_PATH,
+  DEFAULT_FLOWS_PATH,
+  DEFAULT_GLOBAL_MEMORY_PATH,
+  DEFAULT_INDEX_MEMORY_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PENDING_MEMORY_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_PORTALS_PATH,
+  DEFAULT_PROJECTS_MEMORY_PATH,
+  DEFAULT_REJECTED_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_SKILLS_MEMORY_PATH,
+  DEFAULT_TASKS_MEMORY_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
+
 export const OPENAI_COMPATIBLE_LOCAL_PROFILE = "local-test";
 /** A service the operator hosts. Its catalog declares the endpoint and the model. */
 export const OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE = "self-hosted";
@@ -120,29 +142,10 @@ export const HITL_EVAL_BUDGET_MS: number = configurable({
 });
 
 // Path Configuration Defaults
-export const DEFAULT_WORKSPACE_PATH = "Workspace";
-export const DEFAULT_RUNTIME_PATH = ".exa";
-export const DEFAULT_MEMORY_PATH = "Memory";
-export const DEFAULT_PORTALS_PATH = "Portals";
 export const DEFAULT_PORTAL_DEFAULT_BRANCH = "main";
-export const DEFAULT_BLUEPRINTS_PATH = "Blueprints";
-export const DEFAULT_ACTIVE_PATH = "Active";
-export const DEFAULT_ARCHIVE_PATH = "Archive";
-export const DEFAULT_PLANS_PATH = "Plans";
-export const DEFAULT_REQUESTS_PATH = "Requests";
-export const DEFAULT_REJECTED_PATH = "Rejected";
 
 // Subfolder Defaults (relative to their parent domain)
-export const DEFAULT_AGENTS_PATH = "Agents";
-export const DEFAULT_FLOWS_PATH = "Flows";
 export const DEFAULT_WAIT_STATES_PATH = "WaitStates";
-export const DEFAULT_PROJECTS_MEMORY_PATH = "Projects";
-export const DEFAULT_EXECUTION_MEMORY_PATH = "Execution";
-export const DEFAULT_INDEX_MEMORY_PATH = "Index";
-export const DEFAULT_SKILLS_MEMORY_PATH = "Skills";
-export const DEFAULT_PENDING_MEMORY_PATH = "Pending";
-export const DEFAULT_TASKS_MEMORY_PATH = "Tasks";
-export const DEFAULT_GLOBAL_MEMORY_PATH = "Global";
 
 export const ExaPathDefaults = {
   workspace: DEFAULT_WORKSPACE_PATH,
@@ -643,7 +646,6 @@ export const DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD: number = conf
   max: 100,
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA = 3;
 export const DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW: number = configurable({
   key: "agent.convergence_oscillation_window",
   default: 2,
@@ -653,7 +655,6 @@ export const DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW: number = configur
   max: 10,
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS = 12;
 export const DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS: number = configurable({
   key: "agent.convergence_score_interval",
   default: 1,
@@ -1240,7 +1241,6 @@ export const RATE_LIMIT_WINDOW_DAY_MS = 86_400_000; // 1 day
 /** Tokens per million, for cost math. */
 export const TOKENS_PER_MTOK = 1_000_000;
 
-export const TOKEN_ESTIMATION_CHARS_PER_TOKEN = 4;
 export const TOKEN_ESTIMATION_MAX_TOKENS = 2000;
 
 // Prompt Budgeting
@@ -1253,7 +1253,6 @@ export const LOCAL_PROVIDER_PREFIXES = [
 ] as const;
 
 /** Conservative fallback context window for local models when model-specific window is unknown. */
-export const LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32_768;
 
 /** Minimum reserved tokens for critical prompt sections. */
 export const SECTION_FLOORS = {
@@ -2180,7 +2179,6 @@ export const DEFAULT_BLUEPRINT_VERSION = "1.0.0";
 export const DEFAULT_SKILL_INDEX_VERSION = "1.0.0";
 
 /** Semantic version for flows. Bump on breaking schema changes. */
-export const DEFAULT_FLOW_VERSION = "1.0.0";
 
 /** Maximum judge evaluations admitted by one gate in a logical flow run. */
 export const DEFAULT_FLOW_GATE_MAX_EVALUATIONS: number = configurable({
@@ -2310,7 +2308,6 @@ export const STEP_DURABILITY_OVERHEAD_TARGET_MS = 10;
 export const STEP_DURABILITY_RECORD_TARGET_PERCENT = 100;
 
 /** Default max serialized size for a flow namespace artifact in bytes. */
-export const DEFAULT_NAMESPACE_MAX_BYTES = 65536;
 
 /** Semantic version for global memory. Bump on breaking schema changes. */
 export const DEFAULT_GLOBAL_MEMORY_VERSION = "1.0.0";

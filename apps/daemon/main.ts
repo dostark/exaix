@@ -155,13 +155,14 @@ import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
 import {
   CONFIG_INTEGRITY_POLL_INTERVAL_MS,
   DEFAULT_CONFIG_DB_POLL_INTERVAL_MS,
-  DEFAULT_REQUESTS_PATH,
   SESSION_BIN_CLAUDE_CODE,
   SESSION_BIN_CODEX,
   SESSION_BIN_CURSOR,
   SESSION_BIN_OPENCODE,
   SESSION_BIN_VSCODE,
 } from "@exaix/core/types/constants.ts";
+import { DEFAULT_REQUESTS_PATH } from "@exaix/core";
+
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
 import { SoloComposer } from "@exaix/core/composer";
 // Team modules load dynamically only inside non-Solo branches — a static top-level import

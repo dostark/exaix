@@ -8,6 +8,7 @@
  */
 
 import { basename, join } from "@std/path";
+import { EFFORT_AUTO } from "@exaix/shared";
 import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
@@ -96,8 +97,6 @@ export interface IRuntimeFrontmatterValidation {
 
 /** Runtime mirror of @exaix/schemas' EffortDeclarationSchema (core cannot import the
  *  schemas package at runtime); the types are imported type-only from it. */
-// deno-lint-ignore prefer-as-const
-const EFFORT_AUTO: "auto" = "auto";
 const EffortDeclarationSchema = z.union([z.enum(["low", "medium", "high", "xhigh", "max"]), z.literal(EFFORT_AUTO)]);
 /** Runtime mirror of @exaix/schemas' ThinkingDeclarationSchema — the preprocess maps
  *  failsafe-YAML's string "true"/"false". */

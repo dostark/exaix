@@ -40,7 +40,9 @@
     "@exaix/schemas/": "../schemas/src/",
     "@exaix/storage-sqlite": "../storage-sqlite/mod.ts",
     "@exaix/storage-sqlite/": "../storage-sqlite/src/",
-    "ai-token-estimator": "npm:ai-token-estimator@1.7.1"
+    "ai-token-estimator": "npm:ai-token-estimator@1.7.1",
+    "@exaix/shared": "../shared/mod.ts",
+    "@exaix/shared/": "../shared/src/"
   },
   "exports": {
     ".": "./mod.ts"

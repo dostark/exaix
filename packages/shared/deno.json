@@ -1,0 +1,9 @@
+{
+  "name": "@exaix/shared",
+  "version": "0.1.0",
+  "imports": {
+    "@exaix/shared": "./mod.ts",
+    "@exaix/shared/": "./src/"
+  },
+  "exports": "./mod.ts"
+}

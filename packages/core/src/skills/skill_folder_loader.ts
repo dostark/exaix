@@ -13,6 +13,7 @@
  */
 
 import { join } from "@std/path";
+import { SKILL_NAME_MAX_LENGTH } from "@exaix/shared";
 import { REFERENCES_DIR, SIDECAR_FILE, SKILL_FILE } from "./constants.ts";
 import { parse as parseYaml } from "@std/yaml";
 import { SkillSidecarSchema } from "@exaix/schemas/skill_folder.ts";
@@ -55,7 +56,6 @@ const IGNORED_ROOT_ENTRIES: readonly string[] = ["README.md", ".exa-skill-state"
 const EXECUTABLE_DIRS: readonly string[] = ["scripts", "assets"];
 const LEGACY_SUFFIXES: readonly string[] = [".json", ".skill.md"];
 const SKILL_NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const SKILL_NAME_MAX_LENGTH = 64;
 const REFERENCE_FILE_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*\.md$/;
 const MAX_VERIFY_ATTEMPTS = 2;
 

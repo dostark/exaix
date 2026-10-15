@@ -9,7 +9,7 @@
 
 import { countTokens as aiCountTokens } from "ai-token-estimator";
 
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "../types/constants.ts";
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import { TokenizerBackend } from "../types/enums.ts";
 
 export interface ITokenizer {

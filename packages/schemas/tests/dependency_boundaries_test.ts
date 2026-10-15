@@ -23,7 +23,8 @@ Deno.test("@exaix/schemas depends only on core among workspace packages", async 
       const specifier = match[1];
       if (
         specifier === "@exaix/core" || specifier.startsWith("@exaix/core/") || specifier === "@exaix/schemas" ||
-        specifier.startsWith("@exaix/schemas/")
+        specifier.startsWith("@exaix/schemas/") || specifier === "@exaix/shared" ||
+        specifier.startsWith("@exaix/shared/")
       ) {
         continue;
       }
