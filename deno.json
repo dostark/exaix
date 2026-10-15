@@ -116,7 +116,7 @@
     "check:hardcoded-models": "deno run --allow-read scripts/check_hardcoded_models.ts",
     "check:event-strings": "deno run --allow-read scripts/check_event_strings.ts",
     "check:scenario-declarative": "deno run -A scripts/check_scenario_declarative.ts",
-    "check:constant-restatement": "deno run --allow-read scripts/check_constant_restatement.ts",
+    "check:constant-restatement": "deno run --allow-read packages/lint-rules/src/cli/whole_tree.ts --rule=constant-restatement",
     "check:agent-prose": "deno run -A scripts/check_agent_prose.ts",
     "check:ste100-comments": "deno run -A scripts/check_ste100_comments.ts",
     "check:ste100-comments:staged": "deno run --allow-read --allow-env --allow-run=git scripts/check_ste100_comments.ts --staged",

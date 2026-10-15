@@ -90,6 +90,13 @@
     { "glob": "**/coverage/**", "reason": "Coverage output." },
     { "glob": "**/.copilot/**", "reason": "Agent guidance, not production code." }
   ],
+  "wholeTree": {
+    "constantRestatement": {
+      "constantModules": ["packages/core/src/types/constants.ts"],
+      "testRoots": ["apps", "packages", "tests"],
+      "minRestatedElements": 2
+    }
+  },
   "tagVocabulary": {
     "type-safety": { "description": "Rules that keep type evidence (CODE_STYLE.md 1)." },
     "imports": { "description": "Import shape and placement rules (CODE_STYLE.md 3)." },

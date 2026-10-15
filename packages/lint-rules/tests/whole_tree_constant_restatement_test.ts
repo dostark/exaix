@@ -1,6 +1,6 @@
 /**
  * @module CheckConstantRestatementTest
- * @path tests/scripts/check_constant_restatement_test.ts
+ * @path packages/lint-rules/tests/whole_tree_constant_restatement_test.ts
  * @description Phase 142 Step 19 (GAP-3) — a test must derive a constant's value, not restate it.
  *
  *   Step 7 added two hosts to `DAEMON_DEFAULT_NET_HOSTS`. Four tests carried a hardcoded copy of
@@ -11,11 +11,12 @@
  *   This is the same defect class the phase removed from its own parity gates: an expectation
  *   derived from a stale copy rather than from the source of truth.
  * @architectural-layer Test
- * @related-files [scripts/check_constant_restatement.ts, packages/core/src/types/constants.ts]
+ * @related-files [packages/lint-rules/src/rules/whole_tree/constant_restatement.ts, packages/core/src/types/constants.ts]
  */
 
 import { assertEquals } from "@std/assert";
-import { checkRepository, findRestatements, parseListConstants } from "../../scripts/check_constant_restatement.ts";
+import { checkRepository, findRestatements, parseListConstants } from "../src/rules/whole_tree/constant_restatement.ts";
+import { WHOLE_TREE_SETTINGS } from "../src/rules/whole_tree/options.ts";
 
 const CONSTANTS_SOURCE = `
 export const DAEMON_DEFAULT_NET_HOSTS: readonly string[] = [
@@ -97,7 +98,7 @@ Deno.test("[constant-restatement] a single element is not treated as a restateme
 Deno.test("[constant-restatement] the real repository is clean", async () => {
   // The check is only worth registering if the tree currently satisfies it — a gate that is
   // red on arrival gets ignored.
-  const findings = await checkRepository(Deno.cwd());
+  const findings = await checkRepository(Deno.cwd(), WHOLE_TREE_SETTINGS.constantRestatement);
   assertEquals(
     findings.map((f) => `${f.file}: ${f.constant} restated as "${f.value}"`),
     [],
