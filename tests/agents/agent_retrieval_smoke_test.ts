@@ -6,12 +6,18 @@
  */
 
 import { assert, assertExists } from "@std/assert";
+import { join } from "@std/path";
 import { buildIndex } from "../../scripts/build_agents_index.ts";
 import { inject } from "../../scripts/inject_agent_context.ts";
 
 Deno.test("retrieval smoke: build manifest and inject context", async () => {
-  await buildIndex();
-  assertExists(".copilot/manifest.json");
+  const outDir = await Deno.makeTempDir();
+  try {
+    await buildIndex(false, outDir);
+    assertExists(await Deno.stat(join(outDir, "manifest.json")));
+  } finally {
+    await Deno.remove(outDir, { recursive: true });
+  }
 
   // inject may return found=false when no doc scores above 0 for this query; both outcomes are valid.
   const res = await inject("copilot", "copilot");

@@ -129,6 +129,7 @@ Classify precisely:
 - ✅ Reconcile `docs/CHANGELOG.md` open ledger/waived items each run.
 - ✅ Name the tradeoff for every runner-up.
 - ✅ Update the registry before finishing, even if nothing changed.
+- ✅ Keep a "Selected work" note to one line with no step or test counts. Progress detail belongs in the phase doc.
 - ❌ Recommend a phase whose hard deps aren't actually done — confirm, don't trust the
   "Phase Dependencies" line.
 - ❌ Treat "0 steps checked" and "no checkboxes in the doc" as the same signal.

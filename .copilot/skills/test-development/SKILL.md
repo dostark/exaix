@@ -293,6 +293,10 @@ Permissions: some npm packages read env at module-init (`typescript` reads
 `TSC_WATCHFILE`), so a bare `deno test <file>` can fail NotCapable — run standalone script
 tests with `deno test --allow-all <file>`.
 
+Private state: `check:style` rejects `as unknown as`. Expose a `public readonly` field, or narrow
+with `instanceof` on the exported class. A test that needs a private value usually points to a
+value that should be observable behavior.
+
 Output format
   1. Target test files created/modified.
   1. Helpers used.

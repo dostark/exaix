@@ -142,6 +142,9 @@ Spans the submodule plan doc (the ✅/deferred marks) and the parent source → 
    `plan: exaix-dev-docs/planning/<phase>.md#<remediation-step-N>`), then
    `deno run -A scripts/commit_plan_step.ts <msg-file> --commit`. Read #commit's validator
    traps first (Structural Bloom, impact-component-word-in-what, semicolon-in-impact).
+1. If the user's saved preference forbids a `plan:` field, skip `commit_plan_step.ts`: commit the
+   submodule plan doc first, then the parent (code and pointer) with ordinary structured
+   messages. Keep the `→ path` done-marks.
 1. Multiple steps touching the SAME source file: group them into ONE commit whose `plan:`
    names any one step, mark ALL grouped steps' criteria done in that same commit, and name
    every covered GAP/step in the body — honest (every cited `→ path` is a changed file) and

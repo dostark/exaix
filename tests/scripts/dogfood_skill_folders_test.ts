@@ -46,6 +46,10 @@ const BASELINE_COUNT = 28;
 /** Skills whose prose was edited on purpose after the baseline capture. Only their opening is pinned. */
 const EDITED_SINCE_BASELINE = new Set([
   "plan",
+  "next-phase",
+  "next-steps",
+  "remediate-code-gaps",
+  "review-phase-code",
   "clean-codebase",
   "edition-development",
   "run-scenario-test",

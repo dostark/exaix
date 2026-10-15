@@ -34,3 +34,28 @@ Deno.test("extractFrontmatter returns the frontmatter block as string", () => {
   assert(fm!.includes("title: Test"));
   assert(fm!.includes("version: 1.0"));
 });
+
+Deno.test("no test calls buildIndex without an output directory, so test runs never rewrite committed docs", async () => {
+  // A file list from git stays stable while other tests create and delete temporary directories.
+  const listed = await new Deno.Command("git", {
+    args: ["ls-files", "--cached", "--others", "--exclude-standard", "--", "tests"],
+    stdout: "piped",
+  }).output();
+  const files = new TextDecoder().decode(listed.stdout).split("\n").filter((path) => path.endsWith(".ts"));
+  const offenders: string[] = [];
+  for (const path of files) {
+    if (path.endsWith("build_agents_index_test.ts")) continue;
+    const source = await Deno.readTextFile(path).catch((error) => {
+      // A concurrent test can delete its temporary file between the listing and the read.
+      if (error instanceof Deno.errors.NotFound) return "";
+      throw error;
+    });
+    if (/\bbuildIndex\(\s*(?:true|false)?\s*\)/.test(source)) offenders.push(path);
+  }
+  assert(
+    files.length > 0 && offenders.length === 0,
+    `buildIndex() with the default output directory rewrites .copilot/manifest.json and DOCS.md: ${
+      offenders.join(", ")
+    }`,
+  );
+});

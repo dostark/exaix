@@ -137,8 +137,10 @@ thinking and effort data. `readProviderModelInfo` handles unavailable catalogs, 
 metadata. `ModelResolver` uses the selected model's values for cost scoring, thinking
 constraints and size presets. `DefaultModelRegistry` also exposes the selected
 model's context, capability and split-price data, after any static overlay.
-Unknown prices rank behind known prices for "cheapest". Unknown windows and costs
-pass the permissive size-preset filters. OpenRouter supplies no provider-wide
+Unknown prices rank behind known prices for "cheapest". An unknown cost passes the
+size-preset cost filter. An unknown window passes only for a provider that has a
+`modelInfo` lookup, so a provider that declares neither a window nor a catalog
+stays excluded. OpenRouter supplies no provider-wide
 thinking, effort, window or ranking-price defaults.
 
 ### Vertex AI & OpenRouter notes
