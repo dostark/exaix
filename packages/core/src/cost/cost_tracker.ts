@@ -6,6 +6,7 @@
  * @related-files ["packages/core/src/types/i_cost_tracker.ts", "packages/schemas/src/config.ts"]
  */
 import type { SqliteParam } from "../types/mod.ts";
+import { TOKENS_PER_MTOK } from "../types/constants.ts";
 import type { IDatabaseService } from "../types/mod.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ICostTracker } from "../types/mod.ts";
@@ -47,7 +48,6 @@ import type {
 } from "../types/mod.ts";
 
 /** USD-per-Mtok → USD-per-token divisor (pricing is quoted per 1M tokens). */
-const TOKENS_PER_MTOK = 1_000_000;
 /** Percent → fraction divisor. */
 const PERCENT = 100;
 

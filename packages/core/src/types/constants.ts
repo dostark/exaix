@@ -1237,6 +1237,9 @@ export const RATE_LIMIT_WINDOW_HOUR_MS = 3_600_000; // 1 hour
 export const RATE_LIMIT_WINDOW_DAY_MS = 86_400_000; // 1 day
 
 // Token estimation constants
+/** Tokens per million, for cost math. */
+export const TOKENS_PER_MTOK = 1_000_000;
+
 export const TOKEN_ESTIMATION_CHARS_PER_TOKEN = 4;
 export const TOKEN_ESTIMATION_MAX_TOKENS = 2000;
 

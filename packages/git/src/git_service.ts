@@ -14,6 +14,7 @@
  */
 
 import type { Config } from "@exaix/schemas";
+import { DAEMON_AGENT_ROLE_ID } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 
@@ -55,8 +56,6 @@ import type {
 } from "@exaix/core/types";
 
 type GitServiceError = Error | string | Record<string, JsonValue>;
-
-const DAEMON_AGENT_ROLE_ID = "daemon";
 
 /** True for `reset --hard` and for `clean` that forces or removes directories. Compares whole
  *  argument tokens, so free text such as a commit message never matches. */
