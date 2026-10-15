@@ -1,13 +1,13 @@
 /**
  * @module CheckOptionalParamsBareOptionalTest
- * @path tests/scripts/check_optional_params_bare_optional_test.ts
- * @description Verifies the BARE_OPTIONAL rule of scripts/check_optional_params.ts: a parameter
+ * @path packages/lint-rules/tests/whole_tree_optional_params_test.ts
+ * @description Verifies the BARE_OPTIONAL rule of the whole-tree optional-params rule: a parameter
  *   made optional via a bare `?` token OR a bare `| undefined` union (without the Opt<T, Reason>
  *   wrapper) is flagged — the two forms are treated identically because they are semantically
  *   equivalent. Opt-wrapped, plain-required, and default-valued params are not flagged. Guards
  *   the convention that optionality must be codified via Opt<T, Reason>.
  * @architectural-layer Tooling
- * @related-files [scripts/check_optional_params.ts, packages/core/src/types/optional_marker.ts]
+ * @related-files [packages/lint-rules/src/rules/whole_tree/optional_params.ts, packages/core/src/types/optional_marker.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";
@@ -17,9 +17,8 @@ import {
   collectTypeShapeViolations,
   hasBareOptional,
   type IFuncDecl,
-  isOptType,
-  ViolationKind,
-} from "../../scripts/check_optional_params.ts";
+  isWrapperType,
+} from "../src/rules/whole_tree/optional_params.ts";
 
 /** Parse a single function's first parameter from a source snippet. */
 function firstParam(src: string): ts.ParameterDeclaration {
@@ -88,7 +87,7 @@ Deno.test("[bare-optional] does NOT flag a plain required param", () => {
 Deno.test("[bare-optional] does NOT flag an Opt<T, Reason>-wrapped param (with `?`)", () => {
   const p = firstParam("function f(x?: Opt<string, Reason.TraceAbsent>) {}");
   assertEquals(hasBareOptional(p), false);
-  assert(isOptType(p), "Opt-wrapped param must be recognized as Opt");
+  assert(isWrapperType(p), "Opt-wrapped param must be recognized as Opt");
 });
 
 Deno.test("[bare-optional] does NOT flag an Opt<T, Reason> param without `?` (default form)", () => {
@@ -120,7 +119,7 @@ function shapeViolations(src: string): ReturnType<typeof collectTypeShapeViolati
 Deno.test("[marked-not-optional] flags a TRAILING Opt param with no `?`/default (the marker is a lie)", () => {
   // `y?` makes the function collectable; `x` (Opt, no `?`) is trailing-eligible → flagged.
   const v = shapeViolations("function f(y?: number, x: Opt<string, Reason.TraceAbsent>) {}");
-  assertEquals(v.filter((x) => x.kind === ViolationKind.MARKED_NOT_OPTIONAL).length, 1);
+  assertEquals(v.filter((x) => x.kind === "MARKED_NOT_OPTIONAL").length, 1);
 });
 
 Deno.test("[marked-not-optional] does NOT flag a NON-trailing Opt param (a required param follows; `?` is illegal there)", () => {
@@ -128,5 +127,5 @@ Deno.test("[marked-not-optional] does NOT flag a NON-trailing Opt param (a requi
   const v = shapeViolations(
     "function f(y?: number, x: Opt<string, Reason.TraceAbsent>, after: string) {}",
   );
-  assertEquals(v.filter((x) => x.kind === ViolationKind.MARKED_NOT_OPTIONAL).length, 0);
+  assertEquals(v.filter((x) => x.kind === "MARKED_NOT_OPTIONAL").length, 0);
 });

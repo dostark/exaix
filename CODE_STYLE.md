@@ -827,13 +827,14 @@ provides the closed set of codified categories (no catch-all).
 
 ### Automated Enforcement
 
-`scripts/check_optional_params.ts` scans production `.ts` and `.tsx` files using
+`packages/lint-rules/src/rules/whole_tree/optional_params.ts` (run through
+`packages/lint-rules/src/cli/whole_tree.ts`) scans production `.ts` and `.tsx` files using
 the TypeScript compiler API. It compares each function/method declaration with
 optional parameters against all name-matched call sites and reports mismatches.
 
 ```bash
-deno run -A scripts/check_optional_params.ts --fail    # hard gate
-deno run -A scripts/check_optional_params.ts           # advisory (no --fail)
+deno task check:optional-params --fail    # hard gate
+deno task check:optional-params           # advisory (no --fail)
 ```
 
 The check is integrated as `deno task check:optional-params --fail` and runs as

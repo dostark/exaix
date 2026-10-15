@@ -15,14 +15,15 @@
 import ts from "typescript";
 
 const CONSUMER_FILES = [
-  "scripts/check_optional_params.ts",
+  "packages/lint-rules/src/rules/whole_tree/optional_params.ts",
   "packages/lint-rules/src/exaix/check_code_style.ts",
   "packages/lint-rules/src/exaix/check_magic_values.ts",
   "packages/lint-rules/src/rules/whole_tree/unused_exports.ts",
-  "tests/scripts/check_optional_params_bare_optional_test.ts",
+  "packages/lint-rules/tests/whole_tree_optional_params_test.ts",
 ] as const;
 
 const TS_API_ALLOWLIST = [
+  "ConciseBody",
   "ExportDeclaration",
   "FunctionBody",
   "Modifier",
@@ -32,6 +33,7 @@ const TS_API_ALLOWLIST = [
   "NumericLiteral",
   "ParameterDeclaration",
   "ScriptTarget",
+  "SignatureDeclaration",
   "SourceFile",
   "Statement",
   "StringLiteral",

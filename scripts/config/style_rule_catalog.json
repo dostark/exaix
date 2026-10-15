@@ -91,6 +91,15 @@
     { "glob": "**/.copilot/**", "reason": "Agent guidance, not production code." }
   ],
   "wholeTree": {
+    "optionalParams": {
+      "wrapperType": "Opt",
+      "wrapperImport": "@exaix/core/types",
+      "reasonExamples": ["TraceAbsent", "OptionalInput", "OptionalContext"],
+      "testSegments": ["/tests/"],
+      "testSuffixes": ["_test.ts"],
+      "skipSegments": ["/scripts/", "/tests/fixtures/"],
+      "walkSkipSegments": ["/.copilot/", "/.exa/", "/types/"]
+    },
     "unusedExports": {
       "productionRoots": ["packages/", "exaix-team/", "apps/"],
       "testSegments": ["/tests/", "/testing/"],
