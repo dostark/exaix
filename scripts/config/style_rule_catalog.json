@@ -108,6 +108,16 @@
     "deslop": { "description": "Rule idea taken from maharshi365/deslop or dmmulroy/anti-slop." }
   },
   "rules": {
+    "exaix/ignore-needs-reason": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Deferred: activating it needs a tree-wide audit of existing exaix ignore comments.",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#strict-type-safety",
+      "tags": ["type-safety", "deslop"],
+      "options": { "separator": "--" },
+      "limits": "Only ignores that name an exaix rule are checked."
+    },
     "exaix/require-optional-wrapper": {
       "engine": "plugin",
       "severity": "off",
