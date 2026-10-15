@@ -29,7 +29,7 @@ Deno.test("P3: typescript resolves to the 6.x line (TS 7 deferred by contract)",
       `typescript resolved to ${ts.version} (major ${parts[0]}) — TypeScript 7 has no stable ` +
         `programmatic API (only ./unstable/* exports). Before bumping the pin, follow ${RUNBOOK}: ` +
         `migrate the five gate scripts (check_optional_params, check_code_style, check_magic_values, ` +
-        `check_unused_exports + bare-optional test) off the legacy compiler API.`,
+        `the whole-tree rules + bare-optional test) off the legacy compiler API.`,
     );
   }
   if (parts[0] !== 6) {

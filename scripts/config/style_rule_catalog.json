@@ -91,6 +91,17 @@
     { "glob": "**/.copilot/**", "reason": "Agent guidance, not production code." }
   ],
   "wholeTree": {
+    "unusedExports": {
+      "productionRoots": ["packages/", "exaix-team/", "apps/"],
+      "testSegments": ["/tests/", "/testing/"],
+      "testSuffixes": ["_test.ts", ".test.ts"],
+      "entrypointSuffixes": ["/mod.ts", "/index.ts"],
+      "mainEntrypointSuffixes": ["/main.ts"],
+      "scriptRoot": "scripts",
+      "walkSkipPatterns": ["\\.git", "node_modules", "\\.copilot", "\\.exa", "Blueprints", "Memory", "Workspace", "Portals", "coverage", "exaix-dev-docs", "exaix-enterprise", "tests/scenario_framework"],
+      "strictSkipPrefixes": ["packages/tui/", "apps/tui/", "exaix-team/", "packages/schemas/", "apps/daemon/src/", "apps/common/"],
+      "strictSkipSegments": ["/commands/", "/handlers/"]
+    },
     "constantRestatement": {
       "constantModules": ["packages/core/src/types/constants.ts"],
       "testRoots": ["apps", "packages", "tests"],

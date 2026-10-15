@@ -18,7 +18,7 @@ const CONSUMER_FILES = [
   "scripts/check_optional_params.ts",
   "packages/lint-rules/src/exaix/check_code_style.ts",
   "packages/lint-rules/src/exaix/check_magic_values.ts",
-  "scripts/check_unused_exports.ts",
+  "packages/lint-rules/src/rules/whole_tree/unused_exports.ts",
   "tests/scripts/check_optional_params_bare_optional_test.ts",
 ] as const;
 
