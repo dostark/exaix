@@ -35,9 +35,9 @@ import {
   type IAgentExecutionResult,
   type IAgentRunner,
   type IAgentRunnerConfig,
-  type IBlueprint,
   type IParsedRequest,
 } from "./agent_runner.ts";
+import type { IBlueprint } from "@exaix/core/blueprint";
 import type { IEventLogger } from "@exaix/core/logger";
 
 export interface IReflexiveAgentConvergenceConfig {

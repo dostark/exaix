@@ -8,6 +8,8 @@
  */
 
 export * from "./src/agent_runner.ts";
+// The blueprint contract lives in @exaix/core/blueprint, so re-export it for the package surface.
+export type { IBlueprint } from "@exaix/core/blueprint";
 export * from "./src/agent_composer.ts";
 export * from "./src/execution_context_service.ts";
 export * from "./src/blueprint_service.ts";

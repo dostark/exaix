@@ -14,6 +14,7 @@
  */
 
 import type { ICallSite, IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
+import type { IBlueprint } from "@exaix/core/blueprint";
 import { type IGenerateResult, ModelProviderError } from "@exaix/ai/providers";
 import {
   COMPLEXITY_SOURCE_DEFAULT,
@@ -28,7 +29,6 @@ import { type IProjectedCallOptions, projectResolvedCallOptions } from "@exaix/a
 import {
   type EffortDeclaration,
   type EffortTier,
-  type ModelSize,
   type ThinkingDeclaration,
   toolsRoundPolicyReader,
 } from "@exaix/schemas";
@@ -132,28 +132,6 @@ type SegmentEntry = { content: string; kind: IContextSegment["kind"]; priority: 
 
 /** Blueprint defines the agent's persona and system instructions. Initially just a
  *  system prompt, can be extended later. */
-export interface IBlueprint {
-  systemPrompt: string;
-
-  /** Optional: Agent identifier for logging */
-  agentRole?: string;
-
-  /** Optional: Default skills to apply for all requests */
-  defaultSkills?: string[];
-
-  /** Optional: Extended-thinking declaration, sourced from frontmatter.thinking.
-   *  "auto" defers to EffortResolver; a boolean is final. */
-  thinking?: ThinkingDeclaration;
-
-  /** Optional: Reasoning-effort declaration, sourced from frontmatter.effort.
-   *  "auto" defers to EffortResolver; a concrete tier is final. */
-  effort?: EffortDeclaration;
-
-  /** Optional: Model size tier (S/M/L/XL), sourced from frontmatter.model_size — caps
-   *  heuristic effort resolution for small models. */
-  modelSize?: ModelSize;
-}
-
 /**
  * Context data for agent requests
  */
