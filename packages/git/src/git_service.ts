@@ -42,17 +42,17 @@ import {
   GIT_REQUEST_BRANCH_PREFIX,
 } from "./constants.ts";
 import { GitBranchName } from "./enums.ts";
+import type { IGitServiceConfig, JsonValue } from "./i_git_service.ts";
+
 import type {
   IBranchOptions,
   ICommitOptions,
   IGitCommandOptions,
   IGitService,
-  IGitServiceConfig,
   IWorktreeInfo,
-  JsonValue,
-} from "./i_git_service.ts";
-
-import type { Opt, Reason } from "@exaix/core/types";
+  Opt,
+  Reason,
+} from "@exaix/core/types";
 
 type GitServiceError = Error | string | Record<string, JsonValue>;
 
