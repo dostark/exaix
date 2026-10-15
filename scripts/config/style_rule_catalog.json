@@ -110,8 +110,7 @@
   "rules": {
     "exaix/ignore-needs-reason": {
       "engine": "plugin",
-      "severity": "off",
-      "reason": "Deferred: activating it needs a tree-wide audit of existing exaix ignore comments.",
+      "severity": "error",
       "scope": "all",
       "codeStyle": "CODE_STYLE.md#strict-type-safety",
       "tags": ["type-safety", "deslop"],
