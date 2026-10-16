@@ -38,6 +38,7 @@ import {
 import { ContextBudgetExceededError } from "@exaix/core/errors";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
+import { readConfigFixture } from "@exaix/testing";
 
 const NATIVE_PROVIDER_ID = "phase199-agent-runner-native-test";
 const NON_NATIVE_PROVIDER_ID = "phase199-agent-runner-nonnative-test";
@@ -613,28 +614,11 @@ Deno.test("[AgentRunner planning tools] an empty final round falls back to one s
 
 /** A real config file: planning tools on, one portal, and the tools round policy under test. */
 function policyConfigToml(portalRoot: string, parallelCalls: string, maxRounds: number): string {
-  return [
-    "[system]",
-    'root = "."',
-    'version = "1.0.0"',
-    'log_level = "info"',
-    "",
-    "[planning]",
-    "tools_enabled = true",
-    `max_tool_rounds = ${maxRounds}`,
-    "max_tool_result_tokens = 2000",
-    "max_tool_calls_per_round = 3",
-    "",
-    "[tools]",
-    `parallel_calls = "${parallelCalls}"`,
-    "",
-    "[[portals]]",
-    'alias = "myportal"',
-    `target_path = "${portalRoot}"`,
-    'agents_allowed = ["*"]',
-    'operations = ["read"]',
-    "",
-  ].join("\n");
+  return readConfigFixture("execution-planning-tools-policy", {
+    maxRounds: String(maxRounds),
+    parallelCalls,
+    portalRoot,
+  });
 }
 
 function threeReads(idPrefix = "t"): IGenerateResult {

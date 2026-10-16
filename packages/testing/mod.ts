@@ -8,6 +8,7 @@
  */
 export * from "./src/constants.ts";
 export { TestEnvironment } from "../../tests/integration/helpers/test_environment.ts";
+export { readConfigFixture } from "../../tests/integration/helpers/config_fixture.ts";
 export type { ILoggedActivity, ITestDatabaseService } from "./src/helpers/db.ts";
 export { createLoggingTestDb } from "./src/helpers/db.ts";
 // deno-fmt-ignore

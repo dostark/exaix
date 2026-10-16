@@ -12,8 +12,9 @@
 import { assert, assertEquals, assertNotEquals, assertThrows } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
+import { readConfigFixture } from "@exaix/testing";
 
-const VALID = '[system]\nroot = "."\nversion = "1.0.0"\nlog_level = "info"\n';
+const VALID = readConfigFixture("core-config-generation-valid");
 
 Deno.test("[config generation] a failed reload keeps the last valid config and checksum", async () => {
   const dir = await Deno.makeTempDir({ prefix: "config-generation-" });

@@ -34,6 +34,7 @@ import {
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { initTestDbService } from "@exaix/testing";
 import { createTestConfig } from "../../ai/tests/helpers/test_config.ts";
+import { readConfigFixture } from "@exaix/testing";
 
 const PROVIDER_ID = "native-react-strategy-fixture";
 
@@ -635,8 +636,7 @@ Deno.test("[react policy] the composer hands its tool-round reader to the ReAct 
   const configDir = await Deno.makeTempDir({ prefix: "composer-round-policy-" });
   try {
     const configPath = join(configDir, "exa.config.toml");
-    const withMode = (mode: string) =>
-      `[system]\nroot = "."\nversion = "1.0.0"\nlog_level = "info"\n\n[tools]\nparallel_calls = "${mode}"\n`;
+    const withMode = (mode: string) => readConfigFixture("execution-react-strategy", { mode });
     await Deno.writeTextFile(configPath, withMode("off"));
     const service = new ConfigService(configPath);
     const composer = new AgentComposer({

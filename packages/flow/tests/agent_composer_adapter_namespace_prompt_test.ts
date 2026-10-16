@@ -21,6 +21,7 @@ import { EventLogger } from "@exaix/core/logger";
 import { PortalPermissionsService } from "@exaix/portal";
 import { createMockConfig, initTestDbService } from "@exaix/testing";
 import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import { readConfigFixture } from "@exaix/testing";
 
 const TASK = "Compose the research findings.";
 const BOUND = 2048;
@@ -122,7 +123,7 @@ Deno.test("[config] a [flow] value parsed from TOML bounds the evidence block", 
   try {
     const base = createMockConfig(dbService.tempDir);
     const parsed = ConfigSchema.parse(
-      parseToml(`[system]\nwatcher_timeout_sec = 60\n[flow]\nnamespace_prompt_max_bytes = ${BOUND}\n`),
+      parseToml(readConfigFixture("flow-namespace-prompt", { bound: String(BOUND) })),
     );
     const prompts: string[] = [];
     const adapter = new AgentComposerAdapter(capturingRunner(prompts), AGENTS_DIR, {

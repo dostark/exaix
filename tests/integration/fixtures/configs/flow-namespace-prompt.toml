@@ -1,0 +1,4 @@
+[system]
+watcher_timeout_sec = 60
+[flow]
+namespace_prompt_max_bytes = __BOUND__

@@ -1,0 +1,6 @@
+[system]
+root = "__ROOT__"
+
+[agents]
+inject_aci_docs = true
+aci_doc_prompt_max_chars = 8000

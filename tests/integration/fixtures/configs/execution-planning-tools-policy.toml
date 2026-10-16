@@ -1,0 +1,19 @@
+[system]
+root = "."
+version = "1.0.0"
+log_level = "info"
+
+[planning]
+tools_enabled = true
+max_tool_rounds = __MAX_ROUNDS__
+max_tool_result_tokens = 2000
+max_tool_calls_per_round = 3
+
+[tools]
+parallel_calls = "__PARALLEL_CALLS__"
+
+[[portals]]
+alias = "myportal"
+target_path = "__PORTAL_ROOT__"
+agents_allowed = ["*"]
+operations = ["read"]
