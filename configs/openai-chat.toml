@@ -3,11 +3,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = ["api.openai.com"]
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # Phase 155 Step 3: the qualified "openai" compatible profile, targeting the real OpenAI Chat
 # Completions endpoint through the shared @exaix/ai-openai compatible provider rather than a
 # second HTTP stack. Requires OPENAI_API_KEY in the daemon's own environment; no key is present

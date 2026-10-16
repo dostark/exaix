@@ -121,6 +121,7 @@ Deno.test("[scenario-declarative] classifier recognizes each procedural category
   assertEquals(classifyShellStep("sh", ["-c", `"$FRAMEWORK_HOME/bin/exactl" review approve request-x`]), "exactl-glue");
   assertEquals(classifyShellStep("sh", ["-c", "cd todo-app && deno test src/"]), "test-run");
   assertEquals(
+    // path-builder-exclude: the fixture spells shell variables
     classifyShellStep("cp", ["-r", "$FRAMEWORK_HOME/Blueprints", "$WORKSPACE_ROOT/Blueprints"]),
     "sandbox-setup",
   );

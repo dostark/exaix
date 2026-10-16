@@ -3,11 +3,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = []
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # swe_tasks Phase 158 value-run cell on the OpenCode Zen FREE tier:
 # opencode/deepseek-v4-flash-free (zero cost, deliberately scheduled operator runs only).
 # Mirrors opencode-cli-delegate-all.toml with the model downgraded to the free tier.

@@ -4,6 +4,7 @@
  * @description Tests for ConfigCommands convenience methods — set-model,
  *   set-provider, set-path, diff, show --sources, and profile support.
  */
+import * as pathBuilders from "@exaix/shared";
 import { Database } from "@db/sqlite";
 import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
 import { createConfigAdapter, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
@@ -21,7 +22,7 @@ import * as DEFAULTS from "@exaix/core";
 function withTempConfigDb(fn: (adapter: IConfigAdapter) => void): void {
   const dir = Deno.makeTempDirSync({ prefix: "config-cmd-" });
   try {
-    const targetDir = `${dir}/Workspace`;
+    const targetDir = pathBuilders.workspacePath(dir);
     Deno.mkdirSync(targetDir, { recursive: true });
     // Create a minimal config to satisfy system.root
     const configPath = `${targetDir}/config.toml`;

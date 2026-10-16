@@ -8,6 +8,7 @@
  * session simulators, and assertion utilities for all terminal views.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import {
   LegacyRequestManagerTuiSession as _LegacyRequestManagerTuiSession,
@@ -316,7 +317,7 @@ export function samplePortal(overrides: IPortalInfoOverrides = {}): IPortalInfo 
   return {
     alias: overrides.alias ?? `Portal-${Math.floor(Math.random() * 1e6)}`,
     status: overrides.status ?? PortalStatus.ACTIVE,
-    targetPath: overrides.targetPath ?? "/Portals/Main",
+    targetPath: overrides.targetPath ?? pathBuilders.portalsPath("/", "Main"),
     symlinkPath: overrides.symlinkPath ?? "",
     contextCardPath: overrides.contextCardPath ?? "",
     ...overrides,

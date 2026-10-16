@@ -9,11 +9,6 @@ log_level = "info"
 # configs/codex-cli-react.toml's posture (Phase 167 Step 3).
 allow_net = ["127.0.0.1"]
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # Analysis/planning model (the daemon's own in-process LLM, distinct from the delegate below).
 [ai]
 provider = "codex-cli"

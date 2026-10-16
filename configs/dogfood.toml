@@ -6,11 +6,6 @@ log_level = "info"
 # required whenever [dogfood.context] is enabled below, independent of any outbound API host.
 allow_net = ["api.anthropic.com", "api.openai.com", "localhost:11434", "generativelanguage.googleapis.com", "127.0.0.1"]
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # Skill folders are read directly. The dogfood root is the worktree's own .copilot/skills.
 [skills]
 roots = [

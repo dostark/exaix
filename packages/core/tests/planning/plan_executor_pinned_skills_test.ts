@@ -11,6 +11,7 @@
  * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/skill_pin_transport.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import {
   createMockConfig,
@@ -136,9 +137,9 @@ async function run(skills: PinSkillsService | null, frontmatter: JSONObject) {
     contextWindow: 128_000,
   });
   const root = await Deno.makeTempDir();
-  await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
+  await Deno.mkdir(pathBuilders.agentsPath(pathBuilders.blueprintsPath(root)), { recursive: true });
   await Deno.writeTextFile(
-    `${root}/Blueprints/Agents/senior-coder.md`,
+    pathBuilders.agentsPath(pathBuilders.blueprintsPath(root), "senior-coder.md"),
     '---\nagent_role: senior-coder\nmodel: ""\npermitted_tools: ["read_file", "write_file", "list_directory"]\n---\n\nStub role.\n',
   );
   const config = createMockConfig(root, {});

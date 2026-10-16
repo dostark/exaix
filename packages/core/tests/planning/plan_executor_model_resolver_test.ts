@@ -12,6 +12,7 @@
  * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_composer.ts, packages/ai/src/model_resolver.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { createMockConfig } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
@@ -82,9 +83,9 @@ Deno.test({
     registerLocalProvider("ollama");
     try {
       const root = await Deno.makeTempDir();
-      await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
+      await Deno.mkdir(pathBuilders.agentsPath(pathBuilders.blueprintsPath(root)), { recursive: true });
       await Deno.writeTextFile(
-        `${root}/Blueprints/Agents/senior-coder.md`,
+        pathBuilders.agentsPath(pathBuilders.blueprintsPath(root), "senior-coder.md"),
         '---\nagent_role: senior-coder\nmodel: ""\n---\n\nStub agent role for testing.\n',
       );
       const config = createMockConfig(root, {});
@@ -135,9 +136,9 @@ Deno.test({
     registerLocalProvider("ollama");
     try {
       const root = await Deno.makeTempDir();
-      await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
+      await Deno.mkdir(pathBuilders.agentsPath(pathBuilders.blueprintsPath(root)), { recursive: true });
       await Deno.writeTextFile(
-        `${root}/Blueprints/Agents/senior-coder.md`,
+        pathBuilders.agentsPath(pathBuilders.blueprintsPath(root), "senior-coder.md"),
         '---\nagent_role: senior-coder\nmodel: ""\nmodel_size: L\n---\n\nStub agent role for testing.\n',
       );
       const config = createMockConfig(root, {});
@@ -194,9 +195,9 @@ Deno.test({
     registerLocalProvider("ollama");
     try {
       const root = await Deno.makeTempDir();
-      await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
+      await Deno.mkdir(pathBuilders.agentsPath(pathBuilders.blueprintsPath(root)), { recursive: true });
       await Deno.writeTextFile(
-        `${root}/Blueprints/Agents/senior-coder.md`,
+        pathBuilders.agentsPath(pathBuilders.blueprintsPath(root), "senior-coder.md"),
         '---\nagent_role: senior-coder\nmodel: ""\nmodel_size: M\n---\n\nStub agent role for testing.\n',
       );
       const config = createMockConfig(root, {});

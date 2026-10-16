@@ -3,11 +3,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = []
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # Phase 198 Step 6: Codex CLI through a forced ReAct step with a standard AST cache.
 [ai]
 provider = "codex-cli"

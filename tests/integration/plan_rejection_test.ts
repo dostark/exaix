@@ -5,6 +5,7 @@
  * proper status updates, archival of the rejected plan, and cleanup of transient state.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_ACTIVE_PATH, DEFAULT_PLANS_PATH, DEFAULT_REJECTED_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MemoryBankSource } from "@exaix/core";
@@ -16,9 +17,9 @@ import { ensureDir } from "@std/fs";
 Deno.test("Integration: Plan Rejection - Request to Archive", async (t) => {
   const env = await TestEnvironment.create();
   // Ensure all required directories exist for rejection tests
-  await ensureDir(env.tempDir + "/Workspace/Plans");
-  await ensureDir(env.tempDir + "/Workspace/Rejected");
-  await ensureDir(env.tempDir + "/Workspace/Requests");
+  await ensureDir(pathBuilders.plansPath(pathBuilders.workspacePath(env.tempDir)));
+  await ensureDir(pathBuilders.rejectedPath(pathBuilders.workspacePath(env.tempDir)));
+  await ensureDir(pathBuilders.requestsPath(pathBuilders.workspacePath(env.tempDir)));
 
   try {
     let traceId: string;

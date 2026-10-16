@@ -13,6 +13,7 @@
  * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_composer.ts, packages/core/src/prompt_budget_allocator.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertNotEquals } from "@std/assert";
 import { createMockConfig } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
@@ -91,9 +92,9 @@ Deno.test({
       );
 
       const root = await Deno.makeTempDir();
-      await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
+      await Deno.mkdir(pathBuilders.agentsPath(pathBuilders.blueprintsPath(root)), { recursive: true });
       await Deno.writeTextFile(
-        `${root}/Blueprints/Agents/senior-coder.md`,
+        pathBuilders.agentsPath(pathBuilders.blueprintsPath(root), "senior-coder.md"),
         `---\nagent_role: senior-coder\nmodel: "${providerName}:any-model"\n---\n\nStub agent role for testing.\n`,
       );
       const config = createMockConfig(root, {});

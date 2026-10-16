@@ -5,6 +5,7 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/scenarios/flow_blueprints, tests/scenario_framework/fixtures/cli/flow_blueprint_delegate.ts]
  */
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { parse as parseToml } from "@std/toml";
@@ -62,7 +63,7 @@ for (
     assertEquals(expanded.env!.PATH, `${REPO_ROOT}/.mock-cli:${Deno.env.get("PATH")}`);
     assertEquals(config.ai?.provider, "mock");
     assertEquals(config.ai?.model, "test");
-    const flow = await new FlowLoader(`${REPO_ROOT}Blueprints/Flows`).loadFlow(flowId);
+    const flow = await new FlowLoader(pathBuilders.flowsPath(pathBuilders.blueprintsPath(REPO_ROOT))).loadFlow(flowId);
     for (const step of flow.steps.filter((step) => step.strategy === "cli_delegate")) {
       const binding = scenario.bindings?.[`flow:${flowId}/step:${step.id}`];
       assertEquals(binding?.service, "claude-code");

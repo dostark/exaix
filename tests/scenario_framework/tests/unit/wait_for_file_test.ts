@@ -91,7 +91,7 @@ Deno.test("[wait_for_file] fails fast when failure_glob matches before the succe
         id: "wait-for-plan",
         type: ScenarioStepType.WAIT_FOR_FILE,
         args: ["**/Plans/*_plan.md"],
-        failure_glob: "**/Workspace/Rejected/*_rejected.md",
+        failure_glob: "**/Workspace/Rejected/*_rejected.md", // path-builder-exclude: a glob pattern, not a built path
         timeout_sec: 180,
         input_criteria: [],
         output_criteria: [],
@@ -160,7 +160,7 @@ Deno.test("[wait_for_file] success glob still wins if both patterns exist (succe
         id: "wait-for-plan",
         type: ScenarioStepType.WAIT_FOR_FILE,
         args: ["**/Plans/*_plan.md"],
-        failure_glob: "**/Workspace/Rejected/*_rejected.md",
+        failure_glob: "**/Workspace/Rejected/*_rejected.md", // path-builder-exclude: a glob pattern, not a built path
         timeout_sec: 5,
         input_criteria: [],
         output_criteria: [],

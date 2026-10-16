@@ -6,11 +6,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = ["api.deepseek.com"]
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 [ai]
 provider = "openai-chat"
 model = "deepseek-v4-pro"

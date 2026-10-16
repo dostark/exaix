@@ -8,11 +8,6 @@ log_level = "info"
 # performs its subscription-authenticated network traffic in its own child process.
 allow_net = ["127.0.0.1"]
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # Every daemon model turn (analysis, planning, and review) goes through subscribed Claude
 # Code. The session-delegate code_changes gate below launches the same CLI explicitly.
 [ai]

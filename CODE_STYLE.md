@@ -1033,21 +1033,24 @@ Tests: `packages/execution/tests/planning_tool_loop_test.ts` and `packages/ai-go
 
 ## 19. Workspace Path Construction {#exaix-path-construction}
 
-Exaix workspace paths are built by the helper functions in `@exaix/shared`, never by joining a
-default segment constant in the caller.
+Exaix workspace paths are built by the helper functions in `@exaix/shared`, never by composing the
+default segments in the caller.
 
 - Build `<root>/Workspace/Requests/...` with `requestsPath(root, ...)`, and its siblings with
   `plansPath`, `activePath`, `archivePath`, `rejectedPath`, `workspacePath`, and `runtimePath`.
 - Build the blueprint and memory branches with `blueprintsPath`, `agentsPath`, `flowsPath`,
   `memoryPath`, and the `memory*Path` family.
-- A caller that joins `DEFAULT_*_PATH` itself re-derives the layout, so a layout change misses
-  that caller. The helpers own the default, so no caller repeats it.
+- A caller that joins `DEFAULT_*_PATH` or spells a root segment in a literal re-derives the layout,
+  so a layout change misses that caller. The helpers own the default, so no caller repeats it.
+- A shipped config under `configs/` does not restate a `[paths]` default. The schema fills a missing
+  key from the same constant, so a restated value is a second owner of the layout.
 - The helpers live in `packages/shared/src/paths.ts`.
 
-**Exception:** a test may join the constants when the composition itself is the rule under test,
-such as the flow-catalog guard. Mark such a line with `path-builder-exclude` and the reason.
+**Exception:** a test may compose the segments when the composition itself is the rule under test,
+such as the flow-catalog guard, or when the literal must stay a shell variable or a glob. Mark such
+a line with `path-builder-exclude` and the reason.
 
-This is enforced as `[path-builder]` by `deno task check:path-builders`.
+This is enforced by `deno task check:path-builders`.
 
 ---
 

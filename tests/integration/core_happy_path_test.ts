@@ -5,6 +5,7 @@
  * Approval -> Execution -> Report, ensuring trace correlation across all stages.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_ACTIVE_PATH, DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { ExecutionStatus, MemoryBankSource, PortalOperation } from "@exaix/core";
@@ -161,8 +162,8 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
     await t.step("Test 6: Report generated with execution summary", async () => {
       // Generate report (normally done by execution loop on success)
       const reportConfig = {
-        reportsDirectory: `${env.tempDir}/Memory/Execution`,
-        memoryRoot: `${env.tempDir}/Memory`,
+        reportsDirectory: pathBuilders.memoryExecutionPath(pathBuilders.memoryPath(env.tempDir)),
+        memoryRoot: pathBuilders.memoryPath(env.tempDir),
         db: env.db,
       };
       const memoryBank = new MemoryBankService(env.config);

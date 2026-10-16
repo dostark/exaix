@@ -3,11 +3,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = ["generativelanguage.googleapis.com"]
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 [ai]
 provider = "google"
 model = "gemini-3.8-flash"

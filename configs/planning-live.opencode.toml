@@ -3,11 +3,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = []
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 [ai]
 provider = "opencode-cli"
 model = "opencode-go/deepseek-v4-flash"

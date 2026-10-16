@@ -9,6 +9,7 @@
  * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_composer.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import {
   createMockConfig,
@@ -128,9 +129,9 @@ Deno.test("PlanExecutor: a pinned floor-bearing skill raises the execution-path 
   registerLocalProvider("ollama");
   try {
     const root = await Deno.makeTempDir();
-    await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
+    await Deno.mkdir(pathBuilders.agentsPath(pathBuilders.blueprintsPath(root)), { recursive: true });
     await Deno.writeTextFile(
-      `${root}/Blueprints/Agents/senior-coder.md`,
+      pathBuilders.agentsPath(pathBuilders.blueprintsPath(root), "senior-coder.md"),
       '---\nagent_role: senior-coder\nmodel: ""\n---\n\nStub agent role for testing.\n',
     );
     const config = createMockConfig(root, {});
@@ -201,9 +202,9 @@ Deno.test("PlanExecutor: no resolved_skills means no pinned skill floor is appli
   registerLocalProvider("ollama");
   try {
     const root = await Deno.makeTempDir();
-    await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
+    await Deno.mkdir(pathBuilders.agentsPath(pathBuilders.blueprintsPath(root)), { recursive: true });
     await Deno.writeTextFile(
-      `${root}/Blueprints/Agents/senior-coder.md`,
+      pathBuilders.agentsPath(pathBuilders.blueprintsPath(root), "senior-coder.md"),
       '---\nagent_role: senior-coder\nmodel: ""\n---\n\nStub agent role for testing.\n',
     );
     const config = createMockConfig(root, {});

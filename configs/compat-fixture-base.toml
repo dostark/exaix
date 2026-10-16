@@ -6,11 +6,6 @@ root = "__DOGFOOD_ROOT__"
 # files, so a service that only the per-run catalog declares is outside the start-time grant.
 allow_net = ["127.0.0.1:__COMPAT_FIXTURE_PORT__"]
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # Phase 203 Step 7: the base config for the `self-hosted-fixture` preset. The preset's binding
 # supplies the service, so this file carries no [ai.compatible] block; the provider block only
 # names the realm the daemon boots with.

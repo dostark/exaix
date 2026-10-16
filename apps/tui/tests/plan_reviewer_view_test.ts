@@ -7,6 +7,7 @@
  * for pending plans, keyboard-driven approval/rejection workflows, and real-time status updates.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { PlanStatus } from "@exaix/core/status";
 import { ExaPathDefaults } from "@exaix/core";
@@ -53,7 +54,7 @@ function asObject(value: JSONValue | undefined): JSONObject | undefined {
 
 async function setupWorkspace(planId: string, frontmatter: Record<string, string>, body = "") {
   const root = await Deno.makeTempDir();
-  const inbox = `${root}/Workspace/Plans`;
+  const inbox = pathBuilders.plansPath(pathBuilders.workspacePath(root));
   await Deno.mkdir(inbox, { recursive: true });
   const content = yamlFrontmatter(frontmatter) + body;
   await Deno.writeTextFile(`${inbox}/${planId}.md`, content);
@@ -142,7 +143,7 @@ Deno.test("approve moves plan and logs activity via PlanCommands", async () => {
     const ok = await view.approve(planId, "reviewer-1");
     assert(ok);
     // Check that plan file moved to Workspace/Active
-    const activePath = `${root}/Workspace/Active/${planId}.md`;
+    const activePath = pathBuilders.activePath(pathBuilders.workspacePath(root), `${planId}.md`);
     const exists = await Deno.stat(activePath).then(() => true).catch(() => false);
     assertEquals(exists, true);
   } finally {
@@ -199,7 +200,7 @@ Deno.test("reject moves plan to Workspace/Rejected and logs reason via PlanComma
   try {
     const ok = await view.reject(planId, "reviewer-2", "needs changes");
     assert(ok);
-    const rejectedPath = `${root}/Workspace/Rejected/${planId}_rejected.md`;
+    const rejectedPath = pathBuilders.rejectedPath(pathBuilders.workspacePath(root), `${planId}_rejected.md`);
     const exists = await Deno.stat(rejectedPath).then(() => true).catch(() => false);
     assertEquals(exists, true);
   } finally {

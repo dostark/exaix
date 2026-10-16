@@ -3,11 +3,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = ["generativelanguage.googleapis.com"]
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # swe_tasks provider-live cell: real Google end to end (analysis + execution), no session
 # delegate - so execution runs through the daemon's own AgentExecutor/DynamicStepExecutor,
 # journalling real dynamic_tool_call events (trajectory-assert's source). Mirrors

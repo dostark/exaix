@@ -9,6 +9,7 @@
  * @related-files [apps/daemon/src/recovery.ts, packages/session/src/session_delegate_cycle_claim_store.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
@@ -44,7 +45,9 @@ Deno.test("[recovery] a cycle-owned orphan never creates a human-review request"
     assertEquals(count, 0, "a cycle-owned orphan is never counted as a human-review recovery");
     let requestFileExists = true;
     try {
-      await Deno.stat(`${workspaceRoot}/Workspace/Requests/${delegationTraceId}_crash_recovery.md`);
+      await Deno.stat(
+        pathBuilders.requestsPath(pathBuilders.workspacePath(workspaceRoot), `${delegationTraceId}_crash_recovery.md`),
+      );
     } catch {
       requestFileExists = false;
     }
@@ -73,7 +76,9 @@ Deno.test("[recovery] a legacy (non-cycle) orphan still creates a human-review r
     const count = await recoverOrphanedDelegations({ db, logger, workspaceRoot, claimStore });
 
     assertEquals(count, 1, "a legacy orphan is still routed to human review");
-    const content = await Deno.readTextFile(`${workspaceRoot}/Workspace/Requests/${traceId}_crash_recovery.md`);
+    const content = await Deno.readTextFile(
+      pathBuilders.requestsPath(pathBuilders.workspacePath(workspaceRoot), `${traceId}_crash_recovery.md`),
+    );
     assertEquals(content.includes("Crash-Recovery Request"), true);
 
     await Deno.remove(workspaceRoot, { recursive: true });
