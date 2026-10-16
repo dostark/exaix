@@ -4,6 +4,7 @@
  * @description Verifies gate loop field ownership and bounded evaluation schemas.
  */
 import { assertEquals } from "@std/assert";
+import { EvaluationCategory } from "@exaix/core";
 import { FlowSchema, GateEvaluateSchema } from "@exaix/schemas/flow.ts";
 import { GateConfigSchema } from "@exaix/flow";
 
@@ -58,7 +59,7 @@ Deno.test("[schema] YAML gates retain explicit security criteria with evidence d
   const criterion = {
     name: "path_confinement",
     description: "All writes are within the permitted worktree paths.",
-    category: "security",
+    category: EvaluationCategory.SECURITY,
     weight: 1,
     required: true,
   };

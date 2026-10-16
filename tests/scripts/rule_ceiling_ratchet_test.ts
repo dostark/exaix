@@ -15,6 +15,13 @@ const RATCHETED_RULES = [
   "exaix/require-safety-comment",
   "exaix/no-runtime-typeof",
   "exaix/no-conditional-empty-object-spread",
+  "exaix/no-explicit-unknown",
+  "exaix/no-any-escape",
+  "exaix/no-unsafe-dictionary",
+  "exaix/no-object-parameters",
+  "exaix/no-boolean-assert",
+  "exaix/no-repeated-assert-call",
+  "exaix/no-constant-substring-assert",
 ];
 
 const KNOWN_RULES = ["exaix/require-safety-comment", "exaix/no-runtime-typeof"];
@@ -110,7 +117,8 @@ Deno.test("the committed ceilings file names only known rules and packages", asy
 
 Deno.test("the whole-tree counts match the committed ceilings", async () => {
   const command = new Deno.Command(Deno.execPath(), {
-    args: ["lint", "--json"],
+    // The repo lint scope, so a test-scope rule is held too (the no-argument form misses them).
+    args: ["lint", "--json", "tests/", "packages/", "exaix-team/", "apps/"],
     cwd: REPO_ROOT,
     env: { EXAIX_LINT_RULES: RATCHETED_RULES.join(",") },
     stdout: "piped",

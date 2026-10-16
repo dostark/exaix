@@ -12,6 +12,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { parse as parseToml } from "@std/toml";
 import { computeLoopBody, FlowLoader, validateLoopBody } from "@exaix/flow";
 import { BindingOverlaySchema, ConfigSchema, PlanSchema } from "@exaix/schemas";
+import { EvaluationCategory, FlowGateOnFail, FlowInputSource } from "@exaix/core";
 import { OutputParser } from "@exaix/execution";
 
 /** The gate fields the contract pins, with enum values compared as plain strings. */
@@ -292,19 +293,19 @@ Deno.test("[contract] the research overlay keeps explorers light and the compose
 Deno.test("[contract] guarded change binds hardened implementation review and a terminal security gate", async () => {
   const flow = await new FlowLoader(FLOWS_DIR).loadFlow("guarded-change");
   assertEquals(flow.steps.map((step) => [step.id, step.type as string, step.dependsOn, step.input]), [
-    ["explore", "agent", [], { source: "request", transform: "passthrough" }],
+    ["explore", "agent", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }],
     ["implement", "session_delegate_cycle", ["explore"], {
-      source: "step",
+      source: FlowInputSource.STEP,
       stepId: "explore",
       transform: "passthrough",
     }],
     ["security-gate", "gate", ["implement"], {
-      source: "aggregate",
+      source: FlowInputSource.AGGREGATE,
       from: ["explore", "implement"],
       transform: "passthrough",
     }],
     ["validate", "agent", ["security-gate"], {
-      source: "aggregate",
+      source: FlowInputSource.AGGREGATE,
       from: ["implement", "security-gate"],
       transform: "passthrough",
     }],
@@ -319,7 +320,7 @@ Deno.test("[contract] guarded change binds hardened implementation review and a 
       agent_role: "quality-judge",
       criteria: ["code_correctness", "has_tests", "task_fulfillment"],
       threshold: 0.8,
-      onFail: "halt",
+      onFail: FlowGateOnFail.HALT,
       maxRetries: 2,
       includeRequestCriteria: false,
     },
@@ -328,14 +329,14 @@ Deno.test("[contract] guarded change binds hardened implementation review and a 
   assertEquals(security.evaluate?.criteria, [
     {
       name: "path_confinement",
-      category: "security",
+      category: EvaluationCategory.SECURITY,
       description: "Every changed path is src/proof.txt or tests/proof_test.ts in the resolved worktree.",
       required: true,
       weight: 1,
     },
     {
       name: "no_secret_exposure",
-      category: "security",
+      category: EvaluationCategory.SECURITY,
       description: "The diff and return evidence contain no credentials, tokens or host secrets.",
       required: true,
       weight: 1,

@@ -425,8 +425,9 @@
     "exaix/no-repeated-assert-call": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Deferred: activation waits on the test-assertion migration tracked in the Step 8 Reachability Ledger.",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
       "scope": "test",
+      "optIn": true,
       "codeStyle": "CODE_STYLE.md#package-test-boundaries",
       "tags": [
         "test-quality",
@@ -440,8 +441,9 @@
     "exaix/no-constant-substring-assert": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Deferred: activation waits on the test-assertion migration tracked in the Step 8 Reachability Ledger.",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
       "scope": "test",
+      "optIn": true,
       "codeStyle": "CODE_STYLE.md#package-test-boundaries",
       "tags": [
         "test-quality",
@@ -455,8 +457,9 @@
     "exaix/no-boolean-assert": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Deferred: the test-assertion migration is tracked in the Step 8 Reachability Ledger.",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
       "scope": "test",
+      "optIn": true,
       "codeStyle": "CODE_STYLE.md#package-test-boundaries",
       "tags": [
         "test-quality",
@@ -526,8 +529,9 @@
     "exaix/no-explicit-unknown": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
       "scope": "all",
+      "optIn": true,
       "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
@@ -542,8 +546,9 @@
     "exaix/no-unsafe-dictionary": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
       "scope": "all",
+      "optIn": true,
       "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
@@ -562,8 +567,9 @@
     "exaix/no-any-escape": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
       "scope": "all",
+      "optIn": true,
       "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
@@ -592,8 +598,9 @@
     "exaix/no-object-parameters": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
       "scope": "all",
+      "optIn": true,
       "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
