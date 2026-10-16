@@ -17,6 +17,7 @@ import {
   DEFAULT_PORTALS_PATH,
   DEFAULT_PROJECTS_MEMORY_PATH,
   DEFAULT_REJECTED_PATH,
+  DEFAULT_RUNTIME_PATH,
   DEFAULT_WORKSPACE_PATH,
 } from "@exaix/shared";
 import { join } from "@std/path";
@@ -192,9 +193,9 @@ export async function createCliTestContext(options?: { createDirs?: string[] }):
     `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ACTIVE_PATH}`,
     `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ARCHIVE_PATH}`,
     `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REJECTED_PATH}`,
-    ".exa",
-    "Memory",
-    "Portals",
+    DEFAULT_RUNTIME_PATH,
+    DEFAULT_MEMORY_PATH,
+    DEFAULT_PORTALS_PATH,
     `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`,
   ];
   for (const dir of requiredDirs) {

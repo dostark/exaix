@@ -235,7 +235,7 @@ Deno.test("ToolRegistry: should list directory contents", async () => {
     await registry.execute(ToolName.CREATE_DIRECTORY, { path: `${DEFAULT_WORKSPACE_PATH}/subdir` });
     await registry.execute(ToolName.WRITE_FILE, { path: `${DEFAULT_WORKSPACE_PATH}/subdir/file2.txt`, content: "2" });
 
-    const listResult = await registry.execute(ToolName.LIST_DIRECTORY, { path: "Workspace" });
+    const listResult = await registry.execute(ToolName.LIST_DIRECTORY, { path: DEFAULT_WORKSPACE_PATH });
     assert(listResult.success);
     const entries = (listResult.data as { entries: Array<{ name: string; isDirectory: boolean }> }).entries;
 
@@ -258,7 +258,10 @@ Deno.test("ToolRegistry: should search files", async () => {
     });
     await registry.execute(ToolName.WRITE_FILE, { path: `${DEFAULT_WORKSPACE_PATH}/readme.md`, content: "# Readme" });
 
-    const searchResult = await registry.execute(ToolName.SEARCH_FILES, { path: "Workspace", pattern: "**/*.ts" });
+    const searchResult = await registry.execute(ToolName.SEARCH_FILES, {
+      path: DEFAULT_WORKSPACE_PATH,
+      pattern: "**/*.ts",
+    });
     assert(searchResult.success);
     const files = (searchResult.data as { files: string[] }).files;
 

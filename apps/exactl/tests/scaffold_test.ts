@@ -11,6 +11,7 @@ import {
   DEFAULT_AGENTS_PATH,
   DEFAULT_BLUEPRINTS_PATH,
   DEFAULT_MEMORY_PATH,
+  DEFAULT_PORTALS_PATH,
   DEFAULT_REQUESTS_PATH,
   DEFAULT_RUNTIME_PATH,
   DEFAULT_WORKSPACE_PATH,
@@ -208,11 +209,11 @@ Deno.test("scaffold.ts is idempotent", async () => {
 
     // Verify structure is still correct
     const requiredDirs = [
-      ".exa",
+      DEFAULT_RUNTIME_PATH,
       `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`,
       `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`,
       `${DEFAULT_MEMORY_PATH}/Reports`,
-      "Portals",
+      DEFAULT_PORTALS_PATH,
     ];
 
     for (const dir of requiredDirs) {
