@@ -22,6 +22,7 @@ import type {
 } from "@exaix/core/types";
 import { HealthStatus } from "@exaix/core/types";
 import { ModelCommands } from "../src/commands/model_commands.ts";
+import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
 
 /** A minimal in-memory registry stub covering the methods ModelCommands reads. */
 function createStubRegistry(overrides?: Partial<IModelRegistry>): IModelRegistry {
@@ -308,7 +309,7 @@ Deno.test("[model-cli][step5] models refresh refuses when model_registry is disa
 
 Deno.test("[model-cli][step5] models refresh with model_registry.enabled=true prints daemon-refresh guidance", async () => {
   await withTomlConfig(async (configPath, _read) => {
-    Deno.writeTextFileSync(configPath, `[system]\nroot = "/tmp"\n\n[model_registry]\nenabled = true\n`);
+    Deno.writeTextFileSync(configPath, readConfigFixture("exactl-model-refresh-guidance"));
     const cmd = new ModelCommands(createPopulatedRegistry(), configPath);
     const cap = captureLog();
     try {

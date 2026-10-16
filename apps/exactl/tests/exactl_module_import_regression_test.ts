@@ -9,14 +9,9 @@
 
 import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join, toFileUrl } from "@std/path";
+import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
 function buildMinimalConfig(root: string): string {
-  return `
-[system]
-root = ${JSON.stringify(root)}
-version = "1.0.0"
-log_level = "info"
-
-`.trim();
+  return readConfigFixture("exactl-minimal-config", { root: JSON.stringify(root) });
 }
 
 Deno.test("[regression] importing exactl module does not auto-run CLI entrypoint", async () => {

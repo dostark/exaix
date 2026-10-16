@@ -24,6 +24,7 @@ import { handleRequestInspect } from "../src/command_builders/request_actions.ts
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { captureAllOutputs } from "./helpers/console_utils.ts";
 import { withTestMod } from "./helpers/test_utils.ts";
+import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
 
 const TRACE_ID = "66666666-6666-4666-8666-666666666666";
 const RECORD_ID = "77777777-7777-4777-8777-777777777777";
@@ -130,13 +131,7 @@ Deno.test("[dispatch] request inspect is registered under the real `request` com
 });
 
 function buildMinimalConfig(root: string): string {
-  return `
-[system]
-root = ${JSON.stringify(root)}
-version = "1.0.0"
-log_level = "info"
-
-`.trim();
+  return readConfigFixture("exactl-minimal-config", { root: JSON.stringify(root) });
 }
 
 // Real child-process invocation of the exactl entry point, isolated in its own tempDir —
