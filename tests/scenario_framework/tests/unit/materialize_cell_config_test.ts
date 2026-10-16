@@ -21,6 +21,7 @@ import { materializeCellConfig } from "../../runner/synthetic_runner.ts";
 import { MATRIX_START_DAEMON_STEP_ID } from "../../runner/matrix_expander.ts";
 import { ScenarioStepType } from "../../schema/step_schema.ts";
 import type { IScenarioStep } from "../../schema/step_schema.ts";
+import { readConfigFixture } from "@exaix/testing";
 
 const PRESET = [
   "[system]",
@@ -105,7 +106,7 @@ Deno.test("[materialize_cell_config] a preset with no sentinels still materializ
   const workspaceRoot = await Deno.makeTempDir({ prefix: "materialize-cell-clean-" });
   const presetPath = join(workspaceRoot, "clean.toml");
   try {
-    await Deno.writeTextFile(presetPath, '[system]\nroot = "."\n');
+    await Deno.writeTextFile(presetPath, readConfigFixture("cell-config-clean"));
     const result = await materializeCellConfig([daemonStep(presetPath)], {
       workspaceRoot,
       worktreePath: "/repo",
@@ -147,7 +148,7 @@ Deno.test("[materialize_cell_config] a preset without an [ai] block yields undef
   const workspaceRoot = await Deno.makeTempDir({ prefix: "materialize-cell-no-ai-" });
   const presetPath = join(workspaceRoot, "preset.toml");
   try {
-    await Deno.writeTextFile(presetPath, '[system]\nroot = "."\n');
+    await Deno.writeTextFile(presetPath, readConfigFixture("cell-config-clean"));
     const result = await materializeCellConfig([daemonStep(presetPath)], {
       workspaceRoot,
       worktreePath: "/repo",

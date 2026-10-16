@@ -1,0 +1,20 @@
+[system]
+
+[paths]
+
+[ai]
+provider = "mock"
+model = "boot-model"
+
+[catalog.models."mock/judge-model"]
+model_provider = "mock"
+
+[catalog.models."mock/judge-model-2"]
+model_provider = "mock"
+
+[catalog.services.judge-svc]
+adapter = "mock"
+transport = "local"
+interface = "api"
+serves = { "mock/judge-model" = "judge-model", "mock/judge-model-2" = "judge-model-2" }
+
