@@ -123,13 +123,7 @@ Deno.test("[materialize_cell_config] extracts [ai].provider and [ai].model from 
   const workspaceRoot = await Deno.makeTempDir({ prefix: "materialize-cell-ai-" });
   const presetPath = join(workspaceRoot, "preset.toml");
   try {
-    const presetWithAi = [
-      "[system]",
-      'root = "__DOGFOOD_ROOT__"',
-      "[ai]",
-      'provider = "claude-cli"',
-      'model = "claude-sonnet-5"',
-    ].join("\n");
+    const presetWithAi = readConfigFixture("cell-config-preset-with-ai");
     await Deno.writeTextFile(presetPath, presetWithAi);
 
     const result = await materializeCellConfig([daemonStep(presetPath)], {

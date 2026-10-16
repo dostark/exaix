@@ -38,7 +38,7 @@ Deno.test("[cell_config] resolveCellConfig replaces every occurrence (replaceAll
 });
 
 Deno.test("[cell_config] resolveCellConfig leaves a sentinel-free preset unchanged", () => {
-  const clean = '[system]\nroot = "/already/absolute"\n';
+  const clean = readConfigFixture("cell-config-sentinel-free");
   assertEquals(resolveCellConfig(clean, { workspaceRoot: "/ws", worktreePath: "/repo" }), clean);
 });
 
