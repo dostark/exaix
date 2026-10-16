@@ -5,6 +5,7 @@
  * command patterns and argument types while enforcing security boundaries.
  */
 
+import { DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { LearningCategory, PortalOperation, ToolName } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
@@ -41,7 +42,7 @@ function createRegistry(root?: string): ToolRegistry {
     ? ConfigSchema.parse({
       ...mockConfig,
       system: { ...mockConfig.system, root },
-      paths: { ...mockConfig.paths, workspace: "Workspace" },
+      paths: { ...mockConfig.paths, workspace: DEFAULT_WORKSPACE_PATH },
     })
     : mockConfig;
 
@@ -194,7 +195,7 @@ async function runToolRegistryTest(fn: (registry: ToolRegistry, tempDir: string)
   const tempDir = await Deno.makeTempDir({ prefix: "tool-registry-test-" });
   try {
     const registry = createRegistry(tempDir);
-    await Deno.mkdir(join(tempDir, "Workspace"), { recursive: true });
+    await Deno.mkdir(join(tempDir, DEFAULT_WORKSPACE_PATH), { recursive: true });
     await fn(registry, tempDir);
   } finally {
     await Deno.remove(tempDir, { recursive: true });

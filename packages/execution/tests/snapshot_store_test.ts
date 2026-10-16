@@ -6,6 +6,7 @@
  * @related-files ["packages/execution/src/context/snapshot_store.ts"]
  */
 
+import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import type { IContextBudgetSnapshot } from "@exaix/schemas";
@@ -44,7 +45,7 @@ Deno.test("[SnapshotStore] FileSnapshotStore: saves snapshot JSON to path rooted
     const store = new FileSnapshotStore(makeResolver(tempDir));
     await store.save(makeSnapshot("trace-abc123"));
 
-    const expectedPath = join(tempDir, "Execution", "trace-abc123", "step-1_snapshot.json");
+    const expectedPath = join(tempDir, DEFAULT_EXECUTION_MEMORY_PATH, "trace-abc123", "step-1_snapshot.json");
     const raw = await Deno.readTextFile(expectedPath);
     const parsed = JSON.parse(raw);
     assertEquals(parsed.traceId, "trace-abc123");
@@ -103,7 +104,7 @@ Deno.test("[SnapshotStore] FileSnapshotStore: writes atomically (tmp file then r
     const store = new FileSnapshotStore(makeResolver(tempDir));
     await store.save(makeSnapshot("trace-atomic", "step-1"));
 
-    const finalPath = join(tempDir, "Execution", "trace-atomic", "step-1_snapshot.json");
+    const finalPath = join(tempDir, DEFAULT_EXECUTION_MEMORY_PATH, "trace-atomic", "step-1_snapshot.json");
     const tmpPath = `${finalPath}.tmp`;
 
     // Final file must exist with valid content

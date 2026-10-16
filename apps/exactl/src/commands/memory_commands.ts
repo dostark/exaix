@@ -147,7 +147,7 @@ export class MemoryCommands extends BaseCommand {
    */
   private async countExecutions(): Promise<number> {
     let count = 0;
-    const executionDir = join(this.config.system.root, this.config.paths.memory, "Execution");
+    const executionDir = join(this.config.system.root, this.config.paths.memory, DEFAULT_EXECUTION_MEMORY_PATH);
     if (await exists(executionDir)) {
       for await (const entry of Deno.readDir(executionDir)) {
         if (entry.isDirectory) {
@@ -219,7 +219,7 @@ export class MemoryCommands extends BaseCommand {
   async projectList(format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const projects: { name: string; patterns: number; decisions: number }[] = [];
 
-    const projectsDir = join(this.config.system.root, this.config.paths.memory, "Projects");
+    const projectsDir = join(this.config.system.root, this.config.paths.memory, DEFAULT_PROJECTS_MEMORY_PATH);
     if (await exists(projectsDir)) {
       for await (const entry of Deno.readDir(projectsDir)) {
         if (entry.isDirectory) {

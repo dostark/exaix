@@ -15,6 +15,7 @@
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, packages/request/src/common.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { assert } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
@@ -138,8 +139,11 @@ Evaluate the pinned skills.
     // A flow declared in file frontmatter bypasses the CLI's flow/agent-role exclusion guard
     // (that guard only fires on the `--flow` flag), so it must not conflict with the
     // default agent role that options.agent_role always carries.
-    await Deno.mkdir(join(tempDir, "Blueprints", "Flows"), { recursive: true });
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "api-design.flow.yaml"), "id: api-design\n");
+    await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH), { recursive: true });
+    await Deno.writeTextFile(
+      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "api-design.flow.yaml"),
+      "id: api-design\n",
+    );
 
     const inputFile = join(tempDir, "flow.md");
     await Deno.writeTextFile(
@@ -154,8 +158,11 @@ Evaluate the pinned skills.
   });
 
   it("preserves a hardened plan context pointer on file submission", async () => {
-    await Deno.mkdir(join(tempDir, "Blueprints", "Flows"), { recursive: true });
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "api-design.flow.yaml"), "id: api-design\n");
+    await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH), { recursive: true });
+    await Deno.writeTextFile(
+      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "api-design.flow.yaml"),
+      "id: api-design\n",
+    );
     const { frontmatter } = await submit(
       "---\nflow: api-design\nplan_context_ref: .exa/PlanContext/guarded-change.md\n---\nRun the hardened plan.\n",
     );
@@ -166,8 +173,11 @@ Evaluate the pinned skills.
     // A flow request's frontmatter must omit `agent_role` entirely: `create()` always
     // populates `agent` from options.agent_role as a fallback, but the daemon rejects
     // any request carrying both `flow` and `agent`/`agent_role` fields.
-    await Deno.mkdir(join(tempDir, "Blueprints", "Flows"), { recursive: true });
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "api-design.flow.yaml"), "id: api-design\n");
+    await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH), { recursive: true });
+    await Deno.writeTextFile(
+      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "api-design.flow.yaml"),
+      "id: api-design\n",
+    );
 
     const inputFile = join(tempDir, "flow2.md");
     await Deno.writeTextFile(

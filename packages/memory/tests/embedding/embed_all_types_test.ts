@@ -4,6 +4,14 @@
  * @description Verifies the generalized embed path: executions, patterns, decisions, and project overviews are embedded (not just learnings) with their respective identity keys (pattern/decision UUID ids, execution trace_id, `${portal}:overview` for overviews), are retrievable by meaning through a deterministic semantic mock provider, and bank write paths embed on mutation.
  * @architectural-layer Tests
  */
+import {
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_ARCHIVE_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_REJECTED_PATH,
+  DEFAULT_REQUESTS_PATH,
+} from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import type { IEmbeddingProvider } from "@exaix/ai";
 import { MemoryType } from "@exaix/core";
@@ -48,12 +56,12 @@ function testConfig(tempDir: string): Config {
       runtime: "./.exa",
       workspace: "./Workspace",
       portals: "./Portals",
-      active: "Active",
-      archive: "Archive",
-      plans: "Plans",
-      requests: "Requests",
-      rejected: "Rejected",
-      agents: "Agents",
+      active: DEFAULT_ACTIVE_PATH,
+      archive: DEFAULT_ARCHIVE_PATH,
+      plans: DEFAULT_PLANS_PATH,
+      requests: DEFAULT_REQUESTS_PATH,
+      rejected: DEFAULT_REJECTED_PATH,
+      agents: DEFAULT_AGENTS_PATH,
       flows: "Blueprints/Flows",
       memoryProjects: "Projects",
       memoryExecution: "Execution",

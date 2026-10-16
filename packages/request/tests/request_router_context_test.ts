@@ -7,6 +7,7 @@
  * across routed requests, ensuring consistent trace and security boundaries.
  */
 
+import { DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
@@ -73,7 +74,7 @@ describe("RequestRouter IWorkspaceExecutionContext Integration", () => {
       flowValidator: mockFlowValidator,
       eventLogger: logger,
       defaultAgentRole: "default-agent",
-      blueprintsPath: join(tempDir, "Blueprints"),
+      blueprintsPath: join(tempDir, DEFAULT_BLUEPRINTS_PATH),
       config,
     });
   });

@@ -8,6 +8,12 @@
  * @related-files [packages/execution/src/agent_composer.ts, packages/core/src/prompt_budget_allocator.ts]
  */
 
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_SKILLS_MEMORY_PATH,
+} from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { EventLogger } from "@exaix/core/logger";
@@ -27,15 +33,15 @@ async function run(withPin: boolean) {
   const { db, cleanup } = await initTestDbService();
   const testDir = await Deno.makeTempDir({ prefix: "ac-pinned-budget-" });
   try {
-    await Deno.mkdir(join(testDir, "Blueprints", "Agents"), { recursive: true });
+    await Deno.mkdir(join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.writeTextFile(
-      join(testDir, "Blueprints", "Agents", "test-agent.md"),
+      join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "test-agent.md"),
       "---\nagent_role: test-agent\nname: Test\nmodel: mock:test\n---\nYou are a test agent.\n",
     );
-    const skillsDir = join(testDir, "Blueprints", "Skills");
+    const skillsDir = join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
     await writeSkillFolder(skillsDir, { name: SKILL, instructions: BODY });
     const skills = new SkillsService(
-      { memoryDir: join(testDir, "Memory"), blueprintSkillsDir: skillsDir },
+      { memoryDir: join(testDir, DEFAULT_MEMORY_PATH), blueprintSkillsDir: skillsDir },
       db,
       undefined,
       new EventLogger({ db }),

@@ -5,6 +5,7 @@
  * of portal-specific tool calls and cross-portal file access.
  */
 
+import { DEFAULT_ACTIVE_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ExecutionLoop } from "@exaix/execution";
@@ -64,7 +65,7 @@ Deno.test("[regression] ExecutionLoop: targets portal directory and creates revi
       operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
     }];
 
-    const activeDir = join(rootDir, config.paths.workspace, "Active");
+    const activeDir = join(rootDir, config.paths.workspace, DEFAULT_ACTIVE_PATH);
     await ensureDir(activeDir);
 
     const logger = new EventLogger({ db, defaultActor: "user:test" });

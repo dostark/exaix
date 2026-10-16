@@ -9,6 +9,7 @@
  * @related-files [apps/exactl/src/commands/memory_commands.ts, packages/cli/src/formatters/memory_formatter.ts]
  */
 
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { UIOutputFormat } from "@exaix/tui";
@@ -59,7 +60,7 @@ Deno.test("[skills show] an unused skill shows zero uses", async () => {
 Deno.test("[skills --portal] project skills show only for their portal and are global-only without one", async () => {
   const { commands, config, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const projectRoot = join(config.system.root, config.paths.memory, "Skills", "project", "Alpha");
+    const projectRoot = join(config.system.root, config.paths.memory, DEFAULT_SKILLS_MEMORY_PATH, "project", "Alpha");
     await writeSkillFolder(projectRoot, {
       name: "alpha-guide",
       instructions: "Alpha body.",
@@ -186,7 +187,7 @@ Deno.test("[skills revisions/show/usage] history survives deleting the current f
 Deno.test("[skills validate/list --all] diagnostics are typed, mutate nothing and fail the exit code on errors", async () => {
   const { commands, config, db, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const learned = join(config.system.root, config.paths.memory, "Skills", "learned");
+    const learned = join(config.system.root, config.paths.memory, DEFAULT_SKILLS_MEMORY_PATH, "learned");
     await writeSkillFolder(learned, {
       name: "fine-skill",
       instructions: "Fine.",
@@ -246,7 +247,7 @@ Deno.test("[security] a hostile draft prints no control byte in table or markdow
   // deno-lint-ignore no-control-regex
   const controlByte = /[\x00-\x08\x0B-\x1F\x7F]/;
   try {
-    const learned = join(config.system.root, config.paths.memory, "Skills", "learned");
+    const learned = join(config.system.root, config.paths.memory, DEFAULT_SKILLS_MEMORY_PATH, "learned");
     await writeSkillFolder(learned, { name: "hostile-draft", instructions: hostile });
     const service = new SkillsService({ memoryDir: join(config.system.root, config.paths.memory) }, db);
     const draft = await draftOf(service, "hostile-draft");
@@ -274,7 +275,7 @@ Deno.test("[security] a project skill's stored revision is refused to another po
   const { commands, config, db, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     const memoryDir = join(config.system.root, config.paths.memory);
-    await writeSkillFolder(join(memoryDir, "Skills", "project", "Alpha"), {
+    await writeSkillFolder(join(memoryDir, DEFAULT_SKILLS_MEMORY_PATH, "project", "Alpha"), {
       name: "alpha-guide",
       instructions: "Alpha only guidance.",
       sidecar: { status: SkillStatus.ACTIVE },

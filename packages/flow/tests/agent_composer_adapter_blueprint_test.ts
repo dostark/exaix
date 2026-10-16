@@ -10,6 +10,7 @@
  * @related-files [packages/flow/src/agent_composer_adapter.ts]
  */
 
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposerAdapter } from "@exaix/flow";
@@ -30,8 +31,8 @@ You are a test agent.
 
 async function setup(): Promise<{ root: string; cleanup: () => Promise<void> }> {
   const root = await Deno.makeTempDir({ prefix: "adapter-blueprint-" });
-  await Deno.mkdir(join(root, "Agents"), { recursive: true });
-  await Deno.writeTextFile(join(root, "Agents", "test-agent.md"), blueprintContent);
+  await Deno.mkdir(join(root, DEFAULT_AGENTS_PATH), { recursive: true });
+  await Deno.writeTextFile(join(root, DEFAULT_AGENTS_PATH, "test-agent.md"), blueprintContent);
   return { root, cleanup: () => Deno.remove(root, { recursive: true }).catch(() => {}) };
 }
 

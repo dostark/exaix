@@ -6,6 +6,13 @@
  */
 
 import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
+import {
   assert,
   assertEquals,
   assertExists,
@@ -97,9 +104,9 @@ async function setup() {
   // Use centralized test DB + tempdir
   dbService = await initTestDbService();
   testDir = dbService.tempDir;
-  blueprintsDir = join(testDir, "Blueprints", "Agents");
+  blueprintsDir = join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
   portalDir = join(testDir, "TestPortal");
-  runtimeDir = join(testDir, ".exa");
+  runtimeDir = join(testDir, DEFAULT_RUNTIME_PATH);
 
   // Setup test environment
   await Deno.mkdir(blueprintsDir, { recursive: true });
@@ -144,10 +151,10 @@ async function setup() {
   testConfig.system.root = testDir;
   testConfig.paths = {
     ...testConfig.paths,
-    workspace: join(testDir, "Workspace"),
-    memory: join(testDir, "Memory"),
-    runtime: join(testDir, ".exa"),
-    blueprints: join(testDir, "Blueprints"),
+    workspace: join(testDir, DEFAULT_WORKSPACE_PATH),
+    memory: join(testDir, DEFAULT_MEMORY_PATH),
+    runtime: join(testDir, DEFAULT_RUNTIME_PATH),
+    blueprints: join(testDir, DEFAULT_BLUEPRINTS_PATH),
   };
   testConfig.portals = [
     {
@@ -254,8 +261,8 @@ Deno.test({
         strategyRegistry,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -334,8 +341,8 @@ Deno.test({
         strategyRegistry,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -632,8 +639,8 @@ Deno.test({
         strategyRegistry,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -702,8 +709,8 @@ Deno.test({
         },
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -805,8 +812,8 @@ Deno.test({
         },
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -894,8 +901,8 @@ Deno.test({
       // and reverts them. Fix: share the same `planWrittenFiles` Set across instances.
       const sharedWrittenFiles = new Set<string>();
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -1004,8 +1011,8 @@ Deno.test({
 
       // Documents the bug this fix addresses: two independently-constructed instances
       // (no shared planWrittenFiles) reproduce the live regression.
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -1168,8 +1175,8 @@ Deno.test({
         gitAuditService: new RecordingGitAuditService(logger),
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -1261,8 +1268,8 @@ Deno.test({
         gitAuditService: new RecordingGitAuditService(logger),
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -1338,8 +1345,8 @@ Deno.test({
         strategyRegistry,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -1719,8 +1726,8 @@ Deno.test({
         "agent_executor_test",
         "maliciousYaml.md",
       );
-      const blueprintPath = join(testConfig.system.root, "Blueprints", "Agents", "malicious.md");
-      await Deno.mkdir(join(testConfig.system.root, "Blueprints", "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.system.root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "malicious.md");
+      await Deno.mkdir(join(testConfig.system.root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(blueprintPath, maliciousYaml);
 
       // Should reject with safe error
@@ -1753,8 +1760,8 @@ capabilities: []
 ---
 Test prompt`;
 
-      const blueprintPath = join(testConfig.system.root, "Blueprints", "Agents", "invalid.md");
-      await Deno.mkdir(join(testConfig.system.root, "Blueprints", "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.system.root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "invalid.md");
+      await Deno.mkdir(join(testConfig.system.root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(blueprintPath, invalidYaml);
 
       // Should reject due to name exceeding max length
@@ -1786,8 +1793,8 @@ Deno.test({
         "agent_executor_test",
         "scriptYaml.md",
       );
-      const blueprintPath = join(testConfig.system.root, "Blueprints", "Agents", "test.md");
-      await Deno.mkdir(join(testConfig.system.root, "Blueprints", "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.system.root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "test.md");
+      await Deno.mkdir(join(testConfig.system.root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(blueprintPath, scriptYaml);
 
       const blueprint = await executor.loadBlueprint("test");
@@ -1816,8 +1823,8 @@ Deno.test({
         `---\nname: test\nmodel: ${PROVIDER_OPENAI}:${TEST_MODEL_OPENAI}\nprovider: ${PROVIDER_OPENAI}\n---\n` +
         "X".repeat(60000);
 
-      const blueprintPath = join(testConfig.system.root, "Blueprints", "Agents", "huge.md");
-      await Deno.mkdir(join(testConfig.system.root, "Blueprints", "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.system.root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "huge.md");
+      await Deno.mkdir(join(testConfig.system.root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(blueprintPath, hugePrompt);
 
       // Should load successfully but with truncated prompt
@@ -1848,8 +1855,8 @@ capabilities: []
 ---
 Test prompt`;
 
-      const blueprintPath = join(testConfig.system.root, "Blueprints", "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.system.root, "Blueprints", "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.system.root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.system.root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(blueprintPath, validYaml);
 
       // Should load successfully
@@ -1876,8 +1883,13 @@ Deno.test({
       // Create blueprint without frontmatter
       const noFrontmatter = `This is just content without YAML frontmatter.`;
 
-      const blueprintPath = join(testConfig.system.root, "Blueprints", "Agents", "no-frontmatter.md");
-      await Deno.mkdir(join(testConfig.system.root, "Blueprints", "Agents"), { recursive: true });
+      const blueprintPath = join(
+        testConfig.system.root,
+        DEFAULT_BLUEPRINTS_PATH,
+        DEFAULT_AGENTS_PATH,
+        "no-frontmatter.md",
+      );
+      await Deno.mkdir(join(testConfig.system.root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(blueprintPath, noFrontmatter);
 
       await assertRejects(
@@ -2255,8 +2267,8 @@ Deno.test({
         }),
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -2355,8 +2367,8 @@ Deno.test({
         strategyRegistry,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -2669,8 +2681,8 @@ Deno.test({
       const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
 
       // 1. Invalid YAML
-      const badYamlPath = join(testConfig.paths.blueprints, "Agents", "bad-yaml.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const badYamlPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "bad-yaml.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(badYamlPath, "---\nname: [unclosed bracket\n---\nPrompt");
 
       const error = await assertRejects(
@@ -2680,7 +2692,7 @@ Deno.test({
       assert(["YAML_PARSE_ERROR", "BLUEPRINT_LOAD_ERROR"].includes((error as SafeError).errorCode));
 
       // 2. Invalid Schema (missing required field: model)
-      const badSchemaPath = join(testConfig.paths.blueprints, "Agents", "bad-schema.md");
+      const badSchemaPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "bad-schema.md");
       await Deno.writeTextFile(badSchemaPath, "---\nname: test\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
       const error2 = await assertRejects(
@@ -2690,7 +2702,7 @@ Deno.test({
       assertEquals((error2 as SafeError).errorCode, "INVALID_BLUEPRINT_SCHEMA");
 
       // 3. Missing frontmatter
-      const noFrontmatterPath = join(testConfig.paths.blueprints, "Agents", "no-fm.md");
+      const noFrontmatterPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "no-fm.md");
       await Deno.writeTextFile(noFrontmatterPath, "Just content");
 
       const error3 = await assertRejects(
@@ -2757,8 +2769,8 @@ Deno.test({
         executionContext: new ExecutionContextService(testConfig, logger, { tokenizer: mockTokenizer }),
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -2855,8 +2867,8 @@ Deno.test({
         strategyRegistry,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -3042,8 +3054,8 @@ Deno.test({
       // the agent role's permitted_tools. "test-agent" is used (rather than a new agent role
       // name) because getServices()'s fixed portal permissions only allow
       // ["test-agent", "ollama-agent"] to access TestPortal.
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n" +
@@ -3137,8 +3149,8 @@ Deno.test({
         options: { matchedSkillTools: [["grep"]] },
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n" +
@@ -3215,8 +3227,8 @@ Deno.test({
         toolRegistry: fakeToolRegistry,
         options: { matchedSkillTools: [["grep"]] },
       });
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(blueprintPath, "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n---\nPrompt");
       const context: IExecutionContext = {
         trace_id: "8e5c81f3-4236-461d-adcb-bf5741a2c0ca",
@@ -3286,10 +3298,10 @@ Deno.test({
       // Create blueprint file
       const blueprintPath = join(
         testConfig.paths.blueprints,
-        "Agents",
+        DEFAULT_AGENTS_PATH,
         "test-agent.md",
       );
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), {
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), {
         recursive: true,
       });
       await Deno.writeTextFile(
@@ -3396,8 +3408,8 @@ Deno.test({
     try {
       const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions }); // No provider passed
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(blueprintPath, "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
       const context: IExecutionContext = {
@@ -3476,8 +3488,8 @@ Deno.test({
         provider: mockProvider,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(blueprintPath, "---\nmodel: mock\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
       const context: IExecutionContext = {
@@ -3539,8 +3551,8 @@ Deno.test({
         provider: mockProvider,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(blueprintPath, "---\nmodel: mock\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
       const context: IExecutionContext = {
@@ -3602,8 +3614,8 @@ Deno.test({
         provider: mockProvider,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(blueprintPath, "---\nmodel: mock\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
       const context: IExecutionContext = {
@@ -3664,8 +3676,8 @@ Deno.test({
         strategyRegistry,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -3756,8 +3768,8 @@ Deno.test({
         strategyRegistry,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -3864,8 +3876,8 @@ Deno.test({
         strategyRegistry,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -4010,8 +4022,8 @@ Deno.test({
         }),
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -4096,8 +4108,8 @@ Deno.test({
         strategyRegistry,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -4191,8 +4203,8 @@ Deno.test({
         }),
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\n" + "X".repeat(10000),
@@ -4260,8 +4272,8 @@ Deno.test({
         executionContext: new ExecutionContextService(testConfig, logger, { contextCache }),
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -4402,8 +4414,8 @@ Deno.test({
         strategyRegistry,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -4444,8 +4456,8 @@ Deno.test({
     try {
       const { db, logger, pathResolver, permissions } = getServices();
       const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -4499,8 +4511,8 @@ Deno.test({
         strategyRegistry,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
@@ -4582,8 +4594,8 @@ Deno.test({
         strategyRegistry,
       });
 
-      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
-      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      const blueprintPath = join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
         "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",

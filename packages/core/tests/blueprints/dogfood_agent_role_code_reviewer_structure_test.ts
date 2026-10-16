@@ -4,12 +4,13 @@
  * @description Phase 150 Step 4 — verifies the code-reviewer agent role permits no
  *   write tools, carries review default_skills, and has no HITL requirement.
  */
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_PATH = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
 
 const READ_ONLY_TOOLS = [
   "read_file",

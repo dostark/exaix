@@ -12,6 +12,14 @@
  * @related-files [apps/exactl/src/command_builders/request_actions.ts, packages/execution/src/agent_runner.ts, packages/execution/src/native_tool_turns.ts]
  */
 
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PROJECTS_MEMORY_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -51,11 +59,14 @@ async function withDryRunContextFixture(
 ): Promise<void> {
   const { context, tempDir, cleanup } = await createCliTestContext({ createDirs: ["Workspace/Requests"] });
   try {
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Agents", "mock-agent.md"), MOCK_AGENT_BLUEPRINT);
+    await Deno.writeTextFile(
+      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+      MOCK_AGENT_BLUEPRINT,
+    );
     const requestCommands = new RequestCommands(context);
     await fn({
       context: { requestCommands, display: context.display, appContext: context },
-      requestsDir: join(tempDir, "Workspace", "Requests"),
+      requestsDir: join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH),
       tempDir,
     });
   } finally {
@@ -186,7 +197,10 @@ function makePortalKnowledgeConfig(): IPortalKnowledgeConfig {
 Deno.test("[exactl request create --dry-run-context] with --portal injects the real portal_context + portal_knowledge segments the daemon's request path would", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext({ createDirs: ["Workspace/Requests"] });
   try {
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Agents", "mock-agent.md"), MOCK_AGENT_BLUEPRINT);
+    await Deno.writeTextFile(
+      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+      MOCK_AGENT_BLUEPRINT,
+    );
 
     // Real tiny portal + real (quick-mode) PortalKnowledgeService, wired exactly as the CLI
     // init.ts wires it — the preview must resolve real knowledge, not a fabricated summary.
@@ -199,7 +213,7 @@ Deno.test("[exactl request create --dry-run-context] with --portal injects the r
     const portalKnowledge = new PortalKnowledgeService({
       config: makePortalKnowledgeConfig(),
       memoryBank: null as never,
-      projectsDir: join(tempDir, "Memory", "Projects"),
+      projectsDir: join(tempDir, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH),
     });
     await portalKnowledge.analyze("mock-portal", portalDir, PortalAnalysisMode.QUICK);
     (context as IApplicationContext).portalKnowledge = portalKnowledge;
@@ -236,11 +250,14 @@ Deno.test("[exactl request create --dry-run-context] with --portal injects the r
 Deno.test("[exactl request create --dry-run-context] a cold portal never triggers analysis or persistence", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext({ createDirs: ["Workspace/Requests"] });
   try {
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Agents", "mock-agent.md"), MOCK_AGENT_BLUEPRINT);
+    await Deno.writeTextFile(
+      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+      MOCK_AGENT_BLUEPRINT,
+    );
     const portalDir = join(tempDir, "cold-portal");
     await ensureDir(portalDir);
     await Deno.writeTextFile(join(portalDir, "README.md"), "# Cold portal\n");
-    const projectsDir = join(tempDir, "Memory", "Projects");
+    const projectsDir = join(tempDir, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH);
     const portalKnowledge = new PortalKnowledgeService({
       config: makePortalKnowledgeConfig(),
       memoryBank: null as never,

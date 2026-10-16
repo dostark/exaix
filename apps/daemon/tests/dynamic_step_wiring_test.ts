@@ -17,6 +17,13 @@
  * @related-files [apps/daemon/main.ts, exaix-team/packages/mcp-server/tools.ts, packages/mcp/server/local_tool_dispatcher.ts, packages/flow/src/dynamic_step_executor.ts]
  */
 
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_FLOWS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
@@ -100,7 +107,7 @@ async function journalSummary(configPath: string): Promise<string> {
 
 /** Uses the shipped `senior-coder` blueprint so the ReAct prompt prefix is deterministic and the recorded fixture hits. */
 function writeWiringProbeFlow(root: string): void {
-  const dir = join(root, "Blueprints", "Flows");
+  const dir = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   Deno.writeTextFileSync(
     join(dir, "wiring-probe.flow.yaml"),
@@ -133,10 +140,10 @@ function writeWiringProbeFlow(root: string): void {
 }
 
 function writeSeniorCoderAgentRole(root: string): void {
-  const dir = join(root, "Blueprints", "Agents");
+  const dir = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   Deno.copyFileSync(
-    join(REPO_ROOT, "Blueprints", "Agents", "senior-coder.md"),
+    join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "senior-coder.md"),
     join(dir, "senior-coder.md"),
   );
 }
@@ -191,7 +198,7 @@ function writeSoloConfig(configPath: string, root: string, portalDir: string): v
 }
 
 function writeFlowRequest(root: string): void {
-  const dir = join(root, "Workspace", "Requests");
+  const dir = join(root, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   Deno.writeTextFileSync(
     join(dir, "wiring-probe.md"),

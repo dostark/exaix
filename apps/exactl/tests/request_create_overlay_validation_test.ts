@@ -9,6 +9,7 @@
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, packages/ai/src/bindings/binding_layers.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { BINDING_OVERLAY_MAX_BYTES } from "@exaix/core";
 import { assertRejects } from "@std/assert";
 import { join } from "@std/path";
@@ -26,7 +27,10 @@ Deno.test("[security] exactl request --overlay refuses a symlink with overlay_in
     createDirs: ["Workspace/Requests", "Blueprints/Flows"],
   });
   try {
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "research.flow.yaml"), "steps: []");
+    await Deno.writeTextFile(
+      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      "steps: []",
+    );
     const realPath = join(tempDir, "real-overlay.json");
     await Deno.writeTextFile(realPath, VALID_OVERLAY);
     const linkPath = join(tempDir, "link-overlay.json");
@@ -51,7 +55,10 @@ Deno.test("[security] exactl request --overlay refuses a directory with overlay_
     createDirs: ["Workspace/Requests", "Blueprints/Flows"],
   });
   try {
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "research.flow.yaml"), "steps: []");
+    await Deno.writeTextFile(
+      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      "steps: []",
+    );
     const dirPath = join(tempDir, "overlay-dir");
     await Deno.mkdir(dirPath, { recursive: true });
 
@@ -74,7 +81,10 @@ Deno.test("[security] exactl request --overlay refuses a file above the byte cei
     createDirs: ["Workspace/Requests", "Blueprints/Flows"],
   });
   try {
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "research.flow.yaml"), "steps: []");
+    await Deno.writeTextFile(
+      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      "steps: []",
+    );
     const bigPath = join(tempDir, "big-overlay.json");
     // Valid JSON padded past the ceiling, so only the size check can fail.
     await Deno.writeTextFile(bigPath, VALID_OVERLAY + " ".repeat(BINDING_OVERLAY_MAX_BYTES));

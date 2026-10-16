@@ -9,6 +9,7 @@
  * @related-files [packages/core/src/skills/skills.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { MemoryScope, SkillMutationErrorCode, SkillStatus } from "@exaix/core";
@@ -54,8 +55,8 @@ interface IFixture {
 async function fixture(): Promise<IFixture> {
   const env = await initTestDbService();
   const base = await Deno.makeTempDir({ prefix: "exa-skills-service-" });
-  const memoryDir = join(base, "Memory");
-  const blueprintDir = join(base, "Blueprints", "Skills");
+  const memoryDir = join(base, DEFAULT_MEMORY_PATH);
+  const blueprintDir = join(base, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
   await Deno.mkdir(join(blueprintDir, "shipped-skill"), { recursive: true });
   await Deno.writeTextFile(
     join(blueprintDir, "shipped-skill", "SKILL.md"),
@@ -108,7 +109,7 @@ Deno.test("[service] getSkill and listSkills read Blueprint skill folders and wr
     assertEquals((await fx.service.listSkills()).map((s) => s.name), ["shipped-skill"]);
     assertEquals(await fx.service.getSkill("absent-skill"), null);
     assertEquals(await folderBytes(fx.blueprintDir), before);
-    assertEquals(await Deno.stat(join(fx.memoryDir, "Skills", "index.json")).catch(() => null), null);
+    assertEquals(await Deno.stat(join(fx.memoryDir, DEFAULT_SKILLS_MEMORY_PATH, "index.json")).catch(() => null), null);
   } finally {
     await fx.cleanup();
   }
@@ -142,7 +143,9 @@ Deno.test("[service] createSkill publishes a draft folder that is hidden from ma
     assertEquals((await fx.service.matchSkills({ keywords: ["alpha", "beta"] })).matches.map((m) => m.skillId), [
       "shipped-skill",
     ]);
-    const sidecar = await Deno.readTextFile(join(fx.memoryDir, "Skills", "learned", "fresh-skill", "exaix.yaml"));
+    const sidecar = await Deno.readTextFile(
+      join(fx.memoryDir, DEFAULT_SKILLS_MEMORY_PATH, "learned", "fresh-skill", "exaix.yaml"),
+    );
     assertEquals(sidecar.includes("status: draft"), true);
   } finally {
     await fx.cleanup();
@@ -233,7 +236,10 @@ Deno.test("[service] deleteSkill removes a writable skill folder and refuses a r
     await fx.service.initialize();
     await fx.service.createSkill(definition("fresh-skill"), CTX);
     assertEquals(await fx.service.deleteSkill("fresh-skill", CTX), true);
-    assertEquals(await Deno.stat(join(fx.memoryDir, "Skills", "learned", "fresh-skill")).catch(() => null), null);
+    assertEquals(
+      await Deno.stat(join(fx.memoryDir, DEFAULT_SKILLS_MEMORY_PATH, "learned", "fresh-skill")).catch(() => null),
+      null,
+    );
     assertEquals(await fx.service.deleteSkill("fresh-skill", CTX), false);
     const refused = await assertRejects(() => fx.service.deleteSkill("shipped-skill", CTX), SkillMutationError);
     assertEquals(refused.code, SkillMutationErrorCode.ROOT_UNAVAILABLE);
@@ -313,7 +319,9 @@ Deno.test("[service] project skills are visible only to their portal and never t
     assertEquals(await fx.service.getSkill("alpha-skill"), null, "global-only read cannot see a project skill");
     assertEquals(await fx.service.getSkill("alpha-skill", { ...CTX, portal: "Beta" }), null);
     assertEquals(
-      await Deno.stat(join(fx.memoryDir, "Skills", "project", "Alpha", "alpha-skill")).then(() => true),
+      await Deno.stat(join(fx.memoryDir, DEFAULT_SKILLS_MEMORY_PATH, "project", "Alpha", "alpha-skill")).then(() =>
+        true
+      ),
       true,
     );
   } finally {
@@ -331,7 +339,7 @@ Deno.test("[security] a portal name that is not a plain name is refused before a
       );
       assertEquals(error.code, SkillMutationErrorCode.INVALID_INPUT);
     }
-    assertEquals(await Deno.stat(join(fx.memoryDir, "Skills", "project")).catch(() => null), null);
+    assertEquals(await Deno.stat(join(fx.memoryDir, DEFAULT_SKILLS_MEMORY_PATH, "project")).catch(() => null), null);
   } finally {
     await fx.cleanup();
   }
@@ -358,7 +366,7 @@ Deno.test("[service] the eval overlay root takes precedence over the Blueprint s
 Deno.test("[service] initialize journals readiness and recovers an interrupted publication", async () => {
   const fx = await fixture();
   try {
-    const stateDir = join(fx.memoryDir, "Skills", "learned", ".exa-skill-state");
+    const stateDir = join(fx.memoryDir, DEFAULT_SKILLS_MEMORY_PATH, "learned", ".exa-skill-state");
     await Deno.mkdir(join(stateDir, "intents"), { recursive: true });
     await Deno.mkdir(join(stateDir, "staging", "op"), { recursive: true });
     await Deno.writeTextFile(
@@ -366,7 +374,7 @@ Deno.test("[service] initialize journals readiness and recovers an interrupted p
       JSON.stringify({
         operation: "create",
         name: "half-skill",
-        destination: join(fx.memoryDir, "Skills", "learned", "half-skill"),
+        destination: join(fx.memoryDir, DEFAULT_SKILLS_MEMORY_PATH, "learned", "half-skill"),
         staging: join(stateDir, "staging", "op"),
         backup: null,
         intended_sha256: "0".repeat(64),

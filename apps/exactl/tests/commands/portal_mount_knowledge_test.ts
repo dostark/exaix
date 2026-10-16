@@ -9,6 +9,7 @@
  * mount succeeds even when analysis fails.
  */
 
+import { DEFAULT_PORTALS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { PortalCommands } from "../../src/commands/portal_commands.ts";
@@ -155,7 +156,7 @@ Deno.test(
       await commands.add(targetDir, "SafePortal");
 
       // Symlink must exist despite analysis failure
-      const symlinkPath = join(tempRoot, "Portals", "SafePortal");
+      const symlinkPath = join(tempRoot, DEFAULT_PORTALS_PATH, "SafePortal");
       const stat = await Deno.lstat(symlinkPath);
       assertExists(stat, "Symlink should exist after mount");
     } finally {

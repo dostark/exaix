@@ -5,6 +5,17 @@
  * @description Integration tests for subject propagation from Request to Plan.
  */
 
+import {
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_ARCHIVE_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_PORTALS_PATH,
+  DEFAULT_REJECTED_PATH,
+  DEFAULT_REQUESTS_PATH,
+} from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "@exaix/request";
@@ -31,11 +42,11 @@ async function withSubjectPropagationEnv(
 ): Promise<void> {
   const tempDir = await Deno.makeTempDir();
   const workspaceDir = join(tempDir, "workspace");
-  const requestsDir = join(workspaceDir, "Requests");
-  const plansDir = join(workspaceDir, "Plans");
+  const requestsDir = join(workspaceDir, DEFAULT_REQUESTS_PATH);
+  const plansDir = join(workspaceDir, DEFAULT_PLANS_PATH);
   const runtimeDir = join(tempDir, "Runtime");
-  const blueprintsDir = join(tempDir, "Blueprints");
-  const agentRolesDir = join(blueprintsDir, "Agents");
+  const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
+  const agentRolesDir = join(blueprintsDir, DEFAULT_AGENTS_PATH);
 
   await Deno.mkdir(requestsDir, { recursive: true });
   await Deno.mkdir(plansDir, { recursive: true });
@@ -57,14 +68,14 @@ Follow instructions
     system: { root: tempDir },
     paths: {
       workspace: "workspace",
-      requests: "Requests",
-      plans: "Plans",
-      active: "Active",
-      rejected: "Rejected",
-      archive: "Archive",
-      blueprints: "Blueprints",
-      portals: "Portals",
-      memory: "Memory",
+      requests: DEFAULT_REQUESTS_PATH,
+      plans: DEFAULT_PLANS_PATH,
+      active: DEFAULT_ACTIVE_PATH,
+      rejected: DEFAULT_REJECTED_PATH,
+      archive: DEFAULT_ARCHIVE_PATH,
+      blueprints: DEFAULT_BLUEPRINTS_PATH,
+      portals: DEFAULT_PORTALS_PATH,
+      memory: DEFAULT_MEMORY_PATH,
       runtime: "Runtime",
       flows: "Blueprints/Flows",
     },

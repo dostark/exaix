@@ -6,6 +6,7 @@
  * @related-files ["apps/exactl/src/commands/request_commands.ts", "packages/schemas/src/request.ts"]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
@@ -275,7 +276,7 @@ export class RequestCreateHandler extends BaseCommand {
   }
 
   private async assertFlowExists(flowId: string): Promise<void> {
-    const flowPath = join(this.config.system.root, "Blueprints", "Flows", `${flowId}.flow.yaml`);
+    const flowPath = join(this.config.system.root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, `${flowId}.flow.yaml`);
     try {
       await Deno.stat(flowPath);
     } catch {

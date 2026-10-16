@@ -11,6 +11,7 @@
  * @related-files [apps/daemon/main.ts, apps/daemon/src/session_delegation_coordinator.ts, packages/flow/src/step_handlers/session_delegate_cycle_step_handler.ts]
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { PricingTier, ProviderCostTier } from "@exaix/core";
@@ -232,10 +233,10 @@ Deno.test("[daemon] boot with session_delegate.enabled=true executes the fixture
   const costTracker = new CostTracker(db, config);
   try {
     await Deno.mkdir(getWorkspaceRequestsDir(tempDir), { recursive: true });
-    await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+    await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
 
     const portalRoot = await Deno.makeTempDir({ prefix: "daemon-boot-portal-" });
-    const planContextDir = join(portalRoot, ".exa", "PlanContext");
+    const planContextDir = join(portalRoot, DEFAULT_RUNTIME_PATH, "PlanContext");
     await Deno.mkdir(planContextDir, { recursive: true });
     await Deno.writeTextFile(
       join(planContextDir, "phase-174.md"),
@@ -295,7 +296,7 @@ Deno.test("[daemon] boot with session_delegate.enabled=true executes the fixture
     const processor = new RequestProcessor({
       workspacePath: getWorkspaceDir(tempDir),
       requestsDir: getWorkspaceRequestsDir(tempDir),
-      blueprintsPath: join(tempDir, "Blueprints", "Agents"),
+      blueprintsPath: join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH),
       includeReasoning: true,
       context,
       costTracker,

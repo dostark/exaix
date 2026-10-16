@@ -5,6 +5,12 @@
  * portal alias paths and strict prevention of path traversal security attacks.
  */
 
+import {
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
 import { MemoryReferenceType } from "@exaix/core";
 import type { ActivityRecord } from "@exaix/storage-sqlite";
@@ -20,7 +26,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 Deno.test("PathResolver: resolves valid alias path", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-" });
   try {
-    const blueprintsDir = join(tempDir, "Blueprints");
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
     await Deno.mkdir(blueprintsDir);
     const testFile = join(blueprintsDir, "agent.md");
     await Deno.writeTextFile(testFile, "content");
@@ -39,7 +45,7 @@ Deno.test("PathResolver: resolves valid alias path", async () => {
 Deno.test("[security] PathResolver: throws on path traversal attempt", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-traversal-" });
   try {
-    const blueprintsDir = join(tempDir, "Blueprints");
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
     await Deno.mkdir(blueprintsDir);
     const secretFile = join(tempDir, "secret.txt");
     await Deno.writeTextFile(secretFile, "secret");
@@ -63,7 +69,7 @@ Deno.test("[security] PathResolver: throws on path traversal attempt", async () 
 Deno.test("[security] PathResolver: throws on accessing file outside allowed roots", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-outside-" });
   try {
-    const blueprintsDir = join(tempDir, "Blueprints");
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
     await Deno.mkdir(blueprintsDir);
 
     // Create a symlink pointing outside
@@ -115,7 +121,7 @@ Deno.test("PathResolver: throws on unknown alias", async () => {
 Deno.test("PathResolver: root path itself is valid", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-root-" });
   try {
-    const blueprintsDir = join(tempDir, "Blueprints");
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
     await Deno.mkdir(blueprintsDir);
 
     const config = createMockConfig(tempDir);
@@ -174,7 +180,7 @@ Deno.test("[security] PathResolver: rejects absolute path attempt", async () => 
 Deno.test("[security] PathResolver: handles Windows-style path traversal", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-windows-" });
   try {
-    const blueprintsDir = join(tempDir, "Blueprints");
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
     await Deno.mkdir(blueprintsDir);
     const secretFile = join(tempDir, "secret.txt");
     await Deno.writeTextFile(secretFile, "secret");
@@ -194,7 +200,7 @@ Deno.test("[security] PathResolver: handles Windows-style path traversal", async
 Deno.test("[security] PathResolver: handles multiple path traversal attempts", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-multi-" });
   try {
-    const blueprintsDir = join(tempDir, "Blueprints");
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
     await Deno.mkdir(blueprintsDir);
     // Place the file inside Blueprints directory
     const secretFile = join(blueprintsDir, "secret.txt");
@@ -214,7 +220,7 @@ Deno.test("[security] PathResolver: handles multiple path traversal attempts", a
 Deno.test("PathResolver: handles non-existent file in valid directory", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-nonexist-" });
   try {
-    const blueprintsDir = join(tempDir, "Blueprints");
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
     await Deno.mkdir(blueprintsDir);
 
     const config = createMockConfig(tempDir);
@@ -233,7 +239,7 @@ Deno.test("PathResolver: handles non-existent file in valid directory", async ()
 Deno.test("PathResolver: resolves nested directories", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-nested-" });
   try {
-    const nestedDir = join(tempDir, "Memory", "deep", "nested");
+    const nestedDir = join(tempDir, DEFAULT_MEMORY_PATH, "deep", "nested");
     await Deno.mkdir(nestedDir, { recursive: true });
     const testFile = join(nestedDir, "file.md");
     await Deno.writeTextFile(testFile, "content");
@@ -252,10 +258,10 @@ Deno.test("PathResolver: resolves all valid aliases", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-aliases-" });
   try {
     // Create all directories
-    const workspaceDir = join(tempDir, "Workspace");
-    const memoryDir = join(tempDir, "Memory");
-    const runtimeDir = join(tempDir, ".exa");
-    const blueprintsDir = join(tempDir, "Blueprints");
+    const workspaceDir = join(tempDir, DEFAULT_WORKSPACE_PATH);
+    const memoryDir = join(tempDir, DEFAULT_MEMORY_PATH);
+    const runtimeDir = join(tempDir, DEFAULT_RUNTIME_PATH);
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
 
     await Deno.mkdir(workspaceDir);
     await Deno.mkdir(memoryDir);
@@ -290,7 +296,7 @@ Deno.test("PathResolver: resolves all valid aliases", async () => {
 Deno.test("PathResolver: handles special characters in filenames", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-special-" });
   try {
-    const blueprintsDir = join(tempDir, "Blueprints");
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
     await Deno.mkdir(blueprintsDir);
     const testFile = join(blueprintsDir, "file with spaces.md");
     await Deno.writeTextFile(testFile, "content");
@@ -308,7 +314,7 @@ Deno.test("PathResolver: handles special characters in filenames", async () => {
 Deno.test("PathResolver: handles unicode in paths", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-unicode-" });
   try {
-    const blueprintsDir = join(tempDir, "Blueprints");
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
     await Deno.mkdir(blueprintsDir);
     const testFile = join(blueprintsDir, "文件.md");
     await Deno.writeTextFile(testFile, "content");
@@ -387,7 +393,7 @@ Deno.test("PathResolver: logs successful resolution to database", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-db-success-" });
   const { db, cleanup } = await initTestDbService();
   try {
-    const blueprintsDir = join(tempDir, "Blueprints");
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
     await Deno.mkdir(blueprintsDir);
     const testFile = join(blueprintsDir, "logged.md");
     await Deno.writeTextFile(testFile, "content");
@@ -453,7 +459,7 @@ Deno.test("[security] PathResolver: logs security violations to database", async
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-db-security-" });
   const { db, cleanup } = await initTestDbService();
   try {
-    const blueprintsDir = join(tempDir, "Blueprints");
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
     await Deno.mkdir(blueprintsDir);
     const secretFile = join(tempDir, "secret.txt");
     await Deno.writeTextFile(secretFile, "secret");
@@ -496,7 +502,7 @@ interface CapturedEvent {
 Deno.test("PathResolver: routes successful resolution through IEventLogger when provided", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-ev-" });
   try {
-    const blueprintsDir = join(tempDir, "Blueprints");
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
     await Deno.mkdir(blueprintsDir);
     const testFile = join(blueprintsDir, "agent.md");
     await Deno.writeTextFile(testFile, "content");

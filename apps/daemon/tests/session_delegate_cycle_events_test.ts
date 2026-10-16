@@ -9,6 +9,7 @@
  * @related-files [packages/flow/src/step_handlers/session_delegate_cycle_step_handler.ts, apps/daemon/src/flow_event_logger_adapter.ts]
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
@@ -56,7 +57,7 @@ class AlwaysPassGateEvaluator implements IGateEvaluator {
 
 async function makeTwoStepWorktree(): Promise<string> {
   const root = await Deno.makeTempDir({ prefix: "cycle-events-" });
-  const dir = join(root, ".exa", "PlanContext");
+  const dir = join(root, DEFAULT_RUNTIME_PATH, "PlanContext");
   await Deno.mkdir(dir, { recursive: true });
   await Deno.writeTextFile(
     join(dir, "phase-174.md"),

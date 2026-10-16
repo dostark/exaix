@@ -9,6 +9,7 @@
  * @related-files [apps/exactl/src/commands/eval_commands.ts]
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { EvalScoringMode } from "@exaix/core";
@@ -85,7 +86,7 @@ Deno.test("[EvalReportRobustnessFoundingScope] omitting runIds keeps prior unsco
 
 Deno.test("[EvalReportRobustnessFoundingScope] --view robustness --run-ids renders only the scoped runs", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
   const seed = (runId: string, side: "clean" | "attacked", score: number) =>

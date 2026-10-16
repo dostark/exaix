@@ -7,6 +7,7 @@
  * temporary workspace creation and mock Git repository initialization.
  */
 
+import { DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
 import { PortalCommands } from "../../src/commands/portal_commands.ts";
@@ -48,7 +49,7 @@ export async function initPortalTest(options?: {
   const { db, cleanup: dbCleanup } = await initTestDbService();
 
   // Create required directories
-  await Deno.mkdir(join(tempRoot, "Portals"), { recursive: true });
+  await Deno.mkdir(join(tempRoot, DEFAULT_PORTALS_PATH), { recursive: true });
   await Deno.mkdir(getMemoryProjectsDir(tempRoot), { recursive: true });
 
   // Create target directory files if specified
@@ -123,7 +124,7 @@ export async function createTestPortal(
  * Verifies a portal's symlink exists
  */
 export async function verifySymlink(tempRoot: string, alias: string): Promise<boolean> {
-  const symlinkPath = join(tempRoot, "Portals", alias);
+  const symlinkPath = join(tempRoot, DEFAULT_PORTALS_PATH, alias);
   try {
     const info = await Deno.lstat(symlinkPath);
     return info.isSymlink;
@@ -136,7 +137,7 @@ export async function verifySymlink(tempRoot: string, alias: string): Promise<bo
  * Verifies a portal's context card exists
  */
 export async function verifyContextCard(tempRoot: string, alias: string): Promise<boolean> {
-  const cardPath = join(tempRoot, "Memory", "Projects", alias, "portal.md");
+  const cardPath = join(tempRoot, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH, alias, "portal.md");
   try {
     await Deno.stat(cardPath);
     return true;
@@ -149,14 +150,14 @@ export async function verifyContextCard(tempRoot: string, alias: string): Promis
  * Gets the path to a portal's symlink
  */
 export function getPortalSymlinkPath(tempRoot: string, alias: string): string {
-  return join(tempRoot, "Portals", alias);
+  return join(tempRoot, DEFAULT_PORTALS_PATH, alias);
 }
 
 /**
  * Gets the path to a portal's context card
  */
 export function getPortalCardPath(tempRoot: string, alias: string): string {
-  return join(tempRoot, "Memory", "Projects", alias, "portal.md");
+  return join(tempRoot, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH, alias, "portal.md");
 }
 
 /** Creates a unified CLI test context for tests. Delegates to `initTestDbService()`

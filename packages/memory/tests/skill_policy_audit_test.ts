@@ -10,6 +10,7 @@
  * @related-files [packages/memory/src/extraction/llm_learning_extractor.ts, packages/memory/src/reflection/memory_reflection_service.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import type { IModelProvider } from "@exaix/ai";
@@ -60,10 +61,10 @@ interface IFixture {
 async function fixture(): Promise<IFixture> {
   const env = await initTestDbService();
   const base = await Deno.makeTempDir({ prefix: "exa-policy-audit-" });
-  const skillsDir = join(base, "Blueprints", "Skills");
+  const skillsDir = join(base, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
   await writeSkillFolder(skillsDir, { name: POLICY_SKILL, instructions: "Policy body one." });
   const skills = new SkillsService(
-    { memoryDir: join(base, "Memory"), blueprintSkillsDir: skillsDir },
+    { memoryDir: join(base, DEFAULT_MEMORY_PATH), blueprintSkillsDir: skillsDir },
     env.db,
     undefined,
     new EventLogger({ db: env.db }),

@@ -11,6 +11,7 @@
  * @related-files [apps/exactl/src/commands/eval_commands.ts, tests/scenario_framework/runner/memory_efficiency.ts]
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { EvalScoringMode } from "@exaix/core";
@@ -121,7 +122,7 @@ Deno.test("[MemoryMetricRows] groups runs by (metric, provider) for signals outs
 
 Deno.test("[EvalReportMemoryView] renders per-ability/provider score, pass count, and derived tokens/ms per query", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
 
@@ -161,7 +162,7 @@ Deno.test("[EvalReportMemoryView] renders per-ability/provider score, pass count
 
 Deno.test("[EvalReportMemoryView] also renders consolidation/learning-effectiveness metric rows below the ability table", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
 
@@ -194,7 +195,7 @@ Deno.test("[EvalReportMemoryView] also renders consolidation/learning-effectiven
 
 Deno.test("[EvalReportMemoryView] --format json renders machine-readable per-ability rows", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
   seedMemoryRun(store, {
@@ -217,7 +218,7 @@ Deno.test("[EvalReportMemoryView] --format json renders machine-readable per-abi
 
 Deno.test("[EvalReportMemoryView] no memory-tagged history reports cleanly, not an error", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
   store.close();

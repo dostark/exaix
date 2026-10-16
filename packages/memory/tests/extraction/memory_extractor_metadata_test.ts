@@ -6,6 +6,19 @@
  * @description Tests that MemoryExtractorService correctly attaches confidence, source, and extractedAt metadata.
  */
 
+import {
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_ARCHIVE_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_PORTALS_PATH,
+  DEFAULT_REJECTED_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { MemoryExtractorService } from "@exaix/memory";
 import {
@@ -30,17 +43,17 @@ Deno.test("Step 71.1: MemoryExtractorService attaches required metadata to propo
   const rawConfig = {
     system: { root: ".", log_level: LogLevel.INFO, schema_version: "1.0.0", version: "0.1.0" },
     paths: {
-      memory: "Memory",
-      blueprints: "Blueprints",
-      runtime: ".exa",
-      workspace: "Workspace",
-      portals: "Portals",
-      active: "Active",
-      archive: "Archive",
-      plans: "Plans",
-      requests: "Requests",
-      rejected: "Rejected",
-      agents: "Agents",
+      memory: DEFAULT_MEMORY_PATH,
+      blueprints: DEFAULT_BLUEPRINTS_PATH,
+      runtime: DEFAULT_RUNTIME_PATH,
+      workspace: DEFAULT_WORKSPACE_PATH,
+      portals: DEFAULT_PORTALS_PATH,
+      active: DEFAULT_ACTIVE_PATH,
+      archive: DEFAULT_ARCHIVE_PATH,
+      plans: DEFAULT_PLANS_PATH,
+      requests: DEFAULT_REQUESTS_PATH,
+      rejected: DEFAULT_REJECTED_PATH,
+      agents: DEFAULT_AGENTS_PATH,
       flows: "Blueprints/Flows",
       memoryProjects: "Memory/Projects",
       memoryExecution: "Memory/Execution",

@@ -9,6 +9,13 @@
  * @phase-134 Step 2 production call-site: injects the edition-selected IModelRegistry (DefaultModelRegistry floor in Solo) into ModelResolver.
  */
 import {
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_EXECUTION_MEMORY_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
+import {
   BINDING_RUN_FILE_PRUNE_INTERVAL_MS,
   BINDING_RUN_FILE_RETENTION_DAYS,
   DAEMON_AGENT_ROLE_ID,
@@ -448,7 +455,7 @@ if (import.meta.main) {
     // the cycle store holds atomic resume checkpoints.
     const sessionDelegateCycleClaimStore = new SessionDelegateCycleClaimStore(dbService);
     const sessionDelegateCycleStore = new SessionDelegateCycleStore(
-      join(config.system.root, "Memory", "Execution"),
+      join(config.system.root, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH),
     );
     const recoveredCount = await recoverOrphanedDelegations({
       db: dbService,
@@ -676,13 +683,13 @@ if (import.meta.main) {
     const requestsPath = join(
       config.system.root,
       config.paths.workspace,
-      "Requests",
+      DEFAULT_REQUESTS_PATH,
     );
-    const plansPath = join(config.system.root, config.paths.workspace, "Plans");
+    const plansPath = join(config.system.root, config.paths.workspace, DEFAULT_PLANS_PATH);
     const activePath = join(
       config.system.root,
       config.paths.workspace,
-      "Active",
+      DEFAULT_ACTIVE_PATH,
     );
     await ensureDir(requestsPath);
     await ensureDir(plansPath);
@@ -742,7 +749,7 @@ if (import.meta.main) {
     if (config.session_delegate?.enabled) {
       const sessionDir = join(config.system.root, "Session");
       const workspaceRoot = join(config.system.root, config.paths.workspace);
-      const waitStoreBase = join(config.system.root, "Memory", "Execution");
+      const waitStoreBase = join(config.system.root, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH);
       await ensureDir(sessionDir);
       await ensureDir(waitStoreBase);
 
@@ -1106,7 +1113,7 @@ if (import.meta.main) {
         resolveModel: (traceId: string) =>
           resolveModelFromTrace(
             traceId,
-            join(config.system.root, "Workspace", DEFAULT_REQUESTS_PATH),
+            join(config.system.root, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH),
             modelResolver,
           ),
         resolveProviderApiKey: (keyEnv: string) => Deno.env.get(keyEnv),
@@ -1144,7 +1151,9 @@ if (import.meta.main) {
       dynamicModeTools: DYNAMIC_MODE_TOOLS,
       dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
       mcpClient,
-      flowTraceStore: new FlowTraceStore(join(config.system.root, "Memory", "Execution", "flow_traces")),
+      flowTraceStore: new FlowTraceStore(
+        join(config.system.root, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, "flow_traces"),
+      ),
       sessionDelegationCoordinator,
       planContextResolver: sessionDelegationCoordinator ? new PlanContextResolver() : undefined,
       sessionDelegateCycleClaimStore,
@@ -1218,7 +1227,12 @@ if (import.meta.main) {
       onDelegateRefinement: _sessionDelegateService && _sessionWaitStore
         ? async (traceId: string, _requestId: string, body: string) => {
           const sd = config.session_delegate!;
-          const requestPath = join(config.system.root, "Workspace", DEFAULT_REQUESTS_PATH, `${_requestId}.md`);
+          const requestPath = join(
+            config.system.root,
+            DEFAULT_WORKSPACE_PATH,
+            DEFAULT_REQUESTS_PATH,
+            `${_requestId}.md`,
+          );
           const resolvedModel = await resolveRequestModel(requestPath, modelResolver);
           // Use optional chaining for obj access instead of type-assertion cast
           const brief = await _sessionDelegateService!.prepareBrief({

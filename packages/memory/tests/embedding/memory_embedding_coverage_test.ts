@@ -6,6 +6,7 @@
  * @description Negative testing and edge-case coverage for vector similarity calculations,
  * ensuring robust handling of zero vectors and dimension mismatches in RAG operations.
  */
+import { DEFAULT_INDEX_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "@exaix/shared";
 import { ensureDir } from "@std/fs";
 import { assert } from "@std/assert";
 import { MemoryStatus } from "@exaix/core/status";
@@ -317,8 +318,8 @@ Deno.test(
       // Manifest should still be valid
       const manifestPath = join(
         config.system.root,
-        "Memory",
-        "Index",
+        DEFAULT_MEMORY_PATH,
+        DEFAULT_INDEX_MEMORY_PATH,
         "embeddings",
         "manifest.json",
       );

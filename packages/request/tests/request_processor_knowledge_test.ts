@@ -9,6 +9,7 @@
  * @related-files ["packages/request/src/processor.ts", "packages/core/src/types/constants.ts", "packages/core/src/types/i_portal_knowledge_service.ts"]
  */
 
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildPortalKnowledgeSummary, RequestProcessor } from "@exaix/request";
@@ -185,7 +186,7 @@ Deno.test("[RequestProcessor] resolves portal knowledge before execution and inj
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal" });
 
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
+    const blueprintPath = join(env.blueprintsPath, DEFAULT_AGENTS_PATH, "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);
@@ -207,7 +208,7 @@ Deno.test("[RequestProcessor] passes injected knowledge to agent during prompt g
   try {
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal", agent_role: "know-agent" });
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Agents", "know-agent.md");
+    const blueprintPath = join(env.blueprintsPath, DEFAULT_AGENTS_PATH, "know-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# know-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);
@@ -229,7 +230,7 @@ Deno.test("[RequestProcessor] handles knowledge resolution failure gracefully", 
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal" });
 
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
+    const blueprintPath = join(env.blueprintsPath, DEFAULT_AGENTS_PATH, "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     // Should not throw
@@ -251,7 +252,7 @@ Deno.test("[RequestProcessor] skips knowledge resolution if request specifies no
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: undefined });
 
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
+    const blueprintPath = join(env.blueprintsPath, DEFAULT_AGENTS_PATH, "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);
@@ -270,7 +271,7 @@ Deno.test("[RequestProcessor] calls getRelevantContext when portal knowledge res
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal" });
 
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
+    const blueprintPath = join(env.blueprintsPath, DEFAULT_AGENTS_PATH, "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);

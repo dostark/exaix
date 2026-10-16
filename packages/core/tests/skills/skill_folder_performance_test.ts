@@ -9,6 +9,7 @@
  * @related-files [packages/core/src/skills/skills.ts, packages/execution/src/agent_runner.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { FakeTime } from "@std/testing/time";
 import { join } from "@std/path";
@@ -47,9 +48,12 @@ class StaticConfig {
       portals: [{ alias: PORTAL, target_path: root }],
       skills: {
         roots: [
-          { kind: SkillRootKind.PROJECT, path: join(REPO_ROOT, "Memory", "Skills", "project") },
+          {
+            kind: SkillRootKind.PROJECT,
+            path: join(REPO_ROOT, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH, "project"),
+          },
           { kind: SkillRootKind.DOGFOOD, path: join(REPO_ROOT, ".copilot", "skills") },
-          { kind: SkillRootKind.BLUEPRINT, path: join(REPO_ROOT, "Blueprints", "Skills") },
+          { kind: SkillRootKind.BLUEPRINT, path: join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH) },
         ],
       },
     });

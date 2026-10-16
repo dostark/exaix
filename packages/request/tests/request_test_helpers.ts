@@ -6,6 +6,7 @@
  * @description Common utilities and factory functions for Request migration and processor tests.
  */
 
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { ANALYZER_VERSION, PortalAnalysisMode, RequestSource } from "@exaix/core";
 import { RequestStatus } from "@exaix/core/status";
@@ -158,7 +159,7 @@ ${body}`;
 }
 
 export function makeBlueprintFileSync(blueprintsPath: string, agent_role: string): string {
-  const blueprintPath = join(blueprintsPath, "Agents", `${agent_role}.md`);
+  const blueprintPath = join(blueprintsPath, DEFAULT_AGENTS_PATH, `${agent_role}.md`);
   const content = `# Blueprint for ${agent_role}
 You are a helpful assistant.
 `;

@@ -11,6 +11,7 @@
  * @related-files [apps/exactl/src/commands/eval_commands.ts, packages/eval-history/src/history_sqlite.ts, packages/eval-history/src/external_benchmark.ts]
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { EvalScoringMode } from "@exaix/core";
@@ -86,7 +87,7 @@ function writeManifest(dir: string, supportedCount: number): string {
 
 Deno.test("[EvalReportExternalView] renders per-cell comparability with explicit resolved-rate denominator and caveat", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
 
@@ -159,7 +160,7 @@ Deno.test("[EvalReportExternalView] renders per-cell comparability with explicit
 
 Deno.test("[EvalReportExternalView] --format json renders rows plus caveat for trend jobs", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
   seedExternalRun(store, {
@@ -202,7 +203,7 @@ Deno.test("[EvalReportExternalView] --format json renders rows plus caveat for t
 
 Deno.test("[EvalReportExternalView] empty history prints a message", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
   store.close();

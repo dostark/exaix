@@ -9,6 +9,7 @@
  * @related-files [packages/execution/src/agent_composer.ts]
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
 import { initTestDbService } from "@exaix/testing";
@@ -48,7 +49,7 @@ Deno.test("[step132.3][per-call-options] AgentComposer passes model_size and thi
     const config = createTestConfig();
     config.system.root = testDir;
 
-    const blueprintsDir = join(testDir, "Blueprints", "Agents");
+    const blueprintsDir = join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(blueprintsDir, { recursive: true });
     const blueprintPath = join(blueprintsDir, "test-agent.md");
     await Deno.writeTextFile(
@@ -97,7 +98,7 @@ Deno.test("[step132.3][per-call-options] AgentComposer passes characteristics an
     const config = createTestConfig();
     config.system.root = testDir;
 
-    const blueprintsDir = join(testDir, "Blueprints", "Agents");
+    const blueprintsDir = join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(blueprintsDir, { recursive: true });
     const blueprintPath = join(blueprintsDir, "test-agent.md");
     await Deno.writeTextFile(
@@ -141,7 +142,7 @@ Deno.test("[step132.3][per-call-options] AgentComposer without ModelResolver fal
     const config = createTestConfig();
     config.system.root = testDir;
 
-    const blueprintsDir = join(testDir, "Blueprints", "Agents");
+    const blueprintsDir = join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(blueprintsDir, { recursive: true });
     const blueprintPath = join(blueprintsDir, "test-agent.md");
     await Deno.writeTextFile(

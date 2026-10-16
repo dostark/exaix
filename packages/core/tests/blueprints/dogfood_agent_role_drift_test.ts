@@ -7,14 +7,15 @@
  *   EXTRACTED from those documents, not hardcoded — a hardcoded list cannot detect drift,
  *   which is the failure this test exists to prevent (GAP-K).
  */
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_PATH = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
 const ANALYSIS_DOC = join(REPO_ROOT, "exaix-dev-docs", "dev", "Exaix_Dogfooding_Analysis.md");
-const FLOW_BLUEPRINT = join(REPO_ROOT, "Blueprints", "Flows", "dogfood-meta-workflow.flow.yaml");
+const FLOW_BLUEPRINT = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "dogfood-meta-workflow.flow.yaml");
 
 /** The analysis doc lives in a submodule that may not be checked out. */
 function fileExists(path: string): boolean {

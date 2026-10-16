@@ -11,6 +11,7 @@
  * @related-files [packages/execution/src/agent_composer.ts, packages/execution/src/blueprint_service.ts, packages/ai/src/effort_resolver.ts]
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { stub } from "@std/testing/mock";
@@ -55,9 +56,9 @@ async function setup(): Promise<{
   cleanup: () => Promise<void>;
 }> {
   const testDir = await Deno.makeTempDir({ prefix: "ac-effort-" });
-  await Deno.mkdir(join(testDir, "Blueprints", "Agents"), { recursive: true });
+  await Deno.mkdir(join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
   await Deno.writeTextFile(
-    join(testDir, "Blueprints", "Agents", "test-agent.md"),
+    join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "test-agent.md"),
     "---\nagent_role: test-agent\nname: Test\nmodel: mock:test\neffort: low\n---\nYou are a test agent.\n",
   );
   const cleanup = () => Deno.remove(testDir, { recursive: true }).catch(() => {});
@@ -121,8 +122,8 @@ Deno.test("AgentComposer projects real role effort onto compatible capabilities 
   try {
     for (const [role, effort] of [["senior-coder", "high"], ["code-reviewer", "low"]] as const) {
       await Deno.copyFile(
-        join(REPO_ROOT, "Blueprints", "Agents", `${role}.md`),
-        join(testDir, "Blueprints", "Agents", `${role}.md`),
+        join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, `${role}.md`),
+        join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, `${role}.md`),
       );
       for (const override of ["role", "request", "flow"] as const) {
         const config = createTestConfig();
@@ -350,9 +351,9 @@ Deno.test("AgentComposer.executeStep: a failsafe blueprint thinking false sends 
   const { db, cleanup } = await initTestDbService();
   try {
     const testDir = await Deno.makeTempDir({ prefix: "ac-effort-thinking-false-" });
-    await Deno.mkdir(join(testDir, "Blueprints", "Agents"), { recursive: true });
+    await Deno.mkdir(join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.writeTextFile(
-      join(testDir, "Blueprints", "Agents", "test-agent.md"),
+      join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "test-agent.md"),
       "---\nagent_role: test-agent\nname: Test\nmodel: mock:test\nthinking: false\n---\nYou are a test agent.\n",
     );
     try {

@@ -11,6 +11,7 @@
  * @related-files [apps/exactl/src/commands/eval_commands.ts, scripts/run_harness_lift_report.ts, tests/scenario_framework/runner/harness_lift.ts]
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assert, assertStringIncludes } from "@std/assert";
 import { EvalScoringMode } from "@exaix/core";
 import { join } from "@std/path";
@@ -68,7 +69,7 @@ Deno.test("[EvalReportLiftView] renders per-family meanDelta/stdevDelta/noEffect
   // Seed with an explicit path before any chdir: the deno test runner (DENO_JOBS) shares one
   // process cwd across parallel test files, so cwd-dependent resolution must never back the
   // seed. The report() call below is the only cwd-sensitive step, and it is bracketed tightly.
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
 
@@ -136,7 +137,7 @@ Deno.test("[EvalReportLiftView] renders per-family meanDelta/stdevDelta/noEffect
 
 Deno.test("[EvalReportLiftView] empty history renders the no-history notice, not a crash", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
   const cmds = new EvalCommands(context);
   const { output } = await withCapturedOutput(() => cmds.report({ view: "lift", dbPath }));
   const text = output.join("\n");

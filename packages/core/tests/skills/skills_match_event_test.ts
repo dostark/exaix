@@ -11,6 +11,7 @@
  * @related-files [packages/core/src/skills/skills.ts, tests/scenario_framework/scenarios/skill_eval/]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
@@ -43,7 +44,7 @@ function createCapturingLogger(captured: ICapturedEvent[]): IEventLogger {
   return logger;
 }
 
-const REPO_BLUEPRINT_SKILLS = join(REPO_ROOT, "Blueprints", "Skills");
+const REPO_BLUEPRINT_SKILLS = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
 
 async function withSkillsService(
   fn: (service: SkillsService, captured: ICapturedEvent[]) => Promise<void>,
@@ -125,7 +126,7 @@ Deno.test("[skills] matchSkills keeps a fitting lower-confidence match when a hi
   const { db, cleanup } = await initTestDbService();
   const captured: ICapturedEvent[] = [];
   const memoryDir = await Deno.makeTempDir({ prefix: "skills-budget-" });
-  const blueprintDir = join(memoryDir, "Blueprints", "Skills");
+  const blueprintDir = join(memoryDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
   try {
     // Confidence is score divided by max over declared dimensions. `oversized-first` declares
     // only the tag, so it scores 1.0. `small-second` adds an unmatched file pattern, so its

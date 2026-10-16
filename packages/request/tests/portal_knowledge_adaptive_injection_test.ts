@@ -10,6 +10,7 @@
  * @related-files ["packages/request/src/processor.ts", "packages/execution/src/agent_runner.ts"]
  */
 
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { AgentRunner } from "@exaix/execution";
@@ -154,7 +155,7 @@ Deno.test("[adaptive injection] adaptive mode attaches the snapshot, skips resol
       portal: "test-portal",
       body: "Investigate PaymentRouter behavior",
     });
-    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
+    const blueprintPath = join(env.blueprintsPath, DEFAULT_AGENTS_PATH, "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);
@@ -177,7 +178,7 @@ Deno.test("[adaptive injection] default summary mode is unaffected by the adapti
 
   try {
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal" });
-    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
+    const blueprintPath = join(env.blueprintsPath, DEFAULT_AGENTS_PATH, "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);
@@ -195,7 +196,7 @@ Deno.test("[adaptive injection] no portal and disabled injection keep their exis
 
   try {
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: undefined });
-    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
+    const blueprintPath = join(env.blueprintsPath, DEFAULT_AGENTS_PATH, "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);

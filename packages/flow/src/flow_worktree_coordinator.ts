@@ -9,6 +9,7 @@
  * @visible
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { dirname, join } from "@std/path";
 import { ConfigValueType, SwapClass } from "@exaix/core";
 import { configurable } from "@exaix/core/config";
@@ -94,7 +95,7 @@ export class FlowWorktreeCoordinator implements IFlowWorktreeCoordinator {
       }
     }
 
-    const worktreePath = join(this.deps.config.system.root, ".exa", "worktrees", portalAlias, traceId);
+    const worktreePath = join(this.deps.config.system.root, DEFAULT_RUNTIME_PATH, "worktrees", portalAlias, traceId);
     try {
       await Deno.mkdir(dirname(worktreePath), { recursive: true });
       const portalTargetPath = this.resolvePortalTargetPath(portalAlias);

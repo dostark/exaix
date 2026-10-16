@@ -10,6 +10,12 @@
  * @related-files [packages/request/src/processor.ts, packages/request/src/processing/parser.ts]
  */
 
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { type IRequestProcessorConfig, RequestProcessor } from "@exaix/request";
@@ -30,10 +36,10 @@ Deno.test("[process] an injected effort in a request file sets status failed and
   const { db, config, cleanup, tempDir } = await initTestDbService();
   try {
     await Deno.mkdir(getWorkspaceRequestsDir(tempDir), { recursive: true });
-    await Deno.mkdir(join(tempDir, "Workspace", "Plans"), { recursive: true });
-    await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+    await Deno.mkdir(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH), { recursive: true });
+    await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.writeTextFile(
-      join(tempDir, "Blueprints", "Agents", "default.md"),
+      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "default.md"),
       "---\nagent_role: default\n---\n\nYou are a helpful assistant.\n",
     );
 

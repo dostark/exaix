@@ -6,6 +6,7 @@
  *   decision enum, and the gate/decision compatibility surface.
  */
 
+import { DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertThrows } from "@std/assert";
 import {
   CliDelegateConfigSchema,
@@ -140,7 +141,7 @@ Deno.test("[session_delegate] dogfood.claude.toml preset parses via ConfigSchema
       log_level: "info",
       allow_net: ["api.anthropic.com", "api.openai.com", "localhost:11434"],
     },
-    paths: { workspace: "Workspace", portals: "Portals", memory: "Memory" },
+    paths: { workspace: DEFAULT_WORKSPACE_PATH, portals: DEFAULT_PORTALS_PATH, memory: DEFAULT_MEMORY_PATH },
     ai: { provider: "ollama", model: "ollama/llama3" },
     portals: [{
       alias: "exaix-self",

@@ -5,6 +5,12 @@
  * context, such as file lists and repository structure, into agent prompts.
  */
 
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "@exaix/request";
@@ -38,7 +44,7 @@ Deno.test("RequestProcessor: Portal context includes file list for grounding", a
     }];
 
     // 2. Setup agent blueprint
-    const blueprintsDir = join(tempDir, "Blueprints", "Agents");
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(blueprintsDir, { recursive: true });
     await Deno.writeTextFile(
       join(blueprintsDir, "code-analyst.md"),
@@ -61,8 +67,8 @@ Deno.test("RequestProcessor: Portal context includes file list for grounding", a
     };
 
     const processor = new RequestProcessor({
-      workspacePath: join(tempDir, "Workspace"),
-      requestsDir: join(tempDir, "Requests"),
+      workspacePath: join(tempDir, DEFAULT_WORKSPACE_PATH),
+      requestsDir: join(tempDir, DEFAULT_REQUESTS_PATH),
       blueprintsPath: blueprintsDir,
       includeReasoning: true,
       context,
@@ -71,8 +77,8 @@ Deno.test("RequestProcessor: Portal context includes file list for grounding", a
     });
 
     // 4. Create request
-    const requestPath = join(tempDir, "Requests", "req1.md");
-    await Deno.mkdir(join(tempDir, "Requests"), { recursive: true });
+    const requestPath = join(tempDir, DEFAULT_REQUESTS_PATH, "req1.md");
+    await Deno.mkdir(join(tempDir, DEFAULT_REQUESTS_PATH), { recursive: true });
     await Deno.writeTextFile(
       requestPath,
       `---

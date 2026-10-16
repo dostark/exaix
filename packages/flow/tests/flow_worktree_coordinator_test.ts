@@ -7,6 +7,7 @@
  * @related-files [packages/flow/src/flow_worktree_coordinator.ts, packages/core/src/types/i_flow_worktree_coordinator.ts]
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
@@ -129,7 +130,7 @@ Deno.test("FlowWorktreeCoordinator.resolve creates a worktree for a new portal a
   try {
     const path = await test.coordinator.resolve("portal", "trace-1", "main");
 
-    assertEquals(path, join(test.root, ".exa", "worktrees", "portal", "trace-1"));
+    assertEquals(path, join(test.root, DEFAULT_RUNTIME_PATH, "worktrees", "portal", "trace-1"));
     assertEquals(test.gitServiceFactory.createCalls, [{ repoPath: test.portalTargetPath, traceId: "trace-1" }]);
     assertEquals(test.gitService.addCalls, [{ worktreePath: path, baseBranch: "main" }]);
     assertEquals(test.logger.events[0]?.action, DomainEventType.FlowWorktreeCreated);
@@ -259,7 +260,7 @@ Deno.test("FlowWorktreeCoordinator evicts the least-recently-touched worktree", 
     assertEquals(test.gitService.removeCalls.length, 1);
     assertEquals(
       test.gitService.removeCalls[0]?.worktreePath,
-      join(test.root, ".exa", "worktrees", "portal", "trace-1"),
+      join(test.root, DEFAULT_RUNTIME_PATH, "worktrees", "portal", "trace-1"),
     );
   } finally {
     await cleanup(test.root);
@@ -325,7 +326,7 @@ Deno.test(
         await test.coordinator.resolve("portal", `fill-${index}`, "main");
       }
 
-      const inFlightPath = join(test.root, ".exa", "worktrees", "portal", "in-flight-trace");
+      const inFlightPath = join(test.root, DEFAULT_RUNTIME_PATH, "worktrees", "portal", "in-flight-trace");
       let releaseGate!: () => void;
       test.gitService.addWorktreeGate = {
         matchPath: inFlightPath,

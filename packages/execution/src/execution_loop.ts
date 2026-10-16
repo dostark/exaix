@@ -12,6 +12,7 @@
  * @related-files [apps/daemon/main.ts]
  */
 
+import { DEFAULT_REJECTED_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { parse as parseToml } from "@std/toml";
@@ -1364,7 +1365,7 @@ export class ExecutionLoop {
     }
 
     // Move plan to Workspace/Rejected
-    const rejectedDir = join(this.config.system.root, this.config.paths.workspace, "Rejected");
+    const rejectedDir = join(this.config.system.root, this.config.paths.workspace, DEFAULT_REJECTED_PATH);
     await Deno.mkdir(rejectedDir, { recursive: true });
 
     const planFileName = planPath.split("/").pop()!;

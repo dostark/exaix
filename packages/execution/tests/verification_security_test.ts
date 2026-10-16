@@ -8,6 +8,7 @@
  *   checks that a request or plan cannot add.
  */
 
+import { DEFAULT_ACTIVE_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
@@ -126,7 +127,7 @@ async function runSecurityScenario(options: {
     }],
   });
 
-  const activeDir = join(rootDir, config.paths.workspace, "Active");
+  const activeDir = join(rootDir, config.paths.workspace, DEFAULT_ACTIVE_PATH);
   await ensureDir(activeDir);
   const repairContents: string[] = [];
 

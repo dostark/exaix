@@ -7,6 +7,7 @@
  * creation of the required directory structure, config templates, and baseline assets.
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assert, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
@@ -255,7 +256,7 @@ Deno.test("scaffold.ts uses current directory if no target provided", async () =
 
     // Verify structure was created in current directory
     assert(
-      await exists(join(tmp, ".exa")),
+      await exists(join(tmp, DEFAULT_RUNTIME_PATH)),
       ".exa directory should be created in current directory",
     );
   } finally {

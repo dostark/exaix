@@ -8,6 +8,7 @@
  * @related-files [packages/flow/src/agent_composer_adapter.ts]
  */
 
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposerAdapter } from "@exaix/flow";
@@ -29,8 +30,8 @@ async function withAdapter(
 ): Promise<void> {
   const root = await Deno.makeTempDir({ prefix: "adapter-flow-id-" });
   try {
-    await Deno.mkdir(join(root, "Agents"), { recursive: true });
-    await Deno.writeTextFile(join(root, "Agents", "test-agent.md"), BLUEPRINT);
+    await Deno.mkdir(join(root, DEFAULT_AGENTS_PATH), { recursive: true });
+    await Deno.writeTextFile(join(root, DEFAULT_AGENTS_PATH, "test-agent.md"), BLUEPRINT);
     const captured: ICapturedRequest[] = [];
     const runner = {
       run(_blueprint: IBlueprint, request: Parameters<IRunner["run"]>[1]) {

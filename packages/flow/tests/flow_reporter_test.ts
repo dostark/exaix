@@ -6,6 +6,7 @@
  * @description TODO: Add description
  */
 
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "@exaix/shared";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
@@ -31,7 +32,7 @@ describe("FlowReporter", () => {
     config = createMockConfig(tempDir);
 
     reportConfig = {
-      reportsDirectory: join(tempDir, "Memory", "Reports"),
+      reportsDirectory: join(tempDir, DEFAULT_MEMORY_PATH, "Reports"),
       db: dbResult.db,
     };
 
@@ -303,8 +304,8 @@ describe("FlowReporter", () => {
 
       const namespaceArtifactPath = join(
         tempDir,
-        "Memory",
-        "Execution",
+        DEFAULT_MEMORY_PATH,
+        DEFAULT_EXECUTION_MEMORY_PATH,
         "trace-123",
         "namespace.md",
       );

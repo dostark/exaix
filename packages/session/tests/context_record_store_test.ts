@@ -9,6 +9,7 @@
  * @related-files [packages/session/src/context_record_store.ts]
  */
 
+import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { ContextRecordAlreadyExistsError, ContextRecordSecurityError, ContextRecordStore } from "@exaix/session";
@@ -78,7 +79,7 @@ Deno.test("[ContextRecordStore] save writes under @Memory/Execution/<trace>/cont
     const store = new ContextRecordStore(makeResolver(tempDir));
     await store.save(makeRecord());
 
-    const expectedPath = join(tempDir, "Execution", TRACE_ID, "context", `${RECORD_ID}.json`);
+    const expectedPath = join(tempDir, DEFAULT_EXECUTION_MEMORY_PATH, TRACE_ID, "context", `${RECORD_ID}.json`);
     const raw = await Deno.readTextFile(expectedPath);
     assertEquals(JSON.parse(raw).recordId, RECORD_ID);
   } finally {
@@ -92,7 +93,7 @@ Deno.test("[ContextRecordStore] save is atomic: no leftover temp file after succ
     const store = new ContextRecordStore(makeResolver(tempDir));
     await store.save(makeRecord());
 
-    const contextDir = join(tempDir, "Execution", TRACE_ID, "context");
+    const contextDir = join(tempDir, DEFAULT_EXECUTION_MEMORY_PATH, TRACE_ID, "context");
     const entries = await Array.fromAsync(Deno.readDir(contextDir));
     assertEquals(entries.length, 1, "only the final record file must remain, no .tmp artifact");
     assertEquals(entries[0].name, `${RECORD_ID}.json`);
@@ -151,7 +152,7 @@ Deno.test("[ContextRecordStore] refuses to write when a context directory ancest
   try {
     const realExecutionDir = join(tempDir, "RealExecution");
     await Deno.mkdir(realExecutionDir, { recursive: true });
-    const executionLink = join(tempDir, "Execution");
+    const executionLink = join(tempDir, DEFAULT_EXECUTION_MEMORY_PATH);
     await Deno.symlink(realExecutionDir, executionLink, { type: "dir" });
 
     const store = new ContextRecordStore(makeResolver(tempDir));
@@ -327,7 +328,7 @@ Deno.test("[ContextRecordStore] created files/directories are owner-only permiss
     const store = new ContextRecordStore(makeResolver(tempDir));
     await store.save(makeRecord());
 
-    const contextDir = join(tempDir, "Execution", TRACE_ID, "context");
+    const contextDir = join(tempDir, DEFAULT_EXECUTION_MEMORY_PATH, TRACE_ID, "context");
     const dirStat = await Deno.stat(contextDir);
     const fileStat = await Deno.stat(join(contextDir, `${RECORD_ID}.json`));
     assert(dirStat.mode !== null && (dirStat.mode & 0o777) === 0o700, "directory must be 0700");

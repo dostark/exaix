@@ -7,6 +7,7 @@
  * requests, skill/agent targeting, and state tracking within the Workspace/Requests directory.
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertExists, assertNotEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { CritiqueSeverity, RequestPriority, RequestSource } from "@exaix/core";
 import { RequestStatus } from "@exaix/core/status";
@@ -37,7 +38,7 @@ describe("RequestCommands", () => {
     cleanup = result.cleanup;
 
     // Create mock flow file for testing
-    const flowsDir = join(tempDir, "Blueprints", "Flows");
+    const flowsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH);
     await Deno.writeTextFile(join(flowsDir, "code-review.flow.yaml"), "mock flow content");
 
     // Derived paths
@@ -719,7 +720,7 @@ Minimal content for show
     it("should create directory if Workspace/Requests does not exist", async () => {
       // Create a fresh workspace without the Requests dir
       const freshDir = join(tempDir, "fresh_workspace");
-      await ensureDir(join(freshDir, ".exa")); // Need runtime dir for db
+      await ensureDir(join(freshDir, DEFAULT_RUNTIME_PATH)); // Need runtime dir for db
       const context: ICliApplicationContext = {
         config: createStubConfig(createMockConfig(freshDir)),
         db,

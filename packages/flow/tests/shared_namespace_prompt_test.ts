@@ -6,6 +6,7 @@
  * @dependencies [@exaix/flow, @exaix/execution, @exaix/ai]
  * @related-files [packages/flow/src/shared_namespace_prompt.ts, packages/flow/src/agent_composer_adapter.ts]
  */
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import {
@@ -166,7 +167,7 @@ Deno.test("[namespace prompt] runWithStrategy projects the block into the strate
         return Promise.resolve(result);
       },
     });
-    const agents = join(dbService.tempDir, "Blueprints", "Agents");
+    const agents = join(dbService.tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(agents, { recursive: true });
     await Deno.writeTextFile(
       join(agents, "test-agent.md"),

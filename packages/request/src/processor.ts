@@ -8,6 +8,7 @@
  * @architectural-link [ARCHITECTURE.md#request-processing-flow]
  */
 
+import { DEFAULT_PLANS_PATH } from "@exaix/shared";
 import { basename, join } from "@std/path";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -224,7 +225,7 @@ export class RequestProcessor {
       healthChecker,
     );
 
-    this.plansDir = join(processorConfig.workspacePath, "Plans");
+    this.plansDir = join(processorConfig.workspacePath, DEFAULT_PLANS_PATH);
     this.planWriter = new PlanWriter({
       plansDirectory: this.plansDir,
       db: this.db,

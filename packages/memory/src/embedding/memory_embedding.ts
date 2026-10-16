@@ -6,6 +6,7 @@
  * @related-files ["packages/memory/src/session/session_memory.ts", "packages/memory/src/bank/memory_bank.ts"]
  */
 
+import { DEFAULT_INDEX_MEMORY_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -138,7 +139,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
 
   /** Create a new Memory Embedding Service instance. */
   constructor(private config: Config) {
-    this.embeddingsDir = join(config.system.root, config.paths.memory, "Index", "embeddings");
+    this.embeddingsDir = join(config.system.root, config.paths.memory, DEFAULT_INDEX_MEMORY_PATH, "embeddings");
     this.manifestPath = join(this.embeddingsDir, "manifest.json");
     this.hnsw = new HnswVectorIndex();
   }

@@ -11,6 +11,7 @@
  * @related-files [packages/core/src/skills/skills.ts, packages/core/src/skills/skill_revision_store.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { SkillMutationErrorCode, SkillStatus } from "@exaix/core";
@@ -27,8 +28,8 @@ import { initTestDbService, writeSkillFolder } from "@exaix/testing";
 async function fixture() {
   const env = await initTestDbService();
   const base = await Deno.makeTempDir({ prefix: "exa-skills-learned-" });
-  const memoryDir = join(base, "Memory");
-  const blueprintDir = join(base, "Blueprints", "Skills");
+  const memoryDir = join(base, DEFAULT_MEMORY_PATH);
+  const blueprintDir = join(base, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
   await writeSkillFolder(blueprintDir, { name: "shipped", instructions: "Shipped body." });
   const service = new SkillsService(
     { memoryDir, blueprintSkillsDir: blueprintDir },
@@ -42,7 +43,7 @@ async function fixture() {
     env,
     service,
     ctx,
-    learnedDir: join(memoryDir, "Skills", "learned"),
+    learnedDir: join(memoryDir, DEFAULT_SKILLS_MEMORY_PATH, "learned"),
     cleanup: async () => {
       await env.cleanup();
       await Deno.remove(base, { recursive: true }).catch(() => {});

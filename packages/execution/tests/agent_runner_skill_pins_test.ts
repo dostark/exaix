@@ -10,6 +10,7 @@
  * @related-files [packages/execution/src/agent_runner.ts, packages/core/src/skills/skill_pins.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
@@ -32,11 +33,11 @@ class OkProvider implements IModelProvider {
 async function fixture() {
   const env = await initTestDbService();
   const base = await Deno.makeTempDir({ prefix: "exa-runner-pins-" });
-  const skillsDir = join(base, "Blueprints", "Skills");
+  const skillsDir = join(base, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
   await writeSkillFolder(skillsDir, { name: PINNED, instructions: "Pinned body." });
   await writeSkillFolder(skillsDir, { name: CONTRACT, instructions: "Contract body.", sidecar: { critical: true } });
   const skills = new SkillsService(
-    { memoryDir: join(base, "Memory"), blueprintSkillsDir: skillsDir },
+    { memoryDir: join(base, DEFAULT_MEMORY_PATH), blueprintSkillsDir: skillsDir },
     env.db,
     undefined,
     new EventLogger({ db: env.db }),

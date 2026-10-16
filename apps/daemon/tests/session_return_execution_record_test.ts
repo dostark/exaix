@@ -8,6 +8,7 @@
  *   path. A rejected return never reaches onReconciled, so it mints nothing.
  */
 
+import { DEFAULT_PORTALS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -75,7 +76,7 @@ function sampleCandidate(): IProposalLearning {
 async function makeRig(gate: SessionBrief["gate"] = "code_changes") {
   const sessionDir = await Deno.makeTempDir();
   const workspaceRoot = await Deno.makeTempDir();
-  const worktreePath = join(workspaceRoot, "Portals", "portal-under-test");
+  const worktreePath = join(workspaceRoot, DEFAULT_PORTALS_PATH, "portal-under-test");
   await ensureDir(worktreePath);
   const traceId = crypto.randomUUID();
 

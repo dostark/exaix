@@ -7,6 +7,7 @@
  * is the only path into durable memory.
  */
 
+import { DEFAULT_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -35,7 +36,7 @@ Deno.test("extraction loop: proposals land, but global bank, embedding index, an
     await embeddingService.initializeManifest();
     memoryBank.setEmbeddingService(embeddingService);
 
-    const tieredEntriesPath = join(config.system.root, "Memory", "Session", "tiered_entries.json");
+    const tieredEntriesPath = join(config.system.root, DEFAULT_MEMORY_PATH, "Session", "tiered_entries.json");
     const sessionMemory = new SessionMemoryService(memoryBank, embeddingService, undefined, tieredEntriesPath);
 
     const costRouter = castAny<IMemoryCostRouter>({
