@@ -792,8 +792,15 @@
           ".ts",
           ".tsx",
           ".yaml",
-          ".yml"
-        ]
+          ".yml",
+          ".toml",
+          ".jsonc"
+        ],
+        "overrides": {
+          ".toml": {
+            "maxLines": 6
+          }
+        }
       }
     },
     "ephemeral-comment": {
