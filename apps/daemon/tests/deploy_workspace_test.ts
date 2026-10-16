@@ -11,6 +11,7 @@ import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { getDefaultPaths } from "@exaix/core/config";
 import { withCliProcessMutex } from "../../../tests/helpers/cli_process_mutex.ts";
+import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
 
 const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
 
@@ -114,7 +115,7 @@ async function runExactl(
   if (!hasConfig) {
     await Deno.writeTextFile(
       configPath,
-      `[system]\nroot = "${workspacePath}"\nversion = "1.0.0"\nlog_level = "info"\n`,
+      readConfigFixture("daemon-deploy-workspace", { root: workspacePath }),
     );
   }
 

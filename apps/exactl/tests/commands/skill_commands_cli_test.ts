@@ -15,6 +15,7 @@ import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { migrateDaemonWorkspace } from "../../../../tests/integration/helpers/daemon_config.ts";
+import { readConfigFixture } from "../../../../tests/integration/helpers/config_fixture.ts";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..", "..");
 const EXACTL = join(REPO_ROOT, "apps", "exactl", "src", "exactl.ts");
@@ -34,7 +35,7 @@ interface IWorkspace {
 async function workspace(): Promise<IWorkspace> {
   const root = await Deno.makeTempDir({ prefix: "exactl-skill-cli-" });
   const configPath = join(root, "exa.config.toml");
-  await Deno.writeTextFile(configPath, `[system]\nroot = "${root}"\nversion = "1.0.0"\nlog_level = "error"\n`);
+  await Deno.writeTextFile(configPath, readConfigFixture("exactl-skill-commands", { root }));
   await migrateDaemonWorkspace(root);
   return {
     root,
