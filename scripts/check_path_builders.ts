@@ -260,6 +260,11 @@ function scanToml(repoPath: string, text: string): IViolation[] {
   return violations;
 }
 
+/** A scenario step that spells a workspace segment without the `$WORKSPACE_ROOT` anchor. */
+const YAML_ANCHORED_RUN = /\$WORKSPACE_ROOT/;
+const YAML_BARE_SEGMENT =
+  /^\s*(?:[-\w]*:\s*)?(?:\[\s*)?"\/?(?:Workspace|\.exa|Memory|Portals|Blueprints)(?:\/[A-Za-z.]+)*"/;
+
 /** A scenario step that embeds a config document, which a `content_from` fixture replaces. */
 function scanScenarioYaml(repoPath: string, text: string): IViolation[] {
   const violations = scanToml(repoPath, text);

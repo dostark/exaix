@@ -25,7 +25,7 @@ steps:
   - id: "list-workspace"
     type: "shell"
     command: "ls"
-    args: ["Workspace"]
+    args: ["$WORKSPACE_ROOT/Workspace"]
     output_criteria:
       - id: "listed"
         kind: "command-output-contains"

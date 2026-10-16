@@ -449,3 +449,12 @@ Deno.test("[journal_assert] an invalid payload path is rejected by the schema", 
   });
   assertEquals(result.success, true, "schema allows dotted path strings (path safety is enforced at execution)");
 });
+
+Deno.test("[step-executor] substituteRuntimeVars expands the workspace root in an arg", () => {
+  const spec = substituteRuntimeVars(
+    { executable: "ls", args: ["$WORKSPACE_ROOT/Workspace", "--color"] },
+    "/tmp/ws-root",
+  );
+  assertEquals(spec.args[0], "/tmp/ws-root/Workspace", "$WORKSPACE_ROOT resolves to the run's root");
+  assertEquals(spec.args[1], "--color", "an arg without a token is unchanged");
+});

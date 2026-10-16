@@ -108,6 +108,7 @@ export function substituteRuntimeVars(
     // (GAP-8) without changing existing scenarios' semantics.
     JOURNAL_BASELINE: String(baselineRowid ?? 0),
     STEP_BASELINE: String(stepBaselineRowid ?? baselineRowid ?? 0),
+    WORKSPACE_ROOT: workspaceRoot,
   };
   if (traceId) {
     vars.TRACE_ID = traceId;
