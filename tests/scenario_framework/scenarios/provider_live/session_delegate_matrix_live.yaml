@@ -208,23 +208,22 @@ steps:
         payload_absent:
           rejected: true
 
-  # --- The REAL worktree file-content proof (Phase 167 Step 4 Action; GAP-30) ---
+  # --- The REAL worktree file-content proof, asserted for every cell (Phase 167 Step 4 Action; GAP-30) ---
   # The journal chain above proves dispatch + accepted reconciliation — it cannot prove the
   # requested edit materially landed. This step polls the execution worktree until the
-  # fixture's acceptance content appears: the codex cell passes only if the delegate actually
+  # fixture's acceptance content appears: a cell passes only if the delegate actually
   # wrote `export const GREETING = ...` into src/main.ts (mirrors
   # session_delegate_outcome_live.yaml's wait-for-intended-change; $WORKTREE resolves to the
   # newest execution worktree). A run returning accepted-changes_made with zero real edits
   # exhausts timeout_sec and fails.
   # GAP-30: the matrix previously asserted journal rows only, so a zero-edit delegate passed.
-  - id: "assert-codex-worktree-change"
+  - id: "assert-worktree-change"
     type: "file-contains"
-    cells: ["codex"]
     cwd: "$WORKTREE"
     file_pattern: "src/main.ts"
     timeout_sec: 300
     output_criteria:
-      - id: "codex-worktree-greeting-written"
+      - id: "worktree-greeting-written"
         kind: "text-contains"
         contains: "export const GREETING ="
 

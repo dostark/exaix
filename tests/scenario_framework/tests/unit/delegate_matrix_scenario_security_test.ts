@@ -13,16 +13,16 @@ import { expandMatrix, MatrixSchema } from "../../runner/matrix_expander.ts";
 import { CriterionKind, ScenarioStepType } from "../../schema/step_schema.ts";
 import { parseMatrixScenario } from "./helpers/delegate_matrix_scenario_fixture.ts";
 
-Deno.test("[delegate_matrix][security] the codex cell asserts the REAL worktree file-content proof (GREETING in src/main.ts), not just a reconciled journal row", async () => {
+Deno.test("[delegate_matrix][security] every cell asserts the REAL worktree file-content proof (GREETING in src/main.ts), not just a reconciled journal row", async () => {
   // The matrix previously only asserted journal events, so a codex run returning
-  // accepted-changes_made with ZERO real edits could pass. Assert the codex cell carries a
+  // accepted-changes_made with ZERO real edits could pass in any cell. Assert the scenario carries a
   // file-contains step pinning the fixture's acceptance content.
   const scenario = await parseMatrixScenario();
   const byId = new Map(scenario.steps.map((s) => [s.id, s]));
-  const contentStep = byId.get("assert-codex-worktree-change");
-  assert(contentStep, "assert-codex-worktree-change step must exist on the codex cell");
+  const contentStep = byId.get("assert-worktree-change");
+  assert(contentStep, "assert-worktree-change step must exist");
   assertEquals(contentStep.type, ScenarioStepType.FILE_CONTAINS);
-  assertEquals(contentStep.cells, ["codex"], "the file-content step must be codex-cell-scoped");
+  assertEquals(contentStep.cells, undefined, "the file-content step must run for every cell, not only codex");
   const textContains = (contentStep.output_criteria ?? []).find((c) => c.kind === CriterionKind.TEXT_CONTAINS);
   assert(textContains, "the file-content step must carry a text-contains criterion");
   assertEquals(
