@@ -7,7 +7,18 @@
  * temporary workspace creation and mock Git repository initialization.
  */
 
-import { DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
+import {
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_ARCHIVE_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_PORTALS_PATH,
+  DEFAULT_PROJECTS_MEMORY_PATH,
+  DEFAULT_REJECTED_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
 import { PortalCommands } from "../../src/commands/portal_commands.ts";
@@ -177,14 +188,14 @@ export async function createCliTestContext(options?: { createDirs?: string[] }):
 
   // Always create required Workspace and .exa directories for CLI tests
   const requiredDirs = [
-    "Workspace/Plans",
-    "Workspace/Active",
-    "Workspace/Archive",
-    "Workspace/Rejected",
+    `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}`,
+    `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ACTIVE_PATH}`,
+    `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ARCHIVE_PATH}`,
+    `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REJECTED_PATH}`,
     ".exa",
     "Memory",
     "Portals",
-    "Blueprints/Agents",
+    `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`,
   ];
   for (const dir of requiredDirs) {
     await Deno.mkdir(join(tempDir, dir), { recursive: true });

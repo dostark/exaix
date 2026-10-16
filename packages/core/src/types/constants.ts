@@ -33,6 +33,7 @@ import {
   DEFAULT_FLOWS_PATH,
   DEFAULT_GLOBAL_MEMORY_PATH,
   DEFAULT_INDEX_MEMORY_PATH,
+  DEFAULT_MEMORY_EXECUTION_DIR,
   DEFAULT_MEMORY_PATH,
   DEFAULT_PENDING_MEMORY_PATH,
   DEFAULT_PLANS_PATH,
@@ -3439,7 +3440,7 @@ export const SYMBOL_EXTRACTOR_CONCURRENCY: number = configurable({
 export const SESSION_DELEGATE_DIR = "Session";
 
 /** Sub-directory for session wait-state files: Memory/Execution/{traceId}/. */
-export const SESSION_WAIT_STATE_DIR = "Memory/Execution";
+export const SESSION_WAIT_STATE_DIR = DEFAULT_MEMORY_EXECUTION_DIR;
 
 /** Default delegation deadline in hours from brief creation. */
 export const SESSION_DEFAULT_DEADLINE_HOURS: number = configurable({

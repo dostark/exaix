@@ -7,6 +7,7 @@
  * @description Minimal config helpers for git package test support.
  */
 
+import { DEFAULT_FLOWS_DIR } from "@exaix/shared";
 import { ConfigSchema } from "@exaix/schemas";
 import { DEFAULT_TIMEOUT_MS } from "@exaix/core";
 
@@ -34,7 +35,7 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
       requests: overrides.paths?.requests ?? "Requests",
       rejected: overrides.paths?.rejected ?? "Rejected",
       agents: overrides.paths?.agents ?? "Agents",
-      flows: overrides.paths?.flows ?? "Blueprints/Flows",
+      flows: overrides.paths?.flows ?? DEFAULT_FLOWS_DIR,
       memoryProjects: overrides.paths?.memoryProjects ?? "Projects",
       memoryExecution: overrides.paths?.memoryExecution ?? "Execution",
       memoryIndex: overrides.paths?.memoryIndex ?? "Index",

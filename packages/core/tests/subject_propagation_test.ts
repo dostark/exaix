@@ -10,6 +10,7 @@ import {
   DEFAULT_AGENTS_PATH,
   DEFAULT_ARCHIVE_PATH,
   DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_FLOWS_DIR,
   DEFAULT_MEMORY_PATH,
   DEFAULT_PLANS_PATH,
   DEFAULT_PORTALS_PATH,
@@ -77,7 +78,7 @@ Follow instructions
       portals: DEFAULT_PORTALS_PATH,
       memory: DEFAULT_MEMORY_PATH,
       runtime: "Runtime",
-      flows: "Blueprints/Flows",
+      flows: DEFAULT_FLOWS_DIR,
     },
     database: {
       batch_flush_ms: 100,

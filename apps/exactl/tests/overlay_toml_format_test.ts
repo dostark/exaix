@@ -5,7 +5,14 @@
  * @architectural-layer CLI
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, apps/exactl/src/commands/flow_commands.ts]
  */
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import {
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_FLOWS_DIR,
+  DEFAULT_FLOWS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RequestCommands } from "../src/commands/request_commands.ts";
@@ -21,7 +28,7 @@ async function sha256(text: string): Promise<string> {
 
 Deno.test("[cli] exactl request --overlay accepts a TOML overlay and stores the parsed overlay", async () => {
   const { tempDir, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
     await Deno.writeTextFile(
@@ -50,7 +57,7 @@ Deno.test("[cli] exactl request --overlay accepts a TOML overlay and stores the 
 
 Deno.test("[cli] exactl request --overlay refuses malformed TOML with overlay_invalid", async () => {
   const { tempDir, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
     await Deno.writeTextFile(

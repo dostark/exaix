@@ -9,7 +9,14 @@
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, packages/ai/src/bindings/run_bindings_store.ts]
  */
 
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import {
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_FLOWS_DIR,
+  DEFAULT_FLOWS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { BindingLockSchema } from "@exaix/schemas";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { join } from "@std/path";
@@ -22,7 +29,7 @@ function readJson<T>(path: string): T {
 
 Deno.test("[cli] exactl request --overlay writes the run binding file before the request file", async () => {
   const { db, tempDir, config, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
     await Deno.writeTextFile(
@@ -61,7 +68,7 @@ Deno.test("[cli] exactl request --overlay writes the run binding file before the
 
 Deno.test("[cli] exactl request --bind resolves a valid spec and stores it in the run binding file", async () => {
   const { db, tempDir, config, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
     await Deno.writeTextFile(
@@ -94,7 +101,7 @@ Deno.test("[cli] exactl request --bind resolves a valid spec and stores it in th
 
 Deno.test("[cli] exactl request rejects a malformed --bind spec", async () => {
   const { db, tempDir, config, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
     await Deno.writeTextFile(
@@ -117,7 +124,7 @@ Deno.test("[cli] exactl request rejects a malformed --bind spec", async () => {
 
 Deno.test("[cli] exactl request --locked parses a lock file into the run binding file", async () => {
   const { db, tempDir, config, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
     await Deno.writeTextFile(

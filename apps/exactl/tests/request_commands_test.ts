@@ -7,7 +7,14 @@
  * requests, skill/agent targeting, and state tracking within the Workspace/Requests directory.
  */
 
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import {
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_FLOWS_DIR,
+  DEFAULT_FLOWS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assertEquals, assertExists, assertNotEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { CritiqueSeverity, RequestPriority, RequestSource } from "@exaix/core";
 import { RequestStatus } from "@exaix/core/status";
@@ -32,7 +39,9 @@ describe("RequestCommands", () => {
 
   beforeEach(async () => {
     // Initialize shared CLI test context
-    const result = await createCliTestContext({ createDirs: ["Workspace/Requests", "Blueprints/Flows"] });
+    const result = await createCliTestContext({
+      createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
+    });
     tempDir = result.tempDir;
     db = result.db;
     cleanup = result.cleanup;

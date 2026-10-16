@@ -10,6 +10,8 @@ import {
   DEFAULT_ACTIVE_PATH,
   DEFAULT_EXECUTION_MEMORY_PATH,
   DEFAULT_MEMORY_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_REQUESTS_PATH,
   DEFAULT_WORKSPACE_PATH,
 } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
@@ -34,9 +36,9 @@ describe("Plan Amendment CLI", () => {
   beforeEach(async () => {
     const result = await createCliTestContext({
       createDirs: [
-        "Workspace/Active",
-        "Workspace/Plans",
-        "Workspace/Requests",
+        `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ACTIVE_PATH}`,
+        `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}`,
+        `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`,
       ],
     });
     tempDir = result.tempDir;

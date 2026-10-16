@@ -9,6 +9,7 @@
  * @related-files [packages/portal/knowledge/portal_knowledge_service.ts]
  */
 
+import { DEFAULT_MEMORY_PROJECTS_DIR } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -58,7 +59,7 @@ async function makeService(
   tempDir: string,
   configOverrides: Partial<IPortalKnowledgeConfig> = {},
 ): Promise<PortalKnowledgeService> {
-  const projectsDir = join(tempDir, "Memory/Projects");
+  const projectsDir = join(tempDir, DEFAULT_MEMORY_PROJECTS_DIR);
   await ensureDir(projectsDir);
   return new PortalKnowledgeService({
     config: makeConfig(configOverrides),

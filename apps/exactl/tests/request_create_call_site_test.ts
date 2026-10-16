@@ -12,6 +12,7 @@
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, packages/request/src/common.ts]
  */
 
+import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { assert } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
@@ -37,7 +38,7 @@ describe("exactl request stamps scenario_id/step_id from EXA_SCENARIO_ID/EXA_STE
   let cleanup: () => Promise<void>;
 
   beforeEach(async () => {
-    const result = await createCliTestContext({ createDirs: ["Workspace/Requests"] });
+    const result = await createCliTestContext({ createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`] });
     cleanup = result.cleanup;
     requestCommands = new RequestCommands(result.context);
   });

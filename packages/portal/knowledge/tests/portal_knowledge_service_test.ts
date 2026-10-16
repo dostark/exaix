@@ -9,6 +9,7 @@
  * IDocCommandRunner for testability.
  */
 
+import { DEFAULT_MEMORY_PROJECTS_DIR } from "@exaix/shared";
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -578,7 +579,7 @@ Deno.test("[PortalKnowledgeService] getRelevantContext falls back to undefined w
 Deno.test("[PortalKnowledgeService] indexPortalKnowledge then getRelevantContext returns chunks", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
-    const projectsDir = join(tempDir, "Memory/Projects");
+    const projectsDir = join(tempDir, DEFAULT_MEMORY_PROJECTS_DIR);
     await ensureDir(projectsDir);
 
     const mockEmbedder: IEmbeddingProvider = {
@@ -635,7 +636,7 @@ Deno.test("[PortalKnowledgeService] indexPortalKnowledge then getRelevantContext
 Deno.test("[PortalKnowledgeService] analyze() indexes for retrieval automatically, with no manual indexPortalKnowledge call", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
-    const projectsDir = join(tempDir, "Memory/Projects");
+    const projectsDir = join(tempDir, DEFAULT_MEMORY_PROJECTS_DIR);
     await ensureDir(projectsDir);
 
     const mockEmbedder: IEmbeddingProvider = {
@@ -671,7 +672,7 @@ Deno.test("[PortalKnowledgeService] analyze() indexes for retrieval automaticall
 Deno.test("[PortalKnowledgeService] indexPortalKnowledge does not call the embedding provider when relevanceSearchEmbeddingEnabled is false", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
-    const projectsDir = join(tempDir, "Memory/Projects");
+    const projectsDir = join(tempDir, DEFAULT_MEMORY_PROJECTS_DIR);
     await ensureDir(projectsDir);
 
     let embedCalls = 0;
@@ -711,7 +712,7 @@ Deno.test("[PortalKnowledgeService] indexPortalKnowledge does not call the embed
 Deno.test("[PortalKnowledgeService] getRelevantContext respects maxTokens limit", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
-    const projectsDir = join(tempDir, "Memory/Projects");
+    const projectsDir = join(tempDir, DEFAULT_MEMORY_PROJECTS_DIR);
     await ensureDir(projectsDir);
 
     const mockEmbedder: IEmbeddingProvider = {
@@ -759,7 +760,7 @@ Deno.test("[PortalKnowledgeService] getRelevantContext respects maxTokens limit"
 Deno.test("[PortalKnowledgeService] overlapping sentence groups provide broader context", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
-    const projectsDir = join(tempDir, "Memory/Projects");
+    const projectsDir = join(tempDir, DEFAULT_MEMORY_PROJECTS_DIR);
     await ensureDir(projectsDir);
 
     const mockEmbedder: IEmbeddingProvider = {

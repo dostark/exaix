@@ -8,7 +8,7 @@
  * focusing on internal helper methods and edge cases in review management.
  */
 
-import { DEFAULT_PORTALS_PATH } from "@exaix/shared";
+import { DEFAULT_PORTALS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
@@ -285,7 +285,7 @@ branch refs/heads/other
     });
 
     it("bestEffortLinkRequestRejection: updates existing request frontmatter", async () => {
-      const requestsDir = join(tempDir, "Workspace/Requests");
+      const requestsDir = join(tempDir, `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`);
       await Deno.mkdir(requestsDir, { recursive: true });
       const requestFile = join(requestsDir, "req-1.md");
       await Deno.writeTextFile(

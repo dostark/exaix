@@ -15,7 +15,12 @@
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, packages/request/src/common.ts]
  */
 
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
+import {
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_FLOWS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { assert } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
@@ -56,7 +61,7 @@ describe("request --file honours the submitted file's own frontmatter", () => {
   let cleanup: () => Promise<void>;
 
   beforeEach(async () => {
-    const result = await createCliTestContext({ createDirs: ["Workspace/Requests"] });
+    const result = await createCliTestContext({ createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`] });
     tempDir = result.tempDir;
     cleanup = result.cleanup;
     requestCommands = new RequestCommands(result.context);

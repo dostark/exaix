@@ -7,7 +7,13 @@
  * creation of the required directory structure, config templates, and baseline assets.
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assert, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
@@ -202,8 +208,8 @@ Deno.test("scaffold.ts is idempotent", async () => {
     // Verify structure is still correct
     const requiredDirs = [
       ".exa",
-      "Blueprints/Agents",
-      "Workspace/Requests",
+      `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`,
+      `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`,
       "Memory/Reports",
       "Portals",
     ];

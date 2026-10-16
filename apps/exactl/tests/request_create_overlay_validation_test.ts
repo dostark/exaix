@@ -9,7 +9,13 @@
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, packages/ai/src/bindings/binding_layers.ts]
  */
 
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
+import {
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_FLOWS_DIR,
+  DEFAULT_FLOWS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { BINDING_OVERLAY_MAX_BYTES } from "@exaix/core";
 import { assertRejects } from "@std/assert";
 import { join } from "@std/path";
@@ -24,7 +30,7 @@ const VALID_OVERLAY = JSON.stringify({
 
 Deno.test("[security] exactl request --overlay refuses a symlink with overlay_invalid", async () => {
   const { db, tempDir, config, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
     await Deno.writeTextFile(
@@ -52,7 +58,7 @@ Deno.test("[security] exactl request --overlay refuses a symlink with overlay_in
 
 Deno.test("[security] exactl request --overlay refuses a directory with overlay_invalid", async () => {
   const { db, tempDir, config, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
     await Deno.writeTextFile(
@@ -78,7 +84,7 @@ Deno.test("[security] exactl request --overlay refuses a directory with overlay_
 
 Deno.test("[security] exactl request --overlay refuses a file above the byte ceiling with overlay_invalid", async () => {
   const { db, tempDir, config, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
     await Deno.writeTextFile(

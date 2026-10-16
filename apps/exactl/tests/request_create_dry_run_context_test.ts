@@ -57,7 +57,9 @@ Keep responses minimal and parseable for test assertions.
 async function withDryRunContextFixture(
   fn: (ctx: { context: IRequestActionContext; requestsDir: string; tempDir: string }) => Promise<void>,
 ): Promise<void> {
-  const { context, tempDir, cleanup } = await createCliTestContext({ createDirs: ["Workspace/Requests"] });
+  const { context, tempDir, cleanup } = await createCliTestContext({
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`],
+  });
   try {
     await Deno.writeTextFile(
       join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
@@ -195,7 +197,9 @@ function makePortalKnowledgeConfig(): IPortalKnowledgeConfig {
 }
 
 Deno.test("[exactl request create --dry-run-context] with --portal injects the real portal_context + portal_knowledge segments the daemon's request path would", async () => {
-  const { context, tempDir, cleanup } = await createCliTestContext({ createDirs: ["Workspace/Requests"] });
+  const { context, tempDir, cleanup } = await createCliTestContext({
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`],
+  });
   try {
     await Deno.writeTextFile(
       join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
@@ -248,7 +252,9 @@ Deno.test("[exactl request create --dry-run-context] with --portal injects the r
 });
 
 Deno.test("[exactl request create --dry-run-context] a cold portal never triggers analysis or persistence", async () => {
-  const { context, tempDir, cleanup } = await createCliTestContext({ createDirs: ["Workspace/Requests"] });
+  const { context, tempDir, cleanup } = await createCliTestContext({
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`],
+  });
   try {
     await Deno.writeTextFile(
       join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
