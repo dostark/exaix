@@ -8,7 +8,8 @@
  * @related-files [scripts/plan_to_requests.ts]
  */
 
-import { DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import {
@@ -31,7 +32,7 @@ Deno.test("[plan-to-requests][plan-context][security] a '..'-laden plan slug is 
     const { code, stdout, stderr } = await runGenerator([
       evilDoc,
       "--out-dir",
-      join(wt, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH),
+      pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH),
       "--plan-context-root",
       wt,
     ]);
@@ -44,7 +45,7 @@ Deno.test("[plan-to-requests][plan-context][security] a '..'-laden plan slug is 
 
     let planContextAbsent = false;
     try {
-      await Deno.stat(join(wt, DEFAULT_RUNTIME_PATH, "PlanContext"));
+      await Deno.stat(pathBuilders.runtimePath(wt, "PlanContext"));
     } catch {
       planContextAbsent = true;
     }
@@ -58,7 +59,7 @@ Deno.test("[plan-context][relocation][security] pre-existing symlinked PlanConte
   const wt = await makeFakeWorktree({ withGit: false });
   const outside = await Deno.makeTempDir({ prefix: "plan-context-outside-" });
   try {
-    const destDir = join(wt, DEFAULT_RUNTIME_PATH, "PlanContext");
+    const destDir = pathBuilders.runtimePath(wt, "PlanContext");
     const OUTSIDE_SENTINEL = "must remain untouched";
     const outsideTarget = join(outside, "captured-plan.md");
     await Deno.mkdir(destDir, { recursive: true });
@@ -68,7 +69,7 @@ Deno.test("[plan-context][relocation][security] pre-existing symlinked PlanConte
     const result = await runGenerator([
       CONTEXT_FIXTURE_PATH,
       "--out-dir",
-      join(wt, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH),
+      pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH),
       "--plan-context-root",
       wt,
     ]);

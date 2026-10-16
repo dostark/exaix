@@ -8,7 +8,8 @@
  * focusing on internal helper methods and edge cases in review management.
  */
 
-import { DEFAULT_PORTALS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
@@ -249,7 +250,7 @@ branch refs/heads/other
         // Stay on the branch in portalDir
 
         // Link portal
-        const portalsDir = join(tempDir, DEFAULT_PORTALS_PATH);
+        const portalsDir = pathBuilders.portalsPath(tempDir);
         await Deno.mkdir(portalsDir, { recursive: true });
         await Deno.symlink(portalDir, join(portalsDir, "P1"));
 

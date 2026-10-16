@@ -11,7 +11,8 @@
  * @related-files [exaix-team/apps/mcp-server/main.ts, exaix-team/packages/mcp-server/server.ts, packages/mcp/server/mcp_tool_call_canonicalizer.ts, tests/integration/mcp_server_spec_compliance_cutover_test.ts]
  */
 
-import { DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { z } from "zod";
@@ -78,7 +79,7 @@ async function seedWorkspace(root: string): Promise<string> {
     await Deno.writeTextFile(join(portal, "notes.txt"), `${FILE_MARKER}\n`);
     await setupGitRepo(portal);
   }
-  const knowledgeDir = join(root, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH, OPEN_PORTAL);
+  const knowledgeDir = pathBuilders.memoryPath(root, DEFAULT_PROJECTS_MEMORY_PATH, OPEN_PORTAL);
   await Deno.mkdir(knowledgeDir, { recursive: true });
   await Deno.writeTextFile(
     join(knowledgeDir, "knowledge.json"),

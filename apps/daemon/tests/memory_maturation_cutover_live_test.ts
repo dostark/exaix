@@ -12,10 +12,8 @@
  * @related-files [apps/daemon/tests/memory_maturation_cutover_test.ts, packages/execution/tests/agents/react_loop_strategy_live_test.ts]
  */
 
-import { DEFAULT_PENDING_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
-import { join } from "@std/path";
-
 import { ExecutionContextService, OutputParser, ReActLoopAdapter, ReActLoopStrategy } from "@exaix/execution";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { SecurityMode, ToolName } from "@exaix/core";
@@ -183,7 +181,7 @@ Deno.test({
       for (const proposal of pending) {
         proposal.learning.extracted_at = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
         await Deno.writeTextFile(
-          join(config.system.root, config.paths.memory, DEFAULT_PENDING_MEMORY_PATH, `${proposal.id}.json`),
+          pathBuilders.memoryPendingPath(config.system.root, config.paths.memory, `${proposal.id}.json`),
           JSON.stringify(proposal, null, 2),
         );
       }

@@ -11,12 +11,8 @@
  * @related-files [packages/execution/src/execution_loop.ts, packages/core/src/events/domain_event_types.ts]
  */
 
-import {
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_EXECUTION_MEMORY_PATH,
-  DEFAULT_MEMORY_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { join } from "@std/path";
@@ -73,7 +69,7 @@ async function runPlanWithDeclaration(
   const tempDir = config.system.root;
   const activeDir = getWorkspaceActiveDir(tempDir);
   await ensureDir(activeDir);
-  await ensureDir(join(tempDir, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceId));
+  await ensureDir(pathBuilders.memoryPath(tempDir, DEFAULT_EXECUTION_MEMORY_PATH, traceId));
 
   const logger = new EventLogger({ db });
   const loop = new ExecutionLoop({
@@ -137,9 +133,9 @@ async function setupShared(): Promise<{
     }],
   } as never);
 
-  await ensureDir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH));
+  await ensureDir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH));
   await Deno.writeTextFile(
-    join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "code-analyst.md"),
+    pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "code-analyst.md"),
     `---\nagent_role: "code-analyst"\nname: "Code Analyst"\nmodel: "mock:test"\ncapabilities: ["read_file", "list_directory", "grep_search"]\ncreated: "2026-02-04T00:00:00Z"\ncreated_by: "test"\nversion: "1.0.0"\n---\n\n# Code Analyst\n`,
   );
   await Deno.writeTextFile(join(tempDir, "analysis-target.txt"), "analysis source");

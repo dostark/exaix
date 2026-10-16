@@ -9,7 +9,7 @@
  * @related-files [tests/scenario_framework/runner/step_llm_metrics.ts, tests/scenario_framework/runner/step_executor.ts]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -21,7 +21,7 @@ async function makeWorkspaceWithJournal(
   testName: string,
 ): Promise<{ workspaceRoot: string; db: Database; cleanup: () => Promise<void> }> {
   const workspaceRoot = await Deno.makeTempDir({ prefix: `read-step-llm-metrics-${testName}-` });
-  const exaDir = join(workspaceRoot, DEFAULT_RUNTIME_PATH);
+  const exaDir = pathBuilders.runtimePath(workspaceRoot);
   await ensureDir(exaDir);
   const dbPath = join(exaDir, "journal.db");
   const db = new Database(dbPath);

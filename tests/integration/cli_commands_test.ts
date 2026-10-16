@@ -8,6 +8,7 @@
 // Integration tests for exactl CLI commands not yet covered
 // Covers: request list, request show, plan list, plan show, review list, review show, portal add/remove/refresh, dashboard
 
+import * as pathBuilders from "@exaix/shared";
 import {
   DEFAULT_ACTIVE_PATH,
   DEFAULT_PORTALS_PATH,
@@ -44,7 +45,7 @@ async function writeWaitState(
   overrides: IWaitStateOverrides = {},
 ): Promise<string> {
   const traceId = "trace-integration-wait";
-  const waitDir = join(env.tempDir, DEFAULT_WORKSPACE_PATH, "WaitStates", traceId);
+  const waitDir = pathBuilders.workspacePath(env.tempDir, "WaitStates", traceId);
   await Deno.mkdir(waitDir, { recursive: true });
   await Deno.writeTextFile(
     join(waitDir, `${runId}.json`),
@@ -280,7 +281,7 @@ cliTest("[regression] CLI: request --target-branch writes target_branch frontmat
     ], env.tempDir);
     assertEquals(create.code, 0);
 
-    const requestsDir = join(env.tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
+    const requestsDir = pathBuilders.workspacePath(env.tempDir, DEFAULT_REQUESTS_PATH);
     const requestFiles: string[] = [];
     for await (const entry of Deno.readDir(requestsDir)) {
       if (!entry.isFile) continue;

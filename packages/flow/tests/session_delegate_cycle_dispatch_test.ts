@@ -9,6 +9,7 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/src/step_handlers/session_delegate_cycle_step_handler.ts, packages/flow/src/flow_trace_store.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
@@ -76,7 +77,7 @@ class RecordingCoordinator implements ISessionDelegationCoordinator {
 
 async function makeOneStepWorktree(slug: string): Promise<string> {
   const root = await Deno.makeTempDir({ prefix: "cycle-dispatch-" });
-  const dir = join(root, DEFAULT_RUNTIME_PATH, "PlanContext");
+  const dir = pathBuilders.runtimePath(root, "PlanContext");
   await Deno.mkdir(dir, { recursive: true });
   await Deno.writeTextFile(
     join(dir, `${slug}.md`),

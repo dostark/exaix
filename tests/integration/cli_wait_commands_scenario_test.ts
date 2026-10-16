@@ -5,6 +5,7 @@
  * artifacts on disk and exercising exactl wait list/approve/reject/amend/expire commands.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_ACTIVE_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
@@ -41,7 +42,7 @@ async function withWaitState(
 ): Promise<void> {
   const tempDir = await Deno.makeTempDir({ prefix: "wait-scenario-" });
   try {
-    const waitDir = join(tempDir, DEFAULT_WORKSPACE_PATH, "WaitStates", TRACE_ID);
+    const waitDir = pathBuilders.workspacePath(tempDir, "WaitStates", TRACE_ID);
     await Deno.mkdir(waitDir, { recursive: true });
     await Deno.writeTextFile(join(waitDir, `${WAIT_UUID}.json`), makeWaitStateJson(overrides));
     await fn(tempDir, waitDir);

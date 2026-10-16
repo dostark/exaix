@@ -6,7 +6,8 @@
  * @related-files [scripts/run_persona_isolation.ts, tests/scenario_framework/runner/persona_isolation_arm.ts]
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertFalse, assertThrows } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { createMockConfig } from "@exaix/testing";
@@ -17,13 +18,13 @@ const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "../../../..");
 Deno.test("[PersonaIsolationRunner] --dry-run writes report input, uses discrete argv, and cleans overlays", async () => {
   const root = await Deno.makeTempDir({ prefix: "persona-runner-" });
   try {
-    await Deno.mkdir(join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
-    await Deno.mkdir(join(root, DEFAULT_MEMORY_PATH, "persona-overlays"), { recursive: true });
+    await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.memoryPath(root, "persona-overlays"), { recursive: true });
     await Deno.writeTextFile(
-      join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "coder.md"),
+      pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "coder.md"),
       "---\nagent_role: coder\nmodel_size: L\ncapabilities: [testing]\ndefault_skills: [tdd]\npermitted_tools: [read_file]\n---\nPersona\n",
     );
-    const outputPath = join(root, DEFAULT_MEMORY_PATH, "report-input.json");
+    const outputPath = pathBuilders.memoryPath(root, "report-input.json");
     const manifestPath = join(root, "manifest.json");
     await Deno.writeTextFile(
       manifestPath,
@@ -58,7 +59,7 @@ Deno.test("[PersonaIsolationRunner] --dry-run writes report input, uses discrete
     // only recognizes a registered provider id, so a real model name like "claude-sonnet-5"
     // throws "Unknown model" for the judge-quality LLM call.
     assertEquals(output.executionPlan[0].env.EXA_LLM_MODEL, "mock:test-model");
-    assertFalse(await exists(join(root, DEFAULT_MEMORY_PATH, "persona-overlays", "coder")));
+    assertFalse(await exists(pathBuilders.memoryPath(root, "persona-overlays", "coder")));
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -67,10 +68,10 @@ Deno.test("[PersonaIsolationRunner] --dry-run writes report input, uses discrete
 Deno.test("[PersonaIsolationRunner] --dry-run rejects a scenario id absent from the live catalog", async () => {
   const root = await Deno.makeTempDir({ prefix: "persona-runner-invalid-" });
   try {
-    await Deno.mkdir(join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
-    await Deno.mkdir(join(root, DEFAULT_MEMORY_PATH, "persona-overlays"), { recursive: true });
+    await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.memoryPath(root, "persona-overlays"), { recursive: true });
     await Deno.writeTextFile(
-      join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "coder.md"),
+      pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "coder.md"),
       "---\nagent_role: coder\n---\nPersona\n",
     );
     const manifestPath = join(root, "manifest.json");

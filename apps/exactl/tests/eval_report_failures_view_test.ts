@@ -9,9 +9,8 @@
  * @related-files [apps/exactl/src/commands/eval_commands.ts, packages/eval-history/src/history_sqlite.ts]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
 import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { EvalCommands } from "../src/commands/eval_commands.ts";
@@ -63,7 +62,7 @@ function seedRun(
 
 Deno.test("[EvalReportFailuresView] renders class × family × cell counts with top class per cell", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
+  const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
 
@@ -121,7 +120,7 @@ Deno.test("[EvalReportFailuresView] renders class × family × cell counts with 
 
 Deno.test("[EvalReportFailuresView] empty history renders a notice, not a crash", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
+  const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
   const cmds = new EvalCommands(context);
   const { output } = await withCapturedOutput(() => cmds.report({ view: "failures", dbPath }));
   const text = output.join("\n");
@@ -131,7 +130,7 @@ Deno.test("[EvalReportFailuresView] empty history renders a notice, not a crash"
 
 Deno.test("[EvalReportFailuresView] --format json renders machine-readable rows", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
+  const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
   seedRun(store, {

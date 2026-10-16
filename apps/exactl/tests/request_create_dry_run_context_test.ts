@@ -12,10 +12,9 @@
  * @related-files [apps/exactl/src/command_builders/request_actions.ts, packages/execution/src/agent_runner.ts, packages/execution/src/native_tool_turns.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import {
   DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_MEMORY_PATH,
   DEFAULT_PROJECTS_MEMORY_PATH,
   DEFAULT_REQUESTS_PATH,
   DEFAULT_WORKSPACE_PATH,
@@ -62,13 +61,13 @@ async function withDryRunContextFixture(
   });
   try {
     await Deno.writeTextFile(
-      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
       MOCK_AGENT_BLUEPRINT,
     );
     const requestCommands = new RequestCommands(context);
     await fn({
       context: { requestCommands, display: context.display, appContext: context },
-      requestsDir: join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH),
+      requestsDir: pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH),
       tempDir,
     });
   } finally {
@@ -202,7 +201,7 @@ Deno.test("[exactl request create --dry-run-context] with --portal injects the r
   });
   try {
     await Deno.writeTextFile(
-      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
       MOCK_AGENT_BLUEPRINT,
     );
 
@@ -217,7 +216,7 @@ Deno.test("[exactl request create --dry-run-context] with --portal injects the r
     const portalKnowledge = new PortalKnowledgeService({
       config: makePortalKnowledgeConfig(),
       memoryBank: null as never,
-      projectsDir: join(tempDir, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH),
+      projectsDir: pathBuilders.memoryPath(tempDir, DEFAULT_PROJECTS_MEMORY_PATH),
     });
     await portalKnowledge.analyze("mock-portal", portalDir, PortalAnalysisMode.QUICK);
     (context as IApplicationContext).portalKnowledge = portalKnowledge;
@@ -257,13 +256,13 @@ Deno.test("[exactl request create --dry-run-context] a cold portal never trigger
   });
   try {
     await Deno.writeTextFile(
-      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
       MOCK_AGENT_BLUEPRINT,
     );
     const portalDir = join(tempDir, "cold-portal");
     await ensureDir(portalDir);
     await Deno.writeTextFile(join(portalDir, "README.md"), "# Cold portal\n");
-    const projectsDir = join(tempDir, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH);
+    const projectsDir = pathBuilders.memoryPath(tempDir, DEFAULT_PROJECTS_MEMORY_PATH);
     const portalKnowledge = new PortalKnowledgeService({
       config: makePortalKnowledgeConfig(),
       memoryBank: null as never,

@@ -18,13 +18,8 @@
  * @related-files [exaix-team/apps/mcp-server/main.ts, exaix-team/packages/mcp-server/server.ts, apps/daemon/main.ts, packages/flow/src/dynamic_step_executor.ts]
  */
 
-import {
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_FLOWS_PATH,
-  DEFAULT_REQUESTS_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_FLOWS_PATH, DEFAULT_REQUESTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { z } from "zod";
@@ -181,16 +176,16 @@ async function assertGoldenFixtureParity(port: number, authToken?: string): Prom
 
 /** Seed a Team-edition daemon workspace with the real analyze-codebase flow + recordings. */
 function seedAnalyzeCodebaseWorkspace(root: string): void {
-  const flowsDir = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH);
+  const flowsDir = pathBuilders.blueprintsPath(root, DEFAULT_FLOWS_PATH);
   Deno.mkdirSync(flowsDir, { recursive: true });
   Deno.copyFileSync(
-    join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "analyze-codebase.flow.yaml"),
+    pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_FLOWS_PATH, "analyze-codebase.flow.yaml"),
     join(flowsDir, "analyze-codebase.flow.yaml"),
   );
-  const agentRolesDir = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+  const agentRolesDir = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
   Deno.mkdirSync(agentRolesDir, { recursive: true });
   Deno.copyFileSync(
-    join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "senior-coder.md"),
+    pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, "senior-coder.md"),
     join(agentRolesDir, "senior-coder.md"),
   );
   writePortalDir(root);
@@ -228,7 +223,7 @@ function writeTeamDaemonConfig(configPath: string, root: string, portalDir: stri
 }
 
 function writeAnalyzeCodebaseRequest(root: string): void {
-  const dir = join(root, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
+  const dir = pathBuilders.workspacePath(root, DEFAULT_REQUESTS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   Deno.writeTextFileSync(
     join(dir, "analyze-codebase-cutover.md"),

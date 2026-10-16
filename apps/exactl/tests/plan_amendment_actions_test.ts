@@ -5,12 +5,8 @@
  * @related-files [apps/exactl/src/commands/plan_commands.ts, @exaix/core/planning]
  */
 
-import {
-  DEFAULT_ACTIVE_PATH,
-  DEFAULT_EXECUTION_MEMORY_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_ACTIVE_PATH, DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
@@ -32,7 +28,7 @@ Deno.test("amendment list discovers pending amendments", () =>
     const amendmentId2 = "770e8400-e29b-41d4-a716-446655440002";
 
     // Create amendment artifacts
-    const amendmentsDir = join(root, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "amendments");
+    const amendmentsDir = pathBuilders.memoryPath(root, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "amendments");
     await Deno.mkdir(amendmentsDir, { recursive: true });
 
     const amendment1: IPlanAmendmentPatch = {
@@ -79,7 +75,7 @@ Deno.test("amendment list discovers pending amendments", () =>
 Deno.test("amendment show displays structural patch details", () =>
   withTempDir(async (root) => {
     const amendmentId = "550e8400-e29b-41d4-a716-446655440000";
-    const amendmentsDir = join(root, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, "trace-1", "amendments");
+    const amendmentsDir = pathBuilders.memoryPath(root, DEFAULT_EXECUTION_MEMORY_PATH, "trace-1", "amendments");
     await Deno.mkdir(amendmentsDir, { recursive: true });
 
     const patch: IPlanAmendmentPatch = {
@@ -118,7 +114,7 @@ Deno.test("amendment show displays structural patch details", () =>
 Deno.test("amendment approve applies patch to plan file", () =>
   withTempDir(async (root) => {
     // Create a plan file with amendment_pending status
-    const plansDir = join(root, DEFAULT_WORKSPACE_PATH, DEFAULT_ACTIVE_PATH);
+    const plansDir = pathBuilders.workspacePath(root, DEFAULT_ACTIVE_PATH);
     await Deno.mkdir(plansDir, { recursive: true });
 
     const planContent = readFixtureTextSync(
@@ -159,7 +155,7 @@ Deno.test("amendment approve applies patch to plan file", () =>
 Deno.test("amendment reject records reason and fails plan", () =>
   withTempDir(async (root) => {
     const amendmentId = "550e8400-e29b-41d4-a716-446655440000";
-    const amendmentsDir = join(root, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, "trace-1", "amendments");
+    const amendmentsDir = pathBuilders.memoryPath(root, DEFAULT_EXECUTION_MEMORY_PATH, "trace-1", "amendments");
     await Deno.mkdir(amendmentsDir, { recursive: true });
 
     // Create amendment artifact
@@ -188,7 +184,7 @@ Deno.test("amendment reject records reason and fails plan", () =>
       rationale: "Not aligned with project goals",
     };
 
-    const decisionsDir = join(root, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, "trace-1", "decisions");
+    const decisionsDir = pathBuilders.memoryPath(root, DEFAULT_EXECUTION_MEMORY_PATH, "trace-1", "decisions");
     await Deno.mkdir(decisionsDir, { recursive: true });
 
     await Deno.writeTextFile(
@@ -211,7 +207,7 @@ Deno.test("amendment artifacts are stored with correct structure", () =>
     const traceId = "550e8400-e29b-41d4-a716-446655440000";
     const amendmentId = "660e8400-e29b-41d4-a716-446655440001";
 
-    const amendmentsDir = join(root, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "amendments");
+    const amendmentsDir = pathBuilders.memoryPath(root, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "amendments");
     await Deno.mkdir(amendmentsDir, { recursive: true });
 
     const patch: IPlanAmendmentPatch = {
@@ -231,13 +227,13 @@ Deno.test("amendment artifacts are stored with correct structure", () =>
     );
 
     // Verify directory structure
-    const memoryStat = await Deno.stat(join(root, DEFAULT_MEMORY_PATH));
+    const memoryStat = await Deno.stat(pathBuilders.memoryPath(root));
     assertEquals(memoryStat.isDirectory, true);
 
-    const executionStat = await Deno.stat(join(root, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH));
+    const executionStat = await Deno.stat(pathBuilders.memoryPath(root, DEFAULT_EXECUTION_MEMORY_PATH));
     assertEquals(executionStat.isDirectory, true);
 
-    const traceStat = await Deno.stat(join(root, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceId));
+    const traceStat = await Deno.stat(pathBuilders.memoryPath(root, DEFAULT_EXECUTION_MEMORY_PATH, traceId));
     assertEquals(traceStat.isDirectory, true);
 
     const amendmentsStat = await Deno.stat(amendmentsDir);

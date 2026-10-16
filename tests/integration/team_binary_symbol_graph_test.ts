@@ -14,7 +14,8 @@
  * @architectural-layer Test
  */
 
-import { DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { EDITION_ENTERPRISE, EDITION_SOLO, EDITION_TEAM } from "@exaix/core";
@@ -98,13 +99,7 @@ async function analyzeWithCompiledBinary(
     ]);
     assertEquals(analyzeCode, 0, `${edition}: portal analyze must succeed`);
 
-    const knowledgePath = join(
-      workspaceRoot,
-      DEFAULT_MEMORY_PATH,
-      DEFAULT_PROJECTS_MEMORY_PATH,
-      alias,
-      "knowledge.json",
-    );
+    const knowledgePath = pathBuilders.memoryPath(workspaceRoot, DEFAULT_PROJECTS_MEMORY_PATH, alias, "knowledge.json");
     const knowledge = JSON.parse(await Deno.readTextFile(knowledgePath)) as {
       techStack?: { primaryLanguage?: string };
       relationships?: Array<{ from: string; to: string; kind: string }>;
@@ -247,7 +242,7 @@ Deno.test({
 
       const knowledge = JSON.parse(
         await Deno.readTextFile(
-          join(workspaceRoot, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH, alias, "knowledge.json"),
+          pathBuilders.memoryPath(workspaceRoot, DEFAULT_PROJECTS_MEMORY_PATH, alias, "knowledge.json"),
         ),
       ) as { relationships?: Array<{ from: string; to: string; kind: string }> };
       const symbolEdges = (knowledge.relationships ?? []).filter((e) => e.kind === SYMBOL_KIND);
@@ -351,7 +346,7 @@ for (const fixture of SCRIPTED_FIXTURES) {
 
         const knowledge = JSON.parse(
           await Deno.readTextFile(
-            join(workspaceRoot, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH, alias, "knowledge.json"),
+            pathBuilders.memoryPath(workspaceRoot, DEFAULT_PROJECTS_MEMORY_PATH, alias, "knowledge.json"),
           ),
         ) as { relationships?: Array<{ from: string; to: string; kind: string }> };
         const pairs = (knowledge.relationships ?? [])
@@ -372,7 +367,7 @@ for (const fixture of SCRIPTED_FIXTURES) {
           );
           const teamKnowledge = JSON.parse(
             await Deno.readTextFile(
-              join(workspaceRoot, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH, teamAlias, "knowledge.json"),
+              pathBuilders.memoryPath(workspaceRoot, DEFAULT_PROJECTS_MEMORY_PATH, teamAlias, "knowledge.json"),
             ),
           ) as { relationships?: Array<{ kind: string }> };
           return (teamKnowledge.relationships ?? []).filter((e) => e.kind === SYMBOL_KIND);

@@ -15,6 +15,7 @@
  * @related-files [packages/core/src/skills/skills.ts, packages/request/src/blueprint_resolver.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import {
   DEFAULT_AGENTS_PATH,
   DEFAULT_BLUEPRINTS_PATH,
@@ -59,13 +60,13 @@ function assertTreesEqual(before: Map<string, string>, after: Map<string, string
 
 Deno.test("[CatalogImmutability] Memory/Skills/ and Blueprints/Agents/ are byte-identical after skill and agent-role overlays run", async () => {
   const { db, config, cleanup } = await initTestDbService();
-  const skillsDir = join(config.system.root, config.paths.memory, DEFAULT_SKILLS_MEMORY_PATH);
+  const skillsDir = pathBuilders.memorySkillsPath(config.system.root, config.paths.memory);
   const agentRolesRoot = await Deno.makeTempDir({ prefix: "immutability-agent-roles-" });
-  const agentRolesDir = join(agentRolesRoot, DEFAULT_AGENTS_PATH);
+  const agentRolesDir = pathBuilders.agentsPath(agentRolesRoot);
   const skillOverlayDir = await Deno.makeTempDir({ prefix: "immutability-skill-overlay-" });
   const shippedSkillsDir = await Deno.makeTempDir({ prefix: "immutability-shipped-skills-" });
   const agentRoleOverlayRoot = await Deno.makeTempDir({ prefix: "immutability-agent-role-overlay-" });
-  const agentRoleOverlayDir = join(agentRoleOverlayRoot, DEFAULT_AGENTS_PATH);
+  const agentRoleOverlayDir = pathBuilders.agentsPath(agentRoleOverlayRoot);
   const mockLogger = createMockEventLogger();
 
   try {

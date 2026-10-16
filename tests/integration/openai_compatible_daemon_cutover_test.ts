@@ -5,14 +5,12 @@
  * @architectural-layer Integration
  * @related-files [apps/daemon/main.ts, packages/ai-openai/src/compatible_factory.ts, packages/execution/src/strategies/react_loop_strategy.ts]
  */
+import * as pathBuilders from "@exaix/shared";
 import {
   DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
   DEFAULT_EXECUTION_MEMORY_PATH,
-  DEFAULT_MEMORY_PATH,
   DEFAULT_PLANS_PATH,
   DEFAULT_REQUESTS_PATH,
-  DEFAULT_WORKSPACE_PATH,
 } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
@@ -217,9 +215,9 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
           ? `\n[models.mock]\nprovider = "openai-chat"\nmodel = "compat-fixture-v1"\n[models.mock.compatible]\nprofile = "local-test"\nendpoint = "http://example.invalid/v1/chat/completions"\nallow_insecure_loopback = true\n`
           : "";
         await Deno.writeTextFile(configPath, config + rejectionConfig);
-        await Deno.mkdir(join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+        await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
         await Deno.writeTextFile(
-          join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "compat-agent.md"),
+          pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "compat-agent.md"),
           [
             "---",
             'agent_role: "compat-agent"',
@@ -241,7 +239,7 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
         );
 
         const traceId = crypto.randomUUID();
-        const requestPath = join(root, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`);
+        const requestPath = pathBuilders.workspacePath(root, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`);
         await bootRealDaemon(configPath, {
           extraEnv: { EXA_COMPAT_TEST_API_KEY: "local-fixture-key" },
           denoPermissions: [
@@ -254,7 +252,7 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
             "--allow-net=127.0.0.1",
           ],
           midFlight: async (daemon) => {
-            await Deno.mkdir(join(root, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH), { recursive: true });
+            await Deno.mkdir(pathBuilders.workspacePath(root, DEFAULT_REQUESTS_PATH), { recursive: true });
             await Deno.writeTextFile(
               requestPath,
               `---\ntrace_id: "${traceId}"\ncreated: "${new Date().toISOString()}"\n` +
@@ -263,7 +261,7 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
                 "# Request\n\nRead src/marker.txt through the permitted tool.\n",
             );
             if (mode === "invalid-config") return;
-            const plansDir = join(root, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH);
+            const plansDir = pathBuilders.workspacePath(root, DEFAULT_PLANS_PATH);
             let planId: string | undefined;
             await daemon.until(() => {
               planId = firstPlanId(plansDir);
@@ -364,7 +362,7 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
         }
         assert(rows.some((row) => row.action_type === "llm.usage" && row.cost_usd === null));
         const artifact = await Deno.readTextFile(
-          join(root, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "summary.md"),
+          pathBuilders.memoryPath(root, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "summary.md"),
         );
         assert(artifact.includes(fixtureMarker), "the final execution artifact must contain the fixture marker");
       } finally {
@@ -479,9 +477,9 @@ Deno.test({
           `target_path = "${portal}"`,
         ].join("\n"),
       );
-      await Deno.mkdir(join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+      await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
-        join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "compat-agent.md"),
+        pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "compat-agent.md"),
         [
           "---",
           'agent_role: "compat-agent"',
@@ -502,11 +500,11 @@ Deno.test({
         ].join("\n"),
       );
       const traceId = crypto.randomUUID();
-      const requestPath = join(root, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`);
+      const requestPath = pathBuilders.workspacePath(root, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`);
       await bootRealDaemon(configPath, {
         extraEnv: { EXA_COMPAT_TEST_API_KEY: "local-fixture-key" },
         midFlight: async () => {
-          await Deno.mkdir(join(root, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH), { recursive: true });
+          await Deno.mkdir(pathBuilders.workspacePath(root, DEFAULT_REQUESTS_PATH), { recursive: true });
           await Deno.writeTextFile(
             requestPath,
             [
@@ -576,7 +574,7 @@ Deno.test({
       assertEquals(explorationCall.structured_output_mode, undefined);
       assertEquals(finalCall.structured_output_mode, "json_object");
       assertEquals(finalCall.structured_output_mode_reason, "schema_not_strict_representable");
-      const plansDir = join(root, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH);
+      const plansDir = pathBuilders.workspacePath(root, DEFAULT_PLANS_PATH);
       const planFile = [...Deno.readDirSync(plansDir)].find((entry) => entry.isFile && entry.name.endsWith(".md"));
       assert(planFile);
       const planText = await Deno.readTextFile(join(plansDir, planFile.name));

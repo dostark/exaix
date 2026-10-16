@@ -7,6 +7,7 @@
  * creation of the required directory structure, config templates, and baseline assets.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import {
   DEFAULT_AGENTS_PATH,
   DEFAULT_BLUEPRINTS_PATH,
@@ -264,7 +265,7 @@ Deno.test("scaffold.ts uses current directory if no target provided", async () =
 
     // Verify structure was created in current directory
     assert(
-      await exists(join(tmp, DEFAULT_RUNTIME_PATH)),
+      await exists(pathBuilders.runtimePath(tmp)),
       ".exa directory should be created in current directory",
     );
   } finally {

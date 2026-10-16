@@ -5,8 +5,7 @@
  * @description Seeds a pending tool confirmation row in the workspace database for deterministic scenario-framework approval and denial tests.
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
-import { join } from "@std/path";
+import * as pathBuilders from "@exaix/shared";
 import { Database } from "@db/sqlite";
 
 const DEFAULT_CONFIRMATION_ID = "123e4567-e89b-42d3-a456-426614174000";
@@ -18,7 +17,7 @@ const EXPIRY_WINDOW_MS = 10 * 60 * 1000;
 function main(): void {
   const confirmationId = Deno.args[0] ?? DEFAULT_CONFIRMATION_ID;
   const workspaceRoot = Deno.cwd();
-  const dbPath = join(workspaceRoot, DEFAULT_RUNTIME_PATH, "journal.db");
+  const dbPath = pathBuilders.runtimePath(workspaceRoot, "journal.db");
   const now = new Date();
   const expiresAt = new Date(now.getTime() + EXPIRY_WINDOW_MS).toISOString();
   const db = new Database(dbPath);

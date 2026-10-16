@@ -5,7 +5,7 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/tests/helpers/advanced_flow_case.ts]
  */
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assert } from "@std/assert";
 import { join } from "@std/path";
 import { journalMaxRowid } from "../../../integration/helpers/daemon_config.ts";
@@ -30,20 +30,20 @@ export async function startCompiledFlowDaemon(
   workspaceRoot: string,
   binaries: { cli: string; daemon: string },
 ): Promise<number> {
-  const readyBaseline: number = journalMaxRowid(join(workspaceRoot, DEFAULT_RUNTIME_PATH, "journal.db"));
+  const readyBaseline: number = journalMaxRowid(pathBuilders.runtimePath(workspaceRoot, "journal.db"));
   const launched = await new Deno.Command("bash", {
     args: [
       "-c",
       'nohup "$1" > "$2" 2>&1 < /dev/null & echo $!',
       "--",
       binaries.daemon,
-      join(workspaceRoot, DEFAULT_RUNTIME_PATH, "daemon.log"),
+      pathBuilders.runtimePath(workspaceRoot, "daemon.log"),
     ],
     cwd: workspaceRoot,
   }).output();
   const pid = new TextDecoder().decode(launched.stdout).trim();
   if (!launched.success || !/^[0-9]+$/.test(pid)) throw new Error("Compiled daemon launch failed");
-  await Deno.writeTextFile(join(workspaceRoot, DEFAULT_RUNTIME_PATH, "daemon.pid"), pid);
+  await Deno.writeTextFile(pathBuilders.runtimePath(workspaceRoot, "daemon.pid"), pid);
   const ready = await new Deno.Command(binaries.cli, {
     args: [
       "journal",

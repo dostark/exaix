@@ -8,7 +8,8 @@
  * @related-files [scripts/dogfood_bootstrap.ts]
  */
 
-import { DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { copy } from "@std/fs";
 import { join } from "@std/path";
@@ -39,8 +40,8 @@ Deno.test({
       await copy(join(REPO_ROOT, ".copilot", "skills"), join(repoDir, ".copilot", "skills"));
       await copy(join(REPO_ROOT, "configs"), join(repoDir, "configs"));
       await copy(
-        join(REPO_ROOT, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH, "project", "Exaix"),
-        join(repoDir, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH, "project", "Exaix"),
+        pathBuilders.memoryPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH, "project", "Exaix"),
+        pathBuilders.memoryPath(repoDir, DEFAULT_SKILLS_MEMORY_PATH, "project", "Exaix"),
       );
       await git(repoDir, "add", "-A");
       await git(repoDir, "commit", "-m", "skills");
@@ -73,13 +74,13 @@ Deno.test({
       const configText = await Deno.readTextFile(join(workspace, "exa.config.toml"));
       assertStringIncludes(configText, join(worktreePath, ".copilot", "skills"));
       const jsonSkills = [
-        ...Deno.readDirSync(join(workspace, DEFAULT_MEMORY_PATH)).filter((entry) =>
+        ...Deno.readDirSync(pathBuilders.memoryPath(workspace)).filter((entry) =>
           entry.name === DEFAULT_SKILLS_MEMORY_PATH
         ),
       ];
       for (const entry of jsonSkills) {
         assertEquals(
-          await Array.fromAsync(Deno.readDir(join(workspace, DEFAULT_MEMORY_PATH, entry.name, "global"))).catch(
+          await Array.fromAsync(Deno.readDir(pathBuilders.memoryPath(workspace, entry.name, "global"))).catch(
             () => [],
           ),
           [],

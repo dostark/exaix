@@ -6,9 +6,8 @@
  * @dependencies ["@exaix/cli/base", "@exaix/core/config"]
  * @related-files ["apps/exactl/src/exactl.ts"]
  */
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import { join } from "@std/path";
 import { STDIO_INHERIT } from "./constants.ts";
 import { createConfigAdapterAsync, getRegisteredDefaults } from "@exaix/core/config";
 import type { IConfigAdapter, IConfigValidationReport } from "@exaix/core/config";
@@ -48,7 +47,7 @@ export class ConfigCommands extends BaseCommand {
   // DirectConfigAdapter; today the CLI passes no store/db, so this always resolves there.
   private async ensureAdapter(): Promise<IConfigAdapter> {
     if (!this.adapter) {
-      const dbPath = join(this.config.system.root, DEFAULT_RUNTIME_PATH, "config.db");
+      const dbPath = pathBuilders.runtimePath(this.config.system.root, "config.db");
       this.adapter = await createConfigAdapterAsync(dbPath);
     }
     return this.adapter;

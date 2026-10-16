@@ -9,7 +9,7 @@
  * @related-files [packages/ai/src/bindings/net_grant.ts, packages/ai/src/bindings/binding_layers.ts]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { createMockConfig } from "@exaix/testing";
@@ -119,7 +119,7 @@ Deno.test("[net][security] an invalid catalog endpoint is rejected before spawn"
 Deno.test("[net][security] a symlinked catalog overlay is rejected", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "net-grant-" });
   try {
-    const overlaysDir = join(tempDir, DEFAULT_RUNTIME_PATH, "overlays");
+    const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     await Deno.mkdir(overlaysDir, { recursive: true });
     const outsideTarget = join(tempDir, "outside.json");
     await Deno.writeTextFile(outsideTarget, JSON.stringify({ schema: 1, catalog: {} }));
@@ -134,7 +134,7 @@ Deno.test("[net][security] a symlinked catalog overlay is rejected", async () =>
 Deno.test("[net] daemon overlay catalog hosts are included in the grant", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "net-grant-" });
   try {
-    const overlaysDir = join(tempDir, DEFAULT_RUNTIME_PATH, "overlays");
+    const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     await Deno.mkdir(overlaysDir, { recursive: true });
     await Deno.writeTextFile(
       join(overlaysDir, "svc.json"),

@@ -10,13 +10,8 @@
  * @related-files [apps/daemon/main.ts, packages/core/src/skills/skills.ts, packages/core/src/config/service.ts]
  */
 
-import {
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_REQUESTS_PATH,
-  DEFAULT_SKILLS_MEMORY_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -120,19 +115,19 @@ Deno.test({
     const readerConfig = join(readerDir, "exa.config.toml");
     Deno.writeTextFileSync(readerConfig, original);
     try {
-      await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+      await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.copyFile(
-        join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
-        join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+        pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+        pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
       );
-      await writeSkill(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH), FIRST_SKILL);
-      await writeSkill(join(tempDir, "Alt", DEFAULT_SKILLS_MEMORY_PATH), SECOND_SKILL);
+      await writeSkill(pathBuilders.blueprintsPath(tempDir, DEFAULT_SKILLS_MEMORY_PATH), FIRST_SKILL);
+      await writeSkill(pathBuilders.memorySkillsPath(tempDir, "Alt"), SECOND_SKILL);
 
       const submit = async (skill: string, daemon: IRunningDaemon): Promise<string> => {
         const traceId = crypto.randomUUID();
-        await Deno.mkdir(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH), { recursive: true });
+        await Deno.mkdir(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH), { recursive: true });
         await Deno.writeTextFile(
-          join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH, `request-${traceId.slice(0, 8)}.md`),
+          pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH, `request-${traceId.slice(0, 8)}.md`),
           `---
 trace_id: "${traceId}"
 created: "${new Date().toISOString()}"

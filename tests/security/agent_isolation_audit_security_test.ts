@@ -12,7 +12,8 @@
  * - payload contains portal, unauthorized_files, and agent_role fields
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer, AgentExecutionError, type IAgentFileBlueprint } from "@exaix/execution";
@@ -78,7 +79,7 @@ Deno.test({
       await git(["add", "README.md"]);
       await git(["commit", "-m", "Initial commit"]);
 
-      const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+      const blueprintsDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH);
       await Deno.mkdir(blueprintsDir, { recursive: true });
       await Deno.writeTextFile(
         join(blueprintsDir, "audit-agent.md"),
@@ -224,7 +225,7 @@ Deno.test({
       await git(["add", "README.md"]);
       await git(["commit", "-m", "Initial commit"]);
 
-      const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+      const blueprintsDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH);
       await Deno.mkdir(blueprintsDir, { recursive: true });
       await Deno.writeTextFile(
         join(blueprintsDir, "auth-agent.md"),

@@ -5,7 +5,8 @@
  * branches, pointers, and worktree directories are removed after review (approve/reject).
  */
 
-import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
@@ -46,7 +47,7 @@ async function getReviewWorktreePaths(env: TestEnvironment, traceId: string, por
   assertEquals(reviewRow.repository, portalTargetPath);
 
   const canonicalWorktreePath = reviewRow.worktree_path;
-  const pointerPath = join(env.tempDir, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "worktree");
+  const pointerPath = pathBuilders.memoryPath(env.tempDir, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "worktree");
 
   assertEquals(await pathExists(canonicalWorktreePath), true);
   assertEquals(await pathExistsNoFollow(pointerPath), true);
@@ -65,7 +66,7 @@ async function setupReviewWorktreeScenario() {
   await setupWorktreePortalRepo(portalTargetPath, targetBranch);
 
   const config = withSingleWorktreePortal(env.config, portalAlias, portalTargetPath, "main");
-  await ensurePortalSymlink(join(env.tempDir, DEFAULT_PORTALS_PATH), portalAlias, portalTargetPath);
+  await ensurePortalSymlink(pathBuilders.portalsPath(env.tempDir), portalAlias, portalTargetPath);
 
   const { traceId, result } = await createAndRunReviewWorkflow(env, config, {
     portalAlias,
@@ -227,7 +228,7 @@ parallelSafeTest(
 
       const config = withSingleWorktreePortal(env.config, portalAlias, portalTargetPath, "main");
 
-      await ensurePortalSymlink(join(env.tempDir, DEFAULT_PORTALS_PATH), portalAlias, portalTargetPath);
+      await ensurePortalSymlink(pathBuilders.portalsPath(env.tempDir), portalAlias, portalTargetPath);
 
       const { traceId, result } = await createAndRunReviewWorkflow(env, config, {
         portalAlias,

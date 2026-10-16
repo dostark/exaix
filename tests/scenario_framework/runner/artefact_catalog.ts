@@ -13,12 +13,8 @@
  * @related-files [tests/scenario_framework/tests/unit/artefact_catalog_test.ts, tests/scenario_framework/runner/artefact_decision_coverage.ts, scripts/check_blueprint_integrity.ts]
  */
 
-import {
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_FLOWS_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_SKILLS_MEMORY_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { ArtefactKind, type IArtefactRef } from "./artefact_decision_coverage.ts";
@@ -78,12 +74,12 @@ async function loadFlowRefs(flowsDir: string): Promise<IArtefactRef[]> {
 /** Reads the real catalog into the flat `IArtefactRef[]` shape that `assertArtefactDecisionCoverage` compares. `blueprintsDir` is `Blueprints/` itself. Project-scoped skills come from `projectSkillsDir`. */
 export async function loadArtefactCatalog(
   blueprintsDir: string,
-  projectSkillsDir: string = join(blueprintsDir, "..", DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH, "project"),
+  projectSkillsDir: string = pathBuilders.memoryPath(blueprintsDir, "..", DEFAULT_SKILLS_MEMORY_PATH, "project"),
 ): Promise<IArtefactRef[]> {
   const [agentRoles, skills, flows] = await Promise.all([
-    loadAgentRoleRefs(join(blueprintsDir, DEFAULT_AGENTS_PATH)),
-    loadSkillRefs(join(blueprintsDir, DEFAULT_SKILLS_MEMORY_PATH), projectSkillsDir),
-    loadFlowRefs(join(blueprintsDir, DEFAULT_FLOWS_PATH)),
+    loadAgentRoleRefs(pathBuilders.agentsPath(blueprintsDir)),
+    loadSkillRefs(pathBuilders.memorySkillsPath(blueprintsDir), projectSkillsDir),
+    loadFlowRefs(pathBuilders.flowsPath(blueprintsDir)),
   ]);
   return [...agentRoles, ...skills, ...flows];
 }

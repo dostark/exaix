@@ -4,7 +4,8 @@
  * @description End-to-end FlowRunner tests for Phase 79 approval and denial via the real notification queue interceptor path.
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { StubNotificationServiceBase } from "../helpers/notification_service_stub_helpers.ts";
@@ -121,7 +122,7 @@ function installMockProvider(responses: string[]) {
 }
 
 async function writeBlueprint(tempDir: string): Promise<void> {
-  const agentsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+  const agentsDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH);
   await Deno.mkdir(agentsDir, { recursive: true });
   await Deno.writeTextFile(
     join(agentsDir, "senior-coder.md"),

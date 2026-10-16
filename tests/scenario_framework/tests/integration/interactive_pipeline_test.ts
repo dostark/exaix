@@ -15,7 +15,8 @@
  * @related-files [tests/scenario_framework/runner/interactive_clarification.ts, tests/scenario_framework/runner/policy_adherence.ts, apps/exactl/src/commands/wait_state_commands.ts]
  */
 
-import { DEFAULT_ACTIVE_PATH, DEFAULT_RUNTIME_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_ACTIVE_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ClarifyResultStatus, EvalScoringMode } from "@exaix/core";
@@ -74,7 +75,7 @@ async function writeWaitState(waitStatesDir: string, waitState: IWaitState): Pro
 
 Deno.test("[InteractivePipeline] drives the real simulator/clarification/wait-state chain token-free and renders the interactive view", async () => {
   const { context, tempDir, db, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
+  const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
 
   // 1. A seeded (token-free) simulator answers three rounds, then the loop completes.
   const provider = new MockLLMProvider(MockStrategy.SCRIPTED, {

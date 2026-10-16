@@ -6,7 +6,8 @@
  *   a plan with step manifests: agent roles resolve, depends_on ordering is consistent,
  *   and each request carries content suitable for a non-empty brief objective.
  */
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
@@ -15,7 +16,7 @@ import { isContentlessBrief } from "@exaix/core/planning";
 
 const REPO_ROOT = fromFileUrl(new URL("../../", import.meta.url));
 const SCRIPTS_PATH = join(REPO_ROOT, "scripts", "plan_to_requests.ts");
-const AGENTS_PATH = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+const AGENTS_PATH = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH);
 
 const MINIMAL_PLAN = join(
   REPO_ROOT,

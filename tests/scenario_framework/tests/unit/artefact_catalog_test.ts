@@ -12,21 +12,16 @@
  * @related-files [tests/scenario_framework/runner/artefact_catalog.ts, tests/scenario_framework/runner/artefact_decision_coverage.ts]
  */
 
-import {
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_FLOWS_PATH,
-  DEFAULT_SKILLS_MEMORY_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { loadArtefactCatalog } from "../../runner/artefact_catalog.ts";
 import { ArtefactKind } from "../../runner/artefact_decision_coverage.ts";
 
 async function writeFixtureBlueprints(root: string): Promise<void> {
-  const agentRolesDir = join(root, DEFAULT_AGENTS_PATH);
-  const skillsDir = join(root, DEFAULT_SKILLS_MEMORY_PATH);
-  const flowsDir = join(root, DEFAULT_FLOWS_PATH);
+  const agentRolesDir = pathBuilders.agentsPath(root);
+  const skillsDir = pathBuilders.memorySkillsPath(root);
+  const flowsDir = pathBuilders.flowsPath(root);
   const templatesDir = join(flowsDir, "templates");
   await Deno.mkdir(agentRolesDir, { recursive: true });
   await Deno.mkdir(skillsDir, { recursive: true });
@@ -100,11 +95,11 @@ Deno.test("[ArtefactCatalog] mock-agent and default are excluded (non-curated ag
 Deno.test("[ArtefactCatalog] a flow's id comes from its declared `id:` field, not the filename", async () => {
   const root = await Deno.makeTempDir();
   try {
-    await Deno.mkdir(join(root, DEFAULT_AGENTS_PATH), { recursive: true });
-    await Deno.mkdir(join(root, DEFAULT_SKILLS_MEMORY_PATH), { recursive: true });
-    await Deno.mkdir(join(root, DEFAULT_FLOWS_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.agentsPath(root), { recursive: true });
+    await Deno.mkdir(pathBuilders.memorySkillsPath(root), { recursive: true });
+    await Deno.mkdir(pathBuilders.flowsPath(root), { recursive: true });
     await Deno.writeTextFile(
-      join(root, DEFAULT_FLOWS_PATH, "mismatched-filename.flow.yaml"),
+      pathBuilders.flowsPath(root, "mismatched-filename.flow.yaml"),
       "id: real-declared-id\nsteps: []\n",
     );
 
@@ -129,7 +124,7 @@ Deno.test("[ArtefactCatalog] flow templates under Flows/templates/ are not enume
 
 Deno.test("[ArtefactCatalog] the real repo catalog enumerates each kind with no duplicate ids", async () => {
   const repoRoot = join(new URL("../../../../", import.meta.url).pathname);
-  const catalog = await loadArtefactCatalog(join(repoRoot, DEFAULT_BLUEPRINTS_PATH));
+  const catalog = await loadArtefactCatalog(pathBuilders.blueprintsPath(repoRoot));
 
   // A hardcoded per-kind count adds nothing beyond the structural coverage tests already
   // enforce — what matters here is that each kind found something and ids never double-count

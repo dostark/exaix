@@ -5,7 +5,8 @@
  * different portals, ensuring correct file access and security boundary enforcement.
  */
 
-import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -192,7 +193,7 @@ export async function assertPointerPointsTo(
   traceId: string,
   expectedTarget: string,
 ): Promise<void> {
-  const pointerPath = join(traceRoot, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "worktree");
+  const pointerPath = pathBuilders.memoryPath(traceRoot, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "worktree");
   const info = await Deno.lstat(pointerPath);
 
   if (info.isSymlink) {

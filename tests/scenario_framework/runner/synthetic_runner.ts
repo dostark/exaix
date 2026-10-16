@@ -8,13 +8,8 @@
  * @related-files [tests/scenario_framework/tests/integration/synthetic_runner_test.ts, tests/scenario_framework/runner/scenario_loader.ts]
  */
 
-import {
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_FLOWS_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_PORTALS_PATH,
-  DEFAULT_RUNTIME_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { dirname, join, resolve } from "@std/path";
 import { copy, ensureDir } from "@std/fs";
 import { parse as parseToml } from "@std/toml";
@@ -191,11 +186,11 @@ const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "eval-cells.toml");
  *  fresh sandbox therefore lacks entirely — without these a flow request is rejected as
  *  "not found", which doesn't look like a missing-fixture problem from the failure output. */
 const SEEDED_CATALOGS: readonly (readonly [string, string])[] = [
-  [join(DEFAULT_BLUEPRINTS_PATH), join(DEFAULT_BLUEPRINTS_PATH)],
+  [pathBuilders.blueprintsPath(""), pathBuilders.blueprintsPath("")],
   // The full shipped Memory tree (Skills + template banks), so scenarios never need a
   // `cp -r Memory` setup step — the daemon's runtime banks are written to the workspace at
   // run time and the seeded copy is only the shipped template.
-  [join(DEFAULT_MEMORY_PATH), join(DEFAULT_MEMORY_PATH)],
+  [pathBuilders.memoryPath(""), pathBuilders.memoryPath("")],
 ] as const;
 
 /** Additive by design: a scenario that patches an agent role inside its sandbox keeps the
@@ -239,7 +234,7 @@ export async function stageFlowFixture(workspaceRoot: string, flowFixturePath: s
   if (!flowId) {
     throw new Error(`flow fixture declares no id: ${flowFixturePath}`);
   }
-  const flowsDir = join(workspaceRoot, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH);
+  const flowsDir = pathBuilders.blueprintsPath(workspaceRoot, DEFAULT_FLOWS_PATH);
   await ensureDir(flowsDir);
   await Deno.writeTextFile(join(flowsDir, `${flowId}.flow.yaml`), contents);
 }
@@ -655,7 +650,7 @@ export async function runSyntheticScenario(
   }
 
   const scenarioTraces = loadScenarioActivities(
-    join(options.workspaceRoot, DEFAULT_RUNTIME_PATH, "journal.db"),
+    pathBuilders.runtimePath(options.workspaceRoot, "journal.db"),
     scenarioJournalBaselineRowid,
   );
   return {
@@ -805,8 +800,8 @@ export async function resetAndStageFixturePortal(
   workspaceRoot: string,
 ): Promise<void> {
   await removePath(target);
-  await removePath(join(workspaceRoot, DEFAULT_RUNTIME_PATH, "worktrees", portal.alias));
-  await removePath(join(workspaceRoot, DEFAULT_PORTALS_PATH, portal.alias));
+  await removePath(pathBuilders.runtimePath(workspaceRoot, "worktrees", portal.alias));
+  await removePath(pathBuilders.portalsPath(workspaceRoot, portal.alias));
   await copyFixture(source, target);
   if (portal.git_init) {
     await gitInitFixtureRepo(target);

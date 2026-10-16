@@ -11,7 +11,8 @@
  * @related-files [packages/execution/src/agent_runner.ts, packages/core/src/skills/skill_usage_store.ts]
  */
 
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
@@ -79,7 +80,7 @@ interface IFixture {
 async function fixture(): Promise<IFixture> {
   const env = await initTestDbService();
   const base = await Deno.makeTempDir({ prefix: "exa-runner-usage-" });
-  const skillsDir = join(base, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
+  const skillsDir = pathBuilders.blueprintsPath(base, DEFAULT_SKILLS_MEMORY_PATH);
   await writeSkillFolder(skillsDir, {
     name: PIN,
     instructions: "Pinned body.\n\n## Examples\n\nExample text.",
@@ -90,7 +91,7 @@ async function fixture(): Promise<IFixture> {
     sidecar: { critical: true },
   });
   const skills = new SkillsService(
-    { memoryDir: join(base, DEFAULT_MEMORY_PATH), blueprintSkillsDir: skillsDir },
+    { memoryDir: pathBuilders.memoryPath(base), blueprintSkillsDir: skillsDir },
     env.db,
     undefined,
     new EventLogger({ db: env.db }),

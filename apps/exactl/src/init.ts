@@ -6,6 +6,7 @@
  * @related-files ["apps/daemon/main.ts", apps/exactl/src/exactl.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
 import { CostTracker } from "@exaix/core/cost";
@@ -13,7 +14,7 @@ import { GitService } from "@exaix/git";
 import { EventLogger } from "@exaix/core/logger";
 import { ProviderFactory } from "@exaix/ai";
 import { FlowLoader } from "@exaix/flow";
-import { ActivityActor, DEFAULT_PROJECTS_MEMORY_PATH, EDITION_SOLO, ExaPathDefaults } from "@exaix/core";
+import { ActivityActor, EDITION_SOLO, ExaPathDefaults } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -231,7 +232,7 @@ export async function initializeServices(
       },
       embeddingProvider: createMemoryEmbeddingProvider(cfg),
       createVectorIndex: () => new HnswVectorIndex(),
-      projectsDir: join(cfg.system.root!, cfg.paths.memory!, DEFAULT_PROJECTS_MEMORY_PATH),
+      projectsDir: pathBuilders.memoryProjectsPath(cfg.system.root!, cfg.paths.memory!),
     });
 
     // Fill the paid-edition seams that portal analysis uses.

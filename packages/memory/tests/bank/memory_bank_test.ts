@@ -7,7 +7,8 @@
  * and global memories, execution record persistence, and index-based retrieval.
  */
 
-import { DEFAULT_GLOBAL_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_GLOBAL_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -779,7 +780,7 @@ Deno.test("MemoryBankService: lock files are cleaned up on success", async () =>
     });
 
     // Check that no lock files remain
-    const globalDir = join(config.system.root, DEFAULT_MEMORY_PATH, DEFAULT_GLOBAL_MEMORY_PATH);
+    const globalDir = pathBuilders.memoryPath(config.system.root, DEFAULT_GLOBAL_MEMORY_PATH);
     for await (const entry of Deno.readDir(globalDir)) {
       assert(!entry.name.endsWith(".lock"), `Stale lock file found: ${entry.name}`);
     }
@@ -830,7 +831,7 @@ Deno.test("MemoryBankService: lock files are cleaned up on failure", async () =>
     }
 
     // Check that no lock files remain after failure
-    const globalDir = join(config.system.root, DEFAULT_MEMORY_PATH, DEFAULT_GLOBAL_MEMORY_PATH);
+    const globalDir = pathBuilders.memoryPath(config.system.root, DEFAULT_GLOBAL_MEMORY_PATH);
     for await (const entry of Deno.readDir(globalDir)) {
       assert(!entry.name.endsWith(".lock"), `Stale lock file found after failure: ${entry.name}`);
     }

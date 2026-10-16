@@ -8,7 +8,8 @@
  *   passed, failed, error, skipped and read-only cases.
  */
 
-import { DEFAULT_ACTIVE_PATH, DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
@@ -91,7 +92,7 @@ async function makeVerificationLoop(options: {
   await initPortalRepo(portalDir);
 
   if (options.readOnlyAgent) {
-    const blueprintsDir = join(rootDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+    const blueprintsDir = pathBuilders.blueprintsPath(rootDir, DEFAULT_AGENTS_PATH);
     await ensureDir(blueprintsDir);
     await Deno.writeTextFile(
       join(blueprintsDir, "code-analyst.md"),
@@ -113,7 +114,7 @@ async function makeVerificationLoop(options: {
     }],
   });
 
-  const activeDir = join(rootDir, config.paths.workspace, DEFAULT_ACTIVE_PATH);
+  const activeDir = pathBuilders.activePath(rootDir, config.paths.workspace);
   await ensureDir(activeDir);
 
   const logger = new EventLogger({ db, defaultActor: "user:test" });
@@ -318,7 +319,7 @@ Deno.test("[execution-verification] a verification runner that throws completes 
     assertEquals(completedStatus(handle.db, handle.traceId), "error");
     const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
     assertEquals(reviews.length, 1, "the review must be registered on the committed work");
-    const worktree = join(handle.rootDir, DEFAULT_RUNTIME_PATH, "worktrees", "my-portal", handle.traceId);
+    const worktree = pathBuilders.runtimePath(handle.rootDir, "worktrees", "my-portal", handle.traceId);
     assert(await exists(worktree), "the worktree must be kept");
   } finally {
     await handle.cleanupDb();

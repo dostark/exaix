@@ -5,7 +5,8 @@
  * Implements the CLI interface defined in Contract 7 and 8.
  */
 
-import { DEFAULT_MEMORY_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_MEMORY_PATH } from "@exaix/shared";
 import { Command, EnumType } from "@cliffy/command";
 import { join, resolve } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
@@ -411,7 +412,7 @@ await new Command()
         const manifest = manifests.get(entry.id);
         if (manifest && firstTrialWorkspaceRoot) {
           manifest.failureClasses = computeRunFailureClasses({
-            journalPath: join(firstTrialWorkspaceRoot, DEFAULT_RUNTIME_PATH, "journal.db"),
+            journalPath: pathBuilders.runtimePath(firstTrialWorkspaceRoot, "journal.db"),
             outcomeScore: suiteScore,
             scoreThreshold,
           });
@@ -422,7 +423,7 @@ await new Command()
       // resource — stop the whole run, unconditionally (not gated behind --fail-fast).
       if (firstTrialWorkspaceRoot) {
         const exhaustion = computeRunCapacityExhaustion(
-          join(firstTrialWorkspaceRoot, DEFAULT_RUNTIME_PATH, "journal.db"),
+          pathBuilders.runtimePath(firstTrialWorkspaceRoot, "journal.db"),
         );
         if (exhaustion.detected) {
           const remaining = selectedEntries.slice(selectedEntries.indexOf(entry) + 1);

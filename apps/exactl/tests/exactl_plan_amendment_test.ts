@@ -6,10 +6,10 @@
  * @related-files [apps/exactl/src/commands/plan_commands.ts, @exaix/core/planning]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import {
   DEFAULT_ACTIVE_PATH,
   DEFAULT_EXECUTION_MEMORY_PATH,
-  DEFAULT_MEMORY_PATH,
   DEFAULT_PLANS_PATH,
   DEFAULT_REQUESTS_PATH,
   DEFAULT_WORKSPACE_PATH,
@@ -45,7 +45,7 @@ describe("Plan Amendment CLI", () => {
     _db = result.db;
     cleanup = result.cleanup;
 
-    _activeDir = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_ACTIVE_PATH);
+    _activeDir = pathBuilders.workspacePath(tempDir, DEFAULT_ACTIVE_PATH);
     _planCommands = new PlanCommands(result.context);
   });
 
@@ -59,7 +59,7 @@ describe("Plan Amendment CLI", () => {
       const amendmentId = "660e8400-e29b-41d4-a716-446655440001";
 
       // Create amendment artifact directory structure
-      const amendmentsDir = join(tempDir, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "amendments");
+      const amendmentsDir = pathBuilders.memoryPath(tempDir, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "amendments");
       await Deno.mkdir(amendmentsDir, { recursive: true });
 
       // Create amendment artifact file
@@ -93,7 +93,7 @@ describe("Plan Amendment CLI", () => {
 
     it("should handle missing amendment directory gracefully", async () => {
       const traceId = "nonexistent-trace-id";
-      const amendmentsDir = join(tempDir, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "amendments");
+      const amendmentsDir = pathBuilders.memoryPath(tempDir, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "amendments");
 
       // Directory doesn't exist - should not throw
       try {

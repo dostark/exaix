@@ -7,13 +7,8 @@
  * logger, path resolver, and portal permissions.
  */
 
-import {
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_RUNTIME_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
@@ -39,7 +34,7 @@ export async function setupAgentExecutorFixture(): Promise<IAgentExecutorFixture
   const { db, tempDir, cleanup } = await initTestDbService();
 
   const portalDir = join(tempDir, "TestPortal");
-  const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+  const blueprintsDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH);
   await Deno.mkdir(portalDir, { recursive: true });
   await Deno.mkdir(blueprintsDir, { recursive: true });
 
@@ -59,10 +54,10 @@ export async function setupAgentExecutorFixture(): Promise<IAgentExecutorFixture
   config.system.root = tempDir;
   config.paths = {
     ...config.paths,
-    workspace: join(tempDir, DEFAULT_WORKSPACE_PATH),
-    memory: join(tempDir, DEFAULT_MEMORY_PATH),
-    runtime: join(tempDir, DEFAULT_RUNTIME_PATH),
-    blueprints: join(tempDir, DEFAULT_BLUEPRINTS_PATH),
+    workspace: pathBuilders.workspacePath(tempDir),
+    memory: pathBuilders.memoryPath(tempDir),
+    runtime: pathBuilders.runtimePath(tempDir),
+    blueprints: pathBuilders.blueprintsPath(tempDir),
   };
   config.portals = [
     {

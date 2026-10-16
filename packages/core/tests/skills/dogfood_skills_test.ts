@@ -9,7 +9,8 @@
  * @related-files []
  */
 
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
 import { SkillsService } from "@exaix/core/skills";
@@ -54,7 +55,7 @@ for (const slug of SKILL_SLUGS) {
       const memoryDir = join(config.system.root, config.paths.memory);
       const service = new SkillsService({
         memoryDir,
-        blueprintSkillsDir: join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH),
+        blueprintSkillsDir: pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH),
       }, db);
       await service.initialize();
 

@@ -6,7 +6,7 @@
  * list (Finding 10) — that detail is reserved for the operator journal.
  */
 
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ToolRegistry } from "@exaix/tool-runtime";
@@ -18,9 +18,9 @@ Deno.test("ToolRegistry: access-denied error does not leak absolute roots to the
   const outsideDir = await Deno.makeTempDir({ prefix: "outside-" });
 
   try {
-    await Deno.mkdir(join(workspaceDir, DEFAULT_WORKSPACE_PATH));
-    await Deno.mkdir(join(workspaceDir, DEFAULT_MEMORY_PATH));
-    await Deno.mkdir(join(workspaceDir, DEFAULT_BLUEPRINTS_PATH));
+    await Deno.mkdir(pathBuilders.workspacePath(workspaceDir));
+    await Deno.mkdir(pathBuilders.memoryPath(workspaceDir));
+    await Deno.mkdir(pathBuilders.blueprintsPath(workspaceDir));
 
     const config = createTestConfig();
     config.system.root = workspaceDir;

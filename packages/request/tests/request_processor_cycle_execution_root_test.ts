@@ -10,7 +10,8 @@
  * @related-files [packages/request/src/processor.ts, packages/flow/src/flow_runner.ts]
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
@@ -63,7 +64,7 @@ describe("RequestProcessor session_delegate_cycle execution root provenance", ()
     costTracker = new CostTracker(db, config);
 
     await Deno.mkdir(getWorkspaceRequestsDir(testDir), { recursive: true });
-    await Deno.mkdir(join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH), { recursive: true });
 
     ProviderRegistry.clear();
     ProviderRegistry.registerWithMetadata("mock", new MockProviderFactory(), {
@@ -94,7 +95,7 @@ describe("RequestProcessor session_delegate_cycle execution root provenance", ()
     return new RequestProcessor({
       workspacePath: getWorkspaceDir(testDir),
       requestsDir: getWorkspaceRequestsDir(testDir),
-      blueprintsPath: join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH),
+      blueprintsPath: pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH),
       includeReasoning: true,
       context,
       costTracker,

@@ -7,7 +7,7 @@
  * and context aggregation for pending agent plans awaiting review.
  */
 
-import { DEFAULT_ACTIVE_PATH, DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
@@ -74,10 +74,10 @@ async function createTestWorkspace(baseDir: string): Promise<{
   plansDir: string;
   activeDir: string;
 }> {
-  const workspaceDir = join(baseDir, DEFAULT_WORKSPACE_PATH);
-  const requestsDir = join(workspaceDir, DEFAULT_REQUESTS_PATH);
-  const plansDir = join(workspaceDir, DEFAULT_PLANS_PATH);
-  const activeDir = join(workspaceDir, DEFAULT_ACTIVE_PATH);
+  const workspaceDir = pathBuilders.workspacePath(baseDir);
+  const requestsDir = pathBuilders.requestsPath(workspaceDir);
+  const plansDir = pathBuilders.plansPath(workspaceDir);
+  const activeDir = pathBuilders.activePath(workspaceDir);
 
   await ensureDir(requestsDir);
   await ensureDir(plansDir);

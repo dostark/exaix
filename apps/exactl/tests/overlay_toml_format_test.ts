@@ -5,14 +5,8 @@
  * @architectural-layer CLI
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, apps/exactl/src/commands/flow_commands.ts]
  */
-import {
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_FLOWS_DIR,
-  DEFAULT_FLOWS_PATH,
-  DEFAULT_REQUESTS_PATH,
-  DEFAULT_RUNTIME_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_FLOWS_DIR, DEFAULT_FLOWS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RequestCommands } from "../src/commands/request_commands.ts";
@@ -32,7 +26,7 @@ Deno.test("[cli] exactl request --overlay accepts a TOML overlay and stores the 
   });
   try {
     await Deno.writeTextFile(
-      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
       "steps: []",
     );
     const overlayPath = join(tempDir, "overlay.toml");
@@ -40,7 +34,7 @@ Deno.test("[cli] exactl request --overlay accepts a TOML overlay and stores the 
 
     await new RequestCommands(context).create("run the flow", { flow: "research", overlays: [overlayPath] });
 
-    const dir = join(tempDir, DEFAULT_RUNTIME_PATH, "run-bindings");
+    const dir = pathBuilders.runtimePath(tempDir, "run-bindings");
     const [file] = [...Deno.readDirSync(dir)];
     const runFile = JSON.parse(await Deno.readTextFile(join(dir, file.name)));
     assertEquals(runFile.overlays.length, 1);
@@ -61,7 +55,7 @@ Deno.test("[cli] exactl request --overlay refuses malformed TOML with overlay_in
   });
   try {
     await Deno.writeTextFile(
-      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
       "steps: []",
     );
     const overlayPath = join(tempDir, "bad.toml");

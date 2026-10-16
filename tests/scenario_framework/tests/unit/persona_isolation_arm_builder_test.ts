@@ -6,9 +6,9 @@
  * @related-files [tests/scenario_framework/runner/persona_isolation_arm.ts]
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
-import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
 import {
@@ -20,10 +20,10 @@ import {
 
 async function fixture() {
   const root = await Deno.makeTempDir({ prefix: "persona-builder-" });
-  await Deno.mkdir(join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
-  await Deno.mkdir(join(root, DEFAULT_MEMORY_PATH, "overlays"), { recursive: true });
+  await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
+  await Deno.mkdir(pathBuilders.memoryPath(root, "overlays"), { recursive: true });
   await Deno.writeTextFile(
-    join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "coder.md"),
+    pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "coder.md"),
     "---\nagent_role: coder\n---\nPersona\n",
   );
   const resolver = new PathResolver(createMockConfig(root));

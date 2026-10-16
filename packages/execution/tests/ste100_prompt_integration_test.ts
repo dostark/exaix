@@ -22,7 +22,8 @@
  * ]
  */
 
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -42,7 +43,7 @@ import { createMockConfig, createMockLogger, initTestDbService, REPO_ROOT } from
 
 const WELL_FORMED_RESPONSE = "<thought>ok</thought><content>done</content>";
 const FIXTURE_SKILLS_DIR = join(import.meta.dirname!, "../../../tests/scenario_framework/fixtures/ste100/skills");
-const REAL_SKILLS_DIR = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
+const REAL_SKILLS_DIR = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH);
 
 /** Records every prompt it is sent and returns scripted responses — the capturing
  *  provider pattern used across execution tests. */
@@ -73,7 +74,7 @@ function makeCapturingProvider(responses: string[]): {
 /** Loads the fixture skill folders through a real SkillsService. Returns the prompt `AgentRunner.run` sends. */
 async function captureContractPrompt(userPrompt: string, pinnedSkillIds: string[]): Promise<string> {
   const root = await Deno.makeTempDir({ prefix: "ste100-prompt-" });
-  const memoryDir = join(root, DEFAULT_MEMORY_PATH);
+  const memoryDir = pathBuilders.memoryPath(root);
   try {
     const { db, cleanup } = await initTestDbService();
     try {
@@ -162,7 +163,7 @@ async function captureRealSkillPrompt(
   options?: { costTargetTokens?: number; render_mode?: "full" | "trimmed"; requestText?: string },
 ): Promise<{ prompt: string; skill: ISkill | null }> {
   const root = await Deno.makeTempDir({ prefix: "ste100-corpus-" });
-  const memoryDir = join(root, DEFAULT_MEMORY_PATH);
+  const memoryDir = pathBuilders.memoryPath(root);
   try {
     const { db, cleanup } = await initTestDbService();
     try {
@@ -297,7 +298,7 @@ Deno.test("Runtime obligation mapping forbids deduplication into unrendered meta
   // must not be delivered via `constraints`/`output_requirements` (unrendered by the real
   // fort matter). The Body instructions must carry the obligation text.
   const root = await Deno.makeTempDir({ prefix: "ste100-metadata-only-" });
-  const memoryDir = join(root, DEFAULT_MEMORY_PATH);
+  const memoryDir = pathBuilders.memoryPath(root);
   try {
     const { db, cleanup } = await initTestDbService();
     try {

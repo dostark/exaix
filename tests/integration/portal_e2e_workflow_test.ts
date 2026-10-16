@@ -5,13 +5,8 @@
  * artifact reviews and write-capable Git reviews within external portal repositories.
  */
 
-import {
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_EXECUTION_MEMORY_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_PORTALS_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertMatch, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -194,7 +189,7 @@ async function withPortalWorkflowContext(
 }
 
 async function enablePortalDiscovery(tempDir: string, portalAlias: string, portalTargetPath: string): Promise<void> {
-  const portalsDir = join(tempDir, DEFAULT_PORTALS_PATH);
+  const portalsDir = pathBuilders.portalsPath(tempDir);
   await ensureDir(portalsDir);
   const portalSymlinkPath = join(portalsDir, portalAlias);
   try {
@@ -225,7 +220,7 @@ parallelSafeTest("[e2e] Portal request → plan → execution → artifact revie
     });
 
     // IBlueprint as Blueprint must include capabilities so ExecutionLoop can detect read-only mode.
-    const blueprintsDir = join(env.tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+    const blueprintsDir = pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH);
     await ensureDir(blueprintsDir);
     const fixture_1 = readFixtureTextSync(
       import.meta.url,
@@ -267,14 +262,8 @@ parallelSafeTest("[e2e] Portal request → plan → execution → artifact revie
     assertEquals(result.traceId, traceId);
 
     // Trace artifacts should exist for inspection (supporting evidence).
-    const tracePlanPath = join(env.tempDir, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "plan.md");
-    const traceSummaryPath = join(
-      env.tempDir,
-      DEFAULT_MEMORY_PATH,
-      DEFAULT_EXECUTION_MEMORY_PATH,
-      traceId,
-      "summary.md",
-    );
+    const tracePlanPath = pathBuilders.memoryPath(env.tempDir, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "plan.md");
+    const traceSummaryPath = pathBuilders.memoryPath(env.tempDir, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "summary.md");
     const tracePlanExists = await Deno.stat(tracePlanPath).then(() => true).catch(() => false);
     const traceSummaryExists = await Deno.stat(traceSummaryPath).then(() => true).catch(() => false);
     assertEquals(tracePlanExists, true, "Expected Memory/Execution/<traceId>/plan.md");
@@ -545,7 +534,7 @@ parallelSafeTest(
       assertEquals(wtList.includes(canonicalWorktreePath), false);
       assertEquals(await pathExists(canonicalWorktreePath), false);
       assertEquals(
-        await pathExists(join(env.tempDir, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "worktree")),
+        await pathExists(pathBuilders.memoryPath(env.tempDir, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "worktree")),
         false,
       );
       const branchesNow = await listBranches(portalTargetPath);

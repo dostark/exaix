@@ -17,6 +17,7 @@
  * @related-files [packages/core/src/config/paths.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_EXECUTION_DIR, DEFAULT_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { walk } from "@std/fs";
@@ -41,7 +42,7 @@ Deno.test("[path-resolution] both memoryExecution forms resolve to the same dire
   });
 
   assertEquals(rootRelative, DEFAULT_MEMORY_EXECUTION_DIR);
-  assertEquals(memoryRelative, join(DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH));
+  assertEquals(memoryRelative, pathBuilders.memoryPath("", DEFAULT_EXECUTION_MEMORY_PATH));
   assertEquals(rootRelative, memoryRelative);
 });
 
@@ -50,7 +51,7 @@ Deno.test("[path-resolution] a non-default memory root is honoured by the memory
   // that asymmetry is the reason the rule exists and is worth pinning.
   assertEquals(
     resolveMemoryExecutionRoot({ memory: "Brain", memoryExecution: DEFAULT_EXECUTION_MEMORY_PATH }),
-    join("Brain", DEFAULT_EXECUTION_MEMORY_PATH),
+    pathBuilders.memoryExecutionPath("Brain"),
   );
   assertEquals(
     resolveMemoryExecutionRoot({ memory: "Brain", memoryExecution: DEFAULT_MEMORY_EXECUTION_DIR }),

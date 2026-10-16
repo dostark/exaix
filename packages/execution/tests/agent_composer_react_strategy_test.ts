@@ -6,7 +6,8 @@
  * @related-files [packages/execution/src/agent_composer.ts]
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer, StrategyRegistry } from "@exaix/execution";
@@ -46,7 +47,7 @@ async function setup() {
   const root = dbFixture.tempDir;
   const portal = join(root, "TestPortal");
   await Deno.mkdir(portal, { recursive: true });
-  await Deno.mkdir(join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+  await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
   await git(portal, "init");
   await git(portal, "config", "user.name", "Test User");
   await git(portal, "config", "user.email", "test@example.invalid");
@@ -54,12 +55,12 @@ async function setup() {
   await git(portal, "add", "README.md");
   await git(portal, "commit", "-m", "initial");
   await Deno.writeTextFile(
-    join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "test-agent.md"),
+    pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "test-agent.md"),
     "---\nmodel: test\nprovider: mock\ncapabilities: []\npermitted_tools: [read_file]\n---\nRead the portal.",
   );
   const config = createTestConfig();
   config.system.root = root;
-  config.paths = { ...config.paths, blueprints: join(root, DEFAULT_BLUEPRINTS_PATH) };
+  config.paths = { ...config.paths, blueprints: pathBuilders.blueprintsPath(root) };
   config.portals = [{
     alias: "TestPortal",
     target_path: portal,
@@ -221,7 +222,7 @@ Deno.test("ReAct is the default strategy while MCP and CLI precedence stays inta
     provider,
     strategyRegistry: registry,
   });
-  const blueprintPath = join(config.paths.blueprints, DEFAULT_AGENTS_PATH, "test-agent.md");
+  const blueprintPath = pathBuilders.agentsPath(config.paths.blueprints, "test-agent.md");
   const run = async (native: boolean) => {
     const traceId = crypto.randomUUID();
     const result = await composer.executeStep(

@@ -7,9 +7,9 @@
  * @related-files [packages/execution/src/agent_composer.ts, packages/core/src/events/domain_event_types.ts]
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
-import { join } from "@std/path";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
@@ -26,9 +26,9 @@ async function setup(): Promise<{
   cleanup: () => Promise<void>;
 }> {
   const testDir = await Deno.makeTempDir({ prefix: "ac-effort-journal-" });
-  await Deno.mkdir(join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+  await Deno.mkdir(pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH), { recursive: true });
   await Deno.writeTextFile(
-    join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "test-agent.md"),
+    pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH, "test-agent.md"),
     "---\nagent_role: test-agent\nname: Test\nmodel: mock:test\neffort: low\n---\nYou are a test agent.\n",
   );
   return { testDir, cleanup: () => Deno.remove(testDir, { recursive: true }).catch(() => {}) };

@@ -11,13 +11,12 @@
  * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_runner.ts, tests/scenario_framework/scenarios/skill_eval/skill-revision-cutover.yaml]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import {
   DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
   DEFAULT_MEMORY_SKILLS_DIR,
   DEFAULT_PLANS_PATH,
   DEFAULT_SKILLS_MEMORY_PATH,
-  DEFAULT_WORKSPACE_PATH,
 } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { copy } from "@std/fs";
@@ -232,12 +231,12 @@ Deno.test({
         assertEquals(git.code, 0, new TextDecoder().decode(git.stderr));
       }
       await copy(
-        join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH),
-        join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH),
+        pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH),
+        pathBuilders.blueprintsPath(tempDir, DEFAULT_SKILLS_MEMORY_PATH),
       );
-      await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+      await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
-        join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "security-expert.md"),
+        pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "security-expert.md"),
         [
           "---",
           'agent_role: "security-expert"',
@@ -306,10 +305,10 @@ Deno.test({
           `target_path = "${portal}"`,
         ].join("\n"),
       );
-      const skillPath = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH, SKILL, "SKILL.md");
+      const skillPath = pathBuilders.blueprintsPath(tempDir, DEFAULT_SKILLS_MEMORY_PATH, SKILL, "SKILL.md");
       const originalSkill = await Deno.readTextFile(skillPath);
       const originalRoot = join(tempDir, "original-skills");
-      await copy(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH, SKILL), join(originalRoot, SKILL));
+      await copy(pathBuilders.blueprintsPath(tempDir, DEFAULT_SKILLS_MEMORY_PATH, SKILL), join(originalRoot, SKILL));
       const canonical = (await createSkillLoaderFor([{
         path: originalRoot,
         kind: SkillRootKind.BLUEPRINT,
@@ -353,7 +352,7 @@ Deno.test({
         }, `request ${label} to be created`);
         let planId: string | undefined;
         await daemon.until(async () => {
-          planId = planOf(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH), traceId!);
+          planId = planOf(pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH), traceId!);
           if (planId !== undefined) return true;
           return (await readActivity(configPath)).some((row) =>
             row.trace_id === traceId && REQUEST_OUTCOME_ACTIONS.includes(row.action_type)
@@ -364,7 +363,7 @@ Deno.test({
           );
         });
         await Deno.copyFile(
-          join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH, `${planId}.md`),
+          pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH, `${planId}.md`),
           join(evidenceDir, `plan-${label}.md`),
         );
         return { traceId: traceId!, planId: planId! };

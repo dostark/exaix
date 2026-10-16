@@ -7,7 +7,7 @@
  * logic, PID file management, and background process orchestration.
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { RequestSource } from "@exaix/core";
 import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
@@ -284,7 +284,7 @@ describe("DaemonCommands", {
     });
 
     it("waits for daemon.ready under the configured override when no option is given", async () => {
-      const adapter = await createConfigAdapterAsync(join(tempDir, DEFAULT_RUNTIME_PATH, "config.db"));
+      const adapter = await createConfigAdapterAsync(pathBuilders.runtimePath(tempDir, "config.db"));
       await adapter.set(DAEMON_READY_TIMEOUT_CONFIG_KEY, CONFIGURED_READY_MS);
 
       await daemonCommands.start();
@@ -667,7 +667,7 @@ describe("DaemonCommands - Edge Cases", {
     configService = result.configService!;
     cleanup = result.cleanup;
 
-    pidFile = join(tempDir, DEFAULT_RUNTIME_PATH, "daemon.pid");
+    pidFile = pathBuilders.runtimePath(tempDir, "daemon.pid");
 
     daemonCommands = new TestDaemonCommands(createStubContext({ config: configService, db }));
   });
@@ -683,7 +683,7 @@ describe("DaemonCommands - Edge Cases", {
   });
 
   it("status() should return not running when PID file contains invalid number", async () => {
-    await Deno.mkdir(join(tempDir, DEFAULT_RUNTIME_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.runtimePath(tempDir), { recursive: true });
     await Deno.writeTextFile(pidFile, "not-a-number");
 
     const status = await daemonCommands.status();
@@ -694,7 +694,7 @@ describe("DaemonCommands - Edge Cases", {
 
   it("status() should clean up PID file for dead process", async () => {
     // Use a PID that definitely doesn't exist (999999)
-    await Deno.mkdir(join(tempDir, DEFAULT_RUNTIME_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.runtimePath(tempDir), { recursive: true });
     await Deno.writeTextFile(pidFile, "999999");
 
     const status = await daemonCommands.status();
@@ -722,7 +722,7 @@ describe("DaemonCommands - Edge Cases", {
   it("start() should return early when daemon already running", async () => {
     // Use current Deno process PID (which is definitely running)
     const currentPid = Deno.pid;
-    await Deno.mkdir(join(tempDir, DEFAULT_RUNTIME_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.runtimePath(tempDir), { recursive: true });
     await Deno.writeTextFile(pidFile, currentPid.toString());
 
     // Should return without error (early return)
@@ -800,7 +800,7 @@ describe("DaemonCommands - Edge Cases", {
 
   it("status() should handle process check exception", async () => {
     // Use a negative PID to potentially trigger exception in kill -0
-    await Deno.mkdir(join(tempDir, DEFAULT_RUNTIME_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.runtimePath(tempDir), { recursive: true });
     await Deno.writeTextFile(pidFile, "-1");
 
     const status = await daemonCommands.status();
@@ -812,7 +812,7 @@ describe("DaemonCommands - Edge Cases", {
   it("status() should return uptime for running process", async () => {
     // Use current Deno process PID
     const currentPid = Deno.pid;
-    await Deno.mkdir(join(tempDir, DEFAULT_RUNTIME_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.runtimePath(tempDir), { recursive: true });
     await Deno.writeTextFile(pidFile, currentPid.toString());
 
     const status = await daemonCommands.status();
@@ -856,7 +856,7 @@ await new Promise(() => {}); // Run forever
 
     // Get the PID and write to file
     const stubbornPid = startProcess.pid;
-    await Deno.mkdir(join(tempDir, DEFAULT_RUNTIME_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.runtimePath(tempDir), { recursive: true });
     await Deno.writeTextFile(pidFile, stubbornPid.toString());
 
     // Try to stop it - this should trigger force kill after timeout
@@ -1040,8 +1040,8 @@ describe("DaemonCommands - waitForDaemonReady", {
 
   beforeEach(async () => {
     tempDir = await Deno.makeTempDir({ prefix: "wait-ready-test-" });
-    journalPath = join(tempDir, DEFAULT_RUNTIME_PATH, "journal.db");
-    await ensureDir(join(tempDir, DEFAULT_RUNTIME_PATH));
+    journalPath = pathBuilders.runtimePath(tempDir, "journal.db");
+    await ensureDir(pathBuilders.runtimePath(tempDir));
     createJournal(journalPath);
 
     daemonCommands = new TestDaemonCommands(createStubContext());

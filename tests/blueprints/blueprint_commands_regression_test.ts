@@ -5,7 +5,8 @@
  * application and discovery of project blueprints within the workspace.
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
@@ -50,7 +51,7 @@ const AGENT_ROLE_ARRAY = "array-test";
 
 // Helper to create test workspace structure
 async function createTestBlueprintsDir(baseDir: string): Promise<string> {
-  const blueprintsDir = join(baseDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+  const blueprintsDir = pathBuilders.blueprintsPath(baseDir, DEFAULT_AGENTS_PATH);
   await ensureDir(blueprintsDir);
   return blueprintsDir;
 }

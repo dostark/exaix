@@ -7,10 +7,8 @@
  * store never carries a PENDING orphan.
  */
 
-import { DEFAULT_MEMORY_PATH, DEFAULT_PENDING_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
-import { join } from "@std/path";
-
 import {
   MemoryAutoApprovalService,
   MemoryBankService,
@@ -47,7 +45,7 @@ Deno.test("manual approval feeds exactly one session-memory insight keyed to the
     const memoryBank = new MemoryBankService(config);
     memoryBank.setEmbeddingService(embeddingService);
 
-    const tieredEntriesPath = join(config.system.root, DEFAULT_MEMORY_PATH, "Session", "tiered_entries.json");
+    const tieredEntriesPath = pathBuilders.memoryPath(config.system.root, "Session", "tiered_entries.json");
     const sessionMemory = new SessionMemoryService(memoryBank, embeddingService, undefined, tieredEntriesPath);
 
     const fed: Array<{ id: string; title: string }> = [];
@@ -117,7 +115,7 @@ Deno.test("auto-approval triggers the same single session-memory feed per approv
     await embeddingService.initializeManifest();
     const memoryBank = new MemoryBankService(testConfig);
     memoryBank.setEmbeddingService(embeddingService);
-    const tieredEntriesPath = join(testConfig.system.root, DEFAULT_MEMORY_PATH, "Session", "tiered_auto.json");
+    const tieredEntriesPath = pathBuilders.memoryPath(testConfig.system.root, "Session", "tiered_auto.json");
     const sessionMemory = new SessionMemoryService(memoryBank, embeddingService, undefined, tieredEntriesPath);
 
     let fed = 0;
@@ -143,7 +141,7 @@ Deno.test("auto-approval triggers the same single session-memory feed per approv
     for (const proposal of proposals) {
       proposal.learning.extracted_at = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
       await Deno.writeTextFile(
-        join(testConfig.system.root, testConfig.paths.memory, DEFAULT_PENDING_MEMORY_PATH, `${proposal.id}.json`),
+        pathBuilders.memoryPendingPath(testConfig.system.root, testConfig.paths.memory, `${proposal.id}.json`),
         JSON.stringify(proposal, null, 2),
       );
     }

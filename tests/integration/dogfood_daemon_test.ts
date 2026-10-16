@@ -5,9 +5,8 @@
  * in an isolated temp directory via DOGFOOD_ROOT to avoid touching real .dogfood/.
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertRejects } from "@std/assert";
-import { join } from "@std/path";
 import { assertDaemonPidIsDead, readDaemonPid } from "./helpers/daemon_config.ts";
 
 const DAEMON_SCRIPT = "scripts/dogfood_daemon.ts";
@@ -39,7 +38,7 @@ Deno.test({
   sanitizeResources: false,
   async fn() {
     const sandboxRoot = await Deno.makeTempDir({ prefix: "dogfood-daemon-test-" });
-    const pidPath = join(sandboxRoot, DEFAULT_RUNTIME_PATH, "daemon.pid");
+    const pidPath = pathBuilders.runtimePath(sandboxRoot, "daemon.pid");
 
     // Set DOGFOOD_ROOT to point at temp dir (prevents touching real .dogfood/)
     const env = { DOGFOOD_ROOT: sandboxRoot };
@@ -115,7 +114,7 @@ Deno.test({
   sanitizeResources: false,
   async fn() {
     const sandboxRoot = await Deno.makeTempDir({ prefix: "dogfood-daemon-leak-guard-" });
-    const pidPath = join(sandboxRoot, DEFAULT_RUNTIME_PATH, "daemon.pid");
+    const pidPath = pathBuilders.runtimePath(sandboxRoot, "daemon.pid");
     const env = { DOGFOOD_ROOT: sandboxRoot };
 
     try {

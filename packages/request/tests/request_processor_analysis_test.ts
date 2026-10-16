@@ -8,9 +8,8 @@
  * @related-files [packages/request/src/processor.ts, packages/request/src/common.ts, packages/request/src/analysis/mod.ts, "packages/schemas/src/request_analysis.ts"]
  */
 
-import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
-import { join } from "@std/path";
 import type { IApplicationContext, IRequestAnalysisContext, IRequestAnalyzerService } from "@exaix/core/types";
 import type { ANALYZER_VERSION as _ANALYZER_VERSION } from "@exaix/core";
 import { RequestProcessor } from "@exaix/request";
@@ -274,7 +273,7 @@ Deno.test("[RequestProcessor] plan metadata contains request analysis", async ()
   try {
     const filePath = makeAgentRequestFile(env.requestsDir, { agent_role: "test-agent" });
     // Write a dummy blueprint
-    await Deno.writeTextFile(join(env.blueprintsPath, DEFAULT_AGENTS_PATH, "test-agent.md"), "Test prompt");
+    await Deno.writeTextFile(pathBuilders.agentsPath(env.blueprintsPath, "test-agent.md"), "Test prompt");
 
     const mockProvider = createMockProvider([
       '<thought>Analyze</thought><content>{"subject": "Fixed security bug", "description": "Fix bug", "steps": [{"step": 1, "title": "Check code", "description": "Verify security issue"}]}</content>',

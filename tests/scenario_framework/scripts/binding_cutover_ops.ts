@@ -7,7 +7,7 @@
  * @related-files [tests/scenario_framework/scenarios/agent_flows/flow-step-model-bindings.yaml]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
 
 const CONFIG_NAME = "exa.config.toml";
@@ -45,7 +45,7 @@ const LOCK_DESTINATIONS: Record<LockPick, string> = { latest: "fifth.lock.json",
 /** Copy the earliest or latest run lock to a stable path for --locked replay. */
 export async function saveLock(root: string, pick: LockPick): Promise<void> {
   const realRoot = await Deno.realPath(root);
-  const runtimeDir = join(realRoot, DEFAULT_RUNTIME_PATH);
+  const runtimeDir = pathBuilders.runtimePath(realRoot);
   const lockDir = join(runtimeDir, "bindings");
   const locks: Array<{ path: string; modified: number }> = [];
   for await (const entry of Deno.readDir(lockDir)) {

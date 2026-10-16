@@ -9,7 +9,7 @@
  * @related-files [packages/eval-history/src/history_schema.ts, packages/eval-history/mod.ts]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { Database } from "@db/sqlite";
 import { dirname, resolve } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -127,7 +127,7 @@ export function resolveEvalDbPath(workspaceRoot?: Opt<string, Reason.OptionalInp
   const envPath = Deno.env.get("EXA_EVAL_DB_PATH");
   if (envPath) return envPath;
   const root = workspaceRoot ?? Deno.cwd();
-  return resolve(root, DEFAULT_RUNTIME_PATH, "eval.db");
+  return pathBuilders.runtimePath(root, "eval.db");
 }
 
 const SQLITE_DUP_COLUMN_ERR = "duplicate column name";

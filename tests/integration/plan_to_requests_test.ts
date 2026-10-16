@@ -10,12 +10,8 @@
  * @related-files [scripts/plan_to_requests.ts]
  */
 
-import {
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_REQUESTS_PATH,
-  DEFAULT_RUNTIME_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertExists, assertMatch } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYamlRaw } from "@std/yaml";
@@ -447,14 +443,14 @@ Deno.test("[plan-to-requests][plan-context] generator copies the phase doc to .e
     const { code, stderr } = await runGenerator([
       CONTEXT_FIXTURE_PATH,
       "--out-dir",
-      join(wt, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH),
+      pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH),
       "--plan-context-root",
       wt,
     ]);
     assertEquals(code, 0);
     assertEquals(stderr, "");
 
-    const copied = await Deno.readTextFile(join(wt, DEFAULT_RUNTIME_PATH, "PlanContext", `${CONTEXT_SLUG}.md`));
+    const copied = await Deno.readTextFile(pathBuilders.runtimePath(wt, "PlanContext", `${CONTEXT_SLUG}.md`));
     assertEquals(copied, await Deno.readTextFile(CONTEXT_FIXTURE_PATH), "copy is byte-identical to the source doc");
   } finally {
     await Deno.remove(wt, { recursive: true });
@@ -464,7 +460,7 @@ Deno.test("[plan-to-requests][plan-context] generator copies the phase doc to .e
 Deno.test("[plan-to-requests][plan-context] generated request body references the copied relative path", async () => {
   const wt = await makeFakeWorktree({ withGit: true });
   try {
-    const outDir = join(wt, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
+    const outDir = pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH);
     const { code } = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt]);
     assertEquals(code, 0);
 
@@ -480,14 +476,14 @@ Deno.test("[plan-to-requests][plan-context] generated request body references th
 Deno.test("[plan-to-requests][plan-context][hardened-shape] copy lands inside the plan-context root so containment holds by construction", async () => {
   const wt = await makeFakeWorktree({ withGit: true });
   try {
-    const outDir = join(wt, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
+    const outDir = pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH);
     const { code } = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt]);
     assertEquals(code, 0);
 
     // The file lives INSIDE the root (OpenCode permitted-path assertion satisfied),
     // and the pointer the request carries is RELATIVE — it resolves from the delegate's
     // cwd (this same root) without any absolute-path dependence.
-    const expected = join(wt, DEFAULT_RUNTIME_PATH, "PlanContext", `${CONTEXT_SLUG}.md`);
+    const expected = pathBuilders.runtimePath(wt, "PlanContext", `${CONTEXT_SLUG}.md`);
     const stat = await Deno.stat(expected);
     assertEquals(stat.isFile, true);
     const request = await Deno.readTextFile(join(outDir, `${CONTEXT_SLUG}-step-1.md`));
@@ -509,7 +505,7 @@ Deno.test("[plan-context][relocation] repeated runs leave .git metadata and trac
     const args = [
       CONTEXT_FIXTURE_PATH,
       "--out-dir",
-      join(wt, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH),
+      pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH),
       "--plan-context-root",
       wt,
     ];
@@ -518,7 +514,7 @@ Deno.test("[plan-context][relocation] repeated runs leave .git metadata and trac
 
     assertEquals(await Deno.readTextFile(excludePath), EXISTING_EXCLUDE, ".git metadata must remain byte-identical");
     assertEquals(await Deno.readTextFile(join(wt, ".gitignore")), GITIGNORE, "tracked ignore file untouched");
-    const copied = join(wt, DEFAULT_RUNTIME_PATH, "PlanContext", `${CONTEXT_SLUG}.md`);
+    const copied = pathBuilders.runtimePath(wt, "PlanContext", `${CONTEXT_SLUG}.md`);
     assertEquals((await Deno.stat(copied)).isFile, true, "copy must exist after every sampled run");
   } finally {
     await Deno.remove(wt, { recursive: true });
@@ -528,7 +524,7 @@ Deno.test("[plan-context][relocation] repeated runs leave .git metadata and trac
 Deno.test("[plan-to-requests][plan-context] --no-copy-doc skips the copy and the pointer line", async () => {
   const wt = await makeFakeWorktree({ withGit: true });
   try {
-    const outDir = join(wt, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
+    const outDir = pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH);
     const { code } = await runGenerator([
       CONTEXT_FIXTURE_PATH,
       "--out-dir",
@@ -541,7 +537,7 @@ Deno.test("[plan-to-requests][plan-context] --no-copy-doc skips the copy and the
 
     let threwNotFound = false;
     try {
-      await Deno.stat(join(wt, DEFAULT_RUNTIME_PATH, "PlanContext"));
+      await Deno.stat(pathBuilders.runtimePath(wt, "PlanContext"));
     } catch {
       threwNotFound = true;
     }
@@ -567,8 +563,8 @@ Deno.test("[plan-to-requests][plan-context][regression] without --plan-context-r
   const wtB = await makeFakeWorktree({ withGit: false });
   try {
     const base = [CONTEXT_FIXTURE_PATH];
-    const plain = join(wtA, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
-    const noCopy = join(wtB, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
+    const plain = pathBuilders.workspacePath(wtA, DEFAULT_REQUESTS_PATH);
+    const noCopy = pathBuilders.workspacePath(wtB, DEFAULT_REQUESTS_PATH);
     assertEquals((await runGenerator([...base, "--out-dir", plain])).code, 0);
     assertEquals(
       (await runGenerator([...base, "--out-dir", noCopy, "--plan-context-root", wtB, "--no-copy-doc"])).code,
@@ -671,7 +667,7 @@ Deno.test("[plan-context][admission] manifest agent role resolves to a loadable 
     const fm = productionFrontmatterOf(file);
     assertExists(fm.agent_role, "agent_role must exist before blueprint resolution can be meaningful");
     // Drive the SAME resolver class RequestProcessor admission instantiates.
-    const resolver = new BlueprintResolver({ blueprintsPath: join(REPO_ROOT_ADM, DEFAULT_BLUEPRINTS_PATH) });
+    const resolver = new BlueprintResolver({ blueprintsPath: pathBuilders.blueprintsPath(REPO_ROOT_ADM) });
     const loaded = await resolver.resolve(String(fm.agent_role), noopTraceLogger);
     assertExists(
       loaded,
@@ -699,7 +695,7 @@ Deno.test("[regression][admission] strict RequestSchema accepts canonical genera
 Deno.test("[plan-to-requests][plan-context] frontmatter carries plan_context_ref only when a copy occurred", async () => {
   const wt = await makeFakeWorktree({ withGit: true });
   try {
-    const outDir = join(wt, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
+    const outDir = pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH);
     const { code } = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt]);
     assertEquals(code, 0);
 
@@ -730,11 +726,11 @@ Deno.test("[plan-context][metrics] treatment request stays within 3x stripped co
   const MAX_TREATMENT_TO_CONTROL_RATIO = 3;
   const wt = await makeFakeWorktree({ withGit: false });
   try {
-    const outDir = join(wt, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
+    const outDir = pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH);
     const args = [CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt];
     for (const runNumber of [1, 2]) {
       assertEquals((await runGenerator(args)).code, 0, `run ${runNumber} must succeed`);
-      const copied = join(wt, DEFAULT_RUNTIME_PATH, "PlanContext", `${CONTEXT_SLUG}.md`);
+      const copied = pathBuilders.runtimePath(wt, "PlanContext", `${CONTEXT_SLUG}.md`);
       assertEquals((await Deno.stat(copied)).isFile, true, `run ${runNumber} must retain the copy`);
     }
 

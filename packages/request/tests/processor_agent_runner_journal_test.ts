@@ -10,12 +10,8 @@
  * @architectural-layer Services
  */
 
-import {
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_PLANS_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_PLANS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { type IRequestProcessorConfig, RequestProcessor } from "@exaix/request";
@@ -41,10 +37,10 @@ Deno.test("[new] RequestProcessor.processAgentRequest logs runner_kind: agent-ru
   const { db, config, cleanup, tempDir } = await initTestDbService();
   try {
     await Deno.mkdir(getWorkspaceRequestsDir(tempDir), { recursive: true });
-    await Deno.mkdir(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH), { recursive: true });
-    await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.writeTextFile(
-      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "default.md"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "default.md"),
       "---\nagent_role: default\n---\n\nYou are a helpful assistant.\n",
     );
 
@@ -125,10 +121,10 @@ Deno.test("[new] RequestProcessor.processAgentRequest logs runner_kind: agent-ru
   const { db, config, cleanup, tempDir } = await initTestDbService();
   try {
     await Deno.mkdir(getWorkspaceRequestsDir(tempDir), { recursive: true });
-    await Deno.mkdir(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH), { recursive: true });
-    await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.writeTextFile(
-      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "default.md"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "default.md"),
       "---\nagent_role: default\n---\n\nYou are a helpful assistant.\n",
     );
 

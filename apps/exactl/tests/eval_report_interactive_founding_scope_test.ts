@@ -9,9 +9,8 @@
  * @related-files [apps/exactl/src/commands/eval_commands.ts]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
 import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { computeInteractiveRows, EvalCommands } from "../src/commands/eval_commands.ts";
@@ -75,7 +74,7 @@ Deno.test("[EvalReportInteractiveFoundingScope] omitting runIds keeps prior unsc
 
 Deno.test("[EvalReportInteractiveFoundingScope] --view interactive --run-ids renders only the scoped runs", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
+  const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
   const seed = (runId: string, rounds: number) =>

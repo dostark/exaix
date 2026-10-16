@@ -6,7 +6,7 @@
  * @related-files [tests/scenario_framework/scripts/binding_cutover_ops.ts]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { saveLock, setExploreService } from "../../scripts/binding_cutover_ops.ts";
@@ -33,7 +33,7 @@ Deno.test("[phase204] cutover helper edits only the explore selector and restore
 Deno.test("[phase204] cutover helper copies the newest lock for replay", async () => {
   const root = await Deno.makeTempDir();
   try {
-    const dir = join(root, DEFAULT_RUNTIME_PATH, "bindings");
+    const dir = pathBuilders.runtimePath(root, "bindings");
     await Deno.mkdir(dir, { recursive: true });
     const oldPath = join(dir, "old.lock.json");
     const latestPath = join(dir, "latest.lock.json");
@@ -41,7 +41,7 @@ Deno.test("[phase204] cutover helper copies the newest lock for replay", async (
     await Deno.writeTextFile(latestPath, "latest");
     await Deno.utime(oldPath, new Date(0), new Date(0));
     await saveLock(root, "latest");
-    assertEquals(await Deno.readTextFile(join(root, DEFAULT_RUNTIME_PATH, "fifth.lock.json")), "latest");
+    assertEquals(await Deno.readTextFile(pathBuilders.runtimePath(root, "fifth.lock.json")), "latest");
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -50,7 +50,7 @@ Deno.test("[phase204] cutover helper copies the newest lock for replay", async (
 Deno.test("[phase204] cutover helper copies the earliest lock for drift replay and refuses to overwrite", async () => {
   const root = await Deno.makeTempDir();
   try {
-    const dir = join(root, DEFAULT_RUNTIME_PATH, "bindings");
+    const dir = pathBuilders.runtimePath(root, "bindings");
     await Deno.mkdir(dir, { recursive: true });
     const oldPath = join(dir, "old.lock.json");
     const latestPath = join(dir, "latest.lock.json");
@@ -58,7 +58,7 @@ Deno.test("[phase204] cutover helper copies the earliest lock for drift replay a
     await Deno.writeTextFile(latestPath, "latest");
     await Deno.utime(oldPath, new Date(0), new Date(0));
     await saveLock(root, "earliest");
-    assertEquals(await Deno.readTextFile(join(root, DEFAULT_RUNTIME_PATH, "first.lock.json")), "old");
+    assertEquals(await Deno.readTextFile(pathBuilders.runtimePath(root, "first.lock.json")), "old");
     await assertRejects(() => saveLock(root, "earliest"), Error, "already exists");
   } finally {
     await Deno.remove(root, { recursive: true });

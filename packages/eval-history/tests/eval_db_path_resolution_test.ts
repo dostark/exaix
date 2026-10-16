@@ -4,16 +4,15 @@
  * @description Tests for resolveEvalDbPath path resolution logic.
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
-import { resolve } from "@std/path";
 import { resolveEvalDbPath } from "@exaix/eval-history";
 
 Deno.test({
   name: "[EvalDbPath] explicit workspace root produces correct path",
   fn: () => {
     const path = resolveEvalDbPath("/home/user/myproject");
-    assertEquals(path, resolve("/home/user/myproject", DEFAULT_RUNTIME_PATH, "eval.db"));
+    assertEquals(path, pathBuilders.runtimePath("/home/user/myproject", "eval.db"));
   },
   sanitizeOps: false,
   sanitizeResources: false,
@@ -40,7 +39,7 @@ Deno.test({
   name: "[EvalDbPath] no workspace root falls back to Deno.cwd()",
   fn: () => {
     const path = resolveEvalDbPath();
-    assertEquals(path, resolve(Deno.cwd(), DEFAULT_RUNTIME_PATH, "eval.db"));
+    assertEquals(path, pathBuilders.runtimePath(Deno.cwd(), "eval.db"));
   },
   sanitizeOps: false,
   sanitizeResources: false,

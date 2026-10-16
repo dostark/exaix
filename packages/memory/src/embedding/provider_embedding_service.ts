@@ -9,7 +9,7 @@
  * @related-files [packages/memory/src/embedding/memory_embedding.ts, packages/core/src/types/i_memory_embedding_service.ts]
  */
 
-import { DEFAULT_INDEX_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -69,7 +69,7 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
     private provider: IEmbeddingProvider = new OllamaEmbeddingClient(),
     private costRouter?: Opt<IMemoryCostRouter, Reason.OptionalDependency>,
   ) {
-    this.embeddingsDir = join(config.system.root, config.paths.memory, DEFAULT_INDEX_MEMORY_PATH, "embeddings");
+    this.embeddingsDir = pathBuilders.memoryIndexPath(config.system.root, config.paths.memory, "embeddings");
     this.manifestPath = join(this.embeddingsDir, "manifest.json");
     const cacheDir = join(config.system.root, config.paths.runtime, "cache", "embeddings");
     this.cache = new DiskBackedEmbeddingCache(cacheDir, EMBEDDING_CACHE_MAX_ENTRIES);

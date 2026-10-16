@@ -8,22 +8,15 @@
  * @related-files ["packages/execution/src/execution_loop.ts", "../../apps/daemon/src/watcher.ts", "../../apps/exactl/src/commands/daemon_commands.ts", "packages/ai/src/model_resolver.ts"]
  * @phase-134 Step 2 production call-site: injects the edition-selected IModelRegistry (DefaultModelRegistry floor in Solo) into ModelResolver.
  */
-import {
-  DEFAULT_ACTIVE_PATH,
-  DEFAULT_EXECUTION_MEMORY_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_PLANS_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
 import {
   BINDING_RUN_FILE_PRUNE_INTERVAL_MS,
   BINDING_RUN_FILE_RETENTION_DAYS,
   DAEMON_AGENT_ROLE_ID,
   DAEMON_DEFAULT_NET_HOSTS,
   DaemonStatus,
-  DEFAULT_AGENTS_PATH,
   DEFAULT_DOGFOOD_CONTEXT_PRUNE_INTERVAL_MS,
-  DEFAULT_PROJECTS_MEMORY_PATH,
   EDITION_ENTERPRISE,
   EDITION_SOLO,
   EDITION_TEAM,
@@ -455,7 +448,7 @@ if (import.meta.main) {
     // the cycle store holds atomic resume checkpoints.
     const sessionDelegateCycleClaimStore = new SessionDelegateCycleClaimStore(dbService);
     const sessionDelegateCycleStore = new SessionDelegateCycleStore(
-      join(config.system.root, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH),
+      pathBuilders.memoryPath(config.system.root, DEFAULT_EXECUTION_MEMORY_PATH),
     );
     const recoveredCount = await recoverOrphanedDelegations({
       db: dbService,
@@ -656,7 +649,7 @@ if (import.meta.main) {
       symbolExtractorRegistry: symbolRegistry,
       symbolReferenceExtractorRegistry: symbolReferenceRegistry,
       symbolFileResolverRegistry: symbolFileResolverRegistry,
-      projectsDir: join(config.system.root, config.paths.memory, DEFAULT_PROJECTS_MEMORY_PATH),
+      projectsDir: pathBuilders.memoryProjectsPath(config.system.root, config.paths.memory),
     });
 
     // Create central application context
@@ -680,17 +673,9 @@ if (import.meta.main) {
     const _healthService = initializeHealthChecks(dbService, llmProvider, config);
 
     // Ensure required directories exist
-    const requestsPath = join(
-      config.system.root,
-      config.paths.workspace,
-      DEFAULT_REQUESTS_PATH,
-    );
-    const plansPath = join(config.system.root, config.paths.workspace, DEFAULT_PLANS_PATH);
-    const activePath = join(
-      config.system.root,
-      config.paths.workspace,
-      DEFAULT_ACTIVE_PATH,
-    );
+    const requestsPath = pathBuilders.requestsPath(config.system.root, config.paths.workspace);
+    const plansPath = pathBuilders.plansPath(config.system.root, config.paths.workspace);
+    const activePath = pathBuilders.activePath(config.system.root, config.paths.workspace);
     await ensureDir(requestsPath);
     await ensureDir(plansPath);
     await ensureDir(activePath);
@@ -749,7 +734,7 @@ if (import.meta.main) {
     if (config.session_delegate?.enabled) {
       const sessionDir = join(config.system.root, "Session");
       const workspaceRoot = join(config.system.root, config.paths.workspace);
-      const waitStoreBase = join(config.system.root, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH);
+      const waitStoreBase = pathBuilders.memoryPath(config.system.root, DEFAULT_EXECUTION_MEMORY_PATH);
       await ensureDir(sessionDir);
       await ensureDir(waitStoreBase);
 
@@ -869,11 +854,7 @@ if (import.meta.main) {
     );
 
     // Create FlowRunner for multi-agent flow execution
-    const blueprintsPath = join(
-      config.system.root,
-      config.paths.blueprints,
-      DEFAULT_AGENTS_PATH,
-    );
+    const blueprintsPath = pathBuilders.agentsPath(config.system.root, config.paths.blueprints);
     // Without this, constructPrompt's own `if (!manager) return ...` early-return
     // silently skips the real budget system for the planning call.
     const agentRunnerTokenizer = new AiTokenEstimatorTokenizer();
@@ -1113,7 +1094,7 @@ if (import.meta.main) {
         resolveModel: (traceId: string) =>
           resolveModelFromTrace(
             traceId,
-            join(config.system.root, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH),
+            pathBuilders.workspacePath(config.system.root, DEFAULT_REQUESTS_PATH),
             modelResolver,
           ),
         resolveProviderApiKey: (keyEnv: string) => Deno.env.get(keyEnv),
@@ -1152,7 +1133,7 @@ if (import.meta.main) {
       dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
       mcpClient,
       flowTraceStore: new FlowTraceStore(
-        join(config.system.root, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, "flow_traces"),
+        pathBuilders.memoryPath(config.system.root, DEFAULT_EXECUTION_MEMORY_PATH, "flow_traces"),
       ),
       sessionDelegationCoordinator,
       planContextResolver: sessionDelegationCoordinator ? new PlanContextResolver() : undefined,
@@ -1189,11 +1170,7 @@ if (import.meta.main) {
     const requestProcessor = new RequestProcessor({
       workspacePath: join(config.system.root, config.paths.workspace),
       requestsDir: requestsPath,
-      blueprintsPath: join(
-        config.system.root,
-        config.paths.blueprints,
-        DEFAULT_AGENTS_PATH,
-      ),
+      blueprintsPath: pathBuilders.agentsPath(config.system.root, config.paths.blueprints),
       includeReasoning: true,
       context, // Support unified DI
       agentRunner,
@@ -1227,12 +1204,7 @@ if (import.meta.main) {
       onDelegateRefinement: _sessionDelegateService && _sessionWaitStore
         ? async (traceId: string, _requestId: string, body: string) => {
           const sd = config.session_delegate!;
-          const requestPath = join(
-            config.system.root,
-            DEFAULT_WORKSPACE_PATH,
-            DEFAULT_REQUESTS_PATH,
-            `${_requestId}.md`,
-          );
+          const requestPath = pathBuilders.workspacePath(config.system.root, DEFAULT_REQUESTS_PATH, `${_requestId}.md`);
           const resolvedModel = await resolveRequestModel(requestPath, modelResolver);
           // Use optional chaining for obj access instead of type-assertion cast
           const brief = await _sessionDelegateService!.prepareBrief({
@@ -1310,11 +1282,7 @@ if (import.meta.main) {
       "RequestProcessor",
       {
         requestsDir: requestsPath,
-        blueprints: join(
-          config.system.root,
-          config.paths.blueprints,
-          DEFAULT_AGENTS_PATH,
-        ),
+        blueprints: pathBuilders.agentsPath(config.system.root, config.paths.blueprints),
       },
     );
 

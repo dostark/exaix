@@ -11,9 +11,9 @@
  * @related-files [packages/execution/src/skill_pin_transport.ts, packages/execution/src/strategies/react_loop_strategy.ts]
  */
 
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
@@ -52,11 +52,11 @@ const TRACE = "11111111-1111-4111-8111-111111111111";
 async function fixture() {
   const env = await initTestDbService();
   const base = await Deno.makeTempDir({ prefix: "exa-pin-transport-" });
-  const skillsDir = join(base, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
+  const skillsDir = pathBuilders.blueprintsPath(base, DEFAULT_SKILLS_MEMORY_PATH);
   await writeSkillFolder(skillsDir, { name: SKILL, instructions: "Approved body A." });
   await writeSkillFolder(skillsDir, { name: "other-skill", instructions: "Other body." });
   const skills = new SkillsService(
-    { memoryDir: join(base, DEFAULT_MEMORY_PATH), blueprintSkillsDir: skillsDir },
+    { memoryDir: pathBuilders.memoryPath(base), blueprintSkillsDir: skillsDir },
     env.db,
     undefined,
     new EventLogger({ db: env.db }),

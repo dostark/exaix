@@ -5,7 +5,8 @@
  * git commands are strictly confined to authorized repository boundaries.
  */
 
-import { DEFAULT_ACTIVE_PATH, DEFAULT_AGENTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_ACTIVE_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { createGitTestContext, GitTestHelper, setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
@@ -50,7 +51,7 @@ Deno.test("[security] Git Security: blocks destructive git reset --hard in PlanE
     await git.ensureRepository();
     await git.ensureIdentity();
 
-    const blueprintsDir = join(config.system.root, config.paths.blueprints, DEFAULT_AGENTS_PATH);
+    const blueprintsDir = pathBuilders.agentsPath(config.system.root, config.paths.blueprints);
     await Deno.mkdir(blueprintsDir, { recursive: true });
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),
@@ -91,7 +92,7 @@ Deno.test("[security] Git Security: blocks checkout to main branch", async () =>
     await git.ensureIdentity();
 
     // Create blueprint without the MCP capability so the default ReAct strategy is used
-    const blueprintsDir = join(config.system.root, config.paths.blueprints, DEFAULT_AGENTS_PATH);
+    const blueprintsDir = pathBuilders.agentsPath(config.system.root, config.paths.blueprints);
     await Deno.mkdir(blueprintsDir, { recursive: true });
     const fixture_1 = readFixtureTextSync(import.meta.url, "security", "git_security_regression_test", "fixture_1.md");
     await Deno.writeTextFile(join(blueprintsDir, "test-agent.md"), fixture_1);
@@ -161,7 +162,7 @@ Deno.test("[security] Git Security: prevents system root taint during Portal exe
   const planContentPath = getFixturePath(import.meta.url, "git_security_regression_plan.md");
   const planContent = await Deno.readTextFile(planContentPath);
 
-  const activeDir = join(systemRoot, DEFAULT_WORKSPACE_PATH, DEFAULT_ACTIVE_PATH);
+  const activeDir = pathBuilders.workspacePath(systemRoot, DEFAULT_ACTIVE_PATH);
   await Deno.mkdir(activeDir, { recursive: true });
   const planPath = join(activeDir, "plan.md");
   await Deno.writeTextFile(planPath, planContent);

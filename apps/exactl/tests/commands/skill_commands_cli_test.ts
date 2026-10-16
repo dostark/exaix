@@ -10,7 +10,8 @@
  * @related-files [apps/exactl/src/command_builders/skill_commands.ts, apps/exactl/src/commands/memory_commands.ts]
  */
 
-import { DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { migrateDaemonWorkspace } from "../../../../tests/integration/helpers/daemon_config.ts";
@@ -105,7 +106,7 @@ for (const alias of ["skills", "memory skill"] as const) {
       const unknown = await ws.run(alias, ["deprecate", "no-such-skill"]);
       assertEquals(unknown.code, 1);
 
-      await Deno.remove(join(ws.root, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH, "learned", slug), {
+      await Deno.remove(pathBuilders.memoryPath(ws.root, DEFAULT_SKILLS_MEMORY_PATH, "learned", slug), {
         recursive: true,
       });
       const missing = await ws.run(alias, ["validate", slug]);
@@ -127,7 +128,7 @@ for (const alias of ["skills", "memory skill"] as const) {
 Deno.test("[cli] validate reports a broken folder with typed reasons and exits 1 without writing", async () => {
   const ws = await workspace();
   try {
-    const broken = join(ws.root, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH, "learned", "broken-skill");
+    const broken = pathBuilders.memoryPath(ws.root, DEFAULT_SKILLS_MEMORY_PATH, "learned", "broken-skill");
     await Deno.mkdir(broken, { recursive: true });
     await Deno.writeTextFile(join(broken, "SKILL.md"), "no frontmatter SECRET_CONTENT");
     const result = await ws.run("skills", ["validate", "--format", "json"]);

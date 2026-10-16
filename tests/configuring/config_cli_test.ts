@@ -4,10 +4,9 @@
  * @description End-to-end integration tests for the config CLI commands.
  *   Verifies the full stack: CLI invocation → ConfigCommands → DirectConfigAdapter → Config DB.
  */
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { Database } from "@db/sqlite";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
 import { ConfigOutputFormat, ConfigValueType } from "@exaix/core/types";
 import { configurable, createConfigAdapter, insertOverride } from "@exaix/core/config";
 import {
@@ -104,7 +103,7 @@ Deno.test("[configuring] end-to-end: show --json outputs valid JSON", async () =
 Deno.test("[configuring] end-to-end: value persists across DB reconnect", async () => {
   const { commands, dir, cleanup } = setupTest();
   try {
-    const dbPath = join(dir, DEFAULT_RUNTIME_PATH, "config.db");
+    const dbPath = pathBuilders.runtimePath(dir, "config.db");
     await commands.set("cli_test.greeting", "hey");
 
     const reopened = createConfigAdapter(dbPath);
@@ -148,7 +147,7 @@ Deno.test("[configuring] end-to-end: CLI subprocess get with pre-populated DB", 
   try {
     await writeTestConfigFile(dir);
     createTestConfigDb(dir);
-    const dbPath = join(dir, DEFAULT_RUNTIME_PATH, "config.db");
+    const dbPath = pathBuilders.runtimePath(dir, "config.db");
     const db = new Database(dbPath);
     insertOverride(db, "cli_test.greeting", "hey", "test", "hot");
     db.close();

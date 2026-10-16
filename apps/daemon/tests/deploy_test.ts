@@ -5,13 +5,8 @@
  * of assets and execution of post-deployment verification hooks.
  */
 
-import {
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_INDEX_MEMORY_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_PROJECTS_MEMORY_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_INDEX_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertFalse } from "@std/assert";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
@@ -47,13 +42,13 @@ Deno.test("deploy_workspace.ts copies Memory, Blueprints, and not docs subfolder
     assert(result.code === 0, `deploy exited with ${result.code}`);
 
     // Memory should be copied (check for index or projects .gitkeep)
-    const memIndex = join(tmp, DEFAULT_MEMORY_PATH, DEFAULT_INDEX_MEMORY_PATH, ".gitkeep");
-    const memProjects = join(tmp, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH, ".gitkeep");
+    const memIndex = pathBuilders.memoryPath(tmp, DEFAULT_INDEX_MEMORY_PATH, ".gitkeep");
+    const memProjects = pathBuilders.memoryPath(tmp, DEFAULT_PROJECTS_MEMORY_PATH, ".gitkeep");
     const memExists = await exists(memIndex) || await exists(memProjects);
     assert(memExists, "Memory content should be copied to deployed workspace");
 
     // Blueprints should be copied (expect at least a README or agent role file)
-    const blueprintReadme = join(tmp, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "README.md");
+    const blueprintReadme = pathBuilders.blueprintsPath(tmp, DEFAULT_AGENTS_PATH, "README.md");
     assert(await exists(blueprintReadme), "Blueprints content should be copied to deployed workspace");
 
     // docs/: top-level files only — ensure docs directory exists

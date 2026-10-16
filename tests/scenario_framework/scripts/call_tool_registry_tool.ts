@@ -13,7 +13,8 @@
  * @related-files [tests/scenario_framework/scripts/call_mcp_tool.ts]
  */
 
-import { DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { PortalKnowledgeService } from "@exaix/portal/knowledge";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
@@ -28,8 +29,6 @@ import type {
 import type { IDisplayService } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
-import { join } from "@std/path";
-
 const NOOP_DISPLAY: IDisplayService = {
   info: () => Promise.resolve(),
   warn: () => Promise.resolve(),
@@ -120,7 +119,7 @@ if (import.meta.main) {
   const portalKnowledge = new PortalKnowledgeService({
     config: pkConfig,
     memoryBank: {} as IMemoryBankService,
-    projectsDir: join(workspaceRoot, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH),
+    projectsDir: pathBuilders.memoryPath(workspaceRoot, DEFAULT_PROJECTS_MEMORY_PATH),
   });
 
   const context = makeContext(portalKnowledge, config);

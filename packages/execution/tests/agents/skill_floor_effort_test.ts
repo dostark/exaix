@@ -9,9 +9,9 @@
  * @related-files [packages/execution/src/agent_runner.ts, packages/schemas/src/memory_bank.ts]
  */
 
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
-import { join } from "@std/path";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -44,9 +44,9 @@ function makeCapturingProvider(): { provider: IModelProvider; options: IModelOpt
 Deno.test("[AgentRunner] response-contract-security-analysis effort medium floor reaches generate()", async () => {
   const { db, cleanup } = await initTestDbService();
   const root = await Deno.makeTempDir({ prefix: "skill-floor-effort-" });
-  const memoryDir = join(root, DEFAULT_MEMORY_PATH);
+  const memoryDir = pathBuilders.memoryPath(root);
   try {
-    const blueprintSkillsDir = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
+    const blueprintSkillsDir = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH);
     const skillsService = new SkillsService({ memoryDir, blueprintSkillsDir }, db);
     await skillsService.initialize();
     const floor = await skillsService.getSkill("response-contract-security-analysis");

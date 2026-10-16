@@ -6,6 +6,7 @@
  * @related-files ["packages/execution/src/agent_runner.ts", "packages/execution/src/execution_loop.ts"]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import type {
@@ -16,7 +17,7 @@ import type {
 } from "@exaix/schemas/artifact.ts";
 import { coerceReviewStatus, ReviewStatus } from "@exaix/core/status";
 import type { Opt, Reason } from "@exaix/core/types";
-import { ArtifactSubtype as ArtifactType, DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "@exaix/core";
+import { ArtifactSubtype as ArtifactType, DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/core";
 import type { IReviewStatus } from "@exaix/core/status";
 import type { IArtifactRepository, IArtifactRow } from "./artifact_repository.ts";
 
@@ -67,12 +68,12 @@ export class ArtifactRegistry {
     targetBranch?: Opt<string, Reason.OptionalContext>,
   ): Promise<string> {
     const artifactId = `artifact-${shortId()}`;
-    const relativeFilePath = join(DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, `${artifactId}.md`);
+    const relativeFilePath = pathBuilders.memoryPath("", DEFAULT_EXECUTION_MEMORY_PATH, `${artifactId}.md`);
     const absoluteFilePath = join(this.rootDir, relativeFilePath);
     const created = new Date().toISOString();
 
     // Ensure Memory/Execution directory exists
-    await Deno.mkdir(join(this.rootDir, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.memoryPath(this.rootDir, DEFAULT_EXECUTION_MEMORY_PATH), { recursive: true });
 
     // Create frontmatter
     const frontmatter: IArtifactFrontmatter = {

@@ -5,7 +5,8 @@
  * ensuring request metadata drives policy selection and experiment event emission.
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { dirname, join } from "@std/path";
@@ -39,7 +40,7 @@ Deno.test("Integration: dynamic agent-role routing uses routing policy rules and
   });
 
   try {
-    const blueprintsPath = join(env.tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+    const blueprintsPath = pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH);
     await ensureDir(blueprintsPath);
 
     await copyFixture(
@@ -52,10 +53,10 @@ Deno.test("Integration: dynamic agent-role routing uses routing policy rules and
       join(blueprintsPath, `${DEFAULT_AGENT_ROLE}.md`),
     );
 
-    await ensureDir(join(env.tempDir, DEFAULT_RUNTIME_PATH));
+    await ensureDir(pathBuilders.runtimePath(env.tempDir));
     await copyFixture(
       join(FIXTURE_ROOT, "routing.policy.yaml"),
-      join(env.tempDir, DEFAULT_RUNTIME_PATH, "routing.policy.yaml"),
+      pathBuilders.runtimePath(env.tempDir, "routing.policy.yaml"),
     );
 
     const routingPolicyService = createRoutingPolicyService({

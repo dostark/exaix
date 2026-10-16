@@ -17,7 +17,7 @@
  * @related-files [apps/daemon/main.ts, packages/core/src/skills/skills.ts, packages/quality-gate/src/request_quality_gate.ts]
  */
 
-import { DEFAULT_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { parse } from "@std/toml";
@@ -68,7 +68,7 @@ Deno.test("[AblationDisableProof] skills preset: skills.inject_in_prompt=false â
   const { db, tempDir, cleanup } = await initTestDbService();
   try {
     const logger = new EventLogger({ db });
-    const memoryDir = join(tempDir, DEFAULT_MEMORY_PATH);
+    const memoryDir = pathBuilders.memoryPath(tempDir);
     const skillsService = new SkillsService({ memoryDir }, db, undefined, logger);
     await skillsService.initialize();
 
@@ -94,7 +94,7 @@ Deno.test("[AblationDisableProof] skills control: inject_in_prompt=true â†’ skil
   const { db, tempDir, cleanup } = await initTestDbService();
   try {
     const logger = new EventLogger({ db });
-    const memoryDir = join(tempDir, DEFAULT_MEMORY_PATH);
+    const memoryDir = pathBuilders.memoryPath(tempDir);
     const skillsService = new SkillsService({ memoryDir }, db, undefined, logger);
     await skillsService.initialize();
 

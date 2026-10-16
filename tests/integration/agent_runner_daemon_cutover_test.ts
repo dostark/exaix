@@ -28,14 +28,8 @@
  * @related-files [apps/daemon/main.ts, packages/request/src/processor.ts, packages/request/src/router.ts, packages/execution/src/agent_composer.ts, packages/execution/src/planning_tool_loop.ts]
  */
 
-import {
-  DEFAULT_ACTIVE_PATH,
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_PLANS_PATH,
-  DEFAULT_REQUESTS_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_ACTIVE_PATH, DEFAULT_AGENTS_PATH, DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertLessOrEqual } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -192,23 +186,22 @@ Deno.test({
     writeDaemonConfigWithMockAiNoQualityGate(configPath, tempDir);
 
     try {
-      await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+      await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.copyFile(
-        join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
-        join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+        pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+        pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
       );
 
       const traceId = crypto.randomUUID();
-      const requestPath = join(
+      const requestPath = pathBuilders.workspacePath(
         tempDir,
-        DEFAULT_WORKSPACE_PATH,
         DEFAULT_REQUESTS_PATH,
         `request-${traceId.slice(0, 8)}.md`,
       );
 
       await bootRealDaemon(configPath, {
         midFlight: () => {
-          Deno.mkdirSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH), { recursive: true });
+          Deno.mkdirSync(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH), { recursive: true });
           Deno.writeTextFileSync(
             requestPath,
             mockAgentRequest(traceId, "Phase 180 cutover test request", "Add a hello world function."),
@@ -254,23 +247,22 @@ Deno.test({
     writeDaemonConfigWithMockAiNoQualityGate(configPath, tempDir);
 
     try {
-      await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+      await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.copyFile(
-        join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
-        join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+        pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+        pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
       );
 
       const traceId = crypto.randomUUID();
-      const requestPath = join(
+      const requestPath = pathBuilders.workspacePath(
         tempDir,
-        DEFAULT_WORKSPACE_PATH,
         DEFAULT_REQUESTS_PATH,
         `request-${traceId.slice(0, 8)}.md`,
       );
 
       await bootRealDaemon(configPath, {
         midFlight: () => {
-          Deno.mkdirSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH), { recursive: true });
+          Deno.mkdirSync(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH), { recursive: true });
           Deno.writeTextFileSync(
             requestPath,
             mockAgentRequest(traceId, "context-budget cutover test request", "Add a hello world function."),
@@ -421,7 +413,7 @@ function makePortalRequestAndBoot(
   tempDir: string,
 ): { traceId: string; requestPath: string } {
   const traceId = crypto.randomUUID();
-  const requestPath = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`);
+  const requestPath = pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`);
   return { traceId, requestPath };
 }
 
@@ -456,15 +448,15 @@ async function bootPortalRequestRun(
     (adapter as { close?: () => void }).close?.();
   }
 
-  await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+  await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
   await Deno.copyFile(
-    join(Deno.cwd(), DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
-    join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+    pathBuilders.blueprintsPath(Deno.cwd(), DEFAULT_AGENTS_PATH, "mock-agent.md"),
+    pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
   );
   const { traceId, requestPath } = makePortalRequestAndBoot(tempDir);
   await bootRealDaemon(configPath, {
     midFlight: () => {
-      Deno.mkdirSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH), { recursive: true });
+      Deno.mkdirSync(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH), { recursive: true });
       Deno.writeTextFileSync(
         requestPath,
         `---
@@ -711,18 +703,18 @@ async function bootCutoverRun(
   const configPath = join(tempDir, "exa.config.toml");
   writeDaemonConfigForAdaptiveCutover(configPath, tempDir, sharedPortalDir, inclusion);
 
-  await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+  await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
   await Deno.copyFile(
-    join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
-    join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+    pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+    pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
   );
 
   const traceId = crypto.randomUUID();
-  const requestPath = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`);
+  const requestPath = pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`);
 
   await bootRealDaemon(configPath, {
     midFlight: () => {
-      Deno.mkdirSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH), { recursive: true });
+      Deno.mkdirSync(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH), { recursive: true });
       Deno.writeTextFileSync(
         requestPath,
         `---
@@ -1106,26 +1098,26 @@ async function bootPlanningToolsCutoverRun(
   await writePlanningCutoverFixtures(fixturesDir, marker, toolsEnabled, variant.parallelCalls);
   writePlanningToolsCutoverConfig(configPath, tempDir, portalDir, fixturesDir, toolsEnabled, variant.maxCallsPerRound);
 
-  await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+  await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
   await Deno.copyFile(
-    join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
-    join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+    pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+    pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
   );
 
   const traceId = crypto.randomUUID();
-  const requestPath = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`);
+  const requestPath = pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`);
   let planText = "";
   const readPlan = () => {
-    const plans = [...Deno.readDirSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH))];
+    const plans = [...Deno.readDirSync(pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH))];
     return plans.length > 0
-      ? Deno.readTextFileSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH, plans[0].name))
+      ? Deno.readTextFileSync(pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH, plans[0].name))
       : "";
   };
 
   await bootRealDaemon(configPath, {
     midFlight: () => {
-      Deno.mkdirSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH), { recursive: true });
-      Deno.mkdirSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH), { recursive: true });
+      Deno.mkdirSync(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH), { recursive: true });
+      Deno.mkdirSync(pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH), { recursive: true });
       Deno.writeTextFileSync(
         requestPath,
         mockAgentRequest(
@@ -1398,24 +1390,24 @@ async function bootAliasCutoverRun(
   // The real exa.config.toml, loaded and schema-validated by the daemon's ConfigService.
   if (options.strictParams) await Deno.writeTextFile(configPath, "\n[tools]\nstrict_params = true\n", { append: true });
 
-  await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+  await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
   await Deno.copyFile(
-    join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
-    join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+    pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+    pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
   );
 
   const traceId = crypto.randomUUID();
   const readPlan = () => {
-    const dir = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH);
+    const dir = pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH);
     const plans = [...Deno.readDirSync(dir)];
     return plans.length > 0 ? Deno.readTextFileSync(join(dir, plans[0].name)) : "";
   };
   await bootRealDaemon(configPath, {
     midFlight: () => {
-      Deno.mkdirSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH), { recursive: true });
-      Deno.mkdirSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH), { recursive: true });
+      Deno.mkdirSync(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH), { recursive: true });
+      Deno.mkdirSync(pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH), { recursive: true });
       Deno.writeTextFileSync(
-        join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`),
+        pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`),
         mockAgentRequest(
           traceId,
           "Phase 201 tool alias cutover",
@@ -1610,16 +1602,16 @@ Deno.test({
         );
       }
       writePlanningToolsCutoverConfig(configPath, tempDir, portalDir, fixturesDir, true);
-      await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+      await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.copyFile(
-        join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
-        join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+        pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+        pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
       );
 
       const runRequest = async (index: number, daemon: IRunningDaemon): Promise<IPlanningCutoverRow[]> => {
         const traceId = crypto.randomUUID();
         const scenarioId = `phase201-strict-${index}`;
-        const requestDir = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
+        const requestDir = pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH);
         await Deno.mkdir(requestDir, { recursive: true });
         await Deno.writeTextFile(
           join(requestDir, `strict-${index}-${traceId.slice(0, 8)}.md`),
@@ -1771,10 +1763,10 @@ Deno.test({
     try {
       const configPath = join(tempDir, "exa.config.toml");
       writeDaemonConfigWithMockAiNoQualityGate(configPath, tempDir);
-      await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+      await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.copyFile(
-        join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
-        join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+        pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+        pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
       );
       const taskEffectPath = join(tempDir, "phase201-task-effect.ts");
       await Deno.writeTextFile(taskEffectPath, "const phase201TaskEffect={value:1}\n");
@@ -1798,7 +1790,7 @@ Deno.test({
 
       await bootRealDaemon(configPath, {
         midFlight: () => {
-          const activeDir = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_ACTIVE_PATH);
+          const activeDir = pathBuilders.workspacePath(tempDir, DEFAULT_ACTIVE_PATH);
           Deno.mkdirSync(activeDir, { recursive: true });
           for (const probe of probes) {
             Deno.writeTextFileSync(
@@ -2043,18 +2035,18 @@ async function bootRound202Run(tempDir: string, mode: Round202Mode): Promise<IRo
   });
   await writeRound202Fixtures(fixturesDir, markers, mode);
   writeRound202Config(configPath, tempDir, portalDir, fixturesDir, mode);
-  await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+  await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
   await Deno.copyFile(
-    join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
-    join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+    pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+    pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
   );
 
   const traceId = crypto.randomUUID();
-  const requestPath = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`);
+  const requestPath = pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`);
   const boot = await bootRealDaemon(configPath, {
     midFlight: () => {
-      Deno.mkdirSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH), { recursive: true });
-      Deno.mkdirSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH), { recursive: true });
+      Deno.mkdirSync(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH), { recursive: true });
+      Deno.mkdirSync(pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH), { recursive: true });
       Deno.writeTextFileSync(
         requestPath,
         mockAgentRequest(traceId, "Grouped round replay cutover", "Read the three portal files and produce a plan.", [
@@ -2081,9 +2073,9 @@ async function bootRound202Run(tempDir: string, mode: Round202Mode): Promise<IRo
 
 /** The first written plan's text in a run's workspace, or empty when none was written. */
 function readPlanPaths(tempDir: string): string {
-  const plans = [...Deno.readDirSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH))];
+  const plans = [...Deno.readDirSync(pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH))];
   return plans.length > 0
-    ? Deno.readTextFileSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH, plans[0].name))
+    ? Deno.readTextFileSync(pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH, plans[0].name))
     : "";
 }
 

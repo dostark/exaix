@@ -10,9 +10,9 @@
  * @related-files [packages/execution/src/agent_runner.ts, packages/core/src/skills/skills.ts]
  */
 
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
-import { join } from "@std/path";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
@@ -54,8 +54,8 @@ interface IFixture {
 async function fixture(): Promise<IFixture> {
   const env = await initTestDbService();
   const base = await Deno.makeTempDir({ prefix: "exa-runner-revisions-" });
-  const memoryDir = join(base, DEFAULT_MEMORY_PATH);
-  const skillsDir = join(base, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
+  const memoryDir = pathBuilders.memoryPath(base);
+  const skillsDir = pathBuilders.blueprintsPath(base, DEFAULT_SKILLS_MEMORY_PATH);
   await writeSkillFolder(skillsDir, { name: SKILL_NAME, instructions: "First body." });
   const skillsService = new SkillsService(
     { memoryDir, blueprintSkillsDir: skillsDir },
@@ -155,7 +155,7 @@ Deno.test("[runner] a request without skills records nothing and still runs", as
 Deno.test("[runner] resolution is scoped to the request portal, so another portal's project skill is not injected", async () => {
   const fx = await fixture();
   try {
-    await writeSkillFolder(join(fx.memoryDir, DEFAULT_SKILLS_MEMORY_PATH, "project", "Alpha"), {
+    await writeSkillFolder(pathBuilders.memorySkillsPath(fx.memoryDir, "project", "Alpha"), {
       name: "alpha-only",
       instructions: "Alpha body.",
       sidecar: { status: SkillStatus.ACTIVE },

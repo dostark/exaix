@@ -5,9 +5,9 @@
  * @description Integration tests for subject propagation from Request to Plan.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import {
   DEFAULT_ACTIVE_PATH,
-  DEFAULT_AGENTS_PATH,
   DEFAULT_ARCHIVE_PATH,
   DEFAULT_BLUEPRINTS_PATH,
   DEFAULT_FLOWS_DIR,
@@ -43,11 +43,11 @@ async function withSubjectPropagationEnv(
 ): Promise<void> {
   const tempDir = await Deno.makeTempDir();
   const workspaceDir = join(tempDir, "workspace");
-  const requestsDir = join(workspaceDir, DEFAULT_REQUESTS_PATH);
-  const plansDir = join(workspaceDir, DEFAULT_PLANS_PATH);
+  const requestsDir = pathBuilders.requestsPath(workspaceDir);
+  const plansDir = pathBuilders.plansPath(workspaceDir);
   const runtimeDir = join(tempDir, "Runtime");
-  const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH);
-  const agentRolesDir = join(blueprintsDir, DEFAULT_AGENTS_PATH);
+  const blueprintsDir = pathBuilders.blueprintsPath(tempDir);
+  const agentRolesDir = pathBuilders.agentsPath(blueprintsDir);
 
   await Deno.mkdir(requestsDir, { recursive: true });
   await Deno.mkdir(plansDir, { recursive: true });

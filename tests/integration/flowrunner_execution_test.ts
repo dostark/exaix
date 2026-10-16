@@ -5,7 +5,8 @@
  * FlowRunner when configured in processor config.
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert } from "@std/assert";
 import { join } from "@std/path";
 import {
@@ -45,7 +46,7 @@ Deno.test({
     });
 
     try {
-      const agentRolesDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+      const agentRolesDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH);
       const requestsDir = getWorkspaceRequestsDir(tempDir);
       await Deno.mkdir(agentRolesDir, { recursive: true });
       await Deno.mkdir(requestsDir, { recursive: true });

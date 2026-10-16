@@ -4,14 +4,7 @@
  * @description Reproduction test for zombie plan lifecycle issue in manual execution mode.
  */
 
-import {
-  DEFAULT_ACTIVE_PATH,
-  DEFAULT_EXECUTION_MEMORY_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_REJECTED_PATH,
-  DEFAULT_REQUESTS_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assert } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
@@ -45,11 +38,11 @@ Deno.test("Reproduction: Zombie Plan Lifecycle in Manual Execution Mode", async 
 
   try {
     // Initialize paths
-    const workspacePath = join(testRoot, DEFAULT_WORKSPACE_PATH);
-    const activePath = join(workspacePath, DEFAULT_ACTIVE_PATH);
-    const requestsPath = join(workspacePath, DEFAULT_REQUESTS_PATH);
-    const memoryPath = join(testRoot, DEFAULT_MEMORY_PATH);
-    const executionPath = join(memoryPath, DEFAULT_EXECUTION_MEMORY_PATH);
+    const workspacePath = pathBuilders.workspacePath(testRoot);
+    const activePath = pathBuilders.activePath(workspacePath);
+    const requestsPath = pathBuilders.requestsPath(workspacePath);
+    const memoryPath = pathBuilders.memoryPath(testRoot);
+    const executionPath = pathBuilders.memoryExecutionPath(memoryPath);
 
     // Database requires config.paths.runtime to exist
     const runtimePath = join(testRoot, config.paths.runtime);
@@ -113,7 +106,7 @@ Description: Intentionally fail for test
     assert(!existsInActive, "Plan should be removed from Active (Fix Verified)");
 
     // Assertion 2: Plan file moved to Rejected with Error status
-    const rejectedDir = join(workspacePath, DEFAULT_REJECTED_PATH);
+    const rejectedDir = pathBuilders.rejectedPath(workspacePath);
     const rejectedPlanPath = join(rejectedDir, `${planId}_failed.md`);
     const existsInRejected = await exists(rejectedPlanPath);
     assert(existsInRejected, "Plan should be moved to Rejected on failure (Fix Verified)");

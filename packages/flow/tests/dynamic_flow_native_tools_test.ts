@@ -5,7 +5,8 @@
  * @architectural-layer Flows
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/src/dynamic_step_executor.ts]
  */
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { createMockConfig, createMockEventLogger, initTestDbService } from "@exaix/testing";
@@ -95,7 +96,7 @@ ProviderRegistry.registerWithMetadata("dynamic-flow-test", {} as never, {
 } as never);
 
 function writeRole(root: string): void {
-  const agents = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+  const agents = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
   Deno.mkdirSync(agents, { recursive: true });
   Deno.writeTextFileSync(
     join(agents, "reader.md"),

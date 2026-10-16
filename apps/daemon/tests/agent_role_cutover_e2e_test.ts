@@ -13,13 +13,8 @@
  * @related-files [apps/daemon/main.ts, packages/request/src/processor.ts]
  */
 
-import {
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_PLANS_PATH,
-  DEFAULT_REQUESTS_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
@@ -36,10 +31,10 @@ import {
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
 
 function writeSeniorCoderAgentRole(root: string): void {
-  const dir = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+  const dir = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   Deno.copyFileSync(
-    join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "senior-coder.md"),
+    pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, "senior-coder.md"),
     join(dir, "senior-coder.md"),
   );
 }
@@ -47,7 +42,7 @@ function writeSeniorCoderAgentRole(root: string): void {
 /** A plain (non-flow) request selecting `agent_role: senior-coder`; body text includes
  *  "Implement" so the mock provider's default planning pattern returns a real plan. */
 function writeAgentRoleRequest(root: string): void {
-  const dir = join(root, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
+  const dir = pathBuilders.workspacePath(root, DEFAULT_REQUESTS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   Deno.writeTextFileSync(
     join(dir, "agent-role-cutover.md"),
@@ -132,7 +127,7 @@ Deno.test({
         await db.close();
       }
 
-      const plansDir = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH);
+      const plansDir = pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH);
       let planFiles: string[] = [];
       try {
         planFiles = [...Deno.readDirSync(plansDir)].filter((e) => e.isFile).map((e) => e.name);

@@ -7,6 +7,7 @@
  * @related-files ["packages/execution/src/agent_runner.ts", "packages/request/src/processor.ts"]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { basename, join } from "@std/path";
 import { EFFORT_AUTO } from "@exaix/shared";
 import { exists } from "@std/fs";
@@ -483,7 +484,7 @@ export class IBlueprintLoader {
     }
 
     // Otherwise, assume it's the Blueprints root and use Agents subdirectory
-    return join(this.options.blueprintsPath, DEFAULT_AGENTS_PATH, `${agentRole}.md`);
+    return pathBuilders.agentsPath(this.options.blueprintsPath, `${agentRole}.md`);
   }
 
   /**
@@ -500,7 +501,7 @@ export class IBlueprintLoader {
   async listAll(): Promise<ILoadedBlueprint[]> {
     const agentRolesDir = this.options.blueprintsPath.endsWith(DEFAULT_AGENTS_PATH)
       ? this.options.blueprintsPath
-      : join(this.options.blueprintsPath, DEFAULT_AGENTS_PATH);
+      : pathBuilders.agentsPath(this.options.blueprintsPath);
 
     try {
       const stat = await Deno.stat(agentRolesDir);

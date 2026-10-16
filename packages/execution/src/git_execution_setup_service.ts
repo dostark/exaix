@@ -8,8 +8,7 @@
  * @related-files [packages/execution/src/execution_loop.ts]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
-import { join } from "@std/path";
+import * as pathBuilders from "@exaix/shared";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IGitService, IGitServiceFactory } from "@exaix/core/types";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
@@ -163,7 +162,7 @@ export class GitExecutionSetupService {
   }
 
   private buildPortalWorktreePath(portalAlias: string, traceId: string): string {
-    return join(this.config.system.root, DEFAULT_RUNTIME_PATH, "worktrees", portalAlias, traceId);
+    return pathBuilders.runtimePath(this.config.system.root, "worktrees", portalAlias, traceId);
   }
 
   private async addWorktreeOrThrow(
@@ -203,7 +202,7 @@ export class GitExecutionSetupService {
     worktreePath: string;
   }> {
     const worktreePath = this.buildPortalWorktreePath(args.portalAlias, args.traceId);
-    await Deno.mkdir(join(this.config.system.root, DEFAULT_RUNTIME_PATH, "worktrees", args.portalAlias), {
+    await Deno.mkdir(pathBuilders.runtimePath(this.config.system.root, "worktrees", args.portalAlias), {
       recursive: true,
     });
     await args.createWorktreeExecutionPointer(args.traceId, worktreePath, PortalExecutionStrategy.WORKTREE);

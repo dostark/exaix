@@ -13,7 +13,7 @@
  * @related-files [exaix-team/apps/mcp-server/main.ts, tests/scenario_framework/scenarios/mcp_server/sse-liveness.yaml]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { Database } from "@db/sqlite";
 import { scenarioRepoRoot } from "./scenario_repo_root.ts";
@@ -56,7 +56,7 @@ async function prepareWorkspace(workspace: string): Promise<string> {
 /** True once the journal holds the server's bind row. Read-only: the server owns the writes. */
 function bindRecorded(configPath: string): boolean {
   try {
-    const db = new Database(join(dirname(configPath), DEFAULT_RUNTIME_PATH, "journal.db"), { readonly: true });
+    const db = new Database(pathBuilders.runtimePath(dirname(configPath), "journal.db"), { readonly: true });
     try {
       return db.prepare("SELECT 1 FROM activity WHERE action_type = ? LIMIT 1").get(BOUND_EVENT) !== undefined;
     } finally {

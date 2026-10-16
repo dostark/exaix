@@ -14,7 +14,8 @@
  * @related-files [packages/flow/src/agent_composer_adapter.ts, packages/flow/src/flow_worktree_coordinator.ts, apps/daemon/main.ts]
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { AgentComposerAdapter, FlowWorktreeCoordinator } from "@exaix/flow";
@@ -44,7 +45,7 @@ Deno.test({
     try {
       await setupGitRepo(portalDir, { initialCommit: true, branch: TEST_DEFAULT_BRANCH });
 
-      const blueprintsDir = join(systemRoot, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+      const blueprintsDir = pathBuilders.blueprintsPath(systemRoot, DEFAULT_AGENTS_PATH);
       await Deno.mkdir(blueprintsDir, { recursive: true });
       await Deno.writeTextFile(
         join(blueprintsDir, `${AGENT_ROLE}.md`),
@@ -88,9 +89,8 @@ Deno.test({
         ExecutionStrategyName.CLI_DELEGATE,
       );
 
-      const expectedWorktreeFile = join(
+      const expectedWorktreeFile = pathBuilders.runtimePath(
         systemRoot,
-        DEFAULT_RUNTIME_PATH,
         "worktrees",
         PORTAL_ALIAS,
         traceId,

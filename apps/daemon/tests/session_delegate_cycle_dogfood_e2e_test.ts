@@ -14,15 +14,13 @@
  * @related-files [scripts/plan_to_requests.ts, scripts/mock_session_tool.ts, packages/flow/src/step_handlers/session_delegate_cycle_step_handler.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import {
   DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
   DEFAULT_EXECUTION_MEMORY_PATH,
   DEFAULT_FLOWS_PATH,
-  DEFAULT_MEMORY_PATH,
   DEFAULT_REQUESTS_PATH,
   DEFAULT_RUNTIME_PATH,
-  DEFAULT_WORKSPACE_PATH,
 } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
@@ -83,21 +81,21 @@ function planWithSteps(count: number): string {
  * proves the literal shipped catalog artifact dispatches correctly, not a hand-maintained clone
  * that can silently drift from the real file's shape. */
 function copyRealDogfoodFlow(root: string): void {
-  const dir = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH);
+  const dir = pathBuilders.blueprintsPath(root, DEFAULT_FLOWS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   Deno.copyFileSync(
-    join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, `${FLOW_ID}.flow.yaml`),
+    pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_FLOWS_PATH, `${FLOW_ID}.flow.yaml`),
     join(dir, `${FLOW_ID}.flow.yaml`),
   );
 }
 
 /** Copies every identity the real dogfood-meta-workflow flow references. */
 function copyDogfoodFlowIdentities(root: string): void {
-  const dir = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+  const dir = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   for (const identity of ["dogfood-coder", "code-analyst", "code-reviewer"]) {
     Deno.copyFileSync(
-      join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, `${identity}.md`),
+      pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, `${identity}.md`),
       join(dir, `${identity}.md`),
     );
   }
@@ -341,7 +339,7 @@ Deno.test({
       assertEquals(copiedContent, twoStepPlan(), "the generator must copy the exact plan the daemon will read");
 
       const traceId = crypto.randomUUID();
-      const requestsDir = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
+      const requestsDir = pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH);
 
       await bootRealDaemon(configPath, {
         extraEnv: {
@@ -374,9 +372,8 @@ Deno.test({
       assertEquals(JSON.parse(cycleCompleted[0].payload).stepCount, 2);
 
       for (const delegationTraceId of delegationTraceIds) {
-        const resultPath = join(
+        const resultPath = pathBuilders.memoryPath(
           tempDir,
-          DEFAULT_MEMORY_PATH,
           DEFAULT_EXECUTION_MEMORY_PATH,
           delegationTraceId,
           "session_delegate_result.json",
@@ -425,7 +422,7 @@ Deno.test({
 
       const planContextRef = `${DEFAULT_RUNTIME_PATH}/PlanContext/hardened-fixture.md`;
       const traceId = crypto.randomUUID();
-      const requestsDir = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
+      const requestsDir = pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH);
 
       await bootRealDaemon(configPath, {
         extraEnv: {
@@ -536,7 +533,7 @@ Deno.test({
       }).output();
 
       const traceId = crypto.randomUUID();
-      const requestsDir = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
+      const requestsDir = pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH);
 
       await bootRealDaemon(configPath, {
         // This operator-run test boots a real Anthropic provider under EXA_TEST_MODE.
@@ -556,9 +553,8 @@ Deno.test({
 
       const delegationTraceIds = completed.map((e) => JSON.parse(e.payload).delegationTraceId);
       for (const delegationTraceId of delegationTraceIds) {
-        const resultPath = join(
+        const resultPath = pathBuilders.memoryPath(
           tempDir,
-          DEFAULT_MEMORY_PATH,
           DEFAULT_EXECUTION_MEMORY_PATH,
           delegationTraceId,
           "session_delegate_result.json",

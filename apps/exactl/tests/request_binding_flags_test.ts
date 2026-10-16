@@ -9,14 +9,8 @@
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, packages/ai/src/bindings/run_bindings_store.ts]
  */
 
-import {
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_FLOWS_DIR,
-  DEFAULT_FLOWS_PATH,
-  DEFAULT_REQUESTS_PATH,
-  DEFAULT_RUNTIME_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_FLOWS_DIR, DEFAULT_FLOWS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { BindingLockSchema } from "@exaix/schemas";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { join } from "@std/path";
@@ -33,7 +27,7 @@ Deno.test("[cli] exactl request --overlay writes the run binding file before the
   });
   try {
     await Deno.writeTextFile(
-      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
       "steps: []",
     );
     const overlayPath = join(tempDir, "overlay.json");
@@ -48,7 +42,7 @@ Deno.test("[cli] exactl request --overlay writes the run binding file before the
     const requestPath = result.path!;
 
     // The run binding file exists beneath .exa/run-bindings/ and binds trace + request identity.
-    const runFileDir = join(tempDir, DEFAULT_RUNTIME_PATH, "run-bindings");
+    const runFileDir = pathBuilders.runtimePath(tempDir, "run-bindings");
     const runFiles = [...Deno.readDirSync(runFileDir)].map((e) => e.name);
     assertEquals(runFiles.length, 1);
     const runFilePath = join(runFileDir, runFiles[0]!);
@@ -72,7 +66,7 @@ Deno.test("[cli] exactl request --bind resolves a valid spec and stores it in th
   });
   try {
     await Deno.writeTextFile(
-      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
       "steps: []",
     );
 
@@ -82,10 +76,10 @@ Deno.test("[cli] exactl request --bind resolves a valid spec and stores it in th
       binds: ["flow:research/step:compose=service=openai,model=openai/gpt-6-luna"],
     });
 
-    const runFiles = [...Deno.readDirSync(join(tempDir, DEFAULT_RUNTIME_PATH, "run-bindings"))].map((e) => e.name);
+    const runFiles = [...Deno.readDirSync(pathBuilders.runtimePath(tempDir, "run-bindings"))].map((e) => e.name);
     assertEquals(runFiles.length, 1);
     const runFile = readJson<{ binds: Array<{ selector: string; spec: Record<string, string> }> }>(
-      join(tempDir, DEFAULT_RUNTIME_PATH, "run-bindings", runFiles[0]!),
+      pathBuilders.runtimePath(tempDir, "run-bindings", runFiles[0]!),
     );
     assertEquals(runFile.binds.length, 1);
     assertEquals(runFile.binds[0]?.selector, "flow:research/step:compose");
@@ -105,7 +99,7 @@ Deno.test("[cli] exactl request rejects a malformed --bind spec", async () => {
   });
   try {
     await Deno.writeTextFile(
-      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
       "steps: []",
     );
     const commands = new RequestCommands(context);
@@ -128,7 +122,7 @@ Deno.test("[cli] exactl request --locked parses a lock file into the run binding
   });
   try {
     await Deno.writeTextFile(
-      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
       "steps: []",
     );
     const lockPath = join(tempDir, "lock.json");
@@ -154,10 +148,10 @@ Deno.test("[cli] exactl request --locked parses a lock file into the run binding
     const commands = new RequestCommands(context);
     const result = await commands.create("replay", { flow: "research", locked: lockPath });
 
-    const runFiles = [...Deno.readDirSync(join(tempDir, DEFAULT_RUNTIME_PATH, "run-bindings"))].map((e) => e.name);
+    const runFiles = [...Deno.readDirSync(pathBuilders.runtimePath(tempDir, "run-bindings"))].map((e) => e.name);
     assertEquals(runFiles.length, 1);
     const runFile = readJson<{ locked: { trace_id: string }; locked_sha256?: string }>(
-      join(tempDir, DEFAULT_RUNTIME_PATH, "run-bindings", runFiles[0]!),
+      pathBuilders.runtimePath(tempDir, "run-bindings", runFiles[0]!),
     );
     assertExists(runFile.locked);
     const digest = await crypto.subtle.digest(

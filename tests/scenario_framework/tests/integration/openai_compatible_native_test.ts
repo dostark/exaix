@@ -5,12 +5,8 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/scenarios/agent_flows/openai-compatible-native.yaml, tests/scenario_framework/fixtures/phase155/local-compatible.toml, tests/scenario_framework/runner/synthetic_runner.ts]
  */
-import {
-  DEFAULT_EXECUTION_MEMORY_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_PLANS_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PLANS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { withEnv } from "@exaix/testing";
@@ -343,7 +339,7 @@ Deno.test({
       } finally {
         await db.close();
       }
-      const traceDir = join(workspaceRoot, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceId);
+      const traceDir = pathBuilders.memoryPath(workspaceRoot, DEFAULT_EXECUTION_MEMORY_PATH, traceId);
       assert((await Deno.readTextFile(join(traceDir, "summary.md"))).length > 0);
       assert((await Deno.readTextFile(join(traceDir, "plan.md"))).length > 0);
       assert(rows.some((row) => row.action_type === "report.generated" && row.trace_id === traceId));
@@ -588,16 +584,15 @@ Deno.test({
       } finally {
         await db.close();
       }
-      const successArtifact = join(
+      const successArtifact = pathBuilders.memoryPath(
         workspaceRoot,
-        DEFAULT_MEMORY_PATH,
         DEFAULT_EXECUTION_MEMORY_PATH,
         terminal.trace_id!,
         "plan.md",
       );
       assertEquals(await Deno.stat(successArtifact).then(() => true, () => false), false);
-      const plans = await Deno.stat(join(workspaceRoot, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH)).then(
-        () => [...Deno.readDirSync(join(workspaceRoot!, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH))].length,
+      const plans = await Deno.stat(pathBuilders.workspacePath(workspaceRoot, DEFAULT_PLANS_PATH)).then(
+        () => [...Deno.readDirSync(pathBuilders.workspacePath(workspaceRoot!, DEFAULT_PLANS_PATH))].length,
         () => 0,
       );
       assertEquals(plans, 0);

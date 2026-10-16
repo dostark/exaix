@@ -7,6 +7,7 @@
  * temporary workspace creation and mock Git repository initialization.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import {
   DEFAULT_ACTIVE_PATH,
   DEFAULT_AGENTS_PATH,
@@ -61,7 +62,7 @@ export async function initPortalTest(options?: {
   const { db, cleanup: dbCleanup } = await initTestDbService();
 
   // Create required directories
-  await Deno.mkdir(join(tempRoot, DEFAULT_PORTALS_PATH), { recursive: true });
+  await Deno.mkdir(pathBuilders.portalsPath(tempRoot), { recursive: true });
   await Deno.mkdir(getMemoryProjectsDir(tempRoot), { recursive: true });
 
   // Create target directory files if specified
@@ -136,7 +137,7 @@ export async function createTestPortal(
  * Verifies a portal's symlink exists
  */
 export async function verifySymlink(tempRoot: string, alias: string): Promise<boolean> {
-  const symlinkPath = join(tempRoot, DEFAULT_PORTALS_PATH, alias);
+  const symlinkPath = pathBuilders.portalsPath(tempRoot, alias);
   try {
     const info = await Deno.lstat(symlinkPath);
     return info.isSymlink;
@@ -149,7 +150,7 @@ export async function verifySymlink(tempRoot: string, alias: string): Promise<bo
  * Verifies a portal's context card exists
  */
 export async function verifyContextCard(tempRoot: string, alias: string): Promise<boolean> {
-  const cardPath = join(tempRoot, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH, alias, "portal.md");
+  const cardPath = pathBuilders.memoryPath(tempRoot, DEFAULT_PROJECTS_MEMORY_PATH, alias, "portal.md");
   try {
     await Deno.stat(cardPath);
     return true;
@@ -162,14 +163,14 @@ export async function verifyContextCard(tempRoot: string, alias: string): Promis
  * Gets the path to a portal's symlink
  */
 export function getPortalSymlinkPath(tempRoot: string, alias: string): string {
-  return join(tempRoot, DEFAULT_PORTALS_PATH, alias);
+  return pathBuilders.portalsPath(tempRoot, alias);
 }
 
 /**
  * Gets the path to a portal's context card
  */
 export function getPortalCardPath(tempRoot: string, alias: string): string {
-  return join(tempRoot, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH, alias, "portal.md");
+  return pathBuilders.memoryPath(tempRoot, DEFAULT_PROJECTS_MEMORY_PATH, alias, "portal.md");
 }
 
 /** Creates a unified CLI test context for tests. Delegates to `initTestDbService()`

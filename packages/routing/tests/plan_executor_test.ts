@@ -5,7 +5,8 @@
  * robust failure recovery, and correct propagation of step results.
  */
 
-import { DEFAULT_ACTIVE_PATH, DEFAULT_AGENTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_ACTIVE_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
 import {
   type FlowStepType as _FlowStepType,
@@ -66,7 +67,7 @@ async function withPlanExecutorTestContext(
   const testContext = await createGitTestContext(prefix);
   const { tempDir, repoDir, db, cleanup, config, git } = testContext;
   const helper = new GitTestHelper(repoDir);
-  const blueprintsDir = join(config.system.root, config.paths.blueprints, DEFAULT_AGENTS_PATH);
+  const blueprintsDir = pathBuilders.agentsPath(config.system.root, config.paths.blueprints);
 
   try {
     if (options.ensureGit !== false) {

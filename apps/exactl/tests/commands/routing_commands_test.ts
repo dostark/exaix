@@ -6,7 +6,8 @@
  * @description Validates CLI routing inspection and policy validation helpers.
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { createCliTestContext } from "../helpers/test_setup.ts";
@@ -16,7 +17,7 @@ import { readFixtureTextSync } from "@exaix/testing";
 Deno.test("RoutingCommands: validatePolicy rejects invalid routing policy YAML", async () => {
   const { tempDir, context, cleanup } = await createCliTestContext();
   try {
-    const policyDir = join(tempDir, DEFAULT_RUNTIME_PATH);
+    const policyDir = pathBuilders.runtimePath(tempDir);
     const policyPath = join(policyDir, "routing.policy.yaml");
     const invalidPolicy = `
 version: "1.0"
@@ -42,7 +43,7 @@ rules:
 Deno.test("RoutingCommands: explainRequest returns explicit routing decision for request file", async () => {
   const { tempDir, context, cleanup } = await createCliTestContext();
   try {
-    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+    const blueprintsDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(blueprintsDir, { recursive: true });
 
     const fixture_1 = readFixtureTextSync(import.meta.url, "cli", "commands", "routing_commands_test", "fixture_1.md");

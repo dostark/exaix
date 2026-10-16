@@ -5,7 +5,7 @@
  *   query functions (getEffectiveValue, getAllEffectiveValues, insertOverride,
  *   getOverrideHistory).
  */
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { Database } from "@db/sqlite";
 import { assertEquals, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
@@ -50,7 +50,7 @@ Deno.test("[configuring] ensureConfigDb creates .exa directory", () => {
   const dir = Deno.makeTempDirSync({ prefix: "config-db-test-" });
   try {
     const resultPath = ensureConfigDb(dir);
-    const expectedDir = join(dir, DEFAULT_RUNTIME_PATH);
+    const expectedDir = pathBuilders.runtimePath(dir);
     const expectedFile = join(expectedDir, "config.db");
     // ensureConfigDb returns the db path
     assertEquals(resultPath, expectedFile);

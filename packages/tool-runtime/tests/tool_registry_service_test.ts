@@ -5,6 +5,7 @@
  * command patterns and argument types while enforcing security boundaries.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { LearningCategory, PortalOperation, ToolName } from "@exaix/core";
@@ -195,7 +196,7 @@ async function runToolRegistryTest(fn: (registry: ToolRegistry, tempDir: string)
   const tempDir = await Deno.makeTempDir({ prefix: "tool-registry-test-" });
   try {
     const registry = createRegistry(tempDir);
-    await Deno.mkdir(join(tempDir, DEFAULT_WORKSPACE_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.workspacePath(tempDir), { recursive: true });
     await fn(registry, tempDir);
   } finally {
     await Deno.remove(tempDir, { recursive: true });

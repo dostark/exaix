@@ -6,7 +6,8 @@
  * @dependencies [@exaix/flow, @exaix/execution, @exaix/ai, @exaix/testing]
  * @related-files [packages/flow/src/agent_composer_adapter.ts, packages/flow/tests/shared_namespace_prompt_test.ts]
  */
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseToml } from "@std/toml";
@@ -90,7 +91,7 @@ Deno.test("[config] flow.namespace_prompt_max_bytes also bounds the strategy req
         return Promise.resolve(result);
       },
     });
-    const agents = join(dbService.tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+    const agents = pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(agents, { recursive: true });
     await Deno.writeTextFile(
       join(agents, "test-agent.md"),

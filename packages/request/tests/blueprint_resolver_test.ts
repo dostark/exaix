@@ -10,7 +10,8 @@
  * @related-files [packages/request/src/blueprint_resolver.ts, packages/request/src/processor.ts]
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { BlueprintResolver } from "@exaix/request";
@@ -22,7 +23,7 @@ const SAMPLE_BLUEPRINT = await Deno.readTextFile(
 
 async function makeBlueprintsDir(): Promise<{ testDir: string; blueprintsPath: string }> {
   const testDir = await Deno.makeTempDir({ prefix: "exa_blueprint_resolver_test_" });
-  const blueprintsPath = join(testDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+  const blueprintsPath = pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH);
   await Deno.mkdir(blueprintsPath, { recursive: true });
   return { testDir, blueprintsPath };
 }

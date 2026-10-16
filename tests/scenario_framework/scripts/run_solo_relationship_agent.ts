@@ -11,7 +11,8 @@
  * @related-files [tests/scenario_framework/scenarios/portal_knowledge/portal-knowledge-strategies.yaml]
  */
 
-import { DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import {
@@ -46,8 +47,6 @@ import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/a
 import { PortalKnowledgeSchema } from "@exaix/schemas/portal_knowledge.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { createStubConfig, createStubDisplay, createStubGit, initTestDbService } from "@exaix/testing";
-import { join } from "@std/path";
-
 const CODE_ANALYST_ID = "code-analyst";
 const EXPECTED_FROM = "packages/ai-ollama/mod.ts";
 const EXPECTED_TARGET = "packages/ai-ollama/src/ollama_provider.ts";
@@ -138,9 +137,8 @@ if (import.meta.main) {
   const [workspaceRoot, portalAlias, portalPath] = Deno.args;
   if (!workspaceRoot || !portalAlias || !portalPath) usageError();
 
-  const knowledgePath = join(
+  const knowledgePath = pathBuilders.memoryPath(
     workspaceRoot,
-    DEFAULT_MEMORY_PATH,
     DEFAULT_PROJECTS_MEMORY_PATH,
     portalAlias,
     "knowledge.json",

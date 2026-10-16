@@ -10,7 +10,8 @@
  * unresolved-strategy error rather than silently running via the API.
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer } from "@exaix/execution";
@@ -23,7 +24,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
 async function writeBlueprint(root: string, capabilities: string[]): Promise<void> {
-  const dir = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+  const dir = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
   await Deno.mkdir(dir, { recursive: true });
   await Deno.writeTextFile(
     join(dir, "cli-delegate-agent.md"),

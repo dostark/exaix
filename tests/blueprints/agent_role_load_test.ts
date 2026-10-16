@@ -4,7 +4,7 @@
  * @description Unit tests for loading agent blueprints from the Blueprints/Agents/ directory.
  */
 
-import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer } from "@exaix/execution";
@@ -15,7 +15,7 @@ import { readFixtureTextSync } from "@exaix/testing";
 
 Deno.test("AgentComposer Blueprint Loading - Mock Agent Role resolution", async () => {
   const tempDir = await Deno.makeTempDir();
-  const agentRoleDir = join(tempDir, DEFAULT_AGENTS_PATH);
+  const agentRoleDir = pathBuilders.agentsPath(tempDir);
   await Deno.mkdir(agentRoleDir);
 
   const blueprintContent = readFixtureTextSync(

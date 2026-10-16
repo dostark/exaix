@@ -7,7 +7,7 @@
  * traceId-scoped path again instead of colliding with the still-existing directory.
  */
 
-import { DEFAULT_ACTIVE_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ExecutionLoop } from "@exaix/execution";
@@ -82,7 +82,7 @@ Deno.test(
         operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
       }];
 
-      const activeDir = join(rootDir, config.paths.workspace, DEFAULT_ACTIVE_PATH);
+      const activeDir = pathBuilders.activePath(rootDir, config.paths.workspace);
       await ensureDir(activeDir);
 
       const logger = new EventLogger({ db, defaultActor: "user:test" });
@@ -136,7 +136,7 @@ Finish the task.
       const planPath = join(activeDir, `${requestId}_plan.md`);
       await Deno.writeTextFile(planPath, planContent);
 
-      const worktreePath = join(rootDir, DEFAULT_RUNTIME_PATH, "worktrees", "my-portal", traceId);
+      const worktreePath = pathBuilders.runtimePath(rootDir, "worktrees", "my-portal", traceId);
 
       // First pass: the low-confidence step triggers PlanAmendmentPendingError. The plan is
       // marked amendment_pending and the run reports success (paused, not failed) — but

@@ -10,7 +10,7 @@
  * @related-files [tests/scenario_framework/runner/assertions.ts, tests/scenario_framework/schema/step_schema.ts]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
@@ -41,8 +41,8 @@ async function withJournal(
 ): Promise<void> {
   const ws = await Deno.makeTempDir({ prefix: "journal-trace-scope-" });
   try {
-    await Deno.mkdir(join(ws, DEFAULT_RUNTIME_PATH), { recursive: true });
-    const db = new Database(join(ws, DEFAULT_RUNTIME_PATH, "journal.db"));
+    await Deno.mkdir(pathBuilders.runtimePath(ws), { recursive: true });
+    const db = new Database(pathBuilders.runtimePath(ws, "journal.db"));
     db.prepare(
       "CREATE TABLE activity (rowid INTEGER PRIMARY KEY, trace_id TEXT, action_type TEXT, payload TEXT)",
     ).run();

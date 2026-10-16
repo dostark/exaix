@@ -6,7 +6,8 @@
  *   as crash-recovery request files, while completed delegations are skipped.
  */
 
-import { DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { initTestDbService } from "@exaix/testing";
@@ -60,9 +61,8 @@ Deno.test("[crash_recovery] recovers an orphaned delegation (launched without te
     assertEquals(count, 1, "must recover 1 orphaned delegation");
 
     // Assert a request file was created
-    const requestFile = join(
+    const requestFile = pathBuilders.workspacePath(
       workspaceRoot,
-      DEFAULT_WORKSPACE_PATH,
       DEFAULT_REQUESTS_PATH,
       `${traceId}_crash_recovery.md`,
     );
@@ -172,7 +172,7 @@ Deno.test("[crash_recovery][security] redacted launch payload recovers from brie
     });
     assertEquals(count, 1);
     const request = await Deno.readTextFile(
-      join(workspaceRoot, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH, `${traceId}_crash_recovery.md`),
+      pathBuilders.workspacePath(workspaceRoot, DEFAULT_REQUESTS_PATH, `${traceId}_crash_recovery.md`),
     );
     assertEquals(request.includes("Validated recovery objective"), true);
 

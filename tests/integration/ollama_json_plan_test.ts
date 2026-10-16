@@ -5,9 +5,8 @@
  * generation of JSON plans and resilient handling of provider-specific formatting.
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
 import { OllamaProvider } from "@exaix/ai-ollama";
 import { AgentRunner } from "@exaix/execution";
 import { type IRequestMetadata as IRequestMetadata, PlanWriter } from "@exaix/core/planning";
@@ -161,7 +160,7 @@ Deno.test({
       plansDirectory: planDir,
       includeReasoning: true,
       generateWikiLinks: false,
-      runtimeRoot: join(tempDir, DEFAULT_RUNTIME_PATH),
+      runtimeRoot: pathBuilders.runtimePath(tempDir),
       db,
     });
 

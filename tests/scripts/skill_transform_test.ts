@@ -9,6 +9,7 @@
  * @related-files [tests/scenario_framework/runner/ste100_assets.ts, scripts/dogfood_bootstrap.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
@@ -19,8 +20,8 @@ import { runIsolatedGenerator } from "../scenario_framework/runner/ste100_assets
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 const COPILOT_SKILLS = join(REPO_ROOT, ".copilot", "skills");
-const REPO_MEMORY_SKILLS = join(REPO_ROOT, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH);
-const REPO_BLUEPRINTS_SKILLS = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
+const REPO_MEMORY_SKILLS = pathBuilders.memoryPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH);
+const REPO_BLUEPRINTS_SKILLS = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH);
 
 // Produces a stable, order-independent fingerprint of a directory tree: a sorted list of
 // "<relative-path>:<byte-length>:<sha-256>" for every file.

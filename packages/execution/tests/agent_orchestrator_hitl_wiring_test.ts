@@ -19,7 +19,8 @@
  * @architectural-layer Services
  * @related-files [packages/execution/src/agent_composer.ts, packages/tool-runtime/src/tool_registry.ts, packages/tool-runtime/tests/tool_registry_hitl_test.ts]
  */
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer, StrategyRegistry } from "@exaix/execution";
@@ -36,7 +37,7 @@ import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_c
 
 /** Writes a test blueprint with a `hitl.require_secondary_approval` block in its frontmatter. */
 async function writeBlueprintWithHitl(root: string, rules: HitlRule[]): Promise<void> {
-  const dir = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+  const dir = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
   await Deno.mkdir(dir, { recursive: true });
   const ruleLines = rules.map((r) => `    - tool: "${r.tool}"\n      reason: "${r.reason ?? ""}"`).join("\n");
   await Deno.writeTextFile(

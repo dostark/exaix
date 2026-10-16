@@ -6,7 +6,8 @@
  * @related-files [packages/memory/src/bank/memory_bank.ts, packages/core/src/types/i_database_service.ts]
  */
 
-import { DEFAULT_MEMORY_PATH, DEFAULT_PENDING_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_MEMORY_PATH } from "@exaix/shared";
 import {
   DEFAULT_TITLE_PLACEHOLDER,
   MemoryExtractionMethod,
@@ -51,10 +52,9 @@ export class MemoryExtractorService {
     private logger?: Opt<IEventLogger, Reason.OptionalDependency>,
     private options: IMemoryExtractorOptions = {},
   ) {
-    this.pendingDir = join(
+    this.pendingDir = pathBuilders.memoryPendingPath(
       config.system?.root || Deno.cwd(),
       config.paths?.memory || DEFAULT_MEMORY_PATH,
-      DEFAULT_PENDING_MEMORY_PATH,
     );
   }
 

@@ -8,8 +8,7 @@
  * @related-files [tests/scenario_framework/runner/step_executor.ts, tests/scenario_framework/runner/synthetic_runner.ts, packages/execution/src/agent_composer.ts]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
-import { join } from "@std/path";
+import * as pathBuilders from "@exaix/shared";
 import { Database } from "@db/sqlite";
 import { AGENT_EVENT_EXECUTION_COMPLETED, AGENT_GENERATION_COMPLETED } from "@exaix/core";
 import { parseDelegateStdout } from "@exaix/session";
@@ -67,7 +66,7 @@ export async function readStepLlmMetrics(
   sinceRowid: number,
   untilRowid: number,
 ): Promise<IStepLlmMetrics> {
-  const dbPath = join(workspaceRoot, DEFAULT_RUNTIME_PATH, "journal.db");
+  const dbPath = pathBuilders.runtimePath(workspaceRoot, "journal.db");
   try {
     await Deno.stat(dbPath);
   } catch {

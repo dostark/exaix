@@ -10,7 +10,7 @@
  * @related-files [packages/request/src/processor.ts, packages/schemas/src/config.ts]
  */
 
-import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "@exaix/request";
@@ -122,8 +122,8 @@ created_by: "test-user"
 ---
 Test body`,
   );
-  const blueprintPath = join(env.blueprintsPath, DEFAULT_AGENTS_PATH, "test-agent.md");
-  await Deno.mkdir(join(env.blueprintsPath, DEFAULT_AGENTS_PATH), { recursive: true });
+  const blueprintPath = pathBuilders.agentsPath(env.blueprintsPath, "test-agent.md");
+  await Deno.mkdir(pathBuilders.agentsPath(env.blueprintsPath), { recursive: true });
   Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
   await env.processor.process(filePath);
 }

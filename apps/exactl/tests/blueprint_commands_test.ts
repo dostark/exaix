@@ -7,7 +7,7 @@
  * generation, schema validation, and storage within the Blueprints directory.
  */
 
-import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
@@ -65,10 +65,9 @@ Deno.test("[blueprint] create - generates valid blueprint file", async () => {
     assertEquals(result.model, "ollama:codellama:13b");
 
     // Verify file exists
-    const blueprintPath = join(
+    const blueprintPath = pathBuilders.agentsPath(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      DEFAULT_AGENTS_PATH,
       `${agentRole}.md`,
     );
     assertEquals(await exists(blueprintPath), true);
@@ -178,10 +177,9 @@ Deno.test("[blueprint] create - loads system prompt from file", async () => {
     });
 
     // Verify prompt loaded
-    const blueprintPath = join(
+    const blueprintPath = pathBuilders.agentsPath(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      DEFAULT_AGENTS_PATH,
       "custom-agent.md",
     );
     const content = await Deno.readTextFile(blueprintPath);
@@ -322,10 +320,9 @@ Deno.test("[blueprint] list - returns metadata", async () => {
 Deno.test("[blueprint] list - parses YAML inline arrays with invalid JSON", async () => {
   await setupTest();
   try {
-    const blueprintPath = join(
+    const blueprintPath = pathBuilders.agentsPath(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      DEFAULT_AGENTS_PATH,
       `${TEST_BLUEPRINT_YAML_AGENT_ROLE}.md`,
     );
     const yamlContent = `---
@@ -357,10 +354,9 @@ Inline YAML array test
 Deno.test("[blueprint] list - skips YAML frontmatter missing agent_role", async () => {
   await setupTest();
   try {
-    const blueprintPath = join(
+    const blueprintPath = pathBuilders.agentsPath(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      DEFAULT_AGENTS_PATH,
       `${TEST_BLUEPRINT_MISSING_AGENT_ROLE}.md`,
     );
     const yamlContent = `---
@@ -442,10 +438,9 @@ Deno.test("[blueprint] validate - detects missing required fields", async () => 
   await setupTest();
   try {
     // Manually create invalid blueprint
-    const blueprintPath = join(
+    const blueprintPath = pathBuilders.agentsPath(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      DEFAULT_AGENTS_PATH,
       "invalid.md",
     );
     await Deno.writeTextFile(
@@ -472,10 +467,9 @@ Deno.test("[blueprint] validate - checks system prompt format", async () => {
   await setupTest();
   try {
     // Create blueprint with missing output format tags
-    const blueprintPath = join(
+    const blueprintPath = pathBuilders.agentsPath(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      DEFAULT_AGENTS_PATH,
       "no-tags.md",
     );
     await Deno.writeTextFile(
@@ -515,10 +509,9 @@ Deno.test("[blueprint] remove - deletes blueprint file", async () => {
       model: "ollama:llama3.2",
     });
 
-    const blueprintPath = join(
+    const blueprintPath = pathBuilders.agentsPath(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      DEFAULT_AGENTS_PATH,
       "remove-test.md",
     );
     assertEquals(await exists(blueprintPath), true);
@@ -632,10 +625,9 @@ Deno.test("[blueprint] edit - allows save when only warnings exist", async () =>
     });
 
     // Overwrite with short valid content: has tags, but < 50 chars → warning
-    const blueprintPath = join(
+    const blueprintPath = pathBuilders.agentsPath(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      DEFAULT_AGENTS_PATH,
       "warn-test.md",
     );
     const shortContent = `+++
@@ -684,10 +676,9 @@ Deno.test("[blueprint] edit - blocks save when validation errors exist", async (
     });
 
     // Overwrite with content missing required tags → error, no save
-    const blueprintPath = join(
+    const blueprintPath = pathBuilders.agentsPath(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      DEFAULT_AGENTS_PATH,
       "error-test.md",
     );
     const errorContent = `+++
@@ -813,10 +804,9 @@ Deno.test("[blueprint] list - returns empty array when no blueprints", async () 
 Deno.test("[blueprint] validate - reports missing frontmatter", async () => {
   await setupTest();
   try {
-    const blueprintPath = join(
+    const blueprintPath = pathBuilders.agentsPath(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      DEFAULT_AGENTS_PATH,
       `${TEST_BLUEPRINT_NO_FRONTMATTER_ID}.md`,
     );
     await Deno.writeTextFile(blueprintPath, TEST_BLUEPRINT_NO_FRONTMATTER_CONTENT);
@@ -832,10 +822,9 @@ Deno.test("[blueprint] validate - reports missing frontmatter", async () => {
 Deno.test("[blueprint] show - throws on blueprint with invalid frontmatter", async () => {
   await setupTest();
   try {
-    const blueprintPath = join(
+    const blueprintPath = pathBuilders.agentsPath(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      DEFAULT_AGENTS_PATH,
       "bad-format.md",
     );
     await Deno.writeTextFile(
@@ -963,10 +952,9 @@ Deno.test("[blueprint] deprecate - writes the `deprecated` flag that routing con
 
     // The capability matcher reads frontmatter.deprecated; deprecate must set it
     // (not a separate status label) for deprecation to have a runtime effect.
-    const blueprintPath = join(
+    const blueprintPath = pathBuilders.agentsPath(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      DEFAULT_AGENTS_PATH,
       "routing-deprecate.md",
     );
     const raw = await Deno.readTextFile(blueprintPath);

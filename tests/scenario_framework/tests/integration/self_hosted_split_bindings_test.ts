@@ -14,7 +14,7 @@
  * @related-files [tests/scenario_framework/scenarios/agent_flows/self-hosted-split-bindings.yaml, tests/scenario_framework/runner/binding_layers.ts]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { BindingIncompatibleError } from "@exaix/ai";
@@ -50,7 +50,7 @@ async function lockEntries(workspaceRoot: string) {
   const rows = await readRunActivity(workspaceRoot);
   const traceId = rows.find((row) => row.action_type === "binding.resolved")?.trace_id;
   assert(traceId, "the run must journal binding.resolved");
-  const lockPath = join(workspaceRoot, DEFAULT_RUNTIME_PATH, "bindings", `${traceId}.lock.json`);
+  const lockPath = pathBuilders.runtimePath(workspaceRoot, "bindings", `${traceId}.lock.json`);
   const exists = await Deno.stat(lockPath).then(() => true).catch(() => false);
   assert(exists, `the daemon must write a binding lock at ${lockPath}`);
   return readLockEntryEvidence(lockPath, traceId);

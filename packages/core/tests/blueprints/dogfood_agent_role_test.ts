@@ -9,14 +9,15 @@
  * @related-files [packages/core/src/blueprint/blueprint_loader.ts]
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
-import { fromFileUrl, join } from "@std/path";
+import { fromFileUrl } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { McpToolName } from "@exaix/core/types";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const AGENTS_PATH = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+const AGENTS_PATH = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH);
 
 Deno.test("[dogfood-agent-role] dogfood-developer loads through IBlueprintLoader", async () => {
   const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });

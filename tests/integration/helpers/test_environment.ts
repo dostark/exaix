@@ -6,13 +6,8 @@
  * integration tests, including workspace setup, Git mock repositories, and DB initialization.
  */
 
-import {
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_FLOWS_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_FLOWS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import type { IRecordedResponse } from "@exaix/ai/providers";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
@@ -148,15 +143,14 @@ export class TestEnvironment {
     await ensureDir(getPortalsDir(tempDir));
 
     // Copy flows for integration tests that need them
-    const flowsSrcDir = join(
+    const flowsSrcDir = pathBuilders.blueprintsPath(
       dirname(fromFileUrl(import.meta.url)),
       "..",
       "..",
       "..",
-      DEFAULT_BLUEPRINTS_PATH,
       DEFAULT_FLOWS_PATH,
     );
-    const flowsDestDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH);
+    const flowsDestDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH);
     try {
       // `copySync()` throws if destination exists. Some tests create `Blueprints/Flows` up-front.
       // Avoid noisy warnings and just reuse the existing directory.
@@ -679,7 +673,7 @@ This plan will accomplish the requested task.
    * Get report from /Memory/Reports by trace ID
    */
   async getReportByTraceId(traceId: string): Promise<string | null> {
-    const reportsDir = join(this.tempDir, DEFAULT_MEMORY_PATH, "Reports");
+    const reportsDir = pathBuilders.memoryPath(this.tempDir, "Reports");
 
     try {
       for await (const entry of Deno.readDir(reportsDir)) {
@@ -793,7 +787,7 @@ This plan will accomplish the requested task.
     agentRole: string,
     content?: Opt<string, Reason.TestStub>,
   ): Promise<string> {
-    const blueprintsPath = join(this.tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+    const blueprintsPath = pathBuilders.blueprintsPath(this.tempDir, DEFAULT_AGENTS_PATH);
     await ensureDir(blueprintsPath);
 
     const defaultContent = `# ${agentRole} Blueprint
@@ -831,10 +825,10 @@ Always respond with valid JSON containing a plan with actionable steps.`;
     };
 
     const processor = new RequestProcessor({
-      workspacePath: join(this.tempDir, DEFAULT_WORKSPACE_PATH),
+      workspacePath: pathBuilders.workspacePath(this.tempDir),
       requestsDir: options?.requestsDir ?? getWorkspaceRequestsDir(this.tempDir),
       blueprintsPath: options?.blueprintsPath ??
-        join(this.tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH),
+        pathBuilders.blueprintsPath(this.tempDir, DEFAULT_AGENTS_PATH),
       includeReasoning: options?.includeReasoning ?? true,
       context,
       testProvider: provider,

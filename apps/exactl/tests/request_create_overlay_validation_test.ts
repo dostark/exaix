@@ -9,13 +9,8 @@
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, packages/ai/src/bindings/binding_layers.ts]
  */
 
-import {
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_FLOWS_DIR,
-  DEFAULT_FLOWS_PATH,
-  DEFAULT_REQUESTS_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_FLOWS_DIR, DEFAULT_FLOWS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { BINDING_OVERLAY_MAX_BYTES } from "@exaix/core";
 import { assertRejects } from "@std/assert";
 import { join } from "@std/path";
@@ -34,7 +29,7 @@ Deno.test("[security] exactl request --overlay refuses a symlink with overlay_in
   });
   try {
     await Deno.writeTextFile(
-      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
       "steps: []",
     );
     const realPath = join(tempDir, "real-overlay.json");
@@ -62,7 +57,7 @@ Deno.test("[security] exactl request --overlay refuses a directory with overlay_
   });
   try {
     await Deno.writeTextFile(
-      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
       "steps: []",
     );
     const dirPath = join(tempDir, "overlay-dir");
@@ -88,7 +83,7 @@ Deno.test("[security] exactl request --overlay refuses a file above the byte cei
   });
   try {
     await Deno.writeTextFile(
-      join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
       "steps: []",
     );
     const bigPath = join(tempDir, "big-overlay.json");

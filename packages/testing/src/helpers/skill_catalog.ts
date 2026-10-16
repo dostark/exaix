@@ -8,11 +8,10 @@
  * @related-files [packages/core/src/skills/skill_folder_loader.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
 import { stringify as stringifyYaml } from "@std/yaml";
 import {
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_MEMORY_PATH,
   DEFAULT_SKILLS_MEMORY_PATH,
   MemoryBankSource,
   MemoryScope,
@@ -66,13 +65,13 @@ export function testSkillContext(): ISkillOperationContext {
 export function repoSkillRoots(repoRoot: string = REPO_ROOT): IResolvedSkillRoot[] {
   return [
     {
-      path: join(repoRoot, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH, PROJECT_SKILLS_DIR, REPO_SKILL_PROJECT),
+      path: pathBuilders.memoryPath(repoRoot, DEFAULT_SKILLS_MEMORY_PATH, PROJECT_SKILLS_DIR, REPO_SKILL_PROJECT),
       kind: SkillRootKind.PROJECT,
       writable: false,
       project: REPO_SKILL_PROJECT,
     },
     {
-      path: join(repoRoot, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH),
+      path: pathBuilders.blueprintsPath(repoRoot, DEFAULT_SKILLS_MEMORY_PATH),
       kind: SkillRootKind.BLUEPRINT,
       writable: false,
       project: null,

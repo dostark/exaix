@@ -9,10 +9,9 @@
  * @related-files [apps/exactl/src/commands/eval_commands.ts, packages/eval-history/src/history_sqlite.ts]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { EvalScoringMode } from "@exaix/core";
-import { join } from "@std/path";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
@@ -73,7 +72,7 @@ Deno.test("[EvalReportCostView] renders one row per distinct cell_id/provider/mo
   const { context, tempDir, cleanup } = await createCliTestContext();
   // Explicit db path — never the process-global cwd (shared across `deno test --parallel`
   // worker threads), so seeding and report() always agree regardless of concurrent chdirs.
-  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
+  const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
   try {
     const store = new EvalSqliteStore(dbPath);
     store.initialize();
@@ -119,7 +118,7 @@ Deno.test("[EvalReportCostView] renders one row per distinct cell_id/provider/mo
 
 Deno.test("[EvalReportCostView] a cell with no tracked cost data renders — never 0 or a predicted figure", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
+  const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
   try {
     const store = new EvalSqliteStore(dbPath);
     store.initialize();
@@ -150,7 +149,7 @@ Deno.test("[EvalReportCostView] a cell with no tracked cost data renders — nev
 
 Deno.test("[EvalReportCostView] renders per-cell comparison for at least two matrix cells", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, DEFAULT_RUNTIME_PATH, "eval.db");
+  const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
   try {
     const store = new EvalSqliteStore(dbPath);
     store.initialize();

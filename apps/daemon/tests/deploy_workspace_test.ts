@@ -5,7 +5,7 @@
  * dependencies and global configuration are correctly handled during deployment.
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
@@ -228,7 +228,7 @@ parallelSafeTest({
       // If daemon is not running, check the log file for errors
       if (!statusResult.stdout.includes("Running")) {
         try {
-          const logPath = join(workspace, DEFAULT_RUNTIME_PATH, "daemon.log");
+          const logPath = pathBuilders.runtimePath(workspace, "daemon.log");
           const logContent = await Deno.readTextFile(logPath);
           console.log("Daemon log content:", logContent);
         } catch (error) {

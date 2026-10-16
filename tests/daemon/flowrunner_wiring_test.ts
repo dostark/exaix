@@ -5,9 +5,9 @@
  * IAgentRunner → AgentComposerAdapter → FlowRunner assembly.
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertExists } from "@std/assert";
-import { join } from "@std/path";
 import { initTestDbService } from "@exaix/testing";
 import { AgentRunner } from "@exaix/execution";
 import { AgentComposerAdapter, FlowRunner, type IFlowEventLogger } from "@exaix/flow";
@@ -34,7 +34,7 @@ Deno.test({
     });
 
     try {
-      const agentRolesDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+      const agentRolesDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH);
       await Deno.mkdir(agentRolesDir, { recursive: true });
 
       // Replicate daemon bootstrap sequence from apps/daemon/main.ts

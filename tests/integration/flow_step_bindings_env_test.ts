@@ -9,7 +9,7 @@
  * @related-files [packages/ai/src/bindings/binding_layers.ts, packages/ai/src/bindings/model_binding_service.ts]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { type IModelProvider, type IResolvedProviderOptions, ModelBindingService, ProviderRegistry } from "@exaix/ai";
@@ -139,7 +139,7 @@ Deno.test("[runtime] an overlay dropped into .exa/overlays/ applies to the next 
   const { db, tempDir, cleanup } = await initTestDbService();
   registerMock();
   try {
-    const overlaysDir = join(tempDir, DEFAULT_RUNTIME_PATH, "overlays");
+    const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     const config = configFor(tempDir, undefined);
     const service = new ModelBindingService({
       configSource: { get: () => config },

@@ -14,7 +14,8 @@
  * @related-files [apps/daemon/main.ts, packages/core/src/types/constants.ts, packages/session/src/session_delegate_cycle_claim_store.ts]
  */
 
-import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { DomainEventType } from "@exaix/core/events";
@@ -108,7 +109,7 @@ export async function recoverOrphanedDelegations(deps: IRecoveryDeps): Promise<n
       }
 
       // Orphaned — reconstruct and re-queue
-      const requestsDir = join(deps.workspaceRoot, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
+      const requestsDir = pathBuilders.workspacePath(deps.workspaceRoot, DEFAULT_REQUESTS_PATH);
       await ensureDir(requestsDir);
       const requestPath = join(requestsDir, `${traceId}_crash_recovery.md`);
 

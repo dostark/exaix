@@ -5,7 +5,7 @@
  * ensuring execution sandboxing and strict prevention of path traversal attacks.
  */
 
-import { DEFAULT_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertObjectMatch, assertStringIncludes } from "@std/assert";
 import { ConfigAdapterMode, ConfigValueType, DaemonStatus, SwapClass, ToolName } from "@exaix/core";
 import { getRegisteredDefaults } from "@exaix/core/config";
@@ -453,7 +453,7 @@ Deno.test("[security] ToolRegistry: write_file - blocks writing to System direct
     // Attempt to write to System directory (should be protected)
     // Test 1: Try path traversal to escape Memory and reach System
     const traversalResult = await registry.execute(ToolName.WRITE_FILE, {
-      path: join(tempDir, DEFAULT_MEMORY_PATH, "..", "System", "journal.db"),
+      path: pathBuilders.memoryPath(tempDir, "..", "System", "journal.db"),
       content: "CORRUPTED DATA",
     });
 

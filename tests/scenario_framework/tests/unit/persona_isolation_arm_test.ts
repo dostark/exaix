@@ -6,9 +6,9 @@
  * @related-files [tests/scenario_framework/runner/persona_isolation_arm.ts]
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
 import {
@@ -34,9 +34,9 @@ Write careful code.
 Deno.test("[PersonaIsolationArm] materializes shipped, generic, and empty bodies with byte-identical frontmatter", async () => {
   const root = await Deno.makeTempDir({ prefix: "persona-arm-" });
   try {
-    const source = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "senior-coder.md");
-    await Deno.mkdir(join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
-    await Deno.mkdir(join(root, DEFAULT_MEMORY_PATH, "persona-overlays"), { recursive: true });
+    const source = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "senior-coder.md");
+    await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.memoryPath(root, "persona-overlays"), { recursive: true });
     await Deno.writeTextFile(source, BLUEPRINT);
     const plan = await buildPersonaIsolationArmPlan({
       agentRoleId: "senior-coder",

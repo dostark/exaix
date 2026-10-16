@@ -6,9 +6,8 @@
  * @architectural-layer Services
  * @related-files ["apps/daemon/main.ts", "packages/request/src/processor.ts"]
  */
-import { DEFAULT_REQUESTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { DomainEventType } from "@exaix/core/events";
-import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import { EventLogger } from "@exaix/core/logger";
@@ -53,7 +52,7 @@ export class FileWatcher {
     onFileReady: (event: IFileReadyEvent) => void | Promise<void>,
     options: IFileWatcherOptions = {},
   ) {
-    this.watchPath = options.customWatchPath || join(config.system.root, config.paths.workspace, DEFAULT_REQUESTS_PATH);
+    this.watchPath = options.customWatchPath || pathBuilders.requestsPath(config.system.root, config.paths.workspace);
     this.debounceMs = config.watcher.debounce_ms;
     this.stabilityCheck = config.watcher.stability_check;
     this.onFileReady = onFileReady;

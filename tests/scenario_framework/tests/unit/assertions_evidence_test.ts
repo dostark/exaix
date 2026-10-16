@@ -8,7 +8,8 @@
  * @related-files [tests/scenario_framework/runner/assertions.ts, tests/scenario_framework/runner/evidence_collector.ts, tests/scenario_framework/schema/step_schema.ts]
  */
 
-import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_PLANS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes, fail } from "@std/assert";
 import { join } from "@std/path";
 import { callLlmEndpoint, evaluateCriterion, evaluateStepOutcome } from "../../runner/assertions.ts";
@@ -826,7 +827,7 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] expect_failure fails the step w
 Deno.test("[ScenarioFrameworkAssertionsEvidence] file_pattern resolves the most recent match in a shared workspace", async () => {
   const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-framework-newest-" });
   try {
-    const plansDir = join(workspaceRoot, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH);
+    const plansDir = pathBuilders.workspacePath(workspaceRoot, DEFAULT_PLANS_PATH);
     await Deno.mkdir(plansDir, { recursive: true });
 
     // An earlier scenario's plan, then this scenario's plan.

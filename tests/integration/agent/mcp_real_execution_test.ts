@@ -5,7 +5,7 @@
  * real git SHA capture, and security audit/revert logic.
  */
 
-import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer } from "@exaix/execution";
@@ -96,7 +96,7 @@ Deno.test("AgentComposer Integration - Real MCP Execution & Audit", async () => 
   const blueprintsDir = helper.registry["config"].paths.blueprints;
   const systemRoot = helper.registry["config"].system.root;
   const blueprintsDirAbs = blueprintsDir.startsWith("/") ? blueprintsDir : join(systemRoot, blueprintsDir);
-  const agentRolesDir = join(blueprintsDirAbs, DEFAULT_AGENTS_PATH);
+  const agentRolesDir = pathBuilders.agentsPath(blueprintsDirAbs);
   await Deno.mkdir(agentRolesDir, { recursive: true });
 
   // Create a blueprint that allows write_file but restricts paths

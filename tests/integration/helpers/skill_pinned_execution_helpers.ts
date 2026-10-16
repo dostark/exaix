@@ -7,16 +7,9 @@
  * @related-files [tests/integration/skill_pinned_execution_e2e_test.ts, tests/integration/skill_pinned_execution_e2e_security_test.ts]
  */
 
-import {
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_REQUESTS_PATH,
-  DEFAULT_SKILLS_MEMORY_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_REQUESTS_PATH } from "@exaix/shared";
 import { assert } from "@std/assert";
-import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { EventLogger } from "@exaix/core/logger";
 import { MockStrategy } from "@exaix/core";
@@ -65,18 +58,18 @@ export async function planWithPinnedSkill(): Promise<IPinnedPlanFixture> {
     configOverrides: { request_analysis: { mode: "heuristic" } } as never,
   });
   const root = await Deno.makeTempDir({ prefix: "skill-pinned-exec-" });
-  const skillsDir = join(root, DEFAULT_SKILLS_MEMORY_PATH);
+  const skillsDir = pathBuilders.memorySkillsPath(root);
   await writeSkillFolder(skillsDir, { name: SKILL, instructions: "Approved body A." });
   await writeSkillFolder(skillsDir, { name: OTHER, instructions: "Other body." });
   const skills = new SkillsService(
-    { memoryDir: join(root, DEFAULT_MEMORY_PATH), blueprintSkillsDir: skillsDir },
+    { memoryDir: pathBuilders.memoryPath(root), blueprintSkillsDir: skillsDir },
     env.db,
     undefined,
     new EventLogger({ db: env.db }),
   );
   await skills.initialize();
   await Deno.writeTextFile(
-    join(env.tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "default.md"),
+    pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH, "default.md"),
     "---\nagent_role: default\nmodel: mock:test\n---\nYou are a helpful assistant.\n",
   );
   const provider = env.createMockProvider(MockStrategy.RECORDED, [{
@@ -96,18 +89,17 @@ export async function planWithPinnedSkill(): Promise<IPinnedPlanFixture> {
     skills,
   } as never;
   const processor = new RequestProcessor({
-    workspacePath: join(env.tempDir, DEFAULT_WORKSPACE_PATH),
-    requestsDir: join(env.tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH),
-    blueprintsPath: join(env.tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH),
+    workspacePath: pathBuilders.workspacePath(env.tempDir),
+    requestsDir: pathBuilders.workspacePath(env.tempDir, DEFAULT_REQUESTS_PATH),
+    blueprintsPath: pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH),
     includeReasoning: true,
     context: applicationContext,
     testProvider: provider,
     agentRunner: new AgentRunner(provider, { skillsService: skills, disableRetry: true }),
   });
   const traceId = crypto.randomUUID();
-  const requestPath = join(
+  const requestPath = pathBuilders.workspacePath(
     env.tempDir,
-    DEFAULT_WORKSPACE_PATH,
     DEFAULT_REQUESTS_PATH,
     `request-${traceId.slice(0, 8)}.md`,
   );

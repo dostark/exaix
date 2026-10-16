@@ -5,6 +5,7 @@
  * Phase 74 dynamic agent-role routing and validates the routing outcome end to end.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { dirname, join } from "@std/path";
@@ -83,7 +84,7 @@ async function prepareWorkspaceFixtures(workspaceRoot: string): Promise<string> 
     join(FIXTURE_ROOT, "blueprints", `${DEFAULT_AGENT_ROLE}.md`),
     join(workspaceRoot, BLUEPRINTS_SUBDIR, `${DEFAULT_AGENT_ROLE}.md`),
   );
-  await Deno.mkdir(join(workspaceRoot, DEFAULT_RUNTIME_PATH), { recursive: true });
+  await Deno.mkdir(pathBuilders.runtimePath(workspaceRoot), { recursive: true });
   await copyFixture(
     join(FIXTURE_ROOT, "routing.policy.yaml"),
     join(workspaceRoot, ROUTING_POLICY_FILE_NAME),

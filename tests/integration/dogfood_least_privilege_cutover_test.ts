@@ -12,7 +12,7 @@
  * @dependencies [@std/assert, @std/path, @std/fs]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -68,7 +68,7 @@ Deno.test({
   sanitizeResources: false,
   async fn(t) {
     const root = await Deno.makeTempDir({ prefix: "dogfood-cutover-" });
-    await Deno.mkdir(join(root, DEFAULT_RUNTIME_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.runtimePath(root), { recursive: true });
     const configPath = join(root, "exa.config.toml");
     writeConfig(configPath, root);
     const env = { DOGFOOD_ROOT: root, EXA_CONFIG_PATH: configPath };
@@ -123,11 +123,11 @@ Deno.test({
   sanitizeResources: false,
   async fn() {
     const root = await Deno.makeTempDir({ prefix: "dogfood-cutover-leak-guard-" });
-    await Deno.mkdir(join(root, DEFAULT_RUNTIME_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.runtimePath(root), { recursive: true });
     const configPath = join(root, "exa.config.toml");
     writeConfig(configPath, root);
     const env = { DOGFOOD_ROOT: root, EXA_CONFIG_PATH: configPath };
-    const pidPath = join(root, DEFAULT_RUNTIME_PATH, "daemon.pid");
+    const pidPath = pathBuilders.runtimePath(root, "daemon.pid");
 
     try {
       const start = await runScript("scripts/dogfood_daemon.ts", ["start"], env);

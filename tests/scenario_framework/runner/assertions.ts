@@ -9,7 +9,8 @@
  * @related-files [tests/scenario_framework/runner/evidence_collector.ts, tests/scenario_framework/schema/step_schema.ts, tests/scenario_framework/tests/unit/assertions_evidence_test.ts]
  */
 
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { dirname, globToRegExp, isAbsolute, relative, resolve } from "@std/path";
 import { levenshteinDistance } from "@std/text";
 import { SkillRootKind } from "@exaix/core";
@@ -1805,7 +1806,7 @@ const JUDGE_METHODOLOGY_SKILL_IDS: readonly string[] = ["verdict-rubric", "respo
 // reads no eval overlay and no suppression list, so the arm under test never reaches the judge.
 export async function loadJudgeMethodology(workspaceRoot: string): Promise<IJudgeMethodology> {
   const loader = createSkillLoaderFor([{
-    path: resolve(workspaceRoot, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH),
+    path: pathBuilders.blueprintsPath(workspaceRoot, DEFAULT_SKILLS_MEMORY_PATH),
     kind: SkillRootKind.BLUEPRINT,
     writable: false,
     project: null,

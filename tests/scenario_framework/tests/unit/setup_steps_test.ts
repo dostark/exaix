@@ -8,7 +8,8 @@
  * @related-files [tests/scenario_framework/runner/step_executor.ts, tests/scenario_framework/schema/step_schema.ts]
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { executeScenarioStep } from "../../runner/step_executor.ts";
@@ -25,9 +26,9 @@ async function withWorkspace(fn: (ws: string) => Promise<void>): Promise<void> {
 
 Deno.test("[setup_steps] patch-blueprint adds a capability to the sandboxed blueprint", async () => {
   await withWorkspace(async (ws) => {
-    await Deno.mkdir(join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.blueprintsPath(ws, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.writeTextFile(
-      join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "senior-coder.md"),
+      pathBuilders.blueprintsPath(ws, DEFAULT_AGENTS_PATH, "senior-coder.md"),
       '---\nagent_role: "senior-coder"\ncapabilities: ["react"]\n---\n',
     );
     const result = await executeScenarioStep({
@@ -43,16 +44,16 @@ Deno.test("[setup_steps] patch-blueprint adds a capability to the sandboxed blue
       cwd: ws,
     });
     assertEquals(result.exitCode, 0, `expected patch to succeed, got: ${result.stderr}`);
-    const updated = await Deno.readTextFile(join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "senior-coder.md"));
+    const updated = await Deno.readTextFile(pathBuilders.blueprintsPath(ws, DEFAULT_AGENTS_PATH, "senior-coder.md"));
     assertEquals(updated.includes('"cli_delegate"'), true, "capability must be added");
   });
 });
 
 Deno.test("[setup_steps] patch-blueprint is idempotent (does not duplicate an existing capability)", async () => {
   await withWorkspace(async (ws) => {
-    await Deno.mkdir(join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.blueprintsPath(ws, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.writeTextFile(
-      join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "senior-coder.md"),
+      pathBuilders.blueprintsPath(ws, DEFAULT_AGENTS_PATH, "senior-coder.md"),
       '---\ncapabilities: ["react", "cli_delegate"]\n---\n',
     );
     await executeScenarioStep({
@@ -67,7 +68,7 @@ Deno.test("[setup_steps] patch-blueprint is idempotent (does not duplicate an ex
       } as never,
       cwd: ws,
     });
-    const updated = await Deno.readTextFile(join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "senior-coder.md"));
+    const updated = await Deno.readTextFile(pathBuilders.blueprintsPath(ws, DEFAULT_AGENTS_PATH, "senior-coder.md"));
     const count = updated.match(/"cli_delegate"/g)?.length ?? 0;
     assertEquals(count, 1, "capability must not be duplicated");
   });

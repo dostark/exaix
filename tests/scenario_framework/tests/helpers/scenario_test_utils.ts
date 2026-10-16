@@ -6,7 +6,7 @@
  *   to reduce duplication across scenario test files.
  * @architectural-layer Testing
  */
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_REQUESTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 
@@ -38,7 +38,7 @@ export async function stopDaemon(): Promise<void> {
 
 export async function bootstrapWorkspace(workspacePath: string): Promise<void> {
   await ensureDir(workspacePath);
-  await ensureDir(join(workspacePath, DEFAULT_REQUESTS_PATH));
+  await ensureDir(pathBuilders.requestsPath(workspacePath));
 
   const cpMigrations = new Deno.Command("cp", {
     args: ["-r", join(Deno.cwd(), "migrations"), workspacePath],
@@ -46,7 +46,7 @@ export async function bootstrapWorkspace(workspacePath: string): Promise<void> {
   await cpMigrations.output();
 
   const cpBlueprints = new Deno.Command("cp", {
-    args: ["-r", join(Deno.cwd(), DEFAULT_BLUEPRINTS_PATH), workspacePath],
+    args: ["-r", pathBuilders.blueprintsPath(Deno.cwd()), workspacePath],
   });
   await cpBlueprints.output();
 

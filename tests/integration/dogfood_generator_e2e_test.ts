@@ -11,7 +11,8 @@
  * @related-files [scripts/plan_to_requests.ts]
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertExists, assertMatch } from "@std/assert";
 import { join } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
@@ -20,8 +21,8 @@ import { RequestSchema } from "@exaix/schemas/request.ts";
 import { initTestDbService } from "@exaix/testing";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
-const AGENTS_PATH = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
-const BLUEPRINT_SKILLS = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
+const AGENTS_PATH = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH);
+const BLUEPRINT_SKILLS = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH);
 const SCRIPTS_PATH = join(REPO_ROOT, "scripts", "plan_to_requests.ts");
 const PHASE_120_PLAN = join(REPO_ROOT, "exaix-dev-docs", "planning", "phase-120-dogfooding-a-c.md");
 

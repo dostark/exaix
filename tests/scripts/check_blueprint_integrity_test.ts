@@ -13,12 +13,7 @@
  * @related-files [scripts/check_blueprint_integrity.ts]
  */
 
-import {
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_FLOWS_PATH,
-  DEFAULT_SKILLS_MEMORY_PATH,
-} from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
@@ -45,9 +40,9 @@ async function buildCatalog(opts: {
   flows: IFixtureFlow[];
 }): Promise<string> {
   const root = await Deno.makeTempDir({ prefix: "bp_integrity_" });
-  const idDir = join(root, DEFAULT_AGENTS_PATH);
-  const skillDir = join(root, DEFAULT_SKILLS_MEMORY_PATH);
-  const flowDir = join(root, DEFAULT_FLOWS_PATH);
+  const idDir = pathBuilders.agentsPath(root);
+  const skillDir = pathBuilders.memorySkillsPath(root);
+  const flowDir = pathBuilders.flowsPath(root);
   await ensureDir(idDir);
   await ensureDir(skillDir);
   await ensureDir(flowDir);
@@ -262,7 +257,7 @@ Deno.test("[integrity] {{placeholder}} agent slots in templates are skipped (not
 
 Deno.test("[integrity] the live repository catalog passes the gate", () => {
   // Run against the real Blueprints/ so the gate reflects committed state.
-  const r = checkBlueprintIntegrity(join(import.meta.dirname!, "..", "..", DEFAULT_BLUEPRINTS_PATH));
+  const r = checkBlueprintIntegrity(pathBuilders.blueprintsPath(import.meta.dirname!, "..", ".."));
   assert(
     r.ok,
     `live catalog has integrity violations:\n${r.violations.map((v) => `  ${v.kind}: ${v.detail}`).join("\n")}`,

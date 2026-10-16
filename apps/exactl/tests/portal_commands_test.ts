@@ -7,7 +7,8 @@
  * addition/removal, alias validation, and connection testing.
  */
 
-import { DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { PortalStatus, VerificationStatus } from "@exaix/core";
 import { dirname, join } from "@std/path";
@@ -200,7 +201,7 @@ Deno.test("PortalCommands: removes portal and archives context card", async () =
 
     assertEquals(await verifySymlink(tempRoot, "RemovePortal"), false);
 
-    const archivedDir = join(tempRoot, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH, "_archived");
+    const archivedDir = pathBuilders.memoryPath(tempRoot, DEFAULT_PROJECTS_MEMORY_PATH, "_archived");
     const archivedExists = await Deno.stat(archivedDir).then(() => true).catch(() => false);
     assertEquals(archivedExists, true);
 
@@ -356,7 +357,7 @@ Deno.test("PortalCommands: list handles empty portals directory", async () => {
 Deno.test("PortalCommands: list skips non-symlink entries", async () => {
   const { tempRoot, commands, cleanup } = await initPortalTest({ createTarget: false });
   try {
-    await Deno.writeTextFile(join(tempRoot, DEFAULT_PORTALS_PATH, "README.md"), "Not a portal");
+    await Deno.writeTextFile(pathBuilders.portalsPath(tempRoot, "README.md"), "Not a portal");
 
     const portals = await commands.list();
 

@@ -11,7 +11,7 @@
  * @related-files [packages/tool-runtime/src/tool_registry.ts, packages/portal/src/path_resolver.ts]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ToolRegistry } from "@exaix/tool-runtime";
@@ -26,7 +26,7 @@ Deno.test("[ToolRegistryAliasWorktreeResolution] @<matching-portal>/path writes 
   // Mirrors the real worktree layout: system.root/.exa/worktrees/<portalAlias>/<traceId>/,
   // per GitExecutionSetupService.buildPortalWorktreePath — nested under system.root, which
   // getAllowedRoots() always includes.
-  const worktreeDir = join(systemRoot, DEFAULT_RUNTIME_PATH, "worktrees", PORTAL_ALIAS, "trace-1");
+  const worktreeDir = pathBuilders.runtimePath(systemRoot, "worktrees", PORTAL_ALIAS, "trace-1");
   await Deno.mkdir(worktreeDir, { recursive: true });
 
   try {
