@@ -10,7 +10,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildPortalKnowledgeSummary, RequestProcessor } from "@exaix/request";
 import { AgentRunner } from "@exaix/execution";
@@ -238,7 +238,7 @@ Deno.test("[RequestProcessor] handles knowledge resolution failure gracefully", 
 
     // Check captured prompt: knowledge markers should be absent
     const lastPrompt = env.capturedPrompts[env.capturedPrompts.length - 1];
-    assertEquals(lastPrompt.includes("## Portal Knowledge Summary"), false);
+    assertFalse(lastPrompt.includes("## Portal Knowledge Summary"));
   } finally {
     await env.cleanup();
   }
@@ -286,7 +286,7 @@ Deno.test("[RequestProcessor] calls getRelevantContext when portal knowledge res
     // The prompt should contain the relevant context instead of the full summary
     const lastPrompt = env.capturedPrompts[env.capturedPrompts.length - 1];
     assertStringIncludes(lastPrompt, "Relevant: TypeScript service");
-    assertEquals(lastPrompt.includes("## Portal Knowledge Summary"), false);
+    assertFalse(lastPrompt.includes("## Portal Knowledge Summary"));
   } finally {
     await env.cleanup();
   }

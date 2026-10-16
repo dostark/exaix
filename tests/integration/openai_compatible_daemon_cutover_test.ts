@@ -12,7 +12,7 @@ import {
   DEFAULT_PLANS_PATH,
   DEFAULT_REQUESTS_PATH,
 } from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
@@ -293,7 +293,7 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
 
         const rows = await readTraceActivity(configPath, traceId);
         assertEquals(await Deno.readTextFile(join(portal, "src", "marker.txt")), fixtureMarker);
-        assertEquals(JSON.stringify(observedRequests).includes(outsideMarker), false);
+        assertFalse(JSON.stringify(observedRequests).includes(outsideMarker));
         if (mode === "invalid-config") {
           assertEquals(requestCount, 0);
           const failures = rows.filter((row) => row.action_type === "request.failed");
@@ -545,7 +545,7 @@ Deno.test({
       assertEquals(first.tools?.some((tool) => tool.function?.name === "write_file"), false);
       const firstMessages = JSON.stringify(first.messages);
       assert(firstMessages.includes(PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION));
-      assertEquals(firstMessages.includes("Respond with a single json object matching the supplied schema."), false);
+      assertFalse(firstMessages.includes("Respond with a single json object matching the supplied schema."));
       assertEquals(final.response_format?.type, "json_object");
       assertEquals(final.tools, undefined);
       assertEquals(final.tool_choice, undefined);

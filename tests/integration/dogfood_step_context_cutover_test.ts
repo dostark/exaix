@@ -15,7 +15,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_REQUESTS_PATH } from "@exaix/shared";
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
@@ -87,7 +87,7 @@ Deno.test(
       );
       const run = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt.root]);
       assertEquals(run.code, 0, `generator failed: ${run.stderr}`);
-      assertEquals(run.stderr.includes("Unsafe"), false);
+      assertFalse(run.stderr.includes("Unsafe"));
 
       const request = await Deno.readTextFile(join(outDir, `${CONTEXT_SLUG}-step-1.md`));
       assertEquals(request.includes("## Why This Step Exists"), true, "inline context block present");

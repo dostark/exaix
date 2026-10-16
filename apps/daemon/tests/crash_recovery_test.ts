@@ -8,7 +8,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
@@ -181,8 +181,8 @@ Deno.test("[crash_recovery][security] redacted launch payload recovers from brie
       (item) => item.action_type === DomainEventType.SessionDelegateCrashRecovered,
     );
     assertExists(event);
-    assertEquals(event!.payload.includes(workspaceRoot), false);
-    assertEquals(event!.payload.includes("must-not-be-journaled"), false);
+    assertFalse(event!.payload.includes(workspaceRoot));
+    assertFalse(event!.payload.includes("must-not-be-journaled"));
   } finally {
     await Deno.remove(workspaceRoot, { recursive: true });
     await Deno.remove(sessionDir, { recursive: true });

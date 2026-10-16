@@ -13,7 +13,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertFalse, assertNotEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
@@ -455,7 +455,7 @@ Deno.test("[references] final budget fitting drops an ordinary referenced skill 
       request({ skills: [REFERENCED, CONTRACT] }),
       undefined,
     );
-    assertEquals(provider.prompts[0].includes(REFERENCE_TEXT), false);
+    assertFalse(provider.prompts[0].includes(REFERENCE_TEXT));
     assertEquals((await fx.rows()).map((r) => r.skill_name), [CONTRACT]);
   } finally {
     await fx.cleanup();

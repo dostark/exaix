@@ -5,7 +5,7 @@
  * @related-files [@exaix/core/planning, @exaix/core/planning]
  */
 
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertFalse, assertThrows } from "@std/assert";
 import { initTestDbService } from "@exaix/testing";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentDecision, IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
@@ -57,7 +57,7 @@ Deno.test("applyApprovedAmendment preserves original plan structure", async () =
 
     // Verify status updated
     assertEquals(updated.includes("status: approved"), true);
-    assertEquals(updated.includes("status: amendment_pending"), false);
+    assertFalse(updated.includes("status: amendment_pending"));
 
     // Verify first step unchanged
     assertEquals(updated.includes("## Step 1: Setup Environment"), true);
@@ -95,8 +95,8 @@ Deno.test("applyApprovedAmendment handles step removal correctly", async () => {
     const updated = service.applyApprovedAmendment(planContent, patch);
 
     // Verify second step removed
-    assertEquals(updated.includes("## Step 2: To Be Removed"), false);
-    assertEquals(updated.includes("This step should be removed"), false);
+    assertFalse(updated.includes("## Step 2: To Be Removed"));
+    assertFalse(updated.includes("This step should be removed"));
 
     // Verify other steps preserved
     assertEquals(updated.includes("## Step 1: First"), true);

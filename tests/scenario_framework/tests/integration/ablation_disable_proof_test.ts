@@ -18,7 +18,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assertArrayIncludes, assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { parse } from "@std/toml";
 import { fromFileUrl } from "@std/path";
@@ -80,9 +80,8 @@ Deno.test("[AblationDisableProof] skills preset: skills.inject_in_prompt=false â
     await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
 
     const actions = await journalActions(db);
-    assertEquals(
+    assertFalse(
       actions.includes(DomainEventType.SkillsMatchCompleted),
-      false,
       "skills ablation must leave no skills.match_completed in the journal",
     );
   } finally {
@@ -133,9 +132,8 @@ Deno.test("[AblationDisableProof] quality-gate preset: quality_gate.enabled=fals
     });
 
     const actions = await journalActions(db);
-    assertEquals(
+    assertFalse(
       actions.includes("request.quality_assessed"),
-      false,
       "gate ablation must leave no request.quality_assessed in the journal",
     );
   } finally {

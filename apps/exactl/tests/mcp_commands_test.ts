@@ -12,7 +12,7 @@
  * precedent.
  */
 
-import { assertArrayIncludes, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { McpCommands } from "../src/commands/mcp_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { TEST_MCP_PORT } from "@exaix/testing";
@@ -102,7 +102,7 @@ Deno.test("McpCommands.start(sse): uses default port when none provided", async 
   const args = commands.capturedArgs[0];
   assertArrayIncludes(args, ["--transport"]);
   assertEquals(args[args.indexOf("--transport") + 1], "sse");
-  assertEquals(args.includes("--port"), false);
+  assertFalse(args.includes("--port"));
   await cleanup();
 });
 
@@ -116,7 +116,7 @@ Deno.test("McpCommands.start: uses --transport stdio by default", async () => {
   const args = commands.capturedArgs[0];
   assertArrayIncludes(args, ["--transport"]);
   assertEquals(args[args.indexOf("--transport") + 1], "stdio");
-  assertEquals(args.includes("--port"), false);
+  assertFalse(args.includes("--port"));
   await cleanup();
 });
 

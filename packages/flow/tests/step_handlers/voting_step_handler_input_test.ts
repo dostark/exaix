@@ -3,7 +3,7 @@
  * @path packages/flow/tests/step_handlers/voting_step_handler_input_test.ts
  * @description Traces prepared evidence and request metadata through actual Team voters into the ADR.
  */
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { FlowRunner } from "@exaix/flow";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
 import { VotingCapabilityModule, VotingConsensusService } from "@exaix-team/voting";
@@ -104,7 +104,7 @@ Deno.test("[voting input] three Team voters receive prepared evidence and origin
   }
   assertEquals(agent.requests.map((request) => request.flowStepId), ["context", "adr"]);
   assertStringIncludes(agent.requests[1].userPrompt, "Choose SQLite");
-  assertEquals(agent.requests[1].userPrompt.includes("Choose PostgreSQL"), false);
+  assertFalse(agent.requests[1].userPrompt.includes("Choose PostgreSQL"));
   for (const event of [DomainEventType.VotingStarted, DomainEventType.VotingResolved]) {
     const emitted = logger.info.calls.find((call) => call.args[0] === event)!;
     assertEquals(emitted.args[3], "voting-trace");

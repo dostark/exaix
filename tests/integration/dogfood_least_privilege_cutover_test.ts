@@ -13,7 +13,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { assertDaemonPidIsDead, readDaemonPid, writeDaemonConfig } from "./helpers/daemon_config.ts";
@@ -83,7 +83,7 @@ Deno.test({
           // …and the scoped perms, never blanket --allow-all.
           assertStringIncludes(start.stdout, "--allow-write=");
           assertStringIncludes(start.stdout, "--allow-run=");
-          assertEquals(start.stdout.includes("--allow-all"), false, "must not spawn with --allow-all");
+          assertFalse(start.stdout.includes("--allow-all"), "must not spawn with --allow-all");
         });
 
         await t.step("daemon is healthy (status reports running)", async () => {

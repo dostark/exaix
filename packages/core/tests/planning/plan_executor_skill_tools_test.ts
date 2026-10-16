@@ -12,7 +12,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertFalse, assertStringIncludes } from "@std/assert";
 import {
   createMockConfig,
   createStubConfig,
@@ -177,9 +177,8 @@ Deno.test({
         "delete_file",
         "delete_file is in both the skill-tools union and the agent role's permitted_tools — must survive",
       );
-      assertEquals(
+      assertFalse(
         visibleTools.includes("list_directory"),
-        false,
         "list_directory must be excluded: the agent role permits it, but no matched skill's tools union includes it",
       );
     } finally {

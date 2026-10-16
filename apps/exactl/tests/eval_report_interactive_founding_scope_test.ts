@@ -10,7 +10,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { computeInteractiveRows, EvalCommands } from "../src/commands/eval_commands.ts";
@@ -102,6 +102,6 @@ Deno.test("[EvalReportInteractiveFoundingScope] --view interactive --run-ids ren
   const text = output.join("\n");
   assertStringIncludes(text, "cooperative");
   assertStringIncludes(text, "2.000");
-  assertEquals(text.includes("8.000"), false, "the later noise run must not appear in the scoped table");
+  assertFalse(text.includes("8.000"), "the later noise run must not appear in the scoped table");
   await cleanup();
 });

@@ -5,7 +5,7 @@
  * execution contexts, ensuring trace metadata and environment variables are correctly inherited.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -200,14 +200,14 @@ describe("AgentComposer with IWorkspaceExecutionContext", () => {
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);
 
       // Workspace directory should NOT be in allowed paths
-      assertEquals(context.allowedPaths.includes(workspaceDir), false);
+      assertFalse(context.allowedPaths.includes(workspaceDir));
     });
 
     it("workspace context does not allow portal access", () => {
       const context = WorkspaceExecutionContextBuilder.forWorkspace(workspaceDir);
 
       // Portal directory should NOT be in allowed paths
-      assertEquals(context.allowedPaths.includes(portalDir), false);
+      assertFalse(context.allowedPaths.includes(portalDir));
     });
   });
 

@@ -8,7 +8,7 @@
 import { PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 
-import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertNotEquals } from "@std/assert";
 import { SecureCredentialStore } from "@exaix/core";
 
 // Unit Tests for SecureCredentialStore
@@ -56,7 +56,7 @@ Deno.test("[security] SecureCredentialStore: stored data is encrypted", async ()
   // The stored data must not contain the plaintext key — not merely differ from it.
   const storedString = new TextDecoder().decode(stored);
   assertNotEquals(storedString, testKey);
-  assertEquals(storedString.includes(testKey), false, "ciphertext must not contain the plaintext key");
+  assertFalse(storedString.includes(testKey), "ciphertext must not contain the plaintext key");
 
   // But we should be able to decrypt it back
   const retrieved = await SecureCredentialStore.get("test");

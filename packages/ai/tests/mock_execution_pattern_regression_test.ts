@@ -7,7 +7,7 @@
  * of planning and execution responses based on structured prompt patterns.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { MockStrategy } from "@exaix/core";
 
@@ -43,7 +43,7 @@ User request: "Add a hello world function to src/utils.ts"
   assertStringIncludes(responseText, KEY_STEPS);
 
   // Should NOT contain execution actions
-  assertEquals(responseText.includes(TAG_ACTIONS), false, "Planning response should not contain <actions>");
+  assertFalse(responseText.includes(TAG_ACTIONS), "Planning response should not contain <actions>");
 });
 
 Deno.test("[regression] MockLLMProvider generates execution response for execution prompts", async () => {
@@ -75,8 +75,8 @@ Execute this step now.
   assertStringIncludes(responseText, KEY_PARAMS);
 
   // Should NOT contain planning JSON
-  assertEquals(responseText.includes(KEY_STEPS), false, "Execution response should not contain plan steps");
-  assertEquals(responseText.includes(TAG_CONTENT), false, "Execution response should use <actions> not <content>");
+  assertFalse(responseText.includes(KEY_STEPS), "Execution response should not contain plan steps");
+  assertFalse(responseText.includes(TAG_CONTENT), "Execution response should use <actions> not <content>");
 });
 
 Deno.test("[regression] MockLLMProvider execution pattern generates write_file action for write prompts", async () => {
@@ -122,8 +122,8 @@ Read src/index.ts to understand the structure.
   assertStringIncludes(responseText, KEY_PARAMS);
 
   // Should NOT be a planning response
-  assertEquals(responseText.includes(KEY_STEPS), false, "Should not contain planning steps");
-  assertEquals(responseText.includes(TAG_CONTENT), false, "Should use <actions> not <content>");
+  assertFalse(responseText.includes(KEY_STEPS), "Should not contain planning steps");
+  assertFalse(responseText.includes(TAG_CONTENT), "Should use <actions> not <content>");
 });
 
 Deno.test("[regression] MockLLMProvider pattern recognition handles 'Step N' format", async () => {
@@ -146,9 +146,8 @@ Deno.test("[regression] MockLLMProvider pattern recognition handles 'Step N' for
       TAG_ACTIONS,
       `Prompt "${prompt}" should generate execution response with <actions>`,
     );
-    assertEquals(
+    assertFalse(
       responseText.includes(TAG_CONTENT),
-      false,
       `Prompt "${prompt}" should not generate planning response with <content>`,
     );
   }
@@ -171,7 +170,7 @@ Deno.test("[regression] MockLLMProvider distinguishes execution from planning ke
   const { content: executionResponseText } = await provider.generate(executionPrompt);
 
   assertStringIncludes(executionResponseText, TAG_ACTIONS);
-  assertEquals(executionResponseText.includes(KEY_STEPS), false);
+  assertFalse(executionResponseText.includes(KEY_STEPS));
 });
 
 // A flow step's userPrompt runs through mergeAsContext (core/func/transforms.ts:37), which
@@ -193,7 +192,7 @@ Deno.test("[flow-step] a mergeAsContext prompt yields content, not actions", asy
   const response = await provider.generate(MERGE_AS_CONTEXT_PROMPT);
 
   assertStringIncludes(response.content, TAG_CONTENT, "a flow step must produce content for the next step");
-  assertEquals(response.content.includes(TAG_ACTIONS), false, "a flow step is not a plan-execution turn");
+  assertFalse(response.content.includes(TAG_ACTIONS), "a flow step is not a plan-execution turn");
 });
 
 Deno.test("[flow-step] a mergeAsContext prompt keeping its original title still yields content", async () => {
@@ -247,7 +246,7 @@ Action required: implement step 1.`;
   const response = await provider.generate(prompt);
 
   assertStringIncludes(response.content, TAG_ACTIONS, "execution must not be misread as a flow step");
-  assertEquals(response.content.includes(TAG_CONTENT), false);
+  assertFalse(response.content.includes(TAG_CONTENT));
 });
 
 // `recorded` is the default strategy and silently pattern-matches when no fixtures are

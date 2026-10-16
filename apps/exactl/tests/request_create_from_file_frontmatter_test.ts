@@ -17,7 +17,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_FLOWS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { assert } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
@@ -110,8 +110,8 @@ Evaluate the pinned skills.
     // The regression: the raw YAML was pasted into the body, so the daemon parsed the
     // CLI's wrapper frontmatter and treated the real one as prose.
     const { body } = await submit(PINNED);
-    assertEquals(body.includes("trace_id:"), false, "body must not contain the file's raw frontmatter");
-    assertEquals(body.includes("skills: ["), false);
+    assertFalse(body.includes("trace_id:"), "body must not contain the file's raw frontmatter");
+    assertFalse(body.includes("skills: ["));
     assertStringIncludes(body, "Evaluate the pinned skills.");
   });
 

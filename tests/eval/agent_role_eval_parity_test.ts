@@ -8,7 +8,7 @@
  */
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { assertCatalogCovered } from "./catalog_parity.ts";
 import { loadScenarioCatalog } from "../scenario_framework/runner/scenario_catalog.ts";
 import parityExclusions from "./parity_exclusions.json" with { type: "json" };
@@ -65,12 +65,11 @@ Deno.test("agent_role_eval_parity — the catalog is read from disk, not restate
 Deno.test("agent_role_eval_parity — README.md is filtered by the reader, not excluded by hand", () => {
   // A directory readme is not an agent role. Listing it as a parity exclusion made the exclusion
   // list read as though a real agent role had been deliberately left uncovered.
-  assertEquals(
+  assertFalse(
     agentRoleExclusions.includes("README.md"),
-    false,
     "README.md is not an agent role; the reader drops it rather than the exclusion list carrying it",
   );
-  assertEquals(agentRoleNames.includes("README"), false, "the reader must not surface README as an agent role");
+  assertFalse(agentRoleNames.includes("README"), "the reader must not surface README as an agent role");
 });
 
 Deno.test("agent_role_eval_parity — mock-agent remains a real, reasoned exclusion", () => {

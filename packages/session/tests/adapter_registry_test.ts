@@ -9,7 +9,7 @@
  */
 
 import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertFalse, assertThrows } from "@std/assert";
 import { SessionBriefSchema, SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionBrief } from "@exaix/schemas/session_delegate.ts";
 import {
@@ -91,8 +91,8 @@ Deno.test("[session_adapter][security] GAP-4 — the brief objective never reach
     const mode = tool === "cursor" || tool === "vscode" ? "advisory" : "supervised";
     const launch = registry.resolve(tool).buildLaunch(makeBrief({ tool }), mode, BRIEF_PATH);
     const surface = [launch.command, ...launch.args].join("\0");
-    assertEquals(surface.includes(MALICIOUS_OBJECTIVE), false, `${tool}: objective must not be in the command line`);
-    assertEquals(surface.includes("rm -rf"), false, `${tool}: shell payload must not be in the command line`);
+    assertFalse(surface.includes(MALICIOUS_OBJECTIVE), `${tool}: objective must not be in the command line`);
+    assertFalse(surface.includes("rm -rf"), `${tool}: shell payload must not be in the command line`);
   }
 });
 
@@ -119,8 +119,8 @@ Deno.test("[session_adapter] claude-code headless argv contains -p, objective an
   const launch = registry.resolve("claude-code").buildLaunch(brief, "headless", BRIEF_PATH);
   assertEquals(launch.args[0], "-p", "headless claude-code must start with -p");
   assertEquals(launch.args.includes("Refactor the auth module"), true, "objective must be a discrete argv item");
-  assertEquals(launch.args.includes("--brief"), false, "claude-code does not support --brief flag");
-  assertEquals(launch.args.includes("--max-total-tokens"), false, "claude-code does not support --max-total-tokens");
+  assertFalse(launch.args.includes("--brief"), "claude-code does not support --brief flag");
+  assertFalse(launch.args.includes("--max-total-tokens"), "claude-code does not support --max-total-tokens");
   assertEquals(launch.args.includes("--output-format"), true, "must specify output format");
   assertEquals(launch.args.includes("json"), true, "must request JSON output for stdout capture");
   assertEquals(launch.args.includes("json"), true, "output format must be json");
@@ -136,8 +136,8 @@ Deno.test("[session_adapter] opencode headless argv contains run, --format json,
   assertEquals(launch.args[3], "--dir", "opencode must include --dir for worktree path resolution");
   assertEquals(launch.args[4], brief.worktree_path, "--dir must be followed by the worktree path");
   assertEquals(launch.args.includes("Implement feature X"), true, "objective must be a discrete argv item");
-  assertEquals(launch.args.includes("--brief"), false, "opencode does not support --brief flag");
-  assertEquals(launch.args.includes("--max-total-tokens"), false, "opencode does not support --max-total-tokens");
+  assertFalse(launch.args.includes("--brief"), "opencode does not support --brief flag");
+  assertFalse(launch.args.includes("--max-total-tokens"), "opencode does not support --max-total-tokens");
   assertEquals(launch.cwd, brief.worktree_path, "cwd must match the worktree path");
 });
 
@@ -252,7 +252,7 @@ Deno.test("[session_adapter] headless omits --model when the brief has no model"
   const registry = createDefaultSessionAdapterRegistry();
   for (const tool of ["claude-code", "opencode", "codex"] as const) {
     const launch = registry.resolve(tool).buildLaunch(makeBrief({ tool }), "headless", BRIEF_PATH);
-    assertEquals(launch.args.includes("--model"), false, `${tool}: no --model flag when model is unset`);
+    assertFalse(launch.args.includes("--model"), `${tool}: no --model flag when model is unset`);
   }
 });
 

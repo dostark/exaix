@@ -10,7 +10,7 @@
  * run. Both tools share the same injectable `run` seam.
  */
 
-import { assertArrayIncludes, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { CliDelegateStrategy } from "@exaix/execution";
 import { AgentExecutionError, type IAgentFileBlueprint } from "@exaix/execution";
 import { AgentExecutionErrorType, CLI_DELEGATE_TURN_TIMEOUT_MS, ExecutionStrategyName } from "@exaix/core";
@@ -185,7 +185,7 @@ Deno.test("CliDelegateStrategy: Codex uses exec JSONL and resumes its own thread
     'model_reasoning_effort="high"',
   ]);
   assertStringIncludes(calls[0].args[9], "Fix the null-guard bug");
-  assertEquals(calls[0].args.includes("--format"), false);
+  assertFalse(calls[0].args.includes("--format"));
   assertArrayIncludes(calls[1].args, ["resume"]);
   assertArrayIncludes(calls[1].args, [threadId]);
   assertEquals(second.description, "Inspected the portal.");
@@ -272,7 +272,7 @@ Deno.test("CliDelegateStrategy: omits --effort for claude when deps.effort is ab
 
   await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
 
-  assertEquals(capturedArgs.includes("--effort"), false);
+  assertFalse(capturedArgs.includes("--effort"));
 });
 
 Deno.test("CliDelegateStrategy: deps.effort passes opencode's --variant flag", async () => {
@@ -393,7 +393,7 @@ Deno.test("CliDelegateStrategy: a trace's second claude turn omits the full plan
   await strategy.execute(makeBlueprint(), context, makeOptions());
 
   assertStringIncludes(capturedObjectives[0], "FULL PLAN:");
-  assertEquals(capturedObjectives[1].includes("FULL PLAN:"), false);
+  assertFalse(capturedObjectives[1].includes("FULL PLAN:"));
 });
 
 Deno.test("CliDelegateStrategy: without context.full_plan, the objective has no FULL PLAN section", async () => {
@@ -412,7 +412,7 @@ Deno.test("CliDelegateStrategy: without context.full_plan, the objective has no 
 
   await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
 
-  assertEquals(capturedObjective.includes("FULL PLAN:"), false);
+  assertFalse(capturedObjective.includes("FULL PLAN:"));
 });
 
 Deno.test("CliDelegateStrategy: passes CLI_DELEGATE_TURN_TIMEOUT_MS to an opencode step", async () => {
@@ -575,7 +575,7 @@ Deno.test("CliDelegateStrategy: claude's second call for the same trace_id resum
   const first = await strategy.execute(makeBlueprint(), context, makeOptions());
   const second = await strategy.execute(makeBlueprint(), context, makeOptions());
 
-  assertEquals(capturedArgsPerCall[0].includes("--resume"), false);
+  assertFalse(capturedArgsPerCall[0].includes("--resume"));
   const resumeIndex = capturedArgsPerCall[1].indexOf("--resume");
   assertEquals(resumeIndex >= 0, true);
   assertEquals(capturedArgsPerCall[1][resumeIndex + 1], "ses_claude_abc");
@@ -612,8 +612,8 @@ Deno.test("CliDelegateStrategy: two different trace_ids never pass --resume to c
     makeOptions(),
   );
 
-  assertEquals(capturedArgsPerCall[0].includes("--resume"), false);
-  assertEquals(capturedArgsPerCall[1].includes("--resume"), false);
+  assertFalse(capturedArgsPerCall[0].includes("--resume"));
+  assertFalse(capturedArgsPerCall[1].includes("--resume"));
 });
 
 Deno.test("CliDelegateStrategy: builds opencode argv with run, --format json, and objective", async () => {
@@ -665,7 +665,7 @@ Deno.test("CliDelegateStrategy: opencode's second call for the same trace_id pas
   await strategy.execute(makeBlueprint(), context, makeOptions());
   await strategy.execute(makeBlueprint(), context, makeOptions());
 
-  assertEquals(capturedArgsPerCall[0].includes("--session"), false);
+  assertFalse(capturedArgsPerCall[0].includes("--session"));
   const sessionFlagIndex = capturedArgsPerCall[1].indexOf("--session");
   assertEquals(sessionFlagIndex >= 0, true);
   assertEquals(capturedArgsPerCall[1][sessionFlagIndex + 1], "ses_abc123");

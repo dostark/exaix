@@ -5,7 +5,7 @@
  * detection, and file-level boundary analysis used by package migration tooling.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { toFileUrl } from "@std/path";
 import {
   buildBoundaryReport,
@@ -406,7 +406,7 @@ Deno.test("renderBoundaryReport: extractable file shows EXTRACTABLE verdict", ()
 
   const text = renderBoundaryReport(report);
   assertStringIncludes(text, "EXTRACTABLE");
-  assertEquals(text.includes("NOT extractable"), false);
+  assertFalse(text.includes("NOT extractable"));
   assertStringIncludes(text, "packages/mcp/src/tool_result_converter.ts");
 });
 
@@ -426,7 +426,7 @@ Deno.test("renderBoundaryReport: non-extractable file shows src/ blockers", () =
   const text = renderBoundaryReport(report);
   assertStringIncludes(text, "NOT extractable");
   assertStringIncludes(text, "packages/git/src/git_service.ts");
-  assertEquals(text.includes("EXTRACTABLE"), false);
+  assertFalse(text.includes("EXTRACTABLE"));
 });
 
 Deno.test("renderBoundaryReport: external deps appear truncated after 5", () => {

@@ -7,7 +7,7 @@
  * @related-files [scripts/ci.ts, apps/exactl/main.ts, exaix-team/apps/exactl/main.ts]
  */
 
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 
@@ -39,7 +39,7 @@ Deno.test("compiled exactl editions isolate the Team OTel command by graph and d
 
   const soloHelp = await journalHelp(SOLO_BINARY);
   const teamHelp = await journalHelp(TEAM_BINARY);
-  assertEquals(soloHelp.includes("export-otel"), false);
+  assertFalse(soloHelp.includes("export-otel"));
   assertStringIncludes(teamHelp, "export-otel");
 
   const info = await new Deno.Command(Deno.execPath(), {

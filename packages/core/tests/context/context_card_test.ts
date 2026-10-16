@@ -8,7 +8,7 @@
  */
 
 import { ExaPathDefaults } from "@exaix/shared";
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { ContextCardGenerator } from "@exaix/core/context";
 import { EventLogger } from "@exaix/core/logger";
@@ -104,8 +104,8 @@ Deno.test("ContextCardGenerator: sanitizes alias", async () => {
     assertEquals(entries.length, 1);
     // We expect it to be safe.
     const filename = entries[0];
-    assertEquals(filename.includes(" "), false);
-    assertEquals(filename.includes("!"), false);
+    assertFalse(filename.includes(" "));
+    assertFalse(filename.includes("!"));
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

@@ -13,7 +13,7 @@
  * @related-files [scripts/check_reachability_ledger.ts]
  */
 
-import { assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import {
   auditLedgerRows,
   detectLedgerShapeWarnings,
@@ -40,9 +40,9 @@ Deno.test("[extractCandidateSymbols] finds camelCase, PascalCase, and CONSTANT_C
 Deno.test("[extractCandidateSymbols] ignores kebab-case labels, prose, and plain all-caps words", () => {
   const cell = "closed 2026-08-03 (skill-value-live-corpus-run) — the run was GREEN and PASS";
   const found = extractCandidateSymbols(cell);
-  assertEquals(found.includes("skill-value-live-corpus-run"), false);
-  assertEquals(found.includes("GREEN"), false);
-  assertEquals(found.includes("PASS"), false);
+  assertFalse(found.includes("skill-value-live-corpus-run"));
+  assertFalse(found.includes("GREEN"));
+  assertFalse(found.includes("PASS"));
 });
 
 Deno.test("[extractCandidateSymbols] backtick-wrapped identifiers are still extracted", () => {

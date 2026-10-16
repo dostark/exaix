@@ -8,7 +8,7 @@
  */
 
 import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
-import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertNotEquals } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
 import type { IEventLogger } from "@exaix/core/logger";
@@ -309,7 +309,7 @@ Deno.test("[session_delegation_coordinator][Tier A] launched event is trace-link
     assertEquals(payload.brief, undefined);
     assertEquals(payload.objective, undefined);
     assertEquals(payload.resume_token, undefined);
-    assertEquals(JSON.stringify(payload).includes("/tmp/worktree"), false);
+    assertFalse(JSON.stringify(payload).includes("/tmp/worktree"));
   } finally {
     await cleanup();
   }

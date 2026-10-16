@@ -11,7 +11,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { AgentRunner } from "@exaix/execution";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
@@ -164,7 +164,7 @@ Deno.test("[adaptive injection] adaptive mode attaches the snapshot, skips resol
     assertEquals(mockKnowledge.relevanceCalls.length, 0, "adaptive mode must not call getRelevantContext");
 
     const lastPrompt = env.capturedPrompts[env.capturedPrompts.length - 1];
-    assertEquals(lastPrompt.includes("## Portal Knowledge Summary"), false, "the fixed HNSW/text summary must not run");
+    assertFalse(lastPrompt.includes("## Portal Knowledge Summary"), "the fixed HNSW/text summary must not run");
     assertStringIncludes(lastPrompt, "PaymentRouter");
   } finally {
     await env.cleanup();

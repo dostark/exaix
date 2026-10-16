@@ -8,7 +8,7 @@
  * @related-files [packages/core/src/func/prompt_formatter.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { renderCriticalSkillsSection, renderSkillEntry, renderSkillsSection } from "@exaix/core/func";
 import type { ISkillsContext } from "@exaix/core/types";
 import { skillMatchFixture } from "@exaix/testing";
@@ -33,7 +33,7 @@ Deno.test("[render] full mode appends linked references in sorted path order and
   const zeta = output.indexOf("##### Reference: references/zeta.md\nZeta text.");
   assertEquals(alpha > output.indexOf("Body."), true);
   assertEquals(zeta > alpha, true);
-  assertEquals(output.includes("Never rendered."), false);
+  assertFalse(output.includes("Never rendered."));
 });
 
 Deno.test("[render] trimmed mode drops the references and the examples", () => {
@@ -41,8 +41,8 @@ Deno.test("[render] trimmed mode drops the references and the examples", () => {
     contextOf({ references: REFERENCES, content: "Body.\n\n## Examples\n\nExample." }),
     true,
   );
-  assertEquals(output.includes("Reference:"), false);
-  assertEquals(output.includes("Example."), false);
+  assertFalse(output.includes("Reference:"));
+  assertFalse(output.includes("Example."));
   assertStringIncludes(output, "Body.");
 });
 

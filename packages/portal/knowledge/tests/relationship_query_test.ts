@@ -9,7 +9,7 @@
  * layer_contains_file edges.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { PortalAnalysisMode } from "@exaix/core";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import {
@@ -269,7 +269,7 @@ Deno.test("traverseModuleDependencies: never returns a symbol_references_symbol 
   ]);
   for (const edge of edges) {
     assertEquals(edge.kind, "file_imports_file_internal");
-    assertEquals(edge.to.includes("#"), false);
+    assertFalse(edge.to.includes("#"));
   }
 });
 

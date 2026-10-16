@@ -6,7 +6,7 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
-import { assertEquals, assertExists, assertRejects } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
@@ -106,7 +106,7 @@ Deno.test("[Step64.3] FlowRunner resumes with persisted namespace state and skip
     assertEquals(readerRequest.request.sharedNamespace, { summary: "persisted-summary" });
     assertEquals(resumedResult.success, true);
     assertEquals(resumedResult.output, "reader:persisted-summary");
-    assertEquals(resumedExecutor.calls.includes("agent1"), false);
+    assertFalse(resumedExecutor.calls.includes("agent1"));
     assertEquals(resumedResult.namespaceArtifactPath, namespacePath);
     assertEquals(resumedLogger.events.some((entry) => entry.event === FLOW_EVENT_NAMESPACE_READ), true);
   } finally {

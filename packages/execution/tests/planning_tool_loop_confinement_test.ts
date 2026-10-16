@@ -8,7 +8,7 @@
  * @related-files [packages/execution/src/planning_tool_loop.ts, packages/tool-runtime/src/tool_registry.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { createMockConfig, makeGenerateResult } from "@exaix/testing";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
@@ -69,19 +69,19 @@ async function feedBackFor(
 Deno.test("[security] PlanningToolLoop feeds an error result for a traversing search_files pattern", async () => {
   const fedBack = await feedBackFor("search_files", { pattern: "../*.txt", path: "." });
   assert(fedBack.includes("Access denied"), `expected access denied, got ${fedBack}`);
-  assertEquals(fedBack.includes("secret.txt"), false);
+  assertFalse(fedBack.includes("secret.txt"));
 });
 
 Deno.test("[security] PlanningToolLoop denies an absolute file_path alias outside the portal", async () => {
   const fedBack = await feedBackFor("read_file", { file_path: "$ROOT/secret.txt" });
   assert(fedBack.includes("Access denied"), `expected access denied, got ${fedBack}`);
-  assertEquals(fedBack.includes("OUTSIDE"), false);
+  assertFalse(fedBack.includes("OUTSIDE"));
 });
 
 Deno.test("[security] PlanningToolLoop denies a ../ file_path alias outside the portal", async () => {
   const fedBack = await feedBackFor("read_file", { file_path: "../secret.txt" });
   assert(fedBack.includes("Access denied"), `expected access denied, got ${fedBack}`);
-  assertEquals(fedBack.includes("OUTSIDE"), false);
+  assertFalse(fedBack.includes("OUTSIDE"));
 });
 
 Deno.test("PlanningToolLoop still reads an in-portal file through the file_path alias", async () => {
@@ -92,19 +92,19 @@ Deno.test("PlanningToolLoop still reads an in-portal file through the file_path 
 Deno.test("[security] PlanningToolLoop denies read_file with an absolute filePath outside the portal", async () => {
   const fedBack = await feedBackFor("read_file", { filePath: "$ROOT/secret.txt" });
   assert(fedBack.includes("Access denied"), `expected access denied, got ${fedBack}`);
-  assertEquals(fedBack.includes("OUTSIDE"), false);
+  assertFalse(fedBack.includes("OUTSIDE"));
 });
 
 Deno.test("[security] PlanningToolLoop denies read_file with an absolute target_file outside the portal", async () => {
   const fedBack = await feedBackFor("read_file", { target_file: "$ROOT/secret.txt" });
   assert(fedBack.includes("Access denied"), `expected access denied, got ${fedBack}`);
-  assertEquals(fedBack.includes("OUTSIDE"), false);
+  assertFalse(fedBack.includes("OUTSIDE"));
 });
 
 Deno.test("[security] PlanningToolLoop denies glob with a ../ pattern the same way as search_files", async () => {
   const fedBack = await feedBackFor("glob", { query: "../*.txt", path: "." }, "search_files");
   assert(fedBack.includes("Access denied"), `expected access denied, got ${fedBack}`);
-  assertEquals(fedBack.includes("secret.txt"), false);
+  assertFalse(fedBack.includes("secret.txt"));
 });
 
 Deno.test("[planning-allowlist-alias] PlanningToolLoop runs search_files when the allowlist names glob", async () => {

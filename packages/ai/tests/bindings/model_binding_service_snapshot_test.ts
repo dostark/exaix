@@ -5,7 +5,7 @@
  */
 
 import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assertArrayIncludes, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { crypto as stdCrypto } from "@std/crypto";
 import { encodeHex } from "@std/encoding/hex";
@@ -900,7 +900,7 @@ Deno.test("[pool] a provider shared by two runs stays open until the last run re
     const runB = await service.snapshotForRun(flow, { traceId: crypto.randomUUID() });
     await service.releaseRun(runA.traceId);
     await new Promise((resolve) => setTimeout(resolve, 0));
-    assertEquals(spy.disposed.includes("alpha"), false, "run B still holds the shared provider");
+    assertFalse(spy.disposed.includes("alpha"), "run B still holds the shared provider");
     await service.releaseRun(runB.traceId);
     await new Promise((resolve) => setTimeout(resolve, 0));
     assertArrayIncludes(spy.disposed, ["alpha"]);

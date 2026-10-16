@@ -11,7 +11,14 @@
  * @related-files [tests/scenario_framework/runner/binding_layers.ts, tests/scenario_framework/schema/scenario_schema.ts]
  */
 
-import { assertEquals, assertMatch, assertNotEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import {
+  assertEquals,
+  assertFalse,
+  assertMatch,
+  assertNotEquals,
+  assertRejects,
+  assertStringIncludes,
+} from "@std/assert";
 import { join } from "@std/path";
 import { BindingOverlaySchema } from "@exaix/schemas";
 import { BindingIncompatibleError } from "@exaix/ai";
@@ -163,7 +170,7 @@ Deno.test("[bindings] planScenarioBindings substitutes the fixture-port sentinel
     });
 
     const raw = await Deno.readTextFile(plan.overlays[0]!.path);
-    assertEquals(raw.includes("__COMPAT_FIXTURE_PORT__"), false);
+    assertFalse(raw.includes("__COMPAT_FIXTURE_PORT__"));
     const written = BindingOverlaySchema.parse(JSON.parse(raw));
     assertEquals(
       written.catalog?.services?.fixture?.endpoint,
@@ -283,7 +290,7 @@ Deno.test("[bindings] the cell layer substitutes the fixture-port sentinel a pre
     });
 
     const raw = await Deno.readTextFile(plan.overlays[0]!.path);
-    assertEquals(raw.includes("__COMPAT_FIXTURE_PORT__"), false);
+    assertFalse(raw.includes("__COMPAT_FIXTURE_PORT__"));
     const written = BindingOverlaySchema.parse(JSON.parse(raw));
     assertEquals(
       written.catalog?.services?.fixture?.endpoint,
@@ -501,7 +508,7 @@ Deno.test("[pins] no pins overlay is written for any scenario", async () => {
       sandboxRoot: join(root, "sandbox"),
     });
     for (const overlay of plan.overlays) {
-      assertEquals(overlay.path.includes("90-scenario-pins"), false, overlay.path);
+      assertFalse(overlay.path.includes("90-scenario-pins"), overlay.path);
     }
     // The broader entry is stripped rather than refused, so the pin still holds its value.
     assertEquals(plan.pins.map((pin) => [pin.field, pin.value]), [["service", "alpha"]]);

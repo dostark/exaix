@@ -10,7 +10,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { copy } from "@std/fs";
 import { join } from "@std/path";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
@@ -68,7 +68,7 @@ Deno.test({
         stderr: "piped",
       }).output();
       assert(output.success, new TextDecoder().decode(output.stderr));
-      assertEquals(new TextDecoder().decode(output.stdout).includes("Generating skill JSON"), false);
+      assertFalse(new TextDecoder().decode(output.stdout).includes("Generating skill JSON"));
 
       const workspace = join(sandboxRoot, "workspace");
       const configText = await Deno.readTextFile(join(workspace, "exa.config.toml"));

@@ -6,7 +6,7 @@
  * @related-files [apps/exactl/src/commands/eval_commands.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { buildRunArgs, EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
@@ -127,7 +127,7 @@ Deno.test("[EvalCommands] history --last 1 shows only the most recent entry", as
     const outputText = output.join(" ");
 
     assertStringIncludes(outputText, "second-scenario");
-    assertEquals(outputText.includes("first-scenario"), false);
+    assertFalse(outputText.includes("first-scenario"));
   } finally {
     Deno.chdir(ORIGINAL_CWD);
     await cleanup();
@@ -187,10 +187,10 @@ Deno.test("[EvalCommands] buildRunArgs forwards score-threshold, trials, and his
 Deno.test("[EvalCommands] buildRunArgs omits flags not provided", () => {
   const args = buildRunArgs({});
   const argsStr = args.join(" ");
-  assertEquals(argsStr.includes("--score-threshold"), false, "should NOT include --score-threshold");
-  assertEquals(argsStr.includes("--trials"), false, "should NOT include --trials");
-  assertEquals(argsStr.includes("--history-format"), false, "should NOT include --history-format");
-  assertEquals(argsStr.includes("--cell"), false, "should NOT include --cell");
+  assertFalse(argsStr.includes("--score-threshold"), "should NOT include --score-threshold");
+  assertFalse(argsStr.includes("--trials"), "should NOT include --trials");
+  assertFalse(argsStr.includes("--history-format"), "should NOT include --history-format");
+  assertFalse(argsStr.includes("--cell"), "should NOT include --cell");
   assertStringIncludes(argsStr, "--eval-mode", "should always include --eval-mode");
 });
 
@@ -216,7 +216,7 @@ Deno.test("[EvalCommands] buildRunArgs forwards --capture-calibration-evidence w
 
 Deno.test("[EvalCommands] buildRunArgs omits --capture-calibration-evidence when not provided", () => {
   const args = buildRunArgs({ pack: ["swe_tasks"] });
-  assertEquals(args.join(" ").includes("--capture-calibration-evidence"), false);
+  assertFalse(args.join(" ").includes("--capture-calibration-evidence"));
 });
 
 Deno.test("[EvalCommands] history with no history file shows empty message", async () => {

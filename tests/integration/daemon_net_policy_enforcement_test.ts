@@ -10,7 +10,7 @@
  * @dependencies [@std/assert, @std/path]
  */
 
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { writeDaemonConfig } from "./helpers/daemon_config.ts";
 
@@ -86,7 +86,7 @@ Deno.test({
       // after the settle window, so a clean SIGTERM exit is expected, not a refuse).
       const { code, stderr } = await runDaemonDirect(configPath, "--deny-net");
       // It must NOT refuse for a net-policy reason.
-      assertEquals(stderr.includes("allow_net is []"), false, "must not flag a violation when net is denied");
+      assertFalse(stderr.includes("allow_net is []"), "must not flag a violation when net is denied");
       // SIGTERM exit code is acceptable (daemon was alive and got killed).
       assert(code !== 0 ? true : true);
     } finally {

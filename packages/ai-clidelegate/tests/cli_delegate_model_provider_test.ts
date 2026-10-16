@@ -8,7 +8,7 @@
  * independent), env auth stripped, and both tools' stdout shapes parsed into IGenerateResult.
  */
 
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { CliDelegateModelProvider } from "../src/cli_delegate_model_provider.ts";
 import type { IRunCliDelegateProcess } from "../src/cli_delegate_model_provider.ts";
 import { SHELL_ONLY_TOOLS_PROTOCOL_BACKEND, TEXT_COMPLETION_PROTOCOL_BACKEND } from "../src/protocol_backend.ts";
@@ -342,8 +342,8 @@ Deno.test("CliDelegateModelProvider: without conversationId, calls never pass --
   await provider.generate("second call");
 
   for (const args of seenArgsPerCall) {
-    assertEquals(args.includes("--resume"), false);
-    assertEquals(args.includes("--session"), false);
+    assertFalse(args.includes("--resume"));
+    assertFalse(args.includes("--session"));
   }
 });
 
@@ -384,7 +384,7 @@ Deno.test("CliDelegateModelProvider: claude's second call with the same conversa
   await provider.generate("first call", { conversationId: "req-1" });
   await provider.generate("second call", { conversationId: "req-1" });
 
-  assertEquals(seenArgsPerCall[0].includes("--resume"), false);
+  assertFalse(seenArgsPerCall[0].includes("--resume"));
   const resumeIdx = seenArgsPerCall[1].indexOf("--resume");
   assertEquals(resumeIdx >= 0, true);
   assertEquals(seenArgsPerCall[1][resumeIdx + 1], "sess_abc123");
@@ -421,7 +421,7 @@ Deno.test("CliDelegateModelProvider: opencode's second call with the same conver
   await provider.generate("first call", { conversationId: "req-1" });
   await provider.generate("second call", { conversationId: "req-1" });
 
-  assertEquals(seenArgsPerCall[0].includes("--session"), false);
+  assertFalse(seenArgsPerCall[0].includes("--session"));
   const sessionIdx = seenArgsPerCall[1].indexOf("--session");
   assertEquals(sessionIdx >= 0, true);
   assertEquals(seenArgsPerCall[1][sessionIdx + 1], "ses_xyz789");
@@ -458,7 +458,7 @@ Deno.test("CliDelegateModelProvider: different conversationIds never share a ses
   await provider.generate("call for req-2", { conversationId: "req-2" });
 
   for (const args of seenArgsPerCall) {
-    assertEquals(args.includes("--resume"), false);
+    assertFalse(args.includes("--resume"));
   }
 });
 
@@ -846,7 +846,7 @@ Deno.test("CliDelegateModelProvider: omits --effort for claude when options.effo
 
   await provider.generate("Analyze this request");
 
-  assertEquals(seenArgs.includes("--effort"), false);
+  assertFalse(seenArgs.includes("--effort"));
 });
 
 Deno.test("CliDelegateModelProvider: options.effort maps to codex's -c model_reasoning_effort= config override", async () => {

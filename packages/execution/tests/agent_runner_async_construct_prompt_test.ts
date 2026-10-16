@@ -12,7 +12,7 @@
  * ]
  */
 
-import { assert, assertEquals, assertNotEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { AgentRunner, type IBlueprint, type IContextBudgetManagerInput, type IParsedRequest } from "@exaix/execution";
 import { MEMORY_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY, PromptBudgetAllocator } from "@exaix/core";
@@ -226,7 +226,7 @@ Deno.test("[IAgentRunner] filtered segments produce shorter prompt when manager 
   await runner.run(blueprint, makeRequest({ userPrompt: "USER_SECTION" }), undefined);
 
   // System prompt was dropped by the manager — should not appear in the generated prompt
-  assertEquals(capturedPrompt.includes("SYSTEM_SECTION"), false);
+  assertFalse(capturedPrompt.includes("SYSTEM_SECTION"));
   // User prompt was kept — should appear
   assertStringIncludes(capturedPrompt, "USER_SECTION");
 });

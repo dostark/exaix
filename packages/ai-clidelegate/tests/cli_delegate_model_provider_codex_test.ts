@@ -15,7 +15,7 @@
  * boolean left claude-code/opencode behavior unchanged.
  */
 
-import { assertArrayIncludes, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { assertSpyCalls, spy } from "@std/testing/mock";
 import { CliDelegateModelProvider } from "../src/cli_delegate_model_provider.ts";
 import type { IRunCliDelegateProcess } from "../src/cli_delegate_model_provider.ts";
@@ -76,7 +76,7 @@ Deno.test("CliDelegateModelProvider: codex drops --output-schema when jsonSchema
     // codex 0.147.0 rejects non-strict zod-to-json-schema output with invalid_json_schema (400),
     // so --output-schema must never reach codex argv — schema conformance is enforced by
     // PlanAdapter after <content> extraction instead.
-    assertEquals(seenArgs.includes("--output-schema"), false);
+    assertFalse(seenArgs.includes("--output-schema"));
     assertArrayIncludes(seenArgs, ["exec"]);
   } finally {
     await Deno.remove(cwd, { recursive: true });
@@ -132,7 +132,7 @@ Deno.test("CliDelegateModelProvider: codex drops --output-schema and keeps resum
   await provider.generate("first call", { conversationId: "req-1" });
   await provider.generate("second call", { conversationId: "req-1", jsonSchema: { type: "object" } });
 
-  assertEquals(seenArgsPerCall[1].includes("--output-schema"), false);
+  assertFalse(seenArgsPerCall[1].includes("--output-schema"));
   const resumeIdx = seenArgsPerCall[1].indexOf("resume");
   assertEquals(resumeIdx >= 0, true);
   assertEquals(seenArgsPerCall[1][resumeIdx + 1], "thread_abc");
@@ -168,7 +168,7 @@ Deno.test("CliDelegateModelProvider: codex's second call with the same conversat
   await provider.generate("first call", { conversationId: "req-1" });
   await provider.generate("second call", { conversationId: "req-1" });
 
-  assertEquals(seenArgsPerCall[0].includes("resume"), false);
+  assertFalse(seenArgsPerCall[0].includes("resume"));
   const resumeIdx = seenArgsPerCall[1].indexOf("resume");
   assertEquals(resumeIdx >= 0, true);
   assertEquals(seenArgsPerCall[1][resumeIdx + 1], "thread_xyz");

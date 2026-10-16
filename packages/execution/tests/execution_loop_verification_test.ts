@@ -10,7 +10,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { exists } from "@std/fs/exists";
@@ -234,7 +234,7 @@ Deno.test("[execution-verification] a timed-out check completes with verificatio
     await handle.db.waitForFlush();
     assertEquals(completedStatus(handle.db, handle.traceId), "error");
     const events = handle.db.getActivitiesByTrace(handle.traceId).map((row) => row.action_type);
-    assertEquals(events.includes("execution.repair.started"), false);
+    assertFalse(events.includes("execution.repair.started"));
   } finally {
     await handle.cleanupDb();
     await Deno.remove(handle.rootDir, { recursive: true });

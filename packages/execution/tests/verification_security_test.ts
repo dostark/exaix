@@ -9,7 +9,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { stub } from "@std/testing/mock";
@@ -214,7 +214,7 @@ Deno.test("[verification-security] a configured secret value printed by a test i
     await handle.db.waitForFlush();
     assertEquals(repairContents.length, 1);
     assert(repairContents[0].includes(REDACTION_MARKER), repairContents[0]);
-    assertEquals(repairContents[0].includes(CONFIGURED_SECRET), false);
+    assertFalse(repairContents[0].includes(CONFIGURED_SECRET));
     assert(repairContents[0].includes("untrusted tool output"), repairContents[0]);
   } finally {
     await handle.cleanupDb();

@@ -13,7 +13,7 @@
  * @related-files ["packages/execution/src/strategies/react_loop_strategy.ts", "packages/execution/src/react_loop_adapter.ts"]
  */
 
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IReActLoopExecutor } from "@exaix/execution";
@@ -149,7 +149,7 @@ Deno.test("[ReActLoopAci] permitted_tools: [] stays empty and injects no ACI sec
     createOptions([]),
   );
   assertStringIncludes(prompt, "AVAILABLE TOOLS:\n");
-  assertEquals(prompt.includes("ACI TOOL GUIDANCE"), false);
+  assertFalse(prompt.includes("ACI TOOL GUIDANCE"));
 });
 
 Deno.test("[ReActLoopAci] duplicate IDs are deduplicated everywhere; unknown IDs are ignored by ACI rendering", () => {
@@ -165,7 +165,7 @@ Deno.test("[ReActLoopAci] duplicate IDs are deduplicated everywhere; unknown IDs
   // produce a fragment, and read_file's fragment appears exactly once, not twice.
   const aciOccurrences = prompt.split("### read_file").length - 1;
   assertEquals(aciOccurrences, 1, "the ACI fragment for read_file must appear exactly once");
-  assertEquals(prompt.includes("### does_not_exist"), false, "an unknown tool ID can never render a fragment");
+  assertFalse(prompt.includes("### does_not_exist"), "an unknown tool ID can never render a fragment");
 });
 
 Deno.test("[ReActLoopAci] repeated iterations emit one agent.prompt_assembled event each, with indices 0 and 1", async () => {

@@ -8,7 +8,7 @@
  * @related-files [packages/ai-clidelegate/src/cli_delegate_model_provider.ts, packages/execution/src/strategies/cli_delegate_strategy.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { CliDelegateModelProvider } from "../src/cli_delegate_model_provider.ts";
 import type { IRunCliDelegateProcess } from "../src/cli_delegate_model_provider.ts";
 import type { IModelOptions } from "@exaix/ai/types.ts";
@@ -84,7 +84,7 @@ Deno.test("CliDelegateModelProvider: all three builders pass every concrete tier
       const argsLine = seenArgs.join(" ");
       // Every tier reaches the produced argv/TOML interpolation exactly once.
       assertStringIncludes(argsLine, tier, `${tool} must carry tier ${tier}`);
-      assertEquals(argsLine.includes(INJECTED), false);
+      assertFalse(argsLine.includes(INJECTED));
     }
   }
 });

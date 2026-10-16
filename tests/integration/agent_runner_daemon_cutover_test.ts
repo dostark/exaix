@@ -30,7 +30,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_ACTIVE_PATH, DEFAULT_AGENTS_PATH, DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertLessOrEqual } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertLessOrEqual } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService, createConfigAdapter, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
@@ -1482,8 +1482,8 @@ Deno.test({
       assertEquals(read.length, 1);
       for (const call of [...glob, ...read]) {
         assert(call.resultSummary.includes(CONFINEMENT_DENIAL), `denied result expected: ${call.resultSummary}`);
-        assertEquals(call.resultSummary.includes(ESCAPE_CONTENT_SENTINEL), false);
-        assertEquals(call.resultSummary.includes(ESCAPE_NAME_SENTINEL), false);
+        assertFalse(call.resultSummary.includes(ESCAPE_CONTENT_SENTINEL));
+        assertFalse(call.resultSummary.includes(ESCAPE_NAME_SENTINEL));
       }
 
       const rewrites = payloadsOf<IToolAliasRewrittenPayload>(rows, "tool.alias.rewritten");
@@ -1495,8 +1495,8 @@ Deno.test({
       // The final fixture's expectedInput rejects either sentinel in the prompt or priorTurn.
       assertEquals(payloadsOf(rows, "planning.tools.completed").length, 1, actionTypes(rows));
       assertEquals(payloadsOf(rows, "planning.tools.aborted").length, 0, actionTypes(rows));
-      assertEquals(planText.includes(ESCAPE_CONTENT_SENTINEL), false);
-      assertEquals(planText.includes(ESCAPE_NAME_SENTINEL), false);
+      assertFalse(planText.includes(ESCAPE_CONTENT_SENTINEL));
+      assertFalse(planText.includes(ESCAPE_NAME_SENTINEL));
     } finally {
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});
     }
@@ -1528,7 +1528,7 @@ Deno.test({
       assertEquals(strictUnknown[0].strict, true);
       const strictCall = payloadsOf<IToolCallRow>(strict.rows, "dynamic_tool_call");
       assert(strictCall[0].resultSummary.includes("Unknown parameter"), strictCall[0].resultSummary);
-      assertEquals(strictCall[0].resultSummary.includes(strict.marker), false, "strict mode must not execute the read");
+      assertFalse(strictCall[0].resultSummary.includes(strict.marker), "strict mode must not execute the read");
     } finally {
       await Deno.remove(defaultDir, { recursive: true }).catch(() => {});
       await Deno.remove(strictDir, { recursive: true }).catch(() => {});
@@ -1682,7 +1682,7 @@ Deno.test({
       const calls = runs.map((rows) => payloadsOf<IToolCallRow>(rows, "dynamic_tool_call")[0]);
       assert(calls[0].resultSummary.includes(marker), "default mode must execute the read");
       assert(calls[1].resultSummary.includes("Unknown parameter"), calls[1].resultSummary);
-      assertEquals(calls[1].resultSummary.includes(marker), false, "strict mode must reject before execution");
+      assertFalse(calls[1].resultSummary.includes(marker), "strict mode must reject before execution");
       assert(calls[2].resultSummary.includes(marker), "setting false must restore execution");
     } finally {
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});

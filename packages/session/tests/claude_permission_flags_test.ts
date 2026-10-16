@@ -8,7 +8,7 @@
  */
 
 import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionBrief } from "@exaix/schemas/session_delegate.ts";
 import { deriveClaudeToolFlags } from "@exaix/session/claude_permission_flags.ts";
@@ -57,7 +57,7 @@ Deno.test(
   () => {
     const brief = makeBrief();
     const flags = deriveClaudeToolFlags(brief);
-    assertEquals(flags.includes("bypassPermissions"), false);
-    assertEquals(flags.includes("--dangerously-skip-permissions"), false);
+    assertFalse(flags.includes("bypassPermissions"));
+    assertFalse(flags.includes("--dangerously-skip-permissions"));
   },
 );

@@ -9,7 +9,7 @@
  * is rejected. A string-prefix check passes such paths because it never follows symlinks.
  */
 
-import { assertEquals, assertInstanceOf, assertRejects } from "@std/assert";
+import { assertFalse, assertInstanceOf, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
@@ -73,11 +73,7 @@ Deno.test("security: PathResolver error message does not leak absolute host path
     const error = await resolver.resolve("@Project/escape/secret.txt").then(() => null).catch((e) => e);
     assertInstanceOf(error, Error);
     // The caller-facing message must not disclose absolute host filesystem paths.
-    assertEquals(
-      error.message.includes(tempDir),
-      false,
-      `error message leaked an absolute host path: ${error.message}`,
-    );
+    assertFalse(error.message.includes(tempDir), `error message leaked an absolute host path: ${error.message}`);
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

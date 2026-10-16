@@ -6,7 +6,7 @@
  * @related-files [packages/execution/src/strategies/react_loop_strategy.ts]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertFalse, assertRejects } from "@std/assert";
 import { ReActLoopStrategy } from "../src/strategies/react_loop_strategy.ts";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
@@ -189,7 +189,7 @@ Deno.test("native snapshot budget counts tool schema and stops before a generati
     assertEquals(logger.warn.calls.length, 1);
     assertEquals(logger.warn.calls[0].args[0], DomainEventType.ContextBudgetExceeded);
     assertEquals(logger.warn.calls[0].args[3], context.trace_id);
-    assertEquals(JSON.stringify(logger.warn.calls).includes(reasoning), false);
+    assertFalse(JSON.stringify(logger.warn.calls).includes(reasoning));
   }
   ProviderRegistry.clear();
 });

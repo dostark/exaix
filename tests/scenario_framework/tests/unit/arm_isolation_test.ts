@@ -15,7 +15,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "@exaix/core/skills";
 import { initTestDbService, writeSkillFolder } from "@exaix/testing";
@@ -65,7 +65,7 @@ Deno.test("[ArmIsolation] suppressing skill X for one arm does not suppress it f
     "skill-x",
     () => (runner as Any).matchAndApplySkills(blueprint, request, "test-role"),
   );
-  assertEquals(armAResult.skillIds.includes("skill-x"), false, "arm A suppresses skill-x");
+  assertFalse(armAResult.skillIds.includes("skill-x"), "arm A suppresses skill-x");
 
   const armBResult: { skillIds: string[] } = await withEnv(
     EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR,
@@ -73,7 +73,7 @@ Deno.test("[ArmIsolation] suppressing skill X for one arm does not suppress it f
     () => (runner as Any).matchAndApplySkills(blueprint, request, "test-role"),
   );
   assertArrayIncludes(armBResult.skillIds, ["skill-x"], "arm B must not inherit arm A's suppression");
-  assertEquals(armBResult.skillIds.includes("skill-y"), false, "arm B suppresses skill-y instead");
+  assertFalse(armBResult.skillIds.includes("skill-y"), "arm B suppresses skill-y instead");
 });
 
 Deno.test("[ArmIsolation] two sequential skill overlays each see only their own content", async () => {

@@ -11,7 +11,7 @@
  * @related-files [packages/core/src/skills/skills.ts, packages/schemas/src/config.ts]
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects } from "@std/assert";
 import { DEFAULT_SKILLS_MEMORY_PATH, ExaPathDefaults } from "@exaix/shared";
 import { join } from "@std/path";
 import { type Config, ConfigSchema } from "@exaix/schemas";
@@ -186,7 +186,7 @@ Deno.test("[roots][security] a relative root cannot leave the system root and an
     assertEquals(await fx.service.getSkill("escaped", fx.ctx()), null);
     const diagnostics = await fx.service.listDiagnostics(fx.ctx());
     assert(diagnostics.some((d) => d.reason === SkillDiagnosticReason.PATH_ESCAPE));
-    assertEquals(JSON.stringify(diagnostics).includes(fx.root), false, "diagnostics carry no host paths");
+    assertFalse(JSON.stringify(diagnostics).includes(fx.root), "diagnostics carry no host paths");
   } finally {
     await Deno.remove(external, { recursive: true }).catch(() => {});
     await Deno.remove(fx.dir("..", "escape"), { recursive: true }).catch(() => {});

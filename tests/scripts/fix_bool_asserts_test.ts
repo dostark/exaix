@@ -31,11 +31,12 @@ Deno.test("a union subject is left unchanged and listed", () => {
   assertEquals(result.skipped.length, 1);
 });
 
-Deno.test("a false boolean argument is left unchanged and listed", () => {
+Deno.test("a false boolean argument becomes a negated assertion", () => {
+  // The codemod first left `false` unchanged, and now rewrites it to assertFalse.
   const source = 'const s: string = "abc";\nassertEquals(s.includes("b"), false);\n';
   const result = fixSourceText(FILE, source);
-  assertEquals(result.changed, 0);
-  assertEquals(result.text, source);
+  assertEquals(result.changed, 1);
+  assertStringIncludes(result.text, 'assertFalse(s.includes("b"))');
 });
 
 Deno.test("startsWith becomes an anchored assertMatch pattern", () => {
@@ -53,7 +54,7 @@ Deno.test("endsWith becomes an anchored assertMatch pattern", () => {
 Deno.test("a match argument containing a newline stays a valid regex literal", () => {
   const result = fixSourceText(FILE, 'const s: string = "x";\nassertEquals(s.startsWith("---\\n"), true);\n');
   assertEquals(result.changed, 1);
-  assertEquals(result.text.includes("assertMatch(s, /^---\\n/)"), true);
+  assertStringIncludes(result.text, "assertMatch(s, /^---\\n/)");
 });
 
 Deno.test("a match argument containing a slash stays a valid regex literal", () => {
@@ -78,4 +79,27 @@ Deno.test("the codemod is idempotent", () => {
   const twice = fixSourceText(FILE, once.text);
   assertEquals(twice.changed, 0);
   assertEquals(twice.text, once.text);
+});
+
+Deno.test("a false substring assertion becomes assertFalse", () => {
+  const result = fixSourceText(FILE, 'const s: string = "x";\nassertEquals(s.includes("a"), false);\n');
+  assertEquals(result.changed, 1);
+  assertStringIncludes(result.text, 'assertFalse(s.includes("a"))');
+});
+
+Deno.test("a false assertion rewrites without the subject type", () => {
+  const result = fixSourceText(
+    FILE,
+    'declare const raw: unknown;\nassertEquals((raw as string).startsWith("a"), false, "why");\n',
+  );
+  assertEquals(result.changed, 1);
+  assertStringIncludes(result.text, 'assertFalse((raw as string).startsWith("a"), "why")');
+});
+
+Deno.test("a true assertion still needs a statically-typed subject", () => {
+  const result = fixSourceText(
+    FILE,
+    'declare const raw: unknown;\nassertEquals((raw as number).includes("a"), true);\n',
+  );
+  assertEquals(result.changed, 0);
 });

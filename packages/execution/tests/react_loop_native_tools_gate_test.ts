@@ -6,7 +6,7 @@
  * while always rendering AVAILABLE TOOLS and TOOL SELECTION GUIDELINES.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertFalse, assertStringIncludes } from "@std/assert";
 import { ReActLoopStrategy } from "../src/strategies/react_loop_strategy.ts";
 import type { IReActLoopExecutor } from "../src/react_loop_adapter.ts";
 
@@ -48,8 +48,8 @@ Deno.test("buildPrompt with skipToolProse omits FORMAT and TOML but keeps AVAILA
   assertStringIncludes(promptWithoutProse, "prefer patch_file over write_file");
 
   // With skipToolProse: FORMAT and TOML block are omitted
-  assertEquals(promptWithoutProse.includes("FORMAT:"), false);
-  assertEquals(promptWithoutProse.includes("```toml"), false);
+  assertFalse(promptWithoutProse.includes("FORMAT:"));
+  assertFalse(promptWithoutProse.includes("```toml"));
 
   // Without skipToolProse: all sections present
   assertStringIncludes(promptWithProse, "AVAILABLE TOOLS:");

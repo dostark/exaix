@@ -7,7 +7,7 @@
  */
 
 import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionBrief, SessionGate } from "@exaix/schemas/session_delegate.ts";
 import { deriveCodexSandboxFlags } from "@exaix/session/codex_sandbox_flags.ts";
@@ -44,9 +44,9 @@ Deno.test("[codex_sandbox] every gate maps to the exact bounded sandbox mode", (
 Deno.test("[codex_sandbox][security] never emits escape or approval-bypass flags", () => {
   for (const [gate] of EXPECTED_MODES) {
     const flags = deriveCodexSandboxFlags(makeBrief(gate));
-    assertEquals(flags.includes("danger-full-access"), false, gate);
-    assertEquals(flags.includes("--add-dir"), false, gate);
-    assertEquals(flags.includes("--dangerously-bypass-approvals-and-sandbox"), false, gate);
-    assertEquals(flags.includes("--yolo"), false, gate);
+    assertFalse(flags.includes("danger-full-access"), gate);
+    assertFalse(flags.includes("--add-dir"), gate);
+    assertFalse(flags.includes("--dangerously-bypass-approvals-and-sandbox"), gate);
+    assertFalse(flags.includes("--yolo"), gate);
   }
 });

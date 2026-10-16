@@ -12,7 +12,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
-import { assertArrayIncludes, assertEquals, assertExists, assertMatch } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertFalse, assertMatch } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYamlRaw } from "@std/yaml";
 import { parseFrontmatter } from "./helpers/parse_frontmatter.ts";
@@ -355,21 +355,21 @@ Deno.test("[plan-to-requests][context] doc-shaped fixture emits Why This Step Ex
       "the why block leads the body, before Actions",
     );
     assertEquals(step1.includes("**The Problem.**"), true, "Executive Summary carried inline");
-    assertEquals(step1.includes("outside the bounded summary"), false, "Goal-paragraph bounding holds");
+    assertFalse(step1.includes("outside the bounded summary"), "Goal-paragraph bounding holds");
     assertEquals(
       step1.includes("Keep requests concise per `scripts/plan_to_requests.ts` design."),
       true,
       "shared-token constraint bullet included",
     );
-    assertEquals(step1.includes("Never expose private submodule trees"), false, "non-matching bullet filtered");
-    assertEquals(step1.includes("### Relevant Design Decisions"), false, "no-overlap sub-block omitted");
+    assertFalse(step1.includes("Never expose private submodule trees"), "non-matching bullet filtered");
+    assertFalse(step1.includes("### Relevant Design Decisions"), "no-overlap sub-block omitted");
 
     // The second generated step overlaps nothing: still gets the summary (always-present why), no bullet lists.
     const step2 = await Deno.readTextFile(join(tmpDir, "phase-nn-fixture-with-context-step-2.md"));
     assertEquals(step2.includes("## Why This Step Exists"), true);
     assertEquals(step2.includes("**The Goal.**"), true);
-    assertEquals(step2.includes("### Relevant Constraints"), false);
-    assertEquals(step2.includes("### Relevant Design Decisions"), false);
+    assertFalse(step2.includes("### Relevant Constraints"));
+    assertFalse(step2.includes("### Relevant Design Decisions"));
   } finally {
     await Deno.remove(tmpDir, { recursive: true });
   }
@@ -383,9 +383,8 @@ Deno.test("[plan-to-requests][context] legacy minimal fixture output unchanged â
 
     for (const stepNum of [1, 2, 3]) {
       const content = await Deno.readTextFile(join(tmpDir, `phase-nn-fixture-step-${stepNum}.md`));
-      assertEquals(
+      assertFalse(
         content.includes("## Why This Step Exists"),
-        false,
         `step ${stepNum}: docs without an Executive Summary keep legacy output`,
       );
     }
@@ -579,7 +578,7 @@ Deno.test("[plan-to-requests][plan-context][regression] without --plan-context-r
       const b = await Deno.readTextFile(join(noCopy, `${CONTEXT_SLUG}-step-${stepNum}.md`));
       assertEquals(bodyOf(a), bodyOf(b), `step ${stepNum}: omitting the flag must match explicit opt-out`);
       assertEquals(a.match(PLAN_CONTEXT_POINTER_RE), null);
-      assertEquals(a.includes(`${DEFAULT_RUNTIME_PATH}/PlanContext/`), false);
+      assertFalse(a.includes(`${DEFAULT_RUNTIME_PATH}/PlanContext/`));
     }
   } finally {
     await Deno.remove(wtA, { recursive: true });
@@ -715,7 +714,7 @@ Deno.test("[regression][plan-context] default output (no --plan-context-root) ha
     assertEquals((await runGenerator([join(FIXTURES_DIR, "phase-nn-fixture.md"), "--out-dir", tmpDir])).code, 0);
     for (const stepNum of [1, 2, 3]) {
       const content = await Deno.readTextFile(join(tmpDir, `phase-nn-fixture-step-${stepNum}.md`));
-      assertEquals(content.includes("plan_context_ref"), false, `step ${stepNum} must omit plan_context_ref`);
+      assertFalse(content.includes("plan_context_ref"), `step ${stepNum} must omit plan_context_ref`);
     }
   } finally {
     await Deno.remove(tmpDir, { recursive: true });

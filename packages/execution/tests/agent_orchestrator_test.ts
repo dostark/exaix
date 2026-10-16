@@ -2078,7 +2078,7 @@ Deno.test({
 
       // Without a registry there is nothing truthful to advertise — an Available Tools
       // header over an empty list would invite hallucinated tool calls.
-      assertEquals(prompt.includes("Available Tools"), false);
+      assertFalse(prompt.includes("Available Tools"));
       // The rest of the prompt must still be intact.
       assertStringIncludes(prompt, "Fix the null-safety bug");
       assertStringIncludes(prompt, "Test plan");
@@ -3245,7 +3245,7 @@ Deno.test({
 
       assertStringIncludes(getVisibleToolList(capturedPrompt), "search_text");
       await executor.executeStep({ ...context, request_id: "r-empty-tool-scope" }, { ...options, permitted_tools: [] });
-      assertEquals(getVisibleToolList(capturedPrompt).includes("search_text"), false);
+      assertFalse(getVisibleToolList(capturedPrompt).includes("search_text"));
       await executor.executeStep(
         { ...context, request_id: "r-undefined-tool-scope" },
         { ...options, permitted_tools: undefined },

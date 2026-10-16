@@ -12,7 +12,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertNotEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
@@ -189,10 +189,9 @@ Add a hello world function.
         (await readUsage(readerConfig, traceId)).map((row) => row.skill_name);
       assert((await names(traces.first)).includes(FIRST_SKILL));
       assert((await names(traces.second)).includes(SECOND_SKILL));
-      assertEquals((await names(traces.second)).includes(FIRST_SKILL), false);
-      assertEquals(
+      assertFalse((await names(traces.second)).includes(FIRST_SKILL));
+      assertFalse(
         (await names(traces.droppedFirst)).includes(FIRST_SKILL),
-        false,
         "the default catalog is no longer a root after the edit",
       );
       assert((await names(traces.afterInvalid)).includes(SECOND_SKILL), "the last good generation stays in force");

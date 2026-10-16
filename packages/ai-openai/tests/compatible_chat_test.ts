@@ -6,7 +6,7 @@
  * @dependencies [@exaix/ai-openai, @exaix/testing]
  * @related-files [packages/ai-openai/src/openai_provider.ts]
  */
-import { assertEquals, assertExists, assertRejects } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertRejects } from "@std/assert";
 import type { IResolvedProviderOptions } from "@exaix/ai/types.ts";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
@@ -139,10 +139,7 @@ Deno.test("compatible HTTP failures obey status retry policy and expose one reda
         assertEquals(logger.warn.calls.length, 1);
         assertEquals(logger.log.calls.length, 0);
         assertEquals(logger.warn.calls[0].args[3], "http-status-trace");
-        assertEquals(
-          JSON.stringify([error.message, logger.warn.calls, logger.debug.calls]).includes("sensitive"),
-          false,
-        );
+        assertFalse(JSON.stringify([error.message, logger.warn.calls, logger.debug.calls]).includes("sensitive"));
       } finally {
         await server.shutdown();
       }
@@ -395,7 +392,7 @@ Deno.test("compatible response validation rejects invalid protocol before return
           () => provider.generate("prompt", { tools: [{ name: "read_file", inputSchema: { type: "object" } }] }),
           Error,
         );
-        assertEquals(error.message.includes("sensitive-"), false);
+        assertFalse(error.message.includes("sensitive-"));
         assertEquals(requests - before, 1);
       });
     }

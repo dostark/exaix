@@ -6,7 +6,7 @@
  * by ISymbolExtractorRegistry rather than falling through to EMPTY_SYMBOL_EXTRACTOR.
  */
 
-import { assertArrayIncludes, assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse } from "@std/assert";
 import {
   createDefaultSymbolReferenceExtractorRegistry,
   type ISymbolReferenceExtractorRegistry,
@@ -101,6 +101,6 @@ Deno.test("[Enterprise] paidEditionCapabilityModules adds the symbol graph modul
 
   assertArrayIncludes(enterpriseNames, ["EnterpriseSymbolGraphModule"]);
   assertArrayIncludes(enterpriseNames, ["PortalExtractorsModule"]);
-  assertEquals(teamNames.includes("EnterpriseSymbolGraphModule"), false);
+  assertFalse(teamNames.includes("EnterpriseSymbolGraphModule"));
   assertArrayIncludes(teamNames, ["PortalExtractorsModule"]);
 });

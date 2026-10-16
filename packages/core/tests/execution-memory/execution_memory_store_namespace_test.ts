@@ -7,7 +7,7 @@
  */
 
 import { DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/shared";
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 
@@ -132,7 +132,7 @@ Deno.test("ExecutionMemoryStore: getNamespacePath resolves into the trace's exec
     const store = new ExecutionMemoryStore(config);
     const path = store.getNamespacePath("trace-path");
     assertStringIncludes(path, join(resolveMemoryExecutionRoot(config.paths), "trace-path"));
-    assertEquals(path.endsWith("namespace.md"), false, "the markdown artifact must be retired");
+    assertFalse(path.endsWith("namespace.md"), "the markdown artifact must be retired");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

@@ -579,7 +579,7 @@
     },
     "exaix/no-pass-through-type-alias": {
       "engine": "plugin",
-      "severity": "off",
+      "severity": "error",
       "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
       "scope": "all",
       "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",

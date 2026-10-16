@@ -12,7 +12,7 @@
  */
 
 import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import type { JSONValue } from "@exaix/core";
 import { FlowInputSource, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 import type { IGateEvaluator, IGateResult } from "@exaix/core/types";
@@ -369,8 +369,8 @@ Deno.test("[security] cycle lifecycle events carry no prompt text or absolute ho
   await handler.execute(makeCtx(traceId));
 
   const serialized = JSON.stringify(eventLogger.events);
-  assertEquals(serialized.includes("/fake/root"), false, "no absolute worktree path in any cycle event payload");
-  assertEquals(serialized.includes("do 1"), false, "no plan section prose in any cycle event payload");
+  assertFalse(serialized.includes("/fake/root"), "no absolute worktree path in any cycle event payload");
+  assertFalse(serialized.includes("do 1"), "no plan section prose in any cycle event payload");
 });
 
 // Negative: cancellation/expiry/rejection persists failure, never advances

@@ -18,7 +18,7 @@ import {
   DEFAULT_PLANS_PATH,
   DEFAULT_SKILLS_MEMORY_PATH,
 } from "@exaix/shared";
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { copy } from "@std/fs";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -465,13 +465,13 @@ Deno.test({
       ]);
       assertEquals(shown.code, 0, shown.err);
       const shownJson = jsonOf<{ skillMd: string }>(shown.out);
-      assertEquals(shownJson.skillMd.includes(B_MARKER), false, "the historical A revision never carries the edit");
+      assertFalse(shownJson.skillMd.includes(B_MARKER), "the historical A revision never carries the edit");
       const usageA = await exactl(run, ["skills", "usage", "--trace", state.traceA, "--format", "json"]);
       const usageB = await exactl(run, ["skills", "usage", "--trace", state.traceB, "--format", "json"]);
       assertEquals([usageA.code, usageB.code], [0, 0], usageA.err + usageB.err);
       await Deno.writeTextFile(join(evidenceDir, "cli.json"), JSON.stringify({ revisions, shown, usageA, usageB }));
       assertStringIncludes(usageA.out, evidence.revisionA);
-      assertEquals(usageA.out.includes(evidence.revisionB), false, "A's trace never names the edited revision");
+      assertFalse(usageA.out.includes(evidence.revisionB), "A's trace never names the edited revision");
       assertStringIncludes(usageB.out, evidence.revisionB);
 
       assertEquals(

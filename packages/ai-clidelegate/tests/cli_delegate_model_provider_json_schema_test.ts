@@ -5,7 +5,7 @@
  * --json-schema only when options.jsonSchema is set AND the probed version
  * meets the minimum, falling back silently otherwise.
  */
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { CliDelegateModelProvider } from "../src/cli_delegate_model_provider.ts";
 import type { IRunCliDelegateProcess } from "../src/cli_delegate_model_provider.ts";
 import type { IDelegateVersionResult } from "@exaix/session/delegate_version_probe.ts";
@@ -76,7 +76,7 @@ Deno.test("CliDelegateModelProvider: claude omits --json-schema when option not 
 
   await provider.generate("test");
 
-  assertEquals(seenArgs.includes("--json-schema"), false);
+  assertFalse(seenArgs.includes("--json-schema"));
 });
 
 Deno.test("CliDelegateModelProvider: claude omits --json-schema when version below minimum", async () => {
@@ -101,5 +101,5 @@ Deno.test("CliDelegateModelProvider: claude omits --json-schema when version bel
 
   await provider.generate("test", { jsonSchema: { type: "object", properties: {} } });
 
-  assertEquals(seenArgs.includes("--json-schema"), false);
+  assertFalse(seenArgs.includes("--json-schema"));
 });

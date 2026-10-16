@@ -9,7 +9,7 @@
  * schema validation, and fallback behaviour.
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
@@ -292,6 +292,6 @@ Deno.test("[LlmAnalyzer] passes the core JSON schema, without metadata, on both 
     const properties = (schema?.properties ?? {}) as Record<string, JSONValue>;
     assertEquals("metadata" in properties, false);
     assertEquals("goals" in properties, true);
-    assertEquals(((schema?.required ?? []) as string[]).includes("metadata"), false);
+    assertFalse(((schema?.required ?? []) as string[]).includes("metadata"));
   }
 });

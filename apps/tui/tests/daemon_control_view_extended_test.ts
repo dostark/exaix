@@ -7,7 +7,7 @@
  * simulation of daemon restarts, heartbeats, and log rotation for TUI tests.
  */
 
-import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertFalse } from "@std/assert";
 import { DaemonStatus } from "@exaix/core";
 import type { IDaemonService } from "@exaix/core/types";
 import {
@@ -413,7 +413,7 @@ Deno.test("DaemonControlTuiSession: getFocusableElements in different states", a
   // With dialog open
   session.showRestartConfirm();
   elements = session.getFocusableElements();
-  assertEquals(elements.includes("start-button"), false);
+  assertFalse(elements.includes("start-button"));
 
   // Cancel dialog
   await session.handleKey(KEYS.ESCAPE);

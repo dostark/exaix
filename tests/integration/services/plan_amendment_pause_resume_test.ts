@@ -5,7 +5,7 @@
  * @related-files [@exaix/core/planning, @exaix/core/planning]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { dirname } from "@std/path";
 import { initTestDbService } from "@exaix/testing";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -169,7 +169,7 @@ Deno.test("applyApprovedAmendment updates plan status to approved", async () => 
 
     // Verify status changed to approved
     assertEquals(updated.includes("status: approved"), true);
-    assertEquals(updated.includes("status: amendment_pending"), false);
+    assertFalse(updated.includes("status: amendment_pending"));
   } finally {
     await cleanup();
   }

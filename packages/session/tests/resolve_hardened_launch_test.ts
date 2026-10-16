@@ -6,7 +6,7 @@
  *   configPath setting for OpenCode, and flag derivation for Claude Code.
  */
 
-import { assertEquals, assertExists, assertMatch, assertRejects } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertMatch, assertRejects } from "@std/assert";
 import type { SessionBrief, SessionDelegateConfig } from "@exaix/schemas/session_delegate.ts";
 import {
   MINIMUM_VERSION_CLAUDE_CODE,
@@ -234,7 +234,7 @@ Deno.test("[delegate_hardening][security] hardened Codex launch has exactly one 
     "the base --sandbox read-only must be replaced, not duplicated, when hardening widens it",
   );
   assertEquals(result.launch.args[result.launch.args.indexOf("--sandbox") + 1], "workspace-write");
-  assertEquals(result.launch.args.includes("danger-full-access"), false);
+  assertFalse(result.launch.args.includes("danger-full-access"));
 });
 
 Deno.test("[delegate_hardening][security] hardened Codex launch stays read-only (single flag) for a non-code_changes gate", async () => {

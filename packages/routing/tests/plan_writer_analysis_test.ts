@@ -7,7 +7,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assertEquals, assertExists } from "@std/assert";
+import { assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { type IAgentExecutionResult, type IRequestMetadata, PlanWriter } from "@exaix/core/planning";
 import { ANALYZER_VERSION } from "@exaix/core";
@@ -123,11 +123,7 @@ Deno.test("[PlanWriter] writes plan without analysis (backward compat)", async (
     const { planPath } = await writer.writePlan(result, metadata);
     const content = await Deno.readTextFile(planPath);
 
-    assertEquals(
-      content.includes("request_analysis:"),
-      false,
-      "Plan should NOT contain request_analysis field when absent",
-    );
+    assertFalse(content.includes("request_analysis:"), "Plan should NOT contain request_analysis field when absent");
   } finally {
     await cleanup();
   }

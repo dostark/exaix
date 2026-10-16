@@ -6,7 +6,7 @@
  * validation at registry and adapter boundaries (Phase 78 Enforcement Points 1 and 2).
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import {
   type IToolResultValidator,
   validateMCPToolResponse,
@@ -95,11 +95,7 @@ Deno.test("tool_result_validator: failure issues do not embed raw payload values
   const result = validateToolResultEnvelope("run_command", rawResult);
   assertExists(result);
   for (const issue of result.issues) {
-    assertEquals(
-      issue.message.includes("shape"),
-      false,
-      "Issue message must not embed raw payload string values",
-    );
+    assertFalse(issue.message.includes("shape"), "Issue message must not embed raw payload string values");
   }
 });
 

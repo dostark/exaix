@@ -24,7 +24,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
@@ -151,8 +151,8 @@ Deno.test("Metadata-only obligation survives through the unchanged production fo
   // …via the instructions body, not a metadata dump (the metadata lists themselves must
   // not be rendered; only the body's prose mention of them may appear).
   assertStringIncludes(prompt, "**Instructions:**");
-  assertEquals(prompt.includes("output_requirements:"), false);
-  assertEquals(prompt.includes('"output_requirements"'), false);
+  assertFalse(prompt.includes("output_requirements:"));
+  assertFalse(prompt.includes('"output_requirements"'));
 });
 
 /** Runs a real Blueprint skill through the full chain — SkillsService →
@@ -247,11 +247,7 @@ Deno.test("Critical response guidance survives context budget pressure", async (
     requestText: "Do the thing.",
   });
   assertEquals(skill !== null, true);
-  assertEquals(
-    skill!.instructions.includes("ASD-STE100"),
-    false,
-    "the STE rule lives in the agent body, not the skill",
-  );
+  assertFalse(skill!.instructions.includes("ASD-STE100"), "the STE rule lives in the agent body, not the skill");
   assertStringIncludes(prompt, "## Agent Thought Standardization");
   assertStringIncludes(prompt, "REQUIRED SKILLS & CONTRACT");
 });
@@ -315,8 +311,8 @@ Deno.test("Runtime obligation mapping forbids deduplication into unrendered meta
       await runner.run(blueprint, request, undefined);
       const prompt = prompts[0];
       assertStringIncludes(prompt, "## Reviewed body equivalent");
-      assertEquals(prompt.includes("output_requirements:"), false);
-      assertEquals(prompt.includes("constraints:"), false);
+      assertFalse(prompt.includes("output_requirements:"));
+      assertFalse(prompt.includes("constraints:"));
     } finally {
       await cleanup();
     }

@@ -6,7 +6,7 @@
  *   an exported value narrow the pre-commit gate.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
@@ -61,7 +61,7 @@ Deno.test("EXAIX_LINT_RULES selects the rule and the entry prints a narrowing no
 Deno.test("EXAIX_LINT_RULES narrows plugin rules when a non-matching value is set", async () => {
   await withSeed(async (file) => {
     const result = await runDeno(["lint", file], { EXAIX_LINT_RULES: "exaix/no-such-rule" });
-    assertEquals(result.output.includes("exaix/no-chained-type-assertions"), false, result.output);
+    assertFalse(result.output.includes("exaix/no-chained-type-assertions"), result.output);
   });
 });
 

@@ -10,7 +10,7 @@
  * @related-files [packages/execution/src/planning_tool_loop.ts, packages/execution/src/native_tool_turns.ts]
  */
 
-import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertExists, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { PlanningToolLoop } from "../src/planning_tool_loop.ts";
 import type { IPlanningToolLoopDeps, IPlanningToolLoopOptions } from "../src/planning_tool_loop.ts";
 import type { ICallSite, IModelOptions } from "@exaix/ai/types.ts";
@@ -1481,7 +1481,7 @@ Deno.test("[planning_tool_loop][two-rounds] a grouped provider without a native 
     assertEquals(third.options.priorRound?.calls.map((entry) => entry.toolUseId), ["call-3", "call-4"]);
     const olderResult = "CONTENT-@myportal/a.ts";
     assertEquals(third.prompt.split(olderResult).length - 1, 1, "the older round appears once, as transcript text");
-    assertEquals(third.prompt.includes("CONTENT-@myportal/c.ts"), false, "the latest round is replayed natively only");
+    assertFalse(third.prompt.includes("CONTENT-@myportal/c.ts"), "the latest round is replayed natively only");
   } finally {
     ProviderRegistry.clear();
   }

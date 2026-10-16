@@ -5,7 +5,7 @@
  * a valid JSON Schema object derived from RequestAnalysisSchema.
  */
 import type { JSONValue } from "@exaix/core";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { getRequestAnalysisCoreJsonSchema, getRequestAnalysisJsonSchema } from "../src/request_analysis.ts";
 
 Deno.test("getRequestAnalysisJsonSchema returns an object with type: object", () => {
@@ -28,7 +28,7 @@ Deno.test("getRequestAnalysisCoreJsonSchema omits metadata from properties and r
     required?: string[];
   };
   assertEquals("metadata" in schema.properties, false);
-  assertEquals((schema.required ?? []).includes("metadata"), false);
+  assertFalse((schema.required ?? []).includes("metadata"));
 });
 
 Deno.test("getRequestAnalysisCoreJsonSchema keeps every other property of the full schema", () => {

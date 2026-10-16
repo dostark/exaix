@@ -7,7 +7,7 @@
  * and injected into LLM prompt / heuristic signals.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { analyzeHeuristic } from "@exaix/request";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
@@ -65,7 +65,7 @@ Deno.test("[LlmAnalyzer] omits memory section from prompt when no memories provi
 
   await analyzer.analyze("Fix the login bug.", {});
 
-  assertEquals(capturedPrompt.includes("RELEVANT MEMORIES"), false);
+  assertFalse(capturedPrompt.includes("RELEVANT MEMORIES"));
 });
 
 // HeuristicAnalyzer — memory keyword signals

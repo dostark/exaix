@@ -10,7 +10,7 @@
  * @related-files [packages/ai/src/bindings/binding_validation.ts, packages/ai/src/bindings/binding_resolver.ts]
  */
 
-import { assertArrayIncludes, assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse } from "@std/assert";
 import type { IBindingStepRef, IResolvedBinding } from "@exaix/schemas";
 import type { PricingProvenance } from "@exaix/core/types";
 import { adapterKeyId, validateBinding } from "@exaix/ai/bindings/binding_validation.ts";
@@ -177,7 +177,7 @@ Deno.test("[validation][security] local_host_not_private for a local service on 
       endpoint: "http://127.0.0.1:8080/v1",
     },
   });
-  assertEquals(loopback.includes("local_host_not_private"), false);
+  assertFalse(loopback.includes("local_host_not_private"));
 });
 
 Deno.test("[validation] pricing_unavailable when cloud pricing provenance is unknown under a finite cap", async () => {
@@ -200,7 +200,7 @@ Deno.test("[validation] no pricing guard when the cap is unlimited", async () =>
         Promise.resolve({ provider: "openrouter", model: "x", provenance: "unknown" as PricingProvenance }),
     } as never,
   });
-  assertEquals(result.includes("pricing_unavailable"), false);
+  assertFalse(result.includes("pricing_unavailable"));
 });
 
 Deno.test("[validation] an unsupported compatible profile and local-test without loopback opt-in fail", async () => {
@@ -232,7 +232,7 @@ Deno.test("[validation] a known compatible profile passes its adapter check", as
       service: { adapter: "openai-chat", profile: "deepseek", transport: "cloud", interface: "api", serves: {} },
     },
   );
-  assertEquals(known.includes("interface_unsupported"), false);
+  assertFalse(known.includes("interface_unsupported"));
   assertEquals(typeof OPENAI_COMPATIBLE_PROFILE_DEFAULTS.deepseek, "object");
 });
 
@@ -248,7 +248,7 @@ Deno.test("[phase203.validation] the validator admits a self-hosted service and 
     binding({ adapter: "openai-chat", profile: "self-hosted", model: "openai/llama3.1:8b" }),
     { service: service("self-hosted") },
   );
-  assertEquals(selfHosted.includes("interface_unsupported"), false);
+  assertFalse(selfHosted.includes("interface_unsupported"));
   assertArrayIncludes(Object.keys(OPENAI_COMPATIBLE_PROFILE_DEFAULTS), ["self-hosted"]);
 
   const unknown = await codes(binding({ adapter: "openai-chat", profile: "not-a-profile" }), {
@@ -280,7 +280,7 @@ Deno.test("[validation] a host outside an explicit allow_net is host_not_allowed
     },
     allowNet: ["allowed.example.com"],
   });
-  assertEquals(ok.includes("host_not_allowed"), false);
+  assertFalse(ok.includes("host_not_allowed"));
 });
 
 Deno.test("[validation] a new host outside the start grant is needs_restart when allow_net is unset", async () => {
@@ -306,7 +306,7 @@ Deno.test("[validation] a new host outside the start grant is needs_restart when
     },
     startNetGrant: ["known.example.com"],
   });
-  assertEquals(ok.includes("needs_restart"), false);
+  assertFalse(ok.includes("needs_restart"));
 });
 
 const nativeAdapter = (supportsNativeTools: boolean) => () => ({
@@ -365,10 +365,10 @@ Deno.test("[phase203.binding] a fixture host inside the grant reports no restart
     },
   );
 
-  assertEquals(result.includes("needs_restart"), false);
-  assertEquals(result.includes("host_not_allowed"), false);
-  assertEquals(result.includes("endpoint_invalid"), false);
-  assertEquals(result.includes("interface_unsupported"), false);
+  assertFalse(result.includes("needs_restart"));
+  assertFalse(result.includes("host_not_allowed"));
+  assertFalse(result.includes("endpoint_invalid"));
+  assertFalse(result.includes("interface_unsupported"));
 });
 
 Deno.test("[phase203.validation] a scenario judge may use a cli service but never a cli-delegate", async () => {

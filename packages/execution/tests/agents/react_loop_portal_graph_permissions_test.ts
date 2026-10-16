@@ -10,7 +10,7 @@
  * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/tool-runtime/src/tool_registry.ts]
  */
 
-import { assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -255,7 +255,7 @@ Deno.test("[ReAct permissions] AVAILABLE TOOLS prompt text excludes an unlisted 
     [],
   );
 
-  assertEquals(unlistedPrompt.includes(ToolName.QUERY_SYMBOLS), false);
+  assertFalse(unlistedPrompt.includes(ToolName.QUERY_SYMBOLS));
   assertStringIncludes(listedPrompt, ToolName.QUERY_SYMBOLS);
 });
 
@@ -275,8 +275,8 @@ Deno.test(
     await strategy.execute(blueprint, context, makeNativeOptions([ToolName.READ_FILE]));
 
     assertEquals(capturedToolNames.length, 1);
-    assertEquals(capturedToolNames[0]?.includes(ToolName.QUERY_SYMBOLS), false);
-    assertEquals(capturedToolNames[0]?.includes(ToolName.GET_MODULE_DEPENDENCIES), false);
+    assertFalse(capturedToolNames[0]?.includes(ToolName.QUERY_SYMBOLS));
+    assertFalse(capturedToolNames[0]?.includes(ToolName.GET_MODULE_DEPENDENCIES));
   },
 );
 
@@ -316,11 +316,10 @@ Deno.test(
     await strategy.execute(blueprint, context, makeNativeOptions(undefined));
 
     assertEquals(capturedToolNames.length, 1);
-    assertEquals(
+    assertFalse(
       capturedToolNames[0]?.includes(ToolName.QUERY_SYMBOLS),
-      false,
       "the default five visible tools do not include query_symbols",
     );
-    assertEquals(capturedToolNames[0]?.includes(ToolName.GET_MODULE_DEPENDENCIES), false);
+    assertFalse(capturedToolNames[0]?.includes(ToolName.GET_MODULE_DEPENDENCIES));
   },
 );

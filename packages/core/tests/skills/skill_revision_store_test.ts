@@ -13,7 +13,7 @@
  */
 
 import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH } from "@exaix/shared";
-import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertFalse, assertNotEquals, assertRejects } from "@std/assert";
 import {
   canonicalizeSkillText,
   computeRevisionId,
@@ -211,7 +211,7 @@ Deno.test("[store] record inserts once and concurrent duplicates emit a single e
     const events = await env.db.getActivitiesByActionTypeSafe(DomainEventType.SkillsRevisionRecorded);
     assertEquals(events.length, 1);
     assertEquals(events[0].trace_id, OP_CONTEXT.traceId);
-    assertEquals(JSON.stringify(events[0].payload).includes("Review systematically"), false);
+    assertFalse(JSON.stringify(events[0].payload).includes("Review systematically"));
   });
 });
 

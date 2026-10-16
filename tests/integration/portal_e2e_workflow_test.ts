@@ -7,7 +7,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertExists, assertMatch, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertExists, assertFalse, assertMatch, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 
@@ -531,14 +531,14 @@ parallelSafeTest(
 
       // Worktree + pointer should be cleaned up, and feature branch deleted.
       const wtList = await gitStdout(portalTargetPath, ["worktree", "list", "--porcelain"]);
-      assertEquals(wtList.includes(canonicalWorktreePath), false);
+      assertFalse(wtList.includes(canonicalWorktreePath));
       assertEquals(await pathExists(canonicalWorktreePath), false);
       assertEquals(
         await pathExists(pathBuilders.memoryPath(env.tempDir, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "worktree")),
         false,
       );
       const branchesNow = await listBranches(portalTargetPath);
-      assertEquals(branchesNow.includes(createdPortalBranch), false);
+      assertFalse(branchesNow.includes(createdPortalBranch));
 
       // Merge should land on the target branch only.
       await assertPortalFileExistsInBranch(portalTargetPath, targetBranch, RELEASE_ONLY_FILE_PATH, targetBranch);

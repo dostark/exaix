@@ -10,7 +10,7 @@
  * @related-files [packages/core/src/skills/skill_folder_loader.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { createPathSecurity } from "@exaix/tool-runtime";
 import { initTestDbService } from "@exaix/testing";
@@ -122,8 +122,8 @@ Deno.test("[loader] discovers exactly the valid folders in a 27-skill corpus and
     assertEquals(reasons.has("README.md"), false);
     assertEquals(reasons.has(".exa-skill-state"), false);
     for (const d of diagnostics) {
-      assertEquals(d.safe_path.startsWith("/"), false, "diagnostics expose no host path");
-      assertEquals(d.safe_path.includes(fx.base), false);
+      assertFalse(d.safe_path.startsWith("/"), "diagnostics expose no host path");
+      assertFalse(d.safe_path.includes(fx.base));
     }
   } finally {
     await fx.cleanup();
@@ -334,7 +334,7 @@ Deno.test("[loader/events] load_failed and shadowed events carry safe identity a
     assertEquals(failed[0].trace_id, CTX.traceId);
     const failedPayload = JSON.parse(failed[0].payload);
     assertEquals(failedPayload.reason, SkillDiagnosticReason.INVALID_FRONTMATTER);
-    assertEquals(JSON.stringify(failedPayload).includes(fx.base), false);
+    assertFalse(JSON.stringify(failedPayload).includes(fx.base));
     const shadowedPayload = JSON.parse(shadowed[0].payload);
     assertEquals(shadowedPayload.name, "shared-skill");
     assertEquals(shadowedPayload.winner_path, "shared-skill");

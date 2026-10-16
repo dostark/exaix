@@ -12,7 +12,7 @@
  * @related-files [scripts/plan_to_requests.ts, tests/integration/plan_to_requests_test.ts, tests/integration/fixtures/phase-nn-fixture-with-context.md]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { extractExecutiveSummary, extractRelevantConstraints } from "../../scripts/plan_to_requests.ts";
 
@@ -38,7 +38,7 @@ Deno.test("extractExecutiveSummary returns the bold Problem/Solution/Goal paragr
 
 Deno.test("extractExecutiveSummary bounds output at the end of the Goal paragraph (trailing prose excluded)", () => {
   const summary = extractExecutiveSummary(PHASE_DOC);
-  assertEquals(summary.includes("outside the bounded summary"), false);
+  assertFalse(summary.includes("outside the bounded summary"));
 });
 
 Deno.test("extractExecutiveSummary returns empty string when the doc has no Executive Summary heading", () => {

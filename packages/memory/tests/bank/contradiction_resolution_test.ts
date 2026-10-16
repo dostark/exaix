@@ -4,7 +4,7 @@
  * @description Verifies approved-only contradiction candidates and gated ADD/SUPERSEDE decisions.
  * @architectural-layer Tests
  */
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import type { IModelProvider } from "@exaix/ai";
 import type { IMemoryCostRouter, IMemoryEmbeddingService } from "@exaix/core/types";
 import { MemoryCostOperation, MemoryOperation } from "@exaix/core";
@@ -87,7 +87,7 @@ Deno.test("MemoryBankService: contradiction SUPERSEDE ignores PENDING candidate"
     assertEquals(learnings.find((item) => item.id === pending.id)!.status, MemoryStatus.PENDING);
     assertEquals(learnings.find((item) => item.id === incoming.id)!.supersedes, approved.id);
     assertStringIncludes(provider.prompt, approved.id);
-    assertEquals(provider.prompt.includes(pending.id), false);
+    assertFalse(provider.prompt.includes(pending.id));
   } finally {
     await cleanup();
   }

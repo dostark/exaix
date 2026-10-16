@@ -11,7 +11,7 @@
  *   Phase 134 Step 6 — models list/pricing + config model curation, provenance/staleness display.
  */
 
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { parse } from "@std/toml";
 import type {
   ICapabilityProfile,
@@ -164,7 +164,7 @@ Deno.test("[step135.8] models list without --benchmark omits the benchmark colum
     cap.restore();
   }
   const out = cap.lines.join("\n");
-  assertEquals(out.includes("Benchmark"), false);
+  assertFalse(out.includes("Benchmark"));
 });
 
 Deno.test("[model-cli] models pricing shows per-Mtok prices with static/unknown provenance", async () => {

@@ -10,7 +10,7 @@
  * @related-files [tests/scenario_framework/runner/failure_classifier.ts]
  */
 
-import { assertArrayIncludes, assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertFalse } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import type { IActivityRecord } from "@exaix/core/types";
 import { computeFailureClasses } from "../../runner/failure_classifier.ts";
@@ -39,19 +39,19 @@ Deno.test("[ExecutionAlignment] reconciled + failed outcome is flagged", () => {
 Deno.test("[ExecutionAlignment] reconciled + passing outcome is NOT flagged", () => {
   const activities = [makeActivity({ action_type: DomainEventType.SessionDelegateReconciled })];
   const classes = computeFailureClasses({ activities, outcomeScore: 0.9, scoreThreshold: 0.5 });
-  assertEquals(classes.includes("execution-alignment"), false);
+  assertFalse(classes.includes("execution-alignment"));
 });
 
 Deno.test("[ExecutionAlignment] no reconciled event is never flagged", () => {
   const activities = [makeActivity({ action_type: DomainEventType.ExecutionFailed })];
   const classes = computeFailureClasses({ activities, outcomeScore: 0.4, scoreThreshold: 0.5 });
-  assertEquals(classes.includes("execution-alignment"), false);
+  assertFalse(classes.includes("execution-alignment"));
 });
 
 Deno.test("[ExecutionAlignment] threshold boundary: score equal to threshold is a pass", () => {
   const activities = [makeActivity({ action_type: DomainEventType.SessionDelegateReconciled })];
   const classes = computeFailureClasses({ activities, outcomeScore: 0.5, scoreThreshold: 0.5 });
-  assertEquals(classes.includes("execution-alignment"), false, "score === threshold passes");
+  assertFalse(classes.includes("execution-alignment"), "score === threshold passes");
 });
 
 Deno.test("[ExecutionAlignment] coexists with anomaly classes", () => {

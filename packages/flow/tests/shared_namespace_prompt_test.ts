@@ -8,7 +8,7 @@
  */
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import {
   AgentComposerAdapter,
@@ -116,7 +116,7 @@ Deno.test("[namespace prompt] unbound run delivers only attached values to the p
   assertStringIncludes(prompts[0], "CODE SENTINEL");
   assertStringIncludes(prompts[0], "DOCS SENTINEL");
   assertStringIncludes(prompts[0], SHARED_NAMESPACE_PROMPT_LABEL);
-  assertEquals(prompts[1].includes(SHARED_NAMESPACE_PROMPT_LABEL), false, "a disabled namespace adds no block");
+  assertFalse(prompts[1].includes(SHARED_NAMESPACE_PROMPT_LABEL), "a disabled namespace adds no block");
 });
 
 Deno.test("[namespace prompt] bound run delivers the block to the bound provider", async () => {

@@ -9,7 +9,7 @@
  * @related-files ["apps/exactl/src/commands/daemon_commands.ts", "packages/core/src/types/constants.ts"]
  */
 
-import { assertArrayIncludes, assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse } from "@std/assert";
 import { DaemonCommands } from "../src/commands/daemon_commands.ts";
 import { createStubContext } from "@exaix/testing";
 import { createCliTestContext } from "./helpers/test_setup.ts";
@@ -40,7 +40,7 @@ Deno.test("[daemon_least_privilege] allow_net=['api.anthropic.com'] → --allow-
   try {
     const flags = await cmds.callSpawnFlags();
     assertArrayIncludes(flags, ["--allow-net=api.anthropic.com"]);
-    assertEquals(flags.includes("--allow-all"), false);
+    assertFalse(flags.includes("--allow-all"));
   } finally {
     await cleanup();
   }
@@ -51,7 +51,7 @@ Deno.test("[daemon_least_privilege] allow_net=[] → no --allow-net flag (outbou
   try {
     const flags = await cmds.callSpawnFlags();
     assertEquals(flags.some((f) => f.startsWith("--allow-net")), false);
-    assertEquals(flags.includes("--allow-all"), false);
+    assertFalse(flags.includes("--allow-all"));
   } finally {
     await cleanup();
   }
@@ -69,7 +69,7 @@ Deno.test("[daemon_least_privilege] allow_net=undefined → --allow-net includes
     for (const host of DAEMON_DEFAULT_NET_HOSTS) {
       assertArrayIncludes(hosts, [host], `expected default host ${host}`);
     }
-    assertEquals(flags.includes("--allow-all"), false);
+    assertFalse(flags.includes("--allow-all"));
   } finally {
     await cleanup();
   }

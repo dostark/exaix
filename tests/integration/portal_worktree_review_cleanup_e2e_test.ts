@@ -7,7 +7,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
@@ -119,7 +119,7 @@ async function assertWorktreeAndPointerRemoved(params: {
 
   // Worktree should be removed from git and filesystem.
   const wtList = await gitStdout(portalTargetPath, ["worktree", "list", "--porcelain"]);
-  assertEquals(wtList.includes(canonicalWorktreePath), false);
+  assertFalse(wtList.includes(canonicalWorktreePath));
   assertEquals(await pathExists(canonicalWorktreePath), false);
 
   // Pointer should be removed to avoid dangling discoverability.

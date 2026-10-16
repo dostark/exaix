@@ -6,7 +6,7 @@
  * @related-files [tests/scenario_framework/runner/provider_live_evidence.ts]
  */
 import * as pathBuilders from "@exaix/shared";
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import type { IActivityRecord } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import { Database } from "@db/sqlite";
@@ -90,8 +90,8 @@ Deno.test("provider live evidence retains a redacted trace and normalized usage 
       costStatus: "estimated",
       costUsd: 0.01,
     });
-    assertEquals(text.includes("private-key"), false);
-    assertEquals(text.includes("private prompt"), false);
+    assertFalse(text.includes("private-key"));
+    assertFalse(text.includes("private prompt"));
     assertEquals(typeof summary.configRevisionSha256, "string");
   } finally {
     await Deno.remove(sandbox, { recursive: true }).catch(() => {});

@@ -10,7 +10,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertFalse, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { createMockConfig } from "@exaix/testing";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -80,7 +80,7 @@ Deno.test("[net] a set allow_net is returned unchanged, including the empty arra
     });
     const grant = await computeStartNetGrant(explicit);
     assertEquals(grant, ["only.example.com:8080"]);
-    assertEquals(grant.includes("other.example.com"), false);
+    assertFalse(grant.includes("other.example.com"));
 
     const blocked = configWith(tempDir, {
       system: { root: tempDir, log_level: "info" as never, schema_version: "1.0.0", allow_net: [] },

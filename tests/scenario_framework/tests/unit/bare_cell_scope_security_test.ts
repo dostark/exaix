@@ -12,7 +12,7 @@
  * @related-files [tests/scenario_framework/runner/scenario_templates.ts, packages/session/src/opencode_permission_generator.ts]
  */
 
-import { assert, assertEquals, assertExists, assertMatch, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertExists, assertFalse, assertMatch, assertStringIncludes } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import type { Opt, Reason } from "@exaix/core/types";
 import { buildOpencodePermissionConfig } from "@exaix/session";
@@ -154,7 +154,7 @@ Deno.test("[security] bare claude-code launch is confined by the worktree bounda
   // defense is the worktree boundary + this tool-surface restriction — no bare "Bash", only
   // git subcommands, since a wildcard Bash would allow a `find / -name reference.patch` probe.
   assertStringIncludes(allowedTools, "Bash(");
-  assertEquals(allowedTools.includes(",Bash,"), false, "no bare bash tool");
+  assertFalse(allowedTools.includes(",Bash,"), "no bare bash tool");
 });
 
 function expandBareOpencodeCell(): { command: string; args: string[] } {
@@ -224,9 +224,8 @@ function assertJailMountSurface(args: string[], expectation: IJailMountExpectati
         "unmounted parent as root-owned — discovered via a real jailed run (Phase 144 Step 5) failing " +
         "with EACCES on mkdir '/tmp/.local/state'.",
     );
-    assertEquals(
+    assertFalse(
       mounts[1].includes(",ro"),
-      false,
       "the staged copy is writable (in-container writes cannot reach the real host credentials — only the disposable copy)",
     );
     if (expectation.liveCredentialsHome !== undefined) {

@@ -36,6 +36,7 @@ interface IReplacement {
 const STRING_INCLUDES = "assertStringIncludes";
 const ARRAY_INCLUDES = "assertArrayIncludes";
 const MATCH = "assertMatch";
+const ASSERT_FALSE = "assertFalse";
 const ASSERT_FUNCTIONS = new Set(["assertEquals", "assertStrictEquals"]);
 const SUBSTRING_METHODS = new Set(["includes", "startsWith", "endsWith"]);
 const DEFAULT_ROOTS = ["packages", "apps", "tests", "scripts"];
@@ -99,7 +100,12 @@ function rewriteCall(
   call: ts.CallExpression,
   subjectCall: ts.CallExpression,
   method: string,
+  negated: boolean,
 ): { text: string } | { skip: string } {
+  if (negated) {
+    // A negated assertion needs no type knowledge, so the subject may stay untyped.
+    return { text: `${ASSERT_FALSE}(${subjectCall.getText()}${messageSuffixOf(call)})` };
+  }
   const parts = subjectPartsOf(subjectCall);
   if (parts === null) return { skip: "the subject call is not a one-argument method call" };
   const receiver = parts.receiver.getText();
@@ -138,10 +144,11 @@ function collectFixes(
       const name = calleeNameOf(node.expression);
       const subject = node.arguments[0];
       if (name !== null && ASSERT_FUNCTIONS.has(name) && ts.isCallExpression(subject)) {
-        if (node.arguments[1].kind === ts.SyntaxKind.TrueKeyword) {
+        const second = node.arguments[1].kind;
+        if (second === ts.SyntaxKind.TrueKeyword || second === ts.SyntaxKind.FalseKeyword) {
           const method = subjectMethodOf(subject);
           if (method !== null) {
-            const outcome = rewriteCall(checker, node, subject, method);
+            const outcome = rewriteCall(checker, node, subject, method, second === ts.SyntaxKind.FalseKeyword);
             if ("text" in outcome) {
               replacements.push({ start: node.getStart(sourceFile), end: node.getEnd(), text: outcome.text });
             } else {

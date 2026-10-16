@@ -7,7 +7,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_ACTIVE_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertExists, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import {
   type FlowStepType as _FlowStepType,
   type MemoryOperation as _MemoryOperation,
@@ -145,7 +145,7 @@ content = "Hello World"
       const commitMsg = await helper.getLastCommitMessage();
       // Since final commit had no changes, the last commit is the step commit
       assertEquals(commitMsg.includes("Step 1: Create File"), true);
-      assertEquals(commitMsg.includes("Executed by agent"), false); // Final commit message not present
+      assertFalse(commitMsg.includes("Executed by agent")); // Final commit message not present
 
       // Verify step commit exists in the log.
       const log = await helper.runGit(["log", "--oneline"]);

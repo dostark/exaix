@@ -14,7 +14,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer, McpAgentStrategy, StrategyRegistry } from "@exaix/execution";
 import { EventLogger } from "@exaix/core/logger";
@@ -48,7 +48,7 @@ Deno.test("[real execution] the executor sees the approved body after a live edi
 
     assertEquals(prompts.length, 1);
     assertStringIncludes(prompts[0], "Approved body A.");
-    assertEquals(prompts[0].includes("Live body B."), false);
+    assertFalse(prompts[0].includes("Live body B."));
     const rows = await fx.usage(executionTrace);
     assertEquals(rows.map((row) => [row.skill_name, row.match_source, row.submission_kind]), [
       [SKILL, "plan_pinned", "provider"],
@@ -180,7 +180,7 @@ Deno.test("[cli] the delegate objective carries the approved body and the launch
     );
     assertEquals(launches.length, 1);
     assertStringIncludes(launches[0][1], "Approved body A.");
-    assertEquals(launches[0][1].includes("Live body B."), false);
+    assertFalse(launches[0][1].includes("Live body B."));
     const rows = await fx.usage(trace);
     assertEquals(rows.map((row) => [row.skill_name, row.match_source, row.submission_kind]), [
       [SKILL, "plan_pinned", "cli_delegate"],

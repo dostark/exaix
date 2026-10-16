@@ -14,7 +14,7 @@
  * @related-files [packages/execution/src/agent_runner.ts]
  */
 
-import { assertArrayIncludes, assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse } from "@std/assert";
 import { AgentRunner, EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR } from "@exaix/execution";
 import type { IBlueprint } from "@exaix/execution";
 import { SKILL_EVENT_RESOLVED } from "@exaix/core";
@@ -115,7 +115,7 @@ Deno.test("[SkillSuppression] a suppressed default skill is absent from the reso
     const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
     const resolved: string[] = result.skillIds;
 
-    assertEquals(resolved.includes("tdd-methodology"), false, "the suppressed skill must not be in the resolved set");
+    assertFalse(resolved.includes("tdd-methodology"), "the suppressed skill must not be in the resolved set");
     assertArrayIncludes(resolved, ["error-handling"], "an unsuppressed default must still be present");
   });
 });
@@ -130,7 +130,7 @@ Deno.test("[SkillSuppression] a suppressed pinned skill is absent from the resol
     const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
     const resolved: string[] = result.skillIds;
 
-    assertEquals(resolved.includes("portal-grounding"), false, "a pin does not override suppression");
+    assertFalse(resolved.includes("portal-grounding"), "a pin does not override suppression");
   });
 });
 
@@ -144,7 +144,7 @@ Deno.test("[SkillSuppression] a suppressed dynamically-matched skill is absent f
     const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
     const resolved: string[] = result.skillIds;
 
-    assertEquals(resolved.includes("tdd-methodology"), false);
+    assertFalse(resolved.includes("tdd-methodology"));
   });
 });
 

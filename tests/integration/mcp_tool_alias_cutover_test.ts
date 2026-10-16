@@ -13,7 +13,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { z } from "zod";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
@@ -352,11 +352,7 @@ Deno.test({
           "concurrent same-tool rewrites must share only their matching persisted execution traces",
         );
         assertEquals(new Set(readRewriteTraceIds).size, 3, "concurrent and failed calls must not share trace identity");
-        assertEquals(
-          readRewriteTraceIds.includes("forged-trace"),
-          false,
-          "client arguments cannot forge trace identity",
-        );
+        assertFalse(readRewriteTraceIds.includes("forged-trace"), "client arguments cannot forge trace identity");
         const deniedRows = await reader.rows("mcp.permission.denied");
         assertEquals(deniedRows.length, 1);
         assertEquals(
@@ -409,7 +405,7 @@ Deno.test({
         const names = await listedNames(client);
         assert(names.includes("query_symbols"), JSON.stringify(names));
         for (const retired of ["exaix_portal_symbols", "list_symbols"]) {
-          assertEquals(names.includes(retired), false, retired);
+          assertFalse(names.includes(retired), retired);
         }
         const byName = symbolNames(await callTool(client, "query_symbols", { ...base, name: "greet" }));
         const byQuery = symbolNames(await callTool(client, "query_symbols", { ...base, query: "greet" }));

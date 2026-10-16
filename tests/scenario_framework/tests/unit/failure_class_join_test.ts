@@ -11,7 +11,7 @@
  * @related-files [tests/scenario_framework/runner/failure_classifier.ts, packages/core/src/events/anomaly_classification.ts]
  */
 
-import { assertArrayIncludes, assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { DomainEventType } from "@exaix/core/events";
@@ -64,7 +64,7 @@ Deno.test("[FailureClassJoin] recovered findings are excluded (recovery pairing 
     makeActivity({ action_type: DomainEventType.ExecutionFailed, target: "exec" }),
   ];
   const classes = computeFailureClasses({ activities, outcomeScore: 0.4, scoreThreshold: 0.5 });
-  assertEquals(classes.includes("mcp.tool.failed"), false, "recovered finding must be excluded");
+  assertFalse(classes.includes("mcp.tool.failed"), "recovered finding must be excluded");
   assertArrayIncludes(classes, ["execution.failed"]);
 });
 

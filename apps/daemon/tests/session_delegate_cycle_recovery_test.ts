@@ -10,7 +10,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
@@ -142,7 +142,7 @@ Deno.test("[recovery] cycle_owned events still emit crash_recovered without leak
       (item) => item.action_type === DomainEventType.SessionDelegateCrashRecovered,
     );
     assertEquals(event !== undefined, true);
-    assertEquals(event!.payload.includes("request_path"), false);
+    assertFalse(event!.payload.includes("request_path"));
 
     await Deno.remove(workspaceRoot, { recursive: true });
   } finally {

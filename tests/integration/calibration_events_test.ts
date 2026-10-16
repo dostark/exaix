@@ -10,7 +10,7 @@
  * @related-files [tests/scenario_framework/runner/calibration_runner.ts, packages/core/src/events/domain_event_types.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import type { IEventLogger } from "@exaix/core/logger";
@@ -165,7 +165,7 @@ Deno.test("[CalibrationEvents] a successful run logs started -> reference_comple
     assertEquals(actions.filter((a) => a === "eval.calibration.started").length, 1);
     assertEquals(actions.filter((a) => a === "eval.calibration.reference_completed").length, 2);
     assertEquals(actions.filter((a) => a === "eval.calibration.scored").length, 1);
-    assertEquals(actions.includes("eval.calibration.failed"), false);
+    assertFalse(actions.includes("eval.calibration.failed"));
 
     const started = activities.find((a) => a.action_type === "eval.calibration.started");
     assertExists(started);
@@ -182,7 +182,7 @@ Deno.test("[CalibrationEvents] a successful run logs started -> reference_comple
     assertExists((scoredPayload.metric_outcome as JSONObject).exact);
 
     for (const activity of activities) {
-      assertEquals(activity.payload.includes("SENTINEL-"), false, "payload must never leak snapshot text");
+      assertFalse(activity.payload.includes("SENTINEL-"), "payload must never leak snapshot text");
     }
   } finally {
     await cleanup();
@@ -224,7 +224,7 @@ Deno.test("[CalibrationEvents] a mid-run judge failure logs eval.calibration.fai
     const actions = activities.map((a) => a.action_type);
 
     assertEquals(actions.includes("eval.calibration.started"), true);
-    assertEquals(actions.includes("eval.calibration.scored"), false);
+    assertFalse(actions.includes("eval.calibration.scored"));
     assertEquals(actions.filter((a) => a === "eval.calibration.failed").length, 1);
 
     const failed = activities.find((a) => a.action_type === "eval.calibration.failed");
@@ -234,7 +234,7 @@ Deno.test("[CalibrationEvents] a mid-run judge failure logs eval.calibration.fai
     assertEquals(typeof failedPayload.error_code, "string");
     assertEquals((failedPayload.error_code as string).length > 0, true);
     // Never the raw Error.message (which could echo item ids/context) — a fixed classification only.
-    assertEquals((failedPayload.error_code as string).includes("no scripted score"), false);
+    assertFalse((failedPayload.error_code as string).includes("no scripted score"));
   } finally {
     await cleanup();
   }

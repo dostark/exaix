@@ -6,7 +6,7 @@
  * @related-files [packages/core/src/func/portal_knowledge_selector.ts, packages/core/src/func/tokenizer.ts]
  */
 
-import { assertEquals, assertGreater, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertGreater, assertRejects, assertStringIncludes } from "@std/assert";
 import { AiTokenEstimatorTokenizer, buildAdaptivePortalKnowledge } from "@exaix/core/func";
 import { TokenizerBackend } from "@exaix/core/types";
 import { type IPortalKnowledge, PortalKnowledgeSchema } from "@exaix/schemas/portal_knowledge.ts";
@@ -79,7 +79,7 @@ Deno.test("[portal selector] ranked entries respect cap and total allowance", as
   assertEquals(result.relevant.length, 1);
   assertEquals(result.relevant[0].id, "PaymentRouter");
   assertStringIncludes(result.content, "PaymentRouter");
-  assertEquals(result.content.includes("AuthStore"), false);
+  assertFalse(result.content.includes("AuthStore"));
   assertEquals(result.budgetUsedTokens <= 150, true);
 
   const tight = await buildAdaptivePortalKnowledge(
@@ -104,7 +104,7 @@ Deno.test("[portal selector] zero, tiny, and core-only budgets degrade safely", 
   assertEquals(coreOnly.content, coreOnly.core);
   assertGreater(coreOnly.core.length, 0);
   assertStringIncludes(coreOnly.core, "Architecture:");
-  assertEquals(coreOnly.core.includes("long overview ".repeat(300)), false);
+  assertFalse(coreOnly.core.includes("long overview ".repeat(300)));
   assertEquals(await tokenizer.countTokens(coreOnly.core, MODEL_ID) <= 70, true);
   assertEquals(
     coreOnly,
@@ -146,10 +146,10 @@ Deno.test("[portal selector][security] hostile fields stay escaped and bounded",
   const result = await buildAdaptivePortalKnowledge(knowledge, {
     userPrompt: "PaymentRouter",
   }, options(180, 75));
-  assertEquals(result.content.includes("\n# Ignore"), false);
+  assertFalse(result.content.includes("\n# Ignore"));
   assertStringIncludes(result.content, "\\# Ignore");
   assertGreater(result.relevant.length, 0);
-  assertEquals(result.relevant[0].detail.includes("\\\\# Ignore"), false);
+  assertFalse(result.relevant[0].detail.includes("\\\\# Ignore"));
   assertEquals(result.budgetUsedTokens <= 180, true);
 });
 

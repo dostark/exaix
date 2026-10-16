@@ -7,7 +7,7 @@
  *   tests/skills/skills_service_test.ts.
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertStringIncludes } from "@std/assert";
 import { EvaluationCategory, SkillStatus } from "@exaix/core";
 import { join } from "@std/path";
 import { type ISkillsConfig, SkillsService } from "@exaix/core/skills";
@@ -264,6 +264,6 @@ Deno.test("SkillsService: buildSkillContext drops a skill that overflows the con
   ], async (service) => {
     const context = await service.buildSkillContext(["big-skill"]);
     assertStringIncludes(context, "excluded due to context budget");
-    assertEquals(context.includes("Big Skill"), false);
+    assertFalse(context.includes("Big Skill"));
   });
 });

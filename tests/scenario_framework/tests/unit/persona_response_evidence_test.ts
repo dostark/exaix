@@ -6,7 +6,7 @@
  * @related-files [tests/scenario_framework/runner/persona_response_evidence.ts]
  */
 import { DEFAULT_PLANS_PATH, DEFAULT_PORTALS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertFalse, assertNotEquals, assertRejects } from "@std/assert";
 import { capturePersonaRoleResponse, preparePersonaJudgeContext } from "../../runner/persona_response_evidence.ts";
 import { join } from "@std/path";
 import { createPersonaResponseFixture, personaCaptureInput } from "../helpers/persona_response_fixture.ts";
@@ -63,7 +63,7 @@ Deno.test("[PersonaResponse] explicit judge files include only the selected sour
     );
     const context = await Deno.readTextFile(contextPath);
     assertEquals(context.includes("export const selected = true;"), true);
-    assertEquals(context.includes("export const excluded = true;"), false);
+    assertFalse(context.includes("export const excluded = true;"));
     assertEquals(context.includes("Source @Portals/task/src/api.ts:"), true);
   } finally {
     await ctx.cleanup();

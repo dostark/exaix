@@ -6,7 +6,7 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
-import { assert, assertArrayIncludes, assertEquals, assertExists, assertRejects } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertExists, assertFalse, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
@@ -127,7 +127,7 @@ Deno.test("[Step63.3] FlowRunner checkpoints, resumes, and clears state after su
     assertEquals(resumedResult.success, true);
     assertEquals(resumedResult.output, "step2-result");
     assertEquals(resumedResult.stepResults.get("step1")?.result?.content, "step1-result");
-    assertEquals(resumedExecutor.calls.includes("agent1"), false);
+    assertFalse(resumedExecutor.calls.includes("agent1"));
     assertArrayIncludes(resumedExecutor.calls, ["agent2"]);
     assertEquals(await exists(checkpointPath), false);
     assert(

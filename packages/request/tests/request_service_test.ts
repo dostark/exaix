@@ -6,7 +6,7 @@
  * @description Unit tests for the core RequestService (src/services/request.ts).
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertFalse, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { RequestService } from "@exaix/request";
 import { RequestStatus } from "@exaix/core/status";
@@ -48,7 +48,7 @@ Deno.test("RequestService.create: creates a request file with correct frontmatte
     // Verify the file was actually written
     const content = await Deno.readTextFile(metadata.path!);
     assertEquals(content.includes("agent_role: default"), true);
-    assertEquals(content.includes("\nidentity_id: default"), false);
+    assertFalse(content.includes("\nidentity_id: default"));
     assertEquals(content.includes("trace_id:"), true);
     assertEquals(content.includes("Build the login page"), true);
   } finally {
@@ -114,7 +114,7 @@ Deno.test("RequestService.create: derives the subject from the description when 
     // No explicit subject → the first line of the description becomes the subject. The legacy
     // `subject_is_fallback` flag is gone (the request subject is authoritative; never upgraded).
     assertEquals(content.includes("subject: Test description"), true);
-    assertEquals(content.includes("subject_is_fallback"), false);
+    assertFalse(content.includes("subject_is_fallback"));
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }

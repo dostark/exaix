@@ -12,7 +12,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import {
   createMockConfig,
   createStubConfig,
@@ -205,11 +205,11 @@ Deno.test({
       await env.execute();
       assertEquals(env.prompts.length, 1);
       assertStringIncludes(env.prompts[0], "Approved body A.");
-      assertEquals(env.prompts[0].includes("Live body B."), false);
+      assertFalse(env.prompts[0].includes("Live body B."));
       const tools = env.prompts[0].match(/AVAILABLE TOOLS:\n([^\n]*)/)?.[1] ?? "";
       assertStringIncludes(tools, "read_file");
-      assertEquals(tools.includes("list_directory"), false, "live tools never widen a pinned set");
-      assertEquals(tools.includes("write_file"), false, "the pin's tools bound the role's tools");
+      assertFalse(tools.includes("list_directory"), "live tools never widen a pinned set");
+      assertFalse(tools.includes("write_file"), "the pin's tools bound the role's tools");
       const payload = env.logger.events.find((e) => e.action === "agent.effort_resolved")?.payload as Record<
         string,
         JSONValue
@@ -253,7 +253,7 @@ Deno.test({
       assert(skills.calls.matchCalls > 0, "absent pins keep the dynamic path");
       assertEquals(skills.calls.resolved.length, 0);
       assertEquals(skills.calls.submissions.length, 0);
-      assertEquals(env.prompts[0].includes("SKILLS"), false);
+      assertFalse(env.prompts[0].includes("SKILLS"));
     } finally {
       env.cleanup();
     }
@@ -290,7 +290,7 @@ Deno.test({
     const env = await run(skills, { resolved_skills: [pinFor(skill, { content_included: false })] });
     try {
       await env.execute();
-      assertEquals(env.prompts[0].includes("Excluded body."), false);
+      assertFalse(env.prompts[0].includes("Excluded body."));
       assertEquals(skills.calls.submissions.length, 0);
       const payload = env.logger.events.find((e) => e.action === "agent.effort_resolved")?.payload as Record<
         string,

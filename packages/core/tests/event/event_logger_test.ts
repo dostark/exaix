@@ -7,7 +7,14 @@
  * lifecycle events are correctly captured and routed to the persistent journal.
  */
 
-import { assertEquals, assertExists, assertMatch, assertNotMatch, assertStringIncludes } from "@std/assert";
+import {
+  assertEquals,
+  assertExists,
+  assertFalse,
+  assertMatch,
+  assertNotMatch,
+  assertStringIncludes,
+} from "@std/assert";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
@@ -266,8 +273,8 @@ Deno.test("EventLogger: should respect minLevel configuration", async () => {
 
     // Only warn and error should appear
     const fullOutput = logs.join("\n");
-    assertEquals(fullOutput.includes("debug.message"), false);
-    assertEquals(fullOutput.includes("info.message"), false);
+    assertFalse(fullOutput.includes("debug.message"));
+    assertFalse(fullOutput.includes("info.message"));
     assertStringIncludes(fullOutput, "warn.message");
     assertStringIncludes(fullOutput, "error.message");
   }, { minLevel: LogLevel.WARN });

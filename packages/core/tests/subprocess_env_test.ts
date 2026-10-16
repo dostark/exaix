@@ -11,7 +11,7 @@
  *   rejects them anyway, so stripping them is both correct and consistent.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { SafeSubprocess } from "@exaix/core";
 
 Deno.test("SafeSubprocess: strips LD_*/DYLD_* from an explicit child env so the spawn is not refused", async () => {
@@ -24,8 +24,8 @@ Deno.test("SafeSubprocess: strips LD_*/DYLD_* from an explicit child env so the 
   });
 
   assertEquals(result.code, 0, `env should spawn cleanly, got stderr: ${result.stderr}`);
-  assertEquals(result.stdout.includes("LD_LIBRARY_PATH="), false, "LD_LIBRARY_PATH must not reach the child");
-  assertEquals(result.stdout.includes("DYLD_LIBRARY_PATH="), false, "DYLD_LIBRARY_PATH must not reach the child");
+  assertFalse(result.stdout.includes("LD_LIBRARY_PATH="), "LD_LIBRARY_PATH must not reach the child");
+  assertFalse(result.stdout.includes("DYLD_LIBRARY_PATH="), "DYLD_LIBRARY_PATH must not reach the child");
   assertEquals(result.stdout.includes("EXA_SUBPROCESS_SENTINEL=present"), true, "non-dynamic-linker env is preserved");
 });
 
@@ -36,8 +36,8 @@ Deno.test("SafeSubprocess: clearEnv semantics are preserved (only explicit env r
   });
 
   assertEquals(result.code, 0, `env should spawn cleanly, got stderr: ${result.stderr}`);
-  assertEquals(result.stdout.includes("LD_LIBRARY_PATH="), false, "LD_LIBRARY_PATH must be stripped");
+  assertFalse(result.stdout.includes("LD_LIBRARY_PATH="), "LD_LIBRARY_PATH must be stripped");
   assertEquals(result.stdout.includes("EXA_SUBPROCESS_ONLY=yes"), true, "explicit env var is present");
   // With clearEnv, inherited vars like PATH must be absent (we started from an empty env).
-  assertEquals(result.stdout.includes("PATH="), false, "clearEnv must not forward inherited PATH");
+  assertFalse(result.stdout.includes("PATH="), "clearEnv must not forward inherited PATH");
 });

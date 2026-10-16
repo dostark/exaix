@@ -13,7 +13,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
 import { SkillsService } from "@exaix/core/skills";
@@ -164,7 +164,7 @@ Deno.test("[skills] matchSkills keeps a fitting lower-confidence match when a hi
 
     const ids = matches.map((m) => m.skillId);
     assertEquals(ids.includes("small-second"), true, `fitting match dropped: ${ids.join(",")}`);
-    assertEquals(ids.includes("oversized-first"), false, "an over-budget match must not be injected");
+    assertFalse(ids.includes("oversized-first"), "an over-budget match must not be injected");
   } finally {
     await Deno.remove(memoryDir, { recursive: true }).catch(() => {});
     await cleanup();

@@ -6,7 +6,7 @@
  * @description Verifies that the package-local registry initializer only registers providers owned by @exaix/ai.
  */
 
-import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertExists, assertFalse } from "@std/assert";
 import { initializeRegistry } from "../src/provider_factory.ts";
 import { ProviderRegistry } from "../src/provider_registry.ts";
 
@@ -18,9 +18,9 @@ Deno.test("initializeRegistry registers only mock provider ownership inside @exa
   const supported = ProviderRegistry.getSupportedProviders();
 
   assertArrayIncludes(supported, ["mock"]);
-  assertEquals(supported.includes("anthropic"), false);
-  assertEquals(supported.includes("openai"), false);
-  assertEquals(supported.includes("google"), false);
-  assertEquals(supported.includes("ollama"), false);
+  assertFalse(supported.includes("anthropic"));
+  assertFalse(supported.includes("openai"));
+  assertFalse(supported.includes("google"));
+  assertFalse(supported.includes("ollama"));
   assertExists(ProviderRegistry.getFactory("mock"));
 });

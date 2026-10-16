@@ -5,7 +5,7 @@
  *   in-memory credential version that keys the provider pool.
  */
 
-import { assertEquals, assertNotEquals } from "@std/assert";
+import { assertEquals, assertFalse, assertNotEquals } from "@std/assert";
 import { createProductionBindingEnvProbe } from "@exaix/ai";
 
 function probeFor(env: Record<string, string>, stored: Record<string, string>) {
@@ -33,6 +33,6 @@ Deno.test("[probe] a key stored after start counts as present and versions from 
 
 Deno.test("[probe] the credential value never appears in its version", async () => {
   const version = await probeFor({ KEY: "super-secret-value" }, {}).keyVersion("KEY");
-  assertEquals(version.includes("super-secret-value"), false);
+  assertFalse(version.includes("super-secret-value"));
   assertEquals(/^[a-f0-9]{64}$/.test(version), true);
 });

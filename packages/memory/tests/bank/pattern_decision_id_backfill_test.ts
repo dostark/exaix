@@ -4,7 +4,7 @@
  * @description Verifies lazy id backfill for legacy pattern/decision markdown: parsing assigns UUID ids to marker-less entries, `<!-- id: ... -->` markers are read back verbatim, and a bank rewrite persists markers so re-parses return the same stable ids.
  * @architectural-layer Tests
  */
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { MemoryBankService, parseDecisions, parsePatterns } from "@exaix/memory";
 import { initTestDbService } from "@exaix/testing";
@@ -38,7 +38,7 @@ Deno.test("parsePatterns reads persisted id markers and keeps them out of the de
   const patterns = parsePatterns(MARKED_PATTERNS_MD);
   assertEquals(patterns.length, 1);
   assertEquals(patterns[0].id, "11111111-1111-4111-8111-111111111111");
-  assertEquals(patterns[0].description.includes("11111111"), false);
+  assertFalse(patterns[0].description.includes("11111111"));
   assertEquals(patterns[0].description, "Database access through repository classes.");
 });
 

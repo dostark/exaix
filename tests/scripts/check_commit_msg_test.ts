@@ -6,7 +6,7 @@
  * mandatory fields, impact grounding, and provider/model validation.
  */
 
-import { assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import {
   gitOut,
@@ -372,8 +372,8 @@ describe("parsePlanStep", () => {
 
   it("does not bleed into the next step's items", () => {
     const parsed = parsePlanStep(PLAN_DOC, 6);
-    assertEquals(parsed.criteriaPaths.includes("tests/scenario/x_test.ts"), false);
-    assertEquals(parsed.criteriaPaths.includes("packages/x/src/earlier.ts"), false);
+    assertFalse(parsed.criteriaPaths.includes("tests/scenario/x_test.ts"));
+    assertFalse(parsed.criteriaPaths.includes("packages/x/src/earlier.ts"));
   });
 
   it("does not bleed into a later '## ' phase-level section (e.g. Success Metrics) when the step is the doc's last '### Step'", () => {

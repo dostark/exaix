@@ -25,7 +25,7 @@
  * @related-files [tests/scenario_framework/runner/modes.ts, tests/scenario_framework/runner/scenario_catalog.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { selectScenariosForExecution } from "../../runner/modes.ts";
 import { ScenarioCiProfile } from "../../runner/config.ts";
 import { ScenarioExecutionMode } from "../../schema/step_schema.ts";
@@ -125,11 +125,7 @@ Deno.test("[tag-safety] an excluded tag does not widen the selection to other su
   ];
   const selected = idsFor({ scenarios, explicitTags: ["subsystem:flows", "provider-live"] });
 
-  assertEquals(
-    selected.includes("other-live"),
-    false,
-    "a provider-live scenario from another subsystem must not be pulled in",
-  );
+  assertFalse(selected.includes("other-live"), "a provider-live scenario from another subsystem must not be pulled in");
   assertEquals(selected, ["checkpoint-a", "live-a", "manual-a", "mock-a", "mock-b"]);
 });
 

@@ -11,7 +11,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertFalse, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { MemoryScope, SkillMutationErrorCode, SkillStatus } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
@@ -206,7 +206,7 @@ Deno.test("[service] an examples update replaces the examples section instead of
     await fx.service.createSkill(definition("fresh-skill", { examples: "first example" }), CTX);
     const updated = await fx.service.updateSkill("fresh-skill", { examples: "second example" }, CTX);
     assertEquals(updated?.examples, "second example");
-    assertEquals(updated?.instructions.includes("first example"), false);
+    assertFalse(updated?.instructions.includes("first example"));
     assertEquals((updated?.instructions.match(/## Examples/g) ?? []).length, 1);
   } finally {
     await fx.cleanup();

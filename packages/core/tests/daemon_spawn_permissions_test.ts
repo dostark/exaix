@@ -8,7 +8,7 @@
  * @related-files ["packages/core/src/types/constants.ts"]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import {
   DAEMON_DEFAULT_NET_HOSTS,
   DAEMON_SPAWN_PERMISSIONS,
@@ -37,14 +37,14 @@ Deno.test("[daemon_perms] run allowlist includes git, deno, opencode, claude", (
 
 Deno.test("[daemon_perms][security] run allowlist includes Codex and excludes arbitrary executables", () => {
   assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes(SESSION_BIN_CODEX), true);
-  assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("arbitrary-executable"), false);
+  assertFalse(DAEMON_SPAWN_RUN_BINARIES.includes("arbitrary-executable"));
 });
 
 Deno.test("[daemon_perms] run allowlist names the real exactl binary, not the phantom 'exoctl'", () => {
   // Regression: a historical typo (`exoctl`) leaked into the daemon --allow-run set, so
   // the daemon could never spawn the real `exactl` CLI.
   assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("exactl"), true, "must allow the real `exactl` binary");
-  assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("exoctl"), false, "must not list the non-existent `exoctl`");
+  assertFalse(DAEMON_SPAWN_RUN_BINARIES.includes("exoctl"), "must not list the non-existent `exoctl`");
 });
 
 Deno.test("[daemon_perms] DAEMON_SPAWN_PERMISSIONS.run is the same reference as DAEMON_SPAWN_RUN_BINARIES (single source — GAP-6)", () => {
