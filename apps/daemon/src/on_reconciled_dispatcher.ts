@@ -12,8 +12,7 @@
  * @related-files [apps/daemon/main.ts, packages/session/src/gate_mappers.ts, packages/core/src/artifact/mission_reporter.ts]
  */
 
-import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { join } from "@std/path";
+import { basename, join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { DomainEventType } from "@exaix/core/events";
 import { DEFAULT_PORTALS_PATH, DEFAULT_UNKNOWN_LABEL, ExecutionStatus } from "@exaix/core/types";
@@ -130,9 +129,7 @@ async function dispatchReconciledOutcome(
     try {
       switch (brief.gate) {
         case "refinement": {
-          const requestId = brief.artifact_ref
-            .replace(`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, "")
-            .replace(".md", "");
+          const requestId = basename(brief.artifact_ref, ".md");
           const clarification = buildClarificationFromDelegation({
             requestId,
             originalBody: brief.objective,

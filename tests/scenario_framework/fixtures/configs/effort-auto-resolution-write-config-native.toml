@@ -1,0 +1,16 @@
+[system]
+root = "$WORKSPACE_ROOT"
+
+[agents]
+default_model = "claude-cli-sonnet"
+
+[models."claude-cli-sonnet"]
+provider = "claude-cli"
+model = "claude-sonnet-5"
+
+[request_analysis]
+enabled = true
+mode = "heuristic"
+
+[quality_gate]
+enabled = false

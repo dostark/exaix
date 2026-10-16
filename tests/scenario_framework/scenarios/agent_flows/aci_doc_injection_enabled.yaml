@@ -13,18 +13,7 @@ steps:
   - id: "write-config"
     type: "write-file"
     path: "exa.config.toml"
-    content: |
-      [system]
-      root = "$WORKSPACE_ROOT"
-
-      [quality_gate]
-      enabled = false
-
-      [request_analysis]
-      enabled = false
-
-      [agents]
-      inject_aci_docs = true
+    content_from: "fixtures/configs/aci-doc-injection-enabled-write-config.toml"
     output_criteria:
       - id: "config-written"
         kind: "command-exit-code"

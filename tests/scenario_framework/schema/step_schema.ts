@@ -509,6 +509,8 @@ export const ScenarioStepSchema = z.object({
   path: z.string().min(1).optional(),
   // write-file: content to write (overwrites); with `append: true` it appends.
   content: z.string().optional(),
+  // write-file: framework-relative content fixture to write instead of an inline `content`.
+  content_from: z.string().min(1).optional(),
   // write-file: append to the file instead of overwriting.
   append: z.boolean().optional(),
   checkpoint: z.union([NON_EMPTY_STRING, z.boolean()]).optional(),

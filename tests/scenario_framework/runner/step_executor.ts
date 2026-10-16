@@ -23,6 +23,7 @@ import { dirname, globToRegExp, join, relative, resolve } from "@std/path";
 import { Database } from "@db/sqlite";
 import { ConfigService } from "@exaix/core/config";
 import { PathResolver } from "@exaix/portal";
+import { loadContentFixture } from "./content_fixtures.ts";
 import { monotonicNowMs } from "./clock.ts";
 import { capturePersonaRoleResponse } from "./persona_response_evidence.ts";
 import { z } from "zod";
@@ -902,7 +903,9 @@ async function executeWriteFileStep(
 ): Promise<IScenarioStepExecutionResult> {
   const relPath = options.step.path ?? options.step.args?.[0] ?? "";
   const workspaceRoot = options.cwd || Deno.cwd();
-  const rawContent = options.step.content ?? options.step.args?.[1] ?? "";
+  const rawContent = options.step.content_from
+    ? await loadContentFixture(options.step.content_from)
+    : options.step.content ?? options.step.args?.[1] ?? "";
   const content = rawContent.replaceAll("$WORKSPACE_ROOT", workspaceRoot);
   let message = "";
   let ok = false;
