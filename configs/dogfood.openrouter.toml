@@ -30,7 +30,7 @@ enabled = true
 [session_delegate]
 enabled = true
 tool = "opencode"
-model = "deepseek-v4-flash"
+model = "openrouter:deepseek/deepseek-v4-flash"
 gates = ["code_changes"]
 launch_mode = "headless"
 harden_permissions = true
