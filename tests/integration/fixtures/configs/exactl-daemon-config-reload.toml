@@ -1,0 +1,7 @@
+[system]
+version = "1.0.0"
+log_level = "info"
+
+[watcher]
+debounce_ms = 50
+stability_check = false

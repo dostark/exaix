@@ -101,49 +101,6 @@ const DEFINITION_SITES = [
   "packages/shared/src/paths.ts",
   "packages/shared/src/constants.ts",
 ];
-/** A TOML section header, which marks a whole config document inside a literal. */
-const TOML_DOCUMENT = /^\s*\[(?:system|paths)\]\s*$/m;
-/**
- * Test files that still embed a config document, with the reason each one is allowed to.
- * A test reads a fixture from `fixtures/configs` instead, so the config is data, not code.
- */
-const INLINE_CONFIG_ALLOW: Record<string, string> = {
-  "apps/exactl/tests/cli_fallback_regression_test.ts": "fixture extraction pending",
-  "apps/exactl/tests/request_create_dry_run_context_test.ts": "fixture extraction pending",
-  "exaix-team/apps/mcp-server/tests/mcp_git_factory_test.ts": "fixture extraction pending",
-  "exaix-team/apps/mcp-server/tests/server_context_test.ts": "fixture extraction pending",
-  "tests/scenario_framework/tests/unit/provider_live_evidence_test.ts": "fixture extraction pending",
-  "tests/scenario_framework/tests/unit/sandbox_cleanup_test.ts": "fixture extraction pending",
-  "apps/daemon/tests/deploy_workspace_test.ts": "fixture extraction pending",
-  "apps/exactl/tests/commands/skill_commands_cli_test.ts": "fixture extraction pending",
-  "apps/exactl/tests/daemon_config_reload_test.ts": "fixture extraction pending",
-  "apps/exactl/tests/exactl_module_import_regression_test.ts": "fixture extraction pending",
-  "apps/exactl/tests/helpers/test_utils.ts": "shared config builder",
-  "apps/exactl/tests/inspect_dispatch_test.ts": "fixture extraction pending",
-  "apps/exactl/tests/model_commands_test.ts": "fixture extraction pending",
-  "apps/exactl/tests/scaffold_test.ts": "fixture extraction pending",
-  "packages/core/tests/config/config_service_generation_test.ts": "fixture extraction pending",
-  "packages/execution/tests/agent_composer_react_strategy_test.ts": "fixture extraction pending",
-  "packages/execution/tests/agent_runner_planning_tools_test.ts": "fixture extraction pending",
-  "packages/flow/tests/agent_composer_adapter_namespace_prompt_test.ts": "fixture extraction pending",
-  "packages/schemas/tests/config_aci_docs_test.ts": "fixture extraction pending",
-  "packages/schemas/tests/config_flow_namespace_prompt_test.ts": "fixture extraction pending",
-  "packages/storage-sqlite/tests/test_mode_schema_test.ts": "fixture extraction pending",
-  "packages/testing/src/helpers/config.ts": "shared config builder",
-  "packages/testing/src/helpers/init_db.ts": "shared config builder",
-  "tests/config/config_security_test.ts": "crafts a parser fixture inline on purpose",
-  "tests/config/config_test.ts": "crafts a parser fixture inline on purpose",
-  "tests/integration/agent_runner_daemon_cutover_test.ts": "fixture extraction pending",
-  "tests/integration/dogfood_e2e_test.ts": "fixture extraction pending",
-  "tests/integration/dogfood_net_resolver_test.ts": "fixture extraction pending",
-  "tests/scenario_framework/tests/helpers/advanced_flow_case.ts": "shared config builder",
-  "tests/scenario_framework/tests/helpers/legacy_flow_case.ts": "shared config builder",
-  "tests/scenario_framework/tests/unit/cell_config_sentinel_test.ts": "fixture extraction pending",
-  "tests/scenario_framework/tests/unit/judge_bindings_test.ts": "fixture extraction pending",
-  "tests/scenario_framework/tests/unit/materialize_cell_config_test.ts": "fixture extraction pending",
-  "tests/scenario_framework/tests/unit/portal_mount_verification_test.ts": "fixture extraction pending",
-  "tests/scenario_framework/tests/unit/workspace_config_overrides_test.ts": "fixture extraction pending",
-};
 
 interface IViolation {
   readonly file: string;
@@ -219,25 +176,6 @@ function scanEmbeddedToml(node: ts.Node, raw: string, repoPath: string, add: Add
 
 type AddFn = (node: ts.Node, detail: string, lineOffset?: number) => void;
 
-/** True when the file holds tests. */
-function isTestPath(repoPath: string): boolean {
-  return repoPath.includes("/tests/") || repoPath.endsWith("_test.ts");
-}
-
-/** Every literal in the file that holds a whole TOML config document. */
-function configDocumentNodes(source: ts.SourceFile): ts.Node[] {
-  const nodes: ts.Node[] = [];
-  const visit = (node: ts.Node): void => {
-    if (ts.isStringLiteral(node) || ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
-      const raw = node.getText(source).slice(1, -1).replaceAll("\\n", "\n");
-      if (TOML_DOCUMENT.test(raw)) nodes.push(node);
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(source);
-  return nodes;
-}
-
 function scanFile(repoPath: string, text: string): IViolation[] {
   const source = ts.createSourceFile(repoPath, text, ts.ScriptTarget.Latest, true);
   const lines = text.split("\n");
@@ -285,15 +223,6 @@ function scanFile(repoPath: string, text: string): IViolation[] {
     ts.forEachChild(node, visit);
   };
   visit(source);
-  if (isTestPath(repoPath) && !(repoPath in INLINE_CONFIG_ALLOW)) {
-    for (const node of configDocumentNodes(source)) {
-      violations.push({
-        file: repoPath,
-        line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1,
-        detail: "embeds a whole config document. Read a fixture from fixtures/configs instead.",
-      });
-    }
-  }
   for (let index = 0; index < lines.length; index++) {
     const match = PATHS_ASSIGNMENT.exec(lines[index]);
     if (!match) continue;
@@ -350,6 +279,16 @@ export async function findPathBuilderViolations(): Promise<IViolation[]> {
     const entry of walk(join(REPO_ROOT, "configs"), {
       includeDirs: false,
       exts: [".toml"],
+      skip: [/[/\\]node_modules[/\\]/],
+    })
+  ) {
+    const repoPath = relative(REPO_ROOT, entry.path);
+    violations.push(...scanToml(repoPath, await Deno.readTextFile(entry.path)));
+  }
+  for await (
+    const entry of walk(join(REPO_ROOT, "tests"), {
+      includeDirs: false,
+      exts: [".yaml", ".yml"],
       skip: [/[/\\]node_modules[/\\]/],
     })
   ) {

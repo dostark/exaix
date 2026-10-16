@@ -44,13 +44,6 @@ steps:
       [system]
       root = "$WORKSPACE_ROOT"
 
-      [paths]
-      workspace = "Workspace"
-      blueprints = "Blueprints"
-      runtime = ".exa"
-      memory = "Memory"
-      portals = "Portals"
-
       [quality_gate]
       enabled = false
 

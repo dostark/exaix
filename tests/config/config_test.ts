@@ -594,6 +594,7 @@ runtime = "./系統"
     const content = `[system]
 log_level = "info"
 
+[paths]
 runtime = "./Runtime"`;
 
     const configPath1 = `${tempDir}/test-checksum-1.toml`;
