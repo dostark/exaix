@@ -7,6 +7,7 @@
  * @description Test utilities for CLI command testing.
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import type { ExaCtlTestContext } from "../../src/exactl.ts";
 import type * as ExaCtlModule from "../../src/exactl.ts";
 import * as exactlModule from "../../src/exactl.ts";
@@ -42,7 +43,7 @@ export async function withTestMod<T>(
 root = "./"
 
 [paths]
-runtime = "./.exa"
+runtime = "./${DEFAULT_RUNTIME_PATH}"
 
 [database]
 batch_flush_ms = 10

@@ -12,6 +12,8 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
+import { join } from "@std/path";
+
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import type { IModelProvider } from "@exaix/ai";
 import { ExecutionContextService, OutputParser, ReActLoopAdapter, ReActLoopStrategy } from "@exaix/execution";
@@ -245,7 +247,7 @@ Deno.test("[integration][phase-147 cutover] capture → extract → approve → 
     // just created — this is on-disk time-travel, the same lever the eligibility rule exists for.
     pending[0].learning.extracted_at = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     await Deno.writeTextFile(
-      pathBuilders.memoryPendingPath(config.system.root, config.paths.memory, `${pending[0].id}.json`),
+      pathBuilders.memoryPendingPath(join(config.system.root, config.paths.memory), `${pending[0].id}.json`),
       JSON.stringify(pending[0], null, 2),
     );
     await db.waitForFlush();

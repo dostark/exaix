@@ -232,7 +232,7 @@ export async function initializeServices(
       },
       embeddingProvider: createMemoryEmbeddingProvider(cfg),
       createVectorIndex: () => new HnswVectorIndex(),
-      projectsDir: pathBuilders.memoryProjectsPath(cfg.system.root!, cfg.paths.memory!),
+      projectsDir: pathBuilders.memoryProjectsPath(join(cfg.system.root!, cfg.paths.memory!)),
     });
 
     // Fill the paid-edition seams that portal analysis uses.

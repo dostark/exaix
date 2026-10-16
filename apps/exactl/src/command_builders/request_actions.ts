@@ -35,6 +35,7 @@ import { type JSONObject, toSafeJson } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { ClarificationEngine } from "@exaix/quality-gate";
 import { createOutputValidator, readOnlyEditorTools } from "@exaix/tool-runtime";
+import { join } from "@std/path";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import { PORTAL_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY, PromptBudgetAllocator } from "@exaix/core";
 import { PlanAdapter } from "@exaix/core/planning";
@@ -289,7 +290,7 @@ async function handleRequestCreateDryRunContext(
     const config = appContext.config.getAll();
     const effectiveBudgetPolicy = resolveEffectiveBudgetPolicy(config, appContext.configAdapter);
     const providerInfo = ProviderFactory.getProviderInfoByName(config, config.agents.default_model);
-    const blueprintsPath = pathBuilders.agentsPath(config.system.root, config.paths.blueprints);
+    const blueprintsPath = pathBuilders.agentsPath(join(config.system.root, config.paths.blueprints));
     const blueprint = await loadBlueprint(blueprintsPath, agentRole);
     if (!blueprint) {
       throw new Error(`No blueprint found for agent role "${agentRole}" at ${blueprintsPath}`);

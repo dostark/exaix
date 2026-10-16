@@ -9,6 +9,8 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
+import { join } from "@std/path";
+
 import {
   MemoryAutoApprovalService,
   MemoryBankService,
@@ -141,7 +143,7 @@ Deno.test("auto-approval triggers the same single session-memory feed per approv
     for (const proposal of proposals) {
       proposal.learning.extracted_at = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
       await Deno.writeTextFile(
-        pathBuilders.memoryPendingPath(testConfig.system.root, testConfig.paths.memory, `${proposal.id}.json`),
+        pathBuilders.memoryPendingPath(join(testConfig.system.root, testConfig.paths.memory), `${proposal.id}.json`),
         JSON.stringify(proposal, null, 2),
       );
     }

@@ -127,7 +127,7 @@ export function resolveEvalDbPath(workspaceRoot?: Opt<string, Reason.OptionalInp
   const envPath = Deno.env.get("EXA_EVAL_DB_PATH");
   if (envPath) return envPath;
   const root = workspaceRoot ?? Deno.cwd();
-  return pathBuilders.runtimePath(root, "eval.db");
+  return resolve(pathBuilders.runtimePath(root, "eval.db"));
 }
 
 const SQLITE_DUP_COLUMN_ERR = "duplicate column name";

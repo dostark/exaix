@@ -70,7 +70,7 @@ function makeService(root: string, overrides: {
 }
 
 async function ensurePendingDir(config: { system: { root: string }; paths: { memory: string } }): Promise<string> {
-  const pendingDir = pathBuilders.memoryPendingPath(config.system.root, config.paths.memory);
+  const pendingDir = pathBuilders.memoryPendingPath(join(config.system.root, config.paths.memory));
   await Deno.mkdir(pendingDir, { recursive: true });
   return pendingDir;
 }

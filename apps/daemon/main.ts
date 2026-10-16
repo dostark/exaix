@@ -649,7 +649,7 @@ if (import.meta.main) {
       symbolExtractorRegistry: symbolRegistry,
       symbolReferenceExtractorRegistry: symbolReferenceRegistry,
       symbolFileResolverRegistry: symbolFileResolverRegistry,
-      projectsDir: pathBuilders.memoryProjectsPath(config.system.root, config.paths.memory),
+      projectsDir: pathBuilders.memoryProjectsPath(join(config.system.root, config.paths.memory)),
     });
 
     // Create central application context
@@ -673,9 +673,9 @@ if (import.meta.main) {
     const _healthService = initializeHealthChecks(dbService, llmProvider, config);
 
     // Ensure required directories exist
-    const requestsPath = pathBuilders.requestsPath(config.system.root, config.paths.workspace);
-    const plansPath = pathBuilders.plansPath(config.system.root, config.paths.workspace);
-    const activePath = pathBuilders.activePath(config.system.root, config.paths.workspace);
+    const requestsPath = pathBuilders.requestsPath(join(config.system.root, config.paths.workspace));
+    const plansPath = pathBuilders.plansPath(join(config.system.root, config.paths.workspace));
+    const activePath = pathBuilders.activePath(join(config.system.root, config.paths.workspace));
     await ensureDir(requestsPath);
     await ensureDir(plansPath);
     await ensureDir(activePath);
@@ -854,7 +854,7 @@ if (import.meta.main) {
     );
 
     // Create FlowRunner for multi-agent flow execution
-    const blueprintsPath = pathBuilders.agentsPath(config.system.root, config.paths.blueprints);
+    const blueprintsPath = pathBuilders.agentsPath(join(config.system.root, config.paths.blueprints));
     // Without this, constructPrompt's own `if (!manager) return ...` early-return
     // silently skips the real budget system for the planning call.
     const agentRunnerTokenizer = new AiTokenEstimatorTokenizer();
@@ -1170,7 +1170,7 @@ if (import.meta.main) {
     const requestProcessor = new RequestProcessor({
       workspacePath: join(config.system.root, config.paths.workspace),
       requestsDir: requestsPath,
-      blueprintsPath: pathBuilders.agentsPath(config.system.root, config.paths.blueprints),
+      blueprintsPath: pathBuilders.agentsPath(join(config.system.root, config.paths.blueprints)),
       includeReasoning: true,
       context, // Support unified DI
       agentRunner,
@@ -1282,7 +1282,7 @@ if (import.meta.main) {
       "RequestProcessor",
       {
         requestsDir: requestsPath,
-        blueprints: pathBuilders.agentsPath(config.system.root, config.paths.blueprints),
+        blueprints: pathBuilders.agentsPath(join(config.system.root, config.paths.blueprints)),
       },
     );
 

@@ -3,6 +3,7 @@
  * @path packages/schemas/tests/flow_capabilities_schema_test.ts
  * @description Validates the supported capability allowlist on flow input.
  */
+import { DEFAULT_FLOWS_DIR } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
 import { parse } from "@std/yaml";
@@ -30,7 +31,9 @@ for (const capability of ["unknown", "hitl_governance", "model_registry_governan
 Deno.test("[schema] shipped architecture decision declares voting and concrete prepared input edges", async () => {
   const flow = FlowSchema.parse(
     parse(
-      await Deno.readTextFile(new URL("../../../Blueprints/Flows/architecture-decision.flow.yaml", import.meta.url)),
+      await Deno.readTextFile(
+        new URL(`../../../${DEFAULT_FLOWS_DIR}/architecture-decision.flow.yaml`, import.meta.url),
+      ),
     ),
   );
   assertEquals(flow.requires_capabilities, ["voting"]);

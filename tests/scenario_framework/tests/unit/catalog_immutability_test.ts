@@ -60,7 +60,7 @@ function assertTreesEqual(before: Map<string, string>, after: Map<string, string
 
 Deno.test("[CatalogImmutability] Memory/Skills/ and Blueprints/Agents/ are byte-identical after skill and agent-role overlays run", async () => {
   const { db, config, cleanup } = await initTestDbService();
-  const skillsDir = pathBuilders.memorySkillsPath(config.system.root, config.paths.memory);
+  const skillsDir = pathBuilders.memorySkillsPath(join(config.system.root, config.paths.memory));
   const agentRolesRoot = await Deno.makeTempDir({ prefix: "immutability-agent-roles-" });
   const agentRolesDir = pathBuilders.agentsPath(agentRolesRoot);
   const skillOverlayDir = await Deno.makeTempDir({ prefix: "immutability-skill-overlay-" });

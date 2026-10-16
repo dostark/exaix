@@ -65,7 +65,7 @@ Deno.test("[regression] ExecutionLoop: targets portal directory and creates revi
       operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
     }];
 
-    const activeDir = pathBuilders.activePath(rootDir, config.paths.workspace);
+    const activeDir = pathBuilders.activePath(join(rootDir, config.paths.workspace));
     await ensureDir(activeDir);
 
     const logger = new EventLogger({ db, defaultActor: "user:test" });

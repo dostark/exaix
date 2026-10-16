@@ -7,7 +7,15 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_AGENTS_PATH, DEFAULT_FLOWS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_FLOWS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PORTALS_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import type { IRecordedResponse } from "@exaix/ai/providers";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
@@ -144,10 +152,7 @@ export class TestEnvironment {
 
     // Copy flows for integration tests that need them
     const flowsSrcDir = pathBuilders.blueprintsPath(
-      dirname(fromFileUrl(import.meta.url)),
-      "..",
-      "..",
-      "..",
+      join(dirname(fromFileUrl(import.meta.url)), "..", "..", ".."),
       DEFAULT_FLOWS_PATH,
     );
     const flowsDestDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH);
@@ -210,11 +215,11 @@ log_level = "info"
 root = "${tempDir}"
 
 [paths]
-memory = "./Memory"
-blueprints = "./Blueprints"
-runtime = "./.exa"
-workspace = "./Workspace"
-portals = "./Portals"
+memory = "./${DEFAULT_MEMORY_PATH}"
+blueprints = "./${DEFAULT_BLUEPRINTS_PATH}"
+runtime = "./${DEFAULT_RUNTIME_PATH}"
+workspace = "./${DEFAULT_WORKSPACE_PATH}"
+portals = "./${DEFAULT_PORTALS_PATH}"
 active = "Active"
 archive = "Archive"
 plans = "Plans"

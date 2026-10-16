@@ -3,6 +3,7 @@
  * @path packages/flow/tests/branch_prompt_contract_test.ts
  * @description Traces branch JSON instructions through runner, adapter, and provider assembly.
  */
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { AgentRunner } from "@exaix/execution";
 import { AgentComposerAdapter, FlowRunner } from "@exaix/flow";
@@ -46,7 +47,10 @@ Deno.test("[prompt] adapter carries branch-json into AgentRunner and preserves o
     received.push(request);
     return run(blueprint, request, skills);
   };
-  const adapter = new AgentComposerAdapter(runner, new URL("../../../Blueprints/Agents", import.meta.url).pathname);
+  const adapter = new AgentComposerAdapter(
+    runner,
+    new URL(`../../../${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`, import.meta.url).pathname,
+  );
   assertEquals(
     (await adapter.run("code-analyst", {
       userPrompt: "Classify",
@@ -116,7 +120,7 @@ Deno.test("[prompt] companion binding preserves branch identity and forwards eff
     });
     const adapter = new AgentComposerAdapter(
       runner,
-      new URL("../../../Blueprints/Agents", import.meta.url).pathname,
+      new URL(`../../../${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`, import.meta.url).pathname,
       undefined,
       service,
     );

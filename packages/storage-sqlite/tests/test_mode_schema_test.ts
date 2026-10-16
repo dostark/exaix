@@ -11,6 +11,7 @@
  * @related-files [packages/storage-sqlite/src/database_service.ts, packages/storage-sqlite/src/connection_pool.ts]
  */
 
+import { DEFAULT_RUNTIME_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "../src/database_service.ts";
@@ -25,8 +26,8 @@ function writeMinimalConfig(configPath: string, root: string): void {
       `root = "${root}"`,
       'log_level = "info"',
       "[paths]",
-      'runtime = "./.exa"',
-      'workspace = "./Workspace"',
+      `runtime = "./${DEFAULT_RUNTIME_PATH}"`,
+      `workspace = "./${DEFAULT_WORKSPACE_PATH}"`,
       "[database]",
       "batch_flush_ms = 50",
       "batch_max_size = 100",

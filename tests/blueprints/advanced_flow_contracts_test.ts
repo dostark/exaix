@@ -6,7 +6,7 @@
  * @dependencies [@exaix/flow, @exaix/schemas, @exaix/execution]
  * @related-files [packages/flow/src/loop_body.ts, packages/schemas/src/model_binding.ts]
  */
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import { DEFAULT_FLOWS_DIR, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { parse as parseToml } from "@std/toml";
@@ -30,7 +30,7 @@ interface IGuardedRequestFrontmatter {
   plan_context_ref: string;
 }
 
-const FLOWS_DIR = "./Blueprints/Flows";
+const FLOWS_DIR = `./${DEFAULT_FLOWS_DIR}`;
 const OVERLAYS_DIR = "./configs/bindings/flows";
 const SELF_CORRECTING = "self-correcting-implementation";
 

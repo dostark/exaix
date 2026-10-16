@@ -51,7 +51,7 @@ Deno.test("[security] Git Security: blocks destructive git reset --hard in PlanE
     await git.ensureRepository();
     await git.ensureIdentity();
 
-    const blueprintsDir = pathBuilders.agentsPath(config.system.root, config.paths.blueprints);
+    const blueprintsDir = pathBuilders.agentsPath(join(config.system.root, config.paths.blueprints));
     await Deno.mkdir(blueprintsDir, { recursive: true });
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),
@@ -92,7 +92,7 @@ Deno.test("[security] Git Security: blocks checkout to main branch", async () =>
     await git.ensureIdentity();
 
     // Create blueprint without the MCP capability so the default ReAct strategy is used
-    const blueprintsDir = pathBuilders.agentsPath(config.system.root, config.paths.blueprints);
+    const blueprintsDir = pathBuilders.agentsPath(join(config.system.root, config.paths.blueprints));
     await Deno.mkdir(blueprintsDir, { recursive: true });
     const fixture_1 = readFixtureTextSync(import.meta.url, "security", "git_security_regression_test", "fixture_1.md");
     await Deno.writeTextFile(join(blueprintsDir, "test-agent.md"), fixture_1);

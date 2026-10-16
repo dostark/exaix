@@ -6,7 +6,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "@exaix/request";
@@ -17,7 +17,10 @@ import type { IApplicationContext } from "@exaix/core/types";
 import { createStubConfig, createStubDisplay, createStubGit, initTestDbService } from "@exaix/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
-const CODE_ANALYST_BLUEPRINT_PATH = new URL("../../../Blueprints/Agents/code-analyst.md", import.meta.url);
+const CODE_ANALYST_BLUEPRINT_PATH = new URL(
+  `../../../${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}/code-analyst.md`,
+  import.meta.url,
+);
 
 Deno.test("RequestProcessor: Portal context includes file list for grounding", async () => {
   const { tempDir, db, config, cleanup } = await initTestDbService();

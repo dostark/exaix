@@ -28,7 +28,7 @@ export async function setupPortalWorkspaceTestDirs(tempDir: string): Promise<{
   // Create directories with git repos
   await ensureDir(join(portalDir, ".git"));
   await ensureDir(join(workspaceDir, ".git"));
-  await ensureDir(pathBuilders.agentsPath(portalDir, TEST_BLUEPRINTS_DIR));
+  await ensureDir(pathBuilders.agentsPath(join(portalDir, TEST_BLUEPRINTS_DIR)));
 
   const portalConfig: IPortalPermissions = {
     alias: TEST_PORTAL_NAME,

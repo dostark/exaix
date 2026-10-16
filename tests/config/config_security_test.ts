@@ -8,6 +8,7 @@
  * @related-files [packages/schemas/src/config.ts, packages/core/src/config/service.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ConfigService } from "@exaix/core/config";
 
@@ -76,8 +77,8 @@ Deno.test("[security] Env Variable Security: Verify sensitive env vars are not i
 log_level = "info"
 
 [paths]
-memory = "./Memory"
-blueprints = "./Blueprints"
+memory = "./${DEFAULT_MEMORY_PATH}"
+blueprints = "./${DEFAULT_BLUEPRINTS_PATH}"
 runtime = "./Runtime"`,
     );
 
@@ -127,7 +128,7 @@ log_level = "info"
 
 [paths]
 memory = "$MALICIOUS_PATH"
-blueprints = "./Blueprints"
+blueprints = "./${DEFAULT_BLUEPRINTS_PATH}"
 runtime = "./Runtime"`,
     );
 

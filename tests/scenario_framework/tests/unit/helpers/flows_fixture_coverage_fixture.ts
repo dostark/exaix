@@ -26,7 +26,7 @@ export interface IManifestCase {
 }
 
 const FRAMEWORK_HOME = fromFileUrl(new URL("../../../", import.meta.url));
-const FLOWS_DIR = pathBuilders.blueprintsPath(FRAMEWORK_HOME, "..", "..", DEFAULT_FLOWS_PATH);
+const FLOWS_DIR = pathBuilders.blueprintsPath(join(FRAMEWORK_HOME, "..", ".."), DEFAULT_FLOWS_PATH);
 const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---/;
 interface IRequestFrontmatter {
   flow?: string;

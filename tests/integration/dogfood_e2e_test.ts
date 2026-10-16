@@ -7,7 +7,14 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_PLANS_PATH } from "@exaix/shared";
+import {
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_PORTALS_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assert, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
@@ -21,11 +28,11 @@ function writeDaemonConfig(configPath: string, root: string): void {
     `root = "${root}"`,
     "",
     "[paths]",
-    'workspace = "./Workspace"',
-    'blueprints = "./Blueprints"',
-    'runtime = "./.exa"',
-    'memory = "./Memory"',
-    'portals = "./Portals"',
+    `workspace = "./${DEFAULT_WORKSPACE_PATH}"`,
+    `blueprints = "./${DEFAULT_BLUEPRINTS_PATH}"`,
+    `runtime = "./${DEFAULT_RUNTIME_PATH}"`,
+    `memory = "./${DEFAULT_MEMORY_PATH}"`,
+    `portals = "./${DEFAULT_PORTALS_PATH}"`,
     'active = "Active"',
     'plans = "Plans"',
     'requests = "Requests"',

@@ -1806,7 +1806,7 @@ const JUDGE_METHODOLOGY_SKILL_IDS: readonly string[] = ["verdict-rubric", "respo
 // reads no eval overlay and no suppression list, so the arm under test never reaches the judge.
 export async function loadJudgeMethodology(workspaceRoot: string): Promise<IJudgeMethodology> {
   const loader = createSkillLoaderFor([{
-    path: pathBuilders.blueprintsPath(workspaceRoot, DEFAULT_SKILLS_MEMORY_PATH),
+    path: resolve(pathBuilders.blueprintsPath(workspaceRoot, DEFAULT_SKILLS_MEMORY_PATH)),
     kind: SkillRootKind.BLUEPRINT,
     writable: false,
     project: null,

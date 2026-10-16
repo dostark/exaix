@@ -17,6 +17,7 @@
 import * as pathBuilders from "@exaix/shared";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai";
+import { join } from "@std/path";
 import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, REACT_THOUGHT_PREFIX, SecurityMode, ToolName } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { MemoryStatus } from "@exaix/core/status";
@@ -201,7 +202,7 @@ if (import.meta.main) {
     for (const proposal of pending) {
       proposal.learning.extracted_at = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
       await Deno.writeTextFile(
-        pathBuilders.memoryPendingPath(config.system.root, config.paths.memory, `${proposal.id}.json`),
+        pathBuilders.memoryPendingPath(join(config.system.root, config.paths.memory), `${proposal.id}.json`),
         JSON.stringify(proposal, null, 2),
       );
     }

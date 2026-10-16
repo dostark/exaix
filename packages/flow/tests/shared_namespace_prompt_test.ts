@@ -7,7 +7,7 @@
  * @related-files [packages/flow/src/shared_namespace_prompt.ts, packages/flow/src/agent_composer_adapter.ts]
  */
 import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import {
@@ -30,7 +30,7 @@ import { GateTestLogger } from "./helpers/gate_controls.ts";
 const ENCODER = new TextEncoder();
 const STRICT_DECODER = new TextDecoder("utf-8", { fatal: true });
 const TASK = "Compose the research findings.";
-const AGENTS_DIR = new URL("../../../Blueprints/Agents", import.meta.url).pathname;
+const AGENTS_DIR = new URL(`../../../${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`, import.meta.url).pathname;
 
 function blockOf(prompt: string): string {
   const start = prompt.indexOf(SHARED_NAMESPACE_PROMPT_LABEL);

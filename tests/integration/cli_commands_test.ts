@@ -233,7 +233,10 @@ cliTest("CLI: portal add/remove/refresh works", async () => {
     // Create a dummy project to add as portal
     await env.writeFile(`${DEFAULT_PORTALS_PATH}/TestPortal/README.md`, "# Test Portal");
     // Add portal (use relative path from env.tempDir)
-    const add = await runExactl(["portal", MemoryOperation.ADD, "./Portals/TestPortal", "TestPortal"], env.tempDir);
+    const add = await runExactl(
+      ["portal", MemoryOperation.ADD, `./${DEFAULT_PORTALS_PATH}/TestPortal`, "TestPortal"],
+      env.tempDir,
+    );
     // Accept both 0 and 1 as valid (some commands may return 1 if portal already exists or not found)
     assert(add.code === 0 || add.code === 1);
     // Refresh portal

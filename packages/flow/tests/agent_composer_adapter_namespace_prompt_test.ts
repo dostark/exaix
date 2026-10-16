@@ -7,7 +7,7 @@
  * @related-files [packages/flow/src/agent_composer_adapter.ts, packages/flow/tests/shared_namespace_prompt_test.ts]
  */
 import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assert } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseToml } from "@std/toml";
@@ -25,7 +25,7 @@ import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_c
 const TASK = "Compose the research findings.";
 const BOUND = 2048;
 const BIG = { "findings.code": "x".repeat(10_000) };
-const AGENTS_DIR = new URL("../../../Blueprints/Agents", import.meta.url).pathname;
+const AGENTS_DIR = new URL(`../../../${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`, import.meta.url).pathname;
 const ENCODER = new TextEncoder();
 
 function blockBytes(prompt: string): number {

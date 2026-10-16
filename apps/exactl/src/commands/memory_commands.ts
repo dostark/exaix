@@ -117,7 +117,7 @@ export class MemoryCommands extends BaseCommand {
     let lastActivity: string | null = null;
 
     // List projects
-    const projectsDir = pathBuilders.memoryProjectsPath(this.config.system.root, this.config.paths.memory);
+    const projectsDir = pathBuilders.memoryProjectsPath(join(this.config.system.root, this.config.paths.memory));
     if (await exists(projectsDir)) {
       for await (const entry of Deno.readDir(projectsDir)) {
         if (entry.isDirectory) {
@@ -127,7 +127,7 @@ export class MemoryCommands extends BaseCommand {
     }
 
     // Count executions and find last activity
-    const executionDir = pathBuilders.memoryExecutionPath(this.config.system.root, this.config.paths.memory);
+    const executionDir = pathBuilders.memoryExecutionPath(join(this.config.system.root, this.config.paths.memory));
     if (await exists(executionDir)) {
       const executionList = await this.memoryBank.getExecutionHistory(undefined, 1);
       executions = await this.countExecutions();
@@ -148,7 +148,7 @@ export class MemoryCommands extends BaseCommand {
    */
   private async countExecutions(): Promise<number> {
     let count = 0;
-    const executionDir = pathBuilders.memoryExecutionPath(this.config.system.root, this.config.paths.memory);
+    const executionDir = pathBuilders.memoryExecutionPath(join(this.config.system.root, this.config.paths.memory));
     if (await exists(executionDir)) {
       for await (const entry of Deno.readDir(executionDir)) {
         if (entry.isDirectory) {
@@ -220,7 +220,7 @@ export class MemoryCommands extends BaseCommand {
   async projectList(format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const projects: { name: string; patterns: number; decisions: number }[] = [];
 
-    const projectsDir = pathBuilders.memoryProjectsPath(this.config.system.root, this.config.paths.memory);
+    const projectsDir = pathBuilders.memoryProjectsPath(join(this.config.system.root, this.config.paths.memory));
     if (await exists(projectsDir)) {
       for await (const entry of Deno.readDir(projectsDir)) {
         if (entry.isDirectory) {

@@ -139,7 +139,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
 
   /** Create a new Memory Embedding Service instance. */
   constructor(private config: Config) {
-    this.embeddingsDir = pathBuilders.memoryIndexPath(config.system.root, config.paths.memory, "embeddings");
+    this.embeddingsDir = pathBuilders.memoryIndexPath(join(config.system.root, config.paths.memory), "embeddings");
     this.manifestPath = join(this.embeddingsDir, "manifest.json");
     this.hnsw = new HnswVectorIndex();
   }

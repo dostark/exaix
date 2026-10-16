@@ -10,6 +10,13 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
+import {
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PORTALS_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { dirname, join } from "@std/path";
 import { Database } from "@db/sqlite";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -91,11 +98,11 @@ export function daemonConfigSections(root: string, allowNetLine = "allow_net = [
     allowNetLine,
     "",
     "[paths]",
-    'workspace = "./Workspace"',
-    'blueprints = "./Blueprints"',
-    'runtime = "./.exa"',
-    'memory = "./Memory"',
-    'portals = "./Portals"',
+    `workspace = "./${DEFAULT_WORKSPACE_PATH}"`,
+    `blueprints = "./${DEFAULT_BLUEPRINTS_PATH}"`,
+    `runtime = "./${DEFAULT_RUNTIME_PATH}"`,
+    `memory = "./${DEFAULT_MEMORY_PATH}"`,
+    `portals = "./${DEFAULT_PORTALS_PATH}"`,
   ];
 }
 

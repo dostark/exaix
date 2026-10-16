@@ -12,6 +12,7 @@
  * @architectural-layer Test
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { EDITION_SOLO, EDITION_TEAM, PortalAnalysisMode } from "@exaix/core";
@@ -26,7 +27,7 @@ root = "${root}"
 log_level = "error"
 
 [paths]
-runtime = "./.exa"
+runtime = "./${DEFAULT_RUNTIME_PATH}"
 memory = "Memory"
 workspace = "Workspace"
 

@@ -7,13 +7,17 @@
  * file structures into the LLM prompt for better agent grounding.
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assert, assertStringIncludes } from "@std/assert";
 import { TestEnvironment } from "@exaix/testing";
 import { join } from "@std/path";
 import { MockStrategy, PortalOperation } from "@exaix/core";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
-const SENIOR_CODER_BLUEPRINT_PATH = new URL("../../../Blueprints/Agents/senior-coder.md", import.meta.url);
+const SENIOR_CODER_BLUEPRINT_PATH = new URL(
+  `../../../${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}/senior-coder.md`,
+  import.meta.url,
+);
 
 Deno.test("Regression: Portal Context Grounding - deeper file summary in prompt", async () => {
   const env = await TestEnvironment.create({ initGit: false });

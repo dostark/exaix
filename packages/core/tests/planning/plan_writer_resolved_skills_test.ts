@@ -12,6 +12,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertRejects } from "@std/assert";
+import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { SkillMatchSource, SkillRenderOutcome, SkillRootKind } from "@exaix/core";
 import type { JSONObject } from "@exaix/core/types";
@@ -48,7 +49,7 @@ const RESULT = {
 async function writePlan(metadata: Partial<IRequestMetadata>): Promise<JSONObject> {
   const { db, config, tempDir, cleanup } = await initTestDbService();
   try {
-    const plansDir = pathBuilders.plansPath(tempDir, config.paths.workspace);
+    const plansDir = pathBuilders.plansPath(join(tempDir, config.paths.workspace));
     await Deno.mkdir(plansDir, { recursive: true });
     const writer = new PlanWriter({
       plansDirectory: plansDir,

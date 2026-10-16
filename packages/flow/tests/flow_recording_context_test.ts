@@ -6,6 +6,7 @@
  * @dependencies [@exaix/flow, @exaix/execution, @exaix/ai]
  * @related-files [packages/flow/src/contracts/flow_recording_context.ts, packages/execution/src/agent_runner.ts, packages/ai/src/recording_lane_provider.ts]
  */
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import { FlowStepExecutionMode } from "@exaix/core";
 import type { IRecordedCallSite } from "@exaix/core/types";
@@ -191,7 +192,10 @@ Deno.test("[recording] a direct agent call receives its run lane through the ada
     received.push(request);
     return run(blueprint, request, skills);
   };
-  const adapter = new AgentComposerAdapter(runner, new URL("../../../Blueprints/Agents", import.meta.url).pathname);
+  const adapter = new AgentComposerAdapter(
+    runner,
+    new URL(`../../../${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`, import.meta.url).pathname,
+  );
   const recording = enabledContext();
   await adapter.run("senior-coder", { userPrompt: "plan", context: {}, ...SCENARIO, flowStepId: "plan", recording });
   await adapter.run("software-architect", {

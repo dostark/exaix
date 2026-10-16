@@ -257,7 +257,7 @@ Deno.test("[integrity] {{placeholder}} agent slots in templates are skipped (not
 
 Deno.test("[integrity] the live repository catalog passes the gate", () => {
   // Run against the real Blueprints/ so the gate reflects committed state.
-  const r = checkBlueprintIntegrity(pathBuilders.blueprintsPath(import.meta.dirname!, "..", ".."));
+  const r = checkBlueprintIntegrity(pathBuilders.blueprintsPath(join(import.meta.dirname!, "..", "..")));
   assert(
     r.ok,
     `live catalog has integrity violations:\n${r.violations.map((v) => `  ${v.kind}: ${v.detail}`).join("\n")}`,

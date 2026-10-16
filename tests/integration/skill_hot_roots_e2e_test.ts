@@ -121,7 +121,7 @@ Deno.test({
         pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
       );
       await writeSkill(pathBuilders.blueprintsPath(tempDir, DEFAULT_SKILLS_MEMORY_PATH), FIRST_SKILL);
-      await writeSkill(pathBuilders.memorySkillsPath(tempDir, "Alt"), SECOND_SKILL);
+      await writeSkill(pathBuilders.memorySkillsPath(join(tempDir, "Alt")), SECOND_SKILL);
 
       const submit = async (skill: string, daemon: IRunningDaemon): Promise<string> => {
         const traceId = crypto.randomUUID();

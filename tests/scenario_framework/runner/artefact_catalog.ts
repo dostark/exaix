@@ -74,7 +74,7 @@ async function loadFlowRefs(flowsDir: string): Promise<IArtefactRef[]> {
 /** Reads the real catalog into the flat `IArtefactRef[]` shape that `assertArtefactDecisionCoverage` compares. `blueprintsDir` is `Blueprints/` itself. Project-scoped skills come from `projectSkillsDir`. */
 export async function loadArtefactCatalog(
   blueprintsDir: string,
-  projectSkillsDir: string = pathBuilders.memoryPath(blueprintsDir, "..", DEFAULT_SKILLS_MEMORY_PATH, "project"),
+  projectSkillsDir: string = pathBuilders.memoryPath(join(blueprintsDir, ".."), DEFAULT_SKILLS_MEMORY_PATH, "project"),
 ): Promise<IArtefactRef[]> {
   const [agentRoles, skills, flows] = await Promise.all([
     loadAgentRoleRefs(pathBuilders.agentsPath(blueprintsDir)),

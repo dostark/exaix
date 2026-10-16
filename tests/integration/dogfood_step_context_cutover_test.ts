@@ -82,8 +82,7 @@ Deno.test(
     try {
       // Mirror the dogfood workspace shape: requests live under <root>/workspace/...
       const outDir = pathBuilders.workspacePath(
-        await Deno.makeTempDir({ prefix: "p173-cutover-sandbox-" }),
-        "workspace",
+        join(await Deno.makeTempDir({ prefix: "p173-cutover-sandbox-" }), "workspace"),
         DEFAULT_REQUESTS_PATH,
       );
       const run = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt.root]);

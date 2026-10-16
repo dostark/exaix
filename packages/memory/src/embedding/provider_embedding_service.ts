@@ -69,7 +69,7 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
     private provider: IEmbeddingProvider = new OllamaEmbeddingClient(),
     private costRouter?: Opt<IMemoryCostRouter, Reason.OptionalDependency>,
   ) {
-    this.embeddingsDir = pathBuilders.memoryIndexPath(config.system.root, config.paths.memory, "embeddings");
+    this.embeddingsDir = pathBuilders.memoryIndexPath(join(config.system.root, config.paths.memory), "embeddings");
     this.manifestPath = join(this.embeddingsDir, "manifest.json");
     const cacheDir = join(config.system.root, config.paths.runtime, "cache", "embeddings");
     this.cache = new DiskBackedEmbeddingCache(cacheDir, EMBEDDING_CACHE_MAX_ENTRIES);

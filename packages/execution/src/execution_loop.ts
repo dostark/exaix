@@ -285,7 +285,7 @@ export class ExecutionLoop {
     canonicalWorktreePath: string,
     pointerName: string,
   ): Promise<void> {
-    const traceDir = pathBuilders.memoryExecutionPath(this.config.system.root, this.config.paths.memory, traceId);
+    const traceDir = pathBuilders.memoryExecutionPath(join(this.config.system.root, this.config.paths.memory), traceId);
     await Deno.mkdir(traceDir, { recursive: true });
 
     const pointerPath = join(traceDir, pointerName);
@@ -1132,7 +1132,10 @@ export class ExecutionLoop {
 
   private async persistExecutionReport(traceId: string, report: string): Promise<void> {
     try {
-      const execDir = pathBuilders.memoryExecutionPath(this.config.system.root, this.config.paths.memory, traceId);
+      const execDir = pathBuilders.memoryExecutionPath(
+        join(this.config.system.root, this.config.paths.memory),
+        traceId,
+      );
       await Deno.mkdir(execDir, { recursive: true });
       await Deno.writeTextFile(join(execDir, EXECUTION_REPORT_FILENAME), report);
     } catch (error) {
@@ -1212,7 +1215,10 @@ export class ExecutionLoop {
     // Persist the executed plan as an execution artifact for trace inspection.
     // This avoids relying on git diffs for read-only agent outputs.
     try {
-      const execDir = pathBuilders.memoryExecutionPath(this.config.system.root, this.config.paths.memory, traceId);
+      const execDir = pathBuilders.memoryExecutionPath(
+        join(this.config.system.root, this.config.paths.memory),
+        traceId,
+      );
       await Deno.mkdir(execDir, { recursive: true });
 
       const planContent = await Deno.readTextFile(planPath);
@@ -1226,10 +1232,12 @@ export class ExecutionLoop {
     const artifactRepo = this.db ? new DatabaseArtifactRepository(this.db) : undefined;
     if (artifactContext?.isReadOnly && artifactRepo && artifactContext.planAgentId) {
       try {
-        const execDir = pathBuilders.memoryExecutionPath(this.config.system.root, this.config.paths.memory, traceId);
+        const execDir = pathBuilders.memoryExecutionPath(
+          join(this.config.system.root, this.config.paths.memory),
+          traceId,
+        );
         const summaryPath = pathBuilders.memoryExecutionPath(
-          this.config.system.root,
-          this.config.paths.memory,
+          join(this.config.system.root, this.config.paths.memory),
           traceId,
           "summary.md",
         );
@@ -1326,7 +1334,10 @@ export class ExecutionLoop {
     // Persist the failed plan as an execution artifact for trace inspection.
     let planContent: string | null = null;
     try {
-      const execDir = pathBuilders.memoryExecutionPath(this.config.system.root, this.config.paths.memory, traceId);
+      const execDir = pathBuilders.memoryExecutionPath(
+        join(this.config.system.root, this.config.paths.memory),
+        traceId,
+      );
       await Deno.mkdir(execDir, { recursive: true });
       planContent = await Deno.readTextFile(planPath);
       await Deno.writeTextFile(join(execDir, "plan.md"), planContent);
@@ -1339,7 +1350,7 @@ export class ExecutionLoop {
     }
 
     // Move plan to Workspace/Rejected
-    const rejectedDir = pathBuilders.rejectedPath(this.config.system.root, this.config.paths.workspace);
+    const rejectedDir = pathBuilders.rejectedPath(join(this.config.system.root, this.config.paths.workspace));
     await Deno.mkdir(rejectedDir, { recursive: true });
 
     const planFileName = planPath.split("/").pop()!;
@@ -1564,7 +1575,7 @@ export class ExecutionLoop {
       );
     }
     const reportConfig = {
-      reportsDirectory: pathBuilders.memoryExecutionPath(this.config.system.root, this.config.paths.memory),
+      reportsDirectory: pathBuilders.memoryExecutionPath(join(this.config.system.root, this.config.paths.memory)),
     };
     const reader = this.db
       ? {
@@ -1716,7 +1727,10 @@ export class ExecutionLoop {
 
       // Also write a human-readable failure.md file for easy access (tests expect this file)
       try {
-        const failureDir = pathBuilders.memoryExecutionPath(this.config.system.root, this.config.paths.memory, traceId);
+        const failureDir = pathBuilders.memoryExecutionPath(
+          join(this.config.system.root, this.config.paths.memory),
+          traceId,
+        );
         await Deno.mkdir(failureDir, { recursive: true });
         const failureContent =
           `# Failure Report\n\n**Trace ID:** ${traceId}\n**Request ID:** ${requestId}\n**Agent:** ${this.agentRole}\n**Error:** ${error}\n\n**Summary:** ${traceData.summary}\n**Reasoning:** ${traceData.reasoning}\n\nGenerated at ${

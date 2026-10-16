@@ -91,7 +91,7 @@ async function createPortalTestEnv() {
   await ensureDir(portalsDir);
 
   // Create memory projects directory for context cards
-  const memoryProjectsDir = pathBuilders.memoryProjectsPath(tempDir, config.paths.memory);
+  const memoryProjectsDir = pathBuilders.memoryProjectsPath(join(tempDir, config.paths.memory));
   await ensureDir(memoryProjectsDir);
 
   return {

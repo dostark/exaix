@@ -67,7 +67,7 @@ async function withPlanExecutorTestContext(
   const testContext = await createGitTestContext(prefix);
   const { tempDir, repoDir, db, cleanup, config, git } = testContext;
   const helper = new GitTestHelper(repoDir);
-  const blueprintsDir = pathBuilders.agentsPath(config.system.root, config.paths.blueprints);
+  const blueprintsDir = pathBuilders.agentsPath(join(config.system.root, config.paths.blueprints));
 
   try {
     if (options.ensureGit !== false) {

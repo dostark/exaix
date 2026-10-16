@@ -114,7 +114,7 @@ async function makeVerificationLoop(options: {
     }],
   });
 
-  const activeDir = pathBuilders.activePath(rootDir, config.paths.workspace);
+  const activeDir = pathBuilders.activePath(join(rootDir, config.paths.workspace));
   await ensureDir(activeDir);
 
   const logger = new EventLogger({ db, defaultActor: "user:test" });

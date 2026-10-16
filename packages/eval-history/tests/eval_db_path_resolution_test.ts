@@ -6,13 +6,14 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
+import { resolve } from "@std/path";
 import { resolveEvalDbPath } from "@exaix/eval-history";
 
 Deno.test({
   name: "[EvalDbPath] explicit workspace root produces correct path",
   fn: () => {
     const path = resolveEvalDbPath("/home/user/myproject");
-    assertEquals(path, pathBuilders.runtimePath("/home/user/myproject", "eval.db"));
+    assertEquals(path, resolve(pathBuilders.runtimePath("/home/user/myproject", "eval.db")));
   },
   sanitizeOps: false,
   sanitizeResources: false,
@@ -39,7 +40,7 @@ Deno.test({
   name: "[EvalDbPath] no workspace root falls back to Deno.cwd()",
   fn: () => {
     const path = resolveEvalDbPath();
-    assertEquals(path, pathBuilders.runtimePath(Deno.cwd(), "eval.db"));
+    assertEquals(path, resolve(pathBuilders.runtimePath(Deno.cwd(), "eval.db")));
   },
   sanitizeOps: false,
   sanitizeResources: false,

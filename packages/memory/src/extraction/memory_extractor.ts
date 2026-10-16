@@ -53,8 +53,7 @@ export class MemoryExtractorService {
     private options: IMemoryExtractorOptions = {},
   ) {
     this.pendingDir = pathBuilders.memoryPendingPath(
-      config.system?.root || Deno.cwd(),
-      config.paths?.memory || DEFAULT_MEMORY_PATH,
+      join(config.system?.root || Deno.cwd(), config.paths?.memory || DEFAULT_MEMORY_PATH),
     );
   }
 

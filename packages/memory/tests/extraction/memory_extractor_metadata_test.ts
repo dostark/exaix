@@ -20,6 +20,7 @@ import {
   DEFAULT_MEMORY_PROJECTS_DIR,
   DEFAULT_MEMORY_SKILLS_DIR,
   DEFAULT_MEMORY_TASKS_DIR,
+  DEFAULT_PENDING_MEMORY_PATH,
   DEFAULT_PLANS_PATH,
   DEFAULT_PORTALS_PATH,
   DEFAULT_REJECTED_PATH,
@@ -224,5 +225,5 @@ Deno.test("Step 71.1: MemoryExtractorService attaches required metadata to propo
   }
 
   // Clean up
-  await Deno.remove(`./Memory/Pending/${proposalId}.json`).catch(() => {});
+  await Deno.remove(`./${DEFAULT_MEMORY_PATH}/${DEFAULT_PENDING_MEMORY_PATH}/${proposalId}.json`).catch(() => {});
 });

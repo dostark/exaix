@@ -6,14 +6,15 @@
  *   enumeration of Blueprints/Flows/*.flow.yaml, so no step in the shipped catalog silently
  *   lacks an explicit strategy decision and no flow's strategy assignment regresses unnoticed.
  */
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_DIR } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { FlowLoader } from "@exaix/flow";
 import { FlowValidatorImpl } from "@exaix/flow";
 import { FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 import type { IFlowStep } from "@exaix/schemas/flow.ts";
 
-const FLOWS_DIR = "./Blueprints/Flows";
-const BLUEPRINTS_DIR = "./Blueprints";
+const FLOWS_DIR = `./${DEFAULT_FLOWS_DIR}`;
+const BLUEPRINTS_DIR = `./${DEFAULT_BLUEPRINTS_PATH}`;
 
 type Decision = "react" | "cli_delegate" | "no-strategy" | "n/a-dynamic" | "session_delegate_cycle";
 

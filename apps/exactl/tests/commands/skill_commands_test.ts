@@ -60,7 +60,11 @@ Deno.test("[skills show] an unused skill shows zero uses", async () => {
 Deno.test("[skills --portal] project skills show only for their portal and are global-only without one", async () => {
   const { commands, config, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const projectRoot = pathBuilders.memorySkillsPath(config.system.root, config.paths.memory, "project", "Alpha");
+    const projectRoot = pathBuilders.memorySkillsPath(
+      join(config.system.root, config.paths.memory),
+      "project",
+      "Alpha",
+    );
     await writeSkillFolder(projectRoot, {
       name: "alpha-guide",
       instructions: "Alpha body.",
@@ -187,7 +191,7 @@ Deno.test("[skills revisions/show/usage] history survives deleting the current f
 Deno.test("[skills validate/list --all] diagnostics are typed, mutate nothing and fail the exit code on errors", async () => {
   const { commands, config, db, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const learned = pathBuilders.memorySkillsPath(config.system.root, config.paths.memory, "learned");
+    const learned = pathBuilders.memorySkillsPath(join(config.system.root, config.paths.memory), "learned");
     await writeSkillFolder(learned, {
       name: "fine-skill",
       instructions: "Fine.",
@@ -247,7 +251,7 @@ Deno.test("[security] a hostile draft prints no control byte in table or markdow
   // deno-lint-ignore no-control-regex
   const controlByte = /[\x00-\x08\x0B-\x1F\x7F]/;
   try {
-    const learned = pathBuilders.memorySkillsPath(config.system.root, config.paths.memory, "learned");
+    const learned = pathBuilders.memorySkillsPath(join(config.system.root, config.paths.memory), "learned");
     await writeSkillFolder(learned, { name: "hostile-draft", instructions: hostile });
     const service = new SkillsService({ memoryDir: join(config.system.root, config.paths.memory) }, db);
     const draft = await draftOf(service, "hostile-draft");
