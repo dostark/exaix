@@ -6,7 +6,6 @@
  * @related-files [packages/flow/src/flow_runner.ts]
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import type { JSONObject } from "@exaix/core/types";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
@@ -20,6 +19,7 @@ import {
 } from "@exaix/core";
 import { RecordingFlowLogger } from "../helpers/flow_namespace_test_helper.ts";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 interface IStartWaiter {
   ids: string[];
   resolve: () => void;

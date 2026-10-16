@@ -10,11 +10,10 @@
  * @related-files ["packages/tool-runtime/src/aci_doc_renderer.ts", "packages/schemas/src/aci_doc.ts"]
  */
 
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import { assertEquals, assertNotEquals } from "@std/assert";
 import { calculateAciDocBudgetChars, renderAciDocFragments } from "@exaix/tool-runtime";
 import type { ITool } from "@exaix/core/types";
-import { ToolSideEffectScope } from "@exaix/core";
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN, ToolSideEffectScope } from "@exaix/core";
 import type { AciDoc } from "@exaix/schemas";
 import { ACI_DOC_FRAGMENT_MAX_CHARS } from "@exaix/core";
 import type { IPromptBudget } from "@exaix/schemas";

@@ -7,7 +7,6 @@
  * @related-files [packages/flow/src/flow_checkpoint_coordinator.ts, packages/flow/src/flow_runner.ts]
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { FlowCheckpointCoordinator, type IFlowEventLogger } from "@exaix/flow";
 import {
@@ -23,6 +22,7 @@ import { FLOW_CHECKPOINT_SCHEMA_VERSION, FlowInputSource, FlowOutputFormat } fro
 import type { JSONValue } from "@exaix/core";
 import type { IFlowCheckpointService } from "@exaix/flow";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class FakeCheckpointService implements IFlowCheckpointService {
   store = new Map<string, IFlowCheckpoint>();
   deleteCalls: string[] = [];

@@ -6,7 +6,6 @@
  * @related-files [packages/flow/src/flow_runner.ts]
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepOnErrorAction } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
@@ -21,6 +20,7 @@ import { LocalToolDispatcher, ToolHandler } from "@exaix/mcp/server";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class RecordingDeleteFileTool extends ToolHandler {
   static calls: Array<Record<string, JSONValue>> = [];
 

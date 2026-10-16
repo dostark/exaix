@@ -11,7 +11,6 @@
  * ]
  */
 
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import { assertEquals, assertGreater, assertLessOrEqual } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import {
@@ -19,6 +18,7 @@ import {
   REACT_STATUS_COMPLETE,
   REACT_SUMMARY_PREFIX,
   REACT_TOOL_RESULT_BUDGET_RATIO,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
 import type { IAgentFileBlueprint } from "@exaix/execution";

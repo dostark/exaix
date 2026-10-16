@@ -11,9 +11,9 @@
  * @related-files [packages/flow/src/condition_evaluator.ts]
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { ConditionEvaluator, type IConditionContext } from "@exaix/flow";
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 const PWNED_KEY = "__exaix_condition_sandbox_pwned__";
 
 function ctx(): IConditionContext {

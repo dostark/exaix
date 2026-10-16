@@ -6,13 +6,14 @@
  * @related-files ["packages/schemas/src/prompt_budget.ts", "packages/core/src/types/constants.ts"]
  */
 
-import { LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import {
   DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED,
   DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED,
+  LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
   LOCAL_PROVIDER_PREFIXES,
   SECTION_FLOORS,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import { PromptBudgetSection, ZBudgetPolicy, ZPromptBudget } from "@exaix/schemas";
 

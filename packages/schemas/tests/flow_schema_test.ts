@@ -7,12 +7,12 @@
  * validation of steps, inputs, and output formats.
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertThrows } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType, ProviderCostTier } from "@exaix/core";
 import { type z, ZodError } from "zod";
 import { FlowSchema, FlowStepSchema } from "@exaix/schemas";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 // Test FlowStep schema validation
 Deno.test("FlowStepSchema: validates valid step definition", () => {
   const validStep = {

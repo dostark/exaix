@@ -13,7 +13,6 @@
  * @related-files ["packages/request/src/processor.ts", "packages/core/src/blueprint/blueprint_loader.ts"]
  */
 
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import type { ICallSite, IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 import type { IBlueprint } from "@exaix/core/blueprint";
 import { type IGenerateResult, ModelProviderError } from "@exaix/ai/providers";
@@ -35,7 +34,7 @@ import {
 } from "@exaix/schemas";
 import { toSafeJson } from "@exaix/core/types";
 import type { IToolRegistryFactory } from "@exaix/core/types";
-import type { JSONValue } from "@exaix/core";
+import { type JSONValue, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import {
   PlanningToolLoopStopReason,
   PlanningToolsSkipReason,

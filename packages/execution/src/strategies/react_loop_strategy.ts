@@ -7,7 +7,6 @@
  * @related-files [packages/execution/src/agent_composer.ts, packages/execution/src/strategies/execution_strategy.ts]
  */
 
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import type { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_composer.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
@@ -24,7 +23,7 @@ import type {
 import { TOOL_CHOICE_TYPE_AUTO } from "@exaix/ai/types.ts";
 import { PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
 import type { INativePromptSection } from "@exaix/ai";
-import { PromptBudgetAllocator, SkillSubmissionKind } from "@exaix/core";
+import { PromptBudgetAllocator, SkillSubmissionKind, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import type { IProviderToolCall } from "@exaix/ai/providers";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { ITool, IToolResult } from "@exaix/core/types";

@@ -1,8 +1,9 @@
 /**
  * @module SharedConstants
  * @path packages/shared/src/constants.ts
- * @description Constants that both @exaix/core and @exaix/schemas need. Living below
- *   both packages keeps them free of the core-schemas import cycle.
+ * @description Constants that more than one package needs across the core-schemas boundary, or
+ *   that a lower layer than every consumer must own. Living below both packages keeps them free
+ *   of the core-schemas import cycle.
  * @architectural-layer Shared
  * @dependencies []
  * @related-files [packages/shared/mod.ts]
@@ -29,17 +30,8 @@ export const DEFAULT_PENDING_MEMORY_PATH = "Pending";
 export const DEFAULT_TASKS_MEMORY_PATH = "Tasks";
 export const DEFAULT_GLOBAL_MEMORY_PATH = "Global";
 
-/** Reflexive convergence limits, shared by core and schemas. */
-export const DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA = 3;
-export const DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS = 12;
-
-/** Flow and namespace limits, shared by core and schemas. */
-export const DEFAULT_FLOW_VERSION = "1.0.0";
+/** Namespace byte limit, shared by core and schemas. */
 export const DEFAULT_NAMESPACE_MAX_BYTES = 65536;
-
-/** Token estimation and local-model context window, shared by core and schemas. */
-export const TOKEN_ESTIMATION_CHARS_PER_TOKEN = 4;
-export const LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32_768;
 
 /** Skill name limit and the effort auto literal, shared by core and schemas. */
 export const SKILL_NAME_MAX_LENGTH = 64;

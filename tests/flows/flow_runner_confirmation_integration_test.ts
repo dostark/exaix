@@ -5,7 +5,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_AGENTS_PATH, DEFAULT_FLOW_VERSION } from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { StubNotificationServiceBase } from "../helpers/notification_service_stub_helpers.ts";
@@ -23,6 +23,7 @@ import { initTestDbService } from "@exaix/testing";
 import { createStubConfig, createStubContext } from "@exaix/testing";
 import type { JSONValue } from "@exaix/core/types";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 type IToolDefinition = ReturnType<ToolHandler["getToolDefinition"]>;
 
 class NoopEventLogger implements IFlowEventLogger {

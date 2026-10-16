@@ -8,7 +8,6 @@
  * namespace state on its first touch.
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -23,6 +22,7 @@ import type { IFlowStepRequest } from "@exaix/flow";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { initTestDbService } from "@exaix/testing";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 const noopLogger: IFlowEventLogger = { log: () => {} };
 
 class JsonAgentRunner implements IAgentExecutor {

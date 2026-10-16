@@ -6,7 +6,6 @@
  * @related-files [packages/flow/src/flow_runner.ts]
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowRunner, type IAgentExecutor, type IFlowEventLogger, type IFlowStepRequest } from "@exaix/flow";
@@ -15,6 +14,7 @@ import type { IAgentExecutionResult } from "@exaix/execution";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class CapturingExecutor implements IAgentExecutor {
   readonly capturedRequests: Array<{ agentRole: string; request: IFlowStepRequest }> = [];
   private readonly responses = new Map<string, string | Error>();

@@ -13,7 +13,6 @@
  * @related-files ["packages/execution/src/agent_runner.ts", "packages/execution/src/native_tool_turns.ts", "packages/execution/src/strategies/react_loop_strategy.ts"]
  */
 
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import { isAbsolute, resolve, SEPARATOR } from "@std/path";
 import type {
   IModelOptions,
@@ -54,6 +53,7 @@ import {
   PLANNING_TOOLS_UNTRUSTED_DATA_NOTICE,
   PlanningToolLoopStopReason,
   REACT_TOOL_RESULT_SUMMARY_MAX,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import { canonicalizeForRegistry, PathSecurity } from "@exaix/tool-runtime";
 import {

@@ -7,7 +7,6 @@
  * guard: DomainEventType.FlowStepReplayed must NOT be emitted on the current reuse path.
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertFalse } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import {
@@ -34,6 +33,7 @@ import {
   StepSideEffectClass,
 } from "@exaix/core";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 // Test doubles
 
 /** Captures all emitted events for assertion. */

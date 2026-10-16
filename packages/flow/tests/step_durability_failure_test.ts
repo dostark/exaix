@@ -5,7 +5,6 @@
  * verifying partial metadata (missing completedAt, zero durationMs) is stored.
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
 import {
   FlowExecutionError,
@@ -22,6 +21,7 @@ import type { IFlowInput } from "@exaix/schemas/flow.ts";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, FlowInputSource, FlowOutputFormat, StepExecutionDisposition } from "@exaix/core";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class RecordingDurabilityStore implements IStepDurabilityStore {
   private recordsMap = new Map<string, IStepExecutionRecord>();
 

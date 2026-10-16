@@ -19,13 +19,19 @@
  * ]
  */
 
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import type { HitlPolicy } from "@exaix/schemas/hitl.ts";
 import type { IDatabaseService, ISkillsService } from "@exaix/core/types";
 import { createSkillOperationContext, SkillUnavailableError } from "@exaix/core/skills";
 import type { IEventLogger } from "@exaix/core/logger";
-import { ActorType, AGENT_GENERATION_COMPLETED, canonicalizeToolName, LogLevel, RunnerKind } from "@exaix/core";
+import {
+  ActorType,
+  AGENT_GENERATION_COMPLETED,
+  canonicalizeToolName,
+  LogLevel,
+  RunnerKind,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
+} from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";

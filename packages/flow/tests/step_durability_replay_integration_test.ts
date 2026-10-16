@@ -6,7 +6,6 @@
  * back to normal execution when no match exists.
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { encodeHex } from "@std/encoding/hex";
 import {
@@ -31,6 +30,7 @@ import {
   StepSideEffectClass,
 } from "@exaix/core";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class TrackingDurabilityStore implements IStepDurabilityStore {
   records = new Map<string, IStepExecutionRecord>();
   findReplayCandidateCalls: Array<{ query: Parameters<IStepDurabilityStore["findReplayCandidate"]>[0] }> = [];

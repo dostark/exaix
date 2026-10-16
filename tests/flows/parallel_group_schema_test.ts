@@ -6,11 +6,11 @@
  * @related-files ["packages/schemas/src/flow.ts"]
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowSchema, FlowStepSchema, ZFlowParallelConfig, ZParallelMergeMode } from "@exaix/schemas/flow.ts";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 Deno.test("ZFlowParallelConfig: applies merge defaults", () => {
   const parsed = ZFlowParallelConfig.parse({ group: "reviewers" });
 

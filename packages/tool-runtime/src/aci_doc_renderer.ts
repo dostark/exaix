@@ -14,9 +14,8 @@
  * @dependencies ["@exaix/core", "@exaix/schemas"]
  * @related-files ["packages/schemas/src/aci_doc.ts", "packages/core/src/types/i_tool_registry.ts", "packages/execution/src/strategies/react_loop_strategy.ts"]
  */
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import type { ITool } from "@exaix/core/types";
-import { ACI_DOC_FRAGMENT_MAX_CHARS } from "@exaix/core";
+import { ACI_DOC_FRAGMENT_MAX_CHARS, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import { type AciDoc, AciDocSchema } from "@exaix/schemas";
 import type { IPromptBudget } from "@exaix/schemas";
 import type { JSONValue } from "@exaix/core";

@@ -6,7 +6,6 @@
  * classification.
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertNotEquals } from "@std/assert";
 import {
   FlowRunner,
@@ -28,6 +27,7 @@ import {
   StepExecutionDisposition,
 } from "@exaix/core";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class RecordingDurabilityStore implements IStepDurabilityStore {
   private recordsMap = new Map<string, IStepExecutionRecord>();
 

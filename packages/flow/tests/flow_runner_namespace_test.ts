@@ -6,7 +6,6 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowRunner } from "@exaix/flow";
@@ -19,6 +18,7 @@ import {
 import { initTestDbService } from "@exaix/testing";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../../../tests/helpers/flow_namespace_test_helper.ts";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 function createNamespaceFlow(): IFlowInput {
   return {
     id: "namespace-payload-flow",

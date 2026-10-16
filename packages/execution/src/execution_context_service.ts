@@ -9,13 +9,12 @@
  * @related-files [packages/execution/src/agent_composer.ts]
  */
 
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
-import { PromptBudgetAllocator } from "@exaix/core";
+import { PromptBudgetAllocator, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import type { IAllocationHints } from "@exaix/core/prompt_budget_allocator.ts";
 import type { ITokenizer } from "@exaix/core/func";
 import type { ContextCache } from "@exaix/core/context";

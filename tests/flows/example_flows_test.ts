@@ -5,7 +5,6 @@
  * that all example definitions follow the current schema and execution patterns.
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
@@ -21,6 +20,7 @@ import type { IAgentExecutionResult } from "@exaix/execution";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { JSONValue } from "@exaix/core/types";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 describe("Example Flows - Step 7.9", {
   sanitizeResources: false,
   sanitizeOps: false,

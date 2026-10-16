@@ -8,7 +8,6 @@
  * @related-files [packages/flow/src/flow_namespace_coordinator.ts, packages/flow/src/flow_runner.ts]
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { FlowNamespaceCoordinator, type IFlowEventLogger } from "@exaix/flow";
 import type { IExecutionMemoryStore } from "@exaix/core/execution-memory";
@@ -19,6 +18,7 @@ import type { IToolResult } from "@exaix/core/types";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class FakeExecutionMemoryStore implements IExecutionMemoryStore {
   initializeCalls: string[] = [];
   writeCalls: Array<{ traceId: string; stepId: string }> = [];

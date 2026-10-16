@@ -7,11 +7,7 @@
  * @related-files ["packages/schemas/src/config.ts"]
  */
 
-import {
-  DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
-  DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
-  ExaPathDefaults,
-} from "@exaix/shared";
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
 
@@ -23,6 +19,10 @@ import {
   DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS,
 } from "@exaix/core";
 
+import {
+  DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
+  DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
+} from "@exaix/schemas/constants.ts";
 interface IBaseConfig {
   system: { root: string; log_level: string };
   paths: typeof ExaPathDefaults;

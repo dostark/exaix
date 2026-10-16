@@ -6,7 +6,6 @@
  * flows leave an audit trail without enabling automatic replay of prior steps.
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { encodeHex } from "@std/encoding/hex";
 import {
@@ -29,6 +28,7 @@ import {
   FlowOutputFormat,
 } from "@exaix/core";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 // Test doubles
 
 class TrackingDurabilityStore implements IStepDurabilityStore {

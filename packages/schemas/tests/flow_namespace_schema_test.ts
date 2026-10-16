@@ -6,7 +6,7 @@
  * @description Verifies Phase 64 namespace schema parsing, defaults, and backward compatibility.
  */
 
-import { DEFAULT_FLOW_VERSION, DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/shared";
+import { DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/shared";
 import { assertEquals, assertThrows } from "@std/assert";
 import { type z, ZodError } from "zod";
 import { DataFormat, FlowInputSource, FlowOutputFormat } from "@exaix/core";
@@ -25,6 +25,7 @@ import {
   ZFlowStepNamespace,
 } from "@exaix/schemas";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 Deno.test("ZFlowNamespaceConfig: applies defaults", () => {
   const parsed = ZFlowNamespaceConfig.parse({ enabled: true });
 

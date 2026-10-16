@@ -6,9 +6,9 @@
  * @description Tests for TokenCounter utility.
  */
 
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import { assertEquals, assertGreater, assertLess } from "@std/assert";
 import { TokenCounter, trackStreamTokens } from "@exaix/core/func";
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 Deno.test("[TokenCounter] estimates tokens using 4:1 heuristic", () => {
   const counter = new TokenCounter();
   const text = "x".repeat(400);

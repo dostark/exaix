@@ -14,7 +14,6 @@
  * @related-files ["packages/execution/src/agent_runner.ts"]
  */
 
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import {
@@ -31,6 +30,7 @@ import {
   CONTEXT_SECTION_PORTAL_KNOWLEDGE,
   CONTEXT_SECTION_SKILLS,
   CONTEXT_SECTION_SYSTEM,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ITokenizer } from "@exaix/core/func";

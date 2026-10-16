@@ -8,7 +8,6 @@
  *   unchanged, the flow completes, and namespace.md is never created.
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -29,6 +28,7 @@ import type { IFlow } from "@exaix/schemas/flow.ts";
 import { initTestDbService } from "@exaix/testing";
 import type { JSONValue } from "@exaix/core";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class JsonAgentRunner implements IAgentExecutor {
   run(_agentRole: string, _request: IFlowStepRequest): Promise<{ thought: string; content: string; raw: string }> {
     return Promise.resolve({

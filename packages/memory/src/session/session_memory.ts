@@ -6,7 +6,6 @@
  * @related-files ["packages/memory/src/bank/memory_bank.ts", "packages/execution/src/agent_runner.ts"]
  */
 
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import { z } from "zod";
 import type { IMemoryBankService } from "@exaix/core/types";
 import type { IMemoryEmbeddingService } from "@exaix/core/types";
@@ -23,6 +22,7 @@ import {
   MEMORY_LINK_EXPANSION_SCORE_FACTOR,
   MEMORY_TEMPORAL_RECENCY_HALF_LIFE_DAYS,
   SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import { ConfidenceLevel, LearningCategory, MemoryType } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";

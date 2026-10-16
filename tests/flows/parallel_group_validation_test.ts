@@ -6,7 +6,6 @@
  * @related-files [packages/flow/src/flow_runner.ts, "packages/schemas/src/flow.ts"]
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertRejects, assertStringIncludes } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import {
@@ -21,6 +20,7 @@ import type { IAgentExecutionResult } from "@exaix/execution";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class StubAgentExecutor implements IAgentExecutor {
   async run(_agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     return await Promise.resolve({ thought: "", content: "ok", raw: "ok" });

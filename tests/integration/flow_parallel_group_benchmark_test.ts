@@ -7,7 +7,6 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/src/wave_orchestrator.ts]
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowRunner, type IAgentExecutor } from "@exaix/flow";
@@ -16,6 +15,7 @@ import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, FLOW_EVENT_PARALLEL_GROUP_STARTED } from "@exaix/core";
 import { RecordingFlowLogger } from "../helpers/flow_namespace_test_helper.ts";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 /** Deterministic per-step delay so the timing assertion is stable without real model latency. */
 const BENCHMARK_STEP_DELAY_MS = 150;
 

@@ -9,9 +9,9 @@
 
 import { countTokens as aiCountTokens } from "ai-token-estimator";
 
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import { TokenizerBackend } from "../types/enums.ts";
 
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 export interface ITokenizer {
   countTokens(text: string, model: string): Promise<number>;
   countTokensBatch(texts: string[], model: string): Promise<number[]>;

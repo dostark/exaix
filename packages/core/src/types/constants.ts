@@ -1195,9 +1195,14 @@ export const RATE_LIMIT_WINDOW_DAY_MS = 86_400_000; // 1 day
 /** Tokens per million, for cost math. */
 export const TOKENS_PER_MTOK = 1_000_000;
 
+/** Estimated characters per token for the heuristic counter. */
+export const TOKEN_ESTIMATION_CHARS_PER_TOKEN = 4;
 export const TOKEN_ESTIMATION_MAX_TOKENS = 2000;
 
 // Prompt Budgeting
+
+/** Context window assumed for a local model when the provider reports none. */
+export const LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32_768;
 
 /** Provider ID prefixes that identify local/self-hosted LLM providers. */
 export const LOCAL_PROVIDER_PREFIXES = [

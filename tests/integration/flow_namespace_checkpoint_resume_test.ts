@@ -6,7 +6,6 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
@@ -19,6 +18,7 @@ import { initTestDbService } from "@exaix/testing";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
 import { getMemoryExecutionDir } from "@exaix/testing";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 Deno.test("[Step64.3] FlowRunner resumes with persisted namespace state and skips failed-step writes", async () => {
   const { config, tempDir, cleanup } = await initTestDbService();
 

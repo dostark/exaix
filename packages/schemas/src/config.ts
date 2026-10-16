@@ -15,8 +15,6 @@ import {
   DEFAULT_MEMORY_PATH,
   DEFAULT_PLANS_PATH,
   DEFAULT_PORTALS_PATH,
-  DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
-  DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
   DEFAULT_REJECTED_PATH,
   DEFAULT_REQUESTS_PATH,
   DEFAULT_RUNTIME_PATH,
@@ -87,6 +85,10 @@ import { GuardrailConfigSchema } from "./guardrail.ts";
 import { CliDelegateConfigSchema, SessionDelegateConfigSchema } from "./session_delegate.ts";
 import { HitlRuleSchema } from "./hitl.ts";
 
+import {
+  DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
+  DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
+} from "./constants.ts";
 export interface IPortalConfig {
   alias: string;
   target_path: string;

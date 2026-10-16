@@ -7,13 +7,13 @@
  * @related-files [apps/exactl/src/commands/flow_commands.ts, "packages/core/src/types/constants.ts"]
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 import { McpToolName, READ_ONLY_TOOLS, WRITE_TOOLS } from "@exaix/mcp";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import { validateFlowForCli } from "@exaix/cli/flow_validation.ts";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 /**
  * Helper to create minimal valid step
  */

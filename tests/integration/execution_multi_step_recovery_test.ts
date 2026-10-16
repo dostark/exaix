@@ -6,7 +6,6 @@
  * @related-files [packages/flow/src/flow_runner.ts, exaix-team/packages/mcp-server/handlers/delete_file_tool.ts]
  */
 
-import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
@@ -29,6 +28,7 @@ import { createStubConfig, createStubContext } from "@exaix/testing";
 import { GitTestHelper, setupGitRepo } from "@exaix/git/testing";
 import { initToolPermissionTest } from "@exaix/mcp/testing";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 type AgentStepHandler = () => Promise<IAgentExecutionResult>;
 
 class FunctionalAgentExecutor implements IAgentExecutor {

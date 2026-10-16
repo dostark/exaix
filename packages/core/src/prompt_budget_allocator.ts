@@ -6,7 +6,6 @@
  * @description Dynamic prompt budget allocator with waterfall reallocation logic.
  */
 
-import { LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK } from "@exaix/shared";
 import {
   ADJUSTMENT_EPSILON,
   ADJUSTMENT_FILE_COUNT_THRESHOLD,
@@ -36,6 +35,7 @@ import { DomainEventType } from "@exaix/core/events";
 import { TaskType } from "./types/enums.ts";
 import type { IModelRegistry, Opt, Reason } from "@exaix/core/types";
 
+import { LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK } from "@exaix/core";
 export interface IAllocationHints {
   memoryUsedTokens?: number;
   skillsUsedTokens?: number;

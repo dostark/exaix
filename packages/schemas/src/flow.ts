@@ -6,7 +6,7 @@
  * @related-files [packages/flow/src/flow_loader.ts, packages/flow/src/condition_evaluator.ts]
  */
 
-import { DEFAULT_FLOW_VERSION, DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/shared";
+import { DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/shared";
 import { EvaluationCriterionSchema, EvaluationResultSchema } from "@exaix/core/evaluation";
 import { z } from "zod";
 import { CAP_VOTING } from "@exaix/core/composer";
@@ -43,6 +43,7 @@ import {
 } from "@exaix/core";
 import { resolveConfigurableBounds } from "@exaix/core/config";
 
+import { DEFAULT_FLOW_VERSION } from "./constants.ts";
 const DateOrStringSchema = z.union([z.string().datetime(), z.date()]).transform((value) => {
   return value instanceof Date ? value.toISOString() : value;
 });

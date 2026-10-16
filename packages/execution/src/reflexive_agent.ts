@@ -7,10 +7,6 @@
  */
 
 import {
-  DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
-  DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
-} from "@exaix/shared";
-import {
   CritiqueIssueType,
   CritiqueQuality,
   CritiqueSeverity,
@@ -42,6 +38,10 @@ import {
 import type { IBlueprint } from "@exaix/core/blueprint";
 import type { IEventLogger } from "@exaix/core/logger";
 
+import {
+  DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
+  DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
+} from "@exaix/schemas/constants.ts";
 export interface IReflexiveAgentConvergenceConfig {
   qualityExitThreshold: number;
   minImprovementDelta: number;

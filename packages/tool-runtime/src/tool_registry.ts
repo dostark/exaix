@@ -6,7 +6,6 @@
  * @architectural-layer Services
  * @related-files ["packages/core/src/planning/plan_executor.ts", exaix-team/packages/mcp-server/tools.ts]
  */
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { isAbsolute, join, resolve, SEPARATOR } from "@std/path";
 import { expandGlob } from "@std/fs";
@@ -22,6 +21,7 @@ import {
   MAX_GRAPH_TOOL_RESULTS,
   PORTAL_PREFIX_PATTERN,
   SystemCommand,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
   TOOL_AUTH_ONLY_PARAMS,
   ToolCallEntryPoint,
   ToolName,
