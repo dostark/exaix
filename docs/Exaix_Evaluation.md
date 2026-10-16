@@ -191,7 +191,12 @@ exactl eval report --view cost --scenario fix-bug-null-guard-cli-all
 #### `--view families`
 
 Per-task-family aggregate (mean score, pass@1, reconcile rate, duration) over the `task:` tag —
-the readout behind §12's subsystem reporting, narrowed to task families.
+the readout behind §12's subsystem reporting, narrowed to task families. `--format json` prints
+the same rows as one JSON array.
+
+```bash
+exactl eval report --view families [--pack <name>] [--format json]
+```
 
 #### `--view lift` — harness lift
 
