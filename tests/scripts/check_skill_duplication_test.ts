@@ -17,6 +17,7 @@
  * ]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join, resolve } from "@std/path";
 import {
@@ -122,7 +123,10 @@ Deno.test("Skill duplication: policy schema is current and every entry documents
 
 Deno.test("Skill duplication: discovery walks both corpora and returns repo-relative paths", () => {
   const files = discoverSkillFiles(REPO_ROOT);
-  assertStringIncludes(files.join("\n"), "Blueprints/Skills/response-contract/SKILL.md");
+  assertStringIncludes(
+    files.join("\n"),
+    `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/response-contract/SKILL.md`,
+  );
   assertStringIncludes(files.join("\n"), ".copilot/skills/commit/SKILL.md");
 });
 

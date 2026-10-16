@@ -7,13 +7,14 @@
  * @related-files [packages/session/src/session_return_processor.ts]
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { briefFor, dropReturn, makeRig, park } from "./helpers/session_return_watch_helpers.ts";
 
 Deno.test("[integration/session_return][security] GAP-10 — a partial return.json is not processed", async () => {
   const rig = await makeRig();
   try {
-    const brief = await briefFor(rig, "plan_review", ["Workspace/Plans/**"]);
+    const brief = await briefFor(rig, "plan_review", [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/**`]);
     await park(rig, brief);
     // Truncated JSON (as if mid-write) — must not advance the gate.
     await dropReturn(rig, brief.trace_id, '{"trace_id":"' + brief.trace_id + '","resume_token":"');

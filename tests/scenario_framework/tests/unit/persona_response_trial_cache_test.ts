@@ -5,6 +5,7 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/persona_response_trial.ts]
  */
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { readCachedPersonaTrialSnapshot, writePersonaResponseTrial } from "../../runner/persona_response_trial.ts";
@@ -71,7 +72,7 @@ Deno.test("[PersonaResponseTrialCache] reuses a previously persisted trial snaps
       variant: "shipped",
       runId: "22222222-2222-4222-8222-222222222222",
       responseRowid: 1,
-      planPath: "Workspace/Plans/current_plan.md",
+      planPath: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/current_plan.md`,
       content: "accepted content",
       contentHash: Array.from(
         new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("accepted content"))),

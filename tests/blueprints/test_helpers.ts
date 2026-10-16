@@ -11,6 +11,7 @@
  *   tests/blueprints/referential_integrity_gate_test.ts]
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 
@@ -35,9 +36,9 @@ export interface IRawFrontmatter {
 }
 
 export const REPO_ROOT = join(import.meta.dirname!, "..", "..");
-export const AGENTS_DIR = join(REPO_ROOT, "Blueprints", "Agents");
-export const SKILLS_DIR = join(REPO_ROOT, "Blueprints", "Skills");
-export const FRAGMENTS_DIR = join(REPO_ROOT, "Blueprints", "Fragments");
+export const AGENTS_DIR = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
+export const SKILLS_DIR = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
+export const FRAGMENTS_DIR = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, "Fragments");
 
 /** Destructive tool names that read-only agent roles must not carry. */
 export const DESTRUCTIVE_TOOLS = new Set([

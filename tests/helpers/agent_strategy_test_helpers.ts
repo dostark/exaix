@@ -4,6 +4,7 @@
  * @description Shared test helpers for agent executor strategy integration tests.
  * @architectural-layer Tests
  */
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { initTestDbService } from "@exaix/testing";
 import { createTestConfig } from "../../packages/ai/tests/helpers/test_config.ts";
@@ -48,8 +49,8 @@ export async function setupStrategyExecutor(
   config.system.root = tempDir;
   config.paths = {
     ...config.paths,
-    workspace: join(tempDir, "Workspace"),
-    blueprints: join(tempDir, "Blueprints"),
+    workspace: join(tempDir, DEFAULT_WORKSPACE_PATH),
+    blueprints: join(tempDir, DEFAULT_BLUEPRINTS_PATH),
   };
   config.portals = [{
     alias: "workspace",
@@ -59,7 +60,7 @@ export async function setupStrategyExecutor(
     operations: [],
   }];
 
-  const blueprintsDir = join(tempDir, "Blueprints", "Agents");
+  const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
   await Deno.mkdir(blueprintsDir, { recursive: true });
   const fixture = readFixtureTextSync(import.meta.url, fixturePath.group, fixturePath.file, "fixture_1.md");
   await Deno.writeTextFile(join(blueprintsDir, "strategy-agent.md"), fixture);

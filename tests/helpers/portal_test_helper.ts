@@ -5,6 +5,7 @@
  * coordinating portal registration, alias validation, and lifecycle simulation.
  */
 
+import { DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { PortalCommands } from "../../apps/exactl/src/commands/portal_commands.ts";
 import { initTestDbService } from "@exaix/testing";
@@ -98,7 +99,7 @@ export class PortalConfigTestHelper {
 
     // Create portal symlink directory (Portals/) for mounted projects
     // and portal context store (Memory/Portals/) for portal context cards (Markdown)
-    await Deno.mkdir(join(tempRoot, "Portals"), { recursive: true });
+    await Deno.mkdir(join(tempRoot, DEFAULT_PORTALS_PATH), { recursive: true });
     await Deno.mkdir(getPortalsDir(tempRoot), { recursive: true });
 
     const contextCards = new ContextCardAdapter(new ContextCardGenerator(configService.getAll()));
@@ -173,14 +174,14 @@ export class PortalConfigTestHelper {
    * Get portal symlink path
    */
   getSymlinkPath(alias: string): string {
-    return join(this.tempRoot, "Portals", alias);
+    return join(this.tempRoot, DEFAULT_PORTALS_PATH, alias);
   }
 
   /**
    * Get portal context card path
    */
   getCardPath(alias: string): string {
-    return join(this.tempRoot, "Memory", "Portals", `${alias}.md`);
+    return join(this.tempRoot, DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PATH, `${alias}.md`);
   }
 
   /**

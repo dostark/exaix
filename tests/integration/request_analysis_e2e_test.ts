@@ -8,6 +8,12 @@
  * @related-files ["packages/request/src/processor.ts", *   packages/request/src/analysis/analyzer.ts, *   packages/request/src/analysis/persistence.ts, "packages/schemas/src/request_analysis.ts"]
  */
 
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "@exaix/request";
@@ -45,9 +51,9 @@ Deno.test(
       };
 
       const processor = new RequestProcessor({
-        workspacePath: join(env.tempDir, "Workspace"),
-        requestsDir: join(env.tempDir, "Workspace", "Requests"),
-        blueprintsPath: join(env.tempDir, "Blueprints", "Agents"),
+        workspacePath: join(env.tempDir, DEFAULT_WORKSPACE_PATH),
+        requestsDir: join(env.tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH),
+        blueprintsPath: join(env.tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH),
         includeReasoning: true,
         context,
         testProvider: provider,

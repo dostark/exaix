@@ -18,6 +18,7 @@
  * @related-files [tests/scenario_framework/runner/scenario_catalog.ts, packages/flow/src/flow_loader.ts, packages/ai/src/providers/mock_llm_provider.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { dirname, fromFileUrl, join } from "@std/path";
@@ -36,7 +37,7 @@ import { loadManifestCases } from "./helpers/flows_fixture_coverage_fixture.ts";
 const TEST_FILE_DIR = dirname(fromFileUrl(import.meta.url));
 const FRAMEWORK_HOME = join(TEST_FILE_DIR, "../..");
 const REPO_ROOT = join(FRAMEWORK_HOME, "..", "..");
-const FLOWS_DIR = join(REPO_ROOT, "Blueprints", "Flows");
+const FLOWS_DIR = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH);
 const FIXTURES_DIR = join(FRAMEWORK_HOME, "fixtures", "mock_recordings", "flow_blueprints");
 const FLOW_BLUEPRINTS_PACK = "flow_blueprints";
 const CALL_STEP_ID = "submit-flow-request";

@@ -6,7 +6,7 @@
  * @related-files [packages/memory/src/bank/memory_bank.ts, packages/core/src/types/i_database_service.ts]
  */
 
-import { DEFAULT_PENDING_MEMORY_PATH } from "@exaix/shared";
+import { DEFAULT_MEMORY_PATH, DEFAULT_PENDING_MEMORY_PATH } from "@exaix/shared";
 import {
   DEFAULT_TITLE_PLACEHOLDER,
   MemoryExtractionMethod,
@@ -53,7 +53,7 @@ export class MemoryExtractorService {
   ) {
     this.pendingDir = join(
       config.system?.root || Deno.cwd(),
-      config.paths?.memory || "Memory",
+      config.paths?.memory || DEFAULT_MEMORY_PATH,
       DEFAULT_PENDING_MEMORY_PATH,
     );
   }

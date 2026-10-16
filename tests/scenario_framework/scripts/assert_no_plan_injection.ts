@@ -8,6 +8,7 @@
  * @related-files [tests/scenario_framework/scenarios/adversarial/planning-tool-output-attacked.yaml]
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 
 const [workspaceRoot, canary] = Deno.args;
@@ -15,7 +16,7 @@ if (!workspaceRoot || !canary) {
   throw new Error("usage: assert_no_plan_injection.ts <workspaceRoot> <canary>");
 }
 
-const plansDir = join(workspaceRoot, "Workspace", "Plans");
+const plansDir = join(workspaceRoot, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH);
 let found = 0;
 try {
   for (const entry of Deno.readDirSync(plansDir)) {

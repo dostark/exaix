@@ -26,6 +26,7 @@
  * @related-files [tests/scenario_framework/runner/sandbox_lifecycle.ts, tests/scenario_framework/runner/config.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import {
@@ -98,10 +99,10 @@ Deno.test("[sandbox-cleanup] an in-sandbox output dir is preserved; an external 
 
 async function makeSandbox(): Promise<string> {
   const root = await Deno.makeTempDir({ prefix: "sandbox-cleanup-" });
-  await Deno.mkdir(join(root, ".exa"), { recursive: true });
-  await Deno.writeTextFile(join(root, ".exa", "journal.db"), "journal bytes");
-  await Deno.mkdir(join(root, "Blueprints", "Flows"), { recursive: true });
-  await Deno.writeTextFile(join(root, "Blueprints", "Flows", "a.flow.yaml"), "id: a");
+  await Deno.mkdir(join(root, DEFAULT_RUNTIME_PATH), { recursive: true });
+  await Deno.writeTextFile(join(root, DEFAULT_RUNTIME_PATH, "journal.db"), "journal bytes");
+  await Deno.mkdir(join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH), { recursive: true });
+  await Deno.writeTextFile(join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "a.flow.yaml"), "id: a");
   await Deno.mkdir(join(root, "fixtures", "portals"), { recursive: true });
   await Deno.writeTextFile(join(root, "fixtures", "portals", "big"), "x".repeat(1024));
   await Deno.writeTextFile(join(root, "exa.config.toml"), '[system]\nroot = "."\n');
@@ -128,8 +129,8 @@ Deno.test("[sandbox-cleanup] removal keeps the evidence dir and the manifest sta
     const outcome = await applySandboxCleanup(decision, root);
 
     assertEquals(outcome.removed, true);
-    assertEquals(await exists(join(root, ".exa")), false, "runtime state must go");
-    assertEquals(await exists(join(root, "Blueprints")), false);
+    assertEquals(await exists(join(root, DEFAULT_RUNTIME_PATH)), false, "runtime state must go");
+    assertEquals(await exists(join(root, DEFAULT_BLUEPRINTS_PATH)), false);
     assertEquals(await exists(join(root, "fixtures")), false, "the 2.5MB of portal fixtures must go");
     assertEquals(await exists(join(root, "exa.config.toml")), false);
 
@@ -175,8 +176,8 @@ Deno.test("[sandbox-cleanup] a retained sandbox is left exactly as it was", asyn
     const outcome = await applySandboxCleanup(decision, root);
 
     assertEquals(outcome.removed, false);
-    assert(await exists(join(root, ".exa", "journal.db")), "a failed run's journal is the point");
-    assert(await exists(join(root, "Blueprints", "Flows", "a.flow.yaml")));
+    assert(await exists(join(root, DEFAULT_RUNTIME_PATH, "journal.db")), "a failed run's journal is the point");
+    assert(await exists(join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "a.flow.yaml")));
     assertEquals(outcome.path, root, "the retained path must be reported so an operator can find it");
   } finally {
     await Deno.remove(root, { recursive: true }).catch(() => {});
@@ -204,7 +205,7 @@ Deno.test("[sandbox-cleanup] cleanup refuses a path that is not the sandbox it w
     }
 
     assertEquals(threw, true, "a mismatched target must throw rather than remove");
-    assert(await exists(join(root, ".exa")), "nothing may be removed on refusal");
+    assert(await exists(join(root, DEFAULT_RUNTIME_PATH)), "nothing may be removed on refusal");
   } finally {
     await Deno.remove(root, { recursive: true }).catch(() => {});
   }

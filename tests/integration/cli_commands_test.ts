@@ -8,6 +8,12 @@
 // Integration tests for exactl CLI commands not yet covered
 // Covers: request list, request show, plan list, plan show, review list, review show, portal add/remove/refresh, dashboard
 
+import {
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_PORTALS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { FlowInputSource, MemoryOperation } from "@exaix/core";
 import { join } from "@std/path";
@@ -38,7 +44,7 @@ async function writeWaitState(
   overrides: IWaitStateOverrides = {},
 ): Promise<string> {
   const traceId = "trace-integration-wait";
-  const waitDir = join(env.tempDir, "Workspace", "WaitStates", traceId);
+  const waitDir = join(env.tempDir, DEFAULT_WORKSPACE_PATH, "WaitStates", traceId);
   await Deno.mkdir(waitDir, { recursive: true });
   await Deno.writeTextFile(
     join(waitDir, `${runId}.json`),
@@ -224,7 +230,7 @@ cliTest("CLI: portal add/remove/refresh works", async () => {
   const env = await TestEnvironment.create();
   try {
     // Create a dummy project to add as portal
-    await env.writeFile("Portals/TestPortal/README.md", "# Test Portal");
+    await env.writeFile(`${DEFAULT_PORTALS_PATH}/TestPortal/README.md`, "# Test Portal");
     // Add portal (use relative path from env.tempDir)
     const add = await runExactl(["portal", MemoryOperation.ADD, "./Portals/TestPortal", "TestPortal"], env.tempDir);
     // Accept both 0 and 1 as valid (some commands may return 1 if portal already exists or not found)
@@ -274,7 +280,7 @@ cliTest("[regression] CLI: request --target-branch writes target_branch frontmat
     ], env.tempDir);
     assertEquals(create.code, 0);
 
-    const requestsDir = join(env.tempDir, "Workspace", "Requests");
+    const requestsDir = join(env.tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
     const requestFiles: string[] = [];
     for await (const entry of Deno.readDir(requestsDir)) {
       if (!entry.isFile) continue;
@@ -489,7 +495,7 @@ function makeWaitStateJson(overrides: object = {}): string {
       traceId: "trace-integration-wait",
       kind: "plan_approval",
       status: "pending",
-      artifactPath: "Workspace/Active/test-flow",
+      artifactPath: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ACTIVE_PATH}/test-flow`,
       resumeToken: "550e8400-e29b-41d4-a716-446655440001",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

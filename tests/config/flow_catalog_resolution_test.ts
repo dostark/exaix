@@ -17,6 +17,7 @@
  * @related-files [apps/daemon/main.ts, packages/request/src/processor.ts, packages/core/src/types/constants.ts]
  */
 
+import { DEFAULT_FLOWS_DIR, DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, relative, resolve } from "@std/path";
@@ -87,7 +88,7 @@ Deno.test("[flow-catalog] no production consumer recomposes the flows path from 
 Deno.test("[flow-catalog] ExaPathDefaults.flows already composes the parts, so consumers need not", () => {
   // Pins the premise of the guard above: reading `paths.flows` yields the same directory the
   // recomposition produced, so the migration is behaviour-preserving on a default workspace.
-  assertEquals(ExaPathDefaults.flows, "Blueprints/Flows");
+  assertEquals(ExaPathDefaults.flows, DEFAULT_FLOWS_DIR);
   assertEquals(ExaPathDefaults.flows, `${ExaPathDefaults.blueprints}/Flows`);
 });
 
@@ -98,7 +99,7 @@ Deno.test("[flow-catalog] a custom paths.flows resolves to one directory for eve
   const overridden = "Catalogs/MyFlows";
 
   const asConsumersResolveIt = join(root, overridden);
-  const asTheDaemonUsedTo = join(root, ExaPathDefaults.blueprints, "Flows");
+  const asTheDaemonUsedTo = join(root, ExaPathDefaults.blueprints, DEFAULT_FLOWS_PATH);
 
   assertEquals(asConsumersResolveIt, join("/srv/workspace", "Catalogs/MyFlows"));
   assertEquals(
@@ -112,7 +113,7 @@ Deno.test("[path-defaults] a stale bare paths.flows value is rejected at config 
   // The exact value that produced "No flows found": the pre-Phase-142 default, which resolves to
   // `<root>/Flows` — a directory the catalog has never shipped in. Failing at load puts the error
   // where an operator can act on it, rather than four layers down as an empty catalog.
-  const result = ConfigSchema.safeParse({ system: {}, paths: { flows: "Flows" } });
+  const result = ConfigSchema.safeParse({ system: {}, paths: { flows: DEFAULT_FLOWS_PATH } });
 
   assertEquals(result.success, false, 'a config carrying the stale bare `flows = "Flows"` must not parse');
   const message = result.success ? "" : result.error.issues.map((i) => i.message).join(" ");

@@ -18,6 +18,7 @@
  * ]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertMatch, assertNotEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { copy } from "@std/fs";
 import { join } from "@std/path";
@@ -303,7 +304,7 @@ Deno.test("Checker covers supporting skill content in both copilot and Blueprint
   assertEquals(result.sources.some((s) => s.path.endsWith("demo-bp.skill.md")), true, "Blueprints skill covered");
 
   const support = await readFixture(".copilot/skills/demo/support.md");
-  const blueprintProse = await readFixture("Blueprints/Skills/demo-bp.skill.md");
+  const blueprintProse = await readFixture(`${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/demo-bp.skill.md`);
   assertNotEquals(summarizeSteCount(normalizeSteProse(support)), "0/0/0");
   assertEquals(
     summarizeSteCount(normalizeSteProse(blueprintProse)),

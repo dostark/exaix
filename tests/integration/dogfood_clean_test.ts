@@ -8,6 +8,7 @@
  *   DOGFOOD_ROOT to avoid touching the real .dogfood/.
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
@@ -38,7 +39,7 @@ Deno.test({
   sanitizeResources: false,
   async fn() {
     const root = await Deno.makeTempDir({ prefix: "dogfood-clean-ok-" });
-    await ensureDir(join(root, ".exa"));
+    await ensureDir(join(root, DEFAULT_RUNTIME_PATH));
     await Deno.writeTextFile(join(root, "marker.txt"), "x");
 
     const res = await runClean(["--force"], { DOGFOOD_ROOT: root });
@@ -92,9 +93,9 @@ Deno.test({
   sanitizeResources: false,
   async fn() {
     const root = await Deno.makeTempDir({ prefix: "dogfood-clean-alive-" });
-    await ensureDir(join(root, ".exa"));
+    await ensureDir(join(root, DEFAULT_RUNTIME_PATH));
     // Write our own (alive) PID into the daemon PID file.
-    await Deno.writeTextFile(join(root, ".exa", "daemon.pid"), String(Deno.pid));
+    await Deno.writeTextFile(join(root, DEFAULT_RUNTIME_PATH, "daemon.pid"), String(Deno.pid));
 
     const res = await runClean(["--force"], { DOGFOOD_ROOT: root });
     assert(res.code !== 0, "must refuse while daemon PID is alive");

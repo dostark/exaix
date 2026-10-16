@@ -12,6 +12,7 @@
  */
 
 import { assert, assertEquals, assertRejects } from "@std/assert";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { type Config, ConfigSchema } from "@exaix/schemas";
 import {
@@ -92,7 +93,10 @@ async function fixture(skills: ISkillsConfigInput = {}, portals: string[] = ["Al
 Deno.test("[roots] defaults follow the configured paths and a project root needs a configured portal", async () => {
   const fx = await fixture();
   try {
-    await writeSkillFolder(fx.dir(ExaPathDefaults.blueprints, "Skills"), { name: "shared", instructions: "Shared." });
+    await writeSkillFolder(fx.dir(ExaPathDefaults.blueprints, DEFAULT_SKILLS_MEMORY_PATH), {
+      name: "shared",
+      instructions: "Shared.",
+    });
     await writeSkillFolder(fx.dir(ExaPathDefaults.memorySkills, "learned"), {
       name: "learned-one",
       instructions: "Learned.",

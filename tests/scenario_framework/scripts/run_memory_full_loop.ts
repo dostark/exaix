@@ -14,6 +14,7 @@
  * @related-files [tests/scenario_framework/scenarios/agent_flows/memory-full-loop.yaml]
  */
 
+import { DEFAULT_PENDING_MEMORY_PATH } from "@exaix/shared";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai";
 import { join } from "@std/path";
@@ -201,7 +202,7 @@ if (import.meta.main) {
     for (const proposal of pending) {
       proposal.learning.extracted_at = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
       await Deno.writeTextFile(
-        join(config.system.root, config.paths.memory, "Pending", `${proposal.id}.json`),
+        join(config.system.root, config.paths.memory, DEFAULT_PENDING_MEMORY_PATH, `${proposal.id}.json`),
         JSON.stringify(proposal, null, 2),
       );
     }

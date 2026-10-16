@@ -6,6 +6,7 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
@@ -20,7 +21,13 @@ Deno.test("[Step65.4] FlowRunner checkpoint captures individual parallel group m
   try {
     const traceId = "trace-parallel-group-checkpoint";
     const requestId = "req-parallel-group-checkpoint";
-    const checkpointPath = join(tempDir, "Memory", "Execution", traceId, "checkpoint.json");
+    const checkpointPath = join(
+      tempDir,
+      DEFAULT_MEMORY_PATH,
+      DEFAULT_EXECUTION_MEMORY_PATH,
+      traceId,
+      "checkpoint.json",
+    );
 
     const flow: IFlowInput = createParallelGroupFlow({
       flowId: "parallel-group-checkpoint-flow",

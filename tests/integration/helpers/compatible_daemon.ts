@@ -9,6 +9,12 @@
  * @related-files [tests/integration/helpers/daemon_config.ts, tests/integration/openai_compatible_daemon_cutover_test.ts]
  */
 
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -361,7 +367,7 @@ export async function writeCompatAgent(
   modelRef: string = `openai-chat:${FIXTURE_MODEL}`,
   intent: IAgentIntent = {},
 ): Promise<void> {
-  const dir = join(root, "Blueprints", "Agents");
+  const dir = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
   await Deno.mkdir(dir, { recursive: true });
   await Deno.writeTextFile(
     join(dir, `${role}.md`),
@@ -390,7 +396,7 @@ export async function writeCompatAgent(
 
 /** Writes a planning request for the compatible agent against the fixture portal. */
 export async function writePlanningRequest(root: string, traceId: string, subject: string): Promise<void> {
-  const dir = join(root, "Workspace", "Requests");
+  const dir = join(root, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
   await Deno.mkdir(dir, { recursive: true });
   await Deno.writeTextFile(
     join(dir, `r-${traceId.slice(0, 8)}.md`),

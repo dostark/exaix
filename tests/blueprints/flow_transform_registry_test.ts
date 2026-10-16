@@ -18,11 +18,12 @@
  * @related-files [packages/flow/src/step_output_formatter.ts, packages/flow/src/flow_runner.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
-const FLOWS_DIR = join(REPO_ROOT, "Blueprints", "Flows");
+const FLOWS_DIR = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH);
 const FORMATTER = join(REPO_ROOT, "packages", "flow", "src", "step_output_formatter.ts");
 
 /** Read the registry's keys from source, so the test cannot drift from the implementation. */

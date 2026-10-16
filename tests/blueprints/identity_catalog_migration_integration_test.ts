@@ -10,6 +10,7 @@
  * @dependencies [@exaix/core, @exaix/schemas, @exaix/testing, @std/path]
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
@@ -17,7 +18,7 @@ import { initTestDbService } from "@exaix/testing";
 import { SkillsService } from "@exaix/core/skills";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
-const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_PATH = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
 
 const ACTIVE_IDENTITY_IDS = [
   "code-analyst",
@@ -170,7 +171,7 @@ Deno.test({
   },
 });
 
-const SKILL_MD_DIR = join(REPO_ROOT, "Blueprints", "Skills");
+const SKILL_MD_DIR = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
 
 /** Collect default_skills from all loadable identity blueprints. */
 async function collectReferencedSkills(): Promise<Set<string>> {

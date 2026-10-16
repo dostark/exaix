@@ -5,6 +5,7 @@
  * proper status updates, archival of the rejected plan, and cleanup of transient state.
  */
 
+import { DEFAULT_ACTIVE_PATH, DEFAULT_PLANS_PATH, DEFAULT_REJECTED_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MemoryBankSource } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
@@ -50,7 +51,9 @@ Deno.test("Integration: Plan Rejection - Request to Archive", async (t) => {
       });
 
       // Verify setup
-      const planExists = await env.fileExists("Workspace/Plans/callback-reader_plan.md");
+      const planExists = await env.fileExists(
+        `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/callback-reader_plan.md`,
+      );
       assertEquals(planExists, true, "Plan should exist before rejection");
     });
 
@@ -70,15 +73,21 @@ Deno.test("Integration: Plan Rejection - Request to Archive", async (t) => {
     // Test 2: Rejected plan moved to /Workspace/Rejected
     await t.step("Test 2: Rejected plan moved to /Workspace/Rejected", async () => {
       // Verify plan is in Rejected directory
-      const rejectedExists = await env.fileExists("Workspace/Rejected/callback-reader_plan.md");
+      const rejectedExists = await env.fileExists(
+        `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REJECTED_PATH}/callback-reader_plan.md`,
+      );
       assert(rejectedExists === true);
 
       // Verify plan is NOT in Plans directory anymore
-      const plansExists = await env.fileExists("Workspace/Plans/callback-reader_plan.md");
+      const plansExists = await env.fileExists(
+        `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/callback-reader_plan.md`,
+      );
       assert(plansExists === false);
 
       // Verify plan is NOT in Active directory
-      const activeExists = await env.fileExists("Workspace/Active/callback-reader_plan.md");
+      const activeExists = await env.fileExists(
+        `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ACTIVE_PATH}/callback-reader_plan.md`,
+      );
       assertEquals(activeExists, false, "Plan should NOT be in /Workspace/Active");
     });
 
@@ -182,8 +191,8 @@ Deno.test("Integration: Plan Rejection - Multiple plans can be rejected", async 
     const rejected2 = await env.rejectPlan(plan2, "Reason 2");
 
     // Verify both in Rejected directory
-    const exists1 = await env.fileExists("Workspace/Rejected/first-task_plan.md");
-    const exists2 = await env.fileExists("Workspace/Rejected/second-task_plan.md");
+    const exists1 = await env.fileExists(`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REJECTED_PATH}/first-task_plan.md`);
+    const exists2 = await env.fileExists(`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REJECTED_PATH}/second-task_plan.md`);
 
     assertEquals(exists1, true, "First rejected plan should exist");
     assertEquals(exists2, true, "Second rejected plan should exist");
@@ -210,7 +219,7 @@ Deno.test("Integration: Plan Rejection - Empty reason is handled", async () => {
     const rejectedPath = await env.rejectPlan(planPath, "");
 
     // Should still move the file
-    const exists = await env.fileExists("Workspace/Rejected/empty-reason_plan.md");
+    const exists = await env.fileExists(`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REJECTED_PATH}/empty-reason_plan.md`);
     assertEquals(exists, true, "Plan should be moved even with empty reason");
 
     // Should still have rejection section

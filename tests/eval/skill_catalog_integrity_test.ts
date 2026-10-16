@@ -8,6 +8,7 @@
  * @dependencies [@exaix/testing]
  * @related-files [tests/eval/runtime_skill_scopes.ts, scripts/check_skills.ts]
  */
+import { DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { loadRepoSkillCatalog, REPO_ROOT } from "@exaix/testing";
@@ -19,7 +20,12 @@ Deno.test("skill_catalog_integrity — every authored skill folder is valid", as
 });
 
 Deno.test("skill_catalog_integrity — no compiled JSON skill store exists beside the folders", async () => {
-  for (const legacy of [join("Memory", "Skills", "global"), join("Memory", "Skills", "index.json")]) {
+  for (
+    const legacy of [
+      join(DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH, "global"),
+      join(DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH, "index.json"),
+    ]
+  ) {
     assertEquals(await Deno.stat(join(REPO_ROOT, legacy)).catch(() => null), null, `${legacy} must not exist`);
   }
 });

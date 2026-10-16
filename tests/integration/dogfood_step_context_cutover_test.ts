@@ -13,6 +13,7 @@
  * @related-files [scripts/plan_to_requests.ts, tests/integration/fixtures/phase-nn-fixture-with-context.md, tests/integration/plan_to_requests_test.ts]
  */
 
+import { DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 
@@ -82,8 +83,8 @@ Deno.test(
       const outDir = join(
         await Deno.makeTempDir({ prefix: "p173-cutover-sandbox-" }),
         "workspace",
-        "Workspace",
-        "Requests",
+        DEFAULT_WORKSPACE_PATH,
+        DEFAULT_REQUESTS_PATH,
       );
       const run = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt.root]);
       assertEquals(run.code, 0, `generator failed: ${run.stderr}`);
@@ -97,7 +98,7 @@ Deno.test(
 
       // Resolvable BY CONSTRUCTION: the referenced relative path exists directly
       // under the worktree root that will be the delegate's cwd.
-      const resolvedTarget = join(wt.root, ".exa", "PlanContext", `${CONTEXT_SLUG}.md`);
+      const resolvedTarget = join(wt.root, DEFAULT_RUNTIME_PATH, "PlanContext", `${CONTEXT_SLUG}.md`);
       const stat = await Deno.stat(resolvedTarget);
       assertEquals(stat.isFile, true);
       assertEquals(

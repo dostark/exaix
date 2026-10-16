@@ -10,6 +10,7 @@
  * @related-files [tests/scenario_framework/runner/synthetic_runner.ts]
  */
 
+import { DEFAULT_PORTALS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -40,10 +41,13 @@ Deno.test({
     await Deno.writeTextFile(join(target, "src", "stale.ts"), "// previous scenario solution");
     await Deno.writeTextFile(join(target, "stale-root.txt"), "leftover");
     await ensureDir(join(target, ".git")); // stale repo metadata
-    await ensureDir(join(workspaceRoot, ".exa", "worktrees", "todo-app", "stale-trace"));
-    await Deno.writeTextFile(join(workspaceRoot, ".exa", "worktrees", "todo-app", "stale-trace", "plan.md"), "old");
-    await ensureDir(join(workspaceRoot, "Portals"));
-    await Deno.symlink(target, join(workspaceRoot, "Portals", "todo-app"));
+    await ensureDir(join(workspaceRoot, DEFAULT_RUNTIME_PATH, "worktrees", "todo-app", "stale-trace"));
+    await Deno.writeTextFile(
+      join(workspaceRoot, DEFAULT_RUNTIME_PATH, "worktrees", "todo-app", "stale-trace", "plan.md"),
+      "old",
+    );
+    await ensureDir(join(workspaceRoot, DEFAULT_PORTALS_PATH));
+    await Deno.symlink(target, join(workspaceRoot, DEFAULT_PORTALS_PATH, "todo-app"));
 
     // Fresh fixture:
     await ensureDir(join(source, "src"));
@@ -62,11 +66,12 @@ Deno.test({
       assert((await Deno.lstat(join(target, "src", "stale.ts")).catch(() => null)) === null, "prior source removed");
       assert((await Deno.lstat(join(target, "stale-root.txt")).catch(() => null)) === null, "prior root file removed");
       assert(
-        (await Deno.lstat(join(workspaceRoot, "Portals", "todo-app")).catch(() => null)) === null,
+        (await Deno.lstat(join(workspaceRoot, DEFAULT_PORTALS_PATH, "todo-app")).catch(() => null)) === null,
         "stale portal symlink removed",
       );
       assert(
-        (await Deno.stat(join(workspaceRoot, ".exa", "worktrees", "todo-app")).catch(() => null)) === null,
+        (await Deno.stat(join(workspaceRoot, DEFAULT_RUNTIME_PATH, "worktrees", "todo-app")).catch(() => null)) ===
+          null,
         "stale worktrees removed",
       );
 

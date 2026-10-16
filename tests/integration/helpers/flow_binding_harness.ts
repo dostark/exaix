@@ -7,6 +7,7 @@
  * @related-files [tests/integration/flow_step_bindings_declared_test.ts]
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import {
   type IModelOptions,
@@ -102,7 +103,7 @@ export function registerMockFactory(factory: IProviderFactory): void {
 }
 
 export async function writeAgentBlueprints(tempDir: string, roles: string[]): Promise<string> {
-  const blueprints = join(tempDir, "Blueprints", "Agents");
+  const blueprints = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
   await Deno.mkdir(blueprints, { recursive: true });
   for (const role of roles) {
     await Deno.writeTextFile(

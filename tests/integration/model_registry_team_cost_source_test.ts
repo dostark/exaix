@@ -23,6 +23,12 @@
  * @related-files [apps/daemon/main.ts, packages/core/src/cost/cost_tracker.ts, packages/ai/src/providers/mock_llm_provider.ts, packages/ai/src/rate_limited_provider.ts, exaix-team/packages/model-registry-live/src/model_registry_service.ts]
  */
 
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assertEquals, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
@@ -55,7 +61,7 @@ const REQUEST_MARKDOWN = [
 ].join("\n");
 
 function writeStubAgentRole(root: string): void {
-  const dir = join(root, "Blueprints", "Agents");
+  const dir = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   Deno.writeTextFileSync(join(dir, "stub-agent.md"), "You are a stub agent for testing.\n");
 }
@@ -154,8 +160,11 @@ Deno.test({
       await bootRealDaemon(configPath, {
         extraEnv: { EXA_LLM_PROVIDER: "mock" },
         midFlight: () => {
-          Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
-          Deno.writeTextFileSync(join(tempDir, "Workspace", "Requests", `${TRACE_ID}.md`), REQUEST_MARKDOWN);
+          Deno.mkdirSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH), { recursive: true });
+          Deno.writeTextFileSync(
+            join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH, `${TRACE_ID}.md`),
+            REQUEST_MARKDOWN,
+          );
         },
         // The cost row may legitimately be absent, so wait for the request's outcome, not for the row.
         waitForAfterInject: () => daemonJournalHasAny(configPath, REQUEST_OUTCOME_ACTIONS, TRACE_ID),
@@ -212,9 +221,9 @@ Deno.test({
       await bootRealDaemon(configPath, {
         extraEnv: { EXA_LLM_PROVIDER: "mock", EXAIX_EDITION: "team" },
         midFlight: () => {
-          Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
+          Deno.mkdirSync(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH), { recursive: true });
           Deno.writeTextFileSync(
-            join(tempDir, "Workspace", "Requests", `${REGISTRY_COMPUTED_TRACE_ID}.md`),
+            join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH, `${REGISTRY_COMPUTED_TRACE_ID}.md`),
             REGISTRY_COMPUTED_REQUEST_MARKDOWN,
           );
         },

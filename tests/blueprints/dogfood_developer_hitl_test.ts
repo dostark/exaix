@@ -6,10 +6,11 @@
  * @dependencies [@std/assert, @exaix/schemas]
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { HitlPolicySchema } from "@exaix/schemas/hitl.ts";
 
-const FILE_PATH = "Blueprints/Agents/dogfood-developer.md";
+const FILE_PATH = `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}/dogfood-developer.md`;
 
 interface ParsedHitlField {
   require_secondary_approval: Array<{

@@ -8,10 +8,17 @@ import {
   DEFAULT_ACTIVE_PATH,
   DEFAULT_AGENTS_PATH,
   DEFAULT_ARCHIVE_PATH,
+  DEFAULT_EXECUTION_MEMORY_PATH,
   DEFAULT_FLOWS_DIR,
+  DEFAULT_GLOBAL_MEMORY_PATH,
+  DEFAULT_INDEX_MEMORY_PATH,
+  DEFAULT_PENDING_MEMORY_PATH,
   DEFAULT_PLANS_PATH,
+  DEFAULT_PROJECTS_MEMORY_PATH,
   DEFAULT_REJECTED_PATH,
   DEFAULT_REQUESTS_PATH,
+  DEFAULT_SKILLS_MEMORY_PATH,
+  DEFAULT_TASKS_MEMORY_PATH,
 } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import type { IEmbeddingProvider } from "@exaix/ai";
@@ -64,13 +71,13 @@ function testConfig(tempDir: string): Config {
       rejected: DEFAULT_REJECTED_PATH,
       agents: DEFAULT_AGENTS_PATH,
       flows: DEFAULT_FLOWS_DIR,
-      memoryProjects: "Projects",
-      memoryExecution: "Execution",
-      memoryIndex: "Index",
-      memorySkills: "Skills",
-      memoryPending: "Pending",
-      memoryTasks: "Tasks",
-      memoryGlobal: "Global",
+      memoryProjects: DEFAULT_PROJECTS_MEMORY_PATH,
+      memoryExecution: DEFAULT_EXECUTION_MEMORY_PATH,
+      memoryIndex: DEFAULT_INDEX_MEMORY_PATH,
+      memorySkills: DEFAULT_SKILLS_MEMORY_PATH,
+      memoryPending: DEFAULT_PENDING_MEMORY_PATH,
+      memoryTasks: DEFAULT_TASKS_MEMORY_PATH,
+      memoryGlobal: DEFAULT_GLOBAL_MEMORY_PATH,
     },
   } as Config;
 }

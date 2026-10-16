@@ -5,6 +5,7 @@
  * complex multiline arrays in frontmatter are correctly serialized and deserialized.
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
@@ -24,7 +25,7 @@ Deno.test("[regression] YAML multi-line array format parses correctly", async ()
   const tempDir = await Deno.makeTempDir({ prefix: "exa_multiline_regression_" });
 
   try {
-    const blueprintsDir = join(tempDir, "Blueprints", "Agents");
+    const blueprintsDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
     await ensureDir(blueprintsDir);
 
     // Create blueprint with multi-line array format (like mock-agent.md)

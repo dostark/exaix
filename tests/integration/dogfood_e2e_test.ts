@@ -6,6 +6,7 @@
  * PlanWriter.
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
@@ -142,7 +143,7 @@ Deno.test({
                 if (f.endsWith("_plan.md")) {
                   const content = await env.readFile(`Workspace/Plans/${f}`);
                   if (content.includes(requestTraceId)) {
-                    planPath = join(tempDir, "Workspace", "Plans", f);
+                    planPath = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH, f);
                     return true;
                   }
                 }

@@ -10,6 +10,7 @@
  * @related-files [packages/session/src/config_resolver.ts, packages/session/src/session_adapter_registry.ts]
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { fromFileUrl, join } from "@std/path";
@@ -56,7 +57,7 @@ Deno.test("opencode adapter builds an 'opencode run --format json <objective>' h
     gate: "code_changes",
     tool: "opencode",
     objective: "Implement Step 0",
-    artifact_ref: "Workspace/Plans/plan.md",
+    artifact_ref: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/plan.md`,
     permitted_paths: ["packages/**"],
     worktree_path: "/tmp/worktree",
     token_budget: { max_input_tokens: 1000, max_output_tokens: 1000, max_total_tokens: 2000 },

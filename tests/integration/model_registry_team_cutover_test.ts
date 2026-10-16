@@ -24,6 +24,12 @@
  * @related-files [apps/daemon/main.ts, packages/execution/src/execution_loop.ts, packages/core/src/planning/plan_executor.ts, packages/ai/src/model_resolver.ts]
  */
 
+import {
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
@@ -42,7 +48,7 @@ const TRACE_ID = "12121212-1212-4121-8121-121212121212";
 const REQUEST_ID = "step135-9-cutover-req";
 
 function writeStubAgentRole(root: string): void {
-  const dir = join(root, "Blueprints", "Agents");
+  const dir = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   const frontmatter = [
     "---",
@@ -61,7 +67,7 @@ function writeStubAgentRole(root: string): void {
 }
 
 function writeStructuredPlan(root: string): void {
-  const dir = join(root, "Workspace", "Active");
+  const dir = join(root, DEFAULT_WORKSPACE_PATH, DEFAULT_ACTIVE_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   const content = [
     "---",

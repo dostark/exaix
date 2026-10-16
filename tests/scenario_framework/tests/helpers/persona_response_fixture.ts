@@ -5,6 +5,7 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/tests/unit/persona_response_evidence_test.ts]
  */
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { initTestDbService } from "@exaix/testing";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
@@ -30,8 +31,8 @@ export async function createPersonaResponseFixture(): Promise<
     append("llm.call.completed", { model: `${RESPONSE_PROVIDER}-${RESPONSE_PROVIDER}:${RESPONSE_MODEL}` });
     append("agent.llm_response_received", { agent_role: role, full_response: content, stop_reason: "end_turn" });
     append("agent.execution_completed", { agent_role: role, has_content: true });
-    append("plan.created", { plan_path: "Workspace/Plans/current_plan.md" });
-    append("request.planned", { plan_path: "Workspace/Plans/current_plan.md" });
+    append("plan.created", { plan_path: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/current_plan.md` });
+    append("request.planned", { plan_path: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/current_plan.md` });
   };
   return { ...ctx, append, seed };
 }

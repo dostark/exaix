@@ -6,6 +6,7 @@
  * @ungrounded
  * @description Centralized constants used across test suites to avoid magic strings.
  */
+import { DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 
 export const TEST_DEFAULT_BRANCH = "main";
 export const TEST_PORTAL_ALIAS = "workspace";
@@ -18,4 +19,4 @@ export const TEST_SAMPLE_PREFIX = "sample";
 export const TEST_TOPIC_LABEL = "Test";
 export const TEST_DEFAULT_AGENT = "default-agent";
 export const TEST_ID = "test";
-export const TEST_BLUEPRINTS_DIR = "Blueprints";
+export const TEST_BLUEPRINTS_DIR = DEFAULT_BLUEPRINTS_PATH;

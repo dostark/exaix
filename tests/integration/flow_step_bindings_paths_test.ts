@@ -8,6 +8,7 @@
  * @related-files [packages/flow/src/agent_composer_adapter.ts, packages/flow/src/flow_runner.ts, apps/daemon/src/judge_agent_runner.ts]
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { EventLogger } from "@exaix/core/logger";
@@ -140,7 +141,7 @@ function configFor(root: string): Config {
 }
 
 async function writeBlueprints(root: string, roles: string[]): Promise<string> {
-  const blueprints = join(root, "Blueprints", "Agents");
+  const blueprints = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
   await Deno.mkdir(blueprints, { recursive: true });
   for (const role of roles) {
     await Deno.writeTextFile(
@@ -824,7 +825,7 @@ Deno.test("a session_delegate_cycle step's review gate grades on the cycle step'
     const service = bindingServiceFor(config, db);
     // PlanContext fixture plus a recording delegation coordinator, so the cycle step's
     // review gate runs against a real delegated outcome.
-    const planDir = join(root, ".exa", "PlanContext");
+    const planDir = join(root, DEFAULT_RUNTIME_PATH, "PlanContext");
     await Deno.mkdir(planDir, { recursive: true });
     await Deno.writeTextFile(
       join(planDir, "phase-204.md"),
@@ -894,7 +895,7 @@ Deno.test("a session_delegate_cycle step's review gate grades on the cycle step'
       requestId: "req-cycle",
       portal: "workspace",
       executionRoot: root,
-      planContextRef: ".exa/PlanContext/phase-204.md",
+      planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-204.md`,
     });
     assertEquals(result.success, true);
     // The review gate ran the bound provider (alpha model) — not the boot judge.

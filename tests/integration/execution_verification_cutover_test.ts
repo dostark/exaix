@@ -9,6 +9,12 @@
  * @related-files [apps/daemon/main.ts, packages/execution/src/execution_loop.ts, packages/execution/src/verification_runner.ts]
  */
 
+import {
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -136,7 +142,7 @@ function verificationBlock(maxRepairAttempts: number): string {
 const CUTOVER_AGENT_ROLE = "verify-coder";
 
 async function writeAgentBlueprint(root: string): Promise<void> {
-  const agentsDir = join(root, "Blueprints", "Agents");
+  const agentsDir = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
   await Deno.mkdir(agentsDir, { recursive: true });
   await Deno.writeTextFile(
     join(agentsDir, `${CUTOVER_AGENT_ROLE}.md`),
@@ -189,7 +195,7 @@ async function bootCutoverPlan(
   writeConfig(configPath, tempDir, portalDir, fixturesDir, verification);
 
   const traceId = crypto.randomUUID();
-  const activeDir = join(tempDir, "Workspace", "Active");
+  const activeDir = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_ACTIVE_PATH);
 
   try {
     await bootRealDaemon(configPath, {

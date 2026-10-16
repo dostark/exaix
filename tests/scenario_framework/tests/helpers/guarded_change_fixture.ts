@@ -6,6 +6,7 @@
  * @dependencies [@exaix/core, @exaix/portal, @exaix/schemas]
  * @related-files [tests/scenario_framework/tests/integration/advanced_flow_controls_test.ts]
  */
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { Database } from "@db/sqlite";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
@@ -56,7 +57,7 @@ export async function assertGuardedDelegation(
     ...config,
     portals: [...config.portals, { alias: "session-evidence", target_path: join(workspaceRoot, "Session") }, {
       alias: "journal-evidence",
-      target_path: join(workspaceRoot, ".exa"),
+      target_path: join(workspaceRoot, DEFAULT_RUNTIME_PATH),
     }],
   }));
   const brief = SessionBriefSchema.parse(
@@ -80,7 +81,7 @@ export async function assertGuardedDelegation(
   assertEquals(brief.parent_step_id, "implement");
   assertEquals(brief.permitted_paths, EXPECTED_PATHS);
   assertEquals(brief.artifact_ref, `.exa/PlanContext/${PLAN_SLUG}.md`);
-  const worktree = join(workspaceRoot, ".exa", "worktrees", "exaix-self", parentTraceId);
+  const worktree = join(workspaceRoot, DEFAULT_RUNTIME_PATH, "worktrees", "exaix-self", parentTraceId);
   assertEquals(brief.worktree_path, worktree);
   assertEquals(returned.trace_id, delegationTraceId);
   assertEquals(returned.resume_token, brief.resume_token);
@@ -113,7 +114,7 @@ export async function captureGuardedDelegation(workspaceRoot: string): Promise<v
   const resolver = new PathResolver(
     ConfigSchema.parse({
       ...config,
-      portals: [{ alias: "guarded-journal", target_path: join(workspaceRoot, ".exa") }],
+      portals: [{ alias: "guarded-journal", target_path: join(workspaceRoot, DEFAULT_RUNTIME_PATH) }],
     }),
   );
   const db = new Database(await resolver.resolve("@guarded-journal/journal.db"), { readonly: true });

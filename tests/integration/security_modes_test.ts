@@ -6,6 +6,7 @@
  * strict enforcement of file access policies and correct audit detection for sensitive calls.
  */
 
+import { DEFAULT_PORTALS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { PortalOperation, SecurityMode } from "@exaix/core";
@@ -284,7 +285,7 @@ Deno.test("Integration Test 16.5: Permission Validation - Portal Not Found", asy
 
     // Attempt to execute on non-existent portal
     const nonExistentPortal = "NonExistentPortal";
-    const portalsPath = join(env.tempDir, "Portals");
+    const portalsPath = join(env.tempDir, DEFAULT_PORTALS_PATH);
     const portalPath = join(portalsPath, nonExistentPortal);
 
     // Check if portal exists

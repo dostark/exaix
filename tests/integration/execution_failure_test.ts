@@ -6,6 +6,7 @@
  */
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { DEFAULT_REJECTED_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { EvaluationVerdict, FlowStepType, MemoryBankSource, PortalOperation } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import { join as _join } from "@std/path";
@@ -115,7 +116,7 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
       assertEquals(payload.error, failureError);
       assertEquals(
         payload.moved_to,
-        _join(env.tempDir, "Workspace", "Rejected", `${requestId}_plan_failed.md`),
+        _join(env.tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REJECTED_PATH, `${requestId}_plan_failed.md`),
       );
     });
 

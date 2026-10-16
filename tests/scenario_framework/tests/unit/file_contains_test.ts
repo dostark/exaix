@@ -10,6 +10,7 @@
  * @related-files [tests/scenario_framework/runner/step_executor.ts, tests/scenario_framework/schema/step_schema.ts]
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { executeScenarioStep } from "../../runner/step_executor.ts";
@@ -117,7 +118,7 @@ Deno.test("[file_contains] a negative file-not-exists assertion does not wait", 
 
 Deno.test("[file_contains] cwd $WORKTREE resolves a relative glob against the newest worktree", async () => {
   await withTempWorkspace(async (ws) => {
-    const wt = join(ws, ".exa", "worktrees", "todo-app", "trace-1");
+    const wt = join(ws, DEFAULT_RUNTIME_PATH, "worktrees", "todo-app", "trace-1");
     await Deno.mkdir(join(wt, "src"), { recursive: true });
     await Deno.writeTextFile(join(wt, "src", "main.ts"), "const GREETING = 'hi';\n");
     const result = await executeScenarioStep({
@@ -132,7 +133,7 @@ Deno.test("[file_contains] cwd $WORKTREE resolves a relative glob against the ne
 Deno.test("[file_contains] cwd $WORKTREE waits when the worktree is created after the step starts", async () => {
   await withTempWorkspace(async (ws) => {
     setTimeout(async () => {
-      const wt = join(ws, ".exa", "worktrees", "todo-app", "trace-1");
+      const wt = join(ws, DEFAULT_RUNTIME_PATH, "worktrees", "todo-app", "trace-1");
       await Deno.mkdir(join(wt, "src"), { recursive: true });
       await Deno.writeTextFile(join(wt, "src", "main.ts"), "const GREETING = 'hi';\n");
     }, 200);

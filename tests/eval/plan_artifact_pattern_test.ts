@@ -10,6 +10,7 @@
  * @dependencies [packages/core/src/planning/plan_writer.ts]
  * @related-files [tests/scenario_framework/scenarios/, apps/daemon/main.ts]
  */
+import { DEFAULT_ARCHIVE_PATH, DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { walk } from "@std/fs";
@@ -17,8 +18,8 @@ import { globToRegExp } from "@std/path";
 
 /** Where `PlanWriter` actually puts a plan, and what it names it. */
 const CANDIDATE_PLAN_PATHS = [
-  "Workspace/Plans/request-1a2b3c4d_plan.md",
-  "Workspace/Archive/request-1a2b3c4d_plan.md",
+  `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/request-1a2b3c4d_plan.md`,
+  `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ARCHIVE_PATH}/request-1a2b3c4d_plan.md`,
   "/abs/sandbox/Workspace/Plans/request-1a2b3c4d_plan.md",
 ];
 

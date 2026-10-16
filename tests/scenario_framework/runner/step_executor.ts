@@ -9,6 +9,7 @@
  * @related-files [tests/scenario_framework/runner/config.ts, tests/scenario_framework/tests/unit/scenario_loader_execution_core_test.ts]
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import {
   CriterionKind,
   type ICriterion,
@@ -138,7 +139,7 @@ async function resolveNewestWorktree(
   workspaceRoot: string,
   baselineMs?: Opt<number, Reason.OptionalInput>,
 ): Promise<string | undefined> {
-  const worktreesRoot = join(workspaceRoot, ".exa", "worktrees");
+  const worktreesRoot = join(workspaceRoot, DEFAULT_RUNTIME_PATH, "worktrees");
   let best: { path: string; mtime: number } | undefined;
   try {
     for await (const alias of Deno.readDir(worktreesRoot)) {
@@ -208,7 +209,7 @@ export async function executeScenarioStep(
 
   // Handle trajectory-assert — reads journal directly via SQLite instead of executing a command
   if (options.step.type === ScenarioStepType.TRAJECTORY_ASSERT) {
-    const dbPath = join(options.cwd ?? Deno.cwd(), ".exa", "journal.db");
+    const dbPath = join(options.cwd ?? Deno.cwd(), DEFAULT_RUNTIME_PATH, "journal.db");
     const sinceRowid = options.step.source_step_rowid_start ?? 0;
     const untilRowid = options.step.source_step_rowid_end ?? 0;
     const capture = captureToolCallsFromJournal(dbPath, { sinceRowid, untilRowid });
@@ -599,7 +600,7 @@ async function executeFileContainsStep(
 
 /** Current highest `rowid` in the workspace journal; returns 0 for a missing/empty/uninitialized journal so the first event always counts as "after". */
 export async function currentMaxRowid(workspaceRoot: string): Promise<number> {
-  const dbPath = join(workspaceRoot, ".exa", "journal.db");
+  const dbPath = join(workspaceRoot, DEFAULT_RUNTIME_PATH, "journal.db");
   try {
     await Deno.stat(dbPath);
   } catch {
@@ -697,7 +698,7 @@ const BENIGN_REQUEST_SKIPPED_REASON_PREFIX = "Request already has status";
 /** Terminal request.failed/request.skipped for `traceId` — the general counterpart to
  *  failure_glob, which only catches a rejected PLAN, never a request that fails outright. */
 function checkRequestDefinitivelyFailed(workspaceRoot: string, traceId: string): IRequestFailureCheck | undefined {
-  const dbPath = join(workspaceRoot, ".exa", "journal.db");
+  const dbPath = join(workspaceRoot, DEFAULT_RUNTIME_PATH, "journal.db");
   let db: Database | undefined;
   try {
     db = new Database(dbPath, { readonly: true });
@@ -734,7 +735,7 @@ export function resolveCurrentTrace(
   workspaceRoot: string,
   baselineRowid?: Opt<number, Reason.OptionalInput>,
 ): string | undefined {
-  const dbPath = join(workspaceRoot, ".exa", "journal.db");
+  const dbPath = join(workspaceRoot, DEFAULT_RUNTIME_PATH, "journal.db");
   let db: Database | undefined;
   try {
     db = new Database(dbPath, { readonly: true });
@@ -761,7 +762,7 @@ async function executePatchBlueprintStep(
   const blueprint = options.step.blueprint ?? options.step.args?.[0] ?? "";
   const capabilities = options.step.add_capabilities ?? [];
   const workspaceRoot = options.cwd || Deno.cwd();
-  const blueprintPath = join(workspaceRoot, "Blueprints", "Agents", `${blueprint}.md`);
+  const blueprintPath = join(workspaceRoot, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, `${blueprint}.md`);
   let message = "";
   let ok = false;
   try {
@@ -1014,7 +1015,7 @@ function executeJournalAssertStep(
   let matched = false;
   let rowsJson = "[]";
   let errorMessage = "";
-  const dbPath = join(workspaceRoot, ".exa", "journal.db");
+  const dbPath = join(workspaceRoot, DEFAULT_RUNTIME_PATH, "journal.db");
   let db: Database | undefined;
   try {
     db = new Database(dbPath, { readonly: true });

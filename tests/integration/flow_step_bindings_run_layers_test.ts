@@ -5,6 +5,7 @@
  *   binds, and a drifted `--locked` lock fails the run before any provider call.
  */
 
+import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RunBindingsStore } from "@exaix/ai";
@@ -24,7 +25,7 @@ const flow = FlowSchema.parse({
   output: { from: "explore", format: FlowOutputFormat.MARKDOWN },
 });
 
-const REQUEST_PATH = "Workspace/Requests/request-run-layer.md";
+const REQUEST_PATH = `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}/request-run-layer.md`;
 const REQUEST_SHA = "a".repeat(64);
 
 async function harness(tempDir: string, db: IDatabaseService, nativeTools = false, poolMaxSize?: number) {

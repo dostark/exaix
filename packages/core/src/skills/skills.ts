@@ -11,6 +11,7 @@
  */
 
 import { isAbsolute, join, relative, resolve } from "@std/path";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { LOCK_FILE, STATE_DIR } from "./constants.ts";
 import { exists } from "@std/fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
@@ -147,7 +148,7 @@ function rememberedKey(revisionId: string, project: string): string {
 }
 const REVISION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const GENERATION_LENGTH = 16;
-const SKILLS_SUBDIR = "Skills";
+const SKILLS_SUBDIR = DEFAULT_SKILLS_MEMORY_PATH;
 const LEARNED_SUBDIR = "learned";
 const PROJECT_SUBDIR = "project";
 const STATIC_CONFIG_GENERATION = "static";

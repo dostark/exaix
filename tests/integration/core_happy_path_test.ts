@@ -5,6 +5,7 @@
  * Approval -> Execution -> Report, ensuring trace correlation across all stages.
  */
 
+import { DEFAULT_ACTIVE_PATH, DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { ExecutionStatus, MemoryBankSource, PortalOperation } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
@@ -90,11 +91,15 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
       activePlanPath = await env.approvePlan(planPath);
 
       // Verify plan moved to Active
-      const activeExists = await env.fileExists("Workspace/Active/implement-hello_plan.md");
+      const activeExists = await env.fileExists(
+        `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ACTIVE_PATH}/implement-hello_plan.md`,
+      );
       assertEquals(activeExists, true, "Plan should exist in /Workspace/Active");
 
       // Verify original removed from Workspace
-      const inboxExists = await env.fileExists("Workspace/Plans/implement-hello_plan.md");
+      const inboxExists = await env.fileExists(
+        `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/implement-hello_plan.md`,
+      );
       assertEquals(inboxExists, false, "Plan should be removed from /Workspace/Plans");
 
       // Verify status updated

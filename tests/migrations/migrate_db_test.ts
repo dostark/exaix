@@ -5,6 +5,7 @@
  * rollback of schema updates for the persistent journal.
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
@@ -346,7 +347,7 @@ Deno.test("migrate_db.ts creates System directory if missing", async () => {
   const tmp = await setupTestWorkspace();
   try {
     // Ensure System doesn't exist
-    const exaDir = join(tmp, ".exa");
+    const exaDir = join(tmp, DEFAULT_RUNTIME_PATH);
     if (await exists(exaDir)) {
       await Deno.remove(exaDir, { recursive: true });
     }

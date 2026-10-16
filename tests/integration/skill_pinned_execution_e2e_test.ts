@@ -12,6 +12,7 @@
  * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_composer.ts]
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer, McpAgentStrategy, StrategyRegistry } from "@exaix/execution";
@@ -86,7 +87,7 @@ async function composerWithPortal(fx: Awaited<ReturnType<typeof planWithPinnedSk
   const config = fx.env.config;
   config.portals = [portal];
   await Deno.writeTextFile(
-    join(fx.env.tempDir, "Blueprints", "Agents", "pin-agent.md"),
+    join(fx.env.tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "pin-agent.md"),
     `---\nagent_role: pin-agent\nmodel: mock:test\ncapabilities: [${capabilities}]\n---\nYou are a pinned agent.\n`,
   );
   return { config, portal, portalPath };

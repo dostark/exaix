@@ -14,6 +14,7 @@
  * @related-files [packages/core/src/skills/skills.ts, packages/request/src/blueprint_resolver.ts, packages/execution/src/agent_runner.ts]
  */
 
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "@exaix/core/skills";
@@ -108,11 +109,11 @@ Deno.test("[ArmIsolation] two sequential skill overlays each see only their own 
 
 Deno.test("[ArmIsolation] two sequential agent role overlays each see only their own content", async () => {
   const agentRolesRoot = await Deno.makeTempDir({ prefix: "isolation-agent-roles-" });
-  const agentRolesDir = join(agentRolesRoot, "Agents");
+  const agentRolesDir = join(agentRolesRoot, DEFAULT_AGENTS_PATH);
   const overlayARoot = await Deno.makeTempDir({ prefix: "isolation-agent-role-overlay-a-" });
-  const overlayA = join(overlayARoot, "Agents");
+  const overlayA = join(overlayARoot, DEFAULT_AGENTS_PATH);
   const overlayBRoot = await Deno.makeTempDir({ prefix: "isolation-agent-role-overlay-b-" });
-  const overlayB = join(overlayBRoot, "Agents");
+  const overlayB = join(overlayBRoot, DEFAULT_AGENTS_PATH);
   const mockLogger = createMockEventLogger();
   try {
     await Deno.mkdir(agentRolesDir, { recursive: true });

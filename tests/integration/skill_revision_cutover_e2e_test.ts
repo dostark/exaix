@@ -11,6 +11,14 @@
  * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_runner.ts, tests/scenario_framework/scenarios/skill_eval/skill-revision-cutover.yaml]
  */
 
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_SKILLS_DIR,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_SKILLS_MEMORY_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { copy } from "@std/fs";
 import { join } from "@std/path";
@@ -223,10 +231,13 @@ Deno.test({
         const git = await new Deno.Command("git", { args, cwd: portal, stdout: "piped", stderr: "piped" }).output();
         assertEquals(git.code, 0, new TextDecoder().decode(git.stderr));
       }
-      await copy(join(REPO_ROOT, "Blueprints", "Skills"), join(tempDir, "Blueprints", "Skills"));
-      await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+      await copy(
+        join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH),
+        join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH),
+      );
+      await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
-        join(tempDir, "Blueprints", "Agents", "security-expert.md"),
+        join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "security-expert.md"),
         [
           "---",
           'agent_role: "security-expert"',
@@ -295,10 +306,10 @@ Deno.test({
           `target_path = "${portal}"`,
         ].join("\n"),
       );
-      const skillPath = join(tempDir, "Blueprints", "Skills", SKILL, "SKILL.md");
+      const skillPath = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH, SKILL, "SKILL.md");
       const originalSkill = await Deno.readTextFile(skillPath);
       const originalRoot = join(tempDir, "original-skills");
-      await copy(join(tempDir, "Blueprints", "Skills", SKILL), join(originalRoot, SKILL));
+      await copy(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH, SKILL), join(originalRoot, SKILL));
       const canonical = (await createSkillLoaderFor([{
         path: originalRoot,
         kind: SkillRootKind.BLUEPRINT,
@@ -313,7 +324,7 @@ Deno.test({
         }),
         true,
       ).trimEnd();
-      const memorySkillsBefore = await gitStatus("Memory/Skills");
+      const memorySkillsBefore = await gitStatus(DEFAULT_MEMORY_SKILLS_DIR);
 
       const submit = async (label: string, daemon: IRunningDaemon): Promise<{ traceId: string; planId: string }> => {
         const before = (await readActivity(configPath)).reduce((max, row) => Math.max(max, row.rowid), 0);
@@ -342,7 +353,7 @@ Deno.test({
         }, `request ${label} to be created`);
         let planId: string | undefined;
         await daemon.until(async () => {
-          planId = planOf(join(tempDir, "Workspace", "Plans"), traceId!);
+          planId = planOf(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH), traceId!);
           if (planId !== undefined) return true;
           return (await readActivity(configPath)).some((row) =>
             row.trace_id === traceId && REQUEST_OUTCOME_ACTIONS.includes(row.action_type)
@@ -353,7 +364,7 @@ Deno.test({
           );
         });
         await Deno.copyFile(
-          join(tempDir, "Workspace", "Plans", `${planId}.md`),
+          join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH, `${planId}.md`),
           join(evidenceDir, `plan-${label}.md`),
         );
         return { traceId: traceId!, planId: planId! };
@@ -464,7 +475,11 @@ Deno.test({
       assertEquals(usageA.out.includes(evidence.revisionB), false, "A's trace never names the edited revision");
       assertStringIncludes(usageB.out, evidence.revisionB);
 
-      assertEquals(await gitStatus("Memory/Skills"), memorySkillsBefore, "the cutover must not touch Memory/Skills");
+      assertEquals(
+        await gitStatus(DEFAULT_MEMORY_SKILLS_DIR),
+        memorySkillsBefore,
+        "the cutover must not touch Memory/Skills",
+      );
     } finally {
       restoreEnv();
       fixture.shutdown();

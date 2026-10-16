@@ -5,6 +5,7 @@
  * artifacts on disk and exercising exactl wait list/approve/reject/amend/expire commands.
  */
 
+import { DEFAULT_ACTIVE_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { cliTest, runExactl } from "./helpers/cli_test_helpers.ts";
@@ -20,7 +21,7 @@ function makeWaitStateJson(overrides: object = {}): string {
       traceId: TRACE_ID,
       kind: "plan_approval",
       status: "pending",
-      artifactPath: "Workspace/Active/test-flow",
+      artifactPath: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ACTIVE_PATH}/test-flow`,
       resumeToken: TOKEN_UUID,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -40,7 +41,7 @@ async function withWaitState(
 ): Promise<void> {
   const tempDir = await Deno.makeTempDir({ prefix: "wait-scenario-" });
   try {
-    const waitDir = join(tempDir, "Workspace", "WaitStates", TRACE_ID);
+    const waitDir = join(tempDir, DEFAULT_WORKSPACE_PATH, "WaitStates", TRACE_ID);
     await Deno.mkdir(waitDir, { recursive: true });
     await Deno.writeTextFile(join(waitDir, `${WAIT_UUID}.json`), makeWaitStateJson(overrides));
     await fn(tempDir, waitDir);

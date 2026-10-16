@@ -19,6 +19,13 @@
  * @related-files [tests/scenario_framework/runner/synthetic_runner.ts, apps/exactl/src/handlers/request_create_handler.ts]
  */
 
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_FLOWS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_SKILLS_MEMORY_PATH,
+} from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import {
@@ -43,7 +50,10 @@ Deno.test("[workspace_catalog_seeding] a fresh sandbox receives the flow catalog
   const ws = await Deno.makeTempDir({ prefix: "seed-flows-" });
   try {
     await seedWorkspaceCatalogs(ws, REPO_ROOT);
-    assert(await exists(join(ws, "Blueprints", "Flows", "api-design.flow.yaml")), "flow blueprints must be seeded");
+    assert(
+      await exists(join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "api-design.flow.yaml")),
+      "flow blueprints must be seeded",
+    );
   } finally {
     await Deno.remove(ws, { recursive: true });
   }
@@ -53,8 +63,11 @@ Deno.test("[workspace_catalog_seeding] a fresh sandbox receives the agent-role a
   const ws = await Deno.makeTempDir({ prefix: "seed-rest-" });
   try {
     await seedWorkspaceCatalogs(ws, REPO_ROOT);
-    assert(await exists(join(ws, "Blueprints", "Agents", "senior-coder.md")), "agent roles must be seeded");
-    assert(await exists(join(ws, "Memory", "Skills")), "the skill catalog must be seeded");
+    assert(
+      await exists(join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "senior-coder.md")),
+      "agent roles must be seeded",
+    );
+    assert(await exists(join(ws, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH)), "the skill catalog must be seeded");
   } finally {
     await Deno.remove(ws, { recursive: true });
   }
@@ -66,7 +79,7 @@ Deno.test("[workspace_catalog_seeding] seeding never overwrites a catalog alread
   // scenario's seeding pass over the shared workspace.
   const ws = await Deno.makeTempDir({ prefix: "seed-nooverwrite-" });
   try {
-    const agentRoles = join(ws, "Blueprints", "Agents");
+    const agentRoles = join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(agentRoles, { recursive: true });
     await Deno.writeTextFile(join(agentRoles, "senior-coder.md"), "PATCHED BY SCENARIO");
 
@@ -85,8 +98,11 @@ Deno.test("[workspace_catalog_seeding] seeding is idempotent", async () => {
     await seedWorkspaceCatalogs(ws, REPO_ROOT);
     // A second pass must not nest the catalog inside itself, which is exactly what the
     // per-scenario `cp -r <src>/Skills <dst>/Skills` workaround does when the target exists.
-    assertEquals(await exists(join(ws, "Memory", "Skills", "Skills")), false);
-    assertEquals(await exists(join(ws, "Blueprints", "Blueprints")), false);
+    assertEquals(
+      await exists(join(ws, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH)),
+      false,
+    );
+    assertEquals(await exists(join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_BLUEPRINTS_PATH)), false);
   } finally {
     await Deno.remove(ws, { recursive: true });
   }
@@ -223,16 +239,16 @@ Deno.test("[workspace_catalog_seeding] a partially-created catalog is completed,
   const ws = await Deno.makeTempDir({ prefix: "seed-partial-" });
   try {
     // What a scenario's own `cp -r`/`mkdir` leaves behind: the directory exists, the files do not.
-    await Deno.mkdir(join(ws, "Blueprints", "Agents"), { recursive: true });
-    await Deno.mkdir(join(ws, "Blueprints", "Flows"), { recursive: true });
+    await Deno.mkdir(join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
+    await Deno.mkdir(join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH), { recursive: true });
 
     await seedWorkspaceCatalogs(ws, REPO_ROOT);
 
     assert(
-      await exists(join(ws, "Blueprints", "Flows", "analyze-codebase.flow.yaml")),
+      await exists(join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, "analyze-codebase.flow.yaml")),
       "the shipped flow catalog must be seeded even though Blueprints/ already existed",
     );
-    assert(await exists(join(ws, "Blueprints", "Agents", "senior-coder.md")), "agent roles too");
+    assert(await exists(join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "senior-coder.md")), "agent roles too");
   } finally {
     await Deno.remove(ws, { recursive: true });
   }
@@ -243,7 +259,7 @@ Deno.test("[workspace_catalog_seeding] completing a partial catalog still never 
   // the shared sandbox keeps its patch.
   const ws = await Deno.makeTempDir({ prefix: "seed-partial-nooverwrite-" });
   try {
-    const agentRoles = join(ws, "Blueprints", "Agents");
+    const agentRoles = join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(agentRoles, { recursive: true });
     await Deno.writeTextFile(join(agentRoles, "senior-coder.md"), "PATCHED BY SCENARIO");
 
@@ -260,7 +276,7 @@ Deno.test("[workspace_catalog_seeding] a flow staged by an earlier scenario does
   // The exact shape `stageFlowFixture` leaves: Blueprints/Flows exists holding one staged fixture.
   const ws = await Deno.makeTempDir({ prefix: "seed-staged-" });
   try {
-    const flows = join(ws, "Blueprints", "Flows");
+    const flows = join(ws, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH);
     await Deno.mkdir(flows, { recursive: true });
     await Deno.writeTextFile(join(flows, "explore-codebase.flow.yaml"), 'id: "explore-codebase"');
 

@@ -6,6 +6,7 @@
  * @dependencies [@exaix/schemas, @exaix/core, @exaix/flow, @std/toml, @std/yaml]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
@@ -162,7 +163,7 @@ Deno.test("[docs] Flow Commands documents availability in exactl flow list", asy
 });
 
 Deno.test("[docs] Flows README lists the advanced blueprints and the self-correcting template", async () => {
-  const readme = await Deno.readTextFile("Blueprints/Flows/README.md");
+  const readme = await Deno.readTextFile(`${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_FLOWS_PATH}/README.md`);
   for (const id of BLUEPRINT_IDS) assertStringIncludes(readme, `${id}.flow.yaml`);
   assertStringIncludes(readme, "self-correcting.flow.template.yaml");
   assertStringIncludes(readme, "requires_capabilities");

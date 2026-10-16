@@ -17,13 +17,14 @@
  * @related-files [packages/flow/src/step_output_formatter.ts, packages/request/src/processor.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { walk } from "@std/fs";
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
-const FLOWS_DIR = join(REPO_ROOT, "Blueprints", "Flows");
+const FLOWS_DIR = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH);
 
 /** The scenario framework's own flow fixtures are held to the same output-shape contract:
  * `aggregateOutput` reads `output.from` as the step id, so a fixture writing a separate

@@ -5,6 +5,7 @@
  * Phase 74 dynamic agent-role routing and validates the routing outcome end to end.
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { dirname, join } from "@std/path";
 import { ScenarioExecutionMode, ScenarioStepType } from "../../schema/step_schema.ts";
@@ -16,7 +17,7 @@ const SCENARIO_ID = "dynamic-agent-role-routing";
 const SCRIPT_TEMPLATE_NAME = "dynamic_agent_role_routing.ts.template";
 const GENERATED_SCRIPT_NAME = "dynamic_agent_role_routing.ts";
 const BLUEPRINTS_SUBDIR = "Blueprints/Agents";
-const ROUTING_POLICY_FILE_NAME = ".exa/routing.policy.yaml";
+const ROUTING_POLICY_FILE_NAME = `${DEFAULT_RUNTIME_PATH}/routing.policy.yaml`;
 const RESULT_FILE_PATH = "artifacts/result.json";
 const SELECTED_AGENT_ROLE = "senior-coder";
 const DEFAULT_AGENT_ROLE = "default-agent";
@@ -82,7 +83,7 @@ async function prepareWorkspaceFixtures(workspaceRoot: string): Promise<string> 
     join(FIXTURE_ROOT, "blueprints", `${DEFAULT_AGENT_ROLE}.md`),
     join(workspaceRoot, BLUEPRINTS_SUBDIR, `${DEFAULT_AGENT_ROLE}.md`),
   );
-  await Deno.mkdir(join(workspaceRoot, ".exa"), { recursive: true });
+  await Deno.mkdir(join(workspaceRoot, DEFAULT_RUNTIME_PATH), { recursive: true });
   await copyFixture(
     join(FIXTURE_ROOT, "routing.policy.yaml"),
     join(workspaceRoot, ROUTING_POLICY_FILE_NAME),

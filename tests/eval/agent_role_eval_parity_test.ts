@@ -6,6 +6,7 @@
  *   exclusion list (mock-agent). The catalog is read from `Blueprints/Agents/` rather than
  *   restated, and `README.md` is dropped by the reader as a non-agent-role file.
  */
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { assertCatalogCovered } from "./catalog_parity.ts";
 import { loadScenarioCatalog } from "../scenario_framework/runner/scenario_catalog.ts";
@@ -13,7 +14,7 @@ import parityExclusions from "./parity_exclusions.json" with { type: "json" };
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
-const AGENTS_DIR = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_DIR = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
 
 // Files in `Blueprints/Agents/` that are not agent roles. `README.md` used to sit in
 // `parity_exclusions.json`, misleadingly reading as a deliberately-uncovered agent role (and was

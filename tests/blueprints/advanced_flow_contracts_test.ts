@@ -6,6 +6,7 @@
  * @dependencies [@exaix/flow, @exaix/schemas, @exaix/execution]
  * @related-files [packages/flow/src/loop_body.ts, packages/schemas/src/model_binding.ts]
  */
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { parse as parseToml } from "@std/toml";
@@ -374,6 +375,6 @@ Deno.test("[contract] guarded requests activate the hardened coordinator and ret
     const frontmatter = parseYaml(request.split("---")[1]) as IGuardedRequestFrontmatter;
     assertEquals(frontmatter.flow, "guarded-change");
     assertEquals(frontmatter.portal, "exaix-self");
-    assertEquals(frontmatter.plan_context_ref, ".exa/PlanContext/phase205-guarded-change.md");
+    assertEquals(frontmatter.plan_context_ref, `${DEFAULT_RUNTIME_PATH}/PlanContext/phase205-guarded-change.md`);
   }
 });

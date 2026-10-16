@@ -5,6 +5,7 @@
  *   scenarios carry outcome-asserting criteria (not only "session.delegate.reconciled").
  *   Plumbing/safety scenarios (agent_flows) are explicitly retained as-is.
  */
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assert } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
@@ -28,7 +29,7 @@ function assertsProducedContent(steps: ReturnType<typeof ScenarioSchema.parse>["
     // A shell step qualifies only when it reads the delegate's worktree AND asserts
     // on the content it finds there — setup/teardown shell steps do neither.
     if (step.type === ScenarioStepType.SHELL && step.output_criteria) {
-      const readsWorktree = (step.args ?? []).some((a) => String(a).includes(".exa/worktrees"));
+      const readsWorktree = (step.args ?? []).some((a) => String(a).includes(`${DEFAULT_RUNTIME_PATH}/worktrees`));
       const assertsContent = step.output_criteria.some(
         (c) => c.kind === CriterionKind.COMMAND_OUTPUT_CONTAINS && (c.contains?.length ?? 0) > 0,
       );

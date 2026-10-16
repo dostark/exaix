@@ -5,6 +5,7 @@
  * command help, and core architecture sections stay synchronized with the code.
  */
 
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertStringIncludes } from "@std/assert";
 import { FlowInputSource } from "@exaix/core";
 import { readUserGuide } from "./helpers.ts";
@@ -45,7 +46,7 @@ Deno.test("User Guide documents Memory Banks", async () => {
   const guide = await readUserGuide();
 
   assertStringIncludes(guide, "Memory Banks");
-  assertStringIncludes(guide, "Memory/");
+  assertStringIncludes(guide, `${DEFAULT_MEMORY_PATH}/`);
 });
 
 Deno.test("User Guide documents Memory Banks CLI commands", async () => {
@@ -59,9 +60,9 @@ Deno.test("User Guide documents Memory Banks CLI commands", async () => {
 Deno.test("User Guide documents Memory Banks directory structure", async () => {
   const guide = await readUserGuide();
 
-  assertStringIncludes(guide, "Memory/");
-  assertStringIncludes(guide, "Execution/");
-  assertStringIncludes(guide, "Projects/");
+  assertStringIncludes(guide, `${DEFAULT_MEMORY_PATH}/`);
+  assertStringIncludes(guide, `${DEFAULT_EXECUTION_MEMORY_PATH}/`);
+  assertStringIncludes(guide, `${DEFAULT_PROJECTS_MEMORY_PATH}/`);
 });
 
 Deno.test("User Guide documents TUI Dashboard usage", async () => {

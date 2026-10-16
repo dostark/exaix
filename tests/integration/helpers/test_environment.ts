@@ -6,6 +6,13 @@
  * integration tests, including workspace setup, Git mock repositories, and DB initialization.
  */
 
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_FLOWS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import type { IRecordedResponse } from "@exaix/ai/providers";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
@@ -141,8 +148,15 @@ export class TestEnvironment {
     await ensureDir(getPortalsDir(tempDir));
 
     // Copy flows for integration tests that need them
-    const flowsSrcDir = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..", "Blueprints", "Flows");
-    const flowsDestDir = join(tempDir, "Blueprints", "Flows");
+    const flowsSrcDir = join(
+      dirname(fromFileUrl(import.meta.url)),
+      "..",
+      "..",
+      "..",
+      DEFAULT_BLUEPRINTS_PATH,
+      DEFAULT_FLOWS_PATH,
+    );
+    const flowsDestDir = join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH);
     try {
       // `copySync()` throws if destination exists. Some tests create `Blueprints/Flows` up-front.
       // Avoid noisy warnings and just reuse the existing directory.
@@ -172,7 +186,11 @@ export class TestEnvironment {
       // Create initial commit with .gitignore to prevent collateral damage from git reset --hard
       await Deno.writeTextFile(
         join(tempDir, ".gitignore"),
-        "Workspace/\n.exa/journal.db*\n.exa/daemon.*\ndeno.lock\n",
+        `${DEFAULT_WORKSPACE_PATH}/
+.exa/journal.db*
+.exa/daemon.*
+deno.lock
+`,
       );
       await Deno.writeTextFile(join(tempDir, ".gitkeep"), "");
 
@@ -661,7 +679,7 @@ This plan will accomplish the requested task.
    * Get report from /Memory/Reports by trace ID
    */
   async getReportByTraceId(traceId: string): Promise<string | null> {
-    const reportsDir = join(this.tempDir, "Memory", "Reports");
+    const reportsDir = join(this.tempDir, DEFAULT_MEMORY_PATH, "Reports");
 
     try {
       for await (const entry of Deno.readDir(reportsDir)) {
@@ -775,7 +793,7 @@ This plan will accomplish the requested task.
     agentRole: string,
     content?: Opt<string, Reason.TestStub>,
   ): Promise<string> {
-    const blueprintsPath = join(this.tempDir, "Blueprints", "Agents");
+    const blueprintsPath = join(this.tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH);
     await ensureDir(blueprintsPath);
 
     const defaultContent = `# ${agentRole} Blueprint
@@ -813,10 +831,10 @@ Always respond with valid JSON containing a plan with actionable steps.`;
     };
 
     const processor = new RequestProcessor({
-      workspacePath: join(this.tempDir, "Workspace"),
+      workspacePath: join(this.tempDir, DEFAULT_WORKSPACE_PATH),
       requestsDir: options?.requestsDir ?? getWorkspaceRequestsDir(this.tempDir),
       blueprintsPath: options?.blueprintsPath ??
-        join(this.tempDir, "Blueprints", "Agents"),
+        join(this.tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH),
       includeReasoning: options?.includeReasoning ?? true,
       context,
       testProvider: provider,

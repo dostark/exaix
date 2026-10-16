@@ -5,6 +5,7 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/main.ts]
  */
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { DomainEventType } from "@exaix/core/events";
@@ -177,7 +178,7 @@ export async function readRequestLockEntries(
 ): Promise<IProviderLiveBindingEvidence[]> {
   const rows: IProviderLiveBindingEvidence[] = [];
   for (const traceId of traceIds) {
-    const lockPath = join(workspaceRoot, ".exa", "bindings", `${traceId}${LOCKFILE_SUFFIX}`);
+    const lockPath = join(workspaceRoot, DEFAULT_RUNTIME_PATH, "bindings", `${traceId}${LOCKFILE_SUFFIX}`);
     const present = await Deno.stat(lockPath).then(() => true, () => false);
     if (!present) {
       if (required.has(traceId)) {
@@ -323,10 +324,10 @@ export async function writeProviderLiveEvidence(input: IProviderLiveEvidenceInpu
  *  Every lock the daemon reported writing for this run's requests must exist, or the write fails. */
 export async function writeRunBindingEvidence(input: IRunBindingEvidenceInput): Promise<string> {
   const { traceIds, activities } = loadScenarioActivities(
-    join(input.workspaceRoot, ".exa", "journal.db"),
+    join(input.workspaceRoot, DEFAULT_RUNTIME_PATH, "journal.db"),
     input.journalBaselineRowid,
   );
-  const journalPath = join(input.workspaceRoot, ".exa", "journal.db");
+  const journalPath = join(input.workspaceRoot, DEFAULT_RUNTIME_PATH, "journal.db");
   const required = lockedRequestTraces(journalPath, input.journalBaselineRowid);
   const bindings = await readRequestLockEntries(input.workspaceRoot, traceIds, required);
   return await writeProviderLiveEvidence({

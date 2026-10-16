@@ -9,6 +9,12 @@
  * @related-files [apps/exactl/src/command_builders/skill_commands.ts, packages/core/src/skills/skills.ts]
  */
 
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -110,17 +116,17 @@ Deno.test({
     const configPath = join(tempDir, "exa.config.toml");
     writeConfig(configPath, tempDir);
     try {
-      await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+      await Deno.mkdir(join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.copyFile(
-        join(REPO_ROOT, "Blueprints", "Agents", "mock-agent.md"),
-        join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
+        join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+        join(tempDir, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "mock-agent.md"),
       );
 
       const submit = async (daemon: IRunningDaemon): Promise<string> => {
         const traceId = crypto.randomUUID();
-        await Deno.mkdir(join(tempDir, "Workspace", "Requests"), { recursive: true });
+        await Deno.mkdir(join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH), { recursive: true });
         await Deno.writeTextFile(
-          join(tempDir, "Workspace", "Requests", `request-${traceId.slice(0, 8)}.md`),
+          join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH, `request-${traceId.slice(0, 8)}.md`),
           `---
 trace_id: "${traceId}"
 created: "${new Date().toISOString()}"

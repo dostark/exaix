@@ -6,6 +6,7 @@
  * @dependencies [@exaix/flow, @exaix/testing]
  * @related-files [tests/scenario_framework/tests/integration/advanced_flows_cutover_test.ts]
  */
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
@@ -89,9 +90,9 @@ enabled = false
       });
     });
     assert(run);
-    const journal = loadScenarioActivities(join(workspaceRoot, ".exa", "journal.db"), 0);
+    const journal = loadScenarioActivities(join(workspaceRoot, DEFAULT_RUNTIME_PATH, "journal.db"), 0);
     await Deno.writeTextFile(join(outputDir, "journal-evidence.json"), JSON.stringify(journal, null, 2));
-    await Deno.copyFile(join(workspaceRoot, ".exa", "daemon.log"), join(outputDir, "daemon.log"));
+    await Deno.copyFile(join(workspaceRoot, DEFAULT_RUNTIME_PATH, "daemon.log"), join(outputDir, "daemon.log"));
     assertEquals(run.manifest.outcome, "success", JSON.stringify(run.manifest.steps));
     const created = journal.activities.filter((row) =>
       row.action_type === "request.created" && JSON.parse(row.payload).via === "cli"
@@ -107,7 +108,9 @@ enabled = false
     const match = request.match(FRONTMATTER);
     assert(match);
     const flowId = (parseYaml(match[1]) as Record<string, string>).flow ?? "";
-    const flow = flowId ? await new FlowLoader(join(REPO_ROOT, "Blueprints", "Flows")).loadFlow(flowId) : null;
+    const flow = flowId
+      ? await new FlowLoader(join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH)).loadFlow(flowId)
+      : null;
     if (flow) {
       assertEquals(activities.filter((row) => row.action_type === "flow.completed").length, 1);
       assertEquals(activities.filter((row) => row.action_type === "flow.step.completed").length, flow.steps.length);

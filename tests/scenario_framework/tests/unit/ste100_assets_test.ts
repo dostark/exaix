@@ -11,6 +11,7 @@
  * @related-files [tests/scenario_framework/runner/ste100_assets.ts, scripts/skill_catalog_loader.ts]
  */
 
+import { DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { REPO_ROOT } from "@exaix/testing";
 import { assertEquals, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
@@ -27,7 +28,7 @@ Deno.test("ste100 baseline: reconstructs the full dirty instruction state before
   await withTempRoot(async (root) => {
     const baselineDir = join(root, "baseline");
     const source = join(root, "AGENTS.md");
-    const generated = join(root, "Memory/Skills/global/contract.json");
+    const generated = join(root, `${DEFAULT_MEMORY_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/global/contract.json`);
     const configuration = join(root, "exa.config.toml");
     await writeFile(source, "alpha v1\n");
     await writeFile(generated, '{"beta":1}\n');
@@ -40,7 +41,7 @@ Deno.test("ste100 baseline: reconstructs the full dirty instruction state before
       commitHashes: ["parent-head", "edition-head"],
       kinds: {
         "AGENTS.md": "source",
-        "Memory/Skills/global/contract.json": "generated",
+        [`${DEFAULT_MEMORY_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/global/contract.json`]: "generated",
         "exa.config.toml": "configuration",
       },
     });
@@ -48,7 +49,12 @@ Deno.test("ste100 baseline: reconstructs the full dirty instruction state before
     assertEquals(baseline.commitHashes, ["edition-head", "parent-head"]);
     assertEquals(baseline.entries.length, 3);
     assertEquals(baseline.entries.find((e) => e.relPath === "AGENTS.md")?.kind, "source");
-    assertEquals(baseline.entries.find((e) => e.relPath === "Memory/Skills/global/contract.json")?.kind, "generated");
+    assertEquals(
+      baseline.entries.find((e) =>
+        e.relPath === `${DEFAULT_MEMORY_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/global/contract.json`
+      )?.kind,
+      "generated",
+    );
     assertEquals(baseline.entries.find((e) => e.relPath === "exa.config.toml")?.kind, "configuration");
     for (const entry of baseline.entries) {
       assertEquals(await exists(entry.blobPath), true, "content-addressed blob must be written");

@@ -11,6 +11,7 @@
  * @related-files [tests/scenario_framework/scenarios/portal_knowledge/portal-knowledge-strategies.yaml]
  */
 
+import { DEFAULT_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import {
@@ -137,7 +138,13 @@ if (import.meta.main) {
   const [workspaceRoot, portalAlias, portalPath] = Deno.args;
   if (!workspaceRoot || !portalAlias || !portalPath) usageError();
 
-  const knowledgePath = join(workspaceRoot, "Memory", "Projects", portalAlias, "knowledge.json");
+  const knowledgePath = join(
+    workspaceRoot,
+    DEFAULT_MEMORY_PATH,
+    DEFAULT_PROJECTS_MEMORY_PATH,
+    portalAlias,
+    "knowledge.json",
+  );
   const knowledge = PortalKnowledgeSchema.parse(JSON.parse(await Deno.readTextFile(knowledgePath)));
   const config: Config = ConfigSchema.parse({
     system: { root: workspaceRoot },

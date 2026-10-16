@@ -20,6 +20,7 @@
  * @architectural-layer Test
  * @related-files [tests/eval/catalog_parity.ts, tests/scenario_framework/runner/scenario_catalog.ts]
  */
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
@@ -28,7 +29,7 @@ import { loadScenarioCatalog } from "../scenario_framework/runner/scenario_catal
 import parityExclusions from "./parity_exclusions.json" with { type: "json" };
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
-const FLOWS_DIR = join(REPO_ROOT, "Blueprints", "Flows");
+const FLOWS_DIR = join(REPO_ROOT, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_PATH);
 const FRAMEWORK_HOME = join(REPO_ROOT, "tests", "scenario_framework");
 
 /** The suffix a flow's entity tag carries, distinguishing it from an agent role or tool of that name. */

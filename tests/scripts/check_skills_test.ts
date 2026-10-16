@@ -10,6 +10,7 @@
  * @related-files [scripts/check_skills.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { REPO_ROOT } from "@exaix/testing";
@@ -21,9 +22,11 @@ const NO_COUNTS = undefined;
 async function withRepo(fn: (root: string) => Promise<void>): Promise<void> {
   const root = await Deno.makeTempDir({ prefix: "exa-check-skills-" });
   try {
-    await Deno.mkdir(join(root, "Blueprints", "Skills", "good-skill"), { recursive: true });
+    await Deno.mkdir(join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH, "good-skill"), {
+      recursive: true,
+    });
     await Deno.writeTextFile(
-      join(root, "Blueprints", "Skills", "good-skill", "SKILL.md"),
+      join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH, "good-skill", "SKILL.md"),
       "---\nname: good-skill\ndescription: A valid skill\n---\nBody.\n",
     );
     await fn(root);
@@ -48,7 +51,7 @@ Deno.test("[check-skills] a valid minimal folder passes", async () => {
 
 Deno.test("[check-skills] an invalid folder, legacy JSON, a flat skill file and scripts fail with typed reasons", async () => {
   await withRepo(async (root) => {
-    const skills = join(root, "Blueprints", "Skills");
+    const skills = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
     await Deno.mkdir(join(skills, "broken-skill"));
     await Deno.writeTextFile(join(skills, "broken-skill", "SKILL.md"), "no frontmatter");
     await Deno.writeTextFile(join(skills, "legacy.json"), "{}");
@@ -57,21 +60,23 @@ Deno.test("[check-skills] an invalid folder, legacy JSON, a flat skill file and 
     const result = await checkSkillCatalog(root);
     assertEquals(result.ok, false);
     assertEquals(result.errors.sort(), [
-      "Blueprints/Skills/broken-skill: invalid_frontmatter",
-      "Blueprints/Skills/flat.skill.md: legacy_layout",
-      "Blueprints/Skills/good-skill: executable_content",
-      "Blueprints/Skills/legacy.json: legacy_layout",
+      `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/broken-skill: invalid_frontmatter`,
+      `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/flat.skill.md: legacy_layout`,
+      `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/good-skill: executable_content`,
+      `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/legacy.json: legacy_layout`,
     ]);
   });
 });
 
 Deno.test("[check-skills] the tracked Exaix project root is validated", async () => {
   await withRepo(async (root) => {
-    const portal = join(root, "Memory", "Skills", "project", "Exaix", "proj-skill");
+    const portal = join(root, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH, "project", "Exaix", "proj-skill");
     await Deno.mkdir(portal, { recursive: true });
     await Deno.writeTextFile(join(portal, "SKILL.md"), "---\nname: other-name\ndescription: Mismatch\n---\nx\n");
     const result = await checkSkillCatalog(root);
-    assertEquals(result.errors, ["Memory/Skills/project/Exaix/proj-skill: invalid_frontmatter"]);
+    assertEquals(result.errors, [
+      `${DEFAULT_MEMORY_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/project/Exaix/proj-skill: invalid_frontmatter`,
+    ]);
   });
 });
 
@@ -111,10 +116,10 @@ Deno.test("[check-skills] a required corpus with the wrong or zero count fails w
 
 Deno.test("[check-skills] learned roots, operator portal roots and developer config never affect the gate", async () => {
   await withRepo(async (root) => {
-    const learned = join(root, "Memory", "Skills", "learned", "operator-draft");
+    const learned = join(root, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH, "learned", "operator-draft");
     await Deno.mkdir(learned, { recursive: true });
     await Deno.writeTextFile(join(learned, "SKILL.md"), "not valid at all");
-    const operator = join(root, "Memory", "Skills", "project", "Local", "scratch");
+    const operator = join(root, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH, "project", "Local", "scratch");
     await Deno.mkdir(operator, { recursive: true });
     await Deno.writeTextFile(join(operator, "SKILL.md"), "not valid either");
     const config = join(root, "developer.toml");

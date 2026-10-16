@@ -9,6 +9,7 @@
  * @related-files [apps/daemon/main.ts, apps/daemon/src/watcher.ts, packages/execution/src/execution_loop.ts]
  */
 
+import { DEFAULT_ACTIVE_PATH, DEFAULT_RUNTIME_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { dirname, join } from "@std/path";
@@ -36,14 +37,14 @@ async function createPlanWorkspace(): Promise<IPlanWorkspace> {
   const root = await Deno.makeTempDir({ prefix: "plan-detection-" });
   const configPath = join(root, "exa.config.toml");
   writeDaemonConfigWithMockAi(configPath, root);
-  const activeDir = join(root, "Workspace", "Active");
+  const activeDir = join(root, DEFAULT_WORKSPACE_PATH, DEFAULT_ACTIVE_PATH);
   await ensureDir(activeDir);
   return { root, configPath, activeDir };
 }
 
 /** Journal rows for one action that name `path` as their target or inside their payload. */
 function journalRowsNaming(configPath: string, action: string, path: string): IJournalRow[] {
-  const db = new Database(join(dirname(configPath), ".exa", "journal.db"), { readonly: true });
+  const db = new Database(join(dirname(configPath), DEFAULT_RUNTIME_PATH, "journal.db"), { readonly: true });
   try {
     return db.prepare(
       "SELECT payload, trace_id FROM activity WHERE action_type = ? AND (target = ? OR instr(payload, ?) > 0) ORDER BY rowid",

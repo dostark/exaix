@@ -9,6 +9,12 @@
  * @related-files [packages/flow/src/agent_composer_adapter.ts, packages/execution/src/agent_runner.ts]
  */
 
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_SKILLS_MEMORY_PATH,
+} from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -42,15 +48,15 @@ Deno.test("[skill usage] each flow step's model call records a row with the flow
   const env = await initTestDbService();
   const root = await Deno.makeTempDir({ prefix: "skill-usage-flow-" });
   try {
-    const skillsDir = join(root, "Blueprints", "Skills");
+    const skillsDir = join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH);
     await writeSkillFolder(skillsDir, { name: SKILL, instructions: "Flow skill body." });
-    await Deno.mkdir(join(root, "Blueprints", "Agents"), { recursive: true });
+    await Deno.mkdir(join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.writeTextFile(
-      join(root, "Blueprints", "Agents", "flow-agent.md"),
+      join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH, "flow-agent.md"),
       `---\nagent_role: flow-agent\nmodel: mock:test\ndefault_skills: ["${SKILL}"]\n---\nYou are a flow agent.\n`,
     );
     const skills = new SkillsService(
-      { memoryDir: join(root, "Memory"), blueprintSkillsDir: skillsDir },
+      { memoryDir: join(root, DEFAULT_MEMORY_PATH), blueprintSkillsDir: skillsDir },
       env.db,
       undefined,
       new EventLogger({ db: env.db }),
@@ -62,7 +68,7 @@ Deno.test("[skill usage] each flow step's model call records a row with the flow
     };
     const agentRunner = new AgentRunner(provider, { skillsService: skills, disableSkills: false, disableRetry: true });
     const runner = new FlowRunner({
-      agentExecutor: new AgentComposerAdapter(agentRunner, join(root, "Blueprints", "Agents")),
+      agentExecutor: new AgentComposerAdapter(agentRunner, join(root, DEFAULT_BLUEPRINTS_PATH, DEFAULT_AGENTS_PATH)),
       eventLogger: new SilentFlowLogger(),
     });
 

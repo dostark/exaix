@@ -16,6 +16,7 @@
  * ]
  */
 
+import { DEFAULT_ACTIVE_PATH, DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { MockLLMProvider } from "@exaix/ai/providers";
@@ -63,7 +64,7 @@ async function setupExecution(aciDocsEnabled: boolean, providerStrategy: MockStr
       content: "Confirm you can see the read_file tool guidance, then finish.",
     }],
   };
-  const planPath = join(tempDir, "Workspace", "Plans", "Active", `${traceId}.md`);
+  const planPath = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_PLANS_PATH, DEFAULT_ACTIVE_PATH, `${traceId}.md`);
 
   return { db, executor, context, planPath, traceId, requestId, cleanup };
 }
