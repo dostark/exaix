@@ -1,0 +1,13 @@
+schema_version: "1.0.0"
+id: "sql-journal-assert"
+pack: "smoke"
+portals: []
+mode_support: ["auto"]
+steps:
+  - id: "no-dynamic-tools"
+    type: "journal-assert"
+    args: ["SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM activity WHERE action_type = 'dynamic_tool_call')"]
+  - id: "declarative"
+    type: "journal-assert"
+    action_type: "dynamic_tool_call"
+    expect_count: 0

@@ -1,0 +1,14 @@
+schema_version: "1.0.0"
+id: "relabeled-shell"
+pack: "smoke"
+portals: []
+mode_support: ["auto"]
+steps:
+  - id: "probe"
+    type: "run-script"
+    command: "sh"
+    args: ["-c", "pgrep -f '[a]pps/x' >/dev/null && echo LEAKED || echo clean"]
+  - id: "helper"
+    type: "run-script"
+    command: "deno"
+    args: ["run", "-A", "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts", "read_file"]

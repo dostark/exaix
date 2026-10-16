@@ -18,15 +18,9 @@ import {
 } from "../../runner/synthetic_runner.ts";
 import { patchWorkspaceConfig, renderTomlValue, splitConfigPath } from "../../runner/workspace_config_overrides.ts";
 
-const BASE = `# Framework template
-[system]
-root = "."
-log_level = "info"
-
-[portal_knowledge]
-default_mode = "standard"
-quick_scan_limit = 10000
-`;
+const BASE = await Deno.readTextFile(
+  new URL("../../fixtures/configs/workspace-config-overrides-base.toml", import.meta.url),
+);
 
 Deno.test("[workspace_config] splitConfigPath handles bare and quoted segments", () => {
   assertEquals(splitConfigPath("portal_knowledge.default_mode"), ["portal_knowledge", "default_mode"]);

@@ -13,13 +13,9 @@ import { ConfigSchema } from "@exaix/schemas";
 import { PortalMountSchema } from "../../schema/step_schema.ts";
 import { verificationToml } from "../../runner/synthetic_runner.ts";
 
-const BASE_CONFIG = `[system]
-root = "."
-
-[[portals]]
-alias = "demo"
-target_path = "/tmp/demo"
-`;
+const BASE_CONFIG = await Deno.readTextFile(
+  new URL("../../fixtures/configs/portal-mount-verification-base.toml", import.meta.url),
+);
 
 Deno.test("[scenario-schema] a portal mount carries verification into the sandbox config", () => {
   const mount = PortalMountSchema.parse({

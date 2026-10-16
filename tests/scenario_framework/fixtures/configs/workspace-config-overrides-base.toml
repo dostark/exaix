@@ -1,0 +1,8 @@
+# Framework template
+[system]
+root = "."
+log_level = "info"
+
+[portal_knowledge]
+default_mode = "standard"
+quick_scan_limit = 10000

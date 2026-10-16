@@ -1,0 +1,6 @@
+[system]
+root = "."
+
+[[portals]]
+alias = "demo"
+target_path = "/tmp/demo"
