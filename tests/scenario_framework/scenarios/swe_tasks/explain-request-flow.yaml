@@ -141,7 +141,7 @@ steps:
   - id: "prepare-llm-judge-evidence"
     type: "prepare-evidence"
     cwd: "todo-app"
-    source: "src/api.ts"
+    source: "docs/request-flow.md"
     target: "llm-judge-input.txt"
     output_criteria:
       - id: "evidence-prepared"
