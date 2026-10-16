@@ -1046,6 +1046,7 @@ default segments in the caller.
   key from the same constant, so a restated value is a second owner of the layout.
 - A test reads a config document from a fixture. The `test-inline-multiline-fixture` rule requires
   that of any multi-line test input.
+- A scenario step names a config fixture with `content_from` instead of an inline `content` block.
 - The helpers live in `packages/shared/src/paths.ts`.
 
 **Exception:** a test may compose the segments when the composition itself is the rule under test,

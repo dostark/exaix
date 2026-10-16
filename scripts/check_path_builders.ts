@@ -94,6 +94,8 @@ const PLACEHOLDERS: Record<string, string> = {
 };
 const TOML_ENTRY = /^\s*(\w+)\s*=\s*(.+?)\s*$/;
 const TOML_PATHS_HEADER = /^\s*\[paths\]\s*$/;
+/** A TOML section header, which marks a config document. */
+const TOML_DOCUMENT = /^\[(?:system|paths)\]$/;
 const TOML_SECTION = /^\s*\[[^\]]+\]\s*$/;
 const PATHS_ASSIGNMENT = /\.paths\.(\w+)\s*=\s*"([^"]*)"/;
 /** The helper module and the tables that legitimately compose the defaults. */
@@ -258,6 +260,33 @@ function scanToml(repoPath: string, text: string): IViolation[] {
   return violations;
 }
 
+/** A scenario step that embeds a config document, which a `content_from` fixture replaces. */
+function scanScenarioYaml(repoPath: string, text: string): IViolation[] {
+  const violations = scanToml(repoPath, text);
+  const lines = text.split("\n");
+  const content = /^(\s*)content:\s*\|\s*$/;
+  for (let index = 0; index < lines.length; index++) {
+    const match = content.exec(lines[index]);
+    if (!match) continue;
+    const indent = match[1].length;
+    let cursor = index + 1;
+    let holdsConfig = false;
+    while (cursor < lines.length) {
+      const line = lines[cursor];
+      if (line.trim() !== "" && line.length - line.trimStart().length <= indent) break;
+      if (TOML_DOCUMENT.test(line.trim())) holdsConfig = true;
+      cursor++;
+    }
+    if (!holdsConfig) continue;
+    violations.push({
+      file: repoPath,
+      line: index + 1,
+      detail: "embeds a config document. Name a fixture with content_from instead.",
+    });
+  }
+  return violations;
+}
+
 /** Every violation in the repository. */
 export async function findPathBuilderViolations(): Promise<IViolation[]> {
   const violations: IViolation[] = [];
@@ -293,7 +322,7 @@ export async function findPathBuilderViolations(): Promise<IViolation[]> {
     })
   ) {
     const repoPath = relative(REPO_ROOT, entry.path);
-    violations.push(...scanToml(repoPath, await Deno.readTextFile(entry.path)));
+    violations.push(...scanScenarioYaml(repoPath, await Deno.readTextFile(entry.path)));
   }
   return violations.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
 }
