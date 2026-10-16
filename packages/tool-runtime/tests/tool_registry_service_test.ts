@@ -42,7 +42,7 @@ function createRegistry(root?: string): ToolRegistry {
     ? ConfigSchema.parse({
       ...mockConfig,
       system: { ...mockConfig.system, root },
-      paths: { ...mockConfig.paths, workspace: DEFAULT_WORKSPACE_PATH },
+      paths: mockConfig.paths,
     })
     : mockConfig;
 

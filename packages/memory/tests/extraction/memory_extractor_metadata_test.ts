@@ -6,28 +6,7 @@
  * @description Tests that MemoryExtractorService correctly attaches confidence, source, and extractedAt metadata.
  */
 
-import {
-  DEFAULT_ACTIVE_PATH,
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_ARCHIVE_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_FLOWS_DIR,
-  DEFAULT_MEMORY_EXECUTION_DIR,
-  DEFAULT_MEMORY_GLOBAL_DIR,
-  DEFAULT_MEMORY_INDEX_DIR,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_MEMORY_PENDING_DIR,
-  DEFAULT_MEMORY_PROJECTS_DIR,
-  DEFAULT_MEMORY_SKILLS_DIR,
-  DEFAULT_MEMORY_TASKS_DIR,
-  DEFAULT_PENDING_MEMORY_PATH,
-  DEFAULT_PLANS_PATH,
-  DEFAULT_PORTALS_PATH,
-  DEFAULT_REJECTED_PATH,
-  DEFAULT_REQUESTS_PATH,
-  DEFAULT_RUNTIME_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import { DEFAULT_MEMORY_PATH, DEFAULT_PENDING_MEMORY_PATH, ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { MemoryExtractorService } from "@exaix/memory";
 import {
@@ -51,27 +30,7 @@ Deno.test("Step 71.1: MemoryExtractorService attaches required metadata to propo
   // Use a more structured mock to avoid casting if possible
   const rawConfig = {
     system: { root: ".", log_level: LogLevel.INFO, schema_version: "1.0.0", version: "0.1.0" },
-    paths: {
-      memory: DEFAULT_MEMORY_PATH,
-      blueprints: DEFAULT_BLUEPRINTS_PATH,
-      runtime: DEFAULT_RUNTIME_PATH,
-      workspace: DEFAULT_WORKSPACE_PATH,
-      portals: DEFAULT_PORTALS_PATH,
-      active: DEFAULT_ACTIVE_PATH,
-      archive: DEFAULT_ARCHIVE_PATH,
-      plans: DEFAULT_PLANS_PATH,
-      requests: DEFAULT_REQUESTS_PATH,
-      rejected: DEFAULT_REJECTED_PATH,
-      agents: DEFAULT_AGENTS_PATH,
-      flows: DEFAULT_FLOWS_DIR,
-      memoryProjects: DEFAULT_MEMORY_PROJECTS_DIR,
-      memoryExecution: DEFAULT_MEMORY_EXECUTION_DIR,
-      memoryIndex: DEFAULT_MEMORY_INDEX_DIR,
-      memorySkills: DEFAULT_MEMORY_SKILLS_DIR,
-      memoryPending: DEFAULT_MEMORY_PENDING_DIR,
-      memoryTasks: DEFAULT_MEMORY_TASKS_DIR,
-      memoryGlobal: DEFAULT_MEMORY_GLOBAL_DIR,
-    },
+    paths: { ...ExaPathDefaults },
     agents: { default_model: "test-model", timeout_sec: 30, max_iterations: 10 },
     models: { "test-model": { provider: ProviderType.MOCK, model: "test-model" } },
     tools: {},

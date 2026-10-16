@@ -8,25 +8,12 @@
  */
 
 import {
-  DEFAULT_ACTIVE_PATH,
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_ARCHIVE_PATH,
   DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_EXECUTION_MEMORY_PATH,
-  DEFAULT_FLOWS_DIR,
-  DEFAULT_GLOBAL_MEMORY_PATH,
-  DEFAULT_INDEX_MEMORY_PATH,
   DEFAULT_MEMORY_PATH,
-  DEFAULT_PENDING_MEMORY_PATH,
-  DEFAULT_PLANS_PATH,
   DEFAULT_PORTALS_PATH,
-  DEFAULT_PROJECTS_MEMORY_PATH,
-  DEFAULT_REJECTED_PATH,
-  DEFAULT_REQUESTS_PATH,
   DEFAULT_RUNTIME_PATH,
-  DEFAULT_SKILLS_MEMORY_PATH,
-  DEFAULT_TASKS_MEMORY_PATH,
   DEFAULT_WORKSPACE_PATH,
+  ExaPathDefaults,
 } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { ProviderEmbeddingService } from "@exaix/memory";
@@ -56,25 +43,12 @@ async function createTestService(
   const config = {
     system: { root: tempDir, log_level: "info", schema_version: "1.0.0", version: "1.0.0" },
     paths: {
+      ...ExaPathDefaults,
       memory: `./${DEFAULT_MEMORY_PATH}`,
       blueprints: `./${DEFAULT_BLUEPRINTS_PATH}`,
       runtime: `./${DEFAULT_RUNTIME_PATH}`,
       workspace: `./${DEFAULT_WORKSPACE_PATH}`,
       portals: `./${DEFAULT_PORTALS_PATH}`,
-      active: DEFAULT_ACTIVE_PATH,
-      archive: DEFAULT_ARCHIVE_PATH,
-      plans: DEFAULT_PLANS_PATH,
-      requests: DEFAULT_REQUESTS_PATH,
-      rejected: DEFAULT_REJECTED_PATH,
-      agents: DEFAULT_AGENTS_PATH,
-      flows: DEFAULT_FLOWS_DIR,
-      memoryProjects: DEFAULT_PROJECTS_MEMORY_PATH,
-      memoryExecution: DEFAULT_EXECUTION_MEMORY_PATH,
-      memoryIndex: DEFAULT_INDEX_MEMORY_PATH,
-      memorySkills: DEFAULT_SKILLS_MEMORY_PATH,
-      memoryPending: DEFAULT_PENDING_MEMORY_PATH,
-      memoryTasks: DEFAULT_TASKS_MEMORY_PATH,
-      memoryGlobal: DEFAULT_GLOBAL_MEMORY_PATH,
     },
   } as Config;
 
@@ -319,25 +293,12 @@ Deno.test("ProviderEmbeddingService: defaults to OllamaEmbeddingClient when no p
   const config = {
     system: { root: tempDir, log_level: "info", schema_version: "1.0.0", version: "1.0.0" },
     paths: {
+      ...ExaPathDefaults,
       memory: `./${DEFAULT_MEMORY_PATH}`,
       blueprints: `./${DEFAULT_BLUEPRINTS_PATH}`,
       runtime: `./${DEFAULT_RUNTIME_PATH}`,
       workspace: `./${DEFAULT_WORKSPACE_PATH}`,
       portals: `./${DEFAULT_PORTALS_PATH}`,
-      active: DEFAULT_ACTIVE_PATH,
-      archive: DEFAULT_ARCHIVE_PATH,
-      plans: DEFAULT_PLANS_PATH,
-      requests: DEFAULT_REQUESTS_PATH,
-      rejected: DEFAULT_REJECTED_PATH,
-      agents: DEFAULT_AGENTS_PATH,
-      flows: DEFAULT_FLOWS_DIR,
-      memoryProjects: DEFAULT_PROJECTS_MEMORY_PATH,
-      memoryExecution: DEFAULT_EXECUTION_MEMORY_PATH,
-      memoryIndex: DEFAULT_INDEX_MEMORY_PATH,
-      memorySkills: DEFAULT_SKILLS_MEMORY_PATH,
-      memoryPending: DEFAULT_PENDING_MEMORY_PATH,
-      memoryTasks: DEFAULT_TASKS_MEMORY_PATH,
-      memoryGlobal: DEFAULT_GLOBAL_MEMORY_PATH,
     },
   } as Config;
 

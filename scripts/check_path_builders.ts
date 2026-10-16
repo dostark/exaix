@@ -181,6 +181,17 @@ function scanFile(repoPath: string, text: string): IViolation[] {
     }
   };
   const visit = (node: ts.Node): void => {
+    if (
+      ts.isPropertyAssignment(node) && ts.isIdentifier(node.name) && node.name.text === "paths" &&
+      ts.isObjectLiteralExpression(node.initializer)
+    ) {
+      for (const property of node.initializer.properties) {
+        if (!ts.isPropertyAssignment(property)) continue;
+        if (!ts.isIdentifier(property.initializer) || !property.initializer.text.startsWith("DEFAULT_")) continue;
+        const key = ts.isIdentifier(property.name) || ts.isStringLiteral(property.name) ? property.name.text : "?";
+        add(property, `paths.${key} re-spells the default table. Spread ExaPathDefaults instead.`);
+      }
+    }
     if (ts.isCallExpression(node)) {
       const name = calleeName(node.expression);
       if (name && JOIN_CALLS.has(name)) {

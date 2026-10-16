@@ -112,6 +112,7 @@ Deno.test("[path-defaults] a stale bare paths.flows value is rejected at config 
   // The exact value that produced "No flows found": the pre-Phase-142 default, which resolves to
   // `<root>/Flows` — a directory the catalog has never shipped in. Failing at load puts the error
   // where an operator can act on it, rather than four layers down as an empty catalog.
+  // path-builder-exclude: the stale bare value is the rule under test
   const result = ConfigSchema.safeParse({ system: {}, paths: { flows: DEFAULT_FLOWS_PATH } });
 
   assertEquals(result.success, false, 'a config carrying the stale bare `flows = "Flows"` must not parse');

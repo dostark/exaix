@@ -1046,6 +1046,8 @@ default segments in the caller.
   key from the same constant, so a restated value is a second owner of the layout.
 - A caller reads `config.paths.<key>` directly. The schema fills a missing key, so a
   `paths.<key> ?? "<default>"` fallback repeats the default and is dead code.
+- A `paths` object in a test spreads `ExaPathDefaults` and then names only the keys it overrides.
+  Listing the keys with their default constants re-spells the table.
 - A test reads a config document from a fixture. The `test-inline-multiline-fixture` rule requires
   that of any multi-line test input.
 - A scenario step names a config fixture with `content_from` instead of an inline `content` block.

@@ -6,17 +6,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import {
-  DEFAULT_ACTIVE_PATH,
-  DEFAULT_ARCHIVE_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_FLOWS_DIR,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_PLANS_PATH,
-  DEFAULT_PORTALS_PATH,
-  DEFAULT_REJECTED_PATH,
-  DEFAULT_REQUESTS_PATH,
-} from "@exaix/shared";
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "@exaix/request";
@@ -67,19 +57,7 @@ Follow instructions
 
   const configRaw = {
     system: { root: tempDir },
-    paths: {
-      workspace: "workspace",
-      requests: DEFAULT_REQUESTS_PATH,
-      plans: DEFAULT_PLANS_PATH,
-      active: DEFAULT_ACTIVE_PATH,
-      rejected: DEFAULT_REJECTED_PATH,
-      archive: DEFAULT_ARCHIVE_PATH,
-      blueprints: DEFAULT_BLUEPRINTS_PATH,
-      portals: DEFAULT_PORTALS_PATH,
-      memory: DEFAULT_MEMORY_PATH,
-      runtime: "Runtime",
-      flows: DEFAULT_FLOWS_DIR,
-    },
+    paths: { ...ExaPathDefaults, workspace: "workspace", runtime: "Runtime" },
     database: {
       batch_flush_ms: 100,
       batch_max_size: 10,

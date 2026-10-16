@@ -6,14 +6,7 @@
  * JSON/YAML settings, default value application, and strict validation of sensitive provider keys.
  */
 
-import {
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_PORTALS_PATH,
-  DEFAULT_RUNTIME_PATH,
-  DEFAULT_WORKSPACE_PATH,
-  ExaPathDefaults,
-} from "@exaix/shared";
+import { DEFAULT_MEMORY_PATH, ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertExists, assertStringIncludes, assertThrows } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { ProviderCostTier } from "@exaix/core";
@@ -666,13 +659,7 @@ runtime = "./Runtime"`,
 Deno.test("ConfigSchema accepts provider_strategy section", () => {
   const config = {
     system: { version: DEFAULT_MCP_VERSION },
-    paths: {
-      workspace: DEFAULT_WORKSPACE_PATH,
-      runtime: DEFAULT_RUNTIME_PATH,
-      memory: DEFAULT_MEMORY_PATH,
-      portals: DEFAULT_PORTALS_PATH,
-      blueprints: DEFAULT_BLUEPRINTS_PATH,
-    },
+    paths: { ...ExaPathDefaults },
     provider_strategy: {
       prefer_free: true,
       allow_local: true,
