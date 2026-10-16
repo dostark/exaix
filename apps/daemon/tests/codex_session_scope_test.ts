@@ -8,6 +8,7 @@
  * @related-files [apps/daemon/src/headless_session_launcher.ts, apps/daemon/src/session_return_watcher.ts, packages/session/src/session_return_processor.ts]
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
@@ -71,7 +72,7 @@ Deno.test("[codex_session_scope][security] untracked forbidden Codex write canno
       gate: "code_changes",
       tool: "codex",
       objective: "Implement the permitted source change.",
-      artifactRef: "Workspace/Plans/phase-167.md",
+      artifactRef: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/phase-167.md`,
       permittedPaths: ["src/**"],
       worktreePath: worktree,
       tokenBudget: { max_input_tokens: 100, max_output_tokens: 100, max_total_tokens: 200 },

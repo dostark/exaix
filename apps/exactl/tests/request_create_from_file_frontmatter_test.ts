@@ -19,6 +19,7 @@ import {
   DEFAULT_BLUEPRINTS_PATH,
   DEFAULT_FLOWS_PATH,
   DEFAULT_REQUESTS_PATH,
+  DEFAULT_RUNTIME_PATH,
   DEFAULT_WORKSPACE_PATH,
 } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
@@ -171,7 +172,7 @@ Evaluate the pinned skills.
     const { frontmatter } = await submit(
       "---\nflow: api-design\nplan_context_ref: .exa/PlanContext/guarded-change.md\n---\nRun the hardened plan.\n",
     );
-    assertEquals(frontmatter.plan_context_ref, ".exa/PlanContext/guarded-change.md");
+    assertEquals(frontmatter.plan_context_ref, `${DEFAULT_RUNTIME_PATH}/PlanContext/guarded-change.md`);
   });
 
   it("omits agent_role from a flow request's frontmatter, which the daemon requires", async () => {

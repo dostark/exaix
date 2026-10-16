@@ -7,6 +7,7 @@
  * @related-files [packages/session/src/session_delegation_result_store.ts, packages/session/src/session_brief_reader.ts]
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
@@ -112,7 +113,7 @@ Deno.test("[session_brief_reader][security] recovery reads a schema-validated br
       gate: "code_changes",
       tool: "codex",
       objective: "Recover this validated objective.",
-      artifact_ref: ".exa/PlanContext/phase-174.md",
+      artifact_ref: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
       permitted_paths: ["packages/**"],
       token_budget: {
         max_input_tokens: 100,

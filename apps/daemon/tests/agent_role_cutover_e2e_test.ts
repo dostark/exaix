@@ -125,7 +125,7 @@ Deno.test({
           rows.length > 0,
           "activity table must carry at least one row with agent_role = 'senior-coder', queried " +
             "directly via the real DB (not a mock store) — the daemon must have resolved " +
-            "Blueprints/Agents/senior-coder.md for this request",
+            `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}/senior-coder.md for this request`,
         );
         assertEquals(rows[0].agent_role, "senior-coder");
       } finally {

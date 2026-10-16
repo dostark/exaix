@@ -6,6 +6,7 @@
  * @related-files [packages/session/src/codex_sandbox_flags.ts]
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionBrief, SessionGate } from "@exaix/schemas/session_delegate.ts";
@@ -18,7 +19,7 @@ function makeBrief(gate: SessionGate): SessionBrief {
     gate,
     tool: "codex",
     objective: "Apply the requested change",
-    artifact_ref: "Workspace/Plans/phase-167.md",
+    artifact_ref: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/phase-167.md`,
     permitted_paths: ["packages/session/**"],
     worktree_path: "/tmp/phase-167-worktree",
     token_budget: { max_input_tokens: 10_000, max_output_tokens: 5_000, max_total_tokens: 15_000 },

@@ -6,6 +6,7 @@
  *   and abandoned synthesis on exit-without-return.
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -258,7 +259,7 @@ Deno.test({
         gate,
         tool: "claude-code",
         objective: `E2E test for gate ${gate}`,
-        artifact_ref: "Workspace/Plans/test.md",
+        artifact_ref: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/test.md`,
         permitted_paths: ["src/**", "tests/**"],
         token_budget: { max_input_tokens: 10000, max_output_tokens: 10000, max_total_tokens: 20000 },
         resume_token: crypto.randomUUID(),

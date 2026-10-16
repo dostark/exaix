@@ -121,7 +121,7 @@ Deno.test("[Tier A] cycle lifecycle events carry parent and delegation trace fie
       requestId: "req-events",
       portal: "exaix-self",
       executionRoot: root,
-      planContextRef: ".exa/PlanContext/phase-174.md",
+      planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
     });
 
     await db.waitForFlush();

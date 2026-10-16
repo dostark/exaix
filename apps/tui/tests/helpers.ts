@@ -8,6 +8,7 @@
  * session simulators, and assertion utilities for all terminal views.
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import {
   LegacyRequestManagerTuiSession as _LegacyRequestManagerTuiSession,
   RequestManagerView,
@@ -237,7 +238,7 @@ export function sampleLogEntry(overrides: ILogEntryOverrides = {}): ILogEntry {
     actor: overrides.actor ?? MemoryBankSource.USER,
     agent_role: overrides.agent_role ?? "default",
     action_type: overrides.action_type ?? "request_created",
-    target: overrides.target ?? "Workspace/Requests/test.md",
+    target: overrides.target ?? `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}/test.md`,
     payload: payloadObj,
     timestamp: overrides.timestamp ?? new Date().toISOString(),
     ...rest,
@@ -252,7 +253,11 @@ export function sampleLogEntries(arr: ILogEntryOverrides[]): ILogEntry[] {
 export function createTwoAgentLogs(): ILogEntry[] {
   return sampleLogEntries([
     { agent_role: "researcher", action_type: "request_created" },
-    { agent_role: "architect", action_type: "plan_approved", target: "Workspace/Plans/test.md" },
+    {
+      agent_role: "architect",
+      action_type: "plan_approved",
+      target: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/test.md`,
+    },
   ]);
 }
 

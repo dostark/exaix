@@ -6,6 +6,7 @@
  * @related-files [packages/flow/src/wait_states/wait_state_service.ts]
  */
 
+import { DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { type CreateWaitStateInput, WaitStateService } from "../mod.ts";
 import { assertEquals, assertRejects } from "@std/assert";
 
@@ -13,7 +14,7 @@ function makeInput(overrides: Partial<CreateWaitStateInput> = {}): CreateWaitSta
   return {
     kind: "plan_approval",
     traceId: "expiry-trace",
-    artifactPath: "Workspace/WaitStates/expiry-trace/ws.json",
+    artifactPath: `${DEFAULT_WORKSPACE_PATH}/WaitStates/expiry-trace/ws.json`,
     resumeToken: crypto.randomUUID(),
     ...overrides,
   };

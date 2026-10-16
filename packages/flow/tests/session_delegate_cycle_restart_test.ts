@@ -11,6 +11,7 @@
  * @related-files [packages/flow/src/step_handlers/session_delegate_cycle_step_handler.ts, packages/session/src/session_delegate_cycle_claim_store.ts, packages/session/src/session_delegate_cycle_store.ts]
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import type { JSONValue } from "@exaix/core";
 import { FlowInputSource, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
@@ -125,7 +126,7 @@ function makeCtx(traceId: string, flowRunId = "flow-run-1"): IStepExecutionConte
       requestId: "req-1",
       portal: "exaix-self",
       executionRoot: "/fake/root",
-      planContextRef: ".exa/PlanContext/phase-x.md",
+      planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-x.md`,
     },
     stepRequest: { userPrompt: "run", context: {} },
     flowRunId,

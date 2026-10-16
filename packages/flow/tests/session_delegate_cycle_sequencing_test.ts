@@ -9,6 +9,7 @@
  * @related-files [packages/flow/src/step_handlers/session_delegate_cycle_step_handler.ts]
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import {
   DEFAULT_SESSION_DELEGATE_CYCLE_MAX_PLAN_BYTES,
@@ -167,7 +168,7 @@ function makeCtx(): IStepExecutionContext {
       requestId: "req-1",
       portal: "exaix-self",
       executionRoot: "/fake/root",
-      planContextRef: ".exa/PlanContext/phase-x.md",
+      planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-x.md`,
     },
     stepRequest: { userPrompt: "run", context: {} },
     flowRunId: "flow-run-1",

@@ -7,6 +7,7 @@
  * @related-files [apps/daemon/src/session_delegation_coordinator.ts, packages/session/src/session_delegation.ts]
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
@@ -190,7 +191,7 @@ function request(): ISessionDelegationRequest {
     agentRole: "test-role",
     objective: "Implement the coordinator.",
     acceptanceCriteria: ["The coordinator is wired."],
-    artifactRef: ".exa/PlanContext/phase-174.md",
+    artifactRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
     worktreePath: "/tmp/worktree",
   };
 }

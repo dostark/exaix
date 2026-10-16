@@ -6,6 +6,7 @@
  *   worktree-root escape) and glob scope-match (stage 2) mechanics.
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { checkScope } from "@exaix/session/scope_checker.ts";
 
@@ -57,6 +58,8 @@ Deno.test("[scope_checker] empty paths_touched returns no violations", () => {
 });
 
 Deno.test("[scope_checker] literal file-path glob matches", () => {
-  const result = checkScope(["Workspace/Plans/req-01_plan.md"], ["Workspace/Plans/*.md"], ROOT);
+  const result = checkScope([`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/req-01_plan.md`], [
+    `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/*.md`,
+  ], ROOT);
   assertEquals(result.violations, []);
 });

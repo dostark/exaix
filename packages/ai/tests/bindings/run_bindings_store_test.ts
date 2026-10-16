@@ -165,7 +165,9 @@ Deno.test("[store] exists reports a written run file without claiming it, and is
     const store = new RunBindingsStore(createMockConfig(tempDir, {}));
     const traceId = crypto.randomUUID();
     assertEquals(await store.exists(traceId), false);
-    await store.write(runFile(traceId, "Workspace/Requests/r.md", await sha256("bytes")));
+    await store.write(
+      runFile(traceId, `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}/r.md`, await sha256("bytes")),
+    );
     assertEquals(await store.exists(traceId), true);
     assertEquals(await store.exists("../escape"), false);
     // Not claimed: a different request may still claim-fail on identity, but exists never throws.

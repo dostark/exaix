@@ -7,6 +7,7 @@
  * detailed review viewing, and approval/rejection of code branches and artifacts.
  */
 
+import { DEFAULT_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { FlowStepType, MemoryOperation } from "@exaix/core";
 import { ReviewStatus } from "@exaix/core/status";
@@ -291,7 +292,7 @@ describe("ReviewCommands", () => {
       if (!entry) throw new Error("Artifact entry not found");
       assertEquals(entry.type, "artifact");
       assertExists(entry.file_path);
-      assertStringIncludes(entry.file_path!, "Memory/Execution/");
+      assertStringIncludes(entry.file_path!, `${DEFAULT_MEMORY_PATH}/Execution/`);
     });
   });
 

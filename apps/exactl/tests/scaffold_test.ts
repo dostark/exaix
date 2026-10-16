@@ -10,6 +10,7 @@
 import {
   DEFAULT_AGENTS_PATH,
   DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
   DEFAULT_REQUESTS_PATH,
   DEFAULT_RUNTIME_PATH,
   DEFAULT_WORKSPACE_PATH,
@@ -157,7 +158,7 @@ Deno.test("scaffold.ts creates Memory/Projects directory and README placeholder"
     const projectsPath = join(tmp, ExaPathDefaults.memoryProjects);
     assert(
       await exists(projectsPath),
-      "Memory/Projects should be created",
+      `${DEFAULT_MEMORY_PATH}/Projects should be created`,
     );
 
     // Verify the scaffold created a README template at top-level
@@ -210,7 +211,7 @@ Deno.test("scaffold.ts is idempotent", async () => {
       ".exa",
       `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`,
       `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`,
-      "Memory/Reports",
+      `${DEFAULT_MEMORY_PATH}/Reports`,
       "Portals",
     ];
 

@@ -206,7 +206,7 @@ async function runToolRegistryTest(fn: (registry: ToolRegistry, tempDir: string)
 
 Deno.test("ToolRegistry: should create directory", async () => {
   await runToolRegistryTest(async (registry, tempDir) => {
-    const testDir = "Workspace/new-dir/nested";
+    const testDir = `${DEFAULT_WORKSPACE_PATH}/new-dir/nested`;
     const result = await registry.execute(ToolName.CREATE_DIRECTORY, { path: testDir });
 
     assert(result.success);
@@ -216,7 +216,7 @@ Deno.test("ToolRegistry: should create directory", async () => {
 
 Deno.test("ToolRegistry: should write and read files", async () => {
   await runToolRegistryTest(async (registry, tempDir) => {
-    const filePath = "Workspace/test.txt";
+    const filePath = `${DEFAULT_WORKSPACE_PATH}/test.txt`;
     const content = "Hello World";
     const writeResult = await registry.execute(ToolName.WRITE_FILE, { path: filePath, content });
 
@@ -231,9 +231,9 @@ Deno.test("ToolRegistry: should write and read files", async () => {
 
 Deno.test("ToolRegistry: should list directory contents", async () => {
   await runToolRegistryTest(async (registry, _tempDir) => {
-    await registry.execute(ToolName.WRITE_FILE, { path: "Workspace/file1.txt", content: "1" });
-    await registry.execute(ToolName.CREATE_DIRECTORY, { path: "Workspace/subdir" });
-    await registry.execute(ToolName.WRITE_FILE, { path: "Workspace/subdir/file2.txt", content: "2" });
+    await registry.execute(ToolName.WRITE_FILE, { path: `${DEFAULT_WORKSPACE_PATH}/file1.txt`, content: "1" });
+    await registry.execute(ToolName.CREATE_DIRECTORY, { path: `${DEFAULT_WORKSPACE_PATH}/subdir` });
+    await registry.execute(ToolName.WRITE_FILE, { path: `${DEFAULT_WORKSPACE_PATH}/subdir/file2.txt`, content: "2" });
 
     const listResult = await registry.execute(ToolName.LIST_DIRECTORY, { path: "Workspace" });
     assert(listResult.success);
@@ -246,11 +246,17 @@ Deno.test("ToolRegistry: should list directory contents", async () => {
 
 Deno.test("ToolRegistry: should search files", async () => {
   await runToolRegistryTest(async (registry, _tempDir) => {
-    await registry.execute(ToolName.CREATE_DIRECTORY, { path: "Workspace/src" });
+    await registry.execute(ToolName.CREATE_DIRECTORY, { path: `${DEFAULT_WORKSPACE_PATH}/src` });
 
-    await registry.execute(ToolName.WRITE_FILE, { path: "Workspace/src/main.ts", content: "console.log('main')" });
-    await registry.execute(ToolName.WRITE_FILE, { path: "Workspace/src/utils.ts", content: "export const util = 1" });
-    await registry.execute(ToolName.WRITE_FILE, { path: "Workspace/readme.md", content: "# Readme" });
+    await registry.execute(ToolName.WRITE_FILE, {
+      path: `${DEFAULT_WORKSPACE_PATH}/src/main.ts`,
+      content: "console.log('main')",
+    });
+    await registry.execute(ToolName.WRITE_FILE, {
+      path: `${DEFAULT_WORKSPACE_PATH}/src/utils.ts`,
+      content: "export const util = 1",
+    });
+    await registry.execute(ToolName.WRITE_FILE, { path: `${DEFAULT_WORKSPACE_PATH}/readme.md`, content: "# Readme" });
 
     const searchResult = await registry.execute(ToolName.SEARCH_FILES, { path: "Workspace", pattern: "**/*.ts" });
     assert(searchResult.success);

@@ -7,6 +7,7 @@
  *   and bypassPermissions is never emitted for a real brief.
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionBrief } from "@exaix/schemas/session_delegate.ts";
@@ -19,7 +20,7 @@ function makeBrief(overrides: Partial<SessionBrief> = {}): SessionBrief {
     gate: "code_changes",
     tool: "claude-code",
     objective: "Test objective",
-    artifact_ref: "Workspace/Plans/req-01_plan.md",
+    artifact_ref: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/req-01_plan.md`,
     permitted_paths: ["src/**"],
     worktree_path: "/tmp/worktree/trace-1",
     token_budget: { max_input_tokens: 40_000, max_output_tokens: 30_000, max_total_tokens: 70_000 },

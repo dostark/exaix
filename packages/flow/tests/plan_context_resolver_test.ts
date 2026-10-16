@@ -7,7 +7,7 @@
  * @related-files [packages/flow/src/plan_context_resolver.ts]
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import { DEFAULT_RUNTIME_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { PlanContextResolver } from "../src/plan_context_resolver.ts";
@@ -26,7 +26,7 @@ Deno.test("[integration] resolves a valid plan_context_ref beneath executionRoot
     const resolver = new PlanContextResolver();
     const result = await resolver.resolve({
       executionRoot: root,
-      planContextRef: ".exa/PlanContext/phase-174.md",
+      planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
     });
     assertEquals(result.content, "# Phase 174\n");
     assertEquals(result.absolutePath.endsWith(join(DEFAULT_RUNTIME_PATH, "PlanContext", "phase-174.md")), true);
@@ -39,7 +39,9 @@ Deno.test("[security] rejects a planContextRef outside the .exa/PlanContext shap
   const root = await makeWorktreeWithPlan("phase-174", "# Phase 174\n");
   try {
     const resolver = new PlanContextResolver();
-    await assertRejects(() => resolver.resolve({ executionRoot: root, planContextRef: "Workspace/secret.md" }));
+    await assertRejects(() =>
+      resolver.resolve({ executionRoot: root, planContextRef: `${DEFAULT_WORKSPACE_PATH}/secret.md` })
+    );
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -50,7 +52,10 @@ Deno.test("[security] rejects a traversal attempt embedded in the ref", async ()
   try {
     const resolver = new PlanContextResolver();
     await assertRejects(() =>
-      resolver.resolve({ executionRoot: root, planContextRef: ".exa/PlanContext/../../etc/passwd.md" })
+      resolver.resolve({
+        executionRoot: root,
+        planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/../../etc/passwd.md`,
+      })
     );
   } finally {
     await Deno.remove(root, { recursive: true });
@@ -79,7 +84,7 @@ Deno.test("[security] rejects when the PlanContext file is a symlink escaping ex
 
     const resolver = new PlanContextResolver();
     await assertRejects(() =>
-      resolver.resolve({ executionRoot: root, planContextRef: ".exa/PlanContext/phase-174.md" })
+      resolver.resolve({ executionRoot: root, planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md` })
     );
   } finally {
     await Deno.remove(root, { recursive: true });
@@ -99,7 +104,7 @@ Deno.test("[security] rejects when a symlinked ancestor directory escapes execut
 
     const resolver = new PlanContextResolver();
     await assertRejects(() =>
-      resolver.resolve({ executionRoot: root, planContextRef: ".exa/PlanContext/phase-174.md" })
+      resolver.resolve({ executionRoot: root, planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md` })
     );
   } finally {
     await Deno.remove(root, { recursive: true });
@@ -110,6 +115,9 @@ Deno.test("[security] rejects when a symlinked ancestor directory escapes execut
 Deno.test("[security] rejects a missing portal execution root", async () => {
   const resolver = new PlanContextResolver();
   await assertRejects(() =>
-    resolver.resolve({ executionRoot: "/nonexistent/portal/root", planContextRef: ".exa/PlanContext/phase-174.md" })
+    resolver.resolve({
+      executionRoot: "/nonexistent/portal/root",
+      planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
+    })
   );
 });

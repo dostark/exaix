@@ -5,7 +5,7 @@
  * of planning, execution, and confirmation phases for user requests.
  */
 
-import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { EXECUTION_REPORT_FILENAME, MemoryOperation, PortalOperation } from "@exaix/core";
 import { join } from "@std/path";
@@ -598,7 +598,13 @@ Deno.test("ExecutionLoop: handles commit with no changes gracefully", async () =
 
     // Create initial commit so git is initialized
     await Deno.writeTextFile(join(tempDir, "README.md"), "init");
-    await Deno.writeTextFile(join(tempDir, ".gitignore"), "Workspace/\nMemory/\n.exa/\n");
+    await Deno.writeTextFile(
+      join(tempDir, ".gitignore"),
+      `${DEFAULT_WORKSPACE_PATH}/
+Memory/
+.exa/
+`,
+    );
     await new Deno.Command(PortalOperation.GIT, {
       args: ["init"],
       cwd: tempDir,

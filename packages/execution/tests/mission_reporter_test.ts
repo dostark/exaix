@@ -5,6 +5,7 @@
  * and lessons learned are correctly formatted and persisted as execution memory records.
  */
 
+import { DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { ExecutionStatus, MemoryOperation, PortalOperation } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
@@ -31,8 +32,8 @@ function createTestTraceData(overrides: Partial<ITraceData> = {}): ITraceData {
     branch: overrides.branch ?? "feat/implement-auth-550e8400",
     completedAt: overrides.completedAt ?? new Date(),
     contextFiles: overrides.contextFiles ?? [
-      "Portals/MyApp/config.md",
-      "Memory/Projects/MyApp/architecture.md",
+      `${DEFAULT_PORTALS_PATH}/MyApp/config.md`,
+      `${DEFAULT_MEMORY_PATH}/Projects/MyApp/architecture.md`,
     ],
     reasoning: overrides.reasoning ?? "Chose JWT over sessions for stateless authentication.",
     summary: overrides.summary ?? "Successfully implemented JWT-based authentication system.",
@@ -228,7 +229,7 @@ Deno.test("MissionReporter: extracts portal from context files", async () => {
   await withMissionReporter(async ({ memoryBank, reporter }) => {
     const traceData = createTestTraceData({
       contextFiles: [
-        "Portals/TestPortal/config.md",
+        `${DEFAULT_PORTALS_PATH}/TestPortal/config.md`,
         "src/components/Auth.tsx",
       ],
     });

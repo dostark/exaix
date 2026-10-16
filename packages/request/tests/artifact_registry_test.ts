@@ -265,7 +265,7 @@ Deno.test("[artifact] Memory/Execution directory is created if missing", async (
 
     // Verify directory was created
     const stat = await Deno.stat(executionDir);
-    assertEquals(stat.isDirectory, true, "Memory/Execution should be a directory");
+    assertEquals(stat.isDirectory, true, `${DEFAULT_MEMORY_PATH}/Execution should be a directory`);
   } finally {
     await cleanup();
   }

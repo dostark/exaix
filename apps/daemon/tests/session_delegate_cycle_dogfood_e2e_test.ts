@@ -21,6 +21,7 @@ import {
   DEFAULT_FLOWS_PATH,
   DEFAULT_MEMORY_PATH,
   DEFAULT_REQUESTS_PATH,
+  DEFAULT_RUNTIME_PATH,
   DEFAULT_WORKSPACE_PATH,
 } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
@@ -334,7 +335,7 @@ Deno.test({
       const genOutDir = join(tempDir, "generated-requests");
       await runGenerator(fixturePlanPath, portalDir, genOutDir);
 
-      const planContextRef = ".exa/PlanContext/hardened-fixture.md";
+      const planContextRef = `${DEFAULT_RUNTIME_PATH}/PlanContext/hardened-fixture.md`;
       const copiedPlan = join(portalDir, planContextRef);
       const copiedContent = await Deno.readTextFile(copiedPlan);
       assertEquals(copiedContent, twoStepPlan(), "the generator must copy the exact plan the daemon will read");
@@ -422,7 +423,7 @@ Deno.test({
       const genOutDir = join(tempDir, "generated-requests");
       await runGenerator(fixturePlanPath, portalDir, genOutDir);
 
-      const planContextRef = ".exa/PlanContext/hardened-fixture.md";
+      const planContextRef = `${DEFAULT_RUNTIME_PATH}/PlanContext/hardened-fixture.md`;
       const traceId = crypto.randomUUID();
       const requestsDir = join(tempDir, DEFAULT_WORKSPACE_PATH, DEFAULT_REQUESTS_PATH);
 
@@ -524,7 +525,7 @@ Deno.test({
       await Deno.writeTextFile(fixturePlanPath, twoStepPlan());
       const genOutDir = join(tempDir, "generated-requests");
       await runGenerator(fixturePlanPath, portalDir, genOutDir);
-      const planContextRef = ".exa/PlanContext/hardened-fixture.md";
+      const planContextRef = `${DEFAULT_RUNTIME_PATH}/PlanContext/hardened-fixture.md`;
       // The file-change audit (AgentComposer.auditGitChanges) flags ANY untracked
       // file in the portal, including the PlanContext copy the generator just wrote — commit
       // it so the worktree is clean before the real flow's first step runs.

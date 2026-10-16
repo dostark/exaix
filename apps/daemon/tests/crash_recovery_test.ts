@@ -6,7 +6,7 @@
  *   as crash-recovery request files, while completed delegations are skipped.
  */
 
-import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { initTestDbService } from "@exaix/testing";
@@ -151,7 +151,7 @@ Deno.test("[crash_recovery][security] redacted launch payload recovers from brie
         gate: "code_changes",
         tool: "codex",
         objective: "Validated recovery objective",
-        artifact_ref: ".exa/PlanContext/phase-174.md",
+        artifact_ref: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
         permitted_paths: ["packages/**"],
         token_budget: { max_input_tokens: 1, max_output_tokens: 1, max_total_tokens: 2 },
         resume_token: "must-not-be-journaled",
@@ -161,7 +161,7 @@ Deno.test("[crash_recovery][security] redacted launch payload recovers from brie
     await seedEvent(db, DomainEventType.SessionDelegateLaunched, traceId, {
       gate: "code_changes",
       tool: "codex",
-      artifact_ref: ".exa/PlanContext/phase-174.md",
+      artifact_ref: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
     });
 
     const count = await recoverOrphanedDelegations({

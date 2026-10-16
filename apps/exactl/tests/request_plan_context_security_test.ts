@@ -6,7 +6,7 @@
  * @dependencies [@exaix/portal]
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts]
  */
-import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
@@ -20,7 +20,13 @@ Deno.test("[security] request file rejects absolute and traversing plan context 
   try {
     const commands = new RequestCommands(context);
     const file = join(tempDir, "input.md");
-    for (const pointer of ["/tmp/escape.md", ".exa/PlanContext/../escape.md", ".exa/PlanContext/nested/escape.md"]) {
+    for (
+      const pointer of [
+        "/tmp/escape.md",
+        `${DEFAULT_RUNTIME_PATH}/PlanContext/../escape.md`,
+        `${DEFAULT_RUNTIME_PATH}/PlanContext/nested/escape.md`,
+      ]
+    ) {
       await Deno.writeTextFile(file, `---\nplan_context_ref: ${pointer}\n---\nRun the hardened plan.\n`);
       await assertRejects(() => commands.createFromFile(file), Error, "plan_context_ref");
     }

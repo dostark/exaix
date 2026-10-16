@@ -5,7 +5,7 @@
  * robust failure recovery, and correct propagation of step results.
  */
 
-import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import { DEFAULT_ACTIVE_PATH, DEFAULT_AGENTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
 import {
   type FlowStepType as _FlowStepType,
@@ -129,7 +129,7 @@ content = "Hello World"
       };
 
       // Execute plan
-      const planPath = join(tempDir, "Workspace/Active/plan.md");
+      const planPath = join(tempDir, `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ACTIVE_PATH}/plan.md`);
       const result = await executor.execute(planPath, context);
       const sha = result.lastCommitSha;
 

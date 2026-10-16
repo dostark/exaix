@@ -6,6 +6,7 @@
  * @description Verifies CLI commands for durable wait state management.
  */
 
+import { DEFAULT_ACTIVE_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { WaitStateCommands } from "../src/commands/wait_state_commands.ts";
 import type { IWaitState } from "@exaix/flow";
@@ -26,7 +27,7 @@ function makeWaitState(
     traceId: TEST_TRACE,
     kind: "plan_approval",
     status: "pending",
-    artifactPath: "Workspace/Active/test-flow",
+    artifactPath: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ACTIVE_PATH}/test-flow`,
     resumeToken: TEST_TOKEN,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

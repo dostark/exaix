@@ -6,6 +6,7 @@
  *   return from disk and produces the correct artifact via the gate mappers.
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -83,11 +84,11 @@ async function makeRig(gate: SessionBrief["gate"]): Promise<IRig> {
     tool: "claude-code",
     objective: `Do the ${gate} work.`,
     artifactRef: gate === "plan_review"
-      ? "Workspace/Plans/test.md"
+      ? `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/test.md`
       : gate === "review"
       ? traceId
-      : "Workspace/Requests/req-01.md",
-    permittedPaths: ["Workspace/**"],
+      : `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}/req-01.md`,
+    permittedPaths: [`${DEFAULT_WORKSPACE_PATH}/**`],
     tokenBudget: { max_input_tokens: 50_000, max_output_tokens: 50_000, max_total_tokens: 100_000 },
   });
 

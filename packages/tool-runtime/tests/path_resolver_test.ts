@@ -148,7 +148,7 @@ Deno.test("PathResolver: rejects path without @ alias", async () => {
 
     await assertRejects(
       async () => {
-        await resolver.resolve("Blueprints/agent.md");
+        await resolver.resolve(`${DEFAULT_BLUEPRINTS_PATH}/agent.md`);
       },
       Error,
       "Path must start with a portal alias",
