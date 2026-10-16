@@ -25,7 +25,7 @@ function input(): IContextAssemblyInput {
     kind: ContextAssemblyKind.Artifact,
     sources: {
       "packages/execution/src/agent_runner.ts": "assemble resolved segments\n",
-      "Blueprints/Skills/plan.skill.md": "Use the original request.\n",
+      [`${DEFAULT_BLUEPRINTS_PATH}/Skills/plan.skill.md`]: "Use the original request.\n",
     },
     dynamicAssets: [`${DEFAULT_BLUEPRINTS_PATH}/Skills/plan.skill.md`],
     effectiveConfiguration: { context_budget: 4096, selection: { skills: "resolved" } },
