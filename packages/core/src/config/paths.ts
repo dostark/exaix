@@ -18,7 +18,6 @@ import {
   DEFAULT_REJECTED_PATH,
   DEFAULT_REQUESTS_PATH,
   DEFAULT_RUNTIME_PATH,
-  DEFAULT_WAIT_STATES_PATH,
   DEFAULT_WORKSPACE_PATH,
   ExaPathDefaults,
 } from "@exaix/shared";
@@ -65,7 +64,7 @@ export function getDefaultPaths(_root: string): IExaPaths {
     rejected: DEFAULT_REJECTED_PATH,
     agents: DEFAULT_AGENTS_PATH,
     flows: ExaPathDefaults.flows,
-    waitStates: DEFAULT_WAIT_STATES_PATH,
+    waitStates: ExaPathDefaults.waitStates,
     memoryProjects: ExaPathDefaults.memoryProjects,
     memoryExecution: ExaPathDefaults.memoryExecution,
     memoryIndex: ExaPathDefaults.memoryIndex,

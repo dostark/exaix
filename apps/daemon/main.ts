@@ -801,7 +801,7 @@ if (import.meta.main) {
     const waitStatesRoot = join(
       config.system.root,
       config.paths.workspace,
-      config.paths.waitStates ?? "WaitStates",
+      config.paths.waitStates,
     );
 
     // The adapter forwards payload.traceId into the logger's explicit trace argument.

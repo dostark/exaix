@@ -1044,6 +1044,8 @@ default segments in the caller.
   so a layout change misses that caller. The helpers own the default, so no caller repeats it.
 - A shipped config under `configs/` does not restate a `[paths]` default. The schema fills a missing
   key from the same constant, so a restated value is a second owner of the layout.
+- A caller reads `config.paths.<key>` directly. The schema fills a missing key, so a
+  `paths.<key> ?? "<default>"` fallback repeats the default and is dead code.
 - A test reads a config document from a fixture. The `test-inline-multiline-fixture` rule requires
   that of any multi-line test input.
 - A scenario step names a config fixture with `content_from` instead of an inline `content` block.

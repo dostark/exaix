@@ -79,6 +79,8 @@ const TOML_PATHS_HEADER = /^\s*\[paths\]\s*$/;
 const TOML_DOCUMENT = /^\[(?:system|paths)\]$/;
 const TOML_SECTION = /^\s*\[[^\]]+\]\s*$/;
 const PATHS_ASSIGNMENT = /\.paths\.(\w+)\s*=\s*"([^"]*)"/;
+/** A `paths.<key> ?? "<default>"` fallback, which the schema default already covers. */
+const PATHS_FALLBACK = /\.paths\.(\w+)\s*(?:\?\?|\|\|)\s*"([^"]*)"/;
 /** The helper module and the tables that legitimately compose the defaults. */
 const DEFINITION_SITES = [
   "packages/shared/src/paths.ts",
@@ -210,14 +212,27 @@ function scanFile(repoPath: string, text: string): IViolation[] {
   visit(source);
   for (let index = 0; index < lines.length; index++) {
     const match = PATHS_ASSIGNMENT.exec(lines[index]);
-    if (!match) continue;
-    if (!restatesDefault(match[1], `"${match[2]}"`)) continue;
-    if (lines[index].includes(EXCLUDE_MARKER)) continue;
-    violations.push({
-      file: repoPath,
-      line: index + 1,
-      detail: `paths.${match[1]} = "${match[2]}" restates the default`,
-    });
+    if (match && restatesDefault(match[1], `"${match[2]}"`)) {
+      if (!lines[index].includes(EXCLUDE_MARKER)) {
+        violations.push({
+          file: repoPath,
+          line: index + 1,
+          detail: `paths.${match[1]} = "${match[2]}" restates the default`,
+        });
+      }
+    }
+    const fallback = PATHS_FALLBACK.exec(lines[index]);
+    if (fallback && restatesDefault(fallback[1], `"${fallback[2]}"`)) {
+      if (!lines[index].includes(EXCLUDE_MARKER)) {
+        violations.push({
+          file: repoPath,
+          line: index + 1,
+          detail: `paths.${fallback[1]} ?? "${
+            fallback[2]
+          }" repeats the default, so the schema default owns it and the fallback is dead`,
+        });
+      }
+    }
   }
   return violations;
 }
