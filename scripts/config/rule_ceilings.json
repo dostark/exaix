@@ -92,7 +92,7 @@
     "packages/core": 12,
     "packages/execution": 4,
     "packages/flow": 13,
-    "packages/lint-rules": 3,
+    "packages/lint-rules": 5,
     "packages/mcp": 2,
     "packages/portal": 2,
     "packages/quality-gate": 2,
