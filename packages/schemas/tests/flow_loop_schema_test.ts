@@ -23,7 +23,7 @@ const flow = {
   output: { from: "gate", format: "markdown" },
 };
 Deno.test("[schema] gate backTo has no independent iteration or score defaults", () => {
-  assertEquals<unknown>(FlowSchema.parse(flow).steps[0].loop, { backTo: "draft" });
+  assertEquals(FlowSchema.parse(flow).steps[0].loop, { backTo: "draft" });
 });
 for (const loop of [{ maxIterations: 2 }, { targetScore: 0.9 }]) {
   Deno.test(`[schema] rejects redundant gate loop controls ${JSON.stringify(loop)}`, () => {
@@ -64,5 +64,5 @@ Deno.test("[schema] YAML gates retain explicit security criteria with evidence d
   };
   const result = GateEvaluateSchema.safeParse({ agent_role: "security-expert", criteria: [criterion] });
   assertEquals(result.success, true);
-  assertEquals<unknown>(result.success ? result.data.criteria : null, [criterion]);
+  assertEquals(result.success ? result.data.criteria : null, [criterion]);
 });

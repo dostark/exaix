@@ -291,7 +291,7 @@ Deno.test("[contract] the research overlay keeps explorers light and the compose
 
 Deno.test("[contract] guarded change binds hardened implementation review and a terminal security gate", async () => {
   const flow = await new FlowLoader(FLOWS_DIR).loadFlow("guarded-change");
-  assertEquals<unknown>(flow.steps.map((step) => [step.id, step.type as string, step.dependsOn, step.input]), [
+  assertEquals(flow.steps.map((step) => [step.id, step.type as string, step.dependsOn, step.input]), [
     ["explore", "agent", [], { source: "request", transform: "passthrough" }],
     ["implement", "session_delegate_cycle", ["explore"], {
       source: "step",
@@ -313,7 +313,7 @@ Deno.test("[contract] guarded change binds hardened implementation review and a 
   assertEquals(explore.execution_mode as string, "dynamic");
   assertEquals(explore.permitted_tools, ["read_file", "list_directory", "search_files"]);
   assertEquals(implement.agent_role, "dogfood-coder");
-  assertEquals<unknown>(implement.delegateCycle, {
+  assertEquals(implement.delegateCycle, {
     requireChangedPaths: true,
     review: {
       agent_role: "quality-judge",
@@ -325,7 +325,7 @@ Deno.test("[contract] guarded change binds hardened implementation review and a 
     },
   });
   assertEquals(security.agent_role, "security-expert");
-  assertEquals<unknown>(security.evaluate?.criteria, [
+  assertEquals(security.evaluate?.criteria, [
     {
       name: "path_confinement",
       category: "security",
