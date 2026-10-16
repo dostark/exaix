@@ -7,9 +7,10 @@
  * @related-files ["packages/schemas/src/config.ts", "packages/core/src/types/constants.ts"]
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
-import { ExaPathDefaults, type JSONValue, LogLevel } from "@exaix/core";
+import { type JSONValue, LogLevel } from "@exaix/core";
 
 function baseConfig(): Record<string, JSONValue> {
   return {

@@ -13,6 +13,7 @@
  * @related-files ["packages/request/src/processor.ts", "packages/core/src/blueprint/blueprint_loader.ts"]
  */
 
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import type { ICallSite, IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 import type { IBlueprint } from "@exaix/core/blueprint";
 import { type IGenerateResult, ModelProviderError } from "@exaix/ai/providers";
@@ -82,7 +83,6 @@ import {
   DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS,
   DEFAULT_PORTAL_KNOWLEDGE_RELEVANT_MAX_ENTRIES,
   PortalKnowledgeInclusion,
-  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import { computeRegistryPredictedCost } from "./registry_computed_cost.ts";
 import { createLLMRetryPolicy, createRetryPolicy } from "@exaix/core/request";

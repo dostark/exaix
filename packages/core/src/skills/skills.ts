@@ -11,7 +11,7 @@
  */
 
 import { isAbsolute, join, relative, resolve } from "@std/path";
-import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH, ExaPathDefaults } from "@exaix/shared";
 import { LOCK_FILE, STATE_DIR } from "./constants.ts";
 import { exists } from "@std/fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
@@ -29,11 +29,7 @@ import {
 import type { ISkill, ISkillMatch, ISkillTriggers, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
 import { SkillPinVectorSchema } from "@exaix/schemas/skill_pin.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import {
-  DEFAULT_SKILL_CONTEXT_CHAR_BUDGET,
-  DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION,
-  ExaPathDefaults,
-} from "../types/constants.ts";
+import { DEFAULT_SKILL_CONTEXT_CHAR_BUDGET, DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION } from "../types/constants.ts";
 import {
   type MemoryBankSource,
   type MemoryScope,

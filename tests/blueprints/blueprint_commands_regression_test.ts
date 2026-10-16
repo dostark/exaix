@@ -6,12 +6,11 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { createStubDb } from "@exaix/testing";
-import { ExaPathDefaults } from "@exaix/core";
 import type { IBlueprintMetadata } from "@exaix/schemas/blueprint.ts";
 import { createStubConfig, createStubContext } from "@exaix/testing";
 import { BlueprintCommands } from "../../apps/exactl/src/commands/blueprint_commands.ts";

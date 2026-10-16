@@ -6,13 +6,9 @@
  * @related-files ["packages/core/src/types/constants.ts"]
  */
 
+import { DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
-import {
-  DEFAULT_NAMESPACE_MAX_BYTES,
-  FLOW_EVENT_NAMESPACE_INITIALIZED,
-  FLOW_EVENT_NAMESPACE_READ,
-  FLOW_EVENT_NAMESPACE_WRITE,
-} from "@exaix/core";
+import { FLOW_EVENT_NAMESPACE_INITIALIZED, FLOW_EVENT_NAMESPACE_READ, FLOW_EVENT_NAMESPACE_WRITE } from "@exaix/core";
 
 Deno.test("[CoreConstants] namespace event names and defaults are exported", () => {
   assertEquals(FLOW_EVENT_NAMESPACE_INITIALIZED, "flow.namespace.initialized");

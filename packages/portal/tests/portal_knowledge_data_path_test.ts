@@ -7,11 +7,12 @@
  * @related-files ["packages/portal/src/portal.ts", "packages/core/src/types/i_portal_service.ts", packages/portal/knowledge/knowledge_persistence.ts]
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { PortalService } from "@exaix/portal";
-import { ExaPathDefaults, PortalAnalysisMode } from "@exaix/core";
+import { PortalAnalysisMode } from "@exaix/core";
 import { createMockConfig, createStubConfig, createStubDisplay } from "@exaix/testing";
 import type { IContextCardGeneratorService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";

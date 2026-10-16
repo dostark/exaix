@@ -7,13 +7,13 @@
  * correctly falls back to interactive modes when required parameters are missing.
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { EventLogger } from "@exaix/core/logger";
 import { createStubConfig, createStubContext, createStubDb, withEnv } from "@exaix/testing";
 import { createMockConfig } from "@exaix/testing";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
-import { ExaPathDefaults } from "@exaix/core";
 import { BlueprintCommands } from "../src/commands/blueprint_commands.ts";
 import { RequestCommands } from "../src/commands/request_commands.ts";
 import { PlanCommands } from "../src/commands/plan_commands.ts";

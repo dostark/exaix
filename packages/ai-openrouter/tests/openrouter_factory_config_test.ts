@@ -8,9 +8,10 @@
  * IResolvedProviderOptions.config.
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { stub } from "@std/testing/mock";
-import { ExaPathDefaults, LogLevel, ProviderType, SecureCredentialStore } from "@exaix/core";
+import { LogLevel, ProviderType, SecureCredentialStore } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { createMockLogger, withEnv } from "@exaix/testing";
 import { DomainEventType } from "@exaix/core/events";

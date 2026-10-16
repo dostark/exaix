@@ -5,17 +5,11 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { StubNotificationServiceBase } from "../helpers/notification_service_stub_helpers.ts";
-import {
-  DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
-  FlowInputSource,
-  FlowOutputFormat,
-  FlowStepExecutionMode,
-} from "@exaix/core";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS, FlowInputSource, FlowOutputFormat, FlowStepExecutionMode } from "@exaix/core";
 import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, McpToolName } from "@exaix/mcp";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { IFlow, IFlowInput, IFlowStepInput } from "@exaix/schemas/flow.ts";

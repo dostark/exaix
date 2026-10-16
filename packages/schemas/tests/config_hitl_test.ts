@@ -6,10 +6,9 @@
  * @description Verifies the ConfigSchema `hitl` block (Phase 118).
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
-import { ExaPathDefaults } from "@exaix/core";
-
 function baseConfig() {
   return {
     system: { root: "/tmp" },

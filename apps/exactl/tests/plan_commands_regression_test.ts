@@ -8,13 +8,18 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_ACTIVE_PATH, DEFAULT_PLANS_PATH, DEFAULT_REJECTED_PATH, DEFAULT_REQUESTS_PATH } from "@exaix/shared";
+import {
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_REJECTED_PATH,
+  DEFAULT_REQUESTS_PATH,
+  ExaPathDefaults,
+} from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { createStubContext, createStubDb } from "@exaix/testing";
 import { createStubConfig } from "@exaix/testing";
-import { ExaPathDefaults } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import type { IPlanMetadata } from "@exaix/core/types";
 import { PlanCommands } from "../src/commands/plan_commands.ts";

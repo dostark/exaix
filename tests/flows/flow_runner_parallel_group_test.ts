@@ -6,6 +6,7 @@
  * @related-files [packages/flow/src/flow_runner.ts]
  */
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import type { JSONObject } from "@exaix/core/types";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
@@ -14,7 +15,6 @@ import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
   FLOW_EVENT_PARALLEL_GROUP_COMPLETED,
   FLOW_EVENT_PARALLEL_GROUP_STARTED,
 } from "@exaix/core";

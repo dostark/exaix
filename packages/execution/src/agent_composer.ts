@@ -19,6 +19,7 @@
  * ]
  */
 
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import type { HitlPolicy } from "@exaix/schemas/hitl.ts";
 import type { IDatabaseService, ISkillsService } from "@exaix/core/types";
@@ -38,7 +39,6 @@ import {
   AGENT_EVENT_EXECUTION_STARTED,
   AGENT_EVENT_SECURITY_VIOLATION,
   type IAllocationHints,
-  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import {
   DEFAULT_MCP_AGENT_ROLE_ID,
@@ -384,7 +384,7 @@ export class AgentComposer {
     return this._toolRegistry;
   }
 
-  public set toolRegistry(registry: IToolRegistry | undefined) {
+  public set toolRegistry(registry: Opt<IToolRegistry, Reason.OptionalDependency>) {
     this._toolRegistry = registry;
   }
 

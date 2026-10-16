@@ -8,6 +8,7 @@
  *   unchanged, the flow completes, and namespace.md is never created.
  */
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -17,7 +18,6 @@ import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "@exaix/
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { resolveMemoryExecutionRoot } from "@exaix/core/config";
 import {
-  DEFAULT_FLOW_VERSION,
   FLOW_EVENT_NAMESPACE_INITIALIZED,
   FLOW_EVENT_NAMESPACE_READ,
   FLOW_EVENT_NAMESPACE_WRITE,

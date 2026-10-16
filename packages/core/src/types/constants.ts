@@ -24,28 +24,7 @@ import {
 import { configurable } from "../config/registry.ts";
 import { PortalKnowledgeInclusion } from "./portal.ts";
 
-import {
-  DEFAULT_ACTIVE_PATH,
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_ARCHIVE_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_EXECUTION_MEMORY_PATH,
-  DEFAULT_FLOWS_PATH,
-  DEFAULT_GLOBAL_MEMORY_PATH,
-  DEFAULT_INDEX_MEMORY_PATH,
-  DEFAULT_MEMORY_EXECUTION_DIR,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_PENDING_MEMORY_PATH,
-  DEFAULT_PLANS_PATH,
-  DEFAULT_PORTALS_PATH,
-  DEFAULT_PROJECTS_MEMORY_PATH,
-  DEFAULT_REJECTED_PATH,
-  DEFAULT_REQUESTS_PATH,
-  DEFAULT_RUNTIME_PATH,
-  DEFAULT_SKILLS_MEMORY_PATH,
-  DEFAULT_TASKS_MEMORY_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import { DEFAULT_MEMORY_EXECUTION_DIR } from "@exaix/shared";
 
 export const OPENAI_COMPATIBLE_LOCAL_PROFILE = "local-test";
 /** A service the operator hosts. Its catalog declares the endpoint and the model. */
@@ -144,32 +123,6 @@ export const HITL_EVAL_BUDGET_MS: number = configurable({
 
 // Path Configuration Defaults
 export const DEFAULT_PORTAL_DEFAULT_BRANCH = "main";
-
-// Subfolder Defaults (relative to their parent domain)
-export const DEFAULT_WAIT_STATES_PATH = "WaitStates";
-
-export const ExaPathDefaults = {
-  workspace: DEFAULT_WORKSPACE_PATH,
-  runtime: DEFAULT_RUNTIME_PATH,
-  memory: DEFAULT_MEMORY_PATH,
-  portals: DEFAULT_PORTALS_PATH,
-  blueprints: DEFAULT_BLUEPRINTS_PATH,
-  flows: `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_FLOWS_PATH}`,
-  waitStates: DEFAULT_WAIT_STATES_PATH,
-  requests: DEFAULT_REQUESTS_PATH,
-  plans: DEFAULT_PLANS_PATH,
-  active: DEFAULT_ACTIVE_PATH,
-  archive: DEFAULT_ARCHIVE_PATH,
-  rejected: DEFAULT_REJECTED_PATH,
-  agents: DEFAULT_AGENTS_PATH,
-  memoryProjects: `${DEFAULT_MEMORY_PATH}/${DEFAULT_PROJECTS_MEMORY_PATH}`,
-  memoryExecution: `${DEFAULT_MEMORY_PATH}/${DEFAULT_EXECUTION_MEMORY_PATH}`,
-  memoryIndex: `${DEFAULT_MEMORY_PATH}/${DEFAULT_INDEX_MEMORY_PATH}`,
-  memorySkills: `${DEFAULT_MEMORY_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}`,
-  memoryPending: `${DEFAULT_MEMORY_PATH}/${DEFAULT_PENDING_MEMORY_PATH}`,
-  memoryTasks: `${DEFAULT_MEMORY_PATH}/${DEFAULT_TASKS_MEMORY_PATH}`,
-  memoryGlobal: `${DEFAULT_MEMORY_PATH}/${DEFAULT_GLOBAL_MEMORY_PATH}`,
-} as const;
 
 // Plan amendment constants
 export const AMENDMENT_ARTIFACTS_DIR = "amendments";

@@ -35,6 +35,7 @@ import {
   DEFAULT_REQUESTS_PATH,
   DEFAULT_RUNTIME_PATH,
   DEFAULT_WORKSPACE_PATH,
+  ExaPathDefaults,
 } from "@exaix/shared";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..");
@@ -49,27 +50,7 @@ const BLUEPRINTS_SUBDIRS = new Set(["Skills"]);
 /** A path run anchored by a separator or by the end of a template interpolation. */
 const RAW_RUN = /[/}]([A-Za-z.][A-Za-z0-9._]*(?:\/[A-Za-z.][A-Za-z0-9._]*)*)/g;
 /** The default each `[paths]` key resolves to when a config omits it. */
-const PATH_DEFAULTS: Record<string, string> = {
-  workspace: DEFAULT_WORKSPACE_PATH,
-  runtime: DEFAULT_RUNTIME_PATH,
-  memory: DEFAULT_MEMORY_PATH,
-  portals: DEFAULT_PORTALS_PATH,
-  blueprints: DEFAULT_BLUEPRINTS_PATH,
-  active: DEFAULT_ACTIVE_PATH,
-  archive: DEFAULT_ARCHIVE_PATH,
-  plans: DEFAULT_PLANS_PATH,
-  requests: DEFAULT_REQUESTS_PATH,
-  rejected: DEFAULT_REJECTED_PATH,
-  agents: DEFAULT_AGENTS_PATH,
-  flows: DEFAULT_FLOWS_DIR,
-  memoryProjects: DEFAULT_MEMORY_PROJECTS_DIR,
-  memoryExecution: DEFAULT_MEMORY_EXECUTION_DIR,
-  memoryIndex: DEFAULT_MEMORY_INDEX_DIR,
-  memorySkills: DEFAULT_MEMORY_SKILLS_DIR,
-  memoryPending: DEFAULT_MEMORY_PENDING_DIR,
-  memoryTasks: DEFAULT_MEMORY_TASKS_DIR,
-  memoryGlobal: DEFAULT_MEMORY_GLOBAL_DIR,
-};
+const PATH_DEFAULTS: Record<string, string> = ExaPathDefaults;
 /** The shared constants that a test may interpolate into a config value. */
 const PLACEHOLDERS: Record<string, string> = {
   DEFAULT_WORKSPACE_PATH,

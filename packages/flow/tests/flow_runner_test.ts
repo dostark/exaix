@@ -5,10 +5,10 @@
  * state propagation between steps, and fail-fast behavior during workflow interruptions.
  */
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
   FLOW_EVENT_STEP_RETRY,
   FlowInputSource,
   FlowOutputFormat,

@@ -6,6 +6,7 @@
  * flows leave an audit trail without enabling automatic replay of prior steps.
  */
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { encodeHex } from "@std/encoding/hex";
 import {
@@ -23,7 +24,6 @@ import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { JSONValue } from "@exaix/core";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
   FLOW_CHECKPOINT_SCHEMA_VERSION,
   FlowInputSource,
   FlowOutputFormat,

@@ -12,16 +12,10 @@
  */
 
 import { assert, assertEquals, assertRejects } from "@std/assert";
-import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH, ExaPathDefaults } from "@exaix/shared";
 import { join } from "@std/path";
 import { type Config, ConfigSchema } from "@exaix/schemas";
-import {
-  ExaPathDefaults,
-  SkillDiagnosticReason,
-  SkillMutationErrorCode,
-  SkillRootKind,
-  SkillStatus,
-} from "@exaix/core";
+import { SkillDiagnosticReason, SkillMutationErrorCode, SkillRootKind, SkillStatus } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { createSkillOperationContext, SkillMutationError, SkillsService } from "@exaix/core/skills";
 import { initTestDbService, writeSkillFolder } from "@exaix/testing";

@@ -7,7 +7,7 @@
  * @related-files [packages/core/src/context/prompt_budget_allocator.ts, "packages/core/src/types/constants.ts"]
  */
 
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 
 /** @deprecated Use `ITokenizer` / `AiTokenEstimatorTokenizer` from `tokenizer.ts` for model-accurate token counting. */
 export class TokenCounter {

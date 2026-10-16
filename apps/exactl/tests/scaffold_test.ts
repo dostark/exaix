@@ -16,12 +16,11 @@ import {
   DEFAULT_REQUESTS_PATH,
   DEFAULT_RUNTIME_PATH,
   DEFAULT_WORKSPACE_PATH,
+  ExaPathDefaults,
 } from "@exaix/shared";
 import { assert, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
-import { ExaPathDefaults } from "@exaix/core";
-
 const __dirname = dirname(fromFileUrl(import.meta.url));
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 

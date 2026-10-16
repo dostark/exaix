@@ -9,7 +9,7 @@
  * @related-files [packages/schemas/src/config.ts, packages/core/src/types/constants.ts]
  */
 
-import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH } from "@exaix/shared";
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertFalse } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
 import {
@@ -17,7 +17,6 @@ import {
   DEFAULT_SKILL_FALLBACK_MIN_WORD_CHARS,
   DEFAULT_SKILL_MAIN_MAX_BYTES,
   DEFAULT_SKILL_REFERENCE_MAX_CHARS,
-  ExaPathDefaults,
   SkillRootKind,
 } from "@exaix/core";
 

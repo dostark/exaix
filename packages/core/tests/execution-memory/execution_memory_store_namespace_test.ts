@@ -6,6 +6,7 @@
  * skip-on-invalid-key, truncate-on-oversized-value, and throw-only-on-total-quota.
  */
 
+import { DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/shared";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -14,7 +15,6 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
 import { resolveMemoryExecutionRoot } from "../../src/config/mod.ts";
-import { DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/core";
 import { ExecutionMemoryStore, NamespaceQuotaExceededError } from "@exaix/core/execution-memory";
 
 function makeConfig(root: string): Config {

@@ -6,15 +6,10 @@
  * @description Verifies Phase 64 namespace schema parsing, defaults, and backward compatibility.
  */
 
+import { DEFAULT_FLOW_VERSION, DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/shared";
 import { assertEquals, assertThrows } from "@std/assert";
 import { type z, ZodError } from "zod";
-import {
-  DataFormat,
-  DEFAULT_FLOW_VERSION,
-  DEFAULT_NAMESPACE_MAX_BYTES,
-  FlowInputSource,
-  FlowOutputFormat,
-} from "@exaix/core";
+import { DataFormat, FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import {
   FlowSchema,
   FlowStepSchema,

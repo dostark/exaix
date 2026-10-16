@@ -12,9 +12,9 @@
  * @architectural-layer Services
  * @related-files ["packages/request/src/processor.ts", "packages/core/src/blueprint/blueprint_loader.ts"]
  */
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import * as pathBuilders from "@exaix/shared";
 import { dirname, join } from "@std/path";
-import { DEFAULT_AGENTS_PATH } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import { IBlueprintLoader, type ILoadedBlueprint } from "@exaix/core/blueprint";

@@ -7,7 +7,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
@@ -16,8 +16,6 @@ import { FlowReporter, type IFlowReportConfig, type IFlowResult, type IStepResul
 import { createMockConfig, initTestDbService, TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "@exaix/testing";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import { DEFAULT_FLOW_VERSION } from "@exaix/core";
-
 describe("FlowReporter", () => {
   let tempDir: string;
   let cleanup: () => Promise<void>;

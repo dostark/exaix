@@ -6,6 +6,7 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
@@ -14,7 +15,6 @@ import { FlowExecutionError, FlowRunner } from "@exaix/flow";
 import { type IFlow, type IFlowInput, ZFlowCheckpoint } from "@exaix/schemas/flow.ts";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
   FLOW_CHECKPOINT_SCHEMA_VERSION,
   FLOW_EVENT_CHECKPOINT_CLEARED,
   FLOW_EVENT_CHECKPOINT_LOADED,

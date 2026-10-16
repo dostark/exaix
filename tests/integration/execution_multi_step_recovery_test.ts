@@ -6,6 +6,7 @@
  * @related-files [packages/flow/src/flow_runner.ts, exaix-team/packages/mcp-server/handlers/delete_file_tool.ts]
  */
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
@@ -20,7 +21,6 @@ import {
 } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
-import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
 import { DeleteFileTool } from "@exaix-team/mcp-server";
 import { LocalToolDispatcher } from "@exaix/mcp/server";

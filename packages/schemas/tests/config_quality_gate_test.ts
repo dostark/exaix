@@ -7,10 +7,11 @@
  * @related-files ["packages/schemas/src/config.ts", "packages/core/src/types/enums.ts"]
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
 
-import { ExaPathDefaults, LogLevel, QualityGateMode } from "@exaix/core";
+import { LogLevel, QualityGateMode } from "@exaix/core";
 import {
   DEFAULT_MAX_CLARIFICATION_ROUNDS,
   DEFAULT_QG_ENRICHMENT_THRESHOLD,

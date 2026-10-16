@@ -13,10 +13,10 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/command_builders/request_actions.ts, apps/exactl/src/commands/inspect_commands.ts, packages/session/src/context_record_store.ts]
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join, toFileUrl } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
-import { ExaPathDefaults } from "@exaix/core";
 import { PathResolver } from "@exaix/portal";
 import { ContextRecordStore } from "@exaix/session";
 import { CONTEXT_RECORD_SCHEMA_VERSION, type ContextRecord } from "@exaix/schemas/dogfood_context.ts";

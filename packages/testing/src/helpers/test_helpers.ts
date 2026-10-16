@@ -8,6 +8,7 @@
  * of mock files, request factories, and common visual primitives.
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IActivityRepository } from "@exaix/core/repositories";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
@@ -18,7 +19,7 @@ import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/s
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
-import { ExaPathDefaults, LogLevel, PortalOperation } from "@exaix/core";
+import { LogLevel, PortalOperation } from "@exaix/core";
 import { createGitServiceStub } from "@exaix/testing/helpers/mod.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -29,10 +30,14 @@ interface ILocalConfigService {
   getAll(): Config;
   getConfigPath(): string;
   reload(): Config;
-  addPortal(alias: string, targetPath: string, options?: {
-    defaultBranch?: string;
-    executionStrategy?: PortalExecutionStrategy;
-  }): Promise<void>;
+  addPortal(
+    alias: string,
+    targetPath: string,
+    options?: Opt<{
+      defaultBranch?: string;
+      executionStrategy?: PortalExecutionStrategy;
+    }, Reason.OptionalDependency>,
+  ): Promise<void>;
   removePortal(alias: string): Promise<void>;
   getPortals(): IPortalConfigEntry[];
   getPortal(alias: string): IPortalConfigEntry | undefined;

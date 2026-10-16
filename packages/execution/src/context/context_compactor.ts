@@ -15,8 +15,9 @@
  * ]
  */
 
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import { COMPACT_SUMMARY_MAX_TOKENS, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
+import { COMPACT_SUMMARY_MAX_TOKENS } from "@exaix/core";
 import { ContextSegmentKindSchema } from "@exaix/schemas/execution/context_budget.ts";
 import type { IContextSegment } from "./context_segment.ts";
 

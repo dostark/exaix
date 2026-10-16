@@ -7,10 +7,10 @@
  * ensuring that core portal identity and mission are correctly summarized.
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ContextCardGenerator } from "@exaix/core/context";
-import { ExaPathDefaults } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";

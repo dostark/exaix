@@ -7,15 +7,9 @@
  * validation of steps, inputs, and output formats.
  */
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertThrows } from "@std/assert";
-import {
-  DEFAULT_FLOW_VERSION,
-  FlowInputSource,
-  FlowOutputFormat,
-  FlowStepExecutionMode,
-  FlowStepType,
-  ProviderCostTier,
-} from "@exaix/core";
+import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType, ProviderCostTier } from "@exaix/core";
 import { type z, ZodError } from "zod";
 import { FlowSchema, FlowStepSchema } from "@exaix/schemas";
 

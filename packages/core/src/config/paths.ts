@@ -18,10 +18,10 @@ import {
   DEFAULT_REJECTED_PATH,
   DEFAULT_REQUESTS_PATH,
   DEFAULT_RUNTIME_PATH,
+  DEFAULT_WAIT_STATES_PATH,
   DEFAULT_WORKSPACE_PATH,
+  ExaPathDefaults,
 } from "@exaix/shared";
-import * as DEFAULTS from "../types/constants.ts";
-
 export interface IExaPaths {
   workspace: string;
   runtime: string;
@@ -64,15 +64,15 @@ export function getDefaultPaths(_root: string): IExaPaths {
     requests: DEFAULT_REQUESTS_PATH,
     rejected: DEFAULT_REJECTED_PATH,
     agents: DEFAULT_AGENTS_PATH,
-    flows: DEFAULTS.ExaPathDefaults.flows,
-    waitStates: DEFAULTS.DEFAULT_WAIT_STATES_PATH,
-    memoryProjects: DEFAULTS.ExaPathDefaults.memoryProjects,
-    memoryExecution: DEFAULTS.ExaPathDefaults.memoryExecution,
-    memoryIndex: DEFAULTS.ExaPathDefaults.memoryIndex,
-    memorySkills: DEFAULTS.ExaPathDefaults.memorySkills,
-    memoryPending: DEFAULTS.ExaPathDefaults.memoryPending,
-    memoryTasks: DEFAULTS.ExaPathDefaults.memoryTasks,
-    memoryGlobal: DEFAULTS.ExaPathDefaults.memoryGlobal,
+    flows: ExaPathDefaults.flows,
+    waitStates: DEFAULT_WAIT_STATES_PATH,
+    memoryProjects: ExaPathDefaults.memoryProjects,
+    memoryExecution: ExaPathDefaults.memoryExecution,
+    memoryIndex: ExaPathDefaults.memoryIndex,
+    memorySkills: ExaPathDefaults.memorySkills,
+    memoryPending: ExaPathDefaults.memoryPending,
+    memoryTasks: ExaPathDefaults.memoryTasks,
+    memoryGlobal: ExaPathDefaults.memoryGlobal,
   };
 }
 

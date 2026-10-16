@@ -6,6 +6,24 @@
  * @related-files [packages/core/src/config/service.ts, "packages/core/src/types/constants.ts"]
  */
 
+import {
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_ARCHIVE_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_FLOWS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_PORTALS_PATH,
+  DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
+  DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
+  DEFAULT_REJECTED_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_WAIT_STATES_PATH,
+  DEFAULT_WORKSPACE_PATH,
+  ExaPathDefaults,
+} from "@exaix/shared";
 import { z } from "zod";
 import {
   type AiConfig,
@@ -325,26 +343,26 @@ const ConfigObjectSchema = z.object({
       .optional(),
   }),
   paths: z.object({
-    workspace: z.string().default(DEFAULTS.DEFAULT_WORKSPACE_PATH),
-    runtime: z.string().default(DEFAULTS.DEFAULT_RUNTIME_PATH),
-    memory: z.string().default(DEFAULTS.DEFAULT_MEMORY_PATH),
-    portals: z.string().default(DEFAULTS.DEFAULT_PORTALS_PATH),
-    blueprints: z.string().default(DEFAULTS.DEFAULT_BLUEPRINTS_PATH),
-    active: z.string().default(DEFAULTS.DEFAULT_ACTIVE_PATH),
-    archive: z.string().default(DEFAULTS.DEFAULT_ARCHIVE_PATH),
-    plans: z.string().default(DEFAULTS.DEFAULT_PLANS_PATH),
-    requests: z.string().default(DEFAULTS.DEFAULT_REQUESTS_PATH),
-    rejected: z.string().default(DEFAULTS.DEFAULT_REJECTED_PATH),
-    agents: z.string().default(DEFAULTS.DEFAULT_AGENTS_PATH),
-    flows: z.string().default(DEFAULTS.ExaPathDefaults.flows),
-    waitStates: z.string().default(DEFAULTS.DEFAULT_WAIT_STATES_PATH),
-    memoryProjects: z.string().default(DEFAULTS.ExaPathDefaults.memoryProjects),
-    memoryExecution: z.string().default(DEFAULTS.ExaPathDefaults.memoryExecution),
-    memoryIndex: z.string().default(DEFAULTS.ExaPathDefaults.memoryIndex),
-    memorySkills: z.string().default(DEFAULTS.ExaPathDefaults.memorySkills),
-    memoryPending: z.string().default(DEFAULTS.ExaPathDefaults.memoryPending),
-    memoryTasks: z.string().default(DEFAULTS.ExaPathDefaults.memoryTasks),
-    memoryGlobal: z.string().default(DEFAULTS.ExaPathDefaults.memoryGlobal),
+    workspace: z.string().default(DEFAULT_WORKSPACE_PATH),
+    runtime: z.string().default(DEFAULT_RUNTIME_PATH),
+    memory: z.string().default(DEFAULT_MEMORY_PATH),
+    portals: z.string().default(DEFAULT_PORTALS_PATH),
+    blueprints: z.string().default(DEFAULT_BLUEPRINTS_PATH),
+    active: z.string().default(DEFAULT_ACTIVE_PATH),
+    archive: z.string().default(DEFAULT_ARCHIVE_PATH),
+    plans: z.string().default(DEFAULT_PLANS_PATH),
+    requests: z.string().default(DEFAULT_REQUESTS_PATH),
+    rejected: z.string().default(DEFAULT_REJECTED_PATH),
+    agents: z.string().default(DEFAULT_AGENTS_PATH),
+    flows: z.string().default(ExaPathDefaults.flows),
+    waitStates: z.string().default(DEFAULT_WAIT_STATES_PATH),
+    memoryProjects: z.string().default(ExaPathDefaults.memoryProjects),
+    memoryExecution: z.string().default(ExaPathDefaults.memoryExecution),
+    memoryIndex: z.string().default(ExaPathDefaults.memoryIndex),
+    memorySkills: z.string().default(ExaPathDefaults.memorySkills),
+    memoryPending: z.string().default(ExaPathDefaults.memoryPending),
+    memoryTasks: z.string().default(ExaPathDefaults.memoryTasks),
+    memoryGlobal: z.string().default(ExaPathDefaults.memoryGlobal),
   }).prefault({}),
   database: z.object({
     batch_flush_ms: c("database.batch_flush_ms"),
@@ -396,7 +414,7 @@ const ConfigObjectSchema = z.object({
       min_improvement_delta: z.number()
         .min(0)
         .max(20)
-        .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA),
+        .default(DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA),
       oscillation_window: z.number().int().min(2).max(4)
         .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW),
       base_max_iterations: z.number().int()
@@ -406,7 +424,7 @@ const ConfigObjectSchema = z.object({
       complexity_scale_factor: z.number().min(0).max(3)
         .default(1.0),
       absolute_max_iterations: z.number().int().min(1).max(20)
-        .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS),
+        .default(DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS),
       score_every_n_iterations: z.number().int().min(1).max(5)
         .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS),
     }).optional().prefault({}),
@@ -1090,11 +1108,11 @@ const ConfigObjectSchema = z.object({
 
   // `paths.flows` = the bare "Flows" resolves to an empty catalog (a stale legacy default), so it's rejected here.
   // Deliberately narrow: only this exact stale value is refused; other bare subfolder names remain a legitimate operator choice.
-  if (configData.paths?.flows === DEFAULTS.DEFAULT_FLOWS_PATH) {
+  if (configData.paths?.flows === DEFAULT_FLOWS_PATH) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `paths.flows = "${DEFAULTS.DEFAULT_FLOWS_PATH}" is the pre-Phase-142 default and resolves to an ` +
-        `empty catalog. Use the composite form "${DEFAULTS.ExaPathDefaults.flows}", or an explicit ` +
+      message: `paths.flows = "${DEFAULT_FLOWS_PATH}" is the pre-Phase-142 default and resolves to an ` +
+        `empty catalog. Use the composite form "${ExaPathDefaults.flows}", or an explicit ` +
         `path if the catalog genuinely lives elsewhere.`,
       path: ["paths", "flows"],
     });

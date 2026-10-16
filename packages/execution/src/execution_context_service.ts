@@ -9,6 +9,7 @@
  * @related-files [packages/execution/src/agent_composer.ts]
  */
 
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -21,14 +22,16 @@ import type { ContextCache } from "@exaix/core/context";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
 import { DomainEventType } from "@exaix/core/events";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
-
 /** Token counting strategy: BPE via ITokenizer, or character-heuristic fallback. */
 export type TokenSource = "bpe" | "heuristic";
 
 /** Allocates prompt budget for a given model and request context. */
 export interface IPromptBudgetAllocator {
-  allocate(modelId: string, hints?: object, analysis?: IRequestAnalysis): Promise<IPromptBudget>;
+  allocate(
+    modelId: string,
+    hints?: Opt<object, Reason.OptionalDependency>,
+    analysis?: Opt<IRequestAnalysis, Reason.OptionalDependency>,
+  ): Promise<IPromptBudget>;
 }
 
 /** Reduces AgentComposer's constructor parameter count and encapsulates the

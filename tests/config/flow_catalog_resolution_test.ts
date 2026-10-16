@@ -17,11 +17,10 @@
  * @related-files [apps/daemon/main.ts, packages/request/src/processor.ts, packages/core/src/types/constants.ts]
  */
 
-import { DEFAULT_FLOWS_DIR, DEFAULT_FLOWS_PATH } from "@exaix/shared";
+import { DEFAULT_FLOWS_DIR, DEFAULT_FLOWS_PATH, ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, relative, resolve } from "@std/path";
-import { ExaPathDefaults } from "@exaix/core";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");

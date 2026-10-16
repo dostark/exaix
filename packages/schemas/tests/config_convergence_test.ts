@@ -7,14 +7,17 @@
  * @related-files ["packages/schemas/src/config.ts"]
  */
 
+import {
+  DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
+  DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
+  ExaPathDefaults,
+} from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
 
-import { ExaPathDefaults, LogLevel } from "@exaix/core";
+import { LogLevel } from "@exaix/core";
 import {
   DEFAULT_AGENT_MAX_ITERATIONS,
-  DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
-  DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
   DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW,
   DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD,
   DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS,

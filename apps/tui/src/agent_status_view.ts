@@ -6,10 +6,10 @@
  * @related-files ["packages/execution/src/agent_runner.ts", apps/tui/src/tui_dashboard.ts]
  */
 
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { TuiSessionBase } from "@exaix/tui/base/tui_session_base.ts";
 import {
   AgentHealth,
-  DEFAULT_AGENTS_PATH,
   DEFAULT_NONE_LABEL,
   DEFAULT_QUERY_LIMIT,
   DEFAULT_UNKNOWN_LABEL,

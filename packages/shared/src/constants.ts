@@ -54,3 +54,30 @@ export const DEFAULT_MEMORY_SKILLS_DIR = `${DEFAULT_MEMORY_PATH}/${DEFAULT_SKILL
 export const DEFAULT_MEMORY_PENDING_DIR = `${DEFAULT_MEMORY_PATH}/${DEFAULT_PENDING_MEMORY_PATH}`;
 export const DEFAULT_MEMORY_TASKS_DIR = `${DEFAULT_MEMORY_PATH}/${DEFAULT_TASKS_MEMORY_PATH}`;
 export const DEFAULT_MEMORY_GLOBAL_DIR = `${DEFAULT_MEMORY_PATH}/${DEFAULT_GLOBAL_MEMORY_PATH}`;
+
+/** Default location of the wait-states folder inside the workspace. */
+export const DEFAULT_WAIT_STATES_PATH = "WaitStates";
+
+/** The default each `paths.*` config key resolves to when a config omits it. */
+export const ExaPathDefaults = {
+  workspace: DEFAULT_WORKSPACE_PATH,
+  runtime: DEFAULT_RUNTIME_PATH,
+  memory: DEFAULT_MEMORY_PATH,
+  portals: DEFAULT_PORTALS_PATH,
+  blueprints: DEFAULT_BLUEPRINTS_PATH,
+  flows: DEFAULT_FLOWS_DIR,
+  waitStates: DEFAULT_WAIT_STATES_PATH,
+  requests: DEFAULT_REQUESTS_PATH,
+  plans: DEFAULT_PLANS_PATH,
+  active: DEFAULT_ACTIVE_PATH,
+  archive: DEFAULT_ARCHIVE_PATH,
+  rejected: DEFAULT_REJECTED_PATH,
+  agents: DEFAULT_AGENTS_PATH,
+  memoryProjects: DEFAULT_MEMORY_PROJECTS_DIR,
+  memoryExecution: DEFAULT_MEMORY_EXECUTION_DIR,
+  memoryIndex: DEFAULT_MEMORY_INDEX_DIR,
+  memorySkills: DEFAULT_MEMORY_SKILLS_DIR,
+  memoryPending: DEFAULT_MEMORY_PENDING_DIR,
+  memoryTasks: DEFAULT_MEMORY_TASKS_DIR,
+  memoryGlobal: DEFAULT_MEMORY_GLOBAL_DIR,
+} as const;

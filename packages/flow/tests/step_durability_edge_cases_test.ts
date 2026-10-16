@@ -5,6 +5,7 @@
  * recordId handling, empty inputs, concurrent persistence, store errors.
  */
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import {
   FlowRunner,
@@ -18,7 +19,7 @@ import type { IAgentExecutionResult } from "@exaix/execution";
 import type { IFlow } from "@exaix/schemas";
 import type { IFlowInput } from "@exaix/schemas/flow.ts";
 import type { JSONValue } from "@exaix/core";
-import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION, FlowInputSource, FlowOutputFormat } from "@exaix/core";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS, FlowInputSource, FlowOutputFormat } from "@exaix/core";
 
 class RecordingStore implements IStepDurabilityStore {
   private recordsMap = new Map<string, IStepExecutionRecord>();

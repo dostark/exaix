@@ -19,9 +19,9 @@
  * @related-files [packages/schemas/src/config.ts, packages/core/src/config/paths.ts, packages/core/src/types/constants.ts]
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
-import { ExaPathDefaults } from "@exaix/core";
 import { getDefaultPaths } from "@exaix/core/config";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 

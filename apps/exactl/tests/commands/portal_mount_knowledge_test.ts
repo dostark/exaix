@@ -10,12 +10,13 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { PortalCommands } from "../../src/commands/portal_commands.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { ContextResultStatus, ContextUnavailableReason, ExaPathDefaults, PortalAnalysisMode } from "@exaix/core";
+import { ContextResultStatus, ContextUnavailableReason, PortalAnalysisMode } from "@exaix/core";
 import { initPortalTest } from "../helpers/test_setup.ts";
 
 // Mock helpers

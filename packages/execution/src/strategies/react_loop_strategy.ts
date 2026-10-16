@@ -7,6 +7,7 @@
  * @related-files [packages/execution/src/agent_composer.ts, packages/execution/src/strategies/execution_strategy.ts]
  */
 
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import type { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_composer.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
@@ -77,7 +78,6 @@ import {
   RESPONSE_STOP_REASON_MAX_TOKENS,
   RESPONSE_STOP_REASON_REFUSAL,
   STREAMING_EVENT_HEARTBEAT,
-  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
   ToolsRoundLoop,
   ToolsRoundMode,
 } from "@exaix/core";

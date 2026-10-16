@@ -6,12 +6,13 @@
  * @related-files [packages/flow/src/flow_runner.ts]
  */
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepOnErrorAction } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import { FlowExecutionError, FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
-import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
 import { initTestDbService } from "@exaix/testing";
 import { createStubConfig, createStubContext } from "@exaix/testing";

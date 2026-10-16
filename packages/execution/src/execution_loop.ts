@@ -12,6 +12,7 @@
  * @related-files [apps/daemon/main.ts]
  */
 
+import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
 import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -65,7 +66,6 @@ import {
   DEFAULT_AGENT_ROLE,
   DEFAULT_AMENDMENT_EXPIRY_MS,
   DEFAULT_AMENDMENT_ON_TIMEOUT,
-  DEFAULT_EXECUTION_MEMORY_PATH,
   EXECUTION_ARTIFACT_ANALYSIS_SECTION_TITLE,
   EXECUTION_ARTIFACT_PLAN_SECTION_TITLE,
   EXECUTION_ARTIFACT_SECTION_SEPARATOR,

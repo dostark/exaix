@@ -10,11 +10,11 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH, ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { FakeTime } from "@std/testing/time";
 import { join } from "@std/path";
-import { ExaPathDefaults, SKILL_MATCH_TIMEOUT_MS, SkillRootKind } from "@exaix/core";
+import { SKILL_MATCH_TIMEOUT_MS, SkillRootKind } from "@exaix/core";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { EventLogger } from "@exaix/core/logger";

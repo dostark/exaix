@@ -8,9 +8,10 @@
  * is obsolete: @exaix/schemas/config.ts is the single ConfigSchema definition.
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
-import { ExaPathDefaults, LogLevel } from "@exaix/core";
+import { LogLevel } from "@exaix/core";
 
 interface IBaseConfig {
   system: { root: string; log_level: string };

@@ -6,6 +6,7 @@
  * classification.
  */
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertNotEquals } from "@std/assert";
 import {
   FlowRunner,
@@ -21,7 +22,6 @@ import type { IFlowInput } from "@exaix/schemas/flow.ts";
 import type { JSONValue } from "@exaix/core";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
   FlowInputSource,
   FlowOutputFormat,
   StepAttemptClass,

@@ -6,6 +6,7 @@
  * @related-files ["packages/execution/src/agent_runner.ts", "packages/execution/src/execution_loop.ts"]
  */
 
+import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
 import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
@@ -17,7 +18,7 @@ import type {
 } from "@exaix/schemas/artifact.ts";
 import { coerceReviewStatus, ReviewStatus } from "@exaix/core/status";
 import type { Opt, Reason } from "@exaix/core/types";
-import { ArtifactSubtype as ArtifactType, DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/core";
+import { ArtifactSubtype as ArtifactType } from "@exaix/core";
 import type { IReviewStatus } from "@exaix/core/status";
 import type { IArtifactRepository, IArtifactRow } from "./artifact_repository.ts";
 

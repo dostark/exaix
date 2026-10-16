@@ -5,6 +5,7 @@
  * cross-step variable resolution and expression evaluation for conditional branching.
  */
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
@@ -12,8 +13,6 @@ import { ConditionEvaluator, type IConditionContext } from "@exaix/flow";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IStepResult } from "@exaix/flow";
 import type { JSONValue } from "@exaix/core/types";
-import { DEFAULT_FLOW_VERSION } from "@exaix/core";
-
 const createContext = (
   results: Record<string, { success: boolean; content?: string; data?: JSONValue }> = {},
 ): IConditionContext => ({

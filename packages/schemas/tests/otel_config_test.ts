@@ -7,8 +7,9 @@
  * @related-files [packages/schemas/src/config.ts]
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertFalse } from "@std/assert";
-import { ExaPathDefaults, LogLevel } from "@exaix/core";
+import { LogLevel } from "@exaix/core";
 import { ConfigSchema, OtelExportConfigSchema } from "@exaix/schemas";
 
 Deno.test("OTel export configuration applies safe snapshot defaults", () => {

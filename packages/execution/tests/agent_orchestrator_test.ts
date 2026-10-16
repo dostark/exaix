@@ -6,7 +6,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import {
   assert,
   assertEquals,
@@ -23,7 +23,6 @@ import {
   REACT_STATUS_COMPLETE,
   REACT_SUMMARY_PREFIX,
   SecurityMode,
-  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
   ToolName,
 } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";

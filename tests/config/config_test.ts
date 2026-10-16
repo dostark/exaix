@@ -12,6 +12,7 @@ import {
   DEFAULT_PORTALS_PATH,
   DEFAULT_RUNTIME_PATH,
   DEFAULT_WORKSPACE_PATH,
+  ExaPathDefaults,
 } from "@exaix/shared";
 import { assertEquals, assertExists, assertStringIncludes, assertThrows } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
@@ -20,7 +21,6 @@ import { ConfigService } from "@exaix/core/config";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
-import { ExaPathDefaults } from "@exaix/core";
 import { readFixtureTextSync } from "@exaix/testing";
 import type { JSONValue } from "@exaix/core/types";
 

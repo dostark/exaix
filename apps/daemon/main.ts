@@ -9,7 +9,7 @@
  * @phase-134 Step 2 production call-site: injects the edition-selected IModelRegistry (DefaultModelRegistry floor in Solo) into ModelResolver.
  */
 import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_REQUESTS_PATH } from "@exaix/shared";
 import {
   BINDING_RUN_FILE_PRUNE_INTERVAL_MS,
   BINDING_RUN_FILE_RETENTION_DAYS,
@@ -161,8 +161,6 @@ import {
   SESSION_BIN_OPENCODE,
   SESSION_BIN_VSCODE,
 } from "@exaix/core/types/constants.ts";
-import { DEFAULT_REQUESTS_PATH } from "@exaix/core";
-
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
 import { SoloComposer } from "@exaix/core/composer";
 // Team modules load dynamically only inside non-Solo branches — a static top-level import

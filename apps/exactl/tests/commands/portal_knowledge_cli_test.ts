@@ -8,18 +8,13 @@
  * @related-files [apps/exactl/src/commands/portal_commands.ts, packages/portal/knowledge/knowledge_persistence.ts]
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assert, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { PortalCommands } from "../../src/commands/portal_commands.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import {
-  ContextResultStatus,
-  ContextUnavailableReason,
-  ExaPathDefaults,
-  PortalAnalysisMode,
-  SystemCommand,
-} from "@exaix/core";
+import { ContextResultStatus, ContextUnavailableReason, PortalAnalysisMode, SystemCommand } from "@exaix/core";
 import { initPortalTest } from "../helpers/test_setup.ts";
 
 // Fixture helpers

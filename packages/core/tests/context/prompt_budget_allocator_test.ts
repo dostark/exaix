@@ -6,6 +6,7 @@
  * @related-files [packages/core/src/context/prompt_budget_allocator.ts, "packages/schemas/src/prompt_budget.ts"]
  */
 
+import { LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK } from "@exaix/shared";
 import { assert, assertEquals, assertGreater, assertRejects } from "@std/assert";
 import { PromptBudgetAllocator } from "@exaix/core/context";
 import { ContextBudgetExceededError } from "@exaix/core/errors";
@@ -14,7 +15,7 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ITokenizer } from "@exaix/core/func";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
-import { LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK, SECTION_BASE_WEIGHTS, SECTION_FLOORS } from "@exaix/core";
+import { SECTION_BASE_WEIGHTS, SECTION_FLOORS } from "@exaix/core";
 
 // Test 1: Base allocation respects model windows and safety buffer
 

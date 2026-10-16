@@ -6,6 +6,7 @@
  * @related-files [packages/ai/src/providers.ts, "packages/core/src/cost/cost_tracker.ts"]
  */
 
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/shared";
 import type { IModelOptions, IModelProvider } from "./types.ts";
 import type { IGenerateResult } from "./providers/common.ts";
 import type { ICostBudgetAllowance, ICostTracker, Opt, Reason } from "@exaix/core/types";
@@ -20,7 +21,6 @@ import {
   RATE_LIMIT_WINDOW_DAY_MS,
   RATE_LIMIT_WINDOW_HOUR_MS,
   RATE_LIMIT_WINDOW_MINUTE_MS,
-  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
   TOKEN_ESTIMATION_MAX_TOKENS,
 } from "@exaix/core";
 

@@ -11,12 +11,13 @@
  * @architectural-layer Services
  * @related-files ["packages/execution/src/execution_loop.ts", "packages/memory/src/bank/memory_bank.ts"]
  */
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PORTALS_PATH } from "@exaix/shared";
 import * as pathBuilders from "@exaix/shared";
 import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import { resolveMemoryExecutionRoot } from "../config/paths.ts";
-import { AMENDMENT_ARTIFACTS_DIR, DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PORTALS_PATH } from "@exaix/core";
+import { AMENDMENT_ARTIFACTS_DIR } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IEventJournalReader } from "@exaix/core/events";
 import type { MemoryBankService } from "@exaix/memory";

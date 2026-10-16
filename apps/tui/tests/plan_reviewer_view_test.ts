@@ -8,9 +8,9 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
+import { ExaPathDefaults } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { PlanStatus } from "@exaix/core/status";
-import { ExaPathDefaults } from "@exaix/core";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
 import {

@@ -7,6 +7,7 @@
  * guard: DomainEventType.FlowStepReplayed must NOT be emitted on the current reuse path.
  */
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/shared";
 import { assertEquals, assertFalse } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import {
@@ -24,7 +25,6 @@ import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { JSONValue } from "@exaix/core";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
   FLOW_CHECKPOINT_SCHEMA_VERSION,
   FLOW_EVENT_STEP_SKIPPED_BY_REUSE,
   FlowInputSource,

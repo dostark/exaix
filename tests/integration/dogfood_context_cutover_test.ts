@@ -13,6 +13,7 @@
  * @related-files [apps/daemon/src/dogfood_context_service.ts, apps/daemon/tests/dogfood_context_child_query_test.ts, apps/exactl/src/commands/inspect_commands.ts]
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { readConfigFixture } from "./helpers/config_fixture.ts";
 import { fromFileUrl, join } from "@std/path";
@@ -59,7 +60,6 @@ import { generateOpencodePermissionConfig } from "@exaix/session/opencode_permis
 import { ContextRecordStore, isValidUuid } from "@exaix/session";
 import { PathResolver } from "@exaix/portal";
 import { ConfigService } from "@exaix/core/config";
-import { ExaPathDefaults } from "@exaix/core";
 import type { PathResolver as PathResolverType } from "@exaix/portal";
 import { InspectCommands } from "../../apps/exactl/src/commands/inspect_commands.ts";
 import { createStubContext } from "@exaix/testing";
