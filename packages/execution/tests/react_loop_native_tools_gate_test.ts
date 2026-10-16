@@ -6,7 +6,7 @@
  * while always rendering AVAILABLE TOOLS and TOOL SELECTION GUIDELINES.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { ReActLoopStrategy } from "../src/strategies/react_loop_strategy.ts";
 import type { IReActLoopExecutor } from "../src/react_loop_adapter.ts";
 
@@ -43,18 +43,18 @@ Deno.test("buildPrompt with skipToolProse omits FORMAT and TOML but keeps AVAILA
   );
 
   // With skipToolProse: AVAILABLE TOOLS and TOOL SELECTION GUIDELINES are always present
-  assertEquals(promptWithoutProse.includes("AVAILABLE TOOLS:"), true);
-  assertEquals(promptWithoutProse.includes("TOOL SELECTION GUIDELINES:"), true);
-  assertEquals(promptWithoutProse.includes("prefer patch_file over write_file"), true);
+  assertStringIncludes(promptWithoutProse, "AVAILABLE TOOLS:");
+  assertStringIncludes(promptWithoutProse, "TOOL SELECTION GUIDELINES:");
+  assertStringIncludes(promptWithoutProse, "prefer patch_file over write_file");
 
   // With skipToolProse: FORMAT and TOML block are omitted
   assertEquals(promptWithoutProse.includes("FORMAT:"), false);
   assertEquals(promptWithoutProse.includes("```toml"), false);
 
   // Without skipToolProse: all sections present
-  assertEquals(promptWithProse.includes("AVAILABLE TOOLS:"), true);
-  assertEquals(promptWithProse.includes("FORMAT:"), true);
-  assertEquals(promptWithProse.includes("```toml"), true);
+  assertStringIncludes(promptWithProse, "AVAILABLE TOOLS:");
+  assertStringIncludes(promptWithProse, "FORMAT:");
+  assertStringIncludes(promptWithProse, "```toml");
 });
 
 Deno.test("buildPrompt with skipToolProse tells the model not to repeat a finished tool call", () => {
@@ -77,7 +77,7 @@ Deno.test("buildPrompt with skipToolProse tells the model not to repeat a finish
     true,
   );
 
-  assertEquals(prompt.includes("Do not repeat a tool call whose result is already in the history."), true);
-  assertEquals(prompt.includes("every file it names has been read"), true);
-  assertEquals(prompt.includes("stop calling tools"), true);
+  assertStringIncludes(prompt, "Do not repeat a tool call whose result is already in the history.");
+  assertStringIncludes(prompt, "every file it names has been read");
+  assertStringIncludes(prompt, "stop calling tools");
 });

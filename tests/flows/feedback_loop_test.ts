@@ -5,7 +5,7 @@
  * control based on quality scores and maximum retry limits.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { FlowConsensusMethod } from "@exaix/core";
 import {
   createFeedbackLoop,
@@ -279,9 +279,9 @@ Deno.test("SimpleImprovementAgent: formats prompt correctly", async () => {
 
   assertExists(mockRunner.lastRequest);
   assertEquals(mockRunner.lastRequest.agentRole, "improver-agent");
-  assertEquals(mockRunner.lastRequest.prompt.includes("Write a function"), true);
-  assertEquals(mockRunner.lastRequest.prompt.includes("function foo() {}"), true);
-  assertEquals(mockRunner.lastRequest.prompt.includes("Iteration 1"), true);
+  assertStringIncludes(mockRunner.lastRequest.prompt, "Write a function");
+  assertStringIncludes(mockRunner.lastRequest.prompt, "function foo() {}");
+  assertStringIncludes(mockRunner.lastRequest.prompt, "Iteration 1");
   assertEquals(mockRunner.lastRequest.context?.improvementMode, true);
   assertEquals(mockRunner.lastRequest.context?.iteration, 1);
 });

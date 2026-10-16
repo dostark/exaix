@@ -8,7 +8,7 @@
  * @related-files [packages/ai/src/providers/capture_recording_provider.ts]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { CaptureRecordingError, CaptureRecordingProvider } from "../../src/providers/capture_recording_provider.ts";
 import type { ICallSite, IModelOptions, IModelProvider } from "../../src/types.ts";
 import type { IGenerateResult } from "../../src/providers/common.ts";
@@ -81,7 +81,7 @@ Deno.test("[capture_contract_validation] a ReAct-loop prompt accepts STATUS: COM
   const callSite: ICallSite = { scenarioId: "flows", stepId: "b", callIndex: 0 };
 
   const result = await capture.generate(REACT_LOOP_PROMPT, { callSite });
-  assertEquals(result.content.includes("STATUS: COMPLETE"), true);
+  assertStringIncludes(result.content, "STATUS: COMPLETE");
 });
 
 Deno.test("[capture_contract_validation] a ReAct-loop prompt accepts a toml action block", async () => {

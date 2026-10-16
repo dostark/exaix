@@ -7,7 +7,7 @@
  * status colors, keyboard bindings, and visual icons for request priorities.
  */
 
-import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import {
   type CritiqueSeverity as _CritiqueSeverity,
   RequestPriority,
@@ -154,10 +154,10 @@ Deno.test("RequestManagerView: STATUS_COLORS covers all statuses", () => {
 
 Deno.test("RequestManagerView: REQUEST_KEY_BINDINGS is comprehensive", () => {
   const actions = REQUEST_KEY_BINDINGS.map((b) => b.action);
-  assertEquals(actions.includes(RequestAction.NAVIGATE_UP), true);
-  assertEquals(actions.includes(RequestAction.CREATE), true);
-  assertEquals(actions.includes(RequestAction.DELETE), true);
-  assertEquals(actions.includes(RequestAction.HELP), true);
+  assertArrayIncludes(actions, [RequestAction.NAVIGATE_UP]);
+  assertArrayIncludes(actions, [RequestAction.CREATE]);
+  assertArrayIncludes(actions, [RequestAction.DELETE]);
+  assertArrayIncludes(actions, [RequestAction.HELP]);
 });
 
 Deno.test("RequestManagerView: PRIORITY_ICONS and STATUS_ICONS have all values", () => {

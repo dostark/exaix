@@ -370,7 +370,7 @@ describe("ReviewCommands", () => {
 
       // Verify branch was merged
       const log = await runGitCommand(tempDir, ["log", "--oneline"]);
-      assertEquals(log.includes("Merge request-009"), true);
+      assertStringIncludes(log, "Merge request-009");
     });
 
     it(`should validate current branch is ${TEST_DEFAULT_BRANCH}`, async () => {

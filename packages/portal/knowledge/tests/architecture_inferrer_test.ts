@@ -413,7 +413,7 @@ Deno.test("[ArchitectureInferrer] logs error when logger provided and all retrie
     dependencySummary: "",
   });
   assertEquals(errors.length > 0, true, "Should have logged at least one error");
-  assertEquals(errors[0].message.includes("retries"), true);
+  assertStringIncludes(errors[0].message, "retries");
 });
 
 Deno.test("[ArchitectureInferrer] backoff increases between retries", async () => {

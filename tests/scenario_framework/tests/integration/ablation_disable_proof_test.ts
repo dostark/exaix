@@ -18,7 +18,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { parse } from "@std/toml";
 import { fromFileUrl } from "@std/path";
@@ -106,9 +106,9 @@ Deno.test("[AblationDisableProof] skills control: inject_in_prompt=true → skil
     await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
 
     const actions = await journalActions(db);
-    assertEquals(
-      actions.includes(DomainEventType.SkillsMatchCompleted),
-      true,
+    assertArrayIncludes(
+      actions,
+      [DomainEventType.SkillsMatchCompleted],
       "with skills enabled the journal must contain skills.match_completed",
     );
   } finally {
@@ -158,9 +158,9 @@ Deno.test("[AblationDisableProof] quality-gate control: enabled=true → request
     });
 
     const actions = await journalActions(db);
-    assertEquals(
-      actions.includes("request.quality_assessed"),
-      true,
+    assertArrayIncludes(
+      actions,
+      ["request.quality_assessed"],
       "with the gate enabled the journal must contain request.quality_assessed",
     );
   } finally {

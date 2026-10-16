@@ -7,7 +7,7 @@
  * @description Tests for CommandUtils helper functions: formatValidationErrors, printMetadata.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { CommandUtils } from "@exaix/cli/helpers/command_utils.ts";
 
 // formatValidationErrors
@@ -117,8 +117,8 @@ Deno.test("CommandUtils.printMetadata: prints title and key-value pairs", () => 
     // null values should be skipped
     const allContent = logs.join("\n");
     assertEquals(allContent.includes("empty"), false);
-    assertEquals(allContent.includes("name"), true);
-    assertEquals(allContent.includes("42"), true);
+    assertStringIncludes(allContent, "name");
+    assertStringIncludes(allContent, "42");
   } finally {
     console.log = originalLog;
   }
@@ -136,7 +136,7 @@ Deno.test("CommandUtils.printMetadata: handles undefined values", () => {
     });
 
     const allContent = logs.join("\n");
-    assertEquals(allContent.includes("present"), true);
+    assertStringIncludes(allContent, "present");
     assertEquals(allContent.includes("absent"), false);
   } finally {
     console.log = originalLog;

@@ -9,7 +9,7 @@
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_INDEX_MEMORY_PATH } from "@exaix/shared";
 import { ensureDir } from "@std/fs";
-import { assert } from "@std/assert";
+import { assert, assertStringIncludes } from "@std/assert";
 import { MemoryStatus } from "@exaix/core/status";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -46,7 +46,7 @@ Deno.test("cosineSimilarity throws error for vector length mismatch", () => {
     assertEquals(true, false, "Should have thrown an error");
   } catch (error) {
     assertExists(error);
-    assertEquals((error as Error).message.includes("length mismatch"), true);
+    assertStringIncludes((error as Error).message, "length mismatch");
   }
 });
 

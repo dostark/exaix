@@ -10,7 +10,7 @@
  * @related-files [tests/scenario_framework/runner/skill_corpus_reachability.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { computeSkillReachability } from "../../runner/skill_corpus_reachability.ts";
 import type {
   IAgentRoleDefaultSkills,
@@ -46,7 +46,7 @@ Deno.test("[SkillCorpusReachability] a skill matched by neither default_skills n
   assertEquals(result.reachableSkillIds, []);
   assertEquals(result.nonCoverage.length, 1);
   assertEquals(result.nonCoverage[0].skillId, "orphan-skill");
-  assertEquals(result.nonCoverage[0].reason.includes("2"), true);
+  assertStringIncludes(result.nonCoverage[0].reason, "2");
 });
 
 Deno.test("[SkillCorpusReachability] the reachable set is a union across default_skills and every corpus task, without duplicates", () => {
@@ -77,8 +77,8 @@ Deno.test("[SkillCorpusReachability] a non-covered skill still declared in anoth
   );
   assertEquals(result.reachableSkillIds, []);
   assertEquals(result.nonCoverage.length, 1);
-  assertEquals(result.nonCoverage[0].reason.includes("qa-engineer"), true);
-  assertEquals(result.nonCoverage[0].reason.includes("not evidence the skill is unused"), true);
+  assertStringIncludes(result.nonCoverage[0].reason, "qa-engineer");
+  assertStringIncludes(result.nonCoverage[0].reason, "not evidence the skill is unused");
 });
 
 Deno.test("[SkillCorpusReachability] a non-covered skill declared by multiple agent roles names all of them", () => {
@@ -92,8 +92,8 @@ Deno.test("[SkillCorpusReachability] a non-covered skill declared by multiple ag
     [],
     agentRoles,
   );
-  assertEquals(result.nonCoverage[0].reason.includes("quality-judge"), true);
-  assertEquals(result.nonCoverage[0].reason.includes("voting-judge"), true);
+  assertStringIncludes(result.nonCoverage[0].reason, "quality-judge");
+  assertStringIncludes(result.nonCoverage[0].reason, "voting-judge");
 });
 
 Deno.test("[SkillCorpusReachability] a skill genuinely absent from every agent role's default_skills keeps the original, narrower reason", () => {

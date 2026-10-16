@@ -10,7 +10,7 @@
  * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/tool-runtime/src/tool_registry.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -256,7 +256,7 @@ Deno.test("[ReAct permissions] AVAILABLE TOOLS prompt text excludes an unlisted 
   );
 
   assertEquals(unlistedPrompt.includes(ToolName.QUERY_SYMBOLS), false);
-  assertEquals(listedPrompt.includes(ToolName.QUERY_SYMBOLS), true);
+  assertStringIncludes(listedPrompt, ToolName.QUERY_SYMBOLS);
 });
 
 Deno.test(
@@ -296,7 +296,7 @@ Deno.test(
     await strategy.execute(blueprint, context, makeNativeOptions([ToolName.QUERY_SYMBOLS]));
 
     assertEquals(capturedToolNames.length, 1);
-    assertEquals(capturedToolNames[0]?.includes(ToolName.QUERY_SYMBOLS), true);
+    assertArrayIncludes(capturedToolNames[0], [ToolName.QUERY_SYMBOLS]);
   },
 );
 

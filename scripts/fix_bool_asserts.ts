@@ -78,7 +78,13 @@ function textArgumentOf(node: ts.Expression): string | null {
 
 /** Escapes the characters that carry meaning in a regular-expression literal. */
 function escapeForRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // Escape `/` and line terminators too, or the emitted regular-expression literal breaks.
+  return text
+    .replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
 }
 
 function messageSuffixOf(call: ts.CallExpression): string {

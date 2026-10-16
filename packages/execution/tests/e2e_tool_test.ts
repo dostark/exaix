@@ -5,7 +5,7 @@
  * coordination between agent actions and multi-step verification triggers.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { stub } from "@std/testing/mock";
 import { cleanupTempDir, createToolRegistryForTests } from "../../tool-runtime/tests/helpers.ts";
@@ -54,7 +54,7 @@ Deno.test("ToolRegistry: E2E Workflow", async (t) => {
     const matches = todos.data as Array<{ file: string; line: number; content: string }>;
     assertEquals(matches.length, 1);
     assertEquals(matches[0].file, "main.ts");
-    assertEquals(matches[0].content.includes("Implement greeting"), true);
+    assertStringIncludes(matches[0].content, "Implement greeting");
   });
 
   await t.step("Agent learns from docs", async () => {

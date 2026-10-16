@@ -7,7 +7,7 @@
  * simulation of daemon restarts, heartbeats, and log rotation for TUI tests.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { DaemonStatus } from "@exaix/core";
 import type { IDaemonService } from "@exaix/core/types";
 import {
@@ -382,8 +382,8 @@ Deno.test("LegacyDaemonControlTuiSession: getFocusableElements", () => {
   const view = new DaemonControlView(mock);
   const session = new LegacyDaemonControlTuiSession(view, false);
   const elements = session.getFocusableElements();
-  assertEquals(elements.includes("start"), true);
-  assertEquals(elements.includes("logs"), true);
+  assertArrayIncludes(elements, ["start"]);
+  assertArrayIncludes(elements, ["logs"]);
 });
 
 // Dialog Confirmation Flow
@@ -408,7 +408,7 @@ Deno.test("DaemonControlTuiSession: getFocusableElements in different states", a
 
   // Default state
   let elements = session.getFocusableElements();
-  assertEquals(elements.includes("start-button"), true);
+  assertArrayIncludes(elements, ["start-button"]);
 
   // With dialog open
   session.showRestartConfirm();
@@ -421,7 +421,7 @@ Deno.test("DaemonControlTuiSession: getFocusableElements in different states", a
   // With logs view
   await session.showLogs();
   elements = session.getFocusableElements();
-  assertEquals(elements.includes("close-button"), true);
+  assertArrayIncludes(elements, ["close-button"]);
 
   // Close logs
   session.hideLogs();
@@ -429,7 +429,7 @@ Deno.test("DaemonControlTuiSession: getFocusableElements in different states", a
   // With config view
   session.showConfig();
   elements = session.getFocusableElements();
-  assertEquals(elements.includes("close-button"), true);
+  assertArrayIncludes(elements, ["close-button"]);
 
   // Close config
   session.hideConfig();
@@ -437,7 +437,7 @@ Deno.test("DaemonControlTuiSession: getFocusableElements in different states", a
   // With help view
   session.toggleHelp();
   elements = session.getFocusableElements();
-  assertEquals(elements.includes("close-button"), true);
+  assertArrayIncludes(elements, ["close-button"]);
 });
 
 Deno.test("DaemonControlTuiSession: dispose cleans up auto-refresh", async () => {

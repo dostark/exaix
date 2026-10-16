@@ -207,10 +207,7 @@ Deno.test("[scope-boundaries] native names in a planning allowlist do not introd
 
   assertEquals(generate.calls[0].options.tools?.some((tool) => tool.name === "who_depends_on"), false);
   assertEquals(registry.calls, []);
-  assertEquals(
-    String(generate.calls[1].options.priorTurn?.toolResultContent).includes("not in the planning catalog"),
-    true,
-  );
+  assertStringIncludes(String(generate.calls[1].options.priorTurn?.toolResultContent), "not in the planning catalog");
 });
 
 Deno.test("[planning_tool_loop] round 1 with no toolCalls returns the raw response untouched, stopReason no_tool_calls", async () => {
@@ -914,10 +911,7 @@ Deno.test("[security] an alias of a write tool is refused when its canonical too
   const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate }));
   await loop.run(makeOptions({ allowedTools: new Set(["read_file"]), maxRounds: 2 }));
   assertEquals(registry.calls.length, 0);
-  assertEquals(
-    String(generate.calls[1].options.priorTurn?.toolResultContent).includes("not in the planning catalog"),
-    true,
-  );
+  assertStringIncludes(String(generate.calls[1].options.priorTurn?.toolResultContent), "not in the planning catalog");
 });
 
 Deno.test("[security] a fetch_url alias is not offered or executed in the planning catalog", async () => {

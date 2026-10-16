@@ -13,7 +13,7 @@
  * ]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertStringIncludes } from "@std/assert";
 import { CliDelegateStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
@@ -81,5 +81,5 @@ Deno.test("CLI delegate receives STE in its effective objective", async () => {
     "Use ASD-STE100 and Exaix STE Extension v1 for instruction and response prose.",
   );
   assertStringIncludes(capturedObjective, "Exempt documentation deliverables.");
-  assertEquals(capturedObjective.includes("PLAN STEP:"), true);
+  assertStringIncludes(capturedObjective, "PLAN STEP:");
 });

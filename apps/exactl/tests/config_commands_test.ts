@@ -6,7 +6,7 @@
  */
 import * as pathBuilders from "@exaix/shared";
 import { Database } from "@db/sqlite";
-import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertNotEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { createConfigAdapter, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
 import { ConfigKeyLockedError, ConfigRateLimitedError, ConfigValidationError } from "@exaix/core/config";
 
@@ -143,8 +143,8 @@ Deno.test("[configuring-cli] diff() returns a formatted string of overridden key
     await commands.set("ai.timeout_ms", "99999");
     const out = await commands.diff();
     assertEquals(typeof out, "string");
-    assertEquals(out.includes("ai.timeout_ms"), true);
-    assertEquals(out.includes("99999"), true);
+    assertStringIncludes(out, "ai.timeout_ms");
+    assertStringIncludes(out, "99999");
   });
 });
 
@@ -152,7 +152,7 @@ Deno.test("[configuring-cli] diff() returns a no-overrides message when nothing 
   await withProfileCommands(async (commands) => {
     const out = await commands.diff();
     assertEquals(typeof out, "string");
-    assertEquals(out.toLowerCase().includes("no overridden"), true);
+    assertStringIncludes(out.toLowerCase(), "no overridden");
   });
 });
 

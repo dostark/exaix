@@ -18,7 +18,7 @@
  * @architectural-layer Integration
  */
 
-import { assertEquals, assertExists, assertInstanceOf } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertInstanceOf } from "@std/assert";
 import { ProviderRegistry } from "@exaix/ai";
 import { ModelResolver } from "@exaix/ai";
 import { DefaultRoutingStrategy } from "@exaix/ai/routing/default_routing_strategy.ts";
@@ -97,8 +97,8 @@ Deno.test("[integration] registry_bootstrap: codex-cli's real factory-resolved p
     const result = await provider.generate("Analyze this request");
 
     assertEquals(seenCommand, "codex");
-    assertEquals(seenArgs.includes("exec"), true);
-    assertEquals(seenArgs.includes("--sandbox"), true);
+    assertArrayIncludes(seenArgs, ["exec"]);
+    assertArrayIncludes(seenArgs, ["--sandbox"]);
     assertEquals(result.content, "Analysis complete.");
     assertEquals(result.provider, "codex");
     assertEquals(result.cost_usd, 0);

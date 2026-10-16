@@ -8,7 +8,7 @@
  */
 
 import { DEFAULT_PLANS_PATH, DEFAULT_RUNTIME_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
@@ -114,8 +114,8 @@ Deno.test("[session_return_watcher] accepted return resumes the gate and journal
       token_stats: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
     });
     await rig.watcher.handleReturnPath(path);
-    assertEquals(rig.sink.actions().includes(DomainEventType.SessionDelegateReturned), true);
-    assertEquals(rig.sink.actions().includes(DomainEventType.SessionDelegateReconciled), true);
+    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateReturned]);
+    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateReconciled]);
     assertEquals((await rig.store.get(brief.trace_id))?.status, "resumed");
   } finally {
     await rig.cleanup();
@@ -135,7 +135,7 @@ Deno.test("[session_return_watcher][security] forged token journals token_reject
       token_stats: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
     });
     await rig.watcher.handleReturnPath(path);
-    assertEquals(rig.sink.actions().includes(DomainEventType.SessionDelegateTokenRejected), true);
+    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateTokenRejected]);
     assertEquals((await rig.store.get(brief.trace_id))?.status, "pending");
   } finally {
     await rig.cleanup();
@@ -155,7 +155,7 @@ Deno.test("[session_return_watcher][security] scope violation journals scope_vio
       token_stats: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
     });
     await rig.watcher.handleReturnPath(path);
-    assertEquals(rig.sink.actions().includes(DomainEventType.SessionDelegateScopeViolation), true);
+    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateScopeViolation]);
     assertEquals((await rig.store.get(brief.trace_id))?.status, "pending");
   } finally {
     await rig.cleanup();
@@ -335,8 +335,8 @@ Deno.test("[session_return_watcher] an over-budget accepted return also journals
       token_stats: { input_tokens: 120_000, output_tokens: 30_000, total_tokens: 150_000 },
     });
     await rig.watcher.handleReturnPath(path);
-    assertEquals(rig.sink.actions().includes(DomainEventType.SessionDelegateReconciled), true);
-    assertEquals(rig.sink.actions().includes(DomainEventType.SessionDelegateBudgetExceeded), true);
+    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateReconciled]);
+    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateBudgetExceeded]);
     // Budget overage is non-blocking: the gate still resumes.
     assertEquals((await rig.store.get(brief.trace_id))?.status, "resumed");
   } finally {

@@ -9,7 +9,7 @@
  * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 import { ANALYZER_VERSION } from "@exaix/core";
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { createReflexiveAgent, type ReflexiveAgent as _ReflexiveAgent } from "@exaix/execution";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
@@ -179,9 +179,9 @@ Deno.test(
 
     const prompt = capturingRunner.capturedPrompts[0];
     assertExists(prompt);
-    assertEquals(prompt.includes("AC 1"), true);
-    assertEquals(prompt.includes("AC 2"), true);
-    assertEquals(prompt.includes("AC 3"), true);
+    assertStringIncludes(prompt, "AC 1");
+    assertStringIncludes(prompt, "AC 2");
+    assertStringIncludes(prompt, "AC 3");
   },
 );
 
@@ -209,8 +209,8 @@ Deno.test(
 
     const prompt = capturingRunner.capturedPrompts[0];
     assertExists(prompt);
-    assertEquals(prompt.includes("Goal 1"), true);
-    assertEquals(prompt.includes("Goal 2"), true);
-    assertEquals(prompt.includes("Goal 3"), true);
+    assertStringIncludes(prompt, "Goal 1");
+    assertStringIncludes(prompt, "Goal 2");
+    assertStringIncludes(prompt, "Goal 3");
   },
 );

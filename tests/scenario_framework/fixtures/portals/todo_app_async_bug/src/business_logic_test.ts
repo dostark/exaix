@@ -4,6 +4,7 @@ import { assertEquals } from "jsr:@std/assert@1";
 import { processBatchSubmissions, processTaskSubmission } from "./business_logic.ts";
 import type { ITask } from "./models.ts";
 
+import { assertArrayIncludes } from "@std/assert";
 Deno.test("valid submission succeeds with defaulted medium priority", () => {
   const result = processTaskSubmission("Buy milk", "", null, null, []);
   assertEquals(result.success, true);
@@ -13,7 +14,7 @@ Deno.test("valid submission succeeds with defaulted medium priority", () => {
 Deno.test("empty title fails validation", () => {
   const result = processTaskSubmission("", "low", null, null, []);
   assertEquals(result.success, false);
-  assertEquals(result.errors.includes("Title is required"), true);
+  assertArrayIncludes(result.errors, ["Title is required"]);
 });
 
 Deno.test("more than 2 existing same-title tasks rejects a 4th", () => {
@@ -24,7 +25,7 @@ Deno.test("more than 2 existing same-title tasks rejects a 4th", () => {
   ];
   const result = processTaskSubmission("Dup", "low", null, null, existing);
   assertEquals(result.success, false);
-  assertEquals(result.errors.includes("Too many tasks with this title already exist"), true);
+  assertArrayIncludes(result.errors, ["Too many tasks with this title already exist"]);
 });
 
 Deno.test("processBatchSubmissions enforces 3-duplicate limit across the batch", async () => {

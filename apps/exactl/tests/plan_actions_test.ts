@@ -7,7 +7,7 @@
  * diff colorization, and status truncation for terminal display.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertMatch, assertStringIncludes } from "@std/assert";
 import { TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "@exaix/testing";
 import {
   handlePlanAmendmentApprove,
@@ -88,9 +88,9 @@ Deno.test("handlePlanList: displays plan rows with truncation", async () => {
   await handlePlanList(context, { status: "review" });
 
   assertEquals(calls.length, 2);
-  assertEquals(calls[1].a.startsWith("🔍 p1"), true);
-  assertEquals((calls[1].c.request as string).endsWith("..."), true);
-  assertEquals((calls[1].c.trace as string).endsWith("..."), true);
+  assertMatch(calls[1].a, /^🔍 p1/);
+  assertMatch(calls[1].c.request as string, /\.\.\.$/);
+  assertMatch(calls[1].c.trace as string, /\.\.\.$/);
 });
 
 Deno.test("handlePlanShow: prints metadata and content", async () => {
@@ -210,7 +210,7 @@ Deno.test("handlePlanAmendmentList: displays amendments", async () => {
 
   assertEquals(calls.length, 2);
   assertEquals(calls[0].a, "plan.amendment.list");
-  assertEquals(calls[1].a.includes("amendment_pending: a1"), true);
+  assertStringIncludes(calls[1].a, "amendment_pending: a1");
 });
 
 Deno.test("handlePlanAmendmentList: handles empty list", async () => {

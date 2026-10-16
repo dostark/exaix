@@ -10,7 +10,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_REQUESTS_PATH } from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import {
   CONTEXT_FIXTURE_PATH,
@@ -37,9 +37,9 @@ Deno.test("[plan-to-requests][plan-context][security] a '..'-laden plan slug is 
       wt,
     ]);
     assertEquals(code !== 0, true, "must exit non-zero on an unsafe slug");
-    assertEquals(
-      (stdout + stderr).includes("phase..evil"),
-      true,
+    assertStringIncludes(
+      stdout + stderr,
+      "phase..evil",
       "the error must name the rejected slug (rejection-by-validation, not a silent skip)",
     );
 
@@ -75,9 +75,9 @@ Deno.test("[plan-context][relocation][security] pre-existing symlinked PlanConte
     ]);
 
     assertEquals(result.code !== 0, true, "symlinked destination must fail closed");
-    assertEquals(
-      (result.stdout + result.stderr).toLowerCase().includes("symbolic link"),
-      true,
+    assertStringIncludes(
+      (result.stdout + result.stderr).toLowerCase(),
+      "symbolic link",
       "failure must identify the rejected symbolic link",
     );
     assertEquals(await Deno.readTextFile(outsideTarget), OUTSIDE_SENTINEL, "symlink target must remain untouched");

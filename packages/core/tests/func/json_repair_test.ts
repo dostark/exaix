@@ -8,14 +8,14 @@
  * JSON object's keys.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { repairJSON } from "../../src/func/json_repair.ts";
 
 Deno.test("[JSONRepair] extracts a fenced JSON block with no surrounding prose (existing behavior)", () => {
   const input = '```json\n{"a": 1}\n```';
   const { repaired, appliedRepairs } = repairJSON(input);
   assertEquals(JSON.parse(repaired), { a: 1 });
-  assertEquals(appliedRepairs.includes("extract_json_object"), true);
+  assertArrayIncludes(appliedRepairs, ["extract_json_object"]);
 });
 
 Deno.test("[JSONRepair] extracts a fenced JSON block preceded by prose (real Anthropic response shape)", () => {

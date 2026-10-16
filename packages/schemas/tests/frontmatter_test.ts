@@ -6,7 +6,7 @@
  * @description Verifies RequestSchema validation behavior for request frontmatter data.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { RequestStatus } from "@exaix/core/status";
 import { RequestSchema } from "@exaix/schemas/request.ts";
 
@@ -53,7 +53,7 @@ Deno.test("RequestSchema: rejects missing required field (trace_id)", () => {
   } catch (error) {
     if (error instanceof Error) {
       // Should mention the missing field
-      assertEquals(error.message.includes("trace_id"), true);
+      assertStringIncludes(error.message, "trace_id");
     } else {
       throw error;
     }
@@ -72,8 +72,8 @@ Deno.test("RequestSchema: rejects invalid enum value", () => {
   } catch (error) {
     if (error instanceof Error) {
       // Should list valid options
-      assertEquals(error.message.includes(RequestStatus.PENDING), true);
-      assertEquals(error.message.includes("in_progress"), true);
+      assertStringIncludes(error.message, RequestStatus.PENDING);
+      assertStringIncludes(error.message, "in_progress");
     } else {
       throw error;
     }

@@ -10,7 +10,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertRejects } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ReviewCommands } from "../src/commands/review_commands.ts";
@@ -151,8 +151,8 @@ describe("ReviewCommands Targeted Coverage", () => {
           "feat/request-dbonly-trace-db-only",
         ].sort(),
       );
-      assertEquals(branches.includes(branchName), true);
-      assertEquals(branches.includes("feat/request-dbonly-trace-db-only"), true);
+      assertArrayIncludes(branches, [branchName]);
+      assertArrayIncludes(branches, ["feat/request-dbonly-trace-db-only"]);
     });
 
     it("list: avoids duplicates between DB and Git scan", async () => {

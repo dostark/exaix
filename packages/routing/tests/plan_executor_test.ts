@@ -7,7 +7,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_ACTIVE_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import {
   type FlowStepType as _FlowStepType,
   type MemoryOperation as _MemoryOperation,
@@ -320,7 +320,7 @@ path = "non_existent.txt"
     assertEquals(result.lastCommitSha, null);
     const toolCall = logger.events.find((event) => event.action === "dynamic_tool_call");
     assertExists(toolCall);
-    assertEquals(String(toolCall.payload?.resultSummary).includes("File: non_existent.txt not found"), true);
+    assertStringIncludes(String(toolCall.payload?.resultSummary), "File: non_existent.txt not found");
   });
 });
 

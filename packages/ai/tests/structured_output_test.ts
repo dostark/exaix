@@ -7,7 +7,7 @@
  * @dependencies [@exaix/ai, @exaix/schemas]
  * @related-files [packages/ai/src/structured_output.ts]
  */
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import type { JSONValue } from "@exaix/core";
 import { getPlanJsonSchema } from "@exaix/schemas/plan_schema.ts";
 import { PlanAdapter } from "@exaix/core/planning";
@@ -296,8 +296,8 @@ Deno.test("[phase203.structured] self-hosted takes the json_object branch on a s
 });
 
 Deno.test("json_object instruction overrides prompt-level wrapper tags so the reply is bare JSON", () => {
-  assertEquals(STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION.includes("<content>"), true);
-  assertEquals(STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION.includes("first character"), true);
+  assertStringIncludes(STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION, "<content>");
+  assertStringIncludes(STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION, "first character");
 });
 
 Deno.test("fix(structured-output): JSON mode supplies the original schema to the model", () => {

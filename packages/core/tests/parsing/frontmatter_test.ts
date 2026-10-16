@@ -5,7 +5,7 @@
  * @architectural-layer Core
  * @description Verifies @exaix/parsing frontmatter parsing behavior, including validation and activity logging.
  */
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { RequestStatus } from "@exaix/core/status";
 import { FrontmatterParser } from "@exaix/core/parsing";
@@ -36,7 +36,7 @@ No frontmatter here!`;
   const parser = new FrontmatterParser();
   const error = assertThrows(() => parser.parse(markdown)) as Error;
 
-  assertEquals(error.message.includes("No frontmatter found"), true);
+  assertStringIncludes(error.message, "No frontmatter found");
 });
 
 function createLoggerSpy(): IEventLogger & {

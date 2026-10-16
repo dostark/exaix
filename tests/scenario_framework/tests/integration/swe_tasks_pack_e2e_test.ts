@@ -7,7 +7,7 @@
  *   both claude-code and opencode tools.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { resolve } from "@std/path";
 import { loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
 import { loadScenarioFromYamlFile } from "../../runner/scenario_loader.ts";
@@ -58,7 +58,7 @@ Deno.test("[SweTasksPackE2e] all swe_tasks scenarios load from catalog with corr
   assertEquals(ids, EXPECTED_SW_TASKS_IDS);
 
   for (const s of sweScenarios) {
-    assertEquals(s.tags.includes("provider-live"), true);
+    assertArrayIncludes(s.tags, ["provider-live"]);
   }
 });
 

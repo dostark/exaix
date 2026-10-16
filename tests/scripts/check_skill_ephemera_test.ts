@@ -12,7 +12,7 @@
  * @related-files [scripts/check_skill_ephemera.ts, .copilot/skills/self-improvement/SKILL.md]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { isEphemeralNarrative, skillProseLines } from "../../scripts/check_skill_ephemera.ts";
 
 Deno.test("[skill-ephemera] a dated incident-recounting sentence is flagged", () => {
@@ -58,7 +58,7 @@ Deno.test("[skill-ephemera] skillProseLines exempts inner code fences and frontm
     "```",
   ].join("\n");
   const prose = skillProseLines(md);
-  assertEquals(prose.includes("Rule text with no date."), true);
+  assertArrayIncludes(prose, ["Rule text with no date."]);
   assertEquals(
     prose.some((l) => l.includes("2026-08-04 is inside a code fence")),
     false,

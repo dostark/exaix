@@ -9,7 +9,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { ExaPathDefaults } from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { PlanStatus } from "@exaix/core/status";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
@@ -127,7 +127,7 @@ Deno.test("returns plan content as diff via PlanCommands", async () => {
 
   try {
     const diff = await view.getDiff(planId);
-    assertEquals(diff.includes("+ new"), true);
+    assertStringIncludes(diff, "+ new");
   } finally {
     await Deno.remove(root, { recursive: true });
   }

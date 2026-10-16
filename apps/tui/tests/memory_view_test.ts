@@ -7,7 +7,7 @@
  * of the knowledge tree, node selection, and pending proposal counts.
  */
 
-import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { MemoryScope } from "@exaix/core";
 import { MemoryTuiScope } from "../src/memory_view/memory_scope.ts";
 
@@ -264,7 +264,7 @@ Deno.test("MemoryViewTuiSession: enter executes search", async () => {
   // Should have search results in tree
   const tree = session.getTree();
   assertExists(tree);
-  assertEquals(tree[0]?.label.includes("Search"), true);
+  assertStringIncludes(tree[0]?.label, "Search");
 });
 
 // Detail Content Tests
@@ -284,8 +284,8 @@ Deno.test("MemoryViewTuiSession: '?' shows help content", async () => {
 
   await session.handleKey(KEYS.QUESTION);
   const content = session.getDetailContent();
-  assertEquals(content.includes("Help"), true);
-  assertEquals(content.includes("Navigation"), true);
+  assertStringIncludes(content, "Help");
+  assertStringIncludes(content, "Navigation");
 });
 
 // Rendering Tests
@@ -296,8 +296,8 @@ Deno.test("MemoryViewTuiSession: renderTreePanel returns formatted tree", async 
 
   const treePanel = session.renderTreePanel();
   assertExists(treePanel);
-  assertEquals(treePanel.includes("Global"), true);
-  assertEquals(treePanel.includes("Projects"), true);
+  assertStringIncludes(treePanel, "Global");
+  assertStringIncludes(treePanel, "Projects");
 });
 
 Deno.test("MemoryViewTuiSession: renderStatusBar shows shortcuts", async () => {
@@ -305,9 +305,9 @@ Deno.test("MemoryViewTuiSession: renderStatusBar shows shortcuts", async () => {
   await session.initialize();
 
   const statusBar = session.renderStatusBar();
-  assertEquals(statusBar.includes("[g]lobal"), true);
-  assertEquals(statusBar.includes("[p]rojects"), true);
-  assertEquals(statusBar.includes("[s]earch"), true);
+  assertStringIncludes(statusBar, "[g]lobal");
+  assertStringIncludes(statusBar, "[p]rojects");
+  assertStringIncludes(statusBar, "[s]earch");
 });
 
 Deno.test("MemoryViewTuiSession: renderStatusBar shows search input when active", async () => {
@@ -317,8 +317,8 @@ Deno.test("MemoryViewTuiSession: renderStatusBar shows search input when active"
   await enterSearchAndType(session, "test");
 
   const statusBar = session.renderStatusBar();
-  assertEquals(statusBar.includes("Search:"), true);
-  assertEquals(statusBar.includes("test"), true);
+  assertStringIncludes(statusBar, "Search:");
+  assertStringIncludes(statusBar, "test");
 });
 
 Deno.test("MemoryViewTuiSession: renderActionButtons shows context-specific actions", async () => {
@@ -336,8 +336,8 @@ Deno.test("MemoryViewTuiSession: getFocusableElements returns panel list", () =>
   const session = createTestSession();
   const elements = session.getFocusableElements();
 
-  assertEquals(elements.includes("tree-panel"), true);
-  assertEquals(elements.includes("detail-panel"), true);
+  assertArrayIncludes(elements, ["tree-panel"]);
+  assertArrayIncludes(elements, ["detail-panel"]);
   assertEquals(elements.length >= 2, true);
 });
 

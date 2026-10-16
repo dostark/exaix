@@ -7,7 +7,7 @@
  * agent state, prompt assembly, and graceful handling of model provider errors.
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
 import { MEMORY_CONTEXT_KEY, MemoryBankSource, PORTAL_CONTEXT_KEY } from "@exaix/core";
@@ -1167,7 +1167,7 @@ Deno.test("[IAgentRunner] routes prompt_assembled through IEventLogger when prov
   const runner = new AgentRunner(undefined, mockProvider, { logger });
   const result = await runner.run(sampleBlueprint, sampleRequest, undefined);
   assertExists(result);
-  assertEquals(actions.includes("agent.prompt_assembled"), true);
+  assertArrayIncludes(actions, ["agent.prompt_assembled"]);
 });
 
 // conversationId threading for session-continuity providers

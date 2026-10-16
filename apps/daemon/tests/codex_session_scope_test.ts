@@ -9,7 +9,7 @@
  */
 
 import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
 import type { ILogEvent } from "@exaix/core/types";
@@ -107,10 +107,7 @@ Deno.test("[codex_session_scope][security] untracked forbidden Codex write canno
     });
     await watcher.handleReturnPath(join(sessionDir, brief.trace_id, "return.json"));
 
-    assertEquals(
-      sink.events.map((event) => event.action).includes(DomainEventType.SessionDelegateScopeViolation),
-      true,
-    );
+    assertArrayIncludes(sink.events.map((event) => event.action), [DomainEventType.SessionDelegateScopeViolation]);
     assertEquals((await store.get(brief.trace_id))?.status, "pending");
     assertEquals(reconciled, false);
   } finally {

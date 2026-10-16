@@ -12,7 +12,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
@@ -95,7 +95,7 @@ Deno.test("[runner] run snapshots the canonical revision of an injected skill be
     await fx.runner.run(BLUEPRINT, request(), undefined);
     const rows = await revisionRows(fx);
     assertEquals(rows.length, 1);
-    assertEquals(rows[0].skill_md.includes("First body."), true);
+    assertStringIncludes(rows[0].skill_md, "First body.");
     assertEquals(fx.providerCalls(), 1);
   } finally {
     await fx.cleanup();
@@ -111,7 +111,7 @@ Deno.test("[runner] an edit changes the revision on the next run and both snapsh
     const rows = await revisionRows(fx);
     assertEquals(rows.length, 2);
     assertEquals(rows[0].revision_id === rows[1].revision_id, false);
-    assertEquals(rows[1].skill_md.includes("Second body."), true);
+    assertStringIncludes(rows[1].skill_md, "Second body.");
   } finally {
     await fx.cleanup();
   }

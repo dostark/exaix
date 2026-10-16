@@ -5,7 +5,7 @@
  * @related-files [@exaix/core/planning, "packages/core/src/types/i_plan_amendment_service.ts"]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { PlanAmendmentService } from "@exaix/core/planning";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -335,7 +335,7 @@ Deno.test("applyApprovedAmendment throws on invalid plan content", () => {
     throw new Error("Expected error was not thrown");
   } catch (error) {
     if (error instanceof Error) {
-      assertEquals(error.message.includes("Could not parse structured plan steps from markdown"), true);
+      assertStringIncludes(error.message, "Could not parse structured plan steps from markdown");
     } else {
       throw error;
     }

@@ -7,7 +7,7 @@
  * of empty states, long log streams, and focus stability in complex layouts.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertStringIncludes } from "@std/assert";
 import { AgentHealth, LogLevel } from "@exaix/core";
 import { AgentStatus } from "@exaix/core/status";
 import type { IAgentHealthData, IAgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
@@ -73,7 +73,7 @@ Deno.test("AgentStatusView: render details after select shows issues and logs", 
 Deno.test("AgentStatusView: focusable elements stable", () => {
   const view = new AgentStatusView(new EmptyAgentService());
   const elems = view.getFocusableElements();
-  assertEquals(elems.includes("agent-list"), true);
-  assertEquals(elems.includes("agent-details"), true);
-  assertEquals(elems.includes("refresh-button"), true);
+  assertArrayIncludes(elems, ["agent-list"]);
+  assertArrayIncludes(elems, ["agent-details"]);
+  assertArrayIncludes(elems, ["refresh-button"]);
 });

@@ -7,7 +7,7 @@
  * @related-files [packages/quality-gate/src/request_enricher_llm.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { createMockProvider } from "@exaix/testing";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
@@ -69,8 +69,8 @@ Deno.test("[RequestEnricherLlm] includes issues in prompt", async () => {
   await enrichRequest(capturingProvider, ORIGINAL_BODY, SAMPLE_ISSUES);
 
   // Issue descriptions must appear in the prompt
-  assertEquals(capturedPrompt.includes("Request is too vague"), true);
-  assertEquals(capturedPrompt.includes("No acceptance criteria"), true);
+  assertStringIncludes(capturedPrompt, "Request is too vague");
+  assertStringIncludes(capturedPrompt, "No acceptance criteria");
 });
 
 Deno.test("[RequestEnricherLlm] falls back to original on LLM failure", async () => {
@@ -106,7 +106,7 @@ Deno.test("[RequestEnricherLlm] includes original body in prompt", async () => {
 
   await enrichRequest(capturingProvider, uniqueMarker, SAMPLE_ISSUES);
 
-  assertEquals(capturedPrompt.includes(uniqueMarker), true);
+  assertStringIncludes(capturedPrompt, uniqueMarker);
 });
 
 Deno.test("[RequestEnricherLlm] returns non-empty string on success", async () => {

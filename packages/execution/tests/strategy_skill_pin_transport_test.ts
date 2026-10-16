@@ -13,7 +13,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
@@ -357,7 +357,7 @@ Deno.test("[cli] the objective carries the approved body on the first and the re
       assertStringIncludes(args[1], "Approved body A.");
       assertEquals(args[1].includes("Live body B."), false);
     }
-    assertEquals(runs[1].includes("--resume"), true, "the second turn resumes the captured session");
+    assertArrayIncludes(runs[1], ["--resume"], "the second turn resumes the captured session");
     const rows = await fx.rows();
     assertEquals(rows.map((row) => [row.skill_name, row.match_source, row.submission_kind]), [
       [SKILL, "plan_pinned", "cli_delegate"],

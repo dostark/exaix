@@ -14,7 +14,7 @@
  * @related-files [packages/execution/src/agent_runner.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { AgentRunner, EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR } from "@exaix/execution";
 import type { IBlueprint } from "@exaix/execution";
 import { SKILL_EVENT_RESOLVED } from "@exaix/core";
@@ -116,7 +116,7 @@ Deno.test("[SkillSuppression] a suppressed default skill is absent from the reso
     const resolved: string[] = result.skillIds;
 
     assertEquals(resolved.includes("tdd-methodology"), false, "the suppressed skill must not be in the resolved set");
-    assertEquals(resolved.includes("error-handling"), true, "an unsuppressed default must still be present");
+    assertArrayIncludes(resolved, ["error-handling"], "an unsuppressed default must still be present");
   });
 });
 
@@ -174,8 +174,8 @@ Deno.test("[SkillSuppression] with no suppression env var set, resolution is una
     const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
     const resolved: string[] = result.skillIds;
 
-    assertEquals(resolved.includes("tdd-methodology"), true);
-    assertEquals(resolved.includes("error-handling"), true);
+    assertArrayIncludes(resolved, ["tdd-methodology"]);
+    assertArrayIncludes(resolved, ["error-handling"]);
   });
 });
 

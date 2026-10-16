@@ -8,8 +8,7 @@
  * @related-files [tests/scenario_framework/runner/scenario_loader.ts, tests/scenario_framework/runner/step_executor.ts, tests/scenario_framework/runner/config.ts]
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
-import { assertStringIncludes, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
 import { join } from "@std/path";
 import { loadRuntimeConfig } from "../../runner/config.ts";
 import { loadScenarioFromYamlFile } from "../../runner/scenario_loader.ts";

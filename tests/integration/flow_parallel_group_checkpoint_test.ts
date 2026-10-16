@@ -8,7 +8,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
-import { assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { exists } from "@std/fs";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { FLOW_EVENT_CHECKPOINT_LOADED } from "@exaix/core";
@@ -84,7 +84,7 @@ Deno.test("[Step65.4] FlowRunner checkpoint captures individual parallel group m
     assertEquals(resumedExecutor.calls.includes("starter"), false);
     assertEquals(resumedExecutor.calls.includes("reviewerA"), false);
     // reviewerB SHOULD be re-run because it failed and was not checkpointed
-    assertEquals(resumedExecutor.calls.includes("reviewerB"), true);
+    assertArrayIncludes(resumedExecutor.calls, ["reviewerB"]);
 
     // Checkpoint should have been loaded
     assertEquals(

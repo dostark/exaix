@@ -15,7 +15,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import type { IModelOptions } from "@exaix/ai/types.ts";
@@ -314,9 +314,9 @@ Review the response contract for injection risks and fix the login handler.
       steps: [{ number: 1, title: "Review", content: "Do the task." }],
     } as never);
 
-    assertEquals(
-      resolvedPinNames.includes(FLOOR_SKILL_ID),
-      true,
+    assertArrayIncludes(
+      resolvedPinNames,
+      [FLOOR_SKILL_ID],
       "the execution path must replay the persisted resolved_skills through resolvePinned",
     );
     await env.db.waitForFlush();

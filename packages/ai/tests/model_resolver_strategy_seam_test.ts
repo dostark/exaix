@@ -6,7 +6,7 @@
  *   hook is invoked for an explicit provider:model choice. Step 8 adds scoreBest/rankUsage.
  * @architectural-layer AI-Routing
  */
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { initTestDbService } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
 import { ModelResolver } from "../src/model_resolver.ts";
@@ -262,7 +262,7 @@ Deno.test('[step135.8][GAP-C] ["best","cheapest"] blends into one weighted order
     // A blend: neither pure-best nor pure-cheapest is asserted; only that both
     // characteristics fed one scoring pass (both providers are viable outcomes
     // depending on weighting, but the reason must reflect a blended decision).
-    assertEquals(["high-bench", "cheap"].includes(result.provider), true);
+    assertArrayIncludes(["high-bench", "cheap"], [result.provider]);
     // With these scores, "high-bench" wins narrowly (0.5 vs 0.495) — best's maxed score
     // IS what tips the balance (without it, "cheap" would win on price alone, 0.99 vs 0),
     // so reason correctly reflects best as decisive here.

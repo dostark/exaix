@@ -10,7 +10,7 @@
  * @related-files [tests/scenario_framework/runner/failure_classifier.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import type { IActivityRecord } from "@exaix/core/types";
 import { computeFailureClasses } from "../../runner/failure_classifier.ts";
@@ -33,7 +33,7 @@ function makeActivity(overrides: Partial<IActivityRecord>): IActivityRecord {
 Deno.test("[ExecutionAlignment] reconciled + failed outcome is flagged", () => {
   const activities = [makeActivity({ action_type: DomainEventType.SessionDelegateReconciled })];
   const classes = computeFailureClasses({ activities, outcomeScore: 0.4, scoreThreshold: 0.5 });
-  assertEquals(classes.includes("execution-alignment"), true);
+  assertArrayIncludes(classes, ["execution-alignment"]);
 });
 
 Deno.test("[ExecutionAlignment] reconciled + passing outcome is NOT flagged", () => {
@@ -60,6 +60,6 @@ Deno.test("[ExecutionAlignment] coexists with anomaly classes", () => {
     makeActivity({ action_type: DomainEventType.ExecutionFailed, target: "exec" }),
   ];
   const classes = computeFailureClasses({ activities, outcomeScore: 0.4, scoreThreshold: 0.5 });
-  assertEquals(classes.includes("execution-alignment"), true);
-  assertEquals(classes.includes("execution.failed"), true);
+  assertArrayIncludes(classes, ["execution-alignment"]);
+  assertArrayIncludes(classes, ["execution.failed"]);
 });

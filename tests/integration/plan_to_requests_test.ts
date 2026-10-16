@@ -12,7 +12,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
-import { assertEquals, assertExists, assertMatch } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertMatch } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYamlRaw } from "@std/yaml";
 import { parseFrontmatter } from "./helpers/parse_frontmatter.ts";
@@ -101,9 +101,9 @@ Deno.test("[plan-to-requests] files named <slug>-step-<N>.md", async () => {
       if (entry.isFile) entries.push(entry.name);
     }
 
-    assertEquals(entries.includes("phase-nn-fixture-step-1.md"), true);
-    assertEquals(entries.includes("phase-nn-fixture-step-2.md"), true);
-    assertEquals(entries.includes("phase-nn-fixture-step-3.md"), true);
+    assertArrayIncludes(entries, ["phase-nn-fixture-step-1.md"]);
+    assertArrayIncludes(entries, ["phase-nn-fixture-step-2.md"]);
+    assertArrayIncludes(entries, ["phase-nn-fixture-step-3.md"]);
   } finally {
     await Deno.remove(tmpDir, { recursive: true });
   }

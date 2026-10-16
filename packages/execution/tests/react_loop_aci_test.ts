@@ -13,7 +13,7 @@
  * @related-files ["packages/execution/src/strategies/react_loop_strategy.ts", "packages/execution/src/react_loop_adapter.ts"]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IReActLoopExecutor } from "@exaix/execution";
@@ -148,7 +148,7 @@ Deno.test("[ReActLoopAci] permitted_tools: [] stays empty and injects no ACI sec
     { aciDocsEnabled: true, toolRegistry: toolRegistryOf() },
     createOptions([]),
   );
-  assertEquals(prompt.includes("AVAILABLE TOOLS:\n"), true);
+  assertStringIncludes(prompt, "AVAILABLE TOOLS:\n");
   assertEquals(prompt.includes("ACI TOOL GUIDANCE"), false);
 });
 

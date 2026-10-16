@@ -6,7 +6,7 @@
  * @related-files [scripts/fix_bool_asserts.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { fixSourceText } from "../../scripts/fix_bool_asserts.ts";
 
 const FILE = "packages/x/tests/a_test.ts";
@@ -14,13 +14,13 @@ const FILE = "packages/x/tests/a_test.ts";
 Deno.test("a string subject becomes assertStringIncludes", () => {
   const result = fixSourceText(FILE, 'const s: string = "abc";\nassertEquals(s.includes("b"), true);\n');
   assertEquals(result.changed, 1);
-  assertEquals(result.text.includes('assertStringIncludes(s, "b")'), true);
+  assertStringIncludes(result.text, 'assertStringIncludes(s, "b")');
 });
 
 Deno.test("an array subject becomes assertArrayIncludes with a wrapped element", () => {
   const result = fixSourceText(FILE, "const arr: number[] = [1];\nassertEquals(arr.includes(1), true);\n");
   assertEquals(result.changed, 1);
-  assertEquals(result.text.includes("assertArrayIncludes(arr, [1])"), true);
+  assertStringIncludes(result.text, "assertArrayIncludes(arr, [1])");
 });
 
 Deno.test("a union subject is left unchanged and listed", () => {
@@ -41,23 +41,35 @@ Deno.test("a false boolean argument is left unchanged and listed", () => {
 Deno.test("startsWith becomes an anchored assertMatch pattern", () => {
   const result = fixSourceText(FILE, 'const s: string = "abc";\nassertEquals(s.startsWith("a"), true);\n');
   assertEquals(result.changed, 1);
-  assertEquals(result.text.includes("assertMatch(s, /^a/)"), true);
+  assertStringIncludes(result.text, "assertMatch(s, /^a/)");
 });
 
 Deno.test("endsWith becomes an anchored assertMatch pattern", () => {
   const result = fixSourceText(FILE, 'const s: string = "abc";\nassertEquals(s.endsWith("c"), true);\n');
   assertEquals(result.changed, 1);
-  assertEquals(result.text.includes("assertMatch(s, /c$/)"), true);
+  assertStringIncludes(result.text, "assertMatch(s, /c$/)");
+});
+
+Deno.test("a match argument containing a newline stays a valid regex literal", () => {
+  const result = fixSourceText(FILE, 'const s: string = "x";\nassertEquals(s.startsWith("---\\n"), true);\n');
+  assertEquals(result.changed, 1);
+  assertEquals(result.text.includes("assertMatch(s, /^---\\n/)"), true);
+});
+
+Deno.test("a match argument containing a slash stays a valid regex literal", () => {
+  const result = fixSourceText(FILE, 'const s: string = "x";\nassertEquals(s.endsWith(",dst=/tmp/.local"), true);\n');
+  assertEquals(result.changed, 1);
+  assertStringIncludes(result.text, "assertMatch(s, /,dst=\\/tmp\\/\\.local$/)");
 });
 
 Deno.test("a match argument escapes regular-expression metacharacters", () => {
   const result = fixSourceText(FILE, 'const s: string = "x";\nassertEquals(s.startsWith("a.b"), true);\n');
-  assertEquals(result.text.includes("assertMatch(s, /^a\\.b/)"), true);
+  assertStringIncludes(result.text, "assertMatch(s, /^a\\.b/)");
 });
 
 Deno.test("a trailing message argument is kept", () => {
   const result = fixSourceText(FILE, 'const s: string = "abc";\nassertEquals(s.includes("b"), true, "why");\n');
-  assertEquals(result.text.includes('assertStringIncludes(s, "b", "why")'), true);
+  assertStringIncludes(result.text, 'assertStringIncludes(s, "b", "why")');
 });
 
 Deno.test("the codemod is idempotent", () => {

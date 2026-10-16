@@ -15,7 +15,7 @@
  * @related-files [scripts/ingest_terminal_bench.ts, tests/scenario_framework/runner/synthetic_runner.ts]
  */
 
-import { assert, assertEquals, assertThrows } from "@std/assert";
+import { assert, assertStringIncludes, assertThrows } from "@std/assert";
 import { deriveScopedTestCmd } from "../../scripts/ingest_terminal_bench.ts";
 
 Deno.test("[DeriveScopedTestCmd] never references $HOME or $PATH — the scenario framework's expandInString would substitute the HOST's value, not the container's", () => {
@@ -41,7 +41,7 @@ Deno.test("[DeriveScopedTestCmd] falls back to the default package spec when run
 
 Deno.test("[DeriveScopedTestCmd] runs pytest against the hidden oracle-tests mount", () => {
   const cmd = deriveScopedTestCmd("uv pip install pytest==8.4.1\n");
-  assertEquals(cmd.includes("pytest /oracle_tests/test_outputs.py -rA"), true);
+  assertStringIncludes(cmd, "pytest /oracle_tests/test_outputs.py -rA");
 });
 
 Deno.test("[DeriveScopedTestCmd] a backslash-continued multi-line uv pip install block extracts the full package list, not just the first line", () => {

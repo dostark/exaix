@@ -8,7 +8,7 @@
  * @related-files [packages/quality-gate/src/llm_assessor.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { createMockProvider } from "@exaix/testing";
 import { createTestValidator } from "./test_helpers.ts";
 import { RequestQualityLevel, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
@@ -99,7 +99,7 @@ Deno.test("[LlmQualityAssessor] passes request text in prompt", async () => {
   );
   await assessor.assess(requestText);
 
-  assertEquals(capturedPrompt.includes("7c9f3b"), true);
+  assertStringIncludes(capturedPrompt, "7c9f3b");
 });
 
 Deno.test("[LlmQualityAssessor] uses OutputValidator for parsing", async () => {

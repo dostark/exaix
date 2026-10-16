@@ -9,7 +9,7 @@
  * @related-files [scripts/check_tool_naming.ts, packages/core/src/types/enums.ts, packages/core/src/types/tool_aliases.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import {
   findAliasViolations,
   findCatalogViolations,
@@ -143,7 +143,7 @@ Deno.test("[naming] a tool present in both enums but missing from SHARED_TOOL_OP
   const withoutRead = SHARED_TOOL_OPERATIONS.filter((row) => row.canonical !== ToolName.READ_FILE);
   const errors = findSharedOperationViolations(withoutRead, ToolName, McpToolName);
   assertEquals(errors.length, 1);
-  assertEquals(errors[0].includes("read_file"), true);
+  assertStringIncludes(errors[0], "read_file");
 });
 
 Deno.test("[naming] an McpToolName value that is an alias key fails the check (exports stay canonical)", () => {

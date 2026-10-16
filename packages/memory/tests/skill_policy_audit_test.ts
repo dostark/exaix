@@ -12,7 +12,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import type { IModelProvider } from "@exaix/ai";
 import type { IMemoryBankService, IMemoryCostRouter, IMemoryEmbeddingService } from "@exaix/core/types";
 import { EventLogger } from "@exaix/core/logger";
@@ -105,7 +105,7 @@ Deno.test("[extractor] extract snapshots the policy revision before the provider
     await extractor.extract(createMinimalExecutionMemory({}));
     const bodies = await policyBodies(fx);
     assertEquals(bodies.length, 2);
-    assertEquals(bodies[1].includes("Policy body two."), true);
+    assertStringIncludes(bodies[1], "Policy body two.");
     assertEquals(provider.calls, 2);
   } finally {
     await fx.cleanup();

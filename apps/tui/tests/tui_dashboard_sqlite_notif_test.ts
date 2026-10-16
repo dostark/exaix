@@ -7,7 +7,7 @@
  * notification service, ensuring events are correctly polled and displayed.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import {
   ConfidenceAssessmentLevel,
   LearningCategory,
@@ -56,7 +56,7 @@ Deno.test("TUI Dashboard + SQLite: handles notification service integration", as
 
     // Verify async status bar with count from DB
     const statusBar = await dashboard.renderStatusBar();
-    assertEquals(statusBar.includes("🔔1"), true);
+    assertStringIncludes(statusBar, "🔔1");
 
     // Verify async dismissal
     await dashboard.dismissNotification("prop-1");

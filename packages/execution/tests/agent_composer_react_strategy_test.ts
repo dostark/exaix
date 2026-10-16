@@ -8,7 +8,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer, StrategyRegistry } from "@exaix/execution";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
@@ -414,7 +414,7 @@ Deno.test("PlanExecutor passes configured native flag to ReAct execution", async
       steps: [{ number: 1, title: "Read", content: "Read the portal" }],
     } as never);
     assertEquals(calls, 1);
-    assertEquals(nativeToolNames[0].includes(ToolName.READ_FILE), true);
+    assertArrayIncludes(nativeToolNames[0], [ToolName.READ_FILE]);
     await db.waitForFlush();
     const started = await db.queryActivity({ traceId, actionType: AGENT_EVENT_EXECUTION_STARTED });
     assertEquals(started.length, 1);

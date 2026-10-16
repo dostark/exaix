@@ -10,7 +10,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import {
   createMockConfig,
   createStubConfig,
@@ -179,9 +179,9 @@ Deno.test("PlanExecutor: a pinned floor-bearing skill raises the execution-path 
       steps: [{ number: 1, title: "Do nothing", content: "No-op step." }],
     });
 
-    assertEquals(
-      resolvedPins.includes("response-contract-security-analysis"),
-      true,
+    assertArrayIncludes(
+      resolvedPins,
+      ["response-contract-security-analysis"],
       "resolvePinned must be consulted for the persisted resolved_skills",
     );
 
@@ -191,7 +191,7 @@ Deno.test("PlanExecutor: a pinned floor-bearing skill raises the execution-path 
     assertEquals(payload.effort, "medium");
     assertEquals(payload.effort_basis, "skill-floor");
     const floors = payload.floors_applied as string[];
-    assertEquals(floors.includes("response-contract-security-analysis"), true);
+    assertArrayIncludes(floors, ["response-contract-security-analysis"]);
   } finally {
     ProviderRegistry.clear();
   }

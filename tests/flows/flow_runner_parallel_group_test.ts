@@ -6,7 +6,7 @@
  * @related-files [packages/flow/src/flow_runner.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import type { JSONObject } from "@exaix/core/types";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowRunner, type IAgentExecutor, type IFlowStepRequest } from "@exaix/flow";
@@ -154,7 +154,7 @@ Deno.test("FlowRunner: emits parallel group lifecycle events for same-wave group
   assertEquals(startedEvent.payload.waveNumber, 2);
   const startedPayload = startedEvent.payload as JSONObject;
   assertEquals(typeof startedPayload.isoStartedAt, "string");
-  assertEquals((startedPayload.isoStartedAt as string).includes("T"), true);
+  assertStringIncludes(startedPayload.isoStartedAt as string, "T");
 
   executor.release("reviewer-a");
   executor.release("reviewer-b");

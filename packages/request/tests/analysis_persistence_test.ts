@@ -8,7 +8,7 @@
  * `_analysis.json` sibling to the request `.md` file.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { loadAnalysis, saveAnalysis } from "@exaix/request";
 import { ANALYZER_VERSION } from "@exaix/core";
@@ -173,7 +173,7 @@ Deno.test("[AnalysisPersistence] uses atomic write (temp file then rename)", asy
       entries.push(e.name);
     }
     assertEquals(entries.some((n) => n.endsWith(".tmp")), false);
-    assertEquals(entries.includes("req_analysis.json"), true);
+    assertArrayIncludes(entries, ["req_analysis.json"]);
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

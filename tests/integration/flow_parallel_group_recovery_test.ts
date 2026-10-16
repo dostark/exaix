@@ -6,7 +6,7 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { FLOW_EVENT_PARALLEL_GROUP_COMPLETED } from "@exaix/core";
 import { initTestDbService } from "@exaix/testing";
@@ -81,7 +81,7 @@ Deno.test("[Step65.4] FlowRunner recovery preserves successful sibling results w
     assertEquals(resumedExecutor.calls.includes("workerA"), false);
     assertEquals(resumedExecutor.calls.includes("workerC"), false);
     // workerB SHOULD have been called (it failed and was not checkpointed)
-    assertEquals(resumedExecutor.calls.includes("workerB"), true);
+    assertArrayIncludes(resumedExecutor.calls, ["workerB"]);
 
     // Sibling results should still be present and successful from first run
     assertEquals(resumedResult.stepResults.get("task-a")?.success, true);

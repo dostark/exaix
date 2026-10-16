@@ -11,7 +11,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_PLANS_PATH } from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { type IRequestProcessorConfig, RequestProcessor } from "@exaix/request";
 import type { IAgentRunner, IBlueprint, IParsedRequest } from "@exaix/execution";
@@ -129,11 +129,9 @@ Add a hello world function.
       Object.values(TaskComplexity).includes(captured.taskComplexity as TaskComplexity),
       `taskComplexity must be a valid TaskComplexity, got ${captured.taskComplexity}`,
     );
-    assertEquals(
-      ["analysis", "content_heuristic", "agent_role", "default"].includes(captured.taskComplexitySource ?? ""),
-      true,
-      `taskComplexitySource must be one of the four sources, got ${captured.taskComplexitySource}`,
-    );
+    assertArrayIncludes(["analysis", "content_heuristic", "agent_role", "default"], [
+      captured.taskComplexitySource ?? "",
+    ], `taskComplexitySource must be one of the four sources, got ${captured.taskComplexitySource}`);
   } finally {
     await cleanup();
   }

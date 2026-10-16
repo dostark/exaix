@@ -14,7 +14,7 @@
  * @related-files [scripts/check_event_coverage.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import ts from "typescript";
 import {
   analyzeClass,
@@ -549,7 +549,7 @@ Deno.test("[analyzeSourceFile] finds a top-level exported function with a state 
   const result = analyzeSourceFile(sf, "example.ts");
   assertEquals(result.findings.length, 1);
   assertEquals(result.findings[0].scopeName, "persist");
-  assertEquals(result.findings[0].reasons.includes("state-change"), true);
+  assertArrayIncludes(result.findings[0].reasons, ["state-change"]);
 });
 
 Deno.test("[analyzeSourceFile] does not flag a function that logs before its state change", () => {

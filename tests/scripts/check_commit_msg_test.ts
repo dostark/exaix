@@ -6,7 +6,7 @@
  * mandatory fields, impact grounding, and provider/model validation.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import {
   gitOut,
@@ -398,10 +398,7 @@ describe("parsePlanStep", () => {
 
   it("captures the raw ✅ item lines for diff verification", () => {
     const parsed = parsePlanStep(PLAN_DOC, 6);
-    assertEquals(
-      parsed.itemLines.includes("- ✅ Full curation loop → `apps/exactl/src/commands/model_commands.ts`"),
-      true,
-    );
+    assertArrayIncludes(parsed.itemLines, ["- ✅ Full curation loop → `apps/exactl/src/commands/model_commands.ts`"]);
     // This step has 2 tests + 2 criteria = 4 item lines.
     assertEquals(parsed.itemLines.length, 4);
   });
@@ -1016,7 +1013,7 @@ describe("gitOut", () => {
       await run(["commit", "-q", "-m", "second"]);
 
       const baseline = await gitOut(["diff", "HEAD~1", "HEAD", "--unified=0", "--", "file.txt"], repoDir);
-      assertEquals(baseline.includes("+line two"), true, "sanity: baseline diff must be non-empty");
+      assertStringIncludes(baseline, "+line two", "sanity: baseline diff must be non-empty");
 
       // Simulate git's own hook environment: GIT_DIR/GIT_INDEX_FILE/GIT_PREFIX pointing at
       // an unrelated bogus location, exactly as a real commit-msg hook inherits them.
@@ -1031,7 +1028,7 @@ describe("gitOut", () => {
             repoDir,
           );
           assertEquals(underPoisonedEnv, baseline);
-          assertEquals(underPoisonedEnv.includes("+line two"), true);
+          assertStringIncludes(underPoisonedEnv, "+line two");
         } finally {
           Deno.env.delete("GIT_DIR");
           Deno.env.delete("GIT_INDEX_FILE");

@@ -6,7 +6,7 @@
  * @related-files [packages/flow/src/flow_runner.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowRunner, type IAgentExecutor, type IFlowEventLogger, type IFlowStepRequest } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
@@ -249,8 +249,5 @@ Deno.test("[Step65.3] FlowRunner journals merge failures for automatic fan-in mo
   assertEquals(mergeFailureEvent.payload.mergeMode, "all");
   assertEquals(mergeFailureEvent.payload.stepId, "merge");
   assertEquals(typeof mergeFailureEvent.payload.error, "string");
-  assertEquals(
-    String(mergeFailureEvent.payload.error).includes("Parallel group 'writers' cannot be merged"),
-    true,
-  );
+  assertStringIncludes(String(mergeFailureEvent.payload.error), "Parallel group 'writers' cannot be merged");
 });

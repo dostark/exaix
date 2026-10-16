@@ -11,7 +11,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
-import { assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { fromFileUrl } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { McpToolName } from "@exaix/core/types";
@@ -68,7 +68,7 @@ Deno.test("[dogfood-agent-role] permitted_tools contains file, command, and sear
     McpToolName.CREATE_DIRECTORY,
   ];
   for (const tool of expectedTools) {
-    assertEquals(tools.includes(tool), true, `permitted_tools must include '${tool}'`);
+    assertArrayIncludes(tools, [tool], `permitted_tools must include '${tool}'`);
   }
 });
 

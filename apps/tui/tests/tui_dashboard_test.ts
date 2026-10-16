@@ -20,7 +20,7 @@ import {
 import { PortalStatus } from "@exaix/core";
 import { SplitDirection } from "@exaix/tui";
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { getTheme } from "@exaix/tui/helpers/colors.ts";
 
@@ -478,8 +478,8 @@ Deno.test("TUI dashboard default state includes memory fields", () => {
 Deno.test("TUI dashboard help sections include navigation and layout keys", () => {
   const sections = getDashboardHelpSections();
   const titles = sections.map((section) => section.title);
-  assertEquals(titles.includes("Navigation"), true);
-  assertEquals(titles.includes("Layout Management"), true);
+  assertArrayIncludes(titles, ["Navigation"]);
+  assertArrayIncludes(titles, ["Layout Management"]);
 
   const navigation = sections.find((section) => section.title === "Navigation");
   const navigationKeys = navigation?.items.map((item) => item.key) ?? [];
@@ -590,11 +590,11 @@ Deno.test("TUI dashboard view picker renders selected view", () => {
   const lines = renderViewPicker(views, 1, theme);
   const text = lines.join("\n");
 
-  assertEquals(text.includes("Select View"), true);
-  assertEquals(text.includes("PortalManager"), true);
-  assertEquals(text.includes("Monitor"), true);
-  assertEquals(text.includes("▶"), true);
-  assertEquals(text.includes("◀"), true);
+  assertStringIncludes(text, "Select View");
+  assertStringIncludes(text, "PortalManager");
+  assertStringIncludes(text, "Monitor");
+  assertStringIncludes(text, "▶");
+  assertStringIncludes(text, "◀");
 });
 
 Deno.test("TUI dashboard pane title bar reflects focus and max state", () => {
@@ -615,9 +615,9 @@ Deno.test("TUI dashboard pane title bar reflects focus and max state", () => {
   };
 
   const title = renderPaneTitleBar(pane, theme);
-  assertEquals(title.includes("PortalManager"), true);
-  assertEquals(title.includes("[MAX]"), true);
-  assertEquals(title.includes("●"), true);
+  assertStringIncludes(title, "PortalManager");
+  assertStringIncludes(title, "[MAX]");
+  assertStringIncludes(title, "●");
 });
 
 Deno.test("TUI dashboard global help rendering", async () => {

@@ -10,7 +10,7 @@
  * run. Both tools share the same injectable `run` seam.
  */
 
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { CliDelegateStrategy } from "@exaix/execution";
 import { AgentExecutionError, type IAgentFileBlueprint } from "@exaix/execution";
 import { AgentExecutionErrorType, CLI_DELEGATE_TURN_TIMEOUT_MS, ExecutionStrategyName } from "@exaix/core";
@@ -114,11 +114,11 @@ Deno.test("CliDelegateStrategy: builds claude argv with -p <objective>, stream-j
 
   assertEquals(capturedArgs[0], "-p");
   assertStringIncludes(capturedArgs[1], "Fix the null-guard bug in renderAvatar");
-  assertEquals(capturedArgs.includes("--output-format"), true);
-  assertEquals(capturedArgs.includes("stream-json"), true);
-  assertEquals(capturedArgs.includes("--permission-mode"), true);
-  assertEquals(capturedArgs.includes("acceptEdits"), true);
-  assertEquals(capturedArgs.includes("--allowedTools"), true);
+  assertArrayIncludes(capturedArgs, ["--output-format"]);
+  assertArrayIncludes(capturedArgs, ["stream-json"]);
+  assertArrayIncludes(capturedArgs, ["--permission-mode"]);
+  assertArrayIncludes(capturedArgs, ["acceptEdits"]);
+  assertArrayIncludes(capturedArgs, ["--allowedTools"]);
 });
 
 Deno.test("CliDelegateStrategy: strips a provider-prefixed model before passing it to claude's --model", async () => {
@@ -186,8 +186,8 @@ Deno.test("CliDelegateStrategy: Codex uses exec JSONL and resumes its own thread
   ]);
   assertStringIncludes(calls[0].args[9], "Fix the null-guard bug");
   assertEquals(calls[0].args.includes("--format"), false);
-  assertEquals(calls[1].args.includes("resume"), true);
-  assertEquals(calls[1].args.includes(threadId), true);
+  assertArrayIncludes(calls[1].args, ["resume"]);
+  assertArrayIncludes(calls[1].args, [threadId]);
   assertEquals(second.description, "Inspected the portal.");
 });
 

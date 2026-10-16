@@ -9,7 +9,7 @@
  * @related-files ["apps/exactl/src/commands/daemon_commands.ts", "packages/core/src/types/constants.ts"]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { DaemonCommands } from "../src/commands/daemon_commands.ts";
 import { createStubContext } from "@exaix/testing";
 import { createCliTestContext } from "./helpers/test_setup.ts";
@@ -39,7 +39,7 @@ Deno.test("[daemon_least_privilege] allow_net=['api.anthropic.com'] → --allow-
   const { cmds, cleanup } = await makeCommands(["api.anthropic.com"]);
   try {
     const flags = await cmds.callSpawnFlags();
-    assertEquals(flags.includes("--allow-net=api.anthropic.com"), true);
+    assertArrayIncludes(flags, ["--allow-net=api.anthropic.com"]);
     assertEquals(flags.includes("--allow-all"), false);
   } finally {
     await cleanup();
@@ -67,7 +67,7 @@ Deno.test("[daemon_least_privilege] allow_net=undefined → --allow-net includes
     // tests/daemon/net_allowlist_covers_providers_security_test.ts.
     const hosts = netFlag ? netFlag.slice("--allow-net=".length).split(",") : [];
     for (const host of DAEMON_DEFAULT_NET_HOSTS) {
-      assertEquals(hosts.includes(host), true, `expected default host ${host}`);
+      assertArrayIncludes(hosts, [host], `expected default host ${host}`);
     }
     assertEquals(flags.includes("--allow-all"), false);
   } finally {
@@ -95,15 +95,15 @@ Deno.test("[daemon_least_privilege] scoped/typed flags present: read, write, run
   const { cmds, cleanup } = await makeCommands(["api.anthropic.com"]);
   try {
     const flags = await cmds.callSpawnFlags();
-    assertEquals(flags.includes("--allow-read"), true);
+    assertArrayIncludes(flags, ["--allow-read"]);
     assertEquals(flags.some((f) => f.startsWith("--allow-write=")), true);
     assertEquals(
       flags.some((f) => f.startsWith("--allow-run=") && f.includes("git") && f.includes("claude")),
       true,
     );
-    assertEquals(flags.includes("--allow-env"), true);
-    assertEquals(flags.includes("--allow-ffi"), true);
-    assertEquals(flags.includes("--allow-import"), true);
+    assertArrayIncludes(flags, ["--allow-env"]);
+    assertArrayIncludes(flags, ["--allow-ffi"]);
+    assertArrayIncludes(flags, ["--allow-import"]);
   } finally {
     await cleanup();
   }

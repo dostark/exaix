@@ -5,7 +5,7 @@
  * EvaluationCriteria from IRequestAnalysis and merging with static criteria.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { type GateConfig, GateEvaluator } from "@exaix/flow";
 import type { IJudgeInvoker } from "@exaix/core/types";
 import { CriteriaGenerator } from "@exaix/core/skills";
@@ -132,7 +132,7 @@ Deno.test("[GateEvaluator] skips dynamic criteria when analysis unavailable", as
   const hasDynamic = names.some((n) => n.startsWith("goal_") || n.startsWith("ac_"));
   assertEquals(hasDynamic, false);
   // Only static criteria present (resolved lowercase name)
-  assertEquals(names.includes("code_correctness"), true);
+  assertArrayIncludes(names, ["code_correctness"]);
 });
 
 Deno.test("[GateEvaluator] deduplicates criteria by name", async () => {
@@ -206,7 +206,7 @@ Deno.test("[GateEvaluator] falls back to static when dynamic generation returns 
 
   const names = capturer.lastCriteria.map((c) => c.name);
   // Static criteria still present
-  assertEquals(names.includes("code_correctness"), true);
+  assertArrayIncludes(names, ["code_correctness"]);
 });
 
 Deno.test("[GateEvaluator] catches CriteriaGenerator errors and continues with static criteria", async () => {
@@ -226,7 +226,7 @@ Deno.test("[GateEvaluator] catches CriteriaGenerator errors and continues with s
   await evaluator.evaluate(config, "test content", undefined, 0, SAMPLE_ANALYSIS);
 
   const names = capturer.lastCriteria.map((c) => c.name);
-  assertEquals(names.includes("code_correctness"), true);
+  assertArrayIncludes(names, ["code_correctness"]);
   const hasDynamic = names.some((n) => n.startsWith("goal_") || n.startsWith("ac_"));
   assertEquals(hasDynamic, false);
 });

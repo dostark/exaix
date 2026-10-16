@@ -9,7 +9,7 @@
  * @related-files [apps/exactl/src/commands/daemon_commands.ts, packages/ai/src/bindings/net_grant.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { DaemonCommands } from "../src/commands/daemon_commands.ts";
 import { createStubContext } from "@exaix/testing";
 import { createCliTestContext } from "./helpers/test_setup.ts";
@@ -57,9 +57,9 @@ Deno.test("[bindings] unset allow_net extends the start grant with every catalog
     assertEquals(typeof flag, "string");
     const hosts = flag!.slice("--allow-net=".length).split(",");
     // Default hosts plus the catalog host, de-duplicated.
-    assertEquals(hosts.includes("alpha.example.com"), true);
+    assertArrayIncludes(hosts, ["alpha.example.com"]);
     for (const host of DAEMON_DEFAULT_NET_HOSTS) {
-      assertEquals(hosts.includes(host), true, `expected default host ${host}`);
+      assertArrayIncludes(hosts, [host], `expected default host ${host}`);
     }
     assertEquals(new Set(hosts).size, hosts.length);
   } finally {

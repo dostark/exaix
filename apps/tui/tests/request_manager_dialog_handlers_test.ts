@@ -7,7 +7,7 @@
  * ensuring input validation and correct routing of create/approve/reject actions.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertMatch } from "@std/assert";
 import { ConfirmDialog, InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { processDialogCompletion } from "../src/request_manager/dialog_handlers.ts";
@@ -49,7 +49,7 @@ Deno.test("processDialogCompletion: CREATE errors are surfaced via setStatus", a
   await processDialogCompletion(dialog, RequestDialogType.CREATE, handlers);
 
   assertEquals(calls.length, 1);
-  assertEquals(calls[0].startsWith("error:Error:"), true);
+  assertMatch(calls[0], /^error:Error:/);
 });
 
 Deno.test("processDialogCompletion: confirmed ConfirmDialog is routed to processConfirmDialog", async () => {

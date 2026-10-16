@@ -7,7 +7,7 @@
  */
 
 import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
-import { assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { HitlPolicySchema } from "@exaix/schemas/hitl.ts";
 
 const FILE_PATH = `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}/dogfood-developer.md`;
@@ -83,9 +83,9 @@ Deno.test({
     const gatedTools = hitl.require_secondary_approval.map((r) => r.tool);
 
     for (const tool of ["write_file", "patch_file", "run_command"]) {
-      assertEquals(
-        gatedTools.includes(tool),
-        true,
+      assertArrayIncludes(
+        gatedTools,
+        [tool],
         `HITL policy should gate '${tool}' (destructive tool) — gated: [${gatedTools.join(", ")}]`,
       );
     }

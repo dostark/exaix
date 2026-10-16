@@ -11,7 +11,7 @@
  * ]
  */
 
-import { assertEquals, assertGreater, assertLessOrEqual } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertGreater, assertLessOrEqual } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import {
   LOOP_HISTORY_BUDGET_THRESHOLD,
@@ -377,6 +377,6 @@ Deno.test(
     const strategy = new ReActLoopStrategy(executor, makeCompleteProvider());
     await strategy.execute(testBlueprint, testContext, makeOptions());
 
-    assertEquals(emittedEvents.includes(DomainEventType.ContextBudgetExceeded), true);
+    assertArrayIncludes(emittedEvents, [DomainEventType.ContextBudgetExceeded]);
   },
 );

@@ -98,7 +98,7 @@
     "fmt:check": "deno fmt --check tests/ docs/ packages/ exaix-team/ apps/",
     "cache": "deno cache apps/daemon/main.ts apps/exactl/main.ts exaix-team/apps/mcp-server/main.ts apps/tui/main.ts",
     "hooks:install": "deno run --allow-read --allow-write scripts/setup_hooks.ts",
-    "check": "deno check packages/ exaix-team/ apps/ tests/",
+    "check": "deno check packages/ && deno check exaix-team/ && deno check apps/ && deno check tests/ && deno check scripts/",
     "check:version": "deno run -A scripts/check_version.ts",
     "check:commit-msg": "deno run --allow-read --allow-run=git --allow-env=GIT_DIR,GIT_INDEX_FILE,GIT_WORK_TREE,GIT_PREFIX,GIT_COMMON_DIR,GIT_OBJECT_DIRECTORY,GIT_ALTERNATE_OBJECT_DIRECTORIES scripts/check_commit_msg.ts",
     "check:style": "deno run --allow-read --allow-env packages/lint-rules/src/exaix/check_code_style.ts",

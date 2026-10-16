@@ -12,7 +12,7 @@
  * @related-files [tests/scenario_framework/runner/scenario_templates.ts, packages/session/src/opencode_permission_generator.ts]
  */
 
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists, assertMatch, assertStringIncludes } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import type { Opt, Reason } from "@exaix/core/types";
 import { buildOpencodePermissionConfig } from "@exaix/session";
@@ -153,7 +153,7 @@ Deno.test("[security] bare claude-code launch is confined by the worktree bounda
   // Claude Code has no path-deny config (unlike opencode's external_directory), so the leak
   // defense is the worktree boundary + this tool-surface restriction — no bare "Bash", only
   // git subcommands, since a wildcard Bash would allow a `find / -name reference.patch` probe.
-  assertEquals(allowedTools.includes("Bash("), true);
+  assertStringIncludes(allowedTools, "Bash(");
   assertEquals(allowedTools.includes(",Bash,"), false, "no bare bash tool");
 });
 
@@ -213,9 +213,9 @@ function assertJailMountSurface(args: string[], expectation: IJailMountExpectati
     "the primary mount is ONLY the worktree",
   );
   if (expectation.expectCredentialsMount) {
-    assertEquals(
-      mounts[1].endsWith(",dst=/tmp/.local"),
-      true,
+    assertMatch(
+      mounts[1],
+      /,dst=\/tmp\/\.local$/,
       "an opencode delegate must get its OWN staged auth.json (opencode's real credential store is " +
         "~/.local/share/opencode/auth.json, not ~/.claude/.credentials.json) — mounting claude's " +
         "credentials into an opencode container is a no-op that silently leaves opencode unauthenticated. " +

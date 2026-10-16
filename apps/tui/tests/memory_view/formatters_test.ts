@@ -198,7 +198,7 @@ Deno.test("MemoryFormatter.formatExecutionMemory: includes changes only when pre
     ...base,
     changes: { files_created: ["a"], files_modified: [], files_deleted: [] },
   });
-  assertEquals(withChanges.includes("## Changes"), true);
+  assertStringIncludes(withChanges, "## Changes");
   assertStringIncludes(withChanges, "Created: 1 files");
 });
 

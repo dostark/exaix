@@ -6,7 +6,7 @@
  * The full raw args must not appear verbatim in the evidence.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { redactArgs } from "../../runner/trajectory_evaluator.ts";
 
 Deno.test("[TrajectoryRedaction] large args payload is truncated — full value absent", () => {
@@ -19,8 +19,8 @@ Deno.test("[TrajectoryRedaction] large args payload is truncated — full value 
 Deno.test("[TrajectoryRedaction] small args payload is not truncated", () => {
   const args = { path: "/tmp/small.txt", mode: "read" };
   const redacted = redactArgs(args);
-  assertEquals(redacted.includes("/tmp/small.txt"), true);
-  assertEquals(redacted.includes("read"), true);
+  assertStringIncludes(redacted, "/tmp/small.txt");
+  assertStringIncludes(redacted, "read");
 });
 
 Deno.test("[TrajectoryRedaction] sensitive-shaped args do not appear verbatim", () => {

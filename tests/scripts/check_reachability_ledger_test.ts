@@ -13,7 +13,7 @@
  * @related-files [scripts/check_reachability_ledger.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertStringIncludes } from "@std/assert";
 import {
   auditLedgerRows,
   detectLedgerShapeWarnings,
@@ -32,9 +32,9 @@ Deno.test("[extractCandidateSymbols] finds camelCase, PascalCase, and CONSTANT_C
   const cell =
     "executed by the first live run (computePairedComparison over the ablation); see AgentRunner and EXA_EVAL_SUPPRESS_SKILLS";
   const found = extractCandidateSymbols(cell);
-  assertEquals(found.includes("computePairedComparison"), true);
-  assertEquals(found.includes("AgentRunner"), true);
-  assertEquals(found.includes("EXA_EVAL_SUPPRESS_SKILLS"), true);
+  assertArrayIncludes(found, ["computePairedComparison"]);
+  assertArrayIncludes(found, ["AgentRunner"]);
+  assertArrayIncludes(found, ["EXA_EVAL_SUPPRESS_SKILLS"]);
 });
 
 Deno.test("[extractCandidateSymbols] ignores kebab-case labels, prose, and plain all-caps words", () => {
@@ -48,16 +48,16 @@ Deno.test("[extractCandidateSymbols] ignores kebab-case labels, prose, and plain
 Deno.test("[extractCandidateSymbols] backtick-wrapped identifiers are still extracted", () => {
   const cell = "(`evaluateValidityGate`/`assertValidityGate` pass — the run is admitted)";
   const found = extractCandidateSymbols(cell);
-  assertEquals(found.includes("evaluateValidityGate"), true);
-  assertEquals(found.includes("assertValidityGate"), true);
+  assertArrayIncludes(found, ["evaluateValidityGate"]);
+  assertArrayIncludes(found, ["assertValidityGate"]);
 });
 
 Deno.test("[extractCandidateFilenames] finds snake_case.ts filename mentions", () => {
   const cell =
     "a human-triggered live run using `skill_corpus_reachability.ts`/`skill_value_plan.ts`, spending real credits";
   const found = extractCandidateFilenames(cell);
-  assertEquals(found.includes("skill_corpus_reachability.ts"), true);
-  assertEquals(found.includes("skill_value_plan.ts"), true);
+  assertArrayIncludes(found, ["skill_corpus_reachability.ts"]);
+  assertArrayIncludes(found, ["skill_value_plan.ts"]);
 });
 
 Deno.test("[findFilesByBasename] matches by basename regardless of directory", () => {
@@ -240,7 +240,7 @@ Deno.test("[parseReachabilityLedgerRows] parses a well-formed table under a Reac
   assertEquals(rows.length, 2);
   assertEquals(rows[0].symbolLabel, "`paired-arm-comparison`");
   assertEquals(rows[0].status, "✅");
-  assertEquals(rows[0].callSiteText.includes("computePairedComparison"), true);
+  assertStringIncludes(rows[0].callSiteText, "computePairedComparison");
   assertEquals(rows[1].status, "⏳");
 });
 

@@ -11,7 +11,7 @@
  * field at all, preserving the API default.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { AnthropicProvider } from "../mod.ts";
 import { PROVIDER_EVENT_REQUEST_DEBUG_DUMP, PROVIDER_EVENT_THINKING_NOT_DISABLED } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
@@ -171,7 +171,7 @@ async function captureWarningEvents(options: IModelOptions, model: string): Prom
 
 Deno.test("AnthropicProvider: a thinking-off request that cannot be honoured journals provider.thinking_not_disabled", async () => {
   const events = await captureWarningEvents({ thinking: false, effort: "xhigh" }, HAIKU_5_5);
-  assertEquals(events.includes(PROVIDER_EVENT_THINKING_NOT_DISABLED), true);
+  assertArrayIncludes(events, [PROVIDER_EVENT_THINKING_NOT_DISABLED]);
 });
 
 Deno.test("AnthropicProvider: a thinking-off request that is honoured journals no warning", async () => {

@@ -9,7 +9,7 @@
  * @related-files [packages/core/src/skills/skill_folder_publisher.ts]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { createPathSecurity } from "@exaix/tool-runtime";
 import { SkillMutationErrorCode } from "@exaix/core";
@@ -52,7 +52,7 @@ async function stateEntries(root: string, kind: string): Promise<string[]> {
 Deno.test("[publisher] create publishes a complete folder and leaves no intent, staging or backup", async () => {
   await withRoot(async (root, publisher) => {
     await publisher.create(root, "pub-skill", snap("one"));
-    assertEquals((await bodyOf(root)).includes("one"), true);
+    assertStringIncludes(await bodyOf(root), "one");
     assertEquals(await Deno.readTextFile(join(root, "pub-skill", "exaix.yaml")), "status: draft\n");
     for (const kind of ["intents", "staging", "backup"]) assertEquals(await stateEntries(root, kind), []);
   });
@@ -63,7 +63,7 @@ Deno.test("[publisher] create never clobbers an existing folder", async () => {
     await publisher.create(root, "pub-skill", snap("one"));
     const error = await assertRejects(() => publisher.create(root, "pub-skill", snap("two")), SkillMutationError);
     assertEquals(error.code, SkillMutationErrorCode.NAME_CONFLICT);
-    assertEquals((await bodyOf(root)).includes("one"), true);
+    assertStringIncludes(await bodyOf(root), "one");
   });
 });
 
@@ -71,7 +71,7 @@ Deno.test("[publisher] replace swaps content and removes the backup", async () =
   await withRoot(async (root, publisher) => {
     await publisher.create(root, "pub-skill", snap("one"));
     await publisher.replace(root, "pub-skill", snap("two"));
-    assertEquals((await bodyOf(root)).includes("two"), true);
+    assertStringIncludes(await bodyOf(root), "two");
     assertEquals(await stateEntries(root, "backup"), []);
   });
 });
@@ -166,7 +166,7 @@ Deno.test("[recovery] a create interrupted after the rename keeps the verified d
       intended_sha256: await computeSkillContentSha256(snap("one")),
     });
     assertEquals(await publisher.recover(root), 1);
-    assertEquals((await bodyOf(root)).includes("one"), true);
+    assertStringIncludes(await bodyOf(root), "one");
   });
 });
 
@@ -187,7 +187,7 @@ Deno.test("[recovery] an update interrupted between the two renames restores the
       intended_sha256: await computeSkillContentSha256(snap("new")),
     });
     assertEquals(await publisher.recover(root), 1);
-    assertEquals((await bodyOf(root)).includes("old"), true);
+    assertStringIncludes(await bodyOf(root), "old");
     assertEquals(await stateEntries(root, "backup"), []);
     assertEquals(await stateEntries(root, "staging"), []);
   });
@@ -208,7 +208,7 @@ Deno.test("[recovery] an update interrupted after the second rename keeps the in
       intended_sha256: await computeSkillContentSha256(snap("new")),
     });
     assertEquals(await publisher.recover(root), 1);
-    assertEquals((await bodyOf(root)).includes("new"), true);
+    assertStringIncludes(await bodyOf(root), "new");
     assertEquals(await stateEntries(root, "backup"), []);
   });
 });

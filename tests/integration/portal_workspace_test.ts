@@ -5,7 +5,7 @@
  * detection of agent capabilities (Read-only vs Write-capable) and repository boundaries.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { WorkspaceExecutionContextBuilder } from "@exaix/portal";
 import { PortalOperation } from "@exaix/core";
@@ -107,7 +107,7 @@ Deno.test("[integration] Portal context validation fails for missing git repo", 
     } catch (error) {
       errorThrown = true;
       if (error instanceof Error) {
-        assertEquals(error.message.includes("git repository"), true);
+        assertStringIncludes(error.message, "git repository");
       }
     }
 

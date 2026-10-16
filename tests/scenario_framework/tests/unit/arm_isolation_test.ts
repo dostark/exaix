@@ -15,7 +15,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "@exaix/core/skills";
 import { initTestDbService, writeSkillFolder } from "@exaix/testing";
@@ -72,7 +72,7 @@ Deno.test("[ArmIsolation] suppressing skill X for one arm does not suppress it f
     "skill-y",
     () => (runner as Any).matchAndApplySkills(blueprint, request, "test-role"),
   );
-  assertEquals(armBResult.skillIds.includes("skill-x"), true, "arm B must not inherit arm A's suppression");
+  assertArrayIncludes(armBResult.skillIds, ["skill-x"], "arm B must not inherit arm A's suppression");
   assertEquals(armBResult.skillIds.includes("skill-y"), false, "arm B suppresses skill-y instead");
 });
 

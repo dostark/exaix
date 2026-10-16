@@ -10,7 +10,7 @@
  * @related-files [tests/scenario_framework/runner/memory_corpus_lint.ts, tests/scenario_framework/schema/memory_task_schema.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { lintMemoryTaskCorpus } from "../../runner/memory_corpus_lint.ts";
 
@@ -61,7 +61,7 @@ Deno.test("[MemoryCorpusLint] flags a non-abstention task with a query missing g
     });
     const result = await lintMemoryTaskCorpus([root]);
     assertEquals(result.errors.length, 1);
-    assertEquals(result.errors[0].includes("info-missing-gt"), true);
+    assertStringIncludes(result.errors[0], "info-missing-gt");
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -92,7 +92,7 @@ Deno.test("[MemoryCorpusLint] flags an abstention task whose query has non-empty
     });
     const result = await lintMemoryTaskCorpus([root]);
     assertEquals(result.errors.length, 1);
-    assertEquals(result.errors[0].includes("abstention-bad"), true);
+    assertStringIncludes(result.errors[0], "abstention-bad");
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -104,7 +104,7 @@ Deno.test("[MemoryCorpusLint] flags a task.json that fails schema validation", a
     await writeMemoryTask(root, "broken", { ability: "not-a-real-ability" });
     const result = await lintMemoryTaskCorpus([root]);
     assertEquals(result.errors.length, 1);
-    assertEquals(result.errors[0].includes("broken"), true);
+    assertStringIncludes(result.errors[0], "broken");
   } finally {
     await Deno.remove(root, { recursive: true });
   }

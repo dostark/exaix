@@ -10,7 +10,14 @@
  * ]
  */
 
-import { assert, assertEquals, assertGreater, assertLessOrEqual, assertRejects } from "@std/assert";
+import {
+  assert,
+  assertArrayIncludes,
+  assertEquals,
+  assertGreater,
+  assertLessOrEqual,
+  assertRejects,
+} from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import {
   CONTEXT_BUDGET_OVERHEAD_TARGET_MS,
@@ -405,7 +412,7 @@ Deno.test(
     // snapshotStore.save). Use a macrotask fence to ensure all pending microtasks complete.
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-    assertEquals(loggedActions.includes(DomainEventType.ExecutionContextCompacted), true);
+    assertArrayIncludes(loggedActions, [DomainEventType.ExecutionContextCompacted]);
   },
 );
 

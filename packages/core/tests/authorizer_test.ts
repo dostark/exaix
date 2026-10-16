@@ -4,7 +4,7 @@
  * @description Unit tests for IAuthorizer and AllowAllAuthorizer (Phase 115 Step 5).
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import { AllowAllAuthorizer, type IAuthorizationContext, type IAuthorizer } from "../mod.ts";
 import { SoloComposer } from "../src/composer/mod.ts";
@@ -33,7 +33,7 @@ describe("AllowAllAuthorizer", () => {
     const auth = new AllowAllAuthorizer();
     const result = auth.authorize("x", "y");
     assertEquals(typeof result.reason, "string");
-    assertEquals(result.reason!.includes("AllowAllAuthorizer"), true);
+    assertStringIncludes(result.reason!, "AllowAllAuthorizer");
   });
 });
 

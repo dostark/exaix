@@ -8,7 +8,7 @@
  * @related-files [tests/scenario_framework/runner/scenario_catalog.ts, tests/scenario_framework/runner/scenario_templates.ts, tests/scenario_framework/templates/scenario_template.yaml]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { basename, dirname, fromFileUrl, join, relative } from "@std/path";
 import { walk } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
@@ -65,10 +65,10 @@ Deno.test("[ScenarioFrameworkPackGeneralization] tag filtering returns the expec
     true,
     `expected >=9 smoke-tagged scenarios, got ${smokeIds.length}: ${JSON.stringify(smokeIds)}`,
   );
-  assertEquals(smokeIds.includes("dynamic-exploration-smoke"), true);
-  assertEquals(smokeIds.includes("edition-smoke"), true);
-  assertEquals(smokeIds.includes("framework-smoke-validation"), true);
-  assertEquals(smokeIds.includes("workspace-health-smoke"), true);
+  assertArrayIncludes(smokeIds, ["dynamic-exploration-smoke"]);
+  assertArrayIncludes(smokeIds, ["edition-smoke"]);
+  assertArrayIncludes(smokeIds, ["framework-smoke-validation"]);
+  assertArrayIncludes(smokeIds, ["workspace-health-smoke"]);
 });
 
 Deno.test("[ScenarioFrameworkPackGeneralization] every scenario file on disk is discoverable by the catalog — no orphaned scenarios", async () => {

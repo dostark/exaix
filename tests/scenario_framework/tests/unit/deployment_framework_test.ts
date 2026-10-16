@@ -9,7 +9,7 @@
  * @related-files [tests/scenario_framework/scripts/deploy_framework.ts, tests/scenario_framework/runner/config.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertMatch, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { deployFrameworkToDirectory, planFrameworkDeployment } from "../../scripts/deploy_framework.ts";
 import { planPortalMount, PortalLifecycleAction, resolveRuntimeConfigForExecution } from "../../runner/config.ts";
@@ -163,12 +163,12 @@ Deno.test("[ScenarioFrameworkDeployment] a prefix import-map entry keeps its tra
     // does not also end in "/", which aborts the whole scenario run before any test.
     for (const [key, value] of Object.entries(denoConfig.imports)) {
       if (key.endsWith("/")) {
-        assertEquals(value.endsWith("/"), true, `prefix import ${key} target must end with "/" (got ${value})`);
+        assertMatch(value, /\/$/, `prefix import ${key} target must end with "/" (got ${value})`);
       }
     }
     // The schemas prefix is the concrete import the CI failure named.
-    assertEquals(denoConfig.imports["@exaix/schemas/"].endsWith("/"), true);
-    assertEquals(denoConfig.imports["@exaix/schemas/"].startsWith("/"), true, "rewritten to an absolute path");
+    assertMatch(denoConfig.imports["@exaix/schemas/"], /\/$/);
+    assertMatch(denoConfig.imports["@exaix/schemas/"], /^\//, "rewritten to an absolute path");
   } finally {
     await Deno.remove(tempRoot, { recursive: true });
   }

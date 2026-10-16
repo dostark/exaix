@@ -7,7 +7,14 @@
  * local repositories, identity management, and automated branch cleanup via the GitService.
  */
 
-import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
+import {
+  assert,
+  assertArrayIncludes,
+  assertEquals,
+  assertExists,
+  assertRejects,
+  assertStringIncludes,
+} from "@std/assert";
 import { MemoryOperation } from "@exaix/core";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
@@ -60,9 +67,9 @@ describe("GitCommands", () => {
 
       assertEquals(branches.length, 3);
       const branchNames = branches.map((b) => b.name);
-      assertEquals(branchNames.includes("main"), true);
-      assertEquals(branchNames.includes("feature-1"), true);
-      assertEquals(branchNames.includes("feature-2"), true);
+      assertArrayIncludes(branchNames, ["main"]);
+      assertArrayIncludes(branchNames, ["feature-1"]);
+      assertArrayIncludes(branchNames, ["feature-2"]);
     });
 
     it("should sort by commit date descending", async () => {
@@ -219,7 +226,7 @@ describe("GitCommands", () => {
       const status = await gitCommands.status();
 
       assertEquals(status.modified.length, 1);
-      assertEquals(status.modified.includes("README.md"), true);
+      assertArrayIncludes(status.modified, ["README.md"]);
     });
 
     it("should categorize untracked files", async () => {
@@ -228,7 +235,7 @@ describe("GitCommands", () => {
       const status = await gitCommands.status();
 
       // Should have at least the untracked file
-      assertEquals(status.untracked.includes("untracked.txt"), true);
+      assertArrayIncludes(status.untracked, ["untracked.txt"]);
     });
 
     it("should categorize added files", async () => {
@@ -238,7 +245,7 @@ describe("GitCommands", () => {
       const status = await gitCommands.status();
 
       assertEquals(status.added.length, 1);
-      assertEquals(status.added.includes("added.txt"), true);
+      assertArrayIncludes(status.added, ["added.txt"]);
     });
 
     it("should categorize deleted files", async () => {
@@ -251,7 +258,7 @@ describe("GitCommands", () => {
       const status = await gitCommands.status();
 
       assertEquals(status.deleted.length, 1);
-      assertEquals(status.deleted.includes("to-delete.txt"), true);
+      assertArrayIncludes(status.deleted, ["to-delete.txt"]);
     });
 
     it("should handle clean working tree", async () => {

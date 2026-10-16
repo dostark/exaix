@@ -7,7 +7,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
-import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { MemoryReferenceType } from "@exaix/core";
 import type { ActivityRecord } from "@exaix/storage-sqlite";
 import { initTestDbService } from "@exaix/testing";
@@ -373,8 +373,8 @@ Deno.test("[security] PathResolver: logs security violations to console when no 
 
       // Verify console.warn was called
       assertEquals(warnCalled, true);
-      assertEquals(warnMessage.includes("[SECURITY]"), true);
-      assertEquals(warnMessage.includes("path.invalid_alias"), true);
+      assertStringIncludes(warnMessage, "[SECURITY]");
+      assertStringIncludes(warnMessage, "path.invalid_alias");
     } finally {
       console.warn = originalWarn;
     }

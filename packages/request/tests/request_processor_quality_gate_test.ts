@@ -7,7 +7,7 @@
  * @related-files ["packages/request/src/processor.ts", "packages/quality-gate/src/request_quality_gate.ts"]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertMatch } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "@exaix/request";
 import { AgentRunner } from "@exaix/execution";
@@ -466,7 +466,7 @@ Deno.test("[RequestProcessor] refinement-delegation fires onDelegateRefinement w
 
     await processor.process(filePath);
     assertEquals(delegateCalled, true, "onDelegateRefinement must fire when refinement delegation is enabled");
-    assertEquals(capturedTraceId.startsWith("trace-"), true, "traceId must be passed to the callback");
+    assertMatch(capturedTraceId, /^trace-/, "traceId must be passed to the callback");
   } finally {
     await env.cleanup();
   }

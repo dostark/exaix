@@ -7,7 +7,14 @@
  * provider-specific configuration and stable initialization of model instances.
  */
 
-import { assertEquals, assertExists, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
+import {
+  assertEquals,
+  assertExists,
+  assertMatch,
+  assertRejects,
+  assertStringIncludes,
+  assertThrows,
+} from "@std/assert";
 import { ANTHROPIC_PROVIDER_METADATA, AnthropicProviderFactory, PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
 import { GOOGLE_PROVIDER_METADATA, GoogleProviderFactory, PROVIDER_GOOGLE } from "@exaix/ai-google";
 import { OLLAMA_PROVIDER_METADATA, OllamaProviderFactory, PROVIDER_OLLAMA } from "@exaix/ai-ollama";
@@ -189,7 +196,7 @@ Deno.test("ProviderFactory: defaults to MockLLMProvider when no config", async (
   const provider = await ProviderFactory.create(config);
 
   assertExists(provider);
-  assertEquals(provider.id.startsWith("mock"), true, `Expected mock provider, got: ${provider.id}`);
+  assertMatch(provider.id, /^mock/, `Expected mock provider, got: ${provider.id}`);
 });
 
 Deno.test("ProviderFactory: defaults to MockLLMProvider when ai section missing", async () => {
@@ -198,7 +205,7 @@ Deno.test("ProviderFactory: defaults to MockLLMProvider when ai section missing"
   const provider = await ProviderFactory.create(config);
 
   assertExists(provider);
-  assertEquals(provider.id.startsWith("mock"), true);
+  assertMatch(provider.id, /^mock/);
 });
 
 // Environment Variable Tests
@@ -211,7 +218,7 @@ parallelSafeTest(
     const provider = await ProviderFactory.create(config);
 
     assertExists(provider);
-    assertEquals(provider.id.startsWith("mock"), true);
+    assertMatch(provider.id, /^mock/);
   }),
 );
 
@@ -249,7 +256,7 @@ parallelSafeTest(
     const provider = await ProviderFactory.create(config);
 
     assertExists(provider);
-    assertEquals(provider.id.startsWith("mock"), true, "Environment should override config");
+    assertMatch(provider.id, /^mock/, "Environment should override config");
   }),
 );
 
@@ -272,7 +279,7 @@ Deno.test("ProviderFactory: config ai.provider=mock creates MockLLMProvider", as
   const provider = await ProviderFactory.create(config);
 
   assertExists(provider);
-  assertEquals(provider.id.startsWith("mock"), true);
+  assertMatch(provider.id, /^mock/);
 });
 
 // API Key Tests
@@ -330,7 +337,7 @@ Deno.test(
       const provider = await ProviderFactory.create(config);
 
       assertExists(provider);
-      assertEquals(provider.id.startsWith("mock"), true, "Should fall back to mock");
+      assertMatch(provider.id, /^mock/, "Should fall back to mock");
 
       // Check that at least one warning mentions the unknown provider
       const hasProviderWarning = warningMessages.some((msg) => msg.includes("unknown-provider-xyz"));
@@ -454,7 +461,7 @@ Deno.test("ProviderFactory: mock strategy from config", async () => {
   const provider = await ProviderFactory.create(config);
 
   assertExists(provider);
-  assertEquals(provider.id.startsWith("mock"), true);
+  assertMatch(provider.id, /^mock/);
 });
 
 // Integration with IModelProvider Tests
@@ -529,7 +536,7 @@ Deno.test(
 
       assertExists(provider);
       assertStringIncludes(provider.id, `anthropic-${TEST_MODEL_ANTHROPIC}`);
-      assertEquals(provider.id.startsWith("anthropic"), true);
+      assertMatch(provider.id, /^anthropic/);
 
       SecureCredentialStore.clear("ANTHROPIC_API_KEY");
     });
@@ -553,7 +560,7 @@ Deno.test(
 
       assertExists(provider);
       assertStringIncludes(provider.id, `openai-${TEST_MODEL_OPENAI}`);
-      assertEquals(provider.id.startsWith("openai"), true);
+      assertMatch(provider.id, /^openai/);
 
       SecureCredentialStore.clear("OPENAI_API_KEY");
     });

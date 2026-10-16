@@ -12,7 +12,7 @@
  * @related-files [scripts/plan_to_requests.ts, tests/integration/plan_to_requests_test.ts, tests/integration/fixtures/phase-nn-fixture-with-context.md]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { extractExecutiveSummary, extractRelevantConstraints } from "../../scripts/plan_to_requests.ts";
 
@@ -31,9 +31,9 @@ function stepSliceOf(doc: string, stepNumber: number): string {
 
 Deno.test("extractExecutiveSummary returns the bold Problem/Solution/Goal paragraphs for a standard phase doc", () => {
   const summary = extractExecutiveSummary(PHASE_DOC);
-  assertEquals(summary.includes("**The Problem.**"), true);
-  assertEquals(summary.includes("**The Solution.**"), true);
-  assertEquals(summary.includes("**The Goal.**"), true);
+  assertStringIncludes(summary, "**The Problem.**");
+  assertStringIncludes(summary, "**The Solution.**");
+  assertStringIncludes(summary, "**The Goal.**");
 });
 
 Deno.test("extractExecutiveSummary bounds output at the end of the Goal paragraph (trailing prose excluded)", () => {
@@ -49,9 +49,9 @@ Deno.test("extractExecutiveSummary returns empty string when the doc has no Exec
 Deno.test("extractRelevantConstraints returns only bullets sharing a token with the step slice", () => {
   const relevant = extractRelevantConstraints(PHASE_DOC, stepSliceOf(PHASE_DOC, 1));
   assertEquals(relevant.constraints.length, 1);
-  assertEquals(
-    relevant.constraints[0].includes("`scripts/plan_to_requests.ts`"),
-    true,
+  assertStringIncludes(
+    relevant.constraints[0],
+    "`scripts/plan_to_requests.ts`",
     "the concise-constraints bullet cites the same file as the step's Action",
   );
   // Design Decisions bullets carry no token overlapping the step slice.
@@ -102,8 +102,8 @@ ${many}
   const stepMentioningAll = Array.from({ length: 10 }, (_, i) => `\`file_${String(i).padStart(2, "0")}.ts\``).join(" ");
   const relevant = extractRelevantConstraints(cappedDoc, stepMentioningAll);
   assertEquals(relevant.constraints.length, 8);
-  assertEquals(relevant.constraints[0].includes("file_00"), true, "document order preserved from the top");
-  assertEquals(relevant.constraints[7].includes("file_07"), true);
+  assertStringIncludes(relevant.constraints[0], "file_00", "document order preserved from the top");
+  assertStringIncludes(relevant.constraints[7], "file_07");
 });
 
 Deno.test("filter mixed-source match: a bullet citing its file WITHOUT backticks still matches", () => {

@@ -15,7 +15,7 @@
  * boolean left claude-code/opencode behavior unchanged.
  */
 
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { assertSpyCalls, spy } from "@std/testing/mock";
 import { CliDelegateModelProvider } from "../src/cli_delegate_model_provider.ts";
 import type { IRunCliDelegateProcess } from "../src/cli_delegate_model_provider.ts";
@@ -77,7 +77,7 @@ Deno.test("CliDelegateModelProvider: codex drops --output-schema when jsonSchema
     // so --output-schema must never reach codex argv — schema conformance is enforced by
     // PlanAdapter after <content> extraction instead.
     assertEquals(seenArgs.includes("--output-schema"), false);
-    assertEquals(seenArgs.includes("exec"), true);
+    assertArrayIncludes(seenArgs, ["exec"]);
   } finally {
     await Deno.remove(cwd, { recursive: true });
   }

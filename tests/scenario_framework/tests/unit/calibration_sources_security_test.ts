@@ -9,7 +9,7 @@
  * @related-files [tests/scenario_framework/runner/calibration_sources.ts]
  */
 
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { CalibrationRedactionError, redactCalibrationSnapshot } from "../../runner/calibration_sources.ts";
 
 Deno.test("[CalibrationSources][security] redacts a value sourced from a secret-named env var", () => {
@@ -17,14 +17,14 @@ Deno.test("[CalibrationSources][security] redacts a value sourced from a secret-
     MY_API_TOKEN: "sk-abcdefgh12345678",
   });
   assertEquals(redacted.includes("sk-abcdefgh12345678"), false);
-  assertEquals(redacted.includes("[REDACTED]"), true);
+  assertStringIncludes(redacted, "[REDACTED]");
 });
 
 Deno.test("[CalibrationSources][security] redacts a PEM private key block", () => {
   const pem = "-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJBAK...\n-----END RSA PRIVATE KEY-----";
   const redacted = redactCalibrationSnapshot(`context around it\n${pem}\nmore context`, {});
   assertEquals(redacted.includes("BEGIN RSA PRIVATE KEY"), false);
-  assertEquals(redacted.includes("[REDACTED]"), true);
+  assertStringIncludes(redacted, "[REDACTED]");
 });
 
 Deno.test("[CalibrationSources][security] redacts an Authorization header value", () => {

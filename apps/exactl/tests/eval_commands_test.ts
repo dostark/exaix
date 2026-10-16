@@ -172,16 +172,16 @@ Deno.test("[EvalCommands] buildRunArgs forwards score-threshold, trials, and his
   });
 
   const argsStr = args.join(" ");
-  assertEquals(argsStr.includes("--score-threshold"), true, "should include --score-threshold");
-  assertEquals(argsStr.includes("0.8"), true, "should include threshold value 0.8");
-  assertEquals(argsStr.includes("--trials"), true, "should include --trials");
-  assertEquals(argsStr.includes("5"), true, "should include trials value 5");
-  assertEquals(argsStr.includes("--history-format"), true, "should include --history-format");
-  assertEquals(argsStr.includes("jsonl"), true, "should include history format jsonl");
-  assertEquals(argsStr.includes("--verbose"), true, "should include --verbose");
-  assertEquals(argsStr.includes("--eval-mode"), true, "should include --eval-mode");
-  assertEquals(argsStr.includes("--scenario"), true, "should include --scenario");
-  assertEquals(argsStr.includes("test-scenario"), true, "should include scenario id");
+  assertStringIncludes(argsStr, "--score-threshold", "should include --score-threshold");
+  assertStringIncludes(argsStr, "0.8", "should include threshold value 0.8");
+  assertStringIncludes(argsStr, "--trials", "should include --trials");
+  assertStringIncludes(argsStr, "5", "should include trials value 5");
+  assertStringIncludes(argsStr, "--history-format", "should include --history-format");
+  assertStringIncludes(argsStr, "jsonl", "should include history format jsonl");
+  assertStringIncludes(argsStr, "--verbose", "should include --verbose");
+  assertStringIncludes(argsStr, "--eval-mode", "should include --eval-mode");
+  assertStringIncludes(argsStr, "--scenario", "should include --scenario");
+  assertStringIncludes(argsStr, "test-scenario", "should include scenario id");
 });
 
 Deno.test("[EvalCommands] buildRunArgs omits flags not provided", () => {
@@ -191,7 +191,7 @@ Deno.test("[EvalCommands] buildRunArgs omits flags not provided", () => {
   assertEquals(argsStr.includes("--trials"), false, "should NOT include --trials");
   assertEquals(argsStr.includes("--history-format"), false, "should NOT include --history-format");
   assertEquals(argsStr.includes("--cell"), false, "should NOT include --cell");
-  assertEquals(argsStr.includes("--eval-mode"), true, "should always include --eval-mode");
+  assertStringIncludes(argsStr, "--eval-mode", "should always include --eval-mode");
 });
 
 Deno.test("[EvalCommands] buildRunArgs forwards --cell for explicit matrix-cell selection", () => {
@@ -200,8 +200,8 @@ Deno.test("[EvalCommands] buildRunArgs forwards --cell for explicit matrix-cell 
     cell: "claude-code",
   });
   const argsStr = args.join(" ");
-  assertEquals(argsStr.includes("--cell"), true, "should include --cell");
-  assertEquals(argsStr.includes("claude-code"), true, "should include the selected cell's tool");
+  assertStringIncludes(argsStr, "--cell", "should include --cell");
+  assertStringIncludes(argsStr, "claude-code", "should include the selected cell's tool");
 });
 
 Deno.test("[EvalCommands] buildRunArgs forwards --capture-calibration-evidence when provided", () => {
@@ -210,8 +210,8 @@ Deno.test("[EvalCommands] buildRunArgs forwards --capture-calibration-evidence w
     captureCalibrationEvidence: "/tmp/calib-capture",
   });
   const argsStr = args.join(" ");
-  assertEquals(argsStr.includes("--capture-calibration-evidence"), true, "should include the capture flag");
-  assertEquals(argsStr.includes("/tmp/calib-capture"), true, "should include the capture directory");
+  assertStringIncludes(argsStr, "--capture-calibration-evidence", "should include the capture flag");
+  assertStringIncludes(argsStr, "/tmp/calib-capture", "should include the capture directory");
 });
 
 Deno.test("[EvalCommands] buildRunArgs omits --capture-calibration-evidence when not provided", () => {

@@ -39,8 +39,8 @@ Deno.test("renderPendingPanel: renders proposals list", () => {
   const rendered = renderPendingPanel(proposals, 0, options);
 
   assertExists(rendered);
-  assertEquals(rendered.includes("Pending Proposals"), true);
-  assertEquals(rendered.includes("3 proposal(s)"), true);
+  assertStringIncludes(rendered, "Pending Proposals");
+  assertStringIncludes(rendered, "3 proposal(s)");
 });
 
 Deno.test("renderPendingPanel: shows proposal titles", () => {
@@ -60,9 +60,9 @@ Deno.test("renderPendingPanel: shows categories", () => {
 
   const rendered = renderPendingPanel(proposals, 0, options);
 
-  assertEquals(rendered.includes("[pattern]"), true);
-  assertEquals(rendered.includes("[decision]"), true);
-  assertEquals(rendered.includes("[troubleshooting]"), true);
+  assertStringIncludes(rendered, "[pattern]");
+  assertStringIncludes(rendered, "[decision]");
+  assertStringIncludes(rendered, "[troubleshooting]");
 });
 
 Deno.test("renderPendingPanel: shows scope", () => {
@@ -71,8 +71,8 @@ Deno.test("renderPendingPanel: shows scope", () => {
 
   const rendered = renderPendingPanel(proposals, 0, options);
 
-  assertEquals(rendered.includes("Scope: project"), true);
-  assertEquals(rendered.includes("Scope: global"), true);
+  assertStringIncludes(rendered, "Scope: project");
+  assertStringIncludes(rendered, "Scope: global");
 });
 
 Deno.test("renderPendingPanel: marks selected item", () => {
@@ -93,8 +93,8 @@ Deno.test("renderPendingPanel: handles empty list", () => {
 
   const rendered = renderPendingPanel([], 0, options);
 
-  assertEquals(rendered.includes("No pending proposals"), true);
-  assertEquals(rendered.includes("created when agents identify"), true);
+  assertStringIncludes(rendered, "No pending proposals");
+  assertStringIncludes(rendered, "created when agents identify");
 });
 
 Deno.test("renderPendingPanel: formats age correctly", () => {
@@ -135,7 +135,7 @@ Deno.test("renderPendingPanel: limits display to 10 items", () => {
   const options = { width: 80, height: 20, useColors: false };
   const rendered = renderPendingPanel(proposals, 0, options);
 
-  assertEquals(rendered.includes("... and 5 more"), true);
+  assertStringIncludes(rendered, "... and 5 more");
 });
 
 // renderStatsPanel Tests
@@ -152,11 +152,11 @@ Deno.test("renderStatsPanel: renders statistics", () => {
   const rendered = renderStatsPanel(stats, options);
 
   assertExists(rendered);
-  assertEquals(rendered.includes("Memory Statistics"), true);
-  assertEquals(rendered.includes("5"), true);
-  assertEquals(rendered.includes("127"), true);
-  assertEquals(rendered.includes("3"), true);
-  assertEquals(rendered.includes("12"), true);
+  assertStringIncludes(rendered, "Memory Statistics");
+  assertStringIncludes(rendered, "5");
+  assertStringIncludes(rendered, "127");
+  assertStringIncludes(rendered, "3");
+  assertStringIncludes(rendered, "12");
 });
 
 Deno.test("renderStatsPanel: shows all categories", () => {
@@ -170,10 +170,10 @@ Deno.test("renderStatsPanel: shows all categories", () => {
 
   const rendered = renderStatsPanel(stats, options);
 
-  assertEquals(rendered.includes("Projects:"), true);
-  assertEquals(rendered.includes("Executions:"), true);
-  assertEquals(rendered.includes("Pending:"), true);
-  assertEquals(rendered.includes("Learnings:"), true);
+  assertStringIncludes(rendered, "Projects:");
+  assertStringIncludes(rendered, "Executions:");
+  assertStringIncludes(rendered, "Pending:");
+  assertStringIncludes(rendered, "Learnings:");
 });
 
 // MemoryViewTuiSession Pending Actions Tests
@@ -243,9 +243,9 @@ Deno.test("MemoryViewTuiSession: action buttons show pending actions", async () 
   await session.handleKey(KEYS.DOWN);
 
   const buttons = session.renderActionButtons();
-  assertEquals(buttons.includes("[a] Approve"), true);
-  assertEquals(buttons.includes("[r] Reject"), true);
-  assertEquals(buttons.includes("[A] Approve All"), true);
+  assertStringIncludes(buttons, "[a] Approve");
+  assertStringIncludes(buttons, "[r] Reject");
+  assertStringIncludes(buttons, "[A] Approve All");
 });
 
 Deno.test("MemoryViewTuiSession: dialog receives key events", async () => {
@@ -314,8 +314,8 @@ Deno.test("MemoryViewTuiSession: help shows new action keys", async () => {
   await session.handleKey(KEYS.QUESTION); // Open help
 
   const help = session.getDetailContent();
-  assertEquals(help.includes("a: Approve"), true);
-  assertEquals(help.includes("r: Reject"), true);
-  assertEquals(help.includes("A: Approve all"), true);
-  assertEquals(help.includes("L: Add new learning"), true);
+  assertStringIncludes(help, "a: Approve");
+  assertStringIncludes(help, "r: Reject");
+  assertStringIncludes(help, "A: Approve all");
+  assertStringIncludes(help, "L: Add new learning");
 });

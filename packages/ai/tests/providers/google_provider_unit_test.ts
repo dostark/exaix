@@ -6,7 +6,7 @@
  * @description Unit tests for Google Gemini provider.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { GoogleProvider } from "@exaix/ai-google";
 import { spyFetch } from "../helpers/provider_test_helper.ts";
 
@@ -34,8 +34,8 @@ Deno.test("GoogleProvider: generate calls correct endpoint and extracts text con
 
     const call = fetchSpy.calls[0];
     const url = call.args[0] as string;
-    assertEquals(url.includes("gemini-pro:generateContent"), true);
-    assertEquals(url.includes("key=test-key"), true);
+    assertStringIncludes(url, "gemini-pro:generateContent");
+    assertStringIncludes(url, "key=test-key");
   } finally {
     restore();
   }

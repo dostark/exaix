@@ -243,7 +243,7 @@ Deno.test("ToolRegistry: run_command - executes whitelisted command", async () =
       assertEquals(result.success, true);
       const data = result.data as { output: string };
       assertExists(data?.output);
-      assertEquals(data.output.includes("Hello"), true);
+      assertStringIncludes(data.output, "Hello");
     },
     { workspaceRoot: Deno.cwd() },
   );
