@@ -63,6 +63,7 @@ import {
   REQUEST_OUTCOME_ACTIONS,
   writeDaemonConfigWithMockAi,
 } from "./helpers/daemon_config.ts";
+import { readConfigFixture } from "./helpers/config_fixture.ts";
 
 /** Mock-AI daemon config with the request quality gate disabled — a minimal test request body
  *  would otherwise score too low on actionability and get rejected before ever reaching
@@ -642,33 +643,15 @@ function writeDaemonConfigForAdaptiveCutover(
   portalDir: string,
   inclusion: "summary" | "adaptive",
 ): void {
-  const cfg = [
-    "[system]",
-    `root = "${root}"`,
-    'log_level = "debug"',
-    "",
-    "",
-    "[ai]",
-    'provider = "mock"',
-    'model = "test"',
-    "",
-    "[ai.mock]",
-    "timeout_ms = 30000",
-    "",
-    "[quality_gate]",
-    "enabled = false",
-    "",
-    "[portal_knowledge]",
-    'default_mode = "standard"',
-    "use_llm_inference = false",
-    ...(inclusion === "adaptive" ? ['inclusion = "adaptive"'] : []),
-    "",
-    "[[portals]]",
-    'alias = "payment-portal"',
-    `target_path = "${portalDir}"`,
-    "",
-  ].join("\n");
-  Deno.writeTextFileSync(configPath, cfg);
+  const inclusionLine = inclusion === "adaptive" ? 'inclusion = "adaptive"' : "";
+  Deno.writeTextFileSync(
+    configPath,
+    readConfigFixture("agent-runner-adaptive-cutover", {
+      root,
+      portalDir,
+      inclusion: inclusionLine,
+    }),
+  );
 }
 
 interface IStep6ActivityRow {
