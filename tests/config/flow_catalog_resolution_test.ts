@@ -69,7 +69,9 @@ Deno.test("[flow-catalog] no production consumer recomposes the flows path from 
     const source = codeOnly(await Deno.readTextFile(file));
     // The defaults table's own declaration is the one legitimate composition site — identified
     // by what the file declares rather than by path, so the rule survives the table moving.
+    // The shared composite constant is the other one: it defines the name every consumer reads.
     if (/export const ExaPathDefaults\b/.test(source)) continue;
+    if (/export const DEFAULT_FLOWS_DIR\b/.test(source)) continue;
     for (const statement of recompositionStatements(source)) {
       offenders.push(`${relative(REPO_ROOT, file)}: ${statement}`);
     }
