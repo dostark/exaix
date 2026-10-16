@@ -7,15 +7,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import {
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_FLOWS_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_PORTALS_PATH,
-  DEFAULT_RUNTIME_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_FLOWS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import type { IRecordedResponse } from "@exaix/ai/providers";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
@@ -215,18 +207,6 @@ log_level = "info"
 root = "${tempDir}"
 
 [paths]
-memory = "./${DEFAULT_MEMORY_PATH}"
-blueprints = "./${DEFAULT_BLUEPRINTS_PATH}"
-runtime = "./${DEFAULT_RUNTIME_PATH}"
-workspace = "./${DEFAULT_WORKSPACE_PATH}"
-portals = "./${DEFAULT_PORTALS_PATH}"
-active = "Active"
-archive = "Archive"
-plans = "Plans"
-requests = "Requests"
-rejected = "Rejected"
-agents = "Agents"
-flows = "Blueprints/Flows"
 memoryProjects = "Projects"
 memoryExecution = "Execution"
 memoryIndex = "Index"

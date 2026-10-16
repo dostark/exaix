@@ -14,6 +14,7 @@
  */
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { readConfigFixture } from "./helpers/config_fixture.ts";
 import { fromFileUrl, join } from "@std/path";
 import { CliDelegateStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
@@ -182,7 +183,7 @@ async function makeRealRecordStore(): Promise<
   const configPath = join(tempDir, "config.toml");
   await Deno.writeTextFile(
     configPath,
-    `[system]\nroot = ${JSON.stringify(tempDir)}\n\n[paths]\nmemory = ${JSON.stringify(ExaPathDefaults.memory)}\n`,
+    readConfigFixture("dogfood-context-cutover", { root: tempDir }),
   );
   const configService = new ConfigService(configPath);
   const pathResolver = new PathResolver(configService.getAll());

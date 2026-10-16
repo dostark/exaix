@@ -5,6 +5,7 @@
  */
 
 import { assertEquals } from "@std/assert";
+import { readConfigFixture } from "./helpers/config_fixture.ts";
 import { join } from "@std/path";
 import { FlowOutputFormat } from "@exaix/core";
 import { type Config, ConfigSchema, FlowSchema, getDefaultModels } from "@exaix/schemas";
@@ -92,32 +93,7 @@ Deno.test("a config reload changes the next run's bound service", async () => {
     const writeConfig = (service: string, model: string): Promise<void> =>
       Deno.writeTextFile(
         configPath,
-        `
-[system]
-root = "${tempDir}"
-[ai]
-provider = "mock"
-model = "boot"
-[catalog.models."mock/alpha"]
-model_provider = "mock"
-[catalog.models."mock/beta"]
-model_provider = "mock"
-[catalog.services.alpha]
-adapter = "mock"
-transport = "local"
-interface = "api"
-[catalog.services.alpha.serves]
-"mock/alpha" = "alpha"
-[catalog.services.beta]
-adapter = "mock"
-transport = "local"
-interface = "api"
-[catalog.services.beta.serves]
-"mock/beta" = "beta"
-[bindings.default]
-service = "${service}"
-model = "${model}"
-`,
+        readConfigFixture("flow-step-bindings-declared", { root: tempDir, service, model }),
       );
     await writeConfig("alpha", "mock/alpha");
     const configService = new ConfigService(configPath);

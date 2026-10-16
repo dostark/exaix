@@ -127,10 +127,6 @@ Deno.test("[security] Git Security: prevents system root taint during Portal exe
 
   // Update config to use this fake system root
   config.system.root = systemRoot;
-  config.paths.workspace = "Workspace";
-  config.paths.active = "Active";
-  config.paths.memory = "Memory";
-  config.paths.blueprints = "Blueprints";
 
   const portalsDir = join(tempDir, "portals");
   const portalPath = join(portalsDir, "test-portal");

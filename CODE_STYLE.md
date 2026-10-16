@@ -1044,6 +1044,8 @@ default segments in the caller.
   so a layout change misses that caller. The helpers own the default, so no caller repeats it.
 - A shipped config under `configs/` does not restate a `[paths]` default. The schema fills a missing
   key from the same constant, so a restated value is a second owner of the layout.
+- A test reads its config from a fixture under `fixtures/configs`, not from a TOML document inside a
+  string. An inline document is a fixture that no reader can share.
 - The helpers live in `packages/shared/src/paths.ts`.
 
 **Exception:** a test may compose the segments when the composition itself is the rule under test,

@@ -16,6 +16,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
+import { readConfigFixture } from "./helpers/config_fixture.ts";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { EDITION_ENTERPRISE, EDITION_SOLO, EDITION_TEAM } from "@exaix/core";
@@ -42,25 +43,6 @@ async function binaryExists(): Promise<boolean> {
   }
 }
 
-function configToml(root: string): string {
-  return `
-[system]
-root = "${root}"
-log_level = "error"
-
-[agents]
-default_model = "mock:test"
-
-[models."mock:test"]
-provider = "mock"
-model = "test"
-
-[portal_knowledge]
-default_mode = "standard"
-enable_symbol_level_dependency_graph = true
-`;
-}
-
 async function runTeamBinary(workspaceRoot: string, edition: string, args: string[]): Promise<number> {
   const command = new Deno.Command(TEAM_BINARY, {
     args,
@@ -85,7 +67,10 @@ async function analyzeWithCompiledBinary(
   const workspaceRoot = await Deno.makeTempDir({ prefix: `exa_team_bin_${edition}_` });
   const alias = `go-${edition}`;
   try {
-    await Deno.writeTextFile(join(workspaceRoot, "config.toml"), configToml(workspaceRoot));
+    await Deno.writeTextFile(
+      join(workspaceRoot, "config.toml"),
+      readConfigFixture("team-binary-symbol-graph", { root: workspaceRoot }),
+    );
 
     const addCode = await runTeamBinary(workspaceRoot, edition, ["portal", "add", GO_PORTAL, alias]);
     assertEquals(addCode, 0, `${edition}: portal add must succeed`);
@@ -233,7 +218,10 @@ Deno.test({
     const portalRoot = await writeRealisticGoProject();
     const alias = "realistic-go";
     try {
-      await Deno.writeTextFile(join(workspaceRoot, "config.toml"), configToml(workspaceRoot));
+      await Deno.writeTextFile(
+        join(workspaceRoot, "config.toml"),
+        readConfigFixture("team-binary-symbol-graph", { root: workspaceRoot }),
+      );
       assertEquals(await runTeamBinary(workspaceRoot, EDITION_ENTERPRISE, ["portal", "add", portalRoot, alias]), 0);
       assertEquals(
         await runTeamBinary(workspaceRoot, EDITION_ENTERPRISE, ["portal", "analyze", alias, "--mode", "standard"]),
@@ -337,7 +325,10 @@ for (const fixture of SCRIPTED_FIXTURES) {
           await Deno.mkdir(join(portalRoot, relative, ".."), { recursive: true });
           await Deno.writeTextFile(join(portalRoot, relative), content);
         }
-        await Deno.writeTextFile(join(workspaceRoot, "config.toml"), configToml(workspaceRoot));
+        await Deno.writeTextFile(
+          join(workspaceRoot, "config.toml"),
+          readConfigFixture("team-binary-symbol-graph", { root: workspaceRoot }),
+        );
         assertEquals(await runTeamBinary(workspaceRoot, EDITION_ENTERPRISE, ["portal", "add", portalRoot, alias]), 0);
         assertEquals(
           await runTeamBinary(workspaceRoot, EDITION_ENTERPRISE, ["portal", "analyze", alias, "--mode", "standard"]),
@@ -359,7 +350,10 @@ for (const fixture of SCRIPTED_FIXTURES) {
         // The gate must hold for these languages too.
         const teamPairs = await (async () => {
           const teamAlias = `${alias}-team`;
-          await Deno.writeTextFile(join(workspaceRoot, "config.toml"), configToml(workspaceRoot));
+          await Deno.writeTextFile(
+            join(workspaceRoot, "config.toml"),
+            readConfigFixture("team-binary-symbol-graph", { root: workspaceRoot }),
+          );
           assertEquals(await runTeamBinary(workspaceRoot, EDITION_TEAM, ["portal", "add", portalRoot, teamAlias]), 0);
           assertEquals(
             await runTeamBinary(workspaceRoot, EDITION_TEAM, ["portal", "analyze", teamAlias, "--mode", "standard"]),

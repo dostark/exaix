@@ -1,0 +1,17 @@
+[system]
+root = "__ROOT__"
+log_level = "error"
+
+[paths]
+flows = "Workspace/Flows"
+
+[agents]
+default_model = "mock:test"
+
+[models."mock:test"]
+provider = "mock"
+model = "test"
+
+[portal_knowledge]
+default_mode = "standard"
+enable_symbol_level_dependency_graph = true

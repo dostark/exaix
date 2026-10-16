@@ -2,9 +2,9 @@
 /**
  * @module CheckPathBuilders
  * @path scripts/check_path_builders.ts
- * @description Reports callers that build an Exaix workspace path on their own, either by joining
- *   a default segment constant or by spelling a root segment in a literal, instead of using a
- *   helper from `@exaix/shared`.
+ * @description Reports a module that owns the Exaix workspace layout instead of the shared
+ *   helpers. It covers four shapes: a join of a default constant, a root segment spelled in a
+ *   literal, a config entry that restates a default, and a `paths.<key>` assignment that does.
  *
  *   Usage: deno task check:path-builders
  * @architectural-layer Script
@@ -39,6 +39,15 @@ import {
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..");
 const ROOTS = ["packages", "apps", "exaix-team", "tests"];
+const PATH_CONSTANT = /^DEFAULT_[A-Z0-9_]*_PATH$/;
+const JOIN_CALLS = new Set(["join", "resolve", "normalize", "relative"]);
+const EXCLUDE_MARKER = "path-builder-exclude";
+/** The root segments that the helpers own. A literal run must start with one of them. */
+const ROOT_SEGMENTS = new Set(["Workspace", ".exa", "Memory", "Portals", "Blueprints"]);
+/** Blueprint subdirectories that no memory constant owns, so a literal may name them. */
+const BLUEPRINTS_SUBDIRS = new Set(["Skills"]);
+/** A path run anchored by a separator or by the end of a template interpolation. */
+const RAW_RUN = /[/}]([A-Za-z.][A-Za-z0-9._]*(?:\/[A-Za-z.][A-Za-z0-9._]*)*)/g;
 /** The default each `[paths]` key resolves to when a config omits it. */
 const PATH_DEFAULTS: Record<string, string> = {
   workspace: DEFAULT_WORKSPACE_PATH,
@@ -61,19 +70,80 @@ const PATH_DEFAULTS: Record<string, string> = {
   memoryTasks: DEFAULT_MEMORY_TASKS_DIR,
   memoryGlobal: DEFAULT_MEMORY_GLOBAL_DIR,
 };
-const TOML_ENTRY = /^\s*(\w+)\s*=\s*"([^"]*)"\s*$/;
-const PATH_CONSTANT = /^DEFAULT_[A-Z0-9_]*_PATH$/;
-const JOIN_CALLS = new Set(["join", "resolve", "normalize", "relative"]);
-const EXCLUDE_MARKER = "path-builder-exclude";
-/** The root segments that the helpers own. A literal run must start with one of them. */
-const ROOT_SEGMENTS = new Set(["Workspace", ".exa", "Memory", "Portals", "Blueprints"]);
-/** A path run anchored by a separator or by the end of a template interpolation. */
-const RAW_RUN = /[/}]([A-Za-z.][A-Za-z0-9._]*(?:\/[A-Za-z.][A-Za-z0-9._]*)*)/g;
+/** The shared constants that a test may interpolate into a config value. */
+const PLACEHOLDERS: Record<string, string> = {
+  DEFAULT_WORKSPACE_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PORTALS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_ARCHIVE_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_REJECTED_PATH,
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_FLOWS_DIR,
+  DEFAULT_MEMORY_PROJECTS_DIR,
+  DEFAULT_MEMORY_EXECUTION_DIR,
+  DEFAULT_MEMORY_INDEX_DIR,
+  DEFAULT_MEMORY_SKILLS_DIR,
+  DEFAULT_MEMORY_PENDING_DIR,
+  DEFAULT_MEMORY_TASKS_DIR,
+  DEFAULT_MEMORY_GLOBAL_DIR,
+};
+const TOML_ENTRY = /^\s*(\w+)\s*=\s*(.+?)\s*$/;
+const TOML_PATHS_HEADER = /^\s*\[paths\]\s*$/;
+const TOML_SECTION = /^\s*\[[^\]]+\]\s*$/;
+const PATHS_ASSIGNMENT = /\.paths\.(\w+)\s*=\s*"([^"]*)"/;
 /** The helper module and the tables that legitimately compose the defaults. */
 const DEFINITION_SITES = [
   "packages/shared/src/paths.ts",
   "packages/shared/src/constants.ts",
 ];
+/** A TOML section header, which marks a whole config document inside a literal. */
+const TOML_DOCUMENT = /^\s*\[(?:system|paths)\]\s*$/m;
+/**
+ * Test files that still embed a config document, with the reason each one is allowed to.
+ * A test reads a fixture from `fixtures/configs` instead, so the config is data, not code.
+ */
+const INLINE_CONFIG_ALLOW: Record<string, string> = {
+  "apps/exactl/tests/cli_fallback_regression_test.ts": "fixture extraction pending",
+  "apps/exactl/tests/request_create_dry_run_context_test.ts": "fixture extraction pending",
+  "exaix-team/apps/mcp-server/tests/mcp_git_factory_test.ts": "fixture extraction pending",
+  "exaix-team/apps/mcp-server/tests/server_context_test.ts": "fixture extraction pending",
+  "tests/scenario_framework/tests/unit/provider_live_evidence_test.ts": "fixture extraction pending",
+  "tests/scenario_framework/tests/unit/sandbox_cleanup_test.ts": "fixture extraction pending",
+  "apps/daemon/tests/deploy_workspace_test.ts": "fixture extraction pending",
+  "apps/exactl/tests/commands/skill_commands_cli_test.ts": "fixture extraction pending",
+  "apps/exactl/tests/daemon_config_reload_test.ts": "fixture extraction pending",
+  "apps/exactl/tests/exactl_module_import_regression_test.ts": "fixture extraction pending",
+  "apps/exactl/tests/helpers/test_utils.ts": "shared config builder",
+  "apps/exactl/tests/inspect_dispatch_test.ts": "fixture extraction pending",
+  "apps/exactl/tests/model_commands_test.ts": "fixture extraction pending",
+  "apps/exactl/tests/scaffold_test.ts": "fixture extraction pending",
+  "packages/core/tests/config/config_service_generation_test.ts": "fixture extraction pending",
+  "packages/execution/tests/agent_composer_react_strategy_test.ts": "fixture extraction pending",
+  "packages/execution/tests/agent_runner_planning_tools_test.ts": "fixture extraction pending",
+  "packages/flow/tests/agent_composer_adapter_namespace_prompt_test.ts": "fixture extraction pending",
+  "packages/schemas/tests/config_aci_docs_test.ts": "fixture extraction pending",
+  "packages/schemas/tests/config_flow_namespace_prompt_test.ts": "fixture extraction pending",
+  "packages/storage-sqlite/tests/test_mode_schema_test.ts": "fixture extraction pending",
+  "packages/testing/src/helpers/config.ts": "shared config builder",
+  "packages/testing/src/helpers/init_db.ts": "shared config builder",
+  "tests/config/config_security_test.ts": "crafts a parser fixture inline on purpose",
+  "tests/config/config_test.ts": "crafts a parser fixture inline on purpose",
+  "tests/integration/agent_runner_daemon_cutover_test.ts": "fixture extraction pending",
+  "tests/integration/dogfood_e2e_test.ts": "fixture extraction pending",
+  "tests/integration/dogfood_net_resolver_test.ts": "fixture extraction pending",
+  "tests/scenario_framework/tests/helpers/advanced_flow_case.ts": "shared config builder",
+  "tests/scenario_framework/tests/helpers/legacy_flow_case.ts": "shared config builder",
+  "tests/scenario_framework/tests/unit/cell_config_sentinel_test.ts": "fixture extraction pending",
+  "tests/scenario_framework/tests/unit/judge_bindings_test.ts": "fixture extraction pending",
+  "tests/scenario_framework/tests/unit/materialize_cell_config_test.ts": "fixture extraction pending",
+  "tests/scenario_framework/tests/unit/portal_mount_verification_test.ts": "fixture extraction pending",
+  "tests/scenario_framework/tests/unit/workspace_config_overrides_test.ts": "fixture extraction pending",
+};
 
 interface IViolation {
   readonly file: string;
@@ -92,13 +162,7 @@ function isPathConstant(node: ts.Expression): string | null {
   return ts.isIdentifier(node) && PATH_CONSTANT.test(node.text) ? node.text : null;
 }
 
-/** Blueprint subdirectories that no memory constant owns, so a literal may name them. */
-const BLUEPRINTS_SUBDIRS = new Set(["Skills"]);
-
-/**
- * True when the literal starts a root segment run that the helpers own, such as `/Portals/...`
- * or `}/Memory/...`. Prose, shell commands, and glob patterns are left alone.
- */
+/** True when the literal starts a root segment run, such as `/Portals/...` or `}/Memory/...`. */
 function rawRunStart(run: string): string | null {
   const segments = run.split("/");
   const first = segments[0];
@@ -107,15 +171,83 @@ function rawRunStart(run: string): string | null {
   return first;
 }
 
+/** The literal value of a config entry, or null when it holds an unknown interpolation. */
+function entryValue(raw: string): string | null {
+  const quoted = raw.match(/^"([^"]*)"$/);
+  const value = quoted ? quoted[1] : raw.replace(/^"/, "").replace(/"$/, "");
+  if (!value.includes("${")) return value;
+  let resolved = value;
+  for (const [name, replacement] of Object.entries(PLACEHOLDERS)) {
+    resolved = resolved.replaceAll("${" + name + "}", replacement);
+  }
+  resolved = resolved.replace(
+    /\$\{JSON\.stringify\(ExaPathDefaults\.(\w+)\)\}/g,
+    (_m, key) => PATH_DEFAULTS[key] ?? _m,
+  );
+  resolved = resolved.replace(/\$\{ExaPathDefaults\.(\w+)\}/g, (_m, key) => PATH_DEFAULTS[key] ?? _m);
+  return resolved.includes("${") ? null : resolved;
+}
+
+/** True when a `[paths]` value repeats the default that the schema would apply anyway. */
+function restatesDefault(key: string, raw: string): boolean {
+  const value = entryValue(raw);
+  if (value === null) return false;
+  const direct = PATH_DEFAULTS[key];
+  if (direct === undefined) return false;
+  return direct === value || (value.startsWith("./") && direct === value.slice(2));
+}
+
+/** A `[paths]` block inside a string or template literal, which repeats the schema defaults. */
+function scanEmbeddedToml(node: ts.Node, raw: string, repoPath: string, add: AddFn): void {
+  const startLine = node.getStart().valueOf();
+  void startLine;
+  const lines = raw.split(/\\n|\n/);
+  let inPaths = false;
+  for (const line of lines) {
+    if (TOML_SECTION.test(line)) {
+      inPaths = TOML_PATHS_HEADER.test(line);
+      continue;
+    }
+    if (!inPaths || line.trim().startsWith("#")) continue;
+    const match = TOML_ENTRY.exec(line);
+    if (!match) continue;
+    const [, key, value] = match;
+    if (!restatesDefault(key, value)) continue;
+    add(node, `embedded ${key} = ${value} restates the default`);
+  }
+}
+
+type AddFn = (node: ts.Node, detail: string, lineOffset?: number) => void;
+
+/** True when the file holds tests. */
+function isTestPath(repoPath: string): boolean {
+  return repoPath.includes("/tests/") || repoPath.endsWith("_test.ts");
+}
+
+/** Every literal in the file that holds a whole TOML config document. */
+function configDocumentNodes(source: ts.SourceFile): ts.Node[] {
+  const nodes: ts.Node[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isStringLiteral(node) || ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+      const raw = node.getText(source).slice(1, -1).replaceAll("\\n", "\n");
+      if (TOML_DOCUMENT.test(raw)) nodes.push(node);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return nodes;
+}
+
 function scanFile(repoPath: string, text: string): IViolation[] {
   const source = ts.createSourceFile(repoPath, text, ts.ScriptTarget.Latest, true);
   const lines = text.split("\n");
   const violations: IViolation[] = [];
-  const add = (node: ts.Node, detail: string): void => {
-    const line = source.getLineAndCharacterOfPosition(node.getStart(source)).line;
-    if (lines[line].includes(EXCLUDE_MARKER)) return;
-    if (line > 0 && lines[line - 1].includes(EXCLUDE_MARKER)) return;
-    violations.push({ file: repoPath, line: line + 1, detail });
+  const add: AddFn = (node, detail, lineOffset = 0): void => {
+    const startLine = source.getLineAndCharacterOfPosition(node.getStart(source)).line;
+    const line = startLine + lineOffset + 1;
+    if (lines[line - 1]?.includes(EXCLUDE_MARKER)) return;
+    if (line > 1 && lines[line - 2]?.includes(EXCLUDE_MARKER)) return;
+    violations.push({ file: repoPath, line, detail });
   };
   const scanRaw = (node: ts.Node, raw: string): void => {
     for (const match of raw.matchAll(RAW_RUN)) {
@@ -136,42 +268,63 @@ function scanFile(repoPath: string, text: string): IViolation[] {
       const parent = node.parent;
       const isSpecifier = (ts.isImportDeclaration(parent) || ts.isExportDeclaration(parent)) &&
         parent.moduleSpecifier === node;
-      if (!isSpecifier && !/\s/.test(node.text)) scanRaw(node, node.text);
+      if (!isSpecifier && !/\s/.test(node.text)) {
+        scanRaw(node, node.text);
+        scanEmbeddedToml(node, node.getText(source).slice(1, -1), repoPath, add);
+      }
     } else if (ts.isTemplateExpression(node)) {
+      scanEmbeddedToml(node, node.getText(source).slice(1, -1), repoPath, add);
       for (const span of node.templateSpans) {
         const raw = span.literal.getText(source);
         if (!/\s/.test(raw)) scanRaw(span.literal, raw);
       }
     } else if (ts.isNoSubstitutionTemplateLiteral(node)) {
       if (!/\s/.test(node.text)) scanRaw(node, node.text);
+      scanEmbeddedToml(node, node.text, repoPath, add);
     }
     ts.forEachChild(node, visit);
   };
   visit(source);
+  if (isTestPath(repoPath) && !(repoPath in INLINE_CONFIG_ALLOW)) {
+    for (const node of configDocumentNodes(source)) {
+      violations.push({
+        file: repoPath,
+        line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1,
+        detail: "embeds a whole config document. Read a fixture from fixtures/configs instead.",
+      });
+    }
+  }
+  for (let index = 0; index < lines.length; index++) {
+    const match = PATHS_ASSIGNMENT.exec(lines[index]);
+    if (!match) continue;
+    if (!restatesDefault(match[1], `"${match[2]}"`)) continue;
+    if (lines[index].includes(EXCLUDE_MARKER)) continue;
+    violations.push({
+      file: repoPath,
+      line: index + 1,
+      detail: `paths.${match[1]} = "${match[2]}" restates the default`,
+    });
+  }
   return violations;
 }
 
-/** A `[paths]` entry that restates the schema default, so the layout has a second owner. */
+/** A `[paths]` entry in a shipped config that restates the schema default. */
 function scanToml(repoPath: string, text: string): IViolation[] {
   const violations: IViolation[] = [];
   const lines = text.split("\n");
   let inPaths = false;
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
-    if (/^\s*\[/.test(line)) {
-      inPaths = line.trim() === "[paths]";
+    if (TOML_SECTION.test(line)) {
+      inPaths = TOML_PATHS_HEADER.test(line);
       continue;
     }
     if (!inPaths || line.trim().startsWith("#")) continue;
-    const match = TOML_ENTRY.exec(line);
+    const match = /^\s*(\w+)\s*=\s*"([^"]*)"\s*$/.exec(line);
     if (!match) continue;
     const [, key, value] = match;
-    if (PATH_DEFAULTS[key] !== value) continue;
-    violations.push({
-      file: repoPath,
-      line: index + 1,
-      detail: `${key} = "${value}" restates the default`,
-    });
+    if (!restatesDefault(key, `"${value}"`)) continue;
+    violations.push({ file: repoPath, line: index + 1, detail: `${key} = "${value}" restates the default` });
   }
   return violations;
 }

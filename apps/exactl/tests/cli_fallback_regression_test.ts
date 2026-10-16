@@ -228,8 +228,6 @@ Deno.test("[regression] BlueprintCommands works with stub db", async () => {
 Deno.test("[regression] RequestCommands works with stub db", async () => {
   // Create minimal config
   const config = createMockConfig(Deno.cwd());
-  config.paths.workspace = "Workspace";
-  config.paths.requests = "Requests";
 
   // Create stub db with required methods
   const stubDb = createStubDb();

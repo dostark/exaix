@@ -14,13 +14,6 @@
  * @related-files [tests/scenario_framework/scenarios/portal_knowledge/planning-read-only-tools.yaml, tests/scenario_framework/scenarios/adversarial/planning-tool-output-attacked.yaml, tests/scenario_framework/scenarios/portal_knowledge/tool-aliasing.yaml, tests/scenario_framework/scenarios/adversarial/tool-alias-confinement-attacked.yaml]
  */
 
-import {
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_PORTALS_PATH,
-  DEFAULT_RUNTIME_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
 import { join } from "@std/path";
 import type { JSONValue } from "@exaix/core/types";
 
@@ -191,12 +184,6 @@ const config = [
   `root = "${workspaceRoot}"`,
   'log_level = "info"',
   "",
-  "[paths]",
-  `workspace = "./${DEFAULT_WORKSPACE_PATH}"`,
-  `blueprints = "./${DEFAULT_BLUEPRINTS_PATH}"`,
-  `runtime = "./${DEFAULT_RUNTIME_PATH}"`,
-  `memory = "./${DEFAULT_MEMORY_PATH}"`,
-  `portals = "./${DEFAULT_PORTALS_PATH}"`,
   "",
   "[ai]",
   'provider = "mock"',

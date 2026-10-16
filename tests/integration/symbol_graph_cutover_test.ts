@@ -14,8 +14,8 @@
  * @architectural-layer Test
  */
 
-import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
+import { readConfigFixture } from "./helpers/config_fixture.ts";
 import { join } from "@std/path";
 import { EDITION_ENTERPRISE } from "@exaix/core";
 import {
@@ -133,40 +133,13 @@ Deno.test("[cutover] the phase's Enterprise edition constant is the one the modu
   assertEquals(EDITION_ENTERPRISE, "enterprise");
 });
 
-/** A workspace config that enables the Enterprise symbol graph. */
-function enterpriseConfigToml(root: string): string {
-  return `
-[system]
-root = "${root}"
-log_level = "error"
-
-[paths]
-runtime = "./${DEFAULT_RUNTIME_PATH}"
-memory = "Memory"
-workspace = "Workspace"
-flows = "Workspace/Flows"
-blueprints = "Blueprints"
-
-[agents]
-default_model = "mock:test"
-
-[models."mock:test"]
-provider = "mock"
-model = "test"
-
-[portal_knowledge]
-default_mode = "standard"
-enable_symbol_level_dependency_graph = true
-`;
-}
-
 Deno.test("[cutover] the real exactl composition root reaches the symbol graph when EXAIX_EDITION=enterprise", async () => {
   const workspaceRoot = await Deno.makeTempDir({ prefix: "exa_cutover_root_" });
   const alias = "go-reference-cli-root";
   const originalEdition = Deno.env.get("EXAIX_EDITION");
   try {
     const configPath = join(workspaceRoot, "config.toml");
-    await Deno.writeTextFile(configPath, enterpriseConfigToml(workspaceRoot));
+    await Deno.writeTextFile(configPath, readConfigFixture("enterprise-symbol-graph", { root: workspaceRoot }));
 
     // The CLI composition root: edition selection, composer, and registry wiring.
     Deno.env.set("EXAIX_EDITION", EDITION_ENTERPRISE);

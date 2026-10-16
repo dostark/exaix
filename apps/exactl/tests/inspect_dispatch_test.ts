@@ -136,26 +136,6 @@ root = ${JSON.stringify(root)}
 version = "1.0.0"
 log_level = "info"
 
-[paths]
-memory = ${JSON.stringify(ExaPathDefaults.memory)}
-blueprints = ${JSON.stringify(ExaPathDefaults.blueprints)}
-runtime = ${JSON.stringify(ExaPathDefaults.runtime)}
-workspace = ${JSON.stringify(ExaPathDefaults.workspace)}
-portals = ${JSON.stringify(ExaPathDefaults.portals)}
-active = ${JSON.stringify(ExaPathDefaults.active)}
-archive = ${JSON.stringify(ExaPathDefaults.archive)}
-plans = ${JSON.stringify(ExaPathDefaults.plans)}
-requests = ${JSON.stringify(ExaPathDefaults.requests)}
-rejected = ${JSON.stringify(ExaPathDefaults.rejected)}
-agents = ${JSON.stringify(ExaPathDefaults.agents)}
-flows = ${JSON.stringify(ExaPathDefaults.flows)}
-memoryProjects = ${JSON.stringify(ExaPathDefaults.memoryProjects)}
-memoryExecution = ${JSON.stringify(ExaPathDefaults.memoryExecution)}
-memoryIndex = ${JSON.stringify(ExaPathDefaults.memoryIndex)}
-memorySkills = ${JSON.stringify(ExaPathDefaults.memorySkills)}
-memoryPending = ${JSON.stringify(ExaPathDefaults.memoryPending)}
-memoryTasks = ${JSON.stringify(ExaPathDefaults.memoryTasks)}
-memoryGlobal = ${JSON.stringify(ExaPathDefaults.memoryGlobal)}
 `.trim();
 }
 

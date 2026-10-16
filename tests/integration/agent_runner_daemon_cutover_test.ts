@@ -29,17 +29,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import {
-  DEFAULT_ACTIVE_PATH,
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_BLUEPRINTS_PATH,
-  DEFAULT_MEMORY_PATH,
-  DEFAULT_PLANS_PATH,
-  DEFAULT_PORTALS_PATH,
-  DEFAULT_REQUESTS_PATH,
-  DEFAULT_RUNTIME_PATH,
-  DEFAULT_WORKSPACE_PATH,
-} from "@exaix/shared";
+import { DEFAULT_ACTIVE_PATH, DEFAULT_AGENTS_PATH, DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertLessOrEqual } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -657,12 +647,6 @@ function writeDaemonConfigForAdaptiveCutover(
     `root = "${root}"`,
     'log_level = "debug"',
     "",
-    "[paths]",
-    `workspace = "./${DEFAULT_WORKSPACE_PATH}"`,
-    `blueprints = "./${DEFAULT_BLUEPRINTS_PATH}"`,
-    `runtime = "./${DEFAULT_RUNTIME_PATH}"`,
-    `memory = "./${DEFAULT_MEMORY_PATH}"`,
-    `portals = "./${DEFAULT_PORTALS_PATH}"`,
     "",
     "[ai]",
     'provider = "mock"',

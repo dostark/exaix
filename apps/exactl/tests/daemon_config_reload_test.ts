@@ -29,9 +29,6 @@ Deno.test("Daemon: Config Reloading on File Change", async () => {
 version = "1.0.0"
 log_level = "info"
 
-[paths]
-workspace = "${ExaPathDefaults.workspace}"
-portals = "${ExaPathDefaults.portals}"
 # ... minimal required paths
 runtime = "${ExaPathDefaults.runtime}"
 memory = "${ExaPathDefaults.memory}"

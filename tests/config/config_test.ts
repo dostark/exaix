@@ -444,8 +444,6 @@ version = "1.0.0"
 log_level = "invalid_level"
 
 [paths]
-memory = "./${DEFAULT_MEMORY_PATH}"
-blueprints = "./${DEFAULT_BLUEPRINTS_PATH}"
 runtime = "./Runtime"
       `.trim(),
       );
@@ -469,8 +467,6 @@ runtime = "./Runtime"
 log_level = "info"
 
 [paths]
-memory = "./${DEFAULT_MEMORY_PATH}"
-blueprints = "./${DEFAULT_BLUEPRINTS_PATH}"
 runtime = "./Runtime"
 
 [agents]
@@ -547,8 +543,6 @@ log_level = "info"
 unknown_field = "should be ignored"
 
 [paths]
-memory = "./${DEFAULT_MEMORY_PATH}"
-blueprints = "./${DEFAULT_BLUEPRINTS_PATH}"
 runtime = "./Runtime"
 
 [unknown_section]
@@ -600,9 +594,6 @@ runtime = "./系統"
     const content = `[system]
 log_level = "info"
 
-[paths]
-memory = "./${DEFAULT_MEMORY_PATH}"
-blueprints = "./${DEFAULT_BLUEPRINTS_PATH}"
 runtime = "./Runtime"`;
 
     const configPath1 = `${tempDir}/test-checksum-1.toml`;
@@ -639,8 +630,6 @@ runtime = "./Runtime"`;
 log_level = "info"
 
 [paths]
-memory = "./${DEFAULT_MEMORY_PATH}"
-blueprints = "./${DEFAULT_BLUEPRINTS_PATH}"
 runtime = "./Runtime"`,
       );
 
@@ -650,8 +639,6 @@ runtime = "./Runtime"`,
 log_level = "debug"
 
 [paths]
-memory = "./${DEFAULT_MEMORY_PATH}"
-blueprints = "./${DEFAULT_BLUEPRINTS_PATH}"
 runtime = "./Runtime"`,
       );
 

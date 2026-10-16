@@ -7,43 +7,14 @@
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { ConfigService } from "@exaix/core/config";
 import { join } from "@std/path";
-
-const DOGFOOD_CONFIG_TOML = `
-[system]
-root = "./.dogfood"
-log_level = "info"
-
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
-[ai]
-provider = "ollama"
-model = "ollama/llama3"
-
-[[portals]]
-alias = "exaix-self"
-target_path = "__WORKTREE_PATH__"
-execution_strategy = "worktree"
-default_branch = "main"
-
-[portal_knowledge]
-auto_analyze_on_mount = true
-
-[quality_gate]
-enabled = false
-
-[request_analysis]
-enabled = true
-`;
+import { readConfigFixture } from "./helpers/config_fixture.ts";
 
 Deno.test("dogfood config loads without error via ConfigService", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "dogfood-config-test-" });
 
   try {
     const configPath = join(tempDir, "dogfood.toml");
-    await Deno.writeTextFile(configPath, DOGFOOD_CONFIG_TOML);
+    await Deno.writeTextFile(configPath, readConfigFixture("dogfood-config-loading"));
 
     const service = new ConfigService(configPath);
     const config = service.get();
