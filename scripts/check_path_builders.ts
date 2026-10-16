@@ -140,9 +140,7 @@ function restatesDefault(key: string, raw: string): boolean {
 }
 
 /** A `[paths]` block inside a string or template literal, which repeats the schema defaults. */
-function scanEmbeddedToml(node: ts.Node, raw: string, repoPath: string, add: AddFn): void {
-  const startLine = node.getStart().valueOf();
-  void startLine;
+function scanEmbeddedToml(node: ts.Node, raw: string, add: AddFn): void {
   const lines = raw.split(/\\n|\n/);
   let inPaths = false;
   for (const line of lines) {
@@ -206,17 +204,17 @@ function scanFile(repoPath: string, text: string): IViolation[] {
         parent.moduleSpecifier === node;
       if (!isSpecifier && !/\s/.test(node.text)) {
         scanRaw(node, node.text);
-        scanEmbeddedToml(node, node.getText(source).slice(1, -1), repoPath, add);
+        scanEmbeddedToml(node, node.getText(source).slice(1, -1), add);
       }
     } else if (ts.isTemplateExpression(node)) {
-      scanEmbeddedToml(node, node.getText(source).slice(1, -1), repoPath, add);
+      scanEmbeddedToml(node, node.getText(source).slice(1, -1), add);
       for (const span of node.templateSpans) {
         const raw = span.literal.getText(source);
         if (!/\s/.test(raw)) scanRaw(span.literal, raw);
       }
     } else if (ts.isNoSubstitutionTemplateLiteral(node)) {
       if (!/\s/.test(node.text)) scanRaw(node, node.text);
-      scanEmbeddedToml(node, node.text, repoPath, add);
+      scanEmbeddedToml(node, node.text, add);
     }
     ts.forEachChild(node, visit);
   };
@@ -268,11 +266,6 @@ function scanToml(repoPath: string, text: string): IViolation[] {
   }
   return violations;
 }
-
-/** A scenario step that spells a workspace segment without the `$WORKSPACE_ROOT` anchor. */
-const YAML_ANCHORED_RUN = /\$WORKSPACE_ROOT/;
-const YAML_BARE_SEGMENT =
-  /^\s*(?:[-\w]*:\s*)?(?:\[\s*)?"\/?(?:Workspace|\.exa|Memory|Portals|Blueprints)(?:\/[A-Za-z.]+)*"/;
 
 /** A scenario step that embeds a config document, which a `content_from` fixture replaces. */
 function scanScenarioYaml(repoPath: string, text: string): IViolation[] {
