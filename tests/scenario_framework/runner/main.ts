@@ -211,6 +211,7 @@ await new Command()
       }
       console.log(`\nScenario: ${entry.id}`);
       const trialScores: number[] = [];
+      const trialOutcomes: string[] = [];
       let trialInfraError = false;
 
       for (let trial = 0; trial < trials; trial++) {
@@ -223,6 +224,7 @@ await new Command()
               const cachedScore = cached.manifest.suite_score ?? 1.0;
               console.log(`${trialLabel} Reusing cached result (score: ${cachedScore.toFixed(3)})`);
               trialScores.push(cachedScore);
+              trialOutcomes.push(cached.manifest.outcome);
               if (trial === 0) manifests.set(entry.id, cached.manifest);
               continue;
             }
@@ -293,6 +295,7 @@ await new Command()
 
           const suiteScore = result.manifest.suite_score ?? 1.0;
           trialScores.push(suiteScore);
+          trialOutcomes.push(result.manifest.outcome);
 
           if (trial === 0) {
             manifests.set(entry.id, result.manifest);
@@ -347,6 +350,7 @@ await new Command()
           trialInfraError = true;
           if (entry.pack === "persona_response_eval") break;
           trialScores.push(0);
+          trialOutcomes.push("infra-error");
         }
       }
 
@@ -369,9 +373,9 @@ await new Command()
       let isPassed: boolean;
 
       if (trials > 1) {
-        const metrics = computeMultiTrialMetrics(trialScores, scoreThreshold ?? 0.5);
+        const metrics = computeMultiTrialMetrics(trialScores, scoreThreshold ?? 0.5, trialOutcomes);
         suiteScore = metrics.mean;
-        isPassed = resolveScenarioVerdict(manifests.get(entry.id)?.outcome, suiteScore, scoreThreshold);
+        isPassed = trialOutcomes.every((outcome) => resolveScenarioVerdict(outcome, suiteScore, scoreThreshold));
         console.log(
           `  Aggregate: mean=${metrics.mean.toFixed(3)} pass_at_1=${metrics.pass_at_1.toFixed(3)} pass_pow_k=${
             metrics.pass_pow_k.toFixed(3)

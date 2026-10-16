@@ -10,6 +10,11 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { levenshteinTrajectory, scoreTrajectory } from "../../runner/trajectory_evaluator.ts";
 import type { IExpectedTrajectory } from "../../runner/trajectory_evaluator.ts";
 import type { ITrajectoryResult } from "../../runner/trajectory_evaluator.ts";
+import { initTestDbService } from "@exaix/testing";
+import { ACTIVITY_EVENT_DYNAMIC_TOOL_CALL } from "@exaix/core";
+import { executeScenarioStep } from "../../runner/step_executor.ts";
+import { evaluateStepOutcome, StepFailureStage } from "../../runner/assertions.ts";
+import { CriterionPhase, ScenarioStepSchema } from "../../schema/step_schema.ts";
 
 function makeObserved(tools: string[]): ITrajectoryResult {
   return {
@@ -35,6 +40,55 @@ const EXPECTED_SEQUENCE_SHARED: Array<{ tool: string }> = [
   { tool: "edit_file" },
   { tool: "write_file" },
 ];
+
+for (const threshold of [undefined, 0.5]) {
+  Deno.test(`[TrajectoryEvaluator] a partial score survives execution classification with threshold ${threshold}`, async () => {
+    const { db, tempDir, cleanup } = await initTestDbService();
+    try {
+      db.logActivity("system", ACTIVITY_EVENT_DYNAMIC_TOOL_CALL, "read_file", { tool: "read_file", args: {} }, "trace");
+      await db.waitForFlush();
+      const step = ScenarioStepSchema.parse({
+        id: "partial-trajectory",
+        type: "trajectory-assert",
+        source_step: "live-flow",
+        source_step_rowid_start: 0,
+        source_step_rowid_end: 100,
+        expected_sequence: [{ tool: "read_file" }, { tool: "list_directory" }],
+        order_matters: false,
+        partial_credit: true,
+        step_pass_threshold: threshold,
+      });
+      const execution = await executeScenarioStep({ step, cwd: tempDir });
+      assertEquals(execution.exitCode, 0, "a mismatched reference is an output failure");
+      const outcome = await evaluateStepOutcome({ step, workspaceRoot: tempDir, executionResult: execution });
+      assertEquals(outcome.criterionResults[0].score, 0.5);
+      assertEquals(outcome.failureStage, threshold === undefined ? CriterionPhase.OUTPUT : null);
+      assertEquals(outcome.status, threshold === undefined ? "failed" : "passed");
+    } finally {
+      await cleanup();
+    }
+  });
+}
+
+Deno.test("[TrajectoryEvaluator] a missing journal remains an execution failure", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "trajectory-missing-" });
+  try {
+    const step = ScenarioStepSchema.parse({
+      id: "missing-journal",
+      type: "trajectory-assert",
+      source_step: "live-flow",
+      expected_sequence: [{ tool: "read_file" }],
+      step_pass_threshold: 0,
+    });
+    const execution = await executeScenarioStep({ step, cwd: workspace });
+    const outcome = await evaluateStepOutcome({ step, workspaceRoot: workspace, executionResult: execution });
+    assertEquals(execution.exitCode, 1);
+    assertEquals(outcome.failureStage, StepFailureStage.EXECUTION);
+    assertEquals(outcome.status, "failed");
+  } finally {
+    await Deno.remove(workspace, { recursive: true });
+  }
+});
 
 Deno.test("[TrajectoryEvaluator] exact match with order_matters=true returns score 1.0", () => {
   const observed = makeObserved(["read_file", "edit_file", "write_file"]);

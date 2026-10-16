@@ -156,9 +156,10 @@ Deno.test("[agent_role_merge] each merged role declares a pattern-mock cell and 
 
     // The live cell is opt-in, so CI records a skip instead of a failure.
     assertEquals(live.requires_optin, LIVE_CELL_OPT_IN, `${role} live cell needs the opt-in`);
-    assertEquals(live.config, "configs/anthropic-no-delegate.toml", `${role} live cell config`);
-    assert(live.requires_key, `${role} live cell must gate on its provider key`);
-    assertEquals(configProvider(live.config), "anthropic", `${role} live cell config provider`);
+    assertEquals(live.config, "configs/subsystem-live.toml", `${role} live cell config`);
+    assertEquals(live.requires_key, "DEEPSEEK_API_KEY", `${role} live driver needs its configured key`);
+    assertEquals(live.provider, "openai-chat", `${role} must not override its provider with an unknown name`);
+    assertEquals(configProvider(live.config), "openai-chat", `${role} live cell config provider`);
   }
 });
 
@@ -176,10 +177,14 @@ Deno.test("[agent_role_merge] the mock cell keeps the smoke criteria and the liv
     assertEquals(judgePreset(mockSteps), undefined, `${role} mock cell must not run a judge`);
 
     const liveKinds = criterionKinds(liveSteps);
-    for (const kind of ["json-path-exists", "llm-judge"]) {
+    for (const kind of ["frontmatter-field-equals", "llm-judge"]) {
       assert(liveKinds.includes(kind), `${role} live cell must keep the '${kind}' criterion`);
     }
     assertEquals(judgePreset(liveSteps), preset, `${role} live cell judge preset`);
+    for (const judgeStep of liveSteps.filter(isJudgeBearingStep)) {
+      assertEquals(judgeStep.step_pass_threshold, 0.7, `${role} must accept a judge score at its declared threshold`);
+      assertEquals(judgeStep.output_criteria.length, 1, `${role} structural checks must not dilute the judge score`);
+    }
 
     // Both cells still submit the same request fixture the pair already shared. The live cell
     // keeps the portal the validation mounted. The mock cell never needed one.
@@ -234,7 +239,7 @@ Deno.test("[agent_role_merge] the judge is skipped in the mock cell and bound in
   const scenario = await readScenario(mergedScenarioPath(role));
   const cells = scenario.matrix!.cells!;
   const { mock, live } = cellsByTool(cells);
-  const env = { EXA_MATRIX_AGENT_ROLE_LIVE: "1", ANTHROPIC_API_KEY: "k" };
+  const env = { EXA_MATRIX_AGENT_ROLE_LIVE: "1", DEEPSEEK_API_KEY: "fixture-key" };
   const groups = expandMatrix(scenario.steps, { cells: [...cells] }, {
     env,
     binOnPath: () => true,
@@ -263,7 +268,8 @@ Deno.test("[agent_role_merge] the judge is skipped in the mock cell and bound in
 
   assertEquals(plan.issues, [], "the judge binding must resolve without an issue");
   assertEquals(plan.bindings.get("validate-plan-content")?.binding.service, "claude-cli");
-  assertEquals(plan.bindings.get("validate-plan-content")?.binding.model, "anthropic/claude-sonnet-5");
+  assertEquals(plan.bindings.get("validate-plan-content")?.binding.model, "claude-cli/claude-haiku-4-5");
+  assertEquals(plan.bindings.get("validate-plan-content")?.binding.service_model_id, "claude-haiku-4-5");
 
   // An operator runs the live tier alone with `--cell live`, which matches the live cell's tool.
   const selected = expandMatrix(scenario.steps, { cells: [...cells] }, {

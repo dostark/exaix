@@ -36,7 +36,12 @@ import { type IScenario, ScenarioSchema } from "../../schema/scenario_schema.ts"
 import { SCHEMA_VERSION } from "../../schema/version.ts";
 import { buildRunBindingsFile, orderedRequestOverlays, planScenarioBindings } from "../../runner/binding_layers.ts";
 import { overlayRequestBindings } from "../../runner/matrix_expander.ts";
-import { callLlmEndpoint, evaluateLlmJudgeCriterion, type IEvaluateCriterionOptions } from "../../runner/assertions.ts";
+import {
+  callLlmEndpoint,
+  evaluateLlmJudgeCriterion,
+  evaluateStepOutcome,
+  type IEvaluateCriterionOptions,
+} from "../../runner/assertions.ts";
 import {
   assertJudgeBindingsResolved,
   buildJudgeStepRef,
@@ -362,6 +367,20 @@ const REVIEWED_JUDGE_BINDING_PRESETS = new Set(["self-hosted-fixture"]);
 /** The reviewed merged agent-role scenarios. Each binds its live cell's judge to the claude-cli delegate,
  *  so a live judge needs no provider credential. */
 const REVIEWED_JUDGE_BINDING_SCENARIOS = new Set([
+  "code-analyst-smoke",
+  "default-smoke",
+  "dogfood-developer-smoke",
+  "research-synthesizer-smoke",
+  "voting-judge-smoke",
+  "flow-quality-api-documentation",
+  "flow-quality-bug-investigation",
+  "flow-quality-pr-review",
+  "skill-effectiveness-code-review",
+  "skill-effectiveness-portal-grounding",
+  "skill-effectiveness-security-first",
+  "skill-effectiveness-tdd-methodology",
+  "skill-effectiveness-typescript-patterns",
+
   "performance-engineer-smoke",
   "product-manager-smoke",
   "qa-engineer-smoke",
@@ -376,7 +395,7 @@ const REVIEWED_JUDGE_BINDING_SCENARIOS = new Set([
 /** The Step 26 scenario: it declares a scenario judge binding so an operator `--bind` can move it. */
 const REVIEWED_JUDGE_BINDING_TEST_SCENARIOS = new Set(["operator-override-axes"]);
 
-Deno.test("[judge][regression] only the reviewed fixture preset declares a judge binding, so every other judge keeps its env path", async () => {
+Deno.test("[judge][regression] only reviewed quality scenarios and fixture presets declare judge bindings", async () => {
   const scenarios = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
   const offenders: string[] = [];
   const reviewedScenarios = new Set<string>();
@@ -750,4 +769,94 @@ Deno.test("[judge.timeout] an API judge keeps its existing timeout", async () =>
   };
   const observed = await captureBoundJudge(binding);
   assertEquals(observed.timeoutMs, DEFAULT_AI_TIMEOUT_MS);
+});
+
+for (const explicitEvidence of [false, true]) {
+  Deno.test(`[judge.artifact] ${explicitEvidence ? "explicit evidence overrides the file pattern" : "the newest artifact reaches the judge instead of readiness output"}`, async () => {
+    const dir = await Deno.makeTempDir({ prefix: "judge-artifact-" });
+    bootstrapProviderRegistry();
+    const factory = ProviderRegistry.getFactory(CLI_JUDGE.adapter)!;
+    const provider = new MockLLMProvider(MockStrategy.SCRIPTED, {
+      responses: ['{"score":0.8,"reasoning":"Grounded artifact assessment"}'],
+    });
+    let promptUsed = "";
+    const generate = provider.generate.bind(provider);
+    const generateStub = stub(provider, "generate", (prompt, options) => {
+      promptUsed = prompt;
+      return generate(prompt, options);
+    });
+    const createStub = stub(factory, "create", () => Promise.resolve(provider));
+    try {
+      await Deno.writeTextFile(join(dir, "earlier_plan.md"), "STALE_ARTIFACT_BODY");
+      await Deno.utime(join(dir, "earlier_plan.md"), new Date(0), new Date(0));
+      await Deno.writeTextFile(join(dir, "current_plan.md"), "CURRENT_ARTIFACT_BODY with actual task evidence");
+      await Deno.writeTextFile(join(dir, "explicit.md"), "EXPLICIT_ARTIFACT_BODY");
+      const step = ScenarioStepSchema.parse({
+        id: "grade-artifact",
+        type: "file-contains",
+        file_pattern: "*_plan.md",
+        step_pass_threshold: 0.7,
+        output_criteria: [{
+          id: "quality",
+          kind: "llm-judge",
+          rubric: "Evaluate task evidence",
+          score_threshold: 0.7,
+          ...(explicitEvidence ? { evidence_path: "explicit.md" } : {}),
+        }],
+      });
+      const outcome = await evaluateStepOutcome({
+        workspaceRoot: dir,
+        step,
+        judgeBinding: CLI_JUDGE,
+        env: { EXA_EVAL_LLM_MOCK: "false" },
+        executionResult: {
+          stepId: step.id,
+          stepType: step.type,
+          startedAt: "",
+          completedAt: "",
+          durationMs: 0,
+          exitCode: 0,
+          stdout: "File(s) ready: current_plan.md",
+          stderr: "",
+          combinedOutput: "",
+        },
+      });
+      assertEquals(outcome.status, CriterionStatus.PASSED);
+      assertStringIncludes(
+        promptUsed,
+        explicitEvidence ? "EXPLICIT_ARTIFACT_BODY" : "CURRENT_ARTIFACT_BODY with actual task evidence",
+      );
+      assertEquals(promptUsed.includes("STALE_ARTIFACT_BODY"), false);
+      assertEquals(promptUsed.includes("File(s) ready:"), false);
+      assertEquals(outcome.criterionResults[0].evidence_refs, [
+        explicitEvidence ? "explicit.md" : join(dir, "current_plan.md"),
+      ]);
+    } finally {
+      createStub.restore();
+      generateStub.restore();
+      await Deno.remove(dir, { recursive: true });
+    }
+  });
+}
+
+Deno.test("[judge.artifact] an unreadable declared artifact fails instead of grading stdout", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "judge-missing-artifact-" });
+  try {
+    const result = await evaluateLlmJudgeCriterion({
+      workspaceRoot: dir,
+      phase: CriterionPhase.OUTPUT,
+      criterion: {
+        id: "quality",
+        kind: CriterionKind.LLM_JUDGE,
+        rubric: "Assess the artifact",
+        evidence_path: "missing.md",
+        score_threshold: 0.7,
+      },
+      env: { EXA_EVAL_LLM_MOCK: "pass" },
+    });
+    assertEquals(result.status, CriterionStatus.ERROR);
+    assertStringIncludes(result.message, "evidence file");
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
 });

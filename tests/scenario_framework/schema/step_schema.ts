@@ -523,6 +523,7 @@ export const ScenarioStepSchema = z.object({
   output_criteria: z.array(CriterionSchema).optional().default([]),
   step_weight: z.number().min(0).max(1).optional(),
   source_step: z.string().min(1).optional(),
+  through_step: z.string().min(1).optional(),
   source_step_rowid_start: z.number().int().min(0).optional(),
   source_step_rowid_end: z.number().int().min(0).optional(),
   expected_sequence: z.array(ExpectedSequenceEntrySchema).optional(),

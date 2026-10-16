@@ -232,7 +232,6 @@ export async function executeScenarioStep(
     };
 
     const results = scoreTrajectory(trajectoryObserved, trajectoryExpected);
-    const allPassed = results.every((r) => r.status === "passed");
     const stdout = results.map((r) => r.message).join("\n");
 
     const completedAtEpochMs = monotonicNowMs();
@@ -244,7 +243,7 @@ export async function executeScenarioStep(
       startedAt,
       completedAt,
       durationMs: completedAtEpochMs - startedAtEpochMs,
-      exitCode: allPassed ? 0 : 1,
+      exitCode: capture.error ? 1 : 0,
       stdout,
       stderr: "",
       combinedOutput: stdout,

@@ -904,6 +904,9 @@ cloud model is available, and automatic approval stays off until you enable it.
 
 ### Fixed
 
+- Trajectory evaluations retain partial scores and can capture tool calls through asynchronous flow completion.
+- File-based quality judges receive the matching artifact text and fail when it cannot be read.
+- Multi-trial reliability uses trial outcomes, so passing setup steps cannot conceal failed checks.
 - `exactl flow list`, `flow show` and `flow validate` reported "No flows found" against a workspace that held flows, because the default flow-catalog path pointed at a directory the catalog has never shipped in.
 - A flow request created from the CLI was rejected by the daemon the moment it was parsed, so flow requests now run end-to-end for the first time.
 - `exactl request --file` discarded the submitted file's own frontmatter — its skills, tags, identity and priority ended up as literal text in the request body instead of taking effect.

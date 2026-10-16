@@ -6395,20 +6395,62 @@ exactl eval report --group-by subsystem
 > **Run these by hand.** None is attached to a CI job or to the pre-commit gates. `eval:subsystems`
 > spawns daemons across roughly seventy scenarios; the nightly tier below spends provider budget.
 
-**The nightly provider-live recipe.** The mock tier proves mechanics. Anything about _which_ tool an
-agent reaches for, or how good its output is, needs a real model — the mock provider emits no tool
-calls at all, so a trajectory score there is always 0.00 and never partial.
+**The nightly provider-live recipe.** The mock tier proves mechanics through controlled responses.
+Tool-selection and output-quality baselines require live model decisions.
 
 ```bash
-EXA_LLM_PROVIDER=google \
-deno run -A tests/scenario_framework/runner/main.ts \
-  --tag subsystem:mcp-client --tag provider-live \
+# Requires DEEPSEEK_API_KEY; the judge uses the subscription Claude CLI.
+# Strip unrelated API credentials and inherited driver selections.
+env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
+  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL \
+  EXAIX_EDITION=team EXA_MATRIX_AGENT_ROLE_LIVE=1 EXA_EVAL_LLM_MOCK=false \
+  deno run -A tests/scenario_framework/runner/main.ts \
+  --pack agent_role_eval --cell live --mode auto --eval-mode
+
+# Five skill-effectiveness cases and three shipped-flow artifact cases.
+env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
+  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL \
+  EXAIX_EDITION=team EXA_EVAL_LLM_MOCK=false \
+  deno run -A tests/scenario_framework/runner/main.ts \
+  --tag nightly-quality --tag provider-live --cell live --mode auto --eval-mode
+
+# Reliability: repeat the four-role subset.
+env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
+  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL \
+  EXAIX_EDITION=team EXA_MATRIX_AGENT_ROLE_LIVE=1 EXA_EVAL_LLM_MOCK=false \
+  deno run -A tests/scenario_framework/runner/main.ts \
+  --scenario senior-coder-smoke --scenario code-analyst-smoke \
+  --scenario software-architect-smoke --scenario quality-judge-smoke \
+  --cell live --mode auto --eval-mode --trials 3
+
+# Real tool selection and an imperfect-reference partial-credit control.
+env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
+  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL EXAIX_EDITION=team \
+  deno run -A tests/scenario_framework/runner/main.ts \
+  --scenario selection-multi-tool-partial-credit --cell openai-chat \
   --mode auto --eval-mode --trials 3
+
+exactl eval report --group-by subsystem
+exactl eval report --group-by entity
 ```
+
+Role artifacts can contain execution steps, analysis, or QA reports. The live structural
+check verifies role attribution; the separate judge evaluates the requested content.
+Reliability pass rates require both a successful trial outcome and its score threshold.
+Passing setup steps cannot turn a failed judge criterion into a successful trial. A file-based
+judge receives the matching artifact text. If that file cannot be read, the judge returns an
+error instead of grading the step's readiness message.
 
 `--tag provider-live` turns off the CI-safety filter that normally drops those scenarios; it does
 not widen the selection into other packs. Do not pin `EXA_LLM_PROVIDER` inside a scenario — step
 `env` is merged last and would override the value you set here.
+
+The trajectory scenario captures two real tool calls and scores an imperfect three-tool
+reference at 2/3. That is a scoring control, separate from tool-selection quality. Matrix cells
+select their provider through their configuration. The live quality config uses DeepSeek
+for the system under test and Claude Haiku through `claude-cli` for the judge. Record the
+judge criterion score separately from the suite score. Keep quality failures in the baseline;
+exclude malformed judge responses and provider failures from quality-score aggregates.
 
 Scenario sandboxes are reclaimed on success and kept on failure; reclaim the backlog with
 `deno task sandboxes:prune` (dry-run by default). See

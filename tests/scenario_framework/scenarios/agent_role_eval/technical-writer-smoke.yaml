@@ -12,7 +12,7 @@ bindings:
   # The judge grades through a CLI delegate, so it needs no provider credential.
   judge:
     service: "claude-cli"
-    model: "anthropic/claude-sonnet-5"
+    model: "claude-cli/claude-haiku-4-5"
 matrix:
   cells:
     # The mock cell is the former smoke. CI runs it and scores its structural criteria.
@@ -22,10 +22,10 @@ matrix:
       requires_bin: "true"
     # The live cell is the former validation. It stays opt-in, so CI records a skip.
     - tool: "live"
-      provider: "live"
-      config: "configs/anthropic-no-delegate.toml"
+      provider: "openai-chat"
+      config: "configs/subsystem-live.toml"
       requires_bin: "true"
-      requires_key: "ANTHROPIC_API_KEY"
+      requires_key: "DEEPSEEK_API_KEY"
       requires_optin: "EXA_MATRIX_AGENT_ROLE_LIVE"
 steps:
   - id: "start-daemon"
@@ -112,17 +112,25 @@ steps:
     timeout_sec: 180
     cells: ["live"]
 
-  - id: "validate-plan-content"
+  - id: "validate-live-plan-structure"
     type: "json-assert"
     file_pattern: "**/*_plan.md"
     cells: ["live"]
     output_criteria:
-      - id: "has-steps"
-        score_weight: 0.8
-        kind: "json-path-exists"
-        path: "$.steps[0]"
+      - id: "artifact-attributed-to-role"
+        kind: "frontmatter-field-equals"
+        field: "agent_role"
+        equals: "technical-writer"
+
+  - id: "validate-plan-content"
+    type: "file-contains"
+    file_pattern: "**/*_plan.md"
+    cells: ["live"]
+    step_pass_threshold: 0.7
+    output_criteria:
       - id: "quality-content"
         kind: "llm-judge"
+        rubric: "This is a plan-only request. Grade the implementation plan for the stated task: actionable steps, proposed design correctness, relevant tests, validation, and coverage. Applied file changes and already-executed tests are outside this stage. Penalize placeholders, invented existing paths, and unsupported execution claims."
         preset: "CONTENT_QUALITY"
         context_path: "$REQUEST_FIXTURE"
         score_threshold: 0.7

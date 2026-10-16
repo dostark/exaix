@@ -1,0 +1,66 @@
+schema_version: "1.0.0"
+id: flow-quality-api-documentation
+title: "Document task API handlers"
+pack: flow_blueprints
+tags: [provider-live, "subsystem:flows", "entity:api-documentation.flow", nightly-quality]
+request_fixture: fixtures/requests/flow_blueprints/quality-api-documentation.md
+mode_support: [auto]
+portals:
+  - alias: todo-app
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/todo_app"
+    target_path: "$WORKSPACE_ROOT/todo-app"
+    git_init: true
+bindings:
+  judge:
+    service: claude-cli
+    model: claude-cli/claude-haiku-4-5
+matrix:
+  cells:
+    - tool: live
+      provider: openai-chat
+      config: configs/subsystem-live.toml
+      requires_bin: "true"
+      requires_key: DEEPSEEK_API_KEY
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+  - id: submit-flow
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE", --portal, todo-app]
+  - id: verify-flow-completed
+    type: exactl
+    command: journal
+    args: [wait, --event, flow.completed, --since-rowid, "$JOURNAL_BASELINE", --timeout, "900"]
+    timeout_sec: 905
+    output_criteria:
+      - id: shipped-flow-completed
+        kind: journal-event-exists
+        event_type: flow.completed
+        payload_equals:
+          success: true
+          flowId: api-documentation
+  - id: await-artifact
+    type: wait-for-file
+    args: ["Workspace/Plans/*_plan.md"]
+    timeout_sec: 30
+    output_criteria:
+      - id: artifact-produced
+        kind: file-found
+        path_pattern: "Workspace/Plans/*_plan.md"
+  - id: judge-artifact
+    type: file-contains
+    file_pattern: "Workspace/Plans/*_plan.md"
+    step_pass_threshold: 0.7
+    output_criteria:
+      - id: flow-artifact-quality
+        kind: llm-judge
+        rubric: "Assess the delivered API reference. Require concrete coverage of get/list/create handlers, task fields and default values, 404 and 201 semantics, useful invocation examples, and an honest note about missing validation and completion handler. Penalize invented routes/authentication and an outline that only promises future documentation."
+        context_path: "$REQUEST_FIXTURE"
+        score_threshold: 0.7
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

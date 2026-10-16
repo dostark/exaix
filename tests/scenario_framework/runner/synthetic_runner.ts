@@ -977,17 +977,17 @@ export async function materializeCellConfig(
   };
 }
 
-/** Fills `source_step_rowid_start`/`_end` from the named step's own tracked rowid window,
- *  since executeScenarioStep reads those fields directly and they otherwise default to (0, 0),
- *  scoring against an empty capture. A non-trajectory-assert step is returned unchanged. */
+/** Resolves capture from `source_step` through the optional completion barrier `through_step`.
+ * Missing or reversed windows stay unresolved. Other step types remain unchanged. */
 export function resolveTrajectorySourceStep(
   step: IScenarioStep,
   stepRowidWindows: Map<string, { start: number; end: number }>,
 ): IScenarioStep {
   if (step.type !== ScenarioStepType.TRAJECTORY_ASSERT || !step.source_step) return step;
   const window = stepRowidWindows.get(step.source_step);
-  if (!window) return step;
-  return { ...step, source_step_rowid_start: window.start, source_step_rowid_end: window.end };
+  const endWindow = step.through_step ? stepRowidWindows.get(step.through_step) : window;
+  if (!window || !endWindow || endWindow.end < window.start) return step;
+  return { ...step, source_step_rowid_start: window.start, source_step_rowid_end: endWindow.end };
 }
 
 interface IExecuteSyntheticStepOptions {
