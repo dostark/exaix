@@ -6,7 +6,9 @@
  * @dependencies [@exaix/flow, @exaix/execution, @exaix/ai]
  * @related-files [packages/flow/src/shared_namespace_prompt.ts, packages/flow/src/agent_composer_adapter.ts]
  */
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import {
   AgentComposerAdapter,
@@ -28,7 +30,7 @@ import { GateTestLogger } from "./helpers/gate_controls.ts";
 const ENCODER = new TextEncoder();
 const STRICT_DECODER = new TextDecoder("utf-8", { fatal: true });
 const TASK = "Compose the research findings.";
-const AGENTS_DIR = new URL("../../../Blueprints/Agents", import.meta.url).pathname;
+const AGENTS_DIR = new URL(`../../../${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`, import.meta.url).pathname;
 
 function blockOf(prompt: string): string {
   const start = prompt.indexOf(SHARED_NAMESPACE_PROMPT_LABEL);
@@ -114,7 +116,7 @@ Deno.test("[namespace prompt] unbound run delivers only attached values to the p
   assertStringIncludes(prompts[0], "CODE SENTINEL");
   assertStringIncludes(prompts[0], "DOCS SENTINEL");
   assertStringIncludes(prompts[0], SHARED_NAMESPACE_PROMPT_LABEL);
-  assertEquals(prompts[1].includes(SHARED_NAMESPACE_PROMPT_LABEL), false, "a disabled namespace adds no block");
+  assertFalse(prompts[1].includes(SHARED_NAMESPACE_PROMPT_LABEL), "a disabled namespace adds no block");
 });
 
 Deno.test("[namespace prompt] bound run delivers the block to the bound provider", async () => {
@@ -166,7 +168,7 @@ Deno.test("[namespace prompt] runWithStrategy projects the block into the strate
         return Promise.resolve(result);
       },
     });
-    const agents = join(dbService.tempDir, "Blueprints", "Agents");
+    const agents = pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(agents, { recursive: true });
     await Deno.writeTextFile(
       join(agents, "test-agent.md"),

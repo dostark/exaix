@@ -13,7 +13,7 @@
  * @related-files [scripts/validate_aci_docs.ts, packages/tool-runtime/src/tool_schemas.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertMatch } from "@std/assert";
 import { runCli, validateAciDocs } from "../../scripts/validate_aci_docs.ts";
 import { createCoreToolSchemas } from "@exaix/tool-runtime";
 import type { ITool } from "@exaix/core/types";
@@ -76,7 +76,7 @@ Deno.test("[validateAciDocs] an invalid aciDoc (fails AciDocSchema) is reported 
   const result = validateAciDocs([invalid]);
   assertEquals(result.issues.length, 1);
   assertEquals(result.issues[0].tool, "invalid_tool");
-  assertEquals(result.issues[0].reason.startsWith("invalid_aci_doc_schema"), true);
+  assertMatch(result.issues[0].reason, /^invalid_aci_doc_schema/);
 });
 
 Deno.test("[validateAciDocs] a worked example incompatible with the tool's own parameter schema is reported", () => {
@@ -93,7 +93,7 @@ Deno.test("[validateAciDocs] a worked example incompatible with the tool's own p
   };
   const result = validateAciDocs([badExample]);
   assertEquals(result.issues.length, 1);
-  assertEquals(result.issues[0].reason.startsWith("example_incompatible_with_schema"), true);
+  assertMatch(result.issues[0].reason, /^example_incompatible_with_schema/);
 });
 
 Deno.test("[validateAciDocs] an anti-example that does NOT violate any constraint is reported (it must genuinely be wrong)", () => {

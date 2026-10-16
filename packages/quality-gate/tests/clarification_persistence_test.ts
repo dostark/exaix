@@ -6,7 +6,7 @@
  * @related-files [packages/quality-gate/src/clarification_persistence.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
 import { ClarificationSessionStatus, type IClarificationSession } from "@exaix/schemas/clarification_session.ts";
@@ -144,11 +144,11 @@ Deno.test("[clarification_persistence] renderSpecificationAsPrompt produces all 
 
 Deno.test("[clarification_persistence] renderSpecificationAsPrompt omits empty sections", () => {
   const result = renderSpecificationAsPrompt(MINIMAL_SPEC);
-  assertEquals(result.includes("## Goals"), false);
-  assertEquals(result.includes("## Success Criteria"), false);
-  assertEquals(result.includes("## Scope"), false);
-  assertEquals(result.includes("## Constraints"), false);
-  assertEquals(result.includes("## Context"), false);
+  assertFalse(result.includes("## Goals"));
+  assertFalse(result.includes("## Success Criteria"));
+  assertFalse(result.includes("## Scope"));
+  assertFalse(result.includes("## Constraints"));
+  assertFalse(result.includes("## Context"));
   assertEquals(result.includes("## Summary"), true);
 });
 

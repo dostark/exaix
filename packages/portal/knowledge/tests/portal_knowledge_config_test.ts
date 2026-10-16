@@ -5,9 +5,10 @@
  * mapper both composition roots call, including the Enterprise symbol-level flag.
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
-import { ExaPathDefaults, LogLevel, PortalAnalysisMode } from "@exaix/core";
+import { LogLevel, PortalAnalysisMode } from "@exaix/core";
 import { buildPortalKnowledgeConfig } from "@exaix/portal/knowledge";
 
 type PortalKnowledgeSectionOverrides = Partial<{

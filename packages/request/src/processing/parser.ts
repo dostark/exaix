@@ -109,7 +109,7 @@ export class RequestParser {
   private async validateAcceptanceCriteria(fm: IRequestFrontmatter, filePath: string): Promise<void> {
     const value = fm.acceptance_criteria;
     if (value === undefined) return;
-    const valid = Array.isArray(value) && (value as unknown[]).every((v) => typeof v === "string");
+    const valid = Array.isArray(value) && value.every((v) => typeof v === "string");
     if (!valid) {
       await this.logger.warn(DomainEventType.FrontmatterAcceptanceCriteriaMalformed, filePath, {});
       fm.acceptance_criteria = undefined;
@@ -120,7 +120,7 @@ export class RequestParser {
   private async validateExpectedOutcomes(fm: IRequestFrontmatter, filePath: string): Promise<void> {
     const value = fm.expected_outcomes;
     if (value === undefined) return;
-    const valid = Array.isArray(value) && (value as unknown[]).every((v) => typeof v === "string");
+    const valid = Array.isArray(value) && value.every((v) => typeof v === "string");
     if (!valid) {
       await this.logger.warn(DomainEventType.FrontmatterExpectedOutcomesMalformed, filePath, {});
       fm.expected_outcomes = undefined;

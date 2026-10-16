@@ -33,6 +33,8 @@
  * @related-files [packages/ai/src/model_resolver.ts, exaix-team/packages/model-registry-live/src/team_resolution_strategy.ts, exaix-team/packages/model-registry-live/src/adapters/admission.ts, tests/integration/model_registry_team_cutover_test.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_ACTIVE_PATH, DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
@@ -56,7 +58,7 @@ const EXPLICIT_REQUEST_ID = "step135-ledger-explicit-req";
 // (not tryResolveCurated, which returns null with no model_presets.M.candidates configured).
 // resolveOnce's getModelsByCapability lookup swaps in the real catalog entry so routesFor finds 2 rows.
 function writeTwoRouteAgentRole(root: string): void {
-  const dir = join(root, "Blueprints", "Agents");
+  const dir = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   const frontmatter = [
     "---",
@@ -74,7 +76,7 @@ function writeTwoRouteAgentRole(root: string): void {
 }
 
 function writeExplicitAgentRole(root: string): void {
-  const dir = join(root, "Blueprints", "Agents");
+  const dir = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   const frontmatter = [
     "---",
@@ -97,7 +99,7 @@ function writeStructuredPlan(
   requestId: string,
   agentRole: string,
 ): void {
-  const dir = join(root, "Workspace", "Active");
+  const dir = pathBuilders.workspacePath(root, DEFAULT_ACTIVE_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   const content = [
     "---",

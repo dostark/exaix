@@ -6,7 +6,7 @@
  * @dependencies [@exaix/ai-openai, @exaix/testing]
  * @related-files [packages/ai-openai/src/compatible_factory.ts]
  */
-import { assertEquals, assertInstanceOf, assertRejects } from "@std/assert";
+import { assertEquals, assertFalse, assertInstanceOf, assertRejects } from "@std/assert";
 import { ProviderFactoryError } from "@exaix/ai/errors.ts";
 import type { IModelProvider, IResolvedProviderOptions } from "@exaix/ai/types.ts";
 import { OPENAI_COMPATIBLE_PROFILE_DEFAULTS, ProviderType, SecureCredentialStore } from "@exaix/core";
@@ -97,7 +97,7 @@ Deno.test("[security] local compatible tuple rejects alternate model, path and e
     ) {
       const error = await assertRejects(() => factory.create(invalid), ProviderFactoryError);
       assertEquals(error.reasonCode, "profile_mismatch");
-      assertEquals(error.message.includes("arbitrary-key-bypass"), false);
+      assertFalse(error.message.includes("arbitrary-key-bypass"));
     }
   });
 });
@@ -313,7 +313,7 @@ Deno.test("[security] compatible credential read maps NotCapable to a redacted f
     ProviderFactoryError,
   );
   assertEquals(error.reasonCode, "env_permission_denied");
-  assertEquals(error.message.includes("sensitive"), false);
+  assertFalse(error.message.includes("sensitive"));
   assertEquals(deniedRead.calls.length, 1);
 });
 
@@ -546,7 +546,7 @@ Deno.test("[phase203.factory][security] self-hosted rejects every endpoint outsi
       ProviderFactoryError,
     );
     assertEquals(error.reasonCode, "profile_mismatch", endpoint);
-    assertEquals(error.message.includes("user:pass"), false);
+    assertFalse(error.message.includes("user:pass"));
   }
 });
 

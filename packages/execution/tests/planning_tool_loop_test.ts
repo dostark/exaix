@@ -10,7 +10,7 @@
  * @related-files [packages/execution/src/planning_tool_loop.ts, packages/execution/src/native_tool_turns.ts]
  */
 
-import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertExists, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { PlanningToolLoop } from "../src/planning_tool_loop.ts";
 import type { IPlanningToolLoopDeps, IPlanningToolLoopOptions } from "../src/planning_tool_loop.ts";
 import type { ICallSite, IModelOptions } from "@exaix/ai/types.ts";
@@ -207,10 +207,7 @@ Deno.test("[scope-boundaries] native names in a planning allowlist do not introd
 
   assertEquals(generate.calls[0].options.tools?.some((tool) => tool.name === "who_depends_on"), false);
   assertEquals(registry.calls, []);
-  assertEquals(
-    String(generate.calls[1].options.priorTurn?.toolResultContent).includes("not in the planning catalog"),
-    true,
-  );
+  assertStringIncludes(String(generate.calls[1].options.priorTurn?.toolResultContent), "not in the planning catalog");
 });
 
 Deno.test("[planning_tool_loop] round 1 with no toolCalls returns the raw response untouched, stopReason no_tool_calls", async () => {
@@ -914,10 +911,7 @@ Deno.test("[security] an alias of a write tool is refused when its canonical too
   const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate }));
   await loop.run(makeOptions({ allowedTools: new Set(["read_file"]), maxRounds: 2 }));
   assertEquals(registry.calls.length, 0);
-  assertEquals(
-    String(generate.calls[1].options.priorTurn?.toolResultContent).includes("not in the planning catalog"),
-    true,
-  );
+  assertStringIncludes(String(generate.calls[1].options.priorTurn?.toolResultContent), "not in the planning catalog");
 });
 
 Deno.test("[security] a fetch_url alias is not offered or executed in the planning catalog", async () => {
@@ -1487,7 +1481,7 @@ Deno.test("[planning_tool_loop][two-rounds] a grouped provider without a native 
     assertEquals(third.options.priorRound?.calls.map((entry) => entry.toolUseId), ["call-3", "call-4"]);
     const olderResult = "CONTENT-@myportal/a.ts";
     assertEquals(third.prompt.split(olderResult).length - 1, 1, "the older round appears once, as transcript text");
-    assertEquals(third.prompt.includes("CONTENT-@myportal/c.ts"), false, "the latest round is replayed natively only");
+    assertFalse(third.prompt.includes("CONTENT-@myportal/c.ts"), "the latest round is replayed natively only");
   } finally {
     ProviderRegistry.clear();
   }

@@ -5,11 +5,12 @@
  * complex multiline arrays in frontmatter are correctly serialized and deserialized.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { createStubConfig, createStubContext, createStubDb } from "@exaix/testing";
-import { ExaPathDefaults } from "@exaix/core";
 import { BlueprintCommands } from "../../apps/exactl/src/commands/blueprint_commands.ts";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 
@@ -24,7 +25,7 @@ Deno.test("[regression] YAML multi-line array format parses correctly", async ()
   const tempDir = await Deno.makeTempDir({ prefix: "exa_multiline_regression_" });
 
   try {
-    const blueprintsDir = join(tempDir, "Blueprints", "Agents");
+    const blueprintsDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH);
     await ensureDir(blueprintsDir);
 
     // Create blueprint with multi-line array format (like mock-agent.md)

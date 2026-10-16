@@ -7,6 +7,7 @@
  */
 
 import { join } from "@std/path";
+import { DEFAULT_DEBOUNCE_MS } from "@exaix/core";
 import { parse as parseYaml } from "@std/yaml";
 import { consumeFsEvents } from "@exaix/core/fs";
 import { type IRoutingPolicy, ZRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
@@ -23,8 +24,6 @@ export interface IRoutingPolicyLoadResult {
   errors?: string[];
   path: string;
 }
-
-const DEFAULT_DEBOUNCE_MS = 100;
 
 export class RoutingPolicyLoader {
   private readonly policyPath: string;

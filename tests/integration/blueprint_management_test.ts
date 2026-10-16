@@ -5,6 +5,8 @@
  * command-driven creation, listing, and discovery within project boundaries.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -36,7 +38,7 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
       assertEquals(result.agent_role, testAgentId);
 
       // Verify file exists
-      const blueprintPath = join(env.tempDir, "Blueprints", "Agents", `${testAgentId}.md`);
+      const blueprintPath = pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH, `${testAgentId}.md`);
       const fileExists = await exists(blueprintPath);
       assertEquals(fileExists, true, "Blueprint file should exist");
 
@@ -101,7 +103,7 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
     // Test 4: Validation Detects Invalid Blueprints
     await t.step("Test 4: Validation detects missing fields", async () => {
       // Create invalid blueprint manually
-      const invalidPath = join(env.tempDir, "Blueprints", "Agents", "invalid-test.md");
+      const invalidPath = pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH, "invalid-test.md");
       const invalidContent = `---
 name: Missing.agent_role
 model: ollama:llama3.2
@@ -159,7 +161,7 @@ Invalid blueprint without.agent_role field
 
     // Test 7: Edit Blueprint
     await t.step("Test 7: Edit modifies blueprint and re-validates", async () => {
-      const blueprintPath = join(env.tempDir, "Blueprints", "Agents", `${testAgentId}.md`);
+      const blueprintPath = pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH, `${testAgentId}.md`);
       const originalContent = await Deno.readTextFile(blueprintPath);
 
       // Modify blueprint directly (simulating manual edit) — YAML frontmatter.
@@ -189,7 +191,7 @@ Invalid blueprint without.agent_role field
       assertStringIncludes(content, `agent_role: ${testAgentId}`);
 
       // Verify request can be processed (blueprint exists and is valid)
-      const blueprintPath = join(env.tempDir, "Blueprints", "Agents", `${testAgentId}.md`);
+      const blueprintPath = pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH, `${testAgentId}.md`);
       const blueprintExists = await exists(blueprintPath);
       assertEquals(blueprintExists, true, "Blueprint should exist for request processing");
     });
@@ -226,9 +228,9 @@ Invalid blueprint without.agent_role field
       await blueprintCommands.remove(testAgentId, { force: true });
 
       // Verify files deleted
-      const testPath = join(env.tempDir, "Blueprints", "Agents", `${testAgentId}.md`);
-      const coderPath = join(env.tempDir, "Blueprints", "Agents", `${coderAgentId}.md`);
-      const customPath = join(env.tempDir, "Blueprints", "Agents", `${customAgentId}.md`);
+      const testPath = pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH, `${testAgentId}.md`);
+      const coderPath = pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH, `${coderAgentId}.md`);
+      const customPath = pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH, `${customAgentId}.md`);
 
       assertEquals(await exists(testPath), false, "Test agent blueprint should be deleted");
       assertEquals(await exists(coderPath), false, "Coder agent blueprint should be deleted");

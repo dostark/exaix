@@ -11,6 +11,7 @@
  */
 
 import { dirname, join } from "@std/path";
+import { BRIEF_FILE, TOOL_CLAUDE_CODE, TOOL_CODEX } from "./constants.ts";
 import {
   MINIMUM_VERSION_CLAUDE_CODE,
   MINIMUM_VERSION_CODEX,
@@ -66,11 +67,8 @@ export interface ISessionDelegateServiceDeps {
   allowUnsupportedVersion?: Opt<boolean, Reason.OptionalDependency>;
 }
 
-const BRIEF_FILE = "brief.json";
 const RESUME_TOKEN_ENTROPY_BYTES = 32; // 256-bit suffix (GAP-2)
 const TOOL_OPENCODE = "opencode";
-const TOOL_CLAUDE_CODE = "claude-code";
-const TOOL_CODEX = "codex";
 
 /** System wall-clock implementation of the clock seam. */
 export const systemClock: ISessionClock = { now: () => new Date() };

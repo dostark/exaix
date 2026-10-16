@@ -5,6 +5,8 @@
  * Implements the CLI interface defined in Contract 7 and 8.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_MEMORY_PATH } from "@exaix/shared";
 import { Command, EnumType } from "@cliffy/command";
 import { join, resolve } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
@@ -277,7 +279,7 @@ await new Command()
 
           if (entry.pack === "persona_response_eval") {
             const evidence = JSON.parse(
-              await Deno.readTextFile(join(trialWorkspaceRoot, "Memory/persona-response.json")),
+              await Deno.readTextFile(join(trialWorkspaceRoot, `${DEFAULT_MEMORY_PATH}/persona-response.json`)),
             );
             const snapshotDir = join(runtimeConfig.output_dir, "persona-trials", entry.id);
             await Deno.mkdir(snapshotDir, { recursive: true });
@@ -410,7 +412,7 @@ await new Command()
         const manifest = manifests.get(entry.id);
         if (manifest && firstTrialWorkspaceRoot) {
           manifest.failureClasses = computeRunFailureClasses({
-            journalPath: join(firstTrialWorkspaceRoot, ".exa", "journal.db"),
+            journalPath: pathBuilders.runtimePath(firstTrialWorkspaceRoot, "journal.db"),
             outcomeScore: suiteScore,
             scoreThreshold,
           });
@@ -420,7 +422,9 @@ await new Command()
       // A real HTTP 400/429 means every remaining scenario would just re-hit the same exhausted
       // resource — stop the whole run, unconditionally (not gated behind --fail-fast).
       if (firstTrialWorkspaceRoot) {
-        const exhaustion = computeRunCapacityExhaustion(join(firstTrialWorkspaceRoot, ".exa", "journal.db"));
+        const exhaustion = computeRunCapacityExhaustion(
+          pathBuilders.runtimePath(firstTrialWorkspaceRoot, "journal.db"),
+        );
         if (exhaustion.detected) {
           const remaining = selectedEntries.slice(selectedEntries.indexOf(entry) + 1);
           console.error(

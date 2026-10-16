@@ -5,6 +5,7 @@
  * ensuring execution sandboxing and strict prevention of path traversal attacks.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertObjectMatch, assertStringIncludes } from "@std/assert";
 import { ConfigAdapterMode, ConfigValueType, DaemonStatus, SwapClass, ToolName } from "@exaix/core";
 import { getRegisteredDefaults } from "@exaix/core/config";
@@ -242,7 +243,7 @@ Deno.test("ToolRegistry: run_command - executes whitelisted command", async () =
       assertEquals(result.success, true);
       const data = result.data as { output: string };
       assertExists(data?.output);
-      assertEquals(data.output.includes("Hello"), true);
+      assertStringIncludes(data.output, "Hello");
     },
     { workspaceRoot: Deno.cwd() },
   );
@@ -452,7 +453,7 @@ Deno.test("[security] ToolRegistry: write_file - blocks writing to System direct
     // Attempt to write to System directory (should be protected)
     // Test 1: Try path traversal to escape Memory and reach System
     const traversalResult = await registry.execute(ToolName.WRITE_FILE, {
-      path: join(tempDir, "Memory", "..", "System", "journal.db"),
+      path: pathBuilders.memoryPath(tempDir, "..", "System", "journal.db"),
       content: "CORRUPTED DATA",
     });
 

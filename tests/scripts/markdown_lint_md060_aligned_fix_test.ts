@@ -11,7 +11,7 @@
  * @related-files [scripts/markdown_lint.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertStringIncludes } from "@std/assert";
 import { applySpecificFixes, lintMarkdown } from "../../scripts/markdown_lint.ts";
 
 const OPTS = { fix: true, strict: false, verbose: false };
@@ -52,7 +52,7 @@ const COMPACT_TABLE = [
 Deno.test("[md060-fix] an aligned table is never rewritten, so its deno fmt padding survives", () => {
   assert(md060Findings(ALIGNED_TABLE).length > 0, "the fixture must trigger MD060 or the fixer never runs");
 
-  assertEquals(fixedOf(`# Title\n\n${ALIGNED_TABLE}`).includes(ALIGNED_TABLE), true);
+  assertStringIncludes(fixedOf(`# Title\n\n${ALIGNED_TABLE}`), ALIGNED_TABLE);
 });
 
 Deno.test("[md060-fix] a file with one misaligned table keeps its other aligned tables untouched", () => {
@@ -61,8 +61,8 @@ Deno.test("[md060-fix] a file with one misaligned table keeps its other aligned 
 
   const fixed = fixedOf(src);
 
-  assertEquals(fixed.includes(CLEAN_ALIGNED_TABLE), true);
-  assertEquals(fixed.includes(ALIGNED_TABLE), true);
+  assertStringIncludes(fixed, CLEAN_ALIGNED_TABLE);
+  assertStringIncludes(fixed, ALIGNED_TABLE);
 });
 
 Deno.test("[md060-fix] a flagged compact table is still normalized", () => {
@@ -70,6 +70,6 @@ Deno.test("[md060-fix] a flagged compact table is still normalized", () => {
 
   const fixed = fixedOf(`# Title\n\n${COMPACT_TABLE}`);
 
-  assertEquals(fixed.includes("| Field | Note |"), true);
-  assertEquals(fixed.includes("| a | bb |"), true);
+  assertStringIncludes(fixed, "| Field | Note |");
+  assertStringIncludes(fixed, "| a | bb |");
 });

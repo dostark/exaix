@@ -12,12 +12,13 @@ import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
-import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS } from "@exaix/core";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { initTestDbService } from "@exaix/testing";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
 import { getMemoryExecutionDir } from "@exaix/testing";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 Deno.test("[Step64.3] FlowRunner persists namespace artifact and preserves same-wave writes", async () => {
   const { config, tempDir, cleanup } = await initTestDbService();
 

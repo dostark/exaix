@@ -8,7 +8,7 @@
  * user identity) without requiring runtime context (no daemon, no filesystem, no database).
  */
 
-import { assertEquals, assertExists, assertStringIncludes, assertThrows } from "@std/assert";
+import { assertEquals, assertExists, assertMatch, assertStringIncludes, assertThrows } from "@std/assert";
 import { join } from "@std/path";
 import { MemoryStatus } from "@exaix/core/status";
 import { describe, it } from "@std/testing/bdd";
@@ -114,8 +114,8 @@ describe("BaseCommand (serializeFrontmatter)", () => {
     };
 
     const result = testCommand.testSerializeFrontmatter(frontmatter);
-    assertEquals(result.startsWith("---\n"), true);
-    assertEquals(result.endsWith("---"), true);
+    assertMatch(result, /^---\n/);
+    assertMatch(result, /---$/);
     assertStringIncludes(result, "title: Test");
     assertStringIncludes(result, "status: review");
     assertStringIncludes(result, "trace_id: abc-123");
@@ -287,7 +287,7 @@ describe("BaseCommand (truncate)", () => {
     const result = testCommand.testTruncate(str, 20);
 
     assertEquals(result.length, 20);
-    assertEquals(result.endsWith("..."), true);
+    assertMatch(result, /\.\.\.$/);
     assertEquals(result, "This is a very lo...");
   });
 

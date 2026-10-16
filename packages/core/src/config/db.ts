@@ -7,6 +7,7 @@
  * @related-files ["packages/core/src/config/registry.ts"]
  */
 import type { Database } from "@db/sqlite";
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { ensureDirSync } from "@std/fs";
 import { getRegisteredDefaults } from "./registry.ts";
@@ -53,7 +54,7 @@ export interface IInsertOverrideOpts {
 }
 
 const CONFIG_DB_FILE = "config.db";
-const CONFIG_DB_DIR = ".exa";
+const CONFIG_DB_DIR = DEFAULT_RUNTIME_PATH;
 
 // Config `source` vocabulary
 // All values the `source` column of config_overrides may take, co-located here

@@ -9,8 +9,8 @@
  * @related-files [apps/exactl/src/commands/eval_commands.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
+import * as pathBuilders from "@exaix/shared";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { computeInteractiveRows, EvalCommands } from "../src/commands/eval_commands.ts";
@@ -74,7 +74,7 @@ Deno.test("[EvalReportInteractiveFoundingScope] omitting runIds keeps prior unsc
 
 Deno.test("[EvalReportInteractiveFoundingScope] --view interactive --run-ids renders only the scoped runs", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
   const seed = (runId: string, rounds: number) =>
@@ -102,6 +102,6 @@ Deno.test("[EvalReportInteractiveFoundingScope] --view interactive --run-ids ren
   const text = output.join("\n");
   assertStringIncludes(text, "cooperative");
   assertStringIncludes(text, "2.000");
-  assertEquals(text.includes("8.000"), false, "the later noise run must not appear in the scoped table");
+  assertFalse(text.includes("8.000"), "the later noise run must not appear in the scoped table");
   await cleanup();
 });

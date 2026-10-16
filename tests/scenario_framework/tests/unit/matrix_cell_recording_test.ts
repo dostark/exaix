@@ -7,8 +7,8 @@
  * into the eval history entry and SQLite store.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
-import { join } from "@std/path";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { buildRunManifest } from "../../runner/synthetic_runner.ts";
 import type { IRunManifest } from "../../runner/evidence_collector.ts";
@@ -69,7 +69,7 @@ Deno.test({
     "[MatrixCellRecording] cell identity from manifest propagates through writeEvalHistoryEntry into history entry and SQLite",
   fn: async () => {
     const dir = Deno.makeTempDirSync({ prefix: "scenario-framework-cell-rec-" });
-    const dbPath = join(dir, ".exa", "eval.db");
+    const dbPath = pathBuilders.runtimePath(dir, "eval.db");
     const store = new EvalSqliteStore(dbPath);
     try {
       store.initialize();

@@ -1,0 +1,32 @@
+schema_version: "1.0.0"
+id: "plumbing-only"
+title: "Plumbing-only delegation"
+pack: "provider_live"
+tags: ["provider-live"]
+request_fixture: "fixtures/requests/provider_live/product_manager.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "submit"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE"]
+    output_criteria:
+      - id: "created"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    output_criteria:
+      - id: "plan-found"
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+  - id: "list-workspace"
+    type: "shell"
+    command: "ls"
+    args: ["$WORKSPACE_ROOT/Workspace"]
+    output_criteria:
+      - id: "listed"
+        kind: "command-output-contains"
+        contains: ["Plans"]

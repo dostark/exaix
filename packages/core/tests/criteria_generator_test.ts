@@ -7,7 +7,7 @@
  * RequestAnalysis goals and acceptance criteria into EvaluationCriterion arrays.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { EvaluationCategory } from "@exaix/core";
 import { CriteriaGenerator } from "@exaix/core/skills";
 import { ANALYZER_VERSION } from "@exaix/core";
@@ -113,7 +113,7 @@ Deno.test("[CriteriaGenerator] sort order: higher weight criteria survive trunca
   assertEquals(criteria.length, MAX_DYNAMIC_CRITERIA);
   const names = criteria.map((c) => c.name);
   assertEquals(names.includes("goal_priority_1_goal"), true);
-  assertEquals(names.includes("goal_priority_7_goal"), false);
+  assertFalse(names.includes("goal_priority_7_goal"));
 });
 
 Deno.test("[CriteriaGenerator] priority-1 goals get higher weight", () => {

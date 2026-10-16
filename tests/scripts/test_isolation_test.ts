@@ -5,7 +5,7 @@
  *   `dev-test` Dockerfile stage / `.dockerignore` build-context contract.
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import {
   buildWorkerContainerLaunch,
@@ -197,7 +197,7 @@ Deno.test("buildWorkerContainerLaunch isolates HOME, EXA_HOME and DENO_DIR, defa
     watchdogMs: 60_000,
   });
   const joined = launch.args.join(" ");
-  assertEquals(launch.args.includes("--init"), false, "the image entrypoint already runs tini as PID 1");
+  assertFalse(launch.args.includes("--init"), "the image entrypoint already runs tini as PID 1");
   assert(launch.args.includes("-i"), "-i present");
   assert(joined.includes("--name exaix-test-worker-0"), "--name present");
   assert(joined.includes("HOME=/tmp/home"), "HOME isolated");

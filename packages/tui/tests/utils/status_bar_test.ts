@@ -7,7 +7,7 @@
  * responsive layout of partitioned items and correct color application.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { MessageType } from "@exaix/core";
 import { SpinnerStyle, StatusIndicator } from "@exaix/tui";
 import {
@@ -382,7 +382,7 @@ Deno.test("renderMultiLineStatusBar: does not render lines when collapsed", () =
   };
   const result = renderMultiLineStatusBar(state, config);
   assertEquals(result.length, 1);
-  assertEquals(result[0].includes("Hidden line"), false);
+  assertFalse(result[0].includes("Hidden line"));
 });
 
 Deno.test("setLeftItems: handles items without priority", () => {

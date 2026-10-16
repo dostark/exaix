@@ -7,7 +7,8 @@
  * detailed review viewing, and approval/rejection of code branches and artifacts.
  */
 
-import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
+import { DEFAULT_MEMORY_PATH } from "@exaix/shared";
+import { assertEquals, assertExists, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { FlowStepType, MemoryOperation } from "@exaix/core";
 import { ReviewStatus } from "@exaix/core/status";
 
@@ -291,7 +292,7 @@ describe("ReviewCommands", () => {
       if (!entry) throw new Error("Artifact entry not found");
       assertEquals(entry.type, "artifact");
       assertExists(entry.file_path);
-      assertStringIncludes(entry.file_path!, "Memory/Execution/");
+      assertStringIncludes(entry.file_path!, `${DEFAULT_MEMORY_PATH}/Execution/`);
     });
   });
 
@@ -369,7 +370,7 @@ describe("ReviewCommands", () => {
 
       // Verify branch was merged
       const log = await runGitCommand(tempDir, ["log", "--oneline"]);
-      assertEquals(log.includes("Merge request-009"), true);
+      assertStringIncludes(log, "Merge request-009");
     });
 
     it(`should validate current branch is ${TEST_DEFAULT_BRANCH}`, async () => {
@@ -450,7 +451,7 @@ describe("ReviewCommands", () => {
 
       // Verify branch was deleted
       const branches = await runGitCommand(tempDir, [FlowStepType.BRANCH, "--list", "feat/*"]);
-      assertEquals(branches.includes("feat/request-014-def-012-abc"), false);
+      assertFalse(branches.includes("feat/request-014-def-012-abc"));
     });
 
     it("should log rejection to activity", async () => {
@@ -503,11 +504,11 @@ describe("ReviewCommands", () => {
 
       // Verify branch was deleted despite worktree
       const branches = await runGitCommand(tempDir, ["branch", "--list", "feat/*"]);
-      assertEquals(branches.includes("feat/request-017-abc-901-def"), false);
+      assertFalse(branches.includes("feat/request-017-abc-901-def"));
 
       // Verify worktree was removed
       const worktreeListAfter = await runGitCommand(tempDir, ["worktree", "list", "--porcelain"]);
-      assertEquals(worktreeListAfter.includes("feat/request-017-abc-901-def"), false);
+      assertFalse(worktreeListAfter.includes("feat/request-017-abc-901-def"));
 
       // Clean up worktree directory
       await Deno.remove(worktreePath, { recursive: true }).catch(() => {});
@@ -528,7 +529,7 @@ describe("ReviewCommands", () => {
 
       // Verify branch was deleted
       const branches = await runGitCommand(tempDir, ["branch", "--list", "feat/*"]);
-      assertEquals(branches.includes("feat/request-018-def-111-ghi"), false);
+      assertFalse(branches.includes("feat/request-018-def-111-ghi"));
     });
 
     it("should mark artifact as rejected with reason (no git)", async () => {

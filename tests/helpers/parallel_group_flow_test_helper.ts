@@ -7,7 +7,7 @@
  */
 
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
-import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlowInput } from "@exaix/schemas/flow.ts";
 import { FlowRunner } from "@exaix/flow";
@@ -17,6 +17,7 @@ import {
   type ScriptedExecutorResponse,
 } from "./flow_namespace_test_helper.ts";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 interface IParallelGroupMemberStep {
   stepId: string;
   stepName: string;

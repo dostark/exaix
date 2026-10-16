@@ -20,7 +20,6 @@ import {
 } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
-import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
 import { DeleteFileTool } from "@exaix-team/mcp-server";
 import { LocalToolDispatcher } from "@exaix/mcp/server";
@@ -29,6 +28,7 @@ import { createStubConfig, createStubContext } from "@exaix/testing";
 import { GitTestHelper, setupGitRepo } from "@exaix/git/testing";
 import { initToolPermissionTest } from "@exaix/mcp/testing";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 type AgentStepHandler = () => Promise<IAgentExecutionResult>;
 
 class FunctionalAgentExecutor implements IAgentExecutor {

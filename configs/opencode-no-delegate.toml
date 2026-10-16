@@ -3,11 +3,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = []
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # Phase 159 Step 6: the react-strategy half of the cli_delegate-vs-react comparison —
 # same opencode-go/deepseek-v4-flash model as configs/opencode-cli-delegate-all.toml, but
 # [cli_delegate] stays disabled so a `strategy: "react"` flow step resolves ReActLoopStrategy

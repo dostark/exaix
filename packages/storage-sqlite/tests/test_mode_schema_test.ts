@@ -16,26 +16,10 @@ import { join } from "@std/path";
 import { DatabaseService } from "../src/database_service.ts";
 import { ConfigService } from "@exaix/core/config";
 import { withEnv } from "@exaix/testing";
+import { readConfigFixture } from "@exaix/testing";
 
 function writeMinimalConfig(configPath: string, root: string): void {
-  Deno.writeTextFileSync(
-    configPath,
-    [
-      "[system]",
-      `root = "${root}"`,
-      'log_level = "info"',
-      "[paths]",
-      'runtime = "./.exa"',
-      'workspace = "./Workspace"',
-      "[database]",
-      "batch_flush_ms = 50",
-      "batch_max_size = 100",
-      "[database.sqlite]",
-      'journal_mode = "WAL"',
-      "foreign_keys = true",
-      "busy_timeout_ms = 5000",
-    ].join("\n"),
-  );
+  Deno.writeTextFileSync(configPath, readConfigFixture("storage-test-mode-schema", { root }));
 }
 
 Deno.test("[test_mode_schema] a DatabaseService built in test mode has the activity table without manual init", async () => {

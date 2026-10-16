@@ -6,9 +6,8 @@
  *   a real EventLogger when a WORKING entry clears its promotion score.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
-import { join } from "@std/path";
-
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
 import { MemoryBankService, SessionMemoryService } from "@exaix/memory";
@@ -21,7 +20,7 @@ Deno.test("promoteMemories journals MemoryTierPromotion with canonical payload t
   try {
     const logger = new EventLogger({ db });
     const bank = new MemoryBankService(config);
-    const tieredEntriesPath = join(config.system.root, "Memory", "Session", "tiered_entries.json");
+    const tieredEntriesPath = pathBuilders.memoryPath(config.system.root, "Session", "tiered_entries.json");
     const embeddingService = new MemoryEmbeddingService(config);
     await embeddingService.initializeManifest();
     const sessionMemory = new SessionMemoryService(bank, embeddingService, undefined, tieredEntriesPath, logger);

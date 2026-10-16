@@ -18,6 +18,44 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 213 (AST Style Rules and deslop Adoption)
+
+### Added
+
+- Every repository style rule is described by one validated catalog that declares the
+  rule's severity, scope, options, exceptions and tags, and a rule that stays out of the
+  gate must state a reason (see
+  [Style rules](../packages/lint-rules/docs/style_rules.md)).
+- `EXAIX_LINT_RULES` selects which rules a local `deno lint` run executes, by rule id or by
+  `tag:<name>`, and the gate task clears the variable so a leftover selection cannot narrow
+  the pre-commit check.
+- `deno task lint:tags -- <tags>` runs only the rules that carry the given tags, and
+  `deno task docs:style-rules` regenerates the rule reference from the catalog.
+- A rule-ceiling ratchet holds every rule that is parked out of the gate to its measured
+  finding count, so a new violation fails the check and a reduced count must be written
+  back before it passes.
+- The comment-length rule reads YAML, TOML and JSONC comments as well as TypeScript
+  comments, with a per-extension line limit.
+- A `deno task fix:bool-asserts` codemod rewrites a boolean assertion to the named
+  `assertTrue` or `assertFalse` form.
+
+### Changed
+
+- The style checker and the magic-values checker run as rules of the new
+  `@exaix/lint-rules` workspace package instead of as standalone scripts, and the
+  type-safety checks match the syntax tree as Deno lint plugin rules instead of matching
+  source lines with regular expressions.
+- The duplicate-constant and duplicate-type reports compare across the whole repository
+  instead of within one file.
+- An escape-hatch comment, and a type alias that only passes another type through, are now
+  errors.
+
+### Fixed
+
+- `deno task check` reported no error for a source file that fails to parse, because it
+  passed several directories to a single `deno check` invocation; it now type-checks each
+  source root on its own.
+
 ## Unreleased — Phase 202 (Parallel Tool Calls, Replay and Policy)
 
 ### Added

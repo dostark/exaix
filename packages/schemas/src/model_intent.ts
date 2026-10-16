@@ -9,6 +9,7 @@
  * @related-files [packages/ai/src/model_resolver.ts, packages/schemas/src/model_intent.ts]
  */
 import type { JSONValue, TaskType } from "@exaix/core";
+import { EFFORT_AUTO } from "@exaix/shared";
 import { z } from "zod";
 
 /** Model size tier — maps to a capability profile (context window, thinking, cost). */
@@ -119,8 +120,6 @@ export const EffortTierSchema = z.enum(["low", "medium", "high", "xhigh", "max"]
 
 /** Canonical "auto" declaration value — the literal's single source for every surface
  *  that accepts a declaration-time value. */
-// deno-lint-ignore prefer-as-const
-export const EFFORT_AUTO: "auto" = "auto";
 
 /** Declaration-time effort value. "auto" defers to EffortResolver; a concrete EffortTier
  *  bypasses resolution entirely (an explicit choice is never second-guessed). */

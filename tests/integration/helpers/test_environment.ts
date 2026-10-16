@@ -6,6 +6,8 @@
  * integration tests, including workspace setup, Git mock repositories, and DB initialization.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_FLOWS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import type { IRecordedResponse } from "@exaix/ai/providers";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
@@ -141,8 +143,11 @@ export class TestEnvironment {
     await ensureDir(getPortalsDir(tempDir));
 
     // Copy flows for integration tests that need them
-    const flowsSrcDir = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..", "Blueprints", "Flows");
-    const flowsDestDir = join(tempDir, "Blueprints", "Flows");
+    const flowsSrcDir = pathBuilders.blueprintsPath(
+      join(dirname(fromFileUrl(import.meta.url)), "..", "..", ".."),
+      DEFAULT_FLOWS_PATH,
+    );
+    const flowsDestDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH);
     try {
       // `copySync()` throws if destination exists. Some tests create `Blueprints/Flows` up-front.
       // Avoid noisy warnings and just reuse the existing directory.
@@ -172,7 +177,11 @@ export class TestEnvironment {
       // Create initial commit with .gitignore to prevent collateral damage from git reset --hard
       await Deno.writeTextFile(
         join(tempDir, ".gitignore"),
-        "Workspace/\n.exa/journal.db*\n.exa/daemon.*\ndeno.lock\n",
+        `${DEFAULT_WORKSPACE_PATH}/
+.exa/journal.db*
+.exa/daemon.*
+deno.lock
+`,
       );
       await Deno.writeTextFile(join(tempDir, ".gitkeep"), "");
 
@@ -198,18 +207,6 @@ log_level = "info"
 root = "${tempDir}"
 
 [paths]
-memory = "./Memory"
-blueprints = "./Blueprints"
-runtime = "./.exa"
-workspace = "./Workspace"
-portals = "./Portals"
-active = "Active"
-archive = "Archive"
-plans = "Plans"
-requests = "Requests"
-rejected = "Rejected"
-agents = "Agents"
-flows = "Blueprints/Flows"
 memoryProjects = "Projects"
 memoryExecution = "Execution"
 memoryIndex = "Index"
@@ -661,7 +658,7 @@ This plan will accomplish the requested task.
    * Get report from /Memory/Reports by trace ID
    */
   async getReportByTraceId(traceId: string): Promise<string | null> {
-    const reportsDir = join(this.tempDir, "Memory", "Reports");
+    const reportsDir = pathBuilders.memoryPath(this.tempDir, "Reports");
 
     try {
       for await (const entry of Deno.readDir(reportsDir)) {
@@ -775,7 +772,7 @@ This plan will accomplish the requested task.
     agentRole: string,
     content?: Opt<string, Reason.TestStub>,
   ): Promise<string> {
-    const blueprintsPath = join(this.tempDir, "Blueprints", "Agents");
+    const blueprintsPath = pathBuilders.blueprintsPath(this.tempDir, DEFAULT_AGENTS_PATH);
     await ensureDir(blueprintsPath);
 
     const defaultContent = `# ${agentRole} Blueprint
@@ -813,10 +810,10 @@ Always respond with valid JSON containing a plan with actionable steps.`;
     };
 
     const processor = new RequestProcessor({
-      workspacePath: join(this.tempDir, "Workspace"),
+      workspacePath: pathBuilders.workspacePath(this.tempDir),
       requestsDir: options?.requestsDir ?? getWorkspaceRequestsDir(this.tempDir),
       blueprintsPath: options?.blueprintsPath ??
-        join(this.tempDir, "Blueprints", "Agents"),
+        pathBuilders.blueprintsPath(this.tempDir, DEFAULT_AGENTS_PATH),
       includeReasoning: options?.includeReasoning ?? true,
       context,
       testProvider: provider,

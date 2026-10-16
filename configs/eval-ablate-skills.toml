@@ -3,11 +3,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = []
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # Phase 143 Step 2 feature-ablation preset. Each of the three presets
 # (skills / quality-gate / portal-knowledge) is byte-identical to the others except
 # its one documented toggle line, so a contribution delta is attributable to exactly

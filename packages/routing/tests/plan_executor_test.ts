@@ -5,7 +5,9 @@
  * robust failure recovery, and correct propagation of step results.
  */
 
-import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_ACTIVE_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import { assert, assertEquals, assertExists, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import {
   type FlowStepType as _FlowStepType,
   type MemoryOperation as _MemoryOperation,
@@ -65,7 +67,7 @@ async function withPlanExecutorTestContext(
   const testContext = await createGitTestContext(prefix);
   const { tempDir, repoDir, db, cleanup, config, git } = testContext;
   const helper = new GitTestHelper(repoDir);
-  const blueprintsDir = join(config.system.root, config.paths.blueprints, "Agents");
+  const blueprintsDir = pathBuilders.agentsPath(join(config.system.root, config.paths.blueprints));
 
   try {
     if (options.ensureGit !== false) {
@@ -128,7 +130,7 @@ content = "Hello World"
       };
 
       // Execute plan
-      const planPath = join(tempDir, "Workspace/Active/plan.md");
+      const planPath = join(tempDir, `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ACTIVE_PATH}/plan.md`);
       const result = await executor.execute(planPath, context);
       const sha = result.lastCommitSha;
 
@@ -143,7 +145,7 @@ content = "Hello World"
       const commitMsg = await helper.getLastCommitMessage();
       // Since final commit had no changes, the last commit is the step commit
       assertEquals(commitMsg.includes("Step 1: Create File"), true);
-      assertEquals(commitMsg.includes("Executed by agent"), false); // Final commit message not present
+      assertFalse(commitMsg.includes("Executed by agent")); // Final commit message not present
 
       // Verify step commit exists in the log.
       const log = await helper.runGit(["log", "--oneline"]);
@@ -318,7 +320,7 @@ path = "non_existent.txt"
     assertEquals(result.lastCommitSha, null);
     const toolCall = logger.events.find((event) => event.action === "dynamic_tool_call");
     assertExists(toolCall);
-    assertEquals(String(toolCall.payload?.resultSummary).includes("File: non_existent.txt not found"), true);
+    assertStringIncludes(String(toolCall.payload?.resultSummary), "File: non_existent.txt not found");
   });
 });
 

@@ -1,0 +1,1140 @@
+{
+  "version": "1",
+  "scopes": {
+    "test": [
+      "**/tests/**",
+      "**/*_test.ts",
+      "**/*_test.tsx",
+      "**/*.test.ts"
+    ],
+    "fixture": [
+      "tests/scenario_framework/fixtures/**",
+      "**/tests/fixtures/**"
+    ]
+  },
+  "layout": {
+    "packageRoot": "packages/",
+    "appRoot": "apps/",
+    "teamRoot": "exaix-team/",
+    "enterpriseRoot": "exaix-enterprise/",
+    "testsRoot": "tests/",
+    "scriptsRoot": "scripts/",
+    "srcRoot": "src/",
+    "testsSegment": "/tests/",
+    "testingSegment": "/testing/",
+    "srcSegment": "/src/",
+    "scriptsSegment": "/scripts/",
+    "copilotSegment": "/.copilot/",
+    "fixturesSegment": "/tests/fixtures/",
+    "tuiSrcSegment": "/apps/tui/src/",
+    "tuiTestsSegment": "/apps/tui/tests/",
+    "tuiTestDirSegment": "/tests/tui/",
+    "tuiPackageTestsSegment": "/packages/tui/tests/",
+    "rootTestHelpers": "tests/helpers/",
+    "testingPackageRoot": "packages/testing/",
+    "testingPackageRootBare": "packages/testing",
+    "aiTestAllow": "packages/ai/tests/",
+    "mcpServerPrefix": "packages/mcp/server/",
+    "mcpTestsPrefix": "packages/mcp/tests/",
+    "markdownCompatSuffix": "/packages/core/src/parsing/markdown.ts",
+    "packageRootPattern": "^packages/[^/]+/(mod|index)\\.ts$",
+    "editionAppPrefixes": [
+      "apps/daemon/",
+      "apps/exactl/",
+      "exaix-team/apps/daemon/",
+      "exaix-team/apps/exactl/"
+    ],
+    "teamAppBootstrap": "apps/daemon/src/bootstrap_team.ts",
+    "retiredRootHeaderRelatedFiles": [
+      "src/services/core/db.ts"
+    ],
+    "retiredRootImportPaths": [
+      "src/services/core/db.ts",
+      "src/services/tool/tool_validation_reporter.ts",
+      "src/services/tool/cli_confirmation_interceptor.ts",
+      "src/services/tool/notification_queue_confirmation_interceptor.ts",
+      "src/services/tool/output_validator.ts",
+      "src/services/tool/tool_reflector.ts",
+      "src/services/tool/tool_registry.ts",
+      "src/services/utils/json_repair.ts"
+    ],
+    "layerLeakExempt": [
+      {
+        "path": "packages/execution/src/git_audit_service.ts",
+        "reason": "Known bridge file exempt from layer-leak checks."
+      },
+      {
+        "path": "packages/execution/src/execution_context_service.ts",
+        "reason": "Known bridge file exempt from layer-leak checks."
+      },
+      {
+        "path": "packages/core/src/planning/plan_executor.ts",
+        "reason": "Known bridge file exempt from layer-leak checks."
+      },
+      {
+        "path": "packages/flow/src/agent_composer_adapter.ts",
+        "reason": "Builds a fresh per-call AgentComposer; a pre-built DI instance would violate the planWrittenFiles invariant."
+      },
+      {
+        "path": "packages/execution/src/agent_runner.ts",
+        "reason": "Builds a PortalPermissionsService per request from the matched portal; a boot-time instance would pin the wrong portal."
+      }
+    ]
+  },
+  "ignore": [
+    {
+      "glob": "**/.git/**",
+      "reason": "Version-control metadata."
+    },
+    {
+      "glob": "**/node_modules/**",
+      "reason": "Installed dependencies."
+    },
+    {
+      "glob": "**/check_code_style.ts",
+      "reason": "Self-exemption: the checker's own rule regexes and messages trip its rules."
+    },
+    {
+      "glob": "**/check_code_style_rules_test.ts",
+      "reason": "Rule-case snippets are intentional violation shapes for the rule-level tests."
+    },
+    {
+      "glob": "**/scenario_framework/fixtures/**",
+      "reason": "Fixture scope: fixtures intentionally contain violation shapes."
+    },
+    {
+      "glob": "**/dist/**",
+      "reason": "Build output."
+    },
+    {
+      "glob": "**/coverage/**",
+      "reason": "Coverage output."
+    },
+    {
+      "glob": "**/.copilot/**",
+      "reason": "Agent guidance, not production code."
+    }
+  ],
+  "wholeTree": {
+    "optionalParams": {
+      "wrapperType": "Opt",
+      "wrapperImport": "@exaix/core/types",
+      "reasonExamples": [
+        "TraceAbsent",
+        "OptionalInput",
+        "OptionalContext"
+      ],
+      "testSegments": [
+        "/tests/"
+      ],
+      "testSuffixes": [
+        "_test.ts"
+      ],
+      "skipSegments": [
+        "/scripts/",
+        "/tests/fixtures/"
+      ],
+      "walkSkipSegments": [
+        "/.copilot/",
+        "/.exa/",
+        "/types/"
+      ]
+    },
+    "unusedExports": {
+      "productionRoots": [
+        "packages/",
+        "exaix-team/",
+        "apps/"
+      ],
+      "testSegments": [
+        "/tests/",
+        "/testing/"
+      ],
+      "testSuffixes": [
+        "_test.ts",
+        ".test.ts"
+      ],
+      "entrypointSuffixes": [
+        "/mod.ts",
+        "/index.ts"
+      ],
+      "mainEntrypointSuffixes": [
+        "/main.ts"
+      ],
+      "scriptRoot": "scripts",
+      "walkSkipPatterns": [
+        "\\.git",
+        "node_modules",
+        "\\.copilot",
+        "\\.exa",
+        "Blueprints",
+        "Memory",
+        "Workspace",
+        "Portals",
+        "coverage",
+        "exaix-dev-docs",
+        "exaix-enterprise",
+        "tests/scenario_framework"
+      ],
+      "strictSkipPrefixes": [
+        "packages/tui/",
+        "apps/tui/",
+        "exaix-team/",
+        "packages/schemas/",
+        "apps/daemon/src/",
+        "apps/common/"
+      ],
+      "strictSkipSegments": [
+        "/commands/",
+        "/handlers/"
+      ]
+    },
+    "constantRestatement": {
+      "constantModules": [
+        "packages/core/src/types/constants.ts"
+      ],
+      "testRoots": [
+        "apps",
+        "packages",
+        "tests"
+      ],
+      "minRestatedElements": 2
+    }
+  },
+  "tagVocabulary": {
+    "duplication": {
+      "description": "Rules that find restated or duplicated declarations"
+    },
+    "type-safety": {
+      "description": "Rules that keep type evidence (CODE_STYLE.md 1)."
+    },
+    "imports": {
+      "description": "Import shape and placement rules (CODE_STYLE.md 3)."
+    },
+    "magic-values": {
+      "description": "No magic numbers or strings (CODE_STYLE.md 2)."
+    },
+    "module-structure": {
+      "description": "Module headers and placement (CODE_STYLE.md 7)."
+    },
+    "complexity": {
+      "description": "Function and method size limits (CODE_STYLE.md 11)."
+    },
+    "comments": {
+      "description": "Comment discipline (CODE_STYLE.md 16)."
+    },
+    "scripts": {
+      "description": "Utility script headers (CODE_STYLE.md 12)."
+    },
+    "test-quality": {
+      "description": "Rules on test code and fixtures."
+    },
+    "boundary": {
+      "description": "Cross-boundary import rules."
+    },
+    "tui": {
+      "description": "TUI isolation boundary (CODE_STYLE.md 8)."
+    },
+    "cli": {
+      "description": "CLI isolation boundary (CODE_STYLE.md 9)."
+    },
+    "package": {
+      "description": "Package structure and purity."
+    },
+    "edition": {
+      "description": "Edition tier import boundary."
+    },
+    "di": {
+      "description": "Dependency injection and interfaces (CODE_STYLE.md 5)."
+    },
+    "deslop": {
+      "description": "Rule idea taken from maharshi365/deslop or dmmulroy/anti-slop."
+    }
+  },
+  "rules": {
+    "duplicate-constant": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "include": [
+        "packages/**",
+        "apps/**"
+      ],
+      "codeStyle": "CODE_STYLE.md#no-magic-values",
+      "tags": [
+        "magic-values",
+        "duplication",
+        "deslop"
+      ],
+      "options": {
+        "namePattern": "^[A-Z][A-Z0-9_]*$",
+        "allow": [
+          {
+            "name": "GIT_CMD_STATUS",
+            "files": [
+              "packages/execution/src/strategies/cli_delegate_strategy.ts",
+              "packages/git/src/constants.ts"
+            ],
+            "reason": "The git package does not export its low-level subcommand strings, so the execution seam keeps its own."
+          },
+          {
+            "name": "REVIEWS_TABLE_SQL",
+            "files": [
+              "packages/git/testing/helpers/db.ts",
+              "packages/testing/src/helpers/init_db.ts"
+            ],
+            "reason": "The git test helpers keep their own schema text rather than depend on the shared testing package."
+          },
+          {
+            "name": "TEST_DEFAULT_BRANCH",
+            "files": [
+              "packages/git/testing/helpers/constants.ts",
+              "packages/testing/src/helpers/constants.ts"
+            ],
+            "reason": "The git test helpers keep their own branch default rather than depend on the shared testing package."
+          },
+          {
+            "name": "GIT_FLAG_UNTRACKED_FILES_ALL",
+            "files": [
+              "packages/execution/src/strategies/cli_delegate_strategy.ts",
+              "packages/git/src/constants.ts"
+            ],
+            "reason": "The git package does not export its low-level subcommand flags, so the execution seam keeps its own."
+          }
+        ]
+      },
+      "limits": "Compares top-level named constants with a static value; values from a call, identifier, or interpolation are out of scope."
+    },
+    "duplicate-type": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "include": [
+        "packages/**",
+        "apps/**"
+      ],
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "duplication",
+        "deslop"
+      ],
+      "options": {
+        "minProperties": 2,
+        "allow": [
+          {
+            "name": "IOpenAIEmbeddingConfig",
+            "files": [
+              "packages/ai/src/providers/openai_embedding_client.ts",
+              "packages/ai-openai/src/openai_embedding_client.ts"
+            ],
+            "reason": "The ai copy exists to avoid a circular dependency between @exaix/ai and @exaix/ai-openai."
+          },
+          {
+            "name": "IValidationError",
+            "files": [
+              "packages/quality-gate/src/internal_types.ts",
+              "packages/tool-runtime/src/output_validator.ts"
+            ],
+            "reason": "The two packages have no dependency edge and validate independent shapes."
+          },
+          {
+            "name": "ICliDelegateProcessResult",
+            "files": [
+              "packages/ai-clidelegate/src/cli_delegate_model_provider.ts",
+              "packages/execution/src/strategies/cli_delegate_strategy.ts"
+            ],
+            "reason": "The two packages have no dependency edge and each owns its subprocess seam."
+          },
+          {
+            "name": "IToolResult",
+            "files": [
+              "packages/core/src/types/i_tool_reflector.ts",
+              "packages/tool-runtime/src/tool_reflector.ts"
+            ],
+            "reason": "Core exports a second IToolResult from i_tool_registry, so the reflector copy is not reachable through the core barrel."
+          }
+        ]
+      },
+      "limits": "Compares interface and object type alias members after whitespace normalization. Imported aliases are not resolved."
+    },
+    "exaix/ignore-needs-reason": {
+      "engine": "plugin",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "type-safety",
+        "deslop"
+      ],
+      "options": {
+        "separator": "--"
+      },
+      "limits": "Only ignores that name an exaix rule are checked."
+    },
+    "exaix/require-optional-wrapper": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Opt-in: the bare-optional check is a staged-file ratchet today, not a full-tree gate.",
+      "scope": "all",
+      "optIn": true,
+      "codeStyle": "CODE_STYLE.md#optional-params",
+      "tags": [
+        "type-safety",
+        "deslop"
+      ],
+      "options": {
+        "wrapperType": "Opt"
+      },
+      "limits": "Only function and method parameters are checked."
+    },
+    "exaix/max-cyclomatic-complexity": {
+      "engine": "plugin",
+      "severity": "error",
+      "scope": "prod",
+      "include": [
+        "packages/*/src/**",
+        "apps/*/src/**"
+      ],
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#complexity-rules",
+      "tags": [
+        "complexity",
+        "deslop"
+      ],
+      "options": {
+        "max": 15
+      },
+      "limits": "A SwitchCase counts only with a test, and a LogicalExpression only for '||' and '&&'. Nested function bodies are excluded."
+    },
+    "exaix/max-class-size": {
+      "engine": "plugin",
+      "severity": "off",
+      "optIn": true,
+      "reason": "Manual today: check:god-objects is a separate manual task, so the rule runs only when selected.",
+      "scope": "all",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#complexity-rules",
+      "tags": [
+        "complexity",
+        "module-structure"
+      ],
+      "options": {
+        "minClassLines": 200,
+        "threshold": 60
+      },
+      "limits": "Score is per class; a class under minClassLines is skipped before scoring."
+    },
+    "exaix/no-repeated-assert-call": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "scope": "test",
+      "optIn": true,
+      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
+      "tags": [
+        "test-quality",
+        "deslop"
+      ],
+      "options": {
+        "assertPrefix": "assert"
+      },
+      "limits": "Only adjacent statements inside one block are compared; a non-block body is not scanned."
+    },
+    "exaix/no-constant-substring-assert": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "scope": "test",
+      "optIn": true,
+      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
+      "tags": [
+        "test-quality",
+        "deslop"
+      ],
+      "options": {
+        "constantPattern": "^[A-Z][A-Z0-9_]*$"
+      },
+      "limits": "Only named imports are considered; a namespace or default import is not matched."
+    },
+    "exaix/no-boolean-assert": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "scope": "test",
+      "optIn": true,
+      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
+      "tags": [
+        "test-quality",
+        "deslop"
+      ],
+      "options": {
+        "methods": [
+          "includes",
+          "startsWith",
+          "endsWith"
+        ],
+        "assertFunctions": [
+          "assert",
+          "assertEquals",
+          "assertStrictEquals"
+        ]
+      },
+      "limits": "Only a direct call subject is matched; a message argument does not clear the report."
+    },
+    "exaix/require-safety-comment": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "scope": "prod",
+      "optIn": true,
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "type-safety",
+        "deslop"
+      ],
+      "options": {
+        "markers": [
+          "SAFETY"
+        ]
+      },
+      "limits": "Only non-const assertions in production files are checked."
+    },
+    "exaix/no-runtime-typeof": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "scope": "prod",
+      "optIn": true,
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "type-safety",
+        "deslop"
+      ],
+      "options": {
+        "allowInTypeGuards": true
+      },
+      "limits": "An existence probe against \"undefined\" is allowed."
+    },
+    "exaix/no-conditional-empty-object-spread": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "scope": "prod",
+      "optIn": true,
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "type-safety",
+        "deslop"
+      ],
+      "limits": "Only a conditional with an empty object branch is checked."
+    },
+    "exaix/no-explicit-unknown": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "scope": "all",
+      "optIn": true,
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "type-safety",
+        "deslop"
+      ],
+      "options": {
+        "allowCatchBinding": true,
+        "allowTypePredicateSubject": true
+      },
+      "limits": "Imported aliases are not resolved; only syntactic shapes in this file are seen."
+    },
+    "exaix/no-unsafe-dictionary": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "scope": "all",
+      "optIn": true,
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "type-safety",
+        "deslop"
+      ],
+      "options": {
+        "forbiddenValueTypes": [
+          "unknown",
+          "any",
+          "object",
+          "{}"
+        ]
+      },
+      "limits": "Local aliases and union members are resolved. Wrapper types, intersections, interfaces, mapped-type signatures, and generic alias expansion are not followed. Map<K, V> is checked; a generic constraint is allowed."
+    },
+    "exaix/no-any-escape": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "scope": "all",
+      "optIn": true,
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "type-safety",
+        "deslop"
+      ],
+      "options": {
+        "allowedTypeofTargets": [
+          "globalThis.fetch"
+        ],
+        "allowAnyInTests": true
+      },
+      "limits": "The typeof target is compared as source text; only test files may use an allowed target."
+    },
+    "exaix/no-pass-through-type-alias": {
+      "engine": "plugin",
+      "severity": "error",
+      "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
+      "scope": "all",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "type-safety",
+        "deslop"
+      ],
+      "limits": "Only aliases that name another top-level local alias are reported."
+    },
+    "exaix/no-object-parameters": {
+      "engine": "plugin",
+      "severity": "off",
+      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "scope": "all",
+      "optIn": true,
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "type-safety",
+        "deslop"
+      ],
+      "limits": "Only a direct object annotation is checked. A parameter with a default value, and a local alias of object, are not resolved."
+    },
+    "promise-response-alias": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "type-safety"
+      ]
+    },
+    "promise-response-return": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "type-safety"
+      ]
+    },
+    "ts-suppression-pragmas": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "type-safety"
+      ]
+    },
+    "deno-lint-no-explicit-any": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "type-safety"
+      ]
+    },
+    "import-inside-statement": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#import-statements",
+      "tags": [
+        "imports"
+      ]
+    },
+    "dynamic-import": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#import-statements",
+      "tags": [
+        "imports"
+      ],
+      "exclusionCodes": {
+        "REQUIRED_FOR_TEST": "Dynamic import is required for test setup or mocking.",
+        "PLUGINS": "Dynamic import is necessary for plugin or runtime extension loading.",
+        "RUNTIME_REGISTRY": "Dynamic import is required at runtime for provider registry initialization."
+      }
+    },
+    "inline-type-import": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#import-statements",
+      "tags": [
+        "imports"
+      ]
+    },
+    "re-export-imported": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#import-statements",
+      "tags": [
+        "imports"
+      ],
+      "exclude": [
+        "**/mod.ts",
+        "**/index.ts",
+        "src/services/core/db.ts"
+      ],
+      "reason": "Entrypoints and the compatibility shim legitimately re-export; the code keeps the isTestingCompatibilityShim call."
+    },
+    "package-entrypoint-root-src-reexport": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#import-statements",
+      "tags": [
+        "imports",
+        "package"
+      ],
+      "include": [
+        "packages/**/mod.ts",
+        "packages/**/index.ts"
+      ]
+    },
+    "no-interface-rename-on-import": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#import-statements",
+      "tags": [
+        "imports",
+        "di"
+      ]
+    },
+    "import-placement": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": [
+        "imports",
+        "module-structure"
+      ],
+      "limits": "Line-based; a multi-line type re-export can be read as a type definition."
+    },
+    "magic-union-type": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#no-magic-values",
+      "tags": [
+        "magic-values"
+      ]
+    },
+    "module-header": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": [
+        "module-structure"
+      ]
+    },
+    "module-header-tag": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": [
+        "module-structure"
+      ]
+    },
+    "exported-interface-naming": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#di-and-interfaces",
+      "tags": [
+        "di"
+      ]
+    },
+    "exported-interface-placement": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#di-and-interfaces",
+      "tags": [
+        "di",
+        "module-structure"
+      ]
+    },
+    "max-params": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#complexity-rules",
+      "tags": [
+        "complexity",
+        "module-structure"
+      ],
+      "options": {
+        "max": 7
+      }
+    },
+    "long-comment": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "all",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#comment-discipline",
+      "tags": [
+        "comments"
+      ],
+      "options": {
+        "maxLines": 3,
+        "extensions": [
+          ".ts",
+          ".tsx",
+          ".yaml",
+          ".yml",
+          ".toml",
+          ".jsonc"
+        ],
+        "overrides": {
+          ".toml": {
+            "maxLines": 6
+          }
+        }
+      }
+    },
+    "ephemeral-comment": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "all",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#comment-discipline",
+      "tags": [
+        "comments"
+      ]
+    },
+    "decorative-comment": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "all",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#comment-discipline",
+      "tags": [
+        "comments"
+      ]
+    },
+    "edition-conditional-outside-composer": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#layer-aware-constant-imports",
+      "tags": [
+        "edition",
+        "boundary"
+      ],
+      "exclude": [
+        "**/check_code_style.ts",
+        "**/check_no_edition_conditionals.ts",
+        "exaix-enterprise/**",
+        "scripts/ci.ts",
+        "exaix-team/**",
+        "**/src/composer/**",
+        "apps/daemon/**",
+        "apps/exactl/**",
+        "apps/common/**",
+        "tests/scenario_framework/runner/modes.ts",
+        "scripts/test_parallel.ts"
+      ]
+    },
+    "edition-leak": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#layer-aware-constant-imports",
+      "tags": [
+        "edition",
+        "boundary"
+      ],
+      "limits": "Reads source text; check:edition-graph is its resolved-graph double check.",
+      "options": {
+        "soloTier": 0,
+        "teamTier": 1,
+        "enterpriseTier": 2,
+        "soloPrefixes": [
+          "packages/",
+          "apps/"
+        ],
+        "teamPrefixes": [
+          "exaix-team/"
+        ],
+        "enterprisePrefixes": [
+          "exaix-enterprise/"
+        ],
+        "teamAppPaths": [
+          "apps/daemon/src/bootstrap_team.ts"
+        ]
+      }
+    },
+    "script-shebang": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#utility-scripts",
+      "tags": [
+        "scripts"
+      ],
+      "include": [
+        "scripts/**"
+      ]
+    },
+    "script-usage": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#utility-scripts",
+      "tags": [
+        "scripts"
+      ],
+      "include": [
+        "scripts/**"
+      ]
+    },
+    "script-placement": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#utility-scripts",
+      "tags": [
+        "scripts"
+      ]
+    },
+    "tui-boundary-cli": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#tui-boundaries",
+      "tags": [
+        "boundary",
+        "tui"
+      ]
+    },
+    "tui-boundary-services": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#tui-boundaries",
+      "tags": [
+        "boundary",
+        "tui"
+      ]
+    },
+    "tui-boundary-config": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#tui-boundaries",
+      "tags": [
+        "boundary",
+        "tui"
+      ]
+    },
+    "tui-boundary-helpers": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#tui-boundaries",
+      "tags": [
+        "boundary",
+        "tui"
+      ]
+    },
+    "core-boundary-tui-helpers": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#tui-boundaries",
+      "tags": [
+        "boundary",
+        "tui",
+        "package"
+      ]
+    },
+    "cli-boundary-services": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#cli-boundaries",
+      "tags": [
+        "boundary",
+        "cli"
+      ]
+    },
+    "cli-boundary-config": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#cli-boundaries",
+      "tags": [
+        "boundary",
+        "cli"
+      ]
+    },
+    "core-boundary-cli-helpers": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "CODE_STYLE.md#cli-boundaries",
+      "tags": [
+        "boundary",
+        "cli",
+        "package"
+      ]
+    },
+    "package-boundary": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": [
+        "package",
+        "boundary"
+      ]
+    },
+    "package-src-boundary": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": [
+        "package",
+        "boundary"
+      ]
+    },
+    "package-related-files-boundary": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": [
+        "package",
+        "boundary"
+      ]
+    },
+    "package-subpath-promotion": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": [
+        "package",
+        "boundary"
+      ]
+    },
+    "package-testing-import": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "test",
+      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
+      "tags": [
+        "package",
+        "test-quality"
+      ]
+    },
+    "package-canonical-import": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#module-structure",
+      "tags": [
+        "package",
+        "imports"
+      ]
+    },
+    "package-instantiates-event-logger": {
+      "engine": "script",
+      "severity": "error",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#package-module-purity",
+      "tags": [
+        "package",
+        "di"
+      ]
+    },
+    "package-concrete-logger-type": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#package-module-purity",
+      "tags": [
+        "package",
+        "di"
+      ]
+    },
+    "package-uses-config-reader": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#package-module-purity",
+      "tags": [
+        "package",
+        "di"
+      ]
+    },
+    "test-inline-multiline-fixture": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "test",
+      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
+      "tags": [
+        "test-quality"
+      ],
+      "options": {
+        "minLines": 7
+      },
+      "exclusionCodes": {
+        "SMALL_FIXTURE_OK": "Fixture is under the 7-line threshold and inlining improves test clarity.",
+        "FIXTURE_READABILITY": "Inline fixture is more readable and maintainable in this context."
+      }
+    },
+    "concrete-cross-domain": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#layer-aware-constant-imports",
+      "tags": [
+        "boundary",
+        "di"
+      ]
+    },
+    "layer-constant-leak": {
+      "engine": "script",
+      "severity": "warn",
+      "scope": "prod",
+      "codeStyle": "CODE_STYLE.md#layer-aware-constant-imports",
+      "tags": [
+        "boundary"
+      ],
+      "limits": "AST-based over this file only; dynamic imports and re-exports are not followed."
+    },
+    "exaix/no-chained-type-assertions": {
+      "engine": "plugin",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "tags": [
+        "type-safety",
+        "deslop"
+      ],
+      "limits": "Imported aliases are not resolved; only syntactic assertions in this file are seen.",
+      "options": {
+        "allowPartialMockInTests": true,
+        "allowNeverAnyMockInTests": true
+      }
+    }
+  }
+}

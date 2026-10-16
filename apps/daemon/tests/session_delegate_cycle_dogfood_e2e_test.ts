@@ -14,6 +14,14 @@
  * @related-files [scripts/plan_to_requests.ts, scripts/mock_session_tool.ts, packages/flow/src/step_handlers/session_delegate_cycle_step_handler.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_EXECUTION_MEMORY_PATH,
+  DEFAULT_FLOWS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_RUNTIME_PATH,
+} from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import {
@@ -73,21 +81,21 @@ function planWithSteps(count: number): string {
  * proves the literal shipped catalog artifact dispatches correctly, not a hand-maintained clone
  * that can silently drift from the real file's shape. */
 function copyRealDogfoodFlow(root: string): void {
-  const dir = join(root, "Blueprints", "Flows");
+  const dir = pathBuilders.blueprintsPath(root, DEFAULT_FLOWS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   Deno.copyFileSync(
-    join(REPO_ROOT, "Blueprints", "Flows", `${FLOW_ID}.flow.yaml`),
+    pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_FLOWS_PATH, `${FLOW_ID}.flow.yaml`),
     join(dir, `${FLOW_ID}.flow.yaml`),
   );
 }
 
 /** Copies every identity the real dogfood-meta-workflow flow references. */
 function copyDogfoodFlowIdentities(root: string): void {
-  const dir = join(root, "Blueprints", "Agents");
+  const dir = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   for (const identity of ["dogfood-coder", "code-analyst", "code-reviewer"]) {
     Deno.copyFileSync(
-      join(REPO_ROOT, "Blueprints", "Agents", `${identity}.md`),
+      pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, `${identity}.md`),
       join(dir, `${identity}.md`),
     );
   }
@@ -325,13 +333,13 @@ Deno.test({
       const genOutDir = join(tempDir, "generated-requests");
       await runGenerator(fixturePlanPath, portalDir, genOutDir);
 
-      const planContextRef = ".exa/PlanContext/hardened-fixture.md";
+      const planContextRef = `${DEFAULT_RUNTIME_PATH}/PlanContext/hardened-fixture.md`;
       const copiedPlan = join(portalDir, planContextRef);
       const copiedContent = await Deno.readTextFile(copiedPlan);
       assertEquals(copiedContent, twoStepPlan(), "the generator must copy the exact plan the daemon will read");
 
       const traceId = crypto.randomUUID();
-      const requestsDir = join(tempDir, "Workspace", "Requests");
+      const requestsDir = pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH);
 
       await bootRealDaemon(configPath, {
         extraEnv: {
@@ -364,7 +372,12 @@ Deno.test({
       assertEquals(JSON.parse(cycleCompleted[0].payload).stepCount, 2);
 
       for (const delegationTraceId of delegationTraceIds) {
-        const resultPath = join(tempDir, "Memory", "Execution", delegationTraceId, "session_delegate_result.json");
+        const resultPath = pathBuilders.memoryPath(
+          tempDir,
+          DEFAULT_EXECUTION_MEMORY_PATH,
+          delegationTraceId,
+          "session_delegate_result.json",
+        );
         const record = JSON.parse(await Deno.readTextFile(resultPath));
         assert(
           record.outcome.pathsTouched.length > 0,
@@ -407,9 +420,9 @@ Deno.test({
       const genOutDir = join(tempDir, "generated-requests");
       await runGenerator(fixturePlanPath, portalDir, genOutDir);
 
-      const planContextRef = ".exa/PlanContext/hardened-fixture.md";
+      const planContextRef = `${DEFAULT_RUNTIME_PATH}/PlanContext/hardened-fixture.md`;
       const traceId = crypto.randomUUID();
-      const requestsDir = join(tempDir, "Workspace", "Requests");
+      const requestsDir = pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH);
 
       await bootRealDaemon(configPath, {
         extraEnv: {
@@ -509,7 +522,7 @@ Deno.test({
       await Deno.writeTextFile(fixturePlanPath, twoStepPlan());
       const genOutDir = join(tempDir, "generated-requests");
       await runGenerator(fixturePlanPath, portalDir, genOutDir);
-      const planContextRef = ".exa/PlanContext/hardened-fixture.md";
+      const planContextRef = `${DEFAULT_RUNTIME_PATH}/PlanContext/hardened-fixture.md`;
       // The file-change audit (AgentComposer.auditGitChanges) flags ANY untracked
       // file in the portal, including the PlanContext copy the generator just wrote — commit
       // it so the worktree is clean before the real flow's first step runs.
@@ -520,7 +533,7 @@ Deno.test({
       }).output();
 
       const traceId = crypto.randomUUID();
-      const requestsDir = join(tempDir, "Workspace", "Requests");
+      const requestsDir = pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH);
 
       await bootRealDaemon(configPath, {
         // This operator-run test boots a real Anthropic provider under EXA_TEST_MODE.
@@ -540,7 +553,12 @@ Deno.test({
 
       const delegationTraceIds = completed.map((e) => JSON.parse(e.payload).delegationTraceId);
       for (const delegationTraceId of delegationTraceIds) {
-        const resultPath = join(tempDir, "Memory", "Execution", delegationTraceId, "session_delegate_result.json");
+        const resultPath = pathBuilders.memoryPath(
+          tempDir,
+          DEFAULT_EXECUTION_MEMORY_PATH,
+          delegationTraceId,
+          "session_delegate_result.json",
+        );
         const record = JSON.parse(await Deno.readTextFile(resultPath));
         assert(
           record.outcome.pathsTouched.length > 0,

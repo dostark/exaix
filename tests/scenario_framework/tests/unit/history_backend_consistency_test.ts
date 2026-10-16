@@ -5,8 +5,9 @@
  * and EvalSqliteStore.writeRun, both backends list the same run ids.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
-import { join, resolve } from "@std/path";
+import { resolve } from "@std/path";
 import { EvalSqliteStore, type IEvalHistoryEntry } from "@exaix/eval-history";
 import { writeEvalHistoryEntry } from "../../runner/history_writer.ts";
 import type { IRunManifest } from "../../runner/evidence_collector.ts";
@@ -27,8 +28,8 @@ Deno.test({
   fn: async () => {
     const dir = Deno.makeTempDirSync({ prefix: "scenario-framework-backend-consist-" });
     // Create the .exa directory before constructing the store (constructor opens the DB)
-    Deno.mkdirSync(join(dir, ".exa"), { recursive: true });
-    const dbPath = join(dir, ".exa", "eval.db");
+    Deno.mkdirSync(pathBuilders.runtimePath(dir), { recursive: true });
+    const dbPath = pathBuilders.runtimePath(dir, "eval.db");
     const store = new EvalSqliteStore(dbPath);
     try {
       store.initialize();

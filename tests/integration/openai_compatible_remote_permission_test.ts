@@ -12,7 +12,7 @@
  * @architectural-layer Integration
  * @related-files [packages/ai-openai/src/compatible_factory.ts, apps/daemon/main.ts]
  */
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { migrateDaemonWorkspace } from "./helpers/daemon_config.ts";
 
@@ -70,7 +70,7 @@ for (const { preset, credentialEnv, host } of CASES) {
 
         assertEquals(status.success, false, stderrText);
         assert(stderrText.includes("net_permission_denied"), stderrText);
-        assertEquals(stderrText.includes(fixtureKey), false, "the credential value must never reach a crash log");
+        assertFalse(stderrText.includes(fixtureKey), "the credential value must never reach a crash log");
         // A denied permission query fails fast, unlike a real network attempt.
         assert(elapsedMs < BOOT_TIMEOUT_MS, `boot took ${elapsedMs}ms — too slow for a permission-only failure`);
       } finally {

@@ -12,7 +12,7 @@ import { FlowSchema } from "@exaix/schemas/flow.ts";
 import { defineFlow } from "@exaix/core/func";
 import { FlowRunner } from "@exaix/flow";
 import { MockLLMProvider } from "@exaix/ai/providers";
-import { DEFAULT_FLOW_VERSION, EvaluationCategory, FlowInputSource, FlowOutputFormat, MockStrategy } from "@exaix/core";
+import { EvaluationCategory, FlowInputSource, FlowOutputFormat, MockStrategy } from "@exaix/core";
 import { initTestDbService } from "@exaix/testing";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "@exaix/flow";
@@ -20,6 +20,7 @@ import type { IAgentExecutionResult } from "@exaix/execution";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { JSONValue } from "@exaix/core/types";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 describe("Example Flows - Step 7.9", {
   sanitizeResources: false,
   sanitizeOps: false,

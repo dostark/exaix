@@ -7,11 +7,20 @@
  * creation of the required directory structure, config templates, and baseline assets.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PORTALS_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_WORKSPACE_PATH,
+  ExaPathDefaults,
+} from "@exaix/shared";
 import { assert, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
-import { ExaPathDefaults } from "@exaix/core";
-
 const __dirname = dirname(fromFileUrl(import.meta.url));
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 
@@ -150,7 +159,7 @@ Deno.test("scaffold.ts creates Memory/Projects directory and README placeholder"
     const projectsPath = join(tmp, ExaPathDefaults.memoryProjects);
     assert(
       await exists(projectsPath),
-      "Memory/Projects should be created",
+      `${DEFAULT_MEMORY_PATH}/Projects should be created`,
     );
 
     // Verify the scaffold created a README template at top-level
@@ -200,11 +209,11 @@ Deno.test("scaffold.ts is idempotent", async () => {
 
     // Verify structure is still correct
     const requiredDirs = [
-      ".exa",
-      "Blueprints/Agents",
-      "Workspace/Requests",
-      "Memory/Reports",
-      "Portals",
+      DEFAULT_RUNTIME_PATH,
+      `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`,
+      `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`,
+      `${DEFAULT_MEMORY_PATH}/Reports`,
+      DEFAULT_PORTALS_PATH,
     ];
 
     for (const dir of requiredDirs) {
@@ -255,7 +264,7 @@ Deno.test("scaffold.ts uses current directory if no target provided", async () =
 
     // Verify structure was created in current directory
     assert(
-      await exists(join(tmp, ".exa")),
+      await exists(pathBuilders.runtimePath(tmp)),
       ".exa directory should be created in current directory",
     );
   } finally {

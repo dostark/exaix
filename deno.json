@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "nodeModulesDir": "auto",
   "workspace": [
+    "./packages/shared",
     "./packages/schemas",
     "./packages/core",
     "./packages/ai",
@@ -31,6 +32,7 @@
     "./packages/flow",
     "./packages/session",
     "./packages/model-registry",
+    "./packages/lint-rules",
     "./apps/daemon",
     "./apps/exactl",
     "./apps/tui",
@@ -88,22 +90,25 @@
     "coverage:lcov": "mkdir -p coverage && deno coverage coverage/ --include='^file://.*/(src|packages)/' --exclude='test\\.(ts|js)$' --lcov --output=coverage/lcov.info",
     "coverage:with-llama": "deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts --with-llama",
     "bench": "deno bench --allow-all tests/benchmarks/",
-    "lint": "deno lint --rules-include=explicit-module-boundary-types --rules-exclude=no-import-prefix tests/ packages/ exaix-team/ apps/",
+    "lint": "EXAIX_LINT_RULES= deno lint --rules-include=explicit-module-boundary-types --rules-exclude=no-import-prefix tests/ packages/ exaix-team/ apps/",
+    "lint:tags": "sh -c 'sel=\"\"; for t in \"$@\"; do sel=\"${sel:+$sel,}tag:$t\"; done; EXAIX_LINT_RULES=\"$sel\" deno lint --rules-tags= --rules-exclude=no-import-prefix' _",
+    "docs:style-rules": "deno run --allow-read --allow-write scripts/generate_style_rules_doc.ts && deno fmt packages/lint-rules/docs/style_rules.md",
+    "bench:lint-rules": "deno run -A scripts/bench_lint_rules.ts",
     "fmt": "deno fmt tests/ docs/ packages/ exaix-team/ apps/",
     "fmt:check": "deno fmt --check tests/ docs/ packages/ exaix-team/ apps/",
     "cache": "deno cache apps/daemon/main.ts apps/exactl/main.ts exaix-team/apps/mcp-server/main.ts apps/tui/main.ts",
     "hooks:install": "deno run --allow-read --allow-write scripts/setup_hooks.ts",
-    "check": "deno check packages/ exaix-team/ apps/ tests/",
+    "check": "deno check packages/ && deno check exaix-team/ && deno check apps/ && deno check tests/ && deno check scripts/",
     "check:version": "deno run -A scripts/check_version.ts",
     "check:commit-msg": "deno run --allow-read --allow-run=git --allow-env=GIT_DIR,GIT_INDEX_FILE,GIT_WORK_TREE,GIT_PREFIX,GIT_COMMON_DIR,GIT_OBJECT_DIRECTORY,GIT_ALTERNATE_OBJECT_DIRECTORIES scripts/check_commit_msg.ts",
-    "check:style": "deno run --allow-read --allow-env scripts/check_code_style.ts",
+    "check:style": "deno run --allow-read --allow-env packages/lint-rules/src/exaix/check_code_style.ts",
     "check:edition-graph": "deno run --allow-read --allow-run=deno --allow-env scripts/check_edition_graph.ts",
     "check:test-placement": "deno run --allow-read --allow-run=git scripts/check_test_placement.ts --all",
     "check:docs": "deno run --allow-read scripts/verify_manifest_fresh.ts",
     "dep:graph": "deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint apps/daemon/main.ts --format text",
     "check:arch": "deno run --allow-read scripts/validate_architecture.ts",
-    "check:magic": "deno run --allow-read --allow-env scripts/check_magic_values.ts",
-    "check:god-objects": "deno run -A scripts/check_god_objects.ts --fail",
+    "check:magic": "deno run --allow-read --allow-env packages/lint-rules/src/exaix/check_magic_values.ts",
+    "check:god-objects": "deno run --allow-run --allow-read packages/lint-rules/src/cli/rule_report.ts --rule=exaix/max-class-size --roots=packages,apps,tests,scripts --fail",
     "check:agent-docs-integrity": "deno run --allow-read scripts/check_agent_docs_integrity.ts",
     "check:phase-references": "deno run --allow-read scripts/check_phase_references.ts",
     "check:qwen-skills-sync": "deno run --allow-read scripts/check_qwen_skills_sync.ts",
@@ -112,7 +117,8 @@
     "check:hardcoded-models": "deno run --allow-read scripts/check_hardcoded_models.ts",
     "check:event-strings": "deno run --allow-read scripts/check_event_strings.ts",
     "check:scenario-declarative": "deno run -A scripts/check_scenario_declarative.ts",
-    "check:constant-restatement": "deno run --allow-read scripts/check_constant_restatement.ts",
+    "check:constant-restatement": "deno run --allow-read --allow-env packages/lint-rules/src/cli/whole_tree.ts --rule=constant-restatement",
+    "check:path-builders": "deno run --allow-read --allow-env scripts/check_path_builders.ts",
     "check:agent-prose": "deno run -A scripts/check_agent_prose.ts",
     "check:ste100-comments": "deno run -A scripts/check_ste100_comments.ts",
     "check:ste100-comments:staged": "deno run --allow-read --allow-env --allow-run=git scripts/check_ste100_comments.ts --staged",
@@ -125,11 +131,13 @@
     "check:tool-naming": "deno run -A scripts/check_tool_naming.ts",
     "check:aci-docs": "deno run scripts/validate_aci_docs.ts",
     "check:aci-docs:strict": "deno run scripts/validate_aci_docs.ts --strict",
-    "check:complexity": "deno run --allow-run --allow-read scripts/measure_complexity.ts --threshold 15 --fail",
-    "check:unused-exports": "deno run -A scripts/check_unused_exports.ts",
-    "check:unused-exports:strict": "deno run -A scripts/check_unused_exports.ts --strict",
-    "check:optional-params": "deno run --allow-read --allow-env --allow-run=git scripts/check_optional_params.ts",
-    "check:optional-params:staged": "deno run --allow-read --allow-env --allow-run=git scripts/check_optional_params.ts --staged",
+    "check:complexity": "deno run --allow-run --allow-read packages/lint-rules/src/cli/rule_report.ts --rule=exaix/max-cyclomatic-complexity --roots=packages,apps --fail",
+    "fix:bool-asserts": "deno run -A scripts/fix_bool_asserts.ts",
+    "fix:bool-asserts:check": "deno run -A scripts/fix_bool_asserts.ts --check",
+    "check:unused-exports": "deno run -A packages/lint-rules/src/cli/whole_tree.ts --rule=unused-exports",
+    "check:unused-exports:strict": "deno run -A packages/lint-rules/src/cli/whole_tree.ts --rule=unused-exports --strict",
+    "check:optional-params": "deno run -A packages/lint-rules/src/cli/whole_tree.ts --rule=optional-params",
+    "check:optional-params:staged": "deno run -A packages/lint-rules/src/cli/whole_tree.ts --rule=optional-params --staged",
     "check:runtime-artifacts": "deno run --allow-read --allow-run=git scripts/check_runtime_artifacts.ts",
     "check:skill-index": "deno run -A scripts/check_skills.ts",
     "check:blueprint-integrity": "deno run --allow-read scripts/check_blueprint_integrity.ts Blueprints",
@@ -161,7 +169,6 @@
     "build:enterprise": "deno run -A scripts/ci.ts build --edition enterprise",
     "ci:solo": "deno run -A scripts/ci.ts all --edition solo",
     "ci:team": "deno run -A scripts/ci.ts all --edition team",
-
     "dogfood": "deno run -A scripts/dogfood_daemon.ts start",
     "dogfood:stop": "deno run -A scripts/dogfood_daemon.ts stop",
     "dogfood:status": "deno run -A scripts/dogfood_daemon.ts status",
@@ -258,7 +265,6 @@
     "@exaix/core/security": "./packages/core/src/security/mod.ts",
     "@exaix/core/fs": "./packages/core/src/fs/mod.ts",
     "@exaix/core/health": "./packages/core/src/health/mod.ts",
-    "@exaix/core/": "./packages/core/src/",
     "@exaix/core/func": "./packages/core/src/func/mod.ts",
     "@exaix/core/parsing": "./packages/core/src/parsing/mod.ts",
     "@exaix/core/context": "./packages/core/src/context/mod.ts",
@@ -293,6 +299,8 @@
     "@exaix/request/": "./packages/request/src/",
     "@exaix/flow": "./packages/flow/mod.ts",
     "@exaix/flow/": "./packages/flow/src/",
+    "@exaix/lint-rules": "./packages/lint-rules/mod.ts",
+    "@exaix/lint-rules/": "./packages/lint-rules/src/",
     "@exaix/app-exactl/exactl": "./apps/exactl/src/exactl.ts",
     "@exaix-team/voting": "./exaix-team/packages/voting/mod.ts",
     "@exaix-team/voting/": "./exaix-team/packages/voting/src/",
@@ -305,7 +313,9 @@
     "@exaix-team/model-registry-live": "./exaix-team/packages/model-registry-live/mod.ts",
     "@exaix-team/model-registry-live/": "./exaix-team/packages/model-registry-live/src/",
     "@exaix-team/otel-export": "./exaix-team/packages/otel-export/mod.ts",
-    "@exaix-team/otel-export/": "./exaix-team/packages/otel-export/src/"
+    "@exaix-team/otel-export/": "./exaix-team/packages/otel-export/src/",
+    "@exaix/shared": "./packages/shared/mod.ts",
+    "@exaix/shared/": "./packages/shared/src/"
   },
   "exclude": [
     "cov_profile",
@@ -314,6 +324,9 @@
     "tests/scenario_framework/fixtures/"
   ],
   "lint": {
+    "plugins": [
+      "./scripts/config/exaix_lint_plugin.ts"
+    ],
     "exclude": [
       "tests/scenario_framework/fixtures/"
     ]
@@ -346,7 +359,11 @@
     ]
   },
   "compilerOptions": {
-    "lib": ["deno.window", "deno.ns", "deno.unstable"],
+    "lib": [
+      "deno.window",
+      "deno.ns",
+      "deno.unstable"
+    ],
     "strict": true,
     "checkJs": false
   },

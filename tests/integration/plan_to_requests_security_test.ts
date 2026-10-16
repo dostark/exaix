@@ -8,7 +8,9 @@
  * @related-files [scripts/plan_to_requests.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH } from "@exaix/shared";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import {
   CONTEXT_FIXTURE_PATH,
@@ -30,20 +32,20 @@ Deno.test("[plan-to-requests][plan-context][security] a '..'-laden plan slug is 
     const { code, stdout, stderr } = await runGenerator([
       evilDoc,
       "--out-dir",
-      join(wt, "Workspace", "Requests"),
+      pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH),
       "--plan-context-root",
       wt,
     ]);
     assertEquals(code !== 0, true, "must exit non-zero on an unsafe slug");
-    assertEquals(
-      (stdout + stderr).includes("phase..evil"),
-      true,
+    assertStringIncludes(
+      stdout + stderr,
+      "phase..evil",
       "the error must name the rejected slug (rejection-by-validation, not a silent skip)",
     );
 
     let planContextAbsent = false;
     try {
-      await Deno.stat(join(wt, ".exa", "PlanContext"));
+      await Deno.stat(pathBuilders.runtimePath(wt, "PlanContext"));
     } catch {
       planContextAbsent = true;
     }
@@ -57,7 +59,7 @@ Deno.test("[plan-context][relocation][security] pre-existing symlinked PlanConte
   const wt = await makeFakeWorktree({ withGit: false });
   const outside = await Deno.makeTempDir({ prefix: "plan-context-outside-" });
   try {
-    const destDir = join(wt, ".exa", "PlanContext");
+    const destDir = pathBuilders.runtimePath(wt, "PlanContext");
     const OUTSIDE_SENTINEL = "must remain untouched";
     const outsideTarget = join(outside, "captured-plan.md");
     await Deno.mkdir(destDir, { recursive: true });
@@ -67,15 +69,15 @@ Deno.test("[plan-context][relocation][security] pre-existing symlinked PlanConte
     const result = await runGenerator([
       CONTEXT_FIXTURE_PATH,
       "--out-dir",
-      join(wt, "Workspace", "Requests"),
+      pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH),
       "--plan-context-root",
       wt,
     ]);
 
     assertEquals(result.code !== 0, true, "symlinked destination must fail closed");
-    assertEquals(
-      (result.stdout + result.stderr).toLowerCase().includes("symbolic link"),
-      true,
+    assertStringIncludes(
+      (result.stdout + result.stderr).toLowerCase(),
+      "symbolic link",
       "failure must identify the rejected symbolic link",
     );
     assertEquals(await Deno.readTextFile(outsideTarget), OUTSIDE_SENTINEL, "symlink target must remain untouched");

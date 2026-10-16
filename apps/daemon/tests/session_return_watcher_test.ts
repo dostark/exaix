@@ -7,7 +7,8 @@
  *   stays silent on a partial/absent return (GAP-10).
  */
 
-import { assertEquals } from "@std/assert";
+import { DEFAULT_PLANS_PATH, DEFAULT_RUNTIME_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
@@ -84,7 +85,7 @@ async function setup(rig: IRig, gate: SessionBrief["gate"], permitted: string[])
     gate,
     tool: "claude-code",
     objective: "Do the work.",
-    artifactRef: "Workspace/Plans/p.md",
+    artifactRef: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/p.md`,
     permittedPaths: permitted,
     tokenBudget: { max_input_tokens: 50_000, max_output_tokens: 50_000, max_total_tokens: 100_000 },
   });
@@ -103,7 +104,7 @@ async function dropReturn(rig: IRig, traceId: string, body: string | object): Pr
 Deno.test("[session_return_watcher] accepted return resumes the gate and journals reconciled", async () => {
   const rig = await makeRig();
   try {
-    const brief = await setup(rig, "plan_review", ["Workspace/Plans/**"]);
+    const brief = await setup(rig, "plan_review", [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/**`]);
     const path = await dropReturn(rig, brief.trace_id, {
       trace_id: brief.trace_id,
       resume_token: brief.resume_token,
@@ -113,8 +114,8 @@ Deno.test("[session_return_watcher] accepted return resumes the gate and journal
       token_stats: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
     });
     await rig.watcher.handleReturnPath(path);
-    assertEquals(rig.sink.actions().includes(DomainEventType.SessionDelegateReturned), true);
-    assertEquals(rig.sink.actions().includes(DomainEventType.SessionDelegateReconciled), true);
+    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateReturned]);
+    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateReconciled]);
     assertEquals((await rig.store.get(brief.trace_id))?.status, "resumed");
   } finally {
     await rig.cleanup();
@@ -134,7 +135,7 @@ Deno.test("[session_return_watcher][security] forged token journals token_reject
       token_stats: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
     });
     await rig.watcher.handleReturnPath(path);
-    assertEquals(rig.sink.actions().includes(DomainEventType.SessionDelegateTokenRejected), true);
+    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateTokenRejected]);
     assertEquals((await rig.store.get(brief.trace_id))?.status, "pending");
   } finally {
     await rig.cleanup();
@@ -154,7 +155,7 @@ Deno.test("[session_return_watcher][security] scope violation journals scope_vio
       token_stats: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
     });
     await rig.watcher.handleReturnPath(path);
-    assertEquals(rig.sink.actions().includes(DomainEventType.SessionDelegateScopeViolation), true);
+    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateScopeViolation]);
     assertEquals((await rig.store.get(brief.trace_id))?.status, "pending");
   } finally {
     await rig.cleanup();
@@ -164,7 +165,7 @@ Deno.test("[session_return_watcher][security] scope violation journals scope_vio
 Deno.test("[session_return_watcher][security] GAP-10 — a partial return journals nothing", async () => {
   const rig = await makeRig();
   try {
-    const brief = await setup(rig, "review", ["Workspace/**"]);
+    const brief = await setup(rig, "review", [`${DEFAULT_WORKSPACE_PATH}/**`]);
     const path = await dropReturn(rig, brief.trace_id, '{"trace_id":"' + brief.trace_id + '"');
     await rig.watcher.handleReturnPath(path);
     assertEquals(rig.sink.events.length, 0);
@@ -194,7 +195,7 @@ Deno.test("[session_return_watcher] onReconciled callback invoked on accept, not
     });
 
     // Accepted return triggers onReconciled
-    const brief1 = await setup(rig, "plan_review", ["Workspace/Plans/**"]);
+    const brief1 = await setup(rig, "plan_review", [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/**`]);
     const path1 = await dropReturn(rig, brief1.trace_id, {
       trace_id: brief1.trace_id,
       resume_token: brief1.resume_token,
@@ -280,7 +281,7 @@ Deno.test("[session_return_watcher][Tier A] reconciled event persists delegation
       gate: "code_changes",
       tool: "codex",
       objective: "Persist lineage.",
-      artifactRef: ".exa/PlanContext/phase-174.md",
+      artifactRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
       permittedPaths: ["src/**"],
       tokenBudget: { max_input_tokens: 10, max_output_tokens: 10, max_total_tokens: 20 },
     });
@@ -323,7 +324,7 @@ Deno.test("[session_return_watcher][Tier A] reconciled event persists delegation
 Deno.test("[session_return_watcher] an over-budget accepted return also journals budget_exceeded (P2)", async () => {
   const rig = await makeRig();
   try {
-    const brief = await setup(rig, "plan_review", ["Workspace/Plans/**"]);
+    const brief = await setup(rig, "plan_review", [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/**`]);
     // total_tokens 150_000 exceeds the brief's 100_000 max — accepted but over budget.
     const path = await dropReturn(rig, brief.trace_id, {
       trace_id: brief.trace_id,
@@ -334,8 +335,8 @@ Deno.test("[session_return_watcher] an over-budget accepted return also journals
       token_stats: { input_tokens: 120_000, output_tokens: 30_000, total_tokens: 150_000 },
     });
     await rig.watcher.handleReturnPath(path);
-    assertEquals(rig.sink.actions().includes(DomainEventType.SessionDelegateReconciled), true);
-    assertEquals(rig.sink.actions().includes(DomainEventType.SessionDelegateBudgetExceeded), true);
+    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateReconciled]);
+    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateBudgetExceeded]);
     // Budget overage is non-blocking: the gate still resumes.
     assertEquals((await rig.store.get(brief.trace_id))?.status, "resumed");
   } finally {
@@ -349,7 +350,7 @@ Deno.test("[session_return_watcher][security] journaled events carry traceId as 
   // the exact column a `trace_scoped: true` journal-assert filters on (`WHERE trace_id = ?`).
   const rig = await makeRig();
   try {
-    const brief = await setup(rig, "plan_review", ["Workspace/Plans/**"]);
+    const brief = await setup(rig, "plan_review", [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/**`]);
     const path = await dropReturn(rig, brief.trace_id, {
       trace_id: brief.trace_id,
       resume_token: brief.resume_token,

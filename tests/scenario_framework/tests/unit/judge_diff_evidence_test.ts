@@ -14,7 +14,7 @@
  * @related-files [tests/scenario_framework/runner/assertions.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { computeGitDiffEvidence, evaluateLlmJudgeCriterion, resolveTestRunStatus } from "../../runner/assertions.ts";
 import type { IScenarioStepOutcome } from "../../runner/assertions.ts";
 import { CriterionKind, CriterionPhase, CriterionStatus } from "../../schema/step_schema.ts";
@@ -118,8 +118,8 @@ Deno.test("[JudgeDiffEvidence] the diff is scoped to the requested file, not the
 
     const diff = await computeGitDiffEvidence(workspaceRoot, "todo-app/utils.ts");
     assertStringIncludes(diff, "a-changed");
-    assertEquals(diff.includes("other.ts"), false);
-    assertEquals(diff.includes("b-changed"), false);
+    assertFalse(diff.includes("other.ts"));
+    assertFalse(diff.includes("b-changed"));
   } finally {
     await Deno.remove(workspaceRoot, { recursive: true });
   }

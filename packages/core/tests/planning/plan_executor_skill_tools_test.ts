@@ -11,7 +11,8 @@
  * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_composer.ts, packages/execution/src/skill_tools_derivation.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { assertFalse, assertStringIncludes } from "@std/assert";
 import {
   createMockConfig,
   createStubConfig,
@@ -86,11 +87,11 @@ Deno.test({
     registerLocalProvider("ollama");
     try {
       const root = await Deno.makeTempDir();
-      await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
+      await Deno.mkdir(pathBuilders.agentsPath(pathBuilders.blueprintsPath(root)), { recursive: true });
       // Agent role permits a BROAD set — list_directory is included here but no matched skill
       // declares it, so it must not survive the intersection.
       await Deno.writeTextFile(
-        `${root}/Blueprints/Agents/senior-coder.md`,
+        pathBuilders.agentsPath(pathBuilders.blueprintsPath(root), "senior-coder.md"),
         '---\nagent_role: senior-coder\nmodel: ""\n' +
           'permitted_tools: ["read_file", "write_file", "delete_file", "list_directory"]\n---\n\n' +
           "Stub agent role for testing.\n",
@@ -176,9 +177,8 @@ Deno.test({
         "delete_file",
         "delete_file is in both the skill-tools union and the agent role's permitted_tools — must survive",
       );
-      assertEquals(
+      assertFalse(
         visibleTools.includes("list_directory"),
-        false,
         "list_directory must be excluded: the agent role permits it, but no matched skill's tools union includes it",
       );
     } finally {

@@ -5,7 +5,9 @@
  * branches, pointers, and worktree directories are removed after review (approve/reject).
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
@@ -45,7 +47,7 @@ async function getReviewWorktreePaths(env: TestEnvironment, traceId: string, por
   assertEquals(reviewRow.repository, portalTargetPath);
 
   const canonicalWorktreePath = reviewRow.worktree_path;
-  const pointerPath = join(env.tempDir, "Memory", "Execution", traceId, "worktree");
+  const pointerPath = pathBuilders.memoryPath(env.tempDir, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "worktree");
 
   assertEquals(await pathExists(canonicalWorktreePath), true);
   assertEquals(await pathExistsNoFollow(pointerPath), true);
@@ -64,7 +66,7 @@ async function setupReviewWorktreeScenario() {
   await setupWorktreePortalRepo(portalTargetPath, targetBranch);
 
   const config = withSingleWorktreePortal(env.config, portalAlias, portalTargetPath, "main");
-  await ensurePortalSymlink(join(env.tempDir, "Portals"), portalAlias, portalTargetPath);
+  await ensurePortalSymlink(pathBuilders.portalsPath(env.tempDir), portalAlias, portalTargetPath);
 
   const { traceId, result } = await createAndRunReviewWorkflow(env, config, {
     portalAlias,
@@ -117,7 +119,7 @@ async function assertWorktreeAndPointerRemoved(params: {
 
   // Worktree should be removed from git and filesystem.
   const wtList = await gitStdout(portalTargetPath, ["worktree", "list", "--porcelain"]);
-  assertEquals(wtList.includes(canonicalWorktreePath), false);
+  assertFalse(wtList.includes(canonicalWorktreePath));
   assertEquals(await pathExists(canonicalWorktreePath), false);
 
   // Pointer should be removed to avoid dangling discoverability.
@@ -226,7 +228,7 @@ parallelSafeTest(
 
       const config = withSingleWorktreePortal(env.config, portalAlias, portalTargetPath, "main");
 
-      await ensurePortalSymlink(join(env.tempDir, "Portals"), portalAlias, portalTargetPath);
+      await ensurePortalSymlink(pathBuilders.portalsPath(env.tempDir), portalAlias, portalTargetPath);
 
       const { traceId, result } = await createAndRunReviewWorkflow(env, config, {
         portalAlias,

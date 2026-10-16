@@ -40,25 +40,7 @@ steps:
   - id: "write-config"
     type: "write-file"
     path: "exa.config.toml"
-    content: |
-      [system]
-      root = "$WORKSPACE_ROOT"
-
-      [paths]
-      workspace = "Workspace"
-      blueprints = "Blueprints"
-      runtime = ".exa"
-      memory = "Memory"
-      portals = "Portals"
-
-      [quality_gate]
-      enabled = false
-
-      [request_analysis]
-      enabled = false
-
-      [model_registry]
-      enabled = true
+    content_from: "fixtures/configs/model-registry-team-cutover-write-config.toml"
     output_criteria:
       - id: "config-written"
         kind: "command-exit-code"

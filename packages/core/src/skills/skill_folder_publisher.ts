@@ -12,20 +12,16 @@
  */
 
 import { join } from "@std/path";
+import { LOCK_FILE, REFERENCES_DIR, SIDECAR_FILE, SKILL_FILE, STATE_DIR } from "./constants.ts";
 import type { IPathSecurityOps } from "@exaix/tool-runtime";
 import { SkillMutationErrorCode, SkillPublicationOperation, SkillPublicationStage } from "../types/enums.ts";
 import type { Opt, Reason } from "../types/optional_marker.ts";
 import { computeSkillContentSha256 } from "./skill_snapshot.ts";
 import { type ISkillRevisionSnapshot, SkillMutationError } from "./skill_types.ts";
 
-const STATE_DIR = ".exa-skill-state";
-const LOCK_FILE = "lock";
 const STAGING_DIR = "staging";
 const BACKUP_DIR = "backup";
 const INTENT_DIR = "intents";
-const SKILL_FILE = "SKILL.md";
-const SIDECAR_FILE = "exaix.yaml";
-const REFERENCES_DIR = "references";
 const DEFAULT_LOCK_TIMEOUT_MS = 5_000;
 
 /** Durable record of one in-flight publication, written before any rename. */

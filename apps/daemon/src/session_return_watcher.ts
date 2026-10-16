@@ -12,6 +12,7 @@
  */
 
 import { basename, dirname } from "@std/path";
+import { RETURN_FILE } from "@exaix/session";
 import { DomainEventType } from "@exaix/core/events";
 import { FS_WRITE_EVENT_KINDS } from "@exaix/core/types";
 import type { ILogEvent } from "@exaix/core/types";
@@ -34,8 +35,6 @@ export interface ISessionReturnWatcherDeps {
   /** Callback fired once per accepted reconciliation (never on rejection); receives the delegation outcome. */
   onReconciled?: (outcome: ISessionDelegationOutcome) => void | Promise<void>;
 }
-
-const RETURN_FILE = "return.json";
 
 export class SessionReturnWatcher {
   private fsWatcher: Deno.FsWatcher | null = null;

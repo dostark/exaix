@@ -23,7 +23,6 @@ import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { JSONValue } from "@exaix/core";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
   FlowInputSource,
   FlowOutputFormat,
   StepAttemptClass,
@@ -31,6 +30,7 @@ import {
   StepSideEffectClass,
 } from "@exaix/core";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class TrackingDurabilityStore implements IStepDurabilityStore {
   records = new Map<string, IStepExecutionRecord>();
   findReplayCandidateCalls: Array<{ query: Parameters<IStepDurabilityStore["findReplayCandidate"]>[0] }> = [];

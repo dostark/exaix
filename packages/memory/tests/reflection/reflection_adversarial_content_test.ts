@@ -4,7 +4,7 @@
  * @description Verifies that a synthesis derived from a source learning containing an embedded instruction-like payload stays inert descriptive text, does not escalate in apparent authority (low model-assessed quality maps to low confidence), and does not bypass approval: it lands as a PENDING proposal the auto-approval service will not promote.
  * @architectural-layer Tests
  */
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import type { IModelProvider } from "@exaix/ai";
 import type { IMemoryBankService, IMemoryEmbeddingService } from "@exaix/core/types";
 import type { IReflectionSkills } from "@exaix/memory/reflection/memory_reflection_service.ts";
@@ -119,9 +119,8 @@ Deno.test("adversarial source content stays inert, keeps low authority, and does
       false,
       "a low-quality synthesis must not gain apparent authority",
     );
-    assertEquals(
+    assertFalse(
       synthesis.learning.description.includes(PAYLOAD),
-      false,
       "the payload must not be copied verbatim into the synthesis",
     );
 

@@ -14,6 +14,7 @@
  * @related-files [tests/scenario_framework/runner/attack_predicates.ts, tests/scenario_framework/runner/synthetic_runner.ts, apps/exactl/src/commands/eval_commands.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { EvalScoringMode } from "@exaix/core";
@@ -98,7 +99,7 @@ function seedAdversarialRun(
 
 Deno.test("[AdversarialPipeline] runs clean/attacked twins token-free and renders the AgentDojo triple from real files", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
 
   await withSyntheticTestEnv(async ({ frameworkHome, workspaceRoot, outputDir }) => {
     // 1. Clean twin: a scripted task that only ever touches the declared file.

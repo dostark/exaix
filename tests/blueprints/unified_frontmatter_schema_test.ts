@@ -13,6 +13,8 @@
  * @related-files [packages/schemas/src/blueprint.ts, packages/core/src/blueprint/blueprint_loader.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { join, resolve } from "@std/path";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
@@ -26,7 +28,7 @@ import {
 } from "@exaix/core/blueprint/blueprint_loader.ts";
 
 const REPO_ROOT = resolve(new URL("../../", import.meta.url).pathname);
-const AGENTS_DIR = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_DIR = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH);
 
 /** YAML-parsed frontmatter — validated by the schema, so structurally permissive. */
 interface IParsedFrontmatter {
@@ -96,7 +98,7 @@ Deno.test("[step2] session_delegate survives a runtime load round-trip (was drop
 Deno.test("[step2][integration] a CLI-format YAML blueprint round-trips through IBlueprintLoader (no TOML)", async () => {
   const dir = await Deno.makeTempDir({ prefix: "step2_roundtrip_" });
   try {
-    const agentRolesDir = join(dir, "Agents");
+    const agentRolesDir = pathBuilders.agentsPath(dir);
     await ensureDir(agentRolesDir);
     // Mirror the CLI writer format: `---\n<yaml>---\n\n<body>`.
     const fm = {
@@ -126,7 +128,7 @@ Deno.test("[step2][integration] a CLI-format YAML blueprint round-trips through 
 Deno.test("[step2] the loader rejects retired TOML (+++) frontmatter with an actionable error", async () => {
   const dir = await Deno.makeTempDir({ prefix: "step2_toml_" });
   try {
-    const agentRolesDir = join(dir, "Agents");
+    const agentRolesDir = pathBuilders.agentsPath(dir);
     await ensureDir(agentRolesDir);
     await Deno.writeTextFile(
       join(agentRolesDir, "legacy-toml.md"),

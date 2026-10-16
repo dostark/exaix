@@ -7,7 +7,8 @@
  * @related-files [apps/daemon/src/session_delegation_coordinator.ts, packages/session/src/session_delegation.ts]
  */
 
-import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import { assertEquals, assertExists, assertFalse, assertNotEquals } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
 import type { IEventLogger } from "@exaix/core/logger";
@@ -190,7 +191,7 @@ function request(): ISessionDelegationRequest {
     agentRole: "test-role",
     objective: "Implement the coordinator.",
     acceptanceCriteria: ["The coordinator is wired."],
-    artifactRef: ".exa/PlanContext/phase-174.md",
+    artifactRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
     worktreePath: "/tmp/worktree",
   };
 }
@@ -308,7 +309,7 @@ Deno.test("[session_delegation_coordinator][Tier A] launched event is trace-link
     assertEquals(payload.brief, undefined);
     assertEquals(payload.objective, undefined);
     assertEquals(payload.resume_token, undefined);
-    assertEquals(JSON.stringify(payload).includes("/tmp/worktree"), false);
+    assertFalse(JSON.stringify(payload).includes("/tmp/worktree"));
   } finally {
     await cleanup();
   }

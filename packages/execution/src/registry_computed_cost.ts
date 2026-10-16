@@ -9,6 +9,7 @@
  */
 
 import { getOverlayEntry } from "@exaix/model-registry";
+import { TOKENS_PER_MTOK } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IRegistryPredictedCostTokens {
@@ -23,7 +24,6 @@ export interface IRegistryPredictedCostPrice {
   outputPerMtok?: number;
 }
 
-const TOKENS_PER_MTOK = 1_000_000;
 /** Anthropic's documented prompt-cache read discount: a cache hit costs 10% of the standard
  *  input price. https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching */
 const CACHE_READ_PRICE_MULTIPLIER = 0.1;

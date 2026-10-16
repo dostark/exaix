@@ -5,6 +5,8 @@
  * of planning, execution, and confirmation phases for user requests.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { EXECUTION_REPORT_FILENAME, MemoryOperation, PortalOperation } from "@exaix/core";
 import { join } from "@std/path";
@@ -291,7 +293,7 @@ Deno.test("[regression] ExecutionLoop: read-only structured plan writes analysis
     await Deno.mkdir(paths.activeDir, { recursive: true });
 
     // Provide a read-only blueprint so ExecutionLoop can detect capability mode.
-    const blueprintsDir = join(tempDir, "Blueprints", "Agents");
+    const blueprintsDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH);
     await ensureDir(blueprintsDir);
     await Deno.writeTextFile(
       join(blueprintsDir, "code-analyst.md"),
@@ -597,7 +599,13 @@ Deno.test("ExecutionLoop: handles commit with no changes gracefully", async () =
 
     // Create initial commit so git is initialized
     await Deno.writeTextFile(join(tempDir, "README.md"), "init");
-    await Deno.writeTextFile(join(tempDir, ".gitignore"), "Workspace/\nMemory/\n.exa/\n");
+    await Deno.writeTextFile(
+      join(tempDir, ".gitignore"),
+      `${DEFAULT_WORKSPACE_PATH}/
+Memory/
+.exa/
+`,
+    );
     await new Deno.Command(PortalOperation.GIT, {
       args: ["init"],
       cwd: tempDir,

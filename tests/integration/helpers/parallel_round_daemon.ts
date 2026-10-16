@@ -14,6 +14,8 @@
  * ]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_FLOWS_PATH, DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH } from "@exaix/shared";
 import { assert } from "@std/assert";
 import { join } from "@std/path";
 import type { JSONValue } from "@exaix/core";
@@ -387,7 +389,7 @@ export function runReactRound(options: IReactRoundOptions): Promise<IRoundRun> {
     role: "compat-agent",
     midFlight: async (daemon, ctx) => {
       await writePlanningRequest(ctx.root, ctx.traceId, "Phase 202 ReAct cutover");
-      const plansDir = join(ctx.root, "Workspace", "Plans");
+      const plansDir = pathBuilders.workspacePath(ctx.root, DEFAULT_PLANS_PATH);
       let planId: string | undefined;
       let rows: ITraceRow[] = [];
       // A failed planning request writes no plan, so the wait must also end on the failure row.
@@ -430,7 +432,7 @@ export function runFlowRound(options: IFlowRoundOptions): Promise<IRoundRun> {
 
 /** Writes the one-step dynamic flow the Team edition runs through DynamicStepExecutor. */
 async function writeFlowProbe(root: string): Promise<void> {
-  const dir = join(root, "Blueprints", "Flows");
+  const dir = pathBuilders.blueprintsPath(root, DEFAULT_FLOWS_PATH);
   await Deno.mkdir(dir, { recursive: true });
   await Deno.writeTextFile(
     join(dir, `${FLOW_ID}.flow.yaml`),
@@ -461,7 +463,7 @@ async function writeFlowProbe(root: string): Promise<void> {
 }
 
 async function writeFlowRequest(root: string, traceId: string): Promise<void> {
-  const dir = join(root, "Workspace", "Requests");
+  const dir = pathBuilders.workspacePath(root, DEFAULT_REQUESTS_PATH);
   await Deno.mkdir(dir, { recursive: true });
   await Deno.writeTextFile(
     join(dir, `${FLOW_ID}.md`),

@@ -8,6 +8,7 @@
  * @related-files ["packages/core/src/config/registry.ts", "packages/core/src/config/db.ts", "packages/core/src/config/errors.ts"]
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { Database } from "@db/sqlite";
 import { ConfigAdapterMode, ConfigProvenanceSource, ConfigValueType, SwapClass } from "../types/enums.ts";
 import type { ConfigValue, IBlocklistEntry, IConfigOverrideEntry, ILockedKeyEntry } from "./db.ts";
@@ -127,7 +128,11 @@ export interface IConfigAdapter {
   getOverride<T = ConfigValue>(key: string): T | undefined;
 
   /** Validate then append an override row. */
-  set(key: string, value: ConfigValue, options?: { swap_class?: string }): Promise<void>;
+  set(
+    key: string,
+    value: ConfigValue,
+    options?: Opt<{ swap_class?: string }, Reason.OptionalInput>,
+  ): Promise<void>;
 
   /** Revert to default by inserting a NULL row. */
   unset(key: string): Promise<void>;
@@ -858,7 +863,7 @@ export async function isPidAlive(pid: number): Promise<boolean> {
   }
 }
 
-const DEFAULT_DAEMON_PID_PATH = ".exa/daemon.pid";
+const DEFAULT_DAEMON_PID_PATH = `${DEFAULT_RUNTIME_PATH}/daemon.pid`;
 
 /** Factory — creates a DirectConfigAdapter or DaemonConfigAdapter. SYNCHRONOUS: the daemon branch is selected only
  *  when the caller supplies both `store` and `db` AND a PID file EXISTS — it does NOT verify the PID is alive, so a

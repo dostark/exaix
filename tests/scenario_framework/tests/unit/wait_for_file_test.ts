@@ -13,9 +13,10 @@
  * @related-files [tests/scenario_framework/runner/step_executor.ts, tests/scenario_framework/schema/step_schema.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_REJECTED_PATH } from "@exaix/shared";
 import { stub } from "@std/testing/mock";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { executeScenarioStep } from "../../runner/step_executor.ts";
 import { ScenarioStepType } from "../../schema/step_schema.ts";
@@ -36,8 +37,8 @@ async function withJournalWorkspace(
   fn: (ws: string) => Promise<void>,
 ): Promise<void> {
   await withTempWorkspace(async (ws) => {
-    await Deno.mkdir(join(ws, ".exa"), { recursive: true });
-    const db = new Database(join(ws, ".exa", "journal.db"));
+    await Deno.mkdir(pathBuilders.runtimePath(ws), { recursive: true });
+    const db = new Database(pathBuilders.runtimePath(ws, "journal.db"));
     db.prepare(
       "CREATE TABLE activity (rowid INTEGER PRIMARY KEY, trace_id TEXT, action_type TEXT, payload TEXT)",
     ).run();
@@ -55,8 +56,8 @@ async function withJournalWorkspace(
 
 Deno.test("[wait_for_file] succeeds as soon as the success glob matches (no failure_glob set, backward-compat)", async () => {
   await withTempWorkspace(async (ws) => {
-    await Deno.mkdir(join(ws, "Plans"), { recursive: true });
-    await Deno.writeTextFile(join(ws, "Plans", "request-abc_plan.md"), "plan body");
+    await Deno.mkdir(pathBuilders.plansPath(ws), { recursive: true });
+    await Deno.writeTextFile(pathBuilders.plansPath(ws, "request-abc_plan.md"), "plan body");
 
     const result = await executeScenarioStep({
       step: {
@@ -78,9 +79,9 @@ Deno.test("[wait_for_file] succeeds as soon as the success glob matches (no fail
 
 Deno.test("[wait_for_file] fails fast when failure_glob matches before the success glob ever does", async () => {
   await withTempWorkspace(async (ws) => {
-    await Deno.mkdir(join(ws, "Workspace", "Rejected"), { recursive: true });
+    await Deno.mkdir(pathBuilders.workspacePath(ws, DEFAULT_REJECTED_PATH), { recursive: true });
     await Deno.writeTextFile(
-      join(ws, "Workspace", "Rejected", "request-340a896b_rejected.md"),
+      pathBuilders.workspacePath(ws, DEFAULT_REJECTED_PATH, "request-340a896b_rejected.md"),
       "Rejected Plan: Invalid enum value... received 'edit_file'",
     );
 
@@ -90,7 +91,7 @@ Deno.test("[wait_for_file] fails fast when failure_glob matches before the succe
         id: "wait-for-plan",
         type: ScenarioStepType.WAIT_FOR_FILE,
         args: ["**/Plans/*_plan.md"],
-        failure_glob: "**/Workspace/Rejected/*_rejected.md",
+        failure_glob: "**/Workspace/Rejected/*_rejected.md", // path-builder-exclude: a glob pattern, not a built path
         timeout_sec: 180,
         input_criteria: [],
         output_criteria: [],
@@ -110,10 +111,10 @@ Deno.test("[wait_for_file] fails fast when failure_glob matches before the succe
 
 Deno.test("[wait_for_file] min_matches requires a new match count, not just any existing match", async () => {
   await withTempWorkspace(async (ws) => {
-    await Deno.mkdir(join(ws, "Archive"), { recursive: true });
+    await Deno.mkdir(pathBuilders.archivePath(ws), { recursive: true });
     // One archive already exists from an earlier step — a bare "found.length > 0" check would
     // pass instantly on this stale match without ever observing THIS step's own archive.
-    await Deno.writeTextFile(join(ws, "Archive", "request-aaa_plan.md"), "plan body");
+    await Deno.writeTextFile(pathBuilders.archivePath(ws, "request-aaa_plan.md"), "plan body");
 
     const resultPtr: { value?: Awaited<ReturnType<typeof executeScenarioStep>> } = {};
     const run = executeScenarioStep({
@@ -137,7 +138,7 @@ Deno.test("[wait_for_file] min_matches requires a new match count, not just any 
     await new Promise((resolve) => setTimeout(resolve, 300));
     assertEquals(resultPtr.value, undefined, "should still be waiting for the second archive");
 
-    await Deno.writeTextFile(join(ws, "Archive", "request-bbb_plan.md"), "plan body");
+    await Deno.writeTextFile(pathBuilders.archivePath(ws, "request-bbb_plan.md"), "plan body");
     const result = await run;
 
     assertEquals(result.exitCode, 0);
@@ -146,11 +147,11 @@ Deno.test("[wait_for_file] min_matches requires a new match count, not just any 
 
 Deno.test("[wait_for_file] success glob still wins if both patterns exist (success checked first)", async () => {
   await withTempWorkspace(async (ws) => {
-    await Deno.mkdir(join(ws, "Plans"), { recursive: true });
-    await Deno.mkdir(join(ws, "Workspace", "Rejected"), { recursive: true });
-    await Deno.writeTextFile(join(ws, "Plans", "request-abc_plan.md"), "plan body");
+    await Deno.mkdir(pathBuilders.plansPath(ws), { recursive: true });
+    await Deno.mkdir(pathBuilders.workspacePath(ws, DEFAULT_REJECTED_PATH), { recursive: true });
+    await Deno.writeTextFile(pathBuilders.plansPath(ws, "request-abc_plan.md"), "plan body");
     await Deno.writeTextFile(
-      join(ws, "Workspace", "Rejected", "request-other_rejected.md"),
+      pathBuilders.workspacePath(ws, DEFAULT_REJECTED_PATH, "request-other_rejected.md"),
       "unrelated earlier rejection",
     );
 
@@ -159,7 +160,7 @@ Deno.test("[wait_for_file] success glob still wins if both patterns exist (succe
         id: "wait-for-plan",
         type: ScenarioStepType.WAIT_FOR_FILE,
         args: ["**/Plans/*_plan.md"],
-        failure_glob: "**/Workspace/Rejected/*_rejected.md",
+        failure_glob: "**/Workspace/Rejected/*_rejected.md", // path-builder-exclude: a glob pattern, not a built path
         timeout_sec: 5,
         input_criteria: [],
         output_criteria: [],
@@ -245,8 +246,8 @@ Deno.test("[wait_for_file] a benign request.skipped ('already has status') never
       ],
     ],
     async (ws) => {
-      await Deno.mkdir(join(ws, "Plans"), { recursive: true });
-      await Deno.writeTextFile(join(ws, "Plans", "request-current_plan.md"), "plan body");
+      await Deno.mkdir(pathBuilders.plansPath(ws), { recursive: true });
+      await Deno.writeTextFile(pathBuilders.plansPath(ws, "request-current_plan.md"), "plan body");
 
       const result = await executeScenarioStep({
         step: {
@@ -302,8 +303,8 @@ Deno.test("[wait_for_file] a PRIOR trace's request.failed (stale, shared sandbox
 
 Deno.test("[wait_for_file] does not resolve while a writer keeps growing the matched file, and resolves complete once it closes", async () => {
   await withTempWorkspace(async (ws) => {
-    await Deno.mkdir(join(ws, "Plans"), { recursive: true });
-    const target = join(ws, "Plans", "request-slow_plan.md");
+    await Deno.mkdir(pathBuilders.plansPath(ws), { recursive: true });
+    const target = pathBuilders.plansPath(ws, "request-slow_plan.md");
     await Deno.writeTextFile(target, "## Plan\n");
 
     // Start the wait, then grow the file every 150ms for ~1.2s. A wait that accepts on
@@ -355,8 +356,8 @@ Deno.test("[wait_for_file] does not resolve while a writer keeps growing the mat
 
 Deno.test("[wait_for_file] resolves quickly (well under the old 2s tick) once a file is written and settled", async () => {
   await withTempWorkspace(async (ws) => {
-    await Deno.mkdir(join(ws, "Plans"), { recursive: true });
-    await Deno.writeTextFile(join(ws, "Plans", "request-abc_plan.md"), "plan body");
+    await Deno.mkdir(pathBuilders.plansPath(ws), { recursive: true });
+    await Deno.writeTextFile(pathBuilders.plansPath(ws, "request-abc_plan.md"), "plan body");
 
     // The file is old enough that the settle window is already satisfied on the first tick.
     await new Promise((resolve) => setTimeout(resolve, 400));
@@ -408,8 +409,8 @@ Deno.test("[wait_for_file] succeeds normally when the request has neither failed
       await new Promise((resolve) => setTimeout(resolve, 300));
       assertEquals(resultPtr.value, undefined, "should still be waiting — no failure, no file yet");
 
-      await Deno.mkdir(join(ws, "Plans"), { recursive: true });
-      await Deno.writeTextFile(join(ws, "Plans", "request-current_plan.md"), "plan body");
+      await Deno.mkdir(pathBuilders.plansPath(ws), { recursive: true });
+      await Deno.writeTextFile(pathBuilders.plansPath(ws, "request-current_plan.md"), "plan body");
       const result = await run;
 
       assertEquals(result.exitCode, 0);

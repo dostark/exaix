@@ -5,7 +5,14 @@
  * @architectural-layer Integration
  * @related-files [apps/daemon/main.ts, packages/ai-openai/src/compatible_factory.ts, packages/execution/src/strategies/react_loop_strategy.ts]
  */
-import { assert, assertEquals } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_EXECUTION_MEMORY_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_REQUESTS_PATH,
+} from "@exaix/shared";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
@@ -208,9 +215,9 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
           ? `\n[models.mock]\nprovider = "openai-chat"\nmodel = "compat-fixture-v1"\n[models.mock.compatible]\nprofile = "local-test"\nendpoint = "http://example.invalid/v1/chat/completions"\nallow_insecure_loopback = true\n`
           : "";
         await Deno.writeTextFile(configPath, config + rejectionConfig);
-        await Deno.mkdir(join(root, "Blueprints", "Agents"), { recursive: true });
+        await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
         await Deno.writeTextFile(
-          join(root, "Blueprints", "Agents", "compat-agent.md"),
+          pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "compat-agent.md"),
           [
             "---",
             'agent_role: "compat-agent"',
@@ -232,7 +239,7 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
         );
 
         const traceId = crypto.randomUUID();
-        const requestPath = join(root, "Workspace", "Requests", `r-${traceId.slice(0, 8)}.md`);
+        const requestPath = pathBuilders.workspacePath(root, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`);
         await bootRealDaemon(configPath, {
           extraEnv: { EXA_COMPAT_TEST_API_KEY: "local-fixture-key" },
           denoPermissions: [
@@ -245,7 +252,7 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
             "--allow-net=127.0.0.1",
           ],
           midFlight: async (daemon) => {
-            await Deno.mkdir(join(root, "Workspace", "Requests"), { recursive: true });
+            await Deno.mkdir(pathBuilders.workspacePath(root, DEFAULT_REQUESTS_PATH), { recursive: true });
             await Deno.writeTextFile(
               requestPath,
               `---\ntrace_id: "${traceId}"\ncreated: "${new Date().toISOString()}"\n` +
@@ -254,7 +261,7 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
                 "# Request\n\nRead src/marker.txt through the permitted tool.\n",
             );
             if (mode === "invalid-config") return;
-            const plansDir = join(root, "Workspace", "Plans");
+            const plansDir = pathBuilders.workspacePath(root, DEFAULT_PLANS_PATH);
             let planId: string | undefined;
             await daemon.until(() => {
               planId = firstPlanId(plansDir);
@@ -286,7 +293,7 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
 
         const rows = await readTraceActivity(configPath, traceId);
         assertEquals(await Deno.readTextFile(join(portal, "src", "marker.txt")), fixtureMarker);
-        assertEquals(JSON.stringify(observedRequests).includes(outsideMarker), false);
+        assertFalse(JSON.stringify(observedRequests).includes(outsideMarker));
         if (mode === "invalid-config") {
           assertEquals(requestCount, 0);
           const failures = rows.filter((row) => row.action_type === "request.failed");
@@ -354,7 +361,9 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
           assertEquals(payload.model, "compat-fixture-v1");
         }
         assert(rows.some((row) => row.action_type === "llm.usage" && row.cost_usd === null));
-        const artifact = await Deno.readTextFile(join(root, "Memory", "Execution", traceId, "summary.md"));
+        const artifact = await Deno.readTextFile(
+          pathBuilders.memoryPath(root, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "summary.md"),
+        );
         assert(artifact.includes(fixtureMarker), "the final execution artifact must contain the fixture marker");
       } finally {
         await fixture.shutdown();
@@ -468,9 +477,9 @@ Deno.test({
           `target_path = "${portal}"`,
         ].join("\n"),
       );
-      await Deno.mkdir(join(root, "Blueprints", "Agents"), { recursive: true });
+      await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.writeTextFile(
-        join(root, "Blueprints", "Agents", "compat-agent.md"),
+        pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "compat-agent.md"),
         [
           "---",
           'agent_role: "compat-agent"',
@@ -491,11 +500,11 @@ Deno.test({
         ].join("\n"),
       );
       const traceId = crypto.randomUUID();
-      const requestPath = join(root, "Workspace", "Requests", `r-${traceId.slice(0, 8)}.md`);
+      const requestPath = pathBuilders.workspacePath(root, DEFAULT_REQUESTS_PATH, `r-${traceId.slice(0, 8)}.md`);
       await bootRealDaemon(configPath, {
         extraEnv: { EXA_COMPAT_TEST_API_KEY: "local-fixture-key" },
         midFlight: async () => {
-          await Deno.mkdir(join(root, "Workspace", "Requests"), { recursive: true });
+          await Deno.mkdir(pathBuilders.workspacePath(root, DEFAULT_REQUESTS_PATH), { recursive: true });
           await Deno.writeTextFile(
             requestPath,
             [
@@ -536,7 +545,7 @@ Deno.test({
       assertEquals(first.tools?.some((tool) => tool.function?.name === "write_file"), false);
       const firstMessages = JSON.stringify(first.messages);
       assert(firstMessages.includes(PLANNING_TOOLS_EXPLORE_ROUND_INSTRUCTION));
-      assertEquals(firstMessages.includes("Respond with a single json object matching the supplied schema."), false);
+      assertFalse(firstMessages.includes("Respond with a single json object matching the supplied schema."));
       assertEquals(final.response_format?.type, "json_object");
       assertEquals(final.tools, undefined);
       assertEquals(final.tool_choice, undefined);
@@ -565,7 +574,7 @@ Deno.test({
       assertEquals(explorationCall.structured_output_mode, undefined);
       assertEquals(finalCall.structured_output_mode, "json_object");
       assertEquals(finalCall.structured_output_mode_reason, "schema_not_strict_representable");
-      const plansDir = join(root, "Workspace", "Plans");
+      const plansDir = pathBuilders.workspacePath(root, DEFAULT_PLANS_PATH);
       const planFile = [...Deno.readDirSync(plansDir)].find((entry) => entry.isFile && entry.name.endsWith(".md"));
       assert(planFile);
       const planText = await Deno.readTextFile(join(plansDir, planFile.name));

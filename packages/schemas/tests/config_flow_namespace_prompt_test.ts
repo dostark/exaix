@@ -8,8 +8,9 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { ConfigSchema } from "../src/config.ts";
+import { readConfigFixture } from "@exaix/testing";
 
-const BASE = "[system]\nwatcher_timeout_sec = 60\n";
+const BASE = readConfigFixture("schemas-config-flow-namespace-prompt");
 
 Deno.test("[config] flow.namespace_prompt_max_bytes is kept when set", () => {
   const config = ConfigSchema.parse(parseToml(`${BASE}[flow]\nnamespace_prompt_max_bytes = 2048\n`));

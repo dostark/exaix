@@ -6,8 +6,8 @@
  *   full async generator (with temp-dir + PathResolver).
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertThrows } from "@std/assert";
-import { join } from "@std/path";
 import { OpencodeConfigSchema } from "@exaix/schemas/opencode_config.ts";
 import {
   assertPathsWithinWorktree,
@@ -106,7 +106,7 @@ Deno.test(
   async () => {
     const tmpDir = await Deno.makeTempDir();
     try {
-      await Deno.mkdir(join(tmpDir, ".exa"));
+      await Deno.mkdir(pathBuilders.runtimePath(tmpDir));
       const resolver = new PathResolver(createMockConfig(tmpDir));
       const result: IOpencodePermissionConfig = await generateOpencodePermissionConfig(
         ["src/**"],

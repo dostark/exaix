@@ -17,7 +17,14 @@
  * ]
  */
 
-import { assertEquals, assertGreater, assertNotEquals, assertObjectMatch, assertStringIncludes } from "@std/assert";
+import {
+  assertEquals,
+  assertFalse,
+  assertGreater,
+  assertNotEquals,
+  assertObjectMatch,
+  assertStringIncludes,
+} from "@std/assert";
 import { dirname, join } from "@std/path";
 import { describe, test } from "@std/testing/bdd";
 import { parse as parseYaml } from "@std/yaml";
@@ -118,9 +125,9 @@ describe("ste100 developer corpus conversion", () => {
     assertStringIncludes(rendered, "Do not execute from this file.");
     assertStringIncludes(rendered, "Read the canonical source before proceeding.");
     assertStringIncludes(rendered, "Follow all instructions and constraints in the canonical source.");
-    assertEquals(rendered.includes("THIN WRAPPER"), false);
-    assertEquals(rendered.includes("**CRITICAL**"), false);
-    assertEquals(rendered.includes("MUST read"), false);
+    assertFalse(rendered.includes("THIN WRAPPER"));
+    assertFalse(rendered.includes("**CRITICAL**"));
+    assertFalse(rendered.includes("MUST read"));
 
     // The committed regenerated wrapper matches the template byte-for-byte.
     const commitSkill = Deno.readTextFileSync(join(REPO, ".copilot", "skills", "commit", "SKILL.md"));
@@ -144,7 +151,7 @@ describe("ste100 developer corpus conversion", () => {
       assertNotEquals(frontmatter.description, undefined);
       const sidecar = Deno.readTextFileSync(join(REPO, dirname(entry.canonicalPath), "exaix.yaml"));
       assertNotEquals(parseYaml(sidecar), null, `${entry.id}: exaix.yaml sidecar present`);
-      assertEquals(skillText.includes("\n---\nexaix:"), false, `${entry.id}: no trailing exaix block remains`);
+      assertFalse(skillText.includes("\n---\nexaix:"), `${entry.id}: no trailing exaix block remains`);
     }
   });
 

@@ -9,6 +9,7 @@
  * @related-files [packages/schemas/src/config.ts, packages/core/src/types/constants.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertFalse } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
 import {
@@ -16,7 +17,6 @@ import {
   DEFAULT_SKILL_FALLBACK_MIN_WORD_CHARS,
   DEFAULT_SKILL_MAIN_MAX_BYTES,
   DEFAULT_SKILL_REFERENCE_MAX_CHARS,
-  ExaPathDefaults,
   SkillRootKind,
 } from "@exaix/core";
 
@@ -49,9 +49,9 @@ Deno.test("[skills config] a partial table keeps the other defaults", () => {
 Deno.test("[skills config] ordered roots keep their order and an empty list stays empty", () => {
   const roots = [
     { kind: SkillRootKind.DOGFOOD, path: "/opt/work/.copilot/skills" },
-    { kind: SkillRootKind.PROJECT, path: "Memory/Skills/project" },
-    { kind: SkillRootKind.LEARNED, path: "Memory/Skills/learned" },
-    { kind: SkillRootKind.BLUEPRINT, path: "Blueprints/Skills" },
+    { kind: SkillRootKind.PROJECT, path: `${DEFAULT_MEMORY_PATH}/Skills/project` },
+    { kind: SkillRootKind.LEARNED, path: `${DEFAULT_MEMORY_PATH}/Skills/learned` },
+    { kind: SkillRootKind.BLUEPRINT, path: `${DEFAULT_BLUEPRINTS_PATH}/Skills` },
   ];
   assertEquals(ConfigSchema.parse(base({ roots })).skills.roots, roots);
   assertEquals(ConfigSchema.parse(base({ roots: [] })).skills.roots, []);
@@ -64,7 +64,7 @@ Deno.test("[skills config] malformed roots and out-of-range caps are rejected", 
     { roots: [{ kind: SkillRootKind.LEARNED, path: "" }] },
     { roots: [{ kind: SkillRootKind.EVAL_OVERLAY, path: "x" }] },
     { roots: [{ kind: SkillRootKind.LEARNED, path: "x", extra: true }] },
-    { roots: "Blueprints/Skills" },
+    { roots: `${DEFAULT_BLUEPRINTS_PATH}/Skills` },
     { main_max_bytes: 10 },
     { reference_max_count: -1 },
     { fallback_max_keywords: 0 },

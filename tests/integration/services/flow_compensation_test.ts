@@ -11,7 +11,7 @@ import { FlowInputSource, FlowOutputFormat, FlowStepOnErrorAction } from "@exaix
 import { McpToolName } from "@exaix/mcp";
 import { FlowExecutionError, FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
-import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
 import { initTestDbService } from "@exaix/testing";
 import { createStubConfig, createStubContext } from "@exaix/testing";
@@ -20,6 +20,7 @@ import { LocalToolDispatcher, ToolHandler } from "@exaix/mcp/server";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class RecordingDeleteFileTool extends ToolHandler {
   static calls: Array<Record<string, JSONValue>> = [];
 

@@ -8,9 +8,8 @@ import { assert, assertEquals } from "@std/assert";
 import { AgentComposer, ExecutionContextService } from "@exaix/execution";
 import { StrategyRegistry } from "@exaix/execution";
 import type { IPinnedSkillPrompt } from "@exaix/execution";
-import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
+import { ExecutionStrategyName, SecurityMode, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import { setupAgentExecutorFixture } from "../helpers/agent_composer_fixture.ts";
 
 Deno.test("Integration: context overflow recovers by truncating prompt via allocator budget", async () => {

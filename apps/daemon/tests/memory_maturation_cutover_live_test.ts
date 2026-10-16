@@ -12,6 +12,7 @@
  * @related-files [apps/daemon/tests/memory_maturation_cutover_test.ts, packages/execution/tests/agents/react_loop_strategy_live_test.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 
@@ -182,7 +183,7 @@ Deno.test({
       for (const proposal of pending) {
         proposal.learning.extracted_at = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
         await Deno.writeTextFile(
-          join(config.system.root, config.paths.memory, "Pending", `${proposal.id}.json`),
+          pathBuilders.memoryPendingPath(join(config.system.root, config.paths.memory), `${proposal.id}.json`),
           JSON.stringify(proposal, null, 2),
         );
       }

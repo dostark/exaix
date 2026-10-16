@@ -4,12 +4,14 @@
  * @description Asserts every agent_role: reference in every Blueprints/Flows/*.flow.yaml
  *   resolves against Blueprints/Agents/.
  */
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { walk } from "@std/fs";
 import { resolve } from "@std/path";
 
-const FLOWS_DIR = resolve(Deno.cwd(), "Blueprints", "Flows");
-const AGENTS_DIR = resolve(Deno.cwd(), "Blueprints", "Agents");
+const FLOWS_DIR = resolve(pathBuilders.blueprintsPath(Deno.cwd(), DEFAULT_FLOWS_PATH));
+const AGENTS_DIR = resolve(pathBuilders.blueprintsPath(Deno.cwd(), DEFAULT_AGENTS_PATH));
 
 function loadAgentRoleNames(): Set<string> {
   const names = new Set<string>();

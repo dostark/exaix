@@ -5,11 +5,13 @@
  * dependencies and global configuration are correctly handled during deployment.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { getDefaultPaths } from "@exaix/core/config";
 import { withCliProcessMutex } from "../../../tests/helpers/cli_process_mutex.ts";
+import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
 
 const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
 
@@ -113,7 +115,7 @@ async function runExactl(
   if (!hasConfig) {
     await Deno.writeTextFile(
       configPath,
-      `[system]\nroot = "${workspacePath}"\nversion = "1.0.0"\nlog_level = "info"\n`,
+      readConfigFixture("daemon-deploy-workspace", { root: workspacePath }),
     );
   }
 
@@ -227,7 +229,7 @@ parallelSafeTest({
       // If daemon is not running, check the log file for errors
       if (!statusResult.stdout.includes("Running")) {
         try {
-          const logPath = join(workspace, ".exa", "daemon.log");
+          const logPath = pathBuilders.runtimePath(workspace, "daemon.log");
           const logContent = await Deno.readTextFile(logPath);
           console.log("Daemon log content:", logContent);
         } catch (error) {

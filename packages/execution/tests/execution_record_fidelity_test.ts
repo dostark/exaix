@@ -6,7 +6,7 @@
  *   `summary` and `lessons_learned`, replacing the hardcoded placeholder strings.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 
 import { ExecutionLoop } from "@exaix/execution";
 import { MemoryBankService } from "@exaix/memory";
@@ -42,9 +42,8 @@ Deno.test("generateMissionReport uses real completion content, not placeholders 
     // The execution record must carry the real content, not the placeholder.
     const record = await bank.getExecutionByTraceId(traceId);
     assertExists(record, "the execution record must be created");
-    assertEquals(
+    assertFalse(
       record.summary.includes("Successfully executed plan for request:"),
-      false,
       "the record summary must not be the placeholder string",
     );
     assertEquals(

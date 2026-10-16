@@ -7,7 +7,7 @@
  * ensuring robust validation of request intent analysis output.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertFalse } from "@std/assert";
 import {
   AmbiguityImpact,
   AmbiguitySchema,
@@ -251,8 +251,8 @@ Deno.test("[AmbiguitySchema] clarificationQuestion absent when not provided", ()
 // RequestTaskType — BUGFIX is canonical, FIX variant removed
 
 Deno.test("[RequestTaskType] does not contain FIX variant — BUGFIX is canonical", () => {
-  assertEquals(Object.values(RequestTaskType).includes("fix" as RequestTaskType), false);
-  assertEquals(Object.values(RequestTaskType).includes(RequestTaskType.BUGFIX), true);
+  assertFalse(Object.values(RequestTaskType).includes("fix" as RequestTaskType));
+  assertArrayIncludes(Object.values(RequestTaskType), [RequestTaskType.BUGFIX]);
 });
 
 // RequestAnalysisMetadataSchema includes analyzerVersion

@@ -5,6 +5,8 @@
  * correctly indexed in the database and persisted within the Memory/Execution directory.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import { join } from "@std/path";
@@ -34,7 +36,7 @@ Deno.test("[artifact] createArtifact() creates file with frontmatter in Memory/E
     assertStringIncludes(artifactId, "artifact-", "Artifact ID should have prefix");
 
     // Verify file exists
-    const expectedPath = join(tempDir, "Memory", "Execution", `${artifactId}.md`);
+    const expectedPath = pathBuilders.memoryPath(tempDir, DEFAULT_EXECUTION_MEMORY_PATH, `${artifactId}.md`);
     const content = await Deno.readTextFile(expectedPath);
 
     // Verify frontmatter structure
@@ -245,7 +247,7 @@ Deno.test("[artifact] createArtifact() without portal creates artifact with null
 Deno.test("[artifact] Memory/Execution directory is created if missing", async () => {
   const { tempDir, db, cleanup } = await createTestContext();
   try {
-    const executionDir = join(tempDir, "Memory", "Execution");
+    const executionDir = pathBuilders.memoryPath(tempDir, DEFAULT_EXECUTION_MEMORY_PATH);
     // Remove Memory/Execution if it exists
     try {
       await Deno.remove(executionDir, { recursive: true });
@@ -264,7 +266,7 @@ Deno.test("[artifact] Memory/Execution directory is created if missing", async (
 
     // Verify directory was created
     const stat = await Deno.stat(executionDir);
-    assertEquals(stat.isDirectory, true, "Memory/Execution should be a directory");
+    assertEquals(stat.isDirectory, true, `${DEFAULT_MEMORY_PATH}/Execution should be a directory`);
   } finally {
     await cleanup();
   }

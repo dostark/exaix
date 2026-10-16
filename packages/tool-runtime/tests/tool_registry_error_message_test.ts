@@ -6,7 +6,8 @@
  * list (Finding 10) — that detail is reserved for the operator journal.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
@@ -17,9 +18,9 @@ Deno.test("ToolRegistry: access-denied error does not leak absolute roots to the
   const outsideDir = await Deno.makeTempDir({ prefix: "outside-" });
 
   try {
-    await Deno.mkdir(join(workspaceDir, "Workspace"));
-    await Deno.mkdir(join(workspaceDir, "Memory"));
-    await Deno.mkdir(join(workspaceDir, "Blueprints"));
+    await Deno.mkdir(pathBuilders.workspacePath(workspaceDir));
+    await Deno.mkdir(pathBuilders.memoryPath(workspaceDir));
+    await Deno.mkdir(pathBuilders.blueprintsPath(workspaceDir));
 
     const config = createTestConfig();
     config.system.root = workspaceDir;
@@ -38,9 +39,9 @@ Deno.test("ToolRegistry: access-denied error does not leak absolute roots to the
     assertStringIncludes(result.error || "", "Access denied");
 
     // But the caller-facing message must not disclose host filesystem layout.
-    assertEquals((result.error || "").includes("Allowed roots:"), false, "must not leak the allowed-roots list");
-    assertEquals((result.error || "").includes(workspaceDir), false, "must not leak the absolute workspace path");
-    assertEquals((result.error || "").includes(outsideDir), false, "must not echo the attempted absolute path");
+    assertFalse((result.error || "").includes("Allowed roots:"), "must not leak the allowed-roots list");
+    assertFalse((result.error || "").includes(workspaceDir), "must not leak the absolute workspace path");
+    assertFalse((result.error || "").includes(outsideDir), "must not echo the attempted absolute path");
   } finally {
     await Deno.remove(workspaceDir, { recursive: true }).catch(() => {});
     await Deno.remove(outsideDir, { recursive: true }).catch(() => {});

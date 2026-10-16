@@ -7,7 +7,7 @@
  * truncation error, and that other finish reasons come back as stop_reason without an error.
  */
 
-import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import type { JSONValue } from "@exaix/core";
 import { OpenRouterBillingError, OpenRouterProvider, OpenRouterTruncationError } from "@exaix/ai-openrouter";
 import { ModelProviderError } from "@exaix/ai/providers";
@@ -157,7 +157,7 @@ Deno.test("fix(openrouter): an HTTP 200 error retains the sanitized provider rea
     const error = await assertRejects(() => provider.generate("hi"), ModelProviderError);
     assertStringIncludes(error.message, "Tool definitions required");
     assertStringIncludes(error.message, "provider=Fixture");
-    assertEquals(error.message.includes("private-upstream-data"), false);
+    assertFalse(error.message.includes("private-upstream-data"));
     assertEquals(fetches(), 1);
   });
 });

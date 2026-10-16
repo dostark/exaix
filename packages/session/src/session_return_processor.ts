@@ -12,6 +12,7 @@
  */
 
 import { join } from "@std/path";
+import { BRIEF_FILE, RETURN_FILE } from "./constants.ts";
 import { SessionBriefSchema, SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionDecision, SessionReconcileRejection } from "@exaix/schemas/session_delegate.ts";
 import { reconcile } from "./reconcile.ts";
@@ -45,9 +46,6 @@ export interface ISessionReturnProcessorDeps {
   waitStore: ISessionWaitStore;
   resultStore: ISessionDelegationResultStore;
 }
-
-const BRIEF_FILE = "brief.json";
-const RETURN_FILE = "return.json";
 
 const NOT_PROCESSED: ISessionReturnOutcome = {
   processed: false,

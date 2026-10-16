@@ -6,18 +6,19 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
-import { assertEquals, assertExists, assertRejects } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowExecutionError, FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
-import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION, FLOW_EVENT_NAMESPACE_READ } from "@exaix/core";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS, FLOW_EVENT_NAMESPACE_READ } from "@exaix/core";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { initTestDbService } from "@exaix/testing";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
 import { getMemoryExecutionDir } from "@exaix/testing";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 Deno.test("[Step64.3] FlowRunner resumes with persisted namespace state and skips failed-step writes", async () => {
   const { config, tempDir, cleanup } = await initTestDbService();
 
@@ -105,7 +106,7 @@ Deno.test("[Step64.3] FlowRunner resumes with persisted namespace state and skip
     assertEquals(readerRequest.request.sharedNamespace, { summary: "persisted-summary" });
     assertEquals(resumedResult.success, true);
     assertEquals(resumedResult.output, "reader:persisted-summary");
-    assertEquals(resumedExecutor.calls.includes("agent1"), false);
+    assertFalse(resumedExecutor.calls.includes("agent1"));
     assertEquals(resumedResult.namespaceArtifactPath, namespacePath);
     assertEquals(resumedLogger.events.some((entry) => entry.event === FLOW_EVENT_NAMESPACE_READ), true);
   } finally {

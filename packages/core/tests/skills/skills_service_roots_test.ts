@@ -11,16 +11,11 @@
  * @related-files [packages/core/src/skills/skills.ts, packages/schemas/src/config.ts]
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects } from "@std/assert";
+import { DEFAULT_SKILLS_MEMORY_PATH, ExaPathDefaults } from "@exaix/shared";
 import { join } from "@std/path";
 import { type Config, ConfigSchema } from "@exaix/schemas";
-import {
-  ExaPathDefaults,
-  SkillDiagnosticReason,
-  SkillMutationErrorCode,
-  SkillRootKind,
-  SkillStatus,
-} from "@exaix/core";
+import { SkillDiagnosticReason, SkillMutationErrorCode, SkillRootKind, SkillStatus } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { createSkillOperationContext, SkillMutationError, SkillsService } from "@exaix/core/skills";
 import { initTestDbService, writeSkillFolder } from "@exaix/testing";
@@ -92,7 +87,10 @@ async function fixture(skills: ISkillsConfigInput = {}, portals: string[] = ["Al
 Deno.test("[roots] defaults follow the configured paths and a project root needs a configured portal", async () => {
   const fx = await fixture();
   try {
-    await writeSkillFolder(fx.dir(ExaPathDefaults.blueprints, "Skills"), { name: "shared", instructions: "Shared." });
+    await writeSkillFolder(fx.dir(ExaPathDefaults.blueprints, DEFAULT_SKILLS_MEMORY_PATH), {
+      name: "shared",
+      instructions: "Shared.",
+    });
     await writeSkillFolder(fx.dir(ExaPathDefaults.memorySkills, "learned"), {
       name: "learned-one",
       instructions: "Learned.",
@@ -188,7 +186,7 @@ Deno.test("[roots][security] a relative root cannot leave the system root and an
     assertEquals(await fx.service.getSkill("escaped", fx.ctx()), null);
     const diagnostics = await fx.service.listDiagnostics(fx.ctx());
     assert(diagnostics.some((d) => d.reason === SkillDiagnosticReason.PATH_ESCAPE));
-    assertEquals(JSON.stringify(diagnostics).includes(fx.root), false, "diagnostics carry no host paths");
+    assertFalse(JSON.stringify(diagnostics).includes(fx.root), "diagnostics carry no host paths");
   } finally {
     await Deno.remove(external, { recursive: true }).catch(() => {});
     await Deno.remove(fx.dir("..", "escape"), { recursive: true }).catch(() => {});

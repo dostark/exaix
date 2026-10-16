@@ -4,7 +4,7 @@
  * @description Tests for DirectConfigAdapter and createConfigAdapter factory.
  */
 import { Database } from "@db/sqlite";
-import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertNotEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { configurable } from "../../src/config/registry.ts";
 import { ConfigProvenanceSource, ConfigValueType } from "../../src/types/enums.ts";
 import { CONFIG_CHECKSUM_KEY } from "../../src/types/constants.ts";
@@ -581,8 +581,8 @@ Deno.test("[configuring] adapter.compact delegates to DAO and preserves values",
 Deno.test("[configuring] ConfigRateLimitedError has correct surface and limit fields", () => {
   const err = new ConfigRateLimitedError("cli", "max 10 writes per 5s");
   assertEquals(err.name, "ConfigRateLimitedError");
-  assertEquals(err.message.includes("cli"), true);
-  assertEquals(err.message.includes("max 10 writes per 5s"), true);
+  assertStringIncludes(err.message, "cli");
+  assertStringIncludes(err.message, "max 10 writes per 5s");
 });
 
 // config rollback (append restoring a historical value)

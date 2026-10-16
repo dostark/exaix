@@ -11,6 +11,7 @@
  * @related-files [packages/ai/src/bindings/binding_layers.ts, packages/ai/src/bindings/run_bindings_store.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { createMockConfig } from "@exaix/testing";
@@ -38,7 +39,7 @@ function baseConfig(root: string): Config {
 Deno.test("[layers] config < daemon overlays (file-name order) < run overlays < run --bind, per field", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-" });
   try {
-    const overlaysDir = join(tempDir, ".exa", "overlays");
+    const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     const config = baseConfig(tempDir);
     await Deno.mkdir(overlaysDir, { recursive: true });
     // File-name order matters: 01 then 02, and the later file wins a field it sets.
@@ -93,11 +94,11 @@ Deno.test("[layers] a runtime directory inside Workspace or Portals is refused",
   const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-" });
   try {
     const config = createMockConfig(tempDir, {
-      paths: { runtime: join("Workspace", ".exa-in-workspace") } as Config["paths"],
+      paths: { runtime: pathBuilders.workspacePath("", ".exa-in-workspace") } as Config["paths"],
     });
     await assertRejects(() => loadBindingLayers(config), Error, "overlay_invalid");
     const portalConfig = createMockConfig(tempDir, {
-      paths: { runtime: join("Portals", ".exa-in-portals") } as Config["paths"],
+      paths: { runtime: pathBuilders.portalsPath("", ".exa-in-portals") } as Config["paths"],
     });
     await assertRejects(() => loadBindingLayers(portalConfig), Error, "overlay_invalid");
   } finally {
@@ -108,7 +109,7 @@ Deno.test("[layers] a runtime directory inside Workspace or Portals is refused",
 Deno.test("[layers] an overlay above the byte ceiling or with an unknown field is refused", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-" });
   try {
-    const overlaysDir = join(tempDir, ".exa", "overlays");
+    const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     const config = baseConfig(tempDir);
     await Deno.mkdir(overlaysDir, { recursive: true });
     // Above BINDING_OVERLAY_MAX_BYTES (256 KiB): padding inside an otherwise valid overlay.
@@ -130,7 +131,7 @@ Deno.test("[layers] an overlay above the byte ceiling or with an unknown field i
 Deno.test("[layers][security] a symlinked overlay and a non-regular overlay entry are refused", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-" });
   try {
-    const overlaysDir = join(tempDir, ".exa", "overlays");
+    const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     const config = baseConfig(tempDir);
     await Deno.mkdir(overlaysDir, { recursive: true });
 
@@ -153,7 +154,7 @@ Deno.test("[layers][security] a symlinked overlay and a non-regular overlay entr
 Deno.test("[layers] a regular daemon overlay applies and catalog merges over the built-ins", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-" });
   try {
-    const overlaysDir = join(tempDir, ".exa", "overlays");
+    const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     const config = baseConfig(tempDir);
     await Deno.mkdir(overlaysDir, { recursive: true });
     await Deno.writeTextFile(
@@ -214,7 +215,7 @@ Deno.test("[layers][ordering] two run overlays at one selector resolve to the la
 Deno.test("[layers][ordering] two daemon overlay files at one selector resolve to the later file name", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-file-order-" });
   try {
-    const overlaysDir = join(tempDir, ".exa", "overlays");
+    const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     const config = baseConfig(tempDir);
     await Deno.mkdir(overlaysDir, { recursive: true });
     await Deno.writeTextFile(

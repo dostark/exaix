@@ -13,8 +13,9 @@
  * @related-files [packages/request/src/processor.ts, packages/execution/src/agent_runner.ts, packages/execution/src/agent_composer.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
-import { join } from "@std/path";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import type { IModelOptions } from "@exaix/ai/types.ts";
@@ -43,7 +44,7 @@ Deno.test("[integration] request effort high beats blueprint effort low on the p
     configOverrides: { request_analysis: { mode: "heuristic" } } as never,
   });
   try {
-    const blueprintPath = join(env.tempDir, "Blueprints", "Agents", "default.md");
+    const blueprintPath = pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH, "default.md");
     await Deno.writeTextFile(
       blueprintPath,
       "---\nagent_role: default\nmodel: mock:test\neffort: low\n---\nYou are a helpful assistant.\n",
@@ -70,10 +71,9 @@ Deno.test("[integration] request effort high beats blueprint effort low on the p
     };
 
     const traceId = crypto.randomUUID();
-    const requestPath = join(
+    const requestPath = pathBuilders.workspacePath(
       env.tempDir,
-      "Workspace",
-      "Requests",
+      DEFAULT_REQUESTS_PATH,
       `request-${traceId.slice(0, 8)}.md`,
     );
     await Deno.writeTextFile(
@@ -112,7 +112,7 @@ Implement the feature.
 Deno.test("[integration] executing the plan's requestDeclaration through AgentComposer also resolves high", async () => {
   const env = await TestEnvironment.create({ initGit: false });
   try {
-    const blueprintPath = join(env.tempDir, "Blueprints", "Agents", "default.md");
+    const blueprintPath = pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH, "default.md");
     await Deno.writeTextFile(
       blueprintPath,
       "---\nagent_role: default\nmodel: mock:test\neffort: low\n---\nYou are a helpful assistant.\n",
@@ -199,8 +199,8 @@ Deno.test("[integration] a pinned floor-bearing skill resolves medium on both pl
   });
   const root = await Deno.makeTempDir({ prefix: "effort-pinned-skill-" });
   try {
-    const memoryDir = join(root, "Memory");
-    const blueprintSkillsDir = join(REPO_ROOT, "Blueprints", "Skills");
+    const memoryDir = pathBuilders.memoryPath(root);
+    const blueprintSkillsDir = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH);
     const skillsService = new SkillsService({ memoryDir, blueprintSkillsDir }, env.db);
     await skillsService.initialize();
     const resolvedPinNames: string[] = [];
@@ -210,7 +210,7 @@ Deno.test("[integration] a pinned floor-bearing skill resolves medium on both pl
       return originalResolvePinned(pins, ctx);
     };
 
-    const blueprintPath = join(env.tempDir, "Blueprints", "Agents", "default.md");
+    const blueprintPath = pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH, "default.md");
     await Deno.writeTextFile(
       blueprintPath,
       "---\nagent_role: default\nmodel: mock:test\n---\nYou are a helpful assistant.\n",
@@ -241,9 +241,9 @@ Deno.test("[integration] a pinned floor-bearing skill resolves medium on both pl
       skills: skillsService,
     } as never;
     const processor = new RequestProcessor({
-      workspacePath: join(env.tempDir, "Workspace"),
-      requestsDir: join(env.tempDir, "Workspace", "Requests"),
-      blueprintsPath: join(env.tempDir, "Blueprints", "Agents"),
+      workspacePath: pathBuilders.workspacePath(env.tempDir),
+      requestsDir: pathBuilders.workspacePath(env.tempDir, DEFAULT_REQUESTS_PATH),
+      blueprintsPath: pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH),
       includeReasoning: true,
       context: applicationContext,
       testProvider: provider,
@@ -251,7 +251,11 @@ Deno.test("[integration] a pinned floor-bearing skill resolves medium on both pl
     });
 
     const traceId = crypto.randomUUID();
-    const requestPath = join(env.tempDir, "Workspace", "Requests", `request-${traceId.slice(0, 8)}.md`);
+    const requestPath = pathBuilders.workspacePath(
+      env.tempDir,
+      DEFAULT_REQUESTS_PATH,
+      `request-${traceId.slice(0, 8)}.md`,
+    );
     await Deno.writeTextFile(
       requestPath,
       `---
@@ -310,9 +314,9 @@ Review the response contract for injection risks and fix the login handler.
       steps: [{ number: 1, title: "Review", content: "Do the task." }],
     } as never);
 
-    assertEquals(
-      resolvedPinNames.includes(FLOOR_SKILL_ID),
-      true,
+    assertArrayIncludes(
+      resolvedPinNames,
+      [FLOOR_SKILL_ID],
       "the execution path must replay the persisted resolved_skills through resolvePinned",
     );
     await env.db.waitForFlush();

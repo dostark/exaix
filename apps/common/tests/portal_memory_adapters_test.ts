@@ -7,7 +7,7 @@
  *   FlowValidatorAdapter, DaemonServiceAdapter.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { PortalAdapter } from "../../../apps/common/adapters/portal_adapter.ts";
 import type { IPortalDetails, IPortalInfo } from "@exaix/core/types";
 import { DEFAULT_SKILL_INDEX_VERSION } from "@exaix/core";
@@ -194,7 +194,7 @@ Deno.test("PortalAdapter: getPortalActivityLog returns placeholder", () => {
   const adapter = new PortalAdapter(createMockPortalService());
   const log = adapter.getPortalActivityLog("myportal");
   assertEquals(log.length, 1);
-  assertEquals(log[0].includes("not yet implemented"), true);
+  assertStringIncludes(log[0], "not yet implemented");
 });
 
 // MemoryServiceAdapter
@@ -626,7 +626,7 @@ Deno.test("DaemonServiceAdapter: getLogs returns message when no log file", asyn
     const adapter = new DaemonServiceAdapter(commands);
     const logs = await adapter.getLogs();
     assertEquals(logs.length, 1);
-    assertEquals(logs[0].includes("No logs found"), true);
+    assertStringIncludes(logs[0], "No logs found");
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }

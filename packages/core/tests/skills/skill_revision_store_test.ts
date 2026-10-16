@@ -12,7 +12,8 @@
  * @related-files [packages/core/src/skills/skill_snapshot.ts]
  */
 
-import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH } from "@exaix/shared";
+import { assertEquals, assertFalse, assertNotEquals, assertRejects } from "@std/assert";
 import {
   canonicalizeSkillText,
   computeRevisionId,
@@ -56,7 +57,7 @@ function blueprintContext(overrides: Partial<ISkillRootContext> = {}): ISkillRoo
   return {
     rootKind: SkillRootKind.BLUEPRINT,
     name: "code-review",
-    path: "Blueprints/Skills/code-review",
+    path: `${DEFAULT_BLUEPRINTS_PATH}/Skills/code-review`,
     project: null,
     source: MemoryBankSource.USER,
     scope: MemoryScope.GLOBAL,
@@ -99,7 +100,7 @@ Deno.test("equal content in two roots shares one revision but keeps per-root pro
   const second = await parseSkillSnapshot(
     snapshot(),
     blueprintContext({
-      path: "Memory/Skills/project/Exaix/code-review",
+      path: `${DEFAULT_MEMORY_PATH}/Skills/project/Exaix/code-review`,
       rootKind: SkillRootKind.PROJECT,
       project: "Exaix",
       scope: MemoryScope.PROJECT,
@@ -119,7 +120,7 @@ Deno.test("parser defaults status active for blueprint and draft for learned", a
     snapshot(),
     blueprintContext({
       rootKind: SkillRootKind.LEARNED,
-      path: "Memory/Skills/learned/code-review",
+      path: `${DEFAULT_MEMORY_PATH}/Skills/learned/code-review`,
       source: MemoryBankSource.LEARNED,
     }),
   );
@@ -177,7 +178,7 @@ async function loadedSkill(snap: ISkillRevisionSnapshot): Promise<ILoadedSkill> 
     revisionId: skill.id,
     contentSha256: skill.content_sha256,
     rootKind: SkillRootKind.BLUEPRINT,
-    sourcePath: "Blueprints/Skills/code-review",
+    sourcePath: `${DEFAULT_BLUEPRINTS_PATH}/Skills/code-review`,
     snapshot: snap,
   };
 }
@@ -210,7 +211,7 @@ Deno.test("[store] record inserts once and concurrent duplicates emit a single e
     const events = await env.db.getActivitiesByActionTypeSafe(DomainEventType.SkillsRevisionRecorded);
     assertEquals(events.length, 1);
     assertEquals(events[0].trace_id, OP_CONTEXT.traceId);
-    assertEquals(JSON.stringify(events[0].payload).includes("Review systematically"), false);
+    assertFalse(JSON.stringify(events[0].payload).includes("Review systematically"));
   });
 });
 

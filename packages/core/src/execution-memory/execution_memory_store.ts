@@ -23,11 +23,11 @@ import type { IExecutionMemoryStore } from "../types/i_execution_memory_store.ts
 import type { Opt, Reason } from "../types/optional_marker.ts";
 import {
   DEFAULT_NAMESPACE_ENTRY_MAX_BYTES,
-  DEFAULT_NAMESPACE_MAX_BYTES,
   DEFAULT_SCRATCHPAD_MAX_ENTRIES_PER_EXECUTION,
   DEFAULT_SCRATCHPAD_MAX_ENTRY_BYTES,
   VALID_EXECUTION_TRACE_ID_PATTERN,
 } from "../types/constants.ts";
+import { DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/shared";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
 import type { IScratchpadEntry } from "@exaix/schemas/memory_bank.ts";

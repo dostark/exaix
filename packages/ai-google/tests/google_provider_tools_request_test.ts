@@ -13,7 +13,7 @@
  * ]
  */
 
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists, assertFalse } from "@std/assert";
 import { ProviderRegistry } from "@exaix/ai";
 import { PricingTier } from "@exaix/core";
 import { GOOGLE_PROVIDER_METADATA } from "../src/constants.ts";
@@ -373,6 +373,6 @@ Deno.test("GoogleProvider sends no parallel-disable field, even when the loop as
     toolChoice: { type: "auto", disable_parallel_tool_use: true },
   });
   const serialized = JSON.stringify(body);
-  assertEquals(serialized.includes("parallel"), false);
-  assertEquals(serialized.includes("disable_parallel_tool_use"), false);
+  assertFalse(serialized.includes("parallel"));
+  assertFalse(serialized.includes("disable_parallel_tool_use"));
 });

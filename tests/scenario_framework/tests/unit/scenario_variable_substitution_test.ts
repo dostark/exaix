@@ -21,6 +21,8 @@
  * @related-files [tests/scenario_framework/runner/synthetic_runner.ts, tests/scenario_framework/schema/scenario_schema.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join, resolve } from "@std/path";
 import { walk } from "@std/fs";
@@ -146,7 +148,7 @@ Deno.test("[flow-fixture] a declared flow is staged into the sandbox's flow cata
 
     await stageFlowFixture(ws, fixture);
 
-    const staged = join(ws, "Blueprints", "Flows", "explore-codebase.flow.yaml");
+    const staged = pathBuilders.blueprintsPath(ws, DEFAULT_FLOWS_PATH, "explore-codebase.flow.yaml");
     assertEquals(await Deno.stat(staged).then(() => true).catch(() => false), true, `expected ${staged}`);
     assertEquals(await Deno.readTextFile(staged), await Deno.readTextFile(fixture));
   } finally {
@@ -160,7 +162,7 @@ Deno.test("[flow-fixture] staging names the file after the flow's own id, not th
   const ws = await Deno.makeTempDir({ prefix: "stage-flow-id-" });
   try {
     await stageFlowFixture(ws, join(FRAMEWORK_HOME, "fixtures", "flows", "dynamic_execution", "explore.flow.yaml"));
-    const wrong = join(ws, "Blueprints", "Flows", "explore.flow.yaml");
+    const wrong = pathBuilders.blueprintsPath(ws, DEFAULT_FLOWS_PATH, "explore.flow.yaml");
     assertEquals(await Deno.stat(wrong).then(() => true).catch(() => false), false, "must not use the fixture name");
   } finally {
     await Deno.remove(ws, { recursive: true });
@@ -171,7 +173,7 @@ Deno.test("[flow-fixture] every agent role a fixture flow names exists in the ca
   // Now that fixture flows are staged and actually load, their `agent_role:` references resolve
   // at runtime — several of them named agent roles the catalog does not have.
   const catalog = new Set<string>();
-  for await (const entry of Deno.readDir(join(REPO_ROOT, "Blueprints", "Agents"))) {
+  for await (const entry of Deno.readDir(pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH))) {
     if (entry.isFile && entry.name.endsWith(".md")) catalog.add(entry.name.replace(/\.md$/, ""));
   }
   assert(catalog.size > 0, "expected agent roles to be shipped");
@@ -207,7 +209,7 @@ Deno.test("[flow-fixture] a scenario whose request names a flow must declare tha
   // and the runner stages exactly what `flow_fixture` names — a scenario referencing a flow
   // without declaring its fixture passes only if another scenario staged it first.
   const shippedFlows = new Set<string>();
-  for await (const entry of Deno.readDir(join(REPO_ROOT, "Blueprints", "Flows"))) {
+  for await (const entry of Deno.readDir(pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_FLOWS_PATH))) {
     if (entry.name.endsWith(".flow.yaml")) shippedFlows.add(entry.name.replace(/\.flow\.yaml$/, ""));
   }
 

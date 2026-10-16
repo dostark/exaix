@@ -8,6 +8,8 @@
  * @dependencies [@std/assert, @exaix/testing, @exaix/schemas, @exaix/ai]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
 import { initTestDbService } from "@exaix/testing";
@@ -67,7 +69,7 @@ Deno.test("[step132.3] AgentComposer with injected ModelResolver resolves provid
     config.system.root = testDir;
 
     // Write a test blueprint
-    const blueprintsDir = join(testDir, "Blueprints", "Agents");
+    const blueprintsDir = pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(blueprintsDir, { recursive: true });
     const blueprintPath = join(blueprintsDir, "test-agent.md");
     await Deno.writeTextFile(

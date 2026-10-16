@@ -1,0 +1,16 @@
+schema_version: "1.0.0"
+id: "hardcoded-path"
+pack: "smoke"
+portals: []
+mode_support: ["auto"]
+steps:
+  - id: "wait-plan"
+    type: "wait-for-file"
+    args: ["**/.exa/worktrees/todo-app/*/plan.md"]
+    output_criteria:
+      - id: "plan-found"
+        kind: "file-found"
+        path_pattern: "**/.exa/worktrees/todo-app/*/plan.md"
+  - id: "wait-relative"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]

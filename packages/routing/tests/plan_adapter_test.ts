@@ -6,7 +6,7 @@
  */
 
 import { McpToolName } from "@exaix/mcp";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { PlanAdapter } from "@exaix/core/planning";
 
 Deno.test("PlanAdapter: Plan validation fails for unsupported tool names", () => {
@@ -76,6 +76,6 @@ Deno.test("PlanAdapter: renders a fallback heading (not '# undefined') when the 
     steps: [{ step: 1, title: "Do it", description: "the thing" }],
   }));
   const markdown = adapter.toMarkdown(plan);
-  assertEquals(markdown.includes("# undefined"), false);
+  assertFalse(markdown.includes("# undefined"));
   assertEquals(markdown.includes("# Untitled Plan"), true);
 });

@@ -11,7 +11,7 @@
  * @related-files [packages/execution/src/strategies/cli_delegate_strategy.ts]
  */
 
-import { assertEquals, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
+import { assertEquals, assertFalse, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
 import { AgentExecutionError, CliDelegateStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint, IRunCliDelegateProcess } from "@exaix/execution";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
@@ -127,7 +127,7 @@ Deno.test("[CliDelegateStrategy] absent contextPort sends the existing objective
   await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
 
   assertStringIncludes(calls[0][1], "Fix the null-guard bug in renderAvatar");
-  assertEquals(calls[0][1].includes("---"), false, "no dogfood supplement separator without a contextPort");
+  assertFalse(calls[0][1].includes("---"), "no dogfood supplement separator without a contextPort");
 });
 
 Deno.test("[CliDelegateStrategy] an injected contextPort's returned prompt is what reaches the CLI subprocess", async () => {
@@ -279,7 +279,7 @@ Deno.test("[CliDelegateStrategy][security] an agent_role outside the trusted set
 
   assertEquals(inputs.length, 0, "an untrusted agent_role must never call contextPort.prepare");
   assertStringIncludes(calls[0][1], "Fix the null-guard bug in renderAvatar");
-  assertEquals(calls[0][1].includes("---"), false, "no dogfood supplement for an untrusted caller");
+  assertFalse(calls[0][1].includes("---"), "no dogfood supplement for an untrusted caller");
 });
 
 Deno.test("[CliDelegateStrategy][security] an empty/absent agent_role is never trusted (Phase 176 GAP-11)", async () => {
@@ -297,7 +297,7 @@ Deno.test("[CliDelegateStrategy][security] an empty/absent agent_role is never t
   await strategy.execute(makeBlueprint(), makeContext(), makeOptions({ agent_role: "" }));
 
   assertEquals(inputs.length, 0, "an absent agent_role must never call contextPort.prepare");
-  assertEquals(calls[0][1].includes("---"), false, "no dogfood supplement for an unbound caller");
+  assertFalse(calls[0][1].includes("---"), "no dogfood supplement for an unbound caller");
 });
 
 Deno.test("[CliDelegateStrategy][security] construction fails loudly when contextPort is set without trustedAgentRoles (Phase 176 GAP-11)", () => {

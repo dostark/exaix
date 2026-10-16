@@ -9,7 +9,8 @@
  * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_composer.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import {
   createMockConfig,
   createStubConfig,
@@ -128,9 +129,9 @@ Deno.test("PlanExecutor: a pinned floor-bearing skill raises the execution-path 
   registerLocalProvider("ollama");
   try {
     const root = await Deno.makeTempDir();
-    await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
+    await Deno.mkdir(pathBuilders.agentsPath(pathBuilders.blueprintsPath(root)), { recursive: true });
     await Deno.writeTextFile(
-      `${root}/Blueprints/Agents/senior-coder.md`,
+      pathBuilders.agentsPath(pathBuilders.blueprintsPath(root), "senior-coder.md"),
       '---\nagent_role: senior-coder\nmodel: ""\n---\n\nStub agent role for testing.\n',
     );
     const config = createMockConfig(root, {});
@@ -178,9 +179,9 @@ Deno.test("PlanExecutor: a pinned floor-bearing skill raises the execution-path 
       steps: [{ number: 1, title: "Do nothing", content: "No-op step." }],
     });
 
-    assertEquals(
-      resolvedPins.includes("response-contract-security-analysis"),
-      true,
+    assertArrayIncludes(
+      resolvedPins,
+      ["response-contract-security-analysis"],
       "resolvePinned must be consulted for the persisted resolved_skills",
     );
 
@@ -190,7 +191,7 @@ Deno.test("PlanExecutor: a pinned floor-bearing skill raises the execution-path 
     assertEquals(payload.effort, "medium");
     assertEquals(payload.effort_basis, "skill-floor");
     const floors = payload.floors_applied as string[];
-    assertEquals(floors.includes("response-contract-security-analysis"), true);
+    assertArrayIncludes(floors, ["response-contract-security-analysis"]);
   } finally {
     ProviderRegistry.clear();
   }
@@ -201,9 +202,9 @@ Deno.test("PlanExecutor: no resolved_skills means no pinned skill floor is appli
   registerLocalProvider("ollama");
   try {
     const root = await Deno.makeTempDir();
-    await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
+    await Deno.mkdir(pathBuilders.agentsPath(pathBuilders.blueprintsPath(root)), { recursive: true });
     await Deno.writeTextFile(
-      `${root}/Blueprints/Agents/senior-coder.md`,
+      pathBuilders.agentsPath(pathBuilders.blueprintsPath(root), "senior-coder.md"),
       '---\nagent_role: senior-coder\nmodel: ""\n---\n\nStub agent role for testing.\n',
     );
     const config = createMockConfig(root, {});

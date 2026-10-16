@@ -6,6 +6,7 @@
  * JSON/YAML settings, default value application, and strict validation of sensitive provider keys.
  */
 
+import { DEFAULT_MEMORY_PATH, ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertExists, assertStringIncludes, assertThrows } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { ProviderCostTier } from "@exaix/core";
@@ -13,7 +14,6 @@ import { ConfigService } from "@exaix/core/config";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
-import { ExaPathDefaults } from "@exaix/core";
 import { readFixtureTextSync } from "@exaix/testing";
 import type { JSONValue } from "@exaix/core/types";
 
@@ -80,7 +80,7 @@ Deno.test("ConfigSchema rejects invalid log_level", () => {
       log_level: "invalid",
     },
     paths: {
-      memory: "./Memory",
+      memory: `./${DEFAULT_MEMORY_PATH}`,
     },
   };
 
@@ -437,8 +437,6 @@ version = "1.0.0"
 log_level = "invalid_level"
 
 [paths]
-memory = "./Memory"
-blueprints = "./Blueprints"
 runtime = "./Runtime"
       `.trim(),
       );
@@ -462,8 +460,6 @@ runtime = "./Runtime"
 log_level = "info"
 
 [paths]
-memory = "./Memory"
-blueprints = "./Blueprints"
 runtime = "./Runtime"
 
 [agents]
@@ -540,8 +536,6 @@ log_level = "info"
 unknown_field = "should be ignored"
 
 [paths]
-memory = "./Memory"
-blueprints = "./Blueprints"
 runtime = "./Runtime"
 
 [unknown_section]
@@ -594,8 +588,6 @@ runtime = "./系統"
 log_level = "info"
 
 [paths]
-memory = "./Memory"
-blueprints = "./Blueprints"
 runtime = "./Runtime"`;
 
     const configPath1 = `${tempDir}/test-checksum-1.toml`;
@@ -632,8 +624,6 @@ runtime = "./Runtime"`;
 log_level = "info"
 
 [paths]
-memory = "./Memory"
-blueprints = "./Blueprints"
 runtime = "./Runtime"`,
       );
 
@@ -643,8 +633,6 @@ runtime = "./Runtime"`,
 log_level = "debug"
 
 [paths]
-memory = "./Memory"
-blueprints = "./Blueprints"
 runtime = "./Runtime"`,
       );
 
@@ -671,13 +659,7 @@ runtime = "./Runtime"`,
 Deno.test("ConfigSchema accepts provider_strategy section", () => {
   const config = {
     system: { version: DEFAULT_MCP_VERSION },
-    paths: {
-      workspace: "Workspace",
-      runtime: ".exa",
-      memory: "Memory",
-      portals: "Portals",
-      blueprints: "Blueprints",
-    },
+    paths: { ...ExaPathDefaults },
     provider_strategy: {
       prefer_free: true,
       allow_local: true,

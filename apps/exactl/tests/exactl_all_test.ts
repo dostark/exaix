@@ -8,11 +8,11 @@
  * between global command routing, test-mode context injection, and primary subcommands (plan, review, daemon).
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import "./helpers/set_test_mode.ts";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { BINARY_VERSION } from "@exaix/core";
-import { ExaPathDefaults } from "@exaix/core";
 import {
   BlueprintStatus,
   FlowInputSource,

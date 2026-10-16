@@ -7,7 +7,7 @@
  * of repository roots and resilient handling of malformed portal targets.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { PortalPermissionsService } from "@exaix/portal";
 import { TestEnvironment } from "@exaix/testing";
@@ -68,7 +68,7 @@ Deno.test("[portal-multi] validateGitRepo() throws for non-existent portal", asy
     } catch (e) {
       errorThrown = true;
       if (e instanceof Error) {
-        assertEquals(e.message.includes("Portal 'non-existent' not found"), true);
+        assertStringIncludes(e.message, "Portal 'non-existent' not found");
       }
     }
 

@@ -14,6 +14,7 @@
  * @related-files [apps/exactl/main.ts, apps/exactl/src/init.ts, apps/exactl/src/commands/model_commands.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
@@ -45,7 +46,7 @@ function writeCliConfig(configPath: string, root: string): void {
 
 /** Seed one model_benchmark row — what the daemon's benchmark scheduler would write. */
 function seedBenchmarkRow(root: string): void {
-  const db = new Database(join(root, ".exa", "journal.db"));
+  const db = new Database(pathBuilders.runtimePath(root, "journal.db"));
   try {
     db.exec(
       "INSERT INTO model_benchmark (provider, model, benchmark, score, provenance, measured_at) " +

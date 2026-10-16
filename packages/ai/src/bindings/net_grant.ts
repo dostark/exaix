@@ -18,6 +18,7 @@ import { DAEMON_DEFAULT_NET_HOSTS } from "@exaix/core";
 import { BindingOverlaySchema, type IBindingCatalog } from "@exaix/schemas";
 import { BINDING_OVERLAY_MAX_BYTES, BINDING_OVERLAYS_DIR } from "@exaix/core";
 import { buildBuiltInCatalog, mergeCatalogs } from "@exaix/model-registry";
+import { SCHEME_HTTP, SCHEME_HTTPS } from "@exaix/core";
 
 /** Raised for any invalid operator overlay or catalog endpoint during grant computation. */
 export class NetGrantError extends Error {
@@ -28,8 +29,6 @@ export class NetGrantError extends Error {
 }
 
 /** URL scheme constants for endpoint validation. */
-const SCHEME_HTTPS = "https:";
-const SCHEME_HTTP = "http:";
 
 /** Normalized canonical host (IPv6-bracketed) with the effective port, if any. */
 function canonicalHostPort(parsed: URL): string {

@@ -9,14 +9,13 @@
  */
 
 import { join } from "@std/path";
+import { BRIEF_FILE } from "./constants.ts";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionBrief } from "@exaix/schemas/session_delegate.ts";
 
 export interface ISessionBriefReader {
   read(traceId: string): Promise<SessionBrief>;
 }
-
-const BRIEF_FILE = "brief.json";
 
 export class SessionBriefReader implements ISessionBriefReader {
   constructor(private readonly sessionDir: string) {}

@@ -9,36 +9,9 @@
 
 import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join, toFileUrl } from "@std/path";
-import { ExaPathDefaults } from "@exaix/core";
-
+import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
 function buildMinimalConfig(root: string): string {
-  return `
-[system]
-root = ${JSON.stringify(root)}
-version = "1.0.0"
-log_level = "info"
-
-[paths]
-memory = ${JSON.stringify(ExaPathDefaults.memory)}
-blueprints = ${JSON.stringify(ExaPathDefaults.blueprints)}
-runtime = ${JSON.stringify(ExaPathDefaults.runtime)}
-workspace = ${JSON.stringify(ExaPathDefaults.workspace)}
-portals = ${JSON.stringify(ExaPathDefaults.portals)}
-active = ${JSON.stringify(ExaPathDefaults.active)}
-archive = ${JSON.stringify(ExaPathDefaults.archive)}
-plans = ${JSON.stringify(ExaPathDefaults.plans)}
-requests = ${JSON.stringify(ExaPathDefaults.requests)}
-rejected = ${JSON.stringify(ExaPathDefaults.rejected)}
-agents = ${JSON.stringify(ExaPathDefaults.agents)}
-flows = ${JSON.stringify(ExaPathDefaults.flows)}
-memoryProjects = ${JSON.stringify(ExaPathDefaults.memoryProjects)}
-memoryExecution = ${JSON.stringify(ExaPathDefaults.memoryExecution)}
-memoryIndex = ${JSON.stringify(ExaPathDefaults.memoryIndex)}
-memorySkills = ${JSON.stringify(ExaPathDefaults.memorySkills)}
-memoryPending = ${JSON.stringify(ExaPathDefaults.memoryPending)}
-memoryTasks = ${JSON.stringify(ExaPathDefaults.memoryTasks)}
-memoryGlobal = ${JSON.stringify(ExaPathDefaults.memoryGlobal)}
-`.trim();
+  return readConfigFixture("exactl-minimal-config", { root: JSON.stringify(root) });
 }
 
 Deno.test("[regression] importing exactl module does not auto-run CLI entrypoint", async () => {

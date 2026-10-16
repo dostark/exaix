@@ -11,8 +11,8 @@
  * @related-files [apps/exactl/src/commands/eval_commands.ts, packages/eval-history/src/history_sqlite.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
 import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { EvalCommands } from "../src/commands/eval_commands.ts";
@@ -66,7 +66,7 @@ function seedRun(
 
 Deno.test("[EvalReportFrontierView] renders per-cell score/cost/cost-per-solved with Pareto marking", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
 
@@ -139,7 +139,7 @@ Deno.test("[EvalReportFrontierView] renders per-cell score/cost/cost-per-solved 
 
 Deno.test("[EvalReportFrontierView] --format json renders machine-readable frontier rows", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
   seedRun(store, {

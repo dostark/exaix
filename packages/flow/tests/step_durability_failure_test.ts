@@ -19,14 +19,9 @@ import type { IAgentExecutionResult } from "@exaix/execution";
 import type { IFlow } from "@exaix/schemas";
 import type { IFlowInput } from "@exaix/schemas/flow.ts";
 import type { JSONValue } from "@exaix/core";
-import {
-  DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
-  FlowInputSource,
-  FlowOutputFormat,
-  StepExecutionDisposition,
-} from "@exaix/core";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS, FlowInputSource, FlowOutputFormat, StepExecutionDisposition } from "@exaix/core";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class RecordingDurabilityStore implements IStepDurabilityStore {
   private recordsMap = new Map<string, IStepExecutionRecord>();
 

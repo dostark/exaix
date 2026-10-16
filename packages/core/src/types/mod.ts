@@ -7,6 +7,8 @@
  */
 
 export * from "./actor.ts";
+// The shared constants live in @exaix/shared, the lower layer.
+export * from "@exaix/shared";
 export * from "./i_log_event.ts";
 export * from "./agent.ts";
 export * from "./constants.ts";

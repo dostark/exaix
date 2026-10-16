@@ -3,11 +3,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = []
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # swe_tasks eval cell on the OpenCode Zen FREE tier using laguna-s-2.1-free — a callable weak
 # free model (north-mini-code-free returned 401 upstream, so laguna is the weak free stand-in).
 # A weak model leaves headroom below the corpus ceiling, so harness lift is measurable. Zero cost.

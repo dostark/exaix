@@ -7,6 +7,8 @@
  * plan generation via LLM providers, and robust orchestration of flow-based requests.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { MockStrategy, PricingTier, ProviderCostTier } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
@@ -126,11 +128,11 @@ describe("RequestProcessor", () => {
     // Create additional required directories
     await Deno.mkdir(getWorkspaceRequestsDir(testDir), { recursive: true });
     await Deno.mkdir(getWorkspacePlansDir(testDir), { recursive: true });
-    await Deno.mkdir(join(testDir, "Blueprints", "Agents"), { recursive: true });
+    await Deno.mkdir(pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH), { recursive: true });
 
     // Create default blueprint
     await Deno.writeTextFile(
-      join(testDir, "Blueprints", "Agents", "default.md"),
+      pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH, "default.md"),
       createBlueprintContent(),
     );
 
@@ -404,7 +406,7 @@ Do something
     it("should classify analyzer agents as simple tasks", async () => {
       // Create data-analyzer blueprint
       await Deno.writeTextFile(
-        join(testDir, "Blueprints", "Agents", "data-analyzer.md"),
+        pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH, "data-analyzer.md"),
         createBlueprintContent(),
       );
 
@@ -428,7 +430,7 @@ Do something
     it("should classify coder agents as complex tasks", async () => {
       // Create senior-coder blueprint
       await Deno.writeTextFile(
-        join(testDir, "Blueprints", "Agents", "senior-coder.md"),
+        pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH, "senior-coder.md"),
         createBlueprintContent(),
       );
 
@@ -452,7 +454,7 @@ Do something
     it("should classify general agents as medium tasks", async () => {
       // Create content-writer blueprint
       await Deno.writeTextFile(
-        join(testDir, "Blueprints", "Agents", "content-writer.md"),
+        pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH, "content-writer.md"),
         createBlueprintContent(),
       );
 
@@ -478,7 +480,7 @@ Do something
     it("should load custom agent blueprint", async () => {
       // Create a custom blueprint
       await Deno.writeTextFile(
-        join(testDir, "Blueprints", "Agents", "code-reviewer.md"),
+        pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH, "code-reviewer.md"),
         `# Code Reviewer Blueprint
 
 You are an expert code reviewer. Analyze code changes and provide feedback.

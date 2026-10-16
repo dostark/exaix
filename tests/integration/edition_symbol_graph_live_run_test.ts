@@ -17,30 +17,7 @@ import { join } from "@std/path";
 import { EDITION_SOLO, EDITION_TEAM, PortalAnalysisMode } from "@exaix/core";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { initializeServices } from "../../apps/exactl/src/init.ts";
-
-/** A workspace config that leaves the symbol graph at its default (off). */
-function workspaceConfigToml(root: string): string {
-  return `
-[system]
-root = "${root}"
-log_level = "error"
-
-[paths]
-runtime = "./.exa"
-memory = "Memory"
-workspace = "Workspace"
-
-[agents]
-default_model = "mock:test"
-
-[models."mock:test"]
-provider = "mock"
-model = "test"
-
-[portal_knowledge]
-default_mode = "standard"
-`;
-}
+import { readConfigFixture } from "./helpers/config_fixture.ts";
 
 /** A TS-primary portal: the Solo builder resolves these imports without the flag. */
 async function writeTsPortal(): Promise<string> {
@@ -64,7 +41,7 @@ async function analyzeUnderEdition(edition: string, alias: string): Promise<IPor
   const originalEdition = Deno.env.get("EXAIX_EDITION");
   try {
     const configPath = join(workspaceRoot, "config.toml");
-    await Deno.writeTextFile(configPath, workspaceConfigToml(workspaceRoot));
+    await Deno.writeTextFile(configPath, readConfigFixture("edition-symbol-graph-live", { root: workspaceRoot }));
 
     Deno.env.set("EXAIX_EDITION", edition);
     const services = await initializeServices({ configPath });

@@ -7,7 +7,7 @@
  * from knowledge discovery and search to interactive approval of pending proposals.
  */
 
-import { assertEquals, assertExists, assertGreater, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertGreater, assertStringIncludes } from "@std/assert";
 import { MemoryStatus } from "@exaix/core/status";
 import { MemoryTuiScope } from "../src/memory_view/memory_scope.ts";
 
@@ -474,7 +474,7 @@ Deno.test("renderMarkdown: no colors mode", () => {
   const result = renderMarkdown(md, { useColors: false });
 
   // Should not contain ANSI codes
-  assertEquals(result.includes("\x1b["), false);
+  assertFalse(result.includes("\x1b["));
   assertStringIncludes(result, "Header");
   assertStringIncludes(result, "bold");
 });
@@ -483,9 +483,9 @@ Deno.test("stripMarkdown: removes all formatting", () => {
   const md = "# Header\n**bold** and *italic* with `code`";
   const result = stripMarkdown(md);
 
-  assertEquals(result.includes("**"), false);
-  assertEquals(result.includes("`"), false);
-  assertEquals(result.includes("#"), false);
+  assertFalse(result.includes("**"));
+  assertFalse(result.includes("`"));
+  assertFalse(result.includes("#"));
   assertStringIncludes(result, "Header");
   assertStringIncludes(result, "bold");
 });

@@ -12,7 +12,7 @@
  * @related-files [apps/daemon/main.ts, packages/session/src/gate_mappers.ts, packages/core/src/artifact/mission_reporter.ts]
  */
 
-import { join } from "@std/path";
+import { basename, join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { DomainEventType } from "@exaix/core/events";
 import { DEFAULT_PORTALS_PATH, DEFAULT_UNKNOWN_LABEL, ExecutionStatus } from "@exaix/core/types";
@@ -37,7 +37,12 @@ export interface ILogPayload {
 /** `traceId` mirrors IEventLogger.info's real 4th parameter — populates the persisted
  *  row's trace_id column so `trace_scoped: true` journal-assert steps can find it. */
 export interface IReconciledLogger {
-  info(event: string, target: string, payload?: ILogPayload, traceId?: string): void;
+  info(
+    event: string,
+    target: string,
+    payload?: Opt<ILogPayload, Reason.OptionalContext>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): void;
 }
 
 export interface IOnReconciledDeps {
@@ -45,7 +50,12 @@ export interface IOnReconciledDeps {
   workspaceRoot: string;
   reviewRegistry: {
     getByTrace(traceId: string): Promise<Array<{ id: string }>>;
-    updateStatus(id: string, status: IReviewStatus, user?: string, reason?: string): Promise<void>;
+    updateStatus(
+      id: string,
+      status: IReviewStatus,
+      user?: Opt<string, Reason.OptionalContext>,
+      reason?: Opt<string, Reason.OptionalInput>,
+    ): Promise<void>;
   };
   costTracker?: {
     trackGeneration(
@@ -58,7 +68,7 @@ export interface IOnReconciledDeps {
         costUsd?: number;
         costSource?: CostSource;
       },
-      traceId?: string,
+      traceId?: Opt<string, Reason.TraceAbsent>,
     ): Promise<number>;
   };
   logger: IReconciledLogger;
@@ -119,9 +129,7 @@ async function dispatchReconciledOutcome(
     try {
       switch (brief.gate) {
         case "refinement": {
-          const requestId = brief.artifact_ref
-            .replace("Workspace/Requests/", "")
-            .replace(".md", "");
+          const requestId = basename(brief.artifact_ref, ".md");
           const clarification = buildClarificationFromDelegation({
             requestId,
             originalBody: brief.objective,

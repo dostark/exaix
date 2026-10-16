@@ -5,6 +5,7 @@
  * strict confinement of agent operations to authorized portal root boundaries.
  */
 
+import { DEFAULT_PORTALS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { McpToolName } from "@exaix/mcp";
 import { assert, assertEquals, assertExists, type assertRejects as _assertRejects } from "@std/assert";
 
@@ -20,28 +21,28 @@ Deno.test("[security] Integration: Portal Access - Security enforcement", async 
     await t.step("Setup: Create portal with restricted access", async () => {
       // Create portal directories
       await env.writeFile(
-        "Portals/project-alpha/src/main.ts",
+        `${DEFAULT_PORTALS_PATH}/project-alpha/src/main.ts`,
         `
 export function main() {
   console.log("Project Alpha");
 }
 `,
       );
-      await env.writeFile("Portals/project-alpha/README.md", "# Project Alpha");
+      await env.writeFile(`${DEFAULT_PORTALS_PATH}/project-alpha/README.md`, "# Project Alpha");
 
       await env.writeFile(
-        "Portals/project-beta/src/main.ts",
+        `${DEFAULT_PORTALS_PATH}/project-beta/src/main.ts`,
         `
 export function main() {
   console.log("Project Beta");
 }
 `,
       );
-      await env.writeFile("Portals/project-beta/README.md", "# Project Beta");
+      await env.writeFile(`${DEFAULT_PORTALS_PATH}/project-beta/README.md`, "# Project Beta");
 
       // Create secret files outside portals
       await env.writeFile(
-        ".exa/secrets.json",
+        `${DEFAULT_RUNTIME_PATH}/secrets.json`,
         JSON.stringify({
           apiKey: "secret-key-12345",
           dbPassword: "supersecret",
@@ -49,8 +50,8 @@ export function main() {
       );
 
       // Verify structure
-      const alphaExists = await env.fileExists("Portals/project-alpha/src/main.ts");
-      const betaExists = await env.fileExists("Portals/project-beta/src/main.ts");
+      const alphaExists = await env.fileExists(`${DEFAULT_PORTALS_PATH}/project-alpha/src/main.ts`);
+      const betaExists = await env.fileExists(`${DEFAULT_PORTALS_PATH}/project-beta/src/main.ts`);
       assertEquals(alphaExists, true, "Alpha portal should exist");
       assertEquals(betaExists, true, "Beta portal should exist");
     });
@@ -75,7 +76,7 @@ export function main() {
         db: env.db,
       });
 
-      const filePath = join(env.tempDir, "Portals/project-alpha/src/main.ts");
+      const filePath = join(env.tempDir, `${DEFAULT_PORTALS_PATH}/project-alpha/src/main.ts`);
       const context = await contextLoader.loadWithLimit([filePath]);
 
       // Should be able to load context from portal
@@ -89,7 +90,7 @@ export function main() {
       // that's done at a higher level by the execution loop's file access policies
       // This test validates that we can detect out-of-portal file access attempts
 
-      const secretPath = join(env.tempDir, ".exa/secrets.json");
+      const secretPath = join(env.tempDir, `${DEFAULT_RUNTIME_PATH}/secrets.json`);
 
       // Log an access attempt (simulating what the security layer would do)
       // logActivity(actor, actionType, target, payload, traceId, agentRole)
@@ -118,8 +119,8 @@ export function main() {
     // Test 3: Symlink validation
     await t.step("Test 3: Portal symlinks validated", async () => {
       // Create symlink inside portal pointing outside
-      const symlinkPath = join(env.tempDir, "Portals/project-alpha/sneaky_link");
-      const targetPath = join(env.tempDir, ".exa/secrets.json");
+      const symlinkPath = join(env.tempDir, `${DEFAULT_PORTALS_PATH}/project-alpha/sneaky_link`);
+      const targetPath = join(env.tempDir, `${DEFAULT_RUNTIME_PATH}/secrets.json`);
 
       try {
         await Deno.symlink(targetPath, symlinkPath);
@@ -127,7 +128,7 @@ export function main() {
         // Symlink escape attempts should be detected by security layer
         // Log what a security check would record
         const resolvedPath = await Deno.realPath(symlinkPath);
-        const portalRoot = join(env.tempDir, "Portals/project-alpha");
+        const portalRoot = join(env.tempDir, `${DEFAULT_PORTALS_PATH}/project-alpha`);
 
         if (!resolvedPath.startsWith(portalRoot)) {
           env.db.logActivity(
@@ -165,7 +166,7 @@ export function main() {
       assertExists(denial, "portal access audit must retain the denial event");
       const payload = JSON.parse(denial.payload);
       assertEquals(payload.portal, "project-alpha");
-      assertEquals(payload.attempted_path, join(env.tempDir, ".exa/secrets.json"));
+      assertEquals(payload.attempted_path, join(env.tempDir, `${DEFAULT_RUNTIME_PATH}/secrets.json`));
     });
 
     // Test 5: Execution respects portal boundaries
@@ -182,7 +183,7 @@ export function main() {
           {
             tool: McpToolName.WRITE_FILE,
             params: {
-              path: "Portals/project-alpha/src/new_file.ts",
+              path: `${DEFAULT_PORTALS_PATH}/project-alpha/src/new_file.ts`,
               content: "export const x = 1;",
             },
           },
@@ -206,8 +207,8 @@ export function main() {
 
       // Test that a request with portal alpha shouldn't access beta files
       // The ContextLoader loads files - portal boundaries are enforced at higher level
-      const betaFile = join(env.tempDir, "Portals/project-beta/src/main.ts");
-      const alphaRoot = join(env.tempDir, "Portals/project-alpha");
+      const betaFile = join(env.tempDir, `${DEFAULT_PORTALS_PATH}/project-beta/src/main.ts`);
+      const alphaRoot = join(env.tempDir, `${DEFAULT_PORTALS_PATH}/project-alpha`);
 
       // Simulate boundary check
       const isOutsidePortal = !betaFile.startsWith(alphaRoot);
@@ -240,7 +241,7 @@ export function main() {
       };
 
       await env.writeFile(
-        "Portals/project-alpha/.portal.json",
+        `${DEFAULT_PORTALS_PATH}/project-alpha/.portal.json`,
         JSON.stringify(portalConfig, null, 2),
       );
 
@@ -264,8 +265,8 @@ Deno.test("[security] Integration: Portal Access - Nested portal structure", asy
 
   try {
     // Create nested portal structure
-    await env.writeFile("Portals/org/team-a/project/src/main.ts", "// Team A");
-    await env.writeFile("Portals/org/team-b/project/src/main.ts", "// Team B");
+    await env.writeFile(`${DEFAULT_PORTALS_PATH}/org/team-a/project/src/main.ts`, "// Team A");
+    await env.writeFile(`${DEFAULT_PORTALS_PATH}/org/team-b/project/src/main.ts`, "// Team B");
 
     const { traceId } = await env.createRequest(
       "Work on team-a project",
@@ -283,10 +284,10 @@ Deno.test("[security] Integration: Portal Access - Portal with dot files", async
 
   try {
     // Create portal with various dot files
-    await env.writeFile("Portals/dotfiles/.gitignore", "node_modules/");
-    await env.writeFile("Portals/dotfiles/.env", "SECRET=hidden");
-    await env.writeFile("Portals/dotfiles/.env.example", "SECRET=");
-    await env.writeFile("Portals/dotfiles/src/main.ts", "// Main");
+    await env.writeFile(`${DEFAULT_PORTALS_PATH}/dotfiles/.gitignore`, "node_modules/");
+    await env.writeFile(`${DEFAULT_PORTALS_PATH}/dotfiles/.env`, "SECRET=hidden");
+    await env.writeFile(`${DEFAULT_PORTALS_PATH}/dotfiles/.env.example`, "SECRET=");
+    await env.writeFile(`${DEFAULT_PORTALS_PATH}/dotfiles/src/main.ts`, "// Main");
 
     const { traceId } = await env.createRequest(
       "Check gitignore settings",
@@ -304,9 +305,9 @@ Deno.test("[security] Integration: Portal Access - Portal with dot files", async
 
     // Load only safe files (exclude .env)
     const safeFiles = [
-      join(env.tempDir, "Portals/dotfiles/.gitignore"),
-      join(env.tempDir, "Portals/dotfiles/.env.example"),
-      join(env.tempDir, "Portals/dotfiles/src/main.ts"),
+      join(env.tempDir, `${DEFAULT_PORTALS_PATH}/dotfiles/.gitignore`),
+      join(env.tempDir, `${DEFAULT_PORTALS_PATH}/dotfiles/.env.example`),
+      join(env.tempDir, `${DEFAULT_PORTALS_PATH}/dotfiles/src/main.ts`),
     ];
     const context = await contextLoader.loadWithLimit(safeFiles);
 
@@ -326,7 +327,7 @@ Deno.test("[security] Integration: Portal Access - Empty portal", async () => {
 
   try {
     // Create empty portal directory
-    await Deno.mkdir(join(env.tempDir, "Portals/empty-project"), { recursive: true });
+    await Deno.mkdir(join(env.tempDir, `${DEFAULT_PORTALS_PATH}/empty-project`), { recursive: true });
 
     const { traceId } = await env.createRequest(
       "Initialize the project",

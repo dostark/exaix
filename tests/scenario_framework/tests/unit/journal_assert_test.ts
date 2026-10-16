@@ -11,8 +11,8 @@
  * @related-files [tests/scenario_framework/runner/step_executor.ts, tests/scenario_framework/schema/step_schema.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertObjectMatch } from "@std/assert";
-import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { executeScenarioStep, substituteRuntimeVars } from "../../runner/step_executor.ts";
 import { ScenarioStepSchema, ScenarioStepType } from "../../schema/step_schema.ts";
@@ -58,8 +58,8 @@ async function withJournal(
 ): Promise<void> {
   const ws = await Deno.makeTempDir({ prefix: "journal-assert-" });
   try {
-    await Deno.mkdir(join(ws, ".exa"), { recursive: true });
-    const db = new Database(join(ws, ".exa", "journal.db"));
+    await Deno.mkdir(pathBuilders.runtimePath(ws), { recursive: true });
+    const db = new Database(pathBuilders.runtimePath(ws, "journal.db"));
     db.prepare(
       "CREATE TABLE activity (rowid INTEGER PRIMARY KEY, trace_id TEXT, action_type TEXT, payload TEXT)",
     ).run();
@@ -448,4 +448,13 @@ Deno.test("[journal_assert] an invalid payload path is rejected by the schema", 
     payload_equals: [{ path: "stepId; DROP TABLE", value: "x" }],
   });
   assertEquals(result.success, true, "schema allows dotted path strings (path safety is enforced at execution)");
+});
+
+Deno.test("[step-executor] substituteRuntimeVars expands the workspace root in an arg", () => {
+  const spec = substituteRuntimeVars(
+    { executable: "ls", args: ["$WORKSPACE_ROOT/data", "--color"] },
+    "/tmp/ws-root",
+  );
+  assertEquals(spec.args[0], "/tmp/ws-root/data", "$WORKSPACE_ROOT resolves to the run's root");
+  assertEquals(spec.args[1], "--color", "an arg without a token is unchanged");
 });

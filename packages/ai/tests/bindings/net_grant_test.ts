@@ -9,7 +9,8 @@
  * @related-files [packages/ai/src/bindings/net_grant.ts, packages/ai/src/bindings/binding_layers.ts]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { assertEquals, assertFalse, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { createMockConfig } from "@exaix/testing";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -79,7 +80,7 @@ Deno.test("[net] a set allow_net is returned unchanged, including the empty arra
     });
     const grant = await computeStartNetGrant(explicit);
     assertEquals(grant, ["only.example.com:8080"]);
-    assertEquals(grant.includes("other.example.com"), false);
+    assertFalse(grant.includes("other.example.com"));
 
     const blocked = configWith(tempDir, {
       system: { root: tempDir, log_level: "info" as never, schema_version: "1.0.0", allow_net: [] },
@@ -118,7 +119,7 @@ Deno.test("[net][security] an invalid catalog endpoint is rejected before spawn"
 Deno.test("[net][security] a symlinked catalog overlay is rejected", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "net-grant-" });
   try {
-    const overlaysDir = join(tempDir, ".exa", "overlays");
+    const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     await Deno.mkdir(overlaysDir, { recursive: true });
     const outsideTarget = join(tempDir, "outside.json");
     await Deno.writeTextFile(outsideTarget, JSON.stringify({ schema: 1, catalog: {} }));
@@ -133,7 +134,7 @@ Deno.test("[net][security] a symlinked catalog overlay is rejected", async () =>
 Deno.test("[net] daemon overlay catalog hosts are included in the grant", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "net-grant-" });
   try {
-    const overlaysDir = join(tempDir, ".exa", "overlays");
+    const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     await Deno.mkdir(overlaysDir, { recursive: true });
     await Deno.writeTextFile(
       join(overlaysDir, "svc.json"),

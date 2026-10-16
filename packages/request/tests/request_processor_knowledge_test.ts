@@ -9,7 +9,8 @@
  * @related-files ["packages/request/src/processor.ts", "packages/core/src/types/constants.ts", "packages/core/src/types/i_portal_knowledge_service.ts"]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildPortalKnowledgeSummary, RequestProcessor } from "@exaix/request";
 import { AgentRunner } from "@exaix/execution";
@@ -185,7 +186,7 @@ Deno.test("[RequestProcessor] resolves portal knowledge before execution and inj
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal" });
 
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
+    const blueprintPath = pathBuilders.agentsPath(env.blueprintsPath, "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);
@@ -207,7 +208,7 @@ Deno.test("[RequestProcessor] passes injected knowledge to agent during prompt g
   try {
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal", agent_role: "know-agent" });
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Agents", "know-agent.md");
+    const blueprintPath = pathBuilders.agentsPath(env.blueprintsPath, "know-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# know-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);
@@ -229,7 +230,7 @@ Deno.test("[RequestProcessor] handles knowledge resolution failure gracefully", 
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal" });
 
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
+    const blueprintPath = pathBuilders.agentsPath(env.blueprintsPath, "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     // Should not throw
@@ -237,7 +238,7 @@ Deno.test("[RequestProcessor] handles knowledge resolution failure gracefully", 
 
     // Check captured prompt: knowledge markers should be absent
     const lastPrompt = env.capturedPrompts[env.capturedPrompts.length - 1];
-    assertEquals(lastPrompt.includes("## Portal Knowledge Summary"), false);
+    assertFalse(lastPrompt.includes("## Portal Knowledge Summary"));
   } finally {
     await env.cleanup();
   }
@@ -251,7 +252,7 @@ Deno.test("[RequestProcessor] skips knowledge resolution if request specifies no
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: undefined });
 
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
+    const blueprintPath = pathBuilders.agentsPath(env.blueprintsPath, "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);
@@ -270,7 +271,7 @@ Deno.test("[RequestProcessor] calls getRelevantContext when portal knowledge res
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal" });
 
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
+    const blueprintPath = pathBuilders.agentsPath(env.blueprintsPath, "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);
@@ -285,7 +286,7 @@ Deno.test("[RequestProcessor] calls getRelevantContext when portal knowledge res
     // The prompt should contain the relevant context instead of the full summary
     const lastPrompt = env.capturedPrompts[env.capturedPrompts.length - 1];
     assertStringIncludes(lastPrompt, "Relevant: TypeScript service");
-    assertEquals(lastPrompt.includes("## Portal Knowledge Summary"), false);
+    assertFalse(lastPrompt.includes("## Portal Knowledge Summary"));
   } finally {
     await env.cleanup();
   }

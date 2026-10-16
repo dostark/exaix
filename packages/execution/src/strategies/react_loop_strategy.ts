@@ -23,7 +23,7 @@ import type {
 import { TOOL_CHOICE_TYPE_AUTO } from "@exaix/ai/types.ts";
 import { PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
 import type { INativePromptSection } from "@exaix/ai";
-import { PromptBudgetAllocator, SkillSubmissionKind } from "@exaix/core";
+import { PromptBudgetAllocator, SkillSubmissionKind, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import type { IProviderToolCall } from "@exaix/ai/providers";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { ITool, IToolResult } from "@exaix/core/types";
@@ -77,7 +77,6 @@ import {
   RESPONSE_STOP_REASON_MAX_TOKENS,
   RESPONSE_STOP_REASON_REFUSAL,
   STREAMING_EVENT_HEARTBEAT,
-  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
   ToolsRoundLoop,
   ToolsRoundMode,
 } from "@exaix/core";
@@ -1456,9 +1455,13 @@ The plan step is finished once every file it names has been read. Then stop call
     while ((match = codeBlockRegex.exec(response)) !== null) {
       try {
         const block = match[1].trim();
-        const parsed = parseToml(block) as { actions?: unknown };
+        const parsedRoot = parseToml(block) as JSONValue;
 
-        if (parsed === null || typeof parsed !== "object" || !Array.isArray(parsed.actions)) {
+        if (parsedRoot === null || typeof parsedRoot !== "object" || Array.isArray(parsedRoot)) {
+          continue;
+        }
+        const parsed = parsedRoot as Record<string, JSONValue>;
+        if (!Array.isArray(parsed.actions)) {
           continue;
         }
 
@@ -1466,11 +1469,11 @@ The plan step is finished once every file it names has been read. Then stop call
         // registry sees it. A malformed or hostile action is rejected here and journaled
         // as a parse error, never executed.
         for (const act of parsed.actions) {
-          if (act === null || typeof act !== "object") {
+          if (act === null || typeof act !== "object" || Array.isArray(act)) {
             parseErrors.push("ReAct action is not an object");
             continue;
           }
-          const candidate = act as { tool?: unknown; params?: unknown; description?: unknown };
+          const candidate = act as Record<string, JSONValue>;
           const validated = PlanActionSchema.safeParse({
             tool: candidate.tool,
             params: candidate.params ?? {},

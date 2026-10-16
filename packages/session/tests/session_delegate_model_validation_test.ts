@@ -5,7 +5,7 @@
  * @architectural-layer Services
  * @related-files [packages/session/src/session_delegate_service.ts]
  */
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertFalse, assertRejects } from "@std/assert";
 import { SessionDelegateService } from "../src/session_delegate_service.ts";
 import type { IPrepareBriefInput } from "../src/i_session_delegate.ts";
 
@@ -55,6 +55,6 @@ Deno.test("[step132.5] prepareBrief accepts resolved provider:model string", asy
     await service.prepareBrief(input);
   } catch (e) {
     const msg = (e as Error).message;
-    assertEquals(msg.includes("model must be pre-resolved"), false);
+    assertFalse(msg.includes("model must be pre-resolved"));
   }
 });

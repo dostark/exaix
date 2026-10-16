@@ -6,6 +6,7 @@
  *   decision enum, and the gate/decision compatibility surface.
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH, ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertThrows } from "@std/assert";
 import {
   CliDelegateConfigSchema,
@@ -33,8 +34,8 @@ const VALID_BRIEF = {
   gate: "plan_review",
   tool: "claude-code",
   objective: "Review the generated plan and approve or amend it.",
-  artifact_ref: "Workspace/Plans/req-01_plan.md",
-  permitted_paths: ["Workspace/Plans/**"],
+  artifact_ref: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/req-01_plan.md`,
+  permitted_paths: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/**`],
   token_budget: VALID_BUDGET,
   resume_token: "tok-abc-123",
   deadline: "2026-07-01T00:00:00.000Z",
@@ -140,7 +141,7 @@ Deno.test("[session_delegate] dogfood.claude.toml preset parses via ConfigSchema
       log_level: "info",
       allow_net: ["api.anthropic.com", "api.openai.com", "localhost:11434"],
     },
-    paths: { workspace: "Workspace", portals: "Portals", memory: "Memory" },
+    paths: { ...ExaPathDefaults },
     ai: { provider: "ollama", model: "ollama/llama3" },
     portals: [{
       alias: "exaix-self",

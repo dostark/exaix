@@ -3,11 +3,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = []
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # swe_tasks eval cell on the OpenCode Zen FREE tier using the WEAKEST free model by coding
 # benchmark (Artificial Analysis Coding Index 33.4): opencode/north-mini-code-free. A weak model
 # leaves headroom below the corpus ceiling, so harness lift is measurable. Zero cost.

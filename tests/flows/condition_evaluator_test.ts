@@ -12,8 +12,7 @@ import { ConditionEvaluator, type IConditionContext } from "@exaix/flow";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IStepResult } from "@exaix/flow";
 import type { JSONValue } from "@exaix/core/types";
-import { DEFAULT_FLOW_VERSION } from "@exaix/core";
-
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 const createContext = (
   results: Record<string, { success: boolean; content?: string; data?: JSONValue }> = {},
 ): IConditionContext => ({

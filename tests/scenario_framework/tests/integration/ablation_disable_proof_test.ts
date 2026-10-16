@@ -17,7 +17,8 @@
  * @related-files [apps/daemon/main.ts, packages/core/src/skills/skills.ts, packages/quality-gate/src/request_quality_gate.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { assertArrayIncludes, assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { parse } from "@std/toml";
 import { fromFileUrl } from "@std/path";
@@ -67,7 +68,7 @@ Deno.test("[AblationDisableProof] skills preset: skills.inject_in_prompt=false â
   const { db, tempDir, cleanup } = await initTestDbService();
   try {
     const logger = new EventLogger({ db });
-    const memoryDir = join(tempDir, "Memory");
+    const memoryDir = pathBuilders.memoryPath(tempDir);
     const skillsService = new SkillsService({ memoryDir }, db, undefined, logger);
     await skillsService.initialize();
 
@@ -79,9 +80,8 @@ Deno.test("[AblationDisableProof] skills preset: skills.inject_in_prompt=false â
     await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
 
     const actions = await journalActions(db);
-    assertEquals(
+    assertFalse(
       actions.includes(DomainEventType.SkillsMatchCompleted),
-      false,
       "skills ablation must leave no skills.match_completed in the journal",
     );
   } finally {
@@ -93,7 +93,7 @@ Deno.test("[AblationDisableProof] skills control: inject_in_prompt=true â†’ skil
   const { db, tempDir, cleanup } = await initTestDbService();
   try {
     const logger = new EventLogger({ db });
-    const memoryDir = join(tempDir, "Memory");
+    const memoryDir = pathBuilders.memoryPath(tempDir);
     const skillsService = new SkillsService({ memoryDir }, db, undefined, logger);
     await skillsService.initialize();
 
@@ -105,9 +105,9 @@ Deno.test("[AblationDisableProof] skills control: inject_in_prompt=true â†’ skil
     await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
 
     const actions = await journalActions(db);
-    assertEquals(
-      actions.includes(DomainEventType.SkillsMatchCompleted),
-      true,
+    assertArrayIncludes(
+      actions,
+      [DomainEventType.SkillsMatchCompleted],
       "with skills enabled the journal must contain skills.match_completed",
     );
   } finally {
@@ -132,9 +132,8 @@ Deno.test("[AblationDisableProof] quality-gate preset: quality_gate.enabled=fals
     });
 
     const actions = await journalActions(db);
-    assertEquals(
+    assertFalse(
       actions.includes("request.quality_assessed"),
-      false,
       "gate ablation must leave no request.quality_assessed in the journal",
     );
   } finally {
@@ -157,9 +156,9 @@ Deno.test("[AblationDisableProof] quality-gate control: enabled=true â†’ request
     });
 
     const actions = await journalActions(db);
-    assertEquals(
-      actions.includes("request.quality_assessed"),
-      true,
+    assertArrayIncludes(
+      actions,
+      ["request.quality_assessed"],
       "with the gate enabled the journal must contain request.quality_assessed",
     );
   } finally {

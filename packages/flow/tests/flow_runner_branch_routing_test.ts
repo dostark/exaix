@@ -3,7 +3,7 @@
  * @path packages/flow/tests/flow_runner_branch_routing_test.ts
  * @description Verifies run-local routing, selective skip propagation, and terminal branch failures.
  */
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { FlowInputSource, FlowStepExecutionMode, FlowStepOnErrorAction } from "@exaix/core";
 import { BranchStepHandler, FlowExecutionError, FlowRunner } from "@exaix/flow";
 import { BRANCH_OUTPUT, BRANCH_TRACE, BranchTestAgent, branchTestFlow } from "./helpers/branch_controls.ts";
@@ -19,8 +19,8 @@ Deno.test("[runner] branch skips all unchosen pipelines and aggregates only the 
   });
   assertEquals(agent.requests.map((request) => request.flowStepId), ["classify", "bug", "bug-child", "join"]);
   assertStringIncludes(agent.requests.at(-1)!.userPrompt, "Output bug-child");
-  assertEquals(agent.requests.at(-1)!.userPrompt.includes("Output feature"), false);
-  assertEquals(agent.requests.at(-1)!.userPrompt.includes("Output other"), false);
+  assertFalse(agent.requests.at(-1)!.userPrompt.includes("Output feature"));
+  assertFalse(agent.requests.at(-1)!.userPrompt.includes("Output other"));
   for (const id of ["feature", "other", "feature-child", "other-child"]) {
     assertEquals(result.stepResults.get(id)?.skipCode, "branch_not_taken");
   }

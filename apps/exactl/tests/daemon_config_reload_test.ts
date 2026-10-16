@@ -10,8 +10,8 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
+import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
 import { FileWatcher } from "../../../apps/daemon/src/watcher.ts";
-import { ExaPathDefaults } from "@exaix/core";
 import type { ConfigReloadLogger } from "@exaix/core/config";
 import { createConfigReloadHandler } from "@exaix/core/config";
 import { LogLevel } from "@exaix/core";
@@ -24,37 +24,7 @@ Deno.test("Daemon: Config Reloading on File Change", async () => {
   const configPath = join(tempDir, "config.toml");
 
   // Write initial config
-  const initialConfig = `
-[system]
-version = "1.0.0"
-log_level = "info"
-
-[paths]
-workspace = "${ExaPathDefaults.workspace}"
-portals = "${ExaPathDefaults.portals}"
-# ... minimal required paths
-runtime = "${ExaPathDefaults.runtime}"
-memory = "${ExaPathDefaults.memory}"
-blueprints = "${ExaPathDefaults.blueprints}"
-active = "${ExaPathDefaults.active}"
-requests = "${ExaPathDefaults.requests}"
-archive = "${ExaPathDefaults.archive}"
-plans = "${ExaPathDefaults.plans}"
-rejected = "${ExaPathDefaults.rejected}"
-agents = "${ExaPathDefaults.agents}"
-flows = "${ExaPathDefaults.flows}"
-memoryProjects = "${ExaPathDefaults.memoryProjects}"
-memoryExecution = "${ExaPathDefaults.memoryExecution}"
-memoryIndex = "${ExaPathDefaults.memoryIndex}"
-memorySkills = "${ExaPathDefaults.memorySkills}"
-memoryPending = "${ExaPathDefaults.memoryPending}"
-memoryTasks = "${ExaPathDefaults.memoryTasks}"
-memoryGlobal = "${ExaPathDefaults.memoryGlobal}"
-
-[watcher]
-debounce_ms = 50
-stability_check = false
-`;
+  const initialConfig = readConfigFixture("exactl-daemon-config-reload");
   await Deno.writeTextFile(configPath, initialConfig.trim());
 
   // 2. Initialize Services

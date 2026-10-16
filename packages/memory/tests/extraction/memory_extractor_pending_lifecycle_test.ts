@@ -7,6 +7,7 @@
  * discovery, parsing, and retrieval of agent-suggested learnings from the filesystem.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 
@@ -69,7 +70,7 @@ function makeService(root: string, overrides: {
 }
 
 async function ensurePendingDir(config: { system: { root: string }; paths: { memory: string } }): Promise<string> {
-  const pendingDir = join(config.system.root, config.paths.memory, "Pending");
+  const pendingDir = pathBuilders.memoryPendingPath(join(config.system.root, config.paths.memory));
   await Deno.mkdir(pendingDir, { recursive: true });
   return pendingDir;
 }

@@ -17,7 +17,7 @@
  * ]
  */
 
-import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { ReActLoopStrategy } from "../src/strategies/react_loop_strategy.ts";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
@@ -340,7 +340,7 @@ Deno.test(
       String(calls[1].options!.nativeConversation!.turns[0].toolResultContent),
       "OBSERVATION_SENTINEL",
     );
-    assertEquals(calls[1].prompt.includes("OBSERVATION_SENTINEL"), false);
+    assertFalse(calls[1].prompt.includes("OBSERVATION_SENTINEL"));
     assertEquals(result.usage?.cost_usd, null);
     assertEquals(result.usage?.cost_source, "unknown");
     assertEquals(

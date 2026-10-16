@@ -4,7 +4,7 @@
  * @module CheckEditionGraph
  * @path scripts/check_edition_graph.ts
  * @description Edition-leak graph gate — an INDEPENDENT, AST-grounded double-check of the
- *   text-based `[edition-leak]` rule in scripts/check_code_style.ts. It resolves an entry's
+ *   text-based `[edition-leak]` rule in `@exaix/lint-rules`. It resolves an entry's
  *   real module graph via `deno info --json` and flags any STATIC (non-dynamic) runtime
  *   `code` edge from a module of one edition tier into a module of a HIGHER tier
  *   (Solo < Team < Enterprise). Because it reads the resolved graph (not source regex), a bug
@@ -17,15 +17,15 @@
  *   Defaults to the daemon + exactl entrypoints. Exits non-zero on any static leak.
  *   It deliberately MIRRORS the static rule's exemptions: edition-gated DYNAMIC imports
  *   (`isDynamic`) and type-only edges (no `code` edge) are NOT leaks — exactly as
- *   check_code_style.ts exempts them — so the two gates agree on a clean tree (verified: 0).
+ *   the style checker exempts them — so the two gates agree on a clean tree (verified: 0).
  *
  * @architectural-layer Script
- * @dependencies [@std/flags, scripts/check_code_style.ts]
- * @related-files [scripts/check_code_style.ts, scripts/ci.ts, dev/Exaix_Edition_Architecture.md]
+ * @dependencies [@std/flags, @exaix/lint-rules]
+ * @related-files [packages/lint-rules/src/exaix/check_code_style.ts, scripts/ci.ts, dev/Exaix_Edition_Architecture.md]
  */
 
 import { parse } from "@std/flags";
-import { editionTierOfPath } from "./check_code_style.ts";
+import { EDITION_TIERS, editionTierOfPath } from "@exaix/lint-rules";
 
 /** A single resolved runtime edge in the module graph, reduced to what the gate needs. */
 export interface IGraphEdge {
@@ -58,8 +58,8 @@ export function findStaticEditionLeaks(edges: IGraphEdge[]): IStaticEditionLeak[
   const leaks: IStaticEditionLeak[] = [];
   for (const edge of edges) {
     if (edge.isDynamic) continue; // edition-gated dynamic load — the sanctioned exception
-    const fromTier = editionTierOfPath(edge.from);
-    const toTier = editionTierOfPath(edge.to);
+    const fromTier = editionTierOfPath(edge.from, EDITION_TIERS);
+    const toTier = editionTierOfPath(edge.to, EDITION_TIERS);
     if (fromTier === null || toTier === null) continue; // untiered endpoint
     if (toTier > fromTier) {
       leaks.push({ ...edge, fromTier, toTier });

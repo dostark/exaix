@@ -5,7 +5,7 @@
  * is by design. Every Opt<T, R> usage must include a codified
  * reason proving the decision was reviewed, not mechanical.
  * @architectural-layer Core
- * @related-files [scripts/check_optional_params.ts]
+ * @related-files [packages/lint-rules/src/rules/whole_tree/optional_params.ts]
  */
 
 /**

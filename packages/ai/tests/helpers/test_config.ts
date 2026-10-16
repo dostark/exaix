@@ -7,9 +7,10 @@
  * consistent model names and base URLs for Mock/Live backend testing.
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { type AiConfig, AiConfigSchema, type Config, ConfigSchema } from "@exaix/schemas";
 
-import { DEFAULT_AI_RETRY_AFTER_MAX_MS, ExaPathDefaults, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import { DEFAULT_AI_RETRY_AFTER_MAX_MS, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import { AnalysisMode } from "@exaix/core/request";
 import {
   ConfidenceAssessmentLevel,

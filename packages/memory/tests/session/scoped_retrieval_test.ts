@@ -8,7 +8,7 @@
  * legacy unscoped (3-argument) calls must keep their existing cross-portal behavior.
  * @architectural-layer Tests
  */
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { ExecutionStatus, MemoryType } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import { MemoryBankService, SessionMemoryService } from "@exaix/memory";
@@ -83,7 +83,7 @@ Deno.test("[SessionMemoryService] scoped lookup denies another portal's pattern 
     const sources = memories.filter((m) => m.type === MemoryType.PATTERN).map((m) => m.source);
 
     assertEquals(sources.includes(`pattern:${patternA.id}`), true, "portal-a's own pattern must surface");
-    assertEquals(sources.includes(`pattern:${patternB.id}`), false, "portal-b's pattern must never leak into scope");
+    assertFalse(sources.includes(`pattern:${patternB.id}`), "portal-b's pattern must never leak into scope");
   } finally {
     await cleanup();
   }
@@ -165,7 +165,7 @@ Deno.test("[SessionMemoryService] scoped lookup denies a PENDING global learning
     const sources = memories.filter((m) => m.type === MemoryType.LEARNING).map((m) => m.source);
 
     assertEquals(sources.includes(`learning:${approved.id}`), true);
-    assertEquals(sources.includes(`learning:${pending.id}`), false, "a PENDING learning must never surface");
+    assertFalse(sources.includes(`learning:${pending.id}`), "a PENDING learning must never surface");
   } finally {
     await cleanup();
   }

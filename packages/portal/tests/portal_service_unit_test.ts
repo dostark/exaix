@@ -6,6 +6,7 @@
  * @description Unit tests for the core PortalService (src/services/portal.ts).
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -90,7 +91,7 @@ async function createPortalTestEnv() {
   await ensureDir(portalsDir);
 
   // Create memory projects directory for context cards
-  const memoryProjectsDir = join(tempDir, config.paths.memory, "Projects");
+  const memoryProjectsDir = pathBuilders.memoryProjectsPath(join(tempDir, config.paths.memory));
   await ensureDir(memoryProjectsDir);
 
   return {

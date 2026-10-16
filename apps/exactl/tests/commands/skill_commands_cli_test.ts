@@ -10,9 +10,12 @@
  * @related-files [apps/exactl/src/command_builders/skill_commands.ts, apps/exactl/src/commands/memory_commands.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { migrateDaemonWorkspace } from "../../../../tests/integration/helpers/daemon_config.ts";
+import { readConfigFixture } from "../../../../tests/integration/helpers/config_fixture.ts";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..", "..");
 const EXACTL = join(REPO_ROOT, "apps", "exactl", "src", "exactl.ts");
@@ -32,7 +35,7 @@ interface IWorkspace {
 async function workspace(): Promise<IWorkspace> {
   const root = await Deno.makeTempDir({ prefix: "exactl-skill-cli-" });
   const configPath = join(root, "exa.config.toml");
-  await Deno.writeTextFile(configPath, `[system]\nroot = "${root}"\nversion = "1.0.0"\nlog_level = "error"\n`);
+  await Deno.writeTextFile(configPath, readConfigFixture("exactl-skill-commands", { root }));
   await migrateDaemonWorkspace(root);
   return {
     root,
@@ -104,7 +107,9 @@ for (const alias of ["skills", "memory skill"] as const) {
       const unknown = await ws.run(alias, ["deprecate", "no-such-skill"]);
       assertEquals(unknown.code, 1);
 
-      await Deno.remove(join(ws.root, "Memory", "Skills", "learned", slug), { recursive: true });
+      await Deno.remove(pathBuilders.memoryPath(ws.root, DEFAULT_SKILLS_MEMORY_PATH, "learned", slug), {
+        recursive: true,
+      });
       const missing = await ws.run(alias, ["validate", slug]);
       assertEquals(missing.code, 1, "a deleted skill is unknown to validate");
       const revisions = await ws.run(alias, ["revisions", slug, "--format", "json"]);
@@ -124,7 +129,7 @@ for (const alias of ["skills", "memory skill"] as const) {
 Deno.test("[cli] validate reports a broken folder with typed reasons and exits 1 without writing", async () => {
   const ws = await workspace();
   try {
-    const broken = join(ws.root, "Memory", "Skills", "learned", "broken-skill");
+    const broken = pathBuilders.memoryPath(ws.root, DEFAULT_SKILLS_MEMORY_PATH, "learned", "broken-skill");
     await Deno.mkdir(broken, { recursive: true });
     await Deno.writeTextFile(join(broken, "SKILL.md"), "no frontmatter SECRET_CONTENT");
     const result = await ws.run("skills", ["validate", "--format", "json"]);

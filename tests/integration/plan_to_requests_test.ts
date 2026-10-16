@@ -10,13 +10,15 @@
  * @related-files [scripts/plan_to_requests.ts]
  */
 
-import { assertEquals, assertExists, assertMatch } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import { assertArrayIncludes, assertEquals, assertExists, assertFalse, assertMatch } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYamlRaw } from "@std/yaml";
 import { parseFrontmatter } from "./helpers/parse_frontmatter.ts";
 import { RequestSchema } from "@exaix/schemas/request.ts";
 import { BlueprintResolver, RequestProcessor } from "@exaix/request";
-import { RequestKind } from "@exaix/core";
+import { type JSONObject, RequestKind } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import {
   CONTEXT_FIXTURE_PATH,
@@ -99,9 +101,9 @@ Deno.test("[plan-to-requests] files named <slug>-step-<N>.md", async () => {
       if (entry.isFile) entries.push(entry.name);
     }
 
-    assertEquals(entries.includes("phase-nn-fixture-step-1.md"), true);
-    assertEquals(entries.includes("phase-nn-fixture-step-2.md"), true);
-    assertEquals(entries.includes("phase-nn-fixture-step-3.md"), true);
+    assertArrayIncludes(entries, ["phase-nn-fixture-step-1.md"]);
+    assertArrayIncludes(entries, ["phase-nn-fixture-step-2.md"]);
+    assertArrayIncludes(entries, ["phase-nn-fixture-step-3.md"]);
   } finally {
     await Deno.remove(tmpDir, { recursive: true });
   }
@@ -353,21 +355,21 @@ Deno.test("[plan-to-requests][context] doc-shaped fixture emits Why This Step Ex
       "the why block leads the body, before Actions",
     );
     assertEquals(step1.includes("**The Problem.**"), true, "Executive Summary carried inline");
-    assertEquals(step1.includes("outside the bounded summary"), false, "Goal-paragraph bounding holds");
+    assertFalse(step1.includes("outside the bounded summary"), "Goal-paragraph bounding holds");
     assertEquals(
       step1.includes("Keep requests concise per `scripts/plan_to_requests.ts` design."),
       true,
       "shared-token constraint bullet included",
     );
-    assertEquals(step1.includes("Never expose private submodule trees"), false, "non-matching bullet filtered");
-    assertEquals(step1.includes("### Relevant Design Decisions"), false, "no-overlap sub-block omitted");
+    assertFalse(step1.includes("Never expose private submodule trees"), "non-matching bullet filtered");
+    assertFalse(step1.includes("### Relevant Design Decisions"), "no-overlap sub-block omitted");
 
     // The second generated step overlaps nothing: still gets the summary (always-present why), no bullet lists.
     const step2 = await Deno.readTextFile(join(tmpDir, "phase-nn-fixture-with-context-step-2.md"));
     assertEquals(step2.includes("## Why This Step Exists"), true);
     assertEquals(step2.includes("**The Goal.**"), true);
-    assertEquals(step2.includes("### Relevant Constraints"), false);
-    assertEquals(step2.includes("### Relevant Design Decisions"), false);
+    assertFalse(step2.includes("### Relevant Constraints"));
+    assertFalse(step2.includes("### Relevant Design Decisions"));
   } finally {
     await Deno.remove(tmpDir, { recursive: true });
   }
@@ -381,9 +383,8 @@ Deno.test("[plan-to-requests][context] legacy minimal fixture output unchanged �
 
     for (const stepNum of [1, 2, 3]) {
       const content = await Deno.readTextFile(join(tmpDir, `phase-nn-fixture-step-${stepNum}.md`));
-      assertEquals(
+      assertFalse(
         content.includes("## Why This Step Exists"),
-        false,
         `step ${stepNum}: docs without an Executive Summary keep legacy output`,
       );
     }
@@ -441,14 +442,14 @@ Deno.test("[plan-to-requests][plan-context] generator copies the phase doc to .e
     const { code, stderr } = await runGenerator([
       CONTEXT_FIXTURE_PATH,
       "--out-dir",
-      join(wt, "Workspace", "Requests"),
+      pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH),
       "--plan-context-root",
       wt,
     ]);
     assertEquals(code, 0);
     assertEquals(stderr, "");
 
-    const copied = await Deno.readTextFile(join(wt, ".exa", "PlanContext", `${CONTEXT_SLUG}.md`));
+    const copied = await Deno.readTextFile(pathBuilders.runtimePath(wt, "PlanContext", `${CONTEXT_SLUG}.md`));
     assertEquals(copied, await Deno.readTextFile(CONTEXT_FIXTURE_PATH), "copy is byte-identical to the source doc");
   } finally {
     await Deno.remove(wt, { recursive: true });
@@ -458,7 +459,7 @@ Deno.test("[plan-to-requests][plan-context] generator copies the phase doc to .e
 Deno.test("[plan-to-requests][plan-context] generated request body references the copied relative path", async () => {
   const wt = await makeFakeWorktree({ withGit: true });
   try {
-    const outDir = join(wt, "Workspace", "Requests");
+    const outDir = pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH);
     const { code } = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt]);
     assertEquals(code, 0);
 
@@ -474,14 +475,14 @@ Deno.test("[plan-to-requests][plan-context] generated request body references th
 Deno.test("[plan-to-requests][plan-context][hardened-shape] copy lands inside the plan-context root so containment holds by construction", async () => {
   const wt = await makeFakeWorktree({ withGit: true });
   try {
-    const outDir = join(wt, "Workspace", "Requests");
+    const outDir = pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH);
     const { code } = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt]);
     assertEquals(code, 0);
 
     // The file lives INSIDE the root (OpenCode permitted-path assertion satisfied),
     // and the pointer the request carries is RELATIVE — it resolves from the delegate's
     // cwd (this same root) without any absolute-path dependence.
-    const expected = join(wt, ".exa", "PlanContext", `${CONTEXT_SLUG}.md`);
+    const expected = pathBuilders.runtimePath(wt, "PlanContext", `${CONTEXT_SLUG}.md`);
     const stat = await Deno.stat(expected);
     assertEquals(stat.isFile, true);
     const request = await Deno.readTextFile(join(outDir, `${CONTEXT_SLUG}-step-1.md`));
@@ -500,13 +501,19 @@ Deno.test("[plan-context][relocation] repeated runs leave .git metadata and trac
   try {
     const excludePath = join(wt, ".git", "info", "exclude");
     await Deno.writeTextFile(excludePath, EXISTING_EXCLUDE);
-    const args = [CONTEXT_FIXTURE_PATH, "--out-dir", join(wt, "Workspace", "Requests"), "--plan-context-root", wt];
+    const args = [
+      CONTEXT_FIXTURE_PATH,
+      "--out-dir",
+      pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH),
+      "--plan-context-root",
+      wt,
+    ];
     assertEquals((await runGenerator(args)).code, 0);
     assertEquals((await runGenerator(args)).code, 0);
 
     assertEquals(await Deno.readTextFile(excludePath), EXISTING_EXCLUDE, ".git metadata must remain byte-identical");
     assertEquals(await Deno.readTextFile(join(wt, ".gitignore")), GITIGNORE, "tracked ignore file untouched");
-    const copied = join(wt, ".exa", "PlanContext", `${CONTEXT_SLUG}.md`);
+    const copied = pathBuilders.runtimePath(wt, "PlanContext", `${CONTEXT_SLUG}.md`);
     assertEquals((await Deno.stat(copied)).isFile, true, "copy must exist after every sampled run");
   } finally {
     await Deno.remove(wt, { recursive: true });
@@ -516,7 +523,7 @@ Deno.test("[plan-context][relocation] repeated runs leave .git metadata and trac
 Deno.test("[plan-to-requests][plan-context] --no-copy-doc skips the copy and the pointer line", async () => {
   const wt = await makeFakeWorktree({ withGit: true });
   try {
-    const outDir = join(wt, "Workspace", "Requests");
+    const outDir = pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH);
     const { code } = await runGenerator([
       CONTEXT_FIXTURE_PATH,
       "--out-dir",
@@ -529,7 +536,7 @@ Deno.test("[plan-to-requests][plan-context] --no-copy-doc skips the copy and the
 
     let threwNotFound = false;
     try {
-      await Deno.stat(join(wt, ".exa", "PlanContext"));
+      await Deno.stat(pathBuilders.runtimePath(wt, "PlanContext"));
     } catch {
       threwNotFound = true;
     }
@@ -555,8 +562,8 @@ Deno.test("[plan-to-requests][plan-context][regression] without --plan-context-r
   const wtB = await makeFakeWorktree({ withGit: false });
   try {
     const base = [CONTEXT_FIXTURE_PATH];
-    const plain = join(wtA, "Workspace", "Requests");
-    const noCopy = join(wtB, "Workspace", "Requests");
+    const plain = pathBuilders.workspacePath(wtA, DEFAULT_REQUESTS_PATH);
+    const noCopy = pathBuilders.workspacePath(wtB, DEFAULT_REQUESTS_PATH);
     assertEquals((await runGenerator([...base, "--out-dir", plain])).code, 0);
     assertEquals(
       (await runGenerator([...base, "--out-dir", noCopy, "--plan-context-root", wtB, "--no-copy-doc"])).code,
@@ -571,7 +578,7 @@ Deno.test("[plan-to-requests][plan-context][regression] without --plan-context-r
       const b = await Deno.readTextFile(join(noCopy, `${CONTEXT_SLUG}-step-${stepNum}.md`));
       assertEquals(bodyOf(a), bodyOf(b), `step ${stepNum}: omitting the flag must match explicit opt-out`);
       assertEquals(a.match(PLAN_CONTEXT_POINTER_RE), null);
-      assertEquals(a.includes(".exa/PlanContext/"), false);
+      assertFalse(a.includes(`${DEFAULT_RUNTIME_PATH}/PlanContext/`));
     }
   } finally {
     await Deno.remove(wtA, { recursive: true });
@@ -587,24 +594,29 @@ const FM_SLICE_RE = /^---\s*\n([\s\S]*?)\n---\s*\n?/;
 /** Production-split mechanics (mirrors exactl handler's splitFileFrontmatter and the
  *  watcher-shared `---` slice: raw parseYaml cast to IRequestFrontmatter, NO read-time
  *  schema validation) applied to a generated request file. */
-function productionFrontmatterOf(generatedFile: string): Record<string, unknown> {
+function productionFrontmatterOf(generatedFile: string): JSONObject {
   const content = Deno.readTextFileSync(generatedFile); // tests may sync-read for slicing parity
   const fmSlice = content.match(FM_SLICE_RE);
   assertExists(fmSlice, "generated file must carry frontmatter");
-  return parseYamlRaw(fmSlice[1]) as Record<string, unknown>;
+  return parseYamlRaw(fmSlice[1]) as JSONObject;
+}
+
+/** Minimal status-manager stub: the admission branch only needs `updateStatus`. */
+interface IStatusManagerStub {
+  updateStatus(): Promise<void>;
 }
 
 /** Drives the REAL RequestProcessor.getRequestKindOrFail branch logic via prototype
  *  binding with only the failure-path collaborator stubbed — the consumer-contract
  *  oracle whose absence let GAP-1 hide behind writer-side schema greens. */
-async function admissionKindOf(frontmatter: Record<string, unknown>): Promise<RequestKind | null> {
+async function admissionKindOf(frontmatter: JSONObject): Promise<RequestKind | null> {
   const proc = Object.create(RequestProcessor.prototype) as {
-    statusManager: unknown;
+    statusManager: IStatusManagerStub;
   };
   proc.statusManager = { updateStatus: async () => {} };
   const kind = await (proc as never as {
     getRequestKindOrFail(args: {
-      frontmatter: Record<string, unknown>;
+      frontmatter: JSONObject;
       filePath: string;
       traceLogger: IEventLogger;
     }): Promise<RequestKind | null>;
@@ -654,7 +666,7 @@ Deno.test("[plan-context][admission] manifest agent role resolves to a loadable 
     const fm = productionFrontmatterOf(file);
     assertExists(fm.agent_role, "agent_role must exist before blueprint resolution can be meaningful");
     // Drive the SAME resolver class RequestProcessor admission instantiates.
-    const resolver = new BlueprintResolver({ blueprintsPath: join(REPO_ROOT_ADM, "Blueprints") });
+    const resolver = new BlueprintResolver({ blueprintsPath: pathBuilders.blueprintsPath(REPO_ROOT_ADM) });
     const loaded = await resolver.resolve(String(fm.agent_role), noopTraceLogger);
     assertExists(
       loaded,
@@ -682,7 +694,7 @@ Deno.test("[regression][admission] strict RequestSchema accepts canonical genera
 Deno.test("[plan-to-requests][plan-context] frontmatter carries plan_context_ref only when a copy occurred", async () => {
   const wt = await makeFakeWorktree({ withGit: true });
   try {
-    const outDir = join(wt, "Workspace", "Requests");
+    const outDir = pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH);
     const { code } = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt]);
     assertEquals(code, 0);
 
@@ -702,7 +714,7 @@ Deno.test("[regression][plan-context] default output (no --plan-context-root) ha
     assertEquals((await runGenerator([join(FIXTURES_DIR, "phase-nn-fixture.md"), "--out-dir", tmpDir])).code, 0);
     for (const stepNum of [1, 2, 3]) {
       const content = await Deno.readTextFile(join(tmpDir, `phase-nn-fixture-step-${stepNum}.md`));
-      assertEquals(content.includes("plan_context_ref"), false, `step ${stepNum} must omit plan_context_ref`);
+      assertFalse(content.includes("plan_context_ref"), `step ${stepNum} must omit plan_context_ref`);
     }
   } finally {
     await Deno.remove(tmpDir, { recursive: true });
@@ -713,11 +725,11 @@ Deno.test("[plan-context][metrics] treatment request stays within 3x stripped co
   const MAX_TREATMENT_TO_CONTROL_RATIO = 3;
   const wt = await makeFakeWorktree({ withGit: false });
   try {
-    const outDir = join(wt, "Workspace", "Requests");
+    const outDir = pathBuilders.workspacePath(wt, DEFAULT_REQUESTS_PATH);
     const args = [CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt];
     for (const runNumber of [1, 2]) {
       assertEquals((await runGenerator(args)).code, 0, `run ${runNumber} must succeed`);
-      const copied = join(wt, ".exa", "PlanContext", `${CONTEXT_SLUG}.md`);
+      const copied = pathBuilders.runtimePath(wt, "PlanContext", `${CONTEXT_SLUG}.md`);
       assertEquals((await Deno.stat(copied)).isFile, true, `run ${runNumber} must retain the copy`);
     }
 

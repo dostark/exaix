@@ -5,6 +5,7 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/step_executor.ts]
  */
+import { DEFAULT_MEMORY_PATH, DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { stringify } from "@std/toml";
 import { join } from "@std/path";
@@ -48,10 +49,13 @@ Deno.test("[PersonaResponse] declarative capture preserves accepted response art
       },
     });
     assertEquals(result.exitCode, 0, result.stderr);
-    const evidence = JSON.parse(await Deno.readTextFile(join(ctx.tempDir, "Memory/response.json")));
+    const evidence = JSON.parse(await Deno.readTextFile(join(ctx.tempDir, `${DEFAULT_MEMORY_PATH}/response.json`)));
     assertEquals(evidence.content, "actual accepted response");
     assertEquals(evidence.traceId, RESPONSE_TRACE);
-    assertEquals(await Deno.readTextFile(join(ctx.tempDir, "Memory/response.txt")), "actual accepted response");
+    assertEquals(
+      await Deno.readTextFile(join(ctx.tempDir, `${DEFAULT_MEMORY_PATH}/response.txt`)),
+      "actual accepted response",
+    );
   } finally {
     await ctx.cleanup();
   }
@@ -75,8 +79,12 @@ Deno.test("[PersonaResponse] captures real AgentRunner debug journal response ra
       traceId: RESPONSE_TRACE,
     }, undefined);
     await ctx.db.waitForFlush();
-    await logger.info("plan.created", "", { plan_path: "Workspace/Plans/current_plan.md" }, RESPONSE_TRACE);
-    await logger.info("request.planned", "", { plan_path: "Workspace/Plans/current_plan.md" }, RESPONSE_TRACE);
+    await logger.info("plan.created", "", {
+      plan_path: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/current_plan.md`,
+    }, RESPONSE_TRACE);
+    await logger.info("request.planned", "", {
+      plan_path: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/current_plan.md`,
+    }, RESPONSE_TRACE);
     await ctx.db.waitForFlush();
     const evidence = await capturePersonaRoleResponse(personaCaptureInput(ctx.config));
     assertEquals(evidence.content, "actual runner content");

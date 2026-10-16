@@ -7,7 +7,7 @@
  * hosts, per-run --overlay/--bind inputs, issues and the never-print-a-key guarantee.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { FlowCommands } from "../src/commands/flow_commands.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { join } from "@std/path";
@@ -219,7 +219,7 @@ Deno.test("FlowBindings: exits non-zero on an issue and never prints a key value
     assertStringIncludes(output, "Issues");
     assertStringIncludes(output, "does-not-exist");
     // The never-print-a-key guarantee: the credential variable must not appear.
-    assertEquals(output.includes("EXA_SECRET_TOKEN"), false);
+    assertFalse(output.includes("EXA_SECRET_TOKEN"));
   } finally {
     await ctx.cleanup();
   }

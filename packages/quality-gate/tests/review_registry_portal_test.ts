@@ -5,7 +5,7 @@
  * across partitioned portal repositories, ensuring correct path mapping and state persistence.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ReviewRegistry } from "@exaix/core/artifact";
@@ -105,7 +105,7 @@ describe("ReviewRegistry Portal Support", () => {
       assertEquals(portalBranches.includes(branchName), true);
 
       const workspaceBranches = await new GitTestHelper(workspaceRepoDir).listBranches();
-      assertEquals(workspaceBranches.includes(branchName), false);
+      assertFalse(workspaceBranches.includes(branchName));
     });
   });
 
@@ -220,10 +220,10 @@ describe("ReviewRegistry Portal Support", () => {
       const workspaceDiff = await registry.getDiff(workspaceReviewId);
 
       assertEquals(portalDiff.includes("portal.txt"), true);
-      assertEquals(portalDiff.includes("workspace.txt"), false);
+      assertFalse(portalDiff.includes("workspace.txt"));
 
       assertEquals(workspaceDiff.includes("workspace.txt"), true);
-      assertEquals(workspaceDiff.includes("portal.txt"), false);
+      assertFalse(workspaceDiff.includes("portal.txt"));
     });
   });
 

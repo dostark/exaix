@@ -11,8 +11,16 @@
  * @related-files [packages/execution/src/skill_pin_transport.ts, packages/execution/src/strategies/react_loop_strategy.ts]
  */
 
-import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import {
+  assert,
+  assertArrayIncludes,
+  assertEquals,
+  assertFalse,
+  assertRejects,
+  assertStringIncludes,
+} from "@std/assert";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
@@ -51,11 +59,11 @@ const TRACE = "11111111-1111-4111-8111-111111111111";
 async function fixture() {
   const env = await initTestDbService();
   const base = await Deno.makeTempDir({ prefix: "exa-pin-transport-" });
-  const skillsDir = join(base, "Blueprints", "Skills");
+  const skillsDir = pathBuilders.blueprintsPath(base, DEFAULT_SKILLS_MEMORY_PATH);
   await writeSkillFolder(skillsDir, { name: SKILL, instructions: "Approved body A." });
   await writeSkillFolder(skillsDir, { name: "other-skill", instructions: "Other body." });
   const skills = new SkillsService(
-    { memoryDir: join(base, "Memory"), blueprintSkillsDir: skillsDir },
+    { memoryDir: pathBuilders.memoryPath(base), blueprintSkillsDir: skillsDir },
     env.db,
     undefined,
     new EventLogger({ db: env.db }),
@@ -172,8 +180,8 @@ Deno.test("[transport] the pinned snapshot is rendered after a live edit and an 
     const prompt = await createPinnedSkillPrompt(fx.skills, [pinned, excluded], fx.operation);
     assert(prompt !== null);
     assertStringIncludes(prompt.text, "Approved body A.");
-    assertEquals(prompt.text.includes("Live body B."), false);
-    assertEquals(prompt.text.includes("Other body."), false);
+    assertFalse(prompt.text.includes("Live body B."));
+    assertFalse(prompt.text.includes("Other body."));
     assertEquals(await createPinnedSkillPrompt(fx.skills, [], fx.operation), null);
     assertEquals(await createPinnedSkillPrompt(fx.skills, [excluded], fx.operation), null);
   } finally {
@@ -209,7 +217,7 @@ Deno.test("[react] the provider sees the approved body and each call records pla
     await strategy.execute(BLUEPRINT, CONTEXT, OPTIONS, pinnedPrompt);
     assertEquals(prompts.length, 1);
     assertStringIncludes(prompts[0], "Approved body A.");
-    assertEquals(prompts[0].includes("Live body B."), false);
+    assertFalse(prompts[0].includes("Live body B."));
     const rows = await fx.rows();
     assertEquals(rows.map((row) => [row.skill_name, row.match_source, row.submission_kind, row.round]), [[
       SKILL,
@@ -247,7 +255,7 @@ Deno.test("[react] without a pinned prompt the prompt carries no skills and no r
   try {
     const prompts: string[] = [];
     await new ReActLoopStrategy(EXECUTOR, completingProvider(prompts)).execute(BLUEPRINT, CONTEXT, OPTIONS);
-    assertEquals(prompts[0].includes("SKILLS"), false);
+    assertFalse(prompts[0].includes("SKILLS"));
     assertEquals((await fx.rows()).length, 0);
   } finally {
     await fx.cleanup();
@@ -354,9 +362,9 @@ Deno.test("[cli] the objective carries the approved body on the first and the re
     assertEquals(runs.length, 2);
     for (const args of runs) {
       assertStringIncludes(args[1], "Approved body A.");
-      assertEquals(args[1].includes("Live body B."), false);
+      assertFalse(args[1].includes("Live body B."));
     }
-    assertEquals(runs[1].includes("--resume"), true, "the second turn resumes the captured session");
+    assertArrayIncludes(runs[1], ["--resume"], "the second turn resumes the captured session");
     const rows = await fx.rows();
     assertEquals(rows.map((row) => [row.skill_name, row.match_source, row.submission_kind]), [
       [SKILL, "plan_pinned", "cli_delegate"],
@@ -407,7 +415,7 @@ Deno.test("[budget] fit keeps whole skills that fit, critical first, and drops t
     assertEquals(prompt.fit(1_000_000).text, prompt.text);
     const onlyCritical = prompt.fit(prompt.text.length - 1);
     assertStringIncludes(onlyCritical.text, "Critical body.");
-    assertEquals(onlyCritical.text.includes("Approved body A."), false);
+    assertFalse(onlyCritical.text.includes("Approved body A."));
     assertEquals(prompt.fit(0).text, "");
   } finally {
     await fx.cleanup();
@@ -430,7 +438,7 @@ Deno.test("[budget] a skills section budget of zero keeps pinned skills out of t
       OPTIONS,
       pinnedPrompt,
     );
-    assertEquals(prompts[0].includes("Approved body A."), false);
+    assertFalse(prompts[0].includes("Approved body A."));
     assertEquals((await fx.rows()).length, 0);
   } finally {
     await fx.cleanup();

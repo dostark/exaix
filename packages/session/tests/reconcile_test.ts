@@ -7,6 +7,7 @@
  *   out-of-scope path must reject; an opaque transcript_ref is never parsed.
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { SessionBriefSchema, SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionBrief, SessionReturn } from "@exaix/schemas/session_delegate.ts";
@@ -24,7 +25,7 @@ function brief(overrides: Partial<SessionBrief> = {}): SessionBrief {
     gate: "code_changes",
     tool: "claude-code",
     objective: "Implement the feature within src/.",
-    artifact_ref: "Workspace/Plans/req-01_plan.md",
+    artifact_ref: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/req-01_plan.md`,
     permitted_paths: ["src/**"],
     token_budget: { max_input_tokens: 50_000, max_output_tokens: 50_000, max_total_tokens: 100_000 },
     resume_token: RESUME,
@@ -134,7 +135,7 @@ Deno.test("[reconcile][security] traversal in paths_touched is a scope violation
 
 Deno.test("[reconcile] an empty diff with a valid token is accepted", () => {
   const result = reconcile({
-    brief: brief({ gate: "plan_review", permitted_paths: ["Workspace/Plans/**"] }),
+    brief: brief({ gate: "plan_review", permitted_paths: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/**`] }),
     sessionReturn: ret({ decision: "approved", paths_touched: [] }),
     worktreeRoot: WORKTREE,
   });

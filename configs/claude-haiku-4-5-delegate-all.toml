@@ -3,11 +3,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = []
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # swe_tasks provider-live cell verifying CliDelegateStrategy end-to-end with a SINGLE
 # provider/model/tool for every part of the test: request analysis, plan generation,
 # AND the code_changes step all run through the headless `claude` CLI on claude-haiku-4-5,

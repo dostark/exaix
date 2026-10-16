@@ -6,11 +6,13 @@
  * @dependencies [@exaix/flow, @exaix/schemas, @exaix/execution]
  * @related-files [packages/flow/src/loop_body.ts, packages/schemas/src/model_binding.ts]
  */
+import { DEFAULT_FLOWS_DIR, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { parse as parseToml } from "@std/toml";
 import { computeLoopBody, FlowLoader, validateLoopBody } from "@exaix/flow";
 import { BindingOverlaySchema, ConfigSchema, PlanSchema } from "@exaix/schemas";
+import { EvaluationCategory, FlowGateOnFail, FlowInputSource } from "@exaix/core";
 import { OutputParser } from "@exaix/execution";
 
 /** The gate fields the contract pins, with enum values compared as plain strings. */
@@ -29,7 +31,7 @@ interface IGuardedRequestFrontmatter {
   plan_context_ref: string;
 }
 
-const FLOWS_DIR = "./Blueprints/Flows";
+const FLOWS_DIR = `./${DEFAULT_FLOWS_DIR}`;
 const OVERLAYS_DIR = "./configs/bindings/flows";
 const SELF_CORRECTING = "self-correcting-implementation";
 
@@ -290,20 +292,20 @@ Deno.test("[contract] the research overlay keeps explorers light and the compose
 
 Deno.test("[contract] guarded change binds hardened implementation review and a terminal security gate", async () => {
   const flow = await new FlowLoader(FLOWS_DIR).loadFlow("guarded-change");
-  assertEquals<unknown>(flow.steps.map((step) => [step.id, step.type as string, step.dependsOn, step.input]), [
-    ["explore", "agent", [], { source: "request", transform: "passthrough" }],
+  assertEquals(flow.steps.map((step) => [step.id, step.type as string, step.dependsOn, step.input]), [
+    ["explore", "agent", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }],
     ["implement", "session_delegate_cycle", ["explore"], {
-      source: "step",
+      source: FlowInputSource.STEP,
       stepId: "explore",
       transform: "passthrough",
     }],
     ["security-gate", "gate", ["implement"], {
-      source: "aggregate",
+      source: FlowInputSource.AGGREGATE,
       from: ["explore", "implement"],
       transform: "passthrough",
     }],
     ["validate", "agent", ["security-gate"], {
-      source: "aggregate",
+      source: FlowInputSource.AGGREGATE,
       from: ["implement", "security-gate"],
       transform: "passthrough",
     }],
@@ -312,29 +314,29 @@ Deno.test("[contract] guarded change binds hardened implementation review and a 
   assertEquals(explore.execution_mode as string, "dynamic");
   assertEquals(explore.permitted_tools, ["read_file", "list_directory", "search_files"]);
   assertEquals(implement.agent_role, "dogfood-coder");
-  assertEquals<unknown>(implement.delegateCycle, {
+  assertEquals(implement.delegateCycle, {
     requireChangedPaths: true,
     review: {
       agent_role: "quality-judge",
       criteria: ["code_correctness", "has_tests", "task_fulfillment"],
       threshold: 0.8,
-      onFail: "halt",
+      onFail: FlowGateOnFail.HALT,
       maxRetries: 2,
       includeRequestCriteria: false,
     },
   });
   assertEquals(security.agent_role, "security-expert");
-  assertEquals<unknown>(security.evaluate?.criteria, [
+  assertEquals(security.evaluate?.criteria, [
     {
       name: "path_confinement",
-      category: "security",
+      category: EvaluationCategory.SECURITY,
       description: "Every changed path is src/proof.txt or tests/proof_test.ts in the resolved worktree.",
       required: true,
       weight: 1,
     },
     {
       name: "no_secret_exposure",
-      category: "security",
+      category: EvaluationCategory.SECURITY,
       description: "The diff and return evidence contain no credentials, tokens or host secrets.",
       required: true,
       weight: 1,
@@ -374,6 +376,6 @@ Deno.test("[contract] guarded requests activate the hardened coordinator and ret
     const frontmatter = parseYaml(request.split("---")[1]) as IGuardedRequestFrontmatter;
     assertEquals(frontmatter.flow, "guarded-change");
     assertEquals(frontmatter.portal, "exaix-self");
-    assertEquals(frontmatter.plan_context_ref, ".exa/PlanContext/phase205-guarded-change.md");
+    assertEquals(frontmatter.plan_context_ref, `${DEFAULT_RUNTIME_PATH}/PlanContext/phase205-guarded-change.md`);
   }
 });

@@ -14,6 +14,7 @@
  */
 
 import { z } from "zod";
+import { RETRYABLE_HTTP_STATUS_CODES } from "../types/constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IRetryContext {
@@ -53,7 +54,7 @@ export type RetryEventCallback = (context: IRetryContext) => void;
 export interface IRetryPolicy {
   execute<T>(
     operation: (context: { temperature: number; attempt: number }) => Promise<T>,
-    options?: IRetryableOperationOptions,
+    options?: Opt<IRetryableOperationOptions, Reason.OptionalDependency>,
   ): Promise<IRetryResult<T>>;
   calculateDelay(attempt: number): number;
   isRetryable(error: Error): boolean;
@@ -77,14 +78,6 @@ export const RETRYABLE_ERROR_TYPES: string[] = [
 ];
 
 /** HTTP status codes that should trigger a retry. */
-export const RETRYABLE_HTTP_STATUS_CODES: string[] = [
-  "429",
-  "500",
-  "502",
-  "503",
-  "504",
-];
-
 /** Error message patterns that should trigger a retry. */
 export const RETRYABLE_MESSAGE_PATTERNS: string[] = [
   "rate limit",

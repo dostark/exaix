@@ -10,7 +10,15 @@
  * ]
  */
 
-import { assert, assertEquals, assertGreater, assertLessOrEqual, assertRejects } from "@std/assert";
+import {
+  assert,
+  assertArrayIncludes,
+  assertEquals,
+  assertFalse,
+  assertGreater,
+  assertLessOrEqual,
+  assertRejects,
+} from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import {
   CONTEXT_BUDGET_OVERHEAD_TARGET_MS,
@@ -119,7 +127,7 @@ Deno.test("[ContextBudgetManager] drops lowest-priority segments first when over
   // tool_result (lowest priority) dropped; system (highest) kept
   const keptKinds = out.map((s) => s.kind);
   assertEquals(keptKinds.includes("system"), true);
-  assertEquals(keptKinds.includes("tool_result"), false);
+  assertFalse(keptKinds.includes("tool_result"));
 });
 
 Deno.test("[ContextBudgetManager] never drops segments with priority >= CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA", async () => {
@@ -271,7 +279,7 @@ Deno.test("[ContextBudgetManager] drops low-priority tool_result before portal_k
 
   assertEquals(droppedKinds.includes("tool_result"), true);
   // portal_knowledge maps to portalKnowledge section which has budget, so it's kept
-  assertEquals(droppedKinds.includes("portal_knowledge"), false);
+  assertFalse(droppedKinds.includes("portal_knowledge"));
 });
 
 Deno.test("[ContextBudgetManager] never drops system or acceptance_criteria segments under any budget pressure", async () => {
@@ -301,7 +309,7 @@ Deno.test("[ContextBudgetManager] never drops system or acceptance_criteria segm
   const keptKinds = out.map((s) => s.kind);
   assertEquals(keptKinds.includes("system"), true);
   assertEquals(keptKinds.includes("acceptance_criteria"), true);
-  assertEquals(keptKinds.includes("tool_result"), false);
+  assertFalse(keptKinds.includes("tool_result"));
 });
 
 Deno.test("[ContextBudgetManager] synchronous tier completes within CONTEXT_BUDGET_OVERHEAD_TARGET_MS ms", async () => {
@@ -405,7 +413,7 @@ Deno.test(
     // snapshotStore.save). Use a macrotask fence to ensure all pending microtasks complete.
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-    assertEquals(loggedActions.includes(DomainEventType.ExecutionContextCompacted), true);
+    assertArrayIncludes(loggedActions, [DomainEventType.ExecutionContextCompacted]);
   },
 );
 

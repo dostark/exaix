@@ -1,0 +1,16 @@
+[system]
+root = "./"
+
+[database]
+batch_flush_ms = 10
+batch_max_size = 10
+sqlite.journal_mode = "WAL"
+sqlite.foreign_keys = true
+sqlite.busy_timeout_ms = 5000
+
+[agents]
+default_model = "mock:test"
+
+[models."mock:test"]
+provider = "mock"
+model = "test"

@@ -5,7 +5,8 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/provider_live_evidence.ts]
  */
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import type { IActivityRecord } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import { Database } from "@db/sqlite";
@@ -89,8 +90,8 @@ Deno.test("provider live evidence retains a redacted trace and normalized usage 
       costStatus: "estimated",
       costUsd: 0.01,
     });
-    assertEquals(text.includes("private-key"), false);
-    assertEquals(text.includes("private prompt"), false);
+    assertFalse(text.includes("private-key"));
+    assertFalse(text.includes("private prompt"));
     assertEquals(typeof summary.configRevisionSha256, "string");
   } finally {
     await Deno.remove(sandbox, { recursive: true }).catch(() => {});
@@ -276,7 +277,7 @@ Deno.test("[evidence] a bound run without a lockfile fails the evidence write", 
 Deno.test("[evidence] every request trace of a scenario contributes its lock entries", async () => {
   const root = await Deno.makeTempDir({ prefix: "request-locks-all-" });
   try {
-    const dir = `${root}/.exa/bindings`;
+    const dir = pathBuilders.runtimePath(root, "bindings");
     await Deno.mkdir(dir, { recursive: true });
     const first = "10000000-0000-4000-8000-000000000006";
     const second = "10000000-0000-4000-8000-000000000007";

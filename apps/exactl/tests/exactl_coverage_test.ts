@@ -7,6 +7,7 @@
  * graceful failure messages for invalid inputs across all primary subcommands.
  */
 
+import { DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PATH } from "@exaix/shared";
 import "./helpers/set_test_mode.ts";
 import { assert, assertEquals } from "@std/assert";
 import {
@@ -644,17 +645,17 @@ Deno.test("portal list prints entries when present", async () => {
       Promise.resolve([
         {
           alias: "MyPortal",
-          symlinkPath: "Portals/MyPortal",
+          symlinkPath: `${DEFAULT_PORTALS_PATH}/MyPortal`,
           targetPath: "/tmp/target",
           status: PortalStatus.ACTIVE,
-          contextCardPath: "Memory/Projects/MyPortal/portal.md",
+          contextCardPath: `${DEFAULT_MEMORY_PATH}/Projects/MyPortal/portal.md`,
         },
         {
           alias: "BrokenPortal",
-          symlinkPath: "Portals/BrokenPortal",
+          symlinkPath: `${DEFAULT_PORTALS_PATH}/BrokenPortal`,
           targetPath: "/tmp/missing",
           status: PortalStatus.BROKEN,
-          contextCardPath: "Memory/Projects/BrokenPortal/portal.md",
+          contextCardPath: `${DEFAULT_MEMORY_PATH}/Projects/BrokenPortal/portal.md`,
         },
       ]);
     const out = await captureConsoleOutput(async () => {

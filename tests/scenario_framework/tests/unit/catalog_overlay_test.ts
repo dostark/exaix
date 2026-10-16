@@ -11,6 +11,8 @@
  * @related-files [packages/core/src/skills/skills.ts, packages/request/src/blueprint_resolver.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
@@ -99,10 +101,10 @@ Deno.test("[CatalogOverlay] a skill with no overlay folder falls back to the shi
 Deno.test("[CatalogOverlay] an agent role overlay shadows the shipped agent role's content for BlueprintResolver.resolve", async () => {
   const testDir = await Deno.makeTempDir({ prefix: "agent-role-overlay-" });
   const overlayRoot = await Deno.makeTempDir({ prefix: "agent-role-overlay-dir-" });
-  const overlayDir = join(overlayRoot, "Agents");
+  const overlayDir = pathBuilders.agentsPath(overlayRoot);
   const mockLogger = createMockEventLogger();
   try {
-    const blueprintsPath = join(testDir, "Blueprints", "Agents");
+    const blueprintsPath = pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(blueprintsPath, { recursive: true });
     await Deno.mkdir(overlayDir, { recursive: true });
     const shippedBlueprint = await Deno.readTextFile(
@@ -140,10 +142,10 @@ Deno.test("[CatalogOverlay] an agent role overlay shadows the shipped agent role
 Deno.test("[CatalogOverlay] an agent role with no overlay file falls back to the shipped catalog", async () => {
   const testDir = await Deno.makeTempDir({ prefix: "agent-role-overlay-fallback-" });
   const overlayRoot = await Deno.makeTempDir({ prefix: "agent-role-overlay-dir-empty-" });
-  const overlayDir = join(overlayRoot, "Agents");
+  const overlayDir = pathBuilders.agentsPath(overlayRoot);
   const mockLogger = createMockEventLogger();
   try {
-    const blueprintsPath = join(testDir, "Blueprints", "Agents");
+    const blueprintsPath = pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(blueprintsPath, { recursive: true });
     await Deno.mkdir(overlayDir, { recursive: true });
     const shippedBlueprint = await Deno.readTextFile(

@@ -11,6 +11,7 @@
  * @related-files [scripts/check_artefact_decision_coverage.ts, tests/scenario_framework/runner/artefact_decision_coverage.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assert } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { loadArtefactCatalog } from "../../tests/scenario_framework/runner/artefact_catalog.ts";
@@ -21,7 +22,7 @@ import {
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const DECISIONS_FIXTURE_PATH = join(REPO_ROOT, "scripts", "artefact_decisions.json");
-const BLUEPRINTS_DIR = join(REPO_ROOT, "Blueprints");
+const BLUEPRINTS_DIR = pathBuilders.blueprintsPath(REPO_ROOT);
 
 Deno.test("[check_artefact_decision_coverage] scripts/artefact_decisions.json parses into IArtefactDecisionEntry[]", async () => {
   const decisions = await loadArtefactDecisions(DECISIONS_FIXTURE_PATH);

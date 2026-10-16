@@ -98,7 +98,7 @@ export class RequestCommands extends BaseCommand {
   ): Promise<IClarifyResult> {
     if (!options?.onClarificationResolved) {
       const cfg = this.context.config.getAll();
-      const waitStatesRoot = join(cfg.system.root, cfg.paths.workspace, cfg.paths.waitStates ?? "WaitStates");
+      const waitStatesRoot = join(cfg.system.root, cfg.paths.workspace, cfg.paths.waitStates);
       const resolvedBy = options?.resolvedBy;
       const resolveCallback = async (traceId: string) => {
         const waitDir = join(waitStatesRoot, traceId);

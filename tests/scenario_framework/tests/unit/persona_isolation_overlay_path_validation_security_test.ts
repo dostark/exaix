@@ -6,8 +6,9 @@
  * @related-files [tests/scenario_framework/runner/persona_isolation_arm.ts, packages/portal/src/path_resolver.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
 import { buildPersonaIsolationArmPlan } from "../../runner/persona_isolation_arm.ts";
@@ -17,10 +18,10 @@ Deno.test("[security] persona overlay traversal is rejected before environment m
   const envName = "EXA_EVAL_AGENT_ROLE_OVERLAY_DIR";
   const previous = Deno.env.get(envName);
   try {
-    await Deno.mkdir(join(root, "Blueprints", "Agents"), { recursive: true });
-    await Deno.mkdir(join(root, "Memory"), { recursive: true });
+    await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.memoryPath(root), { recursive: true });
     await Deno.writeTextFile(
-      join(root, "Blueprints", "Agents", "senior-coder.md"),
+      pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "senior-coder.md"),
       "---\nagent_role: senior-coder\n---\nbody\n",
     );
     Deno.env.delete(envName);

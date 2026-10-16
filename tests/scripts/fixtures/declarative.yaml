@@ -1,0 +1,20 @@
+schema_version: "1.0.0"
+id: "declarative-only"
+pack: "smoke"
+portals: []
+mode_support: ["auto"]
+steps:
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+  - id: "wait-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+  - id: "assert-created"
+    type: "json-assert"
+    command: "request"

@@ -11,6 +11,7 @@
  * @architectural-link [ARCHITECTURE.md#memory-banks-architecture]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
 import { ensureDir, ensureDirSync, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -29,15 +30,7 @@ import {
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import { DEFAULT_AI_TIMEOUT_MS, MEMORY_DEDUP_SIMILARITY_THRESHOLD } from "@exaix/core";
-import {
-  DEFAULT_EXECUTION_MEMORY_PATH,
-  DEFAULT_GLOBAL_MEMORY_PATH,
-  DEFAULT_GLOBAL_MEMORY_VERSION,
-  DEFAULT_INDEX_MEMORY_PATH,
-  DEFAULT_PROJECTS_MEMORY_PATH,
-  DEFAULT_TASKS_MEMORY_PATH,
-  LOCK_ACQUIRE_TIMEOUT_MS,
-} from "@exaix/core";
+import { DEFAULT_GLOBAL_MEMORY_VERSION, LOCK_ACQUIRE_TIMEOUT_MS } from "@exaix/core";
 import {
   ExecutionMemorySchema,
   GlobalMemorySchema,
@@ -103,11 +96,11 @@ export class MemoryBankService implements IMemoryBankService {
     this.contradictionResolver = options.contradictionResolver;
     this.memoryRoot = join(config.system.root!, config.paths.memory!);
     // Use subdirectory names directly, not full paths (which already include Memory/)
-    this.projectsDir = join(this.memoryRoot, DEFAULT_PROJECTS_MEMORY_PATH);
-    this.executionDir = join(this.memoryRoot, DEFAULT_EXECUTION_MEMORY_PATH);
-    this.tasksDir = join(this.memoryRoot, DEFAULT_TASKS_MEMORY_PATH);
-    this.indexDir = join(this.memoryRoot, DEFAULT_INDEX_MEMORY_PATH);
-    this.globalDir = join(this.memoryRoot, DEFAULT_GLOBAL_MEMORY_PATH);
+    this.projectsDir = pathBuilders.memoryProjectsPath(this.memoryRoot);
+    this.executionDir = pathBuilders.memoryExecutionPath(this.memoryRoot);
+    this.tasksDir = pathBuilders.memoryTasksPath(this.memoryRoot);
+    this.indexDir = pathBuilders.memoryIndexPath(this.memoryRoot);
+    this.globalDir = pathBuilders.memoryGlobalPath(this.memoryRoot);
 
     // Ensure directory structure exists
     this.initializeDirectories();

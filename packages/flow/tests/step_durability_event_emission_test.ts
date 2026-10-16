@@ -24,7 +24,6 @@ import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { JSONValue } from "@exaix/core";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
   FLOW_CHECKPOINT_SCHEMA_VERSION,
   FLOW_EVENT_STEP_SKIPPED_BY_REUSE,
   FlowInputSource,
@@ -34,6 +33,7 @@ import {
   StepSideEffectClass,
 } from "@exaix/core";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 // Test doubles
 
 /** Captures all emitted events for assertion. */

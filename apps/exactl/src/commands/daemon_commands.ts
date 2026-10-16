@@ -6,6 +6,7 @@
  * @related-files ["apps/daemon/main.ts"]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { Database } from "@db/sqlite";
 import { DomainEventType } from "@exaix/core/events";
 import { dirname, fromFileUrl, join } from "@std/path";
@@ -468,7 +469,7 @@ export class DaemonCommands extends BaseCommand {
     pid: number,
     timeoutMs: number,
   ): Promise<boolean> {
-    const dbPath = join(workspaceRoot, ".exa", "journal.db");
+    const dbPath = pathBuilders.runtimePath(workspaceRoot, "journal.db");
 
     // Baseline: only events written AFTER this wait begins count. This prevents a
     // stale daemon.ready from a previous daemon instance (e.g. after restart) from

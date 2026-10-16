@@ -12,6 +12,7 @@ import type * as ExaCtlModule from "../../src/exactl.ts";
 import * as exactlModule from "../../src/exactl.ts";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
+import { readConfigFixture } from "../../../../tests/integration/helpers/config_fixture.ts";
 import {
   captureAllOutputs as captureAllOutputsShared,
   captureConsoleOutput as captureConsoleOutputShared,
@@ -37,27 +38,7 @@ export async function withTestMod<T>(
   const tempDir: string = await Deno.makeTempDir({ prefix: "exa-test-" });
   await ensureDir(tempDir);
   const configPath: string = join(tempDir, "config.toml");
-  const configContent = `
-[system]
-root = "./"
-
-[paths]
-runtime = "./.exa"
-
-[database]
-batch_flush_ms = 10
-batch_max_size = 10
-sqlite.journal_mode = "WAL"
-sqlite.foreign_keys = true
-sqlite.busy_timeout_ms = 5000
-
-[agents]
-default_model = "mock:test"
-
-[models."mock:test"]
-provider = "mock"
-model = "test"
-`;
+  const configContent = readConfigFixture("exactl-test-mod-config");
   await Deno.writeTextFile(configPath, configContent);
   // Set EXA_CONFIG_PATH before any CLI code loads
   Deno.env.set("EXA_CONFIG_PATH", configPath);

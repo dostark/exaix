@@ -4,7 +4,8 @@
  * @description Checks immutable config snapshots and aggregated binding rejection.
  */
 
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import { assertArrayIncludes, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { crypto as stdCrypto } from "@std/crypto";
 import { encodeHex } from "@std/encoding/hex";
@@ -191,7 +192,7 @@ function replayService(
   const runFile = locked === undefined ? undefined : {
     schema: 1,
     trace_id: "00000000-0000-4000-8000-000000000000",
-    request_path: "Workspace/Requests/r.md",
+    request_path: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}/r.md`,
     request_sha256: "b".repeat(64),
     created_at: new Date().toISOString(),
     overlays: [],
@@ -214,7 +215,7 @@ function replayService(
   return { service, config };
 }
 
-const RUN = { requestPath: "Workspace/Requests/r.md", requestSha256: "b".repeat(64) };
+const RUN = { requestPath: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}/r.md`, requestSha256: "b".repeat(64) };
 const composeAlpha: Config["bindings"] = { "flow:research/step:compose": { service: "alpha", model: "mock/alpha" } };
 
 async function sha256Of(text: string): Promise<string> {
@@ -899,10 +900,10 @@ Deno.test("[pool] a provider shared by two runs stays open until the last run re
     const runB = await service.snapshotForRun(flow, { traceId: crypto.randomUUID() });
     await service.releaseRun(runA.traceId);
     await new Promise((resolve) => setTimeout(resolve, 0));
-    assertEquals(spy.disposed.includes("alpha"), false, "run B still holds the shared provider");
+    assertFalse(spy.disposed.includes("alpha"), "run B still holds the shared provider");
     await service.releaseRun(runB.traceId);
     await new Promise((resolve) => setTimeout(resolve, 0));
-    assertEquals(spy.disposed.includes("alpha"), true);
+    assertArrayIncludes(spy.disposed, ["alpha"]);
   } finally {
     spy.restore();
     await cleanup();

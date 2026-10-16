@@ -1,0 +1,7 @@
+[system]
+root = "."
+version = "1.0.0"
+log_level = "info"
+
+[tools]
+parallel_calls = "__MODE__"

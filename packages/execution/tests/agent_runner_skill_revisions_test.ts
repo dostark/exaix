@@ -10,8 +10,9 @@
  * @related-files [packages/execution/src/agent_runner.ts, packages/core/src/skills/skills.ts]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
-import { join } from "@std/path";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
@@ -53,8 +54,8 @@ interface IFixture {
 async function fixture(): Promise<IFixture> {
   const env = await initTestDbService();
   const base = await Deno.makeTempDir({ prefix: "exa-runner-revisions-" });
-  const memoryDir = join(base, "Memory");
-  const skillsDir = join(base, "Blueprints", "Skills");
+  const memoryDir = pathBuilders.memoryPath(base);
+  const skillsDir = pathBuilders.blueprintsPath(base, DEFAULT_SKILLS_MEMORY_PATH);
   await writeSkillFolder(skillsDir, { name: SKILL_NAME, instructions: "First body." });
   const skillsService = new SkillsService(
     { memoryDir, blueprintSkillsDir: skillsDir },
@@ -94,7 +95,7 @@ Deno.test("[runner] run snapshots the canonical revision of an injected skill be
     await fx.runner.run(BLUEPRINT, request(), undefined);
     const rows = await revisionRows(fx);
     assertEquals(rows.length, 1);
-    assertEquals(rows[0].skill_md.includes("First body."), true);
+    assertStringIncludes(rows[0].skill_md, "First body.");
     assertEquals(fx.providerCalls(), 1);
   } finally {
     await fx.cleanup();
@@ -110,7 +111,7 @@ Deno.test("[runner] an edit changes the revision on the next run and both snapsh
     const rows = await revisionRows(fx);
     assertEquals(rows.length, 2);
     assertEquals(rows[0].revision_id === rows[1].revision_id, false);
-    assertEquals(rows[1].skill_md.includes("Second body."), true);
+    assertStringIncludes(rows[1].skill_md, "Second body.");
   } finally {
     await fx.cleanup();
   }
@@ -154,7 +155,7 @@ Deno.test("[runner] a request without skills records nothing and still runs", as
 Deno.test("[runner] resolution is scoped to the request portal, so another portal's project skill is not injected", async () => {
   const fx = await fixture();
   try {
-    await writeSkillFolder(join(fx.memoryDir, "Skills", "project", "Alpha"), {
+    await writeSkillFolder(pathBuilders.memorySkillsPath(fx.memoryDir, "project", "Alpha"), {
       name: "alpha-only",
       instructions: "Alpha body.",
       sidecar: { status: SkillStatus.ACTIVE },

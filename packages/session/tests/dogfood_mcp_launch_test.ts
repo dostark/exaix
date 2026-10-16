@@ -11,7 +11,7 @@
  * @related-files [packages/session/src/dogfood_mcp_config.ts, packages/session/src/session_delegate_service.ts]
  */
 
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists, assertFalse } from "@std/assert";
 import type { SessionBrief } from "@exaix/schemas/session_delegate.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
@@ -200,8 +200,8 @@ Deno.test("[resolveHardenedLaunch+mcp] Claude Code without a connection: no --mc
   try {
     const service = makeService(dir);
     const { launch } = await service.resolveHardenedLaunch(briefFor("claude-code"), "headless", {} as never);
-    assertEquals(launch.args.includes("--mcp-config"), false);
-    assertEquals(launch.args.includes("--strict-mcp-config"), false);
+    assertFalse(launch.args.includes("--mcp-config"));
+    assertFalse(launch.args.includes("--strict-mcp-config"));
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

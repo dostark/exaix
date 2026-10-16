@@ -10,6 +10,8 @@
  * @related-files [packages/request/src/processor.ts, packages/flow/src/flow_runner.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
@@ -62,7 +64,7 @@ describe("RequestProcessor session_delegate_cycle execution root provenance", ()
     costTracker = new CostTracker(db, config);
 
     await Deno.mkdir(getWorkspaceRequestsDir(testDir), { recursive: true });
-    await Deno.mkdir(join(testDir, "Blueprints", "Agents"), { recursive: true });
+    await Deno.mkdir(pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH), { recursive: true });
 
     ProviderRegistry.clear();
     ProviderRegistry.registerWithMetadata("mock", new MockProviderFactory(), {
@@ -93,7 +95,7 @@ describe("RequestProcessor session_delegate_cycle execution root provenance", ()
     return new RequestProcessor({
       workspacePath: getWorkspaceDir(testDir),
       requestsDir: getWorkspaceRequestsDir(testDir),
-      blueprintsPath: join(testDir, "Blueprints", "Agents"),
+      blueprintsPath: pathBuilders.blueprintsPath(testDir, DEFAULT_AGENTS_PATH),
       includeReasoning: true,
       context,
       costTracker,
@@ -138,14 +140,17 @@ describe("RequestProcessor session_delegate_cycle execution root provenance", ()
         });
       },
     };
-    const requestPath = writeCycleRequest({ portal: "exaix-self", planContextRef: ".exa/PlanContext/phase-174.md" });
+    const requestPath = writeCycleRequest({
+      portal: "exaix-self",
+      planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
+    });
 
     const processor = createProcessor(flowRunner);
     await processor.process(requestPath);
 
     assert(captured, "FlowRunner.execute must have been called");
     assertEquals(captured!.executionRoot, "/configured/portal/root");
-    assertEquals(captured!.planContextRef, ".exa/PlanContext/phase-174.md");
+    assertEquals(captured!.planContextRef, `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`);
   });
 
   it("[security] a missing portal fails the request before FlowRunner is invoked", async () => {
@@ -157,7 +162,7 @@ describe("RequestProcessor session_delegate_cycle execution root provenance", ()
         return Promise.reject(new Error("must not be called"));
       },
     };
-    const requestPath = writeCycleRequest({ planContextRef: ".exa/PlanContext/phase-174.md" });
+    const requestPath = writeCycleRequest({ planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md` });
 
     const processor = createProcessor(flowRunner);
     const result = await processor.process(requestPath);
@@ -195,7 +200,10 @@ describe("RequestProcessor session_delegate_cycle execution root provenance", ()
         return Promise.reject(new Error("must not be called"));
       },
     };
-    const requestPath = writeCycleRequest({ portal: "exaix-self", planContextRef: ".exa/PlanContext/phase-174.md" });
+    const requestPath = writeCycleRequest({
+      portal: "exaix-self",
+      planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
+    });
 
     const processor = createProcessor(flowRunner);
     const result = await processor.process(requestPath);
@@ -218,7 +226,10 @@ describe("RequestProcessor session_delegate_cycle execution root provenance", ()
           completedAt: new Date(),
         }),
     };
-    const requestPath = writeCycleRequest({ portal: "exaix-self", planContextRef: ".exa/PlanContext/phase-174.md" });
+    const requestPath = writeCycleRequest({
+      portal: "exaix-self",
+      planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
+    });
     const result = await createProcessor(flowRunner).process(requestPath);
     assertEquals(result, null);
     const written = await Deno.readTextFile(requestPath);

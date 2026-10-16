@@ -16,6 +16,7 @@ export * from "./blueprint.ts";
 export * from "./clarification_session.ts";
 export * from "./session_delegate.ts";
 export * from "./skill_folder.ts";
+export { SKILL_NAME_MAX_LENGTH } from "@exaix/shared";
 export * from "./runtime_skill.ts";
 export * from "./step_manifest.ts";
 export * from "./config.ts";
@@ -49,6 +50,7 @@ export * from "./evaluation_json_schema.ts";
 export * from "./streaming_event.ts";
 export * from "./milestone_event.ts";
 export * from "./model_intent.ts";
+export { EFFORT_AUTO } from "@exaix/shared";
 export * from "./model_binding.ts";
 export * from "./execution/context_budget.ts";
 export {

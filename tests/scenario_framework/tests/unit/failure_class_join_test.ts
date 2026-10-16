@@ -11,7 +11,7 @@
  * @related-files [tests/scenario_framework/runner/failure_classifier.ts, packages/core/src/events/anomaly_classification.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { DomainEventType } from "@exaix/core/events";
@@ -43,8 +43,8 @@ Deno.test("[FailureClassJoin] unrecovered findings become distinct eventType cla
     makeActivity({ action_type: DomainEventType.McpToolFailed, target: "read_file" }),
   ];
   const classes = computeFailureClasses({ activities, outcomeScore: 0.4, scoreThreshold: 0.5 });
-  assertEquals(classes.includes("execution.failed"), true);
-  assertEquals(classes.includes("mcp.tool.failed"), true);
+  assertArrayIncludes(classes, ["execution.failed"]);
+  assertArrayIncludes(classes, ["mcp.tool.failed"]);
 });
 
 Deno.test("[FailureClassJoin] recovered findings are excluded (recovery pairing semantics)", () => {
@@ -64,8 +64,8 @@ Deno.test("[FailureClassJoin] recovered findings are excluded (recovery pairing 
     makeActivity({ action_type: DomainEventType.ExecutionFailed, target: "exec" }),
   ];
   const classes = computeFailureClasses({ activities, outcomeScore: 0.4, scoreThreshold: 0.5 });
-  assertEquals(classes.includes("mcp.tool.failed"), false, "recovered finding must be excluded");
-  assertEquals(classes.includes("execution.failed"), true);
+  assertFalse(classes.includes("mcp.tool.failed"), "recovered finding must be excluded");
+  assertArrayIncludes(classes, ["execution.failed"]);
 });
 
 Deno.test("[FailureClassJoin] loadTraceActivities recovers the run trace via request.created", () => {
@@ -120,7 +120,7 @@ Deno.test("[FailureClassJoin] computeRunFailureClasses joins journal trace to cl
 
   try {
     const classes = computeRunFailureClasses({ journalPath: dbPath, outcomeScore: 0.4, scoreThreshold: 0.5 });
-    assertEquals(classes.includes("execution.failed"), true);
+    assertArrayIncludes(classes, ["execution.failed"]);
   } finally {
     Deno.removeSync(dir, { recursive: true });
   }

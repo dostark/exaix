@@ -5,6 +5,8 @@
  * @architectural-layer CLI
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, apps/exactl/src/commands/flow_commands.ts]
  */
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_FLOWS_DIR, DEFAULT_FLOWS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RequestCommands } from "../src/commands/request_commands.ts";
@@ -20,16 +22,19 @@ async function sha256(text: string): Promise<string> {
 
 Deno.test("[cli] exactl request --overlay accepts a TOML overlay and stores the parsed overlay", async () => {
   const { tempDir, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "research.flow.yaml"), "steps: []");
+    await Deno.writeTextFile(
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      "steps: []",
+    );
     const overlayPath = join(tempDir, "overlay.toml");
     await Deno.writeTextFile(overlayPath, TOML_OVERLAY);
 
     await new RequestCommands(context).create("run the flow", { flow: "research", overlays: [overlayPath] });
 
-    const dir = join(tempDir, ".exa", "run-bindings");
+    const dir = pathBuilders.runtimePath(tempDir, "run-bindings");
     const [file] = [...Deno.readDirSync(dir)];
     const runFile = JSON.parse(await Deno.readTextFile(join(dir, file.name)));
     assertEquals(runFile.overlays.length, 1);
@@ -46,10 +51,13 @@ Deno.test("[cli] exactl request --overlay accepts a TOML overlay and stores the 
 
 Deno.test("[cli] exactl request --overlay refuses malformed TOML with overlay_invalid", async () => {
   const { tempDir, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "research.flow.yaml"), "steps: []");
+    await Deno.writeTextFile(
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      "steps: []",
+    );
     const overlayPath = join(tempDir, "bad.toml");
     await Deno.writeTextFile(overlayPath, "schema = = 1");
     await assertRejects(

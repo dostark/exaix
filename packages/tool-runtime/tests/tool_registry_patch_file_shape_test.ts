@@ -11,7 +11,7 @@
  * @related-files [packages/tool-runtime/src/tool_registry.ts, packages/tool-runtime/src/tool_schemas.ts, exaix-team/packages/mcp-server/handlers/patch_file_tool.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import type { JSONObject } from "@exaix/core/types";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
@@ -42,7 +42,7 @@ Deno.test("ToolRegistry: patch_file (flat search/replace shape)", async (t) => {
 
     const content = await Deno.readTextFile(file);
     assertEquals(content.includes('console.log("Goodbye World");'), true);
-    assertEquals(content.includes('console.log("Hello World");'), false);
+    assertFalse(content.includes('console.log("Hello World");'));
   });
 
   await t.step("fails if search string is not found", async () => {

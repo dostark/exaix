@@ -5,7 +5,7 @@
  * of subsystem dependency checks and aggregate health computation.
  */
 
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { ExecutionStatus, HealthCheckVerdict, HealthStatus, MockStrategy } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
@@ -243,10 +243,7 @@ Deno.test("LLMProviderHealthCheck: handles timeout gracefully", async () => {
   const result = await check.check();
 
   // Should not hang and should return some status
-  assertEquals(
-    [HealthCheckVerdict.PASS, HealthCheckVerdict.FAIL, HealthCheckVerdict.WARN].includes(result.status),
-    true,
-  );
+  assertArrayIncludes([HealthCheckVerdict.PASS, HealthCheckVerdict.FAIL, HealthCheckVerdict.WARN], [result.status]);
 });
 
 Deno.test("DiskSpaceHealthCheck: passes when disk space is sufficient", async () => {
@@ -333,10 +330,10 @@ Deno.test("initializeHealthChecks: initializes all health checks", async () => {
     const status = await healthService.checkHealth();
     const checkNames = Object.keys(status.checks);
 
-    assertEquals(checkNames.includes("database"), true);
-    assertEquals(checkNames.includes("llm_provider"), true);
-    assertEquals(checkNames.includes("disk_space"), true);
-    assertEquals(checkNames.includes("memory"), true);
+    assertArrayIncludes(checkNames, ["database"]);
+    assertArrayIncludes(checkNames, ["llm_provider"]);
+    assertArrayIncludes(checkNames, ["disk_space"]);
+    assertArrayIncludes(checkNames, ["memory"]);
   } finally {
     await cleanup();
   }

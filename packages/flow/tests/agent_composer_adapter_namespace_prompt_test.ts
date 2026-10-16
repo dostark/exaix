@@ -6,6 +6,8 @@
  * @dependencies [@exaix/flow, @exaix/execution, @exaix/ai, @exaix/testing]
  * @related-files [packages/flow/src/agent_composer_adapter.ts, packages/flow/tests/shared_namespace_prompt_test.ts]
  */
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assert } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseToml } from "@std/toml";
@@ -19,11 +21,12 @@ import { EventLogger } from "@exaix/core/logger";
 import { PortalPermissionsService } from "@exaix/portal";
 import { createMockConfig, initTestDbService } from "@exaix/testing";
 import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import { readConfigFixture } from "@exaix/testing";
 
 const TASK = "Compose the research findings.";
 const BOUND = 2048;
 const BIG = { "findings.code": "x".repeat(10_000) };
-const AGENTS_DIR = new URL("../../../Blueprints/Agents", import.meta.url).pathname;
+const AGENTS_DIR = new URL(`../../../${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`, import.meta.url).pathname;
 const ENCODER = new TextEncoder();
 
 function blockBytes(prompt: string): number {
@@ -89,7 +92,7 @@ Deno.test("[config] flow.namespace_prompt_max_bytes also bounds the strategy req
         return Promise.resolve(result);
       },
     });
-    const agents = join(dbService.tempDir, "Blueprints", "Agents");
+    const agents = pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(agents, { recursive: true });
     await Deno.writeTextFile(
       join(agents, "test-agent.md"),
@@ -120,7 +123,7 @@ Deno.test("[config] a [flow] value parsed from TOML bounds the evidence block", 
   try {
     const base = createMockConfig(dbService.tempDir);
     const parsed = ConfigSchema.parse(
-      parseToml(`[system]\nwatcher_timeout_sec = 60\n[flow]\nnamespace_prompt_max_bytes = ${BOUND}\n`),
+      parseToml(readConfigFixture("flow-namespace-prompt", { bound: String(BOUND) })),
     );
     const prompts: string[] = [];
     const adapter = new AgentComposerAdapter(capturingRunner(prompts), AGENTS_DIR, {

@@ -21,106 +21,22 @@ import {
   scanScenarioDir,
 } from "../../scripts/check_scenario_declarative.ts";
 
-const DECLARATIVE_YAML = `schema_version: "1.0.0"
-id: "declarative-only"
-pack: "smoke"
-portals: []
-mode_support: ["auto"]
-steps:
-  - id: "start-daemon"
-    type: "exactl"
-    command: "daemon"
-    args: ["start"]
-  - id: "wait-ready"
-    type: "exactl"
-    command: "journal"
-    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
-    timeout_sec: 30
-    input_criteria: []
-    output_criteria: []
-  - id: "assert-created"
-    type: "json-assert"
-    command: "request"
-`;
+const DECLARATIVE_YAML = await Deno.readTextFile(new URL("./fixtures/declarative.yaml", import.meta.url));
 
-const PROCEDURAL_YAML = `schema_version: "1.0.0"
-id: "procedural"
-pack: "smoke"
-portals: []
-mode_support: ["auto"]
-steps:
-  - id: "setup-repo"
-    type: "shell"
-    command: "sh"
-    args: ['-c', 'cp -r "$FRAMEWORK_HOME/fixtures/x" "$WORKSPACE_ROOT/todo-app" && git init -q']
-  - id: "approve-review"
-    type: "shell"
-    command: "sh"
-    args: ['-c', 'trace_id=$(sqlite3 "$WORKSPACE_ROOT/.exa/journal.db" "SELECT trace_id FROM activity LIMIT 1"); exactl review approve "request-$trace_id"']
-  - id: "verify-tests"
-    type: "shell"
-    command: "sh"
-    args: ['-c', 'cd "$WORKSPACE_ROOT/todo-app" && deno test src/']
-  - id: "probe-file"
-    type: "shell"
-    command: "sh"
-    args: ['-c', 'test ! -f /tmp/escaped.txt && echo ok']
-`;
+const PROCEDURAL_YAML = await Deno.readTextFile(new URL("./fixtures/procedural.yaml", import.meta.url));
 
-const SQL_JOURNAL_ASSERT_YAML = `schema_version: "1.0.0"
-id: "sql-journal-assert"
-pack: "smoke"
-portals: []
-mode_support: ["auto"]
-steps:
-  - id: "no-dynamic-tools"
-    type: "journal-assert"
-    args: ["SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM activity WHERE action_type = 'dynamic_tool_call')"]
-  - id: "declarative"
-    type: "journal-assert"
-    action_type: "dynamic_tool_call"
-    expect_count: 0
-`;
+const SQL_JOURNAL_ASSERT_YAML = await Deno.readTextFile(new URL("./fixtures/sql-journal-assert.yaml", import.meta.url));
 
-const RELABELED_SHELL_YAML = `schema_version: "1.0.0"
-id: "relabeled-shell"
-pack: "smoke"
-portals: []
-mode_support: ["auto"]
-steps:
-  - id: "probe"
-    type: "run-script"
-    command: "sh"
-    args: ["-c", "pgrep -f '[a]pps/x' >/dev/null && echo LEAKED || echo clean"]
-  - id: "helper"
-    type: "run-script"
-    command: "deno"
-    args: ["run", "-A", "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts", "read_file"]
-`;
+const RELABELED_SHELL_YAML = await Deno.readTextFile(new URL("./fixtures/relabeled-shell.yaml", import.meta.url));
 
-const HARDCODED_PATH_YAML = `schema_version: "1.0.0"
-id: "hardcoded-path"
-pack: "smoke"
-portals: []
-mode_support: ["auto"]
-steps:
-  - id: "wait-plan"
-    type: "wait-for-file"
-    args: ["**/.exa/worktrees/todo-app/*/plan.md"]
-    output_criteria:
-      - id: "plan-found"
-        kind: "file-found"
-        path_pattern: "**/.exa/worktrees/todo-app/*/plan.md"
-  - id: "wait-relative"
-    type: "wait-for-file"
-    args: ["**/Plans/*_plan.md"]
-`;
+const HARDCODED_PATH_YAML = await Deno.readTextFile(new URL("./fixtures/hardcoded-path.yaml", import.meta.url));
 
 Deno.test("[scenario-declarative] classifier recognizes each procedural category", () => {
   assertEquals(classifyShellStep("sh", ["-c", `sqlite3 "$WORKSPACE_ROOT/.exa/journal.db" "SELECT 1"`]), "journal-sql");
   assertEquals(classifyShellStep("sh", ["-c", `"$FRAMEWORK_HOME/bin/exactl" review approve request-x`]), "exactl-glue");
   assertEquals(classifyShellStep("sh", ["-c", "cd todo-app && deno test src/"]), "test-run");
   assertEquals(
+    // path-builder-exclude: the fixture spells shell variables
     classifyShellStep("cp", ["-r", "$FRAMEWORK_HOME/Blueprints", "$WORKSPACE_ROOT/Blueprints"]),
     "sandbox-setup",
   );

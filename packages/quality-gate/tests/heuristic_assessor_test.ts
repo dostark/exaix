@@ -7,7 +7,7 @@
  * @related-files [packages/quality-gate/src/heuristic_assessor.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { assessHeuristic } from "@exaix/quality-gate";
 import { ANALYZER_VERSION } from "@exaix/core";
 import { RequestQualityIssueType, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
@@ -144,7 +144,7 @@ Deno.test("[HeuristicAssessor] maps score to correct recommendation", () => {
     RequestQualityRecommendation.NEEDS_CLARIFICATION,
     RequestQualityRecommendation.REJECT,
   ];
-  assertEquals(validRecs.includes(result.recommendation), true);
+  assertArrayIncludes(validRecs, [result.recommendation]);
 });
 
 Deno.test("[HeuristicAssessor] score clamped to 0-100 range", () => {

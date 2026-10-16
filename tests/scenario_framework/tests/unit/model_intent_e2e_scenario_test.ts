@@ -10,7 +10,7 @@
  * @related-files [tests/scenario_framework/scenarios/provider_live/model_intent_e2e.yaml, tests/scenario_framework/fixtures/requests/provider_live/model_intent_e2e.md]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";
@@ -35,8 +35,8 @@ Deno.test("model_intent_e2e scenario loads against the scenario schema (dry-run,
   assert(scenario.request_fixture.endsWith("model_intent_e2e.md"));
 
   const stepIds = scenario.steps.map((step) => step.id);
-  assertEquals(stepIds.includes("submit-request"), true);
-  assertEquals(stepIds.includes("assert-model-resolved"), true);
+  assertArrayIncludes(stepIds, ["submit-request"]);
+  assertArrayIncludes(stepIds, ["assert-model-resolved"]);
 });
 
 // Only execution emits model.resolved. Approve and execute the plan before the assertion.

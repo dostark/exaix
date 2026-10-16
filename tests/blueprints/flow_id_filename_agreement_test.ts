@@ -14,11 +14,13 @@
  * @related-files [packages/flow/src/flow_loader.ts, packages/request/src/processor.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
-const FLOWS_DIR = join(REPO_ROOT, "Blueprints", "Flows");
+const FLOWS_DIR = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_FLOWS_PATH);
 
 interface IFlowFile {
   filename: string;

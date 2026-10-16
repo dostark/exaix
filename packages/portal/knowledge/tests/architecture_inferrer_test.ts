@@ -8,7 +8,7 @@
  * Uses mock IModelProvider and MockOutputValidator to avoid real LLM calls.
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertStringIncludes } from "@std/assert";
 import type { ZodType } from "zod";
 import { ArchitectureInferrer, type IArchitectureValidator } from "@exaix/portal/knowledge";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -218,9 +218,8 @@ Deno.test("[ArchitectureInferrer] truncates long files to ARCHITECTURE_INFERRER_
 
   // Prompt must NOT contain a line beyond the limit
   const limitLine = `line_${ARCHITECTURE_INFERRER_MAX_FILE_TOKENS}`;
-  assertEquals(
+  assertFalse(
     getCapturedPrompt().includes(limitLine),
-    false,
     `Prompt should not include content beyond line ${ARCHITECTURE_INFERRER_MAX_FILE_TOKENS}`,
   );
   // But should include content up to the limit
@@ -413,7 +412,7 @@ Deno.test("[ArchitectureInferrer] logs error when logger provided and all retrie
     dependencySummary: "",
   });
   assertEquals(errors.length > 0, true, "Should have logged at least one error");
-  assertEquals(errors[0].message.includes("retries"), true);
+  assertStringIncludes(errors[0].message, "retries");
 });
 
 Deno.test("[ArchitectureInferrer] backoff increases between retries", async () => {

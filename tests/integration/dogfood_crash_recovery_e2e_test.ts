@@ -14,6 +14,8 @@
  * @dependencies [@exaix/storage-sqlite, @exaix/core, @std/path, @std/fs]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -76,7 +78,7 @@ Deno.test({
     writeDaemonConfig(configPath, tempDir);
 
     const traceId = crypto.randomUUID();
-    const requestPath = join(tempDir, "Workspace", "Requests", `${traceId}_crash_recovery.md`);
+    const requestPath = pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH, `${traceId}_crash_recovery.md`);
 
     try {
       // Migrate before seeding so the journal the daemon later opens carries the full
@@ -123,7 +125,7 @@ Deno.test({
             "no terminal event may exist for an orphaned delegation",
           );
           // No return.json written for the trace.
-          const returnPath = join(tempDir, "Workspace", "Session", traceId, "return.json");
+          const returnPath = pathBuilders.workspacePath(tempDir, "Session", traceId, "return.json");
           assertEquals(await exists(returnPath), false, "no return.json may exist");
         } finally {
           await db.close();

@@ -17,10 +17,10 @@
  * @related-files [apps/daemon/main.ts, packages/request/src/processor.ts, packages/core/src/types/constants.ts]
  */
 
+import { DEFAULT_FLOWS_DIR, DEFAULT_FLOWS_PATH, ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, relative, resolve } from "@std/path";
-import { ExaPathDefaults } from "@exaix/core";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
@@ -69,7 +69,9 @@ Deno.test("[flow-catalog] no production consumer recomposes the flows path from 
     const source = codeOnly(await Deno.readTextFile(file));
     // The defaults table's own declaration is the one legitimate composition site — identified
     // by what the file declares rather than by path, so the rule survives the table moving.
+    // The shared composite constant is the other one: it defines the name every consumer reads.
     if (/export const ExaPathDefaults\b/.test(source)) continue;
+    if (/export const DEFAULT_FLOWS_DIR\b/.test(source)) continue;
     for (const statement of recompositionStatements(source)) {
       offenders.push(`${relative(REPO_ROOT, file)}: ${statement}`);
     }
@@ -85,7 +87,7 @@ Deno.test("[flow-catalog] no production consumer recomposes the flows path from 
 Deno.test("[flow-catalog] ExaPathDefaults.flows already composes the parts, so consumers need not", () => {
   // Pins the premise of the guard above: reading `paths.flows` yields the same directory the
   // recomposition produced, so the migration is behaviour-preserving on a default workspace.
-  assertEquals(ExaPathDefaults.flows, "Blueprints/Flows");
+  assertEquals(ExaPathDefaults.flows, DEFAULT_FLOWS_DIR);
   assertEquals(ExaPathDefaults.flows, `${ExaPathDefaults.blueprints}/Flows`);
 });
 
@@ -96,7 +98,7 @@ Deno.test("[flow-catalog] a custom paths.flows resolves to one directory for eve
   const overridden = "Catalogs/MyFlows";
 
   const asConsumersResolveIt = join(root, overridden);
-  const asTheDaemonUsedTo = join(root, ExaPathDefaults.blueprints, "Flows");
+  const asTheDaemonUsedTo = join(root, ExaPathDefaults.blueprints, DEFAULT_FLOWS_PATH);
 
   assertEquals(asConsumersResolveIt, join("/srv/workspace", "Catalogs/MyFlows"));
   assertEquals(
@@ -110,7 +112,8 @@ Deno.test("[path-defaults] a stale bare paths.flows value is rejected at config 
   // The exact value that produced "No flows found": the pre-Phase-142 default, which resolves to
   // `<root>/Flows` — a directory the catalog has never shipped in. Failing at load puts the error
   // where an operator can act on it, rather than four layers down as an empty catalog.
-  const result = ConfigSchema.safeParse({ system: {}, paths: { flows: "Flows" } });
+  // path-builder-exclude: the stale bare value is the rule under test
+  const result = ConfigSchema.safeParse({ system: {}, paths: { flows: DEFAULT_FLOWS_PATH } });
 
   assertEquals(result.success, false, 'a config carrying the stale bare `flows = "Flows"` must not parse');
   const message = result.success ? "" : result.error.issues.map((i) => i.message).join(" ");

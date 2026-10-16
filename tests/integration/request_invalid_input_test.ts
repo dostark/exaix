@@ -5,6 +5,7 @@
  * graceful failure and clear diagnostic reporting for invalid YAML or schema breaches.
  */
 
+import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
@@ -26,7 +27,7 @@ Deno.test("Integration: Invalid Input - System stability after parser failures",
     });
 
     await t.step("Recovery from corrupt files remains possible", async () => {
-      const corruptPath = join(env.tempDir, "Workspace/Requests/corrupt.md");
+      const corruptPath = join(env.tempDir, `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}/corrupt.md`);
       await Deno.writeTextFile(corruptPath, "CORRUPT-BINARY-DATA");
 
       try {
@@ -43,7 +44,7 @@ Deno.test("Integration: Invalid Input - System stability after parser failures",
 
     await t.step("Invalid input does not affect other requests", async () => {
       const valid1 = await env.createRequest("Valid request 1");
-      const brokenPath = join(env.tempDir, "Workspace/Requests/broken.md");
+      const brokenPath = join(env.tempDir, `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}/broken.md`);
       await Deno.writeTextFile(brokenPath, `---\ninvalid:---\nbad`);
 
       const valid2 = await env.createRequest("Valid request 2");

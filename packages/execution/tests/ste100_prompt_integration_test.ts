@@ -22,7 +22,9 @@
  * ]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
@@ -41,7 +43,7 @@ import { createMockConfig, createMockLogger, initTestDbService, REPO_ROOT } from
 
 const WELL_FORMED_RESPONSE = "<thought>ok</thought><content>done</content>";
 const FIXTURE_SKILLS_DIR = join(import.meta.dirname!, "../../../tests/scenario_framework/fixtures/ste100/skills");
-const REAL_SKILLS_DIR = join(REPO_ROOT, "Blueprints", "Skills");
+const REAL_SKILLS_DIR = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH);
 
 /** Records every prompt it is sent and returns scripted responses — the capturing
  *  provider pattern used across execution tests. */
@@ -72,7 +74,7 @@ function makeCapturingProvider(responses: string[]): {
 /** Loads the fixture skill folders through a real SkillsService. Returns the prompt `AgentRunner.run` sends. */
 async function captureContractPrompt(userPrompt: string, pinnedSkillIds: string[]): Promise<string> {
   const root = await Deno.makeTempDir({ prefix: "ste100-prompt-" });
-  const memoryDir = join(root, "Memory");
+  const memoryDir = pathBuilders.memoryPath(root);
   try {
     const { db, cleanup } = await initTestDbService();
     try {
@@ -149,8 +151,8 @@ Deno.test("Metadata-only obligation survives through the unchanged production fo
   // …via the instructions body, not a metadata dump (the metadata lists themselves must
   // not be rendered; only the body's prose mention of them may appear).
   assertStringIncludes(prompt, "**Instructions:**");
-  assertEquals(prompt.includes("output_requirements:"), false);
-  assertEquals(prompt.includes('"output_requirements"'), false);
+  assertFalse(prompt.includes("output_requirements:"));
+  assertFalse(prompt.includes('"output_requirements"'));
 });
 
 /** Runs a real Blueprint skill through the full chain — SkillsService →
@@ -161,7 +163,7 @@ async function captureRealSkillPrompt(
   options?: { costTargetTokens?: number; render_mode?: "full" | "trimmed"; requestText?: string },
 ): Promise<{ prompt: string; skill: ISkill | null }> {
   const root = await Deno.makeTempDir({ prefix: "ste100-corpus-" });
-  const memoryDir = join(root, "Memory");
+  const memoryDir = pathBuilders.memoryPath(root);
   try {
     const { db, cleanup } = await initTestDbService();
     try {
@@ -245,11 +247,7 @@ Deno.test("Critical response guidance survives context budget pressure", async (
     requestText: "Do the thing.",
   });
   assertEquals(skill !== null, true);
-  assertEquals(
-    skill!.instructions.includes("ASD-STE100"),
-    false,
-    "the STE rule lives in the agent body, not the skill",
-  );
+  assertFalse(skill!.instructions.includes("ASD-STE100"), "the STE rule lives in the agent body, not the skill");
   assertStringIncludes(prompt, "## Agent Thought Standardization");
   assertStringIncludes(prompt, "REQUIRED SKILLS & CONTRACT");
 });
@@ -296,7 +294,7 @@ Deno.test("Runtime obligation mapping forbids deduplication into unrendered meta
   // must not be delivered via `constraints`/`output_requirements` (unrendered by the real
   // fort matter). The Body instructions must carry the obligation text.
   const root = await Deno.makeTempDir({ prefix: "ste100-metadata-only-" });
-  const memoryDir = join(root, "Memory");
+  const memoryDir = pathBuilders.memoryPath(root);
   try {
     const { db, cleanup } = await initTestDbService();
     try {
@@ -313,8 +311,8 @@ Deno.test("Runtime obligation mapping forbids deduplication into unrendered meta
       await runner.run(blueprint, request, undefined);
       const prompt = prompts[0];
       assertStringIncludes(prompt, "## Reviewed body equivalent");
-      assertEquals(prompt.includes("output_requirements:"), false);
-      assertEquals(prompt.includes("constraints:"), false);
+      assertFalse(prompt.includes("output_requirements:"));
+      assertFalse(prompt.includes("constraints:"));
     } finally {
       await cleanup();
     }

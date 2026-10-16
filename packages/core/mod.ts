@@ -7,6 +7,7 @@
  */
 
 export * from "./src/types/enums.ts";
+// The shared constants live in @exaix/shared, the lower layer.
 export * from "./src/types/constants.ts";
 export * from "./src/types/tool_aliases.ts";
 export { ActorType } from "./src/types/actor.ts";

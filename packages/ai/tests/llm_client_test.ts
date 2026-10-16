@@ -5,7 +5,7 @@
  * @architectural-layer AI
  * @description Unit tests for ReAct reasoning logic in LlmClient.
  */
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { LlmClient } from "../src/llm_client.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas";
 
@@ -84,13 +84,13 @@ Deno.test("LlmClient - builds correct reasoning prompt and handles valid tool_ca
   assertEquals(result.model, "test-model");
 
   const prompt = provider.lastPrompt;
-  assertEquals(prompt.includes("Test Agent"), true);
-  assertEquals(prompt.includes("test description"), true);
-  assertEquals(prompt.includes("Test Objective"), true);
-  assertEquals(prompt.includes("Context Data"), true);
-  assertEquals(prompt.includes("Iteration: 2 of 10"), true);
-  assertEquals(prompt.includes("read_file"), true);
-  assertEquals(prompt.includes('"path":{"type":"string"}'), true);
+  assertStringIncludes(prompt, "Test Agent");
+  assertStringIncludes(prompt, "test description");
+  assertStringIncludes(prompt, "Test Objective");
+  assertStringIncludes(prompt, "Context Data");
+  assertStringIncludes(prompt, "Iteration: 2 of 10");
+  assertStringIncludes(prompt, "read_file");
+  assertStringIncludes(prompt, '"path":{"type":"string"}');
 });
 
 Deno.test("LlmClient - handles complete action", async () => {

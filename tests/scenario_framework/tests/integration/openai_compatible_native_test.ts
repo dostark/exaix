@@ -5,7 +5,9 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/scenarios/agent_flows/openai-compatible-native.yaml, tests/scenario_framework/fixtures/phase155/local-compatible.toml, tests/scenario_framework/runner/synthetic_runner.ts]
  */
-import { assert, assertEquals } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PLANS_PATH } from "@exaix/shared";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { withEnv } from "@exaix/testing";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -337,7 +339,7 @@ Deno.test({
       } finally {
         await db.close();
       }
-      const traceDir = join(workspaceRoot, "Memory", "Execution", traceId);
+      const traceDir = pathBuilders.memoryPath(workspaceRoot, DEFAULT_EXECUTION_MEMORY_PATH, traceId);
       assert((await Deno.readTextFile(join(traceDir, "summary.md"))).length > 0);
       assert((await Deno.readTextFile(join(traceDir, "plan.md"))).length > 0);
       assert(rows.some((row) => row.action_type === "report.generated" && row.trace_id === traceId));
@@ -441,8 +443,8 @@ Deno.test({
       assert(llmFailure, "the provider failure must be journaled");
       assertEquals(llmFailure.trace_id, terminal.trace_id);
       const journal = JSON.stringify(result.rows);
-      assertEquals(journal.includes(SENSITIVE_SENTINEL), false);
-      assertEquals(journal.includes(FIXTURE_KEY), false);
+      assertFalse(journal.includes(SENSITIVE_SENTINEL));
+      assertFalse(journal.includes(FIXTURE_KEY));
       assertEquals(result.rows.some((row) => row.action_type === "execution.completed"), false);
       const captureFiles = join(workspaceRoot, "fixtures", "mock_recordings");
       assertEquals(await Deno.stat(captureFiles).then(() => true, () => false), false);
@@ -542,7 +544,7 @@ Deno.test({
       const replays = (chatCalls[2].body.messages ?? []).filter((message) => message.role === "tool");
       assertEquals(replays.map((message) => message.tool_call_id), DYNAMIC_CALL_IDS);
       assert(replays[0].content?.includes("TodoApp"), "the allowed call replays its real result");
-      assertEquals(replays[1].content?.includes("IUser"), false, "the denied call must not leak the file");
+      assertFalse(replays[1].content?.includes("IUser"), "the denied call must not leak the file");
       assert(/den(y|ied)|approv/i.test(replays[1].content ?? ""), replays[1].content);
       const rows = await readActivity(join(workspaceRoot, "exa.config.toml"));
       assertEquals(rows.filter((row) => row.action_type === "dynamic_tool_call").length, 1);
@@ -582,10 +584,15 @@ Deno.test({
       } finally {
         await db.close();
       }
-      const successArtifact = join(workspaceRoot, "Memory", "Execution", terminal.trace_id!, "plan.md");
+      const successArtifact = pathBuilders.memoryPath(
+        workspaceRoot,
+        DEFAULT_EXECUTION_MEMORY_PATH,
+        terminal.trace_id!,
+        "plan.md",
+      );
       assertEquals(await Deno.stat(successArtifact).then(() => true, () => false), false);
-      const plans = await Deno.stat(join(workspaceRoot, "Workspace", "Plans")).then(
-        () => [...Deno.readDirSync(join(workspaceRoot!, "Workspace", "Plans"))].length,
+      const plans = await Deno.stat(pathBuilders.workspacePath(workspaceRoot, DEFAULT_PLANS_PATH)).then(
+        () => [...Deno.readDirSync(pathBuilders.workspacePath(workspaceRoot!, DEFAULT_PLANS_PATH))].length,
         () => 0,
       );
       assertEquals(plans, 0);
@@ -612,7 +619,7 @@ Deno.test({
       assert(result.observed.length >= 1, "the inherited endpoint must have been called");
       const terminal = terminalFailure(result.rows);
       assert(/byte|size|large|limit/i.test(terminal.payload), terminal.payload);
-      assertEquals(JSON.stringify(result.rows).includes(SENSITIVE_SENTINEL), false);
+      assertFalse(JSON.stringify(result.rows).includes(SENSITIVE_SENTINEL));
       assertEquals(result.rows.some((row) => row.action_type === "execution.completed"), false);
     } finally {
       if (workspaceRoot) await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});

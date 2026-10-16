@@ -6,11 +6,12 @@
  * @related-files ["packages/memory/src/session/session_memory.ts", "packages/memory/src/bank/memory_bank.ts"]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
-import type { IEmbeddableMemoryEntry, Opt, Reason } from "@exaix/core/types";
+import type { IEmbeddableMemoryEntry, IEmbeddingSearchResult, Opt, Reason } from "@exaix/core/types";
 import { MemoryType } from "@exaix/core";
 import { HnswVectorIndex } from "./vector_index.ts";
 import {
@@ -20,18 +21,6 @@ import {
   embeddableTitle,
   LEGACY_EMBEDDING_KIND,
 } from "./embeddable_entry.ts";
-
-/**
- * Embedding search result
- */
-export interface IEmbeddingSearchResult {
-  id: string;
-  title: string;
-  summary: string;
-  similarity: number;
-  /** Which memory kind the embedding was created from; absent on legacy index entries (treated as learning). */
-  kind?: MemoryType;
-}
 
 /** 64-dimensional mock embedding vector interface. */
 export interface IMemoryEmbeddingService {
@@ -150,7 +139,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
 
   /** Create a new Memory Embedding Service instance. */
   constructor(private config: Config) {
-    this.embeddingsDir = join(config.system.root, config.paths.memory, "Index", "embeddings");
+    this.embeddingsDir = pathBuilders.memoryIndexPath(join(config.system.root, config.paths.memory), "embeddings");
     this.manifestPath = join(this.embeddingsDir, "manifest.json");
     this.hnsw = new HnswVectorIndex();
   }

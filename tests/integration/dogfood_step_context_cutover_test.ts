@@ -13,7 +13,9 @@
  * @related-files [scripts/plan_to_requests.ts, tests/integration/fixtures/phase-nn-fixture-with-context.md, tests/integration/plan_to_requests_test.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH } from "@exaix/shared";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
@@ -79,15 +81,13 @@ Deno.test(
     const wt = await makeRealWorktree();
     try {
       // Mirror the dogfood workspace shape: requests live under <root>/workspace/...
-      const outDir = join(
-        await Deno.makeTempDir({ prefix: "p173-cutover-sandbox-" }),
-        "workspace",
-        "Workspace",
-        "Requests",
+      const outDir = pathBuilders.workspacePath(
+        join(await Deno.makeTempDir({ prefix: "p173-cutover-sandbox-" }), "workspace"),
+        DEFAULT_REQUESTS_PATH,
       );
       const run = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt.root]);
       assertEquals(run.code, 0, `generator failed: ${run.stderr}`);
-      assertEquals(run.stderr.includes("Unsafe"), false);
+      assertFalse(run.stderr.includes("Unsafe"));
 
       const request = await Deno.readTextFile(join(outDir, `${CONTEXT_SLUG}-step-1.md`));
       assertEquals(request.includes("## Why This Step Exists"), true, "inline context block present");
@@ -97,7 +97,7 @@ Deno.test(
 
       // Resolvable BY CONSTRUCTION: the referenced relative path exists directly
       // under the worktree root that will be the delegate's cwd.
-      const resolvedTarget = join(wt.root, ".exa", "PlanContext", `${CONTEXT_SLUG}.md`);
+      const resolvedTarget = pathBuilders.runtimePath(wt.root, "PlanContext", `${CONTEXT_SLUG}.md`);
       const stat = await Deno.stat(resolvedTarget);
       assertEquals(stat.isFile, true);
       assertEquals(

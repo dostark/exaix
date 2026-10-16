@@ -5,6 +5,8 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/tests/helpers/expected_call_manifest.ts]
  */
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { assert } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
@@ -24,7 +26,7 @@ export interface IManifestCase {
 }
 
 const FRAMEWORK_HOME = fromFileUrl(new URL("../../../", import.meta.url));
-const FLOWS_DIR = join(FRAMEWORK_HOME, "..", "..", "Blueprints", "Flows");
+const FLOWS_DIR = pathBuilders.blueprintsPath(join(FRAMEWORK_HOME, "..", ".."), DEFAULT_FLOWS_PATH);
 const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---/;
 interface IRequestFrontmatter {
   flow?: string;

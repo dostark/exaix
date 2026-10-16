@@ -6,7 +6,8 @@
  * skip-on-invalid-key, truncate-on-oversized-value, and throw-only-on-total-quota.
  */
 
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/shared";
+import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 
@@ -14,7 +15,6 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
 import { resolveMemoryExecutionRoot } from "../../src/config/mod.ts";
-import { DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/core";
 import { ExecutionMemoryStore, NamespaceQuotaExceededError } from "@exaix/core/execution-memory";
 
 function makeConfig(root: string): Config {
@@ -132,7 +132,7 @@ Deno.test("ExecutionMemoryStore: getNamespacePath resolves into the trace's exec
     const store = new ExecutionMemoryStore(config);
     const path = store.getNamespacePath("trace-path");
     assertStringIncludes(path, join(resolveMemoryExecutionRoot(config.paths), "trace-path"));
-    assertEquals(path.endsWith("namespace.md"), false, "the markdown artifact must be retired");
+    assertFalse(path.endsWith("namespace.md"), "the markdown artifact must be retired");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

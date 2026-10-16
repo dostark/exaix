@@ -1,0 +1,5 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+[ai]
+provider = "claude-cli"
+model = "claude-sonnet-5"

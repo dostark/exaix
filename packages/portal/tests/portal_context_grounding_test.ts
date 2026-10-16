@@ -5,6 +5,8 @@
  * context, such as file lists and repository structure, into agent prompts.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "@exaix/request";
@@ -15,7 +17,10 @@ import type { IApplicationContext } from "@exaix/core/types";
 import { createStubConfig, createStubDisplay, createStubGit, initTestDbService } from "@exaix/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
-const CODE_ANALYST_BLUEPRINT_PATH = new URL("../../../Blueprints/Agents/code-analyst.md", import.meta.url);
+const CODE_ANALYST_BLUEPRINT_PATH = new URL(
+  `../../../${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}/code-analyst.md`,
+  import.meta.url,
+);
 
 Deno.test("RequestProcessor: Portal context includes file list for grounding", async () => {
   const { tempDir, db, config, cleanup } = await initTestDbService();
@@ -38,7 +43,7 @@ Deno.test("RequestProcessor: Portal context includes file list for grounding", a
     }];
 
     // 2. Setup agent blueprint
-    const blueprintsDir = join(tempDir, "Blueprints", "Agents");
+    const blueprintsDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(blueprintsDir, { recursive: true });
     await Deno.writeTextFile(
       join(blueprintsDir, "code-analyst.md"),
@@ -61,8 +66,8 @@ Deno.test("RequestProcessor: Portal context includes file list for grounding", a
     };
 
     const processor = new RequestProcessor({
-      workspacePath: join(tempDir, "Workspace"),
-      requestsDir: join(tempDir, "Requests"),
+      workspacePath: pathBuilders.workspacePath(tempDir),
+      requestsDir: pathBuilders.requestsPath(tempDir),
       blueprintsPath: blueprintsDir,
       includeReasoning: true,
       context,
@@ -71,8 +76,8 @@ Deno.test("RequestProcessor: Portal context includes file list for grounding", a
     });
 
     // 4. Create request
-    const requestPath = join(tempDir, "Requests", "req1.md");
-    await Deno.mkdir(join(tempDir, "Requests"), { recursive: true });
+    const requestPath = pathBuilders.requestsPath(tempDir, "req1.md");
+    await Deno.mkdir(pathBuilders.requestsPath(tempDir), { recursive: true });
     await Deno.writeTextFile(
       requestPath,
       `---

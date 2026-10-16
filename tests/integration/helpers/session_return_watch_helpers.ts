@@ -7,6 +7,7 @@
  * @related-files [tests/integration/session_return_watch_test.ts, tests/integration/session_return_watch_security_test.ts]
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { join } from "@std/path";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
@@ -80,7 +81,7 @@ export async function briefFor(
     gate,
     tool: "claude-code",
     objective: "Do the work.",
-    artifactRef: "Workspace/Plans/req_plan.md",
+    artifactRef: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/req_plan.md`,
     permittedPaths: permitted,
     tokenBudget: { max_input_tokens: 50_000, max_output_tokens: 50_000, max_total_tokens: 100_000 },
   });

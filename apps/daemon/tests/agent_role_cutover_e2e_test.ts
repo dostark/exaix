@@ -13,6 +13,8 @@
  * @related-files [apps/daemon/main.ts, packages/request/src/processor.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
@@ -29,10 +31,10 @@ import {
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
 
 function writeSeniorCoderAgentRole(root: string): void {
-  const dir = join(root, "Blueprints", "Agents");
+  const dir = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   Deno.copyFileSync(
-    join(REPO_ROOT, "Blueprints", "Agents", "senior-coder.md"),
+    pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, "senior-coder.md"),
     join(dir, "senior-coder.md"),
   );
 }
@@ -40,7 +42,7 @@ function writeSeniorCoderAgentRole(root: string): void {
 /** A plain (non-flow) request selecting `agent_role: senior-coder`; body text includes
  *  "Implement" so the mock provider's default planning pattern returns a real plan. */
 function writeAgentRoleRequest(root: string): void {
-  const dir = join(root, "Workspace", "Requests");
+  const dir = pathBuilders.workspacePath(root, DEFAULT_REQUESTS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   Deno.writeTextFileSync(
     join(dir, "agent-role-cutover.md"),
@@ -118,14 +120,14 @@ Deno.test({
           rows.length > 0,
           "activity table must carry at least one row with agent_role = 'senior-coder', queried " +
             "directly via the real DB (not a mock store) — the daemon must have resolved " +
-            "Blueprints/Agents/senior-coder.md for this request",
+            `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}/senior-coder.md for this request`,
         );
         assertEquals(rows[0].agent_role, "senior-coder");
       } finally {
         await db.close();
       }
 
-      const plansDir = join(tempDir, "Workspace", "Plans");
+      const plansDir = pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH);
       let planFiles: string[] = [];
       try {
         planFiles = [...Deno.readDirSync(plansDir)].filter((e) => e.isFile).map((e) => e.name);

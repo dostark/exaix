@@ -15,6 +15,13 @@
  * @related-files [packages/core/src/skills/skills.ts, packages/request/src/blueprint_resolver.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import {
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_SKILLS_MEMORY_PATH,
+} from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { walk } from "@std/fs";
@@ -53,13 +60,13 @@ function assertTreesEqual(before: Map<string, string>, after: Map<string, string
 
 Deno.test("[CatalogImmutability] Memory/Skills/ and Blueprints/Agents/ are byte-identical after skill and agent-role overlays run", async () => {
   const { db, config, cleanup } = await initTestDbService();
-  const skillsDir = join(config.system.root, config.paths.memory, "Skills");
+  const skillsDir = pathBuilders.memorySkillsPath(join(config.system.root, config.paths.memory));
   const agentRolesRoot = await Deno.makeTempDir({ prefix: "immutability-agent-roles-" });
-  const agentRolesDir = join(agentRolesRoot, "Agents");
+  const agentRolesDir = pathBuilders.agentsPath(agentRolesRoot);
   const skillOverlayDir = await Deno.makeTempDir({ prefix: "immutability-skill-overlay-" });
   const shippedSkillsDir = await Deno.makeTempDir({ prefix: "immutability-shipped-skills-" });
   const agentRoleOverlayRoot = await Deno.makeTempDir({ prefix: "immutability-agent-role-overlay-" });
-  const agentRoleOverlayDir = join(agentRoleOverlayRoot, "Agents");
+  const agentRoleOverlayDir = pathBuilders.agentsPath(agentRoleOverlayRoot);
   const mockLogger = createMockEventLogger();
 
   try {
@@ -119,9 +126,9 @@ Deno.test("[CatalogImmutability] Memory/Skills/ and Blueprints/Agents/ are byte-
     const shippedAfter = await snapshotTree(shippedSkillsDir);
     const agentRolesAfter = await snapshotTree(agentRolesDir);
 
-    assertTreesEqual(skillsBefore, skillsAfter, "Memory/Skills/");
-    assertTreesEqual(shippedBefore, shippedAfter, "Blueprints/Skills/");
-    assertTreesEqual(agentRolesBefore, agentRolesAfter, "Blueprints/Agents/");
+    assertTreesEqual(skillsBefore, skillsAfter, `${DEFAULT_MEMORY_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/`);
+    assertTreesEqual(shippedBefore, shippedAfter, `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/`);
+    assertTreesEqual(agentRolesBefore, agentRolesAfter, `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}/`);
   } finally {
     await Deno.remove(agentRolesRoot, { recursive: true });
     await Deno.remove(skillOverlayDir, { recursive: true });

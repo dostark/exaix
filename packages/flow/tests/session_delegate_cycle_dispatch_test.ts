@@ -9,6 +9,8 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/src/step_handlers/session_delegate_cycle_step_handler.ts, packages/flow/src/flow_trace_store.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
@@ -75,7 +77,7 @@ class RecordingCoordinator implements ISessionDelegationCoordinator {
 
 async function makeOneStepWorktree(slug: string): Promise<string> {
   const root = await Deno.makeTempDir({ prefix: "cycle-dispatch-" });
-  const dir = join(root, ".exa", "PlanContext");
+  const dir = pathBuilders.runtimePath(root, "PlanContext");
   await Deno.mkdir(dir, { recursive: true });
   await Deno.writeTextFile(
     join(dir, `${slug}.md`),
@@ -138,7 +140,7 @@ Deno.test("[integration] a real FlowRunner dispatch reaches SessionDelegateCycle
       requestId: "req-cycle-1",
       portal: "exaix-self",
       executionRoot: root,
-      planContextRef: ".exa/PlanContext/phase-174.md",
+      planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
     });
 
     assertEquals(result.success, true);
@@ -148,7 +150,7 @@ Deno.test("[integration] a real FlowRunner dispatch reaches SessionDelegateCycle
     assertEquals(coordinator.requests[0].sequence, 1);
     assertEquals(coordinator.requests[0].portalAlias, "exaix-self");
     assertEquals(coordinator.requests[0].worktreePath, root);
-    assertEquals(coordinator.requests[0].artifactRef, ".exa/PlanContext/phase-174.md");
+    assertEquals(coordinator.requests[0].artifactRef, `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`);
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -175,7 +177,7 @@ Deno.test("[restart] omitted traceId normalizes to one stable parent trace for t
         requestId: "req-cycle-restart",
         portal: "exaix-self",
         executionRoot: root,
-        planContextRef: ".exa/PlanContext/phase-174-restart.md",
+        planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174-restart.md`,
       });
     }
 
@@ -204,7 +206,7 @@ Deno.test("[restart] a cycle request with neither traceId nor requestId fails be
       runner.execute(makeCycleFlow(), {
         userPrompt: "run the cycle",
         executionRoot: "/tmp/does-not-matter",
-        planContextRef: ".exa/PlanContext/phase-174.md",
+        planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
       }),
     FlowExecutionError,
   );
@@ -231,7 +233,7 @@ Deno.test("[security] session_delegate.enabled=false fails a session_delegate_cy
         traceId: crypto.randomUUID(),
         requestId: "req-cycle-disabled",
         executionRoot: "/tmp/does-not-matter",
-        planContextRef: ".exa/PlanContext/phase-174.md",
+        planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
       }),
     FlowExecutionError,
   );
@@ -254,7 +256,7 @@ Deno.test("[security] session_delegate.gates omitting code_changes fails a sessi
         traceId: crypto.randomUUID(),
         requestId: "req-cycle-no-code-changes-gate",
         executionRoot: "/tmp/does-not-matter",
-        planContextRef: ".exa/PlanContext/phase-174.md",
+        planContextRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
       }),
     FlowExecutionError,
   );

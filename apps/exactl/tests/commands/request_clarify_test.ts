@@ -102,7 +102,7 @@ async function setupClarifyTest(options: IClarifyTestSetupOptions): Promise<ICla
     cleanup,
     filePath,
     tempDir,
-    waitStatesDir: join(tempDir, config.paths.workspace, config.paths.waitStates ?? "WaitStates"),
+    waitStatesDir: join(tempDir, config.paths.workspace, config.paths.waitStates),
   };
 }
 

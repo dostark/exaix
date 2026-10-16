@@ -7,12 +7,12 @@
  * @related-files [apps/exactl/src/exactl.ts, "apps/exactl/src/commands/request_commands.ts"]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import type { RequestCommands } from "../commands/request_commands.ts";
 import { type IInspectCommandOptions, InspectCommands } from "../commands/inspect_commands.ts";
 import type { ICommandContext } from "@exaix/cli/base.ts";
 import { addTokenFields } from "@exaix/cli/command_builders/display_helpers.ts";
 import {
-  DEFAULT_AGENTS_PATH,
   DEFAULT_MAX_CLARIFICATION_ROUNDS,
   DEFAULT_NONE_LABEL,
   DEFAULT_PLANNING_MAX_TOOL_CALLS_PER_ROUND,
@@ -290,7 +290,7 @@ async function handleRequestCreateDryRunContext(
     const config = appContext.config.getAll();
     const effectiveBudgetPolicy = resolveEffectiveBudgetPolicy(config, appContext.configAdapter);
     const providerInfo = ProviderFactory.getProviderInfoByName(config, config.agents.default_model);
-    const blueprintsPath = join(config.system.root, config.paths.blueprints, DEFAULT_AGENTS_PATH);
+    const blueprintsPath = pathBuilders.agentsPath(join(config.system.root, config.paths.blueprints));
     const blueprint = await loadBlueprint(blueprintsPath, agentRole);
     if (!blueprint) {
       throw new Error(`No blueprint found for agent role "${agentRole}" at ${blueprintsPath}`);

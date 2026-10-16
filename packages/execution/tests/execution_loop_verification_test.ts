@@ -8,7 +8,9 @@
  *   passed, failed, error, skipped and read-only cases.
  */
 
-import { assert, assertEquals } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { exists } from "@std/fs/exists";
@@ -90,7 +92,7 @@ async function makeVerificationLoop(options: {
   await initPortalRepo(portalDir);
 
   if (options.readOnlyAgent) {
-    const blueprintsDir = join(rootDir, "Blueprints", "Agents");
+    const blueprintsDir = pathBuilders.blueprintsPath(rootDir, DEFAULT_AGENTS_PATH);
     await ensureDir(blueprintsDir);
     await Deno.writeTextFile(
       join(blueprintsDir, "code-analyst.md"),
@@ -112,7 +114,7 @@ async function makeVerificationLoop(options: {
     }],
   });
 
-  const activeDir = join(rootDir, config.paths.workspace, "Active");
+  const activeDir = pathBuilders.activePath(join(rootDir, config.paths.workspace));
   await ensureDir(activeDir);
 
   const logger = new EventLogger({ db, defaultActor: "user:test" });
@@ -232,7 +234,7 @@ Deno.test("[execution-verification] a timed-out check completes with verificatio
     await handle.db.waitForFlush();
     assertEquals(completedStatus(handle.db, handle.traceId), "error");
     const events = handle.db.getActivitiesByTrace(handle.traceId).map((row) => row.action_type);
-    assertEquals(events.includes("execution.repair.started"), false);
+    assertFalse(events.includes("execution.repair.started"));
   } finally {
     await handle.cleanupDb();
     await Deno.remove(handle.rootDir, { recursive: true });
@@ -317,7 +319,7 @@ Deno.test("[execution-verification] a verification runner that throws completes 
     assertEquals(completedStatus(handle.db, handle.traceId), "error");
     const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
     assertEquals(reviews.length, 1, "the review must be registered on the committed work");
-    const worktree = join(handle.rootDir, ".exa", "worktrees", "my-portal", handle.traceId);
+    const worktree = pathBuilders.runtimePath(handle.rootDir, "worktrees", "my-portal", handle.traceId);
     assert(await exists(worktree), "the worktree must be kept");
   } finally {
     await handle.cleanupDb();

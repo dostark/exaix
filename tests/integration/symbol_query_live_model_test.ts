@@ -291,7 +291,7 @@ async function runLiveCase(symbolCase: ILiveCase): Promise<{
     for (const call of calls) {
       if (!GRAPH_TOOLS.includes(call.name)) continue;
       const probe = await realRegistry.execute(call.name, call.params);
-      if (probe.success && Array.isArray(probe.data)) graphRows += (probe.data as unknown[]).length;
+      if (probe.success && Array.isArray(probe.data)) graphRows += probe.data.length;
     }
 
     return {

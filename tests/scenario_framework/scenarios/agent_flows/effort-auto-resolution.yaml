@@ -16,31 +16,7 @@ steps:
   - id: "write-config-heuristic"
     type: "write-file"
     path: "exa.config.toml"
-    content: |
-      [system]
-      root = "$WORKSPACE_ROOT"
-
-      [paths]
-      workspace = "Workspace"
-      blueprints = "Blueprints"
-      runtime = ".exa"
-      memory = "Memory"
-      portals = "Portals"
-
-      [agents]
-      default_model = "claude-cli-sonnet"
-
-      [models."claude-cli-sonnet"]
-      provider = "claude-cli"
-      model = "sonnet"
-
-      [request_analysis]
-      enabled = true
-      mode = "heuristic"
-
-      [quality_gate]
-      enabled = false
-
+    content_from: "fixtures/configs/effort-auto-resolution-write-config-heuristic.toml"
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
@@ -109,31 +85,7 @@ steps:
   - id: "write-config-native"
     type: "write-file"
     path: "exa.config.toml"
-    content: |
-      [system]
-      root = "$WORKSPACE_ROOT"
-
-      [paths]
-      workspace = "Workspace"
-      blueprints = "Blueprints"
-      runtime = ".exa"
-      memory = "Memory"
-      portals = "Portals"
-
-      [agents]
-      default_model = "claude-cli-sonnet"
-
-      [models."claude-cli-sonnet"]
-      provider = "claude-cli"
-      model = "claude-sonnet-5"
-
-      [request_analysis]
-      enabled = true
-      mode = "heuristic"
-
-      [quality_gate]
-      enabled = false
-
+    content_from: "fixtures/configs/effort-auto-resolution-write-config-native.toml"
   - id: "restart-daemon-native"
     type: "exactl"
     command: "daemon"
@@ -198,27 +150,7 @@ steps:
   - id: "write-config-flow"
     type: "write-file"
     path: "exa.config.toml"
-    content: |
-      [system]
-      root = "$WORKSPACE_ROOT"
-
-      [paths]
-      workspace = "Workspace"
-      blueprints = "Blueprints"
-      runtime = ".exa"
-      memory = "Memory"
-      portals = "Portals"
-
-      [agents]
-      default_model = "claude-cli-sonnet"
-
-      [models."claude-cli-sonnet"]
-      provider = "claude-cli"
-      model = "sonnet"
-
-      [quality_gate]
-      enabled = false
-
+    content_from: "fixtures/configs/effort-auto-resolution-write-config-flow.toml"
   - id: "write-flow-effort-live"
     type: "write-file"
     path: "Blueprints/Flows/effort-live.flow.yaml"

@@ -16,12 +16,13 @@ import { FlowRunner } from "@exaix/flow";
 import type { IAgentExecutor, IFlowEventLogger } from "@exaix/flow";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { resolveMemoryExecutionRoot } from "@exaix/core/config";
-import { DEFAULT_FLOW_VERSION, FlowInputSource, FlowOutputFormat } from "@exaix/core";
+import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
 import type { IFlowStepRequest } from "@exaix/flow";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { initTestDbService } from "@exaix/testing";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 const noopLogger: IFlowEventLogger = { log: () => {} };
 
 class JsonAgentRunner implements IAgentExecutor {

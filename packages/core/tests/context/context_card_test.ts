@@ -7,10 +7,10 @@
  * ensuring that core portal identity and mission are correctly summarized.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { ExaPathDefaults } from "@exaix/shared";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { ContextCardGenerator } from "@exaix/core/context";
-import { ExaPathDefaults } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
@@ -104,8 +104,8 @@ Deno.test("ContextCardGenerator: sanitizes alias", async () => {
     assertEquals(entries.length, 1);
     // We expect it to be safe.
     const filename = entries[0];
-    assertEquals(filename.includes(" "), false);
-    assertEquals(filename.includes("!"), false);
+    assertFalse(filename.includes(" "));
+    assertFalse(filename.includes("!"));
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

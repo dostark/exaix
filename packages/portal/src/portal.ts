@@ -6,19 +6,14 @@
  * @related-files [apps/exactl/src/commands/portal_commands.ts, "packages/core/src/types/i_portal_service.ts"]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { join, resolve } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config, IPortalKnowledge } from "@exaix/schemas";
 
-import {
-  DEFAULT_PROJECTS_MEMORY_PATH,
-  type PortalAnalysisMode,
-  type PortalExecutionStrategy,
-  PortalStatus,
-  VerificationStatus,
-} from "@exaix/core";
+import { type PortalAnalysisMode, type PortalExecutionStrategy, PortalStatus, VerificationStatus } from "@exaix/core";
 import type { IDisplayService, IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types";
-import { PORTAL_ALIAS_MAX_LENGTH } from "./constants.ts";
+import { PORTAL_ALIAS_MAX_LENGTH } from "@exaix/core";
 
 import { loadKnowledge, saveKnowledge } from "../knowledge/knowledge_persistence.ts";
 import type {
@@ -106,11 +101,7 @@ export class PortalService {
       // Trigger portal knowledge analysis post-mount (fire-and-forget on failure)
       if (this.portalKnowledge && this.portalKnowledgeConfig?.autoAnalyzeOnMount) {
         const sysRoot = this.config.system.root as string;
-        const projectsDir = join(
-          sysRoot,
-          this.config.paths.memory as string,
-          DEFAULT_PROJECTS_MEMORY_PATH,
-        );
+        const projectsDir = pathBuilders.memoryProjectsPath(join(sysRoot, this.config.paths.memory as string));
         (async () => {
           try {
             const knowledge = await this.portalKnowledge!.analyze(alias, absoluteTarget);
@@ -144,10 +135,8 @@ export class PortalService {
 
   private async resolvePortalPaths(alias: string): Promise<{ symlinkPath: string; contextCardPath: string }> {
     const symlinkPath = join(this.portalsDir, alias);
-    const contextCardPath = join(
-      this.config.system.root!,
-      this.config.paths.memory!,
-      DEFAULT_PROJECTS_MEMORY_PATH,
+    const contextCardPath = pathBuilders.memoryProjectsPath(
+      join(this.config.system.root!, this.config.paths.memory!),
       alias,
       "portal.md",
     );
@@ -169,10 +158,8 @@ export class PortalService {
         if (!entry.isSymlink) continue;
 
         const symlinkPath = join(this.portalsDir, entry.name);
-        const contextCardPath = join(
-          this.config.system.root!,
-          this.config.paths.memory!,
-          DEFAULT_PROJECTS_MEMORY_PATH,
+        const contextCardPath = pathBuilders.memoryProjectsPath(
+          join(this.config.system.root!, this.config.paths.memory!),
           entry.name,
           "portal.md",
         );
@@ -258,10 +245,8 @@ export class PortalService {
     await this.configService.removePortal(alias);
 
     if (!options?.keepCard) {
-      const archivedDir = join(
-        this.config.system.root,
-        this.config.paths.memory,
-        DEFAULT_PROJECTS_MEMORY_PATH,
+      const archivedDir = pathBuilders.memoryProjectsPath(
+        join(this.config.system.root, this.config.paths.memory),
         "_archived",
       );
       await ensureDir(archivedDir);
@@ -291,10 +276,8 @@ export class PortalService {
     for (const portalAlias of portalsToVerify) {
       const issues: string[] = [];
       const symlinkPath = join(this.portalsDir, portalAlias);
-      const contextCardPath = join(
-        this.config.system.root!,
-        this.config.paths.memory!,
-        DEFAULT_PROJECTS_MEMORY_PATH,
+      const contextCardPath = pathBuilders.memoryProjectsPath(
+        join(this.config.system.root!, this.config.paths.memory!),
         portalAlias,
         "portal.md",
       );
@@ -400,10 +383,8 @@ export class PortalService {
       throw new Error(`Portal '${portalAlias}' not found`);
     }
 
-    const projectsDir = join(
-      this.config.system.root as string,
-      this.config.paths.memory as string,
-      DEFAULT_PROJECTS_MEMORY_PATH,
+    const projectsDir = pathBuilders.memoryProjectsPath(
+      join(this.config.system.root as string, this.config.paths.memory as string),
     );
     return loadKnowledge(portalAlias, projectsDir);
   }
@@ -431,11 +412,7 @@ export class PortalService {
 
     // Persist knowledge.json
     const sysRoot = this.config.system.root as string;
-    const projectsDir = join(
-      sysRoot,
-      this.config.paths.memory as string,
-      DEFAULT_PROJECTS_MEMORY_PATH,
-    );
+    const projectsDir = pathBuilders.memoryProjectsPath(join(sysRoot, this.config.paths.memory as string));
     await saveKnowledge(alias, knowledge, null, projectsDir);
 
     await this.display.info("portal.analyzed", alias, {

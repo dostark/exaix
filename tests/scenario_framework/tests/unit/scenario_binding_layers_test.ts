@@ -11,7 +11,14 @@
  * @related-files [tests/scenario_framework/runner/binding_layers.ts, tests/scenario_framework/schema/scenario_schema.ts]
  */
 
-import { assertEquals, assertNotEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import {
+  assertEquals,
+  assertFalse,
+  assertMatch,
+  assertNotEquals,
+  assertRejects,
+  assertStringIncludes,
+} from "@std/assert";
 import { join } from "@std/path";
 import { BindingOverlaySchema } from "@exaix/schemas";
 import { BindingIncompatibleError } from "@exaix/ai";
@@ -53,7 +60,7 @@ Deno.test("[bindings] planScenarioBindings writes the scenario overlay with its 
     assertEquals(plan.overlays.length, 1);
     const scenarioOverlay = plan.overlays[0]!;
     assertEquals(scenarioOverlay.role, "scenario");
-    assertEquals(scenarioOverlay.path.endsWith("10-scenario.json"), true);
+    assertMatch(scenarioOverlay.path, /10-scenario\.json$/);
     assertEquals(scenarioOverlay.sha256, await fileSha256(scenarioOverlay.path));
 
     const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(scenarioOverlay.path)));
@@ -91,8 +98,8 @@ Deno.test("[bindings] planScenarioBindings normalizes operator overlays in order
 
     assertEquals(plan.overlays.map((o) => o.role), ["scenario", "operator", "operator"]);
     const operators = plan.overlays.filter((o) => o.role === "operator");
-    assertEquals(operators[0]!.path.endsWith("30-operator-0.json"), true);
-    assertEquals(operators[1]!.path.endsWith("30-operator-1.json"), true);
+    assertMatch(operators[0]!.path, /30-operator-0\.json$/);
+    assertMatch(operators[1]!.path, /30-operator-1\.json$/);
     assertEquals(operators[0]!.sha256, await fileSha256(operators[0]!.path));
     assertEquals(operators[1]!.sha256, await fileSha256(operators[1]!.path));
 
@@ -119,7 +126,7 @@ Deno.test("[bindings] planScenarioBindings writes operator --bind entries as the
 
     assertEquals(plan.overlays.map((o) => o.role), ["scenario", "operator"]);
     const bindOverlay = plan.overlays[1]!;
-    assertEquals(bindOverlay.path.endsWith("40-operator-bind.json"), true);
+    assertMatch(bindOverlay.path, /40-operator-bind\.json$/);
     const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(bindOverlay.path)));
     assertEquals(written.bindings?.["flow:research/step:compose"]?.service, "beta");
     assertEquals(written.bindings?.["flow:research/step:compose"]?.model, "beta/two");
@@ -163,7 +170,7 @@ Deno.test("[bindings] planScenarioBindings substitutes the fixture-port sentinel
     });
 
     const raw = await Deno.readTextFile(plan.overlays[0]!.path);
-    assertEquals(raw.includes("__COMPAT_FIXTURE_PORT__"), false);
+    assertFalse(raw.includes("__COMPAT_FIXTURE_PORT__"));
     const written = BindingOverlaySchema.parse(JSON.parse(raw));
     assertEquals(
       written.catalog?.services?.fixture?.endpoint,
@@ -211,7 +218,7 @@ Deno.test("[bindings] planScenarioBindings writes the cell layer between the sce
 
     assertEquals(plan.overlays.map((overlay) => overlay.role), ["scenario", "cell"]);
     const cellOverlay = plan.overlays[1]!;
-    assertEquals(cellOverlay.path.endsWith("20-cell.json"), true);
+    assertMatch(cellOverlay.path, /20-cell\.json$/);
     assertEquals(cellOverlay.sha256, await fileSha256(cellOverlay.path));
 
     const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(cellOverlay.path)));
@@ -283,7 +290,7 @@ Deno.test("[bindings] the cell layer substitutes the fixture-port sentinel a pre
     });
 
     const raw = await Deno.readTextFile(plan.overlays[0]!.path);
-    assertEquals(raw.includes("__COMPAT_FIXTURE_PORT__"), false);
+    assertFalse(raw.includes("__COMPAT_FIXTURE_PORT__"));
     const written = BindingOverlaySchema.parse(JSON.parse(raw));
     assertEquals(
       written.catalog?.services?.fixture?.endpoint,
@@ -501,7 +508,7 @@ Deno.test("[pins] no pins overlay is written for any scenario", async () => {
       sandboxRoot: join(root, "sandbox"),
     });
     for (const overlay of plan.overlays) {
-      assertEquals(overlay.path.includes("90-scenario-pins"), false, overlay.path);
+      assertFalse(overlay.path.includes("90-scenario-pins"), overlay.path);
     }
     // The broader entry is stripped rather than refused, so the pin still holds its value.
     assertEquals(plan.pins.map((pin) => [pin.field, pin.value]), [["service", "alpha"]]);

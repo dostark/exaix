@@ -3,11 +3,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = []
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # Interactive-pack provider-live cell: unlike claude-cli-delegate-all.toml (which disables
 # quality_gate entirely for swe_tasks scenarios that don't care about clarification), this one
 # turns it on so a real clarification round can be driven against the real `claude` CLI —

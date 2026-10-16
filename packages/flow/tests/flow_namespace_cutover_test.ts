@@ -17,7 +17,6 @@ import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "@exaix/
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { resolveMemoryExecutionRoot } from "@exaix/core/config";
 import {
-  DEFAULT_FLOW_VERSION,
   FLOW_EVENT_NAMESPACE_INITIALIZED,
   FLOW_EVENT_NAMESPACE_READ,
   FLOW_EVENT_NAMESPACE_WRITE,
@@ -29,6 +28,7 @@ import type { IFlow } from "@exaix/schemas/flow.ts";
 import { initTestDbService } from "@exaix/testing";
 import type { JSONValue } from "@exaix/core";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class JsonAgentRunner implements IAgentExecutor {
   run(_agentRole: string, _request: IFlowStepRequest): Promise<{ thought: string; content: string; raw: string }> {
     return Promise.resolve({

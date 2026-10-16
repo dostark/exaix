@@ -3,11 +3,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = ["openrouter.ai"]
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # swe_tasks provider-live cell: real OpenRouter end to end (analysis + execution), no session
 # delegate. Execution runs through the daemon's own AgentExecutor, journalling real
 # dynamic_tool_call events. Mirrors anthropic-no-delegate.toml with the OpenRouter provider.

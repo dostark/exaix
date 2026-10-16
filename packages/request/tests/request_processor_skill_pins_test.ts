@@ -9,6 +9,8 @@
  * @related-files [packages/request/src/processor.ts, packages/core/src/planning/plan_writer.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_PLANS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
@@ -80,10 +82,10 @@ async function planFrontmatterAfter(runner: ScriptedRunner): Promise<JSONObject>
   const { db, config, cleanup, tempDir } = await initTestDbService();
   try {
     await Deno.mkdir(getWorkspaceRequestsDir(tempDir), { recursive: true });
-    await Deno.mkdir(join(tempDir, "Workspace", "Plans"), { recursive: true });
-    await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+    await Deno.mkdir(pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.writeTextFile(
-      join(tempDir, "Blueprints", "Agents", "default.md"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "default.md"),
       "---\nagent_role: default\n---\n\nYou are a helpful assistant.\n",
     );
     const traceId = crypto.randomUUID();
@@ -127,7 +129,7 @@ Add a hello world function.
     );
     await processor.process(requestPath);
     await db.waitForFlush();
-    const plansDir = join(tempDir, "Workspace", "Plans");
+    const plansDir = pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH);
     const files: string[] = [];
     for await (const entry of Deno.readDir(plansDir)) if (entry.name.endsWith(".md")) files.push(entry.name);
     assert(files.length === 1, `expected exactly one plan, found ${files.length}`);

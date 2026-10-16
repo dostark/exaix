@@ -5,7 +5,9 @@
  * @description Integration tests for subject propagation from Request to Plan.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { ExaPathDefaults } from "@exaix/shared";
+import { assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "@exaix/request";
 import { AgentRunner } from "@exaix/execution";
@@ -31,11 +33,11 @@ async function withSubjectPropagationEnv(
 ): Promise<void> {
   const tempDir = await Deno.makeTempDir();
   const workspaceDir = join(tempDir, "workspace");
-  const requestsDir = join(workspaceDir, "Requests");
-  const plansDir = join(workspaceDir, "Plans");
+  const requestsDir = pathBuilders.requestsPath(workspaceDir);
+  const plansDir = pathBuilders.plansPath(workspaceDir);
   const runtimeDir = join(tempDir, "Runtime");
-  const blueprintsDir = join(tempDir, "Blueprints");
-  const agentRolesDir = join(blueprintsDir, "Agents");
+  const blueprintsDir = pathBuilders.blueprintsPath(tempDir);
+  const agentRolesDir = pathBuilders.agentsPath(blueprintsDir);
 
   await Deno.mkdir(requestsDir, { recursive: true });
   await Deno.mkdir(plansDir, { recursive: true });
@@ -55,19 +57,7 @@ Follow instructions
 
   const configRaw = {
     system: { root: tempDir },
-    paths: {
-      workspace: "workspace",
-      requests: "Requests",
-      plans: "Plans",
-      active: "Active",
-      rejected: "Rejected",
-      archive: "Archive",
-      blueprints: "Blueprints",
-      portals: "Portals",
-      memory: "Memory",
-      runtime: "Runtime",
-      flows: "Blueprints/Flows",
-    },
+    paths: { ...ExaPathDefaults, workspace: "workspace", runtime: "Runtime" },
     database: {
       batch_flush_ms: 100,
       batch_max_size: 10,
@@ -175,14 +165,14 @@ Fix the database please.`,
     // 3. The plan's frontmatter subject is the REQUEST's subject, not the agent's plan title.
     const planContent = await Deno.readTextFile(planPath);
     assertExists(planContent.match(new RegExp(`subject: ${initialSubject}`)));
-    assertEquals(planContent.includes(`subject: ${agentSubject}`), false);
+    assertFalse(planContent.includes(`subject: ${agentSubject}`));
     // The agent's name still appears as the plan's own title (H1), kept distinct from subject.
     assertExists(planContent.match(new RegExp(`# ${agentSubject}`)));
 
     // 4. The request file's subject is NOT upgraded — it stays exactly what the request had.
     const updatedRequestContent = await Deno.readTextFile(requestFilePath);
     assertExists(updatedRequestContent.match(new RegExp(`subject: "${initialSubject}"`)));
-    assertEquals(updatedRequestContent.includes(`subject: "${agentSubject}"`), false);
+    assertFalse(updatedRequestContent.includes(`subject: "${agentSubject}"`));
   });
 });
 
@@ -254,6 +244,6 @@ Request content.`,
     const updatedRequestContent = await Deno.readTextFile(requestFilePath);
     assertExists(updatedRequestContent.match(new RegExp(`subject: "${explicitSubject}"`)));
     // Agent's suggested subject should NOT appear
-    assertEquals(updatedRequestContent.includes(`subject: "${agentSubject}"`), false);
+    assertFalse(updatedRequestContent.includes(`subject: "${agentSubject}"`));
   });
 });

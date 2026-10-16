@@ -9,6 +9,7 @@
  * adapter pattern (DirectConfigAdapter.set()) instead.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { dirname, join } from "@std/path";
 import { Database } from "@db/sqlite";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -89,12 +90,6 @@ export function daemonConfigSections(root: string, allowNetLine = "allow_net = [
     `root = "${root}"`,
     allowNetLine,
     "",
-    "[paths]",
-    'workspace = "./Workspace"',
-    'blueprints = "./Blueprints"',
-    'runtime = "./.exa"',
-    'memory = "./Memory"',
-    'portals = "./Portals"',
   ];
 }
 
@@ -241,7 +236,7 @@ export function daemonJournalHasAny(
   actions: readonly string[],
   traceId?: Opt<string, Reason.OptionalInput>,
 ): boolean {
-  const journalPath = join(dirname(configPath), ".exa", "journal.db");
+  const journalPath = pathBuilders.runtimePath(dirname(configPath), "journal.db");
   try {
     const db = new Database(journalPath, { readonly: true });
     try {
@@ -262,7 +257,7 @@ export function daemonJournalHasAny(
 
 /** Rowid of the first journal row with this action whose payload contains `text`, or undefined. Lets a barrier find its own row. */
 export function daemonJournalRowidWithText(configPath: string, action: string, text: string): number | undefined {
-  const journalPath = join(dirname(configPath), ".exa", "journal.db");
+  const journalPath = pathBuilders.runtimePath(dirname(configPath), "journal.db");
   try {
     const db = new Database(journalPath, { readonly: true });
     try {
@@ -280,7 +275,7 @@ export function daemonJournalRowidWithText(configPath: string, action: string, t
 
 /** True once the journal holds a row with this exact action and target. Use it to observe one specific rejection. */
 export function daemonJournalHasEvent(configPath: string, action: string, target: string): boolean {
-  const journalPath = join(dirname(configPath), ".exa", "journal.db");
+  const journalPath = pathBuilders.runtimePath(dirname(configPath), "journal.db");
   try {
     const db = new Database(journalPath, { readonly: true });
     try {
@@ -324,7 +319,7 @@ export async function bootRealDaemon(
 ): Promise<IDaemonBootResult> {
   const workspaceRoot = dirname(configPath);
   await migrateDaemonWorkspace(workspaceRoot);
-  const journalPath = join(workspaceRoot, ".exa", "journal.db");
+  const journalPath = pathBuilders.runtimePath(workspaceRoot, "journal.db");
   const readyBaseline = journalMaxRowid(journalPath);
   const proc = new Deno.Command("deno", {
     args: [

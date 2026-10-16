@@ -5,7 +5,7 @@
  * stability checks for partial writes, and resilient handling of temporary file locks.
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertMatch, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { FileWatcher } from "../../../apps/daemon/src/watcher.ts";
 import { createMockConfig } from "@exaix/testing";
@@ -176,7 +176,7 @@ Deno.test("Test 3: File disappears - handles NotFound gracefully", async () => {
       errorMessage = (error as Error).message;
     }
 
-    assertEquals(errorMessage.includes("File disappeared"), true);
+    assertStringIncludes(errorMessage, "File disappeared");
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }
@@ -212,7 +212,7 @@ Deno.test("Stability verification - file never stabilizes", async () => {
     shouldStop = true;
     await infiniteWrite;
 
-    assertEquals(errorMessage.includes("File never stabilized"), true);
+    assertStringIncludes(errorMessage, "File never stabilized");
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }
@@ -320,7 +320,7 @@ Deno.test("Concurrent modification - multiple files changing simultaneously", as
 
     assertEquals(results.length, 3);
     results.forEach((content, idx) => {
-      assertEquals(content.includes(`file${idx + 1}.txt`), true);
+      assertStringIncludes(content, `file${idx + 1}.txt`);
     });
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
@@ -347,7 +347,7 @@ Deno.test("File size stability - zero size indicates deletion in progress", asyn
       errorMessage = (error as Error).message;
     }
 
-    assertEquals(errorMessage.includes("File is empty or too small"), true);
+    assertStringIncludes(errorMessage, "File is empty or too small");
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }
@@ -457,7 +457,7 @@ Deno.test("FileWatcher: processes .md files and ignores dotfiles", async () => {
 
     // Should only process valid.md
     assertEquals(eventsReceived.length, 1);
-    assertEquals(eventsReceived[0].endsWith("valid.md"), true);
+    assertMatch(eventsReceived[0], /valid\.md$/);
   } finally {
     await cleanup();
   }
@@ -722,7 +722,7 @@ Deno.test("FileWatcher: handles rename events (file moves)", async () => {
 
     // Should detect the moved file
     assertEquals(eventsReceived.length, 1);
-    assertEquals(eventsReceived[0].endsWith("moved.md"), true);
+    assertMatch(eventsReceived[0], /moved\.md$/);
   } finally {
     await cleanup();
   }

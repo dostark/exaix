@@ -7,6 +7,7 @@
  * @related-files [scripts/setup_db.ts, scripts/migrate_db.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { Database } from "@db/sqlite";
 import { join } from "@std/path";
@@ -37,7 +38,7 @@ export async function runSchemaUpgradeDbScript(root: string, script: string): Pr
 
 /** Opens the migrated journal DB inside `tempDir`. The caller closes it. */
 export function openUpgradedJournalDb(tempDir: string): Database {
-  return new Database(join(tempDir, ".exa", "journal.db"));
+  return new Database(pathBuilders.runtimePath(tempDir, "journal.db"));
 }
 
 /** Asserts the DB recorded exactly the single consolidated init migration. */

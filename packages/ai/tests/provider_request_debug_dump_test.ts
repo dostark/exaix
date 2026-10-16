@@ -5,7 +5,7 @@
  * @architectural-layer AI
  * @related-files [packages/ai/src/provider_common_utils.ts, packages/core/src/logger/event_logger.ts]
  */
-import { assertEquals, assertExists, assertRejects } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertRejects } from "@std/assert";
 import { stub } from "@std/testing/mock";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
@@ -129,9 +129,9 @@ Deno.test("[request-dump][security] no header value appears in the event", async
     await db.waitForFlush();
     const rows = db.getActivitiesByActionType(PROVIDER_EVENT_REQUEST_DEBUG_DUMP);
     assertEquals(rows.length, 1);
-    assertEquals(JSON.stringify(rows).includes(SECRET), false);
-    assertEquals(JSON.stringify(rows).includes("Authorization"), false);
-    assertEquals(JSON.stringify(rows).includes("x-api-key"), false);
+    assertFalse(JSON.stringify(rows).includes(SECRET));
+    assertFalse(JSON.stringify(rows).includes("Authorization"));
+    assertFalse(JSON.stringify(rows).includes("x-api-key"));
   });
 });
 

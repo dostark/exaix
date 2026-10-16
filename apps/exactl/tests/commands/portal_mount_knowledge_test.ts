@@ -9,12 +9,14 @@
  * mount succeeds even when analysis fails.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { PortalCommands } from "../../src/commands/portal_commands.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { ContextResultStatus, ContextUnavailableReason, ExaPathDefaults, PortalAnalysisMode } from "@exaix/core";
+import { ContextResultStatus, ContextUnavailableReason, PortalAnalysisMode } from "@exaix/core";
 import { initPortalTest } from "../helpers/test_setup.ts";
 
 // Mock helpers
@@ -155,7 +157,7 @@ Deno.test(
       await commands.add(targetDir, "SafePortal");
 
       // Symlink must exist despite analysis failure
-      const symlinkPath = join(tempRoot, "Portals", "SafePortal");
+      const symlinkPath = pathBuilders.portalsPath(tempRoot, "SafePortal");
       const stat = await Deno.lstat(symlinkPath);
       assertExists(stat, "Symlink should exist after mount");
     } finally {

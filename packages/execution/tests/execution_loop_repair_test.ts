@@ -8,6 +8,7 @@
  *   asserting the status, the repair events and the review commit.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
@@ -207,7 +208,7 @@ async function runRepairScenario(options: {
     }],
   });
 
-  const activeDir = join(rootDir, config.paths.workspace, "Active");
+  const activeDir = pathBuilders.activePath(join(rootDir, config.paths.workspace));
   await ensureDir(activeDir);
 
   const logger = new EventLogger({ db, defaultActor: "user:test" });
@@ -495,7 +496,7 @@ Deno.test("[execution-repair] a failing HEAD read before a repair keeps the work
     assertEquals(calls.length, 2, "an unreadable HEAD must not stop the repair attempts");
     const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
     assertEquals(reviews.length, 1);
-    assert(await exists(join(handle.rootDir, ".exa", "worktrees", "my-portal", handle.traceId)));
+    assert(await exists(pathBuilders.runtimePath(handle.rootDir, "worktrees", "my-portal", handle.traceId)));
   } finally {
     await handle.cleanupDb();
     await Deno.remove(handle.rootDir, { recursive: true });

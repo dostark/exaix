@@ -30,8 +30,8 @@ testDialogInteraction(
   }),
   (_dialog: DialogBase, rendered: string) => {
     assertExists(rendered);
-    assertEquals(rendered.includes("Approve Proposal"), true);
-    assertEquals(rendered.includes("Title"), true);
+    assertStringIncludes(rendered, "Approve Proposal");
+    assertStringIncludes(rendered, "Title");
   },
 );
 
@@ -54,7 +54,7 @@ testDialogInteraction(
     keys: [KEYS.RIGHT],
   }),
   (_dialog: ConfirmApproveDialog, rendered: string) => {
-    assertEquals(rendered.includes("[No, Cancel]"), true);
+    assertStringIncludes(rendered, "[No, Cancel]");
   },
 );
 
@@ -129,8 +129,8 @@ testDialogInteraction(
   }),
   (_dialog: DialogBase, rendered: string) => {
     assertExists(rendered);
-    assertEquals(rendered.includes("Reject Proposal"), true);
-    assertEquals(rendered.includes("Reason"), true);
+    assertStringIncludes(rendered, "Reject Proposal");
+    assertStringIncludes(rendered, "Reason");
   },
 );
 
@@ -277,7 +277,7 @@ testDialogInteraction(
     keys: [],
   }),
   (_dialog: DialogBase, rendered: string) => {
-    assertEquals(rendered.includes("Promote to Global"), true);
+    assertStringIncludes(rendered, "Promote to Global");
   },
 );
 
@@ -288,7 +288,7 @@ testDialogInteraction(
     keys: [KEYS.RIGHT],
   }),
   (_dialog: DialogBase, rendered: string) => {
-    assertEquals(rendered.includes("[Cancel]"), true);
+    assertStringIncludes(rendered, "[Cancel]");
   },
 );
 
@@ -344,8 +344,8 @@ testDialogInteraction(
     keys: [],
   }),
   (_dialog: DialogBase, rendered: string) => {
-    assertEquals(rendered.includes("Approve All Proposals"), true);
-    assertEquals(rendered.includes("5 proposal(s)"), true);
+    assertStringIncludes(rendered, "Approve All Proposals");
+    assertStringIncludes(rendered, "5 proposal(s)");
   },
 );
 
@@ -356,7 +356,7 @@ testDialogInteraction(
     keys: [KEYS.RIGHT],
   }),
   (_dialog: DialogBase, rendered: string) => {
-    assertEquals(rendered.includes("[Cancel]"), true);
+    assertStringIncludes(rendered, "[Cancel]");
   },
 );
 
@@ -409,8 +409,8 @@ testDialogInteraction(
   (dialog: BulkApproveDialog, _rendered: string) => {
     dialog.setProgress(3);
     const updated = renderDialog(dialog);
-    assertEquals(updated.includes("Progress"), true);
-    assertEquals(updated.includes("3/10"), true);
+    assertStringIncludes(updated, "Progress");
+    assertStringIncludes(updated, "3/10");
   },
 );
 

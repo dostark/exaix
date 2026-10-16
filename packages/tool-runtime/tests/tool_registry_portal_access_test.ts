@@ -5,11 +5,11 @@
  * ensuring tools can safely access and manipulate files within approved portal targets.
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import type { Config } from "@exaix/schemas/config.ts";
-import { ExaPathDefaults } from "@exaix/core";
 import { ToolName } from "@exaix/core";
 
 Deno.test("ToolRegistry should allow access to portal targets", async () => {

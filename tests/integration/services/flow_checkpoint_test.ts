@@ -6,7 +6,7 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
-import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertExists, assertFalse, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
@@ -14,7 +14,6 @@ import { FlowExecutionError, FlowRunner } from "@exaix/flow";
 import { type IFlow, type IFlowInput, ZFlowCheckpoint } from "@exaix/schemas/flow.ts";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
   FLOW_CHECKPOINT_SCHEMA_VERSION,
   FLOW_EVENT_CHECKPOINT_CLEARED,
   FLOW_EVENT_CHECKPOINT_LOADED,
@@ -25,6 +24,7 @@ import { initTestDbService } from "@exaix/testing";
 import { getMemoryExecutionDir } from "@exaix/testing";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../../helpers/flow_namespace_test_helper.ts";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 function createCheckpointFlow(
   id: string,
   name: string,
@@ -127,8 +127,8 @@ Deno.test("[Step63.3] FlowRunner checkpoints, resumes, and clears state after su
     assertEquals(resumedResult.success, true);
     assertEquals(resumedResult.output, "step2-result");
     assertEquals(resumedResult.stepResults.get("step1")?.result?.content, "step1-result");
-    assertEquals(resumedExecutor.calls.includes("agent1"), false);
-    assertEquals(resumedExecutor.calls.includes("agent2"), true);
+    assertFalse(resumedExecutor.calls.includes("agent1"));
+    assertArrayIncludes(resumedExecutor.calls, ["agent2"]);
     assertEquals(await exists(checkpointPath), false);
     assert(
       resumedDurationMs < 2000,

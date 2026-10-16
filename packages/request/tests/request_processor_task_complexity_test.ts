@@ -9,7 +9,9 @@
  * @related-files [packages/request/src/processor.ts, packages/request/src/task_complexity_classifier.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_PLANS_PATH } from "@exaix/shared";
+import { assert, assertArrayIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { type IRequestProcessorConfig, RequestProcessor } from "@exaix/request";
 import type { IAgentRunner, IBlueprint, IParsedRequest } from "@exaix/execution";
@@ -53,10 +55,10 @@ Deno.test("[RequestProcessor] the IParsedRequest passed to AgentRunner.run carri
   const { db, config, cleanup, tempDir } = await initTestDbService();
   try {
     await Deno.mkdir(getWorkspaceRequestsDir(tempDir), { recursive: true });
-    await Deno.mkdir(join(tempDir, "Workspace", "Plans"), { recursive: true });
-    await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+    await Deno.mkdir(pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH), { recursive: true });
+    await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.writeTextFile(
-      join(tempDir, "Blueprints", "Agents", "default.md"),
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "default.md"),
       "---\nagent_role: default\n---\n\nYou are a helpful assistant.\n",
     );
 
@@ -127,11 +129,9 @@ Add a hello world function.
       Object.values(TaskComplexity).includes(captured.taskComplexity as TaskComplexity),
       `taskComplexity must be a valid TaskComplexity, got ${captured.taskComplexity}`,
     );
-    assertEquals(
-      ["analysis", "content_heuristic", "agent_role", "default"].includes(captured.taskComplexitySource ?? ""),
-      true,
-      `taskComplexitySource must be one of the four sources, got ${captured.taskComplexitySource}`,
-    );
+    assertArrayIncludes(["analysis", "content_heuristic", "agent_role", "default"], [
+      captured.taskComplexitySource ?? "",
+    ], `taskComplexitySource must be one of the four sources, got ${captured.taskComplexitySource}`);
   } finally {
     await cleanup();
   }

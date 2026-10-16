@@ -4,6 +4,7 @@
  * @description Tests for wait-state schemas, transition policy, and service contracts.
  */
 
+import { DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import {
   CreateWaitStateInputSchema,
@@ -21,7 +22,7 @@ function validWaitState(overrides?: Partial<IWaitState>): IWaitState {
     traceId: "trace-1",
     kind: "plan_approval",
     status: "pending",
-    artifactPath: "Workspace/WaitStates/trace-1/00000000-0000-4000-8000-000000000001.json",
+    artifactPath: `${DEFAULT_WORKSPACE_PATH}/WaitStates/trace-1/00000000-0000-4000-8000-000000000001.json`,
     createdAt: "2026-06-03T00:00:00.000Z",
     updatedAt: "2026-06-03T00:00:00.000Z",
     resumeToken: "00000000-0000-4000-8000-000000000002",
@@ -66,7 +67,7 @@ Deno.test("CreateWaitStateInputSchema requires kind, traceId, artifactPath", () 
   const result = CreateWaitStateInputSchema.safeParse({
     kind: "plan_approval",
     traceId: "trace-1",
-    artifactPath: "Workspace/WaitStates/trace-1/test.json",
+    artifactPath: `${DEFAULT_WORKSPACE_PATH}/WaitStates/trace-1/test.json`,
     resumeToken: "00000000-0000-4000-8000-000000000002",
   });
   assertEquals(result.success, true);
@@ -253,13 +254,13 @@ Deno.test("WaitStateService listPending returns only pending waits", async () =>
   const id1 = await service.create({
     kind: "plan_approval",
     traceId: "trace-list-a",
-    artifactPath: "Workspace/WaitStates/trace-list-a/1.json",
+    artifactPath: `${DEFAULT_WORKSPACE_PATH}/WaitStates/trace-list-a/1.json`,
     resumeToken: "00000000-0000-4000-8000-000000000011",
   });
   const id2 = await service.create({
     kind: "review_approval",
     traceId: "trace-list-b",
-    artifactPath: "Workspace/WaitStates/trace-list-b/2.json",
+    artifactPath: `${DEFAULT_WORKSPACE_PATH}/WaitStates/trace-list-b/2.json`,
     resumeToken: "00000000-0000-4000-8000-000000000012",
   });
 
@@ -281,7 +282,7 @@ Deno.test("WaitStateService full lifecycle: create → approve → getById refle
   const created = await service.create({
     kind: "review_approval",
     traceId: "trace-lifecycle",
-    artifactPath: "Workspace/WaitStates/trace-lifecycle/lc.json",
+    artifactPath: `${DEFAULT_WORKSPACE_PATH}/WaitStates/trace-lifecycle/lc.json`,
     resumeToken,
   });
   assertEquals(created.status, "pending");
@@ -306,7 +307,7 @@ Deno.test("WaitStateService: concurrent transition on same wait state — second
   const created = await service.create({
     kind: "plan_approval",
     traceId: "trace-concurrent",
-    artifactPath: "Workspace/WaitStates/trace-concurrent/cc.json",
+    artifactPath: `${DEFAULT_WORKSPACE_PATH}/WaitStates/trace-concurrent/cc.json`,
     resumeToken,
   });
 

@@ -7,12 +7,19 @@
  * correctly discovered across Active, Rejected, and Pending directory hierarchies.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import {
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_REJECTED_PATH,
+  DEFAULT_REQUESTS_PATH,
+  ExaPathDefaults,
+} from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { createStubContext, createStubDb } from "@exaix/testing";
 import { createStubConfig } from "@exaix/testing";
-import { ExaPathDefaults } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import type { IPlanMetadata } from "@exaix/core/types";
 import { PlanCommands } from "../src/commands/plan_commands.ts";
@@ -53,9 +60,9 @@ async function createTestWorkspace(baseDir: string): Promise<{
   activeDir: string;
   rejectedDir: string;
 }> {
-  const plansDir = join(baseDir, "Workspace", "Plans");
-  const activeDir = join(baseDir, "Workspace", "Active");
-  const rejectedDir = join(baseDir, "Workspace", "Rejected");
+  const plansDir = pathBuilders.workspacePath(baseDir, DEFAULT_PLANS_PATH);
+  const activeDir = pathBuilders.workspacePath(baseDir, DEFAULT_ACTIVE_PATH);
+  const rejectedDir = pathBuilders.workspacePath(baseDir, DEFAULT_REJECTED_PATH);
 
   await ensureDir(plansDir);
   await ensureDir(activeDir);
@@ -247,7 +254,7 @@ Deno.test("[regression] Plan list and show include request context information",
 
   try {
     const { plansDir } = await createTestWorkspace(tempDir);
-    const requestsDir = join(tempDir, "Workspace", "Requests");
+    const requestsDir = pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH);
     await ensureDir(requestsDir);
 
     // Create a request file

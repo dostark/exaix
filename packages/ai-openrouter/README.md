@@ -70,4 +70,4 @@ Every field that the provider sends to the chat completions endpoint has one row
 
 ## Status
 
-Live verification is partial. The Phase 211 plan records the final matrix run, including its two open failures: [phase 211 plan](../../exaix-dev-docs/planning/phase-211-openrouter-adapter-improvements.md) and [Step 9 evidence](../../exaix-dev-docs/planning/evidence/phase-211/live-matrix-2026-10-12.md).
+Live verification is partial. The Phase 211 plan records the final matrix run, including its two open failures: [phase 211 plan](../../exaix-dev-docs/planning/phase-211-openrouter-adapter-improvements.md). The Step 9 evidence file is no longer tracked, because the docs repository stopped versioning the planning evidence folder.

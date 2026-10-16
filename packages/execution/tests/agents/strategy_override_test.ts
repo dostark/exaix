@@ -11,6 +11,8 @@
  * subprocess or live-provider dependency.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer, StrategyRegistry } from "@exaix/execution";
@@ -31,7 +33,7 @@ async function writeBlueprint(
   capabilities: string[],
   extra: IBlueprintExtraFields = {},
 ): Promise<void> {
-  const dir = join(root, "Blueprints", "Agents");
+  const dir = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
   await Deno.mkdir(dir, { recursive: true });
   const extraLines = Object.entries(extra).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join("\n");
   await Deno.writeTextFile(

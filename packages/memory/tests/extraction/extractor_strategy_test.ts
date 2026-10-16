@@ -4,6 +4,7 @@
  * @description Verifies cost-gated extraction strategy selection and extraction events.
  * @architectural-layer Tests
  */
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import type { IExtractionStrategy, IMemoryCostRouter } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
@@ -51,7 +52,7 @@ Deno.test("MemoryExtractorService: selects LLM remotely and heuristic locally wi
       },
     });
     const service = new MemoryExtractorService(
-      castAny({ system: { root: "/tmp" }, paths: { memory: "Memory" } }),
+      castAny({ system: { root: "/tmp" }, paths: { ...ExaPathDefaults } }),
       castAny({}),
       castAny({}),
       logger,

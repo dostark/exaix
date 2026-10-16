@@ -6,7 +6,8 @@
  * @related-files [packages/session/src/codex_sandbox_flags.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import { assertEquals, assertFalse } from "@std/assert";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionBrief, SessionGate } from "@exaix/schemas/session_delegate.ts";
 import { deriveCodexSandboxFlags } from "@exaix/session/codex_sandbox_flags.ts";
@@ -18,7 +19,7 @@ function makeBrief(gate: SessionGate): SessionBrief {
     gate,
     tool: "codex",
     objective: "Apply the requested change",
-    artifact_ref: "Workspace/Plans/phase-167.md",
+    artifact_ref: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/phase-167.md`,
     permitted_paths: ["packages/session/**"],
     worktree_path: "/tmp/phase-167-worktree",
     token_budget: { max_input_tokens: 10_000, max_output_tokens: 5_000, max_total_tokens: 15_000 },
@@ -43,9 +44,9 @@ Deno.test("[codex_sandbox] every gate maps to the exact bounded sandbox mode", (
 Deno.test("[codex_sandbox][security] never emits escape or approval-bypass flags", () => {
   for (const [gate] of EXPECTED_MODES) {
     const flags = deriveCodexSandboxFlags(makeBrief(gate));
-    assertEquals(flags.includes("danger-full-access"), false, gate);
-    assertEquals(flags.includes("--add-dir"), false, gate);
-    assertEquals(flags.includes("--dangerously-bypass-approvals-and-sandbox"), false, gate);
-    assertEquals(flags.includes("--yolo"), false, gate);
+    assertFalse(flags.includes("danger-full-access"), gate);
+    assertFalse(flags.includes("--add-dir"), gate);
+    assertFalse(flags.includes("--dangerously-bypass-approvals-and-sandbox"), gate);
+    assertFalse(flags.includes("--yolo"), gate);
   }
 });

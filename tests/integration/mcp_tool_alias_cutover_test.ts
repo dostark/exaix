@@ -11,7 +11,9 @@
  * @related-files [exaix-team/apps/mcp-server/main.ts, exaix-team/packages/mcp-server/server.ts, packages/mcp/server/mcp_tool_call_canonicalizer.ts, tests/integration/mcp_server_spec_compliance_cutover_test.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { z } from "zod";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
@@ -77,7 +79,7 @@ async function seedWorkspace(root: string): Promise<string> {
     await Deno.writeTextFile(join(portal, "notes.txt"), `${FILE_MARKER}\n`);
     await setupGitRepo(portal);
   }
-  const knowledgeDir = join(root, "Memory", "Projects", OPEN_PORTAL);
+  const knowledgeDir = pathBuilders.memoryPath(root, DEFAULT_PROJECTS_MEMORY_PATH, OPEN_PORTAL);
   await Deno.mkdir(knowledgeDir, { recursive: true });
   await Deno.writeTextFile(
     join(knowledgeDir, "knowledge.json"),
@@ -350,11 +352,7 @@ Deno.test({
           "concurrent same-tool rewrites must share only their matching persisted execution traces",
         );
         assertEquals(new Set(readRewriteTraceIds).size, 3, "concurrent and failed calls must not share trace identity");
-        assertEquals(
-          readRewriteTraceIds.includes("forged-trace"),
-          false,
-          "client arguments cannot forge trace identity",
-        );
+        assertFalse(readRewriteTraceIds.includes("forged-trace"), "client arguments cannot forge trace identity");
         const deniedRows = await reader.rows("mcp.permission.denied");
         assertEquals(deniedRows.length, 1);
         assertEquals(
@@ -407,7 +405,7 @@ Deno.test({
         const names = await listedNames(client);
         assert(names.includes("query_symbols"), JSON.stringify(names));
         for (const retired of ["exaix_portal_symbols", "list_symbols"]) {
-          assertEquals(names.includes(retired), false, retired);
+          assertFalse(names.includes(retired), retired);
         }
         const byName = symbolNames(await callTool(client, "query_symbols", { ...base, name: "greet" }));
         const byQuery = symbolNames(await callTool(client, "query_symbols", { ...base, query: "greet" }));

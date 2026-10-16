@@ -6,6 +6,7 @@
  * descriptions are correctly persisted with stable frontmatter and sequential identifiers.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { spy, type SpyCall } from "@std/testing/mock";
@@ -50,8 +51,8 @@ describe("PlanWriter - JSON Integration", () => {
 
   beforeEach(async () => {
     testDir = await Deno.makeTempDir({ prefix: "plan_writer_json_test_" });
-    plansDir = `${testDir}/Workspace/Plans`;
-    knowledgeDir = `${testDir}/Memory`;
+    plansDir = pathBuilders.plansPath(pathBuilders.workspacePath(testDir));
+    knowledgeDir = pathBuilders.memoryPath(testDir);
 
     await Deno.mkdir(plansDir, { recursive: true });
     await Deno.mkdir(knowledgeDir, { recursive: true });

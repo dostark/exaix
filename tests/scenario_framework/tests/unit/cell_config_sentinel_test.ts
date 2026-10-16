@@ -15,18 +15,9 @@
 
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { resolveCellConfig } from "../../runner/matrix_expander.ts";
+import { readConfigFixture } from "@exaix/testing";
 
-const PRESET = [
-  "[system]",
-  'root = "__DOGFOOD_ROOT__"',
-  "",
-  "[[portals]]",
-  'alias = "exaix-self"',
-  'target_path = "__WORKTREE_PATH__"',
-  "",
-  "[session_delegate]",
-  'tool = "claude-code"',
-].join("\n");
+const PRESET = readConfigFixture("cell-config-sentinel-preset");
 
 Deno.test("[cell_config] resolveCellConfig substitutes __DOGFOOD_ROOT__ with the workspace root", () => {
   const out = resolveCellConfig(PRESET, { workspaceRoot: "/ws/cell", worktreePath: "/repo" });
@@ -47,7 +38,7 @@ Deno.test("[cell_config] resolveCellConfig replaces every occurrence (replaceAll
 });
 
 Deno.test("[cell_config] resolveCellConfig leaves a sentinel-free preset unchanged", () => {
-  const clean = '[system]\nroot = "/already/absolute"\n';
+  const clean = readConfigFixture("cell-config-sentinel-free");
   assertEquals(resolveCellConfig(clean, { workspaceRoot: "/ws", worktreePath: "/repo" }), clean);
 });
 

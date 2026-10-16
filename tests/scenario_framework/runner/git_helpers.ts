@@ -8,7 +8,7 @@
  * @related-files [tests/scenario_framework/runner/synthetic_runner.ts, tests/scenario_framework/runner/assertions.ts, tests/scenario_framework/runner/history_writer.ts]
  */
 
-import { ExaPathDefaults } from "@exaix/core";
+import { ExaPathDefaults } from "@exaix/shared";
 import { GitService } from "@exaix/git";
 import { ConfigSchema } from "@exaix/schemas";
 import type { Config } from "@exaix/schemas/config.ts";

@@ -15,9 +15,10 @@ import type { IFlow, IFlowNamespaceWrite, IFlowStep, IFlowStepInput } from "@exa
 import type { IFlowStepRequest } from "@exaix/flow";
 import type { JSONValue } from "@exaix/core";
 import type { IToolResult } from "@exaix/core/types";
-import { DEFAULT_FLOW_VERSION, FlowInputSource, FlowOutputFormat } from "@exaix/core";
+import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class FakeExecutionMemoryStore implements IExecutionMemoryStore {
   initializeCalls: string[] = [];
   writeCalls: Array<{ traceId: string; stepId: string }> = [];

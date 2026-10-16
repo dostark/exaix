@@ -7,6 +7,14 @@
  * detailed diff visualization, approval workflows, and status synchronization with the Workspace.
  */
 
+import {
+  DEFAULT_ACTIVE_PATH,
+  DEFAULT_ARCHIVE_PATH,
+  DEFAULT_PLANS_PATH,
+  DEFAULT_REJECTED_PATH,
+  DEFAULT_REQUESTS_PATH,
+  DEFAULT_WORKSPACE_PATH,
+} from "@exaix/shared";
 import { RequestSource } from "@exaix/core";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { PlanStatus } from "@exaix/core/status";
@@ -46,11 +54,11 @@ describe("PlanCommands", () => {
     // Initialize shared CLI test context
     const result = await createCliTestContext({
       createDirs: [
-        "Workspace/Plans",
-        "Workspace/Active",
-        "Workspace/Rejected",
-        "Workspace/Archive",
-        "Workspace/Requests",
+        `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}`,
+        `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ACTIVE_PATH}`,
+        `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REJECTED_PATH}`,
+        `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ARCHIVE_PATH}`,
+        `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`,
       ],
     });
     tempDir = result.tempDir;

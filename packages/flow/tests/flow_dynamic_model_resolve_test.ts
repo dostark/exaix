@@ -8,6 +8,8 @@
  * @related-files [packages/flow/src/flow_runner.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { createMockConfig, initTestDbService } from "@exaix/testing";
@@ -156,7 +158,7 @@ const REACT_COMPLETE_FIXTURE = {
 };
 
 function writeAgentRole(root: string): void {
-  const dir = join(root, "Blueprints", "Agents");
+  const dir = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
   Deno.mkdirSync(dir, { recursive: true });
   Deno.writeTextFileSync(
     join(dir, "agent1.md"),

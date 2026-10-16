@@ -1,0 +1,12 @@
+[system]
+root = "$WORKSPACE_ROOT"
+
+[agents]
+default_model = "claude-cli-sonnet"
+
+[models."claude-cli-sonnet"]
+provider = "claude-cli"
+model = "sonnet"
+
+[quality_gate]
+enabled = false

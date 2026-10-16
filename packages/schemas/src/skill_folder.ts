@@ -12,13 +12,13 @@
  */
 
 import { z } from "zod";
+import { SKILL_NAME_MAX_LENGTH } from "@exaix/shared";
 import { canonicalizeToolName, McpToolName, SkillStatus, ToolName } from "@exaix/core";
 import { SkillQualityCriterionSchema, SkillTriggersSchema } from "./memory_bank.ts";
 import { EffortTierSchema } from "./model_intent.ts";
 
 /** Spec slug: lowercase ASCII alphanumerics in single-hyphen-separated groups, 1-64 characters. */
 export const SKILL_NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-export const SKILL_NAME_MAX_LENGTH = 64;
 export const SKILL_DESCRIPTION_MAX_LENGTH = 1024;
 export const SKILL_COMPATIBILITY_MAX_LENGTH = 500;
 

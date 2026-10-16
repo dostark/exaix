@@ -9,6 +9,7 @@
  * @related-files [tests/docs/helpers.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import { stripAnsiCode } from "@std/fmt/colors";
 import { join } from "@std/path";
@@ -26,7 +27,7 @@ const ACTIVE_GUIDANCE = [
   "ARCHITECTURE.md",
   "CODE_STYLE.md",
   ".copilot/README.md",
-  "Blueprints/Skills/README.md",
+  `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/README.md`,
   "packages/execution/README.md",
   "packages/memory/README.md",
 ];

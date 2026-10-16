@@ -8,7 +8,7 @@
  * @related-files [packages/schemas/src/config.ts, packages/core/src/config/service.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { ConfigService } from "@exaix/core/config";
 
 // Security tests, selected by the tests/**/*_security_test.ts glob.
@@ -76,8 +76,6 @@ Deno.test("[security] Env Variable Security: Verify sensitive env vars are not i
 log_level = "info"
 
 [paths]
-memory = "./Memory"
-blueprints = "./Blueprints"
 runtime = "./Runtime"`,
     );
 
@@ -88,11 +86,7 @@ runtime = "./Runtime"`,
 
       // Verify none of the sensitive values appear in config
       for (const varName of sensitiveVars) {
-        assertEquals(
-          configStr.includes("SENSITIVE_VALUE_" + varName),
-          false,
-          `Config should not contain value of ${varName}`,
-        );
+        assertFalse(configStr.includes("SENSITIVE_VALUE_" + varName), `Config should not contain value of ${varName}`);
       }
     } finally {
       try {
@@ -127,7 +121,6 @@ log_level = "info"
 
 [paths]
 memory = "$MALICIOUS_PATH"
-blueprints = "./Blueprints"
 runtime = "./Runtime"`,
     );
 
@@ -135,11 +128,7 @@ runtime = "./Runtime"`,
     const config = service.get();
 
     // Path should be literal "$MALICIOUS_PATH", not expanded to /etc/passwd
-    assertEquals(
-      config.paths.memory.includes("/etc/passwd"),
-      false,
-      "Env vars in paths should not be expanded",
-    );
+    assertFalse(config.paths.memory.includes("/etc/passwd"), "Env vars in paths should not be expanded");
     assertEquals(
       config.paths.memory.includes("$MALICIOUS_PATH") ||
         config.paths.memory.includes("MALICIOUS_PATH"),

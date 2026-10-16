@@ -9,7 +9,8 @@
  * @related-files [apps/exactl/src/commands/memory_commands.ts, packages/cli/src/formatters/memory_formatter.ts]
  */
 
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { UIOutputFormat } from "@exaix/tui";
 import { SkillStatus } from "@exaix/core";
@@ -59,15 +60,19 @@ Deno.test("[skills show] an unused skill shows zero uses", async () => {
 Deno.test("[skills --portal] project skills show only for their portal and are global-only without one", async () => {
   const { commands, config, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const projectRoot = join(config.system.root, config.paths.memory, "Skills", "project", "Alpha");
+    const projectRoot = pathBuilders.memorySkillsPath(
+      join(config.system.root, config.paths.memory),
+      "project",
+      "Alpha",
+    );
     await writeSkillFolder(projectRoot, {
       name: "alpha-guide",
       instructions: "Alpha body.",
       sidecar: { status: SkillStatus.ACTIVE },
     });
     assertStringIncludes(await commands.skillList({ portal: "Alpha" }), "alpha-guide");
-    assertEquals((await commands.skillList({ portal: "Beta" })).includes("alpha-guide"), false);
-    assertEquals((await commands.skillList()).includes("alpha-guide"), false);
+    assertFalse((await commands.skillList({ portal: "Beta" })).includes("alpha-guide"));
+    assertFalse((await commands.skillList()).includes("alpha-guide"));
     assertStringIncludes(await commands.skillShow("alpha-guide", UIOutputFormat.TABLE, "Alpha"), "alpha-guide");
     const hidden = await assertRejects(() => commands.skillShow("alpha-guide"), SkillCommandError);
     assertEquals(hidden.exitCode, 1);
@@ -76,7 +81,7 @@ Deno.test("[skills --portal] project skills show only for their portal and are g
     const created = await commands.skillCreate("beta-note", { instructions: "Beta note.", portal: "Beta" });
     assertStringIncludes(created, "beta-note");
     assertStringIncludes(await commands.skillList({ portal: "Beta" }), "beta-note");
-    assertEquals((await commands.skillList({ portal: "Alpha" })).includes("beta-note"), false);
+    assertFalse((await commands.skillList({ portal: "Alpha" })).includes("beta-note"));
   } finally {
     await cleanup();
   }
@@ -159,14 +164,14 @@ Deno.test("[skills revisions/show/usage] history survives deleting the current f
     assertStringIncludes(shown.skillMd, "Historic body.");
     assertEquals(shown.origin.rootKind, "learned");
     assertEquals(shown.summary.useCount, 2);
-    assertEquals(JSON.stringify(shown).includes(config.system.root), false, "no host paths in the output");
+    assertFalse(JSON.stringify(shown).includes(config.system.root), "no host paths in the output");
 
     const trace = JSON.parse(await commands.skillUsageByTrace(ctx.traceId, { format: UIOutputFormat.JSON }));
     assertEquals(trace.length, 2);
     assertEquals(trace[0].skillName, "historic");
     assertEquals(trace[0].revisionId, active.id);
     assertEquals(trace[0].contentSha256, revisions[0].contentSha256);
-    assertEquals(JSON.stringify(trace).includes("Historic body."), false, "trace rows carry no skill bodies");
+    assertFalse(JSON.stringify(trace).includes("Historic body."), "trace rows carry no skill bodies");
 
     const wrongName = await assertRejects(
       () => commands.skillShow("other-name", UIOutputFormat.JSON, undefined, active.id),
@@ -186,7 +191,7 @@ Deno.test("[skills revisions/show/usage] history survives deleting the current f
 Deno.test("[skills validate/list --all] diagnostics are typed, mutate nothing and fail the exit code on errors", async () => {
   const { commands, config, db, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const learned = join(config.system.root, config.paths.memory, "Skills", "learned");
+    const learned = pathBuilders.memorySkillsPath(join(config.system.root, config.paths.memory), "learned");
     await writeSkillFolder(learned, {
       name: "fine-skill",
       instructions: "Fine.",
@@ -206,7 +211,7 @@ Deno.test("[skills validate/list --all] diagnostics are typed, mutate nothing an
     const report = JSON.parse(error.output!);
     assertEquals(report.valid, false);
     assertEquals(report.diagnostics.some((d: { name: string; reason: string }) => d.name === "broken-skill"), true);
-    assertEquals(JSON.stringify(report).includes("no frontmatter"), false, "no raw file content");
+    assertFalse(JSON.stringify(report).includes("no frontmatter"), "no raw file content");
     assertEquals(await db.preparedAll("SELECT revision_id FROM skill_revisions"), before, "validate writes nothing");
 
     const named = JSON.parse(await commands.skillValidate("fine-skill", { format: UIOutputFormat.JSON }));
@@ -246,7 +251,7 @@ Deno.test("[security] a hostile draft prints no control byte in table or markdow
   // deno-lint-ignore no-control-regex
   const controlByte = /[\x00-\x08\x0B-\x1F\x7F]/;
   try {
-    const learned = join(config.system.root, config.paths.memory, "Skills", "learned");
+    const learned = pathBuilders.memorySkillsPath(join(config.system.root, config.paths.memory), "learned");
     await writeSkillFolder(learned, { name: "hostile-draft", instructions: hostile });
     const service = new SkillsService({ memoryDir: join(config.system.root, config.paths.memory) }, db);
     const draft = await draftOf(service, "hostile-draft");
@@ -274,7 +279,7 @@ Deno.test("[security] a project skill's stored revision is refused to another po
   const { commands, config, db, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     const memoryDir = join(config.system.root, config.paths.memory);
-    await writeSkillFolder(join(memoryDir, "Skills", "project", "Alpha"), {
+    await writeSkillFolder(pathBuilders.memorySkillsPath(memoryDir, "project", "Alpha"), {
       name: "alpha-guide",
       instructions: "Alpha only guidance.",
       sidecar: { status: SkillStatus.ACTIVE },
@@ -292,7 +297,7 @@ Deno.test("[security] a project skill's stored revision is refused to another po
         SkillCommandError,
       );
       assertEquals(refused.exitCode, 1);
-      assertEquals(refused.message.includes("Alpha only guidance."), false);
+      assertFalse(refused.message.includes("Alpha only guidance."));
       assertEquals(
         JSON.parse(await commands.skillRevisions("alpha-guide", { format: UIOutputFormat.JSON, portal })),
         [],

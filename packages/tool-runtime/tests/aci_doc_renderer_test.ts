@@ -13,9 +13,9 @@
 import { assertEquals, assertNotEquals } from "@std/assert";
 import { calculateAciDocBudgetChars, renderAciDocFragments } from "@exaix/tool-runtime";
 import type { ITool } from "@exaix/core/types";
-import { ToolSideEffectScope } from "@exaix/core";
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN, ToolSideEffectScope } from "@exaix/core";
 import type { AciDoc } from "@exaix/schemas";
-import { ACI_DOC_FRAGMENT_MAX_CHARS, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
+import { ACI_DOC_FRAGMENT_MAX_CHARS } from "@exaix/core";
 import type { IPromptBudget } from "@exaix/schemas";
 
 function makeAciDoc(overrides: Partial<AciDoc> = {}): AciDoc {
@@ -81,7 +81,7 @@ Deno.test("[security] an invalid runtime doc is omitted fail-closed", () => {
   const invalidTool = makeTool({
     name: "write_file",
     // Missing anti_example entirely — fails AciDocSchema.
-    aciDoc: { ...makeAciDoc(), anti_example: undefined } as unknown as AciDoc,
+    aciDoc: { ...makeAciDoc(), anti_example: undefined } as Partial<AciDoc> as AciDoc,
   });
   const result = renderAciDocFragments([validTool, invalidTool], ["read_file", "write_file"], 12_000);
 

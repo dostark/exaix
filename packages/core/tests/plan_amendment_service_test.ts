@@ -4,7 +4,7 @@
  * @description Unit tests for PlanAmendmentService, validating patch application logic.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { PlanAmendmentService } from "@exaix/core/planning";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -72,5 +72,5 @@ Deno.test("PlanAmendmentService.applyApprovedAmendment handles removals", () => 
   const updated = service.applyApprovedAmendment(planContent, patch);
 
   assertEquals(updated.includes("## Step 1: title 1"), true);
-  assertEquals(updated.includes("## Step 2: title 2"), false);
+  assertFalse(updated.includes("## Step 2: title 2"));
 });

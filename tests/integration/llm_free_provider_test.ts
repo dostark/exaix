@@ -8,6 +8,7 @@
 // Integration test for free LLM providers (manual/ignored)
 // This test is ignored by default to avoid calling external endpoints in CI.
 
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertExists, assertStringIncludes } from "@std/assert";
 import { EvaluationCategory } from "@exaix/core";
 import { TestEnvironment } from "./helpers/test_environment.ts";
@@ -66,7 +67,7 @@ Deno.test(
       const processor = new RequestProcessor({
         workspacePath: getWorkspaceDir(`${env.tempDir}`),
         requestsDir: getWorkspaceRequestsDir(`${env.tempDir}`),
-        blueprintsPath: `${env.tempDir}/Blueprints/Agents`,
+        blueprintsPath: pathBuilders.agentsPath(pathBuilders.blueprintsPath(env.tempDir)),
         includeReasoning: true,
         context,
         testProvider: provider,

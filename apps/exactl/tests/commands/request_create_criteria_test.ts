@@ -6,6 +6,7 @@
  * @architectural-layer Tests
  * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
+import { DEFAULT_FLOWS_DIR, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { RequestCommands } from "../../src/commands/request_commands.ts";
@@ -20,7 +21,7 @@ describe("[request create] CLI criteria flags", () => {
 
   beforeEach(async () => {
     const result = await createCliTestContext({
-      createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+      createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
     });
     cleanup = result.cleanup;
     requestsDir = getWorkspaceRequestsDir(result.tempDir);

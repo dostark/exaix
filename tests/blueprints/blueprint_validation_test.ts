@@ -5,12 +5,13 @@
  * Quality Judge, and default agent roles pass strict schema validation.
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 
-const BLUEPRINTS_DIR = "./Blueprints/Agents";
+const BLUEPRINTS_DIR = `./${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`;
 
 interface BlueprintFrontmatter {
   agent_role: string;

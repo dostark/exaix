@@ -6,6 +6,7 @@
  * @related-files [packages/eval-history/src/calibration/identity.ts]
  */
 
+import { DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
 import type { JSONObject } from "@exaix/core/types";
 import {
@@ -24,9 +25,9 @@ function input(): IContextAssemblyInput {
     kind: ContextAssemblyKind.Artifact,
     sources: {
       "packages/execution/src/agent_runner.ts": "assemble resolved segments\n",
-      "Blueprints/Skills/plan.skill.md": "Use the original request.\n",
+      [`${DEFAULT_BLUEPRINTS_PATH}/Skills/plan.skill.md`]: "Use the original request.\n",
     },
-    dynamicAssets: ["Blueprints/Skills/plan.skill.md"],
+    dynamicAssets: [`${DEFAULT_BLUEPRINTS_PATH}/Skills/plan.skill.md`],
     effectiveConfiguration: { context_budget: 4096, selection: { skills: "resolved" } },
   };
 }
@@ -41,8 +42,8 @@ Deno.test("context assembly identity sorts exact source inputs and records audit
   assertEquals(await buildContextAssemblyIdentity(reordered), identity);
   assertEquals(identity.version, ARTIFACT_CONTEXT_ASSEMBLY_VERSION);
   assertEquals(
-    identity.input_map.sources["Blueprints/Skills/plan.skill.md"],
-    await sha256Hex(original.sources["Blueprints/Skills/plan.skill.md"]),
+    identity.input_map.sources[`${DEFAULT_BLUEPRINTS_PATH}/Skills/plan.skill.md`],
+    await sha256Hex(original.sources[`${DEFAULT_BLUEPRINTS_PATH}/Skills/plan.skill.md`]),
   );
   assertEquals(
     identity.digest,
@@ -62,7 +63,7 @@ Deno.test("context assembly source, dynamic asset and effective configuration ch
   const changedSource = input();
   changedSource.sources["packages/execution/src/agent_runner.ts"] += "changed budget selection\n";
   const changedAsset = input();
-  changedAsset.sources["Blueprints/Skills/plan.skill.md"] += "Cite evidence.\n";
+  changedAsset.sources[`${DEFAULT_BLUEPRINTS_PATH}/Skills/plan.skill.md`] += "Cite evidence.\n";
   const changedConfiguration = input();
   changedConfiguration.effectiveConfiguration.context_budget = 8192;
   const changedSelection = input();
@@ -95,7 +96,7 @@ Deno.test("[security] assembly input names cannot overwrite the hash map prototy
 
 Deno.test("[security] context assembly rejects missing dynamic inputs, unsafe paths and secret configuration", async (): Promise<void> => {
   const missing = input();
-  missing.dynamicAssets.push("Blueprints/Skills/missing.skill.md");
+  missing.dynamicAssets.push(`${DEFAULT_BLUEPRINTS_PATH}/Skills/missing.skill.md`);
   await assertRejects(() => buildContextAssemblyIdentity(missing), CalibrationCanonicalizationError);
   for (const path of ["../private", "/home/private", "a/../private", "a\\private"]) {
     await assertRejects(

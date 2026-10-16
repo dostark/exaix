@@ -11,7 +11,9 @@
  * @related-files [packages/core/src/skills/skills.ts, tests/scenario_framework/scenarios/skill_eval/]
  */
 
-import { assertEquals } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import { assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
 import { SkillsService } from "@exaix/core/skills";
@@ -43,7 +45,7 @@ function createCapturingLogger(captured: ICapturedEvent[]): IEventLogger {
   return logger;
 }
 
-const REPO_BLUEPRINT_SKILLS = join(REPO_ROOT, "Blueprints", "Skills");
+const REPO_BLUEPRINT_SKILLS = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH);
 
 async function withSkillsService(
   fn: (service: SkillsService, captured: ICapturedEvent[]) => Promise<void>,
@@ -125,7 +127,7 @@ Deno.test("[skills] matchSkills keeps a fitting lower-confidence match when a hi
   const { db, cleanup } = await initTestDbService();
   const captured: ICapturedEvent[] = [];
   const memoryDir = await Deno.makeTempDir({ prefix: "skills-budget-" });
-  const blueprintDir = join(memoryDir, "Blueprints", "Skills");
+  const blueprintDir = pathBuilders.blueprintsPath(memoryDir, DEFAULT_SKILLS_MEMORY_PATH);
   try {
     // Confidence is score divided by max over declared dimensions. `oversized-first` declares
     // only the tag, so it scores 1.0. `small-second` adds an unmatched file pattern, so its
@@ -162,7 +164,7 @@ Deno.test("[skills] matchSkills keeps a fitting lower-confidence match when a hi
 
     const ids = matches.map((m) => m.skillId);
     assertEquals(ids.includes("small-second"), true, `fitting match dropped: ${ids.join(",")}`);
-    assertEquals(ids.includes("oversized-first"), false, "an over-budget match must not be injected");
+    assertFalse(ids.includes("oversized-first"), "an over-budget match must not be injected");
   } finally {
     await Deno.remove(memoryDir, { recursive: true }).catch(() => {});
     await cleanup();

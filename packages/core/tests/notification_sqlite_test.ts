@@ -5,7 +5,7 @@
  * ensuring persistent storage of event alerts within the activity journal.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { initTestDbService } from "@exaix/testing";
 import { createNotificationTestProposal, runNotificationTest } from "@exaix/testing";
 
@@ -41,14 +41,14 @@ Deno.test("Migration 003: notifications table has correct schema", async () => {
     ).all() as Array<{ name: string; type: string; notnull: number }>;
 
     const columnNames = columns.map((c) => c.name);
-    assertEquals(columnNames.includes("id"), true);
-    assertEquals(columnNames.includes("type"), true);
-    assertEquals(columnNames.includes("message"), true);
-    assertEquals(columnNames.includes("proposal_id"), true);
-    assertEquals(columnNames.includes("trace_id"), true);
-    assertEquals(columnNames.includes("created_at"), true);
-    assertEquals(columnNames.includes("dismissed_at"), true);
-    assertEquals(columnNames.includes("metadata"), true);
+    assertArrayIncludes(columnNames, ["id"]);
+    assertArrayIncludes(columnNames, ["type"]);
+    assertArrayIncludes(columnNames, ["message"]);
+    assertArrayIncludes(columnNames, ["proposal_id"]);
+    assertArrayIncludes(columnNames, ["trace_id"]);
+    assertArrayIncludes(columnNames, ["created_at"]);
+    assertArrayIncludes(columnNames, ["dismissed_at"]);
+    assertArrayIncludes(columnNames, ["metadata"]);
   } finally {
     await cleanup();
   }

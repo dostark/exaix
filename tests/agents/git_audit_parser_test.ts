@@ -13,7 +13,7 @@
  * - Non-git directory returns empty array (graceful degradation)
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer } from "@exaix/execution";
 import type { EventLogger } from "@exaix/core/logger";
@@ -164,11 +164,7 @@ Deno.test({
 
       try {
         const unauthorized = await executor.auditGitChanges(repoDir, ["allowed.txt"]);
-        assertEquals(
-          unauthorized.includes("allowed.txt"),
-          false,
-          "allowed.txt must NOT appear in unauthorized list",
-        );
+        assertFalse(unauthorized.includes("allowed.txt"), "allowed.txt must NOT appear in unauthorized list");
       } finally {
         await ds2.cleanup();
       }
@@ -230,11 +226,7 @@ Deno.test({
           true,
           "forbidden.txt must be unauthorized",
         );
-        assertEquals(
-          unauthorized.includes("permitted.txt"),
-          false,
-          "permitted.txt must NOT be in unauthorized list",
-        );
+        assertFalse(unauthorized.includes("permitted.txt"), "permitted.txt must NOT be in unauthorized list");
       } finally {
         await ds2.cleanup();
       }

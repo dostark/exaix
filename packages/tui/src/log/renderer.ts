@@ -8,6 +8,14 @@
  */
 
 import { LogLevel } from "@exaix/core";
+import {
+  LOG_RENDERER_MAX_MESSAGE_LENGTH,
+  LOG_RENDERER_SEPARATOR_LENGTH,
+  LOG_RENDERER_TRACE_ID_LENGTH,
+  TIME_MS_PER_HOUR,
+  TIME_MS_PER_MINUTE,
+  TIME_MS_PER_SECOND,
+} from "@exaix/core";
 import type { IStructuredLogEntry } from "@exaix/core/types";
 import { TuiColorName } from "../types/enums.ts";
 import { ANSI, colorize, type ITuiTheme } from "@exaix/tui/helpers/colors.ts";
@@ -22,13 +30,7 @@ export interface ILogRenderOptions {
   theme: ITuiTheme;
 }
 
-const LOG_RENDERER_MAX_MESSAGE_LENGTH = 100;
-const LOG_RENDERER_TRACE_ID_LENGTH = 8;
-const LOG_RENDERER_SEPARATOR_LENGTH = 50;
 const LOG_RENDERER_SEPARATOR_WIDTH = 80;
-const TIME_MS_PER_SECOND = 1000;
-const TIME_MS_PER_MINUTE = 60_000;
-const TIME_MS_PER_HOUR = 3_600_000;
 
 export const DEFAULT_LOG_RENDER_OPTIONS: ILogRenderOptions = {
   showTimestamp: true,

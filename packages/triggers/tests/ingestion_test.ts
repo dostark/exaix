@@ -6,7 +6,7 @@
  * @related-files [packages/triggers/services/ingestion_service.ts, packages/triggers/services/policy_gate.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { TriggerIngestionService } from "../services/ingestion_service.ts";
 import { TriggerPolicyGate } from "../services/policy_gate.ts";
 import { InMemoryIdempotencyLedger } from "../services/idempotency_ledger.ts";
@@ -467,11 +467,7 @@ Deno.test("[TriggerIngestion] start_flow frontmatter includes request_source: tr
         break;
       }
     }
-    assertEquals(
-      fileContent.includes("request_source: trigger"),
-      true,
-      "Frontmatter must include request_source: trigger",
-    );
+    assertStringIncludes(fileContent, "request_source: trigger", "Frontmatter must include request_source: trigger");
   } finally {
     await Deno.remove(tmpDir, { recursive: true });
   }

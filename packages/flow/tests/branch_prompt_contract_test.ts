@@ -3,7 +3,8 @@
  * @path packages/flow/tests/branch_prompt_contract_test.ts
  * @description Traces branch JSON instructions through runner, adapter, and provider assembly.
  */
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { AgentRunner } from "@exaix/execution";
 import { AgentComposerAdapter, FlowRunner } from "@exaix/flow";
 import type { IRunner } from "@exaix/flow/agent_composer_adapter.ts";
@@ -26,7 +27,7 @@ Deno.test("[prompt] branch instruction replaces the flow Plan envelope and retai
   assertStringIncludes(branch.userPrompt, "Classify issue");
   assertStringIncludes(branch.userPrompt, "results.classify.data.category");
   assertStringIncludes(branch.userPrompt, '"default":"other"');
-  assertEquals(branch.userPrompt.includes('"subject": "Flow Step Output"'), false);
+  assertFalse(branch.userPrompt.includes('"subject": "Flow Step Output"'));
   assertStringIncludes(agent.requests[1].userPrompt, '"subject": "Flow Step Output"');
 });
 Deno.test("[prompt] adapter carries branch-json into AgentRunner and preserves ordinary Plan instructions", async () => {
@@ -46,7 +47,10 @@ Deno.test("[prompt] adapter carries branch-json into AgentRunner and preserves o
     received.push(request);
     return run(blueprint, request, skills);
   };
-  const adapter = new AgentComposerAdapter(runner, new URL("../../../Blueprints/Agents", import.meta.url).pathname);
+  const adapter = new AgentComposerAdapter(
+    runner,
+    new URL(`../../../${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`, import.meta.url).pathname,
+  );
   assertEquals(
     (await adapter.run("code-analyst", {
       userPrompt: "Classify",
@@ -57,7 +61,7 @@ Deno.test("[prompt] adapter carries branch-json into AgentRunner and preserves o
     BRANCH_OUTPUT,
   );
   assertEquals(received[0].flowOutputKind, "branch-json");
-  assertEquals(prompts[0].includes("PLAN_SCHEMA_SENTINEL"), false);
+  assertFalse(prompts[0].includes("PLAN_SCHEMA_SENTINEL"));
   assertStringIncludes(prompts[0], "classification JSON");
   await adapter.run("code-analyst", { userPrompt: "Ordinary task", context: {} });
   assertStringIncludes(prompts[1], "PLAN_SCHEMA_SENTINEL");
@@ -116,7 +120,7 @@ Deno.test("[prompt] companion binding preserves branch identity and forwards eff
     });
     const adapter = new AgentComposerAdapter(
       runner,
-      new URL("../../../Blueprints/Agents", import.meta.url).pathname,
+      new URL(`../../../${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`, import.meta.url).pathname,
       undefined,
       service,
     );

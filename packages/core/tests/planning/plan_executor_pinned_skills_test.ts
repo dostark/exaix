@@ -11,7 +11,8 @@
  * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/skill_pin_transport.ts]
  */
 
-import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { assert, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import {
   createMockConfig,
   createStubConfig,
@@ -136,9 +137,9 @@ async function run(skills: PinSkillsService | null, frontmatter: JSONObject) {
     contextWindow: 128_000,
   });
   const root = await Deno.makeTempDir();
-  await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
+  await Deno.mkdir(pathBuilders.agentsPath(pathBuilders.blueprintsPath(root)), { recursive: true });
   await Deno.writeTextFile(
-    `${root}/Blueprints/Agents/senior-coder.md`,
+    pathBuilders.agentsPath(pathBuilders.blueprintsPath(root), "senior-coder.md"),
     '---\nagent_role: senior-coder\nmodel: ""\npermitted_tools: ["read_file", "write_file", "list_directory"]\n---\n\nStub role.\n',
   );
   const config = createMockConfig(root, {});
@@ -204,11 +205,11 @@ Deno.test({
       await env.execute();
       assertEquals(env.prompts.length, 1);
       assertStringIncludes(env.prompts[0], "Approved body A.");
-      assertEquals(env.prompts[0].includes("Live body B."), false);
+      assertFalse(env.prompts[0].includes("Live body B."));
       const tools = env.prompts[0].match(/AVAILABLE TOOLS:\n([^\n]*)/)?.[1] ?? "";
       assertStringIncludes(tools, "read_file");
-      assertEquals(tools.includes("list_directory"), false, "live tools never widen a pinned set");
-      assertEquals(tools.includes("write_file"), false, "the pin's tools bound the role's tools");
+      assertFalse(tools.includes("list_directory"), "live tools never widen a pinned set");
+      assertFalse(tools.includes("write_file"), "the pin's tools bound the role's tools");
       const payload = env.logger.events.find((e) => e.action === "agent.effort_resolved")?.payload as Record<
         string,
         JSONValue
@@ -252,7 +253,7 @@ Deno.test({
       assert(skills.calls.matchCalls > 0, "absent pins keep the dynamic path");
       assertEquals(skills.calls.resolved.length, 0);
       assertEquals(skills.calls.submissions.length, 0);
-      assertEquals(env.prompts[0].includes("SKILLS"), false);
+      assertFalse(env.prompts[0].includes("SKILLS"));
     } finally {
       env.cleanup();
     }
@@ -289,7 +290,7 @@ Deno.test({
     const env = await run(skills, { resolved_skills: [pinFor(skill, { content_included: false })] });
     try {
       await env.execute();
-      assertEquals(env.prompts[0].includes("Excluded body."), false);
+      assertFalse(env.prompts[0].includes("Excluded body."));
       assertEquals(skills.calls.submissions.length, 0);
       const payload = env.logger.events.find((e) => e.action === "agent.effort_resolved")?.payload as Record<
         string,

@@ -8,7 +8,7 @@
  * display of project-specific, global, and execution-linked knowledge details.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 
 import { MemoryFormatter } from "../../src/memory_view/formatters.ts";
 import { MemoryTuiScope } from "../../src/memory_view/memory_scope.ts";
@@ -192,13 +192,13 @@ Deno.test("MemoryFormatter.formatExecutionMemory: includes changes only when pre
   };
 
   const noChanges = MemoryFormatter.formatExecutionMemory(base);
-  assertEquals(noChanges.includes("## Changes"), false);
+  assertFalse(noChanges.includes("## Changes"));
 
   const withChanges = MemoryFormatter.formatExecutionMemory({
     ...base,
     changes: { files_created: ["a"], files_modified: [], files_deleted: [] },
   });
-  assertEquals(withChanges.includes("## Changes"), true);
+  assertStringIncludes(withChanges, "## Changes");
   assertStringIncludes(withChanges, "Created: 1 files");
 });
 

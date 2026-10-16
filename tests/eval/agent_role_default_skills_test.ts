@@ -12,13 +12,15 @@
  * @dependencies [Blueprints/Agents/, Blueprints/Skills/]
  * @related-files [packages/execution/src/agent_runner.ts]
  */
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { readRuntimeSkillIds } from "./runtime_skill_scopes.ts";
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
-const AGENTS_DIR = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_DIR = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH);
 
 // Upper bound on an agent role's `default_skills`. Matches `DEFAULT_CONFIG.maxSkillsPerRequest`
 // in `packages/core/src/skills/skills.ts`: that cap governs dynamically matched skills, and

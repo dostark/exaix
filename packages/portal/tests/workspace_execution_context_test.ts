@@ -7,7 +7,7 @@
  * identifiers, portal roots, and security credentials are correctly partitioned for each request.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { WorkspaceExecutionContextBuilder } from "@exaix/portal";
@@ -55,7 +55,7 @@ function assertThrowsWithMessage(action: () => void, expectedMessage: string): v
     action();
     throw new Error("Should have thrown");
   } catch (error) {
-    assertEquals((error as Error).message.includes(expectedMessage), true);
+    assertStringIncludes((error as Error).message, expectedMessage);
   }
 }
 

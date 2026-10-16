@@ -10,8 +10,9 @@
  * @related-files [packages/core/src/skills/skills.ts, packages/core/src/skills/skill_folder_loader.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertRejects } from "@std/assert";
-import { join } from "@std/path";
 import { SkillInitOutcome, SkillStatus } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
@@ -44,7 +45,12 @@ async function fixture() {
 Deno.test("[journal] initialize journals a ready outcome with the writable root count", async () => {
   const fx = await fixture();
   try {
-    const service = new SkillsService({ memoryDir: join(fx.base, "Memory") }, fx.env.db, undefined, fx.logger);
+    const service = new SkillsService(
+      { memoryDir: pathBuilders.memoryPath(fx.base) },
+      fx.env.db,
+      undefined,
+      fx.logger,
+    );
     await service.initialize();
     const rows = await fx.rows(DomainEventType.SkillsInitialized);
     assertEquals(rows.length, 1);
@@ -63,7 +69,7 @@ Deno.test("[journal] initialize journals a ready outcome with the writable root 
 Deno.test("[journal] initialize journals a failed outcome and rethrows when a writable root cannot be created", async () => {
   const fx = await fixture();
   try {
-    const blocker = join(fx.base, "Memory");
+    const blocker = pathBuilders.memoryPath(fx.base);
     await Deno.writeTextFile(blocker, "a file where the memory directory should be");
     const service = new SkillsService({ memoryDir: blocker }, fx.env.db, undefined, fx.logger);
     await assertRejects(() => service.initialize());
@@ -78,10 +84,10 @@ Deno.test("[journal] initialize journals a failed outcome and rethrows when a wr
 Deno.test("[journal] a shadowed skill journals its winner and masked paths once per changed shadow set", async () => {
   const fx = await fixture();
   try {
-    const memoryDir = join(fx.base, "Memory");
-    const blueprintDir = join(fx.base, "Blueprints", "Skills");
+    const memoryDir = pathBuilders.memoryPath(fx.base);
+    const blueprintDir = pathBuilders.blueprintsPath(fx.base, DEFAULT_SKILLS_MEMORY_PATH);
     await writeSkillFolder(blueprintDir, { name: "twin", instructions: "Blueprint twin." });
-    await writeSkillFolder(join(memoryDir, "Skills", "learned"), {
+    await writeSkillFolder(pathBuilders.memorySkillsPath(memoryDir, "learned"), {
       name: "twin",
       instructions: "Learned twin.",
       sidecar: { status: SkillStatus.ACTIVE },
@@ -107,7 +113,12 @@ Deno.test("[journal] a shadowed skill journals its winner and masked paths once 
 Deno.test("[journal] approve, delete and a refused mutation journal their payloads on the operation trace", async () => {
   const fx = await fixture();
   try {
-    const service = new SkillsService({ memoryDir: join(fx.base, "Memory") }, fx.env.db, undefined, fx.logger);
+    const service = new SkillsService(
+      { memoryDir: pathBuilders.memoryPath(fx.base) },
+      fx.env.db,
+      undefined,
+      fx.logger,
+    );
     await service.initialize();
     const ctx = createSkillOperationContext({ agentRole: "reviewer", traceId: "trace-lifecycle" });
     const draft = await service.createSkill({ name: "lifecycle", description: "d", instructions: "Body." }, ctx);

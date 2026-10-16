@@ -4,6 +4,7 @@
  * @description Tests for [memory.embedding] config schema — validates that
  *   the new embedding model/dimension fields parse correctly and default.
  */
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
 
@@ -12,27 +13,7 @@ function minimalConfig() {
     agents: { default_model: "gemini-flash" },
     models: { "gemini-flash": { provider: "google", model: "gemini-flash" } },
     system: { root: ".", version: "1.0.0", schema_version: "1.0.0" },
-    paths: {
-      memory: "Memory",
-      blueprints: "Blueprints",
-      runtime: ".exa",
-      workspace: "Workspace",
-      portals: "Portals",
-      active: "Active",
-      archive: "Archive",
-      plans: "Plans",
-      requests: "Requests",
-      rejected: "Rejected",
-      agents: "Agents",
-      flows: "Blueprints/Flows",
-      memoryProjects: "Memory/Projects",
-      memoryExecution: "Memory/Execution",
-      memoryIndex: "Memory/Index",
-      memorySkills: "Memory/Skills",
-      memoryPending: "Memory/Pending",
-      memoryTasks: "Memory/Tasks",
-      memoryGlobal: "Memory/Global",
-    },
+    paths: { ...ExaPathDefaults },
   };
 }
 

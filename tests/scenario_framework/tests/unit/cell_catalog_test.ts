@@ -10,7 +10,7 @@
  * @related-files [tests/scenario_framework/runner/cell_catalog.ts, tests/scenario_framework/runner/matrix_expander.ts]
  */
 
-import { assert, assertEquals, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertThrows } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { fromFileUrl, join, resolve } from "@std/path";
 import type { IMatrixCell } from "../../runner/matrix_expander.ts";
@@ -300,7 +300,7 @@ Deno.test("[phase203.cell_catalog] the fixture base config grants the fixture ho
     compatFixturePort: 8123,
   });
   assert(materialized.includes("127.0.0.1:8123"), "the materialized config must carry the port");
-  assertEquals(materialized.includes("__COMPAT_FIXTURE_PORT__"), false);
+  assertFalse(materialized.includes("__COMPAT_FIXTURE_PORT__"));
 
   // The binding supplies the service, so the base config declares no compatible profile.
   const config = ConfigSchema.parse(parseToml(materialized));

@@ -7,6 +7,7 @@
  * ensuring additional capabilities are correctly persisted in the request frontmatter.
  */
 
+import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
@@ -26,7 +27,7 @@ Deno.test("RequestCommands - Dynamic Skills Injection", async (t) => {
     });
 
     // 2. Verify file exists
-    const requestPath = join(tempDir, "Workspace/Requests", metadata.filename);
+    const requestPath = join(tempDir, `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, metadata.filename);
     const content = await Deno.readTextFile(requestPath);
 
     // 3. Parse frontmatter
@@ -48,7 +49,7 @@ Deno.test("RequestCommands - Dynamic Skills Injection", async (t) => {
     });
 
     // 2. Verify frontmatter
-    const requestPath = join(tempDir, "Workspace/Requests", metadata.filename);
+    const requestPath = join(tempDir, `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, metadata.filename);
     const content = await Deno.readTextFile(requestPath);
     const match = content.match(/^---\n([\s\S]*?)\n---/);
     if (!match) throw new Error("No frontmatter found");
@@ -64,7 +65,7 @@ Deno.test("RequestCommands - Dynamic Skills Injection", async (t) => {
     });
 
     // 2. Verify frontmatter does NOT have skills
-    const requestPath = join(tempDir, "Workspace/Requests", metadata.filename);
+    const requestPath = join(tempDir, `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, metadata.filename);
     const content = await Deno.readTextFile(requestPath);
     const match = content.match(/^---\n([\s\S]*?)\n---/);
     if (!match) throw new Error("No frontmatter found");

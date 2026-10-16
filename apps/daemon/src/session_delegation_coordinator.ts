@@ -8,6 +8,7 @@
  * @related-files [apps/daemon/main.ts, packages/session/src/session_delegation.ts, apps/daemon/src/session_return_watcher.ts]
  */
 
+import { DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import { buildDelegateBriefArgs, isContentlessBrief } from "@exaix/core/planning";
@@ -56,7 +57,7 @@ export interface ISessionDelegationLauncher {
   launch(
     launch: ISessionLaunch,
     traceId: string,
-    delegateProviderEnv: Record<string, string> | undefined,
+    delegateProviderEnv: Opt<Record<string, string>, Reason.OptionalInput>,
   ): Promise<void>;
 }
 
@@ -67,7 +68,7 @@ export interface ISessionCoordinatorDelegateService {
     brief: SessionBrief,
     mode: SessionBriefLaunchMode,
     config: SessionDelegateConfig,
-    connection?: IDogfoodMcpConnectionInput,
+    connection?: Opt<IDogfoodMcpConnectionInput, Reason.OptionalDependency>,
   ): Promise<IHardenedLaunchResult>;
   resolveDelegateEnv(
     config: SessionDelegateConfig,
@@ -125,7 +126,7 @@ function closeReasonForOutcomeStatus(status: ISessionDelegationOutcome["status"]
   if (status === "cancelled" || status === "expired") return ContextConnectionCloseReason.CANCELLED;
   return ContextConnectionCloseReason.FAILED;
 }
-const LEGACY_PERMITTED_PATHS: string[] = ["Workspace/**"];
+const LEGACY_PERMITTED_PATHS: string[] = [`${DEFAULT_WORKSPACE_PATH}/**`];
 const EMPTY_TOKEN_STATS: SessionTokenStats = {
   input_tokens: 0,
   output_tokens: 0,

@@ -6,7 +6,7 @@
  * by ISymbolExtractorRegistry rather than falling through to EMPTY_SYMBOL_EXTRACTOR.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse } from "@std/assert";
 import {
   createDefaultSymbolReferenceExtractorRegistry,
   type ISymbolReferenceExtractorRegistry,
@@ -99,8 +99,8 @@ Deno.test("[Enterprise] paidEditionCapabilityModules adds the symbol graph modul
   const enterpriseNames = paidEditionCapabilityModules(EDITION_ENTERPRISE).map((m) => m.constructor.name);
   const teamNames = paidEditionCapabilityModules(EDITION_TEAM).map((m) => m.constructor.name);
 
-  assertEquals(enterpriseNames.includes("EnterpriseSymbolGraphModule"), true);
-  assertEquals(enterpriseNames.includes("PortalExtractorsModule"), true);
-  assertEquals(teamNames.includes("EnterpriseSymbolGraphModule"), false);
-  assertEquals(teamNames.includes("PortalExtractorsModule"), true);
+  assertArrayIncludes(enterpriseNames, ["EnterpriseSymbolGraphModule"]);
+  assertArrayIncludes(enterpriseNames, ["PortalExtractorsModule"]);
+  assertFalse(teamNames.includes("EnterpriseSymbolGraphModule"));
+  assertArrayIncludes(teamNames, ["PortalExtractorsModule"]);
 });

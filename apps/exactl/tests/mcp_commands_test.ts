@@ -12,7 +12,7 @@
  * precedent.
  */
 
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { McpCommands } from "../src/commands/mcp_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { TEST_MCP_PORT } from "@exaix/testing";
@@ -84,10 +84,10 @@ Deno.test("McpCommands.start(sse): delegates with --transport sse and custom por
 
   assertEquals(commands.capturedArgs.length, 1);
   const args = commands.capturedArgs[0];
-  assertEquals(args.includes("exaix-team/apps/mcp-server/main.ts"), true);
-  assertEquals(args.includes("--transport"), true);
+  assertArrayIncludes(args, ["exaix-team/apps/mcp-server/main.ts"]);
+  assertArrayIncludes(args, ["--transport"]);
   assertEquals(args[args.indexOf("--transport") + 1], "sse");
-  assertEquals(args.includes("--port"), true);
+  assertArrayIncludes(args, ["--port"]);
   assertEquals(args[args.indexOf("--port") + 1], String(TEST_MCP_PORT));
   await cleanup();
 });
@@ -100,9 +100,9 @@ Deno.test("McpCommands.start(sse): uses default port when none provided", async 
 
   assertEquals(commands.capturedArgs.length, 1);
   const args = commands.capturedArgs[0];
-  assertEquals(args.includes("--transport"), true);
+  assertArrayIncludes(args, ["--transport"]);
   assertEquals(args[args.indexOf("--transport") + 1], "sse");
-  assertEquals(args.includes("--port"), false);
+  assertFalse(args.includes("--port"));
   await cleanup();
 });
 
@@ -114,9 +114,9 @@ Deno.test("McpCommands.start: uses --transport stdio by default", async () => {
 
   assertEquals(commands.capturedArgs.length, 1);
   const args = commands.capturedArgs[0];
-  assertEquals(args.includes("--transport"), true);
+  assertArrayIncludes(args, ["--transport"]);
   assertEquals(args[args.indexOf("--transport") + 1], "stdio");
-  assertEquals(args.includes("--port"), false);
+  assertFalse(args.includes("--port"));
   await cleanup();
 });
 
@@ -129,7 +129,7 @@ Deno.test("McpCommands.start: throws on process failure", async () => {
     await commands.start({});
     assertEquals(true, false, "Expected start() to throw");
   } catch (error) {
-    assertEquals((error as Error).message.includes("exited with code 1"), true);
+    assertStringIncludes((error as Error).message, "exited with code 1");
   }
   await cleanup();
 });

@@ -1,0 +1,11 @@
+[system]
+root = "$WORKSPACE_ROOT"
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = false
+
+[agents]
+inject_aci_docs = true

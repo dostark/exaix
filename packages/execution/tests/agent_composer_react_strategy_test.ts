@@ -6,7 +6,9 @@
  * @related-files [packages/execution/src/agent_composer.ts]
  */
 
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import { assertArrayIncludes, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer, StrategyRegistry } from "@exaix/execution";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
@@ -32,6 +34,7 @@ import {
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { initTestDbService } from "@exaix/testing";
 import { createTestConfig } from "../../ai/tests/helpers/test_config.ts";
+import { readConfigFixture } from "@exaix/testing";
 
 const PROVIDER_ID = "native-react-strategy-fixture";
 
@@ -45,7 +48,7 @@ async function setup() {
   const root = dbFixture.tempDir;
   const portal = join(root, "TestPortal");
   await Deno.mkdir(portal, { recursive: true });
-  await Deno.mkdir(join(root, "Blueprints", "Agents"), { recursive: true });
+  await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
   await git(portal, "init");
   await git(portal, "config", "user.name", "Test User");
   await git(portal, "config", "user.email", "test@example.invalid");
@@ -53,12 +56,12 @@ async function setup() {
   await git(portal, "add", "README.md");
   await git(portal, "commit", "-m", "initial");
   await Deno.writeTextFile(
-    join(root, "Blueprints", "Agents", "test-agent.md"),
+    pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "test-agent.md"),
     "---\nmodel: test\nprovider: mock\ncapabilities: []\npermitted_tools: [read_file]\n---\nRead the portal.",
   );
   const config = createTestConfig();
   config.system.root = root;
-  config.paths = { ...config.paths, blueprints: join(root, "Blueprints") };
+  config.paths = { ...config.paths, blueprints: pathBuilders.blueprintsPath(root) };
   config.portals = [{
     alias: "TestPortal",
     target_path: portal,
@@ -220,7 +223,7 @@ Deno.test("ReAct is the default strategy while MCP and CLI precedence stays inta
     provider,
     strategyRegistry: registry,
   });
-  const blueprintPath = join(config.paths.blueprints, "Agents", "test-agent.md");
+  const blueprintPath = pathBuilders.agentsPath(config.paths.blueprints, "test-agent.md");
   const run = async (native: boolean) => {
     const traceId = crypto.randomUUID();
     const result = await composer.executeStep(
@@ -411,7 +414,7 @@ Deno.test("PlanExecutor passes configured native flag to ReAct execution", async
       steps: [{ number: 1, title: "Read", content: "Read the portal" }],
     } as never);
     assertEquals(calls, 1);
-    assertEquals(nativeToolNames[0].includes(ToolName.READ_FILE), true);
+    assertArrayIncludes(nativeToolNames[0], [ToolName.READ_FILE]);
     await db.waitForFlush();
     const started = await db.queryActivity({ traceId, actionType: AGENT_EVENT_EXECUTION_STARTED });
     assertEquals(started.length, 1);
@@ -633,8 +636,7 @@ Deno.test("[react policy] the composer hands its tool-round reader to the ReAct 
   const configDir = await Deno.makeTempDir({ prefix: "composer-round-policy-" });
   try {
     const configPath = join(configDir, "exa.config.toml");
-    const withMode = (mode: string) =>
-      `[system]\nroot = "."\nversion = "1.0.0"\nlog_level = "info"\n\n[tools]\nparallel_calls = "${mode}"\n`;
+    const withMode = (mode: string) => readConfigFixture("execution-react-strategy", { mode });
     await Deno.writeTextFile(configPath, withMode("off"));
     const service = new ConfigService(configPath);
     const composer = new AgentComposer({

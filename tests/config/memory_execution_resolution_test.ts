@@ -17,6 +17,8 @@
  * @related-files [packages/core/src/config/paths.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_EXECUTION_DIR, DEFAULT_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, relative, resolve } from "@std/path";
@@ -30,11 +32,17 @@ const NON_PRODUCTION_SEGMENTS = ["/tests/", "/test/", "/fixtures/", "/node_modul
 const INLINE_SHIM = /memoryExecution\s*\.\s*includes\(\s*"\/"\s*\)/;
 
 Deno.test("[path-resolution] both memoryExecution forms resolve to the same directory", () => {
-  const rootRelative = resolveMemoryExecutionRoot({ memory: "Memory", memoryExecution: "Memory/Execution" });
-  const memoryRelative = resolveMemoryExecutionRoot({ memory: "Memory", memoryExecution: "Execution" });
+  const rootRelative = resolveMemoryExecutionRoot({
+    memory: DEFAULT_MEMORY_PATH,
+    memoryExecution: DEFAULT_MEMORY_EXECUTION_DIR,
+  });
+  const memoryRelative = resolveMemoryExecutionRoot({
+    memory: DEFAULT_MEMORY_PATH,
+    memoryExecution: DEFAULT_EXECUTION_MEMORY_PATH,
+  });
 
-  assertEquals(rootRelative, "Memory/Execution");
-  assertEquals(memoryRelative, join("Memory", "Execution"));
+  assertEquals(rootRelative, DEFAULT_MEMORY_EXECUTION_DIR);
+  assertEquals(memoryRelative, pathBuilders.memoryPath("", DEFAULT_EXECUTION_MEMORY_PATH));
   assertEquals(rootRelative, memoryRelative);
 });
 
@@ -42,19 +50,22 @@ Deno.test("[path-resolution] a non-default memory root is honoured by the memory
   // The composite form names its own parent, so a custom `paths.memory` cannot apply to it —
   // that asymmetry is the reason the rule exists and is worth pinning.
   assertEquals(
-    resolveMemoryExecutionRoot({ memory: "Brain", memoryExecution: "Execution" }),
-    join("Brain", "Execution"),
+    resolveMemoryExecutionRoot({ memory: "Brain", memoryExecution: DEFAULT_EXECUTION_MEMORY_PATH }),
+    pathBuilders.memoryExecutionPath("Brain"),
   );
   assertEquals(
-    resolveMemoryExecutionRoot({ memory: "Brain", memoryExecution: "Memory/Execution" }),
-    "Memory/Execution",
+    resolveMemoryExecutionRoot({ memory: "Brain", memoryExecution: DEFAULT_MEMORY_EXECUTION_DIR }),
+    DEFAULT_MEMORY_EXECUTION_DIR,
   );
 });
 
 Deno.test("[path-resolution] a nested composite form is left intact", () => {
   assertEquals(
-    resolveMemoryExecutionRoot({ memory: "Memory", memoryExecution: "Memory/Runs/Execution" }),
-    "Memory/Runs/Execution",
+    resolveMemoryExecutionRoot({
+      memory: DEFAULT_MEMORY_PATH,
+      memoryExecution: `${DEFAULT_MEMORY_PATH}/Runs/Execution`,
+    }),
+    `${DEFAULT_MEMORY_PATH}/Runs/Execution`,
   );
 });
 

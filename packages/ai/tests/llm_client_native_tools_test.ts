@@ -5,7 +5,7 @@
  * @architectural-layer AI
  * @related-files [packages/ai/src/llm_client.ts, packages/ai/src/types.ts]
  */
-import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { McpToolName } from "@exaix/core";
 import type { IBlueprintFrontmatter } from "@exaix/schemas";
 import { LlmClient } from "../src/llm_client.ts";
@@ -115,7 +115,7 @@ Deno.test("LlmClient native conversation preserves initial context and returns o
   assertEquals(provider.calls[0].options?.effort, undefined);
   assertStringIncludes(provider.calls[0].prompt, "Start with src/a.ts");
   assertStringIncludes(provider.calls[0].options?.nativeConversation?.roundInstruction ?? "", "Iteration: 1 of 4");
-  assertEquals(provider.calls[0].prompt.includes('"action"'), false);
+  assertFalse(provider.calls[0].prompt.includes('"action"'));
 
   provider.toolCalls = undefined;
   provider.content = "The file is clean.";

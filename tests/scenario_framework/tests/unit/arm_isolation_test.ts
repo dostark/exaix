@@ -14,7 +14,8 @@
  * @related-files [packages/core/src/skills/skills.ts, packages/request/src/blueprint_resolver.ts, packages/execution/src/agent_runner.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { assertArrayIncludes, assertEquals, assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "@exaix/core/skills";
 import { initTestDbService, writeSkillFolder } from "@exaix/testing";
@@ -64,15 +65,15 @@ Deno.test("[ArmIsolation] suppressing skill X for one arm does not suppress it f
     "skill-x",
     () => (runner as Any).matchAndApplySkills(blueprint, request, "test-role"),
   );
-  assertEquals(armAResult.skillIds.includes("skill-x"), false, "arm A suppresses skill-x");
+  assertFalse(armAResult.skillIds.includes("skill-x"), "arm A suppresses skill-x");
 
   const armBResult: { skillIds: string[] } = await withEnv(
     EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR,
     "skill-y",
     () => (runner as Any).matchAndApplySkills(blueprint, request, "test-role"),
   );
-  assertEquals(armBResult.skillIds.includes("skill-x"), true, "arm B must not inherit arm A's suppression");
-  assertEquals(armBResult.skillIds.includes("skill-y"), false, "arm B suppresses skill-y instead");
+  assertArrayIncludes(armBResult.skillIds, ["skill-x"], "arm B must not inherit arm A's suppression");
+  assertFalse(armBResult.skillIds.includes("skill-y"), "arm B suppresses skill-y instead");
 });
 
 Deno.test("[ArmIsolation] two sequential skill overlays each see only their own content", async () => {
@@ -108,11 +109,11 @@ Deno.test("[ArmIsolation] two sequential skill overlays each see only their own 
 
 Deno.test("[ArmIsolation] two sequential agent role overlays each see only their own content", async () => {
   const agentRolesRoot = await Deno.makeTempDir({ prefix: "isolation-agent-roles-" });
-  const agentRolesDir = join(agentRolesRoot, "Agents");
+  const agentRolesDir = pathBuilders.agentsPath(agentRolesRoot);
   const overlayARoot = await Deno.makeTempDir({ prefix: "isolation-agent-role-overlay-a-" });
-  const overlayA = join(overlayARoot, "Agents");
+  const overlayA = pathBuilders.agentsPath(overlayARoot);
   const overlayBRoot = await Deno.makeTempDir({ prefix: "isolation-agent-role-overlay-b-" });
-  const overlayB = join(overlayBRoot, "Agents");
+  const overlayB = pathBuilders.agentsPath(overlayBRoot);
   const mockLogger = createMockEventLogger();
   try {
     await Deno.mkdir(agentRolesDir, { recursive: true });

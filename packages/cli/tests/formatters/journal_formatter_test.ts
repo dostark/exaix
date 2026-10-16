@@ -7,7 +7,7 @@
  * tabulated text, and truncated summaries for high-volume log streams.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { JournalFormatter } from "@exaix/cli/formatters/journal_formatter.ts";
 import type { ActivityRecord } from "@exaix/storage-sqlite";
 import type { IJournalFilterOptions } from "@exaix/core/types";
@@ -210,13 +210,13 @@ Deno.test("[regression] JournalFormatter: a stray cost_usd_estimate in the paylo
     const filter: IJournalFilterOptions = {};
     JournalFormatter.render(costActivities, filter, DataFormat.TEXT);
   });
-  assertEquals(textOutput.includes("cost="), false);
-  assertEquals(textOutput.includes("0.420000"), false);
+  assertFalse(textOutput.includes("cost="));
+  assertFalse(textOutput.includes("0.420000"));
 
   const tableOutput = await captureConsoleOutput(() => {
     const filter: IJournalFilterOptions = {};
     JournalFormatter.render(costActivities, filter, UIOutputFormat.TABLE);
   });
   assertStringIncludes(tableOutput, "-");
-  assertEquals(tableOutput.includes("0.420000"), false);
+  assertFalse(tableOutput.includes("0.420000"));
 });

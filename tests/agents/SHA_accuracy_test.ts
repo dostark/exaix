@@ -9,6 +9,8 @@
  * - result.commit_sha !== GIT_EMPTY_SHA ("0000…")
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertMatch, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposer } from "@exaix/execution";
@@ -45,7 +47,7 @@ Deno.test({
       await git(["commit", "-m", "Initial commit"]);
 
       // 2. Write blueprint file at <root>/Blueprints/Agents/test-agent.md
-      const blueprintsDir = join(tempDir, "Blueprints", "Agents");
+      const blueprintsDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH);
       await Deno.mkdir(blueprintsDir, { recursive: true });
       await Deno.writeTextFile(
         join(blueprintsDir, "test-agent.md"),

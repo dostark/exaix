@@ -8,7 +8,9 @@
  * @related-files [scripts/dogfood_bootstrap.ts]
  */
 
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { copy } from "@std/fs";
 import { join } from "@std/path";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
@@ -38,8 +40,8 @@ Deno.test({
       await copy(join(REPO_ROOT, ".copilot", "skills"), join(repoDir, ".copilot", "skills"));
       await copy(join(REPO_ROOT, "configs"), join(repoDir, "configs"));
       await copy(
-        join(REPO_ROOT, "Memory", "Skills", "project", "Exaix"),
-        join(repoDir, "Memory", "Skills", "project", "Exaix"),
+        pathBuilders.memoryPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH, "project", "Exaix"),
+        pathBuilders.memoryPath(repoDir, DEFAULT_SKILLS_MEMORY_PATH, "project", "Exaix"),
       );
       await git(repoDir, "add", "-A");
       await git(repoDir, "commit", "-m", "skills");
@@ -66,15 +68,21 @@ Deno.test({
         stderr: "piped",
       }).output();
       assert(output.success, new TextDecoder().decode(output.stderr));
-      assertEquals(new TextDecoder().decode(output.stdout).includes("Generating skill JSON"), false);
+      assertFalse(new TextDecoder().decode(output.stdout).includes("Generating skill JSON"));
 
       const workspace = join(sandboxRoot, "workspace");
       const configText = await Deno.readTextFile(join(workspace, "exa.config.toml"));
       assertStringIncludes(configText, join(worktreePath, ".copilot", "skills"));
-      const jsonSkills = [...Deno.readDirSync(join(workspace, "Memory")).filter((entry) => entry.name === "Skills")];
+      const jsonSkills = [
+        ...Deno.readDirSync(pathBuilders.memoryPath(workspace)).filter((entry) =>
+          entry.name === DEFAULT_SKILLS_MEMORY_PATH
+        ),
+      ];
       for (const entry of jsonSkills) {
         assertEquals(
-          await Array.fromAsync(Deno.readDir(join(workspace, "Memory", entry.name, "global"))).catch(() => []),
+          await Array.fromAsync(Deno.readDir(pathBuilders.memoryPath(workspace, entry.name, "global"))).catch(
+            () => [],
+          ),
           [],
         );
       }

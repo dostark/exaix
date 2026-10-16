@@ -9,10 +9,12 @@
  * @related-files [packages/core/src/skills/skills.ts, packages/execution/src/agent_runner.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH, ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { FakeTime } from "@std/testing/time";
 import { join } from "@std/path";
-import { ExaPathDefaults, SKILL_MATCH_TIMEOUT_MS, SkillRootKind } from "@exaix/core";
+import { SKILL_MATCH_TIMEOUT_MS, SkillRootKind } from "@exaix/core";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { EventLogger } from "@exaix/core/logger";
@@ -47,9 +49,12 @@ class StaticConfig {
       portals: [{ alias: PORTAL, target_path: root }],
       skills: {
         roots: [
-          { kind: SkillRootKind.PROJECT, path: join(REPO_ROOT, "Memory", "Skills", "project") },
+          {
+            kind: SkillRootKind.PROJECT,
+            path: pathBuilders.memoryPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH, "project"),
+          },
           { kind: SkillRootKind.DOGFOOD, path: join(REPO_ROOT, ".copilot", "skills") },
-          { kind: SkillRootKind.BLUEPRINT, path: join(REPO_ROOT, "Blueprints", "Skills") },
+          { kind: SkillRootKind.BLUEPRINT, path: pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH) },
         ],
       },
     });

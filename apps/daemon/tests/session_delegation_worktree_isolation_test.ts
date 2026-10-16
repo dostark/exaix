@@ -12,6 +12,7 @@
  * @related-files [apps/daemon/src/session_delegation_coordinator.ts, packages/flow/src/flow_worktree_coordinator.ts, packages/flow/src/resolve_worktree_base_dir.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertThrows } from "@std/assert";
 import { join } from "@std/path";
 import { FlowWorktreeCoordinator } from "@exaix/flow";
@@ -292,7 +293,7 @@ Deno.test(
 
       const outcome = await coordinator.delegate(req);
 
-      const expectedWorktreeDir = join(systemRoot, ".exa", "worktrees", PORTAL_ALIAS, req.parentTraceId);
+      const expectedWorktreeDir = pathBuilders.runtimePath(systemRoot, "worktrees", PORTAL_ALIAS, req.parentTraceId);
       assertEquals(outcome.status, "completed");
       assertEquals(
         launcher.captured[0]?.cwd,

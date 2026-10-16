@@ -5,8 +5,9 @@
  * ensuring correct metadata resolution and strict schema validation for flow requests.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 
 Deno.test("Integration: IFlow as Flow Request Creation and Metadata", async (t) => {
@@ -29,7 +30,7 @@ Deno.test("Integration: IFlow as Flow Request Creation and Metadata", async (t) 
 
     // Test 2: IFlow as Flow request file has correct metadata
     await t.step("Test 2: IFlow as Flow request file has correct metadata", async () => {
-      const requestPath = join(env.tempDir, "Workspace", "Requests", `request-${requestId}.md`);
+      const requestPath = pathBuilders.workspacePath(env.tempDir, DEFAULT_REQUESTS_PATH, `request-${requestId}.md`);
       const content = await Deno.readTextFile(requestPath);
 
       assertStringIncludes(content, "flow: refactoring");
@@ -87,7 +88,11 @@ Deno.test("Integration: IFlow as Flow Request Validation", async (t) => {
       const result = await env.createFlowRequest("Valid flow request", "refactoring");
       assert(result.traceId, "Should create valid flow request");
 
-      const requestPath = join(env.tempDir, "Workspace", "Requests", `request-${result.traceId.substring(0, 8)}.md`);
+      const requestPath = pathBuilders.workspacePath(
+        env.tempDir,
+        DEFAULT_REQUESTS_PATH,
+        `request-${result.traceId.substring(0, 8)}.md`,
+      );
       const content = await Deno.readTextFile(requestPath);
       assertStringIncludes(content, "flow: refactoring");
     });
@@ -99,7 +104,11 @@ Deno.test("Integration: IFlow as Flow Request Validation", async (t) => {
         agentRole: "mock-agent",
       });
 
-      const requestPath = join(env.tempDir, "Workspace", "Requests", `request-${result.traceId.substring(0, 8)}.md`);
+      const requestPath = pathBuilders.workspacePath(
+        env.tempDir,
+        DEFAULT_REQUESTS_PATH,
+        `request-${result.traceId.substring(0, 8)}.md`,
+      );
       const content = await Deno.readTextFile(requestPath);
 
       assertStringIncludes(content, "flow: refactoring");

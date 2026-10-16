@@ -11,7 +11,7 @@
  * fact and a generic platitude. Also asserts the two prompts genuinely differ.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 
 import { LlmLearningExtractor } from "@exaix/memory";
 import { castAny, createMinimalExecutionMemory, initTestDbService } from "@exaix/testing";
@@ -125,7 +125,7 @@ Deno.test("content_policy_prompt: skill-guided extraction outscores the policy-f
     assertEquals(treatmentProvider.prompts.length, 1);
     assertEquals(controlProvider.prompts.length, 1);
     assertStringIncludes(treatmentProvider.prompts[0], POLICY_INSTRUCTIONS);
-    assertEquals(controlProvider.prompts[0].includes(POLICY_INSTRUCTIONS), false);
+    assertFalse(controlProvider.prompts[0].includes(POLICY_INSTRUCTIONS));
 
     const treatmentScore = rubricScore(treatmentCandidates);
     const controlScore = rubricScore(controlCandidates);

@@ -8,13 +8,14 @@
  * the scenario-framework README points at the authoring gate tasks.
  */
 
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertStringIncludes } from "@std/assert";
 
 const CONTRIBUTING_PATH = "CONTRIBUTING.md";
 const USER_GUIDE_PATH = "docs/Exaix_User_Guide.md";
 const COMMENTS_DOC_PATH = "scripts/check_ste100_comments.md";
 const SCENARIO_README_PATH = "tests/scenario_framework/README.md";
-const BLUEPRINTS_SKILLS_README_PATH = "Blueprints/Skills/README.md";
+const BLUEPRINTS_SKILLS_README_PATH = `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/README.md`;
 const DENO_JSON_PATH = "deno.json";
 const DOT_COPILOT_README_PATH = ".copilot/README.md";
 const BUILDING_WITH_AI_AGENTS_PATH = "exaix-dev-docs/dev/Building_with_AI_Agents.md";
@@ -93,12 +94,12 @@ Deno.test("deno.json declares the authoring gate and index tasks", async () => {
   assertStringIncludes(denoJson, '"check:skill-index"');
 });
 
-Deno.test("Blueprints/Skills README states the authoring communication rule", async () => {
+Deno.test(`${DEFAULT_BLUEPRINTS_PATH}/Skills README states the authoring communication rule`, async () => {
   const readme = await read(BLUEPRINTS_SKILLS_README_PATH);
   const lower = readme.toLowerCase();
   assert(
     lower.includes("communication") && (lower.includes("ste") || lower.includes("concise")),
-    "Blueprints/Skills README must state the concise communication authoring rule",
+    `${DEFAULT_BLUEPRINTS_PATH}/Skills README must state the concise communication authoring rule`,
   );
 });
 

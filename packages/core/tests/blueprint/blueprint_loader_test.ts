@@ -7,6 +7,7 @@
  * frontmatter, ensuring correct schema validation and default value application.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { McpToolName } from "@exaix/mcp";
 import { ToolName } from "@exaix/core";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
@@ -24,8 +25,8 @@ let blueprintsPath: string;
 
 async function setup() {
   testDir = await Deno.makeTempDir({ prefix: "exa_blueprint_test_" });
-  blueprintsPath = join(testDir, "Blueprints");
-  const agentRolesDir = join(blueprintsPath, "Agents");
+  blueprintsPath = pathBuilders.blueprintsPath(testDir);
+  const agentRolesDir = pathBuilders.agentsPath(blueprintsPath);
   await Deno.mkdir(agentRolesDir, { recursive: true });
   return { testDir, blueprintsPath, agentRolesDir };
 }
@@ -151,7 +152,7 @@ Deno.test("[IBlueprintLoader] lists all blueprints in Agents path", async () => 
 
 Deno.test("[IBlueprintLoader] returns empty list when Agents path is missing", async () => {
   const testDir = await Deno.makeTempDir({ prefix: "exa_blueprint_test_" });
-  const blueprintsPath = join(testDir, "Blueprints");
+  const blueprintsPath = pathBuilders.blueprintsPath(testDir);
 
   try {
     const loader = new IBlueprintLoader({ blueprintsPath });

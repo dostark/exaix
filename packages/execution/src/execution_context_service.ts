@@ -14,21 +14,23 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
-import { PromptBudgetAllocator } from "@exaix/core";
+import { PromptBudgetAllocator, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import type { IAllocationHints } from "@exaix/core/prompt_budget_allocator.ts";
 import type { ITokenizer } from "@exaix/core/func";
 import type { ContextCache } from "@exaix/core/context";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
 import { DomainEventType } from "@exaix/core/events";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
-
 /** Token counting strategy: BPE via ITokenizer, or character-heuristic fallback. */
 export type TokenSource = "bpe" | "heuristic";
 
 /** Allocates prompt budget for a given model and request context. */
 export interface IPromptBudgetAllocator {
-  allocate(modelId: string, hints?: object, analysis?: IRequestAnalysis): Promise<IPromptBudget>;
+  allocate(
+    modelId: string,
+    hints?: Opt<object, Reason.OptionalDependency>,
+    analysis?: Opt<IRequestAnalysis, Reason.OptionalDependency>,
+  ): Promise<IPromptBudget>;
 }
 
 /** Reduces AgentComposer's constructor parameter count and encapsulates the

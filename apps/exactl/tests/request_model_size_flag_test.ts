@@ -4,6 +4,7 @@
  * @description Tests that --model-size CLI flag flows through to frontmatter and metadata.
  */
 
+import { DEFAULT_FLOWS_DIR, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { RequestCommands } from "../src/commands/request_commands.ts";
@@ -19,7 +20,9 @@ describe("request --model-size flag", () => {
   let cleanup: () => Promise<void>;
 
   beforeEach(async () => {
-    const result = await createCliTestContext({ createDirs: ["Workspace/Requests", "Blueprints/Flows"] });
+    const result = await createCliTestContext({
+      createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
+    });
     tempDir = result.tempDir;
     _db = result.db;
     cleanup = result.cleanup;

@@ -7,10 +7,11 @@
  * @related-files ["packages/schemas/src/config.ts"]
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
 
-import { ExaPathDefaults, LogLevel } from "@exaix/core";
+import { LogLevel } from "@exaix/core";
 import { AnalysisMode } from "@exaix/core/request";
 
 // Minimal valid config base (only truly required fields — system + paths)

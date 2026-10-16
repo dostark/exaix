@@ -15,6 +15,7 @@
  * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/tool-runtime/src/tool_registry.ts, packages/portal/src/path_resolver.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { type AgentComposer, ReActLoopStrategy } from "@exaix/execution";
@@ -61,7 +62,7 @@ Deno.test({
     const portalDir = await Deno.makeTempDir({ prefix: "react-worktree-e2e-portal-" });
     const systemRoot = await Deno.makeTempDir({ prefix: "react-worktree-e2e-root-" });
     // Mirrors GitExecutionSetupService.buildPortalWorktreePath's real layout.
-    const worktreeDir = join(systemRoot, ".exa", "worktrees", PORTAL_ALIAS, "trace-e2e-1");
+    const worktreeDir = pathBuilders.runtimePath(systemRoot, "worktrees", PORTAL_ALIAS, "trace-e2e-1");
     await Deno.mkdir(worktreeDir, { recursive: true });
 
     try {

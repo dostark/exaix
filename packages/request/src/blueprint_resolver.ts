@@ -12,8 +12,9 @@
  * @architectural-layer Services
  * @related-files ["packages/request/src/processor.ts", "packages/core/src/blueprint/blueprint_loader.ts"]
  */
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { dirname, join } from "@std/path";
-import { DEFAULT_AGENTS_PATH } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import { IBlueprintLoader, type ILoadedBlueprint } from "@exaix/core/blueprint";
@@ -58,7 +59,7 @@ export class BlueprintResolver implements IBlueprintResolver {
   ): Promise<ILoadedBlueprint | null> {
     let dir = Deno.cwd();
     while (true) {
-      const candidatePath = join(dir, "Blueprints", DEFAULT_AGENTS_PATH);
+      const candidatePath = pathBuilders.blueprintsPath(dir, DEFAULT_AGENTS_PATH);
       try {
         const candidateFile = join(candidatePath, `${agentRole}.md`);
         try {
@@ -90,7 +91,7 @@ export class BlueprintResolver implements IBlueprintResolver {
     traceLogger: IEventLogger,
   ): Promise<ILoadedBlueprint | null> {
     // Try the repository root (cwd) directly
-    const repoAgentRolesPath = join(Deno.cwd(), "Blueprints", DEFAULT_AGENTS_PATH);
+    const repoAgentRolesPath = pathBuilders.blueprintsPath(Deno.cwd(), DEFAULT_AGENTS_PATH);
     const fallbackLoader = new IBlueprintLoader({ blueprintsPath: repoAgentRolesPath });
     const loadedBlueprint = await fallbackLoader.load(agentRole);
     if (loadedBlueprint) {
@@ -101,7 +102,7 @@ export class BlueprintResolver implements IBlueprintResolver {
     // Also try locating Blueprints relative to this module (repo root)
     try {
       const repoRoot = join(dirname(dirname(dirname(dirname(new URL(import.meta.url).pathname)))));
-      const repoModuleAgentRoles = join(repoRoot, "Blueprints", DEFAULT_AGENTS_PATH);
+      const repoModuleAgentRoles = pathBuilders.blueprintsPath(repoRoot, DEFAULT_AGENTS_PATH);
       const moduleLoader = new IBlueprintLoader({ blueprintsPath: repoModuleAgentRoles });
       const moduleLoaded = await moduleLoader.load(agentRole);
       if (moduleLoaded) {

@@ -10,6 +10,7 @@
  * @related-files [packages/core/src/planning/plan_writer.ts, packages/schemas/src/skill_pin.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
@@ -48,7 +49,7 @@ const RESULT = {
 async function writePlan(metadata: Partial<IRequestMetadata>): Promise<JSONObject> {
   const { db, config, tempDir, cleanup } = await initTestDbService();
   try {
-    const plansDir = join(tempDir, config.paths.workspace, "Plans");
+    const plansDir = pathBuilders.plansPath(join(tempDir, config.paths.workspace));
     await Deno.mkdir(plansDir, { recursive: true });
     const writer = new PlanWriter({
       plansDirectory: plansDir,

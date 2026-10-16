@@ -16,7 +16,6 @@ import {
   ADJUSTMENT_PRECISION,
   DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED,
   DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED,
-  LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
   LOCAL_PROVIDER_PREFIXES,
   SAFETY_BUFFER_RATIO,
   SECTION_BASE_WEIGHTS,
@@ -36,6 +35,7 @@ import { DomainEventType } from "@exaix/core/events";
 import { TaskType } from "./types/enums.ts";
 import type { IModelRegistry, Opt, Reason } from "@exaix/core/types";
 
+import { LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK } from "@exaix/core";
 export interface IAllocationHints {
   memoryUsedTokens?: number;
   skillsUsedTokens?: number;

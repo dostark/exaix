@@ -7,6 +7,7 @@
  *   gate-legal decision and only in-scope paths_touched.
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { SessionBriefSchema, SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
@@ -23,7 +24,7 @@ function makeBrief(overrides: Partial<SessionBrief> = {}): SessionBrief {
     gate: "code_changes",
     tool: "claude-code",
     objective: "Implement the feature",
-    artifact_ref: "Workspace/Plans/plan.md",
+    artifact_ref: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/plan.md`,
     permitted_paths: ["src/feature.ts", "src/utils.ts", "tests/feature_test.ts"],
     token_budget: { max_input_tokens: 10000, max_output_tokens: 10000, max_total_tokens: 20000 },
     resume_token: "test-token-abc",

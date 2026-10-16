@@ -6,9 +6,10 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
+import { assertArrayIncludes, assertEquals, assertExists, assertFalse } from "@std/assert";
 import { exists } from "@std/fs";
-import { join } from "@std/path";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { FLOW_EVENT_CHECKPOINT_LOADED } from "@exaix/core";
 import { initTestDbService } from "@exaix/testing";
@@ -20,7 +21,7 @@ Deno.test("[Step65.4] FlowRunner checkpoint captures individual parallel group m
   try {
     const traceId = "trace-parallel-group-checkpoint";
     const requestId = "req-parallel-group-checkpoint";
-    const checkpointPath = join(tempDir, "Memory", "Execution", traceId, "checkpoint.json");
+    const checkpointPath = pathBuilders.memoryPath(tempDir, DEFAULT_EXECUTION_MEMORY_PATH, traceId, "checkpoint.json");
 
     const flow: IFlowInput = createParallelGroupFlow({
       flowId: "parallel-group-checkpoint-flow",
@@ -80,10 +81,10 @@ Deno.test("[Step65.4] FlowRunner checkpoint captures individual parallel group m
     });
 
     // Resume should NOT have re-run starter or reviewerA (they were checkpointed)
-    assertEquals(resumedExecutor.calls.includes("starter"), false);
-    assertEquals(resumedExecutor.calls.includes("reviewerA"), false);
+    assertFalse(resumedExecutor.calls.includes("starter"));
+    assertFalse(resumedExecutor.calls.includes("reviewerA"));
     // reviewerB SHOULD be re-run because it failed and was not checkpointed
-    assertEquals(resumedExecutor.calls.includes("reviewerB"), true);
+    assertArrayIncludes(resumedExecutor.calls, ["reviewerB"]);
 
     // Checkpoint should have been loaded
     assertEquals(

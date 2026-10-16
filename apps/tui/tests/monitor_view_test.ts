@@ -7,6 +7,7 @@
  * resilient rendering of high-volume activity streams, and status bar interactivity.
  */
 
+import { DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { DaemonStatus, DialogStatus, MemoryBankSource } from "@exaix/core";
 import { GroupingMode, LogGroupingMode } from "@exaix/tui";
@@ -191,7 +192,7 @@ Deno.test("MonitorView - does not fetch when paused", async () => {
       actor: LogGroupingMode.AGENT_ROLE,
       agent_role: "dev",
       action_type: "plan.approved",
-      target: "Workspace/Plans/test.md",
+      target: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/test.md`,
       payload: {},
       timestamp: "2025-12-21T10:00:00Z",
     },
@@ -224,7 +225,7 @@ Deno.test("MonitorView - should export logs to file", () => {
       actor: LogGroupingMode.AGENT_ROLE,
       agent_role: "researcher",
       action_type: "request_created",
-      target: "Workspace/Requests/test.md",
+      target: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}/test.md`,
       payload: { description: "Test request" },
       timestamp: "2025-12-21T10:00:00Z",
     },
@@ -288,7 +289,7 @@ Deno.test("MonitorView - should filter logs by time window", async () => {
       actor: LogGroupingMode.AGENT_ROLE,
       agent_role: "researcher",
       action_type: "request_created",
-      target: "Workspace/Requests/test.md",
+      target: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}/test.md`,
       payload: { description: "Recent request" },
       timestamp: now.toISOString(),
     },
@@ -298,7 +299,7 @@ Deno.test("MonitorView - should filter logs by time window", async () => {
       actor: LogGroupingMode.AGENT_ROLE,
       agent_role: "architect",
       action_type: "plan_approved",
-      target: "Workspace/Plans/test.md",
+      target: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/test.md`,
       payload: { plan: "Old plan" },
       timestamp: twoHoursAgo.toISOString(),
     },

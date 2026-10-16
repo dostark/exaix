@@ -6,6 +6,7 @@
  * ensuring stable sandboxing and correct propagation of tool results across JSON-RPC.
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { MemoryOperation, PortalOperation, SecurityMode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
@@ -708,7 +709,7 @@ Deno.test("Integration Test 15.9: Agent Orchestration Errors", async () => {
     await eventLogger.error("agent.blueprint_not_found", "non-existent-agent", {
       trace_id: traceId,
       blueprint_name: "non-existent-agent",
-      search_path: "Blueprints/Agents/",
+      search_path: `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}/`,
     });
 
     // Test 2: Invalid blueprint format

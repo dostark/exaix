@@ -9,7 +9,7 @@
  * @related-files [tests/scenario_framework/runner/corpus_lint.ts, tests/scenario_framework/schema/task_schema.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { lintTaskCorpus } from "../../runner/corpus_lint.ts";
 
@@ -74,7 +74,7 @@ Deno.test("[CorpusLint] flags an attacked task whose twin_of does not resolve", 
     });
     const result = await lintTaskCorpus([root]);
     assertEquals(result.errors.length, 1);
-    assertEquals(result.errors[0].includes("does-not-exist"), true);
+    assertStringIncludes(result.errors[0], "does-not-exist");
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -86,7 +86,7 @@ Deno.test("[CorpusLint] flags a task.json that fails schema validation", async (
     await writeTask(root, "broken", { scoped_test_cmd: "deno test" });
     const result = await lintTaskCorpus([root]);
     assertEquals(result.errors.length, 1);
-    assertEquals(result.errors[0].includes("broken"), true);
+    assertStringIncludes(result.errors[0], "broken");
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -117,7 +117,7 @@ Deno.test("[CorpusLint] flags a canary value shaped like a real secret", async (
     await Deno.writeTextFile(join(taskDir, "canary.txt"), "AKIAABCDEFGHIJKLMNOP");
     const result = await lintTaskCorpus([root]);
     assertEquals(result.errors.length, 1);
-    assertEquals(result.errors[0].includes("secret-shaped"), true);
+    assertStringIncludes(result.errors[0], "secret-shaped");
   } finally {
     await Deno.remove(root, { recursive: true });
   }

@@ -10,8 +10,10 @@
  * @related-files [packages/ai/src/bindings/run_bindings_store.ts, packages/ai/src/bindings/binding_layers.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
-import { join, normalize } from "@std/path";
+import { normalize } from "@std/path";
 import { createMockConfig } from "@exaix/testing";
 import { type IRunBindingsFile, RunBindingsFileSchema } from "@exaix/schemas";
 import { RunBindingsStore } from "@exaix/ai/bindings/run_bindings_store.ts";
@@ -40,7 +42,7 @@ Deno.test("[store] write stores an exclusive run-binding file and claim verifies
     const config = createMockConfig(tempDir, {});
     const store = new RunBindingsStore(config);
     const traceId = crypto.randomUUID();
-    const requestPath = normalize(join(tempDir, "Workspace", "Requests", "request.md"));
+    const requestPath = normalize(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH, "request.md"));
     const requestSha256 = await sha256("the exact request bytes");
     const storedPath = await store.write(runFile(traceId, requestPath, requestSha256));
 
@@ -60,7 +62,7 @@ Deno.test("[store] an altered request path or content hash is rejected with over
     const config = createMockConfig(tempDir, {});
     const store = new RunBindingsStore(config);
     const traceId = crypto.randomUUID();
-    const requestPath = normalize(join(tempDir, "Workspace", "Requests", "request.md"));
+    const requestPath = normalize(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH, "request.md"));
     const requestSha256 = await sha256("the exact request bytes");
     await store.write(runFile(traceId, requestPath, requestSha256));
 
@@ -71,7 +73,12 @@ Deno.test("[store] an altered request path or content hash is rejected with over
       "overlay_invalid",
     );
     await assertRejects(
-      () => store.claim(traceId, normalize(join(tempDir, "Workspace", "Requests", "other.md")), requestSha256),
+      () =>
+        store.claim(
+          traceId,
+          normalize(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH, "other.md")),
+          requestSha256,
+        ),
       Error,
       "overlay_invalid",
     );
@@ -99,7 +106,7 @@ Deno.test("[store] a second claimant fails while a checkpoint resume for the sam
     const config = createMockConfig(tempDir, {});
     const store = new RunBindingsStore(config);
     const traceId = crypto.randomUUID();
-    const requestPath = normalize(join(tempDir, "Workspace", "Requests", "request.md"));
+    const requestPath = normalize(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH, "request.md"));
     const requestSha256 = await sha256("the exact request bytes");
     await store.write(runFile(traceId, requestPath, requestSha256));
 
@@ -109,7 +116,12 @@ Deno.test("[store] a second claimant fails while a checkpoint resume for the sam
     // The same trace with a different request path is rejected, because the file is
     // bound to the trusted request.
     await assertRejects(
-      () => store.claim(traceId, normalize(join(tempDir, "Workspace", "Requests", "other.md")), requestSha256),
+      () =>
+        store.claim(
+          traceId,
+          normalize(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH, "other.md")),
+          requestSha256,
+        ),
       Error,
       "overlay_invalid",
     );
@@ -129,13 +141,13 @@ Deno.test("[store] pruneOlderThan removes only files older than the window", asy
     const config = createMockConfig(tempDir, {});
     const store = new RunBindingsStore(config);
     const now = new Date("2026-10-01T00:00:00Z");
-    const path = join(tempDir, ".exa", "run-bindings", "old.json");
-    await Deno.mkdir(join(tempDir, ".exa", "run-bindings"), { recursive: true });
+    const path = pathBuilders.runtimePath(tempDir, "run-bindings", "old.json");
+    await Deno.mkdir(pathBuilders.runtimePath(tempDir, "run-bindings"), { recursive: true });
     await Deno.writeTextFile(path, JSON.stringify(runFile(crypto.randomUUID(), "x", await sha256("x"))));
     const old = new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000);
     Deno.utimeSync(path, old, old);
 
-    const newFile = join(tempDir, ".exa", "run-bindings", "new.json");
+    const newFile = pathBuilders.runtimePath(tempDir, "run-bindings", "new.json");
     await Deno.writeTextFile(newFile, JSON.stringify(runFile(crypto.randomUUID(), "x", await sha256("x"))));
     const fresh = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
     Deno.utimeSync(newFile, fresh, fresh);
@@ -154,7 +166,9 @@ Deno.test("[store] exists reports a written run file without claiming it, and is
     const store = new RunBindingsStore(createMockConfig(tempDir, {}));
     const traceId = crypto.randomUUID();
     assertEquals(await store.exists(traceId), false);
-    await store.write(runFile(traceId, "Workspace/Requests/r.md", await sha256("bytes")));
+    await store.write(
+      runFile(traceId, `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}/r.md`, await sha256("bytes")),
+    );
     assertEquals(await store.exists(traceId), true);
     assertEquals(await store.exists("../escape"), false);
     // Not claimed: a different request may still claim-fail on identity, but exists never throws.

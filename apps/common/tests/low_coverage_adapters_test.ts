@@ -4,6 +4,7 @@
  * @description Focused unit tests for low-coverage service adapters.
  */
 
+import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 
@@ -35,7 +36,7 @@ function createRequestMetadata() {
   return {
     trace_id: TEST_TRACE_ID,
     filename: "request.md",
-    path: "Workspace/Requests/request.md",
+    path: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}/request.md`,
     status: RequestStatus.PENDING,
     priority: RequestPriority.NORMAL,
     agent_role: TEST_AGENT_ROLE_ID,

@@ -9,6 +9,7 @@
  * @related-files [tests/scenario_framework/runner/step_executor.ts, tests/scenario_framework/schema/step_schema.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { executeScenarioStep } from "../../runner/step_executor.ts";
@@ -61,7 +62,7 @@ Deno.test("[test_run] a failing repo test suite exits non-zero", async () => {
 
 Deno.test("[test_run] cwd $WORKTREE runs in the newest execution worktree", async () => {
   await withWorkspace(async (ws) => {
-    const wt = join(ws, ".exa", "worktrees", "todo-app", "trace-9");
+    const wt = pathBuilders.runtimePath(ws, "worktrees", "todo-app", "trace-9");
     await Deno.mkdir(join(wt, "src"), { recursive: true });
     await Deno.writeTextFile(join(wt, "src", "a_test.ts"), PASSING_TEST);
     const result = await executeScenarioStep({

@@ -502,6 +502,17 @@ Copies a cwd-relative `source` to a workspace-relative `target`
   content: "important data"
 ```
 
+A config document or another multi-line fixture lives in a file under `fixtures/`, which the step
+names with `content_from` instead of `content`. The path is relative to the framework tree, and
+`$WORKSPACE_ROOT` is expanded in the loaded text.
+
+```yaml
+- id: "write-config"
+  type: "write-file"
+  path: "exa.config.toml"
+  content_from: "fixtures/configs/agent-flows-write-config.toml"
+```
+
 ### 5.8 `remove-files` — delete files
 
 ```yaml

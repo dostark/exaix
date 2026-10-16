@@ -9,8 +9,9 @@
  * @related-files [packages/core/src/skills/skill_snapshot.ts, packages/core/src/skills/skills.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertAlmostEquals, assertEquals } from "@std/assert";
-import { join } from "@std/path";
 import { MemoryScope, SkillRootKind } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import {
@@ -117,9 +118,9 @@ Deno.test("[fallback] authored and explicitly empty triggers never synthesize", 
 async function fixture(skillsConfig?: Partial<ISkillsConfig>) {
   const env = await initTestDbService();
   const base = await Deno.makeTempDir({ prefix: "exa-skills-match-" });
-  const blueprintDir = join(base, "Blueprints", "Skills");
+  const blueprintDir = pathBuilders.blueprintsPath(base, DEFAULT_SKILLS_MEMORY_PATH);
   const service = new SkillsService(
-    { memoryDir: join(base, "Memory"), blueprintSkillsDir: blueprintDir },
+    { memoryDir: pathBuilders.memoryPath(base), blueprintSkillsDir: blueprintDir },
     env.db,
     skillsConfig,
     new EventLogger({ db: env.db }),

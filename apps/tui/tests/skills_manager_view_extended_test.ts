@@ -7,7 +7,7 @@
  * skill source icons, status indicators, and keyboard registration.
  */
 
-import { assertEquals, assertExists, assertNotEquals, assertStringIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertNotEquals, assertStringIncludes } from "@std/assert";
 
 import {
   createSkillsManagerView,
@@ -60,12 +60,12 @@ Deno.test("SkillsManagerView: SKILL_ICON is defined", () => {
 
 Deno.test("SkillsManagerView: SKILLS_KEY_BINDINGS has required keys", () => {
   const actions = SKILLS_KEY_BINDINGS.map((b) => b.action);
-  assertEquals(actions.includes(SkillsAction.NAVIGATE_UP), true);
-  assertEquals(actions.includes(SkillsAction.VIEW_DETAIL), true);
-  assertEquals(actions.includes(SkillsAction.DELETE), true);
-  assertEquals(actions.includes(SkillsAction.SEARCH), true);
-  assertEquals(actions.includes(SkillsAction.HELP), true);
-  assertEquals(actions.includes(SkillsAction.BACK), true);
+  assertArrayIncludes(actions, [SkillsAction.NAVIGATE_UP]);
+  assertArrayIncludes(actions, [SkillsAction.VIEW_DETAIL]);
+  assertArrayIncludes(actions, [SkillsAction.DELETE]);
+  assertArrayIncludes(actions, [SkillsAction.SEARCH]);
+  assertArrayIncludes(actions, [SkillsAction.HELP]);
+  assertArrayIncludes(actions, [SkillsAction.BACK]);
 });
 
 // SkillsManagerView Core Tests

@@ -4,6 +4,7 @@
  * @description Verifies gate loop field ownership and bounded evaluation schemas.
  */
 import { assertEquals } from "@std/assert";
+import { EvaluationCategory } from "@exaix/core";
 import { FlowSchema, GateEvaluateSchema } from "@exaix/schemas/flow.ts";
 import { GateConfigSchema } from "@exaix/flow";
 
@@ -23,7 +24,7 @@ const flow = {
   output: { from: "gate", format: "markdown" },
 };
 Deno.test("[schema] gate backTo has no independent iteration or score defaults", () => {
-  assertEquals<unknown>(FlowSchema.parse(flow).steps[0].loop, { backTo: "draft" });
+  assertEquals(FlowSchema.parse(flow).steps[0].loop, { backTo: "draft" });
 });
 for (const loop of [{ maxIterations: 2 }, { targetScore: 0.9 }]) {
   Deno.test(`[schema] rejects redundant gate loop controls ${JSON.stringify(loop)}`, () => {
@@ -58,11 +59,11 @@ Deno.test("[schema] YAML gates retain explicit security criteria with evidence d
   const criterion = {
     name: "path_confinement",
     description: "All writes are within the permitted worktree paths.",
-    category: "security",
+    category: EvaluationCategory.SECURITY,
     weight: 1,
     required: true,
   };
   const result = GateEvaluateSchema.safeParse({ agent_role: "security-expert", criteria: [criterion] });
   assertEquals(result.success, true);
-  assertEquals<unknown>(result.success ? result.data.criteria : null, [criterion]);
+  assertEquals(result.success ? result.data.criteria : null, [criterion]);
 });

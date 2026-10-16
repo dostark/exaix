@@ -4,6 +4,14 @@
  * @description Verifies the generalized embed path: executions, patterns, decisions, and project overviews are embedded (not just learnings) with their respective identity keys (pattern/decision UUID ids, execution trace_id, `${portal}:overview` for overviews), are retrievable by meaning through a deterministic semantic mock provider, and bank write paths embed on mutation.
  * @architectural-layer Tests
  */
+import {
+  DEFAULT_BLUEPRINTS_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PORTALS_PATH,
+  DEFAULT_RUNTIME_PATH,
+  DEFAULT_WORKSPACE_PATH,
+  ExaPathDefaults,
+} from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import type { IEmbeddingProvider } from "@exaix/ai";
 import { MemoryType } from "@exaix/core";
@@ -43,25 +51,12 @@ function testConfig(tempDir: string): Config {
   return {
     system: { root: tempDir, log_level: "info", schema_version: "1.0.0", version: "1.0.0" },
     paths: {
-      memory: "./Memory",
-      blueprints: "./Blueprints",
-      runtime: "./.exa",
-      workspace: "./Workspace",
-      portals: "./Portals",
-      active: "Active",
-      archive: "Archive",
-      plans: "Plans",
-      requests: "Requests",
-      rejected: "Rejected",
-      agents: "Agents",
-      flows: "Blueprints/Flows",
-      memoryProjects: "Projects",
-      memoryExecution: "Execution",
-      memoryIndex: "Index",
-      memorySkills: "Skills",
-      memoryPending: "Pending",
-      memoryTasks: "Tasks",
-      memoryGlobal: "Global",
+      ...ExaPathDefaults,
+      memory: `./${DEFAULT_MEMORY_PATH}`,
+      blueprints: `./${DEFAULT_BLUEPRINTS_PATH}`,
+      runtime: `./${DEFAULT_RUNTIME_PATH}`,
+      workspace: `./${DEFAULT_WORKSPACE_PATH}`,
+      portals: `./${DEFAULT_PORTALS_PATH}`,
     },
   } as Config;
 }

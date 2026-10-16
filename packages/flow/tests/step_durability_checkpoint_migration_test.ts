@@ -23,12 +23,12 @@ import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { JSONValue } from "@exaix/core";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
   FLOW_CHECKPOINT_SCHEMA_VERSION,
   FlowInputSource,
   FlowOutputFormat,
 } from "@exaix/core";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 // Test doubles
 
 class TrackingDurabilityStore implements IStepDurabilityStore {

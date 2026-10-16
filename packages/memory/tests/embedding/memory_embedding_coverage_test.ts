@@ -6,8 +6,10 @@
  * @description Negative testing and edge-case coverage for vector similarity calculations,
  * ensuring robust handling of zero vectors and dimension mismatches in RAG operations.
  */
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_INDEX_MEMORY_PATH } from "@exaix/shared";
 import { ensureDir } from "@std/fs";
-import { assert } from "@std/assert";
+import { assert, assertStringIncludes } from "@std/assert";
 import { MemoryStatus } from "@exaix/core/status";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -44,7 +46,7 @@ Deno.test("cosineSimilarity throws error for vector length mismatch", () => {
     assertEquals(true, false, "Should have thrown an error");
   } catch (error) {
     assertExists(error);
-    assertEquals((error as Error).message.includes("length mismatch"), true);
+    assertStringIncludes((error as Error).message, "length mismatch");
   }
 });
 
@@ -315,10 +317,9 @@ Deno.test(
       await service.deleteEmbedding("non-existent-id");
 
       // Manifest should still be valid
-      const manifestPath = join(
+      const manifestPath = pathBuilders.memoryPath(
         config.system.root,
-        "Memory",
-        "Index",
+        DEFAULT_INDEX_MEMORY_PATH,
         "embeddings",
         "manifest.json",
       );

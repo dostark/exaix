@@ -11,6 +11,8 @@
  */
 
 import { isAbsolute, join, relative, resolve } from "@std/path";
+import { DEFAULT_SKILLS_MEMORY_PATH, ExaPathDefaults } from "@exaix/shared";
+import { LOCK_FILE, STATE_DIR } from "./constants.ts";
 import { exists } from "@std/fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import { z } from "zod";
@@ -27,11 +29,7 @@ import {
 import type { ISkill, ISkillMatch, ISkillTriggers, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
 import { SkillPinVectorSchema } from "@exaix/schemas/skill_pin.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import {
-  DEFAULT_SKILL_CONTEXT_CHAR_BUDGET,
-  DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION,
-  ExaPathDefaults,
-} from "../types/constants.ts";
+import { DEFAULT_SKILL_CONTEXT_CHAR_BUDGET, DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION } from "../types/constants.ts";
 import {
   type MemoryBankSource,
   type MemoryScope,
@@ -146,11 +144,9 @@ function rememberedKey(revisionId: string, project: string): string {
 }
 const REVISION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const GENERATION_LENGTH = 16;
-const SKILLS_SUBDIR = "Skills";
+const SKILLS_SUBDIR = DEFAULT_SKILLS_MEMORY_PATH;
 const LEARNED_SUBDIR = "learned";
 const PROJECT_SUBDIR = "project";
-const STATE_DIR = ".exa-skill-state";
-const LOCK_FILE = "lock";
 const STATIC_CONFIG_GENERATION = "static";
 const SYSTEM_AGENT_ROLE = "system";
 const PORTAL_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;

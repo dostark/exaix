@@ -15,6 +15,7 @@
  * @related-files [tests/scenario_framework/runner/synthetic_runner.ts, tests/scenario_framework/runner/history_writer_dispatch.ts, apps/exactl/src/commands/eval_commands.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { EvalScoringMode } from "@exaix/core";
@@ -103,7 +104,7 @@ function seedVariant(store: EvalSqliteStore, variant: IGridVariant): void {
 
 Deno.test("[HarnessGridPipeline] the grid pipeline runs token-free, attributes the grid cells, and renders all four views", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
   const outputDir = join(tempDir, "grid-output");
 
   await withSyntheticTestEnv(async ({ frameworkHome, workspaceRoot }) => {

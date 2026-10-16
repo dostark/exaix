@@ -6,7 +6,8 @@
  * @related-files [@exaix/core/planning, "packages/schemas/src/plan_schema.ts", "packages/schemas/src/request_analysis.ts"]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { type IAgentExecutionResult, type IRequestMetadata, PlanWriter } from "@exaix/core/planning";
 import { ANALYZER_VERSION } from "@exaix/core";
@@ -39,7 +40,7 @@ Deno.test("[PlanWriter] includes requestAnalysis in plan metadata", async () => 
   const { db, config, tempDir, cleanup } = await initTestDbService();
 
   const workspacePath = join(tempDir, config.paths.workspace);
-  const plansDir = join(workspacePath, "Plans");
+  const plansDir = pathBuilders.plansPath(workspacePath);
   await Deno.mkdir(plansDir, { recursive: true });
 
   const writer = new PlanWriter({
@@ -89,7 +90,7 @@ Deno.test("[PlanWriter] writes plan without analysis (backward compat)", async (
   const { db, config, tempDir, cleanup } = await initTestDbService();
 
   const workspacePath = join(tempDir, config.paths.workspace);
-  const plansDir = join(workspacePath, "Plans");
+  const plansDir = pathBuilders.plansPath(workspacePath);
   await Deno.mkdir(plansDir, { recursive: true });
 
   const writer = new PlanWriter({
@@ -122,11 +123,7 @@ Deno.test("[PlanWriter] writes plan without analysis (backward compat)", async (
     const { planPath } = await writer.writePlan(result, metadata);
     const content = await Deno.readTextFile(planPath);
 
-    assertEquals(
-      content.includes("request_analysis:"),
-      false,
-      "Plan should NOT contain request_analysis field when absent",
-    );
+    assertFalse(content.includes("request_analysis:"), "Plan should NOT contain request_analysis field when absent");
   } finally {
     await cleanup();
   }

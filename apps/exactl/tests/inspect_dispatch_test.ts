@@ -13,10 +13,10 @@
  * @related-files [apps/exactl/src/exactl.ts, apps/exactl/src/command_builders/request_actions.ts, apps/exactl/src/commands/inspect_commands.ts, packages/session/src/context_record_store.ts]
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join, toFileUrl } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
-import { ExaPathDefaults } from "@exaix/core";
 import { PathResolver } from "@exaix/portal";
 import { ContextRecordStore } from "@exaix/session";
 import { CONTEXT_RECORD_SCHEMA_VERSION, type ContextRecord } from "@exaix/schemas/dogfood_context.ts";
@@ -24,6 +24,7 @@ import { handleRequestInspect } from "../src/command_builders/request_actions.ts
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { captureAllOutputs } from "./helpers/console_utils.ts";
 import { withTestMod } from "./helpers/test_utils.ts";
+import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
 
 const TRACE_ID = "66666666-6666-4666-8666-666666666666";
 const RECORD_ID = "77777777-7777-4777-8777-777777777777";
@@ -130,33 +131,7 @@ Deno.test("[dispatch] request inspect is registered under the real `request` com
 });
 
 function buildMinimalConfig(root: string): string {
-  return `
-[system]
-root = ${JSON.stringify(root)}
-version = "1.0.0"
-log_level = "info"
-
-[paths]
-memory = ${JSON.stringify(ExaPathDefaults.memory)}
-blueprints = ${JSON.stringify(ExaPathDefaults.blueprints)}
-runtime = ${JSON.stringify(ExaPathDefaults.runtime)}
-workspace = ${JSON.stringify(ExaPathDefaults.workspace)}
-portals = ${JSON.stringify(ExaPathDefaults.portals)}
-active = ${JSON.stringify(ExaPathDefaults.active)}
-archive = ${JSON.stringify(ExaPathDefaults.archive)}
-plans = ${JSON.stringify(ExaPathDefaults.plans)}
-requests = ${JSON.stringify(ExaPathDefaults.requests)}
-rejected = ${JSON.stringify(ExaPathDefaults.rejected)}
-agents = ${JSON.stringify(ExaPathDefaults.agents)}
-flows = ${JSON.stringify(ExaPathDefaults.flows)}
-memoryProjects = ${JSON.stringify(ExaPathDefaults.memoryProjects)}
-memoryExecution = ${JSON.stringify(ExaPathDefaults.memoryExecution)}
-memoryIndex = ${JSON.stringify(ExaPathDefaults.memoryIndex)}
-memorySkills = ${JSON.stringify(ExaPathDefaults.memorySkills)}
-memoryPending = ${JSON.stringify(ExaPathDefaults.memoryPending)}
-memoryTasks = ${JSON.stringify(ExaPathDefaults.memoryTasks)}
-memoryGlobal = ${JSON.stringify(ExaPathDefaults.memoryGlobal)}
-`.trim();
+  return readConfigFixture("exactl-minimal-config", { root: JSON.stringify(root) });
 }
 
 // Real child-process invocation of the exactl entry point, isolated in its own tempDir —

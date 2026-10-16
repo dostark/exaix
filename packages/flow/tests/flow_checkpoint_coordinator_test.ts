@@ -18,10 +18,11 @@ import {
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { IStepResult } from "@exaix/flow";
 import type { IStepDurabilityStore, IStepExecutionRecord } from "@exaix/flow";
-import { DEFAULT_FLOW_VERSION, FLOW_CHECKPOINT_SCHEMA_VERSION, FlowInputSource, FlowOutputFormat } from "@exaix/core";
+import { FLOW_CHECKPOINT_SCHEMA_VERSION, FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import type { IFlowCheckpointService } from "@exaix/flow";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class FakeCheckpointService implements IFlowCheckpointService {
   store = new Map<string, IFlowCheckpoint>();
   deleteCalls: string[] = [];

@@ -1,0 +1,9 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+
+[[portals]]
+alias = "exaix-self"
+target_path = "__WORKTREE_PATH__"
+
+[session_delegate]
+tool = "claude-code"

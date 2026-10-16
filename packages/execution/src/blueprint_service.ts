@@ -7,6 +7,7 @@
  * @related-files [packages/execution/src/agent_composer.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { isAbsolute, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
@@ -14,13 +15,14 @@ import type { Config } from "@exaix/schemas/config.ts";
 import { HitlPolicySchema } from "@exaix/schemas/hitl.ts";
 import type { IModelCallOptions, IModelIntent } from "@exaix/schemas";
 import type { EffortDeclaration, EffortTier, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
-import { EFFORT_AUTO, EffortDeclarationSchema, ThinkingDeclarationSchema } from "@exaix/schemas/model_intent.ts";
+import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "@exaix/schemas/model_intent.ts";
+import { EFFORT_AUTO } from "@exaix/shared";
 import type { IEventLogger } from "@exaix/core/logger";
 import { SafeError } from "@exaix/core/errors";
 import type { ModelResolver } from "@exaix/ai";
 import { ProviderFactoryError } from "@exaix/ai/errors.ts";
 import type { JSONValue } from "@exaix/core";
-import { DEFAULT_AGENTS_PATH, isRejectedNativeToolName, MAX_NAME_LENGTH, MAX_PROMPT_LENGTH } from "@exaix/core";
+import { isRejectedNativeToolName, MAX_NAME_LENGTH, MAX_PROMPT_LENGTH } from "@exaix/core";
 import { DEFAULT_MCP_AGENT_ROLE_ID } from "@exaix/core/types";
 import type { IAgentComposerOptions, IAgentFileBlueprint } from "./agent_composer.ts";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
@@ -218,7 +220,7 @@ export class BlueprintService {
     const blueprintsBase = isAbsolute(this.config.paths.blueprints)
       ? this.config.paths.blueprints
       : join(this.config.system.root, this.config.paths.blueprints);
-    return join(blueprintsBase, DEFAULT_AGENTS_PATH, `${agentName}.md`);
+    return pathBuilders.agentsPath(blueprintsBase, `${agentName}.md`);
   }
 
   resolveModelId(blueprint: IAgentFileBlueprint): string {

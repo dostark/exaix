@@ -5,7 +5,7 @@
  * ensuring correct mapping to quality metrics like correctness and completeness.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import {
   buildEvaluationPrompt,
   calculateWeightedScore,
@@ -353,7 +353,7 @@ Deno.test("buildEvaluationPrompt: omits context section when not provided", () =
   const prompt = buildEvaluationPrompt("Test content", criteria);
 
   // Should not have a Context section header without context
-  assertEquals(prompt.includes("### Context"), false);
+  assertFalse(prompt.includes("### Context"));
 });
 
 Deno.test("buildEvaluationPrompt: marks required criteria", () => {

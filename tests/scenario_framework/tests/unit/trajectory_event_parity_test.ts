@@ -6,7 +6,7 @@
  * dynamic_step_executor.ts — prevents the event-type drift that caused W3.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { ACTIVITY_EVENT_DYNAMIC_TOOL_CALL } from "@exaix/core";
 
 Deno.test("[TrajectoryParity] shared constant matches dynamic_step_executor event type", () => {
@@ -14,6 +14,6 @@ Deno.test("[TrajectoryParity] shared constant matches dynamic_step_executor even
 });
 
 Deno.test("[TrajectoryParity] constant is not a milestone constant", () => {
-  assertEquals(ACTIVITY_EVENT_DYNAMIC_TOOL_CALL.includes("milestone"), false);
-  assertEquals(ACTIVITY_EVENT_DYNAMIC_TOOL_CALL.includes("tool.call."), false);
+  assertFalse(ACTIVITY_EVENT_DYNAMIC_TOOL_CALL.includes("milestone"));
+  assertFalse(ACTIVITY_EVENT_DYNAMIC_TOOL_CALL.includes("tool.call."));
 });

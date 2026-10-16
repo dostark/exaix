@@ -9,7 +9,7 @@
  * @related-files ["packages/ai/src/traced_provider.ts", "packages/core/src/events/domain_event_types.ts"]
  */
 
-import { assertEquals, assertExists, assertRejects } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertRejects } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import { MockStrategy } from "@exaix/core";
 import { MockLLMProvider } from "../src/providers/mock_llm_provider.ts";
@@ -116,7 +116,7 @@ Deno.test("[TracedProvider] compatible policy failure retains a safe reason and 
   assertEquals(logger.log.calls.length, 0);
   assertEquals(logger.warn.calls[0].args[3], "compatible-parent");
   assertEquals((logger.warn.calls[0].args[2] as LogMetadata).providerReasonCode, "unsupported_call_option");
-  assertEquals(JSON.stringify(logger.warn.calls).includes("sensitive-prompt"), false);
+  assertFalse(JSON.stringify(logger.warn.calls).includes("sensitive-prompt"));
 });
 
 Deno.test("[TracedProvider.generateStream] emits started (debug level) before the first yielded chunk", async () => {

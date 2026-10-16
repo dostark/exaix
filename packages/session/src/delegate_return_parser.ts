@@ -12,6 +12,7 @@
  */
 
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
+import { TOOL_CLAUDE_CODE, TOOL_CODEX } from "./constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IDelegateParsedReturn {
@@ -92,8 +93,6 @@ interface ICodexEvent {
   message?: string;
 }
 
-const TOOL_CLAUDE_CODE: SessionTool = "claude-code";
-const TOOL_CODEX: SessionTool = "codex";
 const OPENCODE_EVENT_TEXT = "text";
 const OPENCODE_EVENT_STEP_FINISH = "step_finish";
 const OPENCODE_EVENT_TOOL_USE = "tool_use";

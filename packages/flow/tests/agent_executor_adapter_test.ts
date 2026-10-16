@@ -5,6 +5,7 @@
  * FlowRunner's IAgentExecutor interface.
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { AgentComposerAdapter, type IRunner } from "../src/agent_composer_adapter.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
@@ -32,7 +33,7 @@ function makeFakeRunner(): IRunner {
 
 Deno.test("AgentComposerAdapter runs an agent and returns IAgentExecutionResult", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "adapter-test-" });
-  const agentRolesDir = `${tmpDir}/Blueprints/Agents`;
+  const agentRolesDir = pathBuilders.agentsPath(pathBuilders.blueprintsPath(tmpDir));
   await Deno.mkdir(agentRolesDir, { recursive: true });
   await Deno.writeTextFile(
     `${agentRolesDir}/test-agent.md`,
@@ -71,7 +72,7 @@ model: "mock:test"
 
 Deno.test("AgentComposerAdapter threads scenarioId/stepId/flowStepId into the runner's request (Phase 157)", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "adapter-test-" });
-  const agentRolesDir = `${tmpDir}/Blueprints/Agents`;
+  const agentRolesDir = pathBuilders.agentsPath(pathBuilders.blueprintsPath(tmpDir));
   await Deno.mkdir(agentRolesDir, { recursive: true });
   await Deno.writeTextFile(
     `${agentRolesDir}/test-agent.md`,

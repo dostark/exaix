@@ -10,7 +10,7 @@
  * @related-files [packages/request/src/rejected_plan_handler.ts, packages/request/src/processor.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RejectedPlanHandler, StatusManager } from "@exaix/request";
 import { createMockConfig, createMockEventLogger, createMockLogger } from "@exaix/testing";
@@ -124,7 +124,7 @@ Deno.test("[RejectedPlanHandler.handleError] non-validation error marks FAILED w
 
     const requestContent = await Deno.readTextFile(filePath);
     assertStringIncludes(requestContent, `status: ${RequestStatus.FAILED}`);
-    assertEquals(requestContent.includes("rejected_path:"), false);
+    assertFalse(requestContent.includes("rejected_path:"));
 
     const rejectedDir = join(config.system.root, config.paths.workspace, config.paths.rejected);
     let rejectedExists = true;

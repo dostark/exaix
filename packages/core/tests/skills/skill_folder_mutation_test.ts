@@ -10,6 +10,7 @@
  * @related-files [packages/core/src/skills/skill_folder_publisher.ts, packages/core/src/skills/skills.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { createPathSecurity } from "@exaix/tool-runtime";
@@ -192,7 +193,7 @@ Deno.test("[fault] two real processes creating one name yield exactly one winner
     );
     const outputs = (await Promise.all(children)).map((result) => new TextDecoder().decode(result.stdout).trim());
     assertEquals([...outputs].sort(), ["created", SkillMutationErrorCode.NAME_CONFLICT].sort());
-    const body = await Deno.readTextFile(join(memoryDir, "Skills", "learned", NAME, "SKILL.md"));
+    const body = await Deno.readTextFile(pathBuilders.memorySkillsPath(memoryDir, "learned", NAME, "SKILL.md"));
     assert(/Made by [ab]/.test(body));
   } finally {
     await Deno.remove(memoryDir, { recursive: true });

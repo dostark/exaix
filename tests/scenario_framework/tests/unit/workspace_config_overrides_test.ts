@@ -17,16 +17,11 @@ import {
   STEP_CONFIG_OVERRIDES_ENV,
 } from "../../runner/synthetic_runner.ts";
 import { patchWorkspaceConfig, renderTomlValue, splitConfigPath } from "../../runner/workspace_config_overrides.ts";
+import { readConfigFixture } from "@exaix/testing";
 
-const BASE = `# Framework template
-[system]
-root = "."
-log_level = "info"
-
-[portal_knowledge]
-default_mode = "standard"
-quick_scan_limit = 10000
-`;
+const BASE = await Deno.readTextFile(
+  new URL("../../fixtures/configs/workspace-config-overrides-base.toml", import.meta.url),
+);
 
 Deno.test("[workspace_config] splitConfigPath handles bare and quoted segments", () => {
   assertEquals(splitConfigPath("portal_knowledge.default_mode"), ["portal_knowledge", "default_mode"]);
@@ -124,7 +119,7 @@ Deno.test("[workspace_config] applyWorkspaceConfigOverrides patches an operator-
   const dir = await Deno.makeTempDir({ prefix: "ws-cfg-existing-" });
   try {
     const configPath = join(dir, "exa.config.toml");
-    await Deno.writeTextFile(configPath, '# operator config\n[system]\nroot = "."\n');
+    await Deno.writeTextFile(configPath, readConfigFixture("workspace-config-operator"));
 
     await applyWorkspaceConfigOverrides(dir, { "system.log_level": "debug" });
 

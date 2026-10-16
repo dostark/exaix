@@ -6,6 +6,7 @@
  * @description Tests that MemoryExtractorService correctly attaches confidence, source, and extractedAt metadata.
  */
 
+import { DEFAULT_MEMORY_PATH, DEFAULT_PENDING_MEMORY_PATH, ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import { MemoryExtractorService } from "@exaix/memory";
 import {
@@ -29,27 +30,7 @@ Deno.test("Step 71.1: MemoryExtractorService attaches required metadata to propo
   // Use a more structured mock to avoid casting if possible
   const rawConfig = {
     system: { root: ".", log_level: LogLevel.INFO, schema_version: "1.0.0", version: "0.1.0" },
-    paths: {
-      memory: "Memory",
-      blueprints: "Blueprints",
-      runtime: ".exa",
-      workspace: "Workspace",
-      portals: "Portals",
-      active: "Active",
-      archive: "Archive",
-      plans: "Plans",
-      requests: "Requests",
-      rejected: "Rejected",
-      agents: "Agents",
-      flows: "Blueprints/Flows",
-      memoryProjects: "Memory/Projects",
-      memoryExecution: "Memory/Execution",
-      memoryIndex: "Memory/Index",
-      memorySkills: "Memory/Skills",
-      memoryPending: "Memory/Pending",
-      memoryTasks: "Memory/Tasks",
-      memoryGlobal: "Memory/Global",
-    },
+    paths: { ...ExaPathDefaults },
     agents: { default_model: "test-model", timeout_sec: 30, max_iterations: 10 },
     models: { "test-model": { provider: ProviderType.MOCK, model: "test-model" } },
     tools: {},
@@ -203,5 +184,5 @@ Deno.test("Step 71.1: MemoryExtractorService attaches required metadata to propo
   }
 
   // Clean up
-  await Deno.remove(`./Memory/Pending/${proposalId}.json`).catch(() => {});
+  await Deno.remove(`./${DEFAULT_MEMORY_PATH}/${DEFAULT_PENDING_MEMORY_PATH}/${proposalId}.json`).catch(() => {});
 });

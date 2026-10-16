@@ -6,7 +6,9 @@
  *   as crash-recovery request files, while completed delegations are skipped.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH } from "@exaix/shared";
+import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
@@ -59,7 +61,11 @@ Deno.test("[crash_recovery] recovers an orphaned delegation (launched without te
     assertEquals(count, 1, "must recover 1 orphaned delegation");
 
     // Assert a request file was created
-    const requestFile = join(workspaceRoot, "Workspace", "Requests", `${traceId}_crash_recovery.md`);
+    const requestFile = pathBuilders.workspacePath(
+      workspaceRoot,
+      DEFAULT_REQUESTS_PATH,
+      `${traceId}_crash_recovery.md`,
+    );
     const content = await Deno.readTextFile(requestFile);
     assertExists(content);
     assertEquals(content.includes("Crash-Recovery Request"), true);
@@ -145,7 +151,7 @@ Deno.test("[crash_recovery][security] redacted launch payload recovers from brie
         gate: "code_changes",
         tool: "codex",
         objective: "Validated recovery objective",
-        artifact_ref: ".exa/PlanContext/phase-174.md",
+        artifact_ref: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
         permitted_paths: ["packages/**"],
         token_budget: { max_input_tokens: 1, max_output_tokens: 1, max_total_tokens: 2 },
         resume_token: "must-not-be-journaled",
@@ -155,7 +161,7 @@ Deno.test("[crash_recovery][security] redacted launch payload recovers from brie
     await seedEvent(db, DomainEventType.SessionDelegateLaunched, traceId, {
       gate: "code_changes",
       tool: "codex",
-      artifact_ref: ".exa/PlanContext/phase-174.md",
+      artifact_ref: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
     });
 
     const count = await recoverOrphanedDelegations({
@@ -166,7 +172,7 @@ Deno.test("[crash_recovery][security] redacted launch payload recovers from brie
     });
     assertEquals(count, 1);
     const request = await Deno.readTextFile(
-      join(workspaceRoot, "Workspace", "Requests", `${traceId}_crash_recovery.md`),
+      pathBuilders.workspacePath(workspaceRoot, DEFAULT_REQUESTS_PATH, `${traceId}_crash_recovery.md`),
     );
     assertEquals(request.includes("Validated recovery objective"), true);
 
@@ -175,8 +181,8 @@ Deno.test("[crash_recovery][security] redacted launch payload recovers from brie
       (item) => item.action_type === DomainEventType.SessionDelegateCrashRecovered,
     );
     assertExists(event);
-    assertEquals(event!.payload.includes(workspaceRoot), false);
-    assertEquals(event!.payload.includes("must-not-be-journaled"), false);
+    assertFalse(event!.payload.includes(workspaceRoot));
+    assertFalse(event!.payload.includes("must-not-be-journaled"));
   } finally {
     await Deno.remove(workspaceRoot, { recursive: true });
     await Deno.remove(sessionDir, { recursive: true });

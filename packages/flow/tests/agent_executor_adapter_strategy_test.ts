@@ -12,6 +12,8 @@
  *   so the test has no live-provider or subprocess dependency.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { AgentComposerAdapter, PLAN_WRITTEN_FILES_TRACE_MAX } from "@exaix/flow";
@@ -30,7 +32,7 @@ import { BOUND_TARGET_KIND_PROVIDER, type ModelBindingService, type ModelResolve
 import type { IFixedModelClient, IModelIntent, IResolvedBinding } from "@exaix/schemas";
 
 async function writeBlueprint(root: string, agentRole: string): Promise<void> {
-  const dir = join(root, "Blueprints", "Agents");
+  const dir = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH);
   await Deno.mkdir(dir, { recursive: true });
   await Deno.writeTextFile(
     join(dir, `${agentRole}.md`),
@@ -105,7 +107,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: fails fast when construction de
   try {
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
     );
 
     await assertRejects(
@@ -129,7 +131,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: fails fast with a distinct erro
 
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions },
     );
 
@@ -157,7 +159,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: dispatches through the forced s
 
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -199,7 +201,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: absent worktreeCoordinator pres
 
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -215,7 +217,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: WORKTREE portal resolves throug
   const dbService = await initTestDbService();
   try {
     const traceId = crypto.randomUUID();
-    const worktreePath = join(dbService.tempDir, ".exa", "worktrees", "workspace", traceId);
+    const worktreePath = pathBuilders.runtimePath(dbService.tempDir, "worktrees", "workspace", traceId);
     await initGitPortal(worktreePath);
     const config: Config = createMockConfig(dbService.tempDir, {
       portals: [{
@@ -235,7 +237,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: WORKTREE portal resolves throug
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry, worktreeCoordinator: coordinator },
     );
 
@@ -289,7 +291,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: BRANCH and undefined strategies
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry, worktreeCoordinator: coordinator },
     );
 
@@ -314,7 +316,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: repeated trace resolution reuse
   const dbService = await initTestDbService();
   try {
     const traceId = crypto.randomUUID();
-    const worktreePath = join(dbService.tempDir, ".exa", "worktrees", "workspace", traceId);
+    const worktreePath = pathBuilders.runtimePath(dbService.tempDir, "worktrees", "workspace", traceId);
     await initGitPortal(worktreePath);
     const config: Config = createMockConfig(dbService.tempDir, {
       portals: [{
@@ -334,7 +336,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: repeated trace resolution reuse
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry, worktreeCoordinator: coordinator },
     );
 
@@ -382,7 +384,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: worktree setup failures propaga
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry, worktreeCoordinator: coordinator },
     );
 
@@ -426,7 +428,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: extracts the <content> block fr
 
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -457,7 +459,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: bridges the whole description u
 
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -499,7 +501,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: two calls for different portals
 
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -586,7 +588,7 @@ Deno.test("fix(flow): reviewed cycle writes survive a later strategy audit only 
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("unused")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       {
         config,
         db: dbService.db,
@@ -673,7 +675,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: two calls sharing a traceId acc
 
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -726,7 +728,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: a different traceId does NOT in
 
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -782,7 +784,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: evicts the least-recently-touch
 
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -855,7 +857,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: an actively-touched trace's pla
 
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -924,7 +926,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: wraps a non-JSON description in
 
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -971,7 +973,7 @@ Deno.test("AgentComposerAdapter.runWithStrategy: does not wrap non-JSON descript
 
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -1002,7 +1004,7 @@ Deno.test("AgentComposerAdapter.run: no-strategy path still calls the wrapped ru
           return Promise.resolve({ thought: "t", content: "c", raw: "r" });
         },
       },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
     );
 
     const result = await adapter.run("test-agent", makeStepRequest({ portal: "workspace" }));
@@ -1043,7 +1045,7 @@ async function runReactStep(
     const captured: IModelIntent[] = [];
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
       {
         config,
         db: dbService.db,

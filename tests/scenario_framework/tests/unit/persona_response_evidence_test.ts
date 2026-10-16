@@ -5,7 +5,8 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/persona_response_evidence.ts]
  */
-import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
+import { DEFAULT_PLANS_PATH, DEFAULT_PORTALS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import { assertEquals, assertFalse, assertNotEquals, assertRejects } from "@std/assert";
 import { capturePersonaRoleResponse, preparePersonaJudgeContext } from "../../runner/persona_response_evidence.ts";
 import { join } from "@std/path";
 import { createPersonaResponseFixture, personaCaptureInput } from "../helpers/persona_response_fixture.ts";
@@ -19,7 +20,7 @@ Deno.test("[PersonaResponse] captures actual content for all three roles without
       const evidence = await capturePersonaRoleResponse(input);
       assertEquals(evidence.content, '{"finding":"actual response"}');
       assertEquals(evidence.agentRole, role);
-      assertEquals(evidence.planPath, "Workspace/Plans/current_plan.md");
+      assertEquals(evidence.planPath, `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/current_plan.md`);
       assertNotEquals(evidence.contentHash, evidence.rawResponseHash);
       assertEquals(await capturePersonaRoleResponse(input), evidence);
     } finally {
@@ -31,13 +32,16 @@ Deno.test("[PersonaResponse] captures actual content for all three roles without
 Deno.test("[PersonaResponse] judge context preserves task and initial source before agent changes", async () => {
   const ctx = await createPersonaResponseFixture();
   try {
-    await Deno.mkdir(join(ctx.tempDir, "Portals/task/src"), { recursive: true });
-    await Deno.writeTextFile(join(ctx.tempDir, "Portals/task/src/api.ts"), "export const original = true;");
+    await Deno.mkdir(join(ctx.tempDir, `${DEFAULT_PORTALS_PATH}/task/src`), { recursive: true });
+    await Deno.writeTextFile(
+      join(ctx.tempDir, `${DEFAULT_PORTALS_PATH}/task/src/api.ts`),
+      "export const original = true;",
+    );
     const path = await preparePersonaJudgeContext(ctx.config, "Explain the flow", ["@Portals/task"]);
     const context = await Deno.readTextFile(path);
     assertEquals(context.includes("Explain the flow"), true);
     assertEquals(context.includes("export const original = true;"), true);
-    await Deno.writeTextFile(join(ctx.tempDir, "Portals/task/src/api.ts"), "changed");
+    await Deno.writeTextFile(join(ctx.tempDir, `${DEFAULT_PORTALS_PATH}/task/src/api.ts`), "changed");
     assertEquals(await Deno.readTextFile(path), context);
   } finally {
     await ctx.cleanup();
@@ -47,7 +51,7 @@ Deno.test("[PersonaResponse] judge context preserves task and initial source bef
 Deno.test("[PersonaResponse] explicit judge files include only the selected source", async () => {
   const ctx = await createPersonaResponseFixture();
   try {
-    const root = join(ctx.tempDir, "Portals/task/src");
+    const root = join(ctx.tempDir, `${DEFAULT_PORTALS_PATH}/task/src`);
     await Deno.mkdir(root, { recursive: true });
     await Deno.writeTextFile(join(root, "api.ts"), "export const selected = true;");
     await Deno.writeTextFile(join(root, "storage.ts"), "export const excluded = true;");
@@ -59,7 +63,7 @@ Deno.test("[PersonaResponse] explicit judge files include only the selected sour
     );
     const context = await Deno.readTextFile(contextPath);
     assertEquals(context.includes("export const selected = true;"), true);
-    assertEquals(context.includes("export const excluded = true;"), false);
+    assertFalse(context.includes("export const excluded = true;"));
     assertEquals(context.includes("Source @Portals/task/src/api.ts:"), true);
   } finally {
     await ctx.cleanup();
@@ -69,7 +73,7 @@ Deno.test("[PersonaResponse] explicit judge files include only the selected sour
 Deno.test("[PersonaResponse] no judge file list still walks every source file", async () => {
   const ctx = await createPersonaResponseFixture();
   try {
-    const root = join(ctx.tempDir, "Portals/task/src");
+    const root = join(ctx.tempDir, `${DEFAULT_PORTALS_PATH}/task/src`);
     await Deno.mkdir(root, { recursive: true });
     await Deno.writeTextFile(join(root, "api.ts"), "api fixture");
     await Deno.writeTextFile(join(root, "storage.ts"), "storage fixture");

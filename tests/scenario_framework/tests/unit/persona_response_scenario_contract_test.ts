@@ -5,6 +5,7 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/scenarios/persona_response_eval]
  */
+import { DEFAULT_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
 import { CriterionKind, ScenarioStepType } from "../../schema/step_schema.ts";
@@ -37,7 +38,7 @@ Deno.test("[PersonaResponse] six live scenarios capture actual role response bef
     const criterion = judge.output_criteria.find((item) => item.kind === CriterionKind.LLM_JUDGE);
     assert(criterion?.kind === CriterionKind.LLM_JUDGE);
     assertEquals(judge.step_pass_threshold, criterion.score_threshold);
-    assertEquals(criterion.evidence_path, "Memory/persona-response.txt");
+    assertEquals(criterion.evidence_path, `${DEFAULT_MEMORY_PATH}/persona-response.txt`);
     assert(criterion.rubric?.includes("proposed"));
     if (role !== "senior-coder") {
       assert(criterion.rubric?.includes("Do not require file writes or executed fixes"));

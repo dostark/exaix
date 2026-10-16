@@ -5,13 +5,14 @@
  * resolve to valid system agent roles or project blueprints.
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH, DEFAULT_FLOWS_DIR } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { FlowLoader } from "@exaix/flow";
 
-const BLUEPRINTS_DIR = "./Blueprints/Agents";
-const FLOWS_DIR = "./Blueprints/Flows";
+const BLUEPRINTS_DIR = `./${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`;
+const FLOWS_DIR = `./${DEFAULT_FLOWS_DIR}`;
 
 interface BlueprintFrontmatter {
   agent_role: string;

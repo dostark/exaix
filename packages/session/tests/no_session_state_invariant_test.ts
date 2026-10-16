@@ -10,7 +10,7 @@
  *   the typed decision + human summary are allowed to cross the membrane.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionReturn } from "@exaix/schemas/session_delegate.ts";
 import {
@@ -40,8 +40,8 @@ function loadedReturn(decision: SessionReturn["decision"], summary: string): Ses
 /** Assert a serialized pipeline artifact carries no session/handoff/conversation state. */
 function assertNoSessionState(artifact: object, label: string): void {
   const serialized = JSON.stringify(artifact);
-  assertEquals(serialized.includes(SECRET_RESUME_TOKEN), false, `${label}: resume_token value leaked`);
-  assertEquals(serialized.includes(TRANSCRIPT_PATH), false, `${label}: transcript_ref value leaked`);
+  assertFalse(serialized.includes(SECRET_RESUME_TOKEN), `${label}: resume_token value leaked`);
+  assertFalse(serialized.includes(TRANSCRIPT_PATH), `${label}: transcript_ref value leaked`);
   assertEquals(/transcript/i.test(serialized), false, `${label}: a transcript field leaked`);
   assertEquals(/resume_token/i.test(serialized), false, `${label}: a resume_token field leaked`);
   assertEquals(/conversation/i.test(serialized), false, `${label}: a conversation field leaked`);

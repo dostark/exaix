@@ -1,0 +1,24 @@
+[system]
+root = "__ROOT__"
+[ai]
+provider = "mock"
+model = "boot"
+[catalog.models."mock/alpha"]
+model_provider = "mock"
+[catalog.models."mock/beta"]
+model_provider = "mock"
+[catalog.services.alpha]
+adapter = "mock"
+transport = "local"
+interface = "api"
+[catalog.services.alpha.serves]
+"mock/alpha" = "alpha"
+[catalog.services.beta]
+adapter = "mock"
+transport = "local"
+interface = "api"
+[catalog.services.beta.serves]
+"mock/beta" = "beta"
+[bindings.default]
+service = "__SERVICE__"
+model = "__MODEL__"

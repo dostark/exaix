@@ -11,7 +11,9 @@
  * @related-files [packages/execution/src/agent_runner.ts, packages/core/src/skills/skill_usage_store.ts]
  */
 
-import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import { assertEquals, assertFalse, assertNotEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
@@ -78,7 +80,7 @@ interface IFixture {
 async function fixture(): Promise<IFixture> {
   const env = await initTestDbService();
   const base = await Deno.makeTempDir({ prefix: "exa-runner-usage-" });
-  const skillsDir = join(base, "Blueprints", "Skills");
+  const skillsDir = pathBuilders.blueprintsPath(base, DEFAULT_SKILLS_MEMORY_PATH);
   await writeSkillFolder(skillsDir, {
     name: PIN,
     instructions: "Pinned body.\n\n## Examples\n\nExample text.",
@@ -89,7 +91,7 @@ async function fixture(): Promise<IFixture> {
     sidecar: { critical: true },
   });
   const skills = new SkillsService(
-    { memoryDir: join(base, "Memory"), blueprintSkillsDir: skillsDir },
+    { memoryDir: pathBuilders.memoryPath(base), blueprintSkillsDir: skillsDir },
     env.db,
     undefined,
     new EventLogger({ db: env.db }),
@@ -453,7 +455,7 @@ Deno.test("[references] final budget fitting drops an ordinary referenced skill 
       request({ skills: [REFERENCED, CONTRACT] }),
       undefined,
     );
-    assertEquals(provider.prompts[0].includes(REFERENCE_TEXT), false);
+    assertFalse(provider.prompts[0].includes(REFERENCE_TEXT));
     assertEquals((await fx.rows()).map((r) => r.skill_name), [CONTRACT]);
   } finally {
     await fx.cleanup();

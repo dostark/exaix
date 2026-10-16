@@ -10,7 +10,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
-import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS } from "@exaix/core";
 import { initTestDbService } from "@exaix/testing";
 import {
   makeStartAndWritersSteps,
@@ -18,6 +18,7 @@ import {
   ScriptedAgentExecutor,
 } from "../helpers/flow_namespace_test_helper.ts";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 Deno.test("[Step65.3] FlowRunner passes JSON-safe parallelGroupResults to downstream fan-in steps", async () => {
   const { config, cleanup } = await initTestDbService();
 

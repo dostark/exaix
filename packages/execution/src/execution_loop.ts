@@ -12,6 +12,8 @@
  * @related-files [apps/daemon/main.ts]
  */
 
+import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
+import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { parse as parseToml } from "@std/toml";
@@ -19,6 +21,7 @@ import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IApplicationContext, IPlanAmendmentGate, IPlanAmendmentService } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
+import type { IPlanAction } from "@exaix/schemas/plan_schema.ts";
 import { createNoopEventLogger, type IEventLogger } from "@exaix/core/logger";
 import { DomainEventType, type IEventJournalReader, type TDomainEventType } from "@exaix/core/events";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -63,7 +66,6 @@ import {
   DEFAULT_AGENT_ROLE,
   DEFAULT_AMENDMENT_EXPIRY_MS,
   DEFAULT_AMENDMENT_ON_TIMEOUT,
-  DEFAULT_EXECUTION_MEMORY_PATH,
   EXECUTION_ARTIFACT_ANALYSIS_SECTION_TITLE,
   EXECUTION_ARTIFACT_PLAN_SECTION_TITLE,
   EXECUTION_ARTIFACT_SECTION_SEPARATOR,
@@ -142,12 +144,6 @@ export interface IExecutionResult {
   success: boolean;
   traceId?: string;
   error?: string;
-}
-
-export interface IPlanAction {
-  tool: string;
-  params: Record<string, JSONValue>;
-  description?: string;
 }
 
 export interface ITaskLease {
@@ -289,12 +285,7 @@ export class ExecutionLoop {
     canonicalWorktreePath: string,
     pointerName: string,
   ): Promise<void> {
-    const traceDir = join(
-      this.config.system.root,
-      this.config.paths.memory,
-      DEFAULT_EXECUTION_MEMORY_PATH,
-      traceId,
-    );
+    const traceDir = pathBuilders.memoryExecutionPath(join(this.config.system.root, this.config.paths.memory), traceId);
     await Deno.mkdir(traceDir, { recursive: true });
 
     const pointerPath = join(traceDir, pointerName);
@@ -955,9 +946,9 @@ export class ExecutionLoop {
     let match: RegExpExecArray | null;
 
     while ((match = codeBlockRegex.exec(planContent)) !== null) {
-      let parsed: unknown;
+      let parsed: JSONValue;
       try {
-        parsed = parseToml(match[1]);
+        parsed = parseToml(match[1]) as JSONValue;
       } catch {
         // Not valid TOML — cannot be an executable action.
         continue;
@@ -965,8 +956,10 @@ export class ExecutionLoop {
 
       // Only a block that declares a string `tool` is an action candidate. Blocks without
       // one (prose, config snippets) are not actions and stay skipped.
-      if (parsed === null || typeof parsed !== "object" || !("tool" in parsed)) continue;
-      const candidate = parsed as { tool?: unknown; params?: unknown; description?: unknown };
+      if (
+        parsed === null || typeof parsed !== "object" || Array.isArray(parsed) || !("tool" in parsed)
+      ) continue;
+      const candidate = parsed as Record<string, JSONValue>;
       if (typeof candidate.tool !== "string") continue;
 
       const validated = PlanActionSchema.safeParse({
@@ -1139,10 +1132,8 @@ export class ExecutionLoop {
 
   private async persistExecutionReport(traceId: string, report: string): Promise<void> {
     try {
-      const execDir = join(
-        this.config.system.root,
-        this.config.paths.memory,
-        DEFAULT_EXECUTION_MEMORY_PATH,
+      const execDir = pathBuilders.memoryExecutionPath(
+        join(this.config.system.root, this.config.paths.memory),
         traceId,
       );
       await Deno.mkdir(execDir, { recursive: true });
@@ -1224,10 +1215,8 @@ export class ExecutionLoop {
     // Persist the executed plan as an execution artifact for trace inspection.
     // This avoids relying on git diffs for read-only agent outputs.
     try {
-      const execDir = join(
-        this.config.system.root,
-        this.config.paths.memory,
-        DEFAULT_EXECUTION_MEMORY_PATH,
+      const execDir = pathBuilders.memoryExecutionPath(
+        join(this.config.system.root, this.config.paths.memory),
         traceId,
       );
       await Deno.mkdir(execDir, { recursive: true });
@@ -1243,16 +1232,12 @@ export class ExecutionLoop {
     const artifactRepo = this.db ? new DatabaseArtifactRepository(this.db) : undefined;
     if (artifactContext?.isReadOnly && artifactRepo && artifactContext.planAgentId) {
       try {
-        const execDir = join(
-          this.config.system.root,
-          this.config.paths.memory,
-          DEFAULT_EXECUTION_MEMORY_PATH,
+        const execDir = pathBuilders.memoryExecutionPath(
+          join(this.config.system.root, this.config.paths.memory),
           traceId,
         );
-        const summaryPath = join(
-          this.config.system.root,
-          this.config.paths.memory,
-          DEFAULT_EXECUTION_MEMORY_PATH,
+        const summaryPath = pathBuilders.memoryExecutionPath(
+          join(this.config.system.root, this.config.paths.memory),
           traceId,
           "summary.md",
         );
@@ -1349,10 +1334,8 @@ export class ExecutionLoop {
     // Persist the failed plan as an execution artifact for trace inspection.
     let planContent: string | null = null;
     try {
-      const execDir = join(
-        this.config.system.root,
-        this.config.paths.memory,
-        DEFAULT_EXECUTION_MEMORY_PATH,
+      const execDir = pathBuilders.memoryExecutionPath(
+        join(this.config.system.root, this.config.paths.memory),
         traceId,
       );
       await Deno.mkdir(execDir, { recursive: true });
@@ -1367,7 +1350,7 @@ export class ExecutionLoop {
     }
 
     // Move plan to Workspace/Rejected
-    const rejectedDir = join(this.config.system.root, this.config.paths.workspace, "Rejected");
+    const rejectedDir = pathBuilders.rejectedPath(join(this.config.system.root, this.config.paths.workspace));
     await Deno.mkdir(rejectedDir, { recursive: true });
 
     const planFileName = planPath.split("/").pop()!;
@@ -1592,11 +1575,7 @@ export class ExecutionLoop {
       );
     }
     const reportConfig = {
-      reportsDirectory: join(
-        this.config.system.root,
-        this.config.paths.memory,
-        DEFAULT_EXECUTION_MEMORY_PATH,
-      ),
+      reportsDirectory: pathBuilders.memoryExecutionPath(join(this.config.system.root, this.config.paths.memory)),
     };
     const reader = this.db
       ? {
@@ -1748,10 +1727,8 @@ export class ExecutionLoop {
 
       // Also write a human-readable failure.md file for easy access (tests expect this file)
       try {
-        const failureDir = join(
-          this.config.system.root,
-          this.config.paths.memory,
-          DEFAULT_EXECUTION_MEMORY_PATH,
+        const failureDir = pathBuilders.memoryExecutionPath(
+          join(this.config.system.root, this.config.paths.memory),
           traceId,
         );
         await Deno.mkdir(failureDir, { recursive: true });

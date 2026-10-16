@@ -28,7 +28,7 @@ Deno.test("[runner] retry runs the body with feedback and passes on evaluation t
   assertEquals(agent.requests[1].context.gateFeedback, GATE_FEEDBACK);
   assertStringIncludes(agent.requests[1].userPrompt, GATE_FEEDBACK);
   assertEquals(agent.requests[2].context.gateFeedback, undefined);
-  assertEquals(judge.contents[1].includes("draft 2"), true);
+  assertStringIncludes(judge.contents[1], "draft 2");
   const loopEvents = logger.events.filter((entry) => entry.event === "flow.loop.iteration");
   assertEquals(loopEvents.length, 1);
   assertEquals(loopEvents[0].payload.maxRetries, 3);

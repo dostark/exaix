@@ -10,8 +10,9 @@
  * @related-files [packages/flow/src/agent_composer_adapter.ts, packages/execution/src/agent_runner.ts, packages/ai/src/effort_resolver.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
-import { join } from "@std/path";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -51,8 +52,8 @@ class MockFlowEventLogger implements IFlowEventLogger {
 
 async function setup(blueprint: string): Promise<{ root: string; cleanup: () => Promise<void> }> {
   const root = await Deno.makeTempDir({ prefix: "judge-effort-flow-" });
-  await Deno.mkdir(join(root, "Blueprints", "Agents"), { recursive: true });
-  await Deno.writeTextFile(join(root, "Blueprints", "Agents", "voting-judge.md"), blueprint);
+  await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
+  await Deno.writeTextFile(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "voting-judge.md"), blueprint);
   return { root, cleanup: () => Deno.remove(root, { recursive: true }).catch(() => {}) };
 }
 
@@ -64,7 +65,7 @@ function judgeFlow(): IFlow {
     execution_mode: FlowStepExecutionMode.DECLARED,
     dependsOn: [],
     input: { source: "request", transform: "passthrough" },
-  }] as object as IFlowStep[];
+  }] as never as IFlowStep[];
   return {
     id: "judge-flow",
     name: "Judge Flow",
@@ -83,7 +84,7 @@ Deno.test("FlowRunner: a judge blueprint with effort auto resolves to medium on 
   try {
     const { provider, options } = makeCapturingProvider();
     const agentRunner = new AgentRunner(provider, { disableRetry: true });
-    const adapter = new AgentComposerAdapter(agentRunner, join(root, "Blueprints", "Agents"));
+    const adapter = new AgentComposerAdapter(agentRunner, pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH));
     const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new MockFlowEventLogger() });
 
     await runner.execute(judgeFlow(), {
@@ -107,7 +108,7 @@ Deno.test("FlowRunner: a judge blueprint with effort high keeps sending high", a
   try {
     const { provider, options } = makeCapturingProvider();
     const agentRunner = new AgentRunner(provider, { disableRetry: true });
-    const adapter = new AgentComposerAdapter(agentRunner, join(root, "Blueprints", "Agents"));
+    const adapter = new AgentComposerAdapter(agentRunner, pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH));
     const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new MockFlowEventLogger() });
 
     await runner.execute(judgeFlow(), {

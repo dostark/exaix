@@ -7,7 +7,7 @@
  * correctly isolated, updated, and cleared across different agent sessions.
  */
 
-import { assertEquals, assertExists, assertGreater, assertLess, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertGreater, assertLess, assertStringIncludes } from "@std/assert";
 import { type Insight, SessionMemoryService } from "@exaix/memory";
 import type { IMemoryBankService } from "@exaix/core/types";
 import type { IEmbeddingSearchResult } from "@exaix/memory";
@@ -551,11 +551,11 @@ Deno.test("SessionMemoryService - extracts key terms from query", async () => {
   const terms = enhanced.metadata.queryTerms || [];
 
   // Should NOT include stop words
-  assertEquals(terms.includes("the"), false);
-  assertEquals(terms.includes("a"), false);
-  assertEquals(terms.includes("for"), false);
-  assertEquals(terms.includes("do"), false);
-  assertEquals(terms.includes("how"), false);
+  assertFalse(terms.includes("the"));
+  assertFalse(terms.includes("a"));
+  assertFalse(terms.includes("for"));
+  assertFalse(terms.includes("do"));
+  assertFalse(terms.includes("how"));
 
   // Should include meaningful terms
   assertEquals(terms.includes("implement"), true);

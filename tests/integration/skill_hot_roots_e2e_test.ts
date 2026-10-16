@@ -10,7 +10,9 @@
  * @related-files [apps/daemon/main.ts, packages/core/src/skills/skills.ts, packages/core/src/config/service.ts]
  */
 
-import { assert, assertEquals, assertNotEquals } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import { assert, assertEquals, assertFalse, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
@@ -113,19 +115,19 @@ Deno.test({
     const readerConfig = join(readerDir, "exa.config.toml");
     Deno.writeTextFileSync(readerConfig, original);
     try {
-      await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+      await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.copyFile(
-        join(REPO_ROOT, "Blueprints", "Agents", "mock-agent.md"),
-        join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
+        pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+        pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
       );
-      await writeSkill(join(tempDir, "Blueprints", "Skills"), FIRST_SKILL);
-      await writeSkill(join(tempDir, "Alt", "Skills"), SECOND_SKILL);
+      await writeSkill(pathBuilders.blueprintsPath(tempDir, DEFAULT_SKILLS_MEMORY_PATH), FIRST_SKILL);
+      await writeSkill(pathBuilders.memorySkillsPath(join(tempDir, "Alt")), SECOND_SKILL);
 
       const submit = async (skill: string, daemon: IRunningDaemon): Promise<string> => {
         const traceId = crypto.randomUUID();
-        await Deno.mkdir(join(tempDir, "Workspace", "Requests"), { recursive: true });
+        await Deno.mkdir(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH), { recursive: true });
         await Deno.writeTextFile(
-          join(tempDir, "Workspace", "Requests", `request-${traceId.slice(0, 8)}.md`),
+          pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH, `request-${traceId.slice(0, 8)}.md`),
           `---
 trace_id: "${traceId}"
 created: "${new Date().toISOString()}"
@@ -187,10 +189,9 @@ Add a hello world function.
         (await readUsage(readerConfig, traceId)).map((row) => row.skill_name);
       assert((await names(traces.first)).includes(FIRST_SKILL));
       assert((await names(traces.second)).includes(SECOND_SKILL));
-      assertEquals((await names(traces.second)).includes(FIRST_SKILL), false);
-      assertEquals(
+      assertFalse((await names(traces.second)).includes(FIRST_SKILL));
+      assertFalse(
         (await names(traces.droppedFirst)).includes(FIRST_SKILL),
-        false,
         "the default catalog is no longer a root after the edit",
       );
       assert((await names(traces.afterInvalid)).includes(SECOND_SKILL), "the last good generation stays in force");

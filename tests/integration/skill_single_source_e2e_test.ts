@@ -10,6 +10,8 @@
  * @related-files [apps/daemon/main.ts, packages/core/src/skills/skills.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { walk } from "@std/fs";
 import { join } from "@std/path";
@@ -131,25 +133,29 @@ Deno.test({
     const configPath = join(tempDir, "exa.config.toml");
     writeConfig(configPath, tempDir);
     try {
-      await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+      await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
       await Deno.copyFile(
-        join(REPO_ROOT, "Blueprints", "Agents", "mock-agent.md"),
-        join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
+        pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH, "mock-agent.md"),
+        pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "mock-agent.md"),
       );
-      const skillDir = join(tempDir, "Blueprints", "Skills", SKILL_NAME);
+      const skillDir = pathBuilders.blueprintsPath(tempDir, DEFAULT_SKILLS_MEMORY_PATH, SKILL_NAME);
       await Deno.mkdir(skillDir, { recursive: true });
       await Deno.writeTextFile(
         join(skillDir, "SKILL.md"),
         `---\nname: ${SKILL_NAME}\ndescription: Folder skill for the daemon e2e\n---\n# E2E\n\n${SKILL_MARKER}\n`,
       );
       await Deno.writeTextFile(join(skillDir, "exaix.yaml"), "title: E2E Folder Skill\n");
-      const authoredBefore = await snapshotTree(join(tempDir, "Blueprints", "Skills"));
+      const authoredBefore = await snapshotTree(pathBuilders.blueprintsPath(tempDir, DEFAULT_SKILLS_MEMORY_PATH));
 
       const traceId = crypto.randomUUID();
-      const requestPath = join(tempDir, "Workspace", "Requests", `request-${traceId.slice(0, 8)}.md`);
+      const requestPath = pathBuilders.workspacePath(
+        tempDir,
+        DEFAULT_REQUESTS_PATH,
+        `request-${traceId.slice(0, 8)}.md`,
+      );
       await bootRealDaemon(configPath, {
         midFlight: () => {
-          Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
+          Deno.mkdirSync(pathBuilders.workspacePath(tempDir, DEFAULT_REQUESTS_PATH), { recursive: true });
           Deno.writeTextFileSync(
             requestPath,
             `---
@@ -197,11 +203,11 @@ Add a hello world function.
       );
 
       assertEquals(
-        await snapshotTree(join(tempDir, "Blueprints", "Skills")),
+        await snapshotTree(pathBuilders.blueprintsPath(tempDir, DEFAULT_SKILLS_MEMORY_PATH)),
         authoredBefore,
         "authored skill folders are byte-identical after the run",
       );
-      const memorySkills = await snapshotTree(join(tempDir, "Memory", "Skills"));
+      const memorySkills = await snapshotTree(pathBuilders.memoryPath(tempDir, DEFAULT_SKILLS_MEMORY_PATH));
       for (const [path, content] of memorySkills) {
         assert(!path.endsWith(".json"), `no JSON skill file may be written: ${path}`);
         assert(!content.includes("usage_count"), `no usage_count may be written: ${path}`);

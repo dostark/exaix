@@ -8,11 +8,13 @@
  * @dependencies [@std/path, @std/assert]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
-const AGENTS_DIR = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_DIR = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH);
 
 const ACTIVE_FILES = [
   "code-analyst.md",

@@ -9,8 +9,8 @@
  * @related-files [apps/exactl/src/commands/eval_commands.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
+import * as pathBuilders from "@exaix/shared";
+import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { computeRobustnessRows, EvalCommands } from "../src/commands/eval_commands.ts";
@@ -85,7 +85,7 @@ Deno.test("[EvalReportRobustnessFoundingScope] omitting runIds keeps prior unsco
 
 Deno.test("[EvalReportRobustnessFoundingScope] --view robustness --run-ids renders only the scoped runs", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  const dbPath = join(tempDir, ".exa", "eval.db");
+  const dbPath = pathBuilders.runtimePath(tempDir, "eval.db");
   const store = new EvalSqliteStore(dbPath);
   store.initialize();
   const seed = (runId: string, side: "clean" | "attacked", score: number) =>
@@ -115,6 +115,6 @@ Deno.test("[EvalReportRobustnessFoundingScope] --view robustness --run-ids rende
   assertStringIncludes(text, "1.000");
   // Unscoped, utility_under_attack would be mean(1.0, 0.0) = 0.500 — its presence would mean
   // the later noise run leaked into the "founding" table despite the runIds allowlist.
-  assertEquals(text.includes("0.500"), false, "the later noise run's score must not appear in the scoped table");
+  assertFalse(text.includes("0.500"), "the later noise run's score must not appear in the scoped table");
   await cleanup();
 });

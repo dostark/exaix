@@ -5,7 +5,7 @@
  * introspect repository state, status, and history.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
 
@@ -65,8 +65,8 @@ Deno.test("ToolRegistry: git_info", async (t) => {
     assertEquals(result.success, true);
     // Output should contain "test.txt" and "1 file changed"
     const summary = result.data as string;
-    assertEquals(summary.includes("test.txt"), true);
-    assertEquals(summary.includes("1 file changed"), true);
+    assertStringIncludes(summary, "test.txt");
+    assertStringIncludes(summary, "1 file changed");
   });
 
   await t.step("fails on non-git dir", async () => {

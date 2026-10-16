@@ -5,11 +5,12 @@
  * @architectural-layer Services
  * @related-files ["packages/memory/src/bank/memory_bank.ts", "packages/core/src/types/i_database_service.ts"]
  */
-import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/core";
+import * as pathBuilders from "@exaix/shared";
 import { dirname, join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IPortalInfo {
   alias: string;
@@ -19,15 +20,15 @@ export interface IPortalInfo {
 
 export class ContextCardGenerator {
   private config: Config;
-  private logger?: IEventLogger;
+  private logger?: Opt<IEventLogger, Reason.OptionalDependency>;
 
-  constructor(config: Config, logger?: IEventLogger) {
+  constructor(config: Config, logger?: Opt<IEventLogger, Reason.OptionalDependency>) {
     this.config = config;
     this.logger = logger;
   }
 
   async generate(info: IPortalInfo): Promise<void> {
-    const portalsDir = join(this.config.system.root, this.config.paths.memory, DEFAULT_PROJECTS_MEMORY_PATH);
+    const portalsDir = pathBuilders.memoryProjectsPath(join(this.config.system.root, this.config.paths.memory));
 
     // Ensure directory exists
     await Deno.mkdir(portalsDir, { recursive: true });

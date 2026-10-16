@@ -10,6 +10,7 @@
  * @related-files [packages/execution/src/agent_composer.ts]
  */
 
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
 import { initTestDbService } from "@exaix/testing";
@@ -46,7 +47,7 @@ function createCapturingResolver(
   };
 }
 
-const resolverDir = "Blueprints/Agents";
+const resolverDir = `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}`;
 
 async function writeBlueprint(root: string, name: string, frontmatter: Record<string, JSONValue>): Promise<string> {
   const dir = join(root, resolverDir);

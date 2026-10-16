@@ -6,6 +6,8 @@
  * @description Regression test for request processor provider selection issues.
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { RequestProcessor } from "@exaix/request";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
@@ -25,9 +27,9 @@ Deno.test("[regression] RequestProcessor uses ProviderSelector when no testProvi
     config.system.root = tmpDir;
 
     // Setup minimal workspace
-    const workspacePath = join(tmpDir, "Workspace");
-    const requestsDir = join(workspacePath, "Requests");
-    const blueprintsPath = join(tmpDir, "Blueprints", "Agents");
+    const workspacePath = pathBuilders.workspacePath(tmpDir);
+    const requestsDir = pathBuilders.requestsPath(workspacePath);
+    const blueprintsPath = pathBuilders.blueprintsPath(tmpDir, DEFAULT_AGENTS_PATH);
     const migrationsPath = join(tmpDir, "migrations");
     await Deno.mkdir(requestsDir, { recursive: true });
     await Deno.mkdir(blueprintsPath, { recursive: true });

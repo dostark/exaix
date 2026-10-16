@@ -9,6 +9,8 @@
  * @related-files [tests/scenario_framework/runner/ste100_assets.ts, scripts/dogfood_bootstrap.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -18,8 +20,8 @@ import { runIsolatedGenerator } from "../scenario_framework/runner/ste100_assets
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 const COPILOT_SKILLS = join(REPO_ROOT, ".copilot", "skills");
-const REPO_MEMORY_SKILLS = join(REPO_ROOT, "Memory", "Skills");
-const REPO_BLUEPRINTS_SKILLS = join(REPO_ROOT, "Blueprints", "Skills");
+const REPO_MEMORY_SKILLS = pathBuilders.memoryPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH);
+const REPO_BLUEPRINTS_SKILLS = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH);
 
 // Produces a stable, order-independent fingerprint of a directory tree: a sorted list of
 // "<relative-path>:<byte-length>:<sha-256>" for every file.
@@ -75,11 +77,15 @@ Deno.test("[skill_transform] the isolated copy leaves the repo Memory/Skills and
     assertEquals(result.errors, []);
     assertEquals(result.generated.length, 28);
 
-    assertEquals(await fingerprintDir(REPO_MEMORY_SKILLS), memoryBefore, "Memory/Skills must be byte-unchanged");
+    assertEquals(
+      await fingerprintDir(REPO_MEMORY_SKILLS),
+      memoryBefore,
+      `${DEFAULT_MEMORY_PATH}/Skills must be byte-unchanged`,
+    );
     assertEquals(
       await fingerprintDir(REPO_BLUEPRINTS_SKILLS),
       blueprintsBefore,
-      "Blueprints/Skills must be byte-unchanged",
+      `${DEFAULT_BLUEPRINTS_PATH}/Skills must be byte-unchanged`,
     );
   } finally {
     await Deno.remove(tempDir, { recursive: true });

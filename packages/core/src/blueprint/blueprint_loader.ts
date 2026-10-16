@@ -7,19 +7,14 @@
  * @related-files ["packages/execution/src/agent_runner.ts", "packages/request/src/processor.ts"]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import { basename, join } from "@std/path";
+import { DEFAULT_AGENTS_PATH, EFFORT_AUTO } from "@exaix/shared";
 import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
-import {
-  canonicalizeToolName,
-  DEFAULT_AGENTS_PATH,
-  DEFAULT_AI_MODEL,
-  DEFAULT_BLUEPRINT_VERSION,
-  McpToolName,
-  ToolName,
-} from "@exaix/core";
+import { canonicalizeToolName, DEFAULT_AI_MODEL, DEFAULT_BLUEPRINT_VERSION, McpToolName, ToolName } from "@exaix/core";
 import type { EffortDeclaration, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
 
 /**
@@ -96,8 +91,6 @@ export interface IRuntimeFrontmatterValidation {
 
 /** Runtime mirror of @exaix/schemas' EffortDeclarationSchema (core cannot import the
  *  schemas package at runtime); the types are imported type-only from it. */
-// deno-lint-ignore prefer-as-const
-const EFFORT_AUTO: "auto" = "auto";
 const EffortDeclarationSchema = z.union([z.enum(["low", "medium", "high", "xhigh", "max"]), z.literal(EFFORT_AUTO)]);
 /** Runtime mirror of @exaix/schemas' ThinkingDeclarationSchema — the preprocess maps
  *  failsafe-YAML's string "true"/"false". */
@@ -484,7 +477,7 @@ export class IBlueprintLoader {
     }
 
     // Otherwise, assume it's the Blueprints root and use Agents subdirectory
-    return join(this.options.blueprintsPath, DEFAULT_AGENTS_PATH, `${agentRole}.md`);
+    return pathBuilders.agentsPath(this.options.blueprintsPath, `${agentRole}.md`);
   }
 
   /**
@@ -501,7 +494,7 @@ export class IBlueprintLoader {
   async listAll(): Promise<ILoadedBlueprint[]> {
     const agentRolesDir = this.options.blueprintsPath.endsWith(DEFAULT_AGENTS_PATH)
       ? this.options.blueprintsPath
-      : join(this.options.blueprintsPath, DEFAULT_AGENTS_PATH);
+      : pathBuilders.agentsPath(this.options.blueprintsPath);
 
     try {
       const stat = await Deno.stat(agentRolesDir);

@@ -48,6 +48,7 @@
  * @related-files [packages/ai-clidelegate/src/cli_delegate_provider_factory.ts, packages/ai-clidelegate/src/opencode_plan_schema_adapter.ts, packages/execution/src/strategies/cli_delegate_strategy.ts, packages/session/src/delegate_return_parser.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { ModelProviderError } from "@exaix/ai/providers";
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
@@ -64,7 +65,6 @@ import { SafeError } from "@exaix/core/errors";
 import { EffortTierSchema } from "@exaix/schemas/model_intent.ts";
 import { SafeSubprocess } from "@exaix/core";
 import {
-  DEFAULT_RUNTIME_PATH,
   MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA,
   SESSION_CONFIG_KEY_MODEL_REASONING_EFFORT,
   SESSION_FLAG_CONFIG_OVERRIDE,
@@ -91,6 +91,7 @@ import { join } from "@std/path";
 import { DEFAULT_CLI_DELEGATE_TIMEOUT_MS } from "./constants.ts";
 import type { ICliDelegateProtocolBackend } from "./protocol_backend.ts";
 import { adaptOpencodePlanJson } from "./opencode_plan_schema_adapter.ts";
+import { ERROR_STDOUT_PREVIEW_MAX_CHARS } from "@exaix/core";
 
 /** Result of running the headless CLI subprocess (subset of SafeSubprocess.run's shape). */
 export interface ICliDelegateProcessResult {
@@ -157,7 +158,6 @@ function buildDelegateEnv(): Record<string, string> {
 const UNSET_LOG_LABEL = "none";
 
 /** Cap on how much of a failing CLI's raw stdout an error message quotes. */
-const ERROR_STDOUT_PREVIEW_MAX_CHARS = 2000;
 
 /** Tool identifiers compared at each of generate()'s three-way dispatch sites. */
 const TOOL_CLAUDE_CODE = SessionToolSchema.enum["claude-code"];
@@ -209,7 +209,7 @@ function buildOpencodeReadOnlyConfig(): IOpencodeReadOnlyPermissionConfig {
 
 /** Written once per provider instance (not per call), under cwd not the OS tempdir — the daemon process only holds --allow-write for its sandbox/portal tree. */
 async function writeOpencodeReadOnlyConfig(cwd: string): Promise<string> {
-  const dir = join(cwd, DEFAULT_RUNTIME_PATH, "tmp");
+  const dir = pathBuilders.runtimePath(cwd, "tmp");
   await Deno.mkdir(dir, { recursive: true });
   const path = join(dir, `opencode-readonly-${crypto.randomUUID()}.json`);
   await Deno.writeTextFile(path, JSON.stringify(buildOpencodeReadOnlyConfig(), null, 2));

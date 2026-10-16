@@ -12,7 +12,6 @@ import { FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
   FLOW_EVENT_NAMESPACE_INITIALIZED,
   FLOW_EVENT_NAMESPACE_READ,
   FLOW_EVENT_NAMESPACE_WRITE,
@@ -22,6 +21,7 @@ import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_name
 import { getMemoryExecutionDir } from "@exaix/testing";
 import { join } from "@std/path";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 Deno.test("[Step64.3] FlowRunner hydrates sharedNamespace and reports namespace artifact path", async () => {
   const { config, tempDir, cleanup } = await initTestDbService();
 

@@ -10,8 +10,9 @@
  * @related-files [packages/execution/src/blueprint_service.ts, packages/schemas/src/model_intent.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
-import { join } from "@std/path";
 import { BlueprintService } from "@exaix/execution";
 import { SafeError } from "@exaix/core/errors";
 import { EventLogger } from "@exaix/core/logger";
@@ -26,7 +27,7 @@ function blueprintContent(frontmatter: string): string {
 
 async function setup(): Promise<{ root: string; service: BlueprintService; cleanup: () => Promise<void> }> {
   const root = await Deno.makeTempDir({ prefix: "bp-effort-schema-" });
-  await Deno.mkdir(join(root, "Blueprints", "Agents"), { recursive: true });
+  await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
   const config: Config = createMockConfig(root);
   const logger = new EventLogger({ prefix: "[test]" });
   const service = new BlueprintService(config, logger);
@@ -35,7 +36,7 @@ async function setup(): Promise<{ root: string; service: BlueprintService; clean
 }
 
 async function writeBlueprint(root: string, agentRole: string, content: string): Promise<void> {
-  await Deno.writeTextFile(join(root, "Blueprints", "Agents", `${agentRole}.md`), content);
+  await Deno.writeTextFile(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, `${agentRole}.md`), content);
 }
 
 Deno.test("BlueprintService: failsafe-parsed thinking true validates as boolean true", async () => {

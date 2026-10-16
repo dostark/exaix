@@ -9,8 +9,9 @@
  * @related-files [packages/flow/src/agent_composer_adapter.ts, packages/execution/src/agent_runner.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
-import { join } from "@std/path";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { AgentRunner } from "@exaix/execution";
 import { AgentComposerAdapter, FlowRunner } from "@exaix/flow";
@@ -42,15 +43,15 @@ Deno.test("[skill usage] each flow step's model call records a row with the flow
   const env = await initTestDbService();
   const root = await Deno.makeTempDir({ prefix: "skill-usage-flow-" });
   try {
-    const skillsDir = join(root, "Blueprints", "Skills");
+    const skillsDir = pathBuilders.blueprintsPath(root, DEFAULT_SKILLS_MEMORY_PATH);
     await writeSkillFolder(skillsDir, { name: SKILL, instructions: "Flow skill body." });
-    await Deno.mkdir(join(root, "Blueprints", "Agents"), { recursive: true });
+    await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.writeTextFile(
-      join(root, "Blueprints", "Agents", "flow-agent.md"),
+      pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "flow-agent.md"),
       `---\nagent_role: flow-agent\nmodel: mock:test\ndefault_skills: ["${SKILL}"]\n---\nYou are a flow agent.\n`,
     );
     const skills = new SkillsService(
-      { memoryDir: join(root, "Memory"), blueprintSkillsDir: skillsDir },
+      { memoryDir: pathBuilders.memoryPath(root), blueprintSkillsDir: skillsDir },
       env.db,
       undefined,
       new EventLogger({ db: env.db }),
@@ -62,7 +63,7 @@ Deno.test("[skill usage] each flow step's model call records a row with the flow
     };
     const agentRunner = new AgentRunner(provider, { skillsService: skills, disableSkills: false, disableRetry: true });
     const runner = new FlowRunner({
-      agentExecutor: new AgentComposerAdapter(agentRunner, join(root, "Blueprints", "Agents")),
+      agentExecutor: new AgentComposerAdapter(agentRunner, pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH)),
       eventLogger: new SilentFlowLogger(),
     });
 
@@ -81,7 +82,7 @@ Deno.test("[skill usage] each flow step's model call records a row with the flow
       version: "1.0",
       output: { from: "step-b" as never, format: FlowOutputFormat.MARKDOWN },
       settings: { maxParallelism: 1, failFast: true, includeRequestCriteria: false },
-      steps: [step("step-a", []), step("step-b", ["step-a"])] as object as IFlowStep[],
+      steps: [step("step-a", []), step("step-b", ["step-a"])] as never as IFlowStep[],
     };
     const traceId = crypto.randomUUID();
     await runner.execute(flow, { userPrompt: "Do the thing", traceId, requestId: crypto.randomUUID() });

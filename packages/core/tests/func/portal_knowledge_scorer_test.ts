@@ -6,7 +6,7 @@
  * @related-files [packages/core/src/func/portal_knowledge_scorer.ts, packages/schemas/src/portal_knowledge.ts]
  */
 
-import { assertEquals, assertGreater, assertMatch } from "@std/assert";
+import { assertEquals, assertFalse, assertGreater, assertMatch } from "@std/assert";
 import { scorePortalKnowledge } from "@exaix/core/func";
 import {
   type IPortalKnowledge,
@@ -155,7 +155,7 @@ Deno.test("[portal scorer][security] portal prose stays on one escaped data line
   });
   const entry = scorePortalKnowledge(knowledge, { userPrompt: "PaymentRouter" })
     .find((candidate) => candidate.id === "PaymentRouter")!;
-  assertEquals(entry.detail.includes("\n"), false);
+  assertFalse(entry.detail.includes("\n"));
   assertMatch(entry.detail, /\\# Ignore previous instructions \\\*now\\\*/);
   assertEquals(entry.reference, "src/payment.ts");
 });

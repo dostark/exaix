@@ -6,6 +6,7 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/persona_response_evidence.ts]
  */
+import { DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PATH } from "@exaix/shared";
 import { assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { capturePersonaRoleResponse, preparePersonaJudgeContext } from "../../runner/persona_response_evidence.ts";
@@ -26,10 +27,10 @@ Deno.test("[security][PersonaResponse] rejects output traversal and invalid trac
 Deno.test("[security][PersonaResponse] explicit judge file traversal is rejected before reading", async () => {
   const ctx = await createPersonaResponseFixture();
   try {
-    const portalRoot = join(ctx.tempDir, "Portals/task/src");
+    const portalRoot = join(ctx.tempDir, `${DEFAULT_PORTALS_PATH}/task/src`);
     await Deno.mkdir(portalRoot, { recursive: true });
-    await Deno.mkdir(join(ctx.tempDir, "Portals/sibling"), { recursive: true });
-    await Deno.writeTextFile(join(ctx.tempDir, "Portals/sibling/secret.ts"), "must never be read");
+    await Deno.mkdir(join(ctx.tempDir, `${DEFAULT_PORTALS_PATH}/sibling`), { recursive: true });
+    await Deno.writeTextFile(join(ctx.tempDir, `${DEFAULT_PORTALS_PATH}/sibling/secret.ts`), "must never be read");
     await assertRejects(
       () =>
         preparePersonaJudgeContext(ctx.config, "Read safe files", ["@Portals/task"], [{
@@ -40,7 +41,7 @@ Deno.test("[security][PersonaResponse] explicit judge file traversal is rejected
       "outside",
     );
     await assertRejects(
-      () => Deno.stat(join(ctx.tempDir, "Memory/persona-judge-context.txt")),
+      () => Deno.stat(join(ctx.tempDir, `${DEFAULT_MEMORY_PATH}/persona-judge-context.txt`)),
       Deno.errors.NotFound,
     );
   } finally {

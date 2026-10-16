@@ -8,7 +8,9 @@
  * focusing on internal helper methods and edge cases in review management.
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import { assertArrayIncludes, assertEquals, assertRejects } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ReviewCommands } from "../src/commands/review_commands.ts";
@@ -149,8 +151,8 @@ describe("ReviewCommands Targeted Coverage", () => {
           "feat/request-dbonly-trace-db-only",
         ].sort(),
       );
-      assertEquals(branches.includes(branchName), true);
-      assertEquals(branches.includes("feat/request-dbonly-trace-db-only"), true);
+      assertArrayIncludes(branches, [branchName]);
+      assertArrayIncludes(branches, ["feat/request-dbonly-trace-db-only"]);
     });
 
     it("list: avoids duplicates between DB and Git scan", async () => {
@@ -248,7 +250,7 @@ branch refs/heads/other
         // Stay on the branch in portalDir
 
         // Link portal
-        const portalsDir = join(tempDir, "Portals");
+        const portalsDir = pathBuilders.portalsPath(tempDir);
         await Deno.mkdir(portalsDir, { recursive: true });
         await Deno.symlink(portalDir, join(portalsDir, "P1"));
 
@@ -284,7 +286,7 @@ branch refs/heads/other
     });
 
     it("bestEffortLinkRequestRejection: updates existing request frontmatter", async () => {
-      const requestsDir = join(tempDir, "Workspace/Requests");
+      const requestsDir = join(tempDir, `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`);
       await Deno.mkdir(requestsDir, { recursive: true });
       const requestFile = join(requestsDir, "req-1.md");
       await Deno.writeTextFile(

@@ -12,7 +12,7 @@
  * @related-files [tests/scenario_framework/runner/scenario_catalog.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { CI_EXCLUDED_TAGS, listCiSafeScenarios, loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
@@ -68,9 +68,9 @@ async function withCatalogFixture(
 }
 
 Deno.test("[ScenarioCatalogDockerTagExcluded] CI_EXCLUDED_TAGS contains docker directly, not merely incidentally via provider-live co-occurrence", () => {
-  assertEquals(
-    (CI_EXCLUDED_TAGS as readonly string[]).includes("docker"),
-    true,
+  assertArrayIncludes(
+    CI_EXCLUDED_TAGS as readonly string[],
+    ["docker"],
     "docker must be its own CI_EXCLUDED_TAGS entry (GAP-6) — a docker-tagged scenario without " +
       "provider-live must still be excluded from CI",
   );

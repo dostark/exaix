@@ -4,12 +4,14 @@
  * @description Phase 150 Step 4 — verifies the dogfood-coder agent role carries the
  *   rigor default_skills the meta-workflow relies on.
  */
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
-import { fromFileUrl, join } from "@std/path";
+import { fromFileUrl } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_PATH = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH);
 
 const DOGFOOD_CODER_REQUIRED_SKILLS = [
   "response-contract",

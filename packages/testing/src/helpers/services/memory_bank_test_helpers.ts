@@ -21,7 +21,8 @@ import {
   MemoryScope,
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
-import { TEST_AGENT_ROLE_ID, TEST_PORTAL_NAME, TEST_SAMPLE_PREFIX, TEST_TIMESTAMP } from "../constants.ts";
+import { TEST_AGENT_ROLE_ID, TEST_SAMPLE_PREFIX, TEST_TIMESTAMP } from "../constants.ts";
+import { TEST_PORTAL_NAME } from "../../constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 /**

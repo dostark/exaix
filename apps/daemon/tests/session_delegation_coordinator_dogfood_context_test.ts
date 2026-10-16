@@ -12,6 +12,7 @@
  * @related-files [apps/daemon/src/session_delegation_coordinator.ts]
  */
 
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { EventLogger } from "@exaix/core/logger";
 import type { IFlowWorktreeCoordinator } from "@exaix/core/types";
@@ -209,7 +210,7 @@ function request(overrides: Partial<ISessionDelegationRequest> = {}): ISessionDe
     agentRole: "dogfood-coder",
     objective: "Implement the coordinator.",
     acceptanceCriteria: ["The coordinator is wired."],
-    artifactRef: ".exa/PlanContext/phase-174.md",
+    artifactRef: `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`,
     worktreePath: "/tmp/worktree",
     ...overrides,
   };
@@ -369,7 +370,7 @@ Deno.test("[session_delegation_coordinator] acceptanceCriteria and artifactRef a
   await coordinator.delegate(request());
 
   assertEquals(delegateService.prepared[0].acceptanceCriteria, ["The coordinator is wired."]);
-  assertEquals(delegateService.prepared[0].artifactRef, ".exa/PlanContext/phase-174.md");
+  assertEquals(delegateService.prepared[0].artifactRef, `${DEFAULT_RUNTIME_PATH}/PlanContext/phase-174.md`);
 });
 
 Deno.test("[session_delegation_coordinator] a prepare() failure surfaces as the existing launch_failed terminal outcome", async () => {

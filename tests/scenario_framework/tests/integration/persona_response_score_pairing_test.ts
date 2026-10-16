@@ -5,7 +5,7 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/persona_response_trial.ts]
  */
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { readCachedPersonaTrialSnapshot, readPersonaResponseTrial } from "../../runner/persona_response_trial.ts";
 import { createPersonaResponseFixture, personaCaptureInput } from "../helpers/persona_response_fixture.ts";
 import { capturePersonaRoleResponse } from "../../runner/persona_response_evidence.ts";
@@ -115,7 +115,7 @@ Deno.test("[PersonaResponse] pairing retains zero judge score and rejects missin
     const output = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
     assertStringIncludes(output, "Executing 1 scenarios");
     assertEquals(result.code, 2, output);
-    assertEquals(output.includes("[trial 2/3] Running"), false);
+    assertFalse(output.includes("[trial 2/3] Running"));
   } finally {
     await ctx.cleanup();
   }

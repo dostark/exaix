@@ -7,10 +7,11 @@
  * factories, dynamic model selection, and resilient fallback when primary providers are unavailable.
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { AnthropicProviderFactory } from "@exaix/ai-anthropic";
 import { OLLAMA_PROVIDER_METADATA, OllamaProviderFactory, PROVIDER_OLLAMA } from "@exaix/ai-ollama";
-import { ExaPathDefaults, MockStrategy, PricingTier, ProviderCostTier, ProviderType } from "@exaix/core";
+import { MockStrategy, PricingTier, ProviderCostTier, ProviderType } from "@exaix/core";
 import { ProviderRegistry } from "../src/provider_registry.ts";
 import { MockProviderFactory } from "../src/factories/mock_factory.ts";
 import type { IResolvedProviderOptions } from "../src/types.ts";
@@ -226,13 +227,7 @@ Deno.test("ProviderFactory: uses registry for mock provider", async () => {
       root: "/tmp/test",
       log_level: "info" as const,
     },
-    paths: {
-      portals: "Portals",
-      workspace: "Workspace",
-      memory: "Memory",
-      runtime: ".exa",
-      blueprints: "Blueprints",
-    },
+    paths: { ...ExaPathDefaults },
     ai: {
       provider: "mock",
       model: "test-model",

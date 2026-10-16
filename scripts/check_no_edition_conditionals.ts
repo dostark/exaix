@@ -18,6 +18,8 @@ const ALLOWED = [
   "apps/daemon",
   "apps/exactl",
   "tests",
+  // The style checker defines the edition-conditional rule, so it must name the pattern.
+  "packages/lint-rules/src/exaix/check_code_style.ts",
 ];
 const SKIP = [".git", "node_modules", "dist", ".exa", "_archive"];
 const PATTERN = 'EXAIX_EDITION|\\bedition\\s*===\\s*"';

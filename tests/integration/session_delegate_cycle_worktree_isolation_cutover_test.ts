@@ -15,6 +15,8 @@
  * @related-files [apps/daemon/src/session_delegation_coordinator.ts, packages/flow/src/step_handlers/session_delegate_cycle_step_handler.ts, apps/daemon/src/headless_session_launcher.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import {
@@ -200,8 +202,8 @@ Deno.test({
       await setupGitRepo(portalDir, { initialCommit: true, branch: TEST_DEFAULT_BRANCH });
 
       await Deno.mkdir(getWorkspaceRequestsDir(systemRoot), { recursive: true });
-      await Deno.mkdir(join(systemRoot, "Blueprints", "Agents"), { recursive: true });
-      const planContextDir = join(portalDir, ".exa", "PlanContext");
+      await Deno.mkdir(pathBuilders.blueprintsPath(systemRoot, DEFAULT_AGENTS_PATH), { recursive: true });
+      const planContextDir = pathBuilders.runtimePath(portalDir, "PlanContext");
       await Deno.mkdir(planContextDir, { recursive: true });
       await Deno.writeTextFile(
         join(planContextDir, "phase-194.md"),
@@ -287,7 +289,7 @@ Deno.test({
       const processor = new RequestProcessor({
         workspacePath: getWorkspaceDir(systemRoot),
         requestsDir: getWorkspaceRequestsDir(systemRoot),
-        blueprintsPath: join(systemRoot, "Blueprints", "Agents"),
+        blueprintsPath: pathBuilders.blueprintsPath(systemRoot, DEFAULT_AGENTS_PATH),
         includeReasoning: true,
         context,
         costTracker,
@@ -320,7 +322,14 @@ Deno.test({
 
       await processor.process(requestPath);
 
-      const expectedWorktreeFile = join(systemRoot, ".exa", "worktrees", PORTAL_ALIAS, traceId, "src", "proof.txt");
+      const expectedWorktreeFile = pathBuilders.runtimePath(
+        systemRoot,
+        "worktrees",
+        PORTAL_ALIAS,
+        traceId,
+        "src",
+        "proof.txt",
+      );
       const worktreeFileExists = await Deno.stat(expectedWorktreeFile).then(() => true).catch(() => false);
       const portalFileExists = await Deno.stat(join(portalDir, "src", "proof.txt")).then(() => true).catch(() => false);
 

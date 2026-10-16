@@ -14,14 +14,16 @@
  * @related-files [packages/schemas/src/memory_bank.ts, packages/core/src/func/prompt_formatter.ts, packages/schemas/src/skill_folder.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertExists } from "@std/assert";
 import { join, resolve } from "@std/path";
 import { renderCriticalSkillsSection } from "@exaix/core/func";
 import { loadRepoSkillCatalog, skillMatchFixture } from "@exaix/testing";
 
 const REPO_ROOT = resolve(new URL("../../", import.meta.url).pathname);
-const AGENTS = join(REPO_ROOT, "Blueprints", "Agents");
-const SKILLS = join(REPO_ROOT, "Blueprints", "Skills");
+const AGENTS = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_AGENTS_PATH);
+const SKILLS = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH);
 const FIXTURES = join(REPO_ROOT, "tests", "fixtures", "identity_migration");
 
 function parseFrontmatter(md: string): { fm: string; body: string } {

@@ -7,7 +7,7 @@
  * memory, and portal data are correctly injected into the agent prompt.
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertFalse, assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { ContextLoader } from "@exaix/core/context";
 import type { IContextConfig, IContextLoadResult } from "@exaix/core/context";
@@ -210,7 +210,7 @@ describe("Warning Block Generation", () => {
     assertEquals(result.warnings.length, 0);
 
     // Should not contain warning block
-    assertEquals(result.content.includes("[System Warning"), false);
+    assertFalse(result.content.includes("[System Warning"));
   });
 });
 
@@ -348,7 +348,7 @@ describe("Local Agent Behavior", () => {
     const result = await loader.loadWithLimit([file]);
 
     assertEquals(result.warnings.length, 0);
-    assertEquals(result.content.includes("[System Warning"), false);
+    assertFalse(result.content.includes("[System Warning"));
   });
 });
 
@@ -521,7 +521,7 @@ describe("Error Handling", () => {
     assertEquals(result.includedFiles.includes(existing), true);
 
     // Missing file should not cause failure
-    assertEquals(result.includedFiles.includes(missing), false);
+    assertFalse(result.includedFiles.includes(missing));
   });
 
   it("should continue loading when one file fails", async () => {
@@ -715,7 +715,7 @@ describe("File System Error Handling", () => {
       assertEquals(result.includedFiles.includes(readable), true);
 
       // Restricted file should be excluded (not in included or skipped)
-      assertEquals(result.includedFiles.includes(restricted), false);
+      assertFalse(result.includedFiles.includes(restricted));
     } finally {
       // Restore permissions for cleanup
       try {
@@ -771,7 +771,7 @@ describe("File System Error Handling", () => {
 
     // Should skip broken link, load valid file
     assertEquals(result.includedFiles.includes(validFile), true);
-    assertEquals(result.includedFiles.includes(brokenLink), false);
+    assertFalse(result.includedFiles.includes(brokenLink));
   });
 
   it("should handle empty files (zero tokens)", async () => {
@@ -789,7 +789,7 @@ describe("File System Error Handling", () => {
     const result = await loader.loadWithLimit([empty, withContent]);
 
     // Empty file should be filtered out (zero tokens)
-    assertEquals(result.includedFiles.includes(empty), false);
+    assertFalse(result.includedFiles.includes(empty));
 
     // File with content should be included
     assertEquals(result.includedFiles.includes(withContent), true);

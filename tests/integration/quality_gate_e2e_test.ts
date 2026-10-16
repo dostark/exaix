@@ -8,8 +8,10 @@
  * @related-files ["packages/request/src/processor.ts", "packages/quality-gate/src/request_quality_gate.ts", "packages/quality-gate/src/clarification_engine.ts", "packages/quality-gate/src/clarification_persistence.ts", "packages/core/src/types/i_request_quality_gate_service.ts"]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_REQUESTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { basename, join } from "@std/path";
+import { basename } from "@std/path";
 import { ClarificationEngine, loadClarification, RequestQualityGate, saveClarification } from "@exaix/quality-gate";
 import { RequestProcessor } from "@exaix/request";
 import { AgentRunner } from "@exaix/execution";
@@ -388,9 +390,9 @@ function buildProcessor(
   };
 
   const processor = new RequestProcessor({
-    workspacePath: join(env.tempDir, "Workspace"),
-    requestsDir: join(env.tempDir, "Workspace", "Requests"),
-    blueprintsPath: join(env.tempDir, "Blueprints", "Agents"),
+    workspacePath: pathBuilders.workspacePath(env.tempDir),
+    requestsDir: pathBuilders.workspacePath(env.tempDir, DEFAULT_REQUESTS_PATH),
+    blueprintsPath: pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH),
     includeReasoning: true,
     context,
     testProvider: provider,

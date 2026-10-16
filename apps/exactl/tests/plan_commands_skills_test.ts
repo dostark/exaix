@@ -8,6 +8,7 @@
  * @related-files [apps/exactl/src/commands/plan_commands.ts, packages/schemas/src/skill_pin.ts]
  */
 
+import { DEFAULT_ACTIVE_PATH, DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
@@ -42,11 +43,13 @@ async function approvedFrontmatter(extra: string): Promise<IFrontmatter> {
   try {
     const planId = "plan-approval";
     await Deno.writeTextFile(
-      join(env.tempDir, "Workspace/Plans", `${planId}.md`),
+      join(env.tempDir, `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}`, `${planId}.md`),
       `---\nstatus: ${PlanStatus.REVIEW}\ntrace_id: ${crypto.randomUUID()}\nrequest_id: request-xyz\nagent_role: test-agent\ncreated_at: 2026-01-27T10:00:00Z\n${extra}---\n\n# Plan\n`,
     );
     await new PlanCommands(env.context).approve(planId);
-    const content = await Deno.readTextFile(join(env.tempDir, "Workspace/Active", `${planId}.md`));
+    const content = await Deno.readTextFile(
+      join(env.tempDir, `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ACTIVE_PATH}`, `${planId}.md`),
+    );
     return parseYaml(content.match(/^---\n([\s\S]*?)\n---/)![1]) as IFrontmatter;
   } finally {
     await env.cleanup();

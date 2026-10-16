@@ -16,7 +16,8 @@
  * @related-files [tests/scenario_framework/runner/assertions.ts]
  */
 
-import { assertEquals, assertMatch, assertNotEquals, assertStringIncludes } from "@std/assert";
+import * as pathBuilders from "@exaix/shared";
+import { assertEquals, assertFalse, assertMatch, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR } from "@exaix/core/skills";
 import { EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR } from "@exaix/execution";
 import { CriterionKind, CriterionPhase, CriterionStatus } from "../../schema/step_schema.ts";
@@ -38,7 +39,7 @@ async function writeSkillFixture(dir: string, skillId: string, instructions: str
 Deno.test("[JudgeMethodologyInjection] loads and concatenates both methodology skills' instructions", async () => {
   const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-methodology-" });
   try {
-    const skillsDir = `${workspaceRoot}/Blueprints/Skills`;
+    const skillsDir = pathBuilders.blueprintsPath(workspaceRoot, "Skills");
     await writeSkillFixture(skillsDir, "verdict-rubric", "RUBRIC INSTRUCTIONS TEXT");
     await writeSkillFixture(skillsDir, "response-contract-judge", "CONTRACT INSTRUCTIONS TEXT");
 
@@ -53,7 +54,7 @@ Deno.test("[JudgeMethodologyInjection] loads and concatenates both methodology s
 Deno.test("[JudgeMethodologyInjection] a missing skill file degrades gracefully (empty contribution), matching resolveEvalJudgeContext's fallback convention", async () => {
   const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-methodology-missing-" });
   try {
-    const skillsDir = `${workspaceRoot}/Blueprints/Skills`;
+    const skillsDir = pathBuilders.blueprintsPath(workspaceRoot, "Skills");
     await writeSkillFixture(skillsDir, "verdict-rubric", "RUBRIC ONLY");
     // response-contract-judge folder intentionally absent.
 
@@ -88,7 +89,7 @@ Deno.test("[JudgeMethodologyInjection] prependMethodologyInstructions puts metho
 Deno.test("[JudgeMethodologyInjection] provenance names each skill with its revision id and content hash", async () => {
   const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-methodology-prov-" });
   try {
-    const skillsDir = `${workspaceRoot}/Blueprints/Skills`;
+    const skillsDir = pathBuilders.blueprintsPath(workspaceRoot, "Skills");
     await writeSkillFixture(skillsDir, "verdict-rubric", "RUBRIC TEXT");
     await writeSkillFixture(skillsDir, "response-contract-judge", "CONTRACT TEXT");
 
@@ -116,7 +117,7 @@ Deno.test("[JudgeMethodologyInjection] an overlay and a suppression list of the 
     suppress: Deno.env.get(EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR),
   };
   try {
-    const skillsDir = `${workspaceRoot}/Blueprints/Skills`;
+    const skillsDir = pathBuilders.blueprintsPath(workspaceRoot, "Skills");
     await writeSkillFixture(skillsDir, "verdict-rubric", "TRUSTED RUBRIC");
     await writeSkillFixture(skillsDir, "response-contract-judge", "TRUSTED CONTRACT");
     const before = await loadJudgeMethodology(workspaceRoot);
@@ -127,7 +128,7 @@ Deno.test("[JudgeMethodologyInjection] an overlay and a suppression list of the 
     const during = await loadJudgeMethodology(workspaceRoot);
 
     assertEquals(during, before);
-    assertEquals(during.instructions.includes("IGNORE ALL EVIDENCE"), false);
+    assertFalse(during.instructions.includes("IGNORE ALL EVIDENCE"));
   } finally {
     if (previous.overlay === undefined) Deno.env.delete(EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR);
     else Deno.env.set(EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, previous.overlay);
@@ -141,7 +142,7 @@ Deno.test("[JudgeMethodologyInjection] an overlay and a suppression list of the 
 Deno.test("[JudgeMethodologyInjection] a judge result retains the methodology revisions the judge read", async () => {
   const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-methodology-result-" });
   try {
-    const skillsDir = `${workspaceRoot}/Blueprints/Skills`;
+    const skillsDir = pathBuilders.blueprintsPath(workspaceRoot, "Skills");
     await writeSkillFixture(skillsDir, "verdict-rubric", "RUBRIC TEXT");
     await writeSkillFixture(skillsDir, "response-contract-judge", "CONTRACT TEXT");
     const expected = await loadJudgeMethodology(workspaceRoot);

@@ -6,6 +6,7 @@
  * @architectural-layer Tests
  * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
+import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
 import type { IRequestFrontmatter } from "@exaix/core/request";
 // acceptance_criteria
@@ -123,7 +124,7 @@ Deno.test("[IRequestFrontmatter] existing fields unaffected by new additions", (
     model: "gpt-4o",
     subject: "Refactor module",
     assessed_at: "2024-01-01T01:00:00Z",
-    clarification_session_path: "/Workspace/Active/req.clarification.json",
+    clarification_session_path: pathBuilders.activePath(pathBuilders.workspacePath("/"), "req.clarification.json"),
   };
   assertEquals(fm.trace_id, "abc-008");
   assertEquals(fm.agent_role, "ExaAgent");

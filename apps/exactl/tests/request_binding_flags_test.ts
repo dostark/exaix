@@ -9,6 +9,8 @@
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, packages/ai/src/bindings/run_bindings_store.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_FLOWS_DIR, DEFAULT_FLOWS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { BindingLockSchema } from "@exaix/schemas";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { join } from "@std/path";
@@ -21,10 +23,13 @@ function readJson<T>(path: string): T {
 
 Deno.test("[cli] exactl request --overlay writes the run binding file before the request file", async () => {
   const { db, tempDir, config, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "research.flow.yaml"), "steps: []");
+    await Deno.writeTextFile(
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      "steps: []",
+    );
     const overlayPath = join(tempDir, "overlay.json");
     await Deno.writeTextFile(
       overlayPath,
@@ -37,7 +42,7 @@ Deno.test("[cli] exactl request --overlay writes the run binding file before the
     const requestPath = result.path!;
 
     // The run binding file exists beneath .exa/run-bindings/ and binds trace + request identity.
-    const runFileDir = join(tempDir, ".exa", "run-bindings");
+    const runFileDir = pathBuilders.runtimePath(tempDir, "run-bindings");
     const runFiles = [...Deno.readDirSync(runFileDir)].map((e) => e.name);
     assertEquals(runFiles.length, 1);
     const runFilePath = join(runFileDir, runFiles[0]!);
@@ -57,10 +62,13 @@ Deno.test("[cli] exactl request --overlay writes the run binding file before the
 
 Deno.test("[cli] exactl request --bind resolves a valid spec and stores it in the run binding file", async () => {
   const { db, tempDir, config, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "research.flow.yaml"), "steps: []");
+    await Deno.writeTextFile(
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      "steps: []",
+    );
 
     const commands = new RequestCommands(context);
     const result = await commands.create("run", {
@@ -68,10 +76,10 @@ Deno.test("[cli] exactl request --bind resolves a valid spec and stores it in th
       binds: ["flow:research/step:compose=service=openai,model=openai/gpt-6-luna"],
     });
 
-    const runFiles = [...Deno.readDirSync(join(tempDir, ".exa", "run-bindings"))].map((e) => e.name);
+    const runFiles = [...Deno.readDirSync(pathBuilders.runtimePath(tempDir, "run-bindings"))].map((e) => e.name);
     assertEquals(runFiles.length, 1);
     const runFile = readJson<{ binds: Array<{ selector: string; spec: Record<string, string> }> }>(
-      join(tempDir, ".exa", "run-bindings", runFiles[0]!),
+      pathBuilders.runtimePath(tempDir, "run-bindings", runFiles[0]!),
     );
     assertEquals(runFile.binds.length, 1);
     assertEquals(runFile.binds[0]?.selector, "flow:research/step:compose");
@@ -87,10 +95,13 @@ Deno.test("[cli] exactl request --bind resolves a valid spec and stores it in th
 
 Deno.test("[cli] exactl request rejects a malformed --bind spec", async () => {
   const { db, tempDir, config, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "research.flow.yaml"), "steps: []");
+    await Deno.writeTextFile(
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      "steps: []",
+    );
     const commands = new RequestCommands(context);
     await assertRejects(
       () => commands.create("run", { flow: "research", binds: ["no-equals-here"] }),
@@ -107,10 +118,13 @@ Deno.test("[cli] exactl request rejects a malformed --bind spec", async () => {
 
 Deno.test("[cli] exactl request --locked parses a lock file into the run binding file", async () => {
   const { db, tempDir, config, context, cleanup } = await createCliTestContext({
-    createDirs: ["Workspace/Requests", "Blueprints/Flows"],
+    createDirs: [`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_REQUESTS_PATH}`, DEFAULT_FLOWS_DIR],
   });
   try {
-    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "research.flow.yaml"), "steps: []");
+    await Deno.writeTextFile(
+      pathBuilders.blueprintsPath(tempDir, DEFAULT_FLOWS_PATH, "research.flow.yaml"),
+      "steps: []",
+    );
     const lockPath = join(tempDir, "lock.json");
     const lock = {
       schema: 1,
@@ -134,10 +148,10 @@ Deno.test("[cli] exactl request --locked parses a lock file into the run binding
     const commands = new RequestCommands(context);
     const result = await commands.create("replay", { flow: "research", locked: lockPath });
 
-    const runFiles = [...Deno.readDirSync(join(tempDir, ".exa", "run-bindings"))].map((e) => e.name);
+    const runFiles = [...Deno.readDirSync(pathBuilders.runtimePath(tempDir, "run-bindings"))].map((e) => e.name);
     assertEquals(runFiles.length, 1);
     const runFile = readJson<{ locked: { trace_id: string }; locked_sha256?: string }>(
-      join(tempDir, ".exa", "run-bindings", runFiles[0]!),
+      pathBuilders.runtimePath(tempDir, "run-bindings", runFiles[0]!),
     );
     assertExists(runFile.locked);
     const digest = await crypto.subtle.digest(

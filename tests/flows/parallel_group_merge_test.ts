@@ -6,18 +6,15 @@
  * @related-files [packages/flow/src/flow_runner.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowRunner, type IAgentExecutor, type IFlowEventLogger, type IFlowStepRequest } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
-import {
-  DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
-  FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED,
-} from "@exaix/core";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS, FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 class CapturingExecutor implements IAgentExecutor {
   readonly capturedRequests: Array<{ agentRole: string; request: IFlowStepRequest }> = [];
   private readonly responses = new Map<string, string | Error>();
@@ -252,8 +249,5 @@ Deno.test("[Step65.3] FlowRunner journals merge failures for automatic fan-in mo
   assertEquals(mergeFailureEvent.payload.mergeMode, "all");
   assertEquals(mergeFailureEvent.payload.stepId, "merge");
   assertEquals(typeof mergeFailureEvent.payload.error, "string");
-  assertEquals(
-    String(mergeFailureEvent.payload.error).includes("Parallel group 'writers' cannot be merged"),
-    true,
-  );
+  assertStringIncludes(String(mergeFailureEvent.payload.error), "Parallel group 'writers' cannot be merged");
 });

@@ -7,7 +7,7 @@
  *   truncation, worktree-safe fmt and the cleared allowlist child environment.
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { stub } from "@std/testing/mock";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
@@ -246,9 +246,9 @@ Deno.test("[verification-runner] the check env is exactly buildChildEnv allowlis
 
     assertEquals(captured.options?.clearEnv, true);
     const keys = Object.keys(captured.options?.env ?? {});
-    assertEquals(keys.includes("EXA_TEST_SECRET"), false);
-    assertEquals(keys.includes("HTTP_PROXY"), false);
-    assertEquals(keys.includes("LD_PRELOAD"), false);
+    assertFalse(keys.includes("EXA_TEST_SECRET"));
+    assertFalse(keys.includes("HTTP_PROXY"));
+    assertFalse(keys.includes("LD_PRELOAD"));
     assert(keys.includes("PATH"), keys.join(","));
   } finally {
     s.restore();
@@ -305,7 +305,7 @@ Deno.test("[verification-runner] a known secret straddling the buffer boundary i
 
     const output = result.failures[0].output;
     assertEquals(output.length, outputMaxChars);
-    assertEquals(output.includes(secret.slice(secret.length / 2)), false, output);
+    assertFalse(output.includes(secret.slice(secret.length / 2)), output);
   } finally {
     s.restore();
     await Deno.remove(root, { recursive: true });

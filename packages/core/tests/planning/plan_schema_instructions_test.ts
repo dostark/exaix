@@ -6,7 +6,7 @@
  * @dependencies [@exaix/core]
  * @related-files [packages/core/src/planning/plan_adapter.ts, packages/core/src/types/enums.ts]
  */
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertFalse, assertStringIncludes } from "@std/assert";
 import { PlanAdapter } from "../../src/planning/plan_adapter.ts";
 import { EXECUTION_TOOL_NAMES, ToolName } from "../../src/types/enums.ts";
 
@@ -19,5 +19,5 @@ Deno.test("[plan schema instructions] name every execution tool the plan validat
 
 Deno.test("[plan schema instructions] never point the planner at the excluded catalog tool", () => {
   const instructions = new PlanAdapter().getSchemaInstructions();
-  assertEquals(instructions.includes(ToolName.LIST_AVAILABLE_TOOLS), false);
+  assertFalse(instructions.includes(ToolName.LIST_AVAILABLE_TOOLS));
 });

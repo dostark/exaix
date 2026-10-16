@@ -8,9 +8,8 @@
  * ensuring consistent identification of 'Blueprints', 'Requests', and 'Plans' roots.
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { join } from "@std/path";
-import { ExaPathDefaults } from "@exaix/core";
-
 export function getWorkspaceDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.workspace);
 }

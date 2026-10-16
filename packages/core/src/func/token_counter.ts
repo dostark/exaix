@@ -1,3 +1,4 @@
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 /**
  * @module TokenCounter
  * @path packages/core/src/func/token_counter.ts
@@ -6,8 +7,6 @@
  * @architectural-layer Services
  * @related-files [packages/core/src/context/prompt_budget_allocator.ts, "packages/core/src/types/constants.ts"]
  */
-
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 
 /** @deprecated Use `ITokenizer` / `AiTokenEstimatorTokenizer` from `tokenizer.ts` for model-accurate token counting. */
 export class TokenCounter {

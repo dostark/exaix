@@ -14,15 +14,17 @@
  * @related-files ["packages/schemas/src/config.ts", "packages/core/src/types/constants.ts", "packages/core/src/config/service.ts", "packages/core/src/config/adapter.ts"]
  */
 
+import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals, assertThrows } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
-import { ExaPathDefaults, LogLevel } from "@exaix/core";
+import { LogLevel } from "@exaix/core";
 import { DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS, DEFAULT_AGENT_INJECT_ACI_DOCS } from "@exaix/core";
 import { ConfigService } from "@exaix/core/config";
 import { DirectConfigAdapter } from "@exaix/core/config";
 import { ConfigProvenanceSource } from "@exaix/core";
 import { ensureConfigDb } from "@exaix/core/config";
 import { join } from "@std/path";
+import { readConfigFixture } from "@exaix/testing";
 
 interface IBaseConfig {
   system: { root: string; log_level: string };
@@ -97,7 +99,7 @@ Deno.test("[ConfigService] agents.inject_aci_docs round-trips through a real TOM
     const configPath = join(dir, "exa.config.toml");
     Deno.writeTextFileSync(
       configPath,
-      `[system]\nroot = "${dir}"\n\n[agents]\ninject_aci_docs = true\naci_doc_prompt_max_chars = 8000\n`,
+      readConfigFixture("schemas-config-aci-docs", { root: dir }),
     );
     const service = new ConfigService(configPath);
     const config = service.get();

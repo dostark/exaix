@@ -5,7 +5,7 @@
  *   process-group kill plus daemon reap, the per-file timeout, and dot-reporter parsing.
  */
 
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import {
   buildDriverTestArgs,
   type IContainerDriverDeps,
@@ -170,5 +170,5 @@ Deno.test("pretty-reporter output is counted from its summary line", async () =>
   };
   const result = await processFile("tests/a_test.ts", deps);
   assertEquals([result.passed, result.failed, result.ignored], [2, 0, 1]);
-  assertEquals(log.join("").includes("first ... ok"), true, "the test names reach the log");
+  assertStringIncludes(log.join(""), "first ... ok", "the test names reach the log");
 });

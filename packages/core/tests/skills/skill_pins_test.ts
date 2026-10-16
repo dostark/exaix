@@ -10,8 +10,9 @@
  * @related-files [packages/core/src/skills/skill_pins.ts, packages/core/src/skills/skills.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
-import { join } from "@std/path";
 import { SkillMatchSource, SkillRenderOutcome, SkillRootKind, SkillStatus } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import {
@@ -29,10 +30,10 @@ const ACTIVE = { status: SkillStatus.ACTIVE };
 async function fixture() {
   const env = await initTestDbService();
   const base = await Deno.makeTempDir({ prefix: "exa-skill-pins-" });
-  const memoryDir = join(base, "Memory");
-  const blueprintDir = join(base, "Blueprints", "Skills");
+  const memoryDir = pathBuilders.memoryPath(base);
+  const blueprintDir = pathBuilders.blueprintsPath(base, DEFAULT_SKILLS_MEMORY_PATH);
   await writeSkillFolder(blueprintDir, { name: "shared-skill", instructions: "Body A." });
-  await writeSkillFolder(join(memoryDir, "Skills", "project", "Alpha"), {
+  await writeSkillFolder(pathBuilders.memorySkillsPath(memoryDir, "project", "Alpha"), {
     name: "alpha-skill",
     instructions: "Alpha A.",
     sidecar: ACTIVE,

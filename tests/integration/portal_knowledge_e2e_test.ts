@@ -8,6 +8,8 @@
  * @related-files [packages/portal/knowledge/portal_knowledge_service.ts, *   packages/portal/knowledge/knowledge_persistence.ts, "packages/request/src/processor.ts", "packages/schemas/src/portal_knowledge.ts"]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH, DEFAULT_PROJECTS_MEMORY_PATH, DEFAULT_REQUESTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -161,7 +163,7 @@ Deno.test("[E2E] knowledge persisted as knowledge.json", async () => {
   try {
     const tempDir = await Deno.makeTempDir();
     const portalDir = await createMockPortalDir(tempDir);
-    const projectsDir = join(tempDir, "Memory", "Projects");
+    const projectsDir = pathBuilders.memoryPath(tempDir, DEFAULT_PROJECTS_MEMORY_PATH);
     await ensureDir(projectsDir);
 
     const service = new PortalKnowledgeService({
@@ -196,7 +198,7 @@ Deno.test("[E2E] knowledge mapped to IProjectMemory files", async () => {
   try {
     const tempDir = await Deno.makeTempDir();
     const portalDir = await createMockPortalDir(tempDir);
-    const projectsDir = join(tempDir, "Memory", "Projects");
+    const projectsDir = pathBuilders.memoryPath(tempDir, DEFAULT_PROJECTS_MEMORY_PATH);
     await ensureDir(projectsDir);
 
     const memoryBank = new MemoryBankService(config);
@@ -299,9 +301,9 @@ Deno.test(
       };
 
       const processor = new RequestProcessor({
-        workspacePath: join(env.tempDir, "Workspace"),
-        requestsDir: join(env.tempDir, "Workspace", "Requests"),
-        blueprintsPath: join(env.tempDir, "Blueprints", "Agents"),
+        workspacePath: pathBuilders.workspacePath(env.tempDir),
+        requestsDir: pathBuilders.workspacePath(env.tempDir, DEFAULT_REQUESTS_PATH),
+        blueprintsPath: pathBuilders.blueprintsPath(env.tempDir, DEFAULT_AGENTS_PATH),
         includeReasoning: false,
         context,
         testProvider: provider,
@@ -399,7 +401,7 @@ Deno.test("[E2E] knowledge.json round-trip preserves new optional fields", async
   try {
     const tempDir = await Deno.makeTempDir();
     const portalDir = await createMockPortalDir(tempDir);
-    const projectsDir = join(tempDir, "Memory", "Projects");
+    const projectsDir = pathBuilders.memoryPath(tempDir, DEFAULT_PROJECTS_MEMORY_PATH);
     await ensureDir(projectsDir);
 
     const service = new PortalKnowledgeService({

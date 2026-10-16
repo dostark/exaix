@@ -6,17 +6,17 @@
  * @description TODO: Add description
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_EXECUTION_MEMORY_PATH } from "@exaix/shared";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { FlowReporter, type IFlowReportConfig, type IFlowResult, type IStepResult } from "@exaix/flow";
 import { createMockConfig, initTestDbService, TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "@exaix/testing";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import { DEFAULT_FLOW_VERSION } from "@exaix/core";
-
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 describe("FlowReporter", () => {
   let tempDir: string;
   let cleanup: () => Promise<void>;
@@ -31,7 +31,7 @@ describe("FlowReporter", () => {
     config = createMockConfig(tempDir);
 
     reportConfig = {
-      reportsDirectory: join(tempDir, "Memory", "Reports"),
+      reportsDirectory: pathBuilders.memoryPath(tempDir, "Reports"),
       db: dbResult.db,
     };
 
@@ -301,10 +301,9 @@ describe("FlowReporter", () => {
         "raw namespace output",
       );
 
-      const namespaceArtifactPath = join(
+      const namespaceArtifactPath = pathBuilders.memoryPath(
         tempDir,
-        "Memory",
-        "Execution",
+        DEFAULT_EXECUTION_MEMORY_PATH,
         "trace-123",
         "namespace.md",
       );

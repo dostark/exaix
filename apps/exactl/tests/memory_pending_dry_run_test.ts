@@ -6,7 +6,7 @@
  * @description Tests memory pending dry-run behavior for the CLI pending approve flow.
  */
 import "./helpers/set_test_mode.ts";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertStringIncludes } from "@std/assert";
 import { MemoryStatus } from "@exaix/core/status";
 import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
 import { captureConsoleOutput, withTestMod } from "./helpers/test_utils.ts";
@@ -24,7 +24,7 @@ Deno.test("memory pending list --eligible routes to pendingList with eligible fl
     });
 
     assert(called);
-    assertEquals(out.includes("Eligible proposals"), true);
+    assertStringIncludes(out, "Eligible proposals");
   });
 });
 
@@ -41,6 +41,6 @@ Deno.test("memory pending approve --dry-run routes to pendingApprove with dryRun
     });
 
     assert(called);
-    assertEquals(out.includes("Dry run preview"), true);
+    assertStringIncludes(out, "Dry run preview");
   });
 });

@@ -6,7 +6,8 @@
  *   and abandoned synthesis on exit-without-return.
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { DEFAULT_PLANS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
+import { assertEquals, assertFalse, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
@@ -130,8 +131,8 @@ Deno.test("[headless_launcher][security] Codex spawn preserves cwd and strips am
     // merges `env` into the parent by default, so without clearEnv the ambient
     // LD_LIBRARY_PATH / secrets leak back in.
     assertEquals(captured[0].clearEnv, true);
-    assertEquals(captured[0].args.includes("danger-full-access"), false);
-    assertEquals(captured[0].args.includes("--dangerously-bypass-approvals-and-sandbox"), false);
+    assertFalse(captured[0].args.includes("danger-full-access"));
+    assertFalse(captured[0].args.includes("--dangerously-bypass-approvals-and-sandbox"));
   } finally {
     await Deno.remove(sessionDir, { recursive: true });
     await Deno.remove(worktree, { recursive: true });
@@ -258,7 +259,7 @@ Deno.test({
         gate,
         tool: "claude-code",
         objective: `E2E test for gate ${gate}`,
-        artifact_ref: "Workspace/Plans/test.md",
+        artifact_ref: `${DEFAULT_WORKSPACE_PATH}/${DEFAULT_PLANS_PATH}/test.md`,
         permitted_paths: ["src/**", "tests/**"],
         token_budget: { max_input_tokens: 10000, max_output_tokens: 10000, max_total_tokens: 20000 },
         resume_token: crypto.randomUUID(),

@@ -1,0 +1,10 @@
+[system]
+root = "__ROOT__"
+log_level = "info"
+[database]
+batch_flush_ms = 50
+batch_max_size = 100
+[database.sqlite]
+journal_mode = "WAL"
+foreign_keys = true
+busy_timeout_ms = 5000

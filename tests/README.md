@@ -61,7 +61,7 @@ apps/<name>/tests/                  # App-local tests (6 apps: daemon, exactl, t
 | `integration/`        | Multi-package E2E scenarios    | `happy_path_test.ts`, `31_cli_flow_integration_test.ts`                |
 | `flows/`              | Integration-heavy flow tests   | `parallel_flow_groups_test.ts`, `condition_evaluator_test.ts`          |
 | `scenario_framework/` | Declarative E2E framework      | Scenario definitions, runner, bin/                                     |
-| `scripts/`            | CI/build script validation     | `check_code_style_test.ts`, `validate_architecture_test.ts`            |
+| `scripts/`            | CI/build script validation     | `validate_architecture_test.ts`, `check_edition_graph_test.ts`         |
 | `docs/`               | Documentation integrity        | `hallucination_benchmark_test.ts`, `user_guide_test.ts`                |
 | `config/`             | Multi-package configuration    | Test configuration constants                                           |
 | `security/`           | Cross-cutting security tests   | `credential_security_test.ts`, `subprocess_isolation_security_test.ts` |

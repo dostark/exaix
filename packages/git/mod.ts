@@ -11,11 +11,15 @@
 
 export * from "./src/enums.ts";
 export * from "./src/i_git_service.ts";
+// The shared git contract lives in @exaix/core/types, so re-export it for the package surface.
+export type { IBranchOptions, ICommitOptions, IGitCommandOptions, IGitService, IWorktreeInfo } from "@exaix/core/types";
 export * from "./src/git_service.ts";
+
+// These defaults live in @exaix/core, the lower layer.
+export { DEFAULT_GIT_ALLOWED_PREFIXES, GIT_TIMEOUT_MS_MAX, GIT_TIMEOUT_MS_MIN } from "@exaix/core";
 
 // Selectively export non-subcommand constants (configurable defaults, error strings, git SHA)
 export {
-  DEFAULT_GIT_ALLOWED_PREFIXES,
   DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES,
   DEFAULT_GIT_BRANCH_PREFIX_PATTERN,
   DEFAULT_GIT_BRANCH_SUFFIX_LENGTH,
@@ -35,6 +39,4 @@ export {
   GIT_EMPTY_SHA,
   GIT_ERROR_NOT_A_REPO,
   GIT_ERROR_NOTHING_TO_COMMIT,
-  GIT_TIMEOUT_MS_MAX,
-  GIT_TIMEOUT_MS_MIN,
 } from "./src/constants.ts";

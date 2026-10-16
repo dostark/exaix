@@ -5,7 +5,7 @@
  * @description Unit tests for defineFlow utility.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { defineFlow } from "@exaix/core/func";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 
@@ -176,7 +176,7 @@ Deno.test("defineFlow: rejects step config without agent_role field (Phase 54)",
   } catch (err) {
     // Expected: FlowSchema validation should reject steps without agent_role
     thrown = true;
-    assertEquals((err as Error).message.includes("agent_role"), true);
+    assertStringIncludes((err as Error).message, "agent_role");
   }
   assertEquals(thrown, true);
 });
@@ -199,7 +199,7 @@ Deno.test("defineFlow: requires 'agent_role' field in step config (Phase 54)", (
   } catch (err) {
     thrown = true;
     // Should fail validation due to missing agent_role
-    assertEquals((err as Error).message.includes("agent_role"), true);
+    assertStringIncludes((err as Error).message, "agent_role");
   }
   assertEquals(thrown, true);
 });

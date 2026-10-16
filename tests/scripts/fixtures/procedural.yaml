@@ -1,0 +1,25 @@
+schema_version: "1.0.0"
+id: "procedural"
+pack: "smoke"
+portals: []
+mode_support: ["auto"]
+steps:
+  - id: "setup-repo"
+    type: "shell"
+    command: "sh"
+    args: ["-c", 'cp -r "$FRAMEWORK_HOME/fixtures/x" "$WORKSPACE_ROOT/todo-app" && git init -q']
+  - id: "approve-review"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      'trace_id=$(sqlite3 "$WORKSPACE_ROOT/.exa/journal.db" "SELECT trace_id FROM activity LIMIT 1"); exactl review approve "request-$trace_id"',
+    ]
+  - id: "verify-tests"
+    type: "shell"
+    command: "sh"
+    args: ["-c", 'cd "$WORKSPACE_ROOT/todo-app" && deno test src/']
+  - id: "probe-file"
+    type: "shell"
+    command: "sh"
+    args: ["-c", "test ! -f /tmp/escaped.txt && echo ok"]

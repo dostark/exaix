@@ -127,7 +127,8 @@ Deno.test("[model_tool_round_docs] documented bounds match ConfigSchema at the d
   for (const [keyCell, defaultCell, minCell, maxCell] of rows) {
     const key = plain(keyCell);
     const [section, field] = key.split(".");
-    const schemaDefault = (defaults as unknown as Record<string, Record<string, number>>)[section][field];
+    const schemaDefault =
+      (JSON.parse(JSON.stringify(defaults)) as Record<string, Record<string, number>>)[section][field];
     assertEquals(Number(defaultCell), schemaDefault, `documented default for ${key}`);
     const min = Number(minCell);
     const max = Number(maxCell);

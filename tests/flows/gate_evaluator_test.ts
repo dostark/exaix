@@ -5,7 +5,7 @@
  * retry decisions based on agent performance against defined thresholds.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { EvaluationCategory, FlowGateAction, FlowGateOnFail } from "@exaix/core";
 import { GateEvaluator, MockJudgeInvoker } from "@exaix/flow";
 import type { IGateConfig } from "@exaix/core/types";
@@ -209,7 +209,7 @@ Deno.test("GateEvaluator: supports criteria objects in config.criteria", async (
 
   const result = await evaluator.evaluate(config, "content");
   assertEquals(result.passed, true);
-  assertEquals(Object.keys(result.evaluation.criteriaScores).includes("custom_criterion"), true);
+  assertArrayIncludes(Object.keys(result.evaluation.criteriaScores), ["custom_criterion"]);
 });
 
 Deno.test("GateEvaluator: handles judge errors and returns halted by default", async () => {

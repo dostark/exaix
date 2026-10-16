@@ -10,6 +10,8 @@
  * @related-files [tests/scenario_framework/runner/arm_overlay.ts, packages/portal/src/path_resolver.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
@@ -19,7 +21,7 @@ import { validateCatalogOverlayDir } from "../../runner/arm_overlay.ts";
 Deno.test("[OverlayPathValidation] an overlay directory inside the workspace boundary resolves to an absolute path", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "overlay-path-valid-" });
   try {
-    const overlayDir = join(tempDir, "Memory", "Skills", "eval-overlay");
+    const overlayDir = pathBuilders.memoryPath(tempDir, DEFAULT_SKILLS_MEMORY_PATH, "eval-overlay");
     await Deno.mkdir(overlayDir, { recursive: true });
 
     const config = createMockConfig(tempDir);
@@ -64,8 +66,8 @@ Deno.test("[OverlayPathValidation] a bare path with no portal alias is rejected 
 Deno.test("[OverlayPathValidation] a symlink inside the alias root that escapes it is rejected", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "overlay-path-symlink-" });
   try {
-    const memoryDir = join(tempDir, "Memory");
-    const skillsDir = join(memoryDir, "Skills");
+    const memoryDir = pathBuilders.memoryPath(tempDir);
+    const skillsDir = pathBuilders.memorySkillsPath(memoryDir);
     const outsideDir = join(tempDir, "outside-secret");
     await Deno.mkdir(skillsDir, { recursive: true });
     await Deno.mkdir(outsideDir, { recursive: true });

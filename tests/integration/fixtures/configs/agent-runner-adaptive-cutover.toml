@@ -1,0 +1,23 @@
+[system]
+root = "__ROOT__"
+log_level = "debug"
+
+
+[ai]
+provider = "mock"
+model = "test"
+
+[ai.mock]
+timeout_ms = 30000
+
+[quality_gate]
+enabled = false
+
+[portal_knowledge]
+default_mode = "standard"
+use_llm_inference = false
+__INCLUSION__
+
+[[portals]]
+alias = "payment-portal"
+target_path = "__PORTAL_DIR__"

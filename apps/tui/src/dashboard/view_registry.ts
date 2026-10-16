@@ -33,6 +33,7 @@ import {
 } from "../tui_dashboard_mocks.ts";
 
 import type { IDatabaseService } from "@exaix/core/types";
+import type { ITuiServiceBundle } from "../services/tui_service_factory.ts";
 import type { IAgentService, IPlanService, IPortalService, IRequestService, ISkillsService } from "@exaix/core/types";
 import type { IDaemonService } from "@exaix/core/types";
 import { TUI_ELEMENT_ACTION_BUTTONS, TUI_MAIN_PANE_ID } from "@exaix/tui/helpers/constants.ts";
@@ -41,19 +42,6 @@ import type { Config } from "@exaix/schemas/config.ts";
 /**
  * Service bundle interface for TUI initialization
  */
-export interface ITuiServiceBundle {
-  portalService: IPortalService;
-  planService: IPlanService;
-  journalService: IJournalService;
-  structuredLogger: IStructuredLogger;
-  structuredLoggerService: ILogService;
-  daemonService: IDaemonService;
-  agentService: IAgentService;
-  requestService: IRequestService;
-  memoryService: IMemoryService;
-  skillsService: ISkillsService;
-}
-
 export interface IDashboardViewOptions {
   testMode?: boolean;
   databaseService?: IDatabaseService;

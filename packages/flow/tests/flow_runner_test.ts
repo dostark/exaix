@@ -8,7 +8,6 @@
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
   FLOW_EVENT_STEP_RETRY,
   FlowInputSource,
   FlowOutputFormat,
@@ -33,6 +32,7 @@ import type { ActivityRecord, SqliteParam } from "@exaix/storage-sqlite";
 import type { IJournalFilterOptions } from "@exaix/core/types";
 import { createMockConfig } from "@exaix/testing";
 
+import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 /** Local type matching the shape logged by FlowRunner for flow.token_summary events */
 interface TokenSummary {
   totalLlmCalls: number;

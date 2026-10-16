@@ -10,6 +10,7 @@
  */
 
 import type { JSONObject, JSONValue } from "@exaix/core/types";
+import { HEX_BYTE_WIDTH, HEX_RADIX } from "@exaix/core";
 import { ARTIFACT_CONTEXT_ASSEMBLY_VERSION, JUDGE_CONTEXT_ASSEMBLY_VERSION } from "./constants.ts";
 
 export interface IContextAssemblyInput {
@@ -29,9 +30,6 @@ export interface IContextAssemblyIdentity {
     readonly configuration: JSONObject;
   };
 }
-
-const HEX_RADIX = 16;
-const HEX_BYTE_WIDTH = 2;
 
 /** Lowercase 64-hex-character SHA256 digest shape used by every calibration identity field. */
 export const SHA256_HEX_PATTERN: RegExp = /^[0-9a-f]{64}$/;

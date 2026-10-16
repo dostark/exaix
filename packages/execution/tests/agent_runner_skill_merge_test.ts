@@ -9,7 +9,7 @@
  * @related-files [packages/execution/src/agent_runner.ts]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { AgentRunner } from "@exaix/execution";
 import type { IBlueprint } from "@exaix/execution";
 
@@ -111,12 +111,12 @@ Deno.test("[agent-runner-merge] default_skills union into resolved set when requ
   const resolved: string[] = result.skillIds;
 
   // Must contain the explicit request skill
-  assertEquals(resolved.includes("security-first"), true);
+  assertArrayIncludes(resolved, ["security-first"]);
 
   // Must ALSO contain all default_skills from the agent role
   const rigorSkills = ["tdd-methodology", "security-first", "portal-grounding", "code-review"];
   for (const skill of rigorSkills) {
-    assertEquals(resolved.includes(skill), true, `resolved set must include '${skill}'`);
+    assertArrayIncludes(resolved, [skill], `resolved set must include '${skill}'`);
   }
 });
 
@@ -150,17 +150,17 @@ Deno.test("fix(agent-runner): a critical default skill survives a successful dyn
   const resolved: string[] = result.skillIds;
 
   // The dynamic match must still be present.
-  assertEquals(resolved.includes("tdd-methodology"), true);
+  assertArrayIncludes(resolved, ["tdd-methodology"]);
 
   // The critical default skill must survive even though it wasn't dynamically matched.
-  assertEquals(resolved.includes("response-contract"), true, "critical default skill must not be dropped");
+  assertArrayIncludes(resolved, ["response-contract"], "critical default skill must not be dropped");
 
   // Non-critical defaults ARE now pulled in — the old critical-only union made the result
   // depend on a flag only 2 of 27 skills set. Bloat is now controlled by keeping agent-role
   // default_skills short instead, and every default is concatenated.
-  assertEquals(resolved.includes("error-handling"), true);
-  assertEquals(resolved.includes("portal-grounding"), true);
-  assertEquals(resolved.includes("blueprint-best-practices"), true);
+  assertArrayIncludes(resolved, ["error-handling"]);
+  assertArrayIncludes(resolved, ["portal-grounding"]);
+  assertArrayIncludes(resolved, ["blueprint-best-practices"]);
 });
 
 // Always-concatenate: skill resolution used three different merge rules depending on
@@ -178,9 +178,9 @@ Deno.test("[step17] explicit pin concatenates with every agent-role default", as
   const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
   const resolved: string[] = result.skillIds;
 
-  assertEquals(resolved.includes("portal-grounding"), true, "the pinned skill is present");
+  assertArrayIncludes(resolved, ["portal-grounding"], "the pinned skill is present");
   for (const id of blueprint.defaultSkills!) {
-    assertEquals(resolved.includes(id), true, `default ${id} must be concatenated, critical or not`);
+    assertArrayIncludes(resolved, [id], `default ${id} must be concatenated, critical or not`);
   }
 });
 
@@ -212,8 +212,8 @@ Deno.test("[step17] a successful dynamic match concatenates ALL defaults, not ju
   const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
   const resolved: string[] = result.skillIds;
 
-  assertEquals(resolved.includes("tdd-methodology"), true, "the dynamic match is present");
+  assertArrayIncludes(resolved, ["tdd-methodology"], "the dynamic match is present");
   for (const id of blueprint.defaultSkills!) {
-    assertEquals(resolved.includes(id), true, `default ${id} must be concatenated regardless of critical`);
+    assertArrayIncludes(resolved, [id], `default ${id} must be concatenated regardless of critical`);
   }
 });

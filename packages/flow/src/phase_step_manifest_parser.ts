@@ -12,6 +12,7 @@
 
 import { parse as parseYaml } from "@std/yaml";
 import { type StepManifest, StepManifestSchema } from "@exaix/schemas/step_manifest.ts";
+import type { JSONValue } from "@exaix/core";
 
 export type PhaseStepDiagnosticCode =
   | "missing_step_heading"
@@ -60,9 +61,9 @@ function parseStepManifest(sectionText: string, stepNumber: number): {
     };
   }
 
-  let parsedYaml: unknown;
+  let parsedYaml: JSONValue;
   try {
-    parsedYaml = parseYaml(fenceMatch[1]);
+    parsedYaml = parseYaml(fenceMatch[1]) as JSONValue;
   } catch {
     return {
       manifest: null,

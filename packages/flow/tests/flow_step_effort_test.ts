@@ -10,8 +10,9 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/src/agent_composer_adapter.ts, packages/execution/src/agent_runner.ts, packages/execution/src/agent_composer.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
-import { join } from "@std/path";
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IAgentFileBlueprint } from "@exaix/execution";
@@ -60,9 +61,9 @@ class MockFlowEventLogger implements IFlowEventLogger {
 
 async function setup(): Promise<{ root: string; cleanup: () => Promise<void> }> {
   const root = await Deno.makeTempDir({ prefix: "flow-step-effort-" });
-  await Deno.mkdir(join(root, "Blueprints", "Agents"), { recursive: true });
+  await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
   await Deno.writeTextFile(
-    join(root, "Blueprints", "Agents", "test-agent.md"),
+    pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "test-agent.md"),
     "---\nagent_role: test-agent\nmodel: mock:test\neffort: high\n---\nYou are a test agent.\n",
   );
   return { root, cleanup: () => Deno.remove(root, { recursive: true }).catch(() => {}) };
@@ -84,7 +85,7 @@ Deno.test("FlowRunner: two declared steps of one flow, same role, resolve differ
       },
     } as never;
     const agentRunner = new AgentRunner(provider, { disableRetry: true, effortResolver: spyResolver });
-    const adapter = new AgentComposerAdapter(agentRunner, join(root, "Blueprints", "Agents"));
+    const adapter = new AgentComposerAdapter(agentRunner, pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH));
     const runner = new FlowRunner({
       agentExecutor: adapter,
       eventLogger: new MockFlowEventLogger(),
@@ -109,7 +110,7 @@ Deno.test("FlowRunner: two declared steps of one flow, same role, resolve differ
         input: { source: "request", transform: "passthrough" },
         effort: "high",
       },
-    ] as object as IFlowStep[];
+    ] as never as IFlowStep[];
     const flow: IFlow = {
       id: "effort-flow",
       name: "Effort Flow",
@@ -174,7 +175,7 @@ Deno.test("runWithStrategy: a strategy-routed step's effort medium reaches execu
 
     const adapter = new AgentComposerAdapter(
       {} as never,
-      join(root, "Blueprints", "Agents"),
+      pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH),
       {
         config,
         db,
@@ -205,7 +206,7 @@ Deno.test("adapter.run: a flowStep effort low reaches the AgentRunner resolution
   try {
     const { provider, options } = makeCapturingProvider();
     const agentRunner = new AgentRunner(provider, { disableRetry: true });
-    const adapter = new AgentComposerAdapter(agentRunner, join(root, "Blueprints", "Agents"));
+    const adapter = new AgentComposerAdapter(agentRunner, pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH));
     const stepRequest = {
       userPrompt: "Do the thing",
       context: {},

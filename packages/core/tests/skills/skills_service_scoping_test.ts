@@ -10,8 +10,9 @@
  * @related-files [packages/core/src/skills/skills.ts, packages/core/src/skills/skill_context.ts]
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
-import { join } from "@std/path";
 import { SkillStatus } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
@@ -31,11 +32,11 @@ interface IFixture {
 async function fixture(): Promise<IFixture> {
   const env = await initTestDbService();
   const base = await Deno.makeTempDir({ prefix: "exa-skills-scoping-" });
-  const memoryDir = join(base, "Memory");
-  const blueprintDir = join(base, "Blueprints", "Skills");
+  const memoryDir = pathBuilders.memoryPath(base);
+  const blueprintDir = pathBuilders.blueprintsPath(base, DEFAULT_SKILLS_MEMORY_PATH);
   await writeSkillFolder(blueprintDir, { name: "shared-skill", instructions: "Shared body." });
   for (const portal of ["Alpha", "Beta"]) {
-    await writeSkillFolder(join(memoryDir, "Skills", "project", portal), {
+    await writeSkillFolder(pathBuilders.memorySkillsPath(memoryDir, "project", portal), {
       name: `${portal.toLowerCase()}-skill`,
       instructions: `Body for ${portal}.`,
       sidecar: ACTIVE_SIDECAR,
@@ -197,7 +198,7 @@ Deno.test("[scoping][security] identical content recorded in two scopes is visib
   try {
     const alphaCtx = createSkillOperationContext({ agentRole: "test", portal: "Alpha" });
     const betaCtx = createSkillOperationContext({ agentRole: "test", portal: "Beta" });
-    await writeSkillFolder(join(fx.memoryDir, "Skills", "project", "Beta"), {
+    await writeSkillFolder(pathBuilders.memorySkillsPath(fx.memoryDir, "project", "Beta"), {
       name: "alpha-skill",
       instructions: "Body for Alpha.",
       sidecar: ACTIVE_SIDECAR,

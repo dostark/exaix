@@ -6,7 +6,7 @@
  * @related-files [tests/scenario_framework/runner/trajectory_evaluator.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { levenshteinTrajectory, scoreTrajectory } from "../../runner/trajectory_evaluator.ts";
 import type { IExpectedTrajectory } from "../../runner/trajectory_evaluator.ts";
 import type { ITrajectoryResult } from "../../runner/trajectory_evaluator.ts";
@@ -56,7 +56,7 @@ Deno.test("[TrajectoryEvaluator] wrong order with order_matters=true returns par
   // Levenshtein distance between [read, edit, write] and [edit, read, write] = 2
   // score = 1 - 2/3 = 0.33 < 1.0
   assertEquals(results[0].status, "failed");
-  assertEquals(results[0].message.includes("0."), true);
+  assertStringIncludes(results[0].message, "0.");
 });
 
 Deno.test("[TrajectoryEvaluator] missing tool with order_matters=false returns proportional score", () => {

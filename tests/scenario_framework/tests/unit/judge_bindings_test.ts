@@ -44,6 +44,7 @@ import {
   judgeSharesSut,
   resolveJudgeBindings,
 } from "../../runner/judge_bindings.ts";
+import { readConfigFixture } from "@exaix/testing";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 
@@ -63,28 +64,7 @@ async function writeJudgeConfig(dir: string): Promise<string> {
   const configPath = join(dir, "exa.config.toml");
   await Deno.writeTextFile(
     configPath,
-    [
-      "[system]",
-      "",
-      "[paths]",
-      "",
-      "[ai]",
-      'provider = "mock"',
-      'model = "boot-model"',
-      "",
-      '[catalog.models."mock/judge-model"]',
-      'model_provider = "mock"',
-      "",
-      '[catalog.models."mock/judge-model-2"]',
-      'model_provider = "mock"',
-      "",
-      "[catalog.services.judge-svc]",
-      'adapter = "mock"',
-      'transport = "local"',
-      'interface = "api"',
-      'serves = { "mock/judge-model" = "judge-model", "mock/judge-model-2" = "judge-model-2" }',
-      "",
-    ].join("\n"),
+    readConfigFixture("judge-bindings-config"),
   );
   return configPath;
 }

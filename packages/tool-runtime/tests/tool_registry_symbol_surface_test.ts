@@ -9,7 +9,7 @@
  * @related-files [packages/tool-runtime/src/tool_registry.ts, packages/portal/knowledge/relationship_query.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { createMockConfig } from "@exaix/testing";
 import { ContextResultStatus, ContextUnavailableReason, PortalAnalysisMode, ToolName } from "@exaix/core";
@@ -128,8 +128,8 @@ Deno.test("[ToolRegistry] get_module_dependencies returns only file edge kinds a
     );
     for (const edge of edges) {
       assertEquals(edge.kind, "file_imports_file_internal");
-      assertEquals(edge.from.includes("#"), false);
-      assertEquals(edge.to.includes("#"), false);
+      assertFalse(edge.from.includes("#"));
+      assertFalse(edge.to.includes("#"));
     }
   });
 });

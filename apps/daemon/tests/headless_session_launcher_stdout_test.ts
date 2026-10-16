@@ -6,7 +6,7 @@
  *   output is correctly parsed into return.json.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { HeadlessSessionLauncher } from "../src/headless_session_launcher.ts";
@@ -407,9 +407,8 @@ Deno.test("[launcher_stdout] cumulative byte cap truncates a stream instead of b
     const parsed = SessionReturnSchema.parse(
       JSON.parse(await Deno.readTextFile(join(rig.sessionDir, TRACE_ID, "return.json"))),
     );
-    assertEquals(
+    assertFalse(
       parsed.summary.includes(filler),
-      false,
       "a capped stream must never yield the full unbounded filler text in the synthesized summary",
     );
   } finally {

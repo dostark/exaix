@@ -14,7 +14,7 @@
  * @related-files [tests/scenario_framework/runner/matrix_expander.ts, tests/scenario_framework/runner/judge_bindings.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
 import { fromFileUrl, join } from "@std/path";
@@ -132,7 +132,7 @@ Deno.test("[agent_role_merge] each merged role keeps the smoke id, pack, tags an
     const scenario = await readScenario(mergedScenarioPath(role));
     assertEquals(scenario.id, `${role}-smoke`, `${role} must keep the smoke id`);
     assertEquals(scenario.pack, "agent_role_eval", `${role} must keep the smoke pack`);
-    assertEquals(scenario.tags.includes("provider-live"), false, `${role} must not carry the provider-live tag`);
+    assertFalse(scenario.tags.includes("provider-live"), `${role} must not carry the provider-live tag`);
     for (const tag of ["smoke", "subsystem:agent_roles", `entity:${role}`]) {
       assert(scenario.tags.includes(tag), `${role} must keep the '${tag}' tag`);
     }

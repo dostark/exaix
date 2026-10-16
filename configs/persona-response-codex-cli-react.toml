@@ -3,11 +3,6 @@ root = "__DOGFOOD_ROOT__"
 log_level = "debug"
 allow_net = []
 
-[paths]
-workspace = "Workspace"
-portals = "Portals"
-memory = "Memory"
-
 # Phase 167 Step 3: the react-strategy proof that Phase 166's production-registered
 # codex-cli provider is reachable from a real, forced `strategy: "react"` flow step.
 # Mirrors configs/opencode-no-delegate.toml's shape (the other cell in the same

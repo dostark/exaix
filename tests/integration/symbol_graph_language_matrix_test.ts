@@ -18,6 +18,8 @@
  * @architectural-layer Test
  */
 
+import * as pathBuilders from "@exaix/shared";
+import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import {
@@ -550,7 +552,12 @@ Deno.test("[matrix] the agent-facing tool answers who-calls-X in a structured, p
   const { knowledge, portalRoot } = await analyzeFixture(GO_FIXTURE);
   try {
     await withToolPermissionTest({ portalAlias: GO_ALIAS }, async (env) => {
-      await saveKnowledge(GO_ALIAS, knowledge, null, join(env.tempDir, "Memory", "Projects"));
+      await saveKnowledge(
+        GO_ALIAS,
+        knowledge,
+        null,
+        pathBuilders.memoryPath(env.tempDir, DEFAULT_PROJECTS_MEMORY_PATH),
+      );
       const tool = new QuerySymbolReferencesTool(
         createToolContext(env),
         createPermissionsService(env),
@@ -606,7 +613,12 @@ Deno.test("[matrix] a symbol with no callers answers with an empty list, not an 
   const { knowledge, portalRoot } = await analyzeFixture(GO_FIXTURE);
   try {
     await withToolPermissionTest({ portalAlias: GO_ALIAS }, async (env) => {
-      await saveKnowledge(GO_ALIAS, knowledge, null, join(env.tempDir, "Memory", "Projects"));
+      await saveKnowledge(
+        GO_ALIAS,
+        knowledge,
+        null,
+        pathBuilders.memoryPath(env.tempDir, DEFAULT_PROJECTS_MEMORY_PATH),
+      );
       const tool = new QuerySymbolReferencesTool(
         createToolContext(env),
         createPermissionsService(env),

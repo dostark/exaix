@@ -6,10 +6,11 @@
  * @dependencies [@std/assert, @exaix/schemas]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { DEFAULT_AGENTS_PATH, DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
+import { assertArrayIncludes, assertEquals, assertExists } from "@std/assert";
 import { HitlPolicySchema } from "@exaix/schemas/hitl.ts";
 
-const FILE_PATH = "Blueprints/Agents/dogfood-developer.md";
+const FILE_PATH = `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_AGENTS_PATH}/dogfood-developer.md`;
 
 interface ParsedHitlField {
   require_secondary_approval: Array<{
@@ -82,9 +83,9 @@ Deno.test({
     const gatedTools = hitl.require_secondary_approval.map((r) => r.tool);
 
     for (const tool of ["write_file", "patch_file", "run_command"]) {
-      assertEquals(
-        gatedTools.includes(tool),
-        true,
+      assertArrayIncludes(
+        gatedTools,
+        [tool],
         `HITL policy should gate '${tool}' (destructive tool) — gated: [${gatedTools.join(", ")}]`,
       );
     }

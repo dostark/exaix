@@ -8,8 +8,7 @@
  * @related-files [tests/scenario_framework/runner/request_fixtures.ts, tests/scenario_framework/schema/scenario_schema.ts]
  */
 
-import { assertEquals, assertRejects, assertStrictEquals } from "@std/assert";
-import { assertStringIncludes, assertThrows } from "@std/assert";
+import { assertEquals, assertRejects, assertStrictEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { ensureScenarioUsesFixtureOnly, loadRequestFixture } from "../../runner/request_fixtures.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
 import type { JSONValue } from "@exaix/core/types";

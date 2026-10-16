@@ -7,6 +7,7 @@
  * @dependencies [@exaix/core, @exaix/portal, @exaix/testing]
  * @related-files [tests/scenario_framework/scenarios/agent_flows/gate_halt.yaml, tests/scenario_framework/scenarios/agent_flows/gate_continue_warning.yaml]
  */
+import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -194,9 +195,9 @@ enabled = false
       });
     });
     assert(run);
-    const journal = loadScenarioActivities(join(workspaceRoot, ".exa", "journal.db"), 0);
+    const journal = loadScenarioActivities(pathBuilders.runtimePath(workspaceRoot, "journal.db"), 0);
     await Deno.writeTextFile(join(outputDir, "journal-evidence.json"), JSON.stringify(journal, null, 2));
-    await Deno.copyFile(join(workspaceRoot, ".exa", "daemon.log"), join(outputDir, "daemon.log"));
+    await Deno.copyFile(pathBuilders.runtimePath(workspaceRoot, "daemon.log"), join(outputDir, "daemon.log"));
     assertEquals(run.manifest.outcome, "success", JSON.stringify(run.manifest.steps));
     const created = journal.activities.filter((row) =>
       row.action_type === "request.created" && (JSON.parse(row.payload) as { via?: string }).via === "cli"
@@ -338,11 +339,11 @@ enabled = false
       assertEquals(completed.length, 1, "cycle advancement requires an approved implementation review");
       const delegationId = JSON.parse(completed[0].payload).delegationTraceId;
       const evidence = JSON.parse(
-        await Deno.readTextFile(join(workspaceRoot, ".exa", "guarded-scope-evidence.json")),
+        await Deno.readTextFile(pathBuilders.runtimePath(workspaceRoot, "guarded-scope-evidence.json")),
       );
       assertEquals(evidence, { parentTraceId: traceId, delegationTraceId: delegationId });
       await Deno.copyFile(
-        join(workspaceRoot, ".exa", "guarded-scope-evidence.json"),
+        pathBuilders.runtimePath(workspaceRoot, "guarded-scope-evidence.json"),
         join(outputDir, "guarded-scope-evidence.json"),
       );
     }

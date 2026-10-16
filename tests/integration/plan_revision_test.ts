@@ -5,6 +5,7 @@
  * triggers plan regeneration while preserving original context and trace integrity.
  */
 
+import { DEFAULT_ACTIVE_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MemoryBankSource } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
@@ -175,7 +176,7 @@ Deno.test("Integration: Plan Revision - Request to Revised Plan", async (t) => {
       const activePath = await env.approvePlan(planPath);
 
       // Verify plan moved to Active
-      const activeExists = await env.fileExists("Workspace/Active/file-reader_plan.md");
+      const activeExists = await env.fileExists(`${DEFAULT_WORKSPACE_PATH}/${DEFAULT_ACTIVE_PATH}/file-reader_plan.md`);
       assertEquals(activeExists, true, "Plan should be in Workspace/Active");
 
       // Verify status updated

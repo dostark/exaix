@@ -13,7 +13,9 @@
  * @related-files [apps/daemon/src/dogfood_context_service.ts, apps/daemon/tests/dogfood_context_child_query_test.ts, apps/exactl/src/commands/inspect_commands.ts]
  */
 
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { ExaPathDefaults } from "@exaix/shared";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
+import { readConfigFixture } from "./helpers/config_fixture.ts";
 import { fromFileUrl, join } from "@std/path";
 import { CliDelegateStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
@@ -58,7 +60,6 @@ import { generateOpencodePermissionConfig } from "@exaix/session/opencode_permis
 import { ContextRecordStore, isValidUuid } from "@exaix/session";
 import { PathResolver } from "@exaix/portal";
 import { ConfigService } from "@exaix/core/config";
-import { ExaPathDefaults } from "@exaix/core";
 import type { PathResolver as PathResolverType } from "@exaix/portal";
 import { InspectCommands } from "../../apps/exactl/src/commands/inspect_commands.ts";
 import { createStubContext } from "@exaix/testing";
@@ -182,7 +183,7 @@ async function makeRealRecordStore(): Promise<
   const configPath = join(tempDir, "config.toml");
   await Deno.writeTextFile(
     configPath,
-    `[system]\nroot = ${JSON.stringify(tempDir)}\n\n[paths]\nmemory = ${JSON.stringify(ExaPathDefaults.memory)}\n`,
+    readConfigFixture("dogfood-context-cutover", { root: tempDir }),
   );
   const configService = new ConfigService(configPath);
   const pathResolver = new PathResolver(configService.getAll());
@@ -235,7 +236,7 @@ async function fullDumpTokenCount(portal: IFixturePortal): Promise<number> {
 
 function assertNoDecoys(promptText: string, memory: IFixtureMemory): void {
   for (const decoy of [...memory.decoys.retired, ...memory.decoys.foreign, ...memory.decoys.secretCanary]) {
-    assertEquals(promptText.includes(decoy.text), false, `decoy leaked into composed prompt: ${decoy.id}`);
+    assertFalse(promptText.includes(decoy.text), `decoy leaked into composed prompt: ${decoy.id}`);
   }
 }
 
@@ -274,12 +275,11 @@ for (const portalIndex of [0, 1] as const) {
         assert(delivered.includes(record.text), `expected relevant record ${id} in the composed prompt`);
       }
       for (const record of otherPortal.records) {
-        assertEquals(delivered.includes(record.text), false, `foreign-portal record leaked: ${record.id}`);
+        assertFalse(delivered.includes(record.text), `foreign-portal record leaked: ${record.id}`);
       }
       assertNoDecoys(delivered, fixture.memory);
-      assertEquals(
+      assertFalse(
         delivered.includes(fixture.memory.approvedAnswerMemory.nonce),
-        false,
         "nonce must not be in the initial prompt",
       );
 
@@ -335,8 +335,8 @@ Deno.test("[dogfood_context_cutover] disabled feature (no contextPort): stock fi
   // still appear verbatim, unmodified, with no dogfood supplement separator appended.
   assertStringIncludes(calls[0][1], fixture.goldens.stockFirstTurnOriginalPrompt);
   assertStringIncludes(calls[1][1], fixture.goldens.stockResumedTurnOriginalPrompt);
-  assertEquals(calls[0][1].includes("---"), false, "no dogfood supplement separator without a contextPort");
-  assertEquals(calls[1][1].includes("---"), false, "no dogfood supplement separator without a contextPort");
+  assertFalse(calls[0][1].includes("---"), "no dogfood supplement separator without a contextPort");
+  assertFalse(calls[1][1].includes("---"), "no dogfood supplement separator without a contextPort");
 });
 
 Deno.test("[dogfood_context_cutover] disabled feature (no contextPort): cycle step delivers its golden byte-for-byte", async () => {

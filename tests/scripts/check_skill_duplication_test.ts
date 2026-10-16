@@ -17,7 +17,8 @@
  * ]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
+import { assertEquals, assertMatch, assertStringIncludes } from "@std/assert";
 import { join, resolve } from "@std/path";
 import {
   discoverSkillFiles,
@@ -122,7 +123,10 @@ Deno.test("Skill duplication: policy schema is current and every entry documents
 
 Deno.test("Skill duplication: discovery walks both corpora and returns repo-relative paths", () => {
   const files = discoverSkillFiles(REPO_ROOT);
-  assertStringIncludes(files.join("\n"), "Blueprints/Skills/response-contract/SKILL.md");
+  assertStringIncludes(
+    files.join("\n"),
+    `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/response-contract/SKILL.md`,
+  );
   assertStringIncludes(files.join("\n"), ".copilot/skills/commit/SKILL.md");
 });
 
@@ -134,6 +138,6 @@ Deno.test("Skill duplication: programmatic check returns findings with file loca
   assertEquals(findings.some((f) => f.text.includes("request exceeds the context budget")), true);
   for (const finding of findings) {
     assertEquals(finding.files.length >= 2, true, "finding must span two or more files");
-    assertEquals(finding.files[0].endsWith("SKILL.md"), true);
+    assertMatch(finding.files[0], /SKILL\.md$/);
   }
 });
