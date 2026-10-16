@@ -122,12 +122,14 @@ export const IGNORE_DIRS: Record<string, true> = {
  * They hold pre-monorepo paths, superseded designs and resolved reports.
  * A stale path inside them is history, not drift to fix.
  * Their references are never reported or auto-rewritten.
+ * `planning/evidence/` holds raw run output, untracked by git, not authored docs.
  * Living docs (`docs/`, `.copilot/`, `planning/`) remain fully checked.
  */
 export const FROZEN_DOC_PREFIXES: readonly string[] = [
   "exaix-dev-docs/dev/",
   "exaix-dev-docs/issues/",
   "exaix-dev-docs/not_actual/",
+  "exaix-dev-docs/planning/evidence/",
 ];
 
 /** True when a repo-relative markdown path lives under a frozen historical tree. */
