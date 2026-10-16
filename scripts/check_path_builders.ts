@@ -191,6 +191,8 @@ function scanFile(repoPath: string, text: string): IViolation[] {
   };
   const scanRaw = (node: ts.Node, raw: string): void => {
     for (const match of raw.matchAll(RAW_RUN)) {
+      // `$WORKSPACE_ROOT` is the run's own anchor, so a token after it is not a new owner.
+      if (raw.slice(0, match.index).endsWith("$WORKSPACE_ROOT")) continue;
       const start = rawRunStart(match[1]);
       if (start) add(node, `literal run "/${match[1]}"`);
     }

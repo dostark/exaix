@@ -452,9 +452,9 @@ Deno.test("[journal_assert] an invalid payload path is rejected by the schema", 
 
 Deno.test("[step-executor] substituteRuntimeVars expands the workspace root in an arg", () => {
   const spec = substituteRuntimeVars(
-    { executable: "ls", args: ["$WORKSPACE_ROOT/Workspace", "--color"] },
+    { executable: "ls", args: ["$WORKSPACE_ROOT/data", "--color"] },
     "/tmp/ws-root",
   );
-  assertEquals(spec.args[0], "/tmp/ws-root/Workspace", "$WORKSPACE_ROOT resolves to the run's root");
+  assertEquals(spec.args[0], "/tmp/ws-root/data", "$WORKSPACE_ROOT resolves to the run's root");
   assertEquals(spec.args[1], "--color", "an arg without a token is unchanged");
 });
