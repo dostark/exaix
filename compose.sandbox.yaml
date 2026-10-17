@@ -34,18 +34,14 @@ services:
     volumes:
       # Exaix runtime home: Workspace / Memory / .exa journal / exa.config.toml.
       - ./.exa-runtime:/exa:rw
-      # Portal targets the agent may edit. Add one bind per portal; prefer :ro
-      # for portals the agent should only read.
+      # Portal targets the agent may edit. Add one bind per portal, and use :ro for portals the agent should only read.
       # - /home/you/Dev/MyProject:/exa/Portals/MyProject:rw
     # --- Secrets: provider API keys via env (never bake into the image) ---
     environment:
       - EXA_HOME=/exa
       # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       # - OPENAI_API_KEY=${OPENAI_API_KEY}
-    # --- Network: restrict egress to the LLM providers you actually use ---
-    # Compose cannot host-allowlist egress directly; attach a user-defined network
-    # and enforce egress with a firewall/proxy (e.g. an egress gateway). The default
-    # bridge below still isolates the container from other containers.
+    # Network: Compose cannot host-allowlist egress, so attach a user-defined network and enforce egress with a firewall or proxy.
     networks:
       - exaix-egress
     restart: unless-stopped

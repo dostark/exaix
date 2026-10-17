@@ -37,18 +37,9 @@ native_tools_enabled = true
 [request_analysis]
 enabled = true
 
-# Phase 134 Solo curated list: without this, a size-M/L request resolves via
-# ProviderSelector's scoring path instead of the pinned model. Pin the curated list to
-# Google (mirrors anthropic-no-delegate.toml) for both M (request analysis/plan
-# generation) and L (execution — confirmed live, 2026-08-14 against OpenAI's equivalent
-# config, that ReActLoopStrategy's execution-phase model resolution requests
-# model_size: "L" specifically; an L-less config silently resolves to mock:mock-model
-# for that phase's budget estimation via preset_default) so the request genuinely plans
-# and executes on gemini-3.8-flash throughout. supports_thinking = false matches
-# this provider's real registration (registry_bootstrap.ts does not set
-# supportsThinking for google); max_cost_per_mtok/min_context_window are reasonable
-# declarative bounds for gemini-3.8-flash, whose standard rate is $3.75/1M output per the
-# Google pricing page (2026-10-11). The actual pin is `candidates`; these fields satisfy the schema.
+# Pins the curated list to Google for both M sizing (request analysis and plan generation) and L sizing (execution). Without the L pin, execution budget resolves to mock:mock-model.
+# The pin is candidates. supports_thinking is false, matching the real registration. The cost and context bounds only satisfy the schema.
+# The output rate in max_cost_per_mtok is a declarative bound from the Google pricing page.
 [model_presets.M]
 max_cost_per_mtok = 3
 min_context_window = 32000

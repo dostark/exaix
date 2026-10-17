@@ -3,14 +3,9 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = ["api.deepseek.com"]
 
-# Phase 155 Step 3: the qualified "deepseek" compatible profile, targeting the real DeepSeek
-# Chat Completions endpoint through the shared @exaix/ai-openai compatible provider. Requires
-# DEEPSEEK_API_KEY in the daemon's own environment; no key is present in this file, its
-# `[[cells]]` catalog entry, or any captured fixture. "deepseek-v4-pro" is the qualified
-# model (packages/core/src/types/constants.ts:OPENAI_COMPATIBLE_PROFILE_DEFAULTS). Requalify
-# this preset if the returned model or its capabilities change (Technical Contracts, Architecture
-# Notes). Unlike the OpenAI profile, DeepSeek supports explicit thinking mode — left disabled
-# (the schema default) here since this preset is not itself a thinking-mode fixture.
+# Qualified deepseek compatible profile. It reaches the DeepSeek Chat Completions endpoint through the shared ai-openai compatible provider.
+# Requires DEEPSEEK_API_KEY in the daemon environment. The key is never stored in this file.
+# Requalify the preset if the returned model or its capabilities change. Thinking mode stays off, which is the schema default.
 [ai]
 provider = "openai-chat"
 model = "deepseek-v4-pro"

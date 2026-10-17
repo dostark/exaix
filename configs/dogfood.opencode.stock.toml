@@ -31,14 +31,8 @@ enabled = false
 [request_analysis]
 enabled = true
 
-# STOCK path (Phase 176 Step 4's stock-opencode live cell): per-step execution via a headless
-# CLI tool as an alternative to direct IModelProvider API calls, selected by an agent
-# blueprint's own `strategy: cli_delegate` (e.g. the dogfood-loop flow's `implement` step —
-# Blueprints/Flows/dogfood-loop.flow.yaml), NOT by a plan-review gate. Distinct from
-# [session_delegate] (the governed "cycle" mechanism in configs/dogfood.toml): this selects
-# the execution strategy for a single agent step, not a whole gate — no `[session_delegate]`
-# block in this file, so the code_changes gate (if any plan reaches one) is never delegated
-# headlessly by this preset.
+# STOCK path: per-step execution through a headless CLI tool, selected by an agent blueprint's own strategy: cli_delegate (the dogfood-loop flow's implement step), not by a plan-review gate.
+# This file has no [session_delegate] block, so the code_changes gate is never delegated headlessly by this preset.
 [cli_delegate]
 enabled = true
 tool = "opencode"

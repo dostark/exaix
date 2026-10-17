@@ -3,13 +3,9 @@ root = "__DOGFOOD_ROOT__"
 log_level = "info"
 allow_net = []
 
-# swe_tasks provider-live cell verifying CliDelegateStrategy end-to-end with a SINGLE
-# provider/model/tool for every part of the test: request analysis, plan generation,
-# AND the code_changes step all run through the headless `opencode` CLI on
-# opencode-go/deepseek-v4-flash (Go tier) — no ANTHROPIC_API_KEY or any metered
-# HTTP API call is used anywhere in this run (allow_net is empty; the daemon never
-# dials out). The Go tier was tested (2026-07-23) and found to regress on add-feature
-# (free tier: 1.000, Go tier: 0.909). This config exists for targeted Go tier testing.
+# swe_tasks provider-live cell. Request analysis, plan generation and the code_changes step all run through the headless opencode CLI on the Go tier of deepseek-v4-flash.
+# No ANTHROPIC_API_KEY or metered API call is used. allow_net is empty, so the daemon never dials out.
+# The Go tier regressed on add-feature (1.000 on the free tier, 0.909 on Go), so this config is for targeted Go tier testing only.
 [ai]
 provider = "opencode-cli"
 model = "opencode-go/deepseek-v4-flash"

@@ -18,18 +18,9 @@ gates = ["refinement", "plan_review", "code_changes", "review"]
 launch_mode = "headless"
 bin_overrides = []
 
-# Phase 159: pattern strategy (not "recorded") so a flow step with no pre-captured fixture
-# still gets a deterministic mock response via MockLLMProvider's built-in default patterns
-# (e.g. the generic ReAct-completion pattern matching "AVAILABLE TOOLS:"), rather than
-# failing with "No recorded response found" — the base exa.config.toml's `recorded` strategy
-# with a flow_blueprints fixtures_dir only covers that pack's own pre-captured prompts.
-#
-# Phase 203 Step 8: the provider is declared so a matrix cell selects the pattern mock through
-# its own EXA_CONFIG_PATH. A step's `env` cannot be scoped to one cell of a two-cell matrix,
-# so the mock cell cannot set EXA_LLM_PROVIDER for itself. An existing EXA_LLM_PROVIDER value
-# still wins over this declaration. Phase 206 follow-up: this declaration is authoritative only
-# because the file has no [models] table; ConfigSchema now derives the boot model from [ai]
-# instead of the old hard-coded Google default that used to outrank it.
+# The provider is declared so a matrix cell can select the pattern mock through its own EXA_CONFIG_PATH. A step env cannot be scoped to one cell.
+# Pattern strategy gives a deterministic default response to a step with no captured fixture. An existing EXA_LLM_PROVIDER still wins.
+# The declaration holds only while the file has no [models] table, because ConfigSchema derives the boot model from [ai].
 [ai]
 provider = "mock"
 
