@@ -57,6 +57,15 @@ function twoStepPlan(): string {
   return planWithSteps(2);
 }
 
+/** The reviewer scores the delegate's report, not the diff, so each step asks for the evidence in it. */
+function concreteTwoStepPlan(): string {
+  return planWithSteps(2).replace(
+    /- Implement change (\d)\./g,
+    '- Add `src/change-$1.ts` exporting `CHANGE_$1 = "change $1"`, and `src/change-$1_test.ts` with a Deno test asserting that value.\n' +
+      "- Run the test. In your final report, quote both files in full and the test command output verbatim.",
+  );
+}
+
 function planWithSteps(count: number): string {
   const sections: string[] = [];
   for (let n = 1; n <= count; n++) {
@@ -261,7 +270,16 @@ async function runGenerator(planPath: string, planContextRoot: string, outDir: s
   );
 }
 
-function writeCycleRequest(requestsDir: string, traceId: string, planContextRef: string): void {
+/** The pre-gap step only reads. A real model needs a bounded deliverable to finish it. */
+const LIVE_PRE_GAP_REQUEST =
+  "Read the plan context once. Reply with the number of plan steps and the title of each, then finish.";
+
+function writeCycleRequest(
+  requestsDir: string,
+  traceId: string,
+  planContextRef: string,
+  body = "Run the governed cycle.",
+): void {
   Deno.mkdirSync(requestsDir, { recursive: true });
   Deno.writeTextFileSync(
     join(requestsDir, "session-delegate-cycle-e2e.md"),
@@ -278,7 +296,7 @@ function writeCycleRequest(requestsDir: string, traceId: string, planContextRef:
       'created_by: "test@example.com"',
       "---",
       "",
-      "Run the governed cycle.",
+      body,
       "",
     ].join("\n"),
   );
@@ -470,15 +488,15 @@ function hasRealOpencode(): boolean {
   }
 }
 
-/** [live, operator-run] Uses the real, installed `opencode` CLI and a real Anthropic model for
- * the review gate. Never runs in CI; an operator opts in explicitly. */
+/** [live, operator-run] Uses the real `opencode` CLI on DeepSeek V4.1 Flash through OpenRouter.
+ * A real Anthropic model runs the review gate. It never runs in CI. An operator opts in. */
 Deno.test({
   name: "[live, operator-run] a supported CLI completes a two-step hardened phase plan with real changed paths",
   // Deliberately requires an explicit opt-in flag, not just credential presence — this
   // test spends real API budget and runs a real CLI, so it must never fire just because
   // the environment happens to already have ANTHROPIC_API_KEY exported for other work.
   ignore: Deno.env.get("EXA_RUN_LIVE_SESSION_DELEGATE_CYCLE_E2E") !== "1" || Deno.env.get("CI") === "true" ||
-    !Deno.env.get("ANTHROPIC_API_KEY") || !hasRealOpencode(),
+    !Deno.env.get("ANTHROPIC_API_KEY") || !Deno.env.get("OPENROUTER_API_KEY") || !hasRealOpencode(),
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -506,10 +524,15 @@ Deno.test({
         "[session_delegate]",
         "enabled = true",
         'tool = "opencode"',
+        'model = "openrouter:deepseek/deepseek-v4.1-flash"',
         'launch_mode = "headless"',
         'gates = ["code_changes"]',
         'permitted_paths = ["**"]',
         "harden_permissions = false",
+        "",
+        "[session_delegate.provider]",
+        'name = "openrouter"',
+        'key_env = "OPENROUTER_API_KEY"',
         "",
         "[[portals]]",
         'alias = "exaix-self"',
@@ -519,7 +542,7 @@ Deno.test({
       Deno.writeTextFileSync(configPath, cfg);
 
       const fixturePlanPath = join(tempDir, "hardened-fixture.md");
-      await Deno.writeTextFile(fixturePlanPath, twoStepPlan());
+      await Deno.writeTextFile(fixturePlanPath, concreteTwoStepPlan());
       const genOutDir = join(tempDir, "generated-requests");
       await runGenerator(fixturePlanPath, portalDir, genOutDir);
       const planContextRef = `${DEFAULT_RUNTIME_PATH}/PlanContext/hardened-fixture.md`;
@@ -539,7 +562,7 @@ Deno.test({
         // This operator-run test boots a real Anthropic provider under EXA_TEST_MODE.
         // It must opt in to paid dispatch explicitly.
         extraEnv: { EXA_TEST_ENABLE_PAID_LLM: "1" },
-        midFlight: () => writeCycleRequest(requestsDir, traceId, planContextRef),
+        midFlight: () => writeCycleRequest(requestsDir, traceId, planContextRef, LIVE_PRE_GAP_REQUEST),
         waitForAfterInject: () => daemonJournalHasAny(configPath, CYCLE_OUTCOME_ACTIONS, traceId),
       });
 
