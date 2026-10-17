@@ -53,6 +53,11 @@ Deno.test("[child-env] allowlist build forwards only safe parent keys and non-se
   assertEquals(env.LD_LIBRARY_PATH, undefined, "dynamic-linker var from launch env must be stripped");
 });
 
+Deno.test("[child-env] allowlist build forwards DENO_DIR so a Deno child reuses the parent's module cache", () => {
+  const env = buildAllowlistChildEnv({}, { PATH: "/usr/bin", DENO_DIR: "/deno-dir" });
+  assertEquals(env.DENO_DIR, "/deno-dir", "a child without DENO_DIR refetches every module and fails offline");
+});
+
 Deno.test("[child-env] allowlist build excludes proxy vars from foreign children", () => {
   const env = buildAllowlistChildEnv({}, {
     PATH: "/usr/bin",
