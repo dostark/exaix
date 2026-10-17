@@ -39,11 +39,8 @@ steps:
         kind: "file-found"
         path_pattern: "Memory/Projects/*/knowledge.json"
 
-  # Phase 175 Step 3: exercises PortalContextBuilder.resolveKnowledgeContext against the
-  # portal just analyzed above — the request→plan flow this fallback logic actually runs in.
-  # The mock provider never enables relevanceSearchEmbeddingEnabled, so this proves the
-  # try/catch-to-buildPortalKnowledgeSummary fallback path completes a real request end to
-  # end without failing the pipeline.
+  # Exercises PortalContextBuilder.resolveKnowledgeContext against the portal analyzed above, in the request-to-plan flow where this fallback runs.
+  # The mock provider never enables relevanceSearchEmbeddingEnabled, so this proves the fallback to buildPortalKnowledgeSummary completes a real request.
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"

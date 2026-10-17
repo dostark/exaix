@@ -29,14 +29,9 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  # No EXA_CONFIG_PATH override on start-daemon (see below) means the framework never
-  # materializes $WORKSPACE_ROOT/exa.config.toml — every step falls back to schema
-  # defaults, which have quality_gate/request_analysis enabled (they'd otherwise route
-  # this request into needs-clarification and no plan is ever written). Write the file
-  # ourselves: quality_gate/request_analysis disabled (heuristic-only would still need a
-  # provider round trip we don't want here), model_registry enabled for Team edition.
-  # Deliberately NOT configs/dogfood.toml — its session_delegate.model = "deepseek-v4-flash"
-  # intercepts plan steps before AgentComposer/ModelResolver ever runs.
+  # Without an EXA_CONFIG_PATH override on start-daemon, the framework never writes $WORKSPACE_ROOT/exa.config.toml, and every step falls back to schema defaults.
+  # Those enable quality_gate and request_analysis, which would route this request into needs-clarification, so no plan would be written. The scenario writes the file itself:
+  # both disabled, model_registry enabled for Team. It avoids configs/dogfood.toml, whose session_delegate.model intercepts plan steps before ModelResolver runs.
   - id: "write-config"
     type: "write-file"
     path: "exa.config.toml"
@@ -114,10 +109,8 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  # --- Step 8/9 checkpoint: model.resolved journalled with reason best_ranked ---
-  # The production resolver (agent_executor.resolveModelFromBlueprint -> ModelResolver.resolve,
-  # wired through PlanExecutor's IPlanExecutorOptions.modelResolver — Phase 135 Step 9, GAP-C9)
-  # journals model.resolved once ExecutionLoop picks up the approved plan.
+  # Checkpoint: model.resolved is journaled with reason best_ranked.
+  # The production resolver (agent_executor.resolveModelFromBlueprint, through PlanExecutor's modelResolver option) journals it once ExecutionLoop picks up the approved plan.
   - id: "verify-model-resolved-best-ranked"
     type: "exactl"
     name: "model.resolved journalled with reason best_ranked (Step 8 scoring reachable from real plan execution)"

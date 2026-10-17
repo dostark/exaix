@@ -2,10 +2,8 @@ schema_version: "1.0.0"
 id: "voting-majority-consensus"
 title: "Voting group — three runners reach a majority consensus through a real daemon"
 pack: "agent_flows"
-# The previous version submitted a request that named no flow and asserted only that some plan file
-# existed, so it proved nothing about voting. This version runs the voting flow on a Team daemon and
-# asserts the voting events. voting.resolved carries no vote counts, so the scenario proves that
-# three candidates reached a consensus, not the exact split.
+# Runs the voting flow on a Team daemon and asserts the voting events. voting.resolved carries no vote counts,
+# so the scenario proves that three candidates reached a consensus, not the exact split.
 tags: ["safety-gate", "voting", "consensus", "subsystem:flows"]
 edition: "team"
 request_fixture: "fixtures/requests/agent_flows/voting_majority_consensus.md"

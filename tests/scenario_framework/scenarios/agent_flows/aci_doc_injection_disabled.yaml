@@ -89,11 +89,8 @@ steps:
     type: "journal-assert"
     action_type: "agent.prompt_assembled"
     trace_scoped: true
-    # agent.prompt_assembled has two producers sharing one action_type, discriminated by
-    # prompt_kind: AgentRunner's PLANNING producer (always fires while a plan is written,
-    # regardless of agents.inject_aci_docs) and ReActLoopAdapter's REACT producer (Step 3,
-    # gated by the flag under test here). Without this filter expect_count: 0 can never
-    # hold — the planning-kind event always exists — so it would silently prove nothing.
+    # agent.prompt_assembled has two producers that share one action_type, told apart by prompt_kind: AgentRunner's planning producer (always fires) and ReActLoopAdapter's react producer (gated by the flag under test).
+    # Without this filter, expect_count: 0 can never hold, because the planning event always exists, so the check would prove nothing.
     payload_equals:
       - path: "prompt_kind"
         value: "react"
