@@ -171,10 +171,8 @@ export type IAgentPromptAssembledPayload =
 /** Which resolution call-site produced an agent.effort_resolved event. */
 export type EffortResolutionPath = "planning" | "execution" | "flow_step";
 
-/** Typed payload for agent.effort_resolved — the journaled EffortResolver outcome with
- *  its basis, inputs and floors, joinable by traceId for measurement reproducibility.
- *  Declaration sources are PER FIELD (effort/thinking) so a mixed request-thinking /
- *  role-effort declaration journals each field's own governing surface (GAP-4).
+/** Typed payload for agent.effort_resolved: the EffortResolver outcome with its basis, inputs and floors, joinable by traceId.
+ *  Declaration sources are per field (effort and thinking), so a mixed request-thinking and role-effort declaration journals each field's own source.
  *  Extends Record<string, JSONValue> so a typed instance passes directly to an EventLogger. */
 export interface IAgentEffortResolvedPayload extends Record<string, JSONValue> {
   /** Which resolution call-site produced the event. */
@@ -935,8 +933,7 @@ export const DomainEventType = {
   RequestQualityGateFailed: "request.quality_gate.failed",
   RequestMemoryEnhanceFailed: "memory.enhance_failed",
 
-  // Request routing events (Phase 74, request/router.ts). RequestRouter is @visible, so
-  // every action it logs must be a registered member (raw strings fail Gate 19).
+  // Request routing events from request/router.ts. RequestRouter is @visible, so every action it logs must be a registered member.
   RequestFlowValidated: "request.flow.validated",
   RequestFlowValidationReportFailed: "request.flow.validation.failed",
   RequestRoutingFlow: "request.routing.flow",

@@ -133,7 +133,7 @@ export class CostTracker implements ICostTracker {
       costSource?: CostSource;
       cacheReadTokens?: number;
       cacheCreationTokens?: number;
-      /** Binding service/transport identity of the generation (Step 8). */
+      /** Binding service and transport identity of the generation. */
       service?: string;
       transport?: string;
       /** Pre-resolved cost/source (avoids recomputing + double divergence emission). */

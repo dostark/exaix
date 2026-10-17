@@ -41,10 +41,8 @@ const DRAFT_DEFAULT_ROOTS: readonly SkillRootKind[] = [
   SkillRootKind.PROJECT,
 ];
 
-/**
- * Canonical string form: CRLF to LF, exactly one terminal LF removed. Rejects NUL and
- * any lone CR (a CR not followed by LF) so an ambiguous byte stream never hashes.
- */
+/** Canonical string form: CRLF to LF, one terminal LF removed.
+ *  Rejects NUL and any lone CR, so an ambiguous byte stream never hashes. */
 export function canonicalizeSkillText(text: string): string {
   if (text.includes("\0")) {
     throw new Error("skill text contains a NUL byte");
@@ -204,10 +202,8 @@ function asciiWords(text: string): string[] {
   return text.normalize("NFKC").toLowerCase().match(ASCII_WORD_PATTERN) ?? [];
 }
 
-/**
- * Trigger keywords for a skill that authored none. Name words come first and keep short words, then
- * description words that meet the minimum length. Stopwords and repeats drop, and the cap applies last.
- */
+/** Trigger keywords for a skill that authored none. Name words come first and keep short words, then description words of minimum length.
+ *  Stopwords and repeats drop, and the cap applies last. */
 export function synthesizeFallbackKeywords(
   name: string,
   description: string,
@@ -297,10 +293,8 @@ export function findLinkedReferencePaths(body: string): string[] {
   return analyzeReferenceLinks(body).linked;
 }
 
-/**
- * Pure parse of one revision snapshot into the runtime view. Filesystem loads and DB
- * rehydration share this path. Corrupt snapshots fail closed.
- */
+/** Pure parse of one revision snapshot into the runtime view. Filesystem loads and DB rehydration share this path.
+ *  Corrupt snapshots fail closed. */
 export async function parseSkillSnapshot(
   snapshot: ISkillRevisionSnapshot,
   rootContext: ISkillRootContext,

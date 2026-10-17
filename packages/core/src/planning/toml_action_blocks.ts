@@ -81,15 +81,9 @@ function parseActionBlock(markerNumber: number, tomlBody: string): IPlanAction {
   return action;
 }
 
-/**
- * Finds every TOML_BLOCK:N-marked fenced ```toml block in rawContent, parses each into
- * an IPlanAction, and returns the surrounding text with those blocks removed. A step
- * needing multiple actions reuses the same marker number across multiple separate
- * fenced blocks — all contribute, in source order, to that marker's action list.
- *
- * Returns { envelope: rawContent, actionsByBlock: new Map() } unchanged when rawContent
- * contains no TOML_BLOCK:N fence at all (the guaranteed no-op path for pure-JSON plans).
- */
+/** Finds every TOML_BLOCK:N-marked fenced ```toml block in rawContent, parses each into an IPlanAction, and returns the text without them.
+ *  A step with several actions reuses one marker number across separate blocks, and all contribute in source order.
+ *  Returns { envelope: rawContent, actionsByBlock: new Map() } unchanged when no marked fence exists. */
 export function extractTomlActionBlocks(rawContent: string): ITomlActionBlockExtraction {
   const actionsByBlock = new Map<number, IPlanAction[]>();
 
