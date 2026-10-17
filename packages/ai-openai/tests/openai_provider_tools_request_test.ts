@@ -54,8 +54,8 @@ Deno.test("[phase203.provider] supportsToolChoice follows the self-hosted declar
   }
 });
 
-// DeepSeek answered HTTP 400 "Thinking mode does not support this tool_choice" for a named
-// tool and for "required" on 2026-10-05. Thinking with "auto" returned 200.
+// DeepSeek answers HTTP 400 "Thinking mode does not support this tool_choice" for a named tool and for "required".
+// Thinking with "auto" returns 200.
 Deno.test("[provider] only the DeepSeek profile refuses a forced tool_choice while thinking", () => {
   for (const profile of ["openai", "deepseek", "local-test"] as const) {
     const provider = new OpenAIProvider({
