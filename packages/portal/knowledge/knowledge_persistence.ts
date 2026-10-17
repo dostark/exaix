@@ -76,14 +76,8 @@ export async function saveKnowledge(
   }
 }
 
-/**
- * Returns `null` when the file is missing or genuinely invalid.
- *
- * A snapshot written by a newer build may carry a relationship kind this build
- * does not know. Only that edge is dropped, and a warning names the count.
- * The tolerance covers `relationships[].kind` alone.
- * Any other invalid field still resolves to `null`.
- */
+/** Returns `null` when the file is missing or invalid. A snapshot from a newer build may carry a relationship kind this build does not know.
+ *  Only that edge is dropped, and a warning names the count. The tolerance covers `relationships[].kind` alone, so any other invalid field still gives `null`. */
 export async function loadKnowledge(
   portalAlias: string,
   projectsDir: string,
@@ -124,13 +118,8 @@ const KNOWN_RELATIONSHIP_KINDS: readonly string[] = [
   SYMBOL_REFERENCE_EDGE_KIND,
 ];
 
-/**
- * Re-parses after replacing each relationship kind with a known one.
- *
- * That proves every other field is valid before any edge is dropped.
- * Only edges whose kind is unknown are removed.
- * Returns `undefined` when the snapshot is invalid for any other reason.
- */
+/** Re-parses after replacing each relationship kind with a known one. This proves every other field is valid before any edge is dropped.
+ *  Only edges with an unknown kind are removed. Returns `undefined` when the snapshot is invalid for any other reason. */
 function tolerateUnknownRelationshipKinds(parsed: JSONValue): IPortalKnowledge | undefined {
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return undefined;
   const record = parsed as Record<string, JSONValue>;
