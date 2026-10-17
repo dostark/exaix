@@ -12,7 +12,7 @@ import { join } from "@std/path";
 import { createGitTestContext, setupGitRepo } from "@exaix/git/testing";
 import { GitSecurityError } from "@exaix/git";
 
-// A real delegate summary that a step commit carried on 2026-10-05.
+// A real delegate summary that a step commit carried.
 const SUMMARY_WITH_TRIGGER_WORDS = "deno lint and deno check clean. Covers N-day and due-date cases. " +
   "Rollback: git reset --hard is not needed.";
 
