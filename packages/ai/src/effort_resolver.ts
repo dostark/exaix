@@ -72,16 +72,15 @@ export interface IEffortResolution {
   thinking: boolean | undefined; // undefined = omit the field
   effortBasis: EffortResolutionBasis;
   thinkingBasis: EffortResolutionBasis;
-  /** The surface whose declaration governs the effort field — per-field, so a mixed
-   *  request-thinking / role-effort declaration journals each field's own source (GAP-4). */
+  /** The surface whose declaration governs the effort field. It is per field, so a mixed request-thinking and role-effort declaration journals each field's own source. */
   effortDeclarationSource: EffortDeclarationSource;
   /** The surface whose declaration governs the thinking field. */
   thinkingDeclarationSource: EffortDeclarationSource;
   /** True when the governing declaration was concrete — the only case where the
    *  execution path sets max_tokens from EFFORT_MAX_TOKENS. */
   concreteDeclaration: boolean;
-  /** Present whenever an `auto` declaration resolved through the heuristic BEFORE any
-   *  floor ran — computed from pre-floor bases so a skill/role floor never drops it (GAP-3). */
+  /** Present whenever an `auto` declaration resolved through the heuristic before any floor ran.
+   *  It is computed from the pre-floor bases, so a skill or role floor never drops it. */
   heuristicInputs?: {
     taskComplexity: TaskComplexity;
     complexitySource: TaskComplexitySource;
@@ -225,14 +224,9 @@ function effortRank(tier: Opt<EffortTier, Reason.OptionalContext>): number {
   return tier === undefined ? -1 : EFFORT_TIER_ORDER.indexOf(tier);
 }
 
-/** Provider types whose calls can host Anthropic native-adaptive thinking: the metered API
- *  (ANTHROPIC) and the subscription-billed Claude Code CLI (CLAUDE_CLI). For CLAUDE_CLI the
- *  evidence is the installed Claude Code binary (2.1.269): it ships the Claude API docs whose
- *  model table says omitting `thinking` runs adaptive on the native-adaptive models, exposes
- *  a `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING` env var (i.e. adaptive is the DEFAULT, not the
- *  opt-in), and its `--help` shows no thinking control flag Exaix could send — opencode's
- *  adapter sends no thinking control either way, so the label only names what the CLI does
- *  by default. See plan Sources (Step 11). */
+/** Provider types whose calls can host Anthropic native-adaptive thinking: the metered API (ANTHROPIC) and the Claude Code CLI (CLAUDE_CLI).
+ *  The CLI docs say that omitting `thinking` runs adaptive. The CLI has a CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING variable and no thinking flag Exaix could send.
+ *  The label names only the CLI default, because opencode sends no thinking control either. */
 const NATIVE_ADAPTIVE_THINKING_PROVIDER_TYPES: ReadonlySet<ProviderType> = new Set([
   ProviderType.ANTHROPIC,
   ProviderType.CLAUDE_CLI,
@@ -242,8 +236,8 @@ function isNativeAdaptiveThinking(signals: IEffortResolutionSignals): boolean {
   if (signals.providerType === undefined || !NATIVE_ADAPTIVE_THINKING_PROVIDER_TYPES.has(signals.providerType)) {
     return false;
   }
-  // ai_anthropic.thinking_default is read only by AnthropicProvider (the metered API). The
-  // claude-cli provider never reads that config, so the gate applies to ANTHROPIC only (GAP-2).
+  // ai_anthropic.thinking_default is read only by AnthropicProvider (the metered API).
+  // The claude-cli provider never reads it, so the gate applies to ANTHROPIC only.
   if (signals.providerType === ProviderType.ANTHROPIC && signals.anthropicThinkingDefault === false) return false;
   if (signals.model === undefined) return false;
   return NATIVE_ADAPTIVE_THINKING_MODEL_PREFIXES.some((prefix) => signals.model!.startsWith(prefix));
@@ -296,9 +290,8 @@ export class EffortResolver implements IEffortResolver {
     const effortResult = this.resolveField(declarations, FIELD_EFFORT, signals);
     const thinkingResult = this.resolveField(declarations, FIELD_THINKING, signals);
 
-    // GAP-3: the heuristic flag is captured from the PRE-FLOOR bases — a skill/role floor
-    // later overwrites a basis in place, and a floor-raised auto resolution must still
-    // journal the heuristic inputs a measurement needs to reproduce it.
+    // The heuristic flag is captured from the pre-floor bases. A floor later overwrites a basis in place.
+    // A floor-raised auto resolution must still journal the heuristic inputs that a measurement needs to reproduce it.
     const heuristicUsed = effortResult.basis === BASIS_HEURISTIC || thinkingResult.basis === BASIS_HEURISTIC;
 
     const floorsApplied = this.applyFloors(
@@ -410,8 +403,7 @@ export class EffortResolver implements IEffortResolver {
       }
     }
 
-    // Role-kind floor (Step 5): a judge role's effort is never resolved below the floor,
-    // unless an explicit concrete request-level value says otherwise (Constraint rule 1).
+    // Role-kind floor: a judge role's effort is never resolved below the floor, unless an explicit concrete request-level value says otherwise.
     const effortSkip = floorSkipped(
       govSource(declarations, FIELD_EFFORT),
       govValue(declarations, FIELD_EFFORT),

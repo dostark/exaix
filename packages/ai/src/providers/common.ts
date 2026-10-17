@@ -145,10 +145,8 @@ export class ConnectionError extends ModelProviderError {
   }
 }
 
-/**
- * Error thrown when fetch itself fails before any HTTP status arrives (DNS, refused or reset connection).
- * It is a ConnectionError, so the retry rule treats it like a 5xx.
- */
+/** Thrown when fetch fails before any HTTP status arrives (DNS, refused or reset connection).
+ *  It is a ConnectionError, so the retry rule treats it like a 5xx. */
 export class TransportError extends ConnectionError {
   constructor(provider: string, message: string) {
     super(provider, message);

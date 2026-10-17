@@ -178,10 +178,9 @@ export class RateLimitedProvider implements IModelProvider {
     return reservation;
   }
 
-  /** Decide whether this call runs under the global or service budget mode.
-   *  A bound provider always uses the mode. The boot provider uses it only while its async
-   *  globalBudget predicate resolves true. Local transport carries its own service cap and
-   *  never consumes a cloud global cap. */
+  /** Decides whether this call runs under the global or the service budget mode. A bound provider always uses the mode.
+   *  The boot provider uses it only while its async globalBudget predicate resolves true.
+   *  Local transport carries its own service cap and never consumes a cloud global cap. */
   private async resolveBudgetMode(finiteRemoteBudget: boolean): Promise<{
     enabled: boolean;
     service: string;

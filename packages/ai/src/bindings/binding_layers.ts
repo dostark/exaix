@@ -214,11 +214,8 @@ function collapseSameSelectorEntries(
   return [...byLayerAndSelector.values()];
 }
 
-/**
- * Assemble the operator binding layers for the current config and one run.
- * Order is config, daemon overlays, run overlays, then run --bind entries.
- * Catalogs merge over the built-ins.
- */
+/** Assembles the operator binding layers for the current config and one run.
+ *  Order is config, daemon overlays, run overlays, then run --bind entries. Catalogs merge over the built-ins. */
 export async function loadBindingLayers(
   config: Config,
   run: Opt<IRunBindingsFile, Reason.OptionalContext> = undefined,

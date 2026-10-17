@@ -18,10 +18,8 @@ import { createMockConfig } from "@exaix/testing";
 import type { Config } from "@exaix/schemas/config.ts";
 import { loadBindingLayers } from "@exaix/ai/bindings/binding_layers.ts";
 
-/**
- * A run binding file carries its own overlays (content copied at submit time) and binds.
- * Built inline so the loader never needs the filesystem claim path for the layer-order test.
- */
+/** A run binding file carries its own overlays (content copied at submit time) and binds.
+ *  It is built inline so the layer-order test never needs the filesystem claim path. */
 function baseConfig(root: string): Config {
   return createMockConfig(root, {
     bindings: {
