@@ -44,14 +44,8 @@ steps:
         path_pattern: "**/Plans/*_plan.md"
         score_weight: 0.2
 
-  # ── exactl request inspect against the produced trace ───────────────────
-  # A request/plan alone never spawns a CLI delegate — dogfood-context capture
-  # only happens at plan-EXECUTION time (native headless launch), which this
-  # CI-safe, mock-provider tier never triggers (see the phase-176 plan's Step 4
-  # Known Deviations note). The honest, real assertion here is that `exactl
-  # request inspect` is genuinely reachable through this declarative runner and
-  # reports the true no_capture (exit 3) result for a trace that never reached a
-  # dogfood launch — never a fabricated success.
+  # Inspects the produced trace with `exactl request inspect`. A request or plan alone never spawns a CLI delegate: dogfood-context capture happens only at plan-execution time,
+  # which this mock-provider tier never reaches. So the real assertion is that the command is reachable and reports the true no_capture (exit 3) result.
   - id: "inspect-produced-trace"
     type: "run-script"
     name: "exactl request inspect reports a real, honest no_capture for a plan-only trace"
