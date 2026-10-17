@@ -1,9 +1,9 @@
 /**
- * @module Phase208VerificationDocsTest
- * @path tests/scripts/phase208_verification_docs_test.ts
+ * @module VerificationDocsTest
+ * @path tests/scripts/verification_docs_test.ts
  * @related-files []
  * @architectural-layer Test
- * @description Doc-content assertions for the Phase 208 post-execution verification feature.
+ * @description Doc-content assertions for the post-execution verification feature.
  */
 
 import { assertStringIncludes } from "@std/assert";
