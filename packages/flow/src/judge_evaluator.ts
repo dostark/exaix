@@ -80,7 +80,7 @@ export class JudgeEvaluator implements IJudgeInvoker {
     callMetadata?: Opt<IFlowJudgeCallMetadata, Reason.OptionalContext>,
   ): Promise<EvaluationResult> {
     // Build evaluation prompt
-    const prompt = buildEvaluationPrompt(content, criteria, context);
+    const prompt = buildEvaluationPrompt(content, criteria, context, criteria.length > 1);
 
     // Invoke judge agent
     const response = await this.agentRunner.run(agentRole, {
