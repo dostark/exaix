@@ -7,7 +7,7 @@
  * @related-files [packages/session/src/delegate_provider_env.ts]
  */
 
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { readDelegateProviderEnv, resolveDelegateProviderEnv } from "@exaix/session/delegate_provider_env.ts";
 
 const OPENROUTER = { name: "openrouter", key_env: "OPENROUTER_API_KEY" };
@@ -32,6 +32,6 @@ Deno.test("[delegate_provider_env] the reader takes the key from the named varia
 Deno.test("[delegate_provider_env] the reader names the variable when the key is missing or empty", () => {
   for (const value of [undefined, ""]) {
     const error = assertThrows(() => readDelegateProviderEnv(OPENROUTER, "opencode", () => value), Error);
-    assertEquals(error.message.includes("OPENROUTER_API_KEY"), true, "the message names the variable");
+    assertStringIncludes(error.message, "OPENROUTER_API_KEY");
   }
 });

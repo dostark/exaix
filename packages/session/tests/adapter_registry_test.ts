@@ -134,7 +134,11 @@ Deno.test("[session_adapter] opencode headless argv contains run, --format json,
   assertEquals(launch.args[1], "--standalone", "opencode 2.x must run a private server so the launch env applies");
   assertEquals(launch.args[2], "--format", "opencode uses --format (not --output-format)");
   assertEquals(launch.args[3], "json", "must request JSON output for return synthesis");
-  assertEquals(launch.args.includes("--dir"), false, "opencode 2.x rejects --dir; the worktree is the launch cwd");
+  assertEquals(
+    launch.args.filter((arg) => arg === "--dir"),
+    [],
+    "opencode 2.x rejects --dir; the worktree is the launch cwd",
+  );
   assertEquals(launch.args.includes("Implement feature X"), true, "objective must be a discrete argv item");
   assertFalse(launch.args.includes("--brief"), "opencode does not support --brief flag");
   assertFalse(launch.args.includes("--max-total-tokens"), "opencode does not support --max-total-tokens");
