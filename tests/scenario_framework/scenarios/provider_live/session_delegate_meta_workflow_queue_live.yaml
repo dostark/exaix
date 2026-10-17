@@ -11,31 +11,9 @@ portals:
     target_path: "$WORKSPACE_ROOT/test-portal"
     git_init: true
 
-# Phase 150 Step 5's outstanding [live, operator-run] item: the documented
-# pre-gap -> next-steps -> post-gap dogfood queue (Exaix_Dogfooding_Analysis.md §7.5),
-# run through a real daemon with a real delegate for the coding step, proving three
-# things the CI-only meta_workflow_queue_pipeline_test.ts cannot (it never boots a
-# daemon): (1) each of the three identities actually resolves — code-analyst,
-# dogfood-coder, code-reviewer — not just that plan_to_requests.ts *would* assign
-# them; (2) the queue's ordering holds against a REAL daemon, not a fixture; (3) the
-# dogfood-coder step's delegate produces a real, reconciled file change (Step 1
-# fidelity), reusing the exact assertions session-delegate-outcome-live already
-# proved for a single request, now inside a 3-identity chain.
-#
-# Ordering is enforced by SEQUENCING, not by a `depends_on` field: each identity's
-# request is submitted only after the previous one's plan has been archived
-# (Workspace/Archive/*_plan.md), so at most one plan ever sits in Workspace/Plans/ at
-# a time — a `wait-for-file` / `frontmatter-field-equals` glob against Plans/ is
-# therefore unambiguous at every stage without needing to resolve a specific
-# trace_id/request_id per step. This is a stronger ordering proof than `depends_on`
-# alone would give (it is enforced by the scenario, not merely declared in
-# frontmatter the daemon is trusted to honour).
-#
-# code-analyst and code-reviewer (Blueprints/Agents/{code-analyst,code-reviewer}.md)
-# have no `session_delegate` block and are read-only (no write_file/patch_file/
-# run_command in permitted_tools) — they execute via the in-process ReAct loop, not a
-# headless delegate subprocess. Only the middle (dogfood-coder) request is expected to
-# emit `session.delegate.*` journal events.
+# Live, operator-run: the documented pre-gap, next-steps and post-gap dogfood queue (Exaix_Dogfooding_Analysis.md), run through a real daemon with a real delegate for the coding step. It proves what the CI-only meta_workflow_queue_pipeline_test.ts cannot, because that test never boots a daemon:
+# each identity (code-analyst, dogfood-coder, code-reviewer) resolves, the queue ordering holds against a real daemon, and the dogfood-coder delegate produces a real reconciled file change.
+# Ordering is enforced by sequencing, not `depends_on`: each request is submitted after the previous plan is archived, so at most one plan sits in Workspace/Plans/ and the Plans/ globs are unambiguous. code-analyst and code-reviewer are read-only ReAct identities with no session_delegate block, so only the dogfood-coder request emits session.delegate.* events.
 
 matrix:
   cells:
@@ -161,10 +139,7 @@ steps:
         kind: "file-found"
         path_pattern: "**/Archive/*_plan.md"
 
-  # ==========================================================================
-  # Step 2 — next-steps (dogfood-coder, real headless delegate)
-  # Mirrors session_delegate_outcome_live.yaml's proven assertions exactly.
-  # ==========================================================================
+  # Step: next-steps (dogfood-coder, real headless delegate). Mirrors session_delegate_outcome_live.yaml's assertions exactly.
 
   - id: "submit-nextsteps-request"
     type: "exactl"
@@ -214,16 +189,9 @@ steps:
         kind: "command-output-contains"
         contains: ["approved"]
 
-  # Wait for the INTENDED CHANGE, not the first return.json — see
-  # session_delegate_outcome_live.yaml's identical step for the Phase 150 LIVE-RT
-  # defect (#5) this guards against: a read-only first plan step would otherwise
-  # satisfy a naive "first return" wait before the writing step has even run.
-  #
-  # $WORKTREE resolves dynamically to the newest execution worktree (mtime-based,
-  # see resolveNewestWorktree in step_executor.ts), not to a specific request's
-  # trace — unlike $TRACE_ID/$REQUEST_ID. Since code-analyst and code-reviewer are
-  # read-only and never create a worktree, the coding step's worktree is the only
-  # one that ever exists, so this is unambiguous even with three requests queued.
+  # Wait for the intended change, not the first return.json, as in session_delegate_outcome_live.yaml: a read-only first plan step would otherwise satisfy a naive first-return wait.
+  # $WORKTREE resolves to the newest execution worktree (resolveNewestWorktree in step_executor.ts), not to one request's trace. code-analyst and code-reviewer are read-only and create no worktree,
+  # so the coding step's worktree is the only one and the match is unambiguous with three requests queued.
   - id: "wait-for-intended-change"
     type: "file-contains"
     cwd: "$WORKTREE"

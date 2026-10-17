@@ -11,12 +11,9 @@ portals:
     target_path: "$WORKSPACE_ROOT/test-portal"
     git_init: true
 
-# Five cells required by exaix-dev-docs/planning/phase-176-dogfood-context-management-
-# refinement.md Step 4 Action 5: two "stock" cells (CliDelegateStrategy, selected by an
-# agent blueprint's own `strategy: cli_delegate` — Blueprints/Flows/dogfood-loop.flow.yaml)
-# and three "cycle" cells (SessionDelegationCoordinator, selected by the [session_delegate]
-# `code_changes` gate). `--cell <name>` matches literally against a cell's `tool` field, so
-# these five values are exactly what `exactl eval run --cell <name>` expects.
+# Five cells: two "stock" cells (CliDelegateStrategy, selected by an agent blueprint's `strategy: cli_delegate` in Blueprints/Flows/dogfood-loop.flow.yaml)
+# and three "cycle" cells (SessionDelegationCoordinator, selected by the [session_delegate] `code_changes` gate).
+# `--cell <name>` matches literally against a cell's `tool` field, so these five values are exactly what `exactl eval run --cell <name>` expects.
 matrix:
   cells:
     - tool: "stock-claude"
@@ -182,11 +179,8 @@ steps:
     args: ["**/Session/**/return.json"]
     timeout_sec: 300
 
-  # return.json landing only means the delegate wrote its raw return — reconciliation is
-  # triggered asynchronously by a SessionReturnWatcher reacting to that file, and races
-  # `assert-cycle-reconciled-clean` if run immediately after (observed live, 2026-09-09:
-  # the assertion found zero rows even on an accepted delegate). Poll for the real
-  # terminal signal instead of assuming it is already journaled.
+  # return.json landing only means the delegate wrote its raw return. A SessionReturnWatcher reconciles asynchronously, which races `assert-cycle-reconciled-clean` if run immediately after.
+  # Poll for the terminal signal instead of assuming it is journaled.
   - id: "wait-for-cycle-reconciled"
     type: "exactl"
     cells: ["cycle-claude", "cycle-opencode", "cycle-codex"]
@@ -196,12 +190,8 @@ steps:
     input_criteria: []
     output_criteria: []
 
-  # Not trace_scoped: session.delegate.* rows are journalled under the CHILD delegate's
-  # own trace_id, never the parent request trace `trace_scoped` resolves to (confirmed by
-  # a real live run, 2026-09-09) — trace_scoped here always yields zero rows. A single
-  # `--cell` invocation runs exactly one delegate per sandbox, so global presence is
-  # unambiguous; matches the proven session_delegate_matrix_live.yaml's own shared (non
-  # per-tool) `assert-reconciled-clean` step, not its `trace_scoped` codex-only steps.
+  # Not trace_scoped: session.delegate.* rows are journalled under the child delegate's own trace_id, never the parent request trace, so trace_scoped always yields zero rows.
+  # A single `--cell` invocation runs one delegate per sandbox, so global presence is unambiguous. This matches session_delegate_matrix_live.yaml's shared `assert-reconciled-clean` step.
   - id: "assert-cycle-reconciled-clean"
     type: "journal-assert"
     cells: ["cycle-claude", "cycle-opencode", "cycle-codex"]

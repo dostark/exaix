@@ -65,10 +65,8 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  # restart-daemon: a running daemon does not hot-reload config, so restart it to pick up the
-  # newly-registered `test-project` portal (the documented portal-mount pattern — README §2.2:
-  # `portal add` then `daemon stop && daemon start`). Without this the daemon's config never
-  # learns the portal and the request submitted below stalls unprocessed.
+  # restart-daemon: a running daemon does not hot-reload config, so restart it to pick up the newly registered `test-project` portal (`portal add`, then `daemon stop && daemon start`).
+  # Without it the daemon never learns the portal and the request submitted below stalls unprocessed.
   - id: "restart-daemon"
     type: "exactl"
     command: "daemon"
@@ -79,11 +77,8 @@ steps:
         kind: "command-output-contains"
         contains: ["daemon.restarted"]
 
-  # wait-for-daemon-ready: `daemon restart`/`start` return when the process is ALIVE (the CLI's
-  # daemon.started), NOT when the daemon's watchers are listening. Submitting the request in that gap
-  # races — and loses to — the not-yet-started Requests watch. Block on `daemon.ready`, which the
-  # daemon PROCESS emits only after every watcher is confirmed listening (distinct from the CLI's
-  # daemon.started — no same-named-event ambiguity).
+  # wait-for-daemon-ready: `daemon restart` and `start` return when the process is alive, not when its watchers are listening, so submitting the request in that gap loses the race to the Requests watch.
+  # Block on `daemon.ready`, which the daemon process emits only after every watcher is confirmed listening. It is distinct from the CLI's daemon.started.
   - id: "wait-for-daemon-ready"
     type: "exactl"
     command: "journal"
@@ -131,12 +126,9 @@ steps:
     args: ["**/Session/**/return.json"]
     timeout_sec: 300
 
-  # --- Codex-only: trace-scoped audit-chain proof (Phase 167 Step 4) ---
-  # The shared assert-reconciled-clean check below uses the older journal-event-exists
-  # criterion kind, which has no trace_scoped support (GAP-1/Architecture Notes: "global
-  # event presence is insufficient"). These four steps assert the SAME four-event
-  # session.delegate.* audit chain scoped to this run's own request trace, so a leftover
-  # row from an earlier scenario in a shared sandbox can never satisfy them.
+  # --- Codex-only: trace-scoped audit-chain proof ---
+  # The shared assert-reconciled-clean check below uses the journal-event-exists criterion, which has no trace_scoped support. These four steps assert the same four-event session.delegate.* audit chain scoped to this run's request trace,
+  # so a leftover row from an earlier scenario in a shared sandbox can never satisfy them.
   - id: "assert-codex-briefed"
     type: "journal-assert"
     cells: ["codex"]
@@ -188,15 +180,9 @@ steps:
         equals: 0
         score_weight: 0.25
 
-  # --- Assertion: the delegate reconciled cleanly AND was ACCEPTED ---
-  # session.delegate.reconciled must be PRESENT *with an accepted payload*. The watcher
-  # journals this same event on BOTH the accepted path ({decision}) and a non-scope
-  # rejection ({rejected:true}); `payload_absent: {rejected: true}` requires a matching
-  # event that is NOT a rejection, so the delegate genuinely returned a parseable result
-  # and reconciliation accepted (the scope check passed — reconciled is only emitted on the
-  # accepted branch when accepted, and the rejected branch sets rejected:true).
-  # The scope_violation event is asserted by the negative scenario
-  # (session_delegate_scope_violation_live.yaml); the matrix does not re-assert it here.
+  # --- Assertion: the delegate reconciled cleanly and was accepted ---
+  # The watcher journals session.delegate.reconciled on both the accepted path ({decision}) and a non-scope rejection ({rejected:true}), so `payload_absent: {rejected: true}` requires a matching event that is not a rejection.
+  # The negative scenario session_delegate_scope_violation_live.yaml asserts scope_violation, so the matrix does not re-assert it.
   - id: "assert-reconciled-clean"
     type: "journal-assert"
     input_criteria: []

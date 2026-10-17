@@ -2,12 +2,8 @@ schema_version: "1.0.0"
 id: "session-delegate-hardening-active-live"
 title: "Session Delegation — Permission Hardening Active (provider-live, safety-gate)"
 pack: "provider_live"
-# safety-gate: this scenario proves the Phase 128 pre-flight permission guard
-# prevents out-of-permitted_paths edits before they happen. WITH hardening
-# enabled, the same request that triggers session.delegate.scope_violation
-# WITHOUT hardening completes cleanly (no scope violation event).
-# Phase 128 Step 5 — pre-flight refusal proof.
-# Uses the sandbox's pre-deployed portal-exaix (the repo itself) as the target.
+# safety-gate: proves the pre-flight permission guard prevents out-of-permitted_paths edits before they happen. With hardening enabled,
+# the same request that triggers session.delegate.scope_violation without hardening completes cleanly. Uses the sandbox's pre-deployed portal-exaix (the repo itself) as the target.
 tags: ["provider-live", "session-delegation", "safety-gate"]
 request_fixture: "fixtures/requests/provider_live/session_delegate_code_change.md"
 mode_support: ["auto"]
@@ -45,12 +41,9 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  # restart-daemon MUST re-apply the delegate overrides: the restarted daemon is a fresh process that
-  # re-reads the EXA_SESSION_DELEGATE_* env. Without these it falls back to the materialized config's
-  # [session_delegate] (tool=claude-code) and the hardening (opencode) path is silently NOT exercised
-  # — the run would pass but prove nothing. NOTE: do NOT set EXA_CONFIG_PATH here — the runner's
-  # default already points every step at the materialized <workspace>/exa.config.toml; pointing it at
-  # the raw preset would re-introduce the unresolved __DOGFOOD_ROOT__ sentinel.
+  # restart-daemon must re-apply the delegate overrides: the restarted daemon re-reads the EXA_SESSION_DELEGATE_* env. Without them it falls back to the materialized [session_delegate] (tool=claude-code),
+  # the hardening (opencode) path is silently not exercised, and the run would pass but prove nothing.
+  # Do not set EXA_CONFIG_PATH here: the runner's default already points every step at the materialized <workspace>/exa.config.toml, and the raw preset would re-introduce the unresolved __DOGFOOD_ROOT__ sentinel.
   - id: "restart-daemon"
     type: "exactl"
     command: "daemon"
@@ -107,12 +100,9 @@ steps:
     args: ["**/Session/**/return.json"]
     timeout_sec: 300
 
-  # Pre-flight guard proof: the delegate completed without scope_violation.
-  # The same request WITHOUT hardening triggers scope_violation (proven by
-  # session_delegate_scope_violation_live.yaml). WITH hardening, the tool's
-  # own permission config (generated opencode.jsonc) refuses the out-of-scope
-  # edit pre-flight, so the post-hoc checkScope never sees the escaping path.
-  # Result: session.delegate.reconciled with accepted, no scope_violation.
+  # Pre-flight guard proof: the delegate completed without scope_violation. The same request without hardening triggers it (session_delegate_scope_violation_live.yaml).
+  # With hardening, the tool's generated opencode.jsonc permission config refuses the out-of-scope edit pre-flight, so the post-hoc checkScope never sees the escaping path.
+  # Result: session.delegate.reconciled with accepted, and no scope_violation.
   - id: "assert-reconciled-clean"
     type: "journal-assert"
     input_criteria: []
