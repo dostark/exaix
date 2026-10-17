@@ -1,9 +1,6 @@
 schema_version: "1.0.0"
-# Asserts search_files discovers files by glob through the tool handler, including that
-# non-matching files are excluded. The previous version ran `find` and asserted its output.
-# This scenario is also the regression guard for the ToolRegistry wiring in
-# apps/mcp-server/main.ts — without it search_files fails with
-# "ToolRegistry not available in context".
+# Asserts search_files discovers files by glob through the tool handler, and that non-matching files are excluded.
+# It is also the regression guard for the ToolRegistry wiring in apps/mcp-server/main.ts: without it, search_files fails with "ToolRegistry not available in context".
 id: "search-files-discovery"
 title: "search_files discovers portal files by glob and excludes non-matches"
 pack: "mcp_tools_extended"

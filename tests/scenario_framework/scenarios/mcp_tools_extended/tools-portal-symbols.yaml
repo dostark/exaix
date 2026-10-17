@@ -1,10 +1,7 @@
 schema_version: "1.0.0"
-# Asserts query_symbols end to end through the real MCP server: refuses before the
-# portal has ever been analyzed, then serves the persisted symbolMap once knowledge.json
-# exists, ranked by pageRankScore and filterable by name substring / kind / limit. Issue #3:
-# PortalKnowledgeService's symbol extraction was computed and persisted but had no agent-facing
-# read path — this is the tool that closes that gap, and the scenario this manifest requires
-# every docs-visible tool to carry (tests/eval/tool_eval_parity_test.ts, entity:<tool-name>).
+# Asserts query_symbols end to end through the real MCP server. It refuses before the portal has been analyzed,
+# then serves the persisted symbolMap once knowledge.json exists, ranked by pageRankScore and filterable by name substring, kind and limit.
+# It is the scenario tests/eval/tool_eval_parity_test.ts requires every docs-visible tool to carry (entity:<tool-name>).
 id: "tools-portal-symbols"
 title: "Domain tool — query_symbols serves a portal's persisted code symbols"
 pack: "mcp_tools_extended"
@@ -31,10 +28,8 @@ steps:
         equals: 0
         score_weight: 0.2
 
-  # A prior run of this same scenario in a reused sandbox may have already written the
-  # fixture knowledge.json below — clear it so the "not yet analyzed" step is deterministic
-  # regardless of run history (same order-independence goal as setup_tools_portal.ts's own
-  # "recreated from scratch each run" fixture copy).
+  # Clears the fixture knowledge.json that a prior run in a reused sandbox may have written,
+  # so the "not yet analyzed" step is deterministic regardless of run history.
   - id: "clean-knowledge-fixture"
     type: "remove-files"
     name: "Clear any knowledge.json left over from a prior run of this scenario"
@@ -60,11 +55,8 @@ steps:
         contains: ["has not been analyzed", "\"isError\": true", "\"success\": false"]
         score_weight: 0.8
 
-  # A small, hand-written symbolMap standing in for a real `portal analyze --mode standard`
-  # run (which is what actually populates this file in production — see
-  # scenarios/portal_knowledge/portal-knowledge-strategies.yaml for that end-to-end path).
-  # Written directly here so this scenario stays fast and asserts the tool's read/filter/rank
-  # contract, not the (separately covered) extraction strategy.
+  # A small hand-written symbolMap stands in for a real `portal analyze --mode standard` run, which populates this file in production.
+  # Writing it directly keeps the scenario fast and focused on the tool's read, filter and rank contract. scenarios/portal_knowledge/portal-knowledge-strategies.yaml covers the extraction path.
   - id: "write-knowledge-fixture"
     type: "write-file"
     name: "Seed Memory/Projects/tools/knowledge.json with a small real symbolMap"

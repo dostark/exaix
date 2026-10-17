@@ -1,12 +1,7 @@
 schema_version: "1.0.0"
-# Asserts query_relationships/find_dependents end to end: a real `portal analyze` populates a
-# real layer_contains_file edge (Step 2, derived on demand) and a real file_imports_file_internal
-# edge (Step 1, persisted), then a real ToolRegistry — the Solo-tier in-process ReAct catalog,
-# a separate catalog from packages/mcp/src/manifest.ts's TOOL_MANIFEST (see ARCHITECTURE.md's
-# "Tool Catalog Parity") — serves both directions of the query. Mirrors
-# tools-portal-symbols.yaml's directness, swapping the MCP stdio call for a direct
-# ToolRegistry.execute() call (call_tool_registry_tool.ts) since there is no MCP handler for
-# either Solo-only tool.
+# Asserts query_relationships and find_dependents end to end. A real `portal analyze` populates a layer_contains_file edge (derived on demand) and a file_imports_file_internal edge (persisted),
+# then a real ToolRegistry serves both directions of the query. That registry is the Solo in-process ReAct catalog, separate from TOOL_MANIFEST in packages/mcp/src/manifest.ts.
+# It calls ToolRegistry.execute() directly (call_tool_registry_tool.ts), because neither Solo-only tool has an MCP handler.
 id: "tools-relationship-query"
 title: "Solo tool — query_relationships/find_dependents serve a portal's relationship graph"
 pack: "mcp_tools_extended"
