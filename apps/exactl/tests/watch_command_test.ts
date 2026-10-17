@@ -105,26 +105,19 @@ Deno.test("WatchCommand: watch should show message for trace with no events", as
 
 Deno.test("WatchCommand: should reject non-UUID traceId", async () => {
   const { context, cleanup } = await createCliTestContext();
-  const originalCliMode = Deno.env.get("EXA_TEST_CLI_MODE");
-  Deno.env.set("EXA_TEST_CLI_MODE", "1");
 
   try {
     const cmd = new WatchCommand(context);
 
     let threw = false;
     try {
-      await cmd.watch("not-a-uuid");
+      await cmd.watch("not-a-uuid", true);
     } catch {
       threw = true;
     }
 
     assertEquals(threw, true);
   } finally {
-    if (originalCliMode === undefined) {
-      Deno.env.delete("EXA_TEST_CLI_MODE");
-    } else {
-      Deno.env.set("EXA_TEST_CLI_MODE", originalCliMode);
-    }
     await cleanup();
   }
 });

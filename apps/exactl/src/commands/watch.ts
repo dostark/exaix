@@ -35,12 +35,14 @@ export class WatchCommand extends BaseCommand {
   /**
    * Watch a trace by ID. Tries SSE stream first; falls back to DB query.
    */
-  async watch(traceId: string, _testMode?: Opt<boolean, Reason.TestOverride>): Promise<void> {
+  async watch(traceId: string, testMode?: Opt<boolean, Reason.TestOverride>): Promise<void> {
     // Validate traceId
     const parseResult = z.string().uuid().safeParse(traceId);
     if (!parseResult.success) {
       const msg = `Invalid traceId: must be a valid UUID. Got: "${traceId}"`;
-      if (Deno.env.get("EXA_TEST_CLI_MODE") === "1") {
+      // An explicit argument, not the process env. Test files share one process env.
+      // Another file can clear a test-mode env var mid-run.
+      if (testMode === true || Deno.env.get("EXA_TEST_CLI_MODE") === "1") {
         throw new Error(msg);
       }
       console.error(colors.red(msg));
