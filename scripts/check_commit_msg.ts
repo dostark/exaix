@@ -322,11 +322,8 @@ function extractArrowTokens(line: string): string[] {
     .filter((t) => t.length > 0);
 }
 
-/**
- * Extract the Symbol column (first cell, backtick-wrapped) of every data row in a
- * Reachability Ledger table. A ledger row is a `| … |` table line whose first cell is a
- * backtick-quoted symbol; header/separator rows and non-table lines are skipped.
- */
+/** Extracts the Symbol column (first cell, backtick-wrapped) of every data row in a Reachability Ledger table.
+ *  Header rows, separator rows and non-table lines are skipped. */
 export function parseLedgerSymbols(docText: string): string[] {
   const symbols: string[] = [];
   for (const line of docText.split("\n")) {
@@ -345,17 +342,9 @@ function truncateForError(s: string): string {
   return clean.length > 60 ? `${clean.slice(0, 57)}...` : clean;
 }
 
-/**
- * Pure cross-repo consistency check for a plan-step commit. Verifies that every ✅ /
- * ⚠️ deferred item line of the claimed step appears among the plan doc's **added** diff
- * lines (proving this commit actually authored/changed them), and that the parent's
- * submodule pointer is in sync with the plan doc's state. Git plumbing (reading the
- * staged diffs + pointer) is done by the caller; this function is pure and testable.
- *
- * @param itemLines     Trimmed ✅ / deferred item lines parsed from the step.
- * @param addedDiffLines Trimmed added lines (`+` stripped) of the plan doc's diff.
- * @param sync          Whether the parent pointer matches the submodule plan-doc state.
- */
+/** Pure cross-repo consistency check for a plan-step commit. Every ✅ or deferred item line must appear in the plan doc's added diff lines.
+ *  The parent's submodule pointer must match the plan doc's state. The caller reads the git data.
+ *  The sync flag says whether that pointer matches. */
 export function validatePlanStepDiff(
   itemLines: string[],
   addedDiffLines: string[],
@@ -392,12 +381,9 @@ export function validatePlanStepDiff(
   return { ok: errors.length === 0, errors };
 }
 
-/**
- * Validates a commit message string.
- * @param text The full commit message.
- * @param options Validation options including changed file count for metrics.
- * @returns Object with success status and list of error messages.
- */
+/** Validates a commit message string. The text argument is the full commit message.
+ *  The options argument carries validation options, including the changed file count.
+ *  The result holds a success status and the list of error messages. */
 export function validateCommitMsg(
   text: string,
   options: {
@@ -487,10 +473,8 @@ export function validateCommitMsg(
         `Impact field must follow the format "<component>: <details>" (e.g., "ReqProc: added validation").`,
       );
     } else {
-      // Component Traceability: Every component must appear in 'what'.
-      // Multi-component entries are separated by semicolons:
-      //   "CompA: details; CompB: more details"
-      // Segments without a colon are plain continuation text, not component names.
+      // Component traceability: every component must appear in 'what'. A multi-component entry is split by semicolons ("CompA: details; CompB: more").
+      // A segment without a colon is plain continuation text, not a component name.
       const components = impact
         .split(";")
         .map((s) => s.trim())
@@ -542,10 +526,9 @@ export function validateCommitMsg(
     );
   }
 
-  // 8. Plan-step traceability (only when a `plan:` field resolved to a step).
-  //    Every checked success criterion and every done planned test in the referenced
-  //    step must name a source/test module, and that module must be a changed file of
-  //    THIS commit — otherwise the item is claimed without proof and the commit is blocked.
+  // Plan-step traceability runs only when a `plan:` field resolved to a step.
+  // Every checked criterion and done planned test must name a source or test module.
+  // That module must be a changed file of this commit, or the item is claimed without proof.
   if (options.planValidation) {
     const pv = options.planValidation;
     // Surface any structural errors from parsing the plan step verbatim.
@@ -606,14 +589,8 @@ export function validateCommitMsg(
  *  The path is repository-relative, for example `exaix-team/packages/x/src/y.ts`. */
 const PLAN_CODE_SUBMODULES = ["exaix-team", "exaix-enterprise"];
 
-/**
- * Changed files of every code submodule the parent is committing.
- *
- * A paid-edition plan step keeps its source in a submodule.
- * Those paths must satisfy the plan's arrow-path check as well.
- * A staged diff comes first, then the submodule's own last commit.
- * The pointer in this commit is what ships that committed work.
- */
+/** Changed files of every code submodule the parent is committing. A paid-edition plan step keeps its source in a submodule, and those paths must pass the arrow-path check too.
+ *  A staged diff comes first, then the submodule's last commit, because the pointer in this commit ships that committed work. */
 async function getSubmoduleStagedFiles(submodulePaths: readonly string[]): Promise<string[]> {
   const files: string[] = [];
   for (const sub of submodulePaths) {
@@ -657,18 +634,9 @@ async function getStagedFiles(): Promise<string[]> {
   }
 }
 
-/** Env var names git itself sets for every hook subprocess (verified live via a real
- *  commit-msg hook trigger in a worktree checkout: GIT_DIR, GIT_INDEX_FILE, and GIT_PREFIX
- *  were all present, pointing at the PARENT repo's paths). If inherited, a nested
- *  `git -C <submodule> ...` call silently resolves against that inherited (wrong) repo
- *  instead of `<submodule>` — `-C` only chdir()s; explicit GIT_DIR still wins over
- *  repo-discovery-from-cwd. The nested call then "succeeds" (exit 0) but reports an empty
- *  diff/log for the submodule, which made every plan-step ✅/deferred item look like a
- *  stale mark and permanently blocked the plan-step commit gate for submodule-housed docs
- *  run from inside a worktree. Deno.Command's `env` option only MERGES overrides — an
- *  empty-string value is still a present key, and git treats `GIT_DIR=""` as an invalid
- *  literal path, not "unset" — so the keys must be genuinely deleted from this process's
- *  own environment before spawning, not merely overridden. */
+/** Env var names that git sets for every hook subprocess: GIT_DIR, GIT_INDEX_FILE and GIT_PREFIX. They point at the parent repo.
+ *  If inherited, a nested `git -C <submodule>` call resolves against the parent repo. It then reports an empty diff.
+ *  Deno.Command's `env` only merges overrides. Git treats GIT_DIR as an invalid empty path, so the keys must be deleted first. */
 const GIT_HOOK_ENV_VARS = [
   "GIT_DIR",
   "GIT_INDEX_FILE",
@@ -679,11 +647,9 @@ const GIT_HOOK_ENV_VARS = [
   "GIT_ALTERNATE_OBJECT_DIRECTORIES",
 ] as const;
 
-/** Run git in `cwd` (or the repo root); trimmed stdout, or "" on failure. Deletes git's own
- *  hook-context env vars (see GIT_HOOK_ENV_VARS) from this process before every spawn, so a
- *  cross-repo `-C <submodule>` call resolves its target repo from `-C`/cwd alone rather than
- *  an inherited GIT_DIR. Deleting an absent key is a no-op; a missing scoped `--allow-env`
- *  grant for one of these names degrades to a best-effort no-op rather than crashing. */
+/** Runs git in `cwd` (or the repo root) and returns trimmed stdout, or "" on failure.
+ *  It deletes git's hook-context env vars before every spawn. A cross-repo `-C <submodule>` call then resolves from its own cwd.
+ *  Deleting an absent key is a no-op. A missing `--allow-env` grant degrades to a no-op. */
 export async function gitOut(args: string[], cwd?: Opt<string, Reason.OptionalContext>): Promise<string> {
   for (const name of GIT_HOOK_ENV_VARS) {
     try {
@@ -735,24 +701,16 @@ async function addedLinesFor(repo: IOwningRepo, range: string[]): Promise<string
     .filter((l) => l.length > 0);
 }
 
-/**
- * Added plan-doc lines this commit contributes = the STAGED diff UNION the last commit's
- * diff (HEAD~1..HEAD). The union covers both flows: (a) plan doc staged together with the
- * code (this hook fires before the commit — staged shows the lines), and (b) the
- * submodule was committed first by `commit_plan_step.ts` (its lines are in HEAD~1..HEAD).
- */
+/** Added plan-doc lines this commit contributes: the staged diff plus the last commit's diff (HEAD~1..HEAD).
+ *  The union covers a plan doc staged with the code and a submodule that `commit_plan_step.ts` committed first. */
 async function planAddedLines(repo: IOwningRepo): Promise<string[]> {
   const staged = await addedLinesFor(repo, ["--cached"]);
   const lastCommit = await addedLinesFor(repo, ["HEAD~1", "HEAD"]);
   return [...new Set([...staged, ...lastCommit])];
 }
 
-/**
- * Sync status of the plan doc's owning repo. `unknown` when a submodule is unresolvable
- * (not checked out / no HEAD); `out_of_sync` when neither the staged nor the last-commit
- * diff carries any plan-doc change (nothing to prove this step was authored here);
- * otherwise `in_sync`.
- */
+/** Sync status of the plan doc's owning repo. `unknown` means a submodule is unresolvable, not checked out or without HEAD.
+ *  The `out_of_sync` status means neither the staged nor the last-commit diff changes the plan doc. Otherwise the status is `in_sync`. */
 async function planSyncStatus(repo: IOwningRepo, addedLines: string[]): Promise<PlanSyncStatus> {
   if (repo.submodule) {
     const head = await gitOut(["rev-parse", "HEAD"], repo.submodule);
@@ -761,13 +719,9 @@ async function planSyncStatus(repo: IOwningRepo, addedLines: string[]): Promise<
   return addedLines.length > 0 ? "in_sync" : "out_of_sync";
 }
 
-/**
- * Resolve the plan-step validation payload for a commit whose `plan:` field names a
- * doc + step. Reads the plan doc, extracts the step's source/test paths + item lines, the
- * ledger symbols, and the plan-doc diff/sync (staged ∪ last-commit) so `validateCommitMsg`
- * enforces the full plan-step gate — including cross-repo consistency — from the hook.
- * A doc-read failure blocks the commit rather than silently passing.
- */
+/** Resolves the plan-step validation payload for a commit whose `plan:` field names a doc and step.
+ *  It reads the doc, the step's source and test paths, the item lines and the ledger symbols. It also reads the plan-doc diff and sync.
+ *  `validateCommitMsg` enforces the full gate from the hook. A doc-read failure blocks the commit. */
 async function resolvePlanValidation(planRef: IPlanRef, stagedFiles: string[]): Promise<IPlanValidation> {
   let docText: string;
   try {
@@ -801,16 +755,9 @@ async function resolvePlanValidation(planRef: IPlanRef, stagedFiles: string[]): 
 }
 
 export async function isGitMergeCommit(cwd?: Opt<string, Reason.OptionalContext>): Promise<boolean> {
-  // MERGE_HEAD only exists during a live, in-progress merge (the pre-commit/
-  // pre-merge-commit hook case, before the commit is finalized) — git deletes
-  // it the moment the merge commit lands. Checking out an already-committed
-  // merge commit later (e.g. CI's Gate 0, which re-derives the message from
-  // `git log -1` on a fresh checkout) never sees MERGE_HEAD, so relying on it
-  // alone made every real merge commit fail Gate 0 in CI despite passing
-  // locally. A merge commit is identifiable independent of that transient
-  // state by having 2+ parents on HEAD. Both checks go through `gitOut` so
-  // they resolve against `cwd`/`-C`, not an inherited GIT_DIR (see `gitOut`'s
-  // own doc comment for the hook-environment bug this guards against).
+  // MERGE_HEAD exists only during a live merge. Git deletes it when the merge commit lands.
+  // An already-committed merge commit, such as CI's Gate 0 on a fresh checkout, never sees it.
+  // A merge commit is identifiable by having two or more parents on HEAD. Both checks go through `gitOut`, which resolves against `cwd` or `-C`, not an inherited GIT_DIR.
   const mergeHead = await gitOut(["rev-parse", "--verify", "MERGE_HEAD"], cwd);
   if (mergeHead) {
     return true;

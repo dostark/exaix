@@ -179,10 +179,8 @@ function resolveParagraphMode(sentences: ISteProseSentence[], explicitMixed: boo
   return modes.size === 1 ? ([...modes][0] as SentenceMode) : "mixed";
 }
 
-/** Normalizes eligible prose and counts paragraphs, sentences, and words under the
- *  shared Issue 9 counting mechanics. Inline literal atoms (backticked commands,
- *  identifiers, quotations, schema keys) are preserved and counted as single atomic
- *  words; their semicolons are excluded from the STE-8.1 punctctuation check. */
+/** Normalizes eligible prose and counts paragraphs, sentences and words under the shared Issue 9 mechanics.
+ *  Inline literal atoms (backticked commands, identifiers, quotations, schema keys) are kept and count as single words. Their semicolons are excluded from the STE-8.1 check. */
 export function normalizeSteProse(text: string): ISteNormalizedProse {
   const decoded = decodeProseEntities(text);
   const stripped = stripProseMarkers(decoded);

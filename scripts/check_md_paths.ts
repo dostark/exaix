@@ -116,15 +116,9 @@ export const IGNORE_DIRS: Record<string, true> = {
   ".copilot/embeddings": true,
 };
 
-/**
- * Frozen historical-documentation prefixes (repo-relative).
- * These trees record the project state at a past date.
- * They hold pre-monorepo paths, superseded designs and resolved reports.
- * A stale path inside them is history, not drift to fix.
- * Their references are never reported or auto-rewritten.
- * `planning/evidence/` holds raw run output, untracked by git, not authored docs.
- * Living docs (`docs/`, `.copilot/`, `planning/`) remain fully checked.
- */
+/** Frozen historical-documentation prefixes (repo-relative). These trees record past project state, such as pre-monorepo paths and resolved reports.
+ *  A stale path there is history, not drift, so it is never reported. `planning/evidence/` holds raw run output.
+ *  Living docs (`docs/`, `.copilot/`, `planning/`) stay fully checked. */
 export const FROZEN_DOC_PREFIXES: readonly string[] = [
   "exaix-dev-docs/dev/",
   "exaix-dev-docs/issues/",
@@ -148,12 +142,8 @@ const HISTORICAL_PHASE_STATUSES: Record<string, true> = {
 /** Cache of phase-doc to is-historical, keyed by absolute path. */
 const historicalPhaseCache = new Map<string, boolean>();
 
-/**
- * True when a `planning/phase-NN-*.md` doc carries a historical frontmatter status.
- * Such docs record what was built at a past date.
- * Their old paths are frozen history, so their references are not drift.
- * Open phases stay checked. Non-phase docs return false.
- */
+/** True when a `planning/phase-NN-*.md` doc carries a historical frontmatter status. Such docs record what was built, so their old paths are history, not drift.
+ *  Open phases stay checked. Non-phase docs return false. */
 export function isHistoricalPhaseDoc(absPath: string): boolean {
   const base = basename(absPath);
   if (!/^phase-\d+.*\.md$/.test(base)) return false;
@@ -176,14 +166,8 @@ export function isHistoricalPhaseDoc(absPath: string): boolean {
   return historical;
 }
 
-/**
- * True when a repo-relative markdown path is a PHASE-PLAN doc.
- * Phase plans are proposals.
- * They legitimately reference files a step will create, plus doc-relative paths.
- * Treating those as stale drift floods the repo-wide run with false positives.
- * So the repo-wide scan skips them.
- * The pre-commit `--staged` ratchet still checks a plan the author edits.
- */
+/** True when a repo-relative markdown path is a phase-plan doc. Plans are proposals and reference files a step will create, so treating those as stale floods the repo-wide run.
+ *  The repo-wide scan skips them. The pre-commit `--staged` ratchet still checks a plan the author edits. */
 export function isPlanDoc(relPath: string): boolean {
   return /(^|\/)planning\/phase-[0-9][^/]*\.md$/.test(relPath);
 }
@@ -216,11 +200,8 @@ export function splitSymbolRef(ref: string): { file: string; symbol?: string } {
   if (colon < 0) return { file: ref };
   const file = ref.slice(0, colon);
   const symbol = ref.slice(colon + 1);
-  // Only a SINGLE colon in a `.ts` or `.tsx` path is a code symbol.
-  // Reject non-TS targets such as `.yaml:key` and `.md:heading`.
-  // Reject double colons such as `file.ts::Symbol`.
-  // Reject line ranges or line numbers such as `file.ts:366-369`.
-  // Reject empty or non-identifier symbols.
+  // Only a single colon in a `.ts` or `.tsx` path is a code symbol. Reject non-TS targets (`.yaml:key`), double colons (`file.ts::Symbol`),
+  // line numbers and ranges (`file.ts:366-369`), and empty or non-identifier symbols.
   if (!/\.(ts|tsx)$/.test(file)) return { file: ref };
   if (file.endsWith(":")) return { file: ref };
   if (!/^[A-Za-z_@][A-Za-z0-9_.]*$/.test(symbol)) return { file: ref };
@@ -267,13 +248,9 @@ export class FenceTracker {
   }
 }
 
-/**
- * Compute a GitHub-Flavored-Markdown-compatible heading slug: strip inline
- * formatting/links/HTML, lowercase, drop punctuation outside `\p{L}\p{N}\p{M}_ -`,
- * then collapse whitespace to single hyphens. Matches GitHub's rendered anchors for
- * the plain-text headings used throughout this repo (verified against `#behavioral-guidelines`,
- * `#task-checklist`, and other already-linked anchors).
- */
+/** Computes a GitHub-compatible heading slug. It strips inline formatting, links and HTML.
+ *  It lowercases the text, drops punctuation outside `\p{L}\p{N}\p{M}_ -`, and collapses whitespace to hyphens.
+ *  It matches GitHub's anchors for the plain-text headings of this repo. */
 export function slugify(headingText: string): string {
   let text = headingText;
   text = text.replace(/`([^`]+)`/g, "$1");
@@ -389,14 +366,9 @@ interface IExtractedAnchorRef {
   line: number;
 }
 
-/**
- * Blank out CommonMark inline-code spans across a whole document.
- * Replaced chars become spaces and newlines stay.
- * Inline code may wrap across lines, so span state MUST be tracked document-wide.
- * A line-local regex leaves an unmatched opening backtick as content.
- * A path in the still-open span is then misread as prose and re-backticked.
- * Only single-backtick spans are masked, and the fence tracker skips fenced blocks.
- */
+/** Blanks out CommonMark inline-code spans across a whole document. Replaced chars become spaces and newlines stay.
+ *  Inline code may wrap across lines, so span state is tracked document-wide. A line-local regex would leave an unmatched backtick as content and re-backtick a path in the open span.
+ *  Only single-backtick spans are masked, and the fence tracker skips fenced blocks. */
 function maskInlineCode(text: string): string {
   const chars = [...text];
   const n = chars.length;
@@ -451,11 +423,9 @@ function extractReferences(text: string): { refs: IExtractedRef[]; anchorRefs: I
   // A multi-line span must not leak a path into the bare-prose pass.
   const maskedLines = maskInlineCode(text).split("\n");
   const lines = text.split("\n");
-  // Fence tracking, CommonMark-style: an OPENING fence may carry an info string
-  // (language), e.g. ```bash; a CLOSING fence must be the marker alone (only the
-  // fence chars + optional whitespace). This is robust against the repo's malformed
-  // ```text "closers" that would otherwise invert a naive open/close toggle counter.
-  let fenceMarker = ""; // "" when outside a fence; otherwise the exact ``` / ~~~ run.
+  // Fence tracking follows CommonMark. An opening fence may carry an info string, such as bash.
+  // A closing fence must be the marker alone. Malformed text closers would otherwise invert a naive toggle.
+  let fenceMarker = ""; // Empty when outside a fence. Otherwise the exact fence run.
   // YAML frontmatter: a leading `---` opens it, the next `---` closes it. Its keys
   // (description, links, @path…) legitimately hold paths but are not rendered prose.
   let inFrontmatter = lines[0]?.trim() === "---";
@@ -528,15 +498,9 @@ function extractReferences(text: string): { refs: IExtractedRef[]; anchorRefs: I
       }
     }
 
-    // 3) Bare prose paths: unquoted, un-linked path-like tokens. These feed the
-    // backtick facet (resolvable ⇒ "wrap in backticks") and are only fixable as
-    // navigational refs when they are `./`/`../` relative links. Lines that look like
-    // an unfenced shell command are skipped: wrapping a path there would break the
-    // command (backticks = command substitution).
-    // Derive the prose text from the inline-code-MASKED line: a path inside a code
-    // span (including a multi-line span) is already-formatted and must never be
-    // re-flagged as bare prose — otherwise --fix wraps it again and corrupts the span.
-    // Also strip HTML comments here so a comment mention is not treated as prose.
+    // Bare prose paths are unquoted, unlinked path-like tokens. They feed the backtick facet, and only `./` or `../` relative links are fixable as navigational refs.
+    // Lines that look like an unfenced shell command are skipped, because backticks there mean command substitution.
+    // The prose text comes from the inline-code-masked line, so a path in a code span is never re-flagged. HTML comments are stripped too.
     let proseSource = maskedLines[i];
     if (inHtmlComment) {
       const end = proseSource.indexOf("-->");
@@ -601,10 +565,8 @@ function repoRootTarget(refWithAnchor: string): string | undefined {
 function referenceResolves(root: string, mdFileAbs: string, refWithAnchor: string): boolean {
   const ref = stripAnchor(refWithAnchor);
   if (ref === "") return true; // pure `#anchor` (same-file) — handled/skipped upstream
-  // A `path/file.ts:Symbol` reference resolves only when the FILE exists AND the file
-  // declares the symbol. A non-symbol `:suffix` (e.g. `x.yaml:key`, `file.ts:366-369`)
-  // is stripped before the file-existence check. Ported from the retired
-  // validate_doc_links.ts gate, which this script replaced.
+  // A `path/file.ts:Symbol` reference resolves only when the file exists and declares the symbol.
+  // A non-symbol `:suffix` (`x.yaml:key`, `file.ts:366-369`) is stripped before the existence check. Ported from the retired validate_doc_links.ts gate.
   const { file: fileOnly, symbol } = splitSymbolRef(ref);
   // Strip any residual `:suffix` (line range, YAML key) the symbol splitter rejected.
   const fileCandidate = symbol === undefined && fileOnly.includes(":")
@@ -732,10 +694,9 @@ function suggestFor(
   mdFileRel: string,
   index: Map<string, string[]>,
 ): string | undefined {
-  // A basename match is only a reliable rename target with shared path context.
-  // A repo-root `src/config/schema.ts` whose basename occurs once in the tree may
-  // be a coincidental collision with an unrelated same-named file.
-  // Rewriting it silently corrupts the doc.
+  // A basename match is a reliable rename target only with shared path context.
+  // A repo-root `src/config/schema.ts` whose basename occurs once may collide with an unrelated file.
+  // Rewriting such a match silently corrupts the doc.
   if (!hasReliableRenameContext(ref)) return undefined;
   const matches = index.get(basename(stripAnchor(ref)));
   if (!matches || matches.length !== 1) return undefined;

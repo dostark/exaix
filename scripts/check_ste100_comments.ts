@@ -97,9 +97,8 @@ export function extractCommentSpans(source: string, _path: string): ICommentSpan
     prose: string;
   }
   // The raw scanner mishandles consecutive template literals.
-  // It yields a comment token for `// ` inside a template head
-  // after a prior template substitution. The parse-tree range
-  // APIs handle strings and template text correctly instead.
+  // It yields a comment token for `// ` in a template head after a prior substitution.
+  // The parse-tree range APIs handle strings and template text correctly.
   const sourceFile = ts.createSourceFile(_path, source, ts.ScriptTarget.Latest, true);
   const byStart = new Map<number, RawComment>();
   const collect = (_node: ts.Node, isTrailing: boolean, offset: number): void => {
@@ -200,10 +199,8 @@ function steFindingsForProse(prose: string): ISteFinding[] {
   return runDeterministicSteChecks(normalizeSteProse(stripProseMarkers(prose)));
 }
 
-/**
- * Checks one source file's comments. The staged ratchet supplies an added-lines set.
- * Only comments whose line is in that set gate. Every span is checked otherwise.
- */
+/** Checks one source file's comments. The staged ratchet supplies an added-lines set, and only comments on those lines gate.
+ *  Every span is checked otherwise. */
 export function checkText(
   source: string,
   path: string,
@@ -314,11 +311,8 @@ async function collectOwnedTsFiles(): Promise<string[]> {
   return files;
 }
 
-/**
- * Runs the comment STE gate. The staged mode gates only the added and changed comment
- * lines of staged files. The focused mode checks given files in full. The default mode
- * scans owned roots and reports.
- */
+/** Runs the comment STE gate. Staged mode gates only the added and changed comment lines of staged files. Focused mode checks the given files in full.
+ *  Default mode scans the owned roots and reports. */
 export async function runSte100CommentsCheck(
   options: ISteCommentsCheckOptions = {},
 ): Promise<ISteCommentsCheckResult> {

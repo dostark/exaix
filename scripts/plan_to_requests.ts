@@ -161,12 +161,9 @@ const BACKTICK_TOKEN_REGEX = /`([^`\n]+)`/g;
 const PATH_TOKEN_REGEX = /[A-Za-z0-9_][A-Za-z0-9_\-./]*\.(?:ts|md|json|toml|yaml|yml|sh)/g;
 const TOKEN_TRIM_PATTERN = /^[\s.,:'"()[\]\\]+|[\s.,:'"()[\]\\]+$/g;
 
-/**
- * Slices `content` from the `## Executive Summary` h2 boundary to the next heading of
- * level ≤ 2, then bounds it to the bold "The Problem / The Solution / The Goal"
- * paragraph run real phase docs use (everything after the Goal paragraph is dropped).
- * Returns "" when the doc has no such heading.
- */
+/** Slices `content` from the `## Executive Summary` h2 to the next heading of level 2 or higher.
+ *  It then bounds the slice to the bold Problem, Solution and Goal paragraph run. Everything after the Goal paragraph is dropped.
+ *  Returns "" when the doc has no such heading. */
 export function extractExecutiveSummary(content: string): string {
   const sectionMatch = content.match(/(^|\n)## Executive Summary\s*\n([\s\S]*?)(?=\n#{1,2} |\n---|$)/);
   if (!sectionMatch) return "";
@@ -231,12 +228,9 @@ function filterBullets(bullets: string[], stepTokens: Set<string>): string[] {
   return kept;
 }
 
-/**
- * Filters the phase doc's `### Constraints` and `### Design Decisions` bullets down to
- * those sharing a backtick-quoted symbol/file-path or bare path-like token with the
- * step's own text (case-insensitive, min length + degenerate exclusions per GAP-4).
- * Docs without those exact headings yield empty lists (fail-safe toward omission).
- */
+/** Filters the phase doc's `### Constraints` and `### Design Decisions` bullets.
+ *  A bullet is kept when it shares a symbol, file path or path-like token with the step.
+ *  The match is case-insensitive, with a minimum length and degenerate exclusions. Docs without those headings yield empty lists. */
 export function extractRelevantConstraints(content: string, stepSectionText: string): IRelevantConstraints {
   const stepTokens = collectTokens(stepSectionText);
   const sliceBlock = (heading: string): string[] => {
@@ -281,9 +275,8 @@ function buildRequestFile(args: IBuildRequestFileArgs): string {
 
   const bodyParts: string[] = [];
 
-  // Phase 173 Step 1 — the "why" block leads the request so the delegate sees the
-  // step's purpose and bounds before its actions. Omitted entirely when the doc has
-  // no Executive Summary (e.g. the legacy minimal fixture), preserving old output.
+  // The "why" block leads the request, so the delegate sees the step's purpose and bounds before its actions.
+  // It is omitted when the doc has no Executive Summary, which keeps the old output.
   if (content) {
     const whyBlock = buildWhyThisStepExists(content, sectionText);
     if (whyBlock) bodyParts.push(whyBlock);
@@ -330,12 +323,9 @@ function buildRequestFile(args: IBuildRequestFileArgs): string {
   return `---\n${fmYamlLines.join("\n")}\n---\n\n${bodyLines.join("\n")}\n`;
 }
 
-/**
- * Assembles the `## Why This Step Exists` block: the phase's Executive Summary plus
- * only Constraints/Design Decisions bullets sharing a token with this step's slice.
- * Returns "" when there is nothing to include (no Executive Summary AND no bullets),
- * so docs without context yield byte-identical legacy output.
- */
+/** Assembles the `## Why This Step Exists` block from the phase's Executive Summary.
+ *  It adds the Constraints and Design Decisions bullets that share a token with this step.
+ *  Returns "" when there is nothing to include, so such docs give byte-identical legacy output. */
 function buildWhyThisStepExists(content: string, sectionText: string): string {
   const summary = extractExecutiveSummary(content);
   const relevant = extractRelevantConstraints(content, sectionText);
@@ -351,11 +341,8 @@ function buildWhyThisStepExists(content: string, sectionText: string): string {
   return `## Why This Step Exists\n\n${parts.join("\n\n")}`;
 }
 
-/**
- * The escape-hatch pointer appended to every generated request when a
- * --plan-context-root copy was performed: names the relative in-worktree path the
- * delegate's own Read tool can resolve (GAP-3: relative-by-construction).
- */
+/** The escape-hatch pointer appended to every generated request when a --plan-context-root copy was made.
+ *  It names the relative in-worktree path that the delegate's own Read tool can resolve. */
 function planContextPointer(planSlug: string): string {
   return `> Full phase context: \`${PLAN_CONTEXT_RELATIVE_DIR}/${planSlug}.md\` (read this if the context above isn't enough).`;
 }
@@ -383,8 +370,8 @@ async function main(): Promise<void> {
     if (WARNED_DIAGNOSTIC_CODES.has(diagnostic.code)) console.warn(diagnostic.message);
   }
 
-  // Phase 173 Step 2 — copy the phase doc into the delegate worktree (once per run,
-  // before any request is written, so a rejection aborts before side effects).
+  // Copy the phase doc into the delegate worktree once per run, before any request is written.
+  // A rejection then aborts before any side effect.
   const performCopy = !dryRun && planContextRoot !== undefined && !noCopyDoc;
   if (performCopy && planContextRoot !== undefined) {
     try {
