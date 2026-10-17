@@ -152,10 +152,8 @@ const TextContainsCriterionSchema = BaseCriterionSchema.extend({
   similarity_threshold: z.number().min(0).max(1).optional(),
 }).strict();
 
-/** The negation of `text-contains`.
- *  It lets a scenario assert that a file does NOT carry a value.
- *  Without it, absence needs a pattern that never matches.
- *  Such a pattern passes whether or not the feature is gated. */
+/** The negation of `text-contains`: a scenario can assert that a file does not carry a value.
+ *  Without it, absence needs a never-matching pattern, which passes whether or not the feature is gated. */
 const TextNotContainsCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.TEXT_NOT_CONTAINS),
   path: z.string().optional(),
@@ -226,10 +224,9 @@ const JournalEventExistsCriterionSchema = BaseCriterionSchema.extend({
   // key, an ARRAY containing every listed string (membership, not equality) — lets a
   // criterion pin ids out of e.g. `skills.resolved`'s `skill_ids` set. See assertions.ts.
   payload_includes: z.record(z.string(), z.array(z.string().min(1)).min(1)).optional(),
-  // When set, a matching event must exist whose parsed `payload`, at each dotted-path key
-  // (e.g. `heuristic_inputs.complexity_source`), carries a SCALAR equal to the given value.
-  // A missing key FAILS the criterion (value-asserting, unlike a bare event-type match) —
-  // see assertions.ts.
+  // When set, a matching event must carry the given scalar at each dotted-path key of its parsed `payload`.
+  // For example, `heuristic_inputs.complexity_source` is such a key. A missing key fails the criterion.
+  // This is value-asserting, unlike a bare event-type match (see assertions.ts).
   payload_equals: z.record(
     z.string().min(1),
     z.union([z.string(), z.number(), z.boolean(), z.null()]),

@@ -392,7 +392,7 @@ const REVIEWED_JUDGE_BINDING_SCENARIOS = new Set([
   "test-engineer-smoke",
 ]);
 
-/** The Step 26 scenario: it declares a scenario judge binding so an operator `--bind` can move it. */
+/** The scenario declares a scenario judge binding, so an operator `--bind` can move it. */
 const REVIEWED_JUDGE_BINDING_TEST_SCENARIOS = new Set(["operator-override-axes"]);
 
 Deno.test("[judge][regression] only reviewed quality scenarios and fixture presets declare judge bindings", async () => {

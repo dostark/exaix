@@ -77,9 +77,8 @@ Deno.test("[SandboxDefault] absent output_dir defaults beside the sandbox, outsi
     }));
 
   // The agent under test may rewrite anything under its own workspace.
-  // The runner writes the binding overlays under the output directory.
-  // A default output inside the sandbox would let the agent rewrite its own bindings.
-  // The default therefore sits beside the sandbox.
+  // The runner writes binding overlays under the output directory.
+  // A default output inside the sandbox would let the agent rewrite its bindings, so it sits beside the sandbox.
   const sandbox = runtimeConfig.workspace_path;
   assert(
     !runtimeConfig.output_dir.startsWith(`${sandbox}/`),

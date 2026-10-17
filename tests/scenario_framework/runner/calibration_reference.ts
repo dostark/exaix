@@ -84,10 +84,9 @@ export function buildReferencePrompt(
   };
 }
 
-/** Parses a reference evaluator's raw response into a score/label/rationale, using the
- *  exact scoring semantics (calculateWeightedScore) the target judge uses. Throws
- *  ReferenceEvaluationError on a malformed/unparseable response — never synthesizes
- *  a passing result. */
+/** Parses a reference evaluator's raw response into a score, label and rationale.
+ *  It uses the same scoring semantics (calculateWeightedScore) as the target judge.
+ *  Throws ReferenceEvaluationError on a malformed response and never synthesizes a passing result. */
 export function parseReferenceResponse(
   raw: string,
   preset: string,
@@ -117,10 +116,9 @@ export function parseReferenceResponse(
   }
 }
 
-/** Scores one calibration item via a live call to `referenceProvider`/`referenceModel`,
- *  using the same rubric prompt and scoring semantics as the target judge — never the
- *  target's own score or label. Throws on a malformed/unparseable response rather than
- *  synthesizing a passing result. */
+/** Scores one calibration item through a live call to `referenceProvider` and `referenceModel`.
+ *  It uses the same rubric prompt and scoring as the target judge, never the target's own score.
+ *  Throws on a malformed response rather than synthesizing a passing result. */
 export async function evaluateReference(
   input: IReferenceEvaluationInput,
 ): Promise<IReferenceEvaluationResult> {

@@ -21,10 +21,9 @@ export const MemoryAbilitySchema = z.enum([
 
 export type IMemoryAbility = z.infer<typeof MemoryAbilitySchema>;
 
-/** One memory-content fixture to seed before a task's queries run. `id` becomes the
- * seeded `ILearning.id` (a query's `ground_truth_ids` references it), so it must be a
- * valid UUID — the same constraint `LearningSchema.id` (`packages/schemas/src/
- * memory_bank.ts`) enforces on every learning production writes. */
+/** One memory-content fixture to seed before a task's queries run.
+ *  The `id` field becomes the seeded `ILearning.id`, which a query's `ground_truth_ids` references, so it must be a valid UUID.
+ *  The same constraint `LearningSchema.id` enforces. */
 export const MemorySessionWriteSchema = z.object({
   id: z.string().uuid(),
   title: z.string().min(1),

@@ -59,13 +59,8 @@ function assignsKey(line: string, key: string): boolean {
   return trimmed.slice(0, equals).trim() === key;
 }
 
-/**
- * Patches `overrides` into TOML `content`.
- *
- * An existing key is replaced in place so its position and the file's comments
- * survive. A missing key is appended to its table. A missing table is appended
- * at the end of the file.
- */
+/** Patches `overrides` into TOML `content`. An existing key is replaced in place, so its position and the file's comments survive.
+ *  A missing key is appended to its table, and a missing table is appended at the end of the file. */
 export function patchWorkspaceConfig(
   content: string,
   overrides: { [key: string]: WorkspaceConfigValue },

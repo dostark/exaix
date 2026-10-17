@@ -143,11 +143,9 @@ export function resolveRuntimeConfigForExecution(
 
   assertNotRepoRoot(workspacePath, frameworkHome);
 
-  // Output precedence mirrors workspace: an explicit path wins.
-  // Otherwise the default sits BESIDE the workspace, never inside it.
-  // The runner writes its binding overlays under the output directory.
-  // The agent under test may rewrite anything under its own workspace root.
-  // An output inside the sandbox would let the agent rewrite its own bindings.
+  // Output precedence mirrors workspace: an explicit path wins, otherwise the default sits beside the workspace.
+  // The agent under test may rewrite anything under its workspace root.
+  // Output inside the sandbox would let it rewrite its own bindings and the runner's overlays.
   const explicitOutput = options.cliFlags?.output ?? fileConfig.output_dir;
   const outputDir = explicitOutput
     ? resolve(explicitOutput)

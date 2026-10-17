@@ -768,8 +768,8 @@ async function evaluateJournalEventExistsCriterion(
     e.action_type === criterion.event_type || e.event_type === criterion.event_type
   );
 
-  // Opt-in `trace_scope: current`: restrict matches to the CURRENT scenario request's trace,
-  // so a globally found event is NOT evidence the request under test emitted it (GAP-8).
+  // Opt-in `trace_scope: current` restricts matches to the current scenario request's trace.
+  // A globally found event is not evidence that the request under test emitted it.
   if (criterion.trace_scope === "current") {
     const traceId = resolveCurrentTrace(
       options.workspaceRoot,
@@ -780,9 +780,8 @@ async function evaluateJournalEventExistsCriterion(
     }
   }
 
-  // Requires a matching event whose payload equals EVERY scalar in criterion.payload_equals at
-  // its dotted path (e.g. heuristic_inputs.complexity_source). A missing key FAILS — this is
-  // a value assertion, unlike a bare event-type match (GAP-8).
+  // Requires a matching event whose payload equals every scalar in criterion.payload_equals at its dotted path (for example heuristic_inputs.complexity_source).
+  // A missing key fails. This is a value assertion, unlike a bare event-type match.
   if (criterion.payload_equals) {
     const equals = criterion.payload_equals;
     if (typeMatches.some((e) => payloadEqualsAll(e, equals))) return buildPassedResult(options, []);
