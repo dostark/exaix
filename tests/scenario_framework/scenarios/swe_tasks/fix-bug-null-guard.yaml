@@ -13,11 +13,8 @@ portals:
     git_init: true
 mode_support: ["auto"]
 matrix:
-  # Preset names from configs/eval-cells.toml. The first six resolved cells are the six this
-  # scenario used to hand-list: claude-code, codex, opencode, exactl-native, exactl-openai
-  # and exactl-google. Their cell ids are unchanged, so history attribution stays comparable.
-  # The OpenRouter DeepSeek cell follows them (Phase 211 Step 10). It is skipped when
-  # OPENROUTER_API_KEY is unset.
+  # Preset names from configs/eval-cells.toml. The first six resolved cells are claude-code, codex, opencode, exactl-native, exactl-openai and exactl-google, with unchanged cell ids so history attribution stays comparable.
+  # The OpenRouter DeepSeek cell follows them and is skipped when OPENROUTER_API_KEY is unset.
   from_catalog: [
     "claude-code",
     "codex",
@@ -32,16 +29,8 @@ steps:
     type: "patch-blueprint"
     blueprint: "senior-coder"
     add_capabilities: ["cli_delegate"]
-    # Scoped to the CLI-delegate cells only (Phase 153 Step 5 finding): the direct-API
-    # exactl cells below (anthropic/openai/google) never enable [cli_delegate] in their
-    # configs, so AgentComposer never registers CliDelegateStrategy for them. Before
-    # this field existed, the capability patch applied unconditionally to every cell,
-    # so a direct-API cell's blueprint carried a capability its config could never back —
-    # AgentComposer.resolveStrategyName() picks CLI_DELEGATE whenever the capability is
-    # present (by design, to fail loudly rather than silently fall back to a different
-    # execution path — see cli_delegate_dispatch_test.ts), so execution threw "Execution
-    # strategy not found: cli_delegate" for every direct-API cell, never reaching
-    # ReActLoopStrategy/native tool-calling at all.
+    # Scoped to the CLI-delegate cells only. The direct-API exactl cells (anthropic, openai, google) never enable [cli_delegate], so AgentComposer never registers CliDelegateStrategy for them.
+    # AgentComposer.resolveStrategyName() picks CLI_DELEGATE whenever the capability is present, by design, so applying the patch to a direct-API cell would throw "Execution strategy not found: cli_delegate" before ReAct native tool-calling runs.
     cells: ["claude-code", "opencode"]
     output_criteria:
       - id: "capability-patched"
@@ -134,11 +123,8 @@ steps:
     action_type: "dynamic_tool_call"
     trace_scoped: true
     expect_count: 0
-    # Scoped to the CLI-delegate cells only (Phase 153 GAP-1): direct-API cells (anthropic/openai/google)
-    # intentionally execute via ReActLoopStrategy with native_tools_enabled: true, which produces
-    # real dynamic_tool_call journal rows. This security gate asserts that no freelance tool calls
-    # were made, which is relevant only to CLI delegates (claude-code, opencode) that are expected
-    # to run completely without Exaix-side dynamic tool-calling.
+    # Scoped to the CLI-delegate cells only: direct-API cells (anthropic, openai, google) run via ReActLoopStrategy with native_tools_enabled: true, which produces real dynamic_tool_call rows.
+    # This security gate asserts no freelance tool calls, which is relevant only to CLI delegates (claude-code, opencode) that run without Exaix-side tool-calling.
     cells: ["claude-code", "opencode"]
     output_criteria:
       - id: "no-dynamic-tool-calls"
