@@ -501,10 +501,8 @@ if (import.meta.main) {
       costTracker,
     );
 
-    // Plan and flow steps run on this client, so model resolution must report it.
-    // A fallback chain can switch providers at call time, so it has no fixed client.
-    // The mock provider is a deterministic test seam, not a real execution client, so
-    // it keeps the resolver reachable instead of short-circuiting every plan step.
+    // Plan and flow steps run on this client, so model resolution must report it. A fallback chain can switch providers at call time, so it has no fixed client.
+    // The mock provider is a test seam, not a real client, so it keeps the resolver reachable.
     const bootClient: IFixedModelClient | undefined = providerInfo.type === "mock" ||
         (config.provider_strategy?.fallback_enabled && config.provider_strategy.fallback_chains?.[defaultModelName])
       ? undefined
@@ -933,11 +931,8 @@ if (import.meta.main) {
       );
     }
 
-    // Dogfood bounded-context supplement: additive, disabled by default. Enabled-but-
-    // unwired (trusted portal alias not uniquely configured) is a startup error, not a
-    // silent no-op; every other caller sees contextPort: undefined and is unaffected.
-    // Daemon-wide known-secret values, derived once for every consumer that redacts
-    // secret text: the dogfood context supplement and post-execution verification.
+    // Dogfood bounded-context supplement: additive and off by default. Enabled but unwired (the trusted portal alias is not uniquely configured) is a startup error.
+    // Daemon-wide known-secret values are derived once for every consumer that redacts secret text: the context supplement and post-execution verification.
     const knownSecrets = Object.entries(Deno.env.toObject())
       .filter(([key, value]) => SECRET_ENV_PATTERN.test(key) && value.length > 0)
       .map(([, value]) => value);
