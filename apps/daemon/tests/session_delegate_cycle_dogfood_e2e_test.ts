@@ -274,6 +274,17 @@ async function runGenerator(planPath: string, planContextRoot: string, outDir: s
 const LIVE_PRE_GAP_REQUEST =
   "Read the plan context once. Reply with the number of plan steps and the title of each, then finish.";
 
+/** Names why a cycle stopped, so a flaky live run explains itself instead of only showing an empty list. */
+function describeCycleFailure(events: Array<{ action_type: string; payload: string }>): string {
+  const reasons = events
+    .filter((e) => e.action_type === "session.delegate.cycle_step_rejected" || e.action_type === "flow.step.failed")
+    .map((e) => {
+      const payload = JSON.parse(e.payload);
+      return `${e.action_type}: ${payload.reason ?? payload.error ?? "unknown"}`;
+    });
+  return reasons.length > 0 ? reasons.join("; ") : "no rejection or failed-step event was journaled";
+}
+
 function writeCycleRequest(
   requestsDir: string,
   traceId: string,
@@ -571,7 +582,7 @@ Deno.test({
       assertEquals(
         completed.map((e) => JSON.parse(e.payload).sequence),
         [1, 2],
-        "a real CLI must complete both hardened steps in order",
+        `a real CLI must complete both hardened steps in order; ${describeCycleFailure(events)}`,
       );
 
       const delegationTraceIds = completed.map((e) => JSON.parse(e.payload).delegationTraceId);
