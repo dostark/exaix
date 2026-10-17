@@ -36,7 +36,8 @@
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_ACTIVE_PATH, DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertExists } from "@std/assert";
-import { join } from "@std/path";
+import { dirname, join } from "@std/path";
+import { Database } from "@db/sqlite";
 import { ConfigService } from "@exaix/core/config";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import {
@@ -53,6 +54,10 @@ const TWO_ROUTE_TRACE_ID = "22222222-2222-4222-8222-222222222222";
 const TWO_ROUTE_REQUEST_ID = "step135-ledger-2route-req";
 const EXPLICIT_TRACE_ID = "33333333-3333-4333-8333-333333333333";
 const EXPLICIT_REQUEST_ID = "step135-ledger-explicit-req";
+// A plan that fails before routing ends both waits, so the assertion reports the failure instead of waiting forever.
+const PLAN_FAILURE_ACTIONS: readonly string[] = ["plan.execution_failed", "plan.execution_managed_failure"];
+// Terminal plan events. Both tests end on these, so a plan that completes or fails cannot leave a wait open.
+const PLAN_TERMINAL_ACTIONS: readonly string[] = ["plan.execution_completed", ...PLAN_FAILURE_ACTIONS];
 
 // NO explicit model, just model_size: M — forces ModelResolver's scored resolveOnce path
 // (not tryResolveCurated, which returns null with no model_presets.M.candidates configured).
@@ -144,7 +149,9 @@ function writeTeamConfig(
       "",
       "[model_presets.M]",
       "max_cost_per_mtok = 100",
-      "min_context_window = 1",
+      // Excludes a host-local model, such as Ollama's 8192-token llama3.2, from the scored M candidates.
+      // The stub routes advertise 100k+ tokens, so both still qualify.
+      "min_context_window = 100000",
       "supports_thinking = false",
     ]
     : [];
@@ -178,6 +185,25 @@ function writeTeamConfig(
     "",
   ].join("\n");
   Deno.writeTextFileSync(configPath, cfg);
+}
+
+/** True once the journal holds a `model.admitted` row for this model name, from any provider. */
+function admittedModelJournaled(configPath: string, model: string): boolean {
+  return daemonJournalHasAny(configPath, ["model.admitted"]) &&
+    readAdmittedModelsSync(configPath).includes(model);
+}
+
+function readAdmittedModelsSync(configPath: string): string[] {
+  const journalPath = pathBuilders.runtimePath(dirname(configPath), "journal.db");
+  const db = new Database(journalPath, { readonly: true });
+  try {
+    const rows = db.prepare("SELECT payload FROM activity WHERE action_type = 'model.admitted'").all() as Array<
+      { payload: string | null }
+    >;
+    return rows.map((row) => (JSON.parse(row.payload ?? "{}") as { model?: string }).model ?? "");
+  } finally {
+    db.close();
+  }
 }
 
 interface IJournalEvent {
@@ -223,15 +249,26 @@ Deno.test({
 
       await bootRealDaemon(configPath, {
         extraEnv: { EXA_LLM_PROVIDER: "mock", EXAIX_EDITION: "team" },
-        midFlight: () =>
+        // The scored resolution only sees the stub models once the refresh admits them, so the plan waits for that.
+        midFlight: async (daemon) => {
+          await daemon.until(
+            () => admittedModelJournaled(configPath, "claude-stub-curated"),
+            "claude-stub-curated to be admitted",
+          );
           writeStructuredPlan(
             tempDir,
             "two-route-test_plan.md",
             TWO_ROUTE_TRACE_ID,
             TWO_ROUTE_REQUEST_ID,
             "stub-two-route",
-          ),
-        waitForAfterInject: () => daemonJournalHasAny(configPath, ["model.route.selected", ...REQUEST_OUTCOME_ACTIONS]),
+          );
+        },
+        waitForAfterInject: () =>
+          daemonJournalHasAny(configPath, [
+            "model.route.selected",
+            ...REQUEST_OUTCOME_ACTIONS,
+            ...PLAN_TERMINAL_ACTIONS,
+          ]),
       });
 
       const routeEvents = await readEvents(configPath, "model.route.selected");
@@ -293,6 +330,7 @@ Deno.test({
             "stub-explicit",
           ),
         waitForAfterInject: async () => {
+          if (await daemonJournalHasAny(configPath, PLAN_FAILURE_ACTIONS)) return true;
           const events = await readEvents(configPath, "model.admitted");
           return events.some((e) => {
             const payload = JSON.parse(e.payload ?? "{}") as { reason?: string; model?: string };
