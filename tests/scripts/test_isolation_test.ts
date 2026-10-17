@@ -22,6 +22,7 @@ import {
   type IWorkerContainer,
   type IWorkerContainerLaunchOptions,
   MIN_TEST_CONTAINER_JOBS,
+  parseDockerTimestamp,
   parseWorkerResultLine,
   resolveContainerResourceBounds,
   runBatch2InContainers,
@@ -48,15 +49,22 @@ import {
 const DOCKERFILE = await Deno.readTextFile(new URL("../../Dockerfile", import.meta.url));
 const DOCKERIGNORE = await Deno.readTextFile(new URL("../../.dockerignore", import.meta.url));
 
-/** The `dev-test` stage block: from its `FROM … AS dev-test` line to the next `FROM`. */
-function devTestStage(dockerfile: string): string {
+/** The block of one named Dockerfile stage: from its `FROM … AS <name>` line to the next `FROM`. */
+function dockerStage(dockerfile: string, name: string): string {
   const lines = dockerfile.split("\n");
-  const start = lines.findIndex((line) => line.includes("AS dev-test"));
-  if (start === -1) throw new Error("no `AS dev-test` stage in Dockerfile");
+  const start = lines.findIndex((line) => line.includes(`AS ${name}`));
+  if (start === -1) throw new Error(`no \`AS ${name}\` stage in Dockerfile`);
   const rest = lines.slice(start + 1);
   const end = rest.findIndex((line) => line.startsWith("FROM "));
   return lines.slice(start, end === -1 ? undefined : start + 1 + end).join("\n");
 }
+
+/** The `dev-test` stage block: from its `FROM … AS dev-test` line to the next `FROM`. */
+function devTestStage(dockerfile: string): string {
+  return dockerStage(dockerfile, "dev-test");
+}
+
+const DELEGATE_CLI_INSTALL = "npm install -g node-gyp @anthropic-ai/claude-code";
 
 Deno.test("dev-test image provider builds only when the image is absent", async () => {
   let builtWhenAbsent = 0;
@@ -74,12 +82,67 @@ Deno.test("dev-test image provider builds only when the image is absent", async 
   await ensureDevTestImage("exaix-dev-test:test", {
     dockerOnPath: () => true,
     imageExists: () => Promise.resolve(true),
+    imageCreatedAt: () => Promise.resolve(new Date()),
+    buildInputsModifiedAt: () => Promise.resolve(new Date(0)),
     build: () => {
       builtWhenPresent++;
       return Promise.resolve(0);
     },
   });
   assertEquals(builtWhenPresent, 0);
+});
+
+Deno.test("dev-test image provider rebuilds a present image older than its build inputs", async () => {
+  let built = 0;
+  await ensureDevTestImage("exaix-dev-test:test", {
+    dockerOnPath: () => true,
+    imageExists: () => Promise.resolve(true),
+    imageCreatedAt: () => Promise.resolve(new Date("2026-10-13T12:00:00Z")),
+    buildInputsModifiedAt: () => Promise.resolve(new Date("2026-10-16T09:00:00Z")),
+    build: () => {
+      built++;
+      return Promise.resolve(0);
+    },
+  });
+  assertEquals(built, 1);
+});
+
+Deno.test("dev-test image provider keeps a present image newer than its build inputs", async () => {
+  let built = 0;
+  await ensureDevTestImage("exaix-dev-test:test", {
+    dockerOnPath: () => true,
+    imageExists: () => Promise.resolve(true),
+    imageCreatedAt: () => Promise.resolve(new Date("2026-10-17T12:00:00Z")),
+    buildInputsModifiedAt: () => Promise.resolve(new Date("2026-10-16T09:00:00Z")),
+    build: () => {
+      built++;
+      return Promise.resolve(0);
+    },
+  });
+  assertEquals(built, 0);
+});
+
+Deno.test("dev-test image provider keeps a present image whose creation time is unreadable", async () => {
+  let built = 0;
+  await ensureDevTestImage("exaix-dev-test:test", {
+    dockerOnPath: () => true,
+    imageExists: () => Promise.resolve(true),
+    imageCreatedAt: () => Promise.resolve(undefined),
+    buildInputsModifiedAt: () => Promise.resolve(new Date("2026-10-16T09:00:00Z")),
+    build: () => {
+      built++;
+      return Promise.resolve(0);
+    },
+  });
+  assertEquals(built, 0);
+});
+
+Deno.test("parseDockerTimestamp reads docker's nanosecond RFC 3339 timestamp", () => {
+  assertEquals(
+    parseDockerTimestamp("2026-10-13T14:56:00.392629629+02:00")?.toISOString(),
+    "2026-10-13T12:56:00.392Z",
+  );
+  assertEquals(parseDockerTimestamp("not a time"), undefined);
 });
 
 Deno.test("ensureDevTestImage surfaces a build failure", async () => {
@@ -112,6 +175,78 @@ Deno.test("dev-test stage inherits builder and adds git without reinstalling the
   assert(stage.startsWith("FROM builder AS dev-test"), stage);
   assert(stage.includes("git"), "the dev-test stage installs git");
   assert(!stage.includes("npm install -g"), "the dev-test stage must not reinstall the delegate CLIs");
+});
+
+Deno.test("the builder stage no longer installs the delegate CLIs, so the test image never waits on them", () => {
+  assertFalse(dockerStage(DOCKERFILE, "builder").includes(DELEGATE_CLI_INSTALL), "builder installs no delegate CLIs");
+});
+
+Deno.test("each delegate CLI installs in its own stage at a pinned version", () => {
+  const npmPins: Record<string, string> = {
+    "cli-opencode": "opencode-ai@1.19.3",
+    "cli-codex": "@openai/codex@0.163.0",
+  };
+  for (const [stageName, spec] of Object.entries(npmPins)) {
+    const stage = dockerStage(DOCKERFILE, stageName);
+    assert(stage.startsWith(`FROM builder AS ${stageName}`), stage);
+    assert(stage.includes(`--prefix /opt/cli/${stageName.replace("cli-", "")} `) && stage.includes(` ${spec}`), stage);
+  }
+  const claude = dockerStage(DOCKERFILE, "cli-claude");
+  assert(claude.startsWith("FROM builder AS cli-claude"), claude);
+  assert(
+    claude.includes("https://claude.ai/install.sh | HOME=/opt/cli/claude bash -s 2.1.302"),
+    "cli-claude pins the curl-installed version",
+  );
+  assert(claude.includes("HOME=/opt/cli/claude"), "cli-claude installs into its own prefix");
+  assert(!claude.includes("npm install"), "cli-claude no longer installs through npm");
+});
+
+Deno.test("the npm-installed delegate CLI stages cache npm downloads in a BuildKit cache mount", () => {
+  for (const stageName of ["cli-opencode", "cli-codex"]) {
+    assert(
+      dockerStage(DOCKERFILE, stageName).includes("--mount=type=cache,target=/root/.npm"),
+      `${stageName} caches npm downloads`,
+    );
+  }
+});
+
+Deno.test("each delegate CLI install gives up on a stalled npm fetch and retries", () => {
+  for (const stageName of ["cli-opencode", "cli-codex"]) {
+    const stage = dockerStage(DOCKERFILE, stageName);
+    assert(stage.includes("--fetch-timeout="), `${stageName} sets an npm fetch timeout`);
+    assert(stage.includes("--fetch-retries="), `${stageName} sets npm fetch retries`);
+  }
+});
+
+Deno.test("the devcontainer copies the CLI prefixes from their own stages and puts them on PATH", () => {
+  const stage = dockerStage(DOCKERFILE, "devcontainer");
+  assert(stage.startsWith("FROM builder AS devcontainer"), stage);
+  assert(stage.includes("COPY --from=cli-claude /opt/cli/claude /opt/cli/claude"), stage);
+  assert(stage.includes("COPY --from=cli-opencode /opt/cli/opencode /opt/cli/opencode"), stage);
+  assert(stage.includes("COPY --from=cli-codex /opt/cli/codex /opt/cli/codex"), stage);
+  assert(stage.includes("/opt/cli/claude/.local/bin"), "the devcontainer puts the CLIs on PATH");
+});
+
+Deno.test("the eval-jail stage copies the pinned delegate CLIs instead of installing them", () => {
+  const stage = dockerStage(DOCKERFILE, "eval-jail");
+  assert(stage.includes("COPY --from=cli-claude /opt/cli/claude /opt/cli/claude"), stage);
+  assert(stage.includes("COPY --from=cli-opencode /opt/cli/opencode /opt/cli/opencode"), stage);
+  assertFalse(stage.includes("npm install -g @anthropic-ai/claude-code"), "eval-jail installs claude unpinned");
+});
+
+Deno.test("the image no longer pipes an install script into a shell", () => {
+  assertFalse(DOCKERFILE.includes("opencode.ai/install"), "the OpenCode installer is curl-piped into bash");
+});
+
+Deno.test("the devcontainer config targets the devcontainer stage", async () => {
+  // devcontainer.json is JSONC (it carries comments), so the target is matched in the text.
+  const config = await Deno.readTextFile(new URL("../../.devcontainer/devcontainer.json", import.meta.url));
+  assert(/"target"\s*:\s*"devcontainer"/.test(config), "devcontainer.json targets the devcontainer stage");
+});
+
+Deno.test("the builder stage persists its deno module cache in a BuildKit cache mount", () => {
+  const stage = dockerStage(DOCKERFILE, "builder");
+  assert(stage.includes("--mount=type=cache"), "builder mounts a persistent cache for deno");
 });
 
 Deno.test("the dev-test stage installs procps so pkill is available to the driver", () => {

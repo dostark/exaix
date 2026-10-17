@@ -36,6 +36,10 @@ export interface IEnsureDevTestImageOptions {
   imageExists?: Opt<(image: string) => Promise<boolean>, Reason.SensibleDefault>;
   /** Exit code of the image build. Defaults to `docker build --target dev-test`. */
   build?: Opt<(image: string) => Promise<number>, Reason.SensibleDefault>;
+  /** Creation time of `image`, or undefined when it cannot be read. Defaults to `docker image inspect`. */
+  imageCreatedAt?: Opt<(image: string) => Promise<Date | undefined>, Reason.SensibleDefault>;
+  /** Newest modification time among the image's build inputs. Defaults to the files in `DEV_TEST_BUILD_INPUTS`. */
+  buildInputsModifiedAt?: Opt<() => Promise<Date>, Reason.SensibleDefault>;
 }
 
 /** One long-lived worker container: it runs the driver and pulls files one at a time. */
@@ -146,6 +150,8 @@ const DOCKER_BUILD_CONTEXT = ".";
 const DOCKER_KILL_SUBCOMMAND = "kill";
 const DOCKER_RM_SUBCOMMAND = "rm";
 const DOCKER_RM_FORCE_FLAG = "-f";
+const DOCKER_FORMAT_FLAG = "--format";
+const DOCKER_CREATED_TEMPLATE = "{{.Created}}";
 
 const DENO_JOBS_ENV = "DENO_JOBS";
 const WORKER_MOUNT_DEST = "/workspaces/exaix";
@@ -189,6 +195,35 @@ async function defaultImageExists(image: string): Promise<boolean> {
   return out.success;
 }
 
+/** Files whose change makes a built `dev-test` image stale: the Dockerfile, its context filter, and the dependency pins it warms. */
+const DEV_TEST_BUILD_INPUTS: readonly string[] = ["Dockerfile", ".dockerignore", "deno.json", "deno.lock"];
+
+/** Parses a `docker image inspect` timestamp. Docker prints nanoseconds, which `Date.parse` rejects, so the fraction is cut to milliseconds. */
+export function parseDockerTimestamp(raw: string): Date | undefined {
+  const time = Date.parse(raw.trim().replace(/(\.\d{3})\d+/, "$1"));
+  return Number.isNaN(time) ? undefined : new Date(time);
+}
+
+/** The image's creation time from `docker image inspect`, or undefined when it cannot be read. */
+async function defaultImageCreatedAt(image: string): Promise<Date | undefined> {
+  const out = await new Deno.Command(DOCKER_BIN, {
+    args: [DOCKER_IMAGE_SUBCOMMAND, DOCKER_INSPECT_SUBCOMMAND, DOCKER_FORMAT_FLAG, DOCKER_CREATED_TEMPLATE, image],
+    stdout: "piped",
+    stderr: "null",
+  }).output();
+  return out.success ? parseDockerTimestamp(new TextDecoder().decode(out.stdout)) : undefined;
+}
+
+/** The newest modification time among `DEV_TEST_BUILD_INPUTS`, read from the repo root. */
+async function defaultBuildInputsModifiedAt(): Promise<Date> {
+  let newest = 0;
+  for (const name of DEV_TEST_BUILD_INPUTS) {
+    const info = await Deno.stat(join(REPO_ROOT, name));
+    newest = Math.max(newest, info.mtime?.getTime() ?? 0);
+  }
+  return new Date(newest);
+}
+
 /** Builds the `dev-test` image from the repo root and returns the process exit code. */
 async function defaultBuildImage(image: string): Promise<number> {
   const out = await new Deno.Command(DOCKER_BIN, {
@@ -207,9 +242,9 @@ async function defaultBuildImage(image: string): Promise<number> {
   return out.code;
 }
 
-/** Ensure the `dev-test` image exists, building it once when absent. It is a no-op when the
- *  `docker` binary is missing, so the caller falls back to the serial path. A failed build
- *  throws, so a broken image is never silently used. */
+/** Ensure the `dev-test` image exists and is not older than its build inputs.
+ *  It builds the image when it is absent or stale. It is a no-op when the `docker` binary is missing,
+ *  so the caller falls back to the serial path. A failed build throws, so a broken image is never used. */
 export async function ensureDevTestImage(
   image: string,
   options: Opt<IEnsureDevTestImageOptions, Reason.SensibleDefault> = {},
@@ -218,7 +253,13 @@ export async function ensureDevTestImage(
   if (!dockerOnPath()) return;
 
   const imageExists = options.imageExists ?? defaultImageExists;
-  if (await imageExists(image)) return;
+  if (await imageExists(image)) {
+    const createdAt = await (options.imageCreatedAt ?? defaultImageCreatedAt)(image);
+    const inputsModifiedAt = await (options.buildInputsModifiedAt ?? defaultBuildInputsModifiedAt)();
+    // An unreadable creation time keeps the image: a guess should not trigger a rebuild.
+    if (createdAt === undefined || createdAt >= inputsModifiedAt) return;
+    console.log(`› ${image} is older than ${DEV_TEST_BUILD_INPUTS.join(", ")}; rebuilding it.`);
+  }
 
   const build = options.build ?? defaultBuildImage;
   const exitCode = await build(image);
