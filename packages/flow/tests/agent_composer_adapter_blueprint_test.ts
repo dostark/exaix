@@ -17,16 +17,9 @@ import type { IRunner } from "@exaix/flow/agent_composer_adapter.ts";
 import type { IBlueprint } from "@exaix/execution";
 import type { IFlowStepRequest } from "@exaix/flow";
 import { TaskComplexity } from "@exaix/core";
+import { readFixtureTextSync } from "@exaix/testing";
 
-const blueprintContent = `---
-agent_role: test-agent
-name: Test
-effort: high
-thinking: true
-default_skills: ["skill-a", "skill-b"]
----
-You are a test agent.
-`;
+const blueprintContent = readFixtureTextSync(import.meta.url, "agent_composer_adapter_blueprint.md");
 
 async function setup(): Promise<{ root: string; cleanup: () => Promise<void> }> {
   const root = await Deno.makeTempDir({ prefix: "adapter-blueprint-" });
