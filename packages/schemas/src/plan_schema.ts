@@ -61,10 +61,9 @@ export type PlanFrontmatter = z.infer<typeof PlanFrontmatterSchema>;
  * Zod schema for individual tool actions within a step
  */
 export const PlanActionSchema = z.object({
-  /** Tool name to invoke — an execution-reachable tool. The planning prompt lists the allowed
-   *  values. Validation re-checks the canonicalized
-   *  name but keeps the raw value. A plan naming an alias like `grep` still passes here.
-   *  The registry performs and journals the actual rewrite at execution time. */
+  /** Tool name to invoke: an execution-reachable tool. The planning prompt lists the allowed values.
+   *  Validation re-checks the canonicalized name but keeps the raw value, so an alias like `grep` still passes.
+   *  The registry performs and journals the rewrite at execution time. */
   tool: z.string().min(1).refine(
     (t) => (EXECUTION_TOOL_NAMES as readonly string[]).includes(canonicalizeToolName(t)),
     {

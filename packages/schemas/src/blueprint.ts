@@ -132,10 +132,8 @@ export const BlueprintFrontmatterSchema = z.object({
   /** Default skills to apply to all requests for this agent. */
   default_skills: z.array(z.string()).optional(),
 
-  /** Tools this agent role is permitted to use in dynamic execution steps (from McpToolName or ToolName). Flow
-   *  steps may narrow but not expand this set. Omitting this field means no dynamic tool permissions. Each entry
-   *  is preprocessed through canonicalizeToolName, so an alias like `grep` resolves to its canonical name.
-   *  Retired native names and case variants fail validation. */
+  /** Tools this agent role may use in dynamic execution steps (McpToolName or ToolName). Flow steps may narrow but not expand the set. Omitting it means no dynamic tool permissions.
+   *  Each entry goes through canonicalizeToolName, so an alias like `grep` resolves to its canonical name. Retired native names and case variants fail validation. */
   permitted_tools: z.array(
     z.preprocess(
       (value) => typeof value === "string" ? canonicalizeToolName(value) : value,

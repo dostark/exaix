@@ -134,9 +134,8 @@ export const ThinkingDeclarationSchema = z.preprocess(
 );
 export type ThinkingDeclaration = z.infer<typeof ThinkingDeclarationSchema>;
 
-/** The two declaration surfaces' field names — canonical constants so parse-boundary code
- *  (request/plan frontmatter) names the offending field without scattering literals, and so
- *  the field union is a shared named alias, per CODE_STYLE §2. */
+/** Field names of the two declaration surfaces, as canonical constants.
+ *  Parse-boundary code names the offending field without scattering literals, and the field union is a shared named alias. */
 export const DECLARATION_FIELD_EFFORT = "effort";
 export const DECLARATION_FIELD_THINKING = "thinking";
 export const DECLARATION_FIELDS = [DECLARATION_FIELD_EFFORT, DECLARATION_FIELD_THINKING] as const;

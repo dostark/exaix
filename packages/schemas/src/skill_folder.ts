@@ -25,10 +25,7 @@ export const SKILL_COMPATIBILITY_MAX_LENGTH = 500;
 /** Frontmatter `metadata` is a flat string-to-string map per the Agent Skills spec. */
 export const SkillMetadataSchema = z.record(z.string(), z.string());
 
-/**
- * Strict `SKILL.md` frontmatter. Unknown top-level keys are rejected, matching the
- * reference validator's `ALLOWED_FIELDS` rule.
- */
+/** Strict `SKILL.md` frontmatter. Unknown top-level keys are rejected, matching the reference validator's `ALLOWED_FIELDS` rule. */
 export const SkillFrontmatterSchema = z.object({
   name: z.string().min(1).max(SKILL_NAME_MAX_LENGTH).regex(SKILL_NAME_PATTERN)
     .describe("Spec skill slug, equal to the folder name"),
@@ -44,10 +41,8 @@ export const SkillFrontmatterSchema = z.object({
 
 export type ISkillFrontmatter = z.infer<typeof SkillFrontmatterSchema>;
 
-/**
- * Knowledge-base frontmatter keys the dogfood `.copilot/skills` corpus keeps because
- * `.copilot/manifest.json` generation reads them. Runtime roots reject all of these.
- */
+/** Knowledge-base frontmatter keys that the dogfood `.copilot/skills` corpus keeps because `.copilot/manifest.json` generation reads them.
+ *  Runtime roots reject all of these. */
 export const DOGFOOD_FRONTMATTER_KEYS: readonly string[] = [
   ...Object.keys(SkillFrontmatterSchema.shape),
   "agent",
@@ -78,11 +73,8 @@ export const SkillAppliesToSchema = z.object({
   flows: z.array(z.string()).optional().describe("Flow ids this skill may be used in"),
 }).strict();
 
-/**
- * Strict `exaix.yaml` sidecar. Holds only Exaix-specific fields the Agent Skills
- * specification cannot carry (nested compatibility, lifecycle, procedure metadata).
- * Identity/name fields are rejected so the folder name remains the single source.
- */
+/** Strict `exaix.yaml` sidecar. It holds only Exaix fields that the Agent Skills specification cannot carry (compatibility, lifecycle, procedure metadata).
+ *  Name fields are rejected so the folder name stays the single source. */
 export const SkillSidecarSchema = z.object({
   title: z.string().min(1).optional().describe("Display title (defaults to the slug)"),
   status: z.nativeEnum(SkillStatus).optional()
@@ -103,10 +95,8 @@ export const SkillSidecarSchema = z.object({
 
 export type ISkillSidecar = z.infer<typeof SkillSidecarSchema>;
 
-/**
- * Authorable create input. Selects only fields a person may author. Strict, so an
- * injected managed identity, path, source, status or approval field is rejected.
- */
+/** Authorable create input. It selects only fields a person may author.
+ *  Strict, so an injected managed identity, path, source, status or approval field is rejected. */
 export const SkillAuthoringSchema = z.object({
   name: z.string().min(1).max(SKILL_NAME_MAX_LENGTH).regex(SKILL_NAME_PATTERN),
   title: z.string().min(1).optional(),
