@@ -62,10 +62,9 @@ replace = "return task.dueDate ? task.dueDate.slice(0, 10) : \\"\\";"
 
 Deno.test("PlanAdapter.parse: a sentinel referencing a non-existent block number throws PlanValidationError naming it", () => {
   const adapter = new PlanAdapter();
-  // A fenced block IS present (so extractTomlActionBlocks finds a non-empty actionsByBlock and
-  // takes the TOML-block path), but under marker 1 while the envelope's sentinel points at 99 —
-  // the dangling-sentinel case, distinct from "no TOML fence anywhere" (which falls through to
-  // the pure-JSON path and fails PlanSchema validation on the literal sentinel string instead).
+  // A fenced block is present, so extractTomlActionBlocks takes the TOML-block path. It indexes marker 1, but the sentinel points at 99.
+  // This is the dangling-sentinel case. No TOML fence at all falls through to the pure-JSON path.
+  // PlanSchema then fails on the literal sentinel string.
   const rawContent =
     `{"description": "Broken plan", "steps": [{"step": 1, "title": "Step", "description": "Desc", "actions": "TOML_BLOCK:99"}]}
 
