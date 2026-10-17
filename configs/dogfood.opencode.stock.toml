@@ -42,4 +42,4 @@ enabled = true
 [cli_delegate]
 enabled = true
 tool = "opencode"
-model = "opencode:deepseek-v4-flash-free"
+model = "opencode-go/deepseek-v4.1-flash"
