@@ -7,15 +7,9 @@ tags: ["timeout", "dynamic", "error-handling", "subsystem:mcp-client", "entity:r
 request_fixture: "fixtures/requests/dynamic_execution/timeout_test.md"
 mode_support: ["auto"]
 portals: []
-# Staged into the sandbox's Blueprints/Flows by the runner; the request fixture names it in its
-# `flow:` frontmatter, which is the only way a flow executes. The scenario previously invoked
-# `exactl flow run <flow> --request <file>` — a command that has never existed — so the step
-# failed on Cliffy's usage dump rather than on anything to do with timeouts.
-#
-# The original expectation ("timeout" / "max iterations" in the output) is not assertable on the
-# mock tier: a dynamic step makes no tool calls under the mock provider, so it never approaches
-# its iteration ceiling and never times out. That claim belongs with the provider-live tier, for
-# the same reason as the selection trajectories — see the Step 15 finding.
+# Staged into the sandbox's Blueprints/Flows by the runner. The request fixture names it in its `flow:` frontmatter, which is the only way a flow executes.
+# A timeout or max-iterations message is not assertable on the mock tier: a dynamic step makes no tool calls under the mock provider, so it never nears its iteration ceiling.
+# That claim belongs with the provider-live tier, like the selection trajectories.
 flow_fixture: "fixtures/flows/dynamic_execution/timeout.flow.yaml"
 steps:
   - id: "start-daemon"

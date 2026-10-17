@@ -6,10 +6,8 @@ edition: "team"
 tags: ["smoke", "dynamic", "read-only", "subsystem:mcp-client"]
 request_fixture: "fixtures/requests/dynamic_execution/explore_codebase.md"
 mode_support: ["auto", "manual-checkpoint"]
-# Mounted by the runner from the seeded fixture, which is a real git repository — portals are
-# mutated only through worktrees, and a plain directory has nowhere isolated to put changes.
-# Previously this pointed at /tmp/sample-ts-project, a bare `mkdir -p` outside the sandbox that
-# leaked between runs and gave `file-found` the whole filesystem to walk.
+# Mounted by the runner from the seeded fixture, which is a real git repository. Portals are mutated only through worktrees, and a plain directory has nowhere isolated for changes.
+# A path outside the sandbox would leak between runs.
 portals:
   - alias: "sample-ts-project"
     source_path: "$WORKSPACE_ROOT/fixtures/portals/simple_repo"

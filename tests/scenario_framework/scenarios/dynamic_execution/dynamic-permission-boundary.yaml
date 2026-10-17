@@ -7,18 +7,9 @@ tags: ["security", "dynamic", "validation", "tool-confirmation", "subsystem:mcp-
 request_fixture: "fixtures/requests/dynamic_execution/approval_required_tool.md"
 mode_support: ["auto"]
 portals: []
-# Staged into the sandbox's Blueprints/Flows by the runner, under the flow's own declared id.
-# The two shell steps that used to do this by hand died on the literal `$FLOW_FIXTURE`, and
-# copied it to `approval-required.flow.yaml` — a name the loader would never resolve, since the
-# fixture declares `id: approval-required-dynamic`.
-#
-# The fixture grants `exaix_create_request` to a dynamic step. This scenario was authored to
-# assert that validation ACCEPTS it, on a Phase 79 intent that approval-required domain tools are
-# gated at runtime rather than at validation. The system models no such tier: `deriveMcpTool-
-# ClassificationSets` splits tools on `side_effect_scope === NONE` alone, and both validators
-# (`flow_loader.ts:validateDynamicStepTools` and `flow_validation.ts:validateFlowForCli`) refuse
-# any write tool in a dynamic step. So the fixture is a genuine violation, and what it proves is
-# that the boundary holds — which is the assertion below.
+# Staged into the sandbox's Blueprints/Flows by the runner, under the flow's own declared id (`approval-required-dynamic`), which is the name the loader resolves.
+# The fixture grants `exaix_create_request` to a dynamic step. The system has no approval-required tier: tools split on `side_effect_scope === NONE` alone,
+# and both validators (`validateDynamicStepTools`, `validateFlowForCli`) refuse any write tool in a dynamic step. So the fixture is a genuine violation, and the scenario proves the boundary holds.
 flow_fixture: "fixtures/flows/dynamic_execution/approval_required.flow.yaml"
 steps:
   - id: "validate-flow"
