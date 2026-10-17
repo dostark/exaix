@@ -69,10 +69,8 @@ Deno.test("[security] delimiter-like newlines and backticks remain JSON-encoded"
   // The exact JSON-string-encoded form of the malicious value is present verbatim —
   // proving the renderer used JSON.stringify rather than raw interpolation.
   assertEquals(result.text.includes(JSON.stringify(maliciousText)), true);
-  // No RAW newline was introduced: the fragment has exactly as many physical lines as
-  // one built from harmless text — the attacker's embedded \n became the two-character
-  // escape sequence \n inside the JSON string, never a real line break that could inject
-  // a fake new prompt line (e.g. a forged "AVAILABLE TOOLS:" section).
+  // No raw newline was introduced. The fragment has as many physical lines as one built from harmless text.
+  // The embedded newline escape stays inside the JSON string, so it cannot forge a prompt line.
   assertEquals(result.text.split("\n").length, cleanResult.text.split("\n").length);
 });
 
@@ -162,10 +160,8 @@ Deno.test("[AciDocRenderer] fragment and aggregate bounds drop the whole next fr
 });
 
 Deno.test("[AciDocRenderer] an aggregate budget too small for even the first, individually-valid fragment renders nothing", () => {
-  // small_a's own fragment comfortably fits ACI_DOC_FRAGMENT_MAX_CHARS — this is not the
-  // per-fragment bound from the test above. The caller-supplied aggregate maxChars is what
-  // is too small here, and it is exhausted before any fragment — including the first — can
-  // be appended, not merely before a later one.
+  // small_a's fragment fits ACI_DOC_FRAGMENT_MAX_CHARS, so this is not the per-fragment bound from the test above.
+  // The caller's aggregate maxChars is too small here, and it runs out before the first fragment can be appended.
   const smallA = makeTool({ name: "small_a" });
   const result = renderAciDocFragments([smallA], ["small_a"], 1);
 

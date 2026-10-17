@@ -103,10 +103,8 @@ const DEFAULT_TOOL_REGISTRY_TRACE_ID = "tool-registry";
 
 // Command Whitelist
 
-// Combined whitelist for backward compatibility.
-// Security (Step 4): the general-purpose runtimes (`deno`, `npm`, `node`) are NOT
-// run_command-reachable. The `deno_task` tool is the agent build/test path and spawns
-// `deno` directly, so the OS-level `--allow-run=deno` grant remains.
+// Combined whitelist for backward compatibility. The general-purpose runtimes (`deno`, `npm`, `node`) are not run_command-reachable.
+// The `deno_task` tool is the agent build and test path. It spawns `deno` directly, so the OS-level `--allow-run=deno` grant remains.
 const ALLOWED_COMMANDS = new Set([
   // Safe commands
   "echo",
@@ -174,16 +172,9 @@ function validateCommandArguments(command: string, args: string[]): { valid: boo
   }
 }
 
-/**
- * Validate runtime command arguments for the run_command allowlist. After Step 4 this
- * function is reached for `exactl` only, because `deno`, `npm` and `node` were removed
- * from ALLOWED_COMMANDS.
- *
- * Security (Finding 4): only inert, non-code-executing subcommands are permitted. The
- * WHOLE argument vector is checked. Code-executing subcommands (`test`, `run`, `eval`,
- * `repl`, `task`, `bench`, `exec`, `start`, etc.) are rejected because they would run
- * arbitrary code. Any Deno permission flag (`-A` / `--allow-*`) is rejected too.
- */
+/** Validates runtime command arguments for the run_command allowlist. Only `exactl` reaches it, because `deno`, `npm` and `node` are not in ALLOWED_COMMANDS.
+ *  Only inert subcommands pass, and the whole argument vector is checked. Code-executing subcommands (`test`, `run`, `eval`, `repl`, `task`, `bench`, `exec`, `start`) are rejected.
+ *  Any Deno permission flag (`-A` or `--allow-*`) is rejected too. */
 function validateRuntimeArguments(runtime: string, args: string[]): { valid: boolean; reason?: string } {
   // Inert subcommands that do not execute project code (static checks / metadata).
   const safeSubcommands = ["--version", "--help", "-V", "-v", "version", "info", "lint", "fmt", "check"];
@@ -256,11 +247,8 @@ function validateGrepArguments(args: string[]): { valid: boolean; reason?: strin
 
 // ToolRegistry Implementation
 
-/**
- * Converts a tool-result value into a JSONValue with a JSON round-trip.
- * Tool handlers build typed objects not assignable to JSONValue.
- * This normalizes them once at the registry boundary.
- */
+/** Converts a tool-result value into a JSONValue with a JSON round-trip, once at the registry boundary.
+ *  Tool handlers build typed objects that are not assignable to JSONValue. */
 function toJsonValue<T>(value: T): JSONValue {
   return JSON.parse(JSON.stringify(value) ?? "null") as JSONValue;
 }
@@ -360,7 +348,7 @@ export class ToolRegistry implements IToolRegistry {
       await next();
     });
 
-    // HITL Confirmation Middleware (Phase 118 — per-action governance)
+    // HITL confirmation middleware: per-action governance.
     this.pipeline.use(async (ctx, next) => {
       if (!this.hitlPolicyEvaluator) return await next();
       const match = this.hitlPolicyEvaluator.evaluate(
@@ -568,25 +556,15 @@ export class ToolRegistry implements IToolRegistry {
     return Array.from(this.tools.values());
   }
 
-  /**
-   * The resolved, absolute directory every tool call is rooted at — the
-   * explicit `baseDir` constructor option when given (e.g. a plan's git
-   * worktree), else config.system.root. Lets a caller that bypasses
-   * ToolRegistry.execute() for its own file operations (e.g.
-   * CliDelegateStrategy shelling out to an external CLI) still run in the
-   * same directory ToolRegistry-mediated tool calls do.
-   */
+  /** The resolved absolute directory every tool call is rooted at.
+   *  It is the `baseDir` constructor option when given, else config.system.root.
+   *  A caller can bypass ToolRegistry.execute() for its own file operations. CliDelegateStrategy does this. */
   getBaseDir(): string {
     return this.baseDir;
   }
 
-  /**
-   * Sets the per-blueprint HITL rules the HITL middleware evaluates against for every
-   * subsequent `execute()` call, replacing whatever was passed at construction (if any).
-   * Called by `AgentComposer.executeStep()` once it has loaded the blueprint about to
-   * run (Phase 154 Step 3) — see `IToolRegistry.setHitlBlueprintRules` for why this exists
-   * as a setter rather than a constructor-only option.
-   */
+  /** Sets the per-blueprint HITL rules that the HITL middleware checks on every later `execute()` call. They replace any rules passed at construction.
+   *  AgentComposer.executeStep() calls it after loading the blueprint. See `IToolRegistry.setHitlBlueprintRules` for why it is a setter. */
   setHitlBlueprintRules(rules: HitlRule[]): void {
     this.hitlBlueprintRules = rules;
   }
@@ -811,11 +789,9 @@ export class ToolRegistry implements IToolRegistry {
     return this.formatSuccess(toJsonValue(results));
   }
 
-  /** Read-only discovery: return the catalog of registered tools with their functional
-   *  description and parameter schema, so a planning or execution model selects a tool by what
-   *  it does rather than by guessing from a bare name. When `cli_delegate.tool_exposure` is
-   *  `"shell_only"`, the effective catalog collapses to the shell tool (`run_command`) — the
-   *  only tool that deployment's CLI provider exposes. */
+  /** Read-only discovery: returns the registered tools with their description and parameter schema.
+   *  A model selects a tool by what it does. With `cli_delegate.tool_exposure` set to "shell_only", the catalog collapses to `run_command`.
+   *  That is the only tool the CLI provider exposes. */
   private listAvailableToolsTool(): Promise<IToolResult> {
     const shellOnly = this.config.cli_delegate?.tool_exposure === "shell_only";
     const catalog = Array.from(this.tools.values())
@@ -828,15 +804,8 @@ export class ToolRegistry implements IToolRegistry {
     return Promise.resolve(this.formatSuccess(toJsonValue(catalog)));
   }
 
-  /**
-   * Strips a leading `@<alias>/` portal qualifier from a graph query target.
-   *
-   * A portal-qualified path is idiomatic in this codebase.
-   * Every model tested prefixed its endpoint that way.
-   * The knowledge graph stores portal-relative keys.
-   * The qualifier must therefore be removed.
-   * Otherwise the lookup answers empty and the caller concludes the graph holds nothing.
-   */
+  /** Strips a leading `@<alias>/` portal qualifier from a graph query target. Models prefix endpoints that way,
+   *  but the knowledge graph stores portal-relative keys. Without the strip the lookup answers empty and the caller concludes the graph holds nothing. */
   private stripPortalQualifier(target: string): string {
     const portal = this.currentPortal();
     if (!portal) return target;
@@ -877,18 +846,14 @@ export class ToolRegistry implements IToolRegistry {
     return this.formatSuccess(toJsonValue(capped));
   }
 
-  /** Model identity for graph-tool result token counting — the bare configured AI model name.
-   *  ai-token-estimator's catalog keys are bare model names (e.g. "claude-haiku-4-5"); a
-   *  provider-prefixed composite ("claude-cli:claude-haiku-4-5") does not match any entry
-   *  and throws "Unknown model" even for a real, supported model. */
+  /** Model identity for graph-tool token counting: the bare configured model name.
+   *  ai-token-estimator's catalog keys are bare names. A provider-prefixed composite such as "claude-cli:claude-haiku-4-5" throws "Unknown model". */
   private graphToolModelId(): string {
     return this.config.ai?.model ?? DEFAULT_AI_MODEL;
   }
 
-  /** graphToolTokenizer.countTokens, but never throws: ai-token-estimator rejects any model
-   *  id outside its own hardcoded catalog (e.g. a next-gen or CLI-delegate model name it
-   *  doesn't yet know), and a bounding utility must not crash the tool call over that — falls
-   *  back to the same chars-per-token heuristic TokenCounter already uses elsewhere. */
+  /** Like graphToolTokenizer.countTokens, but never throws. ai-token-estimator rejects model ids outside its catalog.
+   *  A bounding utility must not crash the tool call over that. It falls back to the chars-per-token heuristic of TokenCounter. */
   private async safeCountTokens(text: string, modelId: string): Promise<number> {
     try {
       return await this.graphToolTokenizer.countTokens(text, modelId);
@@ -1139,11 +1104,9 @@ export class ToolRegistry implements IToolRegistry {
     }
   }
 
-  /**
-   * The absolute filesystem roots a tool may operate within: the workspace, memory,
-   * and blueprint dirs under system root, the system root itself, and every configured
-   * portal target. Used to validate both resolved file paths and run_command cwd.
-   */
+  /** The absolute roots a tool may operate within.
+   *  The roots are the system root's workspace, memory and blueprint dirs, the root itself, and each configured portal.
+   *  It validates both resolved file paths and run_command cwd. */
   private async getAllowedRoots(): Promise<string[]> {
     const systemRootAbsolute = await Deno.realPath(this.config.system.root).catch(() =>
       resolve(this.config.system.root)
@@ -1157,43 +1120,28 @@ export class ToolRegistry implements IToolRegistry {
     ];
   }
 
-  /**
-   * A `baseDir` other than config.system.root means this registry was constructed for a
-   * specific execution root (e.g. a plan's git worktree, per PlanExecutor's `repoPath` ->
-   * ToolRegistry `baseDir` wiring) — mirrors resolveAuditPortalPath's identical guard in
-   * agent_composer.ts.
-   */
+  /** A `baseDir` other than config.system.root means a specific execution root.
+   *  Such a root is a plan's git worktree, for example.
+   *  It mirrors the guard in resolveAuditPortalPath in agent_composer.ts. */
   private hasExplicitExecutionRoot(): boolean {
     return this.baseDir !== resolve(this.config.system.root);
   }
 
-  /**
-   * Splits a `@<alias>/<relativePath>` string, returning the bare alias name (no `@`) and the
-   * remainder. Mirrors PathResolver.resolve's own parsing so both stay in sync.
-   */
+  /** Splits a `@<alias>/<relativePath>` string into the bare alias (no `@`) and the remainder. Mirrors PathResolver.resolve's parsing. */
   private parseAliasPath(path: string): { alias: string; relativePath: string } {
     const parts = path.split("/");
     return { alias: parts[0].slice(1), relativePath: parts.slice(1).join("/") };
   }
 
-  /**
-   * Resolve and validate a path
-   * - If path starts with @ and names THIS registry's own portal while an explicit worktree
-   *   baseDir is active, resolve relative to baseDir (the worktree) — matching
-   *   CliDelegateStrategy.resolvePortalPath's established getBaseDir()-first pattern. This is
-   *   the one alias case ToolRegistry itself can resolve correctly, since only it knows which
-   *   worktree the current execution is actually rooted at.
-   * - Otherwise (a non-portal alias, or a portal ToolRegistry has no worktree for), delegate to
-   *   the injected pathResolver, which always resolves a portal alias to its live target_path.
-   * - A bare (non-@) path validates within allowed roots, rooted at baseDir.
-   */
+  /** Resolves and validates a path. A path starting with @ that names this registry's own portal, with a worktree baseDir active, resolves against baseDir.
+   *  Any other alias goes to the injected pathResolver, which resolves a portal alias to its live target_path.
+   *  A bare path validates within the allowed roots, rooted at baseDir. */
   private async resolvePath(path: string): Promise<string> {
     if (path.startsWith("@")) {
       const { alias, relativePath } = this.parseAliasPath(path);
       const portalConfig = this.config.portals.find((p) => p.alias === alias);
-      // Phase 140a Step 5: only resolve into baseDir when the portal's target_path
-      // actually matches baseDir (registry's OWN portal under a worktree). This lets
-      // a worktree-cloned portal isolate writes without grabbing unrelated portals.
+      // Resolve into baseDir only when the portal's target_path matches baseDir, which is the registry's own portal under a worktree.
+      // A worktree-cloned portal then isolates its writes without capturing unrelated portals.
       const ownPortal = this.hasExplicitExecutionRoot() && portalConfig &&
         resolve(portalConfig.target_path) === this.baseDir;
       if (ownPortal) {
@@ -1273,13 +1221,8 @@ export class ToolRegistry implements IToolRegistry {
     }
   }
 
-  /**
-   * Run command tool implementation.
-   *
-   * Security (Finding 6): when a `cwd` is provided it is validated to be within the
-   * allowed roots (e.g. the portal the caller was authorized for) before the command
-   * spawns there. Without a `cwd` the command runs in baseDir (system root) as before.
-   */
+  /** Run command tool implementation. A provided `cwd` must lie within the allowed roots, such as the authorized portal, before the command spawns there.
+   *  Without a `cwd` the command runs in baseDir. */
   public async runCommand(
     command: string,
     args: string[],
@@ -1366,10 +1309,7 @@ export class ToolRegistry implements IToolRegistry {
     void this.logger.info(actionType, target, payload, this.traceId);
   }
 
-  /**
-   * Format tool result for success
-   * @private
-   */
+  /** Formats a successful tool result. */
   private formatSuccess(data: JSONValue): IToolResult {
     return {
       success: true,
@@ -1377,10 +1317,7 @@ export class ToolRegistry implements IToolRegistry {
     };
   }
 
-  /**
-   * Format tool result for error
-   * @private
-   */
+  /** Formats a tool error result. */
   private formatError<T>(error: T, context?: Opt<string, Reason.OptionalContext>): IToolResult {
     const normalizedError = error instanceof Error ? error : String(error);
 
@@ -1491,10 +1428,7 @@ export class ToolRegistry implements IToolRegistry {
           };
         }
 
-        // 6. Format output
-        // For now, basic text. If markdown is requested, we could add a converter later,
-        // but for now raw HTML/Text is better than nothing.
-        // Ideally we would use a library like 'turndown' or similar, but let's start simple.
+        // Basic text output: raw HTML or text, with no markdown converter yet.
         return this.formatSuccess({
           url,
           content: text,
@@ -1542,10 +1476,7 @@ export class ToolRegistry implements IToolRegistry {
         args.push(`--exclude-dir=${dir}`);
       }
 
-      // Max results limit (soft limit via head? or hard limit via grep -m?)
-      // grep -m stops reading FILE after N matches, but we want total matches?
-      // grep doesn't have a global max count. We'll limit output parsing.
-      // But let's check max_results config.
+      // grep has no global max count (`-m` is per file), so the output parsing enforces max_results.
       const maxResults = this.config.tools?.grep_search?.max_results || 50;
 
       // Add pattern and path

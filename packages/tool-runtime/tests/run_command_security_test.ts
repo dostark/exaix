@@ -137,8 +137,7 @@ Deno.test("security: path-denied tool error does not leak the allowed-roots list
   }
 });
 
-// Step 4: the general-purpose runtimes leave the run_command allowlist. Bare and inert
-// forms must be rejected at the allowlist before any subprocess spawns.
+// The general-purpose runtimes leave the run_command allowlist. Bare and inert forms are rejected before any subprocess spawns.
 const REMOVED_RUNTIME_COMMANDS: ReadonlyArray<string> = ["deno", "npm", "node"];
 
 Deno.test("security: run_command rejects deno/npm/node", async () => {

@@ -92,9 +92,8 @@ Deno.test("ToolRegistry: patch_file (flat search/replace shape)", async (t) => {
   await t.step(
     "[regression] writes $-prefixed replacement text literally, not as a special substitution pattern",
     async () => {
-      // JS String.prototype.replace() interprets $&, $`, $', $$, and $<digit> in the replacement
-      // argument even when the search pattern is a plain string (Phase 154 GAP-6) — patchFile()
-      // must write these sequences byte-for-byte, not silently substitute them.
+      // JS String.prototype.replace() reads $&, $`, $', $$ and $<digit> in the replacement text.
+      // That happens even when the pattern is a plain string. patchFile() must write these sequences byte for byte.
       const cases: Array<{ name: string; replace: string }> = [
         { name: "$&", replace: "matched: $&" },
         { name: "$`", replace: "before: $`" },
