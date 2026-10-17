@@ -23,7 +23,7 @@ import { DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { dirname, fromFileUrl, join } from "@std/path";
-import { type IScenarioCatalogEntry, loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
+import { CI_EXCLUDED_TAGS, type IScenarioCatalogEntry, loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
 import { FlowLoader } from "@exaix/flow";
 import {
   loadFlowFile,
@@ -71,6 +71,11 @@ interface IRequestFrontmatter {
   flow?: string;
 }
 
+/** A scenario a bare selection drops (provider-live, manual-only) runs without mock fixtures. */
+function isCiExcluded(scenario: IScenarioCatalogEntry): boolean {
+  return scenario.tags.some((tag) => (CI_EXCLUDED_TAGS as readonly string[]).includes(tag));
+}
+
 function optsIntoRecordingLanes(scenario: IScenarioCatalogEntry): boolean {
   return scenario.steps.some((step) => step.env?.[RECORDING_LANES_ENV] === "1");
 }
@@ -79,7 +84,7 @@ async function loadSoloEditionFlowScenarios(): Promise<IScenarioFlow[]> {
   const catalog = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
   const scenarios = catalog.filter((scenario) =>
     scenario.pack === FLOW_BLUEPRINTS_PACK && (!scenario.edition || scenario.edition === SOLO_EDITION) &&
-    !optsIntoRecordingLanes(scenario)
+    !optsIntoRecordingLanes(scenario) && !isCiExcluded(scenario)
   );
 
   const result: IScenarioFlow[] = [];
