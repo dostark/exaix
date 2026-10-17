@@ -1,9 +1,6 @@
 schema_version: "1.0.0"
-# Phase 148 Step 1 vertical slice: seeds a sandboxed SessionMemoryService/MemoryBankService
-# with fixtures/memory/info-extraction-basic's session write, issues its query through the
-# real keyword-retrieval surface (run_memory_replay.ts, the in-process pattern proven by
-# run_memory_full_loop.ts), and scores the retrieved ids with the new recall-at-k criterion —
-# deterministic, no LLM/provider involved.
+# Seeds a sandboxed SessionMemoryService and MemoryBankService with the fixtures/memory/info-extraction-basic session write,
+# queries through the real keyword-retrieval surface (run_memory_replay.ts), and scores the retrieved ids with the recall-at-k criterion. Deterministic, with no LLM or provider.
 id: "memory-info-extraction-basic"
 title: "Memory evaluation — information-extraction ability scores recall@k end-to-end"
 pack: "memory"

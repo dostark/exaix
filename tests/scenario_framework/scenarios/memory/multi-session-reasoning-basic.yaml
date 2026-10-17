@@ -1,9 +1,7 @@
 schema_version: "1.0.0"
-# Phase 148 Step 2: a multi-session-reasoning task whose query needs combining two
-# learnings (capacity + restart behavior); recall@2 proves both were retrieved, and the
-# gated llm-judge (Phase 140) grades whether the retrieved evidence supports the
-# expected_answer stated in memory-task-context.md. provider-live: costs real tokens,
-# excluded from a bare --pack/--tag selection.
+# A multi-session-reasoning task: the query needs two learnings combined (capacity and restart behavior). Recall@2 proves both were retrieved,
+# and the gated llm-judge grades whether the evidence supports the expected_answer in memory-task-context.md.
+# provider-live: it costs real tokens and is excluded from a bare --pack or --tag selection.
 id: "memory-multi-session-reasoning-basic"
 title: "Memory evaluation — multi-session-reasoning ability combines two learnings, judged"
 pack: "memory"
