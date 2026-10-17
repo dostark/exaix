@@ -32,10 +32,8 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  # The merge rule under test is pinned ∪ matched ∪ defaults, so the assertion has to see
-  # BOTH sides in one event: the ids pinned by the fixture and senior-coder's own
-  # default_skills. `skills.match_completed` reports only the matching stage — which this
-  # pinned request skips entirely — so it could never show the merge.
+  # The merge rule under test is pinned ∪ matched ∪ defaults, so the assertion must see both sides in one event: the ids pinned by the fixture and senior-coder's own default_skills.
+  # `skills.match_completed` reports only the matching stage, which this pinned request skips, so it could never show the merge.
   - id: "wait-for-match"
     type: "exactl"
     command: "journal"
