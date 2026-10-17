@@ -74,7 +74,7 @@ import {
   VERIFICATION_REPAIR_INSTRUCTION,
   VERIFICATION_REPAIR_PHASE,
 } from "@exaix/core";
-import { GIT_CMD_DIFF, GIT_CMD_REV_PARSE, GIT_FLAG_NAME_ONLY } from "@exaix/git/constants.ts";
+import { listChangedFilesBetween, readHeadSha } from "@exaix/git";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -549,7 +549,7 @@ export class ExecutionLoop {
     let execution: { lastCommitSha: string | null };
     let before: string;
     try {
-      before = await this.getHeadSha(context.executionGitService);
+      before = await readHeadSha(context.executionGitService);
       const repairPlan = this.buildRepairPlan(frontmatter, verification, result, attempt, context);
       execution = await this.executeStructuredPlan(
         repairPlan,
@@ -578,8 +578,8 @@ export class ExecutionLoop {
       return { failed: true, commitSha: null };
     }
 
-    const after = await this.getHeadSha(context.executionGitService);
-    const changedFiles = await this.diffChangedFiles(context.executionGitService, before, after);
+    const after = await readHeadSha(context.executionGitService);
+    const changedFiles = await listChangedFilesBetween(context.executionGitService, before, after);
     this.logActivity(DomainEventType.ExecutionRepairCompleted, context.traceId, {
       request_id: context.requestId,
       attempt,
@@ -630,22 +630,6 @@ export class ExecutionLoop {
     const overhead = render(failures.map(() => "")).length;
     const share = Math.max(0, Math.floor((USER_REQUEST_MAX_LENGTH - overhead) / Math.max(1, failures.length)));
     return render(failures.map((failure) => failure.output.slice(Math.max(0, failure.output.length - share))));
-  }
-
-  /** Current HEAD sha of the execution worktree, or an empty string when unreadable. */
-  private async getHeadSha(gitService: IGitService): Promise<string> {
-    const result = await gitService.runGitCommand([GIT_CMD_REV_PARSE, "HEAD"], { throwOnError: false });
-    return result.exitCode === 0 ? result.output.trim() : "";
-  }
-
-  /** Repo-relative paths changed between two commits. Empty when they are equal or the diff fails. */
-  private async diffChangedFiles(gitService: IGitService, before: string, after: string): Promise<string[]> {
-    if (!before || !after || before === after) return [];
-    const result = await gitService.runGitCommand([GIT_CMD_DIFF, GIT_FLAG_NAME_ONLY, before, after], {
-      throwOnError: false,
-    });
-    if (result.exitCode !== 0) return [];
-    return result.output.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
   }
 
   /** The portal's optional verification block, matched by the plan's portal alias. */
