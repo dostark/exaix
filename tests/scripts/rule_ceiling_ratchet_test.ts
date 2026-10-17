@@ -6,7 +6,7 @@
  * @related-files [packages/lint-rules/src/cli/rule_ceiling.ts, packages/lint-rules/tests/check_code_style_catalog_parity_test.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { evaluateCeilings } from "../../packages/lint-rules/src/cli/rule_ceiling.ts";
 
@@ -116,15 +116,24 @@ Deno.test("the committed ceilings file names only known rules and packages", asy
 });
 
 Deno.test("the whole-tree counts match the committed ceilings", async () => {
-  const command = new Deno.Command(Deno.execPath(), {
-    // The repo lint scope, so a test-scope rule is held too (the no-argument form misses them).
-    args: ["lint", "--json", "tests/", "packages/", "exaix-team/", "apps/"],
-    cwd: REPO_ROOT,
-    env: { EXAIX_LINT_RULES: RATCHETED_RULES.join(",") },
-    stdout: "piped",
-    stderr: "null",
-  });
-  const { stdout } = await command.output();
+  // Parallel tests can remove files under the repo during one walk.
+  // A bounded retry absorbs the resulting missing-file error.
+  const MAX_LINT_ATTEMPTS = 3;
+  let stdout = new Uint8Array();
+  let stderr = new Uint8Array();
+  for (let attempt = 1; attempt <= MAX_LINT_ATTEMPTS && stdout.length === 0; attempt++) {
+    const command = new Deno.Command(Deno.execPath(), {
+      // The repo lint scope, so a test-scope rule is held too (the no-argument form misses them).
+      args: ["lint", "--json", "tests/", "packages/", "exaix-team/", "apps/"],
+      cwd: REPO_ROOT,
+      env: { EXAIX_LINT_RULES: RATCHETED_RULES.join(",") },
+      stdout: "piped",
+      stderr: "piped",
+    });
+    ({ stdout, stderr } = await command.output());
+  }
+  // deno lint exits non-zero whenever it reports violations, so the report on stdout is the signal.
+  assert(stdout.length > 0, `whole-tree lint produced no report: ${new TextDecoder().decode(stderr).slice(-2000)}`);
   const report = JSON.parse(new TextDecoder().decode(stdout)) as ILintReport;
 
   const knownPackages = await workspacePackages();
