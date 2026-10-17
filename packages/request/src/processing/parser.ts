@@ -20,9 +20,8 @@ import {
   ThinkingDeclarationSchema,
 } from "@exaix/schemas/model_intent.ts";
 
-/** A declaration rejected at the request-file parse boundary — surfaces the failure as a
- *  typed result (never a swallowed error) so the processor can fail the file visibly and
- *  correlate the RequestFailed event to the request's trace (GAP-7). */
+/** A declaration rejected at the request-file parse boundary. It surfaces as a typed result, never a swallowed error.
+ *  The processor fails the file visibly and correlates the RequestFailed event to the request's trace. */
 export interface IRequestParseRejection {
   rejected: true;
   filePath: string;
@@ -88,8 +87,7 @@ export class RequestParser {
         rawContent: content,
       };
     } catch (error) {
-      // A rejected declaration is a typed outcome, not a parse failure: no second
-      // FrontmatterParseFailed log, the processor owns the visible failure (GAP-7).
+      // A rejected declaration is a typed outcome, not a parse failure. The processor owns the visible failure, so there is no second FrontmatterParseFailed log.
       if (error instanceof RequestFrontmatterRejectedError) {
         return {
           rejected: true,
@@ -137,10 +135,8 @@ export class RequestParser {
     }
   }
 
-  /** Reject an invalid declaration-time effort/thinking value, naming the field — requests
-   *  are file-driven, so this covers the manual/hand-written channel the CLI-level check can
-   *  never reach (GAP-5). The rejection surfaces as a typed IRequestParseRejection; the
-   *  processor owns the visible RequestFailed + status transition (GAP-7). */
+  /** Rejects an invalid declaration-time effort or thinking value and names the field. Requests are file-driven, so this covers hand-written files that the CLI check never reaches.
+   *  The rejection is a typed IRequestParseRejection. The processor owns the visible RequestFailed event and the status change. */
   private validateEffortThinkingBoundary(fm: IRequestFrontmatter): void {
     if (fm.effort !== undefined) {
       const parsedEffort = EffortDeclarationSchema.safeParse(fm.effort);
@@ -159,9 +155,8 @@ export class RequestParser {
   }
 }
 
-/** Signals a rejected request-file declaration; parse() converts it into a typed
- *  IRequestParseRejection so processing can stop before any provider call while the
- *  processor records a visible, trace-correlated failure (GAP-7). */
+/** Signals a rejected request-file declaration. parse() converts it into a typed IRequestParseRejection.
+ *  Processing stops before any provider call. The processor records a visible, trace-correlated failure. */
 class RequestFrontmatterRejectedError extends Error {
   constructor(
     readonly field: DeclarationField,

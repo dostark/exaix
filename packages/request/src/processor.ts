@@ -150,10 +150,8 @@ export interface IRequestProcessorConfig {
 // RequestProcessor Implementation
 
 export class RequestProcessor {
-  /** Forwards the request frontmatter's model intent fields onto the plan so native
-   * execution applies request overrides (see PlanWriter.requestIntent). Declared "auto"
-   * values are EXCLUDED here — they must never float into the concrete IModelIntent that
-   * drives provider selection (GAP-3); they travel as requestEffortDeclaration instead. */
+  /** Forwards the request frontmatter's model intent fields onto the plan, so native execution applies request overrides (see PlanWriter.requestIntent).
+   *  Declared "auto" values are excluded. They never enter the concrete IModelIntent that drives provider selection and travel as requestEffortDeclaration. */
   private static requestIntentFromFrontmatter(frontmatter: IRequestFrontmatter): Partial<IModelIntent> {
     const intent: Partial<IModelIntent> = {};
     if (frontmatter.model_size !== undefined) intent.model_size = frontmatter.model_size as IModelIntent["model_size"];
@@ -431,10 +429,8 @@ export class RequestProcessor {
     }
   }
 
-  /** Fails a request whose file declaration was rejected at the parse boundary (GAP-7):
-   *  the file's status becomes FAILED visibly, and the RequestFailed event is logged
-   *  through a trace-scoped child logger with the offending field, joinable to the request
-   *  by its trace_id. */
+  /** Fails a request whose file declaration was rejected at the parse boundary. The file's status becomes FAILED visibly.
+   *  The RequestFailed event is logged through a trace-scoped child logger with the offending field. It is joinable by trace_id. */
   private async handleParseRejection(rejection: IRequestParseRejection): Promise<void> {
     const errorMessage = `Invalid '${rejection.field}' frontmatter value`;
     await this.statusManager.updateStatus(rejection.filePath, RequestStatus.FAILED, errorMessage);
