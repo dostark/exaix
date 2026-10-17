@@ -54,7 +54,7 @@ export const STATIC_OVERLAY: StaticOverlay = {
     sourceUrl: "https://anthropic.com/pricing/",
   },
   // `gemini-3.8-flash` on the Google AI API, standard paid tier, text.
-  // The rates apply through 2026-12-31 and double on 2027-01-01 (see sourceUrl).
+  // The rates apply through the end of 2026 and double at the start of 2027 (see sourceUrl).
   "google:gemini-3.8-flash": {
     inputPerMtok: 0.75,
     outputPerMtok: 3.75,
@@ -64,8 +64,7 @@ export const STATIC_OVERLAY: StaticOverlay = {
   },
 };
 
-/** Context windows of current models, from the OpenRouter catalog on 2026-10-12. Kept apart from
- *  STATIC_OVERLAY, so a window row never reports static pricing. */
+/** Context windows of current models, from the OpenRouter catalog. Kept apart from STATIC_OVERLAY, so a window row never reports static pricing. */
 export const STATIC_CONTEXT_WINDOWS: Readonly<Record<string, number>> = {
   "openai:gpt-5.6-terra": 1_050_000,
   "openai:gpt-5-mini": 400_000,
