@@ -33,13 +33,8 @@ interface IPortalSeamComposer {
   }>;
 }
 
-/**
- * Registers the paid-edition portal extractor modules and runs the seam hooks.
- *
- * The modules are imported dynamically, so Team code stays out of the Solo build.
- * The Enterprise symbol graph module joins only for the enterprise edition.
- * Returns how many modules received the reference registry.
- */
+/** Registers the paid-edition portal extractor modules and runs the seam hooks. The modules load dynamically, so Team code stays out of the Solo build.
+ *  The Enterprise symbol graph module joins only for the enterprise edition. Returns how many modules received the reference registry. */
 export async function fillPortalKnowledgeSeams(
   composer: IPortalSeamComposer,
   registries: {
