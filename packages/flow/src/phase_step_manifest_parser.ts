@@ -114,11 +114,8 @@ function parseStepManifest(sectionText: string, stepNumber: number): {
   return { manifest: result.data };
 }
 
-/**
- * Splits `content` into ordered per-step sections at `## Step N` / `### Step N`
- * headings and parses each section's fenced step-manifest. Pure: no I/O, no console,
- * no `Deno.exit`. Callers map `diagnostics` to their own warning/error/exit policy.
- */
+/** Splits `content` into ordered per-step sections at `## Step N` or `### Step N` headings and parses each fenced step-manifest.
+ *  Pure: no I/O, no console, no `Deno.exit`. Callers map `diagnostics` to their own warning, error or exit policy. */
 export function parsePhaseStepManifests(content: string): IPhaseStepManifestParseResult {
   const diagnostics: IPhaseStepDiagnostic[] = [];
   const rawSections: Array<{ stepNumber: number; sectionText: string }> = [];
