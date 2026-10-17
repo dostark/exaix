@@ -151,7 +151,8 @@ steps:
     type: "exactl"
     cells: ["cycle-claude", "cycle-opencode", "cycle-codex"]
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--portal", "test-project"]
+    # The context supplement activates only for trusted agent roles; the default role is not one.
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "test-project", "--agent-role", "dogfood-coder"]
     output_criteria:
       - id: "cycle-request-submitted"
         score_weight: 0.5
