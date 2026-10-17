@@ -71,6 +71,9 @@ async function setup() {
   return { ...dbFixture, config, portal };
 }
 
+/** Longer than the 200-char journal summary, shorter than the model-history cap. */
+const LONG_RESULT_FILLER = 1000;
+
 Deno.test("capability-free blueprint uses one native ReAct loop with replay and usage", async () => {
   const fixture = await setup();
   ProviderRegistry.registerWithMetadata(PROVIDER_ID, new MockProviderFactory(), {
@@ -625,6 +628,67 @@ Deno.test("text-mode ReAct keeps the prior action and tool result in the next tu
     assertEquals(prompts.length, 2);
     assertStringIncludes(prompts[1], "Tool read_file result:");
     assertStringIncludes(prompts[1], "PORTAL README SENTINEL");
+  } finally {
+    composer.dispose();
+    await cleanup();
+  }
+});
+
+Deno.test("text-mode ReAct keeps a tool result longer than the journal summary intact in the next turn's prompt", async () => {
+  const fixture = await setup();
+  const prompts: string[] = [];
+  const provider: IModelProvider = {
+    id: "text-react-long-result-fixture",
+    generate: (prompt) => {
+      prompts.push(prompt);
+      return Promise.resolve({
+        content: prompts.length === 1
+          ? 'THOUGHT: Read it.\n```toml\n[[actions]]\ntool = "read_file"\n[actions.params]\npath = "README.md"\n```'
+          : `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`,
+        usage: { promptTokens: 4, completionTokens: 2, totalTokens: 6 },
+        model: "test",
+        provider: "text-react-long-result-fixture",
+      });
+    },
+  };
+  const { config, db, cleanup } = fixture;
+  const composer = new AgentComposer({
+    config,
+    db,
+    logger: new EventLogger({ db }),
+    pathResolver: new PathResolver(config),
+    permissions: new PortalPermissionsService(config.portals),
+    provider,
+    toolRegistry: {
+      getTools:
+        () => [{ name: ToolName.READ_FILE, description: "Read", parameters: { type: "object", properties: {} } }],
+      execute: () =>
+        Promise.resolve({ success: true, data: { content: `${"x".repeat(LONG_RESULT_FILLER)} END SENTINEL` } }),
+      getBaseDir: () => fixture.portal,
+    } as never,
+  });
+  try {
+    await composer.executeStep(
+      {
+        trace_id: crypto.randomUUID(),
+        request_id: "request-text",
+        request: "Read",
+        plan: "Read",
+        portal: "TestPortal",
+      },
+      {
+        portal: "TestPortal",
+        agent_role: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 30000,
+        max_tool_calls: 5,
+        audit_enabled: true,
+        native_tools_enabled: false,
+      },
+    );
+    assertEquals(prompts.length, 2);
+    assertStringIncludes(prompts[1], "Tool read_file result:");
+    assertStringIncludes(prompts[1], "END SENTINEL", "the model must see the end of a result past the journal cap");
   } finally {
     composer.dispose();
     await cleanup();

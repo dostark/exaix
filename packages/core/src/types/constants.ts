@@ -745,6 +745,15 @@ export const REACT_CALLING_TOOL_PREFIX = "CALLING TOOL: ";
 export const REACT_TOOL_ERROR_PREFIX = "TOOL ERROR: ";
 /** Max chars of a serialized tool result kept in the dynamic_tool_call journal summary. */
 export const REACT_TOOL_RESULT_SUMMARY_MAX = 200;
+export const REACT_TOOL_RESULT_HISTORY_MAX: number = configurable({
+  key: "react.tool_result_history_max_chars",
+  default: 4000,
+  type: ConfigValueType.NUMBER,
+  description: "Max chars of one tool result kept in the ReAct history the model reads on its next turn",
+  min: 200,
+  max: 100000,
+  swap: SwapClass.RESTART,
+});
 export const REACT_DEFAULT_TEMPERATURE: number = configurable({
   key: "react.temperature",
   default: 0.1,

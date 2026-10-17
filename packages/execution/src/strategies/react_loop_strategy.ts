@@ -73,6 +73,7 @@ import {
   REACT_SUMMARY_PREFIX,
   REACT_THOUGHT_PREFIX,
   REACT_TOOL_RESULT_BUDGET_RATIO,
+  REACT_TOOL_RESULT_HISTORY_MAX,
   REACT_TOOL_RESULT_SUMMARY_MAX,
   RESPONSE_STOP_REASON_MAX_TOKENS,
   RESPONSE_STOP_REASON_REFUSAL,
@@ -821,8 +822,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       history.push({ role: ReActRole.ACTION, content: toolCallLine });
 
       const resultEntry = `Tool ${action.tool} result: ${toolResultContent}`;
-      const truncatedResult = resultEntry.length > REACT_TOOL_RESULT_SUMMARY_MAX
-        ? resultEntry.slice(0, REACT_TOOL_RESULT_SUMMARY_MAX) + "..."
+      const truncatedResult = resultEntry.length > REACT_TOOL_RESULT_HISTORY_MAX
+        ? resultEntry.slice(0, REACT_TOOL_RESULT_HISTORY_MAX) + "..."
         : resultEntry;
       history.push({ role: ReActRole.RESULT, content: truncatedResult });
 
