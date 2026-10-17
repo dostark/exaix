@@ -1,8 +1,6 @@
 schema_version: "1.0.0"
-# Asserts real discovery parity: the server must serve the tools TOOL_MANIFEST declares
-# docs_visible. The previous version asserted `contains: ["tools"]`, which any JSON
-# response satisfies, and pointed at sandbox-relative paths that do not exist, so it could
-# never run at all.
+# Asserts real discovery parity: the server must serve the tools TOOL_MANIFEST declares docs_visible.
+# A bare `contains: ["tools"]` check would pass on any JSON response.
 id: "mcp-server-contract-discovery"
 title: "MCP server — tools/list discovery parity with TOOL_MANIFEST"
 pack: "mcp_server"
