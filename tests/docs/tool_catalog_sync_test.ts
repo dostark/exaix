@@ -133,7 +133,7 @@ Deno.test("tool_catalog_sync: tool count in TOOLS.md matches manifest docs-visib
   );
 });
 
-// GAP-4: per-tool schema and permission blocks
+// Per-tool schema and permission blocks.
 
 Deno.test("tool_catalog_sync: each docs-visible tool has a schema block with input_schema and permissions", async () => {
   const section = await readAgentToolsSection();

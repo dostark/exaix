@@ -27,11 +27,8 @@ export interface IRunningDaemon {
   until(check: () => boolean | Promise<boolean>, awaiting: string): Promise<void>;
 }
 
-/**
- * Options for {@link bootRealDaemon}. `midFlight` runs after `daemon.ready`.
- * It must await its own effects. `waitForAfterInject` polls until it holds.
- * A daemon exit fails either wait first.
- */
+/** Options for {@link bootRealDaemon}. `midFlight` runs after `daemon.ready` and must await its own effects. `waitForAfterInject` polls until it holds.
+ *  A daemon exit fails either wait first. */
 export interface IRealDaemonBootOptions {
   /** Explicit child permissions for tests that prove network confinement. */
   denoPermissions?: string[];
@@ -147,11 +144,8 @@ const DAEMON_EVENT_POLL_MS = 100;
 /** Tail of daemon stderr kept for the failure message when the daemon exits early. */
 const DAEMON_STDERR_TAIL_CHARS = 2000;
 
-/**
- * Resolves once `check` holds. Rejects when the daemon exits first, naming the awaited event.
- * No wall-clock budget is used. A fixed budget encodes machine speed. A daemon that stays alive
- * and never journals the event keeps the wait open. Only the CI job limit ends that case.
- */
+/** Resolves once `check` holds. Rejects when the daemon exits first, naming the awaited event.
+ *  There is no wall-clock budget, because a fixed budget encodes machine speed. A live daemon that never journals the event keeps the wait open until the CI job limit. */
 export async function waitForDaemonEvent(
   check: () => boolean | Promise<boolean>,
   exited: Promise<IDaemonExit>,
@@ -183,10 +177,8 @@ async function collectStderrTail(stream: ReadableStream<Uint8Array>): Promise<st
   return tail + decoder.decode();
 }
 
-/**
- * Resolves with a child's exit code and the tail of its stderr. A child whose stderr is piped
- * is drained as it runs, so a full pipe can never block it. A child with no piped stderr gets an empty tail.
- */
+/** Resolves with a child's exit code and the tail of its stderr. A piped stderr is drained as the child runs, so a full pipe never blocks it.
+ *  A child with no piped stderr gets an empty tail. */
 export function watchChildExit(proc: Deno.ChildProcess): Promise<IDaemonExit> {
   // Deno throws on reading `stderr` when it was not piped, so the check is a try, not a null test.
   let stderr: ReadableStream<Uint8Array> | undefined;
@@ -308,11 +300,8 @@ function daemonReadySince(journalPath: string, afterRowid: number): boolean {
   }
 }
 
-/**
- * Boots the real daemon and waits for its `daemon.ready` event.
- * Then runs the optional mid-flight input and waits for its effect.
- * Finally sends SIGTERM and awaits the exit on every path. Migrates the workspace first (see {@link migrateDaemonWorkspace}).
- */
+/** Boots the real daemon and waits for `daemon.ready`, runs the optional mid-flight input and waits for its effect.
+ *  Then sends SIGTERM and awaits the exit on every path. Migrates the workspace first (see {@link migrateDaemonWorkspace}). */
 export async function bootRealDaemon(
   configPath: string,
   options: IRealDaemonBootOptions = {},

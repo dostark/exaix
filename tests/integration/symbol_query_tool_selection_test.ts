@@ -206,7 +206,7 @@ async function writeProject(files: { [path: string]: string }): Promise<string> 
   return root;
 }
 
-// ── Layer 1: the tool must be OFFERED, with guidance a model can act on ──────
+// Layer 1: the tool must be offered, with guidance a model can act on.
 
 Deno.test("[tool-selection] the planning catalog offers the symbol-query tools", () => {
   const names = new Set(readOnlyEditorTools().map((t) => t.name));
@@ -255,7 +255,7 @@ Deno.test("[tool-selection] the search tools do not claim to answer call-graph q
   );
 });
 
-// ── Layer 2: the decided call must DISPATCH and answer per language ──────────
+// Layer 2: the decided call must dispatch and answer per language.
 
 for (const symbolCase of CASES) {
   Deno.test(`[tool-selection] a decided find_dependents call answers "what calls X" for ${symbolCase.language}`, async () => {
@@ -314,10 +314,8 @@ for (const symbolCase of CASES) {
 }
 
 Deno.test("[tool-selection] a decided query_relationships call answers the forward direction with a kind filter", async () => {
-  // "What does X call" is the forward question.
-  // It reuses the same registry tool as "what calls X".
-  // The dispatch must therefore carry the symbol kind.
-  // Without it, the answer mixes file edges into a symbol answer.
+  // "What does X call" is the forward question and reuses the registry tool of "what calls X".
+  // The dispatch must carry the symbol kind. Without it, the answer mixes file edges into a symbol answer.
   const symbolCase = CASES[0];
   const portalRoot = await writeProject(symbolCase.files);
   const alias = "sel-forward";

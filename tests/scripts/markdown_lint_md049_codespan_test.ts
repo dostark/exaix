@@ -98,13 +98,9 @@ Deno.test("[md049-fix] a document with no underscore-emphasis heading is left un
 });
 
 Deno.test("[md049-fix] YAML frontmatter is never rewritten, even when a heading elsewhere triggers the fix (regression)", () => {
-  // Reproduces the phase-161-identity-persona-value-isolation.md incident (2026-09-15):
-  // a heading's underscore emphasis triggered the fixer, which then ran its whole-document
-  // underscore-to-asterisk regex over the frontmatter block too. Bare (non-backticked)
-  // underscores in a frontmatter string value — `short_summary: "...default_skills/
-  // permitted_tools/model_size..."` — were misparsed as paired emphasis markers and
-  // corrupted into `short*summary: "...default*skills/permitted*tools/model*size..."`,
-  // breaking YAML parsing.
+  // A heading's underscore emphasis triggered the fixer, which then ran its whole-document underscore-to-asterisk regex over the frontmatter too.
+  // Bare underscores in a frontmatter value (`default_skills/permitted_tools`) were misparsed as paired emphasis and corrupted into `default*skills/permitted*tools`,
+  // which broke YAML parsing.
   const src = [
     "---",
     "status: PLANNING",

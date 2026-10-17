@@ -139,10 +139,9 @@ async function journalRows(configPath: string, actionType: string): Promise<IJou
   }
 }
 
-/** Journal writes go through one FIFO queue, in the order the server logs them. A sentinel call is a
- *  registered tool call against a portal that does not exist. Its handler row carries a unique marker and
- *  marks the queue position. Every row before that position is then in the journal. The sentinel's own
- *  rows are excluded from later reads, so the counts under test stay exact. The server must be alive. */
+/** Journal writes go through one FIFO queue in the order the server logs them. A sentinel call is a registered tool call against a portal that does not exist.
+ *  Its handler row carries a unique marker and fixes the queue position, so every earlier row is in the journal. The sentinel's own rows are excluded from later reads.
+ *  The server must be alive. */
 class JournalReader {
   private readonly sentinelRowids = new Set<number>();
 
