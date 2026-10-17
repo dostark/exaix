@@ -1283,10 +1283,9 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     return history.filter((_, idx) => keptHistoryIds.has(`hist-${idx}-${context.trace_id}`));
   }
 
-  /** Tools visible to this iteration. Uses `options.permitted_tools` when declared, an
-   *  explicit empty array stays empty, else the default five. Each entry is canonicalized
-   *  then deduplicated, so an alias like `grep` resolves to its canonical id. Computed once
-   *  and reused for both the AVAILABLE TOOLS line and ACI rendering. */
+  /** Tools visible to this iteration. Uses `options.permitted_tools` when declared, an empty array stays empty, otherwise the default five.
+   *  Entries are canonicalized and deduplicated, so an alias like `grep` resolves to its canonical id.
+   *  Computed once for both the AVAILABLE TOOLS line and ACI rendering. */
   private deriveVisibleToolIds(options: IAgentExecutionOptions): string[] {
     const requested = options.permitted_tools ?? DEFAULT_REACT_VISIBLE_TOOLS;
     return [...new Set(requested.map(canonicalizeToolName))];
@@ -1440,11 +1439,8 @@ The plan step is finished once every file it names has been read. Then stop call
     const isComplete = response.includes(REACT_STATUS_COMPLETE);
     const parseErrors: string[] = [];
 
-    // Capture the text after the THOUGHT: prefix up to the first action block, the
-    // completion marker, or end of response. No literal spaces inside the lookahead
-    // alternatives: the previous pattern required a space-padded " ```toml " / " $",
-    // which never matches fence-on-its-own-line responses — so thought was always
-    // undefined and the model's reasoning never entered the loop history.
+    // Captures the text after THOUGHT: up to the first action block, the completion marker or the end.
+    // The lookahead alternatives hold no literal spaces, so a fence on its own line still ends the thought.
     const thoughtPattern = `${REACT_THOUGHT_PREFIX}\\s*(.*?)(?=\`\`\`toml|${REACT_STATUS_COMPLETE}|$)`;
     const thoughtMatch = response.match(new RegExp(thoughtPattern, "s"));
     const thought = thoughtMatch ? thoughtMatch[1].trim() : undefined;
@@ -1504,8 +1500,7 @@ The plan step is finished once every file it names has been read. Then stop call
     toolCallCount: number,
     writtenFiles: ReadonlySet<string>,
   ): IChangesetResult {
-    // Try to extract JSON from the response using the executor's parser (Phase 61.2)
-    // This allows the agent to provide a summary JSON at the end of the ReAct loop
+    // Extracts JSON from the response with the executor's parser, so the agent can end the loop with a summary JSON.
     const jsonResult = this.executor.parseAgentResponse(
       response,
       context,

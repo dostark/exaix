@@ -14,10 +14,8 @@
 
 import type { Opt, Reason } from "@exaix/core/types";
 
-/** An undefined `permittedTools` means no restriction, so everything passes. An empty array
- *  means no tools are permitted, so the result is always empty (fail-closed, matching
- *  `resolvePermittedTools`). Both inputs must already be canonical. Canonicalization happens
- *  once, at the schema boundary, not inside this pure helper. */
+/** An undefined `permittedTools` means no restriction. An empty array permits nothing, so the result is empty (fail-closed, like `resolvePermittedTools`).
+ *  Both inputs must already be canonical. Canonicalization happens at the schema boundary, not in this pure helper. */
 export function resolveEffectiveSkillTools(
   matchedSkillTools: Array<string[] | undefined>,
   permittedTools: Opt<string[], Reason.OptionalInput>,

@@ -108,8 +108,7 @@ Deno.test("AgentComposer.executeStep emits agent.effort_resolved with path execu
   }
 });
 
-/** Compile-time link: the execution emitter's payload satisfies the same typed
- *  IAgentEffortResolvedPayload shape the planning emitter produces (GAP-4). */
+/** Compile-time link: the execution emitter's payload satisfies the same typed IAgentEffortResolvedPayload shape as the planning emitter. */
 function assertSatisfiesType(payload: Record<string, JSONValue>): IAgentEffortResolvedPayload {
   return payload as IAgentEffortResolvedPayload;
 }

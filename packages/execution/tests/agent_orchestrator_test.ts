@@ -3033,21 +3033,16 @@ Deno.test({
         provider: mockProvider,
         toolRegistry: fakeToolRegistry,
         options: {
-          // Two matched skills: one contributes read_file+write_file, the other
-          // contributes write_file+delete_file. Union = {read_file, write_file, delete_file}
-          // — deliberately a STRICT SUBSET of the agent role's broader permitted_tools below,
-          // so this test can only pass if matchedSkillTools is actually consulted (not just
-          // passed through agent role permitted_tools unfiltered).
+          // Two matched skills: one adds read_file and write_file, the other write_file and delete_file.
+          // Their union is a strict subset of the broader permitted_tools below.
+          // The test passes only if matchedSkillTools is consulted.
           matchedSkillTools: [["read_file", "write_file"], ["write_file", "delete_file"]],
         },
       });
 
-      // Agent role permits a BROADER set (including list_directory, which no matched skill
-      // declared) — list_directory must be filtered out because no skill's tools union
-      // includes it, and delete_file must survive because it's in both the skill union and
-      // the agent role's permitted_tools. "test-agent" is used (rather than a new agent role
-      // name) because getServices()'s fixed portal permissions only allow
-      // ["test-agent", "ollama-agent"] to access TestPortal.
+      // The agent role permits a broader set, including list_directory, which no matched skill declares.
+      // The filter must remove list_directory. It must keep delete_file, because both the skills and the role declare it.
+      // The test uses "test-agent" because getServices() allows only ["test-agent", "ollama-agent"] on TestPortal.
       const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
       await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
       await Deno.writeTextFile(
@@ -3926,11 +3921,8 @@ Deno.test({
       assertEquals(remaining1.stepId, stepIds[3]);
       assertEquals(remaining2.stepId, stepIds[4]);
 
-      // NOTE: FlowCheckpointService integration is not yet wired into
-      // AgentComposer. The originalStepIds field is a forward-compatibility
-      // hook — once FlowCheckpointService is wired into compactLoopHistory(),
-      // these IDs can be used to retrieve original checkpoint data.
-      // See phase-103 Step 103.14 for the deferred integration plan.
+      // FlowCheckpointService is not wired into AgentComposer yet.
+      // originalStepIds is a hook for the original checkpoint data, once compactLoopHistory() uses it.
 
       executor.dispose();
     } finally {
