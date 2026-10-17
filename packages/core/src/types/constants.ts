@@ -3462,6 +3462,8 @@ export const SESSION_FLAG_MAX_TOTAL_TOKENS = "--max-total-tokens";
 /** Headless-mode flags: claude -p <objective>, opencode run <objective>, and output-format json. */
 export const SESSION_FLAG_PRINT = "-p";
 export const SESSION_SUBCMD_RUN = "run";
+/** OpenCode 2.x. Runs a private server on the launch env. The shared background service ignores a per-launch key. */
+export const SESSION_FLAG_STANDALONE = "--standalone";
 export const SESSION_FLAG_OUTPUT_FORMAT = "--output-format";
 /** OpenCode-specific: --format json (differs from claude's --output-format). */
 export const SESSION_FLAG_FORMAT = "--format";

@@ -29,6 +29,7 @@ import {
   SESSION_FLAG_OUTPUT_FORMAT,
   SESSION_FLAG_PRINT,
   SESSION_FLAG_SANDBOX,
+  SESSION_FLAG_STANDALONE,
   SESSION_OUTPUT_FORMAT_JSON,
   SESSION_SANDBOX_READ_ONLY,
   SESSION_SUBCMD_EXEC,
@@ -116,6 +117,7 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
         command: this.bin,
         args: [
           SESSION_SUBCMD_RUN,
+          SESSION_FLAG_STANDALONE,
           SESSION_FLAG_FORMAT,
           SESSION_OUTPUT_FORMAT_JSON,
           ...opencodeModelFlag,

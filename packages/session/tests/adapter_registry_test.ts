@@ -131,8 +131,9 @@ Deno.test("[session_adapter] opencode headless argv contains run, --format json,
   const brief = makeBrief({ tool: "opencode", objective: "Implement feature X" });
   const launch = registry.resolve("opencode").buildLaunch(brief, "headless", BRIEF_PATH);
   assertEquals(launch.args[0], "run", "headless opencode must start with `run` subcommand");
-  assertEquals(launch.args[1], "--format", "opencode uses --format (not --output-format)");
-  assertEquals(launch.args[2], "json", "must request JSON output for return synthesis");
+  assertEquals(launch.args[1], "--standalone", "opencode 2.x must run a private server so the launch env applies");
+  assertEquals(launch.args[2], "--format", "opencode uses --format (not --output-format)");
+  assertEquals(launch.args[3], "json", "must request JSON output for return synthesis");
   assertEquals(launch.args.includes("--dir"), false, "opencode 2.x rejects --dir; the worktree is the launch cwd");
   assertEquals(launch.args.includes("Implement feature X"), true, "objective must be a discrete argv item");
   assertFalse(launch.args.includes("--brief"), "opencode does not support --brief flag");
@@ -236,6 +237,14 @@ Deno.test("[session_adapter] opencode headless converts provider:model to provid
     "opencode/deepseek-v4-flash-free",
     "opencode --model uses provider/model (slash), not provider:model (colon)",
   );
+});
+
+// The opencode 2.x background service ignores a per-launch key. --standalone uses the launch env.
+Deno.test("[session_adapter] opencode headless runs a private --standalone server so the launch env applies", () => {
+  const registry = createDefaultSessionAdapterRegistry();
+  const brief = makeBrief({ tool: "opencode", model: "openrouter:deepseek/deepseek-v4.1-flash", objective: "Do X" });
+  const launch = registry.resolve("opencode").buildLaunch(brief, "headless", BRIEF_PATH);
+  assertEquals(launch.args.slice(0, 2), ["run", "--standalone"], "--standalone follows the run subcommand");
 });
 
 Deno.test("[session_adapter] claude-code headless emits --model <model> when the brief carries a model", () => {

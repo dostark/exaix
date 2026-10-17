@@ -68,6 +68,6 @@ Deno.test("opencode adapter builds an 'opencode run --format json <objective>' h
   const launch = adapter.buildLaunch(brief, "headless", "/tmp/brief.json");
 
   assertEquals(launch.command, "opencode");
-  assertEquals(launch.args, ["run", "--format", "json", "Implement Step 0"]);
+  assertEquals(launch.args, ["run", "--standalone", "--format", "json", "Implement Step 0"]);
   assertEquals(launch.cwd, "/tmp/worktree");
 });
