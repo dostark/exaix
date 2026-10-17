@@ -633,9 +633,34 @@ Deno.test("CliDelegateStrategy: builds opencode argv with run, --format json, an
   await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
 
   assertEquals(capturedArgs[0], "run");
-  assertEquals(capturedArgs[1], "--format");
-  assertEquals(capturedArgs[2], "json");
-  assertStringIncludes(capturedArgs[3], "Fix the null-guard bug in renderAvatar");
+  assertEquals(capturedArgs[1], "--standalone", "opencode 2.x must run a private server so the launch env applies");
+  assertEquals(capturedArgs[2], "--format");
+  assertEquals(capturedArgs[3], "json");
+  assertStringIncludes(capturedArgs[4], "Fix the null-guard bug in renderAvatar");
+});
+
+Deno.test("CliDelegateStrategy: passes the provider env to the opencode subprocess and keeps other ambient keys out", async () => {
+  const original = Deno.env.get("DEEPSEEK_API_KEY");
+  Deno.env.set("DEEPSEEK_API_KEY", "sk-ambient-must-not-reach-subprocess");
+  let capturedEnv: Record<string, string> | undefined;
+  const run: IRunCliDelegateProcess = (_command, _args, options) => {
+    capturedEnv = options.env;
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  try {
+    await new CliDelegateStrategy({
+      tool: "opencode",
+      bin: "opencode",
+      resolvePortalPath: () => "/tmp/portal",
+      providerEnv: { OPENROUTER_API_KEY: "sk-or-delegate" },
+      run,
+    }).execute(makeBlueprint(), makeContext(), makeOptions());
+    assertEquals(capturedEnv?.OPENROUTER_API_KEY, "sk-or-delegate");
+    assertEquals(capturedEnv?.DEEPSEEK_API_KEY, undefined);
+  } finally {
+    if (original === undefined) Deno.env.delete("DEEPSEEK_API_KEY");
+    else Deno.env.set("DEEPSEEK_API_KEY", original);
+  }
 });
 
 Deno.test("CliDelegateStrategy: opencode's second call for the same trace_id passes --session with the captured id", async () => {

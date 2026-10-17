@@ -603,6 +603,25 @@ tool = "claude-code"          # claude-code | opencode
 model = "claude-sonnet-5"     # optional; tool default when absent
 ```
 
+By default the tool runs with no provider API key in its environment and uses its own login.
+To run a tool on a provider API instead, add a `[cli_delegate.provider]` block. The daemon reads
+the key from the named variable and passes it to the tool only. A missing variable is a startup
+error. This is the same block as `[session_delegate.provider]`:
+
+```toml
+[cli_delegate]
+enabled = true
+tool = "opencode"
+model = "openrouter/deepseek/deepseek-v4.1-flash"
+
+[cli_delegate.provider]
+name = "openrouter"
+key_env = "OPENROUTER_API_KEY"
+```
+
+OpenCode 2.x sends a run to a shared background service that keeps the environment it started
+with. Exaix launches OpenCode with `--standalone` so that each run uses its own environment.
+
 For planning and analysis calls that use the `claude-cli` model provider, you may
 limit Claude Code's native tool catalog to Bash:
 

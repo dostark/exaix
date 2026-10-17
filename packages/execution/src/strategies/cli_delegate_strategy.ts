@@ -74,6 +74,7 @@ import {
   SESSION_FLAG_SANDBOX,
   SESSION_FLAG_SESSION_ID,
   SESSION_FLAG_SKIP_GIT_REPO_CHECK,
+  SESSION_FLAG_STANDALONE,
   SESSION_FLAG_VARIANT,
   SESSION_FLAG_VERBOSE,
   SESSION_INPUT_FORMAT_STREAM_JSON,
@@ -154,6 +155,9 @@ export interface ICliDelegateStrategyDeps {
   /** Defaults to Deno.writeTextFile. Overridden in tests to simulate an MCP config write
    *  failure deterministically. */
   writeConfigFile?: Opt<IWriteConfigFile, Reason.OptionalDependency>;
+  /** Env that gives the tool access to one provider, from `[cli_delegate.provider]`. The tool env
+   *  otherwise holds no provider key. */
+  providerEnv?: Opt<Record<string, string>, Reason.OptionalDependency>;
 }
 
 const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubprocess.run(command, args, options);
@@ -206,6 +210,7 @@ function buildDelegateEnv(
   portalPath: string,
   connection?: Opt<IDogfoodContextConnection, Reason.OptionalContext>,
   opencodeMcpConfigPath?: Opt<string, Reason.OptionalContext>,
+  providerEnv?: Opt<Record<string, string>, Reason.OptionalContext>,
 ): Record<string, string> {
   // Deno.Command's `cwd` changes the OS-level spawn directory but does NOT update the
   // inherited `PWD` env var — opencode resolves relative tool-call paths against
@@ -217,6 +222,7 @@ function buildDelegateEnv(
   }
   const env = buildAllowlistChildEnv(launchEnv, Deno.env.toObject());
   for (const key of STRIPPED_AUTH_ENV_KEYS) delete env[key];
+  if (providerEnv) Object.assign(env, providerEnv);
   if (connection) {
     env[connection.bearerEnvVar] = connection.bearerToken;
   }
@@ -342,7 +348,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
       try {
         result = await this.run(this.deps.bin, args, {
           cwd: portalPath,
-          env: buildDelegateEnv(portalPath, connection),
+          env: buildDelegateEnv(portalPath, connection, undefined, this.deps.providerEnv),
           clearEnv: true,
           timeoutMs: CLI_DELEGATE_TURN_TIMEOUT_MS,
         });
@@ -397,7 +403,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
       try {
         result = await this.run(this.deps.bin, args, {
           cwd: portalPath,
-          env: buildDelegateEnv(portalPath, connection, mcpConfig?.configPath),
+          env: buildDelegateEnv(portalPath, connection, mcpConfig?.configPath, this.deps.providerEnv),
           clearEnv: true,
           timeoutMs: CLI_DELEGATE_TURN_TIMEOUT_MS,
         });
@@ -595,6 +601,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     const sessionFlag = sessionId ? [SESSION_FLAG_SESSION_ID, sessionId] : [];
     return [
       SESSION_SUBCMD_RUN,
+      SESSION_FLAG_STANDALONE,
       SESSION_FLAG_FORMAT,
       SESSION_OUTPUT_FORMAT_JSON,
       ...modelFlag,

@@ -103,6 +103,7 @@ import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import { ExecutionContextService } from "./execution_context_service.ts";
 import { BlueprintService } from "./blueprint_service.ts";
 import { PromptBuilder } from "./prompt_builder.ts";
+import { readDelegateProviderEnv } from "@exaix/session/delegate_provider_env.ts";
 import { createPinnedSkillPrompt, type IPinnedSkillPrompt } from "./skill_pin_transport.ts";
 import { resolveEffectiveSkillTools } from "./skill_tools_derivation.ts";
 import { GitAuditService } from "./git_audit_service.ts";
@@ -373,11 +374,15 @@ export class AgentComposer {
     if (!bin) {
       throw new Error(`Unsupported cli-delegate tool: ${tool}`);
     }
+    const providerEnv = cliDelegateConfig?.provider
+      ? readDelegateProviderEnv(cliDelegateConfig.provider, tool, (name) => Deno.env.get(name))
+      : undefined;
     return new CliDelegateStrategy({
       tool,
       bin,
       model: cliDelegateBinding?.model ?? cliDelegateConfig?.model,
       effort: cliDelegateConfig?.effort,
+      ...(providerEnv ? { providerEnv } : {}),
       resolvePortalPath: (portalAlias) =>
         this._toolRegistry?.getBaseDir() ?? this.getPortalConfig(portalAlias)?.target_path,
       contextPort: this.contextPort,

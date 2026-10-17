@@ -15,3 +15,5 @@ export const RETURN_FILE = "return.json";
 export const TOOL_CLAUDE_CODE = "claude-code";
 /** Codex delegate tool name. */
 export const TOOL_CODEX = "codex";
+/** OpenCode delegate tool name. */
+export const TOOL_OPENCODE = "opencode";
