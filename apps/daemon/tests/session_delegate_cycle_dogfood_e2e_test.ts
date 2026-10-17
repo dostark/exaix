@@ -270,7 +270,7 @@ async function runGenerator(planPath: string, planContextRoot: string, outDir: s
   );
 }
 
-/** The pre-gap step only reads. A real model needs a bounded deliverable to finish it. */
+/** The analysis step only reads. A real model needs a bounded deliverable to finish it. */
 const LIVE_PRE_GAP_REQUEST =
   "Read the plan context once. Reply with the number of plan steps and the title of each, then finish.";
 
