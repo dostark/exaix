@@ -16,7 +16,7 @@ const RATCHETED_RULES = [
   "exaix/no-runtime-typeof",
   "exaix/no-conditional-empty-object-spread",
   "exaix/no-explicit-unknown",
-  "exaix/no-any-escape",
+  "exaix/no-typeof-escape",
   "exaix/no-unsafe-dictionary",
   "exaix/no-object-parameters",
   "exaix/no-boolean-assert",

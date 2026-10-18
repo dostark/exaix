@@ -47,7 +47,7 @@
     "packages/execution": 32,
     "packages/flow": 34,
     "packages/git": 1,
-    "packages/lint-rules": 24,
+    "packages/lint-rules": 23,
     "packages/mcp": 2,
     "packages/memory": 1,
     "packages/portal": 9,
@@ -105,12 +105,11 @@
     "packages/triggers": 3,
     "packages/tui": 3
   },
-  "exaix/no-any-escape": {
+  "exaix/no-typeof-escape": {
     "apps/exactl": 1,
     "packages/ai": 17,
     "packages/ai-openrouter": 20,
-    "packages/execution": 9,
-    "packages/tool-runtime": 3,
+    "packages/execution": 6,
     "packages/tui": 1
   },
   "exaix/no-unsafe-dictionary": {

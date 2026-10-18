@@ -100,7 +100,7 @@ How the generic type-safety rules are enforced in this repository today. Severit
   `exaix/no-pass-through-type-alias`, `exaix/no-forbidden-lint-ignore`, and the style-checker rules
   `ts-suppression-pragmas`, `promise-response-alias`, and `promise-response-return`.
 - **Parked (`severity: off`, opt-in):** `exaix/no-explicit-unknown`,
-  `exaix/no-any-escape`, `exaix/no-unsafe-dictionary`, and
+  `exaix/no-typeof-escape`, `exaix/no-unsafe-dictionary`, and
   `exaix/no-object-parameters`. The rule-ceiling ratchet holds each one at a
   measured count, so the count can only fall. Each rule becomes a gate when its
   count reaches zero.

@@ -568,7 +568,7 @@
       },
       "limits": "Local aliases and union members are resolved. Wrapper types, intersections, interfaces, mapped-type signatures, and generic alias expansion are not followed. Map<K, V> is checked; a generic constraint is allowed."
     },
-    "exaix/no-any-escape": {
+    "exaix/no-typeof-escape": {
       "engine": "plugin",
       "severity": "off",
       "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
@@ -582,10 +582,9 @@
       "options": {
         "allowedTypeofTargets": [
           "globalThis.fetch"
-        ],
-        "allowAnyInTests": true
+        ]
       },
-      "limits": "The typeof target is compared as source text; only test files may use an allowed target."
+      "limits": "Only an as typeof cast is reported; the built-in no-explicit-any reports any. The typeof target is compared as source text, and only test files may use an allowed target."
     },
     "exaix/no-pass-through-type-alias": {
       "engine": "plugin",
