@@ -142,7 +142,8 @@
         "/.copilot/",
         "/.exa/",
         "/types/"
-      ]
+      ],
+      "pluginRuleId": "exaix/require-optional-wrapper"
     },
     "unusedExports": {
       "productionRoots": [

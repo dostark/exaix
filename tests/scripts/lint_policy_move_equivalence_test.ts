@@ -11,7 +11,7 @@
 import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, relative } from "@std/path";
-import { createLintPlugin, parseCatalog, runPlugin } from "@exaix/lint-rules";
+import { createLintPlugin, parseCatalog, parseWholeTreeSettings, runPlugin, selectionEnvName } from "@exaix/lint-rules";
 import { EXAIX_PLUGIN_NAME } from "@exaix/lint-policy/rule_pack/mod.ts";
 import { EXAIX_REGISTRY, EXAIX_RULE_PACKS } from "@exaix/lint-policy/rule_packs.ts";
 import catalogJson from "@exaix/lint-policy/catalog.json" with { type: "json" };
@@ -369,4 +369,144 @@ Deno.test("the lint task also runs the two Deno rules over scripts/", async () =
   assertStringIncludes(lintTask, "scripts/");
   assertStringIncludes(lintTask, `${EXAIX_PLUGIN_NAME}/require-deno-shebang`);
   assertStringIncludes(lintTask, `${EXAIX_PLUGIN_NAME}/no-forbidden-lint-ignore`);
+});
+
+const WHOLE_TREE_CLI = join(REPO_ROOT, ENGINE_ROOT, "src/cli/whole_tree.ts");
+const CATALOG_PATH = join(REPO_ROOT, POLICY_ROOT, "catalog.json");
+const WHOLE_TREE_TASKS: readonly string[] = [
+  "check:constant-restatement",
+  "check:unused-exports",
+  "check:unused-exports:strict",
+  "check:optional-params",
+  "check:optional-params:staged",
+];
+const FIXTURE_FILES: { [path: string]: string } = {
+  "packages/core/src/types/constants.ts":
+    'export const FIXTURE_HOSTS: readonly string[] = [\n  "a.example.com",\n  "b.example.com",\n];\n',
+  "tests/host_test.ts": 'export const NET_FLAG = "--allow-net=a.example.com,b.example.com";\n',
+  "packages/p/src/a.ts":
+    "export function unwiredHelper(): number {\n  return 1;\n}\n\nexport function takesBare(value?: string): string {\n  return String(value);\n}\n",
+};
+const UNWIRED = "is exported but never imported by production code.";
+const UNWIRED_STRICT = "is exported, NOT re-exported through any barrel, and never imported.";
+const STRICT_TAIL = "This is likely dead code or was never wired. Remove it or wire it.";
+const BARE_MESSAGE = "'value' is optional without a codified reason (`value?: string`) — declare it with the Opt " +
+  "wrapper: `value?: Opt<string, Reason.*>` (import Opt + Reason from @exaix/core/types; pick a Reason that fits, " +
+  "e.g. TraceAbsent / OptionalInput / OptionalContext). A bare `?` and a bare `| undefined` are equivalent and " +
+  "both require Opt.";
+
+interface IWholeTreeCase {
+  readonly args: readonly string[];
+  readonly code: number;
+  readonly stdout: string;
+  readonly stderr: string;
+}
+
+const WHOLE_TREE_CASES: readonly IWholeTreeCase[] = [
+  {
+    args: ["--rule=constant-restatement"],
+    code: 1,
+    stdout: "",
+    stderr: [
+      "❌ 1 test(s) restate a constant instead of importing it:",
+      "",
+      "  tests/host_test.ts",
+      '    restates FIXTURE_HOSTS as "a.example.com,b.example.com"',
+      "    fix: import FIXTURE_HOSTS and derive the value from it",
+      "",
+      "",
+    ].join("\n"),
+  },
+  {
+    args: ["--rule=unused-exports"],
+    code: 0,
+    stdout: [
+      `WARN [unwired-export] packages/p/src/a.ts:1 – 'unwiredHelper' ${UNWIRED}`,
+      `WARN [unwired-export] packages/p/src/a.ts:5 – 'takesBare' ${UNWIRED}`,
+      `WARN [unwired-export] packages/core/src/types/constants.ts:1 – 'FIXTURE_HOSTS' ${UNWIRED}`,
+      "",
+      "⚠️  3 unwired export(s) found (relaxed mode).",
+      "  Run with --strict for CI-grade dead-code detection.",
+      "",
+      "Top directories:",
+      "  packages/p: 2",
+      "  packages/core: 1",
+      "",
+    ].join("\n"),
+    stderr: "",
+  },
+  {
+    args: ["--rule=unused-exports", "--strict"],
+    code: 1,
+    stdout: [
+      `ERROR [unwired-export] packages/p/src/a.ts:1 – 'unwiredHelper' ${UNWIRED_STRICT} ${STRICT_TAIL}`,
+      `ERROR [unwired-export] packages/p/src/a.ts:5 – 'takesBare' ${UNWIRED_STRICT} ${STRICT_TAIL}`,
+      `ERROR [unwired-export] packages/core/src/types/constants.ts:1 – 'FIXTURE_HOSTS' ${UNWIRED_STRICT} ${STRICT_TAIL}`,
+      "",
+      "❌ 3 strictly unwired export(s) — likely dead code. Fix before commit.",
+      "",
+    ].join("\n"),
+    stderr: "",
+  },
+  {
+    args: ["--rule=optional-params"],
+    code: 0,
+    stdout: "",
+    stderr: [
+      "🟣 BARE_OPTIONAL — param optional via bare `?` or `| undefined` (not the wrapper):",
+      "",
+      "  packages/p/src/a.ts:5",
+      `    ${BARE_MESSAGE}`,
+      "",
+      "1 BARE_OPTIONAL (advisory — grandfathered; enforced on staged files with --staged).",
+      "0 enforceable violation(s) found (advisory — use --fail to enforce)",
+      "",
+    ].join("\n"),
+  },
+];
+
+async function runWholeTree(cwd: string, args: readonly string[]): Promise<IWholeTreeCase> {
+  const result = await new Deno.Command(Deno.execPath(), {
+    args: ["run", "-A", WHOLE_TREE_CLI, `--catalog=${CATALOG_PATH}`, ...args],
+    cwd,
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  const decoder = new TextDecoder();
+  return { args, code: result.code, stdout: decoder.decode(result.stdout), stderr: decoder.decode(result.stderr) };
+}
+
+Deno.test("the whole-tree CLI prints the findings recorded before the engine took its settings from --catalog", async () => {
+  const root = await Deno.makeTempDir({ prefix: "whole_tree_fixture_" });
+  try {
+    for (const [path, source] of Object.entries(FIXTURE_FILES)) {
+      await Deno.mkdir(dirname(join(root, path)), { recursive: true });
+      await Deno.writeTextFile(join(root, path), source);
+    }
+    for (const expected of WHOLE_TREE_CASES) {
+      const actual = await runWholeTree(root, expected.args);
+      assertEquals(actual, expected, expected.args.join(" "));
+    }
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("the repository passes the constant-restatement check through the CLI", async () => {
+  const result = await runWholeTree(REPO_ROOT, ["--rule=constant-restatement"]);
+  assertEquals(result.code, 0, result.stderr);
+});
+
+Deno.test("the committed catalog gives the whole-tree settings and the selection variable the gates expect", () => {
+  const settings = parseWholeTreeSettings(catalogJson);
+  assertEquals(settings.optionalParams?.pluginRuleId, `${EXAIX_PLUGIN_NAME}/require-optional-wrapper`);
+  assertEquals(settings.optionalParams?.walkSkipSegments, ["/.copilot/", "/.exa/", "/types/"]);
+  assertEquals(selectionEnvName(EXAIX_PLUGIN_NAME), SELECTION_VARIABLE);
+});
+
+Deno.test("each whole-tree task passes the policy catalog to the CLI", async () => {
+  const tasks = (await readRepoJson("deno.json")).tasks as { [name: string]: string };
+  for (const name of WHOLE_TREE_TASKS) {
+    assertStringIncludes(tasks[name], `--catalog=${POLICY_ROOT}/catalog.json`);
+  }
 });
