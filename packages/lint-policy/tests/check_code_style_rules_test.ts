@@ -44,11 +44,6 @@ const CASES: IRuleCase[] = [
     invalid: "// @ts-ignore\nexport const a = 1;\n",
     valid: "export const a = 1;\n",
   },
-  {
-    id: "deno-lint-no-explicit-any",
-    invalid: "// deno-lint-ignore no-explicit-any\nexport const a = 1;\n",
-    valid: "export const a = 1;\n",
-  },
 
   // imports
   {
@@ -119,12 +114,6 @@ const CASES: IRuleCase[] = [
   },
 
   // scripts
-  {
-    id: "script-shebang",
-    invalid: "/**\n * @module S\n * @path scripts/sample_tool.ts\n * @description d.\n */\nexport const a = 1;\n",
-    valid: "#!/usr/bin/env -S deno run -A\n/**\n * @module S\n * @description d.\n */\nexport const a = 1;\n",
-    path: SCRIPT,
-  },
   {
     id: "script-usage",
     invalid: "#!/usr/bin/env -S deno run -A\n/**\n * @module S\n * @description d.\n */\nexport const a = 1;\n",

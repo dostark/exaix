@@ -639,14 +639,17 @@
         "type-safety"
       ]
     },
-    "deno-lint-no-explicit-any": {
-      "engine": "script",
+    "exaix/no-forbidden-lint-ignore": {
+      "engine": "plugin",
       "severity": "error",
       "scope": "all",
       "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety"
-      ]
+      ],
+      "options": {
+        "includeFileIgnores": false
+      }
     },
     "import-inside-statement": {
       "engine": "script",
@@ -884,8 +887,8 @@
         ]
       }
     },
-    "script-shebang": {
-      "engine": "script",
+    "exaix/require-deno-shebang": {
+      "engine": "plugin",
       "severity": "error",
       "scope": "all",
       "codeStyle": "CODE_STYLE.md#utility-scripts",

@@ -97,9 +97,8 @@ How the generic type-safety rules are enforced in this repository today. Severit
 `packages/lint-policy/catalog.json`.
 
 - **Gates (`severity: error`):** `exaix/no-chained-type-assertions`,
-  `exaix/no-pass-through-type-alias`, and the style-checker rules
-  `ts-suppression-pragmas`, `deno-lint-no-explicit-any`, `promise-response-alias`,
-  and `promise-response-return`.
+  `exaix/no-pass-through-type-alias`, `exaix/no-forbidden-lint-ignore`, and the style-checker rules
+  `ts-suppression-pragmas`, `promise-response-alias`, and `promise-response-return`.
 - **Parked (`severity: off`, opt-in):** `exaix/no-explicit-unknown`,
   `exaix/no-any-escape`, `exaix/no-unsafe-dictionary`, and
   `exaix/no-object-parameters`. The rule-ceiling ratchet holds each one at a

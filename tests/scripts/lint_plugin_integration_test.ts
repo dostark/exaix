@@ -71,6 +71,30 @@ Deno.test("an ignore comment for a rule the catalog turns off is unused, not an 
   }, OFF_RULE_IGNORE_SEED);
 });
 
+const FORBIDDEN_IGNORE_SEED = "// deno-lint-ignore no-explicit-any\nexport const value: any = 1;\n";
+const SCRIPT_SEED_FILE = join(REPO_ROOT, "scripts", "__temp_lint_plugin_no_shebang.ts");
+const SCRIPT_SEED_SOURCE = "export const value = 1;\n";
+const SCRIPTS_RUN_RULES = "exaix/require-deno-shebang,exaix/no-forbidden-lint-ignore";
+
+Deno.test("deno lint reports exaix/no-forbidden-lint-ignore on a seeded violation", async () => {
+  await withSeed(async (file) => {
+    const result = await runDeno(["lint", file]);
+    assertEquals(result.code === 0, false, result.output);
+    assertStringIncludes(result.output, "exaix/no-forbidden-lint-ignore");
+  }, FORBIDDEN_IGNORE_SEED);
+});
+
+Deno.test("the scripts run of the lint task reports exaix/require-deno-shebang on a script without a shebang", async () => {
+  await Deno.writeTextFile(SCRIPT_SEED_FILE, SCRIPT_SEED_SOURCE);
+  try {
+    const result = await runDeno(["lint", "--rules-tags=", SCRIPT_SEED_FILE], { EXAIX_LINT_RULES: SCRIPTS_RUN_RULES });
+    assertEquals(result.code === 0, false, result.output);
+    assertStringIncludes(result.output, "exaix/require-deno-shebang");
+  } finally {
+    await Deno.remove(SCRIPT_SEED_FILE).catch(() => {});
+  }
+});
+
 Deno.test("EXAIX_LINT_RULES selects the rule and the entry prints a narrowing notice", async () => {
   await withSeed(async (file) => {
     const result = await runDeno(["lint", file], {

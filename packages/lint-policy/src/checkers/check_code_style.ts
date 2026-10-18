@@ -977,11 +977,6 @@ const rules: Rule[] = [
       "TypeScript suppression pragmas (e.g. @ts-ignore, @ts-expect-error, @ts-nocheck) are prohibited; fix the underlying type error instead.",
   },
   {
-    name: "deno-lint-no-explicit-any",
-    regex: /\/\/\s*deno-lint-ignore\s+no-explicit-any/,
-    message: "Using '// deno-lint-ignore no-explicit-any' is not allowed; address the typing issue explicitly.",
-  },
-  {
     name: "promise-response-return",
     // Expanded to catch both arrow => Promise<Response> and : Promise<Response> method/function returns
     regex: /:\s*Promise\s*<\s*Response\s*>/,
@@ -1043,7 +1038,6 @@ const INLINE_SCRIPT_RULE_IDS = [
   "ephemeral-comment",
   "decorative-comment",
   "edition-leak",
-  "script-shebang",
   "script-usage",
   "script-placement",
   "tui-boundary-cli",
@@ -1371,18 +1365,12 @@ function checkModuleHeader(path: string, repoPath: string, lines: string[], head
     }
   }
 
-  checkScriptHeader(path, lines, headerLines);
+  checkScriptHeader(path, headerLines);
 }
 
 /** Maintenance-script header checks (CODE_STYLE.md 12). */
-function checkScriptHeader(path: string, lines: string[], headerLines: string): void {
+function checkScriptHeader(path: string, headerLines: string): void {
   if (!path.includes(LAYOUT.scriptsSegment) || path.includes(LAYOUT.testsSegment)) return;
-  if (!lines[0].startsWith("#!/usr/bin/env -S deno run -A")) {
-    console.log(
-      `ERROR [script-shebang] ${path}:1 – Maintenance scripts must start with '#!/usr/bin/env -S deno run -A'.`,
-    );
-    errorCount++;
-  }
   if (!headerLines.includes("Usage:")) {
     console.log(
       `ERROR [script-usage] ${path}:1 – Maintenance scripts must include a 'Usage:' section in the header.`,

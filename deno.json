@@ -91,7 +91,7 @@
     "coverage:lcov": "mkdir -p coverage && deno coverage coverage/ --include='^file://.*/(src|packages)/' --exclude='test\\.(ts|js)$' --lcov --output=coverage/lcov.info",
     "coverage:with-llama": "deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts --with-llama",
     "bench": "deno bench --allow-all tests/benchmarks/",
-    "lint": "EXAIX_LINT_RULES= deno lint --rules-include=explicit-module-boundary-types --rules-exclude=no-import-prefix tests/ packages/ exaix-team/ apps/",
+    "lint": "EXAIX_LINT_RULES= deno lint --rules-include=explicit-module-boundary-types --rules-exclude=no-import-prefix tests/ packages/ exaix-team/ apps/ && EXAIX_LINT_RULES=exaix/require-deno-shebang,exaix/no-forbidden-lint-ignore deno lint --rules-tags= scripts/",
     "lint:tags": "sh -c 'sel=\"\"; for t in \"$@\"; do sel=\"${sel:+$sel,}tag:$t\"; done; EXAIX_LINT_RULES=\"$sel\" deno lint --rules-tags= --rules-exclude=no-import-prefix' _",
     "docs:style-rules": "deno run --allow-read --allow-write scripts/generate_style_rules_doc.ts && deno fmt packages/lint-policy/docs/style_rules.md",
     "bench:lint-rules": "deno run -A scripts/bench_lint_rules.ts",

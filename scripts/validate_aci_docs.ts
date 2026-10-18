@@ -24,7 +24,7 @@
  *
  * Actual required permissions are none (the deno.json tasks below run with zero
  * `--allow-*` flags) — the `-A` above only satisfies this repo's uniform
- * maintenance-script shebang convention (check:style's `[script-shebang]` rule).
+ * maintenance-script shebang convention (the `exaix/require-deno-shebang` lint rule).
  */
 // Imports the specific source modules directly rather than the @exaix/tool-runtime
 // and @exaix/schemas barrels: both barrels' mod.ts re-export files whose own import

@@ -16,7 +16,7 @@
     "packages/execution": 61,
     "packages/flow": 72,
     "packages/git": 4,
-    "packages/lint-rules": 22,
+    "packages/lint-rules": 21,
     "packages/mcp": 18,
     "packages/memory": 17,
     "packages/model-registry": 5,
