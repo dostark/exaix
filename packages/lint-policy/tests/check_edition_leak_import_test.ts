@@ -1,7 +1,7 @@
 /**
  * @module CheckEditionLeakImportTest
- * @path packages/lint-rules/tests/check_edition_leak_import_test.ts
- * @description Tests for the edition-tier import guard in packages/lint-rules/src/exaix/check_code_style.ts.
+ * @path packages/lint-policy/tests/check_edition_leak_import_test.ts
+ * @description Tests for the edition-tier import guard in packages/lint-policy/src/checkers/check_code_style.ts.
  *   A lower-edition module must not import a higher-edition one (it would couple the
  *   lower edition's source/build to code that is licensed/shipped separately — the
  *   Team-into-Solo leak). Tiers: Solo (packages/, apps/) < Team (exaix-team/) <
@@ -9,11 +9,11 @@
  *   DYNAMIC edition-gated load of `@exaix-team/...` in the daemon/exactl dispatch entries,
  *   which is loaded only in the Team branch and never executed in a Solo run.
  * @architectural-layer Test
- * @related-files [packages/lint-rules/src/exaix/check_code_style.ts]
+ * @related-files [packages/lint-policy/src/checkers/check_code_style.ts]
  */
 
 import { assertEquals } from "@std/assert";
-import { isEditionLeakImport } from "../src/exaix/check_code_style.ts";
+import { isEditionLeakImport } from "../src/checkers/check_code_style.ts";
 
 // --- Solo (packages/, apps/) must not import Team or Enterprise ---
 

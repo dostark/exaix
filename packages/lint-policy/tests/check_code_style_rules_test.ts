@@ -1,15 +1,15 @@
 /**
  * @module CheckCodeStyleRulesTest
- * @path packages/lint-rules/tests/check_code_style_rules_test.ts
+ * @path packages/lint-policy/tests/check_code_style_rules_test.ts
  * @description Named valid and invalid case per style rule id, grouped by tag.
  * @architectural-layer Test
- * @related-files [packages/lint-rules/src/exaix/check_code_style.ts, packages/lint-rules/tests/check_code_style_catalog_parity_test.ts]
+ * @related-files [packages/lint-policy/src/checkers/check_code_style.ts, packages/lint-policy/tests/check_code_style_catalog_parity_test.ts]
  */
 
 import { assertEquals } from "@std/assert";
 import { parseCatalog } from "@exaix/lint-rules";
-import { checkSource } from "../src/exaix/check_code_style.ts";
-import catalogJson from "../../../scripts/config/style_rule_catalog.json" with { type: "json" };
+import { checkSource } from "../src/checkers/check_code_style.ts";
+import catalogJson from "../catalog.json" with { type: "json" };
 
 const catalog = parseCatalog(catalogJson);
 const ROOT = Deno.cwd();

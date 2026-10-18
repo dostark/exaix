@@ -3,11 +3,14 @@
  * @path tests/scripts/check_code_style_duplicate_types_test.ts
  * @description Cross-file duplicate type-contract detection for check_code_style.ts (deslop, MIT).
  * @architectural-layer Test
- * @related-files [packages/lint-rules/src/exaix/check_code_style.ts]
+ * @related-files [packages/lint-policy/src/checkers/check_code_style.ts]
  */
 
 import { assertEquals } from "@std/assert";
-import { findDuplicateTypes, validateTypeAllowEntries } from "../../packages/lint-rules/src/exaix/check_code_style.ts";
+import {
+  findDuplicateTypes,
+  validateTypeAllowEntries,
+} from "../../packages/lint-policy/src/checkers/check_code_style.ts";
 
 const A = "packages/a/src/i_a.ts";
 const B = "packages/b/src/i_b.ts";

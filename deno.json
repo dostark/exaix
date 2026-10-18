@@ -33,6 +33,7 @@
     "./packages/session",
     "./packages/model-registry",
     "./packages/lint-rules",
+    "./packages/lint-policy",
     "./apps/daemon",
     "./apps/exactl",
     "./apps/tui",
@@ -92,7 +93,7 @@
     "bench": "deno bench --allow-all tests/benchmarks/",
     "lint": "EXAIX_LINT_RULES= deno lint --rules-include=explicit-module-boundary-types --rules-exclude=no-import-prefix tests/ packages/ exaix-team/ apps/",
     "lint:tags": "sh -c 'sel=\"\"; for t in \"$@\"; do sel=\"${sel:+$sel,}tag:$t\"; done; EXAIX_LINT_RULES=\"$sel\" deno lint --rules-tags= --rules-exclude=no-import-prefix' _",
-    "docs:style-rules": "deno run --allow-read --allow-write scripts/generate_style_rules_doc.ts && deno fmt packages/lint-rules/docs/style_rules.md",
+    "docs:style-rules": "deno run --allow-read --allow-write scripts/generate_style_rules_doc.ts && deno fmt packages/lint-policy/docs/style_rules.md",
     "bench:lint-rules": "deno run -A scripts/bench_lint_rules.ts",
     "fmt": "deno fmt tests/ docs/ packages/ exaix-team/ apps/",
     "fmt:check": "deno fmt --check tests/ docs/ packages/ exaix-team/ apps/",
@@ -101,13 +102,13 @@
     "check": "deno check packages/ && deno check exaix-team/ && deno check apps/ && deno check tests/ && deno check scripts/",
     "check:version": "deno run -A scripts/check_version.ts",
     "check:commit-msg": "deno run --allow-read --allow-run=git --allow-env=GIT_DIR,GIT_INDEX_FILE,GIT_WORK_TREE,GIT_PREFIX,GIT_COMMON_DIR,GIT_OBJECT_DIRECTORY,GIT_ALTERNATE_OBJECT_DIRECTORIES scripts/check_commit_msg.ts",
-    "check:style": "deno run --allow-read --allow-env packages/lint-rules/src/exaix/check_code_style.ts",
+    "check:style": "deno run --allow-read --allow-env packages/lint-policy/src/checkers/check_code_style.ts",
     "check:edition-graph": "deno run --allow-read --allow-run=deno --allow-env scripts/check_edition_graph.ts",
     "check:test-placement": "deno run --allow-read --allow-run=git scripts/check_test_placement.ts --all",
     "check:docs": "deno run --allow-read scripts/verify_manifest_fresh.ts",
     "dep:graph": "deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint apps/daemon/main.ts --format text",
     "check:arch": "deno run --allow-read scripts/validate_architecture.ts",
-    "check:magic": "deno run --allow-read --allow-env packages/lint-rules/src/exaix/check_magic_values.ts",
+    "check:magic": "deno run --allow-read --allow-env packages/lint-policy/src/checkers/check_magic_values.ts",
     "check:god-objects": "deno run --allow-run --allow-read packages/lint-rules/src/cli/rule_report.ts --rule=exaix/max-class-size --roots=packages,apps,tests,scripts --fail",
     "check:agent-docs-integrity": "deno run --allow-read scripts/check_agent_docs_integrity.ts",
     "check:phase-references": "deno run --allow-read scripts/check_phase_references.ts",
@@ -301,6 +302,9 @@
     "@exaix/flow/": "./packages/flow/src/",
     "@exaix/lint-rules": "./packages/lint-rules/mod.ts",
     "@exaix/lint-rules/": "./packages/lint-rules/src/",
+    "@exaix/lint-policy": "./packages/lint-policy/mod.ts",
+    "@exaix/lint-policy/": "./packages/lint-policy/src/",
+    "@exaix/lint-policy/catalog.json": "./packages/lint-policy/catalog.json",
     "@exaix/app-exactl/exactl": "./apps/exactl/src/exactl.ts",
     "@exaix-team/voting": "./exaix-team/packages/voting/mod.ts",
     "@exaix-team/voting/": "./exaix-team/packages/voting/src/",
@@ -325,7 +329,7 @@
   ],
   "lint": {
     "plugins": [
-      "./scripts/config/exaix_lint_plugin.ts"
+      "./packages/lint-policy/plugin.ts"
     ],
     "exclude": [
       "tests/scenario_framework/fixtures/"

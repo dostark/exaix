@@ -425,7 +425,7 @@
     "exaix/no-repeated-assert-call": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "test",
       "optIn": true,
       "codeStyle": "CODE_STYLE.md#package-test-boundaries",
@@ -441,7 +441,7 @@
     "exaix/no-constant-substring-assert": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "test",
       "optIn": true,
       "codeStyle": "CODE_STYLE.md#package-test-boundaries",
@@ -457,7 +457,7 @@
     "exaix/no-boolean-assert": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "test",
       "optIn": true,
       "codeStyle": "CODE_STYLE.md#package-test-boundaries",
@@ -482,7 +482,7 @@
     "exaix/require-safety-comment": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "prod",
       "optIn": true,
       "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
@@ -500,7 +500,7 @@
     "exaix/no-runtime-typeof": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "prod",
       "optIn": true,
       "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
@@ -516,7 +516,7 @@
     "exaix/no-conditional-empty-object-spread": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "prod",
       "optIn": true,
       "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
@@ -529,7 +529,7 @@
     "exaix/no-explicit-unknown": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "all",
       "optIn": true,
       "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
@@ -546,7 +546,7 @@
     "exaix/no-unsafe-dictionary": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "all",
       "optIn": true,
       "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
@@ -567,7 +567,7 @@
     "exaix/no-any-escape": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "all",
       "optIn": true,
       "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
@@ -598,7 +598,7 @@
     "exaix/no-object-parameters": {
       "engine": "plugin",
       "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (scripts/config/rule_ceilings.json).",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "all",
       "optIn": true,
       "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",

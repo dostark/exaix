@@ -1,28 +1,28 @@
 ---
 title: "check_code_style.ts — Error Tag Reference"
-description: Complete reference for all error and warning tags emitted by packages/lint-rules/src/exaix/check_code_style.ts
+description: Complete reference for all error and warning tags emitted by packages/lint-policy/src/checkers/check_code_style.ts
 agent_priority: reference
 copilot_knowledge_base: true
 version: 1.0
 capabilities: [error_tags, boundary_rules, import_rules]
 links:
-  - "packages/lint-rules/src/exaix/check_code_style.ts"
+  - "packages/lint-policy/src/checkers/check_code_style.ts"
   - "CODE_STYLE.md"
   - "ARCHITECTURE.md"
 ---
 
 # `check_code_style.ts` — Error Tag Reference
 
-This document is the companion reference for `packages/lint-rules/src/exaix/check_code_style.ts`.
+This document is the companion reference for `packages/lint-policy/src/checkers/check_code_style.ts`.
 It lists every error and warning tag the script emits, the rule that governs
 it, and where to read the full definition.
 
 Run the checker:
 
 ```bash
-deno run -A packages/lint-rules/src/exaix/check_code_style.ts          # scan whole repo
-deno run -A packages/lint-rules/src/exaix/check_code_style.ts packages/ # scan a subtree
-deno run -A packages/lint-rules/src/exaix/check_code_style.ts --convert-warnings-to-errors
+deno run -A packages/lint-policy/src/checkers/check_code_style.ts          # scan whole repo
+deno run -A packages/lint-policy/src/checkers/check_code_style.ts packages/ # scan a subtree
+deno run -A packages/lint-policy/src/checkers/check_code_style.ts --convert-warnings-to-errors
 ```
 
 ---
@@ -150,7 +150,7 @@ deno run -A packages/lint-rules/src/exaix/check_code_style.ts --convert-warnings
 
 ## Configuring rules
 
-Every rule setting lives in `scripts/config/style_rule_catalog.json`. `parseCatalog` validates
+Every rule setting lives in `packages/lint-policy/catalog.json`. `parseCatalog` validates
 the file and rejects an unknown key with its JSON path. The fields per rule:
 
 | Field                 | Meaning                                                                                     | Example                                |
@@ -190,7 +190,7 @@ Deno's `--rules-tags=` disables the built-in rules.
 
 Warnings (not errors) may be suppressed with a `// style-exclude:<CODE> - <rationale>` comment
 on the line immediately above the flagged line. Valid codes are listed in each rule's
-`exclusionCodes` entry in `scripts/config/style_rule_catalog.json`. Errors cannot be suppressed this way.
+`exclusionCodes` entry in `packages/lint-policy/catalog.json`. Errors cannot be suppressed this way.
 
 ---
 

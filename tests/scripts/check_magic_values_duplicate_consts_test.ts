@@ -3,7 +3,7 @@
  * @path tests/scripts/check_magic_values_duplicate_consts_test.ts
  * @description Cross-file duplicate named-constant detection for check_magic_values.ts (deslop, MIT).
  * @architectural-layer Test
- * @related-files [packages/lint-rules/src/exaix/check_magic_values.ts]
+ * @related-files [packages/lint-policy/src/checkers/check_magic_values.ts]
  */
 
 import { assertEquals } from "@std/assert";
@@ -11,8 +11,8 @@ import {
   classifyRepoPath as classifyMagicPath,
   findDuplicateConstants,
   validateConstantAllowEntries,
-} from "../../packages/lint-rules/src/exaix/check_magic_values.ts";
-import { classifyRepoPath as classifyStylePath } from "../../packages/lint-rules/src/exaix/check_code_style.ts";
+} from "../../packages/lint-policy/src/checkers/check_magic_values.ts";
+import { classifyRepoPath as classifyStylePath } from "../../packages/lint-policy/src/checkers/check_code_style.ts";
 
 const A = "packages/a/src/a.ts";
 const B = "packages/b/src/b.ts";

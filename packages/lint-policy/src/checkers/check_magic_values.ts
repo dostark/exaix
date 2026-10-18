@@ -1,19 +1,19 @@
 #!/usr/bin/env -S deno run -A
 /**
  * @module CheckMagicValues
- * @path packages/lint-rules/src/exaix/check_magic_values.ts
+ * @path packages/lint-policy/src/checkers/check_magic_values.ts
  * @description Magic Value Detector — scans TypeScript sources using the compiler API
  * AST to find repeated string/number literals that should be extracted
  * into named constants or enums.
  * @architectural-layer Tooling
  * @dependencies [typescript, @std/fs, @std/path]
- * @related-files [packages/lint-rules/src/exaix/check_code_style.ts]
+ * @related-files [packages/lint-policy/src/checkers/check_code_style.ts]
  * @public Exports are the unit-test surface of this module.
  *
  * Usage:
- *   deno run -A packages/lint-rules/src/exaix/check_magic_values.ts          # strings + numbers
- *   deno run -A packages/lint-rules/src/exaix/check_magic_values.ts --no-numbers  # strings only
- *   deno run -A packages/lint-rules/src/exaix/check_magic_values.ts --include-tests  # include tests
+ *   deno run -A packages/lint-policy/src/checkers/check_magic_values.ts          # strings + numbers
+ *   deno run -A packages/lint-policy/src/checkers/check_magic_values.ts --no-numbers  # strings only
+ *   deno run -A packages/lint-policy/src/checkers/check_magic_values.ts --include-tests  # include tests
  *
  * The repository root comes from `--root=` or the working directory. Run it from the
  * repository root, as the `check:magic` task does.
@@ -27,8 +27,8 @@ import ts from "typescript";
 import { walk } from "@std/fs";
 import { globToRegExp, relative } from "@std/path";
 import { classifyPath, type PathClass } from "@exaix/lint-rules";
-import { LAYOUT } from "./repo_layout.ts";
-import catalogJson from "../../../../scripts/config/style_rule_catalog.json" with { type: "json" };
+import { LAYOUT } from "../repo_layout.ts";
+import catalogJson from "../../catalog.json" with { type: "json" };
 
 // SAFETY: the catalog loader validates the scopes section against its schema.
 const CATALOG_SCOPES = catalogJson.scopes as { test: string[]; fixture: string[] };
@@ -65,7 +65,7 @@ if (args.has("--help") || args.has("-h")) {
   console.log(`Magic Value Detector
 
 Usage:
-  deno run -A ${LAYOUT.packageRoot}lint-rules/${LAYOUT.srcRoot}exaix/check_magic_values.ts [options]
+  deno run -A ${LAYOUT.packageRoot}lint-policy/${LAYOUT.srcRoot}checkers/check_magic_values.ts [options]
 
 Options:
   --no-numbers, --strings-only  Skip number literal checks (strings only)
@@ -743,6 +743,7 @@ async function main(): Promise<void> {
         /check_magic_values\.ts$/,
         /check_code_style\.ts$/,
         /repo_layout\.ts$/,
+        /lint-policy[/\\]plugin\.ts$/,
         /[/\\]whole_tree[/\\]/,
       ],
     })

@@ -1,0 +1,9 @@
+{
+  "name": "@exaix/lint-policy",
+  "version": "0.1.0",
+  "exports": "./mod.ts",
+  "imports": {
+    "@exaix/lint-policy": "./mod.ts",
+    "@exaix/lint-policy/": "./src/"
+  }
+}

@@ -5,7 +5,7 @@
  * satisfy `IExternalMcpClient` under `deno check`/`deno test`. This is a
  * positive-only compile-time assertion — the repo bans TypeScript suppression
  * pragmas that bypass the compiler (see `CODE_STYLE.md`'s "No TypeScript
- * suppression pragmas" rule, enforced by `packages/lint-rules/src/exaix/check_code_style.ts`'s
+ * suppression pragmas" rule, enforced by `packages/lint-policy/src/checkers/check_code_style.ts`'s
  * `[ts-suppression-pragmas]` check), so there is deliberately no negative
  * "missing method" case (Pre-Gap Analysis GAP-1).
  * @architectural-layer MCP

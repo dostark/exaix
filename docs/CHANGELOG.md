@@ -25,7 +25,7 @@
 - Every repository style rule is described by one validated catalog that declares the
   rule's severity, scope, options, exceptions and tags, and a rule that stays out of the
   gate must state a reason (see
-  [Style rules](../packages/lint-rules/docs/style_rules.md)).
+  [Style rules](../packages/lint-policy/docs/style_rules.md)).
 - `EXAIX_LINT_RULES` selects which rules a local `deno lint` run executes, by rule id or by
   `tag:<name>`, and the gate task clears the variable so a leftover selection cannot narrow
   the pre-commit check.

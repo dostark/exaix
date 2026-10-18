@@ -1,21 +1,23 @@
 /**
  * @module CheckCodeStyleCatalogParityTest
- * @path packages/lint-rules/tests/check_code_style_catalog_parity_test.ts
+ * @path packages/lint-policy/tests/check_code_style_catalog_parity_test.ts
  * @description Parity between the catalog, the generated rule reference, both engines,
  *   `deno.json`, and the repository path policy.
  * @architectural-layer Test
- * @related-files [packages/lint-rules/docs/style_rules.md, packages/lint-rules/src/exaix/check_code_style.ts]
+ * @related-files [packages/lint-policy/docs/style_rules.md, packages/lint-policy/src/checkers/check_code_style.ts]
  */
 
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { PLUGIN_RULE_IMPLEMENTATIONS } from "@exaix/lint-rules";
-import { IMPLEMENTED_SCRIPT_RULE_IDS } from "../src/exaix/check_code_style.ts";
+import { IMPLEMENTED_SCRIPT_RULE_IDS } from "../src/checkers/check_code_style.ts";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
-const DOC_PATH = join(REPO_ROOT, "packages/lint-rules/docs/style_rules.md");
-const CATALOG_PATH = join(REPO_ROOT, "scripts/config/style_rule_catalog.json");
+const DOC_PATH = join(REPO_ROOT, "packages/lint-policy/docs/style_rules.md");
+const CATALOG_PATH = join(REPO_ROOT, "packages/lint-policy/catalog.json");
+const ENGINE_SRC = "packages/lint-rules/src";
+const POLICY_SRC = "packages/lint-policy/src";
 
 interface IRuleEntry {
   engine: string;
@@ -97,6 +99,12 @@ Deno.test("every exclusion code is used by a style-exclude line in the tree", as
   }
 });
 
+const GUIDE_DOCS: readonly string[] = [
+  "packages/lint-rules/docs/style_guide.md",
+  "packages/lint-policy/docs/style_guide.md",
+  "packages/lint-policy/docs/style_rules.md",
+];
+
 /** Removes comments and import/export module specifiers, keeping executable code. */
 function stripNonCode(source: string): string {
   const withoutBlock = source.replace(/\/\*[\s\S]*?\*\//g, "");
@@ -111,19 +119,19 @@ const PATH_TOKEN = /(?<!@)(?:packages\/|apps\/|exaix-team\/|exaix-enterprise\/|t
 const EXAIX_SYMBOL = /@exaix\/|EventLogger|ConfigService/;
 
 Deno.test("no repository path literal lives in the package sources", async () => {
-  for await (
-    const entry of walk(join(REPO_ROOT, "packages/lint-rules/src"), { includeDirs: false, exts: [".ts"] })
-  ) {
-    const code = stripNonCode(await Deno.readTextFile(entry.path));
-    const matches = [...code.matchAll(PATH_TOKEN)].map((m) => m[0]);
-    assertEquals(matches, [], `${entry.path} contains repository path literal(s): ${matches.join(", ")}`);
+  for (const root of [ENGINE_SRC, POLICY_SRC]) {
+    for await (const entry of walk(join(REPO_ROOT, root), { includeDirs: false, exts: [".ts"] })) {
+      const code = stripNonCode(await Deno.readTextFile(entry.path));
+      const matches = [...code.matchAll(PATH_TOKEN)].map((m) => m[0]);
+      assertEquals(matches, [], `${entry.path} contains repository path literal(s): ${matches.join(", ")}`);
+    }
   }
 });
 
 Deno.test("the generic rule areas name no Exaix symbol", async () => {
   for (const area of ["engine", "rules"]) {
     for await (
-      const entry of walk(join(REPO_ROOT, "packages/lint-rules/src", area), { includeDirs: false, exts: [".ts"] })
+      const entry of walk(join(REPO_ROOT, ENGINE_SRC, area), { includeDirs: false, exts: [".ts"] })
     ) {
       const code = stripNonCode(await Deno.readTextFile(entry.path));
       assert(
@@ -139,7 +147,7 @@ Deno.test("every catalog codeStyle target resolves to an existing heading", asyn
   const codeStyleDoc = await Deno.readTextFile(join(REPO_ROOT, "CODE_STYLE.md"));
   const anchorsOf = (text: string) => new Set([...text.matchAll(/\{#([^}]+)\}/g)].map((m) => m[1]));
   const docs: Record<string, Set<string>> = { "CODE_STYLE.md": anchorsOf(codeStyleDoc) };
-  for (const extra of ["packages/lint-rules/docs/style_guide.md", "packages/lint-rules/docs/style_rules.md"]) {
+  for (const extra of GUIDE_DOCS) {
     try {
       docs[extra] = anchorsOf(await Deno.readTextFile(join(REPO_ROOT, extra)));
     } catch {
@@ -154,6 +162,31 @@ Deno.test("every catalog codeStyle target resolves to an existing heading", asyn
     const anchors = docs[doc];
     assert(anchors, `${id} names an unknown doc: ${doc}`);
     assert(anchors.has(anchor), `${id}: '${anchor}' does not resolve to a heading in ${doc}`);
+  }
+});
+
+const GENERIC_GUIDE = "packages/lint-rules/docs/style_guide.md";
+const POLICY_GUIDE = "packages/lint-policy/docs/style_guide.md";
+const EXAIX_ONLY_TOKENS: readonly string[] = ["exaix", "check_magic_values"];
+const POLICY_GUIDE_SECTIONS: readonly string[] = [
+  "Magic Values",
+  "Canonical Subpackage Boundary",
+  "Interface Aliasing Exception",
+  "Comment Discipline Additions",
+  "Enforcement Status",
+];
+
+Deno.test("the generic style guide holds no Exaix-specific content", async () => {
+  const generic = (await Deno.readTextFile(join(REPO_ROOT, GENERIC_GUIDE))).toLowerCase();
+  for (const token of EXAIX_ONLY_TOKENS) {
+    assertFalse(generic.includes(token), `${GENERIC_GUIDE} still names ${token}`);
+  }
+});
+
+Deno.test("the lint-policy style guide holds the Exaix sections split out of the generic guide", async () => {
+  const policy = await Deno.readTextFile(join(REPO_ROOT, POLICY_GUIDE));
+  for (const section of POLICY_GUIDE_SECTIONS) {
+    assertStringIncludes(policy, `## ${section}`);
   }
 });
 

@@ -1,16 +1,16 @@
 /**
  * @module CheckCodeStyleTagsTest
- * @path packages/lint-rules/tests/check_code_style_tags_test.ts
+ * @path packages/lint-policy/tests/check_code_style_tags_test.ts
  * @description Tests `--tags` selection in the style checker and the `lint:tags` task contract.
  * @architectural-layer Test
- * @related-files [packages/lint-rules/src/exaix/check_code_style.ts, packages/lint-rules/tests/check_code_style_catalog_parity_test.ts]
+ * @related-files [packages/lint-policy/src/checkers/check_code_style.ts, packages/lint-policy/tests/check_code_style_catalog_parity_test.ts]
  */
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
-const CHECKER = "packages/lint-rules/src/exaix/check_code_style.ts";
+const CHECKER = "packages/lint-policy/src/checkers/check_code_style.ts";
 
 const BOTH_TAGS_FIXTURE = `/**
  * @module TagFixture

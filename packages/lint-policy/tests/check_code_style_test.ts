@@ -1,6 +1,6 @@
 /**
  * @module CheckCodeStyleTest
- * @path packages/lint-rules/tests/check_code_style_test.ts
+ * @path packages/lint-policy/tests/check_code_style_test.ts
  * @description Regression tests for the moved style checker, including test-file multiline fixture detection.
  */
 
@@ -11,7 +11,7 @@ const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
 
 async function runCheckCodeStyle(filePath: string): Promise<{ code: number; output: string }> {
   const command = new Deno.Command(Deno.execPath(), {
-    args: ["run", "--config=deno.json", "-A", "packages/lint-rules/src/exaix/check_code_style.ts", filePath],
+    args: ["run", "--config=deno.json", "-A", "packages/lint-policy/src/checkers/check_code_style.ts", filePath],
     cwd: REPO_ROOT,
     stdout: "piped",
     stderr: "piped",
@@ -29,11 +29,11 @@ Deno.test("check_code_style flags inline multiline fixture text in test files", 
     filePath,
     `/**
  * @module TempInlineFixtureTest
- * @path packages/lint-rules/tests/inline_fixture_test.ts
+ * @path packages/lint-policy/tests/inline_fixture_test.ts
  */
 
 Deno.test("inline fixture markdown", () => {
-  const markdown = \Deno.readTextFileSync(join(FIXTURE_ROOT, 'packages', 'lint-rules', 'tests', 'fixtures', 'check_code_style_test', 'markdown.md'));
+  const markdown = \Deno.readTextFileSync(join(FIXTURE_ROOT, 'packages', 'lint-policy', 'tests', 'fixtures', 'check_code_style_test', 'markdown.md'));
   assertEquals(markdown.includes("Bad"), true);
 });
 `,
@@ -56,7 +56,7 @@ Deno.test("check_code_style does not flag same inline multiline text in non-test
  * @description Temporary non-test fixture file for code style regression coverage.
  */
 
-const markdown = \Deno.readTextFileSync(join(FIXTURE_ROOT, 'packages', 'lint-rules', 'tests', 'fixtures', 'check_code_style_test', 'markdown.md'));
+const markdown = \Deno.readTextFileSync(join(FIXTURE_ROOT, 'packages', 'lint-policy', 'tests', 'fixtures', 'check_code_style_test', 'markdown.md'));
 export { markdown };
 `,
   );

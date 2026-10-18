@@ -145,8 +145,10 @@ For the full RED → GREEN → REFACTOR workflow, CI gates per phase, and covera
 ### Coding Standards
 
 All style rules live in [CODE_STYLE.md](./CODE_STYLE.md) (the Exaix-specific rules, with a stub for
-each moved section) and [packages/lint-rules/docs/style_guide.md](./packages/lint-rules/docs/style_guide.md)
-(the generic TypeScript rules). Please consult both for the authoritative, up-to-date guidelines on
+each moved section), [packages/lint-policy/docs/style_guide.md](./packages/lint-policy/docs/style_guide.md)
+(the Exaix additions to the generic rules), and
+[packages/lint-rules/docs/style_guide.md](./packages/lint-rules/docs/style_guide.md) (the generic
+TypeScript rules). Please consult all three for the authoritative, up-to-date guidelines on
 typing, imports, constants, DI, environment variables, and related topics.
 
 ---

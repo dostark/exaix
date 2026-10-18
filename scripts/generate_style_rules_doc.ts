@@ -3,14 +3,14 @@
  * @module GenerateStyleRulesDoc
  * @path scripts/generate_style_rules_doc.ts
  * @description Regenerates the rule reference, tag index, and analysis-boundaries sections
- *   of packages/lint-rules/docs/style_rules.md from scripts/config/style_rule_catalog.json.
+ *   of packages/lint-policy/docs/style_rules.md from packages/lint-policy/catalog.json.
  *
  * Usage:
  *   deno run -A scripts/generate_style_rules_doc.ts   # rewrite the generated block
  *
  * @architectural-layer Tooling
  * @dependencies [@std/path]
- * @related-files [packages/lint-rules/docs/style_rules.md, scripts/config/style_rule_catalog.json]
+ * @related-files [packages/lint-policy/docs/style_rules.md, packages/lint-policy/catalog.json]
  */
 
 import { join } from "@std/path";
@@ -31,8 +31,8 @@ interface ICatalog {
   readonly rules: Record<string, IRuleEntry>;
 }
 
-const catalogPath = "scripts/config/style_rule_catalog.json";
-const docPath = "packages/lint-rules/docs/style_rules.md";
+const catalogPath = "packages/lint-policy/catalog.json";
+const docPath = "packages/lint-policy/docs/style_rules.md";
 
 interface ICellTable {
   readonly headers: readonly string[];

@@ -1,13 +1,13 @@
 /**
  * @module RepoLayout
- * @path packages/lint-rules/src/exaix/repo_layout.ts
+ * @path packages/lint-policy/src/repo_layout.ts
  * @description Repository path tokens the Exaix rule scripts read from the catalog.
  * @architectural-layer Tooling
  * @dependencies []
- * @related-files [packages/lint-rules/mod.ts, packages/lint-rules/src/exaix/check_code_style.ts]
+ * @related-files [packages/lint-rules/mod.ts, packages/lint-policy/src/checkers/check_code_style.ts]
  */
 
-import catalogJson from "../../../../scripts/config/style_rule_catalog.json" with { type: "json" };
+import catalogJson from "../catalog.json" with { type: "json" };
 
 /** Repository path tokens, defined once in the catalog's `layout` section. */
 export interface IRepoLayout {

@@ -306,9 +306,9 @@ describe("Team composition — stub module with all hooks", () => {
 
 ## Guardrails to follow
 
-1. **Never put edition conditionals in core packages.** The `[edition-conditional-outside-composer]` rule in `packages/lint-rules/src/exaix/check_code_style.ts` enforces this. Allowed only in: `src/composer/`, `exaix-team/`, `exaix-enterprise/`, `scripts/`, `apps/common/`.
+1. **Never put edition conditionals in core packages.** The `[edition-conditional-outside-composer]` rule in `packages/lint-policy/src/checkers/check_code_style.ts` enforces this. Allowed only in: `src/composer/`, `exaix-team/`, `exaix-enterprise/`, `scripts/`, `apps/common/`.
 
-2. **Never import from `exaix-team/` or `@exaix-team/*` in Solo source files.** The `[edition-leak]` rule in `packages/lint-rules/src/exaix/check_code_style.ts` enforces this across `packages/` and `apps/`. Test files (`/tests/`, `/testing/`) are exempt — integration tests legitimately import Team classes. When Solo source needs a Team type, extract the interface to `packages/core/types/`.
+2. **Never import from `exaix-team/` or `@exaix-team/*` in Solo source files.** The `[edition-leak]` rule in `packages/lint-policy/src/checkers/check_code_style.ts` enforces this across `packages/` and `apps/`. Test files (`/tests/`, `/testing/`) are exempt — integration tests legitimately import Team classes. When Solo source needs a Team type, extract the interface to `packages/core/types/`.
 
 3. **Leak-guard must pass before publishing.** The CI release pipeline blocks on it. Leaks detected: enterprise path imports in source, proprietary license headers, `.gitmodules` enterprise entry.
 

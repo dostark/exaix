@@ -3,7 +3,7 @@
  * @path tests/scripts/rule_ceiling_ratchet_test.ts
  * @description Behaviour of the rule-ceiling ratchet evaluator.
  * @architectural-layer Test
- * @related-files [packages/lint-rules/src/cli/rule_ceiling.ts, packages/lint-rules/tests/check_code_style_catalog_parity_test.ts]
+ * @related-files [packages/lint-rules/src/cli/rule_ceiling.ts, packages/lint-policy/tests/check_code_style_catalog_parity_test.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";
@@ -109,7 +109,7 @@ function packageOf(filename: string, root: string): string | null {
 }
 
 Deno.test("the committed ceilings file names only known rules and packages", async () => {
-  const ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "scripts/config/rule_ceilings.json")));
+  const ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "packages/lint-policy/rule_ceilings.json")));
   const result = evaluateCeilings(ceilings, ceilings, RATCHETED_RULES, await workspacePackages());
   assertEquals(result.unknownRules, []);
   assertEquals(result.unknownPackages, []);
@@ -148,7 +148,7 @@ Deno.test("the whole-tree counts match the committed ceilings", async () => {
     counts[code][pkg] = (counts[code][pkg] ?? 0) + 1;
   }
 
-  const ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "scripts/config/rule_ceilings.json")));
+  const ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "packages/lint-policy/rule_ceilings.json")));
   const result = evaluateCeilings(ceilings, counts, RATCHETED_RULES, knownPackages);
   assertEquals(result.over, [], `a count rose above its ceiling: ${JSON.stringify(result.over)}`);
   assertEquals(result.under, [], `a count fell; write the lower value back: ${JSON.stringify(result.under)}`);

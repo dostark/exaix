@@ -15,7 +15,7 @@
  *   deno run -A scripts/check_ste100_comments.ts --staged         # gate staged TS/TSX diffs
  * @architectural-layer Script
  * @dependencies [@std/path, typescript]
- * @related-files ["scripts/ste100_prose_rules.ts", "tests/scripts/check_ste100_comments_test.ts", "packages/lint-rules/src/exaix/check_code_style.ts"]
+ * @related-files ["scripts/ste100_prose_rules.ts", "tests/scripts/check_ste100_comments_test.ts", "packages/lint-policy/src/checkers/check_code_style.ts"]
  */
 
 import { join } from "@std/path";

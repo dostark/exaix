@@ -1,15 +1,15 @@
 #!/usr/bin/env -S deno run -A
 /**
  * @module CheckCodeStyle
- * @path packages/lint-rules/src/exaix/check_code_style.ts
+ * @path packages/lint-policy/src/checkers/check_code_style.ts
  * @description Scans all .ts and .tsx files for code style violations defined in CODE_STYLE.md.
  * @architectural-layer Tooling
  * @dependencies [typescript, @std/fs, @std/path, zod, @exaix/lint-rules]
- * @related-files [packages/lint-rules/mod.ts, packages/lint-rules/src/exaix/check_magic_values.ts]
+ * @related-files [packages/lint-rules/mod.ts, packages/lint-policy/src/checkers/check_magic_values.ts]
  * @public Exports are the unit-test surface of this module.
  *
  * Usage:
- *   deno run -A packages/lint-rules/src/exaix/check_code_style.ts [path] [--root=<dir>]
+ *   deno run -A packages/lint-policy/src/checkers/check_code_style.ts [path] [--root=<dir>]
  *
  * The repository root comes from `--root=` or the working directory. Run it from the
  * repository root, as the `check:style` task does.
@@ -28,7 +28,7 @@ import {
   ruleSettings,
   type ScriptRuleSchemas,
 } from "@exaix/lint-rules";
-import styleRuleCatalog from "../../../../scripts/config/style_rule_catalog.json" with { type: "json" };
+import styleRuleCatalog from "../../catalog.json" with { type: "json" };
 import {
   escapeRegExp,
   LAYOUT,
@@ -37,7 +37,7 @@ import {
   RE_PACKAGE_SRC_CAPTURE,
   RE_PACKAGE_TEST_HELPERS,
   RE_PACKAGE_TESTS_CAPTURE,
-} from "./repo_layout.ts";
+} from "../repo_layout.ts";
 
 /** Resolves the repository root from `--root=` or the working directory. */
 function resolveRepoRoot(): string {
@@ -702,7 +702,7 @@ if (args.has("--help") || args.has("-h")) {
 
 Usage:
 
-  deno run ${LAYOUT.packageRoot}lint-rules/${LAYOUT.srcRoot}exaix/check_code_style.ts [options] [paths...]
+  deno run ${LAYOUT.packageRoot}lint-policy/${LAYOUT.srcRoot}checkers/check_code_style.ts [options] [paths...]
 
 Options:
   --help, -h          Show this help message
