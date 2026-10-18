@@ -10,7 +10,9 @@
  *
  * Usage:
  *   deno task unslop-ts:deploy --ref=<vX.Y.Z|commit>   Check out a published ref, run the compatibility check, stage the pointer.
- *   deno task unslop-ts:deploy --init                  Initialize the submodule at the recorded pointer, then run the check.
+ *   deno run --no-config --allow-run --allow-read --allow-env scripts/deploy_unslop_ts.ts --init
+ *                                                      Initialize the submodule at the recorded pointer, then run the check.
+ *                                                      Use this form on a fresh clone, where the empty submodule directory stops `deno task`.
  *
  * Exit code 0 = done, 1 = refused or failed, 2 = usage error.
  * The script stages the pointer with `git add`. It never creates a commit and never pushes.
