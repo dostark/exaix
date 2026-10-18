@@ -30,6 +30,7 @@ COPY deno.json deno.lock ./
 COPY packages/ packages/
 COPY apps/ apps/
 COPY exaix-team/ exaix-team/
+COPY unslop-ts/ unslop-ts/
 
 # Vendor the daemon module graph into DENO_DIR. (The CLI `exactl` is not run inside
 # the daemon container; one of its commands imports from tests/, which is excluded.)
@@ -169,6 +170,7 @@ RUN printf '#!/bin/sh\nexec deno run --allow-all --config /workspaces/exaix/deno
 
 COPY tests/ tests/
 COPY scripts/ scripts/
+COPY CODE_STYLE.md ./
 
 # Warm the driver entrypoint's import graph (plus the test/package/app graph) so the
 # worker resolves every module with `--network none`. Cache the entrypoint, not the
@@ -176,7 +178,7 @@ COPY scripts/ scripts/
 # can fail on an unrelated script error. The grammar packages are imported through a
 # computed specifier (`npm:tree-sitter-<lang>/…wasm`), so name them explicitly or a
 # Batch-2 file that builds a workspace would fetch them from npm at run time.
-RUN deno cache --config deno.json scripts/test_container_driver.ts tests/ packages/ apps/ exaix-team/ \
+RUN deno cache --config deno.json scripts/test_container_driver.ts tests/ packages/ apps/ exaix-team/ unslop-ts/ \
   packages/core/tests/skills/skill_folder_performance_test.ts \
   npm:web-tree-sitter@0.26.12 npm:tree-sitter-python@0.25.0 npm:tree-sitter-rust@0.24.0 npm:tree-sitter-go@0.25.0 npm:tree-sitter-java@0.23.5 \
   npm:tree-sitter@0.25.0

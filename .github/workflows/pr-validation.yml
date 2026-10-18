@@ -31,6 +31,9 @@ jobs:
           git config --local submodule.exaix-team.url "https://x-access-token:${{ secrets.EXAIX_TEAM_PAT }}@github.com/dostark/exaix-team.git"
           git submodule update --init --depth 1 exaix-team
 
+      - name: "Init unslop-ts submodule"
+        run: git submodule update --init --depth 1 unslop-ts
+
       - name: "Setup Deno"
         uses: denoland/setup-deno@v2
         with:
@@ -82,6 +85,9 @@ jobs:
           git config --local submodule.exaix-team.url "https://x-access-token:${{ secrets.EXAIX_TEAM_PAT }}@github.com/dostark/exaix-team.git"
           git submodule update --init --depth 1 exaix-team
 
+      - name: "Init unslop-ts submodule"
+        run: git submodule update --init --depth 1 unslop-ts
+
       - name: "Setup Deno"
         uses: denoland/setup-deno@v2
         with:
@@ -108,6 +114,9 @@ jobs:
         run: |
           git config --local submodule.exaix-team.url "https://x-access-token:${{ secrets.EXAIX_TEAM_PAT }}@github.com/dostark/exaix-team.git"
           git submodule update --init --depth 1 exaix-team
+
+      - name: "Init unslop-ts submodule"
+        run: git submodule update --init --depth 1 unslop-ts
 
       - name: "Setup Deno"
         uses: denoland/setup-deno@v2
@@ -141,6 +150,9 @@ jobs:
         run: |
           git config --local submodule.exaix-team.url "https://x-access-token:${{ secrets.EXAIX_TEAM_PAT }}@github.com/dostark/exaix-team.git"
           git submodule update --init --depth 1 exaix-team
+
+      - name: "Init unslop-ts submodule"
+        run: git submodule update --init --depth 1 unslop-ts
 
       - name: "Setup Deno"
         uses: denoland/setup-deno@v2
