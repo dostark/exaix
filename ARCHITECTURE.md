@@ -261,6 +261,7 @@ package-level configuration and restart/failure semantics:
 - Governance and compliance features in Enterprise (🟣 Enterprise)
 - **Composition seam:** `IEditionComposer` (`@exaix/core/composer/`) is the single attach point for paid capabilities; `ICapabilityModule` registers hooks per seam
 - **Option-C layout:** `packages/` (Solo, Apache 2.0) · `exaix-team/` (private submodule, BSL) · `exaix-enterprise/` (private submodule)
+- **Lint engine:** `unslop-ts/` (public submodule, MIT) holds the generic lint engine. `packages/lint-policy` holds the Exaix policy and the Exaix rule pack. Neither ships in a deployed workspace.
 - **Solo defaults:** `SoloComposer` with `AllowAllAuthorizer` — zero paid code in Solo builds
 - **Edition build:** `build:solo|team|enterprise` selects entry point + prefix via `scripts/ci.ts`
 - **Leak-guard:** `scripts/leak_guard.ts` blocks Enterprise paths and proprietary headers from OSS publish targets
@@ -1666,6 +1667,10 @@ For operator configuration, adapter-by-adapter reference, HMAC setup, cron rules
 Exaix includes repository tooling under `scripts/` to keep development workflows deterministic, along with a developer-facing knowledge base under `.copilot/`.
 
 For the full script inventory and `.copilot/` artifact details, see `docs/Reference_Data.md#developer-tooling`.
+
+**Lint tooling.** The lint engine is the `unslop-ts` submodule, which `deno.json` consumes as `@dostark/unslop-ts` through a workspace member. `packages/lint-policy` configures it for Exaix: the rule catalog `catalog.json`, the plugin entry `plugin.ts` that `deno lint` loads, the rule ceilings, the style checkers, and the Exaix style guide. The engine moves only through `deno task unslop-ts:deploy`, which checks that the ref is published and that the engine still accepts the Exaix catalog.
+
+**Rule-pack extension point.** A rule pack is a set of rules with their option schemas, keyed by bare rule key. The engine ships `TYPESCRIPT_RULE_PACK` and `DENO_RULE_PACK`. `packages/lint-policy` adds `EXAIX_RULE_PACK` for rules that encode Exaix conventions, such as `exaix/exported-interface-naming`. `createRuleRegistry` joins the packs under the plugin name `exaix`, and the catalog lists every rule as `exaix/<key>`. Rules that stay Exaix-only are never part of the engine.
 
 ---
 

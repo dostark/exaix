@@ -200,6 +200,21 @@ clone` without `--recurse-submodules` still works and gives you a full Solo-edit
 checkout; the `exaix-dev-docs/`, `exaix-team/`, and `exaix-enterprise/` directories
 simply stay empty until you have access and initialize them.
 
+**Lint engine submodule (`unslop-ts`):** `unslop-ts` is public (MIT, HTTPS), and it is a workspace
+member of the root `deno.json`. An empty `unslop-ts/` directory makes every `deno` command fail with
+`Could not find config file for workspace member`, so a clone needs it: clone with
+`--recurse-submodules`, or run `git submodule update --init unslop-ts`. On a fresh clone `deno task`
+does not start yet, so use `deno run --no-config --allow-run --allow-read --allow-env
+scripts/deploy_unslop_ts.ts --init`, which also runs the compatibility check. The `exaix-team/`
+members are nested paths, so an empty `exaix-team/` only prints skip warnings.
+
+To move the engine, run `deno task unslop-ts:deploy --ref=vX.Y.Z` (a release tag or a commit on
+`origin/main`). The task refuses a dirty or unpublished ref, prints the incoming log, runs the engine
+tests and the Exaix compatibility test, and stages the pointer. It never commits or pushes: review
+the staged pointer and commit it yourself. Move the `unslop-ts` pointer only through this task, because
+the pre-push hook auto-pushes `exaix-dev-docs` and `exaix-team` but not `unslop-ts`. Push the `unslop-ts`
+repository first, then this repository, or CI cannot resolve the recorded commit.
+
 | Hook         | Purpose                               |
 | ------------ | ------------------------------------- |
 | `pre-rebase` | Blocks rebase with dirty working tree |

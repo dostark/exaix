@@ -1063,6 +1063,16 @@ This is enforced by `deno task check:path-builders`.
 
 ---
 
+## 20. Lint Policy {#lint-policy}
+
+Exaix lint rules live in two places. `packages/lint-policy` holds the Exaix rules, the rule catalog, and the
+reference [`style_rules.md`](packages/lint-policy/docs/style_rules.md). Its guide,
+[`style_guide.md`](packages/lint-policy/docs/style_guide.md), holds the Exaix additions. The generic TypeScript rules
+live in the `unslop-ts` engine, and [`unslop-ts/docs/style_guide.md`](unslop-ts/docs/style_guide.md) is their guide.
+Run `deno task lint` for the plugin rules and `deno task check:style` for the script checkers.
+
+---
+
 ## Footer — Agent Knowledge Base
 
 - **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)

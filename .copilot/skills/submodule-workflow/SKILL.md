@@ -12,13 +12,13 @@ scope: dev
 title: "Submodule Workflow Skill (#submodule-workflow)"
 description: Manage simultaneous parent repo and exaix-dev-docs submodule changes safely with correct pointer policy
 short_summary: "Correct handling of simultaneous parent repo and exaix-dev-docs submodule changes."
-version: "1.0.1"
+version: "1.1.0"
 topics: ["git", "submodule", "docs", "workflow"]
 qwen_skill: submodule-workflow
 ---
 Key points
 
-- exaix-dev-docs and exaix-team are real Git submodules, not nested folders.
+- exaix-dev-docs, exaix-team, and unslop-ts are real Git submodules, not nested folders.
 - The parent stores only a pointer to each submodule commit.
 - A broken flow leaves the parent pointing at a detached or uncommitted submodule state.
 - Commit submodule changes FIRST, then update the parent pointer — **except plan-step
@@ -26,6 +26,9 @@ Key points
   `scripts/commit_plan_step.ts` so the phase file and parent stay in sync. The exception
   applies only to `exaix-dev-docs` planning docs — `exaix-team` is source, so it always
   follows the submodule-first rule.
+- `unslop-ts` (the public lint engine) is source and follows the submodule-first rule. Its parent
+  pointer moves only through `deno task unslop-ts:deploy --ref=<tag|commit>`, which stages it. A fresh
+  clone needs `git submodule update --init unslop-ts` before `deno task` runs.
 
 Canonical prompt (short):
 "Update exaix-dev-docs submodule for {goal}: commit submodule change first, push it,

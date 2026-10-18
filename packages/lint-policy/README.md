@@ -17,11 +17,22 @@ style checkers that still run as standalone scripts.
 - `docs/style_guide.md` — the Exaix additions to the generic style guide in `unslop-ts/docs/`.
 - `tests/` — the tests for the checkers and the catalog.
 
+## Add an Exaix plugin rule
+
+1. Implement `create(context, ctx)` in `src/rule_pack/<rule>.ts`, following `exported_interface_naming.ts`.
+1. Register it in `EXAIX_RULE_PACK` (`src/rule_pack/mod.ts`) under its bare rule key, with an option schema.
+1. Add the catalog entry `exaix/<rule key>` to `catalog.json` with `engine: "plugin"`, `severity`, `scope`, `codeStyle`, and `tags`.
+1. Add named valid and invalid cases under `tests/`, then run `deno task docs:style-rules`.
+
+A rule that is not specific to Exaix belongs in `unslop-ts` instead. A script checker (`engine: "script"`) is the
+fallback for a rule that needs the whole repository.
+
 ## Tasks
 
 - `deno task lint` — runs the plugin with every enabled rule.
 - `deno task check:style` and `deno task check:magic` — run the two checkers.
 - `deno task docs:style-rules` — regenerates the rule reference.
+- `deno task unslop-ts:deploy` — moves the engine pointer after a compatibility check.
 
 ## Related
 
