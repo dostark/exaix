@@ -80,10 +80,8 @@ function responsesEndpointFor(chatEndpoint: string): string {
   return `${chatEndpoint.slice(0, -OPENAI_CHAT_COMPLETIONS_PATH.length)}${OPENAI_RESPONSES_PATH}`;
 }
 
-/**
- * OpenAIProvider implements IModelProvider for OpenAI GPT models. Native calls use the Responses API. Compatible
- * servers, configured with a profile, use Chat Completions.
- */
+/** OpenAIProvider implements IModelProvider for OpenAI GPT models. Native calls use the Responses API.
+ *  Compatible servers, configured with a profile, use Chat Completions. */
 export class OpenAIProvider extends BaseProvider {
   readonly callCapabilities?: IProviderCallCapabilities;
   private readonly compatible: boolean;

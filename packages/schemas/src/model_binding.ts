@@ -164,19 +164,15 @@ export interface IBindingRunSnapshot {
   layers: IBindingLayers;
   bindings: ReadonlyMap<string, BindingOutcome>;
   issues: readonly IBindingIssue[];
-  /** True when an operator binding layer exists and the run shadows EXA_LLM_*.
-   *  Step 7 records it in the lock. Here it is the in-memory run-level flag. */
+  /** True when an operator binding layer exists and the run shadows EXA_LLM_*. The lock records it. Here it is the in-memory run-level flag. */
   envIgnored: boolean;
   lock?: { path: string; sha256: string };
-  /** True when an operator binding layer exists for this run (config [bindings], daemon
-   *  overlays or per-run overlays/binds). Every bound provider in the run uses this mode
-   *  for its cost admission (Step 8). */
+  /** True when an operator binding layer exists for this run (config [bindings], daemon overlays, or per-run overlays and binds).
+   *  Every bound provider in the run uses this mode for its cost admission. */
   globalBudgetMode?: boolean;
 }
 
-/** Gate-judge binding context for a flow gate evaluation.
- *  It holds the step ref and the immutable run snapshot.
- *  The step carries kind "gate", the step id and its judge role.
+/** Gate-judge binding context for a flow gate evaluation: the step ref (kind "gate", step id, judge role) and the immutable run snapshot.
  *  Non-flow gate callers omit it and keep the boot provider. */
 export interface IBindingGateContext {
   stepRef: IBindingStepRef;

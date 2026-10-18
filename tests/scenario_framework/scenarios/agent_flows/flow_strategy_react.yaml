@@ -67,13 +67,9 @@ steps:
         kind: "command-output-contains"
         contains: ["request.created"]
 
-  # NOTE: this scenario proves strategy DISPATCH (the forced `strategy: react` step reaches
-  # ReActLoopStrategy and calls a real live provider), not that the ReAct loop's task succeeds.
-  # A live small model can emit a <thought> with no parseable <action>, which the ReAct loop
-  # correctly treats as a hard failure ("No actions generated in ReAct iteration") rather than
-  # silently completing — so waiting on `flow.completed` here would time out on a legitimate,
-  # already-terminal failure. `flow.step.started` fires immediately and always carries the
-  # `strategy` field (packages/flow/src/flow_runner.ts), which is what this scenario asserts.
+  # This scenario proves strategy dispatch (the forced `strategy: react` step reaches ReActLoopStrategy and calls a live provider), not that the ReAct task succeeds.
+  # A small live model can emit a thought with no parseable action, which the loop treats as a hard failure, so waiting on `flow.completed` could time out on a legitimate failure.
+  # `flow.step.started` always carries the `strategy` field (packages/flow/src/flow_runner.ts), and the scenario asserts that.
   - id: "wait-for-step-started"
     type: "exactl"
     command: "journal"
@@ -138,13 +134,9 @@ steps:
         equals: 0
         score_weight: 0.3
 
-  # Informational only (always passes): the flow's own terminal outcome (converged on a valid
-  # action, or the "No actions generated" failure mode) is reported for the comparison doc
-  # without gating the scenario's pass/fail on a live model's reliability. `journal wait`
-  # supports repeatable --event with OR semantics, so this resolves on whichever of
-  # flow.completed / flow.failed appears first — exit is not gated (the terminal event is
-  # nondeterministic across live runs: codex may finish as flow.completed or legitimately
-  # fail as flow.failed).
+  # Informational only (always passes): the flow's terminal outcome is reported for the comparison doc without gating on a live model's reliability.
+  # `journal wait` takes repeatable --event with OR semantics, so this resolves on whichever of flow.completed or flow.failed appears first.
+  # The terminal event varies across live runs, so the exit is not gated.
   - id: "report-flow-outcome"
     type: "exactl"
     command: "journal"

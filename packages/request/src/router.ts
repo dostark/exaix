@@ -122,10 +122,7 @@ export class RoutingError extends Error {
   }
 }
 
-/**
- * RequestRouter handles routing decisions for incoming requests
- * @visible
- */
+/** RequestRouter makes routing decisions for incoming requests. @visible */
 export class RequestRouter {
   private flowRunner: IFlowRunner;
   private agentRunner: IAgentRunner;

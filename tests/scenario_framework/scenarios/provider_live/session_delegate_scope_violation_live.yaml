@@ -2,10 +2,8 @@ schema_version: "1.0.0"
 id: "session-delegate-scope-violation-live"
 title: "Session Delegation — Worktree Scope Violation (provider-live, safety-gate)"
 pack: "provider_live"
-# safety-gate: this scenario proves the production worktree-isolation guard
-# (reconcile.ts:78 checkScope -> session_return_watcher.ts) journals
-# session.delegate.scope_violation when a delegate edits outside its permitted_paths.
-# Phase 127 Step 3 — no new scenario step kind; it asserts the existing journal event.
+# safety-gate: proves the production worktree-isolation guard (reconcile.ts checkScope, then session_return_watcher.ts) journals session.delegate.scope_violation when a delegate edits outside its permitted_paths.
+# No new scenario step kind: it asserts the existing journal event.
 tags: ["provider-live", "session-delegation", "safety-gate"]
 request_fixture: "fixtures/requests/agent_flows/request_analysis_smoke.md"
 mode_support: ["auto"]
@@ -24,10 +22,8 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  # The delegate is briefed with a narrow permitted_paths; a return that touches a
-  # path outside it (e.g. a write to ".env") is rejected by reconcile.ts:78 and the
-  # watcher journals session.delegate.scope_violation. This mirrors the production
-  # unit coverage in apps/daemon/tests/session_return_watcher_test.ts:132.
+  # The delegate is briefed with a narrow permitted_paths. A return that touches a path outside it (for example a write to ".env") is rejected by reconcile.ts and the watcher journals session.delegate.scope_violation.
+  # This mirrors the unit coverage in apps/daemon/tests/session_return_watcher_test.ts.
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
@@ -53,10 +49,8 @@ steps:
         kind: "command-output-contains"
         contains: ["request.created"]
 
-  # Wait for the delegate to drop its return.json — that is what SessionReturnWatcher
-  # reconciles (reconcile.ts:78), producing the scope_violation when the touched paths
-  # escape permitted_paths. wait-for-file is the proven polling step (mirrors the other
-  # provider_live scenarios), not the unhandled wait-for-status.
+  # Wait for the delegate to drop its return.json, which SessionReturnWatcher reconciles (reconcile.ts), producing the scope_violation when the touched paths escape permitted_paths.
+  # wait-for-file is the proven polling step, not the unhandled wait-for-status.
   - id: "wait-for-delegate-return"
     type: "wait-for-file"
     args: ["**/Session/**/return.json"]

@@ -15,12 +15,8 @@ import type { IPortalKnowledgeConfig } from "@exaix/core/types";
 /** The `[portal_knowledge]` section of a parsed config. */
 export type PortalKnowledgeConfigSection = Config["portal_knowledge"];
 
-/**
- * Builds the service config from the persisted config section.
- *
- * Every optional boolean resolves to a concrete value.
- * The service therefore sees no `undefined` for a key the schema defaults.
- */
+/** Builds the service config from the persisted config section. Every optional boolean resolves to a concrete value,
+ *  so the service sees no `undefined` for a key the schema defaults. */
 export function buildPortalKnowledgeConfig(
   section: PortalKnowledgeConfigSection,
 ): IPortalKnowledgeConfig {

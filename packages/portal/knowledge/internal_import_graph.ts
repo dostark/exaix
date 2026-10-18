@@ -73,12 +73,8 @@ function toPortalRelativePath(fileUrlSpecifier: string, portalRoot: string): str
 /** File names a Python module specifier may resolve to, in probe order. */
 const PYTHON_MODULE_FILES: readonly string[] = ["__init__.py", "mod.py", "main.py"];
 
-/**
- * Reads every module specifier a Python source imports.
- *
- * `from a.b import c` and `import a.b` both contribute `a.b`. A relative import
- * keeps its leading dots so the resolver can walk up from the importing file.
- */
+/** Reads every module specifier that a Python source imports. `from a.b import c` and `import a.b` both give `a.b`.
+ *  A relative import keeps its leading dots so the resolver can walk up from the importing file. */
 function parsePythonImportSpecifiers(source: string): string[] {
   const specifiers: string[] = [];
   for (const match of source.matchAll(/^\s*from\s+([.\w]+)\s+import\s+/gm)) {
@@ -98,14 +94,8 @@ function isPythonFile(file: string): boolean {
   return file.endsWith(".py");
 }
 
-/**
- * Resolves one Python specifier into a portal-relative file, or `undefined`.
- *
- * A dotted module path maps onto directories.
- * A package resolves to its `__init__.py`.
- * A relative import walks up from the importing file.
- * A result that would leave the portal is refused.
- */
+/** Resolves one Python specifier into a portal-relative file, or `undefined`. A dotted path maps onto directories and a package resolves to its `__init__.py`.
+ *  A relative import walks up from the importing file. A result that would leave the portal is refused. */
 async function resolvePythonSpecifier(
   portalRoot: string,
   fromFile: string,
@@ -197,13 +187,8 @@ export class InternalImportGraphBuilder {
     return { edges: [...edgesByKey.values()], droppedOutOfBounds: dropped, truncatedEntrypointCount };
   }
 
-  /**
-   * Collects Python import edges by walking the local import closure.
-   *
-   * `deno info` cannot resolve Python, so the graph is built from the source's
-   * own import statements. Only files inside the portal are followed, which
-   * bounds the walk to the portal's own tree.
-   */
+  /** Collects Python import edges by walking the local import closure.
+   *  The `deno info` command cannot resolve Python. The graph therefore comes from the source's own import statements. Only files inside the portal are followed, which bounds the walk. */
   private async _collectPythonEdges(
     portalRoot: string,
     entrypoint: string,

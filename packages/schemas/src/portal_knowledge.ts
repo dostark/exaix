@@ -144,16 +144,9 @@ export const MonorepoPackageSchema = z.object({
 
 export type IMonorepoPackage = z.infer<typeof MonorepoPackageSchema>;
 
-/**
- * A directed edge between two portal files, or between two symbols.
- * `layer_contains_file` edges are computed on demand, never persisted here.
- * See `deriveLayerContainsFileEdges` for those.
- *
- * The endpoint format depends on the edge kind.
- * A file-import edge holds two portal-relative file paths.
- * A symbol-reference edge holds two `<file>#<symbolName>` composite keys.
- * Build those keys with `encodeSymbolRef` and `decodeSymbolRef`.
- */
+/** A directed edge between two portal files or two symbols. `layer_contains_file` edges are computed on demand (see `deriveLayerContainsFileEdges`).
+ *  A file-import edge holds two portal-relative file paths. A symbol-reference edge holds two `<file>#<symbolName>` keys.
+ *  Build those keys with `encodeSymbolRef` and `decodeSymbolRef`. */
 export const PortalKnowledgeRelationshipSchema = z.object({
   /** Source: a portal-relative file path, or `<file>#<symbolName>` for a symbol edge. */
   from: z.string().min(1),

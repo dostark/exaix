@@ -513,7 +513,7 @@ export const DEFAULT_DESCRIPTION_PLACEHOLDER = "(no description)";
 /** CLI table column label for the resolved model binding. */
 export const MODEL_COLUMN_LABEL = "Model";
 
-/** Binding transport labels (Step 8), canonicalized for shared cost accounting. */
+/** Binding transport labels, canonicalized for shared cost accounting. */
 export const BINDING_TRANSPORT_CLOUD = "cloud" as const;
 export const BINDING_TRANSPORT_LOCAL = "local" as const;
 /** The cost budget denial when pricing for a cloud call is unknown under a finite cap. */
@@ -745,6 +745,15 @@ export const REACT_CALLING_TOOL_PREFIX = "CALLING TOOL: ";
 export const REACT_TOOL_ERROR_PREFIX = "TOOL ERROR: ";
 /** Max chars of a serialized tool result kept in the dynamic_tool_call journal summary. */
 export const REACT_TOOL_RESULT_SUMMARY_MAX = 200;
+export const REACT_TOOL_RESULT_HISTORY_MAX: number = configurable({
+  key: "react.tool_result_history_max_chars",
+  default: 4000,
+  type: ConfigValueType.NUMBER,
+  description: "Max chars of one tool result kept in the ReAct history the model reads on its next turn",
+  min: 200,
+  max: 100000,
+  swap: SwapClass.RESTART,
+});
 export const REACT_DEFAULT_TEMPERATURE: number = configurable({
   key: "react.temperature",
   default: 0.1,
@@ -1574,7 +1583,8 @@ export const COST_RATE_ANTHROPIC: number = configurable({
   swap: SwapClass.RESTART,
 });
 // Google AI API gemini-3.8-flash, standard paid tier: $3.75/1M output → $0.00375/1K.
-// The rate doubles on 2027-01-01 to $7.50/1M output. Thinking tokens bill at this output rate too.
+// The output rate doubles to $7.50/1M at the start of 2027.
+// Thinking tokens bill at this output rate too.
 export const COST_RATE_GOOGLE: number = configurable({
   key: "cost_tracking.rate_google",
   default: 0.00375,
@@ -2397,10 +2407,8 @@ export const DEFAULT_SYMBOL_REFERENCE_EDGE_LIMIT: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-/** Separator joining a portal-relative file path and a symbol name.
- *  It forms one `symbol_references_symbol` edge endpoint (`<file>#<symbolName>`).
- *  This is a format constant, not a tunable.
- *  Use `encodeSymbolRef` or `decodeSymbolRef` to build or read a composite key. */
+/** Separator joining a portal-relative file path and a symbol name in one `symbol_references_symbol` edge endpoint (`<file>#<symbolName>`).
+ *  A format constant, not a tunable. Use `encodeSymbolRef` or `decodeSymbolRef` for the composite key. */
 export const SYMBOL_REF_ID_SEPARATOR = "#";
 
 /** Maximum files to scan in quick mode. */
@@ -2969,22 +2977,14 @@ export const QG_TECH_SPECIFICS_PATTERN =
 
 // Cross-phase context keys
 
-/**
- * Key used to store the `IRequestSpecification` produced by the quality gate
- * in `IParsedRequest.context`. Consumed by Phase 48 (planning) and Phase 49 (execution).
- */
+/** Key under which the quality gate stores its `IRequestSpecification` in `IParsedRequest.context`. */
 export const REQUEST_SPECIFICATION_KEY = "requestSpecification";
 
-/**
- * Key used to store the `IRequestQualityAssessment` snapshot in `IParsedRequest.context`.
- * Allows downstream phases to inspect heuristic/LLM gate results without recomputing.
- */
+/** Key under which the `IRequestQualityAssessment` snapshot is stored in `IParsedRequest.context`. */
 export const REQUEST_QUALITY_ASSESSMENT_KEY = "qualityAssessment";
 
-/**
- * Config model-alias key for the Q&A clarification planning agent.
- * Resolved against the provider's model map; falls back to the fast/cheap model.
- */
+/** Config model-alias key for the clarification planning agent.
+ *  It resolves against the provider's model map and falls back to the fast model. */
 export const DEFAULT_CLARIFICATION_MODEL_KEY: string = configurable({
   key: "quality_gate.clarification_model",
   default: "fast",
@@ -2995,18 +2995,11 @@ export const DEFAULT_CLARIFICATION_MODEL_KEY: string = configurable({
 
 // Acceptance Criteria Propagation
 
-/**
- * Maximum number of dynamically generated EvaluationCriterion objects that
- * CriteriaGenerator.fromAnalysis() may return. Input lists are sorted by
- * descending weight (tiebreak: ascending goal priority) and then truncated to
- * this limit. No similarity-based merging is performed in Phase 48.
- */
+/** Maximum number of generated EvaluationCriterion objects that CriteriaGenerator.fromAnalysis() returns.
+ *  Inputs are sorted by descending weight, then ascending goal priority, and truncated to this limit. */
 export const MAX_DYNAMIC_CRITERIA = 10;
 
-/**
- * Default weight assigned to goal-derived criteria when the goal does not
- * hold priority === 1.
- */
+/** Default weight of a goal-derived criterion when the goal is not priority 1. */
 export const DEFAULT_GOAL_WEIGHT: number = configurable({
   key: "agent.goal_weight",
   default: 1.0,
@@ -3017,104 +3010,61 @@ export const DEFAULT_GOAL_WEIGHT: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-/**
- * Weight assigned to criteria derived from priority-1 goals. Higher than
- * DEFAULT_GOAL_WEIGHT so that top-priority goals survive the cap-at-10
- * truncation.
- */
+/** Weight of a criterion derived from a priority-1 goal.
+ *  Higher than DEFAULT_GOAL_WEIGHT so top goals survive the 10-criterion cap. */
 export const PRIORITY_1_GOAL_WEIGHT = 2.0;
 
-/**
- * Weight assigned to acceptance-criterion-derived criteria. Sits between
- * PRIORITY_1_GOAL_WEIGHT and DEFAULT_GOAL_WEIGHT so that explicit acceptance
- * criteria are preferred over lower-priority goals under the cap.
- */
+/** Weight of a criterion derived from an acceptance criterion.
+ *  It sits between PRIORITY_1_GOAL_WEIGHT and DEFAULT_GOAL_WEIGHT. */
 export const ACCEPTANCE_CRITERION_WEIGHT = 1.5;
 
-/**
- * Blend weight for the goal-alignment component in ConfidenceScorer.assess()
- * when a ReflexiveAgent critique with requirementsFulfillment is available.
- * Final score = rawScore * EXISTING_SCORE_CONFIDENCE_WEIGHT
- *             + goalAlignmentScore * GOAL_ALIGNMENT_CONFIDENCE_WEIGHT
- */
+/** Blend weight of goal alignment in ConfidenceScorer.assess() when a critique has requirementsFulfillment.
+ *  Final score = rawScore * EXISTING_SCORE_CONFIDENCE_WEIGHT + goalAlignmentScore * this. */
 export const GOAL_ALIGNMENT_CONFIDENCE_WEIGHT = 0.3;
 
-/**
- * Blend weight for the pre-Phase-48 raw confidence score component when
- * goal-alignment data is present in the critique.
- */
+/** Blend weight of the raw confidence score when the critique carries goal-alignment data. */
 export const EXISTING_SCORE_CONFIDENCE_WEIGHT = 0.7;
 
-/**
- * Maximum length (characters) of a sanitized criterion name produced by
- * CriteriaGenerator. Names longer than this are sliced after sanitization.
- */
+/** Maximum length in characters of a sanitized criterion name from CriteriaGenerator.
+ *  Longer names are sliced after sanitization. */
 export const CRITERION_NAME_MAX_LENGTH = 50;
 
-/**
- * Regex used by CriteriaGenerator.sanitizeName() to remove characters that are
- * not lowercase letters, digits, or underscores from a criterion name.
- * Applied after toLowerCase() and before slice(0, CRITERION_NAME_MAX_LENGTH).
- */
+/** Regex that CriteriaGenerator.sanitizeName() uses to remove characters other than lowercase letters, digits and underscores.
+ *  It runs after toLowerCase() and before the slice to CRITERION_NAME_MAX_LENGTH. */
 export const CRITERION_NAME_SANITIZE_PATTERN = /[^a-z0-9_]/g;
 
-// Quality Pipeline Hardening
-// Constants for Phase 49 hardening improvements across the quality pipeline.
+// Quality pipeline hardening constants.
 
-/**
- * Maximum number of requirement items (goals + acceptance criteria combined)
- * injected into the ReflexiveAgent critique prompt when IRequestAnalysis is
- * available. Items are sorted by goal priority ascending; excess items are
- * truncated. Prevents critique-prompt bloat on large requests.
- */
+/** Maximum number of requirement items (goals plus acceptance criteria) in the ReflexiveAgent critique prompt.
+ *  Items sort by ascending goal priority and the rest are cut, to keep the prompt small. */
 export const MAX_CRITIQUE_REQUIREMENTS = 10;
 
-/**
- * Minimum number of bullet/list items in a request body that triggers a
- * COMPLEX complexity classification in checkContentHeuristics().
- * Requests with >= this many bullets (lines starting with "- " or "* ") are
- * considered multi-requirement and promoted to TaskComplexity.COMPLEX.
- */
+/** Minimum bullet count in a request body that makes checkContentHeuristics() classify it COMPLEX.
+ *  Bullets are lines that start with "- " or "* ". */
 export const COMPLEXITY_BULLET_THRESHOLD_HIGH = 8;
 
-/**
- * Maximum number of bullet items below which a request qualifies as a
- * SIMPLE complexity candidate (combined with other low-signal checks).
- */
+/** Bullet count below which a request can qualify as a SIMPLE candidate, together with other low-signal checks. */
 export const COMPLEXITY_BULLET_THRESHOLD_LOW = 2;
 
-/**
- * Minimum number of distinct file references in a request body that triggers
- * a COMPLEX complexity classification in checkContentHeuristics().
- * File references are detected by COMPLEXITY_FILE_REF_PATTERN.
- */
+/** Minimum distinct file references in a request body that makes checkContentHeuristics() classify it COMPLEX.
+ *  COMPLEXITY_FILE_REF_PATTERN detects the references. */
 export const COMPLEXITY_FILE_REF_THRESHOLD_HIGH = 5;
 
-/**
- * Minimum request body character count that triggers a COMPLEX complexity
- * classification in checkContentHeuristics().
- */
+/** Minimum request body length in characters that makes checkContentHeuristics() classify it COMPLEX. */
 export const COMPLEXITY_BODY_LENGTH_HIGH = 500;
 
-/**
- * Maximum request body character count below which a request qualifies as a
- * SIMPLE complexity candidate (combined with other low-signal checks).
- */
+/** Request body length in characters below which a request can qualify as a SIMPLE candidate, together with other low-signal checks. */
 export const COMPLEXITY_BODY_LENGTH_LOW = 50;
 
-/**
- * Regex used by checkContentHeuristics() to detect file references in a
- * request body. Matches typical source-file paths and file extensions across
- * the most common programming languages.
- * Applied with the 'gi' flags (global, case-insensitive).
- */
+/** Regex that checkContentHeuristics() uses to detect file references in a request body.
+ *  It matches source-file paths and extensions of common languages, with the 'gi' flags. */
 export const COMPLEXITY_FILE_REF_PATTERN = /(\/[\w.-]+|[a-z0-9_]+\.(ts|js|md|json|py|go|rs|c|cpp|h))/gi;
 
-// Tool IClassification for Dynamic Execution (Phase 56)
+// Tool classification for dynamic execution.
 
 // MCP tool names and related work sets are now owned by @exaix/mcp.
 
-// Agent Execution & Prompting (Phase 61 Cleanup)
+// Agent execution and prompting.
 
 /** Prefixes used for plan step execution prompts */
 export const PROMPT_PLAN_STEP_TASK_PREFIX = "CURRENT TASK:\n";
@@ -3126,13 +3076,9 @@ export const MAX_USER_INPUT_LENGTH = 10000;
 /** Regular expression for extracting TOML blocks from model responses */
 export const TOML_BLOCK_PATTERN = /```toml\s*([\s\S]*?)```/g;
 
-/**
- * Regular expression for extracting step-scoped TOML action blocks from a plan-generation
- * <content> response (Phase 151) — a fenced ```toml block whose first line is a
- * `# TOML_BLOCK:N` marker comment, distinct from the unscoped TOML_BLOCK_PATTERN above
- * (which has no per-step marker requirement and is used for single-turn execution actions,
- * not multi-step plan generation).
- */
+/** Regex that extracts step-scoped TOML action blocks from a plan-generation <content> reply.
+ *  The block is a fenced ```toml block whose first line is a `# TOML_BLOCK:N` marker.
+ *  TOML_BLOCK_PATTERN above has no marker and serves single-turn execution actions. */
 export const TOML_ACTION_BLOCK_MARKER_PATTERN = /```toml\n# TOML_BLOCK:(\d+)\n([\s\S]*?)\n```/g;
 
 /** Generic fallback timeout in milliseconds (30s). */
@@ -3462,6 +3408,8 @@ export const SESSION_FLAG_MAX_TOTAL_TOKENS = "--max-total-tokens";
 /** Headless-mode flags: claude -p <objective>, opencode run <objective>, and output-format json. */
 export const SESSION_FLAG_PRINT = "-p";
 export const SESSION_SUBCMD_RUN = "run";
+/** OpenCode 2.x. Runs a private server on the launch env. The shared background service ignores a per-launch key. */
+export const SESSION_FLAG_STANDALONE = "--standalone";
 export const SESSION_FLAG_OUTPUT_FORMAT = "--output-format";
 /** OpenCode-specific: --format json (differs from claude's --output-format). */
 export const SESSION_FLAG_FORMAT = "--format";
@@ -3533,7 +3481,7 @@ export const MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA = "2.1.205";
 /** Minimum Codex CLI version this integration targets, pinned to the exact version live-verified against a real `codex exec --help`/`codex --version` invocation: `codex-cli 0.77.0`. Unlike `MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA`, this floor has **no active `probeDelegateVersion` gate** in `CliDelegateModelProvider` — a documented Design Decision, not an oversight: no evidence was found that `--output-schema`/`--sandbox`/`resume` were later additions to `codex exec`, so an operator on a too-old Codex CLI gets a loud CLI-level flag-rejection error rather than needing speculative version-gating machinery for a first integration pass. */
 export const MINIMUM_VERSION_CODEX = "0.77.0";
 
-// Flow-step model bindings — operator runtime files (Phase 204)
+// Flow-step model bindings: operator runtime files.
 
 /** Operator runtime directory name for per-run binding locks, beneath `<root>/.exa/`. */
 export const BINDINGS_DIR = "bindings";
@@ -4056,10 +4004,8 @@ export interface ISharedToolOperation {
   mcpToolNameMember: keyof typeof McpToolName;
 }
 
-/** D9 source of truth: each shared operation has one canonical name in both enums.
- *  The `check:tool-naming` gate asserts both members resolve to `canonical`.
- *  It also requires a row for every value present in both enums.
- *  Classify any new unmatched export in review. */
+/** Source of truth for shared operations: each has one canonical name in both enums.
+ *  The `check:tool-naming` gate checks that both members resolve to `canonical` and that every shared value has a row. */
 export const SHARED_TOOL_OPERATIONS: readonly ISharedToolOperation[] = [
   {
     canonical: ToolName.READ_FILE,

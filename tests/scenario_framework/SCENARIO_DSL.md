@@ -588,11 +588,20 @@ Evaluates `json-path-*` / `json-query` criteria against `file_pattern`-matched f
 
 Checks the recorded tool-call sequence of a `source_step` against an `expected_sequence`.
 `order_matters` (default true) / `allow_extra_tools` / `partial_credit` refine matching.
+For asynchronous execution, `through_step` extends the capture through a later completed step.
+Use the request step as `source_step` and a `flow.completed` journal wait as `through_step`.
+Without `through_step`, capture covers only `source_step` itself. Missing or earlier barriers
+do not extend capture.
+
+An unmatched reference is an output-criterion failure and retains its fractional score.
+`step_pass_threshold` defaults to 1.0. A scoring control can set a lower threshold while
+retaining its observed score. An unreadable journal remains an execution failure.
 
 ```yaml
 - id: "verify-search-selected"
   type: "trajectory-assert"
   source_step: "submit-request"
+  through_step: "await-flow"
   expected_sequence:
     - tool: "search_files"
   order_matters: false
@@ -701,6 +710,11 @@ When `trace_scope` is absent the criterion keeps its original global semantics.
 git diff of a tracked file against its repo's root commit; `context_path` supplies the judge
 with the request context (so a `GOAL_ALIGNED_REVIEW` preset can score goal alignment it was
 actually shown).
+
+A judge on a step with `file_pattern` receives the newest matching file's contents when no
+explicit evidence file or diff is declared. The file pattern follows the step's working
+directory. An unreadable evidence file is an error; the runner does not grade a readiness
+message or substitute command output for that file.
 
 ---
 

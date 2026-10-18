@@ -47,14 +47,12 @@ interface BlueprintInput {
   task_type?: IModelIntent["task_type"];
 }
 
-/** Normalizes a declaration-time thinking value to a concrete boolean for the intent —
- *  "auto" (and any string) is dropped so it never constrains provider selection (GAP-3). */
+/** Normalizes a declaration-time thinking value to a boolean for the intent. "auto" is dropped so it never constrains provider selection. */
 function thinkingLike(value: Opt<boolean | ThinkingDeclaration, Reason.OptionalInput>): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
 }
 
-/** Normalizes a declaration-time effort value to a concrete tier for the intent — "auto"
- *  is dropped so it never constrains provider selection (GAP-3). */
+/** Normalizes a declaration-time effort value to a tier for the intent. "auto" is dropped so it never constrains provider selection. */
 function effortLike(value: Opt<EffortTier | EffortDeclaration, Reason.OptionalInput>): EffortTier | undefined {
   return value === undefined || value === EFFORT_AUTO ? undefined : (value as EffortTier);
 }
@@ -187,8 +185,8 @@ export class BlueprintService {
         model_size: requestIntent?.model_size ?? extras.model_size,
         characteristics: requestIntent?.characteristics ?? extras.characteristics,
         preferred_provider: requestIntent?.preferred_provider ?? extras.preferred_provider,
-        // A declaration-time "auto" must never reach ModelResolver (it only understands
-        // concrete values); it is resolved after selection by the caller (GAP-3).
+        // A declaration-time "auto" never reaches ModelResolver, which only knows concrete values.
+        // The caller resolves it after selection.
         thinking: thinkingLike(requestIntent?.thinking ?? extras.thinking),
         effort: effortLike(requestIntent?.effort ?? extras.effort),
         task_type: derivedTaskType.taskType,

@@ -92,10 +92,9 @@ export function findMcpOnlyViolations(
   return errors;
 }
 
-/** D9: every declared row resolves to its canonical string in both enums.
+/** Every declared row resolves to its canonical string in both enums.
  *  Every value present in both enums must be a declared row.
- *  Semantic identity of unmatched operations is a review decision.
- *  This check compares only declared members and literal intersections. */
+ *  The check compares only declared members and literal intersections. Unmatched operations need a review decision. */
 export function findSharedOperationViolations(
   rows: readonly ISharedToolOperation[],
   toolNames: Readonly<Record<string, string>>,

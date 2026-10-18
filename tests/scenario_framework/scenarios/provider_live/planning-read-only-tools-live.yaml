@@ -11,17 +11,9 @@ portals:
     target_path: "$WORKSPACE_ROOT/live-portal"
     git_init: true
 matrix:
-  # Phase 203 Step 8: the seven hand-listed cells become planning-live presets. Each preset
-  # keeps this file's own config, provider, model and opt-in, so the run predicates are
-  # unchanged, and so are the history cell ids.
-  #
-  # CLI-delegate tools (subscription-billed): the planning gate SKIPS planning tools with
-  # reason=provider_unsupported (Phase 199 R5 / GAP-8) and the plan comes from a single-call
-  # CLI run. These are the "run with claude-code/codex/opencode" forms.
-  #
-  # Native-tools HTTP providers: the planning call ENGAGES the read-only tool loop and a
-  # real model decides to read the portal. Each cell pins its provider and model in its config
-  # and is gated on the provider's API key, the same convention swe_tasks' direct-API cells use.
+  # The cells are planning-live presets. Each preset keeps this file's config, provider, model and opt-in, so the run predicates and history cell ids are stable.
+  # CLI-delegate tools (subscription-billed): the planning gate skips planning tools with reason=provider_unsupported, and the plan comes from a single-call CLI run.
+  # Native-tools HTTP providers: the planning call engages the read-only tool loop and a real model decides to read the portal. Each cell pins its provider and model and is gated on the provider's API key.
   from_catalog: [
     "planning-live-claude",
     "planning-live-codex",

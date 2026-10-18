@@ -49,9 +49,7 @@ Deno.test("[security] multibyte content survives canonicalization and hashes sta
   assertEquals(lf, crlf);
 });
 
-// ---------------------------------------------------------------------------
-// Phase 206 Step 2 — physical confinement in the loader.
-// ---------------------------------------------------------------------------
+// Physical confinement in the loader.
 
 const SEC_CTX: ISkillOperationContext = {
   portal: null,

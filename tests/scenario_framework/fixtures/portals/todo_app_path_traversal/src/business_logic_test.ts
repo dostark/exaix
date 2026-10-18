@@ -12,7 +12,7 @@ import { assertEquals } from "jsr:@std/assert@1";
 import { processTaskSubmission } from "./business_logic.ts";
 import type { ITask } from "./models.ts";
 
-import { assertArrayIncludes } from "@std/assert";
+import { assertArrayIncludes } from "jsr:@std/assert@1";
 Deno.test("valid submission succeeds with defaulted medium priority", () => {
   const result = processTaskSubmission("Buy milk", "", null, null, []);
   assertEquals(result.success, true);

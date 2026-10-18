@@ -223,19 +223,16 @@ export interface IParsedRequest {
   flowStepId?: string;
   /** Run-local fixture lane from an opted-in flow run. It replaces the runner's shared counter. */
   recordingLane?: Opt<IRecordingLane, Reason.OptionalContext>;
-  /** Flow step's own effort declaration, set by AgentComposerAdapter for declared flow
-   *  steps (GAP-4) — distinct from request-level `effort`. */
+  /** The flow step's own effort declaration, set by AgentComposerAdapter. Distinct from request-level `effort`. */
   flowStepEffort?: EffortDeclaration;
-  /** Flow step's own thinking declaration, set by AgentComposerAdapter for declared flow
-   *  steps (GAP-4). */
+  /** The flow step's own thinking declaration, set by AgentComposerAdapter. */
   flowStepThinking?: ThinkingDeclaration;
   bindingEffort?: EffortDeclaration;
   bindingThinking?: ThinkingDeclaration;
 
-  /** Resolved portal knowledge snapshot for adaptive inclusion (`portal_knowledge.inclusion
-   *  === "adaptive"`). Ephemeral — never persisted to the request file or `knowledge.json`;
-   *  set once by `RequestProcessor.buildRequestContext` and consumed by
-   *  `assemblePromptSegments`. Absent in `summary` mode and outside the request pipeline. */
+  /** Portal knowledge snapshot for adaptive inclusion (`portal_knowledge.inclusion === "adaptive"`).
+   *  Never persisted. `RequestProcessor.buildRequestContext` sets it and `assemblePromptSegments` consumes it.
+   *  Absent in `summary` mode and outside the request pipeline. */
   portalKnowledgeSnapshot?: IPortalKnowledge;
 }
 
@@ -609,11 +606,9 @@ export class AgentRunner implements IAgentRunner {
     };
   }
 
-  /** Resolves declaration-time effort/thinking through EffortResolver, keyed on the
-   *  selected model's provider identity and the request's TaskComplexity signal, and
-   *  journals the outcome as agent.effort_resolved, joinable by traceId (Step 6 of
-   *  phase-197). The payload is built by buildAgentEffortResolvedPayload — the single
-   *  typed owner of the event's shape (GAP-4). */
+  /** Resolves declaration-time effort and thinking through EffortResolver, using the selected model's provider
+   *  and the request's TaskComplexity. Journals the result as agent.effort_resolved, joinable by traceId.
+   *  buildAgentEffortResolvedPayload owns the payload shape. */
   private journalEffortResolution(
     blueprint: IBlueprint,
     request: IParsedRequest,
@@ -783,10 +778,8 @@ export class AgentRunner implements IAgentRunner {
     });
   }
 
-  /**
-   * The skills whose complete rendered block survived final budget fitting, one item each. Null when
-   * no skill reached the prompt. A skill the budget dropped or truncated is not "included".
-   */
+  /** The skills whose complete rendered block survived budget fitting, one item each. Null when no skill reached the prompt.
+   *  A skill the budget dropped or truncated is not included. */
   private buildSkillUsagePlan(
     skillsContext: ISkillsContext | null,
     combinedPrompt: string,
@@ -814,11 +807,9 @@ export class AgentRunner implements IAgentRunner {
     return items.length === 0 ? null : { operation, items, round: 0 };
   }
 
-  /**
-   * The durable pin vector for every skill this run selected, ordered by confidence. A skill the budget
-   * dropped stays a pin with `content_included` false. Every pinned snapshot is made durable before the
-   * provider is called, so a failure stops the run. Undefined when skills are off.
-   */
+  /** The durable pin vector for every skill this run selected, ordered by confidence.
+   *  A skill the budget dropped stays a pin with `content_included` false. Pins are durable before the provider call.
+   *  A failure stops the run. Undefined when skills are off. */
   private async persistSkillPins(
     skillsContext: ISkillsContext | null,
     usage: ISkillUsagePlan | null,
@@ -844,11 +835,8 @@ export class AgentRunner implements IAgentRunner {
     return pins;
   }
 
-  /**
-   * Wraps one provider dispatch round. Each invocation, including every retry attempt, records the
-   * skill vector under a fresh call id before dispatching. A recording failure is kept so the run can
-   * rethrow it unchanged, and no further attempt reaches the provider.
-   */
+  /** Wraps one provider dispatch round. Each attempt records the skill vector under a fresh call id first.
+   *  A recording failure is rethrown unchanged and no further attempt reaches the provider. */
   private withSkillUsage(
     usage: ISkillUsagePlan | null,
     generate: () => Promise<IGenerateResult>,

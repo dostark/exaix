@@ -6,15 +6,8 @@ edition: "team"
 tags: ["react", "dynamic", "provider-live", "subsystem:mcp-client", "entity:read_file"]
 request_fixture: "fixtures/requests/dynamic_execution/find_and_summarize.md"
 mode_support: ["manual-checkpoint"]
-# Phase 142 Step 15 — `exactl flow run <flow> --request <file>` was invoked here and has never
-# existed; a flow runs when a request naming it in its `flow:` frontmatter is submitted, which the
-# fixture now does. The portal was a bare `mkdir -p /tmp/sample-ts-project`, outside the sandbox
-# and shared between runs; it is now the seeded git fixture, mounted by the runner. The
-# `flow_run_*.json` wait was removed: no code in the repository writes such a file, so that step
-# could only ever time out.
-#
-# Stays provider-live: the iteration count and distinct tool names it asserts require real tool
-# calls, and the mock provider makes none.
+# A flow runs when a request naming it in its `flow:` frontmatter is submitted. The portal is the seeded git fixture, mounted by the runner.
+# Stays provider-live: the iteration count and distinct tool names it asserts require real tool calls, and the mock provider makes none.
 portals:
   - alias: "sample-ts-project"
     source_path: "$WORKSPACE_ROOT/fixtures/portals/simple_repo"

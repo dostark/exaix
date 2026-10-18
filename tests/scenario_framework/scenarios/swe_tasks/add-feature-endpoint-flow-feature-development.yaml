@@ -118,11 +118,8 @@ steps:
         kind: "command-exit-code"
         equals: 0
         score_weight: 0.3
-  # assert-no-dynamic-tool-calls restored here (Phase 159 Step 8): Step 7 pinned all 6 steps of
-  # feature-development.flow.yaml to strategy: cli_delegate, which never emits dynamic_tool_call
-  # events (see Step 6's removal note, still in effect for the *other* flow scenarios that may
-  # still use react). This scenario's confound is resolved, so the criterion is a legitimate
-  # regression guard again — it catches a future silent fallback to ReAct.
+  # assert-no-dynamic-tool-calls is a regression guard here: all six steps of feature-development.flow.yaml are pinned to strategy: cli_delegate, which never emits dynamic_tool_call events.
+  # The criterion catches a future silent fallback to ReAct.
   - id: "assert-no-dynamic-tool-calls"
     type: "journal-assert"
     action_type: "dynamic_tool_call"

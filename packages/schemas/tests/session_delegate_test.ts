@@ -357,3 +357,14 @@ Deno.test("[cli_delegate] tool exposure defaults to unchanged behavior and valid
   assertEquals(CliDelegateConfigSchema.parse({ ...base, tool_exposure: "shell_only" }).tool_exposure, "shell_only");
   assertThrows(() => CliDelegateConfigSchema.parse({ ...base, tool_exposure: "unknown" }));
 });
+
+Deno.test("[session_delegate] CliDelegateConfigSchema accepts an optional provider block", () => {
+  const parsed = CliDelegateConfigSchema.parse({
+    enabled: true,
+    tool: "opencode",
+    model: "openrouter/deepseek/deepseek-v4.1-flash",
+    provider: { name: "openrouter", key_env: "OPENROUTER_API_KEY" },
+  });
+  assertEquals(parsed.provider, { name: "openrouter", key_env: "OPENROUTER_API_KEY" });
+  assertEquals(CliDelegateConfigSchema.parse({ enabled: true, tool: "opencode" }).provider, undefined);
+});

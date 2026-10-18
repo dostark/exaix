@@ -55,10 +55,7 @@ export function needsCapabilityEntry(options: Opt<IModelOptions, Reason.Optional
     options?.temperature !== undefined || options?.top_p !== undefined || options?.stop !== undefined;
 }
 
-/**
- * Drops each hint that the model's entry does not list.
- * An unlisted hint can remove every route when `require_parameters` is true.
- */
+/** Drops each hint that the model's entry does not list. An unlisted hint can remove every route when `require_parameters` is true. */
 export function dropUnlistedHints(
   body: IOpenRouterHintTarget,
   entry: Opt<IOpenRouterModelEntry, Reason.OptionalContext>,

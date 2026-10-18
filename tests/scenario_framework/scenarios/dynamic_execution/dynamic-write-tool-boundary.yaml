@@ -7,17 +7,9 @@ tags: ["security", "dynamic", "validation", "subsystem:mcp-client", "entity:writ
 request_fixture: "fixtures/requests/dynamic_execution/write_attempt.md"
 mode_support: ["auto"]
 portals: []
-# Sibling of `dynamic-permission-boundary`, and the reason it exists is a measurement.
-#
-# `validateDynamicStepTools` refuses a dynamic step's tool on two independent grounds: the tool is
-# a WRITE tool, or the tool is APPROVAL-REQUIRED. The sibling scenario's fixture grants
-# `exaix_create_request`, which is in BOTH sets — so the approval branch catches it whatever the
-# write branch does. Phase 142 Step 21 ran the mutation this pack declares (disabling the write
-# branch in `flow_loader.ts`) and the pack stayed green at 1.000: the write guard had no coverage
-# at all, and the pack's only evidence of sensitivity was measuring the other guard.
-#
-# This scenario grants `write_file` — a write tool that is not approval-required — so the write
-# branch is the only thing that can refuse it.
+# Sibling of `dynamic-permission-boundary`. `validateDynamicStepTools` refuses a tool on two grounds: it is a WRITE tool, or it is APPROVAL-REQUIRED.
+# The sibling's `exaix_create_request` is in both sets, so the approval branch catches it whatever the write branch does. This scenario grants `write_file`, which is write-only,
+# so the write branch in `flow_loader.ts` is the only thing that can refuse it.
 flow_fixture: "fixtures/flows/dynamic_execution/write_tool_dynamic.flow.yaml"
 steps:
   - id: "validate-flow"

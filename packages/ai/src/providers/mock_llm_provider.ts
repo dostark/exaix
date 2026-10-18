@@ -1068,12 +1068,8 @@ I see the drift instructions in the analysis phase.
           // 2. Execution Phase — AgentComposer defaults provider-backed plan steps to ReActLoopStrategy.
           const isReActPrompt = prompt.includes("AGENT ROLE: ") && prompt.includes("AVAILABLE TOOLS:");
           if (prompt.includes("## Execution Context (SYSTEM CONTROLLED)") || isReActPrompt) {
-            // Each step's prompt only carries that step's own content (context.request /
-            // context.plan = step.content), not the whole plan body — so a later step's
-            // title/content ("Corrected Refactor", "Verify the fix") never appears in an
-            // EARLIER amended step's own prompt. "(amended)" is the marker the amendment
-            // patch above actually writes into step 1's updated content, so it is what a
-            // resumed step 1 execution sees.
+            // Each step prompt carries only its own content, so a later title never reaches an earlier amended prompt.
+            // The (amended) marker lets a resumed step see its update.
             const isAmendedStep = prompt.includes("Corrected Refactor") || prompt.includes("Verify the fix") ||
               prompt.includes("(amended)");
 
@@ -1189,12 +1185,9 @@ I will analyze the request and provide a detailed architectural assessment.
       // Execution patterns (specific triggers) — must come BEFORE planning patterns
       // so that "Step N" prompts are caught before generic "implement" patterns
       {
-        // ReAct prompts carry NONE of the execution markers below — the template is
-        // `AGENT ROLE: ... CAPABILITIES: ... AVAILABLE TOOLS: ...` — so a check placed inside the
-        // execution response never ran for them. They fell through to a plan-shaped pattern,
-        // returning neither a toml action block nor STATUS: COMPLETE, which the loop reports as
-        // "Agent provided no actions and did not signal completion" and PlanExecutor converts
-        // into a tool_error amendment that halts the plan awaiting approval.
+        // ReAct prompts (`AGENT ROLE: ... CAPABILITIES: ... AVAILABLE TOOLS: ...`) carry none of the execution markers below.
+        // Without this check they fell through to a plan-shaped pattern that returns neither a toml action nor STATUS: COMPLETE.
+        // The loop then reports no actions, and PlanExecutor turns that into a tool_error amendment that halts the plan.
         pattern: /^AVAILABLE TOOLS:/m,
         response: REACT_COMPLETE_RESPONSE,
       },
@@ -1404,10 +1397,7 @@ I will create a plan to address this request.
 
 // Helper Functions
 
-/**
- * Create a MockLLMProvider with common plan generation responses.
- * Pattern-based mock for plan/bugfix/execution flows.
- */
+/** Creates a MockLLMProvider with common plan generation responses. A pattern-based mock for plan, bugfix and execution flows. */
 export function createPlanGeneratorMock(): MockLLMProvider {
   return new MockLLMProvider(MockStrategy.PATTERN, {
     patterns: [
@@ -1537,20 +1527,14 @@ ${
   });
 }
 
-/**
- * Create a MockLLMProvider that simulates API failures.
- * @param errorMessage Optional custom error message
- */
+/** Creates a MockLLMProvider that simulates API failures. `errorMessage` is optional. */
 export function createFailingMock(errorMessage?: Opt<string, Reason.OptionalInput>): MockLLMProvider {
   return new MockLLMProvider(MockStrategy.FAILING, {
     errorMessage: errorMessage ?? "Simulated API failure",
   });
 }
 
-/**
- * Create a MockLLMProvider that simulates slow responses.
- * @param delayMs Delay in milliseconds (default: 5000)
- */
+/** Creates a MockLLMProvider that simulates slow responses. `delayMs` defaults to 5000. */
 export function createSlowMock(delayMs: number = 5000): MockLLMProvider {
   return new MockLLMProvider(MockStrategy.SLOW, {
     delayMs,

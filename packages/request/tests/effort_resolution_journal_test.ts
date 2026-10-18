@@ -114,8 +114,7 @@ Deno.test("[integration] AgentRunner.run journals heuristic and native-adaptive 
   }
 });
 
-/** Compile-time link: the payload must satisfy IAgentEffortResolvedPayload (the shared
- *  builder's return type), proving both emitters produce the same typed shape (GAP-4). */
+/** Compile-time link: the payload must satisfy IAgentEffortResolvedPayload, the shared builder's return type, so both emitters produce the same shape. */
 function assertSatisfiesType(payload: Record<string, JSONValue>): IAgentEffortResolvedPayload {
   return payload as IAgentEffortResolvedPayload;
 }

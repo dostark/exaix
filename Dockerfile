@@ -33,26 +33,53 @@ COPY exaix-team/ exaix-team/
 
 # Vendor the daemon module graph into DENO_DIR. (The CLI `exactl` is not run inside
 # the daemon container; one of its commands imports from tests/, which is excluded.)
-RUN deno cache --config deno.json apps/daemon/main.ts
+# The module cache lives in a BuildKit cache mount, so a rebuild after a dependency
+# change reuses what was already downloaded. The copy bakes the modules into this layer.
+RUN --mount=type=cache,target=/cache/deno,sharing=locked \
+    DENO_DIR=/cache/deno deno cache --config deno.json apps/daemon/main.ts \
+    && cp -a /cache/deno/. /deno-dir/
 
 # @db/sqlite loads a native library that @denosaurs/plug downloads at RUNTIME from
 # GitHub. Warm it here so the .so is baked into DENO_DIR and the runtime container
 # can run with restricted network egress (no GitHub access needed at start).
-RUN printf 'import { Database } from "@db/sqlite";\nconst db = new Database(":memory:");\ndb.close();\n' > /tmp/warm_sqlite.ts \
-  && deno run --config deno.json --allow-ffi --allow-read --allow-write --allow-env --allow-net /tmp/warm_sqlite.ts \
-  && rm /tmp/warm_sqlite.ts
-
-# Install delegate CLI tools (Claude Code, OpenCode CLI) for headless agent
-# integration tests and dogfooding. The devcontainer (target "builder") needs
-# these on PATH so the @provider_live E2E test can run. OpenRouter does not
-# require a binary — it is configured via env vars only.
-RUN npm install -g node-gyp @anthropic-ai/claude-code \
-  && curl -fsSL https://opencode.ai/install | bash \
-  && rm -rf /root/.npm /root/.cache
+RUN --mount=type=cache,target=/cache/deno,sharing=locked \
+    printf 'import { Database } from "@db/sqlite";\nconst db = new Database(":memory:");\ndb.close();\n' > /tmp/warm_sqlite.ts \
+    && DENO_DIR=/cache/deno deno run --config deno.json --allow-ffi --allow-read --allow-write --allow-env --allow-net /tmp/warm_sqlite.ts \
+    && cp -a /cache/deno/. /deno-dir/ \
+    && rm /tmp/warm_sqlite.ts
 
 # ---------------------------------------------------------------------------
-# Stage 2 — runtime: non-root, minimal toolset, scoped permissions
+# Delegate CLIs: one stage per CLI, each installed into its own npm prefix at a pinned
+# version. A version bump rebuilds only that CLI's stage, and the npm download cache is a
+# BuildKit cache mount, so a rebuild reuses what was already downloaded.
 # ---------------------------------------------------------------------------
+# Claude Code comes from its official installer, pinned to a version. HOME points into the
+# stage's prefix, so the binary lands in /opt/cli/claude/.local/bin. pipefail makes a failed
+# download fail the build instead of installing nothing.
+FROM builder AS cli-claude
+RUN ["/bin/bash", "-o", "pipefail", "-c", "curl -fsSL https://claude.ai/install.sh | HOME=/opt/cli/claude bash -s 2.1.302"]
+
+FROM builder AS cli-opencode
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm install -g --prefix /opt/cli/opencode --fetch-timeout=60000 --fetch-retries=5 opencode-ai@1.19.3
+
+FROM builder AS cli-codex
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm install -g --prefix /opt/cli/codex --fetch-timeout=60000 --fetch-retries=5 @openai/codex@0.163.0
+
+# ---------------------------------------------------------------------------
+# Devcontainer: the builder toolchain plus the delegate CLIs from their own stages. The
+# test images build from `builder` and never copy these, so a CLI change cannot slow them.
+# OpenRouter does not require a binary — it is configured via env vars only.
+# ---------------------------------------------------------------------------
+FROM builder AS devcontainer
+COPY --from=cli-claude /opt/cli/claude /opt/cli/claude
+COPY --from=cli-opencode /opt/cli/opencode /opt/cli/opencode
+COPY --from=cli-codex /opt/cli/codex /opt/cli/codex
+ENV PATH="/opt/cli/claude/.local/bin:/opt/cli/opencode/bin:/opt/cli/codex/bin:${PATH}"
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm install -g node-gyp
+
 FROM denoland/deno:2.8.2 AS runtime
 
 # git is required by GitService and the run_command allowlist; ca-certificates for TLS.
@@ -104,19 +131,14 @@ FROM denoland/deno:2.8.2 AS eval-jail
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates curl nodejs npm build-essential python3 \
-  && npm install -g @anthropic-ai/claude-code \
-  && curl -fsSL https://opencode.ai/install | bash \
-  && rm -rf /var/lib/apt/lists/* /root/.npm /root/.cache
+  && rm -rf /var/lib/apt/lists/*
 
-# Make the delegate CLIs resolvable for any --user. npm -g puts claude in /usr/local/bin
-# (world-readable); the opencode install script drops the binary under the building user's
-# home — which is root-private (0700) — so COPY it (dereferenced) into /usr/local/bin rather
-# than symlinking, or a non-root delegate could not traverse the target.
-RUN set -eux; \
-    command -v claude; \
-    opencode_src="$(find /root /usr/local /usr/bin /home -name opencode -type f 2>/dev/null | head -n1 || true)"; \
-    if [ -n "$opencode_src" ]; then cp "$opencode_src" /usr/local/bin/opencode && chmod 755 /usr/local/bin/opencode; fi; \
-    command -v opencode && command -v claude
+# The delegate CLIs come from their pinned stages (cli-*), so the sandbox never runs an install
+# script. Each prefix is world-readable, so any --user can run them.
+COPY --from=cli-claude /opt/cli/claude /opt/cli/claude
+COPY --from=cli-opencode /opt/cli/opencode /opt/cli/opencode
+ENV PATH="/opt/cli/claude/.local/bin:/opt/cli/opencode/bin:${PATH}"
+RUN set -eux; command -v claude && command -v opencode
 
 # The runner passes `--user <host-uid>:<host-gid>` so the bind-mounted worktree (owned by the
 # host user) is writable; HOME=/tmp gives the delegate a writable cache. The image default user

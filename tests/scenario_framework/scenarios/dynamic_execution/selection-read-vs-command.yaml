@@ -3,29 +3,18 @@ id: "selection-read-vs-command"
 title: "Tool selection — read_file preferred over run_command (cat)"
 pack: "dynamic_execution"
 edition: "team"
-# Phase 142 Step 15 — moved to the provider-live tier. Every step below the plan wait asserts a
-# TOOL TRAJECTORY, and the mock provider makes no tool calls: `dynamic_tool_call` rows are 0 under
-# every configuration tried (before approval, after `plan approve-all`, with and without a
-# readiness barrier), so `trajectory-assert` correctly reports `matched 0/1 (score 0.00)` — the
-# scorer works and there is nothing to score. Which tool an agent reaches for is a judgement only
-# a real model makes, so the claim cannot be served by a canned-response tier at all. Keeping the
-# scenario in the mock profile would have meant either a permanent red or deleting the assertion
-# that is the scenario's entire point.
+# Provider-live tier. Every step below the plan wait asserts a tool trajectory, and the mock provider makes no tool calls: dynamic_tool_call rows stay 0 under every configuration.
+# So trajectory-assert reports matched 0/1 (score 0.00): the scorer works but has nothing to score. Which tool an agent picks is a real-model judgement, which a canned-response tier cannot serve.
 tags: ["selection", "read-vs-command", "trajectory", "subsystem:mcp-client", "entity:read_file", "provider-live"]
 request_fixture: "fixtures/requests/dynamic_execution/explore_codebase.md"
 mode_support: ["auto"]
 portals: []
-# Phase 142 Step 7 — declares the flow its request fixture names. Step 15 added
-# `flow: "explore-codebase"` to `explore_codebase.md`, and this scenario shared that fixture
-# without declaring `flow_fixture`, so the flow was only ever staged when
-# `dynamic-exploration-smoke` happened to run first in the same sandbox. Run alone — as the
-# nightly live tier does — it failed with "Flow 'explore-codebase' not found".
+# Declares the flow its request fixture names (`flow: "explore-codebase"` in `explore_codebase.md`). Without flow_fixture, the flow is staged only when `dynamic-exploration-smoke` runs first in the same sandbox.
+# Run alone, as the nightly live tier does, it fails with "Flow 'explore-codebase' not found".
 flow_fixture: "fixtures/flows/dynamic_execution/explore.flow.yaml"
 steps:
-  # The daemon migrates only the Config DB at boot; the journal schema is
-  # scripts/setup_db.ts's job (see the scenario template's setup-db step). Without this,
-  # `.exa/journal.db` has no `activity` table, every daemon activity write fails silently
-  # into daemon.log, and no plan is ever produced — the request just sits in Requests/.
+  # The daemon migrates only the Config DB at boot. The journal schema is scripts/setup_db.ts's job.
+  # Without it, `.exa/journal.db` has no `activity` table, daemon activity writes fail silently into daemon.log, and no plan is produced.
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"

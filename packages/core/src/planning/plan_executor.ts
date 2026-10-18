@@ -96,11 +96,10 @@ export interface IPlanExecutorOptions {
   guardrailRunner?: IGuardrailRunner;
   /** Request-level IModelIntent fields that override blueprint values. */
   requestIntent?: Partial<IModelIntent>;
-  /** The request's declaration-time effort/thinking pair, threaded from the plan frontmatter
-   *  passthrough (GAP-3) so the execution path resolves "auto" after provider selection. */
+  /** The request's declaration-time effort and thinking pair, passed from the plan frontmatter passthrough.
+   *  The execution path resolves "auto" after provider selection. */
   requestDeclaration?: IEffortDeclarationPair;
-  /** The EffortResolver instance forwarded into AgentComposer so the execution path uses
-   *  the same injected instance as the planning path (GAP-9); defaults inside AgentComposer. */
+  /** The EffortResolver forwarded into AgentComposer, so execution uses the same instance as planning. AgentComposer defaults it. */
   effortResolver?: IEffortResolver;
   /** Resolver threaded into AgentComposer so resolveModelFromBlueprint's
    *  ModelResolver.resolve() branch is reachable during real execution — without it,
@@ -399,11 +398,8 @@ export class PlanExecutor {
     });
   }
 
-  /**
-   * Resolves the plan's pinned skills once. Undefined means the plan has no vector, so live matching stays.
-   * An empty vector freezes no skills. A malformed vector or an unresolvable pin fails here.
-   * Nothing has started by then, so no git work or strategy call follows.
-   */
+  /** Resolves the plan's pinned skills once. Undefined means no vector, so live matching stays. An empty vector freezes no skills.
+   *  A malformed vector or an unresolvable pin fails here, before any git work or strategy call. */
   private async resolvePlanSkills(
     context: IPlanContext,
   ): Promise<Opt<IPlanSkillSnapshot, Reason.OptionalContext>> {

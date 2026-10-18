@@ -586,7 +586,7 @@ Deno.test("[plan-to-requests][plan-context][regression] without --plan-context-r
   }
 });
 
-// Phase 173 Step 5 remediation - admission contract (GAP-1)
+// Admission contract of the generated request.
 
 const REPO_ROOT_ADM = join(import.meta.dirname!, "..", "..");
 const FM_SLICE_RE = /^---\s*\n([\s\S]*?)\n---\s*\n?/;
@@ -606,9 +606,8 @@ interface IStatusManagerStub {
   updateStatus(): Promise<void>;
 }
 
-/** Drives the REAL RequestProcessor.getRequestKindOrFail branch logic via prototype
- *  binding with only the failure-path collaborator stubbed — the consumer-contract
- *  oracle whose absence let GAP-1 hide behind writer-side schema greens. */
+/** Drives the real RequestProcessor.getRequestKindOrFail branch logic through prototype binding, with only the failure-path collaborator stubbed.
+ *  It is the consumer-contract oracle, so writer-side schema greens cannot hide a rejection. */
 async function admissionKindOf(frontmatter: JSONObject): Promise<RequestKind | null> {
   const proc = Object.create(RequestProcessor.prototype) as {
     statusManager: IStatusManagerStub;
@@ -689,7 +688,7 @@ Deno.test("[regression][admission] strict RequestSchema accepts canonical genera
   }
 });
 
-// Phase 174 Step 2 — plan_context_ref frontmatter provenance
+// plan_context_ref frontmatter provenance.
 
 Deno.test("[plan-to-requests][plan-context] frontmatter carries plan_context_ref only when a copy occurred", async () => {
   const wt = await makeFakeWorktree({ withGit: true });

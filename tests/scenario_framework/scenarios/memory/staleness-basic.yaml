@@ -1,13 +1,6 @@
 schema_version: "1.0.0"
-# Phase 148 Step 6: staleness (current-over-retired retrieval preference) is Step 3's
-# consolidation-quality metric, but it also directly measures the knowledge-updates
-# ability's real behavior — so this scenario carries BOTH tags: ability:knowledge-updates
-# (contributes to that ability's row in the per-ability table alongside
-# knowledge-updates-basic.yaml's plain recall check) and metric:staleness (for clarity in
-# the Consolidation & Learning-Effectiveness table's grouping). run_memory_staleness_check.ts
-# performs a genuine supersede (real MemoryBankService.supersedeLearning) then queries
-# through the real retrieval surface, scoring the result with Step 3's
-# computeStalenessCorrect — the production call site the Reachability Ledger required.
+# Staleness (current-over-retired retrieval preference) is a consolidation-quality metric that also measures the knowledge-updates ability, so this scenario carries both tags: ability:knowledge-updates and metric:staleness.
+# run_memory_staleness_check.ts performs a real supersede (MemoryBankService.supersedeLearning), queries the real retrieval surface, and scores the result with computeStalenessCorrect.
 id: "memory-staleness-basic"
 title: "Memory evaluation — staleness: retrieval prefers the current fact over the retired one"
 pack: "memory"

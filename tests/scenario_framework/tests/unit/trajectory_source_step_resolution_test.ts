@@ -53,6 +53,28 @@ Deno.test("[TrajectorySourceStepResolution] fills rowid_start/end from the named
   assertEquals(resolved.source_step_rowid_end, 12);
 });
 
+Deno.test("[TrajectorySourceStepResolution] an asynchronous trajectory spans submission through the completion barrier", () => {
+  const windows = new Map([
+    ["submit-request", { start: 5, end: 8 }],
+    ["await-flow", { start: 9, end: 20 }],
+  ]);
+  const step = { ...trajectoryAssertStep("submit-request"), through_step: "await-flow" };
+  const resolved = resolveTrajectorySourceStep(step, windows);
+  assertEquals(resolved.source_step_rowid_start, 5);
+  assertEquals(resolved.source_step_rowid_end, 20);
+});
+
+for (const completion of [undefined, { start: 1, end: 4 }]) {
+  Deno.test(`[TrajectorySourceStepResolution] an unavailable or earlier completion barrier cannot widen capture: ${completion?.end}`, () => {
+    const windows = new Map([["submit-request", { start: 5, end: 8 }]]);
+    if (completion) windows.set("await-flow", completion);
+    const step = { ...trajectoryAssertStep("submit-request"), through_step: "await-flow" };
+    const resolved = resolveTrajectorySourceStep(step, windows);
+    assertEquals(resolved.source_step_rowid_start, undefined);
+    assertEquals(resolved.source_step_rowid_end, undefined);
+  });
+}
+
 Deno.test("[TrajectorySourceStepResolution] non-trajectory-assert steps are returned unchanged", () => {
   const windows = new Map([["run-tool-calls", { start: 5, end: 12 }]]);
   const step = shellStep("run-tool-calls");

@@ -11,14 +11,12 @@
  */
 
 import { dirname, join } from "@std/path";
-import { BRIEF_FILE, TOOL_CLAUDE_CODE, TOOL_CODEX } from "./constants.ts";
+import { BRIEF_FILE, TOOL_CLAUDE_CODE, TOOL_CODEX, TOOL_OPENCODE } from "./constants.ts";
+import { resolveDelegateProviderEnv } from "./delegate_provider_env.ts";
 import {
   MINIMUM_VERSION_CLAUDE_CODE,
   MINIMUM_VERSION_CODEX,
   MINIMUM_VERSION_OPENCODE,
-  PROVIDER_ANTHROPIC,
-  PROVIDER_OLLAMA,
-  PROVIDER_OPENROUTER,
   SESSION_DEFAULT_DEADLINE_HOURS,
   SESSION_FLAG_SANDBOX,
   TIME_MS_PER_HOUR,
@@ -68,7 +66,6 @@ export interface ISessionDelegateServiceDeps {
 }
 
 const RESUME_TOKEN_ENTROPY_BYTES = 32; // 256-bit suffix (GAP-2)
-const TOOL_OPENCODE = "opencode";
 
 /** System wall-clock implementation of the clock seam. */
 export const systemClock: ISessionClock = { now: () => new Date() };
@@ -264,32 +261,6 @@ export class SessionDelegateService implements ISessionDelegateService {
     tool: SessionTool,
     providerApiKey: string,
   ): Record<string, string> {
-    if (!config.provider) return {};
-
-    const { name, base_url } = config.provider;
-
-    if (name === PROVIDER_OPENROUTER) {
-      if (tool === TOOL_OPENCODE) {
-        return { OPENROUTER_API_KEY: providerApiKey };
-      }
-      if (tool === TOOL_CLAUDE_CODE) {
-        return {
-          ANTHROPIC_BASE_URL: base_url ?? "https://openrouter.ai/api",
-          ANTHROPIC_AUTH_TOKEN: providerApiKey,
-          ANTHROPIC_API_KEY: "",
-        };
-      }
-      return {};
-    }
-
-    if (name === PROVIDER_ANTHROPIC) {
-      return { ANTHROPIC_API_KEY: providerApiKey };
-    }
-
-    if (name === PROVIDER_OLLAMA) {
-      return {};
-    }
-
-    return {};
+    return config.provider ? resolveDelegateProviderEnv(config.provider, tool, providerApiKey) : {};
   }
 }

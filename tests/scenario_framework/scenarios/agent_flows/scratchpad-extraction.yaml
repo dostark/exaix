@@ -1,9 +1,6 @@
 schema_version: "1.0.0"
-# Asserts the Step 10 loop end to end: a real Solo ReAct loop calls remember_fact through a
-# real, context-wired ToolRegistry (the tool result must reach the agent's next turn, mirroring
-# the run_solo_relationship_agent.ts precedent from phase-175), the entry lands in the trace's
-# scratchpad.jsonl, and scratchpad-informed extraction files the insight through the normal
-# Pending -> approval pipeline — never directly into global memory (the GAP-3 constraint).
+# Asserts the loop end to end: a real Solo ReAct loop calls remember_fact through a context-wired ToolRegistry (the result must reach the agent's next turn),
+# the entry lands in the trace's scratchpad.jsonl, and scratchpad-informed extraction files the insight through the Pending approval pipeline, never directly into global memory.
 id: "scratchpad-extraction"
 title: "Agent flow — remember_fact capture reaches Pending via scratchpad-informed extraction"
 pack: "agent_flows"

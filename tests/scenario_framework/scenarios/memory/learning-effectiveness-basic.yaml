@@ -1,14 +1,7 @@
 schema_version: "1.0.0"
-# Phase 148 Step 6: learning-effectiveness (Step 4's self-improvement headline metric) is
-# a cross-cutting signal with no ability: slot, so it's tagged metric:learning-effectiveness
-# instead. run_learning_effectiveness.ts already has its own CLI entry point (built in
-# Step 4): cold workspace queries task B directly (nothing seeded, so recall is always 0);
-# warm workspace runs task A's lesson through the real MemoryExtractorService +
-# HeuristicExtractionStrategy + MemoryAutoApprovalService pipeline, then queries task B.
-# This is the LLM-free, deterministic (ci-core-tier) leg — the live claude-cli leg is
-# covered separately by learning_effectiveness_live_test.ts, not this scenario. This
-# scenario is the production call site the Reachability Ledger required for
-# runLearningEffectiveness (Step 4).
+# Learning effectiveness has no ability: slot, so this scenario is tagged metric:learning-effectiveness. run_learning_effectiveness.ts runs a cold workspace (nothing seeded, so recall is 0) and a warm workspace.
+# The warm one runs task A's lesson through MemoryExtractorService, HeuristicExtractionStrategy and MemoryAutoApprovalService, then queries task B.
+# This is the deterministic ci-core-tier leg with no LLM. learning_effectiveness_live_test.ts covers the live claude-cli leg.
 id: "memory-learning-effectiveness-basic"
 title: "Memory evaluation — learning-effectiveness: warm minus cold recall (heuristic extraction)"
 pack: "memory"

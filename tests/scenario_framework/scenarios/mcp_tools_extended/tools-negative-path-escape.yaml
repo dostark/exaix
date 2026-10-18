@@ -67,10 +67,8 @@ steps:
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
-      # An absolute path is rejected earlier than a `../` path — by JSON-RPC argument
-      # validation (code -32602 "Access denied: Invalid path") rather than by the
-      # handler's own traversal guard, so the refusal shape differs from the read case
-      # above. Both are refusals; the assertion matches the layer that actually rejects.
+      # An absolute path is rejected earlier than a `../` path: JSON-RPC argument validation refuses it (code -32602 "Access denied: Invalid path"),
+      # not the handler's own traversal guard. Both are refusals, and the assertion matches the layer that rejects.
       - id: "write-traversal-blocked"
         kind: "command-output-contains"
         contains: ["Access denied: Invalid path", "\"success\": false"]

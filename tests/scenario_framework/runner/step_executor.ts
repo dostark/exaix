@@ -88,10 +88,9 @@ const FILE_STABILITY_WINDOW_MS = 300;
 /** The cwd token that resolves to the scenario's newest execution worktree. */
 export const CWD_WORKTREE_TOKEN = "$WORKTREE";
 
-/** Substitute runtime-only variables into a command spec: `$TRACE_ID` → the current request's
- *  full trace, `$REQUEST_ID` → `request-<trace[0:8]>` (the review/plan approve key), and
- *  `$JOURNAL_BASELINE` / `$STEP_BASELINE` → the scenario / per-step barrier rowid floors.
- *  Resolved at step-execution time (the trace does not exist at scenario load). */
+/** Substitutes runtime-only variables into a command spec: `$TRACE_ID` is the request's full trace.
+ *  It sets `$REQUEST_ID` to `request-<trace[0:8]>`. The `$JOURNAL_BASELINE` and `$STEP_BASELINE` variables are the scenario and per-step barrier rowid floors.
+ *  They resolve at step execution, because the trace does not exist at scenario load. */
 export function substituteRuntimeVars(
   spec: ICommandSpec,
   workspaceRoot: string,
@@ -100,12 +99,9 @@ export function substituteRuntimeVars(
 ): ICommandSpec {
   const traceId = resolveCurrentTrace(workspaceRoot, baselineRowid);
   const vars: Record<string, string> = {
-    // $TRACE_ID/$REQUEST_ID resolve from the SCENARIO baseline (a per-step barrier baseline
-    // rises above the request as execution progresses, so it would resolve to nothing);
-    // $JOURNAL_BASELINE likewise stays scenario-wide for backward compatibility. The per-step
-    // barrier baseline is exposed separately as $STEP_BASELINE so a leg can scope its
-    // `daemon.ready`/event waits to exactly the events a boot it just performed produced
-    // (GAP-8) without changing existing scenarios' semantics.
+    // $TRACE_ID and $REQUEST_ID resolve from the scenario baseline.
+    // A per-step baseline rises as execution progresses, so it would miss the request.
+    // The $JOURNAL_BASELINE stays scenario-wide. The $STEP_BASELINE scopes daemon.ready and event waits to one boot.
     JOURNAL_BASELINE: String(baselineRowid ?? 0),
     STEP_BASELINE: String(stepBaselineRowid ?? baselineRowid ?? 0),
     WORKSPACE_ROOT: workspaceRoot,
@@ -232,7 +228,6 @@ export async function executeScenarioStep(
     };
 
     const results = scoreTrajectory(trajectoryObserved, trajectoryExpected);
-    const allPassed = results.every((r) => r.status === "passed");
     const stdout = results.map((r) => r.message).join("\n");
 
     const completedAtEpochMs = monotonicNowMs();
@@ -244,7 +239,7 @@ export async function executeScenarioStep(
       startedAt,
       completedAt,
       durationMs: completedAtEpochMs - startedAtEpochMs,
-      exitCode: allPassed ? 0 : 1,
+      exitCode: capture.error ? 1 : 0,
       stdout,
       stderr: "",
       combinedOutput: stdout,

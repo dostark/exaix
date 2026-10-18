@@ -35,35 +35,26 @@ export interface ISkillsService {
    */
   forContext(ctx: ISkillOperationContext): ISkillsService;
 
-  /**
-   * The generation of the validated config the next operation resolves against. Stamp it into an
-   * operation context so a reload cannot change the roots mid-operation. `static` without a config source.
-   */
+  /** The generation of the validated config that the next operation resolves against.
+   *  Stamp it into an operation context so a reload cannot change the roots mid-operation. `static` without a config source. */
   currentConfigGeneration(): string;
 
-  /**
-   * Durably snapshot the canonical content of revisions this service returned. Throws
-   * `skill_audit_unavailable` when a snapshot cannot be made durable, so no model call follows.
-   */
+  /** Durably snapshots the canonical content of revisions this service returned.
+   *  Throws `skill_audit_unavailable` when a snapshot cannot be made durable, so no model call follows. */
   ensureRevisions(
     revisionIds: readonly string[],
     ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
   ): Promise<void>;
 
-  /**
-   * Join each pin to the immutable snapshot it names. Never reads live files. Throws
-   * `skill_unavailable` for a malformed vector, a name/digest mismatch, an unknown or corrupt
-   * revision or a foreign portal.
-   */
+  /** Joins each pin to the immutable snapshot it names. Never reads live files.
+   *  Throws `skill_unavailable` for a malformed vector, a name or digest mismatch, an unknown or corrupt revision, or a foreign portal. */
   resolvePinned(
     pins: readonly ISkillPin[],
     ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
   ): Promise<IPinnedSkill[]>;
 
-  /**
-   * One stored revision with its canonical snapshot, or null when it was never recorded. Historical
-   * content only: this never grants injection authority. Throws `skill_unavailable` for a corrupt row.
-   */
+  /** One stored revision with its canonical snapshot, or null when never recorded. Historical content only, never injection authority.
+   *  Throws `skill_unavailable` for a corrupt row. */
   getRevision(
     revisionId: string,
     ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
@@ -77,10 +68,8 @@ export interface ISkillsService {
     ctx?: Opt<ISkillOperationContext, Reason.OptionalContext>,
   ): Promise<ISkillRevisionRecord[]>;
 
-  /**
-   * Record one observable model submission: its revision snapshots first, then one usage row per
-   * skill in a single statement. Throws `skill_audit_unavailable` on any failure.
-   */
+  /** Records one observable model submission: its revision snapshots first, then one usage row per skill in one statement.
+   *  Throws `skill_audit_unavailable` on any failure. */
   recordSubmission(submission: ISkillSubmission, ctx: ISkillOperationContext): Promise<void>;
 
   /**

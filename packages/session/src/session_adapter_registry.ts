@@ -29,6 +29,7 @@ import {
   SESSION_FLAG_OUTPUT_FORMAT,
   SESSION_FLAG_PRINT,
   SESSION_FLAG_SANDBOX,
+  SESSION_FLAG_STANDALONE,
   SESSION_OUTPUT_FORMAT_JSON,
   SESSION_SANDBOX_READ_ONLY,
   SESSION_SUBCMD_EXEC,
@@ -109,17 +110,16 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
       }
       // opencode run supports --format json, not --output-format. prepareBrief requires
       // provider:model (colon) but opencode --model uses provider/model (slash); convert here.
-      // --dir resolves relative paths against the worktree, not the portal's git root.
+      // opencode 2.x rejects `--dir`; the launch cwd is already the worktree.
       const opencodeWorkDir = brief.worktree_path ?? dirname(briefPath);
       const opencodeModelFlag = brief.model ? [SESSION_FLAG_MODEL, brief.model.replace(":", "/")] : [];
-      const opencodeDirFlag = ["--dir", opencodeWorkDir];
       return {
         command: this.bin,
         args: [
           SESSION_SUBCMD_RUN,
+          SESSION_FLAG_STANDALONE,
           SESSION_FLAG_FORMAT,
           SESSION_OUTPUT_FORMAT_JSON,
-          ...opencodeDirFlag,
           ...opencodeModelFlag,
           brief.objective,
         ],

@@ -14,6 +14,7 @@ export * from "./src/i_git_service.ts";
 // The shared git contract lives in @exaix/core/types, so re-export it for the package surface.
 export type { IBranchOptions, ICommitOptions, IGitCommandOptions, IGitService, IWorktreeInfo } from "@exaix/core/types";
 export * from "./src/git_service.ts";
+export * from "./src/git_queries.ts";
 
 // These defaults live in @exaix/core, the lower layer.
 export { DEFAULT_GIT_ALLOWED_PREFIXES, GIT_TIMEOUT_MS_MAX, GIT_TIMEOUT_MS_MIN } from "@exaix/core";

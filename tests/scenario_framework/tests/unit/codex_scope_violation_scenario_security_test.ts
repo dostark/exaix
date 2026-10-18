@@ -66,10 +66,8 @@ Deno.test("[codex_scope_violation_live][security] asserts NO review approval/mer
 });
 
 Deno.test("[codex_scope_violation_live][security] a wait-for-reconcile journal barrier precedes every trace-scoped assertion (GAP-29 race guard)", async () => {
-  // wait-for-delegate-return polls the FILESYSTEM.
-  // The reconciler commits `session.delegate.reconciled` asynchronously, so asserting right
-  // after the FS poll intermittently ran before the row existed.
-  // This guard pins the journal --wait barrier.
+  // wait-for-delegate-return polls the filesystem, but the reconciler commits `session.delegate.reconciled` asynchronously.
+  // Asserting right after the poll sometimes ran before the row existed. This guard pins the journal --wait barrier.
   const scenario = await parseScenario();
   const steps = scenario.steps;
   const resolveIdx = steps.findIndex((s) => s.id === "wait-for-reconcile");

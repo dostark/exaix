@@ -1,0 +1,61 @@
+schema_version: "1.0.0"
+id: skill-effectiveness-typescript-patterns
+title: "Plan a typed parse result"
+pack: skill_eval
+tags: [provider-live, "subsystem:skills", "entity:typescript-patterns", nightly-quality]
+request_fixture: fixtures/requests/skill_eval/effectiveness-typescript-patterns.md
+mode_support: [auto]
+portals: []
+bindings:
+  judge:
+    service: claude-cli
+    model: claude-cli/claude-haiku-4-5
+matrix:
+  cells:
+    - tool: live
+      provider: openai-chat
+      config: configs/subsystem-live.toml
+      requires_bin: "true"
+      requires_key: DEEPSEEK_API_KEY
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+  - id: submit-request
+    type: exactl
+    command: request
+    args: ["--agent-role", "senior-coder", "--plan-only", "--file", "$REQUEST_FIXTURE"]
+  - id: verify-pinned-skill
+    type: exactl
+    command: journal
+    args: [wait, --event, skills.resolved, --since-rowid, "$JOURNAL_BASELINE", --timeout, "60"]
+    timeout_sec: 65
+    output_criteria:
+      - id: skill-injected
+        kind: journal-event-exists
+        event_type: skills.resolved
+        payload_includes:
+          pinned_skill_ids: [typescript-patterns]
+  - id: await-plan
+    type: wait-for-file
+    args: ["Workspace/Plans/*_plan.md"]
+    timeout_sec: 180
+    output_criteria:
+      - id: plan-produced
+        kind: file-found
+        path_pattern: "Workspace/Plans/*_plan.md"
+  - id: judge-effectiveness
+    type: file-contains
+    file_pattern: "Workspace/Plans/*_plan.md"
+    step_pass_threshold: 0.7
+    output_criteria:
+      - id: skill-effectiveness
+        kind: llm-judge
+        rubric: "Check a discriminated union with explicit payload types, safe narrowing, no any or unsafe casts, clear errors and tests for both branches. Score zero if the proposed public result remains any."
+        context_path: "$REQUEST_FIXTURE"
+        score_threshold: 0.7
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

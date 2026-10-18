@@ -157,9 +157,7 @@ Deno.test("parser rejects a folder-name mismatch", async () => {
   await assertRejects(() => parseSkillSnapshot(snapshot(), blueprintContext({ name: "other" })));
 });
 
-// ---------------------------------------------------------------------------
-// Phase 206 Step 2 — durable SkillRevisionStore over a real journal DB.
-// ---------------------------------------------------------------------------
+// Durable SkillRevisionStore over a real journal DB.
 
 const OP_CONTEXT: ISkillOperationContext = {
   portal: null,

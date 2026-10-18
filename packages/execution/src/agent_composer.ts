@@ -103,6 +103,7 @@ import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import { ExecutionContextService } from "./execution_context_service.ts";
 import { BlueprintService } from "./blueprint_service.ts";
 import { PromptBuilder } from "./prompt_builder.ts";
+import { readDelegateProviderEnv } from "@exaix/session/delegate_provider_env.ts";
 import { createPinnedSkillPrompt, type IPinnedSkillPrompt } from "./skill_pin_transport.ts";
 import { resolveEffectiveSkillTools } from "./skill_tools_derivation.ts";
 import { GitAuditService } from "./git_audit_service.ts";
@@ -137,9 +138,8 @@ export interface IAgentComposerOptions {
   guardrailRunner?: IGuardrailRunner;
   /** Request-level IModelIntent fields override blueprint values. */
   requestIntent?: Partial<IModelIntent>;
-  /** The request's declaration-time effort/thinking pair ("auto" allowed), threaded by
-   *  PlanExecutor from the plan frontmatter so the execution path resolves it AFTER
-   *  provider selection (GAP-3). */
+  /** The request's declaration-time effort and thinking pair ("auto" allowed), passed by PlanExecutor.
+   *  The execution path resolves it after provider selection. */
   requestDeclaration?: IEffortDeclarationPair;
   /** The caller's highest-confidence skill match's triggers.task_types, in priority order
    *  (first = most confident). AgentComposer has no SkillsService dependency; a caller
@@ -187,13 +187,10 @@ export interface IAgentComposerDeps {
   /** Agent-role blueprint IDs trusted to activate contextPort, passed through to
    *  CliDelegateStrategy. Mandatory whenever contextPort is set. */
   trustedAgentRoles?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
-  /** The EffortResolver instance used for execution-path resolution; defaults to a fresh
-   *  EffortResolver (IAgentComposerDeps mirror of options.effortResolver, GAP-9). */
+  /** The EffortResolver for execution-path resolution. Defaults to a fresh EffortResolver. */
   effortResolver?: IEffortResolver;
-  /** Bind a strategy cli_delegate step to a concrete session tool and model.
-   *  This requires a cli-delegate catalog service.
-   *  buildCliDelegateStrategy prefers it over the config block.
-   *  The binding stays active even when the config flag is disabled. */
+  /** Binds a strategy cli_delegate step to a session tool and model from a cli-delegate catalog service.
+   *  The `buildCliDelegateStrategy` call prefers this binding over the config block. It does so even when the config flag is off. */
   cliDelegateBinding?: { tool: SessionTool; model: string };
   /** Test-only escape hatch, a fake subprocess runner for the cli-delegate strategy.
    *  It stops a bound delegate test from spawning a real tool.
@@ -245,8 +242,7 @@ export class AgentComposer {
   private _guardrailRunner?: IGuardrailRunner;
   private readonly options?: IAgentComposerOptions;
   private modelResolver?: ModelResolver;
-  /** Resolver for execution-path effort/thinking resolution — injected once (GAP-9), so
-   *  IEffortResolverOptions overrides and test substitutes reach this path too. */
+  /** Resolver for execution-path effort and thinking. Injected once so overrides and test substitutes reach this path. */
   private readonly effortResolver: IEffortResolver;
   private blueprintService: BlueprintService;
   private promptBuilder: PromptBuilder;
@@ -355,11 +351,9 @@ export class AgentComposer {
     }
   }
 
-  /** Builds CliDelegateStrategy from the [cli_delegate] config block.
-   *  A bound cli-delegate service's tool and model beat the config block.
-   *  They keep the strategy active even when `[cli_delegate].enabled` is false.
-   *  The binary mapping handles claude-code, opencode and codex. Any other tool fails preflight.
-   *  Prefers the ToolRegistry's resolved baseDir over the portal's static config path. */
+  /** Builds CliDelegateStrategy from the [cli_delegate] config block. A bound cli-delegate service beats the block,
+   *  even when `[cli_delegate].enabled` is false. Only claude-code, opencode and codex have a binary.
+   *  The ToolRegistry's baseDir beats the portal's static config path. */
   private buildCliDelegateStrategy(
     cliDelegateConfig?: Opt<NonNullable<Config["cli_delegate"]>, Reason.OptionalDependency>,
     cliDelegateBinding?: Opt<{ tool: SessionTool; model: string }, Reason.OptionalDependency>,
@@ -373,11 +367,15 @@ export class AgentComposer {
     if (!bin) {
       throw new Error(`Unsupported cli-delegate tool: ${tool}`);
     }
+    const providerEnv = cliDelegateConfig?.provider
+      ? readDelegateProviderEnv(cliDelegateConfig.provider, tool, (name) => Deno.env.get(name))
+      : undefined;
     return new CliDelegateStrategy({
       tool,
       bin,
       model: cliDelegateBinding?.model ?? cliDelegateConfig?.model,
       effort: cliDelegateConfig?.effort,
+      providerEnv,
       resolvePortalPath: (portalAlias) =>
         this._toolRegistry?.getBaseDir() ?? this.getPortalConfig(portalAlias)?.target_path,
       contextPort: this.contextPort,
@@ -543,9 +541,8 @@ export class AgentComposer {
     return result.blueprint;
   }
 
-  /** Resolves the execution call's declaration-time effort/thinking (GAP-3): request
-   *  declaration wins over the blueprint's; TaskComplexity comes from the persisted
-   *  request_analysis (the plan path may differ — Step 2's documented divergence). */
+  /** Resolves the execution call's declaration-time effort and thinking. The request declaration wins over the blueprint's.
+   *  TaskComplexity comes from the persisted request_analysis. */
   private async resolveStepEffort(
     blueprint: IAgentFileBlueprint,
     options: IAgentExecutionOptions,
@@ -575,9 +572,8 @@ export class AgentComposer {
     );
   }
 
-  /** Journals the execution path's effort resolution as agent.effort_resolved, joinable by
-   *  the plan's traceId (Step 6). The payload is built by buildAgentEffortResolvedPayload —
-   *  the single typed owner of the event's shape (GAP-4). */
+  /** Journals the execution path's effort resolution as agent.effort_resolved, joinable by the plan's traceId.
+   *  buildAgentEffortResolvedPayload owns the payload shape. */
   private journalStepEffortResolution(
     resolution: IEffortResolution,
     blueprint: IAgentFileBlueprint,
@@ -614,10 +610,8 @@ export class AgentComposer {
     );
   }
 
-  /** Rebuilds _resolvedCallOptions from the resolution: the final thinking/effort replace
-   *  the ModelResolver-derived values, and max_tokens is EFFORT_MAX_TOKENS[effort] only
-   *  when the governing declaration was concrete (GAP-8) — auto-resolved effort never sets
-   *  max_tokens. */
+  /** Rebuilds _resolvedCallOptions from the resolution. The final thinking and effort replace the ModelResolver values.
+   *  max_tokens is EFFORT_MAX_TOKENS[effort] only when the governing declaration was concrete. */
   private applyEffortResolution(resolution: IEffortResolution, projection: IProjectedCallOptions): void {
     this._resolvedCallOptions = this._resolvedCallOptions ?? {};
     delete this._resolvedCallOptions.thinking;
@@ -638,11 +632,9 @@ export class AgentComposer {
   public static sanitizePrompt(prompt: string): string {
     return BlueprintService.sanitizePrompt(prompt);
   }
-  /** Bridges blueprint-level permitted_tools/allowed_paths onto per-call options. Then narrows
-   *  permitted_tools to matched skills' tools intersected with the agent role's own allowlist.
-   *  A skill can only narrow, never grant a tool the role doesn't allow. Both sides are
-   *  canonicalized here, before the pure intersection, so a role listing `grep_search` still
-   *  matches a skill declaring `grep`. */
+  /** Bridges blueprint permitted_tools and allowed_paths onto per-call options.
+   *  It narrows permitted_tools to the matched skills' tools that the agent role also allows. A skill can narrow, never grant.
+   *  Both sides are canonicalized first. A role listing `grep_search` still matches a skill declaring `grep`. */
   private applyBlueprintToolScope(
     blueprint: IAgentFileBlueprint,
     options: IAgentExecutionOptions,
@@ -664,10 +656,8 @@ export class AgentComposer {
     }
   }
 
-  /**
-   * Renders the plan's pinned skills from their stored snapshots. Absent pins keep live behavior and
-   * return null. Pins that cannot resolve fail the step before any strategy runs.
-   */
+  /** Renders the plan's pinned skills from their stored snapshots. Absent pins keep live behavior.
+   *  A pin that cannot resolve fails the step before any strategy runs. */
   private async resolvePinnedSkillPrompt(
     context: IExecutionContext,
     options: IAgentExecutionOptions,

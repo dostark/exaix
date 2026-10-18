@@ -84,8 +84,8 @@ export interface IModelBindingServiceDeps {
   modelRegistry?: Pick<IModelRegistry, "getModelPricing">;
   /** Finite daily cost cap enabling the unknown-pricing guard. */
   maxCostPerDay?: number;
-  /** The start-time network grant covering every catalog host (Step 7). An endpoint host
-   *  outside it when allow_net is unset yields needs_restart during validation. */
+  /** The start-time network grant that covers every catalog host.
+   *  An endpoint host outside it, with allow_net unset, yields needs_restart during validation. */
   startNetGrant?: readonly string[];
 }
 
@@ -338,7 +338,7 @@ export class ModelBindingService {
     else bindings.set(step.id, outcome);
   }
 
-  /** Run the binding validation table over one resolved outcome (Step 6). */
+  /** Runs the binding validation table over one resolved outcome. */
   private async validateOutcomeBinding(
     ref: IBindingStepRef,
     resolved: IResolvedBinding,

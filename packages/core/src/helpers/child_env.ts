@@ -44,7 +44,16 @@ export interface IChildEnvOptions {
 }
 
 /** Parent env vars safe to forward to ANY child — including a foreign agent binary. */
-export const ALLOWED_PARENT_ENV_KEYS: readonly string[] = ["PATH", "HOME", "LANG", "LC_ALL", "TERM", "TMPDIR"];
+/** DENO_DIR locates the module cache. It names a directory, not a secret, and a Deno child without it refetches every module. */
+export const ALLOWED_PARENT_ENV_KEYS: readonly string[] = [
+  "PATH",
+  "HOME",
+  "LANG",
+  "LC_ALL",
+  "TERM",
+  "TMPDIR",
+  "DENO_DIR",
+];
 
 /** Variables whose name implies a secret — never forwarded to a foreign agent child. */
 export const SECRET_ENV_PATTERN = /API_KEY|SECRET|PASSWORD|CREDENTIAL|PRIVATE_KEY/i;

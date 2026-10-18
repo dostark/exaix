@@ -633,14 +633,7 @@ System prompt.
 Deno.test("[schemas] a runtime-loaded blueprint accepts the Read alias and resolves it to read_file", async () => {
   const { blueprintsPath, agentRolesDir, testDir } = await setup();
   try {
-    const content = `---
-agent_role: "alias-test"
-name: "Alias Test"
-permitted_tools: ["Read"]
----
-
-Read a file.
-`;
+    const content = readFixtureTextSync(import.meta.url, "blueprint", "alias_read.md");
     await Deno.writeTextFile(join(agentRolesDir, "alias-test.md"), content);
     const blueprint = await new IBlueprintLoader({ blueprintsPath }).load("alias-test");
     assertEquals(blueprint?.frontmatter.permitted_tools, [ToolName.READ_FILE]);
@@ -652,14 +645,7 @@ Read a file.
 Deno.test("[schemas] a runtime-loaded blueprint rejects a retired native permitted_tools alias", async () => {
   const { blueprintsPath, agentRolesDir, testDir } = await setup();
   try {
-    const content = `---
-agent_role: "alias-retired-test"
-name: "Alias Retired Test"
-permitted_tools: ["list_symbols"]
----
-
-Query symbols.
-`;
+    const content = readFixtureTextSync(import.meta.url, "blueprint", "alias_retired_list_symbols.md");
     await Deno.writeTextFile(join(agentRolesDir, "alias-retired-test.md"), content);
     await assertRejects(
       () => new IBlueprintLoader({ blueprintsPath }).load("alias-retired-test"),
@@ -673,14 +659,7 @@ Query symbols.
 Deno.test("[naming] a runtime-loaded blueprint listing grep_search loads and resolves to search_text", async () => {
   const { blueprintsPath, agentRolesDir, testDir } = await setup();
   try {
-    const content = `---
-agent_role: "alias-grep-search-test"
-name: "Alias Grep Search Test"
-permitted_tools: ["grep_search"]
----
-
-Search text.
-`;
+    const content = readFixtureTextSync(import.meta.url, "blueprint", "alias_grep_search.md");
     await Deno.writeTextFile(join(agentRolesDir, "alias-grep-search-test.md"), content);
     const blueprint = await new IBlueprintLoader({ blueprintsPath }).load("alias-grep-search-test");
     assertEquals(blueprint?.frontmatter.permitted_tools, [ToolName.GREP_SEARCH]);

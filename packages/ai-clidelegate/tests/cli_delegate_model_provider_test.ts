@@ -182,6 +182,7 @@ Deno.test("CliDelegateModelProvider: an injected protocol backend can configure 
 
   assertEquals(seenArgs, [
     "run",
+    "--standalone",
     "--format",
     "json",
     "--model",
@@ -223,6 +224,7 @@ Deno.test("CliDelegateModelProvider: builds opencode argv with run, --format jso
   assertEquals(seenCommand, "opencode");
   assertEquals(seenArgs, [
     "run",
+    "--standalone",
     "--format",
     "json",
     "--model",
@@ -905,6 +907,7 @@ Deno.test("CliDelegateModelProvider: options.effort maps to opencode's --variant
 
   assertEquals(seenArgs, [
     "run",
+    "--standalone",
     "--format",
     "json",
     "--model",

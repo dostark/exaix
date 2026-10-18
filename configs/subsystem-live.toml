@@ -1,0 +1,56 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+allow_net = ["api.deepseek.com"]
+
+[ai]
+timeout_ms = 180000
+provider = "openai-chat"
+model = "deepseek-v4-pro"
+
+[ai.compatible]
+profile = "deepseek"
+
+[models.default]
+provider = "openai-chat"
+model = "deepseek-v4-pro"
+timeout_ms = 180000
+
+[execution]
+native_tools_enabled = true
+
+[agents]
+default_model = "default"
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = false
+
+[session_delegate]
+enabled = false
+tool = "claude-code"
+gates = ["code_changes"]
+
+[portal_knowledge]
+auto_analyze_on_mount = false
+
+[model_presets.M]
+max_cost_per_mtok = 0
+min_context_window = 32000
+supports_thinking = false
+candidates = ["openai-chat"]
+
+[catalog.models."claude-cli/claude-haiku-4-5"]
+model_provider = "claude-cli"
+
+[catalog.services.claude-cli]
+adapter = "claude-cli"
+transport = "local"
+interface = "cli"
+serves = { "claude-cli/claude-haiku-4-5" = "claude-haiku-4-5" }
+
+# Flow steps and the judge use separate services from the binding catalog.
+[bindings.default]
+service = "deepseek"
+model = "deepseek/deepseek-v4-pro"

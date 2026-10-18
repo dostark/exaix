@@ -299,10 +299,8 @@ function mergeEntries(
     }
   }
 
-  // Pin rule (Resolution algorithm step 4).
-  // A field the flow author pinned may only be changed by an exact higher-layer entry.
-  // A broader entry is skipped, the flow value wins, and sources record pin_kept.
-  // Equal values pass silently.
+  // Pin rule: a field the flow author pinned changes only through an exact higher-layer entry.
+  // A broader entry is skipped, the flow value wins, and sources record pin_kept. Equal values pass silently.
   const pinIssue = applyPins(ref, step, winners, spec, sources);
   if (pinIssue) return pinIssue;
 
@@ -560,10 +558,8 @@ function driverSource(sources: IResolvedBinding["sources"]): IBindingFieldSource
     sources.transport ?? sources.interface ?? { layer: FALLBACK_LAYER, selector: SELECTOR_DEFAULT };
 }
 
-/** Route compatibility between the step ref and the chosen service.
- *  A cli-delegate service is a session-tool target, never a provider.
- *  A generate-backed cli service stays a provider with a cli interface.
- *  A gate judge and a scenario judge both call provider.generate, so both accept cli.
+/** Route compatibility between the step ref and the chosen service. A cli-delegate service is a session-tool target, never a provider.
+ *  A generate-backed cli service stays a provider with a cli interface. Gate and scenario judges call provider.generate, so both accept cli.
  *  Returns a reason when incompatible, else undefined. */
 function interfaceCompatibilityIssue(ref: IBindingStepRef, service: ICatalogService): string | undefined {
   const isDelegateService = service.adapter === "cli-delegate";

@@ -1,11 +1,6 @@
 schema_version: "1.0.0"
-# Exercises the TRIGGER path — a request with no `skills:` frontmatter, whose tags and body
-# keywords the matcher scores against a skill's declared triggers.
-#
-# The previous version used fixtures/requests/skill_eval/pin_batch1.md, which pins
-# `skills: [tdd-methodology, ...]`. Explicit request.skills short-circuits matching entirely
-# (AgentRunner takes the pinned ids and never calls matchSkills), so despite its title the
-# scenario was a duplicate of skill-pin-batch-1 and could not observe trigger matching at all.
+# Exercises the trigger path: a request with no `skills:` frontmatter, whose tags and body keywords the matcher scores against a skill's declared triggers.
+# A fixture that pins `skills:` would short-circuit matching entirely (AgentRunner takes the pinned ids and never calls matchSkills), so it could not observe trigger matching at all.
 id: "skill-engine-trigger-matching"
 title: "Skill engine — trigger matching hits skills whose triggers match request tags and keywords"
 pack: "skill_eval"
@@ -39,12 +34,9 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  # A bare event-type match proves only that the matcher ran, not that it matched anything —
-  # a zero-match result emits the same event. These two skills are reachable ONLY through the
-  # tag channel for this fixture: `self-critique` and `architecture-review` are each declared
-  # by exactly one skill, and neither word appears in a request body about exception paths,
-  # so the keyword scorer cannot produce them. Requiring them is therefore precisely the
-  # assertion that request-frontmatter tags survive parsing and reach the matcher (Step 17B).
+  # A bare event-type match proves only that the matcher ran, because a zero-match result emits the same event. `self-critique` and `architecture-review` are each declared by exactly one skill,
+  # and neither word appears in this fixture's request body, so only the tag channel can produce them.
+  # Requiring them asserts that request-frontmatter tags survive parsing and reach the matcher.
   - id: "wait-for-match"
     type: "exactl"
     command: "journal"
@@ -60,10 +52,8 @@ steps:
             - "reflexive-critique"
             - "architecture-review"
 
-      # `skills.resolved` reports the UNION, so on its own it cannot say whether an id arrived
-      # by matching or by some other route. The matcher's own event is what proves the
-      # matching stage produced them, and it is the assertion Step 12 set out to make before
-      # the propagation blockers made it unreachable — kept alongside rather than replaced.
+      # `skills.resolved` reports the union, so on its own it cannot say whether an id arrived by matching or by another route.
+      # The matcher's own event proves the matching stage produced them, so keep it alongside.
       - id: "matcher-stage-observed"
         kind: "journal-event-exists"
         event_type: "skills.match_completed"

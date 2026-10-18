@@ -9,15 +9,9 @@ portals:
   - alias: "sample-project"
     source_path: "$WORKSPACE_ROOT/fixtures/portals/simple_repo"
 flow_fixture: "fixtures/flows/integration_e2e/full_refactor.flow.yaml"
-# Phase 142 Step 15 — repaired against the real surfaces. `exactl flow run` has never existed; a
-# flow executes when a request naming it in its `flow:` frontmatter is submitted. The sample
-# project was built with `mkdir -p /tmp/sample-project`, outside the sandbox and shared between
-# runs; it is now the seeded git fixture the runner mounts. `mcp.tool.read_file` and its siblings
-# are not action types the journal ever writes — tool calls are journalled as `dynamic_tool_call`.
-# Nothing in the repository writes a `flow_run_*.json`, so that wait could only time out.
-#
-# Tagged provider-live: the tool calls it counts require a real model. The mock provider makes
-# none, which is the Step 15 finding.
+# A flow executes when a request naming it in its `flow:` frontmatter is submitted. The sample project is the seeded git fixture the runner mounts.
+# Tool calls are journalled as `dynamic_tool_call`, not as `mcp.tool.*` action types.
+# Tagged provider-live: the tool calls it counts require a real model, and the mock provider makes none.
 steps:
   - id: "start-daemon"
     type: "exactl"

@@ -1,9 +1,7 @@
 schema_version: "1.0.0"
-# Asserts query_symbol_references end to end through the real MCP server: it refuses before the
-# portal has ever been analyzed, then serves the persisted symbol edges from knowledge.json.
-# Who calls a symbol and what a symbol calls are both answered from the same edge list. File
-# import edges are never returned. This is the scenario that tests/eval/tool_eval_parity_test.ts
-# requires every docs-visible tool to carry (entity:<tool-name>).
+# Asserts query_symbol_references end to end through the real MCP server. It refuses before the portal has been analyzed, then serves the persisted symbol edges from knowledge.json.
+# Callers and callees both come from the same edge list, and file import edges are never returned.
+# It is the scenario tests/eval/tool_eval_parity_test.ts requires every docs-visible tool to carry (entity:<tool-name>).
 id: "tools-query-symbol-references"
 title: "Domain tool — query_symbol_references serves a portal's persisted symbol edges"
 pack: "mcp_tools_extended"

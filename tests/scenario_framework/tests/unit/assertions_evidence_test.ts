@@ -14,7 +14,13 @@ import { assert, assertEquals, assertStringIncludes, fail } from "@std/assert";
 import { join } from "@std/path";
 import { callLlmEndpoint, evaluateCriterion, evaluateStepOutcome } from "../../runner/assertions.ts";
 import { copyEvidenceArtifact, writeRunManifest } from "../../runner/evidence_collector.ts";
-import { CriterionKind, CriterionPhase, CriterionStatus, ScenarioStepType } from "../../schema/step_schema.ts";
+import {
+  CriterionKind,
+  CriterionPhase,
+  CriterionStatus,
+  ScenarioStepSchema,
+  ScenarioStepType,
+} from "../../schema/step_schema.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import { withEnv } from "@exaix/testing";
 
@@ -978,4 +984,36 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] text-not-contains fails on a pr
   } finally {
     await Deno.remove(workspaceRoot, { recursive: true });
   }
+});
+
+Deno.test("[ScenarioFrameworkAssertionsEvidence] a judge artifact follows the step working directory", async () => {
+  await withTempWorkspace(async (workspaceRoot) => {
+    await Deno.mkdir(join(workspaceRoot, "nested"));
+    await Deno.writeTextFile(join(workspaceRoot, "nested", "current_plan.md"), "Actual nested artifact");
+    const step = ScenarioStepSchema.parse({
+      id: "grade-artifact",
+      type: "file-contains",
+      cwd: "nested",
+      file_pattern: "*_plan.md",
+      output_criteria: [{ id: "quality", kind: "llm-judge", rubric: "Assess artifact" }],
+    });
+    const outcome = await evaluateStepOutcome({
+      workspaceRoot,
+      step,
+      env: { EXA_EVAL_LLM_MOCK: "pass" },
+      executionResult: {
+        stepId: step.id,
+        stepType: step.type,
+        startedAt: "",
+        completedAt: "",
+        durationMs: 0,
+        exitCode: 0,
+        stdout: "File(s) ready",
+        stderr: "",
+        combinedOutput: "",
+      },
+    });
+    assertEquals(outcome.status, CriterionStatus.PASSED);
+    assertEquals(outcome.criterionResults[0].evidence_refs, [join(workspaceRoot, "nested", "current_plan.md")]);
+  });
 });

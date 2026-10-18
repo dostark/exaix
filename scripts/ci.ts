@@ -549,12 +549,8 @@ async function fixUnusedImports(paths: string[], fmt: boolean): Promise<boolean>
 
     let modified = source;
     for (const name of names) {
-      // Only remove the name when it appears inside an import { ... } statement.
-      // We handle three patterns:
-      //   A) `Name,`              (name followed by comma and optional whitespace)
-      //   B) `, Name`             (comma before name)
-      //   C) `{ Name }`           (sole entry — removes entire import statement if
-      //                            nothing else is imported from that module)
+      // Remove the name only when it is inside an import { ... } statement.
+      // A sole `{ Name }` drops the whole statement, when nothing else is imported from that module.
 
       // Pattern A: `Name,` at word boundary (accounts for leading spaces)
       modified = modified.replace(new RegExp(`\\b${name}\\s*,\\s*`, "g"), "");

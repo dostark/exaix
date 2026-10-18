@@ -226,13 +226,8 @@ export async function loadBenchmarkFloor(
   }
 }
 
-/**
- * Invokes each module's symbol-extractor hooks with the app's registries.
- *
- * The reference registry reaches a module by object identity.
- * A module therefore cannot hold a copy the service never sees.
- * Returns how many modules received a reference registry.
- */
+/** Invokes each module's symbol-extractor hooks with the app's registries. The reference registry reaches a module by object identity,
+ *  so a module cannot hold a copy the service never sees. Returns how many modules received a reference registry. */
 export function registerCapabilitySeamHooks(
   modules: Iterable<ICapabilityModule>,
   registries: {
@@ -256,13 +251,8 @@ export function registerCapabilitySeamHooks(
   return referenceRegistrations;
 }
 
-/**
- * Builds the paid-edition capability modules for one edition string.
- *
- * The Team extractor module is always present for a paid edition.
- * The Enterprise symbol graph module appears only for the enterprise string.
- * Keeping the decision here makes it testable without a daemon boot.
- */
+/** Builds the paid-edition capability modules for one edition string. The Team extractor module is always present for a paid edition.
+ *  The Enterprise symbol graph module appears only for the enterprise string. The decision lives here so it is testable without a daemon boot. */
 export function paidEditionCapabilityModules(edition: string): ICapabilityModule[] {
   const modules: ICapabilityModule[] = [new PortalExtractorsModule()];
   if (edition === EDITION_ENTERPRISE) {

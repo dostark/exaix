@@ -6,12 +6,8 @@ tags: ["e2e", "security", "permission-boundary", "negative-test"]
 request_fixture: "fixtures/requests/integration_e2e/permission_escalation_prevention.md"
 mode_support: ["auto"]
 portals: []
-# Phase 142 Step 15 — three fictions removed. `flow validate` takes a flow ID, not a file path, and
-# the fixture is now staged into the sandbox catalog by the runner so the ID resolves.
-# `exactl flow run` has never existed, so "execute and expect rejection" could only ever fail on a
-# usage dump — validation is where the escalation is refused, which is what this asserts.
-# `exactl journal query` is not a command and `security.validation_failed` is not an event the
-# codebase emits, so that step asserted something that could never be true.
+# `flow validate` takes a flow ID, not a file path. The runner stages the fixture into the sandbox catalog so the ID resolves.
+# Validation is where the escalation is refused, so that is what this asserts. There is no flow-run command to execute the flow.
 flow_fixture: "fixtures/flows/integration_e2e/permission_escalation.flow.yaml"
 steps:
   - id: "validate-flow"
@@ -33,11 +29,8 @@ steps:
   - id: "read-only-tool-not-flagged"
     type: "exactl"
     name: "The rejection names only the write tool, not the read-only one beside it"
-    # Guards against a rule that rejects any dynamic step carrying permitted_tools at all: the
-    # fixture grants read_file AND write_file, and only the second is an escalation. validate
-    # fails on the write-file escalation (see validate-flow above), so expect_failure makes the
-    # non-zero exit the expected outcome and the not-contains criterion asserts read_file is not
-    # named as a write tool.
+    # Guards against a rule that rejects any dynamic step carrying permitted_tools: the fixture grants read_file and write_file, and only write_file is an escalation.
+    # validate fails on the write escalation, so expect_failure makes the non-zero exit the expected outcome. The not-contains criterion asserts read_file is not named as a write tool.
     command: "flow"
     args: ["validate", "permission-escalation-test"]
     expect_failure: true

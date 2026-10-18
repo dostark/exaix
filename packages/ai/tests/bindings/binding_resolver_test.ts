@@ -489,7 +489,7 @@ Deno.test("a plain (non-cli_delegate) agent step refuses a cli interface service
   if (outcome.kind === "invalid") assertEquals(outcome.issues[0].code, "interface_unsupported");
 });
 
-// --- Step 5: flow-file binding and pin ---
+// Flow-file binding and pin.
 
 const STEP_BINDING = { service: "alpha", model: "mock/alpha" };
 const STEP_PIN = { fields: ["service", "model"] as PinnableBindingField[], reason: "capability-gate" as const };

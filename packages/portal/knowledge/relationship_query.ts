@@ -53,15 +53,9 @@ export function encodeSymbolRef(file: string, name: string): string {
   return `${file}${SYMBOL_REF_ID_SEPARATOR}${name}`;
 }
 
-/**
- * Reads a `symbol_references_symbol` endpoint.
- *
- * Splits on the LAST separator and attributes the tail to the name.
- * A name that itself contains a separator therefore still decodes.
- * File paths never contain the separator in practice, so the contract is total.
- * A separator on both sides decodes without throwing.
- * Returns `undefined` when no separator is present, or when nothing precedes it.
- */
+/** Reads a `symbol_references_symbol` endpoint. It splits on the last separator.
+ *  The tail is the name, so a name that contains a separator still decodes. File paths never contain the separator in practice.
+ *  Returns `undefined` when no separator is present or nothing precedes it. */
 export function decodeSymbolRef(ref: string): { file: string; name: string } | undefined {
   const index = ref.lastIndexOf(SYMBOL_REF_ID_SEPARATOR);
   if (index <= 0) return undefined;
@@ -74,15 +68,8 @@ function edgesFromLayer(layer: IArchitectureLayer): IRelationshipEdge[] {
 
 /** Derives `layer_contains_file` edges from `layers` and each `packages[].layers` entry —
  *  never persisted; always freshly computed from whatever knowledge is passed in. */
-/**
- * Merges edge arrays into one list, deduplicated on `from`, `to`, and `kind`.
- *
- * The first occurrence wins, so the Solo builder's ordering is preserved.
- * A later array can only add edges the earlier ones did not already carry.
- * Callers reuse the returned array as the persisted relationships.
- * They also pass it as the reference extractor input.
- * One array therefore serves both roles.
- */
+/** Merges edge arrays into one list, deduplicated on `from`, `to` and `kind`. The first occurrence wins, so the Solo builder's ordering is preserved.
+ *  Callers reuse the result both as the persisted relationships and as the reference extractor input. */
 export function mergeRelationships(
   edgeGroups: ReadonlyArray<ReadonlyArray<IPersistedRelationshipEdge>>,
 ): IPersistedRelationshipEdge[] {
@@ -130,13 +117,8 @@ export function whoDependsOn(knowledge: IPortalKnowledge, path: string): IRelati
   return allEdges(knowledge).filter((edge) => edge.to === path);
 }
 
-/**
- * Breadth-first traverses persisted `file_imports_file_internal` edges forward.
- *
- * Each node is visited at most once, so cycles terminate naturally.
- * Each hop's edges are sorted by `from` then `to` for deterministic output.
- * Only the module-dependency edge kind is walked, so a symbol-level edge never is.
- */
+/** Breadth-first traversal of persisted `file_imports_file_internal` edges, forward. Each node is visited once, so cycles end.
+ *  Each hop's edges sort by `from` then `to` for deterministic output. Symbol-level edges are never walked. */
 export function traverseModuleDependencies(
   knowledge: IPortalKnowledge,
   from: string,

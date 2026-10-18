@@ -8,7 +8,7 @@
  * @related-files [tests/scenario_framework/runner/scoring.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import { computeMultiTrialMetrics } from "../../runner/scoring.ts";
 
 Deno.test("[MultiTrial] 5 trials all passing at threshold 0.5 → pass_at_1=1.0, pass_pow_k=1.0", () => {
@@ -72,4 +72,20 @@ Deno.test("[MultiTrial] stdev computed with sample variance", () => {
   const mean = (0.9 + 0.4 + 0.9) / 3;
   const variance = ((0.9 - mean) ** 2 + (0.4 - mean) ** 2 + (0.9 - mean) ** 2) / 3;
   assertEquals(metrics.stdev, Math.sqrt(variance));
+});
+
+Deno.test("[MultiTrial] a failed trial cannot become a pass through setup scores", () => {
+  const metrics = computeMultiTrialMetrics([0.9, 0.8, 0.95], 0.7, ["success", "scenario-failure", "success"]);
+  assertEquals(metrics.mean, (0.9 + 0.8 + 0.95) / 3);
+  assertEquals(metrics.pass_at_1, 2 / 3);
+  assertEquals(metrics.pass_pow_k, Math.pow(2 / 3, 3));
+});
+
+Deno.test("[MultiTrial] successful outcomes still have to meet the score threshold", () => {
+  const metrics = computeMultiTrialMetrics([0.4, 0.8, 0.95], 0.7, ["success", "success", "infra-error"]);
+  assertEquals(metrics.pass_at_1, 1 / 3);
+});
+
+Deno.test("[MultiTrial] rejects misaligned trial outcomes", () => {
+  assertThrows(() => computeMultiTrialMetrics([0.9], 0.7, []), RangeError, "Trial outcomes must match trial scores");
 });

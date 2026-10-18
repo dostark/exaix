@@ -661,6 +661,25 @@ Deno.test("[md-paths] a PLANNING phase doc is skipped repo-wide (proposals are n
   }
 });
 
+Deno.test("[md-paths] planning evidence output is skipped (raw run artifacts are not docs)", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    const dir = join(root, "exaix-dev-docs", "planning", "evidence", "phase-142", "artifacts");
+    await ensureDir(dir);
+    await ensureDir(join(root, "src"));
+    await Deno.writeTextFile(join(root, "src", "real.ts"), "export {};\n");
+    await Deno.writeTextFile(
+      join(dir, "artifact.md"),
+      "See `src/cli/base.ts` and the file src/real.ts in prose.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.violations.length, 0, JSON.stringify(r.violations));
+    assertEquals(r.styleViolations.length, 0, JSON.stringify(r.styleViolations));
+  } finally {
+    cleanup();
+  }
+});
+
 Deno.test("[md-paths] a STAGED plan doc is still checked (ratchet override)", async () => {
   const { root, cleanup } = await sandbox();
   try {

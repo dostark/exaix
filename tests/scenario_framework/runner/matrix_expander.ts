@@ -54,7 +54,7 @@ export interface IJailLaunchOptions {
   extraMounts?: Opt<string[], Reason.OptionalInput>;
   /** Explicit `--mount` args used VERBATIM instead of live-resolving credentials — required when a caller persists launch args to a static file (e.g. scenario YAML), since a live-resolved mount would go stale after the process exits. */
   credentialMountArgs?: Opt<string[], Reason.OptionalInput>;
-  /** `--network` mode. emitted only when set (Phase 207 worker containers). */
+  /** `--network` mode, emitted only when set (worker containers). */
   network?: Opt<JailNetworkMode, Reason.OptionalInput>;
   /** `--pids-limit`. emitted only when set. */
   pidsLimit?: Opt<number, Reason.OptionalInput>;
@@ -62,7 +62,7 @@ export interface IJailLaunchOptions {
   memory?: Opt<string, Reason.OptionalInput>;
   /** `--cpus`. emitted only when set. */
   cpus?: Opt<string, Reason.OptionalInput>;
-  /** `--sysctl KEY=VALUE` args. emitted only when set (Phase 207 worker containers). */
+  /** `--sysctl KEY=VALUE` args, emitted only when set (worker containers). */
   sysctls?: Opt<string[], Reason.OptionalInput>;
   /** `--init` (reap zombie grandchildren). emitted only when true. */
   init?: Opt<boolean, Reason.OptionalInput>;

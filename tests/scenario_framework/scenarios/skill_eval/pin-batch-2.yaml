@@ -40,13 +40,9 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  # Waits on `skills.resolved`, not `skills.match_completed`: matching is deliberately
-  # skipped for a request that pins skills, so match_completed never fires on this path and
-  # the step could only pass by accident, when some later plan step happened to call the
-  # matcher. `payload_includes` then checks the pinned ids actually reached the resolved set,
-  # which is the propagation this scenario exists to prove — and, because each batch pins a
-  # distinct set, it also stops one batch's event from satisfying another's assertion in the
-  # shared sandbox.
+  # Waits on `skills.resolved`, not `skills.match_completed`: matching is skipped for a request that pins skills, so match_completed never fires on this path.
+  # `payload_includes` then checks the pinned ids reached the resolved set, which is the propagation this scenario proves.
+  # Each batch pins a distinct set, so one batch's event cannot satisfy another batch's assertion in the shared sandbox.
   - id: "wait-for-completion"
     type: "exactl"
     command: "journal"

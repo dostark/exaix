@@ -107,7 +107,7 @@ export interface IRunner {
   run(
     blueprint: IBlueprint,
     request: IParsedRequest,
-    jsonSchema?: Record<string, JSONValue>,
+    jsonSchema?: Opt<Record<string, JSONValue>, Reason.OptionalContext>,
   ): Promise<IAgentExecutionResult>;
   withProvider?(provider: IModelProvider, selectedModel: { provider: string; model: string }): IRunner;
 }
@@ -133,13 +133,10 @@ export interface IAgentComposerConstructionDeps {
   trustedAgentRoles?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
   /** Optional per-trace worktree resolver. Its absence preserves each portal's configured target path. */
   worktreeCoordinator?: Opt<IFlowWorktreeCoordinator, Reason.OptionalDependency>;
-  /** The EffortResolver instance forwarded into AgentComposer's execution resolution so
-   *  the flow path shares the planning path's injected instance (GAP-9). */
+  /** The EffortResolver forwarded into AgentComposer's execution resolution, so the flow path shares the planning path's instance. */
   effortResolver?: IEffortResolver;
-  /** Bind a strategy cli_delegate step to a specific session tool and model (Step 3).
-   *  The tool must be a cli-delegate catalog service.
-   *  AgentComposer prefers it over `config.cli_delegate`, and it stays active
-   *  even when that config flag is disabled. */
+  /** Binds a strategy cli_delegate step to a specific session tool and model. The tool must be a cli-delegate catalog service.
+   *  AgentComposer prefers it over `config.cli_delegate`, and it stays active even when that config flag is off. */
   cliDelegateBinding?: { tool: SessionTool; model: string };
   /** Test-only escape hatch, a fake subprocess runner for the cli-delegate strategy.
    *  Production never sets this flag. */
@@ -245,8 +242,7 @@ export class AgentComposerAdapter {
     if (!loaded) {
       throw new Error(`Blueprint not found for agent_role: ${agentRole}`);
     }
-    // GAP-4 fix: use the loader's legacy projection so the flow role's declared
-    // effort/thinking/default_skills reach AgentRunner instead of being dropped.
+    // Use the loader's legacy projection, so the flow role's declared effort, thinking and default_skills reach AgentRunner instead of being dropped.
     const blueprint: IBlueprint = this.loader.toLegacyBlueprint(loaded);
     const analysis = request.requestAnalysis;
     const parsedRequest: IParsedRequest = {

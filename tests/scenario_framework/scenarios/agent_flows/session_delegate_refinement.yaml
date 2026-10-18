@@ -73,10 +73,8 @@ steps:
         kind: "file-found"
         path_pattern: "**/Clarifications/*.json"
 
-  # The clarification file exists as soon as the gate opens, but its status only becomes
-  # `user-confirmed` once the delegate's answer is reconciled back. The preceding wait gates on
-  # existence, so the verify step ran against a record whose status had not yet landed. This
-  # barrier waits for the reconcile itself.
+  # The clarification file exists as soon as the gate opens, but its status becomes `user-confirmed` only when the delegate's answer is reconciled back.
+  # The preceding wait gates on existence, so this barrier waits for the reconcile itself.
   - id: "wait-for-delegate-reconciled"
     type: "exactl"
     command: "journal"
@@ -90,11 +88,8 @@ steps:
 
   - id: "verify-delegated-clarification"
     type: "exactl"
-    # Asserts the clarification RECORD, not CLI output. This checked `request show --all` for
-    # the text "user-confirmed" — a flag that does not exist (`show` takes a required <id>, so
-    # the CLI read it as a request id), and `request list` does not carry the marker either. The
-    # delegated confirmation is state, and it lives in the clarification session file as
-    # `status: user-confirmed`; asserting it there is what makes this step mean the gate ran.
+    # Asserts the clarification record, not CLI output. The delegated confirmation is state and lives in the clarification session file as `status: user-confirmed`,
+    # so asserting it there is what makes this step mean the gate ran.
     command: "request"
     args: ["list"]
     # The clarification file is named for the request's UUID, so the target is resolved by

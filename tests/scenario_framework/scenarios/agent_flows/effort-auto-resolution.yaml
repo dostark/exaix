@@ -8,11 +8,8 @@ mode_support: ["auto"]
 portals: []
 
 steps:
-  # --- Heuristic leg: claude-cli (subscription-billed), --effort auto on a COMPLEX request.
-  # TaskComplexity is PINNED deterministically by forcing the heuristic analyzer
-  # (request_analysis.mode = heuristic): the long refactor prompt's content drives
-  # COMPLEX, so effort must resolve to high. The leg is the scenario's FIRST request, so
-  # trace_scope: current resolves to THIS request's trace. ---
+  # Heuristic leg: claude-cli (subscription-billed), --effort auto on a COMPLEX request. The heuristic analyzer (request_analysis.mode = heuristic) pins TaskComplexity,
+  # and the long refactor prompt drives COMPLEX, so effort must resolve to high. This is the first request, so trace_scope: current resolves to this request's trace.
   - id: "write-config-heuristic"
     type: "write-file"
     path: "exa.config.toml"
@@ -76,12 +73,9 @@ steps:
           effort: "high"
           heuristic_inputs.complexity_source: "analysis"
 
-  # --- Native-adaptive leg: Claude Code CLI with a subscription (not metered API), model
-  # claude-sonnet-5, --thinking auto. EffortResolver's native-adaptive set includes CLAUDE_CLI
-  # (verified: Claude Code runs adaptive by default on native-adaptive models), so
-  # thinking_basis == "native-adaptive" is journaled and no thinking-disabling setting reaches
-  # the CLI. This leg is NOT the first request, so trace_scope current does not apply; the
-  # native-adaptive basis is a value NO other leg emits, so payload_equals alone is specific. ---
+  # Native-adaptive leg: Claude Code CLI on a subscription, model claude-sonnet-5, --thinking auto. EffortResolver's native-adaptive set includes CLAUDE_CLI,
+  # so thinking_basis "native-adaptive" is journaled and no thinking-disabling setting reaches the CLI. This is not the first request, so trace_scope current does not apply.
+  # No other leg emits that basis, so payload_equals alone is specific.
   - id: "write-config-native"
     type: "write-file"
     path: "exa.config.toml"
@@ -142,11 +136,8 @@ steps:
         payload_equals:
           thinking_basis: "native-adaptive"
 
-  # --- Flow + judge floor leg: a self-contained fixture flow with two declared steps
-  # (effort low / effort high, same role) and a quality-judge step whose blueprint declares
-  # effort: low — the judge role floor raises it, so floors_applied contains
-  # role:quality-judge. Path is flow_context and the two step efforts differ, which no other
-  # leg emits, so payload_equals is leg-specific. ---
+  # Flow and judge floor leg: a fixture flow with two declared steps (effort low and high, same role) and a quality-judge step whose blueprint declares effort: low.
+  # The judge role floor raises it, so floors_applied contains role:quality-judge. The path is flow_context and the step efforts differ, which no other leg emits.
   - id: "write-config-flow"
     type: "write-file"
     path: "exa.config.toml"
@@ -279,11 +270,8 @@ steps:
         payload_includes:
           floors_applied: ["role:quality-judge"]
 
-  # --- Skill-floor leg: a SIMPLE request pinned to the response-contract-security-analysis
-  # skill with --effort auto resolves to low heuristically, then the skill's `effort: medium`
-  # floor raises it — effort_basis skill-floor, effort medium, heuristic_inputs still present
-  # (GAP-3), and the resolved_skill_ids passthrough lets the execution path apply the same
-  # floor (GAP-5). ---
+  # Skill-floor leg: a SIMPLE request pinned to the response-contract-security-analysis skill with --effort auto resolves to low heuristically,
+  # then the skill's `effort: medium` floor raises it. effort_basis is skill-floor, heuristic_inputs are still present, and the resolved_skill_ids passthrough lets the execution path apply the same floor.
   - id: "request-effort-skill-floor"
     type: "exactl"
     command: "request"

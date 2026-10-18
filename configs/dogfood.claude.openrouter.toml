@@ -22,21 +22,9 @@ enabled = false
 [request_analysis]
 enabled = true
 
-# Delegate the code_changes gate to headless Claude Code routed through OpenRouter.
-# This is the claude-code+openrouter cell of the Phase 127 provider_live matrix.
-#
-# OpenRouter-Claude 1P caveat (Phase 127 / §13.5): Claude Code via OpenRouter is only
-# guaranteed to work with the Anthropic first-party provider, so `model` below is an
-# Anthropic slug — the forwarded `--model` is the only routing signal Exaix controls.
-# Exaix has NO delegate-config routing-order lever (SessionDelegateProviderSchema is
-# {name, key_env, base_url} only); a `provider.order` pin would require a schema phase.
-#
-# The child env (ANTHROPIC_BASE_URL, ANTHROPIC_AUTH_TOKEN, and the deliberately EMPTY
-# ANTHROPIC_API_KEY that stops the CLI falling back to direct Anthropic auth) is injected
-# at runtime by SessionDelegateService.resolveDelegateEnv from this provider block —
-# it is NOT set here, and cannot be (TOML has no field for child env values).
-# Provider keys are stripped from the child by sanitizeChildEnv; only the resolved
-# delegate-provider env reaches the child.
+# Delegates the code_changes gate to headless Claude Code routed through OpenRouter. This is the claude-code plus openrouter cell of the provider-live matrix.
+# The model is an Anthropic slug, because Claude Code via OpenRouter is only guaranteed with Anthropic first-party routing. Exaix has no delegate routing-order setting.
+# The child env (base URL, auth token, empty API key) is injected at runtime from the provider block. sanitizeChildEnv strips provider keys, so only the resolved delegate env reaches the child.
 [session_delegate]
 enabled = true
 tool = "claude-code"

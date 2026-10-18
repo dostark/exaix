@@ -78,10 +78,8 @@ interface IStepDelegationContext {
   portalAlias: string;
   worktreePath: string;
   artifactRef: string;
-  /** Judge-binding context for the review gate.
-   *  It carries the cycle step's ref and the run snapshot.
-   *  The review judge uses the step's bound provider.
-   *  Absent when no binding layer exists, the boot provider grades as before. */
+  /** Judge-binding context for the review gate: the cycle step's ref and the run snapshot.
+   *  The review judge uses the step's bound provider. Absent when no binding layer exists, the boot provider grades as before. */
   bindingContext?: IBindingGateContext;
   /** Run-local fixture lane for review judge calls. It is absent outside an opted-in scenario run. */
   reviewLane?: IRecordingLane;

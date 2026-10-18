@@ -30,11 +30,8 @@ export type ISkillReference = z.infer<typeof SkillReferenceSchema>;
 export const SkillTriggersSourceSchema = z.enum(["authored", "description"]);
 export type ISkillTriggersSource = z.infer<typeof SkillTriggersSourceSchema>;
 
-/**
- * The runtime skill view. Identity (`id`, `content_sha256`, `path`, `root_kind`) is
- * derived from content. There is no authored UUID, counter or semantic version.
- * The revision is the version policy.
- */
+/** The runtime skill view. Identity (`id`, `content_sha256`, `path`, `root_kind`) derives from content.
+ *  There is no authored UUID, counter or semantic version. The revision is the version policy. */
 export const RuntimeSkillSchema = z.object({
   id: z.string().uuid().describe("Content-addressed revision UUIDv5"),
   skill_id: z.string().regex(SKILL_NAME_PATTERN).describe("Validated slug (compatibility alias for name)"),

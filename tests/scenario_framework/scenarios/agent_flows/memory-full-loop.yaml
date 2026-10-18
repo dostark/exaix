@@ -1,10 +1,7 @@
 schema_version: "1.0.0"
-# Phase 147 Step 12 cutover scenario: the full memory-maturation chain — capture (a real ReAct
-# loop calling remember_fact through a real context-wired ToolRegistry), scratchpad-informed
-# extraction, real auto-approval (auto_approve.enabled=true, no human in the loop), hybrid
-# retrieval for a later request, and a real reflection cycle whose synthesis writes topical
-# links — asserted end-to-end against the mocked provider in a single run (run_memory_full_loop.ts,
-# the in-process pattern proven by run_solo_relationship_agent.ts / run_solo_scratchpad_extraction.ts).
+# Cutover scenario for the full memory-maturation chain, asserted end to end against the mocked provider in one run: capture (a real ReAct loop calling remember_fact through a context-wired ToolRegistry),
+# scratchpad-informed extraction, real auto-approval (auto_approve.enabled=true), hybrid retrieval for a later request, and a reflection cycle whose synthesis writes topical links.
+# It uses the in-process pattern of run_memory_full_loop.ts.
 id: "memory-full-loop"
 title: "Agent flow — the full capture → extract → approve → retrieve → reflect loop closes unattended"
 pack: "agent_flows"

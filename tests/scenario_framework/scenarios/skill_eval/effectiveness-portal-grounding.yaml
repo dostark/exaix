@@ -1,0 +1,65 @@
+schema_version: "1.0.0"
+id: skill-effectiveness-portal-grounding
+title: "Plan documentation from portal evidence"
+pack: skill_eval
+tags: [provider-live, "subsystem:skills", "entity:portal-grounding", nightly-quality]
+request_fixture: fixtures/requests/skill_eval/effectiveness-portal-grounding.md
+mode_support: [auto]
+portals:
+  - alias: Exaix
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/simple_repo"
+    target_path: "$WORKSPACE_ROOT/Exaix"
+    git_init: true
+bindings:
+  judge:
+    service: claude-cli
+    model: claude-cli/claude-haiku-4-5
+matrix:
+  cells:
+    - tool: live
+      provider: openai-chat
+      config: configs/subsystem-live.toml
+      requires_bin: "true"
+      requires_key: DEEPSEEK_API_KEY
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+  - id: submit-request
+    type: exactl
+    command: request
+    args: ["--agent-role", "senior-coder", "--plan-only", "--file", "$REQUEST_FIXTURE", "--portal", "Exaix"]
+  - id: verify-pinned-skill
+    type: exactl
+    command: journal
+    args: [wait, --event, skills.resolved, --since-rowid, "$JOURNAL_BASELINE", --timeout, "60"]
+    timeout_sec: 65
+    output_criteria:
+      - id: skill-injected
+        kind: journal-event-exists
+        event_type: skills.resolved
+        payload_includes:
+          pinned_skill_ids: [portal-grounding]
+  - id: await-plan
+    type: wait-for-file
+    args: ["Workspace/Plans/*_plan.md"]
+    timeout_sec: 180
+    output_criteria:
+      - id: plan-produced
+        kind: file-found
+        path_pattern: "Workspace/Plans/*_plan.md"
+  - id: judge-effectiveness
+    type: file-contains
+    file_pattern: "Workspace/Plans/*_plan.md"
+    step_pass_threshold: 0.7
+    output_criteria:
+      - id: skill-effectiveness
+        kind: llm-judge
+        rubric: "The fixture contains README.md and src/main.ts, whose program prints hello. Check that claims and existing file references stay within those files, new files are explicitly proposed, and no unobserved repository modules are invented. Score zero for invented existing paths or unsupported architecture claims."
+        context_path: "$REQUEST_FIXTURE"
+        score_threshold: 0.7
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

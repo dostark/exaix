@@ -108,7 +108,7 @@ function normalizeHeadingText(text: string): string {
   return t.replace(/\s+/g, " ").trim().toLowerCase();
 }
 
-/** Scan all markdown files under `root` for quoted §-citations that don't resolve. */
+/** Scans all markdown files under `root` for quoted citations that don't resolve. */
 export async function checkDocSectionRefs(root: string, options: ICheckOptions = {}): Promise<ISectionRefResult> {
   const absRoot = resolve(root);
   const violations: ISectionRefViolation[] = [];
@@ -134,11 +134,9 @@ export async function checkDocSectionRefs(root: string, options: ICheckOptions =
     const lines = text.split("\n");
     const fence = new FenceTracker();
 
-    // Soft-wrapped prose commonly splits a citation across lines, e.g.
-    // "...lives in `ARCHITECTURE.md`\n§"Packages vs. Services — Placement Model"."
-    // Join consecutive non-blank, non-fenced lines into one logical paragraph before
-    // matching, so word-wrap never hides a citation from the filename that precedes
-    // it. Violations are reported at the paragraph's start line.
+    // Soft-wrapped prose often splits a citation across lines.
+    // Consecutive non-blank, non-fenced lines are joined into one paragraph before matching, so a wrap never hides a citation.
+    // Violations are reported at the paragraph's start line.
     let paragraph: string[] = [];
     let paragraphStartLine = 0;
 
@@ -219,11 +217,8 @@ export async function checkDocSectionRefs(root: string, options: ICheckOptions =
         continue;
       }
       if (paragraph.length === 0) paragraphStartLine = i + 1;
-      // Strip a leading blockquote marker ("> ") and surrounding indentation before
-      // joining — otherwise ">" from a wrapped blockquote line, or the extra indent
-      // of a wrapped list-item continuation, becomes stray characters INSIDE the
-      // joined citation text (e.g. a `> by Edition"` continuation line would leak a
-      // literal "> " into the matched title).
+      // Strip a leading blockquote marker ("> ") and surrounding indentation before joining.
+      // Otherwise a ">" from a wrapped blockquote, or the indent of a list continuation, leaks into the joined citation text.
       paragraph.push(line.replace(/^\s*>\s?/, "").trim());
     }
     await scanParagraph();

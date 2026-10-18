@@ -184,11 +184,8 @@ pub fn remote(v: i32) -> i32 {
   },
 };
 
-/**
- * Java resolves a call through the receiver type.
- * An edge can therefore land on the type and on the method.
- * The coarse form is asserted, not hidden, because an agent sees it.
- */
+/** Java resolves a call through the receiver type, so an edge can land on the type and on the method.
+ *  The coarse form is asserted, not hidden, because an agent sees it. */
 const JAVA_FIXTURE: ILanguageFixture = {
   language: LANG_JAVA,
   extension: ".java",
@@ -666,10 +663,8 @@ Deno.test("[matrix] every fixture declares a chain at least three frames deep", 
     // At least three functions must be involved, or the chain cannot be deep.
     const declared = new Set(fixture.chain.flatMap((edge) => [edge.from, edge.to]));
     assert(declared.size >= 4, `${fixture.language}: the chain must involve at least four symbols`);
-    // Multi-package or multi-file within one package.
-    // Both layouts are real.
-    // Go and Java split packages across files.
-    // A TS or Python package often keeps several modules in one directory.
+    // Multi-package or multi-file within one package: both layouts are real.
+    // Go and Java split packages across files. A TS or Python package often keeps several modules in one directory.
     const paths = Object.keys(fixture.files);
     const directories = new Set(paths.map((p) => join(p, "..")));
     assert(

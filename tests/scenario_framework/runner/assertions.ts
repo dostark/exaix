@@ -28,6 +28,7 @@ import {
 import type { JSONValue, Opt, Reason } from "@exaix/core/types";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 import { resolveCurrentTrace, resolveExecutionBase } from "./step_executor.ts";
+import { computeStepScore } from "./scoring.ts";
 import {
   computeAbstentionCorrect,
   computeNdcgAtK,
@@ -276,19 +277,21 @@ export async function evaluateStepOutcome(
   // Trajectory-assert steps use criterion results populated by the step executor
   if (options.step.type === ScenarioStepType.TRAJECTORY_ASSERT) {
     const criterionResults = options.executionResult?.criterionResults ?? [];
-    const allPassed = criterionResults.every((r) => r.status === "passed");
+    const executionFailed = !options.executionResult || options.executionResult.exitCode !== 0 ||
+      criterionResults.length === 0;
+    const passed = !executionFailed && computeStepScore(criterionResults) >= (options.step.step_pass_threshold ?? 1);
     return {
       stepId: options.step.id,
-      status: allPassed ? CriterionStatus.PASSED : CriterionStatus.FAILED,
-      failureStage: allPassed ? null : StepFailureStage.EXECUTION,
+      status: passed ? CriterionStatus.PASSED : CriterionStatus.FAILED,
+      failureStage: executionFailed ? StepFailureStage.EXECUTION : passed ? null : CriterionPhase.OUTPUT,
       criterionResults,
       executionResult: options.executionResult,
     };
   }
+  const executionBase = await resolveExecutionBase(options.step, options.workspaceRoot, options.artifactBaselineMs);
   // Resolve file_pattern if provided by the step
   let stepTargetFile: string | undefined = undefined;
   if (options.step.file_pattern) {
-    const executionBase = await resolveExecutionBase(options.step, options.workspaceRoot, options.artifactBaselineMs);
     stepTargetFile = await resolveStepFilePattern(
       executionBase,
       options.step.file_pattern,
@@ -298,16 +301,12 @@ export async function evaluateStepOutcome(
 
   // Rewrite criteria if step-level target file is resolved
   const inputCriteria = stepTargetFile
-    ? rewriteCriteriaWithTarget(options.step.input_criteria, stepTargetFile)
+    ? rewriteCriteriaWithTarget(options.step.input_criteria, stepTargetFile, executionBase)
     : options.step.input_criteria;
 
   const outputCriteria = stepTargetFile
-    ? rewriteCriteriaWithTarget(options.step.output_criteria, stepTargetFile)
+    ? rewriteCriteriaWithTarget(options.step.output_criteria, stepTargetFile, executionBase)
     : options.step.output_criteria;
-
-  // The step's resolved working directory — file criteria (file-found, text-contains, ...) and
-  // the file_pattern glob resolve against it, so scenarios declare short relative paths.
-  const executionBase = await resolveExecutionBase(options.step, options.workspaceRoot, options.artifactBaselineMs);
 
   const inputResults = await evaluateCriteriaBatch({
     workspaceRoot: options.workspaceRoot,
@@ -769,8 +768,8 @@ async function evaluateJournalEventExistsCriterion(
     e.action_type === criterion.event_type || e.event_type === criterion.event_type
   );
 
-  // Opt-in `trace_scope: current`: restrict matches to the CURRENT scenario request's trace,
-  // so a globally found event is NOT evidence the request under test emitted it (GAP-8).
+  // Opt-in `trace_scope: current` restricts matches to the current scenario request's trace.
+  // A globally found event is not evidence that the request under test emitted it.
   if (criterion.trace_scope === "current") {
     const traceId = resolveCurrentTrace(
       options.workspaceRoot,
@@ -781,9 +780,8 @@ async function evaluateJournalEventExistsCriterion(
     }
   }
 
-  // Requires a matching event whose payload equals EVERY scalar in criterion.payload_equals at
-  // its dotted path (e.g. heuristic_inputs.complexity_source). A missing key FAILS — this is
-  // a value assertion, unlike a bare event-type match (GAP-8).
+  // Requires a matching event whose payload equals every scalar in criterion.payload_equals at its dotted path (for example heuristic_inputs.complexity_source).
+  // A missing key fails. This is a value assertion, unlike a bare event-type match.
   if (criterion.payload_equals) {
     const equals = criterion.payload_equals;
     if (typeMatches.some((e) => payloadEqualsAll(e, equals))) return buildPassedResult(options, []);
@@ -1216,6 +1214,7 @@ async function resolveStepFilePattern(
 function rewriteCriteriaWithTarget(
   criteria: ICriterion[],
   targetFile: string,
+  executionBase: string,
 ): ICriterion[] {
   return criteria.map((original) => {
     const criterion = { ...original } as ICriterion & Record<string, string | number | boolean | null | undefined>;
@@ -1241,6 +1240,13 @@ function rewriteCriteriaWithTarget(
 
     if (kindsWithFilePath.includes(criterion.kind) && !criterion.path) {
       criterion.path = targetFile;
+    }
+
+    if (
+      criterion.kind === CriterionKind.LLM_JUDGE && !criterion.evidence_path &&
+      !criterion.evidence_diff_path && !criterion.evidence_diff_dir
+    ) {
+      criterion.evidence_path = resolve(executionBase, targetFile);
     }
 
     return criterion as ICriterion;
@@ -1951,7 +1957,15 @@ export async function evaluateLlmJudgeCriterion(
     try {
       content = await Deno.readTextFile(resolvedPath);
     } catch {
-      content = options.executionResult?.stdout ?? "";
+      return {
+        criterion_id: criterion.id,
+        kind: CriterionKind.LLM_JUDGE,
+        phase: options.phase,
+        status: CriterionStatus.ERROR,
+        message: `LLM judge evidence file could not be read: ${criterion.evidence_path}`,
+        evidence_refs: [criterion.evidence_path],
+        score_weight: options.criterion.score_weight,
+      };
     }
   } else {
     content = options.executionResult?.stdout ?? "";

@@ -46,11 +46,8 @@ export const CAP_MODEL_REGISTRY_GOVERNANCE = "model_registry_governance";
 /** P177: OpenTelemetry trace export — Team/Enterprise only */
 export const CAP_OTEL_EXPORT = "otel_export";
 
-/** P178: Symbol-level portal dependency graph — Enterprise only.
- *  Reserved for Enterprise by `Exaix_Edition_Separation_Design.md` D5a.
- *  Do NOT map this to `EDITION_TEAM`.
- *  `isCapabilityEligible` compares editions by rank.
- *  A Team mapping would also grant Team, so it cannot express Enterprise only. */
+/** Symbol-level portal dependency graph: Enterprise only, reserved by `Exaix_Edition_Separation_Design.md` D5a.
+ *  Do not map it to `EDITION_TEAM`. `isCapabilityEligible` compares editions by rank, so a Team mapping would also grant Team. */
 export const CAP_SYMBOL_LEVEL_DEPENDENCY_GRAPH = "symbol_level_dependency_graph";
 
 // Edition tier map

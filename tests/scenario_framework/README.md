@@ -730,29 +730,66 @@ subsystem runs on both editions.
 
 ### The nightly provider-live recipe
 
-The mock tier proves mechanics. Anything about _which_ tool an agent reaches for, or how good its
-output is, needs a real model — see the Step 15 finding: the mock provider emits **zero**
-`dynamic_tool_call` rows, so a trajectory score there is always 0.00 and never partial.
+The mock tier proves mechanics through controlled responses. Tool-selection and output-quality
+baselines require live model decisions.
 
 ```bash
-# One subsystem's live tier. `--tag provider-live` disables the CI-safety filter, which is what
-# makes the excluded scenarios selectable at all.
-EXA_LLM_PROVIDER=google \
-deno run -A tests/scenario_framework/runner/main.ts \
-  --tag subsystem:mcp-client --tag provider-live \
+# Requires DEEPSEEK_API_KEY; the judge uses the subscription Claude CLI.
+# Strip unrelated API credentials and inherited driver selections.
+env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
+  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL \
+  EXAIX_EDITION=team EXA_MATRIX_AGENT_ROLE_LIVE=1 EXA_EVAL_LLM_MOCK=false \
+  deno run -A tests/scenario_framework/runner/main.ts \
+  --pack agent_role_eval --cell live --mode auto --eval-mode
+
+# Five skill-effectiveness cases and three shipped-flow artifact cases.
+env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
+  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL \
+  EXAIX_EDITION=team EXA_EVAL_LLM_MOCK=false \
+  deno run -A tests/scenario_framework/runner/main.ts \
+  --tag nightly-quality --tag provider-live --cell live --mode auto --eval-mode
+
+# Reliability: repeat the four-role subset.
+env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
+  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL \
+  EXAIX_EDITION=team EXA_MATRIX_AGENT_ROLE_LIVE=1 EXA_EVAL_LLM_MOCK=false \
+  deno run -A tests/scenario_framework/runner/main.ts \
+  --scenario senior-coder-smoke --scenario code-analyst-smoke \
+  --scenario software-architect-smoke --scenario quality-judge-smoke \
+  --cell live --mode auto --eval-mode --trials 3
+
+# Real tool selection and an imperfect-reference partial-credit control.
+env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GOOGLE_API_KEY \
+  -u EXA_LLM_PROVIDER -u EXA_LLM_MODEL EXAIX_EDITION=team \
+  deno run -A tests/scenario_framework/runner/main.ts \
+  --scenario selection-multi-tool-partial-credit --cell openai-chat \
   --mode auto --eval-mode --trials 3
 
-# Then read the per-subsystem table:
 exactl eval report --group-by subsystem
+exactl eval report --group-by entity
 ```
+
+Role artifacts can contain execution steps, analysis, or QA reports. The live structural
+check verifies role attribution; the separate judge evaluates the requested content.
+Reliability pass rates require both a successful trial outcome and its score threshold.
+Passing setup steps cannot turn a failed judge criterion into a successful trial. A file-based
+judge receives the matching artifact text. If that file cannot be read, the judge returns an
+error instead of grading the step's readiness message.
 
 Notes that cost real money if ignored:
 
-- **Provider comes from the environment.** A scenario must not pin `EXA_LLM_PROVIDER`; step `env`
-  is merged last and would override you. A guard test enforces this for `provider-live` scenarios.
+- **Matrix presets select the provider and model.** Scenarios without a matrix can use the environment.
+  Step `env` is merged last. A provider-live step must not pin the provider to mock.
 - `--trials 3` is what makes a reliability number meaningful; a single live trial measures one
   sample of a stochastic system.
 - Costs land in the journal and surface via `exactl eval report` (cost view).
+
+The partial-credit control scores a captured two-tool trace against a three-tool reference.
+Its expected score is 2/3. This calibrates scoring and does not measure an agent's failure to
+choose a required tool. The live config uses DeepSeek for the system under test and Claude Haiku through `claude-cli`
+for the judge. Report the judge criterion score separately from the suite score. A quality
+failure remains a measured result; malformed judge responses and provider failures require
+diagnosis and do not supply quality scores.
 
 ## 4c. Adversarial & Interactive Packs
 

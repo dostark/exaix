@@ -2,32 +2,17 @@ schema_version: "1.0.0"
 id: "guardrail-block-violation"
 title: "Guardrail screens a policy violation and journals it"
 pack: "agent_flows"
-# Phase 142 Step 7 — moved to provider-live, and still not passing there. The cutover measured
-# what Step 15 had marked NOT VERIFIED: with the guardrail enabled the daemon journals
-# `guardrail.initialized` and then nothing. `GuardrailConfigSchema.policies` defaults to `[]`,
-# and each policy names a BLUEPRINT that a model evaluates — so a violation verdict needs both
-# a real provider and a policy blueprint, and the repository ships neither. Two consequences:
-#   * the verdict is model-produced, so this belongs to the live tier, not the mock one;
-#   * it cannot pass on any tier until a guardrail policy blueprint exists (Phase 107 scope).
-# Left tagged rather than deleted: the gap is real and this scenario is the record of it.
+# Provider-live, and not passing there yet. With the guardrail enabled the daemon journals `guardrail.initialized` and then nothing.
+# `GuardrailConfigSchema.policies` defaults to `[]`, and each policy names a blueprint that a model evaluates, so a violation verdict needs a real provider and a policy blueprint. The repository ships neither.
+# It stays tagged as the record of that gap.
 tags: ["safety-gate", "subsystem:flows", "provider-live"]
 edition: "team"
 request_fixture: "fixtures/requests/agent_flows/guardrail_block_violation.md"
 mode_support: ["auto"]
 portals: []
-# Phase 142 Step 15 — `exactl evaluate --guardrail-enabled true --expect-guardrail-block` was pure
-# fiction: no `evaluate` command, no such flags, and no reference to either anywhere in the
-# repository. `edition: team` skips the scenario on Solo, which is every development machine, so
-# nothing ever ran it.
-#
-# The guardrail has no CLI surface. It is enabled through config (`guardrail.enabled`, default
-# false, edition-gated per `EDITION_GATED_PATHS`) and observed through the journal, which emits
-# `guardrail.screen.pass` / `guardrail.screen.violation` / `guardrail.screen.error`
-# (`domain_event_types.ts:523-526`). This asserts the screen ran and recorded a verdict, which is
-# what "the concurrent guardrail runner is integrated" actually means at this level.
-#
-# NOT VERIFIED on Solo: edition-gated and skipped here, so the repair is to the command and event
-# names (both now real), not a measured pass.
+# The guardrail has no CLI surface. Config enables it (`guardrail.enabled`, default false, edition-gated per `EDITION_GATED_PATHS`) and the journal shows it:
+# `guardrail.screen.pass`, `guardrail.screen.violation` and `guardrail.screen.error` (`domain_event_types.ts`). This asserts that the screen ran and recorded a verdict.
+# Not verified on Solo: edition-gated and skipped there.
 steps:
   - id: "enable-guardrail"
     type: "write-file"
@@ -66,11 +51,7 @@ steps:
   - id: "wait-for-guardrail-verdict"
     type: "exactl"
     name: "The guardrail screens the request and records a verdict"
-    # Phase 142 Step 7 — this waited on `**/Plans/*_plan.md`, which a BLOCKED request never
-    # produces: the whole point of a guardrail block is that no plan is written. The step could
-    # therefore only ever time out, and the scenario asserted the opposite of its own title.
-    # Caught by the first full six-subsystem run; Step 15 had marked it NOT VERIFIED because
-    # `edition: team` skips it on Solo, which is every development machine.
+    # This waits on the journal, not on `**/Plans/*_plan.md`, because a blocked request never produces a plan: no plan is the point of a guardrail block.
     command: "journal"
     args: ["wait", "--event", "guardrail.screen.violation", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "120"]
     timeout_sec: 120

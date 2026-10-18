@@ -65,13 +65,6 @@ roots = [
 # reference_max_count = 16
 # fallback_max_keywords = 32
 
-# ── Notes ──────────────────────────────────────────────────────────────
-# Run `exactl config show` to see all ~180 configurable settings.
-# Run `exactl config set <key> <value>` to override any setting.
-# Run `exactl config --help` for all subcommands (get, set, unset,
-# validate, show, diff, set-model, set-provider, set-path, use-profile).
-#
-# All settings not listed here (AI timeouts, retries, rate limits,
-# health checks, cost tracking, quality gates, git operations, etc.)
-# are registered via configurable() and visible through the Config DB.
-# Use `exactl config set` to override them — no TOML editing needed.
+# Notes
+# Run exactl config show to list every configurable setting. Run exactl config set <key> <value> to override one.
+# Run exactl config --help for all subcommands. Settings not listed here are registered via configurable() and visible through the Config DB, so no TOML editing is needed.

@@ -48,8 +48,7 @@ const JUDGE_MODEL_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
   [ProviderType.CODEX_CLI]: "gpt-5.6-terra",
 };
 
-const testJudgeProvider = Deno.env.get("EXA_EVAL_LLM_PROVIDER") ??
-  (testProvider === ProviderType.CODEX_CLI ? ProviderType.CLAUDE_CLI : ProviderType.CODEX_CLI);
+const testJudgeProvider = Deno.env.get("EXA_EVAL_LLM_PROVIDER") ?? ProviderType.CLAUDE_CLI;
 const testJudgeModel = Deno.env.get("EXA_EVAL_LLM_MODEL") ??
   JUDGE_MODEL_BY_PROVIDER[testJudgeProvider as ProviderType];
 

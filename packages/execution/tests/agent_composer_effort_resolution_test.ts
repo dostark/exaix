@@ -344,10 +344,9 @@ Deno.test("AgentComposer.executeStep: thinking auto never appears in the ModelRe
 });
 
 Deno.test("AgentComposer.executeStep: a failsafe blueprint thinking false sends thinking false and applies no thinking constraint", async () => {
-  // GAP-6 (Step 13): on main, `thinking: false` arrived from failsafe YAML as the truthy
-  // string "false", so the intent carried `thinking: true`. The declaration preprocess now
-  // maps it to boolean false: the execution path sends `thinking: false` (Anthropic
-  // {type:"disabled"}) and no longer forces thinking-capable provider selection.
+  // `thinking: false` from failsafe YAML used to arrive as the truthy string "false".
+  // The declaration preprocess now maps it to boolean false. The execution path sends `thinking: false`
+  // and does not force thinking-capable provider selection.
   const { db, cleanup } = await initTestDbService();
   try {
     const testDir = await Deno.makeTempDir({ prefix: "ac-effort-thinking-false-" });

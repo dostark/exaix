@@ -45,8 +45,8 @@ export interface IRequestMetadata {
   /** Forwarded onto the plan frontmatter so native plan execution applies the same CLI-flag
    *  overrides the delegation path resolves. */
   requestIntent?: Partial<IModelIntent>;
-  /** The request's declaration-time effort/thinking pair ("auto" allowed), persisted beside
-   *  requestIntent so the execution path resolves it AFTER provider selection (GAP-3). */
+  /** The request's declaration-time effort and thinking pair ("auto" allowed), persisted beside requestIntent.
+   *  The execution path resolves it after provider selection. */
   requestEffortDeclaration?: IEffortDeclarationPair;
   /** The final successful planning run's pin vector, persisted so execution replays those exact
    *  revisions. An empty vector freezes no skills and an absent one keeps live behavior. */
@@ -333,9 +333,8 @@ export class PlanWriter {
     }
   }
 
-  /** Persists the request-level effort/thinking declaration onto the plan frontmatter so
-   *  execution can resolve "auto" against the SAME request declaration that produced the
-   *  plan (GAP-3). */
+  /** Persists the request-level effort and thinking declaration onto the plan frontmatter.
+   *  Execution then resolves "auto" against the same declaration that produced the plan. */
   private applyRequestEffortDeclaration(
     frontmatter: PlanFrontmatter,
     requestEffortDeclaration?: Opt<IEffortDeclarationPair, Reason.OptionalContext>,

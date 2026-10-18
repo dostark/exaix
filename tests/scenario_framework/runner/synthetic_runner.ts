@@ -425,11 +425,9 @@ export async function runSyntheticScenario(
 
   const stepOutcomes: IScenarioStepOutcome[] = [];
 
-  // Matrix-aware step resolution: for a `matrix:` scenario this expands to per-cell groups;
-  // for a matrix-less scenario it returns a single pass-through group. The runner executes
-  // the first runnable group; selectedCell narrows a multi-cell matrix to one cell explicitly.
-  // A `from_catalog` matrix names catalog presets instead of inline cells, so the catalog is
-  // loaded here (IResolvableScenario carries only { steps, matrix }) and resolved into cells.
+  // Matrix-aware step resolution: a `matrix:` scenario expands to per-cell groups, and a matrix-less scenario returns one pass-through group.
+  // The runner executes the first runnable group, and selectedCell narrows a multi-cell matrix to one cell.
+  // A `from_catalog` matrix names presets, so the catalog is loaded here (IResolvableScenario carries only { steps, matrix }).
   const matrix = loadedScenario.scenario.matrix;
   const fixturePort = envForExpansion.EXA_COMPAT_FIXTURE_PORT
     ? Number.parseInt(envForExpansion.EXA_COMPAT_FIXTURE_PORT, 10)
@@ -706,13 +704,8 @@ export async function seedWorkspaceConfig(workspaceRoot: string, frameworkHome: 
  *  exercise both a flag-on and a flag-off analysis. */
 export const STEP_CONFIG_OVERRIDES_ENV = "EXAIX_STEP_CONFIG_OVERRIDES";
 
-/**
- * Applies the config overrides a single step declares in its `env`.
- *
- * It runs immediately before that step so a flag can differ between steps. A
- * malformed payload throws, because silently skipping it would turn a negative
- * assertion into a vacuous pass.
- */
+/** Applies the config overrides that a step declares in its `env`, immediately before that step.
+ *  A flag can therefore differ between steps. A malformed payload throws, because skipping it would turn a negative assertion into a vacuous pass. */
 export async function applyStepConfigOverrides(
   workspaceRoot: string,
   steps: ReadonlyArray<{ env?: { [key: string]: string } }>,
@@ -735,13 +728,8 @@ export async function applyStepConfigOverrides(
   await applyWorkspaceConfigOverrides(workspaceRoot, merged);
 }
 
-/**
- * Patches a scenario's config overrides into the sandbox workspace config.
- *
- * The patch runs even when the config already existed, so an operator-supplied
- * `--workspace` receives the scenario's declared values too. An absent config is
- * left alone, because the scenario cannot patch a file it did not seed.
- */
+/** Patches a scenario's config overrides into the sandbox workspace config. The patch runs even when the config existed, so an operator-supplied `--workspace` gets the declared values too.
+ *  An absent config is left alone, because the scenario cannot patch a file it did not seed. */
 export async function applyWorkspaceConfigOverrides(
   workspaceRoot: string,
   overrides: Opt<{ [key: string]: WorkspaceConfigValue }, Reason.OptionalInput>,
@@ -977,17 +965,17 @@ export async function materializeCellConfig(
   };
 }
 
-/** Fills `source_step_rowid_start`/`_end` from the named step's own tracked rowid window,
- *  since executeScenarioStep reads those fields directly and they otherwise default to (0, 0),
- *  scoring against an empty capture. A non-trajectory-assert step is returned unchanged. */
+/** Resolves capture from `source_step` through the optional completion barrier `through_step`.
+ * Missing or reversed windows stay unresolved. Other step types remain unchanged. */
 export function resolveTrajectorySourceStep(
   step: IScenarioStep,
   stepRowidWindows: Map<string, { start: number; end: number }>,
 ): IScenarioStep {
   if (step.type !== ScenarioStepType.TRAJECTORY_ASSERT || !step.source_step) return step;
   const window = stepRowidWindows.get(step.source_step);
-  if (!window) return step;
-  return { ...step, source_step_rowid_start: window.start, source_step_rowid_end: window.end };
+  const endWindow = step.through_step ? stepRowidWindows.get(step.through_step) : window;
+  if (!window || !endWindow || endWindow.end < window.start) return step;
+  return { ...step, source_step_rowid_start: window.start, source_step_rowid_end: endWindow.end };
 }
 
 interface IExecuteSyntheticStepOptions {

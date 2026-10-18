@@ -899,9 +899,9 @@ Deno.test({
   },
 });
 
-/// Phase 199 Step 6 — real-daemon planning-tool cutover: with `[planning] tools_enabled =
-/// true` and a recorded-mock provider, the planning call runs a read-only `read_file` round
-/// (journaled `dynamic_tool_call` phase "planning") whose result reaches the written plan.
+// Real-daemon planning-tool cutover with `[planning] tools_enabled = true` and a recorded-mock provider.
+// The planning call runs a read-only `read_file` round, journaled as `dynamic_tool_call` phase "planning".
+// Its result reaches the written plan.
 
 /** A valid plan body (PlanSchema) carrying the run-specific marker, reused verbatim by BOTH
  *  the flag-on final-round fixture and the flag-off single-call fixture so the two runs' plan

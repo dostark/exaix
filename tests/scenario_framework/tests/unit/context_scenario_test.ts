@@ -11,6 +11,7 @@
  * @related-files [tests/scenario_framework/scenarios/flow_blueprints/dogfood_context.yaml, tests/scenario_framework/scenarios/provider_live/dogfood_context_live.yaml, tests/scenario_framework/runner/matrix_expander.ts]
  */
 
+import { DEFAULT_DOGFOOD_CONTEXT_TRUSTED_AGENT_ROLES } from "@exaix/core";
 import { assert, assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { parse as parseToml } from "@std/toml";
@@ -218,6 +219,20 @@ Deno.test("[context_scenario] cycle cells assert reconciled-accepted and a real 
   const worktreeStep = byId.get("assert-cycle-worktree-change");
   assert(worktreeStep, "assert-cycle-worktree-change step must exist");
   assertEquals(worktreeStep.cells, ["cycle-claude", "cycle-opencode", "cycle-codex"]);
+});
+
+Deno.test("[context_scenario] cycle cells submit as a trusted dogfood agent role, so the context supplement activates", async () => {
+  const scenario = await parseScenario(LIVE_SCENARIO);
+  const submitStep = scenario.steps.find((s) => s.id === "submit-request-cycle");
+  assert(submitStep, "submit-request-cycle step must exist");
+  const args = submitStep.args ?? [];
+  const roleIndex = args.indexOf("--agent-role");
+  assert(roleIndex >= 0, "the cycle request must name its agent role; the default role is not trusted");
+  const role = args[roleIndex + 1];
+  assert(
+    typeof role === "string" && DEFAULT_DOGFOOD_CONTEXT_TRUSTED_AGENT_ROLES.includes(role),
+    `the cycle agent role must be one of ${DEFAULT_DOGFOOD_CONTEXT_TRUSTED_AGENT_ROLES.join(", ")}`,
+  );
 });
 
 Deno.test("[context_scenario] the inspect step is shared (not cell-scoped) and expects a real, non-empty capture", async () => {

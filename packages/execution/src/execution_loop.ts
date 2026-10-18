@@ -74,7 +74,7 @@ import {
   VERIFICATION_REPAIR_INSTRUCTION,
   VERIFICATION_REPAIR_PHASE,
 } from "@exaix/core";
-import { GIT_CMD_DIFF, GIT_CMD_REV_PARSE, GIT_FLAG_NAME_ONLY } from "@exaix/git/constants.ts";
+import { listChangedFilesBetween, readHeadSha } from "@exaix/git";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -92,8 +92,7 @@ export interface IExecutionLoopConfig {
   logger?: IEventLogger;
   agentRole: string;
   llmProvider?: IModelProvider;
-  /** The EffortResolver instance threaded into execution-path resolution (GAP-9); PlanExecutor
-   *  and AgentComposer fall back to their own default when absent. */
+  /** The EffortResolver for execution-path resolution. PlanExecutor and AgentComposer use their own default when absent. */
   effortResolver?: IEffortResolver;
   amendmentService?: IPlanAmendmentService;
   amendmentGate?: IPlanAmendmentGate;
@@ -459,11 +458,8 @@ export class ExecutionLoop {
     }
   }
 
-  /**
-   * Run the portal's post-execution verification and bounded repair loop.
-   * Returns not_configured without a block, skipped when nothing is verifiable,
-   * and otherwise the runner's status plus the last verified commit.
-   */
+  /** Runs the portal's post-execution verification and bounded repair loop.
+   *  Returns not_configured without a block and skipped when nothing is verifiable. Otherwise it returns the runner's status and last verified commit. */
   private async runVerification(
     frontmatter: PlanFrontmatter,
     context: {
@@ -529,10 +525,8 @@ export class ExecutionLoop {
     }
   }
 
-  /**
-   * Run one repair attempt as a structured one-step plan.
-   * A throw is returned as failed with a categorical error_class. The worktree stays.
-   */
+  /** Runs one repair attempt as a one-step plan. A throw returns failed with a categorical error_class.
+   *  The worktree stays. */
   private async runRepairAttempt(
     frontmatter: PlanFrontmatter,
     verification: IPortalVerification,
@@ -555,7 +549,7 @@ export class ExecutionLoop {
     let execution: { lastCommitSha: string | null };
     let before: string;
     try {
-      before = await this.getHeadSha(context.executionGitService);
+      before = await readHeadSha(context.executionGitService);
       const repairPlan = this.buildRepairPlan(frontmatter, verification, result, attempt, context);
       execution = await this.executeStructuredPlan(
         repairPlan,
@@ -584,8 +578,8 @@ export class ExecutionLoop {
       return { failed: true, commitSha: null };
     }
 
-    const after = await this.getHeadSha(context.executionGitService);
-    const changedFiles = await this.diffChangedFiles(context.executionGitService, before, after);
+    const after = await readHeadSha(context.executionGitService);
+    const changedFiles = await listChangedFilesBetween(context.executionGitService, before, after);
     this.logActivity(DomainEventType.ExecutionRepairCompleted, context.traceId, {
       request_id: context.requestId,
       attempt,
@@ -617,11 +611,8 @@ export class ExecutionLoop {
     };
   }
 
-  /**
-   * Instruction, original step titles, then the failures framed as untrusted data. Each
-   * failure keeps an equal share of the agent request limit, tail first. The whole step
-   * then passes agent input validation.
-   */
+  /** Instruction, original step titles, then the failures as untrusted data.
+   *  Each failure keeps an equal share of the agent request limit, tail first. The step then passes input validation. */
   private buildRepairContent(originalStepTitles: string[], failures: IVerificationCheckFailure[]): string {
     const render = (outputs: string[]): string => {
       const lines = [VERIFICATION_REPAIR_INSTRUCTION];
@@ -639,22 +630,6 @@ export class ExecutionLoop {
     const overhead = render(failures.map(() => "")).length;
     const share = Math.max(0, Math.floor((USER_REQUEST_MAX_LENGTH - overhead) / Math.max(1, failures.length)));
     return render(failures.map((failure) => failure.output.slice(Math.max(0, failure.output.length - share))));
-  }
-
-  /** Current HEAD sha of the execution worktree, or an empty string when unreadable. */
-  private async getHeadSha(gitService: IGitService): Promise<string> {
-    const result = await gitService.runGitCommand([GIT_CMD_REV_PARSE, "HEAD"], { throwOnError: false });
-    return result.exitCode === 0 ? result.output.trim() : "";
-  }
-
-  /** Repo-relative paths changed between two commits. Empty when they are equal or the diff fails. */
-  private async diffChangedFiles(gitService: IGitService, before: string, after: string): Promise<string[]> {
-    if (!before || !after || before === after) return [];
-    const result = await gitService.runGitCommand([GIT_CMD_DIFF, GIT_FLAG_NAME_ONLY, before, after], {
-      throwOnError: false,
-    });
-    if (result.exitCode !== 0) return [];
-    return result.output.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
   }
 
   /** The portal's optional verification block, matched by the plan's portal alias. */
@@ -867,10 +842,9 @@ export class ExecutionLoop {
     return result;
   }
 
-  /** Extracts the request's model intent from the plan frontmatter passthrough
-   *  (PlanWriter writes it there), so native plan execution applies the same request
-   *  overrides the delegation path resolves. Declaration-time "auto" is never forwarded
-   *  into the concrete intent (GAP-3) — it travels as the requestDeclaration pair. */
+  /** Extracts the request's model intent from the plan frontmatter passthrough that PlanWriter writes.
+   *  Native plan execution then applies the same overrides as the delegation path.
+   *  A declaration-time "auto" is not forwarded into the intent. It travels as the requestDeclaration pair. */
   private requestIntentFromPlanFrontmatter(frontmatter: PlanFrontmatter): Partial<IModelIntent> {
     const raw = this.toSafeFrontmatter(frontmatter);
     const intent: Partial<IModelIntent> = {};
@@ -888,11 +862,9 @@ export class ExecutionLoop {
     return intent;
   }
 
-  /** Reads the plan frontmatter's request_effort_declaration passthrough (written by
-   *  PlanWriter) and surfaces it as typed declaration values for the execution path.
-   *  The plan file is an on-disk, editable parse boundary like the request file (GAP-1):
-   *  each field is validated against the declaration schemas — an invalid value is
-   *  DROPPED (never cast through) and journaled as execution.declaration_invalid. */
+  /** Reads the plan frontmatter's request_effort_declaration passthrough as typed declaration values.
+   *  The plan file is editable, so each field is validated against the declaration schemas.
+   *  An invalid value is dropped, never cast, and journaled as execution.declaration_invalid. */
   private requestDeclarationFromPlanFrontmatter(
     frontmatter: PlanFrontmatter,
     traceId: string,
@@ -1075,8 +1047,7 @@ export class ExecutionLoop {
       modelResolver: this.modelResolver,
       modelRegistry: this.modelRegistry,
       ...(this.fixedClient ? { fixedClient: this.fixedClient } : {}),
-      // Phase 132 (GAP-4): request-level intent flags ride the plan frontmatter
-      // (written by PlanWriter) so native execution overrides blueprint values.
+      // Request-level intent flags ride the plan frontmatter, so native execution overrides blueprint values.
       requestIntent: this.requestIntentFromPlanFrontmatter(frontmatter),
       requestDeclaration: this.requestDeclarationFromPlanFrontmatter(frontmatter, frontmatter.trace_id ?? "", planPath),
       ...(this.effortResolver !== undefined ? { effortResolver: this.effortResolver } : {}),
@@ -1448,11 +1419,9 @@ export class ExecutionLoop {
       console.error("Failed to update plan status for amendment:", e);
     }
 
-    // The plan stays paused (not archived, not rejected) but its worktree — created
-    // for this same traceId — must not survive the pause: once the amendment is
-    // approved, execution resumes on the SAME traceId and `git worktree add` would
-    // collide with an orphaned worktree from this attempt (see handleFailure's
-    // identical cleanup for the rejected-plan path).
+    // The plan stays paused, but its worktree must not survive the pause.
+    // After approval, execution resumes on the same traceId. An orphaned worktree would make `git worktree add` collide.
+    // handleFailure does the same cleanup for a rejected plan.
     if (_cleanup?.worktreePath && _cleanup?.portalGitService) {
       try {
         await _cleanup.portalGitService.removeWorktree(_cleanup.worktreePath, {
@@ -1588,16 +1557,10 @@ export class ExecutionLoop {
     return new MissionReporter(this.config, reportConfig, this.memoryBank as MemoryBankService, this.logger, reader);
   }
 
-  /**
-   * Auto-extract learnings from execution using the configured MemoryExtractorService.
-   * Loads the persisted execution record and delegates to analyzeExecution + createProposal.
-   */
-  /**
-   * Extract learnings from the persisted execution record into Pending proposals.
-   * Public so the memory no-fast-path guarantee (GAP-1) is testable at the loop boundary:
-   * this method writes proposals only — global bank, embedding index, and tiered memory
-   * are fed exclusively by the approval pipeline.
-   */
+  /** Extracts learnings from execution with the configured MemoryExtractorService.
+   *  It loads the persisted execution record and runs analyzeExecution and createProposal. */
+  /** Extracts learnings from the persisted execution record into Pending proposals. Public so the loop boundary can test it.
+   *  It writes proposals only. The approval pipeline alone feeds the global bank, embedding index and tiered memory. */
   async extractExecutionLearnings(traceId: string): Promise<void> {
     if (!this.context?.extractor) return;
 
@@ -1608,8 +1571,8 @@ export class ExecutionLoop {
 
       const learnings = await this.context.extractor.analyzeExecution(executionMemory);
       for (const learning of learnings) {
-        // Proposals only: the tiered-memory feed is gated behind approval (GAP-1) — the
-        // extractor options' onApproved hook is the single seam that feeds session memory.
+        // Proposals only: the tiered-memory feed waits for approval.
+        // The extractor options' onApproved hook is the one seam that feeds session memory.
         await this.context.extractor.createProposal(learning, executionMemory, this.agentRole);
       }
     } catch (error) {

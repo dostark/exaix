@@ -1,7 +1,5 @@
 schema_version: "1.0.0"
-# Asserts spec-shaped JSON-RPC errors. The previous version asserted only
-# `contains: ["not found"]` and `exit-code: 0`, and pointed at sandbox-relative paths that
-# do not exist, so it never ran. Now pins the JSON-RPC error code as well as the message,
+# Asserts spec-shaped JSON-RPC errors. It pins the JSON-RPC error code as well as the message,
 # and covers both an unknown tool and a schema-invalid call.
 id: "mcp-server-error-shape"
 title: "MCP server — error shapes for unknown tools and invalid arguments"

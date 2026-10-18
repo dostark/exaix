@@ -10,7 +10,7 @@ import type { CostGroupBy, CostSource, ICostFilter, IGroupedCostRecord, IProvide
 import type { Opt, Reason } from "@exaix/core/types";
 import type { BindingTransport } from "@exaix/schemas";
 
-/** Binding identity of a costed generation across a flow step binding (Step 8). */
+/** Binding identity of a costed generation across a flow step binding. */
 export interface ICostBindingIdentity {
   /** The binding service that hosts and bills the call. */
   service: string;
@@ -29,7 +29,7 @@ export interface ICostDailyFilter {
 /** Why an atomic daily budget reservation was refused. */
 export type CostBudgetDenialReason = "budget_exceeded" | "pricing_unavailable" | "reservation_conflict";
 
-/** Params for an atomic daily budget reservation (Step 8). */
+/** Params for an atomic daily budget reservation. */
 export interface ICostBudgetReservation {
   /** Binding service identity of the call. Per-service caps key off it. */
   service: string;
@@ -110,15 +110,13 @@ export interface ICostTracker {
    */
   getDailyCost(provider?: string): Promise<number>;
 
-  /** Sum a day's persisted spend under a typed binding filter. The filter isolates the cloud
-   *  global cap, a per-service cap, or local usage. This avoids overloading positional
-   *  arguments (Step 8). Absent keeps only the legacy provider-based visitor. */
+  /** Sums a day's persisted spend under a typed binding filter. The filter isolates the cloud global cap, a per-service cap or local usage.
+   *  The typed filter avoids overloading positional arguments. When absent, only the legacy provider-based visitor applies. */
   getDailyBudgetCost?(filter: ICostDailyFilter): Promise<number>;
 
-  /** Atomically count persisted spend plus active reservations against the finite caps.
-   *  Reserve an upper bound when the call may proceed. Reject unpriced cloud usage under a
-   *  finite cap. Returns an allowance with a reservation id for the caller to settle or
-   *  release. Absent keeps the legacy budget path. */
+  /** Atomically counts persisted spend plus active reservations against the finite caps. Reserves an upper bound when the call may proceed.
+   *  Rejects unpriced cloud usage under a finite cap. Returns an allowance with a reservation id to settle or release.
+   *  Absent keeps the legacy budget path. */
   reserveDailyBudget?(params: ICostBudgetReservation): Promise<ICostBudgetAllowance>;
 
   /** Settle a reservation with the actual cost after the call. Actual cost above the estimate

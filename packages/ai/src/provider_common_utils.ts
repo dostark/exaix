@@ -412,9 +412,8 @@ export function extractOpenAIContent(d: OpenAIResponse): string {
   return d.choices?.[0]?.message?.content ?? "";
 }
 
-/** OpenAI's wire-format tool object (`{type:"function", function:{name, description?,
- *  parameters}}`), mapped from IToolDefinition. Exported so OpenRouter's request body (Step 4)
- *  can name its `tools[]` field against this shape instead of `ReturnType<typeof ...>`. */
+/** OpenAI's wire-format tool object (`{type:"function", function:{name, description?, parameters}}`), mapped from IToolDefinition.
+ *  Exported so OpenRouter's request body can name its `tools[]` field against this shape. */
 export type OpenAiWireToolDefinition = {
   type: "function";
   function: { name: string; description?: string; parameters: Record<string, JSONValue> };

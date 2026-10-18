@@ -1,0 +1,66 @@
+schema_version: "1.0.0"
+id: flow-quality-pr-review
+title: "Review task creation validation"
+pack: flow_blueprints
+tags: [provider-live, "subsystem:flows", "entity:pr-review.flow", nightly-quality]
+request_fixture: fixtures/requests/flow_blueprints/quality-pr-review.md
+mode_support: [auto]
+portals:
+  - alias: todo-app
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/todo_app"
+    target_path: "$WORKSPACE_ROOT/todo-app"
+    git_init: true
+bindings:
+  judge:
+    service: claude-cli
+    model: claude-cli/claude-haiku-4-5
+matrix:
+  cells:
+    - tool: live
+      provider: openai-chat
+      config: configs/subsystem-live.toml
+      requires_bin: "true"
+      requires_key: DEEPSEEK_API_KEY
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+  - id: submit-flow
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE", --portal, todo-app]
+  - id: verify-flow-completed
+    type: exactl
+    command: journal
+    args: [wait, --event, flow.completed, --since-rowid, "$JOURNAL_BASELINE", --timeout, "900"]
+    timeout_sec: 905
+    output_criteria:
+      - id: shipped-flow-completed
+        kind: journal-event-exists
+        event_type: flow.completed
+        payload_equals:
+          success: true
+          flowId: pr-review
+  - id: await-artifact
+    type: wait-for-file
+    args: ["Workspace/Plans/*_plan.md"]
+    timeout_sec: 30
+    output_criteria:
+      - id: artifact-produced
+        kind: file-found
+        path_pattern: "Workspace/Plans/*_plan.md"
+  - id: judge-artifact
+    type: file-contains
+    file_pattern: "Workspace/Plans/*_plan.md"
+    step_pass_threshold: 0.7
+    output_criteria:
+      - id: flow-artifact-quality
+        kind: llm-judge
+        rubric: "Assess the actual review, not whether a plan exists. It must identify unvalidated title/priority inputs in handleCreateTask, explain their effect with concrete examples, and propose relevant negative tests. Reward grounded file/function references and ranked actionable findings; penalize invented existing features, vague generic checklists, or claims that files were modified."
+        context_path: "$REQUEST_FIXTURE"
+        score_threshold: 0.7
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

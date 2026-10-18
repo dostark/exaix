@@ -139,9 +139,8 @@ Deno.test({
   name: "[team-binary] the delivery vehicle is the Team artifact, and the enterprise artifact ships no feature",
   ignore: !(await binaryExists()),
   fn: async () => {
-    // GAP-14: the isolated Enterprise workspace is a scaffold. It cannot import
-    // the Team-owned extractor seam, so it cannot deliver this feature. This test
-    // holds that down instead of leaving it as prose.
+    // The isolated Enterprise workspace is a scaffold. It cannot import the Team-owned extractor seam, so it cannot deliver this feature.
+    // This test holds that down instead of leaving it as prose.
     assert(await binaryExists(), "the Team artifact must be the built delivery vehicle");
 
     let enterprisePresent = false;

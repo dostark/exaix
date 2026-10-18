@@ -852,10 +852,8 @@ export function flowStepOutputInstruction(step: IFlowStep, flow: IFlow): string 
 export class FlowRunner implements IFlowRunner {
   private conditionEvaluator: ConditionEvaluator;
   protected dynamicStepExecutor?: DynamicStepExecutor;
-  /** Step-3 DYNAMIC executors keyed by binding fingerprint.
-   *  One LlmClient serves each distinct bound service fingerprint.
-   *  Two differently-bound DYNAMIC steps never share a model route.
-   *  At most one entry grows per fingerprint used in this process. */
+  /** DYNAMIC executors keyed by binding fingerprint. One LlmClient serves each distinct bound service fingerprint,
+   *  so two differently bound DYNAMIC steps never share a model route. At most one entry grows per fingerprint used in this process. */
   /** One executor per pooled provider instance. A new provider gets a new executor.
    *  An evicted provider takes its executor with it. */
   private readonly dynamicExecutorsByProvider = new WeakMap<IModelProvider, DynamicStepExecutor>();
@@ -1161,12 +1159,9 @@ export class FlowRunner implements IFlowRunner {
     this.stepHandlerRegistry.registerWithKey(FlowStepType.CONSENSUS, agentHandler);
   }
 
-  /** Resolve the DYNAMIC executor for one step.
-   *  A bound step gets a fingerprint-keyed executor.
-   *  Its LlmClient runs the bound provider with the snapshot's effort and thinking.
-   *  An unbound step keeps the shared lazily-resolved executor.
-   *  The cache never re-resolves a binding after the run snapshot.
-   *  It keys entries by the already-fixed binding fingerprint. */
+  /** Resolves the DYNAMIC executor for one step. A bound step gets a fingerprint-keyed executor whose LlmClient runs the bound provider
+   *  with the snapshot's effort and thinking. An unbound step keeps the shared lazily-resolved executor.
+   *  The cache never re-resolves a binding after the run snapshot, because it keys entries by the already fixed fingerprint. */
   private async dynamicExecutorFor(
     step: IFlowStep,
     _request: IFlowOriginalRequest,

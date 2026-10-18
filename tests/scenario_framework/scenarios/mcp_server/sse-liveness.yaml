@@ -1,9 +1,6 @@
 schema_version: "1.0.0"
-# Asserts the SSE transport boots and accepts a connection. The previous version ran the
-# long-lived server in the FOREGROUND with `timeout_sec: 10` and asserted `exit-code: 0` —
-# a server that stays up can only ever be killed by the timeout and report non-zero, so the
-# scenario could never pass, and it leaked the process on the runner. The probe script
-# backgrounds the server, polls an ephemeral port, and always reaps the child.
+# Asserts the SSE transport boots and accepts a connection. A long-lived server run in the foreground can only be stopped by the timeout and report non-zero,
+# so the probe script backgrounds the server, polls an ephemeral port, and always reaps the child.
 id: "mcp-server-sse-liveness"
 title: "MCP server — SSE transport boots and serves its endpoint"
 pack: "mcp_server"

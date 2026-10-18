@@ -38,11 +38,8 @@ export interface IPinnedSkillPrompt {
   fit(maxChars: number): IPinnedSkillPrompt;
 }
 
-/**
- * Resolves the pins to their stored snapshots and renders the included ones. Returns null when no
- * pin carries content. Throws `skill_unavailable` for any pin that cannot be resolved, before
- * anything renders.
- */
+/** Resolves the pins to their stored snapshots and renders the included ones. Returns null when no pin carries content.
+ *  Throws `skill_unavailable` for any pin that cannot resolve, before anything renders. */
 export async function createPinnedSkillPrompt(
   skills: ISkillsService,
   pins: readonly ISkillPin[],

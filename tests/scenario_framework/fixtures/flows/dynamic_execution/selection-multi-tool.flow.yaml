@@ -1,0 +1,16 @@
+id: selection-multi-tool
+name: Multi-tool selection control
+description: Read a mounted fixture through two permitted tools.
+version: "1.0"
+steps:
+  - id: inspect
+    name: List the portal directory, read its README, and summarize the content
+    agent_role: code-analyst
+    execution_mode: dynamic
+    permitted_tools: [list_directory, read_file]
+    input:
+      source: request
+    timeout: 180000
+output:
+  from: inspect
+  format: markdown

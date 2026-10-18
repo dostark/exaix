@@ -87,10 +87,8 @@ export class RunBindingsStore implements IRunBindingsStore {
     }
   }
 
-  /** Claim a run file for a request, verifying trace id, path and content hash.
-   *  Returns the file, or undefined when no run file exists for that trace.
-   *  A plain request carries no operator bindings.
-   *  A repeated claim for the same request returns the saved file.
+  /** Claims a run file for a request, checking trace id, path and content hash. Returns the file, or undefined when none exists for that trace.
+   *  A plain request carries no operator bindings. A repeated claim returns the saved file.
    *  A different request, or a malformed file, rejects with overlay_invalid. */
   async claim(
     traceId: string,

@@ -226,5 +226,7 @@ export const CliDelegateConfigSchema = z.object({
   tool_exposure: z.enum(["default", "shell_only"]).default("default").optional(),
   /** Absolute paths to additional binaries allowed beyond the built-in claude/opencode bins. */
   bin_overrides: z.array(z.string()).optional(),
+  /** Provider whose API key the daemon passes to the tool. Without it the tool gets no provider key. */
+  provider: SessionDelegateProviderSchema.optional(),
 });
 export type CliDelegateConfig = z.infer<typeof CliDelegateConfigSchema>;

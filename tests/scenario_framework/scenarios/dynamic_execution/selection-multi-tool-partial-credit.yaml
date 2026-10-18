@@ -1,0 +1,61 @@
+schema_version: "1.0.0"
+id: selection-multi-tool-partial-credit
+title: Live multi-tool selection with an imperfect-reference scoring control
+pack: dynamic_execution
+edition: team
+tags: [selection, trajectory, "subsystem:mcp-client", provider-live]
+request_fixture: fixtures/requests/dynamic_execution/selection_multi_tool.md
+flow_fixture: fixtures/flows/dynamic_execution/selection-multi-tool.flow.yaml
+mode_support: [auto]
+portals:
+  - alias: sample-ts-project
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/simple_repo"
+    target_path: "$WORKSPACE_ROOT/sample-ts-project"
+    git_init: true
+matrix:
+  from_catalog: [deepseek-chat]
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+  - id: submit-request
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE", --portal, sample-ts-project]
+  - id: await-flow
+    type: exactl
+    command: journal
+    args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "240"]
+    timeout_sec: 260
+    output_criteria:
+      - id: flow-completed
+        kind: command-exit-code
+        equals: 0
+  - id: assert-tool-selection
+    type: trajectory-assert
+    source_step: submit-request
+    through_step: await-flow
+    expected_sequence:
+      - tool: list_directory
+      - tool: read_file
+    order_matters: false
+    allow_extra_tools: true
+    partial_credit: true
+  # The reference adds an unavailable tool. A real two-tool trace must score 2/3.
+  - id: assert-partial-control
+    type: trajectory-assert
+    source_step: submit-request
+    through_step: await-flow
+    expected_sequence:
+      - tool: list_directory
+      - tool: read_file
+      - tool: search_files
+    order_matters: false
+    allow_extra_tools: true
+    partial_credit: true
+    step_pass_threshold: 0.6
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

@@ -401,6 +401,10 @@ export class EvalCommands extends BaseCommand {
           console.log("No family summary data found.");
           return;
         }
+        if (options.format === JSON_FORMAT) {
+          console.log(JSON.stringify(summary, null, 2));
+          return;
+        }
         console.log("Family Report");
         console.log("-------------");
         console.log(

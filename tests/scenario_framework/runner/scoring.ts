@@ -191,7 +191,11 @@ export function composeGated(
 export function computeMultiTrialMetrics(
   trialScores: number[],
   scoreThreshold: number = 0.5,
+  trialOutcomes?: Opt<readonly string[], Reason.OptionalInput>,
 ): IMultiTrialMetrics {
+  if (trialOutcomes && trialOutcomes.length !== trialScores.length) {
+    throw new RangeError("Trial outcomes must match trial scores");
+  }
   if (trialScores.length === 0) {
     return { mean: 0, min: 0, max: 0, stdev: 0, pass_at_1: 0, pass_pow_k: 0 };
   }
@@ -204,7 +208,10 @@ export function computeMultiTrialMetrics(
   const variance = trialScores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / n;
   const stdev = Math.sqrt(variance);
 
-  const passCount = trialScores.filter((s) => s >= scoreThreshold).length;
+  const passCount =
+    trialScores.filter((score, index) =>
+      score >= scoreThreshold && (trialOutcomes === undefined || trialOutcomes[index] === "success")
+    ).length;
   const pass_at_1 = passCount / n;
   const pass_pow_k = n > 0 ? Math.pow(pass_at_1, n) : 0;
 

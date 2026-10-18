@@ -73,8 +73,8 @@ export const DEFAULT_OPENROUTER_CAPABILITY_CACHE_TTL_MS: number = configurable({
 /** Sampling and parallel-call hints that are best effort. A model that does not list one never receives it. */
 export const OPENROUTER_HINT_PARAMETERS = ["temperature", "top_p", "stop", "parallel_tool_calls"] as const;
 
-/** Explicit cache_control breakpoints, as the prompt-caching guide documents them (checked 2026-10-12). Anthropic Claude
- *  and Google Gemini are listed by family. The Alibaba models are listed one by one. */
+/** Explicit cache_control breakpoints, as the prompt-caching guide documents them. Anthropic Claude and Google Gemini are listed by family.
+ *  The Alibaba models are listed one by one. */
 export const OPENROUTER_EXPLICIT_CACHE_PREFIXES = ["anthropic/claude", "google/gemini"] as const;
 export const OPENROUTER_EXPLICIT_CACHE_MODELS = [
   "deepseek/deepseek-v3.2",
@@ -143,10 +143,8 @@ export const PROVIDER_OPENROUTER_CAPABILITIES = ["chat", "multi-model"] as const
 export const PROVIDER_OPENROUTER_STRENGTHS = ["model-variety", "auto-fallback", "unified-billing"] as const;
 export const PROVIDER_OPENROUTER_COST_TIER = ProviderCostTier.PAID;
 
-/**
- * Estimator model for each OpenRouter tokenizer family that has a matching estimator tokenizer.
- * Every other family keeps the configured model id, and the estimator falls back to characters per token.
- */
+/** Estimator model for each OpenRouter tokenizer family that has a matching estimator tokenizer.
+ *  Every other family keeps the configured model id, and the estimator falls back to characters per token. */
 export const OPENROUTER_TOKENIZER_MODEL_MAP: Readonly<Record<string, string>> = {
   GPT: "gpt-4o",
   Claude: "claude-sonnet-4",

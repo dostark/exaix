@@ -7,18 +7,9 @@ edition: "team"
 request_fixture: "fixtures/requests/agent_flows/edition_smoke.md"
 mode_support: ["auto"]
 portals: []
-# Phase 142 Step 15 — `exactl evaluate --edition-provider-check` was pure fiction: no `evaluate`
-# command, no such flag, and no reference to either anywhere in the repository. It was invisible
-# because `edition: team` skips the scenario on Solo, which is every development machine.
-#
-# The registry is observed through the DAEMON, not the CLI. `models list` prints
-# "Model Registry (Solo floor)" unconditionally — `init.ts:102` notes the CLI process holds only
-# the Solo floor and cannot reach the DB-backed live registry — so it cannot distinguish editions
-# at all. The daemon resolves through ModelRegistryService and journals `model.resolved` with the
-# candidate provider set, which is the edition-sensitive observable.
-#
-# NOT VERIFIED on Solo: this scenario is edition-gated and skipped here, so the repair is to the
-# command and event names (both now real), not a measured pass.
+# The registry is observed through the daemon, not the CLI. `models list` always prints "Model Registry (Solo floor)", because the CLI process holds only the Solo floor, so it cannot tell editions apart.
+# The daemon resolves through ModelRegistryService and journals `model.resolved` with the candidate provider set, which is the edition-sensitive observable.
+# Not verified on Solo: the scenario is edition-gated and skipped there.
 steps:
   - id: "start-daemon"
     type: "exactl"

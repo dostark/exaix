@@ -46,17 +46,9 @@ enabled = false
 [request_analysis]
 enabled = true
 
-# Delegate the code_changes gate to headless Claude Code on Sonnet 5.
-#
-# Model id: `prepareBrief` requires the `provider:model` form (it rejects a bare id),
-# but the `claude` CLI rejects a provider-prefixed id — passing `anthropic:claude-sonnet-5`
-# returns "It may not exist or you may not have access to it". The claude-code adapter
-# strips the prefix when building `--model`, so this value satisfies both.
-# Verified against claude CLI 2.1.217: `claude -p ... --model claude-sonnet-5` succeeds.
-#
-# No [session_delegate.provider] block: sanitizeChildEnv strips provider keys from the
-# child, so the CLI falls back to its own OAuth credential. Run with ANTHROPIC_API_KEY
-# unset so the delegate bills the subscription rather than the API.
+# Delegates the code_changes gate to headless Claude Code on Sonnet 5.
+# The model value keeps the provider prefix, because prepareBrief requires it. The claude-code adapter strips the prefix before --model, and the CLI rejects the prefixed form.
+# Run with ANTHROPIC_API_KEY unset, so the delegate bills the subscription. There is no [session_delegate.provider] block, because sanitizeChildEnv strips provider keys from the child.
 [session_delegate]
 enabled = true
 tool = "claude-code"

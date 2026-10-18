@@ -154,13 +154,8 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
 
   // Helpers
 
-  /**
-   * Reads one portal file under the shared containment and byte bounds.
-   *
-   * No parse happens here, so a caller that needs the raw text can reuse it.
-   * A language file resolver uses this to read import declarations.
-   * Returns `undefined` when the path escapes the root or cannot be read.
-   */
+  /** Reads one portal file under the shared containment and byte bounds, with no parse. A caller that needs raw text can reuse it.
+   *  Returns `undefined` when the path escapes the root or cannot be read. */
   protected async readPortalFile(
     portalRoot: string,
     file: string,
@@ -178,17 +173,9 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
     }
   }
 
-  /**
-   * Reads and parses one portal file under the shared security and size bounds.
-   *
-   * Returns `undefined` when the path escapes the portal root.
-   * It also returns `undefined` for a non-regular or unreadable file.
-   * A file over a byte or node bound is skipped as well.
-   *
-   * A language file resolver or a reference extractor reuses this method.
-   * That keeps the containment and bounds rules in exactly one place.
-   * `portalRoot` must already be resolved.
-   */
+  /** Reads and parses one portal file under the shared security and size bounds. `portalRoot` must already be resolved.
+   *  Returns `undefined` for a path outside the root. It also returns it for a non-regular file, an unreadable file, or one over a byte or node bound.
+   *  Resolvers and extractors reuse it, which keeps the bounds rules in one place. */
   protected async parsePortalFile(
     portalRoot: string,
     file: string,
@@ -220,15 +207,8 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
     return { content, tree };
   }
 
-  /**
-   * Counts syntax nodes with an explicit stack.
-   *
-   * The count is an upper bound.
-   * It stops once the ceiling is passed.
-   * A recursive walk cannot be used here.
-   * A deeply nested file would overflow the call stack first.
-   * The bound would then become the crash.
-   */
+  /** Counts syntax nodes with an explicit stack. The count is an upper bound and stops once the ceiling is passed.
+   *  A recursive walk would overflow the call stack on a deeply nested file, so the bound would become the crash. */
   protected _countNodes(
     node: { childCount: number; child: (i: number) => unknown },
   ): number {

@@ -50,3 +50,25 @@ Deno.test("[TrajectoryScenario] every trajectory-assert step in the catalog expe
   }
   assertEquals(unknown, [], "a trajectory expecting a tool Exaix does not have can never pass");
 });
+
+Deno.test("[TrajectoryScenario] live partial-credit control captures a completed multi-tool flow", async () => {
+  const raw = await Deno.readTextFile(join(SCENARIOS_DIR, "selection-multi-tool-partial-credit.yaml"));
+  const scenario = ScenarioSchema.parse(parseYaml(raw));
+  assert(scenario.tags.includes("provider-live"));
+  assert(scenario.portals.length > 0, "live tools need a mounted fixture");
+  const submit = scenario.steps.find((step) => step.id === "submit-request");
+  const barrier = scenario.steps.find((step) => step.id === "await-flow");
+  assertEquals(submit?.command, "request");
+  assertEquals(barrier?.command, "journal");
+  assert(barrier?.args?.includes("flow.completed"));
+  const full = scenario.steps.find((step) => step.id === "assert-tool-selection");
+  const partial = scenario.steps.find((step) => step.id === "assert-partial-control");
+  assertEquals(full?.source_step, "submit-request");
+  assertEquals(partial?.source_step, "submit-request");
+  assertEquals(full?.through_step, "await-flow");
+  assertEquals(partial?.through_step, "await-flow");
+  assertEquals(full?.expected_sequence?.map((entry) => entry.tool), ["list_directory", "read_file"]);
+  assertEquals(partial?.expected_sequence?.map((entry) => entry.tool), ["list_directory", "read_file", "search_files"]);
+  assertEquals(partial?.partial_credit, true);
+  assertEquals(partial?.step_pass_threshold, 0.6);
+});

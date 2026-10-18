@@ -48,7 +48,7 @@ steps:
         score_weight: 1.0
       - id: "structured-data-emitted"
         kind: "command-output-contains"
-        contains: ["exaix_structured_data"]
+        contains: ["\"structuredContent\""]
         score_weight: 0.7
       - id: "call-succeeded"
         kind: "command-output-contains"
