@@ -7,11 +7,11 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { parseCatalog } from "@exaix/lint-rules";
 import { checkSource } from "../src/checkers/check_code_style.ts";
 import catalogJson from "../catalog.json" with { type: "json" };
+import { loadPolicyCatalog } from "./helpers/catalog.ts";
 
-const catalog = parseCatalog(catalogJson);
+const catalog = loadPolicyCatalog(catalogJson);
 const ROOT = Deno.cwd();
 const abs = (rel: string) => `${ROOT}/${rel}`;
 const PROD = abs("packages/x/src/sample.ts");
@@ -81,11 +81,6 @@ const CASES: IRuleCase[] = [
     id: "module-header-tag",
     invalid: "/**\n * @module Sample\n * @path packages/x/src/sample.ts\n */\nexport const a = 1;\n",
     valid: HEADER + "export const a = 1;\n",
-  },
-  {
-    id: "exported-interface-naming",
-    invalid: "export interface Foo { a: string }\n",
-    valid: "export interface IFoo { a: string }\n",
   },
   {
     id: "exported-interface-placement",

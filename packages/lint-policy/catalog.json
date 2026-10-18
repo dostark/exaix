@@ -76,6 +76,10 @@
         "reason": "Builds a fresh per-call AgentComposer; a pre-built DI instance would violate the planWrittenFiles invariant."
       },
       {
+        "path": "packages/lint-policy/src/rule_packs.ts",
+        "reason": "Composes the engine rule pack and the Exaix rule pack into one registry; the pack constants are rule data, not service state."
+      },
+      {
         "path": "packages/execution/src/agent_runner.ts",
         "reason": "Builds a PortalPermissionsService per request from the matched portal; a boot-time instance would pin the wrong portal."
       }
@@ -753,8 +757,8 @@
         "module-structure"
       ]
     },
-    "exported-interface-naming": {
-      "engine": "script",
+    "exaix/exported-interface-naming": {
+      "engine": "plugin",
       "severity": "error",
       "scope": "all",
       "codeStyle": "CODE_STYLE.md#di-and-interfaces",

@@ -10,8 +10,8 @@
 import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
-import { PLUGIN_RULE_IMPLEMENTATIONS } from "@exaix/lint-rules";
 import { IMPLEMENTED_SCRIPT_RULE_IDS } from "../src/checkers/check_code_style.ts";
+import { EXAIX_REGISTRY } from "../src/rule_packs.ts";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
 const DOC_PATH = join(REPO_ROOT, "packages/lint-policy/docs/style_rules.md");
@@ -59,11 +59,11 @@ Deno.test("catalog rule ids and tags equal the generated rule reference", () => 
 Deno.test("every rule id is implemented by exactly one engine", () => {
   for (const [id, entry] of Object.entries(catalog.rules)) {
     if (entry.engine === "plugin") {
-      assert(id in PLUGIN_RULE_IMPLEMENTATIONS, `plugin rule ${id} has no implementation`);
+      assert(EXAIX_REGISTRY.implementation(id) !== null, `plugin rule ${id} has no implementation`);
       assert(!IMPLEMENTED_SCRIPT_RULE_IDS.has(id), `plugin rule ${id} is also a script rule`);
     } else {
       assert(IMPLEMENTED_SCRIPT_RULE_IDS.has(id), `script rule ${id} has no implementation`);
-      assert(!(id in PLUGIN_RULE_IMPLEMENTATIONS), `script rule ${id} is also a plugin rule`);
+      assert(EXAIX_REGISTRY.implementation(id) === null, `script rule ${id} is also a plugin rule`);
     }
   }
   for (const id of IMPLEMENTED_SCRIPT_RULE_IDS) {

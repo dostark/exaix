@@ -5,8 +5,9 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { CatalogError, type JsonValue, parseCatalog } from "@exaix/lint-rules";
+import { CatalogError, type JsonValue } from "@exaix/lint-rules";
 import catalogJson from "../catalog.json" with { type: "json" };
+import { loadPolicyCatalog } from "./helpers/catalog.ts";
 
 function cloneCatalog(): Record<string, JsonValue> {
   return structuredClone(catalogJson) as Record<string, JsonValue>;
@@ -20,7 +21,7 @@ function expectReject(mutate: (catalog: Record<string, JsonValue>) => void, path
   const catalog = cloneCatalog();
   mutate(catalog);
   try {
-    parseCatalog(catalog);
+    loadPolicyCatalog(catalog);
     throw new Error("expected parseCatalog to throw");
   } catch (error) {
     assertEquals(error instanceof CatalogError, true, "expected a CatalogError");
@@ -29,7 +30,7 @@ function expectReject(mutate: (catalog: Record<string, JsonValue>) => void, path
 }
 
 Deno.test("catalog is accepted as committed", () => {
-  assertEquals(parseCatalog(cloneCatalog()).version, "1");
+  assertEquals(loadPolicyCatalog(cloneCatalog()).version, "1");
 });
 
 Deno.test("parseCatalog rejects an unknown top-level key with its JSON path", () => {

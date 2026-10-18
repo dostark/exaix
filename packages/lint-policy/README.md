@@ -9,6 +9,9 @@ style checkers that still run as standalone scripts.
 - `plugin.ts` — the `deno lint` plugin entry, loaded through `deno.json` `lint.plugins`.
 - `rule_ceilings.json` — the per-package counts that hold each parked rule at a measured ceiling.
 - `src/checkers/` — `check_code_style.ts` and `check_magic_values.ts`, run by `deno task check:style` and `deno task check:magic`.
+- `src/rule_pack/` — `EXAIX_RULE_PACK`: the plugin rules that encode Exaix conventions. The first rule is
+  `exaix/exported-interface-naming`.
+- `src/rule_packs.ts` — the rule packs and the registry that `plugin.ts` and the style checker share.
 - `src/repo_layout.ts` — the repository path tokens the checkers read from the catalog.
 - `docs/style_rules.md` — the rule reference, generated from the catalog by `deno task docs:style-rules`.
 - `docs/style_guide.md` — the Exaix additions to the generic style guide in `packages/lint-rules/docs/`.

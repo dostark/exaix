@@ -31,8 +31,8 @@ async function runDeno(
   };
 }
 
-async function withSeed<T>(body: (file: string) => Promise<T>): Promise<T> {
-  await Deno.writeTextFile(SEED_FILE, SEED_SOURCE);
+async function withSeed<T>(body: (file: string) => Promise<T>, source: string = SEED_SOURCE): Promise<T> {
+  await Deno.writeTextFile(SEED_FILE, source);
   try {
     return await body(SEED_FILE);
   } finally {
@@ -46,6 +46,29 @@ Deno.test("deno lint reports exaix/no-chained-type-assertions on a seeded violat
     assertEquals(result.code === 0, false, result.output);
     assertStringIncludes(result.output, "exaix/no-chained-type-assertions");
   });
+});
+
+const INTERFACE_SEED = "export interface Foo {}\n";
+const OFF_RULE_IGNORE_SEED = [
+  "// deno-lint-ignore exaix/no-explicit-unknown -- the catalog turns this rule off",
+  "export const value = 1;",
+  "",
+].join("\n");
+
+Deno.test("deno lint reports exaix/exported-interface-naming on a seeded violation", async () => {
+  await withSeed(async (file) => {
+    const result = await runDeno(["lint", file]);
+    assertEquals(result.code === 0, false, result.output);
+    assertStringIncludes(result.output, "exaix/exported-interface-naming");
+  }, INTERFACE_SEED);
+});
+
+Deno.test("an ignore comment for a rule the catalog turns off is unused, not an unknown rule code", async () => {
+  await withSeed(async (file) => {
+    const result = await runDeno(["lint", file]);
+    assertStringIncludes(result.output, "ban-unused-ignore");
+    assertFalse(result.output.includes("ban-unknown-rule-code"), result.output);
+  }, OFF_RULE_IGNORE_SEED);
 });
 
 Deno.test("EXAIX_LINT_RULES selects the rule and the entry prints a narrowing notice", async () => {

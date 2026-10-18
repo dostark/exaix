@@ -103,6 +103,20 @@ export interface IReActAction {
   description?: string;
 }
 
+/** Internal type for dynamically-built provider.generate() options. */
+export interface IGeneratedOptions {
+  traceId?: string;
+  temperature: number;
+  max_tokens: number;
+  tools?: IToolDefinition[];
+  toolChoice?: IToolChoice;
+  priorTurn?: IProviderTurn;
+  nativeConversation?: INativeConversationSnapshot;
+  /** "forced" means the preferred-tool branch chose this iteration's tool choice. "any" means the
+   *  unconstrained fallback. Non-wire: provider request builders ignore it. */
+  nativeToolChoiceMode?: NativeToolChoiceMode;
+}
+
 /** The five tools listed when an agent role/skill declares no permitted_tools restriction at all. */
 const DEFAULT_REACT_VISIBLE_TOOLS: readonly string[] = [
   ToolName.READ_FILE,
@@ -139,20 +153,6 @@ const REACT_WRITE_TOOLS: ReadonlySet<string> = new Set<string>([
 /** Executes an agentic loop: the LLM generates actions, ToolRegistry runs them, until the task completes. */
 /** Which native tool-choice branch produced this iteration's options. */
 export type NativeToolChoiceMode = "forced" | "any" | "auto";
-
-export /** Internal type for dynamically-built provider.generate() options. */
-interface GeneratedOptions {
-  traceId?: string;
-  temperature: number;
-  max_tokens: number;
-  tools?: IToolDefinition[];
-  toolChoice?: IToolChoice;
-  priorTurn?: IProviderTurn;
-  nativeConversation?: INativeConversationSnapshot;
-  /** "forced" means the preferred-tool branch chose this iteration's tool choice; "any"
-   *  means the unconstrained fallback. Non-wire: ignored by provider request builders. */
-  nativeToolChoiceMode?: NativeToolChoiceMode;
-}
 
 /** Parameters for runSingleIteration. */
 interface IIterationParams {
@@ -425,11 +425,11 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     nativeToolsUsed = false,
     nativePreferredTool?: Opt<string, Reason.OptionalInput>,
     parallelMode: ToolsRoundMode = ToolsRoundMode.AUTO,
-  ): GeneratedOptions {
+  ): IGeneratedOptions {
     const base = Object.assign({
       temperature: REACT_DEFAULT_TEMPERATURE,
       max_tokens: REACT_DEFAULT_MAX_TOKENS,
-    }, this.callOptions) as GeneratedOptions;
+    }, this.callOptions) as IGeneratedOptions;
     // Off asks for one call per response. Auto sends no parallel flag, so the provider default applies.
     const parallel: { disable_parallel_tool_use?: boolean } = parallelMode === ToolsRoundMode.OFF
       ? { disable_parallel_tool_use: true }
@@ -544,7 +544,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     prompt: string;
     initialPrompt?: string;
     initialSections: INativePromptSection[];
-    generateOptions: GeneratedOptions;
+    generateOptions: IGeneratedOptions;
     aciSection?: { result: IAciRenderResult; budgetChars: number };
   }> {
     const {
@@ -913,7 +913,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   private async preflightNativeConversationBudget(
     blueprint: IAgentFileBlueprint,
     snapshot: Opt<INativeConversationSnapshot, Reason.OptionalContext>,
-    options: GeneratedOptions,
+    options: IGeneratedOptions,
     traceId: string,
   ): Promise<void> {
     if (!snapshot) return;

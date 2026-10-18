@@ -29,6 +29,7 @@ import {
   type ScriptRuleSchemas,
 } from "@exaix/lint-rules";
 import styleRuleCatalog from "../../catalog.json" with { type: "json" };
+import { EXAIX_REGISTRY } from "../rule_packs.ts";
 import {
   escapeRegExp,
   LAYOUT,
@@ -79,7 +80,10 @@ const SCRIPT_RULE_SCHEMAS: ScriptRuleSchemas = {
   }).strict(),
 };
 
-const CATALOG: ICatalog = parseCatalog(styleRuleCatalog, { scriptRuleSchemas: SCRIPT_RULE_SCHEMAS });
+const CATALOG: ICatalog = parseCatalog(styleRuleCatalog, {
+  scriptRuleSchemas: SCRIPT_RULE_SCHEMAS,
+  registry: EXAIX_REGISTRY,
+});
 
 /** Classifies a repository-relative path with the shared catalog scopes. */
 export function classifyRepoPath(repoPath: string): PathClass {
@@ -240,7 +244,7 @@ function matchesAnyGlob(repoPath: string, globs: string[]): boolean {
 
 /** Resolves a rule's effective severity for a path, or null when the rule does not apply. */
 function ruleEnabled(catalog: ICatalog, ruleName: string, repoPath: string): "error" | "warn" | null {
-  const settings = ruleSettings(catalog, ruleName);
+  const settings = ruleSettings(catalog, ruleName, EXAIX_REGISTRY);
   if (settings.severity === "off") return null;
   const pathClass = classifyPath(repoPath, catalog.scopes);
   if (pathClass === "fixture") return null;
@@ -422,7 +426,7 @@ function stringListOption(value: JsonValue, fallback: string[]): string[] {
   return Array.isArray(value) ? value.map((item) => String(item)) : fallback;
 }
 
-const EDITION_TIER_OPTIONS = ruleSettings(CATALOG, "edition-leak").options;
+const EDITION_TIER_OPTIONS = ruleSettings(CATALOG, "edition-leak", EXAIX_REGISTRY).options;
 
 export const EDITION_TIERS: IEditionTiers = {
   soloTier: Number(EDITION_TIER_OPTIONS.soloTier ?? 0),
@@ -1033,7 +1037,6 @@ const INLINE_SCRIPT_RULE_IDS = [
   "import-placement",
   "module-header",
   "module-header-tag",
-  "exported-interface-naming",
   "exported-interface-placement",
   "max-params",
   "long-comment",
@@ -1708,7 +1711,7 @@ async function checkFile(path: string) {
 
 /** Whole-tree duplicate type-contract pass, run after the per-file checks. */
 function runDuplicateTypePass(): void {
-  const settings = ruleSettings(CATALOG, "duplicate-type");
+  const settings = ruleSettings(CATALOG, "duplicate-type", EXAIX_REGISTRY);
   // SAFETY: the catalog loader validates rule options against their schema before this read.
   const options = settings.options as {
     minProperties?: number;
@@ -2285,20 +2288,6 @@ function scanImportLine(
   }
 }
 
-/** Reports an exported interface whose name does not start with a capital I. */
-function reportInterfaceNaming(path: string, line: string, idx: number): void {
-  const match = line.match(/^\s*export\s+interface\s+([A-Za-z0-9_$]+)/);
-  if (!match) return;
-  const name = match[1];
-  if (name.startsWith("I") && (name.length <= 1 || name[1] === name[1].toUpperCase())) return;
-  console.log(
-    `ERROR [exported-interface-naming] ${path}:${
-      idx + 1
-    } – Exported interface '${name}' must start with a capital 'I' (e.g., I${name}).`,
-  );
-  errorCount++;
-}
-
 /** Tracks a type/interface/enum block start and reports placement findings. */
 function scanTypeStart(path: string, line: string, trimmed: string, idx: number, state: IScanState): void {
   if (state.firstInterfaceLineNum === -1) state.firstInterfaceLineNum = idx + 1;
@@ -2314,7 +2303,6 @@ function scanTypeStart(path: string, line: string, trimmed: string, idx: number,
   if (state.protectedBraceCount > 0 || (!trimmed.endsWith(";") && !trimmed.endsWith("}"))) {
     state.inTypeDeclaration = true;
   }
-  reportInterfaceNaming(path, line, idx);
 }
 
 /** Adds any top-level comma count in text to the parameter tally. */
@@ -2444,11 +2432,13 @@ function scanFileLines(
 function checkFileFromText(path: string, text: string, catalog: ICatalog): void {
   const repoPath = path.startsWith(REPO_ROOT + "/") ? path.slice(REPO_ROOT.length + 1) : path;
   const lines = text.split(/\r?\n/);
-  const maxParams = Number(ruleSettings(catalog, "max-params").options.max ?? 7);
-  const longCommentMaxLines = Number(ruleSettings(catalog, "long-comment").options.maxLines ?? 3);
-  const minFixtureLines = Number(ruleSettings(catalog, "test-inline-multiline-fixture").options.minLines ?? 7);
+  const maxParams = Number(ruleSettings(catalog, "max-params", EXAIX_REGISTRY).options.max ?? 7);
+  const longCommentMaxLines = Number(ruleSettings(catalog, "long-comment", EXAIX_REGISTRY).options.maxLines ?? 3);
+  const minFixtureLines = Number(
+    ruleSettings(catalog, "test-inline-multiline-fixture", EXAIX_REGISTRY).options.minLines ?? 7,
+  );
 
-  const commentSettings = ruleSettings(catalog, "long-comment").options;
+  const commentSettings = ruleSettings(catalog, "long-comment", EXAIX_REGISTRY).options;
   // SAFETY: the catalog loader validates the comment extension list against its schema.
   const commentExtensions =
     (commentSettings.extensions ?? [".ts", ".tsx", ".yaml", ".yml", ".toml", ".jsonc"]) as string[];
@@ -2659,7 +2649,7 @@ function emitTaggedFindings(buffered: string[], tags: Set<string>): void {
 /** Walks the requested paths and runs every enabled rule over each file. */
 async function runAllChecks(manualPaths: string[]): Promise<void> {
   // SAFETY: the catalog loader validates the walk extension list against its schema.
-  const walkExtensions = (ruleSettings(CATALOG, "long-comment").options.extensions ??
+  const walkExtensions = (ruleSettings(CATALOG, "long-comment", EXAIX_REGISTRY).options.extensions ??
     [".ts", ".tsx"]) as string[];
 
   if (manualPaths.length > 0) {
