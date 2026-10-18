@@ -510,3 +510,52 @@ Deno.test("each whole-tree task passes the policy catalog to the CLI", async () 
     assertStringIncludes(tasks[name], `--catalog=${POLICY_ROOT}/catalog.json`);
   }
 });
+
+const ENGINE_SUBMODULE = "unslop-ts";
+const ENGINE_VIOLATION_STYLE = [
+  "// @ts-" + "ignore",
+  "export const value: number = 1;",
+  "",
+].join("\n");
+
+/** Runs `body` with a demo root that holds a clean module, then removes the root. */
+async function withCleanRoot<T>(body: (root: string) => Promise<T>): Promise<T> {
+  return await withDemoRoot(async (root, srcDir) => {
+    await Deno.writeTextFile(join(srcDir, "clean.ts"), CLEAN_MODULE);
+    return await body(root);
+  });
+}
+
+Deno.test("check:style reports the same findings with and without an unslop-ts directory", async () => {
+  await withCleanRoot(async (root) => {
+    const without = await runTask("check:style", [root]);
+    await Deno.mkdir(join(root, ENGINE_SUBMODULE, "src"), { recursive: true });
+    await Deno.writeTextFile(join(root, ENGINE_SUBMODULE, "src/bad.ts"), ENGINE_VIOLATION_STYLE);
+    const withEngine = await runTask("check:style", [root]);
+    assertEquals(withEngine.code, without.code, withEngine.output);
+    assertEquals(withEngine.output, without.output);
+    assertFalse(withEngine.output.includes(ENGINE_SUBMODULE));
+  });
+});
+
+Deno.test("check:magic reports the same findings with and without an unslop-ts directory", async () => {
+  await withCleanRoot(async (root) => {
+    const without = await runTask("check:magic", [`--root=${root}`]);
+    const lines = Array.from({ length: 6 }, () => `  "${REPEATED_LITERAL}",`);
+    await Deno.mkdir(join(root, ENGINE_SUBMODULE, "src"), { recursive: true });
+    await Deno.writeTextFile(
+      join(root, ENGINE_SUBMODULE, "src/repeat.ts"),
+      ["export const list = [", ...lines, "];", ""].join("\n"),
+    );
+    const withEngine = await runTask("check:magic", [`--root=${root}`]);
+    assertEquals(withEngine.code, without.code, withEngine.output);
+    assertEquals(withEngine.output, without.output);
+    assertFalse(withEngine.output.includes(REPEATED_LITERAL));
+  });
+});
+
+Deno.test("the style catalog lists the engine submodule as ignored with a reason", () => {
+  const ignored = (catalogJson.ignore ?? []).filter((entry) => entry.glob.includes(ENGINE_SUBMODULE));
+  assertEquals(ignored.length, 1);
+  assertStringIncludes(ignored[0].reason, "own CI");
+});

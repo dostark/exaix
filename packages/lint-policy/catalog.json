@@ -87,6 +87,10 @@
   },
   "ignore": [
     {
+      "glob": "**/unslop-ts/**",
+      "reason": "Engine repository, linted by its own CI."
+    },
+    {
       "glob": "**/.git/**",
       "reason": "Version-control metadata."
     },

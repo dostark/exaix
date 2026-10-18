@@ -615,6 +615,15 @@
           "jsr:@std/fs@^1.0.23",
           "jsr:@std/path@^1.1.4"
         ]
+      },
+      "unslop-ts": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19",
+          "jsr:@std/fs@^1.0.24",
+          "jsr:@std/path@^1.1.6",
+          "npm:typescript@6.0.3",
+          "npm:zod@^4.4.3"
+        ]
       }
     },
     "links": {

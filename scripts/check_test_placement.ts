@@ -50,6 +50,7 @@ const SKIP_PATH_PATTERNS: RegExp[] = [
   /(^|\/)node_modules(\/|$)/,
   /(^|\/)coverage(\/|$)/,
   /(^|\/)dist(\/|$)/,
+  /^unslop-ts(\/|$)/,
 ];
 
 function normalizePath(path: string): string {

@@ -5,7 +5,9 @@
  */
 
 import { assertEquals } from "@std/assert";
+import { join } from "@std/path";
 import {
+  getAllRepoFiles,
   getTestPlacementIssue,
   recommendTestDirectoryForSource,
   validateTestPlacement,
@@ -72,4 +74,17 @@ Deno.test("recommendTestDirectoryForSource: maps package sources to package test
 Deno.test("getTestPlacementIssue: accepts package-local tests", () => {
   const issue = getTestPlacementIssue("packages/schemas/tests/request_analysis_test.ts");
   assertEquals(issue, null);
+});
+
+Deno.test("getAllRepoFiles: skips the unslop-ts submodule, which has its own test layout", async () => {
+  const root = await Deno.makeTempDir({ prefix: "test_placement_" });
+  try {
+    for (const path of ["unslop-ts/tests/engine_test.ts", "packages/p/tests/a_test.ts"]) {
+      await Deno.mkdir(join(root, path, ".."), { recursive: true });
+      await Deno.writeTextFile(join(root, path), "");
+    }
+    assertEquals(await getAllRepoFiles(root), ["packages/p/tests/a_test.ts"]);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 });

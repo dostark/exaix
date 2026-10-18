@@ -745,6 +745,7 @@ async function main(): Promise<void> {
         /repo_layout\.ts$/,
         /lint-policy[/\\]plugin\.ts$/,
         /[/\\]whole_tree[/\\]/,
+        /[/\\]unslop-ts[/\\]/,
       ],
     })
   ) {

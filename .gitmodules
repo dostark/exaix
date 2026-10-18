@@ -8,3 +8,6 @@
 [submodule "exaix-team"]
 	path = exaix-team
 	url = git@github.com:dostark/exaix-team.git
+[submodule "unslop-ts"]
+	path = unslop-ts
+	url = https://github.com/dostark/unslop-ts.git
