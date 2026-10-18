@@ -3,7 +3,7 @@
  * @module FixBoolAsserts
  * @path scripts/fix_bool_asserts.ts
  * @description One-off typed codemod that rewrites boolean-wrapped substring assertions.
- * @related-files [packages/lint-rules/src/rules/test_assertion_rules.ts, tests/scripts/fix_bool_asserts_test.ts]
+ * @related-files [unslop-ts/src/rules/test_assertion_rules.ts, tests/scripts/fix_bool_asserts_test.ts]
  *
  * Usage:
  *   deno run -A scripts/fix_bool_asserts.ts [roots...] [--check]

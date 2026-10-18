@@ -3,12 +3,12 @@
  * @path tests/scripts/rule_ceiling_ratchet_test.ts
  * @description Behaviour of the rule-ceiling ratchet evaluator.
  * @architectural-layer Test
- * @related-files [packages/lint-rules/src/cli/rule_ceiling.ts, packages/lint-policy/tests/check_code_style_catalog_parity_test.ts]
+ * @related-files [packages/lint-policy/tests/check_code_style_catalog_parity_test.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
-import { evaluateCeilings } from "../../packages/lint-rules/src/cli/rule_ceiling.ts";
+import { evaluateCeilings } from "../../unslop-ts/src/cli/rule_ceiling.ts";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const RATCHETED_RULES = [

@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { createLintPlugin, runPlugin } from "@exaix/lint-rules";
+import { createLintPlugin, runPlugin } from "@dostark/unslop-ts";
 import { EXAIX_PLUGIN_NAME } from "../src/rule_pack/mod.ts";
 import { EXAIX_RULE_PACKS } from "../src/rule_packs.ts";
 import catalogJson from "../catalog.json" with { type: "json" };

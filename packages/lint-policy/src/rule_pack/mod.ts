@@ -3,12 +3,12 @@
  * @path packages/lint-policy/src/rule_pack/mod.ts
  * @description The Exaix rule pack: plugin rules that encode Exaix conventions, registered with the lint engine.
  * @architectural-layer Tooling
- * @dependencies [@exaix/lint-rules, zod]
+ * @dependencies [@dostark/unslop-ts, zod]
  * @related-files [packages/lint-policy/src/rule_pack/exported_interface_naming.ts, packages/lint-policy/src/rule_packs.ts]
  */
 
 import { z } from "zod";
-import type { IRulePack } from "@exaix/lint-rules";
+import type { IRulePack } from "@dostark/unslop-ts";
 import { createExportedInterfaceNaming } from "./exported_interface_naming.ts";
 
 export const EXAIX_PLUGIN_NAME = "exaix";

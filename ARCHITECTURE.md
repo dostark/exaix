@@ -291,7 +291,7 @@ An `apps/` or runtime-wiring module orchestrates the running Exaix process. It c
 - It coordinates two or more packages — it is glue, not logic.
 - Removing it would break daemon startup or the request-processing pipeline directly.
 
-**Dev-tooling exception (2026-10-18):** `packages/lint-policy` and `packages/lint-rules` are non-deployed packages by user decision. They hold no runtime code and no app imports them, so `deno compile` never bundles them. `packages/lint-policy` holds all Exaix lint policy: the rule catalog, the plugin entry, the rule ceilings, the style checkers, and the Exaix style guide. `packages/lint-rules` is the generic lint engine. It has no Exaix names or paths and reads every setting from the catalog.
+**Dev-tooling exception (2026-10-18):** `packages/lint-policy` and the `unslop-ts` submodule are non-deployed by user decision. They hold no runtime code and no app imports them, so `deno compile` never bundles them. `packages/lint-policy` holds all Exaix lint policy: the rule catalog, the plugin entry, the rule ceilings, the style checkers, and the Exaix style guide. `unslop-ts` is the generic lint engine, embedded as a git submodule and consumed as `@dostark/unslop-ts`. It has no Exaix names or paths and reads every setting from the catalog.
 
 ---
 

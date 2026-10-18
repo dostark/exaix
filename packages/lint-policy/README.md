@@ -1,6 +1,6 @@
 # @exaix/lint-policy
 
-All Exaix lint policy. It configures the generic engine in `packages/lint-rules` and holds the
+All Exaix lint policy. It configures the generic engine in the `unslop-ts` submodule (`@dostark/unslop-ts`) and holds the
 style checkers that still run as standalone scripts.
 
 ## Layout
@@ -14,7 +14,7 @@ style checkers that still run as standalone scripts.
 - `src/rule_packs.ts` — the rule packs and the registry that `plugin.ts` and the style checker share.
 - `src/repo_layout.ts` — the repository path tokens the checkers read from the catalog.
 - `docs/style_rules.md` — the rule reference, generated from the catalog by `deno task docs:style-rules`.
-- `docs/style_guide.md` — the Exaix additions to the generic style guide in `packages/lint-rules/docs/`.
+- `docs/style_guide.md` — the Exaix additions to the generic style guide in `unslop-ts/docs/`.
 - `tests/` — the tests for the checkers and the catalog.
 
 ## Tasks
@@ -25,5 +25,6 @@ style checkers that still run as standalone scripts.
 
 ## Related
 
-- [packages/lint-rules](../lint-rules/README.md) — the generic lint engine.
+- [unslop-ts](../../unslop-ts/README.md) — the generic lint engine.
+- `deno task unslop-ts:deploy` — moves the engine pointer after a compatibility check.
 - [CODE_STYLE.md](../../CODE_STYLE.md) — the other Exaix style rules.

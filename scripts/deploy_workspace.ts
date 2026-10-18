@@ -20,9 +20,11 @@ import { copy, type CopyOptions } from "@std/fs/copy";
 // Source directories a **Solo** deploy copies into a standalone workspace. `exaix-team/`
 // is deliberately EXCLUDED: it is BSL-licensed Team code that must not ship in a Solo
 // deployment. Safe because app entry points load `@exaix-team/*` only when editionType !== "solo".
-/** Minimal shape of a deno.json config the deploy rewrites (only `workspace` is touched). */
+/** Minimal shape of a deno.json config the deploy rewrites (`workspace`, `lint.plugins`, and `tasks`). */
 export interface IDenoConfigShape {
   workspace?: string[];
+  lint?: { plugins?: string[] };
+  tasks?: Record<string, string>;
 }
 
 export const WORKSPACE_COPY_DIRS: readonly string[] = [
@@ -31,15 +33,47 @@ export const WORKSPACE_COPY_DIRS: readonly string[] = [
   "migrations",
 ];
 
-// Remove `exaix-team/*` entries from a deployed deno.json's `workspace` array so a Solo
-// deploy (which excludes exaix-team/ source) does not reference absent workspace members.
-// Other config fields are preserved unchanged.
-export function stripTeamWorkspaceMembers<T extends IDenoConfigShape>(denoConfig: T): T {
-  if (!Array.isArray(denoConfig.workspace)) return denoConfig;
-  return {
-    ...denoConfig,
-    workspace: denoConfig.workspace.filter((member) => !member.includes("exaix-team/")),
-  };
+/** The scripts a deploy copies into `scripts/`. */
+export const DEPLOYED_SCRIPT_FILES: readonly string[] = [
+  "setup_db.ts",
+  "migrate_db.ts",
+  "scaffold.ts",
+  "deploy_workspace.ts",
+  "activity_cache_schema.ts",
+  "journal_integrity_schema.ts",
+  "provider_costs_schema.ts",
+  "skill_journal_schema.ts",
+];
+
+const DEV_ONLY_MEMBERS: readonly string[] = ["exaix-team/", "./unslop-ts"];
+const UNDEPLOYED_DIR_REFERENCES: readonly string[] = ["unslop-ts/", "packages/lint-policy/"];
+const SCRIPT_REFERENCE = /(?:^|[\s'"=])(?:\.\/)?scripts\/([^\s'"/]+\.ts)/g;
+
+/** True when a task command runs a script the deploy omits, the engine submodule, or the lint policy package. */
+function runsUndeployedFile(command: string): boolean {
+  if (UNDEPLOYED_DIR_REFERENCES.some((dir) => command.includes(dir))) return true;
+  return [...command.matchAll(SCRIPT_REFERENCE)].some((match) => !DEPLOYED_SCRIPT_FILES.includes(match[1]));
+}
+
+// Drop workspace members, lint plugins, and tasks that point at paths the deploy does not copy.
+// Other config fields stay unchanged.
+export function stripDevOnlyConfig<T extends IDenoConfigShape>(denoConfig: T): T {
+  const stripped: T = { ...denoConfig };
+  if (Array.isArray(denoConfig.workspace)) {
+    stripped.workspace = denoConfig.workspace.filter(
+      (member) => !DEV_ONLY_MEMBERS.some((devOnly) => member.includes(devOnly)),
+    );
+  }
+  if (denoConfig.lint?.plugins !== undefined) {
+    const { plugins: _plugins, ...otherLint } = denoConfig.lint;
+    stripped.lint = otherLint;
+  }
+  if (denoConfig.tasks !== undefined) {
+    stripped.tasks = Object.fromEntries(
+      Object.entries(denoConfig.tasks).filter(([, command]) => !runsUndeployedFile(command)),
+    );
+  }
+  return stripped;
 }
 
 /** Copy each existing WORKSPACE_COPY_DIRS entry from repoRoot into dest. */
@@ -92,13 +126,13 @@ async function main() {
   // 2. Copy artifacts
   const copyOpts: CopyOptions = { overwrite: true };
 
-  // Copy deno.json, stripping exaix-team workspace members (Solo deploy excludes them).
-  // The @exaix-team/* import-map entries remain so a Team run's dynamic Team load can still
-  // resolve when exaix-team/ IS present; a Solo run never triggers those Team loads.
+  // Copy deno.json without the dev-only members, lint plugins, and tasks that a Solo deploy omits.
+  // The @exaix-team/* import-map entries stay, so a Team run can resolve Team modules when exaix-team/ is present.
+  // A Solo run never loads them.
   const denoConfig = JSON.parse(await Deno.readTextFile(join(repoRoot, "deno.json")));
   await Deno.writeTextFile(
     join(dest, "deno.json"),
-    JSON.stringify(stripTeamWorkspaceMembers(denoConfig), null, 2) + "\n",
+    JSON.stringify(stripDevOnlyConfig(denoConfig), null, 2) + "\n",
   );
 
   // Copy Memory/ (all content)
@@ -130,16 +164,7 @@ async function main() {
   await copyWorkspaceDirs(repoRoot, dest, copyOpts);
 
   // Copy runtime scripts
-  const scriptFiles = [
-    "setup_db.ts",
-    "migrate_db.ts",
-    "scaffold.ts",
-    "deploy_workspace.ts",
-    "activity_cache_schema.ts",
-    "journal_integrity_schema.ts",
-    "provider_costs_schema.ts",
-    "skill_journal_schema.ts",
-  ];
+  const scriptFiles = DEPLOYED_SCRIPT_FILES;
   await ensureDir(join(dest, "scripts"));
   for (const f of scriptFiles) {
     try {

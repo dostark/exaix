@@ -4,21 +4,27 @@
  * @description Proves that all Exaix lint policy lives in packages/lint-policy, that the engine
  *   package holds no Exaix code, and that the moved style checkers still run through their tasks.
  * @architectural-layer Tooling
- * @dependencies [@std/assert, @std/fs, @std/path, @exaix/lint-rules, @exaix/lint-policy]
- * @related-files [packages/lint-policy/mod.ts, packages/lint-rules/mod.ts]
+ * @dependencies [@std/assert, @std/fs, @std/path, @dostark/unslop-ts, @exaix/lint-policy]
+ * @related-files [packages/lint-policy/mod.ts]
  */
 
 import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, relative } from "@std/path";
-import { createLintPlugin, parseCatalog, parseWholeTreeSettings, runPlugin, selectionEnvName } from "@exaix/lint-rules";
+import {
+  createLintPlugin,
+  parseCatalog,
+  parseWholeTreeSettings,
+  runPlugin,
+  selectionEnvName,
+} from "@dostark/unslop-ts";
 import { EXAIX_PLUGIN_NAME } from "@exaix/lint-policy/rule_pack/mod.ts";
 import { EXAIX_REGISTRY, EXAIX_RULE_PACKS } from "@exaix/lint-policy/rule_packs.ts";
 import catalogJson from "@exaix/lint-policy/catalog.json" with { type: "json" };
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const POLICY_ROOT = "packages/lint-policy";
-const ENGINE_ROOT = "packages/lint-rules";
+const ENGINE_ROOT = "unslop-ts";
 const POLICY_FILES: readonly string[] = [
   `${POLICY_ROOT}/deno.json`,
   `${POLICY_ROOT}/mod.ts`,
@@ -558,4 +564,47 @@ Deno.test("the style catalog lists the engine submodule as ignored with a reason
   const ignored = (catalogJson.ignore ?? []).filter((entry) => entry.glob.includes(ENGINE_SUBMODULE));
   assertEquals(ignored.length, 1);
   assertStringIncludes(ignored[0].reason, "own CI");
+});
+
+const REMOVED_ENGINE_PATH = ["packages", "lint-rules"].join("/");
+const REMOVED_ENGINE_ALIAS = `@${["exaix"].join("")}/${["lint", "rules"].join("-")}`;
+const REFERENCE_SKIP = /[/\\](\.git|node_modules|\.cache|coverage|unslop-ts|exaix-dev-docs)([/\\]|$)/;
+const REFERENCE_EXTENSIONS: readonly string[] = [".ts", ".md", ".json", ".toml", ".yml", ".yaml"];
+
+Deno.test("no file outside unslop-ts names the removed engine package or its alias", async () => {
+  assertFalse(await exists(REMOVED_ENGINE_PATH), "the engine package directory must be gone");
+  const offenders: string[] = [];
+  for await (
+    const entry of walk(REPO_ROOT, { includeDirs: false, exts: [...REFERENCE_EXTENSIONS], skip: [REFERENCE_SKIP] })
+  ) {
+    const text = await Deno.readTextFile(entry.path);
+    if (text.includes(REMOVED_ENGINE_PATH) || text.includes(REMOVED_ENGINE_ALIAS)) {
+      offenders.push(relative(REPO_ROOT, entry.path));
+    }
+  }
+  assertEquals(offenders, []);
+});
+
+Deno.test("the root deno.json resolves the engine from unslop-ts only", async () => {
+  const config = await readRepoJson("deno.json");
+  const workspace = config.workspace as string[];
+  const imports = config.imports as { [alias: string]: string };
+  const tasks = config.tasks as { [name: string]: string };
+  assert(workspace.includes(`./${ENGINE_ROOT}`));
+  assertFalse(workspace.includes(`./${REMOVED_ENGINE_PATH}`));
+  assertEquals(Object.keys(imports).filter((alias) => alias.startsWith(REMOVED_ENGINE_ALIAS)), []);
+  for (const name of ["check:god-objects", "check:complexity"]) {
+    assertStringIncludes(tasks[name], `${ENGINE_ROOT}/src/cli/rule_report.ts`);
+  }
+  for (const name of WHOLE_TREE_TASKS) {
+    assertStringIncludes(tasks[name], `${ENGINE_ROOT}/src/cli/whole_tree.ts`);
+  }
+});
+
+Deno.test("the rule ceilings hold no key for the removed engine package", async () => {
+  const ceilings = await readRepoJson(`${POLICY_ROOT}/rule_ceilings.json`);
+  const holders = Object.entries(ceilings)
+    .filter(([, perPackage]) => REMOVED_ENGINE_PATH in (perPackage as { [name: string]: number }))
+    .map(([rule]) => rule);
+  assertEquals(holders, []);
 });

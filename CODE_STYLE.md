@@ -10,12 +10,12 @@ links:
   - "packages/lint-policy/src/checkers/check_code_style.ts"
   - "packages/lint-policy/docs/style_rules.md"
   - "packages/lint-policy/docs/style_guide.md"
-  - "packages/lint-rules/docs/style_guide.md"
+  - "unslop-ts/docs/style_guide.md"
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
 
 > 🚨 Original documents now point to this file for the authoritative style rules. The generic
-> TypeScript rules live in [packages/lint-rules/docs/style_guide.md](./packages/lint-rules/docs/style_guide.md),
+> TypeScript rules live in [unslop-ts/docs/style_guide.md](./unslop-ts/docs/style_guide.md),
 > with the Exaix additions in [packages/lint-policy/docs/style_guide.md](./packages/lint-policy/docs/style_guide.md);
 > this file keeps the Exaix-specific rules and a stub for each moved section.
 
@@ -23,7 +23,7 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 
 ## 1. Strict Type Safety {#strict-type-safety}
 
-> This section moved to the [package style guide](packages/lint-rules/docs/style_guide.md#strict-type-safety). It is a
+> This section moved to the [package style guide](unslop-ts/docs/style_guide.md#strict-type-safety). It is a
 > generic TypeScript rule; the full text and its enforcement notes live there.
 
 ---
@@ -67,7 +67,7 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 
 ### Automated Enforcement
 
-> Moved to the [package style guide](packages/lint-rules/docs/style_guide.md). It is a generic TypeScript rule;
+> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
 > the full text lives in the guide.
 
 ### Event Type Strings {#event-type-strings}
@@ -157,7 +157,7 @@ const { Y } = await import("./y.ts");
 
 ### No Re-exporting
 
-> Moved to the [package style guide](packages/lint-rules/docs/style_guide.md). It is a generic TypeScript rule;
+> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
 > the full text lives in the guide.
 
 ### No Production Dependency on `tests/`
@@ -187,12 +187,12 @@ This is enforced as `[package-tests-boundary]` by `deno task check:style`.
 
 ### Multi-line Named Imports
 
-> Moved to the [package style guide](packages/lint-rules/docs/style_guide.md). It is a generic TypeScript rule;
+> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
 > the full text lives in the guide.
 
 ### Dynamic Imports
 
-> Moved to the [package style guide](packages/lint-rules/docs/style_guide.md). It is a generic TypeScript rule;
+> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
 > the full text lives in the guide.
 
 ## 4. Package Test Boundary Isolation {#package-test-boundaries}
@@ -237,12 +237,12 @@ These rules are enforced in part by `packages/lint-policy/src/checkers/check_cod
 
 ### No Inline Type Imports
 
-> Moved to the [package style guide](packages/lint-rules/docs/style_guide.md). It is a generic TypeScript rule;
+> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
 > the full text lives in the guide.
 
 ### No Aliasing Interfaces on Import
 
-> Moved to the [package style guide](packages/lint-rules/docs/style_guide.md). It is a generic TypeScript rule;
+> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
 > the full text lives in the guide.
 
 ---
@@ -605,7 +605,7 @@ This file is the single authoritative source for code style. The following docum
 
 ## 11. Function & Method Complexity {#complexity-rules}
 
-> This section moved to the [package style guide](packages/lint-rules/docs/style_guide.md#complexity-rules). It is a
+> This section moved to the [package style guide](unslop-ts/docs/style_guide.md#complexity-rules). It is a
 > generic TypeScript rule; the full text and its enforcement notes live there.
 
 ---
@@ -740,12 +740,12 @@ Three anti-patterns are enforced by `deno task check:optional-params` (Gate 14):
 
 ### REDUNDANT_OPTIONAL — param is `?` but all callers pass it
 
-> Moved to the [package style guide](packages/lint-rules/docs/style_guide.md). It is a generic TypeScript rule;
+> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
 > the full text lives in the guide.
 
 ### UNUSED_OPTIONAL — param is `?`, used in body, but no caller passes it
 
-> Moved to the [package style guide](packages/lint-rules/docs/style_guide.md). It is a generic TypeScript rule;
+> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
 > the full text lives in the guide.
 
 ### Optional marker on a required parameter — `Opt<T, R>`
@@ -810,7 +810,7 @@ added to the `Reason` enum in `packages/core/src/types/optional_marker.ts`.
 
 ### Guidelines
 
-> Moved to the [package style guide](packages/lint-rules/docs/style_guide.md). It is a generic TypeScript rule;
+> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
 > the full text lives in the guide.
 
 ### Opt type and Reason enum
@@ -829,8 +829,8 @@ provides the closed set of codified categories (no catch-all).
 
 ### Automated Enforcement
 
-`packages/lint-rules/src/rules/whole_tree/optional_params.ts` (run through
-`packages/lint-rules/src/cli/whole_tree.ts`) scans production `.ts` and `.tsx` files using
+`unslop-ts/src/rules/whole_tree/optional_params.ts` (run through
+`unslop-ts/src/cli/whole_tree.ts`) scans production `.ts` and `.tsx` files using
 the TypeScript compiler API. It compares each function/method declaration with
 optional parameters against all name-matched call sites and reports mismatches.
 
@@ -976,7 +976,7 @@ counts, and per-file breakdown.
 
 ## 16. Comment Discipline {#comment-discipline}
 
-> This section moved to the [package style guide](packages/lint-rules/docs/style_guide.md#comment-discipline). It is a
+> This section moved to the [package style guide](unslop-ts/docs/style_guide.md#comment-discipline). It is a
 > generic TypeScript rule; the full text and its enforcement notes live there.
 
 ### Automated enforcement

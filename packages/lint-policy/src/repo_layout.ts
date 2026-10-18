@@ -4,7 +4,7 @@
  * @description Repository path tokens the Exaix rule scripts read from the catalog.
  * @architectural-layer Tooling
  * @dependencies []
- * @related-files [packages/lint-rules/mod.ts, packages/lint-policy/src/checkers/check_code_style.ts]
+ * @related-files [packages/lint-policy/src/checkers/check_code_style.ts]
  */
 
 import catalogJson from "../catalog.json" with { type: "json" };

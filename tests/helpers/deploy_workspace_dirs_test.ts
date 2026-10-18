@@ -12,11 +12,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import {
-  type IDenoConfigShape,
-  stripTeamWorkspaceMembers,
-  WORKSPACE_COPY_DIRS,
-} from "../../scripts/deploy_workspace.ts";
+import { type IDenoConfigShape, stripDevOnlyConfig, WORKSPACE_COPY_DIRS } from "../../scripts/deploy_workspace.ts";
 
 Deno.test("[deploy_workspace] the copy-dir set includes packages, apps, migrations", () => {
   for (const dir of ["packages", "apps", "migrations"]) {
@@ -36,7 +32,7 @@ Deno.test("[deploy_workspace] a Solo deploy EXCLUDES exaix-team/ (no BSL Team so
   );
 });
 
-Deno.test("[deploy_workspace] stripTeamWorkspaceMembers drops exaix-team/* workspace entries", () => {
+Deno.test("[deploy_workspace] stripDevOnlyConfig drops exaix-team/* workspace entries", () => {
   const config = {
     workspace: [
       "./packages/core",
@@ -47,7 +43,7 @@ Deno.test("[deploy_workspace] stripTeamWorkspaceMembers drops exaix-team/* works
     ],
     imports: { "@exaix/core": "./packages/core/mod.ts" },
   };
-  const stripped = stripTeamWorkspaceMembers(config);
+  const stripped = stripDevOnlyConfig(config);
   assertEquals(stripped.workspace, [
     "./packages/core",
     "./packages/quality-gate",
@@ -57,9 +53,40 @@ Deno.test("[deploy_workspace] stripTeamWorkspaceMembers drops exaix-team/* works
   assertEquals((stripped as typeof config).imports, config.imports);
 });
 
-Deno.test("[deploy_workspace] stripTeamWorkspaceMembers is a no-op when there is no workspace array", () => {
+Deno.test("[deploy_workspace] stripDevOnlyConfig is a no-op when there is no workspace array", () => {
   const config: IDenoConfigShape & { imports: Record<string, string> } = {
     imports: { "@exaix/core": "./packages/core/mod.ts" },
   };
-  assertEquals(stripTeamWorkspaceMembers(config), config);
+  assertEquals(stripDevOnlyConfig(config), config);
+});
+
+Deno.test("[deploy_workspace] stripDevOnlyConfig drops the unslop-ts workspace member", () => {
+  const config = { workspace: ["./packages/core", "./unslop-ts", "./packages/lint-policy"] };
+  assertEquals(stripDevOnlyConfig(config).workspace, ["./packages/core", "./packages/lint-policy"]);
+});
+
+Deno.test("[deploy_workspace] stripDevOnlyConfig drops the lint plugins and keeps the other lint settings", () => {
+  const config: IDenoConfigShape & { lint: { plugins: string[]; exclude: string[] } } = {
+    lint: { plugins: ["./packages/lint-policy/plugin.ts"], exclude: ["tests/fixtures/"] },
+  };
+  const lint: Record<string, string[]> = stripDevOnlyConfig(config).lint ?? {};
+  assertEquals(lint, { exclude: ["tests/fixtures/"] });
+});
+
+Deno.test("[deploy_workspace] stripDevOnlyConfig drops tasks that run files the deploy does not copy", () => {
+  const tasks = {
+    setup: "deno run -A scripts/setup_db.ts",
+    "check:style": "deno run packages/lint-policy/src/checkers/check_code_style.ts",
+    "check:magic": "deno run scripts/check_magic.ts",
+    "unslop-ts:deploy": "deno run scripts/deploy_unslop_ts.ts",
+    "docs:style-rules": "deno run scripts/generate_style_rules_doc.ts",
+    "check:complexity": "deno run unslop-ts/src/cli/rule_report.ts --rule=x",
+    lint: "EXAIX_LINT_RULES= deno lint tests/ packages/ && deno lint --rules-tags= scripts/",
+  };
+  assertEquals(Object.keys(stripDevOnlyConfig({ tasks }).tasks ?? {}), ["setup", "lint"]);
+});
+
+Deno.test("[deploy_workspace] stripDevOnlyConfig leaves a config without lint or tasks unchanged", () => {
+  const config: IDenoConfigShape & { imports: Record<string, string> } = { imports: { a: "./a.ts" } };
+  assertEquals(stripDevOnlyConfig(config), config);
 });

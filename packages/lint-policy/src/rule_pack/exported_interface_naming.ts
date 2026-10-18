@@ -3,11 +3,11 @@
  * @path packages/lint-policy/src/rule_pack/exported_interface_naming.ts
  * @description Plugin rule that reports an exported interface whose name does not start with a capital I.
  * @architectural-layer Tooling
- * @dependencies [@exaix/lint-rules]
+ * @dependencies [@dostark/unslop-ts]
  * @related-files [packages/lint-policy/src/rule_pack/mod.ts, packages/lint-policy/catalog.json]
  */
 
-import type { IPluginRuleContext, LintVisitor } from "@exaix/lint-rules";
+import type { IPluginRuleContext, LintVisitor } from "@dostark/unslop-ts";
 
 const DEFAULT_CODE_STYLE = "CODE_STYLE.md#di-and-interfaces";
 const INTERFACE_PREFIX = "I";

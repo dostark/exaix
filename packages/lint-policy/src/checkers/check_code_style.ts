@@ -4,8 +4,8 @@
  * @path packages/lint-policy/src/checkers/check_code_style.ts
  * @description Scans all .ts and .tsx files for code style violations defined in CODE_STYLE.md.
  * @architectural-layer Tooling
- * @dependencies [typescript, @std/fs, @std/path, zod, @exaix/lint-rules]
- * @related-files [packages/lint-rules/mod.ts, packages/lint-policy/src/checkers/check_magic_values.ts]
+ * @dependencies [typescript, @std/fs, @std/path, zod, @dostark/unslop-ts]
+ * @related-files [packages/lint-policy/src/checkers/check_magic_values.ts]
  * @public Exports are the unit-test surface of this module.
  *
  * Usage:
@@ -27,7 +27,7 @@ import {
   type PathClass,
   ruleSettings,
   type ScriptRuleSchemas,
-} from "@exaix/lint-rules";
+} from "@dostark/unslop-ts";
 import styleRuleCatalog from "../../catalog.json" with { type: "json" };
 import { EXAIX_REGISTRY } from "../rule_packs.ts";
 import {

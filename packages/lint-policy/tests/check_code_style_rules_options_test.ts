@@ -5,7 +5,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import type { ICatalog, JsonValue } from "@exaix/lint-rules";
+import type { ICatalog, JsonValue } from "@dostark/unslop-ts";
 import { checkSource } from "../src/checkers/check_code_style.ts";
 import catalogJson from "../catalog.json" with { type: "json" };
 import { loadPolicyCatalog } from "./helpers/catalog.ts";

@@ -322,7 +322,7 @@
         "packages/**",
         "apps/**"
       ],
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "duplication",
         "deslop"
@@ -370,7 +370,7 @@
       "engine": "plugin",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
         "deslop"
@@ -404,7 +404,7 @@
         "packages/*/src/**",
         "apps/*/src/**"
       ],
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#complexity-rules",
+      "codeStyle": "unslop-ts/docs/style_guide.md#complexity-rules",
       "tags": [
         "complexity",
         "deslop"
@@ -420,7 +420,7 @@
       "optIn": true,
       "reason": "Manual today: check:god-objects is a separate manual task, so the rule runs only when selected.",
       "scope": "all",
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#complexity-rules",
+      "codeStyle": "unslop-ts/docs/style_guide.md#complexity-rules",
       "tags": [
         "complexity",
         "module-structure"
@@ -494,7 +494,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "prod",
       "optIn": true,
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
         "deslop"
@@ -512,7 +512,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "prod",
       "optIn": true,
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
         "deslop"
@@ -528,7 +528,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "prod",
       "optIn": true,
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
         "deslop"
@@ -541,7 +541,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "all",
       "optIn": true,
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
         "deslop"
@@ -558,7 +558,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "all",
       "optIn": true,
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
         "deslop"
@@ -579,7 +579,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "all",
       "optIn": true,
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
         "deslop"
@@ -596,7 +596,7 @@
       "severity": "error",
       "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
       "scope": "all",
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
         "deslop"
@@ -609,7 +609,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "all",
       "optIn": true,
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
         "deslop"
@@ -620,7 +620,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety"
       ]
@@ -629,7 +629,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety"
       ]
@@ -638,7 +638,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety"
       ]
@@ -647,7 +647,7 @@
       "engine": "plugin",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety"
       ],
@@ -787,7 +787,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#complexity-rules",
+      "codeStyle": "unslop-ts/docs/style_guide.md#complexity-rules",
       "tags": [
         "complexity",
         "module-structure"
@@ -800,7 +800,7 @@
       "engine": "script",
       "severity": "warn",
       "scope": "all",
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#comment-discipline",
+      "codeStyle": "unslop-ts/docs/style_guide.md#comment-discipline",
       "tags": [
         "comments"
       ],
@@ -825,7 +825,7 @@
       "engine": "script",
       "severity": "warn",
       "scope": "all",
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#comment-discipline",
+      "codeStyle": "unslop-ts/docs/style_guide.md#comment-discipline",
       "tags": [
         "comments"
       ]
@@ -834,7 +834,7 @@
       "engine": "script",
       "severity": "warn",
       "scope": "all",
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#comment-discipline",
+      "codeStyle": "unslop-ts/docs/style_guide.md#comment-discipline",
       "tags": [
         "comments"
       ]
@@ -1136,7 +1136,7 @@
       "engine": "plugin",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "packages/lint-rules/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
         "deslop"

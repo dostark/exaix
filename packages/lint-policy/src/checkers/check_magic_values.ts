@@ -26,7 +26,7 @@
 import ts from "typescript";
 import { walk } from "@std/fs";
 import { globToRegExp, relative } from "@std/path";
-import { classifyPath, type PathClass } from "@exaix/lint-rules";
+import { classifyPath, type PathClass } from "@dostark/unslop-ts";
 import { LAYOUT } from "../repo_layout.ts";
 import catalogJson from "../../catalog.json" with { type: "json" };
 

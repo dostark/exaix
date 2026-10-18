@@ -5,12 +5,12 @@ agent_priority: mandatory
 copilot_knowledge_base: true
 capabilities: [linting_rules, naming_conventions]
 links:
-  - "packages/lint-rules/docs/style_guide.md"
+  - "unslop-ts/docs/style_guide.md"
   - "packages/lint-policy/docs/style_rules.md"
 ---
 
 > The Exaix-specific additions to the generic TypeScript style rules in
-> [packages/lint-rules/docs/style_guide.md](../../lint-rules/docs/style_guide.md). Rule ids and
+> [unslop-ts/docs/style_guide.md](../../../unslop-ts/docs/style_guide.md). Rule ids and
 > severities come from `packages/lint-policy/catalog.json`; the generated reference is
 > [style_rules.md](./style_rules.md). `CODE_STYLE.md` holds the remaining Exaix rules.
 

@@ -16,7 +16,7 @@ import { EXAIX_REGISTRY } from "../src/rule_packs.ts";
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
 const DOC_PATH = join(REPO_ROOT, "packages/lint-policy/docs/style_rules.md");
 const CATALOG_PATH = join(REPO_ROOT, "packages/lint-policy/catalog.json");
-const ENGINE_SRC = "packages/lint-rules/src";
+const ENGINE_SRC = "unslop-ts/src";
 const POLICY_SRC = "packages/lint-policy/src";
 
 interface IRuleEntry {
@@ -100,7 +100,7 @@ Deno.test("every exclusion code is used by a style-exclude line in the tree", as
 });
 
 const GUIDE_DOCS: readonly string[] = [
-  "packages/lint-rules/docs/style_guide.md",
+  "unslop-ts/docs/style_guide.md",
   "packages/lint-policy/docs/style_guide.md",
   "packages/lint-policy/docs/style_rules.md",
 ];
@@ -165,7 +165,7 @@ Deno.test("every catalog codeStyle target resolves to an existing heading", asyn
   }
 });
 
-const GENERIC_GUIDE = "packages/lint-rules/docs/style_guide.md";
+const GENERIC_GUIDE = "unslop-ts/docs/style_guide.md";
 const POLICY_GUIDE = "packages/lint-policy/docs/style_guide.md";
 const EXAIX_ONLY_TOKENS: readonly string[] = ["exaix", "check_magic_values"];
 const POLICY_GUIDE_SECTIONS: readonly string[] = [

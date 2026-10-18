@@ -42,7 +42,7 @@
 ### Changed
 
 - The style checker and the magic-values checker run as rules of the new
-  `@exaix/lint-rules` workspace package instead of as standalone scripts, and the
+  lint engine workspace package instead of as standalone scripts, and the
   type-safety checks match the syntax tree as Deno lint plugin rules instead of matching
   source lines with regular expressions.
 - The duplicate-constant and duplicate-type reports compare across the whole repository

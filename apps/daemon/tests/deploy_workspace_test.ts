@@ -102,6 +102,52 @@ parallelSafeTest("deploy_workspace.ts --no-run creates deploy files", async () =
   }
 });
 
+interface IDeployedConfig {
+  readonly workspace?: string[];
+  readonly lint?: { readonly plugins?: string[] };
+  readonly tasks?: Record<string, string>;
+}
+
+const UNDEPLOYED_TASK_REFERENCE =
+  /unslop-ts\/|packages\/lint-policy\/|scripts\/(?!setup_db|migrate_db|scaffold|deploy_workspace)\S+\.ts/;
+
+async function runDenoIn(cwd: string, args: string[]): Promise<string> {
+  const res = await new Deno.Command("deno", { args, cwd, stdout: "piped", stderr: "piped" }).output();
+  const decoder = new TextDecoder();
+  return decoder.decode(res.stdout) + decoder.decode(res.stderr);
+}
+
+parallelSafeTest("deploy_workspace.ts --no-run writes a deno.json that references only deployed paths", async () => {
+  const tmp = await Deno.makeTempDir({ prefix: "exaix-deploy-config-test-" });
+  try {
+    const deployScript = join(REPO_ROOT, "scripts", "deploy_workspace.ts");
+    const res = await new Deno.Command("deno", {
+      args: ["run", "-A", deployScript, "--no-run", tmp],
+      cwd: REPO_ROOT,
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    assert(res.code === 0, `deploy_workspace.ts exited with code ${res.code}`);
+
+    const config: IDeployedConfig = JSON.parse(await Deno.readTextFile(join(tmp, "deno.json")));
+    for (const member of config.workspace ?? []) {
+      assert(await exists(join(tmp, member)), `workspace member ${member} must exist in the deployed workspace`);
+    }
+    assert((config.lint?.plugins ?? []).length === 0, "the deployed config must not list lint plugins");
+    const dangling = Object.entries(config.tasks ?? {})
+      .filter(([, command]) => UNDEPLOYED_TASK_REFERENCE.test(command))
+      .map(([name]) => name);
+    assert(dangling.length === 0, `tasks run undeployed files: ${dangling.join(", ")}`);
+
+    const output = await runDenoIn(tmp, ["lint", "apps/exactl/main.ts"]) +
+      await runDenoIn(tmp, ["check", "apps/exactl/main.ts"]);
+    assert(!/Workspace member .* not found/i.test(output), `deployed workspace output: ${output}`);
+    assert(!/Module not found/i.test(output), `deployed workspace output: ${output}`);
+  } finally {
+    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+  }
+});
+
 async function runExactl(
   workspacePath: string,
   args: string[],
