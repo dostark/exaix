@@ -11,6 +11,7 @@ import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { getDefaultPaths } from "@exaix/core/config";
 import { withCliProcessMutex } from "../../../tests/helpers/cli_process_mutex.ts";
+import { ALLOWED_UNDEPLOYED_DIRS, undeployedDirsNamedBy } from "../../../tests/helpers/deployed_task_dirs.ts";
 import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
 
 const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
@@ -134,6 +135,8 @@ parallelSafeTest("deploy_workspace.ts --no-run writes a deno.json that reference
       assert(await exists(join(tmp, member)), `workspace member ${member} must exist in the deployed workspace`);
     }
     assert((config.lint?.plugins ?? []).length === 0, "the deployed config must not list lint plugins");
+    const strayDirs = undeployedDirsNamedBy(config.tasks ?? {}).filter((dir) => !ALLOWED_UNDEPLOYED_DIRS.includes(dir));
+    assert(strayDirs.length === 0, `tasks name undeployed directories: ${strayDirs.join(", ")}`);
     const dangling = Object.entries(config.tasks ?? {})
       .filter(([, command]) => UNDEPLOYED_TASK_REFERENCE.test(command))
       .map(([name]) => name);

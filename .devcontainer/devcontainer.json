@@ -91,10 +91,10 @@
 
   // Lifecycle split so Codespaces prebuilds cache the expensive image-time work and
   // attach-time only verifies:
-  //   onCreate       — once at creation (git trust for the bind-mounted repo)
+  //   onCreate       — once at creation (git trust for the bind-mounted repo, the unslop-ts submodule)
   //   updateContent  — during prebuild / content refresh (warm the module cache)
   //   postCreate     — after creation (verify the delegate CLIs are on PATH)
-  "onCreateCommand": "git config --global --add safe.directory /workspaces/exaix",
+  "onCreateCommand": "git config --global --add safe.directory /workspaces/exaix && git submodule update --init unslop-ts",
   "updateContentCommand": "deno cache --config deno.json apps/daemon/main.ts",
   "postCreateCommand": "deno --version && claude --version && opencode --version",
 

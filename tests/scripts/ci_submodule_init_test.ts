@@ -102,3 +102,10 @@ Deno.test("the team-submodule step text is the same in every job, so the unslop-
   }
   assertEquals([...texts], ["standard"]);
 });
+
+Deno.test("the devcontainer initializes unslop-ts in onCreateCommand, before updateContentCommand needs it", async () => {
+  const text = await Deno.readTextFile(join(REPO_ROOT, ".devcontainer", "devcontainer.json"));
+  const onCreate = /"onCreateCommand":\s*"([^"]*)"/.exec(text)?.[1] ?? "";
+  assertStringIncludes(onCreate, "git submodule update --init unslop-ts");
+  assertEquals(text.indexOf('"onCreateCommand"') < text.indexOf('"updateContentCommand"'), true);
+});

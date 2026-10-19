@@ -13,6 +13,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { type IDenoConfigShape, stripDevOnlyConfig, WORKSPACE_COPY_DIRS } from "../../scripts/deploy_workspace.ts";
+import { ALLOWED_UNDEPLOYED_DIRS, undeployedDirsNamedBy } from "./deployed_task_dirs.ts";
 
 Deno.test("[deploy_workspace] the copy-dir set includes packages, apps, migrations", () => {
   for (const dir of ["packages", "apps", "migrations"]) {
@@ -89,4 +90,22 @@ Deno.test("[deploy_workspace] stripDevOnlyConfig drops tasks that run files the 
 Deno.test("[deploy_workspace] stripDevOnlyConfig leaves a config without lint or tasks unchanged", () => {
   const config: IDenoConfigShape & { imports: Record<string, string> } = { imports: { a: "./a.ts" } };
   assertEquals(stripDevOnlyConfig(config), config);
+});
+
+Deno.test("[deploy_workspace] the kept tasks of the real deno.json name only the allow-listed undeployed directories", async () => {
+  const config = JSON.parse(await Deno.readTextFile(new URL("../../deno.json", import.meta.url)));
+  const kept = stripDevOnlyConfig(config).tasks ?? {};
+  const named = undeployedDirsNamedBy(kept);
+  assertEquals(named.filter((dir) => !ALLOWED_UNDEPLOYED_DIRS.includes(dir)), []);
+  assertEquals(named, [...ALLOWED_UNDEPLOYED_DIRS], "the allow-list must list each directory that is still named");
+});
+
+Deno.test("[deploy_workspace] a task that names another undeployed directory fails the allow-list check", () => {
+  const named = undeployedDirsNamedBy({
+    ok: "deno run apps/daemon/main.ts",
+    deployed: "deno run -A scripts/setup_db.ts docs/x.md",
+    extra: "deno test --allow-read=. configs/ ./fixtures/a.ts",
+    flag: "deno run --config=other/deno.json npm:pkg/x jsr:@std/path https://example.com/a",
+  });
+  assertEquals(named, ["configs", "fixtures"]);
 });
