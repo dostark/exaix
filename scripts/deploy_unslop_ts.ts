@@ -9,10 +9,16 @@
  * @public Exports are the unit-test surface of this module.
  *
  * Usage:
- *   deno task unslop-ts:deploy --ref=<vX.Y.Z|commit>   Check out a published ref, run the compatibility check, stage the pointer.
+ *   deno task unslop-ts:deploy --ref=<vX.Y.Z|commit> [--yes]
+ *                                                      Show the incoming log, ask for approval, check out the ref,
+ *                                                      run the compatibility check, stage the pointer.
+ *                                                      Without a terminal the script stops unless --yes is given.
  *   deno run --no-config --allow-run --allow-read --allow-env scripts/deploy_unslop_ts.ts --init
  *                                                      Initialize the submodule at the recorded pointer, then run the check.
  *                                                      Use this form on a fresh clone, where the empty submodule directory stops `deno task`.
+ *
+ * The compatibility check runs the new engine's own tests on this machine. Its permission flags stop
+ * accidents only: a hostile test can still start `deno` or `git` and run anything. Read the log first.
  *
  * Exit code 0 = done, 1 = refused or failed, 2 = usage error.
  * The script stages the pointer with `git add`. It never creates a commit and never pushes.
@@ -47,8 +53,9 @@ const DEFAULT_TEMP_DIR = "/tmp";
 /** Dynamic-loader variables. A scoped --allow-run refuses to spawn a process while one of them is set. */
 const LOADER_ENV_PATTERN = /^(LD_|DYLD_)/;
 const USAGE_EXIT = 2;
+const APPROVAL_ANSWERS: readonly string[] = ["y", "yes"];
 const FAILURE_EXIT = 1;
-const USAGE = "Usage: deploy_unslop_ts.ts --ref=<vX.Y.Z|commit> | --init";
+const USAGE = "Usage: deploy_unslop_ts.ts --ref=<vX.Y.Z|commit> [--yes] | --init";
 
 class DeployError extends Error {
   readonly exitCode: number;
@@ -66,7 +73,10 @@ interface IGitResult {
   readonly stderr: string;
 }
 
-/** The arguments of the compatibility check. They grant read and write only on the repository and the temp dir. */
+/**
+ * The arguments of the compatibility check. They limit read and write to the repository and the temp dir.
+ * The flag `--allow-run=deno,git` still lets a test run any command. These flags stop accidents, not a hostile ref.
+ */
 export function compatCommandArgs(rootDir: string, tempDir: string): string[] {
   return [
     "test",
@@ -104,17 +114,40 @@ async function gitOrThrow(cwd: string, args: readonly string[]): Promise<string>
   return result.stdout;
 }
 
-/** The ref to deploy, or null when the arguments ask for --init. Throws a usage error otherwise. */
-function parseArgs(args: readonly string[]): string | null {
+interface IParsedArgs {
+  /** The ref to deploy, or null for --init. */
+  readonly ref: string | null;
+  readonly approved: boolean;
+}
+
+/** True when the user's answer approves the deploy. */
+export function isApprovalAnswer(answer: string | null): boolean {
+  return answer !== null && APPROVAL_ANSWERS.includes(answer.trim().toLowerCase());
+}
+
+/** Reads the arguments. Throws a usage error when they are not --init or --ref. */
+function parseArgs(args: readonly string[]): IParsedArgs {
   const init = args.includes("--init");
   const refArg = args.find((arg) => arg.startsWith("--ref="));
+  const approved = args.includes("--yes");
   if (init === (refArg !== undefined)) throw new DeployError(USAGE, USAGE_EXIT);
-  if (init) return null;
+  if (init) return { ref: null, approved };
   const ref = refArg!.slice("--ref=".length);
   if (!TAG_PATTERN.test(ref) && !COMMIT_PATTERN.test(ref)) {
     throw new DeployError(`'${ref}' is not a version tag or a commit hash.\n${USAGE}`, USAGE_EXIT);
   }
-  return ref;
+  return { ref, approved };
+}
+
+/** Stops the deploy before any engine code runs, unless the user approves on a terminal or passes --yes. */
+function requireApproval(ref: string, approved: boolean): void {
+  if (approved) return;
+  if (!Deno.stdin.isTerminal()) {
+    throw new DeployError(`Approval needed for ${ref}. Read the log above, then run again with --yes.`, FAILURE_EXIT);
+  }
+  if (!isApprovalAnswer(prompt(`Run the engine tests for ${ref}? [y/N]`))) {
+    throw new DeployError(`Deploy of ${ref} was not approved.`, FAILURE_EXIT);
+  }
 }
 
 async function assertPublished(submodule: string, ref: string): Promise<void> {
@@ -148,7 +181,7 @@ async function initialize(root: string): Promise<void> {
   console.log(`Initialized ${SUBMODULE}. The pointer is unchanged.`);
 }
 
-async function moveTo(root: string, ref: string): Promise<void> {
+async function moveTo(root: string, ref: string, approved: boolean): Promise<void> {
   const submodule = `${root}/${SUBMODULE}`;
   const initialized = await git(submodule, ["rev-parse", "--git-dir"]);
   if (!initialized.ok) throw new DeployError(`${SUBMODULE} is not initialized. Run with --init first.`, FAILURE_EXIT);
@@ -160,6 +193,7 @@ async function moveTo(root: string, ref: string): Promise<void> {
   await assertPublished(submodule, ref);
   console.log(`Incoming changes ${previous.slice(0, 10)}..${ref}:`);
   console.log(await gitOrThrow(submodule, ["log", "--oneline", `${previous}..${ref}`]));
+  requireApproval(ref, approved);
   await gitOrThrow(submodule, ["checkout", "-q", "--detach", ref]);
   if (!(await runCompatCheck(root))) {
     await gitOrThrow(submodule, ["checkout", "-q", "--detach", previous]);
@@ -174,10 +208,10 @@ async function moveTo(root: string, ref: string): Promise<void> {
 
 async function main(args: readonly string[]): Promise<number> {
   try {
-    const ref = parseArgs(args);
+    const { ref, approved } = parseArgs(args);
     const root = Deno.cwd();
     if (ref === null) await initialize(root);
-    else await moveTo(root, ref);
+    else await moveTo(root, ref, approved);
     return 0;
   } catch (error) {
     if (!(error instanceof DeployError)) throw error;

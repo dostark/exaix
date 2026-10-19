@@ -9,7 +9,7 @@
 
 import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
-import { compatCommandArgs, compatEnv } from "../../scripts/deploy_unslop_ts.ts";
+import { compatCommandArgs, compatEnv, isApprovalAnswer } from "../../scripts/deploy_unslop_ts.ts";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const SCRIPT = join(REPO_ROOT, "scripts", "deploy_unslop_ts.ts");
@@ -52,6 +52,7 @@ async function run(command: string, args: readonly string[], cwd: string): Promi
     args: [...args],
     cwd,
     env: GIT_ENV,
+    stdin: "null",
     stdout: "piped",
     stderr: "piped",
   }).output();
@@ -122,6 +123,7 @@ Deno.test("a ref that is neither a version tag nor a commit hash exits 2 with us
       const result = await deploy(superproject, ...args);
       assertEquals(result.code, USAGE_EXIT, `${args.join(" ")}: ${result.stderr}`);
       assertStringIncludes(result.stderr, "Usage:");
+      assertStringIncludes(result.stderr, "--yes");
     }
     assertEquals(await submoduleHead(superproject), before);
   });
@@ -152,7 +154,7 @@ Deno.test("a commit that exists only locally exits 1 because the remote does not
 Deno.test("a published tag moves the pointer, stages it, prints the incoming log, and commits nothing", async () => {
   await withFixture(async ({ superproject }) => {
     const commitsBefore = await git(superproject, "rev-list", "--count", "HEAD");
-    const result = await deploy(superproject, "--ref=v1.1.0");
+    const result = await deploy(superproject, "--ref=v1.1.0", "--yes");
     assertEquals(result.code, 0, result.stderr);
     assertStringIncludes(result.stdout, "add changelog for 1.1.0");
     assertEquals(await git(superproject, "diff", "--cached", "--name-only"), SUBMODULE);
@@ -167,12 +169,30 @@ Deno.test("a published tag moves the pointer, stages it, prints the incoming log
 Deno.test("a tag whose tests fail exits 1 and restores the previous pointer", async () => {
   await withFixture(async ({ superproject }) => {
     const before = await submoduleHead(superproject);
-    const result = await deploy(superproject, "--ref=v2.0.0");
+    const result = await deploy(superproject, "--ref=v2.0.0", "--yes");
     assertEquals(result.code, FAILURE_EXIT, result.stdout + result.stderr);
     assertStringIncludes(result.stderr, "compatibility check failed");
     assertEquals(await submoduleHead(superproject), before);
     assertEquals(await git(superproject, "diff", "--cached", "--name-only"), "");
   });
+});
+
+Deno.test("a non-interactive deploy without --yes stops after the incoming log and changes nothing", async () => {
+  await withFixture(async ({ superproject }) => {
+    const before = await submoduleHead(superproject);
+    const result = await deploy(superproject, "--ref=v2.0.0");
+    assertEquals(result.code, FAILURE_EXIT, result.stdout + result.stderr);
+    assertStringIncludes(result.stdout, "engine 2.0.0 breaks the catalog");
+    assertStringIncludes(result.stderr, "--yes");
+    assertEquals(result.stdout.includes("passed"), false, "no test may run before approval");
+    assertEquals(await submoduleHead(superproject), before);
+    assertEquals(await git(superproject, "diff", "--cached", "--name-only"), "");
+  });
+});
+
+Deno.test("only y and yes approve a deploy, in any case", () => {
+  for (const answer of ["y", "Y", "yes", " YES "]) assertEquals(isApprovalAnswer(answer), true, answer);
+  for (const answer of ["", "n", "no", "yep", null]) assertEquals(isApprovalAnswer(answer), false, String(answer));
 });
 
 Deno.test("--init checks out the recorded pointer in a clone without the submodule", async () => {
@@ -211,4 +231,6 @@ Deno.test("the compatibility check environment drops loader variables and keeps 
 Deno.test("the deploy script never commits or pushes", async () => {
   const source = await Deno.readTextFile(SCRIPT);
   assertFalse(/["'`](commit|push)["'`]/.test(source), "the script must not pass commit or push to git");
+  assertStringIncludes(source, "[--yes]");
+  assertStringIncludes(source, "not a hostile ref");
 });

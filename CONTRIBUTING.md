@@ -209,9 +209,12 @@ scripts/deploy_unslop_ts.ts --init`, which also runs the compatibility check. Th
 members are nested paths, so an empty `exaix-team/` only prints skip warnings.
 
 To move the engine, run `deno task unslop-ts:deploy --ref=vX.Y.Z` (a release tag or a commit on
-`origin/main`). The task refuses a dirty or unpublished ref, prints the incoming log, runs the engine
-tests and the Exaix compatibility test, and stages the pointer. It never commits or pushes: review
-the staged pointer and commit it yourself. Move the `unslop-ts` pointer only through this task, because
+`origin/main`). The task refuses a dirty or unpublished ref and prints the incoming log. Read that log:
+the task then asks for approval before it checks out the ref and runs the new engine's own tests and the
+Exaix compatibility test on your machine. Without a terminal it stops, unless you pass `--yes`. The
+permission flags of that test run stop accidents only. They are not a sandbox, because a test can start
+`deno` or `git` and run any command. After the check the task stages the pointer. It never commits or
+pushes: review the staged pointer and commit it yourself. Move the `unslop-ts` pointer only through this task, because
 the pre-push hook auto-pushes `exaix-dev-docs` and `exaix-team` but not `unslop-ts`. Push the `unslop-ts`
 repository first, then this repository, or CI cannot resolve the recorded commit.
 
