@@ -142,6 +142,9 @@ SECURITY gate (portal code or input parsing, file paths, DB queries, subprocesse
   13b. New input path/query/subprocess/HTTP handler? Confirm a [security] rejection-by-
        validation test exists.
   13c. Security-relevant file touched? Run `deno task test:security`.
+  13d. A criterion that claims containment (permission flags, a sandbox, an allow-list) needs a test
+       that tries to escape it with a hostile case, such as a child process or a `git -c alias`.
+       A flag list that a test only reads proves nothing about what it stops.
 
 SUCCESS CRITERION VERIFICATION GATE — mandatory, before the doc update
   14. Read the step's full Success criteria. Per criterion do ONE of:
@@ -167,7 +170,10 @@ REFACTOR + CI gates
   21b. Stage the step's files BEFORE running `deno run -A scripts/ci.ts check`. The bare-optional,
       comment-STE and commit-message gates read only staged files and pass vacuously on an
       empty index. Write comments as sentences of at most 20 words and no semicolons. A staged
-      file's existing bare `?` parameters also fail the ratchet.
+      file's existing bare `?` parameters and its existing long comment sentences also fail the
+      ratchet, so shorten them in the same change. Staged `.copilot/` sources make `check:docs` fail
+      until `deno run --allow-read --allow-write --allow-run=deno scripts/build_agents_index.ts`
+      rebuilds and you stage `.copilot/manifest.json`.
   22. Final step validation: once the full step implementation, wiring, and refactoring
       are done and focused checks pass, run any full suite required by Validation policy
       with `deno task test_all` (or `test_all:team` for team scope).
