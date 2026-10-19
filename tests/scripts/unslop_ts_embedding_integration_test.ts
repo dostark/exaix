@@ -71,9 +71,30 @@ function task(clone: string, name: string, ...args: string[]): Promise<IRun> {
   return run(Deno.execPath(), ["task", name, ...args], clone);
 }
 
-async function submoduleReady(name: string): Promise<boolean> {
-  return await Deno.stat(join(REPO_ROOT, name, ".git")).then(() => true).catch(() => false);
+async function pathExists(path: string): Promise<boolean> {
+  return await Deno.stat(path).then(() => true).catch(() => false);
 }
+
+function gitOnPath(): boolean {
+  try {
+    return new Deno.Command("git", { args: ["--version"], stdout: "null", stderr: "null" }).outputSync().success;
+  } catch {
+    return false;
+  }
+}
+
+/** The reason this test cannot run in the current checkout, or null when it can. */
+async function skipReason(): Promise<string | null> {
+  if (!(await pathExists(join(REPO_ROOT, ".git")))) return "the checkout has no .git directory to clone";
+  if (!gitOnPath()) return "git is not on the path";
+  for (const submodule of [ENGINE_SUBMODULE, TEAM_SUBMODULE]) {
+    if (!(await pathExists(join(REPO_ROOT, submodule, ".git")))) return `${submodule} is not initialized`;
+  }
+  return null;
+}
+
+const SKIP_REASON = await skipReason();
+if (SKIP_REASON !== null) console.warn(`unslop_ts_embedding_integration_test is ignored: ${SKIP_REASON}`);
 
 async function prepareClone(root: string): Promise<string> {
   const clone = join(root, "clone");
@@ -86,7 +107,7 @@ async function prepareClone(root: string): Promise<string> {
 
 Deno.test({
   name: "a fresh clone runs every style gate through the embedded engine",
-  ignore: !(await submoduleReady(ENGINE_SUBMODULE)) || !(await submoduleReady(TEAM_SUBMODULE)),
+  ignore: SKIP_REASON !== null,
   fn: async () => {
     const root = await Deno.makeTempDir({ prefix: "unslop_ts_embedding_" });
     try {
