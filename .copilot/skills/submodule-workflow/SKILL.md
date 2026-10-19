@@ -18,7 +18,7 @@ qwen_skill: submodule-workflow
 ---
 Key points
 
-- exaix-dev-docs, exaix-team, and unslop-ts are real Git submodules, not nested folders.
+- exaix-dev-docs and exaix-team are real Git submodules, not nested folders.
 - The parent stores only a pointer to each submodule commit.
 - A broken flow leaves the parent pointing at a detached or uncommitted submodule state.
 - Commit submodule changes FIRST, then update the parent pointer — **except plan-step

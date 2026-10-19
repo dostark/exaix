@@ -57,6 +57,7 @@ const EDITED_SINCE_BASELINE = new Set([
   "review-phase-plan",
   "review-research",
   "self-improvement",
+  "submodule-workflow",
   "test-development",
 ]);
 const EDITED_PREFIX_CHARS = 200;
