@@ -208,6 +208,27 @@
         "tests"
       ],
       "minRestatedElements": 2
+    },
+    "magicLiterals": {
+      "additionalStrings": [
+        "other"
+      ],
+      "statusLiterals": [
+        "pending",
+        "resumed",
+        "fulfilled",
+        "rejected",
+        "amended",
+        "expired",
+        "cancelled"
+      ],
+      "structuralArrayProperties": [
+        "required",
+        "args",
+        "enum",
+        "capabilities",
+        "tags"
+      ]
     }
   },
   "tagVocabulary": {

@@ -23,6 +23,7 @@ const PARITY_TEST_SUFFIX = "_parity_test.ts";
 const GUARD_PATHS = [
   TABLE_PATH,
   "packages/lint-policy/tests/port_migration_test.ts",
+  "packages/lint-policy/tests/port_split_table_test.ts",
   "packages/lint-policy/tests/helpers/port_migration.ts",
   "packages/lint-policy/tests/fixtures/port/",
   "docs/CHANGELOG.md",

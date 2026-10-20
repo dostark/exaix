@@ -2083,7 +2083,7 @@
     },
     {
       "id": "magic-literals",
-      "origin": "checker",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -2095,9 +2095,8 @@
       ],
       "mechanism": "options",
       "coupling": [
-        "detector in check_magic_values.ts: thresholds, structural-literal skips, constants.ts and enums.ts path suffixes",
-        "uses catalog scopes through classifyPath",
-        "Exaix layer allow-list stays in lint-policy"
+        "Exaix status words, array property names, and the other stop word are options in wholeTree.magicLiterals",
+        "uses catalog scopes through classifyPath"
       ],
       "options": [
         "thresholds",
@@ -2132,9 +2131,9 @@
         "dropped": []
       },
       "positive": [],
-      "ported": false,
+      "ported": true,
       "parked": false,
-      "note": "Conditional on Step 5: dropped and recorded if the coupling cannot become options."
+      "note": "Moved to @dostark/unslop-ts/whole-tree in Step 5. check:magic calls detectMagicLiterals in-process, and the Exaix vocabulary lives in the wholeTree.magicLiterals catalog section."
     }
   ]
 }

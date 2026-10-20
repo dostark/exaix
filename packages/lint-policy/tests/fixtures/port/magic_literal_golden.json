@@ -1,0 +1,66 @@
+{
+  "clean tree": {
+    "stdout": "✅ No magic value violations detected\n",
+    "stderr": ""
+  },
+  "local string violation": {
+    "stdout": "",
+    "stderr": "❌ Magic value violations detected:\n\n[MODULE] score=27 existing-constant=no \"repeated literal text\" (string) appears 4x across 1 file\n    ┃\n    ┃ per-file breakdown:\n    ┃   packages/x/src/a.ts: 4 occurrences (line 1)\n\n1 violation(s) found\n"
+  },
+  "global string violation": {
+    "stdout": "",
+    "stderr": "❌ Magic value violations detected:\n\n[GLOBAL] score=58 existing-constant=no \"repeated literal text\" (string) appears 6x across 3 files\n    ┃\n    ┃ per-file breakdown:\n    ┃   packages/x/src/a.ts: 2 occurrences (line 1)\n    ┃   packages/x/src/c.ts: 2 occurrences (line 1)\n    ┃   packages/x/src/b.ts: 2 occurrences (line 1)\n\n1 violation(s) found\n"
+  },
+  "number violation": {
+    "stdout": "",
+    "stderr": "❌ Magic value violations detected:\n\n[MODULE] score=30 existing-constant=no 12345 (number) appears 5x across 1 file\n    ┃\n    ┃ per-file breakdown:\n    ┃   packages/x/src/a.ts: 5 occurrences (line 1)\n\n1 violation(s) found\n"
+  },
+  "number violation with --no-numbers": {
+    "stdout": "✅ No magic value violations detected\n",
+    "stderr": ""
+  },
+  "structural strings": {
+    "stdout": "✅ No magic value violations detected\n",
+    "stderr": ""
+  },
+  "structural positions": {
+    "stdout": "✅ No magic value violations detected\n",
+    "stderr": ""
+  },
+  "domain status words": {
+    "stdout": "✅ No magic value violations detected\n",
+    "stderr": ""
+  },
+  "existing constant candidate": {
+    "stdout": "",
+    "stderr": "❌ Magic value violations detected:\n\n[MODULE] score=67 existing-constant=yes \"repeated literal text\" (string) appears 4x across 1 file\n    ┃\n    ┃ per-file breakdown:\n    ┃   packages/x/src/use.ts: 4 occurrences (line 1)\n\n1 violation(s) found\n"
+  },
+  "test files skipped by default": {
+    "stdout": "✅ No magic value violations detected\n",
+    "stderr": ""
+  },
+  "test files included": {
+    "stdout": "",
+    "stderr": "❌ Magic value violations detected:\n\n[MODULE] score=27 existing-constant=no \"another literal\" (string) appears 4x across 1 file\n    ┃\n    ┃ per-file breakdown:\n    ┃   packages/x/tests/a_test.ts: 4 occurrences (line 10)\n\n1 violation(s) found\n"
+  },
+  "lowered local threshold flag": {
+    "stdout": "",
+    "stderr": "❌ Magic value violations detected:\n\n[MODULE] score=21 existing-constant=no \"repeated literal text\" (string) appears 2x across 1 file\n    ┃\n    ┃ per-file breakdown:\n    ┃   packages/x/src/a.ts: 2 occurrences (line 1)\n\n1 violation(s) found\n"
+  },
+  "raised global threshold flag": {
+    "stdout": "✅ No magic value violations detected\n",
+    "stderr": ""
+  },
+  "ranked violations": {
+    "stdout": "",
+    "stderr": "❌ Magic value violations detected:\n\n[GLOBAL] score=58 existing-constant=no \"third literal text\" (string) appears 6x across 3 files\n    ┃\n    ┃ per-file breakdown:\n    ┃   packages/x/src/e.ts: 2 occurrences (line 1)\n    ┃   packages/x/src/d.ts: 2 occurrences (line 1)\n    ┃   packages/x/src/c.ts: 2 occurrences (line 1)\n\n[MODULE] score=30 existing-constant=no 98765 (number) appears 5x across 1 file\n    ┃\n    ┃ per-file breakdown:\n    ┃   packages/x/src/f.ts: 5 occurrences (line 1)\n\n[MODULE] score=30 existing-constant=no \"second literal text\" (string) appears 5x across 1 file\n    ┃\n    ┃ per-file breakdown:\n    ┃   packages/x/src/b.ts: 5 occurrences (line 1)\n\n[MODULE] score=27 existing-constant=no \"first literal text\" (string) appears 4x across 1 file\n    ┃\n    ┃ per-file breakdown:\n    ┃   packages/x/src/a.ts: 4 occurrences (line 1)\n\n4 violation(s) found\n"
+  },
+  "more than ten files": {
+    "stdout": "",
+    "stderr": "❌ Magic value violations detected:\n\n[GLOBAL] score=121 existing-constant=no \"repeated literal text\" (string) appears 12x across 12 files\n    ┃\n    ┃ per-file breakdown:\n    ┃   packages/x/src/f2.ts: 1 occurrence (line 1)\n    ┃   packages/x/src/f10.ts: 1 occurrence (line 1)\n    ┃   packages/x/src/f4.ts: 1 occurrence (line 1)\n    ┃   packages/x/src/f8.ts: 1 occurrence (line 1)\n    ┃   packages/x/src/f9.ts: 1 occurrence (line 1)\n    ┃   packages/x/src/f7.ts: 1 occurrence (line 1)\n    ┃   packages/x/src/f5.ts: 1 occurrence (line 1)\n    ┃   packages/x/src/f1.ts: 1 occurrence (line 1)\n    ┃   packages/x/src/f0.ts: 1 occurrence (line 1)\n    ┃   packages/x/src/f6.ts: 1 occurrence (line 1)\n    ┃   … and 2 more file(s) with 2 occurrence(s)\n\n1 violation(s) found\n"
+  },
+  "fixture files skipped": {
+    "stdout": "✅ No magic value violations detected\n",
+    "stderr": ""
+  }
+}
