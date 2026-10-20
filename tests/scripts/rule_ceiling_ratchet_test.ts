@@ -27,8 +27,12 @@ const RATCHETED_RULES = [
   "exaix/exported-interface-placement",
   "exaix/magic-union-type",
   "exaix/promise-response-return",
+  "exaix/long-comment",
+  "exaix/ephemeral-comment",
+  "exaix/max-params",
+  "exaix/test-inline-multiline-fixture",
 ];
-const ROOT_BUCKETS = ["tests", "exaix-team"];
+const ROOT_BUCKETS = ["tests", "exaix-team", "scripts"];
 
 const KNOWN_RULES = ["exaix/require-safety-comment", "exaix/no-runtime-typeof"];
 const KNOWN_PACKAGES = ["packages/flow", "packages/core"];
@@ -97,7 +101,7 @@ interface ILintReport {
   readonly diagnostics?: readonly ILintDiagnostic[];
 }
 
-/** The workspace package names (`packages/*` and `apps/*`) and the root buckets for `tests/` and `exaix-team/`. */
+/** The workspace package names (`packages/*` and `apps/*`) and the root buckets for `tests/`, `exaix-team/`, and `scripts/`. */
 async function workspacePackages(): Promise<string[]> {
   const denoJson = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json"))) as { workspace?: string[] };
   const workspace = (denoJson.workspace ?? [])
@@ -132,7 +136,7 @@ Deno.test("the whole-tree counts match the committed ceilings", async () => {
   for (let attempt = 1; attempt <= MAX_LINT_ATTEMPTS && stdout.length === 0; attempt++) {
     const command = new Deno.Command(Deno.execPath(), {
       // The repo lint scope, so a test-scope rule is held too (the no-argument form misses them).
-      args: ["lint", "--json", "tests/", "packages/", "exaix-team/", "apps/"],
+      args: ["lint", "--json", "tests/", "packages/", "exaix-team/", "apps/", "scripts/"],
       cwd: REPO_ROOT,
       env: { EXAIX_LINT_RULES: RATCHETED_RULES.join(",") },
       stdout: "piped",

@@ -577,7 +577,7 @@
     },
     {
       "id": "max-params",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -629,13 +629,13 @@
           "code": "export function many(a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number): number {\n  return a + b + c + d + e + f + g + h;\n}\n"
         }
       ],
-      "ported": false,
-      "parked": false,
+      "ported": true,
+      "parked": true,
       "note": "Replaces a line scanner (paramListStartLine) with the parameter list of the function-like node."
     },
     {
       "id": "long-comment",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -676,13 +676,13 @@
           "code": "export function f(): number {\n  // one\n  // two\n  // three\n  // four\n  return 1;\n}\n"
         }
       ],
-      "ported": false,
-      "parked": false,
+      "ported": true,
+      "parked": true,
       "note": ""
     },
     {
       "id": "ephemeral-comment",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -722,13 +722,13 @@
           "code": "// Added on 2026-10-20 for the migration.\nexport const a = 1;\n"
         }
       ],
-      "ported": false,
-      "parked": false,
+      "ported": true,
+      "parked": true,
       "note": ""
     },
     {
       "id": "decorative-comment",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -764,13 +764,13 @@
           "code": "// ==== section ====\nexport const a = 1;\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": ""
     },
     {
       "id": "ephemeral-filename",
-      "origin": "emitted",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -799,13 +799,13 @@
         "dropped": []
       },
       "positive": [],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": "Ported with ephemeral-comment; the plugin rule reads context.filename."
     },
     {
       "id": "test-inline-multiline-fixture",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -843,13 +843,13 @@
           "code": "Deno.test(\"t\", () => {\n  const markdown = `\n# Title\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\n`;\n  console.log(markdown);\n});\n"
         }
       ],
-      "ported": false,
-      "parked": false,
+      "ported": true,
+      "parked": true,
       "note": ""
     },
     {
       "id": "module-header",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "split",
       "parts": [
         {
@@ -891,13 +891,13 @@
           "code": "export const a = 1;\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": "Generic part is new to the port list: assigned to Step 6; the Exaix part stays a script rule."
     },
     {
       "id": "script-usage",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "split",
       "parts": [
         {
@@ -933,7 +933,7 @@
         ]
       },
       "positive": [],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": "Deno-script header part is new to the port list: assigned to Step 6 (Deno pack)."
     },

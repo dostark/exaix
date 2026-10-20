@@ -17,7 +17,6 @@ import {
   materializePersonaVariants,
 } from "../../runner/persona_isolation_arm.ts";
 
-// style-exclude:FIXTURE_READABILITY - The byte-level frontmatter/body boundary is clearest inline.
 const BLUEPRINT = `---
 agent_role: "senior-coder"
 model_size: L

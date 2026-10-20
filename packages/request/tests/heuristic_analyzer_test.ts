@@ -72,7 +72,6 @@ Deno.test("[HeuristicAnalyzer] classifies medium multi-step request (default)", 
 });
 
 Deno.test("[HeuristicAnalyzer] classifies complex multi-requirement request", () => {
-  // style-exclude:FIXTURE_READABILITY - The inline request sample is intentionally embedded for readability and demonstration.
   const text = `
     Implement a full caching layer for the API:
     - Add Redis client configuration

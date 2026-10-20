@@ -24,6 +24,7 @@ const GUARD_PATHS = [
   TABLE_PATH,
   "packages/lint-policy/tests/port_migration_test.ts",
   "packages/lint-policy/tests/port_split_table_test.ts",
+  "packages/lint-policy/tests/port_scope_test.ts",
   "packages/lint-policy/tests/helpers/port_migration.ts",
   "packages/lint-policy/tests/fixtures/port/",
   "docs/CHANGELOG.md",
@@ -59,11 +60,11 @@ Deno.test("the style-exclude sites of a rule are listed with their file and line
   assertEquals(findStyleExcludeSites(files, CODES), ["packages/a/src/x.ts:2"]);
 });
 
-Deno.test("a bare rule id is found, and the plugin id and a longer word are not", () => {
+Deno.test("a bare rule id in brackets or backticks is found, and the plugin id, a longer word, and prose are not", () => {
   const files = new Map<string, string>([
     [
       "a.md",
-      "See [dynamic-import] and `dynamic-import`.\nUse exaix/dynamic-import instead.\nA dynamic-importer is a word.\n",
+      "See [dynamic-import] and `dynamic-import`.\nUse exaix/dynamic-import instead.\nA dynamic-importer is a word.\nThe dynamic-import rule is prose.\n",
     ],
   ]);
   assertEquals(findBareIdReferences(files, "dynamic-import"), ["a.md:1", "a.md:1"]);

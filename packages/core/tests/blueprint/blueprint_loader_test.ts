@@ -383,7 +383,6 @@ Deno.test("[IBlueprintLoader] toLegacyBlueprint carries default_skills through a
   const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
-    // style-exclude:SMALL_FIXTURE_OK - 5-line frontmatter fixture, inline for readability
     const content = `---
 agent_role: "skills-test"
 name: "Skills Test"
@@ -412,7 +411,6 @@ Deno.test("[IBlueprintLoader] toLegacyBlueprint carries thinking/effort through,
   const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
-    // style-exclude:SMALL_FIXTURE_OK - 5-line frontmatter fixture, inline for readability
     const content = `---
 agent_role: "effort-test"
 name: "Effort Test"

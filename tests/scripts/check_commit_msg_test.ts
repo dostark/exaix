@@ -283,7 +283,6 @@ impact: ReqProc: added validation; EventLogger: added audit entry`;
 
 // Plan-step traceability (path: <doc>#<step>)
 
-// style-exclude:FIXTURE_READABILITY - Compact plan-doc excerpt kept inline for step-parsing test clarity
 const PLAN_DOC = `## Implementation Plan
 
 ### Step 5: Something earlier
@@ -377,7 +376,6 @@ describe("parsePlanStep", () => {
   });
 
   it("does not bleed into a later '## ' phase-level section (e.g. Success Metrics) when the step is the doc's last '### Step'", () => {
-    // style-exclude:FIXTURE_READABILITY - Compact plan-doc excerpt kept inline for step-parsing test clarity
     const planDocLastStep = `## Implementation Plan
 
 ### Step 6: Terminal, last step in the doc
@@ -630,7 +628,6 @@ More prose here that must never be treated as part of the criterion above.
 });
 
 // A plan whose step has a ✅ item AND a ⚠️ deferred item, plus a Reachability Ledger.
-// style-exclude:FIXTURE_READABILITY - Compact plan-doc excerpt kept inline for deferred-parsing test clarity
 const PLAN_DOC_DEFERRED = `## Implementation Plan
 
 ### Step 6: With a deferral

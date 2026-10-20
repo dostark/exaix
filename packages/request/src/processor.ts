@@ -81,7 +81,7 @@ import type { IRequestSpecification } from "@exaix/schemas/request_specification
 import type { EnhancedRequest, SessionMemoryService } from "@exaix/memory";
 import type { Opt, Reason } from "@exaix/core/types";
 
-/** Shared options for internal request-processing methods (reduces max-params). */
+/** Shared options for internal request-processing methods, to keep parameter counts low. */
 interface IProcessRequestOptions {
   frontmatter: IRequestFrontmatter;
   body: string;

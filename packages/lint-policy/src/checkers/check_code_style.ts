@@ -55,15 +55,8 @@ const REPO_ROOT = resolveRepoRoot();
 
 /** Option schemas for the script rules that read catalog options. */
 const SCRIPT_RULE_SCHEMAS: ScriptRuleSchemas = {
-  "max-params": z.object({ max: z.number().int().positive().default(7) }).strict(),
   "duplicate-constant": DuplicateConstantOptionsSchema,
   "duplicate-type": DuplicateTypeOptionsSchema,
-  "long-comment": z.object({
-    maxLines: z.number().int().positive().default(3),
-    extensions: z.array(z.string().min(2)).default([".ts", ".tsx", ".yaml", ".yml", ".toml", ".jsonc"]),
-    overrides: z.record(z.string(), z.object({ maxLines: z.number().int().positive() })).default({}),
-  }).strict(),
-  "test-inline-multiline-fixture": z.object({ minLines: z.number().int().positive().default(7) }).strict(),
   "edition-leak": z.object({
     soloTier: z.number().int().default(0),
     teamTier: z.number().int().default(1),
@@ -84,18 +77,6 @@ const CATALOG: ICatalog = parseCatalog(styleRuleCatalog, {
 export function classifyRepoPath(repoPath: string): PathClass {
   return classifyPath(repoPath, CATALOG.scopes);
 }
-
-/** `style-exclude:CODE` reasons, read from each rule's `exclusionCodes` catalog entry. */
-const exclusionDict: Record<string, Record<string, { reason: string }>> = Object.fromEntries(
-  Object.entries(CATALOG.rules)
-    .filter(([, entry]) => entry.exclusionCodes)
-    .map(([id, entry]) => [
-      id,
-      Object.fromEntries(
-        Object.entries(entry.exclusionCodes ?? {}).map(([code, reason]) => [code, { reason }]),
-      ),
-    ]),
-);
 
 /** Walker skip list, from the catalog `ignore` globs (each carries a reason). */
 const IGNORE_GLOBS = (CATALOG.ignore ?? []).map((entry) =>
@@ -549,7 +530,6 @@ const publicPackageAliases = discoverPublicPackageAliases();
 
 const args = new Set(Deno.args);
 const convertWarnings = args.has("--convert-warnings-to-errors");
-const showAllWarnings = args.has("--show-all-warnings");
 
 if (args.has("--help") || args.has("-h")) {
   console.log(`Exaix Code Style Checker
@@ -562,7 +542,6 @@ Options:
   --help, -h          Show this help message
 
   --convert-warnings-to-errors  Convert all warnings to errors
-  --show-all-warnings          Show all warnings, including those masked by exclusion comments
 
 Description:
   Scans all .ts and .tsx files in the Exaix repository for code style violations
@@ -783,14 +762,6 @@ function checkLayerLeaks(sourceFile: ts.SourceFile, repoPath: string): void {
 // The script exits non-zero when it finds any error, so hooks and CI can gate on it.
 const rules: Rule[] = [
   {
-    name: "test-inline-multiline-fixture",
-    regex:
-      /^\s*(?:const|let|var)\s+(?:markdown|yaml|json|input|payload|text|content)\s*=\s*(?:[A-Za-z_$][\w$]*\s*)?`[^`]*$/,
-    message:
-      "Avoid inline multiline structured text fixtures in test files. Move YAML, markdown, JSON, or other multi-line test inputs into a package-local fixture under " +
-      `${LAYOUT.testsRoot}fixtures/ and load them from the test file.`,
-  },
-  {
     name: "package-entrypoint-root-src-reexport",
     regex: /from\s+['"](?:src\/|(\.\.\/)+src\/)/,
     message:
@@ -820,14 +791,8 @@ const INLINE_SCRIPT_RULE_IDS = [
   "duplicate-constant",
   "duplicate-type",
   "no-interface-rename-on-import",
-  "module-header",
   "module-header-tag",
-  "max-params",
-  "long-comment",
-  "ephemeral-comment",
-  "decorative-comment",
   "edition-leak",
-  "script-usage",
   "script-placement",
   "tui-boundary-cli",
   "tui-boundary-services",
@@ -859,281 +824,9 @@ export const IMPLEMENTED_SCRIPT_RULE_IDS: ReadonlySet<string> = new Set([
 let errorCount = 0;
 let warnCount = 0;
 
-function parseExclusionComment(line: string, ruleName: string): { code: string; rationale: string } | null {
-  // Looks for: // style-exclude:CODE - rationale
-  const match = line.match(new RegExp(`//\\s*style-exclude:([A-Z0-9_]+)\\s*-\\s*(.+)$`));
-  if (match && exclusionDict[ruleName] && exclusionDict[ruleName][match[1]]) {
-    return { code: match[1], rationale: match[2] };
-  }
-  return null;
-}
-
-// This matches a run of four or more repeated separator characters on a comment line.
-// It covers both pure banner lines and text wrapped in dashes.
-// The threshold is four, not three.
-// A short code echo in prose must not match the real comparison operators.
-// The `#` character is excluded, because this codebase never uses it for banners.
-// It also collides with markdown heading examples such as `######`.
-const DECORATIVE_COMMENT_LINE_PATTERN = /[=\-_~*─━═▬•]{4,}/;
-
-const EPHEMERAL_COMMENT_PATTERNS: { pattern: RegExp; hint: string }[] = [
-  { pattern: /\bphase\s+\d+\b/i, hint: "a phase number" },
-  { pattern: /\bstep\s+\d+\b/i, hint: "a step number" },
-  { pattern: /\bgaps?\s*[-#:]\s*[\w\d.-]+/i, hint: "a GAP identifier" },
-  { pattern: /\bgaps?\s+\d+\b/i, hint: "a GAP identifier" },
-  { pattern: /\b(?:pre|post)[ -]?gap\b/i, hint: "a pre/post-gap reference" },
-  { pattern: /\bgap\s+(?:analysis|remediation|finding|decision)\b/i, hint: "gap analysis/remediation details" },
-  { pattern: /\btried\b/i, hint: "a narration of a prior attempt" },
-  { pattern: /\b(?:didn't|did not)\s+work\b/i, hint: "what didn't work" },
-  { pattern: /§/, hint: "a document-section reference (§)" },
-];
-
-const MONTH_NAME_PATTERN =
-  "(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
-const FOUR_DIGIT_YEAR_PATTERN = "(?:19|20)\\d{2}";
-const TWO_OR_FOUR_DIGIT_YEAR_PATTERN = `(?:\\d{2}|${FOUR_DIGIT_YEAR_PATTERN})`;
-const MONTH_NUMBER_PATTERN = "(?:0?[1-9]|1[0-2])";
-const DAY_NUMBER_PATTERN = "(?:0?[1-9]|[12]\\d|3[01])";
-const COMMENT_DATE_PATTERNS: RegExp[] = [
-  new RegExp(
-    `\\b${FOUR_DIGIT_YEAR_PATTERN}[-/.]${MONTH_NUMBER_PATTERN}[-/.]${DAY_NUMBER_PATTERN}\\b`,
-  ),
-  new RegExp(`\\b${FOUR_DIGIT_YEAR_PATTERN}${MONTH_NUMBER_PATTERN}${DAY_NUMBER_PATTERN}\\b`),
-  new RegExp(
-    `\\b(?:${MONTH_NUMBER_PATTERN}[-/.]${DAY_NUMBER_PATTERN}|${DAY_NUMBER_PATTERN}[-/.]${MONTH_NUMBER_PATTERN})[-/.]${TWO_OR_FOUR_DIGIT_YEAR_PATTERN}\\b`,
-  ),
-  new RegExp(
-    `\\b(?:${MONTH_NAME_PATTERN}[\\s.-]+${DAY_NUMBER_PATTERN}(?:st|nd|rd|th)?(?:,|[\\s.-])+(?:${FOUR_DIGIT_YEAR_PATTERN})|${DAY_NUMBER_PATTERN}(?:st|nd|rd|th)?[\\s.-]+${MONTH_NAME_PATTERN}(?:,|[\\s.-])+(?:${FOUR_DIGIT_YEAR_PATTERN})|${MONTH_NAME_PATTERN}[\\s.-]+${FOUR_DIGIT_YEAR_PATTERN})\\b`,
-    "i",
-  ),
-  new RegExp(`\\bQ[1-4][\\s.-]+${FOUR_DIGIT_YEAR_PATTERN}\\b`, "i"),
-];
-
-function reportCommentViolation(
-  rule: "long-comment" | "ephemeral-comment" | "decorative-comment" | "ephemeral-filename",
-  repoPath: string,
-  lineNum: number,
-  message: string,
-): void {
-  const severity = convertWarnings ? "ERROR" : "WARN";
-  console.log(`${severity} [${rule}] ${repoPath}:${lineNum} – ${message}`);
-  if (convertWarnings) errorCount++;
-  else warnCount++;
-}
-
-// This matches only a numbered plan-phase reference such as `phase147_`.
-// A bare phase word and any step form are deliberately exempt.
-// The step word is an established domain term for flow and execution steps.
-// It is independent of plan-phase numbering.
-// Banning it would flag dozens of correctly named files.
-// See CODE_STYLE.md.
-const EPHEMERAL_TEST_FILENAME_PATTERN = /(?:^|[_.-])phase[-_]?(\d+)(?:[_.-]|$)/i;
-
-function checkTestFileName(repoPath: string): void {
-  const isTestFile = repoPath.includes(LAYOUT.testsSegment) || repoPath.endsWith("_test.ts") ||
-    repoPath.endsWith(".test.ts");
-  if (!isTestFile) return;
-  const basename = repoPath.slice(repoPath.lastIndexOf("/") + 1);
-  const match = basename.match(EPHEMERAL_TEST_FILENAME_PATTERN);
-  if (!match) return;
-  reportCommentViolation(
-    "ephemeral-filename",
-    repoPath,
-    1,
-    `Test file name embeds a numbered plan-phase reference ("phase${
-      match[1]
-    }") — this is ephemeral implementation history in the path, same as in a comment. ` +
-      "Name the file after the behavior it verifies; the phase-plan doc is the durable " +
-      "record of which phase introduced it.",
-  );
-}
-
-function checkCommentDates(repoPath: string, text: string): void {
-  const sourceFile = ts.createSourceFile(repoPath, text, ts.ScriptTarget.Latest, false);
-  const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, ts.LanguageVariant.Standard, text);
-
-  for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
-    if (
-      token !== ts.SyntaxKind.SingleLineCommentTrivia &&
-      token !== ts.SyntaxKind.MultiLineCommentTrivia
-    ) {
-      continue;
-    }
-
-    const commentText = scanner.getTokenText();
-    if (!COMMENT_DATE_PATTERNS.some((pattern) => pattern.test(commentText))) continue;
-
-    const lineNum = sourceFile.getLineAndCharacterOfPosition(scanner.getTokenPos()).line + 1;
-    reportCommentViolation(
-      "ephemeral-comment",
-      repoPath,
-      lineNum,
-      "Comment contains a calendar date; time-specific context belongs in version control or project documentation, not code comments that should remain durable.",
-    );
-  }
-}
-
-/** Extensions whose comments start with `#`. */
-const HASH_COMMENT_EXTENSIONS = new Set([".yaml", ".yml", ".toml"]);
-/** Extensions whose comments use the TypeScript line and block forms. */
-const SLASH_COMMENT_EXTENSIONS = new Set([".jsonc"]);
-
-/**
- * Applies the comment-length rule to a file whose comments start with `#`.
- * The leading block is exempt, as it is for a module header in TypeScript.
- */
-function checkHashComments(repoPath: string, lines: string[], maxLines: number): void {
-  let run: string[] = [];
-  let runStart = 0;
-  let seenContent = false;
-  const flush = (): void => {
-    if (run.length === 0) return;
-    if (seenContent && run.length > maxLines) {
-      evaluateInModuleComment(repoPath, runStart, run, maxLines);
-    }
-    run = [];
-  };
-  for (let index = 0; index < lines.length; index++) {
-    const line = lines[index];
-    if (line.trim().startsWith("#")) {
-      if (run.length === 0) runStart = index + 1;
-      run.push(line);
-      continue;
-    }
-    flush();
-    if (line.trim() !== "") seenContent = true;
-  }
-  flush();
-}
-
-// Evaluates one already-closed comment (a block comment or a run of consecutive
-// `//` lines) against the length and ephemeral-reference rules. Never called for
-// the module's own leading header comment — that block is governed by §7 instead.
-function evaluateInModuleComment(
-  repoPath: string,
-  startLine: number,
-  commentLines: string[],
-  maxLines: number,
-): void {
-  if (commentLines.length === 0) return;
-
-  if (commentLines.length > maxLines) {
-    reportCommentViolation(
-      "long-comment",
-      repoPath,
-      startLine,
-      `Comment spans ${commentLines.length} lines, more than the ${maxLines}-line limit for in-module comments. Shorten it to the one non-obvious fact a reader needs, or move a longer explanation into the module's own documentation.`,
-    );
-  }
-
-  const commentText = commentLines.join("\n");
-  for (const { pattern, hint } of EPHEMERAL_COMMENT_PATTERNS) {
-    if (pattern.test(commentText)) {
-      reportCommentViolation(
-        "ephemeral-comment",
-        repoPath,
-        startLine,
-        `Comment references ${hint}; implementation history belongs in the commit message or phase-plan doc, not in code that outlives the task that produced it.`,
-      );
-      break;
-    }
-  }
-
-  for (let i = 0; i < commentLines.length; i++) {
-    if (DECORATIVE_COMMENT_LINE_PATTERN.test(commentLines[i])) {
-      reportCommentViolation(
-        "decorative-comment",
-        repoPath,
-        startLine + i,
-        "Comment uses a decorative separator (====, ----, ────, or text wrapped in dashes). Drop it and write a plain comment — the decoration adds characters without adding meaning.",
-      );
-    }
-  }
-}
-
-// Scans comments past the module header for length, ephemeral-history, and decoration rules.
-// Calendar dates are scanned separately because their ban also applies to headers and inline comments.
-function checkCommentDiscipline(
-  repoPath: string,
-  lines: string[],
-  templateLiteralLines: Set<number>,
-  maxLines: number,
-): void {
-  let pastHeader = false;
-  let inBlock = false;
-  let blockStartLine = -1;
-  let blockLines: string[] = [];
-  let lineRunStartLine = -1;
-  let lineRunLines: string[] = [];
-
-  const flushLineRun = () => {
-    if (pastHeader) evaluateInModuleComment(repoPath, lineRunStartLine, lineRunLines, maxLines);
-    lineRunStartLine = -1;
-    lineRunLines = [];
-  };
-
-  for (let idx = 0; idx < lines.length; idx++) {
-    const lineNum = idx + 1;
-    if (templateLiteralLines.has(lineNum)) {
-      flushLineRun();
-      continue;
-    }
-
-    const rawLine = lines[idx];
-    const trimmed = rawLine.trim();
-
-    if (inBlock) {
-      blockLines.push(rawLine);
-      if (trimmed.includes("*/")) {
-        inBlock = false;
-        if (pastHeader) evaluateInModuleComment(repoPath, blockStartLine, blockLines, maxLines);
-        blockLines = [];
-      }
-      continue;
-    }
-
-    if (!trimmed) {
-      flushLineRun();
-      continue;
-    }
-
-    if (trimmed.startsWith("/*")) {
-      flushLineRun();
-      if (trimmed.includes("*/")) {
-        if (pastHeader) evaluateInModuleComment(repoPath, lineNum, [rawLine], maxLines);
-      } else {
-        inBlock = true;
-        blockStartLine = lineNum;
-        blockLines = [rawLine];
-      }
-      continue;
-    }
-
-    if (trimmed.startsWith("//")) {
-      if (lineRunStartLine === -1) lineRunStartLine = lineNum;
-      lineRunLines.push(rawLine);
-      continue;
-    }
-
-    flushLineRun();
-    if (!pastHeader && !trimmed.startsWith("#!")) {
-      pastHeader = true;
-    }
-  }
-  flushLineRun();
-}
-
-/** Module header and script-header checks (CODE_STYLE.md 7 and 12). */
+/** Module header tag and script placement checks (CODE_STYLE.md 7 and 12). */
 function checkModuleHeader(path: string, repoPath: string, lines: string[], headerFound: boolean): void {
-  if (!headerFound) {
-    const severity = convertWarnings ? "ERROR" : "WARN";
-    console.log(
-      `${severity} [module-header] ${path}:1 – Modules should start with a descriptive header comment.`,
-    );
-    if (convertWarnings) errorCount++;
-    else warnCount++;
-    return;
-  }
+  if (!headerFound) return;
   if (path.includes(LAYOUT.testsSegment)) return;
 
   const headerLines = lines.slice(0, 15).join("\n");
@@ -1154,18 +847,12 @@ function checkModuleHeader(path: string, repoPath: string, lines: string[], head
     }
   }
 
-  checkScriptHeader(path, headerLines);
+  checkScriptPlacement(path);
 }
 
-/** Maintenance-script header checks (CODE_STYLE.md 12). */
-function checkScriptHeader(path: string, headerLines: string): void {
+/** Maintenance-script placement check (CODE_STYLE.md 12). */
+function checkScriptPlacement(path: string): void {
   if (!path.includes(LAYOUT.scriptsSegment) || path.includes(LAYOUT.testsSegment)) return;
-  if (!headerLines.includes("Usage:")) {
-    console.log(
-      `ERROR [script-usage] ${path}:1 – Maintenance scripts must include a 'Usage:' section in the header.`,
-    );
-    errorCount++;
-  }
   const fileName = path.split("/").pop() || "";
   if (fileName.startsWith("debug_") || fileName.startsWith("tmp_")) {
     console.log(
@@ -1231,79 +918,6 @@ function checkPackagePurity(repoPath: string, lines: string[]): void {
     if (trimmedLine.startsWith("//") || trimmedLine.startsWith("*") || trimmedLine.startsWith("/*")) continue;
     reportPackagePurityViolations(repoPath, line, trimmedLine, idx);
   }
-}
-
-interface IMultilineFixtureLines {
-  readonly exempt: Set<number>;
-  readonly warn: Set<number>;
-}
-
-/** A TOML section header or `schema_version:` opens a document, so it is a fixture at any size. */
-function isDocumentFixture(run: ITemplateRun): boolean {
-  return run.closed && run.firstNonEmptyLine !== null &&
-    (/^\[[A-Za-z_]/.test(run.firstNonEmptyLine) || /^schema_version:/.test(run.firstNonEmptyLine));
-}
-
-/** A YAML front-matter or comment opening that reaches the minimum size is a fixture worth warning about. */
-function isWarnableFixture(run: ITemplateRun, minFixtureLines: number): boolean {
-  return run.closed && !run.containsInterpolation && run.lineCount >= minFixtureLines &&
-    run.firstNonEmptyLine !== null &&
-    (run.firstNonEmptyLine.startsWith("---") || run.firstNonEmptyLine.startsWith("#"));
-}
-
-/** Scans multi-line template fixtures and classifies each opening line as exempt or warn. */
-function collectMultilineFixtureLines(lines: string[], minFixtureLines: number): IMultilineFixtureLines {
-  const exempt = new Set<number>();
-  const warn = new Set<number>();
-  const fixtureStartRegex = /^\s*(?:const|let|var)\s+(?:markdown|yaml|json|input|payload|text|content)\s*=\s*`/;
-  const anyTemplateStartRegex = /^\s*(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*`/;
-
-  for (let idx = 0; idx < lines.length; idx++) {
-    const line = lines[idx];
-    if (!anyTemplateStartRegex.test(line) || /`[^`]*`/.test(line)) continue;
-    const run = scanTemplateRun(lines, idx);
-    const lineNumber = idx + 1;
-    if (isDocumentFixture(run)) {
-      warn.add(lineNumber);
-    } else if (fixtureStartRegex.test(line)) {
-      if (!run.closed || run.containsInterpolation || run.lineCount < minFixtureLines) exempt.add(lineNumber);
-    } else if (isWarnableFixture(run, minFixtureLines)) {
-      warn.add(lineNumber);
-    }
-  }
-  return { exempt, warn };
-}
-
-interface ITemplateRun {
-  readonly closed: boolean;
-  readonly containsInterpolation: boolean;
-  readonly lineCount: number;
-  readonly firstNonEmptyLine: string | null;
-}
-
-/** Scans a multi-line template run that opens on `lines[startIdx]`. */
-function scanTemplateRun(lines: string[], startIdx: number): ITemplateRun {
-  const openingText = lines[startIdx].slice(lines[startIdx].indexOf("`") + 1);
-  let containsInterpolation = false;
-  let lineCount = 0;
-  let firstNonEmptyLine: string | null = null;
-  if (openingText.trim().length > 0) {
-    if (openingText.includes("${")) containsInterpolation = true;
-    lineCount++;
-    firstNonEmptyLine = openingText.trim();
-  }
-
-  for (let j = startIdx + 1; j < lines.length; j++) {
-    if (lines[j].includes("${")) containsInterpolation = true;
-    if (firstNonEmptyLine === null && lines[j].trim().length > 0) firstNonEmptyLine = lines[j].trim();
-    const backtickIndex = lines[j].indexOf("`");
-    if (backtickIndex !== -1) {
-      if (lines[j].slice(0, backtickIndex).trim().length > 0) lineCount++;
-      return { closed: true, containsInterpolation, lineCount, firstNonEmptyLine };
-    }
-    lineCount++;
-  }
-  return { closed: false, containsInterpolation, lineCount, firstNonEmptyLine };
 }
 
 /** Reports the TUI-only boundary violations for one line (CODE_STYLE.md 8). */
@@ -1472,83 +1086,15 @@ interface IStyleRuleContext {
   readonly lines: string[];
   readonly catalog: ICatalog;
   readonly templateLiteralLines: Set<number>;
-  readonly multilineFixtureExemptLines: Set<number>;
-  readonly multilineFixtureWarnLines: Set<number>;
 }
 
-interface IMaskResult {
-  readonly masked: boolean;
-  readonly code: string | null;
-  readonly rationale: string | null;
-}
-
-const UNMASKED: IMaskResult = { masked: false, code: null, rationale: null };
-
-/** Resolves a warning rule's `style-exclude:CODE` masking for one line. */
-function resolveMasking(
-  rule: Rule,
-  severity: "error" | "warn",
-  lineToTest: string,
-  idx: number,
-  ctx: IStyleRuleContext,
-): IMaskResult {
-  if (severity !== "warn") return UNMASKED;
-  const isFixtureWarn = rule.name === "test-inline-multiline-fixture" && ctx.multilineFixtureWarnLines.has(idx + 1);
-  if (!rule.regex.test(lineToTest) && !isFixtureWarn) return UNMASKED;
-  const exclusion = parseExclusionComment(idx > 0 ? ctx.lines[idx - 1].trim() : "", rule.name);
-  return exclusion ? { masked: true, code: exclusion.code, rationale: exclusion.rationale } : UNMASKED;
-}
-
-/** Prints a `test-inline-multiline-fixture` warning and counts it. */
-function reportFixtureWarning(
-  rule: Rule,
-  severity: "error" | "warn",
-  idx: number,
-  ctx: IStyleRuleContext,
-  masking: IMaskResult,
-): void {
+/** Prints a regex-rule violation and counts it. */
+function reportRegexViolation(rule: Rule, severity: "error" | "warn", idx: number, ctx: IStyleRuleContext): void {
   const actualSeverity = convertWarnings ? "error" : severity;
   const prefix = actualSeverity === "error" ? "ERROR" : "WARN";
-  if (!masking.masked || showAllWarnings) {
-    let msg = `${prefix} [${rule.name}] ${ctx.path}:${idx + 1} – ${rule.message}`;
-    if (exclusionDict[rule.name]) {
-      msg += `\n  Possible exclusion codes: ${Object.keys(exclusionDict[rule.name]).join(", ")}`;
-    }
-    if (masking.masked) msg += `\n  (masked by style-exclude:${masking.code} – ${masking.rationale})`;
-    console.log(msg);
-  }
-  if (!masking.masked) {
-    if (actualSeverity === "error") errorCount++;
-    else warnCount++;
-  }
-}
-
-/** True when a masked warning must stay hidden. */
-function isRegexViolationSuppressed(severity: "error" | "warn", masking: IMaskResult): boolean {
-  return severity === "warn" && masking.masked && !showAllWarnings;
-}
-
-/** Prints a generic regex-rule violation and counts it. */
-function reportRegexViolation(
-  rule: Rule,
-  severity: "error" | "warn",
-  idx: number,
-  ctx: IStyleRuleContext,
-  masking: IMaskResult,
-): void {
-  if (isRegexViolationSuppressed(severity, masking)) return;
-  const actualSeverity = convertWarnings ? "error" : severity;
-  const prefix = actualSeverity === "error" ? "ERROR" : "WARN";
-  let msg = `${prefix} [${rule.name}] ${ctx.path}:${idx + 1} – ${rule.message}`;
-  if (severity === "warn" && exclusionDict[rule.name]) {
-    msg += `\n  Possible exclusion codes: ${Object.keys(exclusionDict[rule.name]).join(", ")}`;
-  }
-  if (masking.masked) msg += `\n  (masked by style-exclude:${masking.code} – ${masking.rationale})`;
-  console.log(msg);
-  if (!masking.masked) {
-    if (actualSeverity === "error") errorCount++;
-    else warnCount++;
-  }
+  console.log(`${prefix} [${rule.name}] ${ctx.path}:${idx + 1} – ${rule.message}`);
+  if (actualSeverity === "error") errorCount++;
+  else warnCount++;
 }
 
 /** Evaluates one rule against one line, reporting any violation. */
@@ -1559,18 +1105,8 @@ function evaluateStyleRuleLine(
   idx: number,
   ctx: IStyleRuleContext,
 ): void {
-  if (ctx.templateLiteralLines.has(idx + 1) && rule.name !== "test-inline-multiline-fixture") return;
-  const lineToTest = line;
-  const masking = resolveMasking(rule, severity, lineToTest, idx, ctx);
-  if (rule.name === "test-inline-multiline-fixture") {
-    if (ctx.multilineFixtureExemptLines.has(idx + 1)) return;
-    if (ctx.multilineFixtureWarnLines.has(idx + 1)) {
-      reportFixtureWarning(rule, severity, idx, ctx, masking);
-      return;
-    }
-  }
-  if (!rule.regex.test(lineToTest)) return;
-  reportRegexViolation(rule, severity, idx, ctx, masking);
+  if (ctx.templateLiteralLines.has(idx + 1)) return;
+  if (rule.regex.test(line)) reportRegexViolation(rule, severity, idx, ctx);
 }
 
 /** Evaluates every catalog regex rule over the file's lines. */
@@ -1785,10 +1321,6 @@ interface IScanState {
   protectedBraceCount: number;
   headerFound: boolean;
   firstContentLineNum: number;
-  paramDepth: number;
-  inParamList: boolean;
-  currentParamCount: number;
-  paramListStartLine: number;
 }
 
 interface IScanResult {
@@ -1935,68 +1467,11 @@ function scanTypeStart(trimmed: string, state: IScanState): void {
   }
 }
 
-/** Adds any top-level comma count in text to the parameter tally. */
-function countParamsInText(content: string, state: IScanState): void {
-  for (const char of content) {
-    if (char === "<" || char === "{") state.paramDepth++;
-    if (char === ">" || char === "}") state.paramDepth--;
-    if (char === "," && state.paramDepth === 0) state.currentParamCount++;
-  }
-}
-
-/** Reports a parameter-list that exceeds the configured maximum. */
-function reportMaxParamsIfNeeded(path: string, maxParams: number, state: IScanState): void {
-  if (state.currentParamCount < maxParams) return;
-  console.log(
-    `ERROR [max-params] ${path}:${state.paramListStartLine} – Methods and functions must not exceed ${maxParams} parameters (found ${
-      state.currentParamCount + 1
-    }). Refactor to use a parameter object.`,
-  );
-  errorCount++;
-}
-
-/** Continues counting parameters across the lines of an open parameter list. */
-function continueParamList(path: string, line: string, maxParams: number, state: IScanState): void {
-  const closingIdx = line.indexOf(")");
-  const content = closingIdx !== -1 ? line.substring(0, closingIdx) : line;
-  countParamsInText(content, state);
-  if (closingIdx === -1) return;
-  reportMaxParamsIfNeeded(path, maxParams, state);
-  state.inParamList = false;
-}
-
-/** True when the line looks like a function signature that opens a parameter list. */
-function isParamStartLine(trimmed: string, state: IScanState): boolean {
-  const looksLikeFunction = trimmed.includes("function ") || trimmed.includes("constructor") ||
-    /\b(private|public|protected|async|static|readonly)\b.*\(/.test(trimmed);
-  return looksLikeFunction && !state.inParamList && !state.inTypeDeclaration &&
-    !state.inMultiLineComment && !state.inMultiLineImport && !trimmed.startsWith("import");
-}
-
-/** Opens a parameter list for the line. Returns true while the list stays open. */
-function startParamList(path: string, line: string, idx: number, maxParams: number, state: IScanState): boolean {
-  const openingIdx = line.indexOf("(");
-  if (openingIdx === -1) return false;
-  state.inParamList = true;
-  state.paramListStartLine = idx + 1;
-  state.currentParamCount = 0;
-  state.paramDepth = 0;
-  const closingIdx = line.indexOf(")", openingIdx);
-  const content = closingIdx !== -1 ? line.substring(openingIdx + 1, closingIdx) : line.substring(openingIdx + 1);
-  countParamsInText(content, state);
-  if (closingIdx !== -1) {
-    reportMaxParamsIfNeeded(path, maxParams, state);
-    state.inParamList = false;
-  }
-  return state.inParamList;
-}
-
 /** Pre-scans one source unit, collecting import and interface placement state. */
 function scanFileLines(
   path: string,
   lines: string[],
   templateLiteralLines: Set<number>,
-  maxParams: number,
 ): IScanResult {
   const state: IScanState = {
     inMultiLineComment: false,
@@ -2005,10 +1480,6 @@ function scanFileLines(
     protectedBraceCount: 0,
     headerFound: false,
     firstContentLineNum: -1,
-    paramDepth: 0,
-    inParamList: false,
-    currentParamCount: 0,
-    paramListStartLine: -1,
   };
 
   for (let idx = 0; idx < lines.length; idx++) {
@@ -2026,14 +1497,6 @@ function scanFileLines(
       scanTypeStart(trimmed, state);
       continue;
     }
-
-    if (state.inParamList) {
-      continueParamList(path, line, maxParams, state);
-      continue;
-    }
-    if (isParamStartLine(trimmed, state) && startParamList(path, line, idx, maxParams, state)) {
-      continue;
-    }
   }
 
   return {
@@ -2044,31 +1507,6 @@ function scanFileLines(
 function checkFileFromText(path: string, text: string, catalog: ICatalog): void {
   const repoPath = path.startsWith(REPO_ROOT + "/") ? path.slice(REPO_ROOT.length + 1) : path;
   const lines = text.split(/\r?\n/);
-  const maxParams = Number(ruleSettings(catalog, "max-params", EXAIX_REGISTRY).options.max ?? 7);
-  const longCommentMaxLines = Number(ruleSettings(catalog, "long-comment", EXAIX_REGISTRY).options.maxLines ?? 3);
-  const minFixtureLines = Number(
-    ruleSettings(catalog, "test-inline-multiline-fixture", EXAIX_REGISTRY).options.minLines ?? 7,
-  );
-
-  const commentSettings = ruleSettings(catalog, "long-comment", EXAIX_REGISTRY).options;
-  // SAFETY: the catalog loader validates the comment extension list against its schema.
-  const commentExtensions =
-    (commentSettings.extensions ?? [".ts", ".tsx", ".yaml", ".yml", ".toml", ".jsonc"]) as string[];
-  // SAFETY: the catalog loader validates the comment override table against its schema.
-  const commentOverrides = (commentSettings.overrides ?? {}) as Record<string, { maxLines?: number }>;
-  const extension = repoPath.slice(repoPath.lastIndexOf("."));
-  if (extension !== ".ts" && extension !== ".tsx") {
-    // Only the comment rules read a non-TypeScript file, so no TypeScript check sees it.
-    if (!commentExtensions.includes(extension)) return;
-    const limit = Number(commentOverrides[extension]?.maxLines ?? longCommentMaxLines);
-    if (HASH_COMMENT_EXTENSIONS.has(extension)) {
-      checkHashComments(repoPath, lines, limit);
-    } else if (SLASH_COMMENT_EXTENSIONS.has(extension)) {
-      checkCommentDiscipline(repoPath, lines, new Set<number>(), limit);
-    }
-    return;
-  }
-
   // Single parse per file: the layer-leak check and the template-literal line
   // ranges both read from this SourceFile.
   const sourceFile = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true);
@@ -2076,14 +1514,9 @@ function checkFileFromText(path: string, text: string, catalog: ICatalog): void 
   // AST-based layer-aware constant import check (supersedes the old regex rule)
   checkLayerLeaks(sourceFile, repoPath);
 
-  checkCommentDates(repoPath, text);
-  checkTestFileName(repoPath);
-
   const templateLiteralLines = collectTemplateLiteralLines(sourceFile);
 
-  checkCommentDiscipline(repoPath, lines, templateLiteralLines, longCommentMaxLines);
-
-  const scan = scanFileLines(path, lines, templateLiteralLines, maxParams);
+  const scan = scanFileLines(path, lines, templateLiteralLines);
 
   for (let idx = 0; idx < lines.length; idx++) {
     if (templateLiteralLines.has(idx + 1)) {
@@ -2131,19 +1564,12 @@ function checkFileFromText(path: string, text: string, catalog: ICatalog): void 
   // Package Module Purity (CODE_STYLE.md 13)
   checkPackagePurity(repoPath, lines);
 
-  const { exempt: multilineFixtureExemptLines, warn: multilineFixtureWarnLines } = collectMultilineFixtureLines(
-    lines,
-    minFixtureLines,
-  );
-
   evaluateStyleRules({
     path,
     repoPath,
     lines,
     catalog,
     templateLiteralLines,
-    multilineFixtureExemptLines,
-    multilineFixtureWarnLines,
   });
 }
 
@@ -2251,12 +1677,10 @@ function emitTaggedFindings(buffered: string[], tags: Set<string>): void {
   if (errorCount > 0) Deno.exit(1);
 }
 
+const WALK_EXTENSIONS = [".ts", ".tsx"];
+
 /** Walks the requested paths and runs every enabled rule over each file. */
 async function runAllChecks(manualPaths: string[]): Promise<void> {
-  // SAFETY: the catalog loader validates the walk extension list against its schema.
-  const walkExtensions = (ruleSettings(CATALOG, "long-comment", EXAIX_REGISTRY).options.extensions ??
-    [".ts", ".tsx"]) as string[];
-
   if (manualPaths.length > 0) {
     for (const p of manualPaths) {
       const fullPath = p.startsWith("/") ? p : join(Deno.cwd(), p);
@@ -2268,7 +1692,7 @@ async function runAllChecks(manualPaths: string[]): Promise<void> {
           for await (
             const entry of walk(fullPath, {
               includeDirs: false,
-              exts: walkExtensions,
+              exts: WALK_EXTENSIONS,
               followSymlinks: false,
               skip: IGNORE_GLOBS,
             })
@@ -2286,7 +1710,7 @@ async function runAllChecks(manualPaths: string[]): Promise<void> {
   for await (
     const entry of walk(REPO_ROOT, {
       includeDirs: false,
-      exts: walkExtensions,
+      exts: WALK_EXTENSIONS,
       followSymlinks: false,
       skip: IGNORE_GLOBS,
     })

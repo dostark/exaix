@@ -583,7 +583,6 @@ runtime = "./系統"
 
   await t.step("should compute consistent checksums", async () => {
     const tempDir = await Deno.makeTempDir({ prefix: "config-checksum-consistent-test-" });
-    // style-exclude:FIXTURE_READABILITY - The inline TOML content is kept here for compactness and clarity in this checksum test.
     const content = `[system]
 log_level = "info"
 

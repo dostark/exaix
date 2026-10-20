@@ -31,12 +31,16 @@ async function runDeno(
   };
 }
 
-async function withSeed<T>(body: (file: string) => Promise<T>, source: string = SEED_SOURCE): Promise<T> {
-  await Deno.writeTextFile(SEED_FILE, source);
+async function withSeed<T>(
+  body: (file: string) => Promise<T>,
+  source: string = SEED_SOURCE,
+  file: string = SEED_FILE,
+): Promise<T> {
+  await Deno.writeTextFile(file, source);
   try {
-    return await body(SEED_FILE);
+    return await body(file);
   } finally {
-    await Deno.remove(SEED_FILE).catch(() => {});
+    await Deno.remove(file).catch(() => {});
   }
 }
 
@@ -145,6 +149,76 @@ Deno.test("a parked type-pattern rule is silent by default and reports when EXAI
       const selected = await runDeno(["lint", file], { EXAIX_LINT_RULES: rule });
       assertStringIncludes(selected.output, rule);
     }, source);
+  }
+});
+
+const TEST_SEED_FILE = join(REPO_ROOT, "packages", "core", "tests", "__temp_lint_plugin_phase12_seed_test.ts");
+const PLAIN_TEST_SEED_FILE = join(REPO_ROOT, "packages", "core", "tests", "__temp_lint_plugin_seed_test.ts");
+const NO_USAGE_SEED_FILE = join(REPO_ROOT, "scripts", "__temp_lint_plugin_no_usage.ts");
+const DECORATIVE_SEED = "/** header */\nexport const first = 1;\n// ==========\nexport const second = 2;\n";
+const NO_HEADER_SEED = "export const value = 1;\n";
+const NO_USAGE_SEED = "#!/usr/bin/env -S deno run -A\n/**\n * @module S\n */\nexport const value = 1;\n";
+const LONG_COMMENT_SEED =
+  "/** header */\nexport const first = 1;\n// one\n// two\n// three\n// four\nexport const second = 2;\n";
+const EPHEMERAL_SEED = "/** header */\nexport const first = 1;\n// we tried a loop first\nexport const second = 2;\n";
+const MAX_PARAMS_SEED =
+  "/** header */\nexport function take(a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number): void {}\n";
+const FIXTURE_SEED = "/** header */\nconst yaml = `\na: 1\nb: 2\nc: 3\nd: 4\ne: 5\nf: 6\ng: 7\n`;\n";
+
+Deno.test("deno lint reports exaix/decorative-comment and exaix/require-module-header on seeded violations", async () => {
+  await withSeed(async (file) => {
+    const result = await runDeno(["lint", file]);
+    assertEquals(result.code === 0, false, result.output);
+    assertStringIncludes(result.output, "exaix/decorative-comment");
+  }, DECORATIVE_SEED);
+  await withSeed(async (file) => {
+    const result = await runDeno(["lint", file]);
+    assertStringIncludes(result.output, "exaix/require-module-header");
+  }, NO_HEADER_SEED);
+});
+
+Deno.test("deno lint reports exaix/ephemeral-filename on a test file named after a phase", async () => {
+  await withSeed(
+    async (file) => {
+      const result = await runDeno(["lint", file]);
+      assertEquals(result.code === 0, false, result.output);
+      assertStringIncludes(result.output, "exaix/ephemeral-filename");
+    },
+    "/** header */\nexport const value = 1;\n",
+    TEST_SEED_FILE,
+  );
+});
+
+Deno.test("the scripts run reports exaix/require-script-usage on a script header without a Usage section", async () => {
+  await withSeed(
+    async (file) => {
+      const result = await runDeno(["lint", "--rules-tags=", file], { EXAIX_LINT_RULES: "exaix/require-script-usage" });
+      assertEquals(result.code === 0, false, result.output);
+      assertStringIncludes(result.output, "exaix/require-script-usage");
+    },
+    NO_USAGE_SEED,
+    NO_USAGE_SEED_FILE,
+  );
+});
+
+Deno.test("a parked comment, parameter, or fixture rule is silent by default and reports when selected", async () => {
+  const seeds: [string, string, string][] = [
+    ["exaix/long-comment", LONG_COMMENT_SEED, SEED_FILE],
+    ["exaix/ephemeral-comment", EPHEMERAL_SEED, SEED_FILE],
+    ["exaix/max-params", MAX_PARAMS_SEED, SEED_FILE],
+    ["exaix/test-inline-multiline-fixture", FIXTURE_SEED, PLAIN_TEST_SEED_FILE],
+  ];
+  for (const [rule, source, path] of seeds) {
+    await withSeed(
+      async (file) => {
+        const silent = await runDeno(["lint", file]);
+        assertFalse(silent.output.includes(rule), silent.output);
+        const selected = await runDeno(["lint", file], { EXAIX_LINT_RULES: rule });
+        assertStringIncludes(selected.output, rule);
+      },
+      source,
+      path,
+    );
   }
 });
 

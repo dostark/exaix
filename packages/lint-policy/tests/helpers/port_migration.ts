@@ -12,8 +12,8 @@ import { fromFileUrl } from "@std/path";
 const EXCLUDE_PATTERN = /^(\s*)\/\/\s*style-exclude:([A-Z0-9_]+)\s*-\s*(.+)$/;
 const HISTORY_PREFIX = "exaix-dev-docs/planning/";
 const TEXT_EXTENSIONS = [".ts", ".tsx", ".json", ".md", ".yml", ".yaml", ".sh", ".toml", ".jsonc", ""];
-const BARE_ID_BOUNDARY_BEFORE = String.raw`(?<![\w/.-])`;
-const BARE_ID_BOUNDARY_AFTER = String.raw`(?![\w-])`;
+const BARE_ID_BOUNDARY_BEFORE = String.raw`(?<=[\[\`"'])`;
+const BARE_ID_BOUNDARY_AFTER = String.raw`(?=[\]\`"'])`;
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 
 /** Rewrites each `// style-exclude:CODE - reason` of the given codes to `// deno-lint-ignore <id> -- reason`. */
@@ -40,7 +40,7 @@ export function findStyleExcludeSites(files: ReadonlyMap<string, string>, codes:
   return sites;
 }
 
-/** The `path:line` of every mention of the bare rule id, once per mention. */
+/** The `path:line` of every mention of the bare rule id inside brackets, backticks, or quotes, once per mention. */
 export function findBareIdReferences(files: ReadonlyMap<string, string>, bareId: string): string[] {
   const escaped = bareId.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
   const pattern = new RegExp(`${BARE_ID_BOUNDARY_BEFORE}${escaped}${BARE_ID_BOUNDARY_AFTER}`, "g");

@@ -15,8 +15,6 @@ const catalog = loadPolicyCatalog(catalogJson);
 const ROOT = Deno.cwd();
 const abs = (rel: string) => `${ROOT}/${rel}`;
 const PROD = abs("packages/x/src/sample.ts");
-const TEST = abs("packages/x/tests/sample_test.ts");
-const SCRIPT = abs("scripts/sample_tool.ts");
 
 interface IRuleCase {
   readonly id: string;
@@ -42,44 +40,13 @@ const CASES: IRuleCase[] = [
   },
 
   // module-structure
-  { id: "module-header", invalid: "export const a = 1;\n", valid: HEADER + "export const a = 1;\n" },
   {
     id: "module-header-tag",
     invalid: "/**\n * @module Sample\n * @path packages/x/src/sample.ts\n */\nexport const a = 1;\n",
     valid: HEADER + "export const a = 1;\n",
   },
-  {
-    id: "max-params",
-    invalid:
-      "export function f(a: number, b: number, c: number, d: number, e: number, g: number, h: number, i: number): number {\n  return a + b + c + d + e + g + h + i;\n}\n",
-    valid: "export function f(a: number, b: number): number {\n  return a + b;\n}\n",
-  },
-
-  // comments
-  {
-    id: "long-comment",
-    invalid: "export const x = 1;\n/**\n * one\n * two\n * three\n * four\n */\nexport const y = 2;\n",
-    valid: "export const x = 1;\n/**\n * one\n */\nexport const y = 2;\n",
-  },
-  {
-    id: "ephemeral-comment",
-    invalid: "export const x = 1;\n// phase 5 did this\n",
-    valid: "export const x = 1;\n// plain note\n",
-  },
-  {
-    id: "decorative-comment",
-    invalid: "export const x = 1;\n// ==========\n",
-    valid: "export const x = 1;\n// plain note\n",
-  },
 
   // scripts
-  {
-    id: "script-usage",
-    invalid: "#!/usr/bin/env -S deno run -A\n/**\n * @module S\n * @description d.\n */\nexport const a = 1;\n",
-    valid:
-      "#!/usr/bin/env -S deno run -A\n/**\n * @module S\n * @description d.\n *\n * Usage:\n *   deno run -A scripts/sample_tool.ts\n */\nexport const a = 1;\n",
-    path: SCRIPT,
-  },
   {
     id: "script-placement",
     invalid:
@@ -201,12 +168,6 @@ const CASES: IRuleCase[] = [
   },
 
   // test-quality
-  {
-    id: "test-inline-multiline-fixture",
-    invalid: "const markdown = `\n# Title\nline two\nline three\nline four\nline five\nline six\nline seven\n`;\n",
-    valid: "export const a = 1;\n",
-    path: TEST,
-  },
 
   // boundary
   {

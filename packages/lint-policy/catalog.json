@@ -805,9 +805,9 @@
       "optIn": true,
       "reason": "Parked: The AST rule exempts only a union that is the whole alias body, so it finds inline unions that the line scanner skipped. Phase 230 burns them down and turns the rule on."
     },
-    "module-header": {
-      "engine": "script",
-      "severity": "warn",
+    "exaix/require-module-header": {
+      "engine": "plugin",
+      "severity": "error",
       "scope": "all",
       "codeStyle": "CODE_STYLE.md#module-structure",
       "tags": [
@@ -844,9 +844,9 @@
       "optIn": true,
       "reason": "Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on."
     },
-    "max-params": {
-      "engine": "script",
-      "severity": "error",
+    "exaix/max-params": {
+      "engine": "plugin",
+      "severity": "off",
       "scope": "all",
       "codeStyle": "unslop-ts/docs/style_guide.md#complexity-rules",
       "tags": [
@@ -855,45 +855,96 @@
       ],
       "options": {
         "max": 7
-      }
+      },
+      "optIn": true,
+      "reason": "Parked: the AST rule counts arrows and methods that the line scanner skipped. Phase 230 burns them down and turns the rule on."
     },
-    "long-comment": {
-      "engine": "script",
-      "severity": "warn",
+    "exaix/long-comment": {
+      "engine": "plugin",
+      "severity": "off",
       "scope": "all",
       "codeStyle": "unslop-ts/docs/style_guide.md#comment-discipline",
       "tags": [
         "comments"
       ],
       "options": {
-        "maxLines": 3,
-        "extensions": [
-          ".ts",
-          ".tsx",
-          ".yaml",
-          ".yml",
-          ".toml",
-          ".jsonc"
-        ],
-        "overrides": {
-          ".toml": {
-            "maxLines": 6
-          }
-        }
-      }
+        "maxLines": 3
+      },
+      "optIn": true,
+      "reason": "Parked: one comment in scripts/ is over the limit. Phase 230 shortens it and turns the rule on."
     },
-    "ephemeral-comment": {
-      "engine": "script",
-      "severity": "warn",
+    "exaix/ephemeral-comment": {
+      "engine": "plugin",
+      "severity": "off",
       "scope": "all",
+      "codeStyle": "unslop-ts/docs/style_guide.md#comment-discipline",
+      "tags": [
+        "comments"
+      ],
+      "options": {
+        "phrases": [
+          {
+            "pattern": "\\bphase\\s+\\d+\\b",
+            "flags": "i",
+            "hint": "a phase number"
+          },
+          {
+            "pattern": "\\bstep\\s+\\d+\\b",
+            "flags": "i",
+            "hint": "a step number"
+          },
+          {
+            "pattern": "\\bgaps?\\s*[-#:]\\s*[\\w\\d.-]+",
+            "flags": "i",
+            "hint": "a GAP identifier"
+          },
+          {
+            "pattern": "\\bgaps?\\s+\\d+\\b",
+            "flags": "i",
+            "hint": "a GAP identifier"
+          },
+          {
+            "pattern": "\\b(?:pre|post)[ -]?gap\\b",
+            "flags": "i",
+            "hint": "a pre/post-gap reference"
+          },
+          {
+            "pattern": "\\bgap\\s+(?:analysis|remediation|finding|decision)\\b",
+            "flags": "i",
+            "hint": "gap analysis/remediation details"
+          },
+          {
+            "pattern": "\\btried\\b",
+            "flags": "i",
+            "hint": "a narration of a prior attempt"
+          },
+          {
+            "pattern": "\\b(?:didn't|did not)\\s+work\\b",
+            "flags": "i",
+            "hint": "what didn't work"
+          },
+          {
+            "pattern": "§",
+            "flags": "",
+            "hint": "a document-section reference (§)"
+          }
+        ]
+      },
+      "optIn": true,
+      "reason": "Parked: one test helper comment names a phase. Phase 230 rewrites it and turns the rule on."
+    },
+    "exaix/ephemeral-filename": {
+      "engine": "plugin",
+      "severity": "error",
+      "scope": "test",
       "codeStyle": "unslop-ts/docs/style_guide.md#comment-discipline",
       "tags": [
         "comments"
       ]
     },
-    "decorative-comment": {
-      "engine": "script",
-      "severity": "warn",
+    "exaix/decorative-comment": {
+      "engine": "plugin",
+      "severity": "error",
       "scope": "all",
       "codeStyle": "unslop-ts/docs/style_guide.md#comment-discipline",
       "tags": [
@@ -964,10 +1015,10 @@
         "scripts/**"
       ]
     },
-    "script-usage": {
-      "engine": "script",
+    "exaix/require-script-usage": {
+      "engine": "plugin",
       "severity": "error",
-      "scope": "all",
+      "scope": "prod",
       "codeStyle": "CODE_STYLE.md#utility-scripts",
       "tags": [
         "scripts"
@@ -1157,21 +1208,20 @@
         "di"
       ]
     },
-    "test-inline-multiline-fixture": {
-      "engine": "script",
-      "severity": "warn",
+    "exaix/test-inline-multiline-fixture": {
+      "engine": "plugin",
+      "severity": "off",
       "scope": "test",
       "codeStyle": "CODE_STYLE.md#package-test-boundaries",
       "tags": [
         "test-quality"
       ],
       "options": {
-        "minLines": 7
+        "minLines": 7,
+        "fixturesDirectory": "tests/fixtures/"
       },
-      "exclusionCodes": {
-        "SMALL_FIXTURE_OK": "Fixture is under the 7-line threshold and inlining improves test clarity.",
-        "FIXTURE_READABILITY": "Inline fixture is more readable and maintainable in this context."
-      }
+      "optIn": true,
+      "reason": "Parked: the AST rule reads templates that hold escaped backticks, which the line scanner ended early. Phase 230 burns them down and turns the rule on."
     },
     "concrete-cross-domain": {
       "engine": "script",

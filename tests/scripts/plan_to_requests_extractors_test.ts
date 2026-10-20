@@ -42,7 +42,6 @@ Deno.test("extractExecutiveSummary bounds output at the end of the Goal paragrap
 });
 
 Deno.test("extractExecutiveSummary returns empty string when the doc has no Executive Summary heading", () => {
-  // style-exclude:FIXTURE_READABILITY - One-line negative-case input, not a structured fixture
   assertEquals(extractExecutiveSummary("# Doc\n\n## Current State\n\nnothing\n"), "");
 });
 
@@ -65,7 +64,6 @@ Deno.test("[regression] a step with zero matching bullets omits both sub-block l
 });
 
 Deno.test("filter min-length boundary: a 4-char shared token does not match, a 5-char one does", () => {
-  // style-exclude:FIXTURE_READABILITY - Minimal 4-line probe isolating one rule boundary
   const shortDoc = `# D
 
 ### Constraints
@@ -92,7 +90,6 @@ Deno.test("filter cap boundary: more matching bullets than MAX_RELEVANT_BULLETS 
   const many = Array.from({ length: 10 }, (_, i) => `- Handle \`file_${String(i).padStart(2, "0")}.ts\` here.`).join(
     "\n",
   );
-  // style-exclude:FIXTURE_READABILITY - Generated probe for the cap boundary, not a structured fixture
   const cappedDoc = `# C
 
 ### Constraints
@@ -107,7 +104,6 @@ ${many}
 });
 
 Deno.test("filter mixed-source match: a bullet citing its file WITHOUT backticks still matches", () => {
-  // style-exclude:FIXTURE_READABILITY - Three-line probe for plain-path token sources
   const plainDoc = `# P
 
 ### Constraints
@@ -119,7 +115,6 @@ Deno.test("filter mixed-source match: a bullet citing its file WITHOUT backticks
 });
 
 Deno.test("filter degenerate exclusion: a bullet sharing only the universal token `step` matches nothing", () => {
-  // style-exclude:FIXTURE_READABILITY - Three-line probe for the degenerate-token denylist
   const degenerateDoc = `# G
 
 ### Constraints

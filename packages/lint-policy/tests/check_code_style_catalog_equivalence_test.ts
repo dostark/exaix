@@ -22,9 +22,5 @@ Deno.test("catalog covers exactly the implemented script rules", () => {
 Deno.test("checkSource findings are stable for the committed catalog", () => {
   const source = "export const gated = edition === 'team';\nexport const flag = edition !== 'solo';\n";
   const rules = checkSource(PROD, source, loadPolicyCatalog(catalogJson)).map((f) => f.rule).sort();
-  assertEquals(rules, [
-    "edition-conditional-outside-composer",
-    "edition-conditional-outside-composer",
-    "module-header",
-  ]);
+  assertEquals(rules, ["edition-conditional-outside-composer", "edition-conditional-outside-composer"]);
 });

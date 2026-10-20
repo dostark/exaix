@@ -46,7 +46,6 @@ Deno.test("[JSONRepair] plain JSON with no fence is unaffected", () => {
 Deno.test("[JSONRepair] well-formed multi-line, multi-key JSON is never corrupted by newlines_in_strings", () => {
   // Regression: newlines_in_strings' pattern previously matched across the structural
   // ",\n  " between two keys, treating it as a newline inside one string.
-  // style-exclude:SMALL_FIXTURE_OK - fixture shape (multi-key, multi-line JSON) is the regression itself
   const input = `{
   "status": "analyzing",
   "findings": {

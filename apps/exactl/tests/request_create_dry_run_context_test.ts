@@ -34,7 +34,6 @@ import {
 import { RequestCommands } from "../src/commands/request_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 
-// style-exclude:SMALL_FIXTURE_OK - 13-line blueprint frontmatter+body fixture, inline for readability
 const MOCK_AGENT_BLUEPRINT = `---
 agent_role: "mock-agent"
 name: "Mock Testing Agent"
@@ -166,7 +165,6 @@ Deno.test("[exactl request create --dry-run] (existing flag) behavior is complet
 /// `portal_context` (file listing) + `portal_knowledge` (knowledge summary) segments the
 /// daemon's real request path injects (mirrors `buildRequestContext`).
 
-// style-exclude:SMALL_FIXTURE_OK - 4-file mock portal fixture, inline for readability
 const MOCK_PORTAL_FILES: Array<[string, string]> = [
   ["deno.json", JSON.stringify({ name: "mock-portal", version: "1.0.0" })],
   ["README.md", "# Mock Portal\n\nA minimal TypeScript project for testing.\n"],

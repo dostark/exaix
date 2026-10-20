@@ -176,7 +176,6 @@ Deno.test("[plan-to-requests] >10-step plan keeps priorities within 0-10", async
 });
 
 Deno.test("[plan-to-requests] heading-scrape fallback produces RequestSchema-valid output", async () => {
-  // style-exclude:FIXTURE_READABILITY - Small inline fixture kept for test clarity
   const planContent = `# Plan
 
 ## Step 1
@@ -298,7 +297,6 @@ Deno.test("[plan-to-requests] metadata line carries portal and target_branch fro
 });
 
 Deno.test("[plan-to-requests] heading-scrape fallback uses default portal and target_branch", async () => {
-  // style-exclude:FIXTURE_READABILITY - Small inline fixture kept for test clarity
   const planContent = `# Scrape Only
 
 ## Step 1

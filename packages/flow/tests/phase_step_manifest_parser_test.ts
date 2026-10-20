@@ -10,7 +10,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { parsePhaseStepManifests } from "../src/phase_step_manifest_parser.ts";
 
-// style-exclude:FIXTURE_READABILITY - a realistic two-step manifest doc is the input under test
 const VALID_MANIFEST_PLAN = `# Phase Doc
 
 ## Step 1

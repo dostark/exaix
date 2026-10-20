@@ -90,7 +90,6 @@
     "packages/core": 12,
     "packages/execution": 4,
     "packages/flow": 13,
-    "packages/lint-policy": 2,
     "packages/mcp": 2,
     "packages/portal": 2,
     "packages/quality-gate": 2,
@@ -183,7 +182,6 @@
     "packages/core": 2,
     "packages/execution": 2,
     "packages/flow": 1,
-    "packages/lint-policy": 1,
     "packages/schemas": 2
   },
   "exaix/magic-union-type": {
@@ -194,7 +192,6 @@
     "packages/core": 3,
     "packages/execution": 2,
     "packages/flow": 2,
-    "packages/lint-policy": 8,
     "packages/memory": 1,
     "packages/schemas": 2,
     "packages/session": 2
@@ -202,5 +199,25 @@
   "exaix/promise-response-return": {
     "exaix-team": 1,
     "packages/ai": 4
+  },
+  "exaix/max-params": {
+    "packages/core": 1,
+    "packages/flow": 2,
+    "packages/storage-sqlite": 1,
+    "packages/testing": 1
+  },
+  "exaix/test-inline-multiline-fixture": {
+    "apps/exactl": 2,
+    "packages/core": 10,
+    "packages/flow": 2,
+    "packages/request": 1,
+    "packages/routing": 5,
+    "tests": 14
+  },
+  "exaix/long-comment": {
+    "scripts": 1
+  },
+  "exaix/ephemeral-comment": {
+    "tests": 1
   }
 }

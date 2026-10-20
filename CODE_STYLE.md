@@ -234,7 +234,7 @@ These rules are enforced in part by `packages/lint-policy/src/checkers/check_cod
 
 - Production-module imports from the `tests/` folder are reported as `[package-tests-boundary]` (see [No Production Dependency on `tests/`](#no-production-dependency-on-tests)).
 
-- Structured multiline test fixtures are also flagged as `[test-inline-multiline-fixture]` in test files.
+- Structured multiline test fixtures are also flagged as `exaix/test-inline-multiline-fixture` in test files.
 
 ### No Inline Type Imports
 
@@ -982,18 +982,20 @@ counts, and per-file breakdown.
 
 ### Automated enforcement
 
-`packages/lint-policy/src/checkers/check_code_style.ts` scans every comment for calendar dates and
-applies the remaining rules past a module's own header block:
+The `deno lint` plugin checks every comment for calendar dates and applies the remaining rules past a
+module's own header block:
 
-| Tag                    | Detects                                                                                                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[long-comment]`       | A block comment or line-comment run longer than three physical lines                                                                          |
-| `[ephemeral-comment]`  | A comment containing a calendar date or mentioning a phase/step number, GAP identifier, pre/post-gap, prior attempt, or `§` section reference |
-| `[decorative-comment]` | A comment line using a repeated-punctuation separator or dash-wrapped text                                                                    |
-| `[ephemeral-filename]` | A test file's own name embeds a numbered plan-phase reference (`phase147_...`) — bare "phase" and any "step" form are exempt                  |
+| Rule                       | Detects                                                                                                                                       |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `exaix/long-comment`       | A block comment or line-comment run longer than three physical lines                                                                          |
+| `exaix/ephemeral-comment`  | A comment containing a calendar date or mentioning a phase/step number, GAP identifier, pre/post-gap, prior attempt, or `§` section reference |
+| `exaix/decorative-comment` | A comment line using a repeated-punctuation separator or dash-wrapped text                                                                    |
+| `exaix/ephemeral-filename` | A test file's own name embeds a numbered plan-phase reference (`phase147_...`) — bare "phase" and any "step" form are exempt                  |
 
-All four are warnings by default (visible, non-blocking) and escalate to
-errors under `--convert-warnings-to-errors`.
+`exaix/decorative-comment` and `exaix/ephemeral-filename` are errors. `exaix/long-comment` and
+`exaix/ephemeral-comment` are opt-in while existing findings remain: select them with
+`EXAIX_LINT_RULES` to see the findings. The rules read TypeScript only, so a YAML, TOML, or JSONC
+comment is not checked.
 
 ---
 
@@ -1051,7 +1053,7 @@ default segments in the caller.
   `paths.<key> ?? "<default>"` fallback repeats the default and is dead code.
 - A `paths` object in a test spreads `ExaPathDefaults` and then names only the keys it overrides.
   Listing the keys with their default constants re-spells the table.
-- A test reads a config document from a fixture. The `test-inline-multiline-fixture` rule requires
+- A test reads a config document from a fixture. The `exaix/test-inline-multiline-fixture` rule requires
   that of any multi-line test input.
 - A scenario step names a config fixture with `content_from` instead of an inline `content` block.
 - The helpers live in `packages/shared/src/paths.ts`.

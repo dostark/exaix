@@ -14,12 +14,10 @@ const CHECKER = "packages/lint-policy/src/checkers/check_code_style.ts";
 
 const BOTH_TAGS_FIXTURE = `/**
  * @module TagFixture
- * @path packages/example/src/tag_fixture.ts
- * @description Temporary fixture for the tag-selection test.
+ * @description Temporary fixture for the tag-selection test. The header has no path tag.
  */
 
 export const value = edition === 'team';
-// ==========
 `;
 
 async function runChecker(extraArgs: string[], filePath: string): Promise<{ code: number; output: string }> {
@@ -34,7 +32,7 @@ async function runChecker(extraArgs: string[], filePath: string): Promise<{ code
   return { code: result.code, output: decoder.decode(result.stdout) + decoder.decode(result.stderr) };
 }
 
-Deno.test("--tags edition reports edition rules and hides others", async () => {
+Deno.test("--tags edition reports edition rules and hides module-structure rules", async () => {
   const dir = await Deno.makeTempDir();
   const file = join(dir, "tag_fixture.ts");
   await Deno.writeTextFile(file, BOTH_TAGS_FIXTURE);
@@ -42,20 +40,20 @@ Deno.test("--tags edition reports edition rules and hides others", async () => {
   const result = await runChecker(["--tags=edition"], file);
 
   assertStringIncludes(result.output, "[edition-conditional-outside-composer]");
-  assert(!result.output.includes("[decorative-comment]"), "decorative-comment must be hidden under --tags=edition");
+  assert(!result.output.includes("[module-header-tag]"), "module-header-tag must be hidden under --tags=edition");
 });
 
-Deno.test("--tags comments reports comment rules and hides edition rules", async () => {
+Deno.test("--tags module-structure reports module-structure rules and hides edition rules", async () => {
   const dir = await Deno.makeTempDir();
   const file = join(dir, "tag_fixture.ts");
   await Deno.writeTextFile(file, BOTH_TAGS_FIXTURE);
 
-  const result = await runChecker(["--tags=comments"], file);
+  const result = await runChecker(["--tags=module-structure"], file);
 
-  assertStringIncludes(result.output, "[decorative-comment]");
+  assertStringIncludes(result.output, "[module-header-tag]");
   assert(
     !result.output.includes("[edition-conditional-outside-composer]"),
-    "edition-conditional-outside-composer must be hidden under --tags=comments",
+    "edition-conditional-outside-composer must be hidden under --tags=module-structure",
   );
 });
 

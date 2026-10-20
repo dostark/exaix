@@ -47,7 +47,7 @@ Deno.test("parseCatalog rejects an unknown plugin option with its JSON path", ()
 
 Deno.test("parseCatalog rejects off without a reason", () => {
   expectReject((catalog) => {
-    (rulesOf(catalog)["module-header"] as Record<string, JsonValue>).severity = "off";
+    (rulesOf(catalog)["module-header-tag"] as Record<string, JsonValue>).severity = "off";
   }, "reason");
 });
 

@@ -75,7 +75,6 @@ describe("request --file honours the submitted file's own frontmatter", () => {
     return splitFrontmatter(await Deno.readTextFile(result.path));
   }
 
-  // style-exclude:SMALL_FIXTURE_OK - the frontmatter/body split IS the subject of the test
   const PINNED = `---
 trace_id: "fixture-trace"
 status: "pending"

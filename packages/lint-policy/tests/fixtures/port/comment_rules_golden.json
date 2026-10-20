@@ -1,0 +1,331 @@
+{
+  "header of many lines": [],
+  "leading comment run before the first statement": [],
+  "in-module run of four lines": [
+    [
+      "long-comment",
+      7
+    ]
+  ],
+  "in-module run of three lines": [],
+  "in-module block comment of five lines": [
+    [
+      "long-comment",
+      7
+    ]
+  ],
+  "single-line block comment": [],
+  "runs split by a blank line": [],
+  "trailing comment on a code line": [],
+  "comment-like text in a template literal": [],
+  "comment-like text in a string": [],
+  "date in the header": [
+    [
+      "ephemeral-comment",
+      1
+    ]
+  ],
+  "date in a trailing comment": [
+    [
+      "ephemeral-comment",
+      6
+    ]
+  ],
+  "date in an in-module comment": [
+    [
+      "ephemeral-comment",
+      7
+    ]
+  ],
+  "month-name date": [
+    [
+      "ephemeral-comment",
+      7
+    ]
+  ],
+  "quarter date": [
+    [
+      "ephemeral-comment",
+      7
+    ]
+  ],
+  "phase number in an in-module comment": [
+    [
+      "ephemeral-comment",
+      7
+    ]
+  ],
+  "phase number in the header": [],
+  "step number in an in-module comment": [
+    [
+      "ephemeral-comment",
+      7
+    ]
+  ],
+  "gap identifier in an in-module comment": [
+    [
+      "ephemeral-comment",
+      7
+    ]
+  ],
+  "pre-gap reference": [
+    [
+      "ephemeral-comment",
+      7
+    ]
+  ],
+  "section sign": [
+    [
+      "ephemeral-comment",
+      7
+    ]
+  ],
+  "narration of an attempt": [
+    [
+      "ephemeral-comment",
+      7
+    ]
+  ],
+  "what did not work": [
+    [
+      "ephemeral-comment",
+      7
+    ]
+  ],
+  "date and phase in one comment": [
+    [
+      "ephemeral-comment",
+      7
+    ],
+    [
+      "ephemeral-comment",
+      7
+    ]
+  ],
+  "plain in-module comment": [],
+  "separator of equal signs": [
+    [
+      "decorative-comment",
+      7
+    ]
+  ],
+  "separator of dashes in a block comment": [
+    [
+      "decorative-comment",
+      8
+    ]
+  ],
+  "text wrapped in dashes": [
+    [
+      "decorative-comment",
+      7
+    ]
+  ],
+  "strict equality in prose": [],
+  "separator in the header": [],
+  "function with eight parameters": [
+    [
+      "max-params",
+      1
+    ],
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "function with eight parameters over lines": [
+    [
+      "max-params",
+      1
+    ],
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "function with seven parameters": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "arrow with eight parameters": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "method with a modifier and eight parameters": [
+    [
+      "max-params",
+      2
+    ],
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "constructor with eight parameters": [
+    [
+      "max-params",
+      2
+    ],
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "interface method with eight parameters": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "function with commas inside a generic and an object type": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "named template of nine lines": [
+    [
+      "module-header",
+      1
+    ],
+    [
+      "test-inline-multiline-fixture",
+      1
+    ]
+  ],
+  "named template of six lines": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "tagged named template": [
+    [
+      "module-header",
+      1
+    ],
+    [
+      "test-inline-multiline-fixture",
+      1
+    ]
+  ],
+  "named template with an interpolation": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "unnamed plain template": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "document fixture under any name": [
+    [
+      "module-header",
+      1
+    ],
+    [
+      "test-inline-multiline-fixture",
+      1
+    ]
+  ],
+  "front matter fixture under any name": [
+    [
+      "module-header",
+      1
+    ],
+    [
+      "test-inline-multiline-fixture",
+      1
+    ]
+  ],
+  "named template in a production file": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "single-line template": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "exported named template": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "file without a header": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "file with a block header": [],
+  "file with a header below a shebang": [],
+  "file with a header on line seven": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "file with only a late comment": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "empty file": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "script with a usage section": [],
+  "script without a usage section": [
+    [
+      "script-usage",
+      1
+    ]
+  ],
+  "script without a header": [
+    [
+      "module-header",
+      1
+    ]
+  ],
+  "source file without a usage section": [],
+  "test file named after a phase": [
+    [
+      "ephemeral-filename",
+      1
+    ]
+  ],
+  "test file with a phase in the middle": [
+    [
+      "ephemeral-filename",
+      1
+    ]
+  ],
+  "test file with a plain phase word": [],
+  "source file named after a phase": [],
+  "date-shaped text outside comments": [],
+  "natural language use of the word gap": [],
+  "short parenthetical dash in a plain comment": [],
+  "triple-equals echo of a code comparison": [],
+  "markdown heading example in a comment": [],
+  "named template that holds escaped backticks": [
+    [
+      "module-header",
+      1
+    ]
+  ]
+}
