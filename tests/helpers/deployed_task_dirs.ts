@@ -12,7 +12,7 @@ import { WORKSPACE_COPY_DIRS } from "../../scripts/deploy_workspace.ts";
 /** Top-level directories a deploy copies besides `WORKSPACE_COPY_DIRS`. */
 const OTHER_DEPLOYED_DIRS: readonly string[] = ["Memory", "Blueprints", "docs", "scripts"];
 
-/** Undeployed directories that kept tasks may name. Phase 228 decides what a deployed workspace runs. */
+/** Undeployed directories that kept tasks may name. Phase 229 decides what a deployed workspace runs. */
 export const ALLOWED_UNDEPLOYED_DIRS: readonly string[] = ["coverage", "exaix-team", "tests"];
 
 const DIR_TOKEN = /^[A-Za-z_.-]+\//;
