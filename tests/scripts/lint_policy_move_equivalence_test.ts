@@ -162,15 +162,14 @@ const CLEAN_MODULE = [
   "",
 ].join("\n");
 
-const PRAGMA_MODULE = [
+const EDITION_MODULE = [
   "/**",
-  " * @module TempPragma",
-  " * @path packages/demo/src/pragma.ts",
-  " * @description Temporary module with a suppression pragma.",
+  " * @module TempEdition",
+  " * @path packages/demo/src/edition.ts",
+  " * @description Temporary module with an edition conditional.",
   " */",
   "",
-  "// @ts-" + "expect-error temporary violation",
-  'export const value: number = "text";',
+  'export const gated = edition === "team";',
   "",
 ].join("\n");
 
@@ -188,11 +187,11 @@ Deno.test("the check:style task runs the moved checker and reports a clean modul
 
 Deno.test("the check:style task reports a violation through the catalog in lint-policy", async () => {
   await withDemoRoot(async (_root, srcDir) => {
-    const file = join(srcDir, "pragma.ts");
-    await Deno.writeTextFile(file, PRAGMA_MODULE);
+    const file = join(srcDir, "edition.ts");
+    await Deno.writeTextFile(file, EDITION_MODULE);
     const result = await runTask("check:style", [file]);
     assertEquals(result.code, 1, result.output);
-    assertStringIncludes(result.output, "[ts-suppression-pragmas]");
+    assertStringIncludes(result.output, "[edition-conditional-outside-composer]");
   });
 });
 

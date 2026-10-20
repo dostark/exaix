@@ -28,23 +28,6 @@ interface IRuleCase {
 const HEADER = "/**\n * @module Sample\n * @path packages/x/src/sample.ts\n * @description Sample module.\n */\n";
 
 const CASES: IRuleCase[] = [
-  // type-safety
-  {
-    id: "promise-response-alias",
-    invalid: "export type A = Promise<Response>;\n",
-    valid: "export type A = Promise<string>;\n",
-  },
-  {
-    id: "promise-response-return",
-    invalid: "export function f(): Promise<Response> {\n  return fetch('x');\n}\n",
-    valid: "export function f(): Promise<string> {\n  return Promise.resolve('');\n}\n",
-  },
-  {
-    id: "ts-suppression-pragmas",
-    invalid: "// @ts-ignore\nexport const a = 1;\n",
-    valid: "export const a = 1;\n",
-  },
-
   // imports
   {
     id: "package-entrypoint-root-src-reexport",
@@ -87,13 +70,6 @@ const CASES: IRuleCase[] = [
     id: "decorative-comment",
     invalid: "export const x = 1;\n// ==========\n",
     valid: "export const x = 1;\n// plain note\n",
-  },
-
-  // magic-values
-  {
-    id: "magic-union-type",
-    invalid: 'export const x: "a" | "b" = "a";\n',
-    valid: 'export type T = "a" | "b";\nexport const x: T = "a";\n',
   },
 
   // scripts

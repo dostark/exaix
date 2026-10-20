@@ -915,38 +915,10 @@ const rules: Rule[] = [
       `${LAYOUT.testsRoot}fixtures/ and load them from the test file.`,
   },
   {
-    name: "promise-response-alias",
-    regex: /^\s*(?:export\s+)?type\s+[A-Za-z_$][\w$]*\s*=\s*(?:\([^\)]*\)\s*=>\s*)?Promise\s*<\s*Response\s*>\s*;/,
-    message: "Type aliases that mask 'Promise<Response>' are prohibited; define a specific response type instead.",
-  },
-  {
-    name: "ts-suppression-pragmas",
-    regex: /@ts-(?:ignore|expect-error|nocheck)/,
-    message:
-      "TypeScript suppression pragmas (e.g. @ts-ignore, @ts-expect-error, @ts-nocheck) are prohibited; fix the underlying type error instead.",
-  },
-  {
-    name: "promise-response-return",
-    // Expanded to catch both arrow => Promise<Response> and : Promise<Response> method/function returns
-    regex: /:\s*Promise\s*<\s*Response\s*>/,
-    message:
-      "'Promise<Response>' as return type is too weak; define a specific interface describing the expected response shape.",
-  },
-  {
     name: "package-entrypoint-root-src-reexport",
     regex: /from\s+['"](?:src\/|(\.\.\/)+src\/)/,
     message:
       "Package entrypoints must not re-export entities directly from repo retired 'src/*' paths. Use package-local public exports instead.",
-  },
-  {
-    name: "magic-union-type",
-    // This matches an inline union of string literals such as `"foo" | "bar"`.
-    // Word boundaries and double quotes identify the string literals.
-    // A line that starts with `type ` or `export type ` is skipped.
-    // A named type alias is the recommended solution, not a violation.
-    regex: /^(?!\s*(?:export\s+)?type\s+).*"\w+"\s*\|\s*"\w+"/,
-    message: "Avoid magic string unions (e.g., '\"a\" | \"b\"'). Define a TypeScript 'enum' in " +
-      `${LAYOUT.packageRoot}core/${LAYOUT.srcRoot}types/enums.ts or use a shared named union type instead.`,
   },
   // The former [mit-team-import] regex rule is superseded.
   // The [edition-leak] check in checkFile() replaces it with the full tier order.

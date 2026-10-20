@@ -98,6 +98,10 @@ Deno.test("the scripts run of the lint task reports exaix/require-deno-shebang o
 const DYNAMIC_IMPORT_SEED = 'export const loaded = await import("./other.ts");\n';
 const INLINE_TYPE_IMPORT_SEED = 'export type Loaded = import("./other.ts").IOther;\n';
 const PARKED_REEXPORT_SEED = 'export { value } from "./other.ts";\n';
+const ALIAS_SEED = "export type Fetcher = Promise<Response>;\n";
+const PRAGMA_SEED = '// @ts-expect-error: the literal is checked at run time\nexport const value: number = "x";\n';
+const PARKED_RETURN_SEED = 'export function get(): Promise<Response> {\n  return fetch("x");\n}\n';
+const PARKED_UNION_SEED = 'export function mode(value: "fast" | "slow"): string {\n  return value;\n}\n';
 
 Deno.test("deno lint reports exaix/dynamic-import on a seeded violation", async () => {
   await withSeed(async (file) => {
@@ -113,6 +117,35 @@ Deno.test("deno lint reports exaix/inline-type-import on a seeded violation", as
     assertEquals(result.code === 0, false, result.output);
     assertStringIncludes(result.output, "exaix/inline-type-import");
   }, INLINE_TYPE_IMPORT_SEED);
+});
+
+Deno.test("deno lint reports exaix/promise-response-alias on a seeded violation", async () => {
+  await withSeed(async (file) => {
+    const result = await runDeno(["lint", file]);
+    assertEquals(result.code === 0, false, result.output);
+    assertStringIncludes(result.output, "exaix/promise-response-alias");
+  }, ALIAS_SEED);
+});
+
+Deno.test("deno lint reports exaix/ts-suppression-pragmas on a described pragma", async () => {
+  await withSeed(async (file) => {
+    const result = await runDeno(["lint", file]);
+    assertEquals(result.code === 0, false, result.output);
+    assertStringIncludes(result.output, "exaix/ts-suppression-pragmas");
+    assertFalse(result.output.includes("ban-ts-comment"), result.output);
+  }, PRAGMA_SEED);
+});
+
+Deno.test("a parked type-pattern rule is silent by default and reports when EXAIX_LINT_RULES selects it", async () => {
+  const seeds = [["exaix/promise-response-return", PARKED_RETURN_SEED], ["exaix/magic-union-type", PARKED_UNION_SEED]];
+  for (const [rule, source] of seeds) {
+    await withSeed(async (file) => {
+      const silent = await runDeno(["lint", file]);
+      assertFalse(silent.output.includes(rule), silent.output);
+      const selected = await runDeno(["lint", file], { EXAIX_LINT_RULES: rule });
+      assertStringIncludes(selected.output, rule);
+    }, source);
+  }
 });
 
 Deno.test("a parked rule is silent by default and reports when EXAIX_LINT_RULES selects it", async () => {

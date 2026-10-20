@@ -42,14 +42,12 @@ Deno.test("default long-comment maxLines reports the same comment", () => {
 });
 
 Deno.test("checkSource returns in-process findings without printing", () => {
-  const source = "export type A = Promise<" + "Response>;\nexport function f(): Promise<" +
-    "Response> {\n  return fetch('x');\n}\n";
+  const source = "export const gated = edition === 'team';\n";
   const findings = checkSource(PROD, source, loadPolicyCatalog(catalogJson));
   assertEquals(
-    findings.some((f) => f.rule === "promise-response-alias" && f.line === 1 && f.severity === "error"),
+    findings.some((f) => f.rule === "edition-conditional-outside-composer" && f.line === 1 && f.severity === "error"),
     true,
   );
-  assertEquals(findings.some((f) => f.rule === "promise-response-return" && f.line === 2), true);
 });
 
 Deno.test("a long YAML comment is reported under the configured extensions", () => {

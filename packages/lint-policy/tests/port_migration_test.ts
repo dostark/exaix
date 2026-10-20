@@ -19,10 +19,12 @@ import { loadPortTables } from "./helpers/port_tables.ts";
 const CODES = ["REQUIRED_FOR_TEST", "PLUGINS"];
 const IMPORT_KEYWORD = "import";
 const TABLE_PATH = "packages/lint-policy/port_tables.json";
+const PARITY_TEST_SUFFIX = "_parity_test.ts";
 const GUARD_PATHS = [
   TABLE_PATH,
   "packages/lint-policy/tests/port_migration_test.ts",
   "packages/lint-policy/tests/helpers/port_migration.ts",
+  "packages/lint-policy/tests/fixtures/port/",
   "docs/CHANGELOG.md",
   "unslop-ts/",
 ];
@@ -75,6 +77,8 @@ Deno.test("the tracked text files exclude the historical planning documents", as
 Deno.test("a ported rule has no style-exclude site and no bare id left in the tracked files", async () => {
   const tables = await loadPortTables();
   const files = await trackedTextFiles(GUARD_PATHS);
+  // A parity test names the script rule ids it compares.
+  for (const path of [...files.keys()]) if (path.endsWith(PARITY_TEST_SUFFIX)) files.delete(path);
   const catalog = JSON.parse(await Deno.readTextFile(new URL("../catalog.json", import.meta.url)));
   for (const row of tables.rules.filter((candidate) => candidate.ported)) {
     const codes = Object.keys(catalog.rules[row.id]?.exclusionCodes ?? {});

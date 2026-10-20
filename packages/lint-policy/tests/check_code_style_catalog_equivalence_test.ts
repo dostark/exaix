@@ -4,7 +4,7 @@
  * @description Locks the catalog-driven findings and proves catalog/code rule parity.
  */
 
-import { assertArrayIncludes, assertEquals } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import { checkSource, IMPLEMENTED_SCRIPT_RULE_IDS } from "../src/checkers/check_code_style.ts";
 import catalogJson from "../catalog.json" with { type: "json" };
 import { loadPolicyCatalog } from "./helpers/catalog.ts";
@@ -20,9 +20,11 @@ Deno.test("catalog covers exactly the implemented script rules", () => {
 });
 
 Deno.test("checkSource findings are stable for the committed catalog", () => {
-  const source = "export type A = Promise<" + "Response>;\nexport function f(): Promise<" +
-    "Response> {\n  return fetch('x');\n}\n";
+  const source = "export const gated = edition === 'team';\nexport const flag = edition !== 'solo';\n";
   const rules = checkSource(PROD, source, loadPolicyCatalog(catalogJson)).map((f) => f.rule).sort();
-  assertArrayIncludes(rules, ["promise-response-alias"]);
-  assertArrayIncludes(rules, ["promise-response-return"]);
+  assertEquals(rules, [
+    "edition-conditional-outside-composer",
+    "edition-conditional-outside-composer",
+    "module-header",
+  ]);
 });

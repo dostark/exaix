@@ -334,7 +334,7 @@
     },
     {
       "id": "promise-response-alias",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -366,13 +366,13 @@
           "code": "export type Fetcher = () => Promise<Response>;\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": ""
     },
     {
       "id": "promise-response-return",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -404,13 +404,13 @@
           "code": "export function get(): Promise<Response> {\n  return fetch(\"https://example.com\");\n}\n"
         }
       ],
-      "ported": false,
-      "parked": false,
+      "ported": true,
+      "parked": true,
       "note": ""
     },
     {
       "id": "ts-suppression-pragmas",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -455,13 +455,13 @@
           "code": "// @ts-expect-error: the literal is checked at run time\nexport const a: number = \"x\";\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": "Verified 2026-10-20: ban-ts-comment accepts a described pragma, so the port keeps only the described case."
     },
     {
       "id": "magic-union-type",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -497,8 +497,8 @@
           "code": "export function mode(value: \"fast\" | \"slow\"): string {\n  return value;\n}\n"
         }
       ],
-      "ported": false,
-      "parked": false,
+      "ported": true,
+      "parked": true,
       "note": ""
     },
     {

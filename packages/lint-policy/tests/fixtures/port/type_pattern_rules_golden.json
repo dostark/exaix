@@ -1,0 +1,191 @@
+{
+  "alias of the weak promise": [
+    [
+      "promise-response-alias",
+      1
+    ]
+  ],
+  "alias of a function returning the weak promise": [
+    [
+      "promise-response-alias",
+      1
+    ]
+  ],
+  "alias of a function with parameters returning the weak promise": [
+    [
+      "promise-response-alias",
+      1
+    ]
+  ],
+  "alias of another promise": [],
+  "alias comment mentioning the weak promise": [],
+  "alias text inside a string": [],
+  "alias spread over two lines": [],
+  "function returning the weak promise": [
+    [
+      "promise-response-return",
+      1
+    ]
+  ],
+  "arrow returning the weak promise": [
+    [
+      "promise-response-return",
+      1
+    ]
+  ],
+  "method returning the weak promise": [
+    [
+      "promise-response-return",
+      2
+    ]
+  ],
+  "interface method returning the weak promise": [
+    [
+      "promise-response-return",
+      2
+    ]
+  ],
+  "parameter typed as the weak promise": [
+    [
+      "promise-response-return",
+      1
+    ]
+  ],
+  "variable typed as the weak promise": [
+    [
+      "promise-response-return",
+      1
+    ]
+  ],
+  "function type returning the weak promise as a parameter": [],
+  "weak promise in a comment": [
+    [
+      "promise-response-return",
+      1
+    ]
+  ],
+  "weak promise in a string": [
+    [
+      "promise-response-return",
+      1
+    ]
+  ],
+  "return type of another promise": [],
+  "weak promise with a space before the colon": [
+    [
+      "promise-response-return",
+      1
+    ]
+  ],
+  "return type split over two lines": [],
+  "expect-error with a description": [
+    [
+      "ts-suppression-pragmas",
+      1
+    ]
+  ],
+  "ignore with a description": [
+    [
+      "ts-suppression-pragmas",
+      1
+    ]
+  ],
+  "ignore without a description": [
+    [
+      "ts-suppression-pragmas",
+      1
+    ]
+  ],
+  "ignore with an empty description after a colon": [
+    [
+      "ts-suppression-pragmas",
+      1
+    ]
+  ],
+  "block comment ignore with a description": [
+    [
+      "ts-suppression-pragmas",
+      1
+    ]
+  ],
+  "block comment ignore without a description": [
+    [
+      "ts-suppression-pragmas",
+      1
+    ]
+  ],
+  "nocheck with a description": [
+    [
+      "ts-suppression-pragmas",
+      1
+    ]
+  ],
+  "pragma name in prose": [
+    [
+      "ts-suppression-pragmas",
+      1
+    ]
+  ],
+  "pragma name in a string": [
+    [
+      "ts-suppression-pragmas",
+      1
+    ]
+  ],
+  "pragma in a test file": [
+    [
+      "ts-suppression-pragmas",
+      1
+    ]
+  ],
+  "parameter with a string union": [
+    [
+      "magic-union-type",
+      1
+    ]
+  ],
+  "interface member with a string union": [
+    [
+      "magic-union-type",
+      2
+    ]
+  ],
+  "cast to a string union": [
+    [
+      "magic-union-type",
+      1
+    ]
+  ],
+  "named alias of a string union": [],
+  "named alias of a string union and undefined": [],
+  "single string literal with undefined": [],
+  "string union with a dash in a value": [],
+  "string union split over lines": [],
+  "string union in a comment": [
+    [
+      "magic-union-type",
+      1
+    ]
+  ],
+  "string union in a string": [
+    [
+      "magic-union-type",
+      1
+    ]
+  ],
+  "string union in a test file": [],
+  "alias of an object with a string union member on one line": [],
+  "alias of an object with a string union member over lines": [
+    [
+      "magic-union-type",
+      2
+    ]
+  ],
+  "alias of an array of a string union": [],
+  "string union of three values in a parameter": [
+    [
+      "magic-union-type",
+      1
+    ]
+  ]
+}

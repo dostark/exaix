@@ -18,7 +18,7 @@ const BOTH_TAGS_FIXTURE = `/**
  * @description Temporary fixture for the tag-selection test.
  */
 
-export const value: Promise<Response> = fetch('x');
+export const value = edition === 'team';
 // ==========
 `;
 
@@ -34,18 +34,18 @@ async function runChecker(extraArgs: string[], filePath: string): Promise<{ code
   return { code: result.code, output: decoder.decode(result.stdout) + decoder.decode(result.stderr) };
 }
 
-Deno.test("--tags type-safety reports type-safety rules and hides others", async () => {
+Deno.test("--tags edition reports edition rules and hides others", async () => {
   const dir = await Deno.makeTempDir();
   const file = join(dir, "tag_fixture.ts");
   await Deno.writeTextFile(file, BOTH_TAGS_FIXTURE);
 
-  const result = await runChecker(["--tags=type-safety"], file);
+  const result = await runChecker(["--tags=edition"], file);
 
-  assertStringIncludes(result.output, "[promise-response-return]");
-  assert(!result.output.includes("[decorative-comment]"), "decorative-comment must be hidden under --tags=type-safety");
+  assertStringIncludes(result.output, "[edition-conditional-outside-composer]");
+  assert(!result.output.includes("[decorative-comment]"), "decorative-comment must be hidden under --tags=edition");
 });
 
-Deno.test("--tags comments reports comment rules and hides type-safety rules", async () => {
+Deno.test("--tags comments reports comment rules and hides edition rules", async () => {
   const dir = await Deno.makeTempDir();
   const file = join(dir, "tag_fixture.ts");
   await Deno.writeTextFile(file, BOTH_TAGS_FIXTURE);
@@ -54,8 +54,8 @@ Deno.test("--tags comments reports comment rules and hides type-safety rules", a
 
   assertStringIncludes(result.output, "[decorative-comment]");
   assert(
-    !result.output.includes("[promise-response-return]"),
-    "promise-response-return must be hidden under --tags=comments",
+    !result.output.includes("[edition-conditional-outside-composer]"),
+    "edition-conditional-outside-composer must be hidden under --tags=comments",
   );
 });
 
@@ -64,9 +64,9 @@ Deno.test("--tags prints a per-tag count in the summary", async () => {
   const file = join(dir, "tag_fixture.ts");
   await Deno.writeTextFile(file, BOTH_TAGS_FIXTURE);
 
-  const result = await runChecker(["--tags=type-safety"], file);
+  const result = await runChecker(["--tags=edition"], file);
 
-  assertStringIncludes(result.output, "type-safety");
+  assertStringIncludes(result.output, "per-tag: edition");
 });
 
 Deno.test("--tags with an unknown tag exits 2 and names the tag", async () => {

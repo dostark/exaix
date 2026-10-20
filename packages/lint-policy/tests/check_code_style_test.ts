@@ -799,7 +799,7 @@ Deno.test("check_code_style does not exempt lines after a backtick inside a rege
     " */",
     "",
     'const stripBackticks = (s: string): string => s.replace(/[\\$`]/g, "");',
-    "const value: Promise<" + "Response> = fetch('x');",
+    "const gated = edition === 'team';",
     "",
   ];
   await Deno.writeTextFile(filePath, lines.join("\n"));
@@ -807,7 +807,7 @@ Deno.test("check_code_style does not exempt lines after a backtick inside a rege
   const result = await runCheckCodeStyle(filePath);
 
   assertEquals(result.code, 1, result.output);
-  assertStringIncludes(result.output, "[promise-response-return]");
+  assertStringIncludes(result.output, "[edition-conditional-outside-composer]");
   assertStringIncludes(result.output, `${filePath}:8`);
 });
 
@@ -822,7 +822,7 @@ Deno.test("check_code_style exempts text inside a real multi-line template liter
     " */",
     "",
     "export const guidance = `",
-    "  Never write Promise<" + "Response> in code;",
+    "  Never write edition === 'team' in code;",
     "  name the shape at the boundary instead.",
     "`;",
     "",
@@ -832,7 +832,7 @@ Deno.test("check_code_style exempts text inside a real multi-line template liter
   const result = await runCheckCodeStyle(filePath);
 
   assertEquals(result.code, 0, result.output);
-  assertFalse(result.output.includes("[promise-response-return]"), result.output);
+  assertFalse(result.output.includes("[edition-conditional-outside-composer]"), result.output);
 });
 
 Deno.test("check_code_style is not fooled by comment, escaped-string, or nested template backticks", async () => {
@@ -850,7 +850,7 @@ Deno.test("check_code_style is not fooled by comment, escaped-string, or nested 
     "const nested = `",
     "  outer ${`inner`} text",
     "`;",
-    "const value: Promise<" + "Response> = fetch('x');",
+    "const gated = edition === 'team';",
     "",
   ];
   await Deno.writeTextFile(filePath, lines.join("\n"));
@@ -858,6 +858,6 @@ Deno.test("check_code_style is not fooled by comment, escaped-string, or nested 
   const result = await runCheckCodeStyle(filePath);
 
   assertEquals(result.code, 1, result.output);
-  assertStringIncludes(result.output, "[promise-response-return]");
+  assertStringIncludes(result.output, "[edition-conditional-outside-composer]");
   assertStringIncludes(result.output, `${filePath}:12`);
 });

@@ -185,5 +185,22 @@
     "packages/flow": 1,
     "packages/lint-policy": 1,
     "packages/schemas": 2
+  },
+  "exaix/magic-union-type": {
+    "apps/daemon": 1,
+    "apps/tui": 3,
+    "packages/ai-google": 1,
+    "packages/ai-openrouter": 1,
+    "packages/core": 3,
+    "packages/execution": 2,
+    "packages/flow": 2,
+    "packages/lint-policy": 8,
+    "packages/memory": 1,
+    "packages/schemas": 2,
+    "packages/session": 2
+  },
+  "exaix/promise-response-return": {
+    "exaix-team": 1,
+    "packages/ai": 4
   }
 }

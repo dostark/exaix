@@ -25,6 +25,8 @@ const RATCHETED_RULES = [
   "exaix/re-export-imported",
   "exaix/import-placement",
   "exaix/exported-interface-placement",
+  "exaix/magic-union-type",
+  "exaix/promise-response-return",
 ];
 const ROOT_BUCKETS = ["tests", "exaix-team"];
 

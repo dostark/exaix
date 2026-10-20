@@ -97,10 +97,10 @@ How the generic type-safety rules are enforced in this repository today. Severit
 `packages/lint-policy/catalog.json`.
 
 - **Gates (`severity: error`):** `exaix/no-chained-type-assertions`,
-  `exaix/no-pass-through-type-alias`, `exaix/no-forbidden-lint-ignore`, and the style-checker rules
-  `ts-suppression-pragmas`, `promise-response-alias`, and `promise-response-return`.
+  `exaix/no-pass-through-type-alias`, `exaix/no-forbidden-lint-ignore`,
+  `exaix/ts-suppression-pragmas`, and `exaix/promise-response-alias`.
 - **Parked (`severity: off`, opt-in):** `exaix/no-explicit-unknown`,
-  `exaix/no-typeof-escape`, `exaix/no-unsafe-dictionary`, and
-  `exaix/no-object-parameters`. The rule-ceiling ratchet holds each one at a
+  `exaix/no-typeof-escape`, `exaix/no-unsafe-dictionary`,
+  `exaix/no-object-parameters`, and `exaix/promise-response-return`. The rule-ceiling ratchet holds each one at a
   measured count, so the count can only fall. Each rule becomes a gate when its
   count reaches zero.

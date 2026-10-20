@@ -18,7 +18,6 @@ import catalogJson from "../catalog.json" with { type: "json" };
 import { loadPolicyCatalog } from "./helpers/catalog.ts";
 
 const FILE = "packages/x/src/a.ts";
-const RESPONSE_PROMISE = ["Promise", "<Response>"].join("");
 
 Deno.test("a script finding that the plugin side lacks is reported as missing", () => {
   const report = compareFindings([{ file: FILE, line: 3 }], []);
@@ -52,9 +51,9 @@ Deno.test("a file that only one side covers is listed as dropped surface", () =>
 
 Deno.test("the script side returns the findings of one rule with their lines", () => {
   const catalog = loadPolicyCatalog(catalogJson);
-  const findings = scriptRuleFindings("promise-response-return", catalog, {
+  const findings = scriptRuleFindings("edition-conditional-outside-composer", catalog, {
     file: FILE,
-    text: `export function f(): ${RESPONSE_PROMISE} {\n  return fetch("x");\n}\n`,
+    text: "export const gated = edition === 'team';\n",
   });
   assertEquals(findings, [{ file: FILE, line: 1 }]);
 });

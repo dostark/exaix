@@ -616,8 +616,8 @@
       ],
       "limits": "Only a direct object annotation is checked. A parameter with a default value, and a local alias of object, are not resolved."
     },
-    "promise-response-alias": {
-      "engine": "script",
+    "exaix/promise-response-alias": {
+      "engine": "plugin",
       "severity": "error",
       "scope": "all",
       "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
@@ -625,17 +625,19 @@
         "type-safety"
       ]
     },
-    "promise-response-return": {
-      "engine": "script",
-      "severity": "error",
+    "exaix/promise-response-return": {
+      "engine": "plugin",
+      "severity": "off",
       "scope": "all",
       "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety"
-      ]
+      ],
+      "optIn": true,
+      "reason": "Parked: The AST rule also reports a parameter, a variable, and a function type that the line scanner missed. Phase 230 burns them down and turns the rule on."
     },
-    "ts-suppression-pragmas": {
-      "engine": "script",
+    "exaix/ts-suppression-pragmas": {
+      "engine": "plugin",
       "severity": "error",
       "scope": "all",
       "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
@@ -768,14 +770,19 @@
       "optIn": true,
       "reason": "Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on."
     },
-    "magic-union-type": {
-      "engine": "script",
-      "severity": "error",
+    "exaix/magic-union-type": {
+      "engine": "plugin",
+      "severity": "off",
       "scope": "prod",
       "codeStyle": "CODE_STYLE.md#no-magic-values",
       "tags": [
         "magic-values"
-      ]
+      ],
+      "options": {
+        "hint": "Define an enum in packages/core/src/types/enums.ts or use a shared named union type."
+      },
+      "optIn": true,
+      "reason": "Parked: The AST rule exempts only a union that is the whole alias body, so it finds inline unions that the line scanner skipped. Phase 230 burns them down and turns the rule on."
     },
     "module-header": {
       "engine": "script",
