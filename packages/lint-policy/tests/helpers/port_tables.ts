@@ -9,7 +9,13 @@
 
 import { z } from "zod";
 
-export const PORT_ORIGIN = { catalog: "catalog", emitted: "emitted", plugin: "plugin", checker: "checker" } as const;
+export const PORT_ORIGIN = {
+  catalog: "catalog",
+  emitted: "emitted",
+  plugin: "plugin",
+  checker: "checker",
+  ported: "ported",
+} as const;
 export const PORT_OUTCOME = { generic: "generic", deno: "deno", exaix: "exaix", split: "split", zone: "zone" } as const;
 export const OVERLAP_KIND = {
   duplicate: "duplicate",
@@ -48,7 +54,13 @@ const CounterpartSchema = z.object({
 
 const RuleRowSchema = z.object({
   id: z.string().min(1),
-  origin: z.enum([PORT_ORIGIN.catalog, PORT_ORIGIN.emitted, PORT_ORIGIN.plugin, PORT_ORIGIN.checker]),
+  origin: z.enum([
+    PORT_ORIGIN.catalog,
+    PORT_ORIGIN.emitted,
+    PORT_ORIGIN.plugin,
+    PORT_ORIGIN.checker,
+    PORT_ORIGIN.ported,
+  ]),
   outcome: z.enum([PORT_OUTCOME.generic, PORT_OUTCOME.deno, PORT_OUTCOME.exaix, PORT_OUTCOME.split, PORT_OUTCOME.zone]),
   parts: z.array(PartSchema),
   mechanism: z.enum(MECHANISMS),
@@ -69,6 +81,7 @@ const RuleRowSchema = z.object({
   }).strict(),
   positive: z.array(PositiveSchema),
   ported: z.boolean(),
+  parked: z.boolean(),
   note: z.string(),
 }).strict();
 

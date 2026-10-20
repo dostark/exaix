@@ -29,6 +29,7 @@ Deno.test("a row is marked emitted exactly when the catalog does not list it", a
   for (const row of tables.rules) {
     if (row.origin === PORT_ORIGIN.catalog) assert(catalogIds.has(row.id), `${row.id} is not a catalog script rule`);
     if (row.origin === PORT_ORIGIN.emitted) assert(!catalogIds.has(row.id), `${row.id} is in the catalog`);
+    if (row.origin === PORT_ORIGIN.ported) assert(!catalogIds.has(row.id), `${row.id} is still a catalog script rule`);
   }
 });
 

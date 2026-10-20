@@ -160,7 +160,7 @@ export interface ITuiDashboard {
 
   // Notifications
   notificationService: INotificationService;
-  notify(message: string, type?: string): Promise<void>;
+  notify(message: string, type?: Opt<string, Reason.OptionalInput>): Promise<void>;
   dismissNotification(id: string): Promise<void>;
   clearNotifications(): Promise<void>;
   approveMemoryUpdate(proposalId: string): Promise<void>;
@@ -191,11 +191,11 @@ export interface ITuiDashboard {
 // dependency is still tracked by the module graph while avoiding imports inside
 // nested statements.
 
-// style-exclude:PLUGINS - runtime TUI helper loaded on demand
+// deno-lint-ignore exaix/dynamic-import -- runtime TUI helper loaded on demand
 const handleKeyModulePromise = import("@exaix/tui/helpers/handle_key.ts");
-// style-exclude:PLUGINS - runtime TUI helper loaded on demand
+// deno-lint-ignore exaix/dynamic-import -- runtime TUI helper loaded on demand
 const prodHandleKeyModulePromise = import("@exaix/tui/helpers/prod_handle_key.ts");
-// style-exclude:RUNTIME_REGISTRY - dynamic std/streams import used in non-tty fallback
+// deno-lint-ignore exaix/dynamic-import -- dynamic std/streams import used in non-tty fallback
 const stdStreamsModulePromise = import("@std/streams");
 
 export const DASHBOARD_ICONS = {
@@ -238,7 +238,7 @@ export const DASHBOARD_ICONS = {
   },
 } as const;
 
-// style-exclude:RUNTIME_REGISTRY - Dynamic import is required at runtime to avoid circular dependency and load TUI service factory only when the dashboard is initialized.
+// deno-lint-ignore exaix/dynamic-import -- Dynamic import is required at runtime to avoid circular dependency and load TUI service factory only when the dashboard is initialized.
 const tuiServiceFactoryModule = import("./services/tui_service_factory.ts");
 
 // Dashboard Key Bindings

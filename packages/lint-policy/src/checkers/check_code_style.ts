@@ -36,7 +36,6 @@ import {
   RE_PACKAGE_NAME_CAPTURE,
   RE_PACKAGE_ROOT_ENTRYPOINT,
   RE_PACKAGE_SRC_CAPTURE,
-  RE_PACKAGE_TEST_HELPERS,
   RE_PACKAGE_TESTS_CAPTURE,
 } from "../repo_layout.ts";
 
@@ -252,7 +251,6 @@ function ruleEnabled(catalog: ICatalog, ruleName: string, repoPath: string): "er
   if (settings.scope === "prod" && pathClass !== "prod") return null;
   if (settings.include && !matchesAnyGlob(repoPath, settings.include)) return null;
   if (settings.exclude && matchesAnyGlob(repoPath, settings.exclude)) return null;
-  if (settings.severity === "warn" && ruleName === "dynamic-import" && strictImports) return "error";
   return settings.severity;
 }
 
@@ -286,21 +284,8 @@ const RETIRED_ROOT_PACKAGE_IMPORT_PATHS = new Set([
   ...LAYOUT.retiredRootImportPaths,
 ]);
 
-function isPackageEntrypoint(path: string): boolean {
-  return path.endsWith("/mod.ts") || path.endsWith("/index.ts");
-}
-
 function isPackageRootEntrypoint(path: string): boolean {
   return RE_PACKAGE_ROOT_ENTRYPOINT.test(path);
-}
-
-function isSamePackageReExport(line: string): boolean {
-  const match = line.match(/from\s+["']([^"']+)["']/);
-  return !!match && match[1].startsWith("./");
-}
-
-function isTestingCompatibilityShim(path: string): boolean {
-  return path.startsWith(LAYOUT.rootTestHelpers) || RE_PACKAGE_TEST_HELPERS.test(path);
 }
 
 function parseHeaderRelatedFiles(headerText: string): string[] {
@@ -383,16 +368,6 @@ function isEditionDispatchEntry(repoPath: string): boolean {
 function precededByEditionGuard(precedingLines: string[]): boolean {
   const window = precedingLines.slice(-EDITION_GUARD_LOOKBACK_LINES);
   return window.some((l) => /\beditionType\s*(?:===?|!==?)\s*EDITION_/.test(l));
-}
-
-/**
- * Shape check on one line: a dynamic Team import in a dispatch entry.
- * The dynamic-import and import-inside-statement style exemptions use it.
- * They only need the sanctioned shape.
- * The stricter edition-guard check below governs the edition-leak rule.
- */
-function isEditionGatedTeamDynamicImport(repoPath: string, line: string): boolean {
-  return isEditionDispatchEntry(repoPath) && isTeamDynamicImportLine(line);
 }
 
 /**
@@ -697,7 +672,6 @@ const rootTestingShimExports = discoverRootTestingShimExports();
 const publicPackageAliases = discoverPublicPackageAliases();
 
 const args = new Set(Deno.args);
-const strictImports = args.has("--strict-imports");
 const convertWarnings = args.has("--convert-warnings-to-errors");
 const showAllWarnings = args.has("--show-all-warnings");
 
@@ -710,7 +684,6 @@ Usage:
 
 Options:
   --help, -h          Show this help message
-  --strict-imports    Enable strict dynamic import checks (detects imports inside statements)
 
   --convert-warnings-to-errors  Convert all warnings to errors
   --show-all-warnings          Show all warnings, including those masked by exclusion comments
@@ -934,30 +907,6 @@ function checkLayerLeaks(sourceFile: ts.SourceFile, repoPath: string): void {
 // The script exits non-zero when it finds any error, so hooks and CI can gate on it.
 const rules: Rule[] = [
   {
-    name: "import-inside-statement",
-    // Match lines that have 'import(' and start with whitespace (indented = nested)
-    // AND ignore 'typeof import('
-    regex: /^\s+.*(?<!typeof\s+)import\s*\(/,
-    message:
-      "Use of import() inside other statements (e.g., if, function, loop) is prohibited. All imports must be at the top level.",
-  },
-  {
-    name: "dynamic-import",
-    // Match 'import(' but exclude 'typeof import('
-    regex: /(?<!typeof\s+)\bimport\s*\(/,
-    message:
-      "Dynamic import statements (import(...)) are discouraged. If used, document the rationale in a comment above the import.",
-  },
-  {
-    name: "inline-type-import",
-    // This matches `import("...").Something` in a type annotation, as in `Promise<import("./foo.ts").IFoo>`.
-    // It excludes `typeof import("...").Foo`.
-    // That form types the result of a dynamic import helper without a top-level import.
-    regex: /(?<!typeof\s+)import\s*\(\s*["'][^"']+["']\s*\)\s*\.\s*\w/,
-    message: 'Inline type imports (e.g. `import("./foo.ts").IFoo` inside a type annotation) are prohibited. ' +
-      'Declare an explicit `import type { IFoo } from "./foo.ts"` at the top of the file.',
-  },
-  {
     name: "test-inline-multiline-fixture",
     regex:
       /^\s*(?:const|let|var)\s+(?:markdown|yaml|json|input|payload|text|content)\s*=\s*(?:[A-Za-z_$][\w$]*\s*)?`[^`]*$/,
@@ -982,12 +931,6 @@ const rules: Rule[] = [
     regex: /:\s*Promise\s*<\s*Response\s*>/,
     message:
       "'Promise<Response>' as return type is too weak; define a specific interface describing the expected response shape.",
-  },
-  {
-    name: "re-export-imported",
-    regex: /^\s*export\s+.*from\s+['"]|^\s*export\s+\*\s+from/,
-    message:
-      "Re-exporting entities from other modules (e.g., 'export { ... } from ...' or 'export * from ...') is prohibited. Each module must only export entities it defines.",
   },
   {
     name: "package-entrypoint-root-src-reexport",
@@ -1029,10 +972,8 @@ const INLINE_SCRIPT_RULE_IDS = [
   "duplicate-constant",
   "duplicate-type",
   "no-interface-rename-on-import",
-  "import-placement",
   "module-header",
   "module-header-tag",
-  "exported-interface-placement",
   "max-params",
   "long-comment",
   "ephemeral-comment",
@@ -1386,43 +1327,6 @@ function checkScriptHeader(path: string, headerLines: string): void {
   }
 }
 
-interface IImportPlacementState {
-  readonly firstImportLineNum: number;
-  readonly lastImportLineNum: number;
-  readonly firstInterfaceLineNum: number;
-  readonly importFollowingInterface: Map<number, number>;
-  readonly importFollowingFunctional: Map<number, number>;
-}
-
-/** Import-placement checks: interfaces after imports, and imports before functional code. */
-function checkImportPlacement(path: string, state: IImportPlacementState): void {
-  if (
-    state.firstImportLineNum !== -1 && state.firstInterfaceLineNum !== -1 &&
-    state.firstInterfaceLineNum < state.lastImportLineNum
-  ) {
-    console.log(
-      `ERROR [import-placement] ${path}:${state.firstInterfaceLineNum} – Interface/type definitions must follow all imports (last import at line ${state.lastImportLineNum}).`,
-    );
-    errorCount++;
-  } else if (state.importFollowingInterface.size > 0) {
-    const line = Array.from(state.importFollowingInterface.keys())[0];
-    const started = state.importFollowingInterface.get(line);
-    console.log(
-      `ERROR [import-placement] ${path}:${line} – Imports must precede all interface/type definitions (interface started at line ${started}).`,
-    );
-    errorCount++;
-  }
-
-  if (state.importFollowingFunctional.size > 0) {
-    const line = Array.from(state.importFollowingFunctional.keys())[0];
-    const started = state.importFollowingFunctional.get(line);
-    console.log(
-      `ERROR [import-placement] ${path}:${line} – Imports must be at the top, preceding functional code (functional code started at line ${started}).`,
-    );
-    errorCount++;
-  }
-}
-
 function isConfigServiceConfigUsage(trimmedLine: string, line: string): boolean {
   const isImport = trimmedLine.startsWith("import") && trimmedLine.includes("ConfigService") &&
     trimmedLine.includes("@exaix/core");
@@ -1684,11 +1588,6 @@ function collectTemplateLiteralLines(sourceFile: ts.SourceFile): Set<number> {
  * True for a line that is only a `//`, `/*`, or `*` comment.
  * Code-shape rules then do not read comment prose as code.
  */
-function isCommentOnlyLine(line: string): boolean {
-  const trimmed = line.trim();
-  return trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*");
-}
-
 const SOURCE_UNITS: Array<{ path: string; text: string }> = [];
 
 async function checkFile(path: string) {
@@ -1780,42 +1679,20 @@ function reportFixtureWarning(
   }
 }
 
-/** True when a regex-rule violation must be suppressed (boundary/edition/masking guards). */
-function isRegexViolationSuppressed(
-  rule: Rule,
-  severity: "error" | "warn",
-  lineToTest: string,
-  idx: number,
-  ctx: IStyleRuleContext,
-  masking: IMaskResult,
-): boolean {
-  if (rule.name === "re-export-imported" && isPackageEntrypoint(ctx.path) && isSamePackageReExport(lineToTest)) {
-    return true;
-  }
-  if (
-    (rule.name === "import-inside-statement" || rule.name === "dynamic-import") &&
-    isEditionGatedTeamDynamicImport(ctx.repoPath, lineToTest)
-  ) {
-    return true;
-  }
-  if (severity === "warn" && masking.masked && !showAllWarnings) return true;
-  if (rule.name === "dynamic-import") {
-    const exclusion = parseExclusionComment(idx > 0 ? ctx.lines[idx - 1].trim() : "", rule.name);
-    if (exclusion && !showAllWarnings) return true;
-  }
-  return false;
+/** True when a masked warning must stay hidden. */
+function isRegexViolationSuppressed(severity: "error" | "warn", masking: IMaskResult): boolean {
+  return severity === "warn" && masking.masked && !showAllWarnings;
 }
 
 /** Prints a generic regex-rule violation and counts it. */
 function reportRegexViolation(
   rule: Rule,
   severity: "error" | "warn",
-  lineToTest: string,
   idx: number,
   ctx: IStyleRuleContext,
   masking: IMaskResult,
 ): void {
-  if (isRegexViolationSuppressed(rule, severity, lineToTest, idx, ctx, masking)) return;
+  if (isRegexViolationSuppressed(severity, masking)) return;
   const actualSeverity = convertWarnings ? "error" : severity;
   const prefix = actualSeverity === "error" ? "ERROR" : "WARN";
   let msg = `${prefix} [${rule.name}] ${ctx.path}:${idx + 1} – ${rule.message}`;
@@ -1839,9 +1716,6 @@ function evaluateStyleRuleLine(
   ctx: IStyleRuleContext,
 ): void {
   if (ctx.templateLiteralLines.has(idx + 1) && rule.name !== "test-inline-multiline-fixture") return;
-  if ((rule.name === "import-inside-statement" || rule.name === "dynamic-import") && isCommentOnlyLine(line)) {
-    return;
-  }
   const lineToTest = line;
   const masking = resolveMasking(rule, severity, lineToTest, idx, ctx);
   if (rule.name === "test-inline-multiline-fixture") {
@@ -1852,7 +1726,7 @@ function evaluateStyleRuleLine(
     }
   }
   if (!rule.regex.test(lineToTest)) return;
-  reportRegexViolation(rule, severity, lineToTest, idx, ctx, masking);
+  reportRegexViolation(rule, severity, idx, ctx, masking);
 }
 
 /** Evaluates every catalog regex rule over the file's lines. */
@@ -1860,7 +1734,6 @@ function evaluateStyleRules(ctx: IStyleRuleContext): void {
   for (const rule of rules) {
     const severity = ruleEnabled(ctx.catalog, rule.name, ctx.repoPath);
     if (!severity) continue;
-    if (rule.name === "re-export-imported" && isTestingCompatibilityShim(ctx.repoPath)) continue;
     for (let idx = 0; idx < ctx.lines.length; idx++) {
       evaluateStyleRuleLine(rule, severity, ctx.lines[idx], idx, ctx);
     }
@@ -2060,63 +1933,22 @@ function reportPackageSrcBoundary(repoPath: string, line: string, idx: number): 
   errorCount++;
 }
 
-/** Reports `export { Foo as Bar }` re-exports of imported names. Returns true to skip the line. */
-function checkNamedReExport(
-  path: string,
-  line: string,
-  trimmed: string,
-  idx: number,
-  importedNames: Map<string, number>,
-): boolean {
-  const namedExportMatch = line.match(/^\s*export\s+(type\s+)?{([^}]*)}\s*;?\s*$/);
-  if (!namedExportMatch || path.endsWith("/mod.ts") || path.endsWith("/index.ts")) return false;
-
-  for (const entry of namedExportMatch[2].split(",")) {
-    const parts = entry.trim().split(/\s+as\s+/);
-    const name = parts[0].trim();
-    if (!importedNames.has(name)) continue;
-    const importLine = importedNames.get(name)!;
-    const isImmediate = importLine === idx; // idx is 0-indexed and importLine is 1-indexed
-    const message = isImmediate
-      ? `Improper re-export of '${name}' on the next line after its import. Combine into 'export ${
-        namedExportMatch[1] || ""
-      }{ ... } from ...' or define it locally.`
-      : `Exporting imported entity '${name}' (imported on line ${importLine}) is prohibited. Define it locally or export it from its origin.`;
-    console.log(`ERROR [re-export-imported] ${path}:${idx + 1} – ${message}`);
-    errorCount++;
-  }
-
-  return !trimmed.includes("=") && (trimmed.endsWith(";") || trimmed.endsWith("}"));
-}
-
 /** Runs every style check over one source unit, with `catalog` supplying the settings. */
 interface IScanState {
   inMultiLineComment: boolean;
   inMultiLineImport: boolean;
   inTypeDeclaration: boolean;
   protectedBraceCount: number;
-  functionalCodeLineNum: number;
-  firstImportLineNum: number;
-  lastImportLineNum: number;
-  firstInterfaceLineNum: number;
   headerFound: boolean;
   firstContentLineNum: number;
   paramDepth: number;
-  importedNames: Map<string, number>;
   inParamList: boolean;
   currentParamCount: number;
   paramListStartLine: number;
-  importFollowingInterface: Map<number, number>;
-  importFollowingFunctional: Map<number, number>;
 }
 
 interface IScanResult {
   readonly headerFound: boolean;
-  readonly firstImportLineNum: number;
-  readonly lastImportLineNum: number;
-  readonly firstInterfaceLineNum: number;
-  readonly importFollowingInterface: Map<number, number>;
-  readonly importFollowingFunctional: Map<number, number>;
 }
 
 /** Returns the net brace count of one trimmed line. */
@@ -2162,17 +1994,9 @@ function handleCommentLine(trimmed: string, idx: number, state: IScanState): boo
 }
 
 /** Collects names from an ongoing multi-line import. Returns true when still inside one. */
-function handleMultiLineImportContinue(trimmed: string, idx: number, state: IScanState): boolean {
+function handleMultiLineImportContinue(trimmed: string, state: IScanState): boolean {
   if (!state.inMultiLineImport) return false;
-  for (const raw of trimmed.replace(/}.*/, "").split(",")) {
-    const parts = raw.trim().split(/\s+as\s+/);
-    const name = parts.pop()?.trim();
-    if (name && name !== "from" && name !== "import") state.importedNames.set(name, idx + 1);
-  }
-  if (trimmed.includes("} from")) {
-    state.inMultiLineImport = false;
-    state.lastImportLineNum = idx + 1;
-  }
+  if (trimmed.includes("} from")) state.inMultiLineImport = false;
   return true;
 }
 
@@ -2209,40 +2033,31 @@ function skipLeadingBlock(
   if (handleCommentLine(trimmed, idx, state)) return true;
   if (trimmed.startsWith("#!")) return true;
   if (state.firstContentLineNum === -1) state.firstContentLineNum = idx + 1;
-  if (handleMultiLineImportContinue(trimmed, idx, state)) return true;
+  if (handleMultiLineImportContinue(trimmed, state)) return true;
   if (handleProtectedBlock(trimmed, state)) return true;
   if (templateLiteralLines.has(idx + 1)) return true;
   return handleTypeDeclarationContinue(line, trimmed, state);
 }
 
-/** Records names and interface-rename findings from an import clause. */
-function collectImportNames(path: string, trimmed: string, idx: number, state: IScanState): void {
+/** Reports an interface that an import clause renames. */
+function checkInterfaceRename(path: string, trimmed: string, idx: number): void {
   const namedMatch = trimmed.match(/{([^}]*)/);
-  if (namedMatch) {
-    for (const raw of namedMatch[1].replace(/}.*/, "").split(",")) {
-      const parts = raw.trim().split(/\s+as\s+/);
-      const name = parts.pop()?.trim();
-      const isCompatShim = path.endsWith(LAYOUT.markdownCompatSuffix);
-      if (!isCompatShim && parts.length > 0 && /^I[A-Z]/.test(parts[0].trim())) {
-        console.log(
-          `ERROR [no-interface-rename-on-import] ${path}:${idx + 1} – Renaming interface '${
-            parts[0].trim()
-          }' to '${name}' is prohibited. Use the original name.`,
-        );
-        errorCount++;
-      }
-      if (name && name !== "from" && name !== "import") state.importedNames.set(name, idx + 1);
+  if (!namedMatch || path.endsWith(LAYOUT.markdownCompatSuffix)) return;
+  for (const raw of namedMatch[1].replace(/}.*/, "").split(",")) {
+    const parts = raw.trim().split(/\s+as\s+/);
+    const name = parts.pop()?.trim();
+    if (parts.length > 0 && /^I[A-Z]/.test(parts[0].trim())) {
+      console.log(
+        `ERROR [no-interface-rename-on-import] ${path}:${idx + 1} – Renaming interface '${
+          parts[0].trim()
+        }' to '${name}' is prohibited. Use the original name.`,
+      );
+      errorCount++;
     }
   }
-  const defaultMatch = trimmed.match(/^import\s+([\w$]+)[,\s]/);
-  if (defaultMatch && defaultMatch[1] !== "type" && defaultMatch[1] !== "*") {
-    state.importedNames.set(defaultMatch[1], idx + 1);
-  }
-  const namespaceMatch = trimmed.match(/import\s+\*\s+as\s+([\w$]+)/);
-  if (namespaceMatch) state.importedNames.set(namespaceMatch[1], idx + 1);
 }
 
-/** Runs every import-line check and updates import placement state. */
+/** Runs every import-line check. */
 function scanImportLine(
   path: string,
   line: string,
@@ -2253,9 +2068,7 @@ function scanImportLine(
   state: IScanState,
 ): void {
   if (isImportStart) {
-    if (state.firstImportLineNum === -1) state.firstImportLineNum = idx + 1;
-    state.lastImportLineNum = idx + 1;
-    if (trimmed.startsWith("import")) collectImportNames(path, trimmed, idx, state);
+    if (trimmed.startsWith("import")) checkInterfaceRename(path, trimmed, idx);
     if (trimmed.includes("{") && !trimmed.includes("} from")) state.inMultiLineImport = true;
   }
 
@@ -2268,26 +2081,11 @@ function scanImportLine(
   reportPackageSrcBoundary(relativePath, line, idx);
 
   if (state.inMultiLineImport && trimmed.includes("} from")) state.inMultiLineImport = false;
-  if (state.firstInterfaceLineNum !== -1) {
-    state.importFollowingInterface.set(idx + 1, state.firstInterfaceLineNum);
-  }
-  if (state.functionalCodeLineNum !== -1) {
-    state.importFollowingFunctional.set(idx + 1, state.functionalCodeLineNum);
-  }
 }
 
-/** Tracks a type/interface/enum block start and reports placement findings. */
-function scanTypeStart(path: string, line: string, trimmed: string, idx: number, state: IScanState): void {
-  if (state.firstInterfaceLineNum === -1) state.firstInterfaceLineNum = idx + 1;
+/** Tracks the start of a type, interface, or enum block so the later checks skip its body. */
+function scanTypeStart(trimmed: string, state: IScanState): void {
   state.protectedBraceCount += countBraces(trimmed);
-  if (state.functionalCodeLineNum !== -1 && /^\s*export\s+interface\b/.test(line)) {
-    console.log(
-      `ERROR [exported-interface-placement] ${path}:${
-        idx + 1
-      } – Exported interfaces must be at the top, preceding functional code (functional code started at line ${state.functionalCodeLineNum}).`,
-    );
-    errorCount++;
-  }
   if (state.protectedBraceCount > 0 || (!trimmed.endsWith(";") && !trimmed.endsWith("}"))) {
     state.inTypeDeclaration = true;
   }
@@ -2361,19 +2159,12 @@ function scanFileLines(
     inMultiLineImport: false,
     inTypeDeclaration: false,
     protectedBraceCount: 0,
-    functionalCodeLineNum: -1,
-    firstImportLineNum: -1,
-    lastImportLineNum: -1,
-    firstInterfaceLineNum: -1,
     headerFound: false,
     firstContentLineNum: -1,
     paramDepth: 0,
-    importedNames: new Map<string, number>(),
     inParamList: false,
     currentParamCount: 0,
     paramListStartLine: -1,
-    importFollowingInterface: new Map<number, number>(),
-    importFollowingFunctional: new Map<number, number>(),
   };
 
   for (let idx = 0; idx < lines.length; idx++) {
@@ -2387,10 +2178,8 @@ function scanFileLines(
       scanImportLine(path, line, trimmed, idx, lines, isImportStart, state);
       continue;
     }
-    if (checkNamedReExport(path, line, trimmed, idx, state.importedNames)) continue;
-
     if (isTypeStartLine(line)) {
-      scanTypeStart(path, line, trimmed, idx, state);
+      scanTypeStart(trimmed, state);
       continue;
     }
 
@@ -2401,19 +2190,10 @@ function scanFileLines(
     if (isParamStartLine(trimmed, state) && startParamList(path, line, idx, maxParams, state)) {
       continue;
     }
-
-    if (state.functionalCodeLineNum === -1 && state.protectedBraceCount === 0) {
-      state.functionalCodeLineNum = idx + 1;
-    }
   }
 
   return {
     headerFound: state.headerFound,
-    firstImportLineNum: state.firstImportLineNum,
-    lastImportLineNum: state.lastImportLineNum,
-    firstInterfaceLineNum: state.firstInterfaceLineNum,
-    importFollowingInterface: state.importFollowingInterface,
-    importFollowingFunctional: state.importFollowingFunctional,
   };
 }
 
@@ -2499,13 +2279,6 @@ function checkFileFromText(path: string, text: string, catalog: ICatalog): void 
   }
 
   checkModuleHeader(path, repoPath, lines, scan.headerFound);
-  checkImportPlacement(path, {
-    firstImportLineNum: scan.firstImportLineNum,
-    lastImportLineNum: scan.lastImportLineNum,
-    firstInterfaceLineNum: scan.firstInterfaceLineNum,
-    importFollowingInterface: scan.importFollowingInterface,
-    importFollowingFunctional: scan.importFollowingFunctional,
-  });
 
   // TUI and CLI boundary isolation checks (CODE_STYLE.md 8 and 9)
   checkTuiBoundary(path, lines);

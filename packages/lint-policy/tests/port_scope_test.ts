@@ -39,7 +39,7 @@ Deno.test("the scripts run selects only plugin rules that exist or that the tabl
   const tables = await loadPortTables();
   const task = await readLintTask();
   const ported = tables.rules
-    .filter((row) => row.ported)
+    .filter((row) => row.ported && !row.parked)
     .flatMap((row) => row.parts.map((part) => `${PLUGIN_NAME}/${part.key}`));
   const allowed = new Set([...tables.scope.scriptsRunRules, ...ported]);
   for (const rule of task.scriptsRunRules) {
@@ -52,7 +52,7 @@ Deno.test("a ported rule with the decision extend-scripts-run is selected in the
   const task = await readLintTask();
   for (
     const row of tables.rules.filter((candidate) =>
-      candidate.ported && candidate.scope.decision === "extend-scripts-run"
+      candidate.ported && !candidate.parked && candidate.scope.decision === "extend-scripts-run"
     )
   ) {
     for (const part of row.parts.filter((candidate) => candidate.pack !== "exaix")) {

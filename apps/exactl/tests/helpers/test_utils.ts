@@ -21,7 +21,6 @@ import {
 
 // Static import avoids a runtime dynamic import statement inside a function,
 // which is prohibited by the test style checker.
-// style-exclude:REQUIRED_FOR_TEST - This is a type-only typeof import for deferred CLI module typing, not an actual runtime dynamic import.
 const exactlModulePromise: Promise<typeof import("../../src/exactl.ts")> = Promise.resolve(exactlModule);
 
 function loadExaCtlModule(): Promise<typeof import("../../src/exactl.ts")> {

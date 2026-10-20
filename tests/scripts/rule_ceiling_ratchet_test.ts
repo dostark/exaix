@@ -22,7 +22,11 @@ const RATCHETED_RULES = [
   "exaix/no-boolean-assert",
   "exaix/no-repeated-assert-call",
   "exaix/no-constant-substring-assert",
+  "exaix/re-export-imported",
+  "exaix/import-placement",
+  "exaix/exported-interface-placement",
 ];
+const ROOT_BUCKETS = ["tests", "exaix-team"];
 
 const KNOWN_RULES = ["exaix/require-safety-comment", "exaix/no-runtime-typeof"];
 const KNOWN_PACKAGES = ["packages/flow", "packages/core"];
@@ -91,12 +95,13 @@ interface ILintReport {
   readonly diagnostics?: readonly ILintDiagnostic[];
 }
 
-/** The workspace package names (`packages/*` and `apps/*`). */
+/** The workspace package names (`packages/*` and `apps/*`) and the root buckets for `tests/` and `exaix-team/`. */
 async function workspacePackages(): Promise<string[]> {
   const denoJson = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json"))) as { workspace?: string[] };
-  return (denoJson.workspace ?? [])
+  const workspace = (denoJson.workspace ?? [])
     .map((entry) => entry.replace(/^\.\//, ""))
     .filter((entry) => entry.startsWith("packages/") || entry.startsWith("apps/"));
+  return [...workspace, ...ROOT_BUCKETS];
 }
 
 /** The workspace package a lint diagnostic belongs to, or null when it is outside one. */
@@ -105,6 +110,7 @@ function packageOf(filename: string, root: string): string | null {
   if (!path.startsWith(`${root}/`)) return null;
   const parts = path.slice(root.length + 1).split("/");
   if (parts.length >= 2 && (parts[0] === "packages" || parts[0] === "apps")) return `${parts[0]}/${parts[1]}`;
+  if (ROOT_BUCKETS.includes(parts[0])) return parts[0];
   return null;
 }
 

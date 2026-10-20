@@ -95,6 +95,35 @@ Deno.test("the scripts run of the lint task reports exaix/require-deno-shebang o
   }
 });
 
+const DYNAMIC_IMPORT_SEED = 'export const loaded = await import("./other.ts");\n';
+const INLINE_TYPE_IMPORT_SEED = 'export type Loaded = import("./other.ts").IOther;\n';
+const PARKED_REEXPORT_SEED = 'export { value } from "./other.ts";\n';
+
+Deno.test("deno lint reports exaix/dynamic-import on a seeded violation", async () => {
+  await withSeed(async (file) => {
+    const result = await runDeno(["lint", file]);
+    assertEquals(result.code === 0, false, result.output);
+    assertStringIncludes(result.output, "exaix/dynamic-import");
+  }, DYNAMIC_IMPORT_SEED);
+});
+
+Deno.test("deno lint reports exaix/inline-type-import on a seeded violation", async () => {
+  await withSeed(async (file) => {
+    const result = await runDeno(["lint", file]);
+    assertEquals(result.code === 0, false, result.output);
+    assertStringIncludes(result.output, "exaix/inline-type-import");
+  }, INLINE_TYPE_IMPORT_SEED);
+});
+
+Deno.test("a parked rule is silent by default and reports when EXAIX_LINT_RULES selects it", async () => {
+  await withSeed(async (file) => {
+    const silent = await runDeno(["lint", file]);
+    assertFalse(silent.output.includes("exaix/re-export-imported"), silent.output);
+    const selected = await runDeno(["lint", file], { EXAIX_LINT_RULES: "exaix/re-export-imported" });
+    assertStringIncludes(selected.output, "exaix/re-export-imported");
+  }, PARKED_REEXPORT_SEED);
+});
+
 Deno.test("EXAIX_LINT_RULES selects the rule and the entry prints a narrowing notice", async () => {
   await withSeed(async (file) => {
     const result = await runDeno(["lint", file], {

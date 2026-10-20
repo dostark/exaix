@@ -47,18 +47,6 @@ const CASES: IRuleCase[] = [
 
   // imports
   {
-    id: "import-inside-statement",
-    invalid: "export function f() {\n  return import('./a.ts');\n}\n",
-    valid: "export const a = 1;\n",
-  },
-  { id: "dynamic-import", invalid: "export const p = import('./a.ts');\n", valid: "export const a = 1;\n" },
-  {
-    id: "inline-type-import",
-    invalid: "export function f(x: import('./a.ts').IFoo): void {}\n",
-    valid: "export function f(x: string): void {}\n",
-  },
-  { id: "re-export-imported", invalid: "export { Foo } from './foo.ts';\n", valid: "export const x = 1;\n" },
-  {
     id: "package-entrypoint-root-src-reexport",
     invalid: "export { Foo } from '../src/foo.ts';\n",
     valid: "export { Foo } from './foo.ts';\n",
@@ -76,11 +64,6 @@ const CASES: IRuleCase[] = [
     id: "module-header-tag",
     invalid: "/**\n * @module Sample\n * @path packages/x/src/sample.ts\n */\nexport const a = 1;\n",
     valid: HEADER + "export const a = 1;\n",
-  },
-  {
-    id: "exported-interface-placement",
-    invalid: "export function f(): number {\n  return 1;\n}\nexport interface IFoo { a: string }\n",
-    valid: "export interface IFoo { a: string }\nexport function f(): number {\n  return 1;\n}\n",
   },
   {
     id: "max-params",
@@ -261,11 +244,6 @@ const CASES: IRuleCase[] = [
     invalid: "import { DEFAULT_MCP_TIMEOUT } from '@exaix/mcp';\nexport const a = DEFAULT_MCP_TIMEOUT;\n",
     valid: "export const a = 1;\n",
     path: abs("packages/flow/src/sample.ts"),
-  },
-  {
-    id: "import-placement",
-    invalid: "export const a = 1;\nexport const b = 2;\nimport { z } from './z.ts';\nexport const c = z;\n",
-    valid: "import { z } from './z.ts';\nexport const c = z;\n",
   },
 ];
 

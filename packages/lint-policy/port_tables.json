@@ -27,7 +27,7 @@
   "rules": [
     {
       "id": "import-inside-statement",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -64,12 +64,13 @@
           "code": "export function load() {\n  return import(\"./b.ts\");\n}\n"
         }
       ],
-      "ported": false,
+      "ported": true,
+      "parked": false,
       "note": ""
     },
     {
       "id": "dynamic-import",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -108,12 +109,13 @@
           "code": "export const loader = await import(\"./b.ts\");\n"
         }
       ],
-      "ported": false,
+      "ported": true,
+      "parked": false,
       "note": ""
     },
     {
       "id": "inline-type-import",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -151,12 +153,13 @@
           "code": "export type Loaded = Promise<import(\"./b.ts\").IThing>;\n"
         }
       ],
-      "ported": false,
+      "ported": true,
+      "parked": false,
       "note": ""
     },
     {
       "id": "re-export-imported",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -192,12 +195,13 @@
           "code": "export { value } from \"./b.ts\";\n"
         }
       ],
-      "ported": false,
+      "ported": true,
+      "parked": true,
       "note": ""
     },
     {
       "id": "import-placement",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -237,12 +241,13 @@
           "code": "export const first = 1;\nimport { value } from \"./b.ts\";\nexport { value };\n"
         }
       ],
-      "ported": false,
+      "ported": true,
+      "parked": true,
       "note": ""
     },
     {
       "id": "exported-interface-placement",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -280,7 +285,8 @@
           "code": "export const first = 1;\nexport interface IThing {\n  readonly a: number;\n}\n"
         }
       ],
-      "ported": false,
+      "ported": true,
+      "parked": true,
       "note": ""
     },
     {
@@ -323,6 +329,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -360,6 +367,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -397,6 +405,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -447,6 +456,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": "Verified 2026-10-20: ban-ts-comment accepts a described pragma, so the port keeps only the described case."
     },
     {
@@ -488,6 +498,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -524,6 +535,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": "Whole-tree analysis: interface and object type alias members after whitespace normalization. Library function called by check:style."
     },
     {
@@ -560,6 +572,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": "Whole-tree analysis: top-level named constants with a static value. Library function called by check:style."
     },
     {
@@ -617,6 +630,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": "Replaces a line scanner (paramListStartLine) with the parameter list of the function-like node."
     },
     {
@@ -663,6 +677,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -708,6 +723,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -749,6 +765,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -783,6 +800,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": "Ported with ephemeral-comment; the plugin rule reads context.filename."
     },
     {
@@ -826,6 +844,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -873,6 +892,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": "Generic part is new to the port list: assigned to Step 6; the Exaix part stays a script rule."
     },
     {
@@ -914,6 +934,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": "Deno-script header part is new to the port list: assigned to Step 6 (Deno pack)."
     },
     {
@@ -972,6 +993,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1030,6 +1052,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1088,6 +1111,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1146,6 +1170,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1204,6 +1229,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1262,6 +1288,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1320,6 +1347,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1378,6 +1406,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1436,6 +1465,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1494,6 +1524,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": "Emitted by the checker but absent from the catalog and from INLINE_SCRIPT_RULE_IDS."
     },
     {
@@ -1552,6 +1583,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1583,6 +1615,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1614,6 +1647,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1645,6 +1679,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1676,6 +1711,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1707,6 +1743,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1738,6 +1775,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1769,6 +1807,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1800,6 +1839,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1831,6 +1871,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1862,6 +1903,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1893,6 +1935,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1924,6 +1967,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1955,6 +1999,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -1986,6 +2031,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": ""
     },
     {
@@ -2032,6 +2078,7 @@
         }
       ],
       "ported": false,
+      "parked": false,
       "note": "Moves out of the Exaix pack; the catalog id exaix/exported-interface-naming does not change."
     },
     {
@@ -2086,6 +2133,7 @@
       },
       "positive": [],
       "ported": false,
+      "parked": false,
       "note": "Conditional on Step 5: dropped and recorded if the coupling cannot become options."
     }
   ]

@@ -24,6 +24,7 @@ const GUARD_PATHS = [
   "packages/lint-policy/tests/port_migration_test.ts",
   "packages/lint-policy/tests/helpers/port_migration.ts",
   "docs/CHANGELOG.md",
+  "unslop-ts/",
 ];
 
 Deno.test("a style-exclude comment of the rule becomes a deno-lint-ignore comment with the same reason", () => {

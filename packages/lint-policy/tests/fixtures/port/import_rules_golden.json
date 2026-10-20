@@ -1,0 +1,284 @@
+{
+  "top-level await import": [
+    [
+      "dynamic-import",
+      1
+    ]
+  ],
+  "import returned from a function": [
+    [
+      "import-inside-statement",
+      2
+    ],
+    [
+      "dynamic-import",
+      2
+    ]
+  ],
+  "import inside an if block": [
+    [
+      "import-inside-statement",
+      3
+    ],
+    [
+      "dynamic-import",
+      3
+    ]
+  ],
+  "typeof import type": [],
+  "import call in an indented string": [
+    [
+      "import-inside-statement",
+      3
+    ],
+    [
+      "dynamic-import",
+      1
+    ],
+    [
+      "dynamic-import",
+      3
+    ]
+  ],
+  "import call in an indented comment": [],
+  "one-line arrow import": [
+    [
+      "dynamic-import",
+      1
+    ]
+  ],
+  "import in an arrow inside an object": [
+    [
+      "import-inside-statement",
+      2
+    ],
+    [
+      "dynamic-import",
+      2
+    ]
+  ],
+  "indented await import in a top-level array": [
+    [
+      "import-inside-statement",
+      2
+    ],
+    [
+      "dynamic-import",
+      2
+    ]
+  ],
+  "allowed team import in a dispatch entry": [],
+  "other specifier in a dispatch entry": [
+    [
+      "import-inside-statement",
+      2
+    ],
+    [
+      "dynamic-import",
+      2
+    ]
+  ],
+  "team specifier outside a dispatch entry": [
+    [
+      "import-inside-statement",
+      2
+    ],
+    [
+      "dynamic-import",
+      2
+    ]
+  ],
+  "computed specifier in a dispatch entry": [
+    [
+      "import-inside-statement",
+      2
+    ],
+    [
+      "dynamic-import",
+      2
+    ]
+  ],
+  "style-exclude comment above a dynamic import": [],
+  "deno-lint-ignore comment above a dynamic import": [
+    [
+      "dynamic-import",
+      2
+    ]
+  ],
+  "import type in a parameter": [
+    [
+      "dynamic-import",
+      1
+    ],
+    [
+      "inline-type-import",
+      1
+    ]
+  ],
+  "typeof import with a member": [],
+  "import type without a member": [
+    [
+      "dynamic-import",
+      1
+    ]
+  ],
+  "import type in a type argument": [
+    [
+      "dynamic-import",
+      1
+    ],
+    [
+      "inline-type-import",
+      1
+    ]
+  ],
+  "import type in a comment": [
+    [
+      "inline-type-import",
+      1
+    ]
+  ],
+  "named export from a module": [
+    [
+      "re-export-imported",
+      1
+    ]
+  ],
+  "star export from a module": [
+    [
+      "re-export-imported",
+      1
+    ]
+  ],
+  "type export from a module": [
+    [
+      "re-export-imported",
+      1
+    ]
+  ],
+  "string that contains the word from": [
+    [
+      "re-export-imported",
+      1
+    ]
+  ],
+  "export of an imported name, next line": [
+    [
+      "re-export-imported",
+      2
+    ]
+  ],
+  "export of an imported name, later": [
+    [
+      "re-export-imported",
+      3
+    ]
+  ],
+  "aliased export of an imported name": [
+    [
+      "re-export-imported",
+      2
+    ]
+  ],
+  "type export of an imported type": [
+    [
+      "re-export-imported",
+      2
+    ]
+  ],
+  "export of a local name": [],
+  "entrypoint exports a same-directory module": [],
+  "entrypoint exports a parent-directory module": [],
+  "entrypoint exports an imported name": [],
+  "index entrypoint exports a same-directory module": [],
+  "multi-line export list of imported names": [],
+  "export of an imported default": [
+    [
+      "re-export-imported",
+      2
+    ]
+  ],
+  "export of an imported namespace": [
+    [
+      "re-export-imported",
+      2
+    ]
+  ],
+  "imports then types then code": [],
+  "type before an import": [
+    [
+      "import-placement",
+      1
+    ]
+  ],
+  "import after a constant": [
+    [
+      "import-placement",
+      2
+    ]
+  ],
+  "imports only": [],
+  "declare before an import": [
+    [
+      "import-placement",
+      1
+    ]
+  ],
+  "enum before an import": [
+    [
+      "import-placement",
+      1
+    ]
+  ],
+  "side-effect import after a constant": [
+    [
+      "import-placement",
+      2
+    ]
+  ],
+  "type import after a constant": [
+    [
+      "import-placement",
+      2
+    ]
+  ],
+  "import after a function with parameters": [
+    [
+      "import-placement",
+      4
+    ]
+  ],
+  "import after header comments and a shebang": [],
+  "multi-line import then type": [],
+  "export from counts as an import before a type": [],
+  "interface before code": [],
+  "interface after a function": [
+    [
+      "exported-interface-placement",
+      4
+    ]
+  ],
+  "interface after a constant": [
+    [
+      "exported-interface-placement",
+      2
+    ]
+  ],
+  "local interface after a constant": [],
+  "two interfaces after a constant": [
+    [
+      "exported-interface-placement",
+      2
+    ],
+    [
+      "exported-interface-placement",
+      5
+    ]
+  ],
+  "interface after a function with parameters": [
+    [
+      "exported-interface-placement",
+      4
+    ]
+  ]
+}

@@ -655,52 +655,82 @@
         "includeFileIgnores": false
       }
     },
-    "import-inside-statement": {
-      "engine": "script",
+    "exaix/import-inside-statement": {
+      "engine": "plugin",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#import-statements",
-      "tags": [
-        "imports"
-      ]
-    },
-    "dynamic-import": {
-      "engine": "script",
-      "severity": "warn",
-      "scope": "all",
-      "codeStyle": "CODE_STYLE.md#import-statements",
+      "codeStyle": "unslop-ts/docs/style_guide.md#dynamic-imports",
       "tags": [
         "imports"
       ],
-      "exclusionCodes": {
-        "REQUIRED_FOR_TEST": "Dynamic import is required for test setup or mocking.",
-        "PLUGINS": "Dynamic import is necessary for plugin or runtime extension loading.",
-        "RUNTIME_REGISTRY": "Dynamic import is required at runtime for provider registry initialization."
+      "options": {
+        "allowDynamicImports": [
+          {
+            "files": [
+              "apps/daemon/**",
+              "apps/exactl/**",
+              "exaix-team/apps/daemon/**",
+              "exaix-team/apps/exactl/**"
+            ],
+            "specifiers": [
+              "^@exaix-team/",
+              "^\\./src/bootstrap_team"
+            ]
+          }
+        ]
       }
     },
-    "inline-type-import": {
-      "engine": "script",
+    "exaix/dynamic-import": {
+      "engine": "plugin",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#import-statements",
+      "codeStyle": "unslop-ts/docs/style_guide.md#dynamic-imports",
+      "tags": [
+        "imports"
+      ],
+      "options": {
+        "allowDynamicImports": [
+          {
+            "files": [
+              "apps/daemon/**",
+              "apps/exactl/**",
+              "exaix-team/apps/daemon/**",
+              "exaix-team/apps/exactl/**"
+            ],
+            "specifiers": [
+              "^@exaix-team/",
+              "^\\./src/bootstrap_team"
+            ]
+          }
+        ]
+      }
+    },
+    "exaix/inline-type-import": {
+      "engine": "plugin",
+      "severity": "error",
+      "scope": "all",
+      "codeStyle": "unslop-ts/docs/style_guide.md#no-inline-type-imports",
       "tags": [
         "imports"
       ]
     },
-    "re-export-imported": {
-      "engine": "script",
-      "severity": "error",
+    "exaix/re-export-imported": {
+      "engine": "plugin",
+      "severity": "off",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#import-statements",
+      "codeStyle": "unslop-ts/docs/style_guide.md#no-re-exporting",
       "tags": [
         "imports"
       ],
       "exclude": [
         "**/mod.ts",
         "**/index.ts",
-        "src/services/core/db.ts"
+        "src/services/core/db.ts",
+        "tests/helpers/**",
+        "packages/*/tests/helpers/**"
       ],
-      "reason": "Entrypoints and the compatibility shim legitimately re-export; the code keeps the isTestingCompatibilityShim call."
+      "reason": "Entrypoints and the compatibility shim legitimately re-export; the code keeps the isTestingCompatibilityShim call. Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on.",
+      "optIn": true
     },
     "package-entrypoint-root-src-reexport": {
       "engine": "script",
@@ -726,16 +756,17 @@
         "di"
       ]
     },
-    "import-placement": {
-      "engine": "script",
-      "severity": "error",
+    "exaix/import-placement": {
+      "engine": "plugin",
+      "severity": "off",
       "scope": "all",
       "codeStyle": "CODE_STYLE.md#module-structure",
       "tags": [
         "imports",
         "module-structure"
       ],
-      "limits": "Line-based; a multi-line type re-export can be read as a type definition."
+      "optIn": true,
+      "reason": "Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on."
     },
     "magic-union-type": {
       "engine": "script",
@@ -773,15 +804,17 @@
         "di"
       ]
     },
-    "exported-interface-placement": {
-      "engine": "script",
-      "severity": "error",
+    "exaix/exported-interface-placement": {
+      "engine": "plugin",
+      "severity": "off",
       "scope": "all",
       "codeStyle": "CODE_STYLE.md#di-and-interfaces",
       "tags": [
         "di",
         "module-structure"
-      ]
+      ],
+      "optIn": true,
+      "reason": "Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on."
     },
     "max-params": {
       "engine": "script",

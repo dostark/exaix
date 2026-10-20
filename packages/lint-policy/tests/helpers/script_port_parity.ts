@@ -38,7 +38,6 @@ export interface ISourceUnit {
   readonly text: string;
 }
 
-const SELECTION_VARIABLE = "EXAIX_LINT_RULES";
 const LINE_SPLIT = /\r?\n/;
 
 function keyOf(finding: IFindingKey): string {
@@ -81,19 +80,14 @@ export function scriptRuleFindings(ruleId: string, catalog: ICatalog, unit: ISou
     .map((finding) => ({ file: unit.file, line: finding.line }));
 }
 
-/** The findings of one plugin rule (by bare key) on one source unit, keyed by file and line. */
+/** The findings of one plugin rule (by bare key) on one source unit, keyed by file and line. The rule is selected, so a parked rule runs. */
 export function pluginRuleFindings(key: string, catalog: ICatalog, unit: ISourceUnit): IFindingKey[] {
-  const previous = Deno.env.get(SELECTION_VARIABLE) ?? null;
-  try {
-    Deno.env.delete(SELECTION_VARIABLE);
-    const plugin = createLintPlugin(EXAIX_PLUGIN_NAME, catalog, { rulePacks: EXAIX_RULE_PACKS });
-    return runPlugin(plugin, unit.file, unit.text)
-      .filter((diagnostic) => diagnostic.id === `${EXAIX_PLUGIN_NAME}/${key}`)
-      .map((diagnostic) => ({
-        file: unit.file,
-        line: unit.text.slice(0, diagnostic.range[0]).split(LINE_SPLIT).length,
-      }));
-  } finally {
-    if (previous !== null) Deno.env.set(SELECTION_VARIABLE, previous);
-  }
+  const id = `${EXAIX_PLUGIN_NAME}/${key}`;
+  const plugin = createLintPlugin(EXAIX_PLUGIN_NAME, catalog, { rulePacks: EXAIX_RULE_PACKS, selection: id });
+  return runPlugin(plugin, unit.file, unit.text)
+    .filter((diagnostic) => diagnostic.id === id)
+    .map((diagnostic) => ({
+      file: unit.file,
+      line: unit.text.slice(0, diagnostic.range[0]).split(LINE_SPLIT).length,
+    }));
 }

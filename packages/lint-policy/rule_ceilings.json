@@ -160,5 +160,30 @@
   },
   "exaix/no-constant-substring-assert": {
     "packages/ai": 2
+  },
+  "exaix/re-export-imported": {
+    "packages/ai": 2,
+    "packages/cli": 1,
+    "packages/core": 21,
+    "packages/git": 1,
+    "packages/mcp": 6,
+    "packages/schemas": 2,
+    "packages/session": 1,
+    "tests": 1
+  },
+  "exaix/import-placement": {
+    "packages/cli": 1,
+    "packages/core": 3,
+    "packages/git": 1
+  },
+  "exaix/exported-interface-placement": {
+    "apps/tui": 1,
+    "exaix-team": 1,
+    "packages/ai-openai": 1,
+    "packages/core": 2,
+    "packages/execution": 2,
+    "packages/flow": 1,
+    "packages/lint-policy": 1,
+    "packages/schemas": 2
   }
 }

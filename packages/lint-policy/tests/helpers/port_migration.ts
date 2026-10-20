@@ -53,8 +53,8 @@ export function findBareIdReferences(files: ReadonlyMap<string, string>, bareId:
   return references;
 }
 
-/** Reads the tracked text files of the repository and its submodules, without the historical planning documents and the exempt paths. */
-export async function trackedTextFiles(exemptPaths: readonly string[]): Promise<Map<string, string>> {
+/** Reads the tracked text files of the repository and its submodules, minus planning documents and the exempt prefixes. */
+export async function trackedTextFiles(exemptPrefixes: readonly string[]): Promise<Map<string, string>> {
   const listing = await new Deno.Command("git", {
     args: ["ls-files", "-z", "--recurse-submodules"],
     cwd: REPO_ROOT,
@@ -63,7 +63,7 @@ export async function trackedTextFiles(exemptPaths: readonly string[]): Promise<
   const paths = new TextDecoder().decode(listing.stdout).split("\0").filter((path) => path.length > 0);
   const files = new Map<string, string>();
   for (const path of paths) {
-    const skipped = path.startsWith(HISTORY_PREFIX) || exemptPaths.includes(path);
+    const skipped = path.startsWith(HISTORY_PREFIX) || exemptPrefixes.some((prefix) => path.startsWith(prefix));
     if (skipped || !TEXT_EXTENSIONS.some((extension) => path.endsWith(extension))) continue;
     try {
       files.set(path, await Deno.readTextFile(`${REPO_ROOT}${path}`));
