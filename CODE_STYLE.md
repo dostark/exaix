@@ -183,7 +183,7 @@ import { EvalSqliteStore } from "@exaix/eval-history"; // ✅ package-owned, dep
 - **Test files** (paths containing `/tests/` or ending in `_test.ts` / `.test.ts`) may import test helpers and fixtures from `tests/`.
 - **Test-infrastructure modules** — the `@exaix/testing` package (`packages/testing/`) and any `*/testing/` compatibility shim — exist solely to provide shared test helpers and never ship in a production deploy, so they may bridge to `tests/`.
 
-This is enforced as `[package-tests-boundary]` by `deno task check:style`.
+The production-to-tests zone of `exaix/import-boundaries` enforces this in `deno task lint`.
 
 ### Multi-line Named Imports
 
@@ -226,13 +226,13 @@ import { setupGitRepo } from "../helpers/git_test_helper.ts";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 ```
 
-These rules are enforced in part by `packages/lint-policy/src/checkers/check_code_style.ts` via the `[package-test-boundary]`, `[package-src-boundary]`, `[package-related-files-boundary]`, and `[package-testing-import]` error tags. The public testing-subpath import rule must be followed wherever a package exposes `@exaix/<package>/testing`.
+These rules are enforced in part by the retired-root-import zone of `exaix/import-boundaries` and, in `packages/lint-policy/src/checkers/check_code_style.ts`, by the `[package-related-files-boundary]` and `[package-testing-import]` error tags. The public testing-subpath import rule must be followed wherever a package exposes `@exaix/<package>/testing`.
 
 - Barrel re-export violations from source are reported as `[src-barrel-re-export]`.
 
 - Canonical package and subpackage barrel enforcement is reported as `[package-canonical-import]`.
 
-- Production-module imports from the `tests/` folder are reported as `[package-tests-boundary]` (see [No Production Dependency on `tests/`](#no-production-dependency-on-tests)).
+- Production-module imports from the `tests/` folder are reported by the production-to-tests zone of `exaix/import-boundaries` (see [No Production Dependency on `tests/`](#no-production-dependency-on-tests)).
 
 - Structured multiline test fixtures are also flagged as `exaix/test-inline-multiline-fixture` in test files.
 
@@ -473,14 +473,10 @@ Exaix enforces a strict boundary between the Terminal User Interface (TUI) and t
 - **TUI-owned Helpers**: Utilities specifically for terminal rendering and interaction (e.g., keyboard handling, tree views, spinners) must reside in `packages/tui/src/helpers/`. These are private to the TUI and must not be imported by Core modules.
 - **Core-to-TUI Direction**: External callers may only invoke the TUI entry point (`apps/tui/main.ts` via `Deno.Command` subprocess) to launch the dashboard interface.
 
-These rules are enforced by `packages/lint-policy/src/checkers/check_code_style.ts` via:
-
-- `[tui-boundary-cli]`
-- `[tui-boundary-services]`
-- `[tui-boundary-config]`
-- `[tui-boundary-helpers]`
-- `[core-boundary-tui-helpers]`
-- `[package-src-boundary]`
+These rules are enforced by the `exaix/import-boundaries` lint rule. Its zones are catalog data in
+`packages/lint-policy/catalog.json`: one zone for each of the TUI imports of the CLI, the retired services
+folder, the retired config folder, and the retired helpers folder (for TUI sources and for TUI tests), one
+for non-TUI imports of the TUI helpers, and one for package imports of retired root paths.
 
 Boundary checks run as part of the standard quality gates in pre-commit hooks and CI.
 
@@ -585,8 +581,8 @@ Exaix enforces a strict boundary between the CLI command layer and core implemen
 
 These rules are enforced by:
 
-- `packages/lint-policy/src/checkers/check_code_style.ts` — regex-based checks
-  (`[cli-boundary-services]`, `[cli-boundary-config]`, `[core-boundary-cli-helpers]`, etc.)
+- `exaix/import-boundaries` — the CLI zones (retired services and config imports, and non-CLI imports of the
+  CLI helpers) in `packages/lint-policy/catalog.json`
 - `packages/lint-policy/src/checkers/check_magic_values.ts` — AST-based magic value detection
   (`[MODULE]`, `[GLOBAL]` violation tags)
 

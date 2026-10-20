@@ -19,12 +19,14 @@ import { loadPortTables } from "./helpers/port_tables.ts";
 const CODES = ["REQUIRED_FOR_TEST", "PLUGINS"];
 const IMPORT_KEYWORD = "import";
 const TABLE_PATH = "packages/lint-policy/port_tables.json";
+const CATALOG_PATH = "packages/lint-policy/catalog.json";
 const PARITY_TEST_SUFFIX = "_parity_test.ts";
 const GUARD_PATHS = [
   TABLE_PATH,
   "packages/lint-policy/tests/port_migration_test.ts",
   "packages/lint-policy/tests/port_split_table_test.ts",
   "packages/lint-policy/tests/port_scope_test.ts",
+  "tests/scripts/lint_plugin_integration_test.ts",
   "packages/lint-policy/tests/helpers/port_migration.ts",
   "packages/lint-policy/tests/fixtures/port/",
   "docs/CHANGELOG.md",
@@ -85,6 +87,8 @@ Deno.test("a ported rule has no style-exclude site and no bare id left in the tr
   for (const row of tables.rules.filter((candidate) => candidate.ported)) {
     const codes = Object.keys(catalog.rules[row.id]?.exclusionCodes ?? {});
     assertEquals(findStyleExcludeSites(files, codes), [], `${row.id} still has style-exclude sites`);
-    assertEquals(findBareIdReferences(files, row.id), [], `${row.id} is still referenced by its bare id`);
+    // A zone keeps the old rule id as its id, and the catalog is where zones are written.
+    const searched = row.outcome === "zone" ? new Map([...files].filter(([path]) => path !== CATALOG_PATH)) : files;
+    assertEquals(findBareIdReferences(searched, row.id), [], `${row.id} is still referenced by its bare id`);
   }
 });

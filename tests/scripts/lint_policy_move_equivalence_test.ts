@@ -47,7 +47,6 @@ const POLICY_TESTS: readonly string[] = [
   "check_code_style_catalog_validation_test.ts",
   "check_code_style_tags_test.ts",
   "check_edition_leak_import_test.ts",
-  "check_prod_tests_import_test.ts",
 ];
 const OLD_SCRIPT_CONFIG_FILES: readonly string[] = [
   "scripts/config/style_rule_catalog.json",
@@ -101,7 +100,7 @@ Deno.test("lint-policy holds the catalog, plugin entry, ceilings, checkers, layo
   }
 });
 
-Deno.test("lint-policy holds the nine Exaix test files and the style checker fixtures", async () => {
+Deno.test("lint-policy holds the moved Exaix test files and the style checker fixtures", async () => {
   for (const name of POLICY_TESTS) {
     assert(await exists(`${POLICY_ROOT}/tests/${name}`), `${name} must live in lint-policy`);
     assertFalse(await exists(`${ENGINE_ROOT}/tests/${name}`), `${name} must leave the engine package`);

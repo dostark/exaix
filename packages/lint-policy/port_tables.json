@@ -939,7 +939,7 @@
     },
     {
       "id": "tui-boundary-cli",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "zone",
       "parts": [
         {
@@ -992,13 +992,13 @@
           "code": "import { run } from \"../../cli/run.ts\";\nexport { run };\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": ""
     },
     {
       "id": "tui-boundary-services",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "zone",
       "parts": [
         {
@@ -1051,13 +1051,13 @@
           "code": "import { s } from \"../../services/s.ts\";\nexport { s };\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": ""
     },
     {
       "id": "tui-boundary-config",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "zone",
       "parts": [
         {
@@ -1110,13 +1110,13 @@
           "code": "import { c } from \"../../config/c.ts\";\nexport { c };\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": ""
     },
     {
       "id": "tui-boundary-helpers",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "zone",
       "parts": [
         {
@@ -1169,13 +1169,13 @@
           "code": "import { h } from \"../../helpers/h.ts\";\nexport { h };\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": ""
     },
     {
       "id": "core-boundary-tui-helpers",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "zone",
       "parts": [
         {
@@ -1228,13 +1228,13 @@
           "code": "import { h } from \"../../../apps/tui/src/helpers/h.ts\";\nexport { h };\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": ""
     },
     {
       "id": "cli-boundary-services",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "zone",
       "parts": [
         {
@@ -1287,13 +1287,13 @@
           "code": "import { s } from \"../../services/s.ts\";\nexport { s };\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": ""
     },
     {
       "id": "cli-boundary-config",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "zone",
       "parts": [
         {
@@ -1346,13 +1346,13 @@
           "code": "import { c } from \"../../config/service.ts\";\nexport { c };\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": ""
     },
     {
       "id": "core-boundary-cli-helpers",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "zone",
       "parts": [
         {
@@ -1405,13 +1405,13 @@
           "code": "import { h } from \"../../../apps/exactl/src/helpers/h.ts\";\nexport { h };\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": ""
     },
     {
       "id": "package-src-boundary",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "zone",
       "parts": [
         {
@@ -1464,13 +1464,13 @@
           "code": "import { s } from \"../../../src/s.ts\";\nexport { s };\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": ""
     },
     {
       "id": "package-tests-boundary",
-      "origin": "emitted",
+      "origin": "ported",
       "outcome": "zone",
       "parts": [
         {
@@ -1523,13 +1523,13 @@
           "code": "import { t } from \"../../../tests/t.ts\";\nexport { t };\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": "Emitted by the checker but absent from the catalog and from INLINE_SCRIPT_RULE_IDS."
     },
     {
       "id": "package-entrypoint-root-src-reexport",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "zone",
       "parts": [
         {
@@ -1582,7 +1582,7 @@
           "code": "export { s } from \"src/s.ts\";\n"
         }
       ],
-      "ported": false,
+      "ported": true,
       "parked": false,
       "note": ""
     },

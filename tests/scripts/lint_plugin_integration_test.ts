@@ -224,6 +224,73 @@ Deno.test("a parked comment, parameter, or fixture rule is silent by default and
   }
 });
 
+const BOUNDARY_SEEDS: readonly (readonly [string, string, string])[] = [
+  [
+    "tui-boundary-cli",
+    join("apps", "tui", "src", "__temp_boundary_seed.ts"),
+    'import { a } from "../../cli/x.ts";\nexport const b = a;\n',
+  ],
+  [
+    "cli-boundary-services",
+    join("apps", "exactl", "src", "commands", "__temp_boundary_seed.ts"),
+    'import { a } from "../services/x.ts";\nexport const b = a;\n',
+  ],
+  [
+    "package-src-boundary",
+    join("packages", "core", "src", "__temp_boundary_seed.ts"),
+    'import { a } from "../../../src/services/core/db.ts";\nexport const b = a;\n',
+  ],
+  [
+    "package-tests-boundary",
+    join("packages", "core", "src", "__temp_boundary_seed.ts"),
+    'import { a } from "../../../tests/helpers/x.ts";\nexport const b = a;\n',
+  ],
+  [
+    "core-boundary-cli-helpers",
+    join("packages", "core", "src", "__temp_boundary_seed.ts"),
+    'import { a } from "../../../apps/exactl/src/helpers/x.ts";\nexport const b = a;\n',
+  ],
+];
+
+Deno.test("a seeded import in each Exaix boundary zone fails deno lint with the zone name", async () => {
+  for (const [zone, path, source] of BOUNDARY_SEEDS) {
+    await withSeed(
+      async (file) => {
+        const result = await runDeno(["lint", file]);
+        assertEquals(result.code === 0, false, result.output);
+        assertStringIncludes(result.output, "exaix/import-boundaries");
+        assertStringIncludes(result.output, `Boundary '${zone}'`);
+      },
+      source,
+      join(REPO_ROOT, path),
+    );
+  }
+});
+
+Deno.test("the same TUI-shaped import outside the TUI zone passes the boundary rule", async () => {
+  await withSeed(async (file) => {
+    const result = await runDeno(["lint", file]);
+    assertFalse(result.output.includes("exaix/import-boundaries"), result.output);
+  }, 'import { a } from "../../cli/x.ts";\nexport const b = a;\n');
+});
+
+Deno.test("a seeded package entrypoint re-export of a retired src path fails deno lint", async () => {
+  const dir = join(REPO_ROOT, "packages", "__temp_boundary_seed_pkg");
+  await Deno.mkdir(dir, { recursive: true });
+  try {
+    await withSeed(
+      async (file) => {
+        const result = await runDeno(["lint", file]);
+        assertStringIncludes(result.output, "Boundary 'package-entrypoint-root-src-reexport'");
+      },
+      'export { a } from "../src/foo.ts";\n',
+      join(dir, "mod.ts"),
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true }).catch(() => {});
+  }
+});
+
 Deno.test("a parked rule is silent by default and reports when EXAIX_LINT_RULES selects it", async () => {
   await withSeed(async (file) => {
     const silent = await runDeno(["lint", file]);

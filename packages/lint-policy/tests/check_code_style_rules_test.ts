@@ -26,14 +26,6 @@ interface IRuleCase {
 const HEADER = "/**\n * @module Sample\n * @path packages/x/src/sample.ts\n * @description Sample module.\n */\n";
 
 const CASES: IRuleCase[] = [
-  // imports
-  {
-    id: "package-entrypoint-root-src-reexport",
-    invalid: "export { Foo } from '../src/foo.ts';\n",
-    valid: "export { Foo } from './foo.ts';\n",
-    path: abs("packages/x/mod.ts"),
-  },
-
   // module-structure
   {
     id: "module-header-tag",
@@ -62,65 +54,10 @@ const CASES: IRuleCase[] = [
     valid: "export const a = 1;\n",
   },
 
-  // boundary / tui / cli
-  {
-    id: "tui-boundary-cli",
-    invalid: "import { X } from '../../cli/x.ts';\nexport const a = X;\n",
-    valid: "export const a = 1;\n",
-    path: abs("apps/tui/src/sample.ts"),
-  },
-  {
-    id: "tui-boundary-services",
-    invalid: "import { X } from '../../services/x.ts';\nexport const a = X;\n",
-    valid: "export const a = 1;\n",
-    path: abs("apps/tui/src/sample.ts"),
-  },
-  {
-    id: "tui-boundary-config",
-    invalid: "import { X } from '../../config/x.ts';\nexport const a = X;\n",
-    valid: "export const a = 1;\n",
-    path: abs("apps/tui/src/sample.ts"),
-  },
-  {
-    id: "tui-boundary-helpers",
-    invalid: "import { X } from '../../../helpers/x.ts';\nexport const a = X;\n",
-    valid: "export const a = 1;\n",
-    path: abs("apps/tui/src/views/sample.ts"),
-  },
-  {
-    id: "core-boundary-tui-helpers",
-    invalid: "import { X } from '../../tui/helpers/x.ts';\nexport const a = X;\n",
-    valid: "export const a = 1;\n",
-    path: abs("packages/x/src/sample.ts"),
-  },
-  {
-    id: "cli-boundary-services",
-    invalid: "import { X } from '../../services/x.ts';\nexport const a = X;\n",
-    valid: "export const a = 1;\n",
-    path: abs("apps/exactl/src/commands/sample.ts"),
-  },
-  {
-    id: "cli-boundary-config",
-    invalid: "import { X } from '../../config/service.ts';\nexport const a = X;\n",
-    valid: "export const a = 1;\n",
-    path: abs("apps/exactl/src/commands/sample.ts"),
-  },
-  {
-    id: "core-boundary-cli-helpers",
-    invalid: "import { X } from '../../../apps/exactl/src/helpers/x.ts';\nexport const a = X;\n",
-    valid: "export const a = 1;\n",
-    path: abs("packages/x/src/sample.ts"),
-  },
-
   // package
   {
     id: "package-boundary",
     invalid: "import { X } from '../../other/src/x.ts';\nexport const a = X;\n",
-    valid: "import { X } from './sibling.ts';\nexport const a = X;\n",
-  },
-  {
-    id: "package-src-boundary",
-    invalid: "import { X } from '../../../src/services/core/db.ts';\nexport const a = X;\n",
     valid: "import { X } from './sibling.ts';\nexport const a = X;\n",
   },
   {

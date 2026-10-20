@@ -24,10 +24,6 @@ export interface IRepoLayout {
   readonly scriptsSegment: string;
   readonly copilotSegment: string;
   readonly fixturesSegment: string;
-  readonly tuiSrcSegment: string;
-  readonly tuiTestsSegment: string;
-  readonly tuiTestDirSegment: string;
-  readonly tuiPackageTestsSegment: string;
   readonly rootTestHelpers: string;
   readonly testingPackageRoot: string;
   readonly testingPackageRootBare: string;
@@ -38,7 +34,6 @@ export interface IRepoLayout {
   readonly editionAppPrefixes: readonly string[];
   readonly teamAppBootstrap: string;
   readonly retiredRootHeaderRelatedFiles: readonly string[];
-  readonly retiredRootImportPaths: readonly string[];
   readonly layerLeakExempt: readonly { readonly path: string; readonly reason: string }[];
 }
 

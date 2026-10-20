@@ -26,10 +26,6 @@
     "scriptsSegment": "/scripts/",
     "copilotSegment": "/.copilot/",
     "fixturesSegment": "/tests/fixtures/",
-    "tuiSrcSegment": "/apps/tui/src/",
-    "tuiTestsSegment": "/apps/tui/tests/",
-    "tuiTestDirSegment": "/tests/tui/",
-    "tuiPackageTestsSegment": "/packages/tui/tests/",
     "rootTestHelpers": "tests/helpers/",
     "testingPackageRoot": "packages/testing/",
     "testingPackageRootBare": "packages/testing",
@@ -46,16 +42,6 @@
     "teamAppBootstrap": "apps/daemon/src/bootstrap_team.ts",
     "retiredRootHeaderRelatedFiles": [
       "src/services/core/db.ts"
-    ],
-    "retiredRootImportPaths": [
-      "src/services/core/db.ts",
-      "src/services/tool/tool_validation_reporter.ts",
-      "src/services/tool/cli_confirmation_interceptor.ts",
-      "src/services/tool/notification_queue_confirmation_interceptor.ts",
-      "src/services/tool/output_validator.ts",
-      "src/services/tool/tool_reflector.ts",
-      "src/services/tool/tool_registry.ts",
-      "src/services/utils/json_repair.ts"
     ],
     "layerLeakExempt": [
       {
@@ -754,19 +740,217 @@
       "reason": "Entrypoints and the compatibility shim legitimately re-export; the code keeps the isTestingCompatibilityShim call. Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on.",
       "optIn": true
     },
-    "package-entrypoint-root-src-reexport": {
-      "engine": "script",
+    "exaix/import-boundaries": {
+      "engine": "plugin",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#import-statements",
+      "codeStyle": "CODE_STYLE.md#module-structure",
       "tags": [
-        "imports",
-        "package"
+        "boundary",
+        "tui",
+        "cli",
+        "package",
+        "imports"
       ],
-      "include": [
-        "packages/**/mod.ts",
-        "packages/**/index.ts"
-      ]
+      "options": {
+        "zones": [
+          {
+            "id": "tui-boundary-cli",
+            "files": [
+              "**/apps/tui/src/**",
+              "**/apps/tui/tests/**"
+            ],
+            "deny": [
+              {
+                "specifier": "^(\\.\\.\\/)+cli\\/",
+                "message": "TUI modules must not import from 'apps/exactl/src/'."
+              }
+            ]
+          },
+          {
+            "id": "tui-boundary-services",
+            "files": [
+              "**/apps/tui/src/**",
+              "**/apps/tui/tests/**"
+            ],
+            "deny": [
+              {
+                "specifier": "^(\\.\\.\\/)+services\\/(?!adapters\\/|tui_service_factory\\.ts)",
+                "message": "TUI modules must not import from retired 'src/services/' (now 'packages/core/src/services/')."
+              }
+            ]
+          },
+          {
+            "id": "tui-boundary-config",
+            "files": [
+              "**/apps/tui/src/**",
+              "**/apps/tui/tests/**"
+            ],
+            "deny": [
+              {
+                "specifier": "^(\\.\\.\\/)+config\\/",
+                "message": "TUI modules must not import from retired 'src/config/' (now 'packages/core/src/config/')."
+              }
+            ]
+          },
+          {
+            "id": "tui-boundary-helpers",
+            "files": [
+              "**/apps/tui/src/**"
+            ],
+            "deny": [
+              {
+                "specifier": "^(\\.\\.\\/)+helpers\\/",
+                "outside": [
+                  "**/apps/tui/src/**"
+                ],
+                "message": "TUI modules must not import from retired 'src/helpers/' (now 'packages/tui/src/helpers/')."
+              }
+            ]
+          },
+          {
+            "id": "tui-boundary-helpers-tests",
+            "files": [
+              "**/apps/tui/tests/**"
+            ],
+            "deny": [
+              {
+                "specifier": "^(\\.\\.\\/)+helpers\\/",
+                "outside": [
+                  "**/apps/tui/tests/**"
+                ],
+                "message": "TUI modules must not import from retired 'src/helpers/' (now 'packages/tui/src/helpers/')."
+              }
+            ]
+          },
+          {
+            "id": "core-boundary-tui-helpers",
+            "files": [
+              "**"
+            ],
+            "except": [
+              "**/apps/tui/src/**",
+              "**/apps/tui/tests/**",
+              "**/tests/tui/**",
+              "**/packages/tui/tests/**"
+            ],
+            "deny": [
+              {
+                "specifier": "^(\\.\\.\\/)+.*?tui\\/helpers\\/",
+                "message": "Non-TUI modules must not import from 'apps/tui/src/helpers/'."
+              }
+            ]
+          },
+          {
+            "id": "cli-boundary-services",
+            "files": [
+              "**/apps/exactl/src/commands/**",
+              "**/apps/exactl/src/handlers/**",
+              "**/apps/exactl/src/command_builders/**"
+            ],
+            "deny": [
+              {
+                "specifier": "^(\\.\\.\\/)+services\\/(?!adapters\\/)",
+                "message": "CLI command/handler/formatter/builder modules must not import from retired 'src/services/' (now 'packages/core/src/services/') except retired 'src/services/adapters/' (now 'packages/core/src/services/adapters/')."
+              }
+            ]
+          },
+          {
+            "id": "cli-boundary-config",
+            "files": [
+              "**/apps/exactl/src/commands/**",
+              "**/apps/exactl/src/handlers/**",
+              "**/apps/exactl/src/command_builders/**"
+            ],
+            "deny": [
+              {
+                "specifier": "^(\\.\\.\\/)+config\\/service(\\.ts)?$",
+                "message": "CLI command/handler/formatter/builder modules must not import from retired 'src/config/service.ts' (now 'packages/core/src/config/service.ts')."
+              }
+            ]
+          },
+          {
+            "id": "core-boundary-cli-helpers",
+            "files": [
+              "**"
+            ],
+            "except": [
+              "**/apps/exactl/src/**"
+            ],
+            "deny": [
+              {
+                "specifier": "apps\\/exactl\\/src\\/helpers\\/",
+                "message": "Non-CLI modules must not import from 'apps/exactl/src/helpers/'."
+              }
+            ]
+          },
+          {
+            "id": "package-src-boundary",
+            "files": [
+              "packages/**"
+            ],
+            "except": [
+              "**/tests/**",
+              "**/*_test.ts",
+              "**/*_test.tsx",
+              "**/*.test.ts"
+            ],
+            "deny": [
+              {
+                "target": [
+                  "src/services/core/db.ts",
+                  "src/services/tool/tool_validation_reporter.ts",
+                  "src/services/tool/cli_confirmation_interceptor.ts",
+                  "src/services/tool/notification_queue_confirmation_interceptor.ts",
+                  "src/services/tool/output_validator.ts",
+                  "src/services/tool/tool_reflector.ts",
+                  "src/services/tool/tool_registry.ts",
+                  "src/services/utils/json_repair.ts"
+                ],
+                "message": "Package-owned modules must not import retired root implementation paths like '{target}'. Use the package-owned source of truth instead."
+              }
+            ]
+          },
+          {
+            "id": "package-tests-boundary",
+            "files": [
+              "packages/**",
+              "exaix-team/**",
+              "apps/**"
+            ],
+            "except": [
+              "**/tests/**",
+              "**/*_test.ts",
+              "**/*_test.tsx",
+              "**/*.test.ts",
+              "packages/testing/**",
+              "**/testing/**"
+            ],
+            "deny": [
+              {
+                "target": [
+                  "tests",
+                  "tests/**"
+                ],
+                "message": "Functional deployable module must not import from the tests/ folder: '{specifier}'. Move shared code into a package under packages/ (test code is excluded from a deployed workspace)."
+              }
+            ]
+          },
+          {
+            "id": "package-entrypoint-root-src-reexport",
+            "files": [
+              "packages/**/mod.ts",
+              "packages/**/index.ts"
+            ],
+            "deny": [
+              {
+                "specifier": "^(src\\/|(\\.\\.\\/)+src\\/)",
+                "message": "Package entrypoints must not re-export entities directly from repo retired 'src/*' paths. Use package-local public exports instead."
+              }
+            ]
+          }
+        ]
+      }
     },
     "exaix/no-interface-rename-on-import": {
       "engine": "plugin",
@@ -1046,99 +1230,7 @@
         "scripts"
       ]
     },
-    "tui-boundary-cli": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "CODE_STYLE.md#tui-boundaries",
-      "tags": [
-        "boundary",
-        "tui"
-      ]
-    },
-    "tui-boundary-services": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "CODE_STYLE.md#tui-boundaries",
-      "tags": [
-        "boundary",
-        "tui"
-      ]
-    },
-    "tui-boundary-config": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "CODE_STYLE.md#tui-boundaries",
-      "tags": [
-        "boundary",
-        "tui"
-      ]
-    },
-    "tui-boundary-helpers": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "CODE_STYLE.md#tui-boundaries",
-      "tags": [
-        "boundary",
-        "tui"
-      ]
-    },
-    "core-boundary-tui-helpers": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "CODE_STYLE.md#tui-boundaries",
-      "tags": [
-        "boundary",
-        "tui",
-        "package"
-      ]
-    },
-    "cli-boundary-services": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "CODE_STYLE.md#cli-boundaries",
-      "tags": [
-        "boundary",
-        "cli"
-      ]
-    },
-    "cli-boundary-config": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "CODE_STYLE.md#cli-boundaries",
-      "tags": [
-        "boundary",
-        "cli"
-      ]
-    },
-    "core-boundary-cli-helpers": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "CODE_STYLE.md#cli-boundaries",
-      "tags": [
-        "boundary",
-        "cli",
-        "package"
-      ]
-    },
     "package-boundary": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#module-structure",
-      "tags": [
-        "package",
-        "boundary"
-      ]
-    },
-    "package-src-boundary": {
       "engine": "script",
       "severity": "error",
       "scope": "prod",

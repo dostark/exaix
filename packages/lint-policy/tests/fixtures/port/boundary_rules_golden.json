@@ -1,0 +1,191 @@
+{
+  "tui imports the cli": [
+    [
+      "tui-boundary-cli",
+      1
+    ]
+  ],
+  "tui imports the retired services folder": [
+    [
+      "tui-boundary-services",
+      1
+    ]
+  ],
+  "tui imports the permitted adapters": [],
+  "tui imports the permitted service factory": [],
+  "tui imports the retired config folder": [
+    [
+      "tui-boundary-config",
+      1
+    ]
+  ],
+  "tui helpers within the source root": [],
+  "tui helpers above the source root": [
+    [
+      "tui-boundary-helpers",
+      1
+    ]
+  ],
+  "tui helpers from the source root": [
+    [
+      "tui-boundary-helpers",
+      1
+    ]
+  ],
+  "tui test imports helpers above its root": [
+    [
+      "tui-boundary-helpers",
+      1
+    ]
+  ],
+  "tui test imports helpers within its root": [],
+  "tui type import of the cli": [
+    [
+      "tui-boundary-cli",
+      1
+    ]
+  ],
+  "tui import of the cli over lines": [],
+  "tui re-export of the cli": [],
+  "tui import text in a comment": [
+    [
+      "tui-boundary-cli",
+      1
+    ]
+  ],
+  "core imports the tui helpers": [],
+  "tui test imports its own helpers": [],
+  "tui package test imports tui helpers": [],
+  "cli command imports the retired services folder": [
+    [
+      "cli-boundary-services",
+      1
+    ]
+  ],
+  "cli command imports the permitted adapters": [],
+  "cli command imports the retired config service": [
+    [
+      "cli-boundary-config",
+      1
+    ]
+  ],
+  "cli command imports the retired config service without extension": [
+    [
+      "cli-boundary-config",
+      1
+    ]
+  ],
+  "cli command imports another config module": [],
+  "cli helper imports the retired services folder": [],
+  "cli handler imports the retired services folder": [
+    [
+      "cli-boundary-services",
+      1
+    ]
+  ],
+  "core imports the cli helpers": [
+    [
+      "core-boundary-cli-helpers",
+      1
+    ]
+  ],
+  "cli file imports its own helpers": [],
+  "package imports a retired root path": [
+    [
+      "package-src-boundary",
+      1
+    ]
+  ],
+  "package imports a retired root path by bare path": [
+    [
+      "package-src-boundary",
+      1
+    ]
+  ],
+  "package imports another root path": [],
+  "app imports a retired root path": [],
+  "package imports from tests": [
+    [
+      "package-tests-boundary",
+      1
+    ]
+  ],
+  "app imports from tests": [
+    [
+      "package-tests-boundary",
+      1
+    ]
+  ],
+  "team package imports from tests": [
+    [
+      "package-tests-boundary",
+      1
+    ]
+  ],
+  "package test imports from tests": [],
+  "testing package imports from tests": [],
+  "testing folder imports from tests": [],
+  "package imports an alias": [],
+  "package imports a url": [],
+  "package imports tests by bare path": [
+    [
+      "package-tests-boundary",
+      1
+    ]
+  ],
+  "entrypoint re-exports a retired src path": [
+    [
+      "package-entrypoint-root-src-reexport",
+      1
+    ]
+  ],
+  "entrypoint re-exports a bare src path": [
+    [
+      "package-entrypoint-root-src-reexport",
+      1
+    ]
+  ],
+  "entrypoint re-exports a sibling": [],
+  "index entrypoint re-exports a retired src path": [
+    [
+      "package-entrypoint-root-src-reexport",
+      1
+    ]
+  ],
+  "non-entrypoint re-exports a retired src path": [],
+  "core imports a retired tui helpers path": [
+    [
+      "core-boundary-tui-helpers",
+      1
+    ]
+  ],
+  "tui test imports a retired tui helpers path": [],
+  "scenario tui test imports a retired tui helpers path": [],
+  "tui package test imports a retired tui helpers path": [],
+  "quality gate module imports scenario tests": [
+    [
+      "package-tests-boundary",
+      1
+    ]
+  ],
+  "exactl command imports scenario tests": [
+    [
+      "package-tests-boundary",
+      1
+    ]
+  ],
+  "team module imports root tests": [
+    [
+      "package-tests-boundary",
+      1
+    ]
+  ],
+  "package test imports root tests helpers": [],
+  "app test imports root tests fixtures": [],
+  "exactl command imports a package alias": [],
+  "package module imports a core module": [],
+  "testing package bridges to tests": [],
+  "testing shim bridges to tests": [],
+  "script imports root tests": [],
+  "root test imports a sibling": []
+}

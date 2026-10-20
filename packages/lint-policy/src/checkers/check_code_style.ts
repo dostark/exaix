@@ -37,7 +37,6 @@ import {
 import styleRuleCatalog from "../../catalog.json" with { type: "json" };
 import { EXAIX_REGISTRY } from "../rule_packs.ts";
 import {
-  escapeRegExp,
   LAYOUT,
   RE_PACKAGE_NAME_CAPTURE,
   RE_PACKAGE_ROOT_ENTRYPOINT,
@@ -137,10 +136,6 @@ const RETIRED_ROOT_HEADER_RELATED_FILES = new Set([
   ...LAYOUT.retiredRootHeaderRelatedFiles,
 ]);
 
-const RETIRED_ROOT_PACKAGE_IMPORT_PATHS = new Set([
-  ...LAYOUT.retiredRootImportPaths,
-]);
-
 function isPackageRootEntrypoint(path: string): boolean {
   return RE_PACKAGE_ROOT_ENTRYPOINT.test(path);
 }
@@ -168,38 +163,6 @@ function parseNamedSymbols(clause: string): string[] {
 
 function isRepoRelativeSpecifier(specifier: string): boolean {
   return !/^[a-z]+:/i.test(specifier) && !specifier.startsWith("//");
-}
-
-/** True when repoPath is a functional, deployable production module (not a test file). */
-function isProductionModulePath(repoPath: string): boolean {
-  const isProductionRoot = repoPath.startsWith(LAYOUT.packageRoot) ||
-    repoPath.startsWith(LAYOUT.teamRoot) ||
-    repoPath.startsWith(LAYOUT.appRoot);
-  const isTestFile = repoPath.includes(LAYOUT.testsSegment) ||
-    repoPath.endsWith("_test.ts") ||
-    repoPath.endsWith(".test.ts");
-  // Test-infrastructure modules are not deployable production code.
-  // The @exaix/testing package and any `*/testing/` shim provide test helpers.
-  // They may bridge to tests/ and never ship in a production deploy.
-  const isTestInfra = repoPath.startsWith(LAYOUT.testingPackageRoot) ||
-    repoPath.includes(LAYOUT.testingSegment);
-  return isProductionRoot && !isTestFile && !isTestInfra;
-}
-
-/**
- * True when a production module in packages/, apps/ or exaix-team/ imports tests/.
- * A deployable module must not depend on test code.
- * A deployed workspace excludes tests/, so the import breaks at module load.
- * This is the EvalSqliteStore-under-tests/ layering bug.
- * Test files are exempt, and they may import test helpers and fixtures.
- */
-export function isProductionToTestsImport(repoPath: string, specifier: string): boolean {
-  if (!isProductionModulePath(repoPath)) return false;
-  if (!isRepoRelativeSpecifier(specifier)) return false; // bare alias or URL, not a tests/ path.
-  // Resolve the specifier against the importing file's directory.
-  // Flag the specifier when the resolved path lands in tests/.
-  const resolved = specifier.startsWith(".") ? normalize(join(dirname(repoPath), specifier)) : specifier;
-  return resolved === "tests" || resolved.startsWith(LAYOUT.testsRoot);
 }
 
 /** How many preceding source lines to scan for the enclosing `editionType` guard. */
@@ -761,12 +724,6 @@ function checkLayerLeaks(sourceFile: ts.SourceFile, repoPath: string): void {
 // A violation prints a plain-language explanation.
 // The script exits non-zero when it finds any error, so hooks and CI can gate on it.
 const rules: Rule[] = [
-  {
-    name: "package-entrypoint-root-src-reexport",
-    regex: /from\s+['"](?:src\/|(\.\.\/)+src\/)/,
-    message:
-      "Package entrypoints must not re-export entities directly from repo retired 'src/*' paths. Use package-local public exports instead.",
-  },
   // The former [mit-team-import] regex rule is superseded.
   // The [edition-leak] check in checkFile() replaces it with the full tier order.
   // That order runs Solo, then Team, then Enterprise.
@@ -793,16 +750,7 @@ const INLINE_SCRIPT_RULE_IDS = [
   "module-header-tag",
   "edition-leak",
   "script-placement",
-  "tui-boundary-cli",
-  "tui-boundary-services",
-  "tui-boundary-config",
-  "tui-boundary-helpers",
-  "core-boundary-tui-helpers",
-  "cli-boundary-services",
-  "cli-boundary-config",
-  "core-boundary-cli-helpers",
   "package-boundary",
-  "package-src-boundary",
   "package-related-files-boundary",
   "package-subpath-promotion",
   "package-testing-import",
@@ -916,112 +864,6 @@ function checkPackagePurity(repoPath: string, lines: string[]): void {
     const trimmedLine = line.trim();
     if (trimmedLine.startsWith("//") || trimmedLine.startsWith("*") || trimmedLine.startsWith("/*")) continue;
     reportPackagePurityViolations(repoPath, line, trimmedLine, idx);
-  }
-}
-
-/** Reports the TUI-only boundary violations for one line (CODE_STYLE.md 8). */
-function reportTuiOnlyViolations(path: string, line: string, idx: number, tuiDepth: number): void {
-  if (line.match(/import\b.*?\bfrom\s+["'](?:\.\.\/)+cli\//)) {
-    console.log(
-      `ERROR [tui-boundary-cli] ${path}:${
-        idx + 1
-      } – TUI modules must not import from '${LAYOUT.appRoot}exactl/${LAYOUT.srcRoot}'.`,
-    );
-    errorCount++;
-  }
-  if (line.match(/import\b.*?\bfrom\s+["'](?:\.\.\/)+services\/(?!adapters\/|tui_service_factory\.ts)/)) {
-    console.log(
-      `ERROR [tui-boundary-services] ${path}:${
-        idx + 1
-      } – TUI modules must not import from retired '${LAYOUT.srcRoot}services/' (now '${LAYOUT.packageRoot}core/${LAYOUT.srcRoot}services/').`,
-    );
-    errorCount++;
-  }
-  if (line.match(/import\b.*?\bfrom\s+["'](?:\.\.\/)+config\//)) {
-    console.log(
-      `ERROR [tui-boundary-config] ${path}:${
-        idx + 1
-      } – TUI modules must not import from retired '${LAYOUT.srcRoot}config/' (now '${LAYOUT.packageRoot}core/${LAYOUT.srcRoot}config/').`,
-    );
-    errorCount++;
-  }
-  const helperMatch = line.match(/import\b.*?\bfrom\s+["']((\.\.\/)+)helpers\//);
-  if (helperMatch && (helperMatch[1].match(/\.\.\//g) || []).length > tuiDepth) {
-    console.log(
-      `ERROR [tui-boundary-helpers] ${path}:${
-        idx + 1
-      } – TUI modules must not import from retired '${LAYOUT.srcRoot}helpers/' (now '${LAYOUT.packageRoot}tui/${LAYOUT.srcRoot}helpers/').`,
-    );
-    errorCount++;
-  }
-}
-
-/** TUI boundary isolation (CODE_STYLE.md 8) plus the core-to-TUI-helpers guard. */
-function checkTuiBoundary(path: string, lines: string[]): void {
-  const isTuiFile = path.includes(LAYOUT.tuiSrcSegment) || path.includes(LAYOUT.tuiTestsSegment);
-  const tuiSegments = path.split(LAYOUT.tuiSrcSegment)[1]?.split("/").filter(Boolean) ||
-    path.split(LAYOUT.tuiTestsSegment)[1]?.split("/").filter(Boolean) || [];
-  const tuiDepth = tuiSegments.length - 1;
-  const isTuiTest = path.includes(LAYOUT.tuiTestDirSegment) || path.includes(LAYOUT.tuiTestsSegment) ||
-    path.includes(LAYOUT.tuiPackageTestsSegment);
-
-  for (let idx = 0; idx < lines.length; idx++) {
-    const line = lines[idx];
-    if (isTuiFile) {
-      reportTuiOnlyViolations(path, line, idx, tuiDepth);
-    } else if (!isTuiTest && line.match(/import\b.*?\bfrom\s+["'](?:\.\.\/)+.*?tui\/helpers\//)) {
-      console.log(
-        `ERROR [core-boundary-tui-helpers] ${path}:${
-          idx + 1
-        } – Non-TUI modules must not import from '${LAYOUT.appRoot}tui/${LAYOUT.srcRoot}helpers/'.`,
-      );
-      errorCount++;
-    }
-  }
-}
-
-/** CLI boundary isolation (CODE_STYLE.md 9) plus the core-to-CLI-helpers guard. */
-function checkCliBoundary(path: string, lines: string[]): void {
-  const isCliBoundaryFile = path.includes(`${LAYOUT.appRoot}exactl/${LAYOUT.srcRoot}commands/`) ||
-    path.includes(`${LAYOUT.appRoot}exactl/${LAYOUT.srcRoot}handlers/`) ||
-    path.includes(`${LAYOUT.appRoot}exactl/${LAYOUT.srcRoot}command_builders/`);
-  const isCliFile = path.includes(`${LAYOUT.appRoot}exactl/${LAYOUT.srcRoot}`);
-
-  for (let idx = 0; idx < lines.length; idx++) {
-    const line = lines[idx];
-    if (isCliBoundaryFile) {
-      if (line.match(/import\b.*?\bfrom\s+["'](?:\.\.\/)+services\/(?!adapters\/)/)) {
-        console.log(
-          `ERROR [cli-boundary-services] ${path}:${
-            idx + 1
-          } – CLI command/handler/formatter/builder modules must not import from retired '${LAYOUT.srcRoot}services/' (now '${LAYOUT.packageRoot}core/${LAYOUT.srcRoot}services/') except retired '${LAYOUT.srcRoot}services/adapters/' (now '${LAYOUT.packageRoot}core/${LAYOUT.srcRoot}services/adapters/').`,
-        );
-        errorCount++;
-      }
-      if (line.match(/import\b.*?\bfrom\s+["'](?:\.\.\/)+config\/service(?:\.ts)?["']/)) {
-        console.log(
-          `ERROR [cli-boundary-config] ${path}:${
-            idx + 1
-          } – CLI command/handler/formatter/builder modules must not import from retired '${LAYOUT.srcRoot}config/service.ts' (now '${LAYOUT.packageRoot}core/${LAYOUT.srcRoot}config/service.ts').`,
-        );
-        errorCount++;
-      }
-    }
-    if (
-      !isCliFile &&
-      line.match(
-        new RegExp(
-          `import\\b.*?\\bfrom\\s+["'].*?${escapeRegExp(LAYOUT.appRoot)}exactl/${escapeRegExp(LAYOUT.srcRoot)}helpers/`,
-        ),
-      )
-    ) {
-      console.log(
-        `ERROR [core-boundary-cli-helpers] ${path}:${
-          idx + 1
-        } – Non-CLI modules must not import from '${LAYOUT.appRoot}exactl/${LAYOUT.srcRoot}helpers/'.`,
-      );
-      errorCount++;
-    }
   }
 }
 
@@ -1280,38 +1122,6 @@ function reportEditionLeak(repoPath: string, line: string, lines: string[], idx:
   errorCount++;
 }
 
-/** Reports a functional deployable module importing from the tests/ folder. */
-function reportProductionToTestsImport(repoPath: string, line: string, idx: number): void {
-  const match = line.match(/from\s+["']([^"']+)["']/) || line.match(/^\s*import\s+["']([^"']+)["']/);
-  const importPath = match?.[1];
-  if (!importPath || !isProductionToTestsImport(repoPath, importPath)) return;
-  console.log(
-    `ERROR [package-tests-boundary] ${repoPath}:${
-      idx + 1
-    } – Functional deployable module must not import from the ${LAYOUT.testsRoot} folder: '${importPath}'. Move shared code into a package under ${LAYOUT.packageRoot} (test code is excluded from a deployed workspace).`,
-  );
-  errorCount++;
-}
-
-/** Reports a package module importing a retired root implementation path. */
-function reportPackageSrcBoundary(repoPath: string, line: string, idx: number): void {
-  if (!repoPath.startsWith(LAYOUT.packageRoot)) return;
-  const match = line.match(/from\s+["']([^"']+)["']/) || line.match(/^\s*import\s+["']([^"']+)["']/);
-  const importPath = match?.[1];
-  if (!importPath) return;
-  let normalizedImport: string | null = null;
-  if (importPath.startsWith(".")) normalizedImport = normalize(join(dirname(repoPath), importPath));
-  else if (importPath.startsWith(LAYOUT.srcRoot)) normalizedImport = normalize(importPath);
-  if (normalizedImport === null || !RETIRED_ROOT_PACKAGE_IMPORT_PATHS.has(normalizedImport)) return;
-  const packageRoot = repoPath.split("/").slice(0, 2).join("/");
-  console.log(
-    `ERROR [package-src-boundary] ${repoPath}:${
-      idx + 1
-    } – Package-owned modules under '${packageRoot}/' must not import retired root implementation paths like '${normalizedImport}'. Use the package-owned source of truth instead.`,
-  );
-  errorCount++;
-}
-
 /** Runs every style check over one source unit, with `catalog` supplying the settings. */
 interface IScanState {
   inMultiLineComment: boolean;
@@ -1430,11 +1240,9 @@ function scanImportLine(
 
   const relativePath = path.startsWith(REPO_ROOT) ? path.slice(REPO_ROOT.length + 1) : path;
 
-  reportProductionToTestsImport(relativePath, line, idx);
   reportEditionLeak(relativePath, line, lines, idx);
   reportPackageBoundary(relativePath, line, idx);
   reportCanonicalImports(relativePath, line, idx);
-  reportPackageSrcBoundary(relativePath, line, idx);
 
   if (state.inMultiLineImport && trimmed.includes("} from")) state.inMultiLineImport = false;
 }
@@ -1536,10 +1344,6 @@ function checkFileFromText(path: string, text: string, catalog: ICatalog): void 
   }
 
   checkModuleHeader(path, repoPath, lines, scan.headerFound);
-
-  // TUI and CLI boundary isolation checks (CODE_STYLE.md 8 and 9)
-  checkTuiBoundary(path, lines);
-  checkCliBoundary(path, lines);
 
   // Package Module Purity (CODE_STYLE.md 13)
   checkPackagePurity(repoPath, lines);
