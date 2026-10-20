@@ -275,7 +275,7 @@
         "packages/**",
         "apps/**"
       ],
-      "codeStyle": "CODE_STYLE.md#no-magic-values",
+      "codeStyle": "unslop-ts/docs/style_guide.md#no-magic-values",
       "tags": [
         "magic-values",
         "duplication",
@@ -328,7 +328,7 @@
         "packages/**",
         "apps/**"
       ],
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
+      "codeStyle": "unslop-ts/docs/style_guide.md#no-magic-values",
       "tags": [
         "duplication",
         "deslop"
@@ -744,7 +744,7 @@
       "engine": "plugin",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#module-structure",
+      "codeStyle": "unslop-ts/docs/style_guide.md#import-boundaries",
       "tags": [
         "boundary",
         "tui",
@@ -956,7 +956,7 @@
       "engine": "plugin",
       "severity": "off",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#import-statements",
+      "codeStyle": "unslop-ts/docs/style_guide.md#interface-conventions",
       "tags": [
         "imports",
         "di"
@@ -974,7 +974,7 @@
       "engine": "plugin",
       "severity": "off",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#module-structure",
+      "codeStyle": "unslop-ts/docs/style_guide.md#imports-at-the-top",
       "tags": [
         "imports",
         "module-structure"
@@ -986,7 +986,7 @@
       "engine": "plugin",
       "severity": "off",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#no-magic-values",
+      "codeStyle": "unslop-ts/docs/style_guide.md#no-magic-values",
       "tags": [
         "magic-values"
       ],
@@ -1000,7 +1000,7 @@
       "engine": "plugin",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#module-structure",
+      "codeStyle": "unslop-ts/docs/style_guide.md#module-order",
       "tags": [
         "module-structure"
       ]
@@ -1018,7 +1018,7 @@
       "engine": "plugin",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#di-and-interfaces",
+      "codeStyle": "unslop-ts/docs/style_guide.md#interface-conventions",
       "tags": [
         "di"
       ],
@@ -1030,7 +1030,7 @@
       "engine": "plugin",
       "severity": "off",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#di-and-interfaces",
+      "codeStyle": "unslop-ts/docs/style_guide.md#interface-conventions",
       "tags": [
         "di",
         "module-structure"
@@ -1201,7 +1201,7 @@
       "engine": "plugin",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#utility-scripts",
+      "codeStyle": "unslop-ts/docs/style_guide.md#deno-scripts",
       "tags": [
         "scripts"
       ],
@@ -1213,7 +1213,7 @@
       "engine": "plugin",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#utility-scripts",
+      "codeStyle": "unslop-ts/docs/style_guide.md#deno-scripts",
       "tags": [
         "scripts"
       ],
@@ -1314,7 +1314,7 @@
       "engine": "plugin",
       "severity": "off",
       "scope": "test",
-      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
+      "codeStyle": "unslop-ts/docs/style_guide.md#test-fixtures",
       "tags": [
         "test-quality"
       ],

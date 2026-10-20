@@ -14,24 +14,17 @@ links:
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
 
-> 🚨 Original documents now point to this file for the authoritative style rules. The generic
-> TypeScript rules live in [unslop-ts/docs/style_guide.md](./unslop-ts/docs/style_guide.md),
-> with the Exaix additions in [packages/lint-policy/docs/style_guide.md](./packages/lint-policy/docs/style_guide.md);
-> this file keeps the Exaix-specific rules and a stub for each moved section.
+> The generic TypeScript rules live in [unslop-ts/docs/style_guide.md](./unslop-ts/docs/style_guide.md),
+> with the Exaix additions in [packages/lint-policy/docs/style_guide.md](./packages/lint-policy/docs/style_guide.md).
+> This file holds the Exaix-specific rules.
 
 ---
 
-## 1. Strict Type Safety {#strict-type-safety}
+## No Magic Values {#no-magic-values}
 
-> This section moved to the [package style guide](unslop-ts/docs/style_guide.md#strict-type-safety). It is a
-> generic TypeScript rule; the full text and its enforcement notes live there.
+The generic rule (name every value, use an enum for a fixed set of strings) is in the
+[style guide](unslop-ts/docs/style_guide.md#no-magic-values). Exaix adds the following.
 
----
-
-## 2. No Magic Numbers or Strings {#no-magic-values}
-
-- Never hardcode numeric literals or string constants in production or test code
-  (timeouts, status values, provider names, etc.).
 - **User‑configurable values** — every tunable `DEFAULT_*` constant,
   regardless of which package it lives in, **must** be wrapped with
   `configurable({key, default, type, description, min?, max?, enum?, swap?})`.
@@ -64,11 +57,6 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 - **Enums.** Whenever a set of fixed strings is used (statuses, types,
   providers), define a TypeScript `enum` in the appropriate package (e.g. `packages/core/src/types/enums.ts`) and reference it.
   Compare against `RequestStatus.PENDING`, never the literal string.
-
-### Automated Enforcement
-
-> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
-> the full text lives in the guide.
 
 ### Event Type Strings {#event-type-strings}
 
@@ -132,33 +120,11 @@ Search helpers are provided in the repository to locate inadvertent magic values
 
 ---
 
-## 3. Import Statements {#import-statements}
+## Import Statements {#import-statements}
 
-All import declarations **must** appear at the top of the file and **must not** be nested inside any other statement (such as functions, conditionals, or loops). Imports must be top-level only.
-
-**Prohibited:**
-
-```ts
-if (condition) {
-  await import("./foo.ts"); // ❌ Not allowed
-}
-
-function loadModule() {
-  return import("./bar.ts"); // ❌ Not allowed
-}
-```
-
-**Allowed (with justification comment for dynamic import):**
-
-```ts
-// Dynamic import required to break circular dependency between X and Y.
-const { Y } = await import("./y.ts");
-```
-
-### No Re-exporting
-
-> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
-> the full text lives in the guide.
+The generic import rules (imports at the top, no re-exporting, dynamic imports, no inline type
+imports) are in the [style guide](unslop-ts/docs/style_guide.md#imports-at-the-top). Exaix adds the
+following.
 
 ### No Production Dependency on `tests/`
 
@@ -185,17 +151,7 @@ import { EvalSqliteStore } from "@exaix/eval-history"; // ✅ package-owned, dep
 
 The production-to-tests zone of `exaix/import-boundaries` enforces this in `deno task lint`.
 
-### Multi-line Named Imports
-
-> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
-> the full text lives in the guide.
-
-### Dynamic Imports
-
-> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
-> the full text lives in the guide.
-
-## 4. Package Test Boundary Isolation {#package-test-boundaries}
+## Package Test Boundary Isolation {#package-test-boundaries}
 
 Package-local tests under `packages/<package>/tests/` must remain self-contained and must not import test fixtures, helpers, or other test modules from outside the package boundary.
 
@@ -236,30 +192,14 @@ These rules are enforced in part by the retired-root-import zone of `exaix/impor
 
 - Structured multiline test fixtures are also flagged as `exaix/test-inline-multiline-fixture` in test files.
 
-### No Inline Type Imports
-
-> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
-> the full text lives in the guide.
-
-### No Aliasing Interfaces on Import
-
-> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
-> the full text lives in the guide.
-
 ---
 
-## 5. Dependency Injection & Interfaces {#di-and-interfaces}
+## Dependency Injection & Interfaces {#di-and-interfaces}
 
-- **Interface naming:** **All exported interfaces** (injectable or otherwise)
-  **must** use the `IInterfaceName` prefix convention (starting with a capital `I`).
-  This makes it obvious at a glance that the symbol is an interface rather than
-  a class or type alias.
-- **Placement:** **All exported interfaces must be declared at the very top of
-  the module**, immediately following imports (and any module-level descriptive
-  header comments). They must appear before any functional code such as
-  classes, functions, or variable initializations (e.g., `const`, `let`, `var`).
-  Keeping them grouped at the top ensures that the API surfaces of the module
-  are visible at a glance and prevents hoisting-related confusion.
+- **Interface conventions:** exported interfaces use the `I` prefix and sit at the top of the module,
+  as the [style guide](unslop-ts/docs/style_guide.md#interface-conventions) describes. The lint rules
+  `exaix/exported-interface-naming`, `exaix/exported-interface-placement`, and
+  `exaix/no-interface-rename-on-import` check them.
 - Every injectable class `Foo` **must** export a companion interface `IFoo`.
   Consumers depend on the interface, never on the concrete implementation.
 - Dependencies are supplied via constructors; module‑level singletons or static
@@ -284,7 +224,7 @@ export class PlanExecutor {
 
 ---
 
-## 6. Environment Variables {#env-vars}
+## Environment Variables {#env-vars}
 
 Environment‑variable rules were formalised in configuration cleanup and are part of the
 style guide:
@@ -303,14 +243,9 @@ runtime bugs.
 
 ---
 
-## 7. Module Structure & Placement {#module-structure}
+## Module Structure & Placement {#module-structure}
 
-- **Module Structure Order:** Every module **must** follow this specific structural order:
-  1. **Header Comment:** A brief description of the module and the Implementation Plan step it satisfies (warning if missing).
-  1. **Imports:** All import declarations.
-  1. **Exports:** All exported interfaces, types, and enums.
-  1. **Functional Code:** Classes, functions, and variable initializations.
-- **Top-of-module placement:** Imports and exported interfaces must appear at the top of the file, before any functional code.
+- **Module structure order:** every module follows the order of the [style guide](unslop-ts/docs/style_guide.md#module-order): header comment, imports, exports, functional code. The Exaix header comment also names the Implementation Plan step that the module satisfies.
 
 ### JSDoc Header Tags (`@visible`) {#jsdoc-header-tags}
 
@@ -460,7 +395,7 @@ delegate permission hardening reconcile crash).
 - Status changes go through the service lifecycle (`approveSkill`, `deprecateSkill`). An approve names the reviewed revision, and a content update returns the skill to draft.
 - Never write skill bodies or host paths into events or CLI errors. Use typed reasons.
 
-## 8. Module Boundaries & TUI Isolation {#tui-boundaries}
+## Module Boundaries & TUI Isolation {#tui-boundaries}
 
 Exaix enforces a strict boundary between the Terminal User Interface (TUI) and the core system. This decoupling is essential for maintainability and independent evolution of the layers.
 
@@ -565,7 +500,7 @@ artifact `[edition-leak]` governs, and goes green today. It runs in CI **Gate 3b
 
 ---
 
-## 9. Module Boundaries & CLI Isolation {#cli-boundaries}
+## Module Boundaries & CLI Isolation {#cli-boundaries}
 
 Exaix enforces a strict boundary between the CLI command layer and core implementations to preserve interface-driven separation.
 
@@ -588,7 +523,7 @@ These rules are enforced by:
 
 ---
 
-## 10. Related Documents {#related-docs}
+## Related Documents {#related-docs}
 
 This file is the single authoritative source for code style. The following documents reference it but do not duplicate its content:
 
@@ -600,24 +535,19 @@ This file is the single authoritative source for code style. The following docum
 
 ---
 
-## 11. Function & Method Complexity {#complexity-rules}
-
-> This section moved to the [package style guide](unslop-ts/docs/style_guide.md#complexity-rules). It is a
-> generic TypeScript rule; the full text and its enforcement notes live there.
-
 ---
 
-## 12. Utility Scripting & Headers {#utility-scripts}
+## Utility Scripting & Headers {#utility-scripts}
 
 - **Preferred Runtime**: Deno TypeScript is the strictly preferred runtime for all repository maintenance, automation, and CI/CD utility scripts. Avoid Bash or standalone Node.js scripts to leverage type safety and the Deno standard library.
-- **Shebang**: Every script in `scripts/` must begin with the standard Deno shebang:
-  `#!/usr/bin/env -S deno run -A`
+- **Shebang and usage**: every script in `scripts/` follows the [Deno scripts rules](unslop-ts/docs/style_guide.md#deno-scripts) of the style guide: the standard Deno shebang
+  `#!/usr/bin/env -S deno run -A` on line 1, and a `Usage:` section in the header.
 - **Standardized Header**: All scripts must feature a unified JSDoc-style header immediately following the shebang.
 - **Mandatory Metadata Tags**:
   - `@module [Name]`: The logical name of the utility.
   - `@path scripts/[filename].ts`: The relative path to the script.
   - `@description [Text]`: A concise summary of the script's purpose.
-- **Usage Context**: Following the metadata, a script must include a clear `Usage:` section providing at least one example command (e.g., `deno run -A scripts/ci.ts`). For complex utilities, also include `Options:` and `Commands:` blocks.
+- **Usage Context**: following the metadata, the `Usage:` section gives at least one example command (e.g., `deno run -A scripts/ci.ts`). For complex utilities, also include `Options:` and `Commands:` blocks.
 - **Temporary & Debug Scripts**: All scripts intended for one-off debugging or temporary use must be created outside of the `scripts/` directory (e.g., in the repository root or a dedicated `tmp/` folder) and must clearly indicate their ephemeral purpose in the filename (e.g., `debug_test_failure.ts` or `tmp_fix_metadata.ts`). The `scripts/` directory is reserved for permanent, well-documented repository utilities that are integrated into the project's quality gates.
 
 Example:
@@ -636,7 +566,7 @@ Example:
 
 ---
 
-## 13. Package Module Purity {#package-module-purity}
+## Package Module Purity {#package-module-purity}
 
 A _pure package module_ can be consumed by an external project with no
 knowledge of the Exaix daemon. The canonical test is in
@@ -727,23 +657,15 @@ constructor(private readonly config: Config) {}
 
 ---
 
-## 14. Optional Parameter Usage {#optional-params}
+## Optional Parameter Usage {#optional-params}
 
 The `?` annotation communicates intent: "this parameter may be omitted." When
 actual call-site usage contradicts that intent, the `?` becomes a liability
 — either misleading readers or hiding wiring gaps.
 
-Three anti-patterns are enforced by `deno task check:optional-params` (Gate 14):
-
-### REDUNDANT_OPTIONAL — param is `?` but all callers pass it
-
-> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
-> the full text lives in the guide.
-
-### UNUSED_OPTIONAL — param is `?`, used in body, but no caller passes it
-
-> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
-> the full text lives in the guide.
+Three anti-patterns are enforced by `deno task check:optional-params` (Gate 14). The generic
+REDUNDANT_OPTIONAL and UNUSED_OPTIONAL patterns are in the
+[style guide](unslop-ts/docs/style_guide.md#complexity-rules). Exaix adds the `Opt<T, R>` marker.
 
 ### Optional marker on a required parameter — `Opt<T, R>`
 
@@ -805,11 +727,6 @@ added to the `Reason` enum in `packages/core/src/types/optional_marker.ts`.
 
 ---
 
-### Guidelines
-
-> Moved to the [package style guide](unslop-ts/docs/style_guide.md). It is a generic TypeScript rule;
-> the full text lives in the guide.
-
 ### Opt type and Reason enum
 
 Both are defined in `packages/core/src/types/optional_marker.ts` and exported
@@ -842,7 +759,7 @@ feedback during development.
 
 ---
 
-## 15. Layer-Aware Constant Imports {#layer-aware-constant-imports}
+## Layer-Aware Constant Imports {#layer-aware-constant-imports}
 
 A high-level class (orchestrator, coordinator, controller) must not directly
 import low-level implementation constants from packages that provide services it
@@ -971,10 +888,9 @@ counts, and per-file breakdown.
 
 ---
 
-## 16. Comment Discipline {#comment-discipline}
+## Comment Discipline {#comment-discipline}
 
-> This section moved to the [package style guide](unslop-ts/docs/style_guide.md#comment-discipline). It is a
-> generic TypeScript rule; the full text and its enforcement notes live there.
+The rules are in the [style guide](unslop-ts/docs/style_guide.md#comment-discipline).
 
 ### Automated enforcement
 
@@ -1000,7 +916,7 @@ comment is not checked.
 > (e.g. `.copilot/skills/exaix-development/SKILL.md`) and **are not** repeated here unless they
 > directly impact the way code is written.
 
-## 17. Tool Naming
+## Tool Naming
 
 Canonical tool names use `<verb>_<object>` in snake_case. Allowed first tokens are
 `read`, `write`, `list`, `search`, `create`, `run`, `fetch`, `move`, `copy`, `delete`,
@@ -1021,7 +937,7 @@ export and declare whether it is distinct or add it to the shared-operation tabl
 
 ---
 
-## 18. Native Tool-Round Replay {#native-tool-round-replay}
+## Native Tool-Round Replay {#native-tool-round-replay}
 
 A provider response that carries tool calls replays as one round. Code that builds or reads a round follows these rules:
 
@@ -1032,7 +948,7 @@ A provider response that carries tool calls replays as one round. Code that buil
 
 Tests: `packages/execution/tests/planning_tool_loop_test.ts` and `packages/ai-google/tests/google_provider_tools_request_test.ts`.
 
-## 19. Workspace Path Construction {#exaix-path-construction}
+## Workspace Path Construction {#exaix-path-construction}
 
 Exaix workspace paths are built by the helper functions in `@exaix/shared`, never by composing the
 default segments in the caller.
@@ -1062,7 +978,7 @@ This is enforced by `deno task check:path-builders`.
 
 ---
 
-## 20. Lint Policy {#lint-policy}
+## Lint Policy {#lint-policy}
 
 Exaix lint rules live in two places. `packages/lint-policy` holds the Exaix rules, the rule catalog, and the
 reference [`style_rules.md`](packages/lint-policy/docs/style_rules.md). Its guide,
