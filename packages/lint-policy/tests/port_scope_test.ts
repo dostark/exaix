@@ -4,7 +4,7 @@
  * @description Checks that the port scope table matches the roots and the rule lists of the lint task.
  * @architectural-layer Test
  * @dependencies [@std/assert]
- * @related-files [packages/lint-policy/port_tables.json, packages/lint-policy/tests/helpers/port_tables.ts]
+ * @related-files [packages/lint-policy/tests/fixtures/port/port_tables.json, packages/lint-policy/tests/helpers/port_tables.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";

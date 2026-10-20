@@ -4,7 +4,7 @@
  * @description Checks the style-exclude migration helper, the bare-id search, and the guard for ported rules.
  * @architectural-layer Test
  * @dependencies [@std/assert]
- * @related-files [packages/lint-policy/tests/helpers/port_migration.ts, packages/lint-policy/port_tables.json]
+ * @related-files [packages/lint-policy/tests/helpers/port_migration.ts, packages/lint-policy/tests/fixtures/port/port_tables.json]
  */
 
 import { assert, assertEquals } from "@std/assert";
@@ -12,28 +12,14 @@ import {
   findBareIdReferences,
   findStyleExcludeSites,
   migrateStyleExclude,
+  portReferenceFiles,
   trackedTextFiles,
 } from "./helpers/port_migration.ts";
 import { loadPortTables } from "./helpers/port_tables.ts";
 
 const CODES = ["REQUIRED_FOR_TEST", "PLUGINS"];
 const IMPORT_KEYWORD = "import";
-const TABLE_PATH = "packages/lint-policy/port_tables.json";
 const CATALOG_PATH = "packages/lint-policy/catalog.json";
-const PARITY_TEST_SUFFIX = "_parity_test.ts";
-const GUARD_PATHS = [
-  TABLE_PATH,
-  // Documentation assertions name generic engine rule IDs, rather than activating catalog rules.
-  "packages/lint-policy/tests/code_style_anchor_test.ts",
-  "packages/lint-policy/tests/port_migration_test.ts",
-  "packages/lint-policy/tests/port_split_table_test.ts",
-  "packages/lint-policy/tests/port_scope_test.ts",
-  "tests/scripts/lint_plugin_integration_test.ts",
-  "packages/lint-policy/tests/helpers/port_migration.ts",
-  "packages/lint-policy/tests/fixtures/port/",
-  "docs/CHANGELOG.md",
-  "unslop-ts/",
-];
 
 Deno.test("a style-exclude comment of the rule becomes a deno-lint-ignore comment with the same reason", () => {
   const before = [
@@ -82,9 +68,7 @@ Deno.test("the tracked text files exclude the historical planning documents", as
 
 Deno.test("a ported rule has no style-exclude site and no bare id left in the tracked files", async () => {
   const tables = await loadPortTables();
-  const files = await trackedTextFiles(GUARD_PATHS);
-  // A parity test names the script rule ids it compares.
-  for (const path of [...files.keys()]) if (path.endsWith(PARITY_TEST_SUFFIX)) files.delete(path);
+  const files = await portReferenceFiles();
   const catalog = JSON.parse(await Deno.readTextFile(new URL("../catalog.json", import.meta.url)));
   for (const row of tables.rules.filter((candidate) => candidate.ported)) {
     const codes = Object.keys(catalog.rules[row.id]?.exclusionCodes ?? {});

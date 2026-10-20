@@ -4,7 +4,7 @@
  * @description Checks that the committed port table has one row for every rule id the checkers emit.
  * @architectural-layer Test
  * @dependencies [@std/assert]
- * @related-files [packages/lint-policy/port_tables.json, packages/lint-policy/tests/helpers/port_tables.ts]
+ * @related-files [packages/lint-policy/tests/fixtures/port/port_tables.json, packages/lint-policy/tests/helpers/port_tables.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";

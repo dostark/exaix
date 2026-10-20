@@ -4,7 +4,7 @@
  * @description Rewrites style-exclude comments to deno-lint-ignore comments and finds leftovers of a ported rule.
  * @architectural-layer Test
  * @dependencies [@std/path]
- * @related-files [packages/lint-policy/catalog.json, packages/lint-policy/port_tables.json]
+ * @related-files [packages/lint-policy/catalog.json, packages/lint-policy/tests/fixtures/port/port_tables.json]
  */
 
 import { fromFileUrl } from "@std/path";
@@ -15,6 +15,21 @@ const TEXT_EXTENSIONS = [".ts", ".tsx", ".json", ".md", ".yml", ".yaml", ".sh", 
 const BARE_ID_BOUNDARY_BEFORE = String.raw`(?<=[\[\`"'])`;
 const BARE_ID_BOUNDARY_AFTER = String.raw`(?=[\]\`"'])`;
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
+
+const PORT_REFERENCE_EXEMPTIONS = [
+  "packages/lint-policy/tests/fixtures/port/port_tables.json",
+  // Documentation assertions name generic engine rule IDs, rather than activating catalog rules.
+  "packages/lint-policy/tests/code_style_anchor_test.ts",
+  "packages/lint-policy/tests/port_migration_test.ts",
+  "packages/lint-policy/tests/generic_rules_ported_test.ts",
+  "packages/lint-policy/tests/port_split_table_test.ts",
+  "packages/lint-policy/tests/port_scope_test.ts",
+  "tests/scripts/lint_plugin_integration_test.ts",
+  "packages/lint-policy/tests/helpers/port_migration.ts",
+  "packages/lint-policy/tests/fixtures/port/",
+  "docs/CHANGELOG.md",
+  "unslop-ts/",
+];
 
 /** Rewrites each `// style-exclude:CODE - reason` of the given codes to `// deno-lint-ignore <id> -- reason`. */
 export function migrateStyleExclude(text: string, codes: readonly string[], pluginRuleId: string): string {
@@ -72,4 +87,10 @@ export async function trackedTextFiles(exemptPrefixes: readonly string[]): Promi
     }
   }
   return files;
+}
+
+/** Reads active consumer references, excluding fixtures that name the original rule IDs. */
+export async function portReferenceFiles(): Promise<Map<string, string>> {
+  const files = await trackedTextFiles(PORT_REFERENCE_EXEMPTIONS);
+  return new Map([...files].filter(([path]) => !path.endsWith("_parity_test.ts")));
 }

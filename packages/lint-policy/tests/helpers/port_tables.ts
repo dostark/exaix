@@ -4,7 +4,7 @@
  * @description Loads the committed port table and scans the checkers for the rule ids they emit.
  * @architectural-layer Test
  * @dependencies [zod]
- * @related-files [packages/lint-policy/port_tables.json, packages/lint-policy/src/checkers/check_code_style.ts]
+ * @related-files [packages/lint-policy/tests/fixtures/port/port_tables.json, packages/lint-policy/src/checkers/check_code_style.ts]
  */
 
 import { z } from "zod";
@@ -103,7 +103,7 @@ const POLICY_ROOT = new URL("../../", import.meta.url);
 
 /** Reads and validates the committed port table. */
 export async function loadPortTables(): Promise<IPortTables> {
-  const text = await Deno.readTextFile(new URL("port_tables.json", POLICY_ROOT));
+  const text = await Deno.readTextFile(new URL("../fixtures/port/port_tables.json", import.meta.url));
   return PortTablesSchema.parse(JSON.parse(text));
 }
 

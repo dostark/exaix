@@ -4,7 +4,7 @@
  * @description Runs each generic rule's positive snippet through the Deno recommended rules and compares the codes with the table.
  * @architectural-layer Test
  * @dependencies [@std/assert, @std/path]
- * @related-files [packages/lint-policy/port_tables.json, packages/lint-policy/tests/helpers/port_tables.ts]
+ * @related-files [packages/lint-policy/tests/fixtures/port/port_tables.json, packages/lint-policy/tests/helpers/port_tables.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";

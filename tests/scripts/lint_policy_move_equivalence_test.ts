@@ -606,3 +606,25 @@ Deno.test("the rule ceilings hold no key for the removed engine package", async 
     .map(([rule]) => rule);
   assertEquals(holders, []);
 });
+
+const PORTED_DYNAMIC_ID = "exaix/dynamic-import";
+
+Deno.test("a ported import violation runs through the plugin rather than the script gate", async () => {
+  await withDemoRoot(async (_root, srcDir) => {
+    const source = CLEAN_MODULE.replace(
+      "export const value = 1;",
+      'export async function load() { return await import("./value.ts"); }',
+    );
+    const file = join(srcDir, "dynamic.ts");
+    await Deno.writeTextFile(file, source);
+    const script = await runTask("check:style", [file]);
+    assertEquals(script.code, 0, script.output);
+    const parsed = parseCatalog(catalogJson, { scriptRuleSchemas: null, registry: EXAIX_REGISTRY });
+    const plugin = createLintPlugin(EXAIX_PLUGIN_NAME, parsed, {
+      rulePacks: EXAIX_RULE_PACKS,
+      selection: PORTED_DYNAMIC_ID,
+    });
+    const diagnostics = runPlugin(plugin, "packages/demo/src/dynamic.ts", source);
+    assertEquals(diagnostics.map((diagnostic) => diagnostic.id), [PORTED_DYNAMIC_ID]);
+  });
+});
