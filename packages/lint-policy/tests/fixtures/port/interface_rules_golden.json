@@ -1,0 +1,36 @@
+{
+  "interface renamed to a plain name": [
+    [
+      "no-interface-rename-on-import",
+      1
+    ]
+  ],
+  "interface imported under its own name": [],
+  "type import renamed": [
+    [
+      "no-interface-rename-on-import",
+      1
+    ]
+  ],
+  "plain name renamed": [],
+  "interface renamed to another interface name": [
+    [
+      "no-interface-rename-on-import",
+      1
+    ]
+  ],
+  "name that starts with I and a lowercase letter": [],
+  "second specifier renamed": [
+    [
+      "no-interface-rename-on-import",
+      1
+    ]
+  ],
+  "renamed specifier on its own line": [],
+  "re-export with a rename": [],
+  "default import": [],
+  "namespace import": [],
+  "import text in a comment": [],
+  "import text in a string": [],
+  "rename in the compatibility file": []
+}

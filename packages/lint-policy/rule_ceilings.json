@@ -219,5 +219,10 @@
   },
   "exaix/ephemeral-comment": {
     "tests": 1
+  },
+  "exaix/no-interface-rename-on-import": {
+    "apps/tui": 3,
+    "packages/core": 1,
+    "tests": 3
   }
 }

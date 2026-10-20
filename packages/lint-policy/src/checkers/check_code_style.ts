@@ -790,7 +790,6 @@ const rules: Rule[] = [
 const INLINE_SCRIPT_RULE_IDS = [
   "duplicate-constant",
   "duplicate-type",
-  "no-interface-rename-on-import",
   "module-header-tag",
   "edition-leak",
   "script-placement",
@@ -1415,24 +1414,6 @@ function skipLeadingBlock(
   return handleTypeDeclarationContinue(line, trimmed, state);
 }
 
-/** Reports an interface that an import clause renames. */
-function checkInterfaceRename(path: string, trimmed: string, idx: number): void {
-  const namedMatch = trimmed.match(/{([^}]*)/);
-  if (!namedMatch || path.endsWith(LAYOUT.markdownCompatSuffix)) return;
-  for (const raw of namedMatch[1].replace(/}.*/, "").split(",")) {
-    const parts = raw.trim().split(/\s+as\s+/);
-    const name = parts.pop()?.trim();
-    if (parts.length > 0 && /^I[A-Z]/.test(parts[0].trim())) {
-      console.log(
-        `ERROR [no-interface-rename-on-import] ${path}:${idx + 1} – Renaming interface '${
-          parts[0].trim()
-        }' to '${name}' is prohibited. Use the original name.`,
-      );
-      errorCount++;
-    }
-  }
-}
-
 /** Runs every import-line check. */
 function scanImportLine(
   path: string,
@@ -1444,7 +1425,6 @@ function scanImportLine(
   state: IScanState,
 ): void {
   if (isImportStart) {
-    if (trimmed.startsWith("import")) checkInterfaceRename(path, trimmed, idx);
     if (trimmed.includes("{") && !trimmed.includes("} from")) state.inMultiLineImport = true;
   }
 

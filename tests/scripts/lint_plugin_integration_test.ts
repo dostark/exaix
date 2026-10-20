@@ -163,6 +163,7 @@ const LONG_COMMENT_SEED =
 const EPHEMERAL_SEED = "/** header */\nexport const first = 1;\n// we tried a loop first\nexport const second = 2;\n";
 const MAX_PARAMS_SEED =
   "/** header */\nexport function take(a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number): void {}\n";
+const RENAME_SEED = 'import { IThing as Thing } from "./other.ts";\nexport const value = Thing;\n';
 const FIXTURE_SEED = "/** header */\nconst yaml = `\na: 1\nb: 2\nc: 3\nd: 4\ne: 5\nf: 6\ng: 7\n`;\n";
 
 Deno.test("deno lint reports exaix/decorative-comment and exaix/require-module-header on seeded violations", async () => {
@@ -206,6 +207,7 @@ Deno.test("a parked comment, parameter, or fixture rule is silent by default and
     ["exaix/long-comment", LONG_COMMENT_SEED, SEED_FILE],
     ["exaix/ephemeral-comment", EPHEMERAL_SEED, SEED_FILE],
     ["exaix/max-params", MAX_PARAMS_SEED, SEED_FILE],
+    ["exaix/no-interface-rename-on-import", RENAME_SEED, SEED_FILE],
     ["exaix/test-inline-multiline-fixture", FIXTURE_SEED, PLAIN_TEST_SEED_FILE],
   ];
   for (const [rule, source, path] of seeds) {

@@ -29,6 +29,7 @@ const RATCHETED_RULES = [
   "exaix/promise-response-return",
   "exaix/long-comment",
   "exaix/ephemeral-comment",
+  "exaix/no-interface-rename-on-import",
   "exaix/max-params",
   "exaix/test-inline-multiline-fixture",
 ];

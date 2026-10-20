@@ -291,7 +291,7 @@
     },
     {
       "id": "no-interface-rename-on-import",
-      "origin": "catalog",
+      "origin": "ported",
       "outcome": "generic",
       "parts": [
         {
@@ -328,8 +328,8 @@
           "code": "import { IThing as Thing } from \"./b.ts\";\nexport type Alias = Thing;\n"
         }
       ],
-      "ported": false,
-      "parked": false,
+      "ported": true,
+      "parked": true,
       "note": ""
     },
     {
@@ -2048,7 +2048,7 @@
       ],
       "mechanism": "options",
       "coupling": [
-        "I-prefix convention; lives in the Exaix pack today"
+        "I-prefix convention; the prefix is an option, and the Exaix catalog sets it"
       ],
       "options": [
         "prefix (default I)",
@@ -2079,7 +2079,7 @@
       ],
       "ported": false,
       "parked": false,
-      "note": "Moves out of the Exaix pack; the catalog id exaix/exported-interface-naming does not change."
+      "note": "Moved from the Exaix pack to the TypeScript pack in Step 7. The catalog id exaix/exported-interface-naming does not change, and the catalog sets the prefix option."
     },
     {
       "id": "magic-literals",

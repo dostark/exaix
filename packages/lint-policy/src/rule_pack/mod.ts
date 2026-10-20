@@ -1,26 +1,18 @@
 /**
  * @module ExaixRulePack
  * @path packages/lint-policy/src/rule_pack/mod.ts
- * @description The Exaix rule pack: plugin rules that encode Exaix conventions, registered with the lint engine.
+ * @description The Exaix rule pack: the extension point for plugin rules that encode Exaix conventions. It holds no rule today.
  * @architectural-layer Tooling
- * @dependencies [@dostark/unslop-ts, zod]
- * @related-files [packages/lint-policy/src/rule_pack/exported_interface_naming.ts, packages/lint-policy/src/rule_packs.ts]
+ * @dependencies [@dostark/unslop-ts]
+ * @related-files [packages/lint-policy/src/rule_packs.ts, packages/lint-policy/catalog.json]
  */
 
-import { z } from "zod";
 import type { IRulePack } from "@dostark/unslop-ts";
-import { createExportedInterfaceNaming } from "./exported_interface_naming.ts";
 
 export const EXAIX_PLUGIN_NAME = "exaix";
 
-const NO_OPTIONS = z.object({}).strict();
-
 export const EXAIX_RULE_PACK: IRulePack = {
   name: EXAIX_PLUGIN_NAME,
-  rules: {
-    "exported-interface-naming": { create: createExportedInterfaceNaming },
-  },
-  optionSchemas: {
-    "exported-interface-naming": NO_OPTIONS,
-  },
+  rules: {},
+  optionSchemas: {},
 };

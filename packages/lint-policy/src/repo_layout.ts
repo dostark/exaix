@@ -34,7 +34,6 @@ export interface IRepoLayout {
   readonly aiTestAllow: string;
   readonly mcpServerPrefix: string;
   readonly mcpTestsPrefix: string;
-  readonly markdownCompatSuffix: string;
   readonly packageRootPattern: string;
   readonly editionAppPrefixes: readonly string[];
   readonly teamAppBootstrap: string;

@@ -36,7 +36,6 @@
     "aiTestAllow": "packages/ai/tests/",
     "mcpServerPrefix": "packages/mcp/server/",
     "mcpTestsPrefix": "packages/mcp/tests/",
-    "markdownCompatSuffix": "/packages/core/src/parsing/markdown.ts",
     "packageRootPattern": "^packages/[^/]+/(mod|index)\\.ts$",
     "editionAppPrefixes": [
       "apps/daemon/",
@@ -769,15 +768,23 @@
         "packages/**/index.ts"
       ]
     },
-    "no-interface-rename-on-import": {
-      "engine": "script",
-      "severity": "error",
+    "exaix/no-interface-rename-on-import": {
+      "engine": "plugin",
+      "severity": "off",
       "scope": "all",
       "codeStyle": "CODE_STYLE.md#import-statements",
       "tags": [
         "imports",
         "di"
-      ]
+      ],
+      "exclude": [
+        "packages/core/src/parsing/markdown.ts"
+      ],
+      "options": {
+        "prefix": "I"
+      },
+      "optIn": true,
+      "reason": "Parked: the AST rule reads specifiers on their own lines, which the line scanner skipped. Phase 230 burns them down and turns the rule on."
     },
     "exaix/import-placement": {
       "engine": "plugin",
@@ -830,7 +837,10 @@
       "codeStyle": "CODE_STYLE.md#di-and-interfaces",
       "tags": [
         "di"
-      ]
+      ],
+      "options": {
+        "prefix": "I"
+      }
     },
     "exaix/exported-interface-placement": {
       "engine": "plugin",

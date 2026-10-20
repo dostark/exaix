@@ -33,11 +33,6 @@ const CASES: IRuleCase[] = [
     valid: "export { Foo } from './foo.ts';\n",
     path: abs("packages/x/mod.ts"),
   },
-  {
-    id: "no-interface-rename-on-import",
-    invalid: "import { IFoo as Foo } from './foo.ts';\nexport const x = Foo;\n",
-    valid: "import { IFoo } from './foo.ts';\nexport const x: IFoo = { a: 1 };\n",
-  },
 
   // module-structure
   {

@@ -3,7 +3,7 @@
  * @path packages/lint-policy/tests/exported_interface_naming_test.ts
  * @description Named valid and invalid cases for the exaix/exported-interface-naming plugin rule.
  * @architectural-layer Test
- * @related-files [packages/lint-policy/src/rule_pack/exported_interface_naming.ts, packages/lint-policy/catalog.json]
+ * @related-files [packages/lint-policy/catalog.json, packages/lint-policy/src/rule_packs.ts]
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
