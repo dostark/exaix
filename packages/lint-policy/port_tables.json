@@ -1,0 +1,2092 @@
+{
+  "version": 1,
+  "scope": {
+    "scriptExtensions": [
+      ".ts",
+      ".tsx"
+    ],
+    "commentExtensions": [
+      ".ts",
+      ".tsx",
+      ".yaml",
+      ".yml",
+      ".toml",
+      ".jsonc"
+    ],
+    "pluginRoots": [
+      "tests/",
+      "packages/",
+      "exaix-team/",
+      "apps/"
+    ],
+    "scriptsRunRules": [
+      "exaix/require-deno-shebang",
+      "exaix/no-forbidden-lint-ignore"
+    ]
+  },
+  "rules": [
+    {
+      "id": "import-inside-statement",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "import-inside-statement",
+          "step": 2
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "exempts edition-gated dynamic Team imports: path prefix LAYOUT.editionAppPrefixes plus specifier @exaix-team/ or ./src/bootstrap_team",
+        "skips masked lines (strings, comments)"
+      ],
+      "options": [
+        "allowDynamicImports: [{ files, specifiers }]"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "export function load() {\n  return import(\"./b.ts\");\n}\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "dynamic-import",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "dynamic-import",
+          "step": 2
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "same edition exemption as import-inside-statement",
+        "--strict-imports flag raises warn to error; no gate passes it",
+        "style-exclude codes REQUIRED_FOR_TEST, PLUGINS, RUNTIME_REGISTRY (6 sites)"
+      ],
+      "options": [
+        "allowDynamicImports: [{ files, specifiers }]",
+        "justification comment required"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "export const loader = await import(\"./b.ts\");\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "inline-type-import",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "inline-type-import",
+          "step": 2
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "typescript-eslint",
+          "rule": "consistent-type-imports",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "export type Loaded = Promise<import(\"./b.ts\").IThing>;\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "re-export-imported",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "re-export-imported",
+          "step": 2
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "exempts ./ re-exports in mod.ts and index.ts (isPackageEntrypoint, isSamePackageReExport)"
+      ],
+      "options": [
+        "allowReExports: [{ files, relativeOnly }]"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "export { value } from \"./b.ts\";\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "import-placement",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "import-placement",
+          "step": 2
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "shares one line-state machine with exported-interface-placement (IImportPlacementState)"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "eslint-plugin-import",
+          "rule": "first",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "export const first = 1;\nimport { value } from \"./b.ts\";\nexport { value };\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "exported-interface-placement",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "exported-interface-placement",
+          "step": 2
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "interface convention: depends on the I-prefix naming rule",
+        "shares the placement state machine with import-placement"
+      ],
+      "options": [
+        "prefix (default I)",
+        "off by default in the engine example catalog"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "export const first = 1;\nexport interface IThing {\n  readonly a: number;\n}\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "no-interface-rename-on-import",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "no-interface-rename-on-import",
+          "step": 7
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "interface convention: assumes the I prefix"
+      ],
+      "options": [
+        "prefix (default I)",
+        "off by default in the engine example catalog"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "import { IThing as Thing } from \"./b.ts\";\nexport type Alias = Thing;\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "promise-response-alias",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "promise-response-alias",
+          "step": 3
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "export type Fetcher = () => Promise<Response>;\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "promise-response-return",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "promise-response-return",
+          "step": 3
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "export function get(): Promise<Response> {\n  return fetch(\"https://example.com\");\n}\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "ts-suppression-pragmas",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "ts-suppression-pragmas",
+          "step": 3
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "script rule bans every pragma; Deno ban-ts-comment bans a pragma without a description"
+      ],
+      "options": [
+        "narrowed to a pragma with a description"
+      ],
+      "overlap": {
+        "kind": "related",
+        "builtins": [],
+        "related": [
+          "ban-ts-comment"
+        ],
+        "outcome": "narrow"
+      },
+      "counterparts": [
+        {
+          "tool": "typescript-eslint",
+          "rule": "ban-ts-comment",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "// @ts-expect-error: the literal is checked at run time\nexport const a: number = \"x\";\n"
+        }
+      ],
+      "ported": false,
+      "note": "Verified 2026-10-20: ban-ts-comment accepts a described pragma, so the port keeps only the described case."
+    },
+    {
+      "id": "magic-union-type",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "magic-union-type",
+          "step": 3
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "message names packages/core/src/types/enums.ts (LAYOUT)"
+      ],
+      "options": [
+        "hint"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "export function mode(value: \"fast\" | \"slow\"): string {\n  return value;\n}\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "duplicate-type",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "duplicate-type",
+          "step": 4
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "allow lists name Exaix file paths (catalog data)",
+        "include globs packages/** and apps/**"
+      ],
+      "options": [
+        "allow: [{ name, files, reason }]",
+        "minProperties or namePattern"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "whole-tree pass over packages/** and apps/**",
+        "decision": "unchanged",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": "Whole-tree analysis: interface and object type alias members after whitespace normalization. Library function called by check:style."
+    },
+    {
+      "id": "duplicate-constant",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "duplicate-constant",
+          "step": 4
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "allow lists name Exaix file paths (catalog data)",
+        "include globs packages/** and apps/**"
+      ],
+      "options": [
+        "allow: [{ name, files, reason }]",
+        "minProperties or namePattern"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "whole-tree pass over packages/** and apps/**",
+        "decision": "unchanged",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": "Whole-tree analysis: top-level named constants with a static value. Library function called by check:style."
+    },
+    {
+      "id": "max-params",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "max-params",
+          "step": 6
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "limit 7 comes from the catalog"
+      ],
+      "options": [
+        "max"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "eslint",
+          "rule": "max-params",
+          "kind": "duplicate"
+        },
+        {
+          "tool": "typescript-eslint",
+          "rule": "max-params",
+          "kind": "duplicate"
+        },
+        {
+          "tool": "oxlint",
+          "rule": "eslint/max-params",
+          "kind": "duplicate"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "export function many(a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number): number {\n  return a + b + c + d + e + f + g + h;\n}\n"
+        }
+      ],
+      "ported": false,
+      "note": "Replaces a line scanner (paramListStartLine) with the parameter list of the function-like node."
+    },
+    {
+      "id": "long-comment",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "long-comment",
+          "step": 6
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "extensions list includes .yaml .yml .toml .jsonc, which deno lint cannot read"
+      ],
+      "options": [
+        "maxLines",
+        "extensions overrides"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, .ts .tsx .yaml .yml .toml .jsonc files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "yaml",
+          "yml",
+          "toml",
+          "jsonc",
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "export function f(): number {\n  // one\n  // two\n  // three\n  // four\n  return 1;\n}\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "ephemeral-comment",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "ephemeral-comment",
+          "step": 6
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "calendar-date patterns are generic; phase-number vocabulary is plan-specific"
+      ],
+      "options": [
+        "patterns"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, .ts .tsx .yaml .yml .toml .jsonc files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "yaml",
+          "yml",
+          "toml",
+          "jsonc",
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "// Added on 2026-10-20 for the migration.\nexport const a = 1;\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "decorative-comment",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "decorative-comment",
+          "step": 6
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, .ts .tsx .yaml .yml .toml .jsonc files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "yaml",
+          "yml",
+          "toml",
+          "jsonc",
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "// ==== section ====\nexport const a = 1;\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "ephemeral-filename",
+      "origin": "emitted",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "ephemeral-filename",
+          "step": 6
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "flags a test file name with phase<N>; it is a value inside the comment checker, not a catalog rule"
+      ],
+      "options": [
+        "pattern"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, test file names",
+        "decision": "extend-scripts-run",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": "Ported with ephemeral-comment; the plugin rule reads context.filename."
+    },
+    {
+      "id": "test-inline-multiline-fixture",
+      "origin": "catalog",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "test-inline-multiline-fixture",
+          "step": 6
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "message names LAYOUT.testsRoot fixtures directory",
+        "style-exclude codes FIXTURE_READABILITY, SMALL_FIXTURE_OK (21 sites)"
+      ],
+      "options": [
+        "minLines",
+        "fixturesDir"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "unchanged",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/tests/a_test.ts",
+          "code": "Deno.test(\"t\", () => {\n  const markdown = `\n# Title\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\n`;\n  console.log(markdown);\n});\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "module-header",
+      "origin": "catalog",
+      "outcome": "split",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "require-module-header",
+          "step": 6
+        },
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "module-header-tag"
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "generic part: a module starts with a descriptive header comment (warn today, convertWarnings flag)",
+        "Exaix part: mandatory @module @path @description tags and the @related-files rules"
+      ],
+      "options": [
+        "include globs"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "export const a = 1;\n"
+        }
+      ],
+      "ported": false,
+      "note": "Generic part is new to the port list: assigned to Step 6; the Exaix part stays a script rule."
+    },
+    {
+      "id": "script-usage",
+      "origin": "catalog",
+      "outcome": "split",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "deno",
+          "key": "require-script-usage",
+          "step": 6
+        },
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "script-placement"
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "gated by the scripts/ path; the check is a Usage: section in the header"
+      ],
+      "options": [
+        "include globs"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [],
+      "ported": false,
+      "note": "Deno-script header part is new to the port list: assigned to Step 6 (Deno pack)."
+    },
+    {
+      "id": "tui-boundary-cli",
+      "origin": "catalog",
+      "outcome": "zone",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "import-boundaries",
+          "step": 8
+        }
+      ],
+      "mechanism": "options",
+      "zoneForm": "specifier",
+      "coupling": [
+        "TUI files must not import (../)+cli/"
+      ],
+      "options": [
+        "zones entry"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "eslint",
+          "rule": "no-restricted-imports",
+          "kind": "related"
+        },
+        {
+          "tool": "eslint-plugin-import",
+          "rule": "no-restricted-paths",
+          "kind": "related"
+        },
+        {
+          "tool": "oxlint",
+          "rule": "eslint/no-restricted-imports",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "apps/tui/src/views/a.ts",
+          "code": "import { run } from \"../../cli/run.ts\";\nexport { run };\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "tui-boundary-services",
+      "origin": "catalog",
+      "outcome": "zone",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "import-boundaries",
+          "step": 8
+        }
+      ],
+      "mechanism": "options",
+      "zoneForm": "specifier",
+      "coupling": [
+        "TUI files must not import (../)+services/ except adapters/ and tui_service_factory.ts"
+      ],
+      "options": [
+        "zones entry"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "eslint",
+          "rule": "no-restricted-imports",
+          "kind": "related"
+        },
+        {
+          "tool": "eslint-plugin-import",
+          "rule": "no-restricted-paths",
+          "kind": "related"
+        },
+        {
+          "tool": "oxlint",
+          "rule": "eslint/no-restricted-imports",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "apps/tui/src/views/a.ts",
+          "code": "import { s } from \"../../services/s.ts\";\nexport { s };\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "tui-boundary-config",
+      "origin": "catalog",
+      "outcome": "zone",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "import-boundaries",
+          "step": 8
+        }
+      ],
+      "mechanism": "options",
+      "zoneForm": "specifier",
+      "coupling": [
+        "TUI files must not import (../)+config/"
+      ],
+      "options": [
+        "zones entry"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "eslint",
+          "rule": "no-restricted-imports",
+          "kind": "related"
+        },
+        {
+          "tool": "eslint-plugin-import",
+          "rule": "no-restricted-paths",
+          "kind": "related"
+        },
+        {
+          "tool": "oxlint",
+          "rule": "eslint/no-restricted-imports",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "apps/tui/src/views/a.ts",
+          "code": "import { c } from \"../../config/c.ts\";\nexport { c };\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "tui-boundary-helpers",
+      "origin": "catalog",
+      "outcome": "zone",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "import-boundaries",
+          "step": 8
+        }
+      ],
+      "mechanism": "options",
+      "zoneForm": "specifier+outside",
+      "coupling": [
+        "TUI files must not import (../)+helpers/ beyond the TUI source root (tuiDepth)"
+      ],
+      "options": [
+        "zones entry"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "eslint",
+          "rule": "no-restricted-imports",
+          "kind": "related"
+        },
+        {
+          "tool": "eslint-plugin-import",
+          "rule": "no-restricted-paths",
+          "kind": "related"
+        },
+        {
+          "tool": "oxlint",
+          "rule": "eslint/no-restricted-imports",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "apps/tui/src/a.ts",
+          "code": "import { h } from \"../../helpers/h.ts\";\nexport { h };\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "core-boundary-tui-helpers",
+      "origin": "catalog",
+      "outcome": "zone",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "import-boundaries",
+          "step": 8
+        }
+      ],
+      "mechanism": "options",
+      "zoneForm": "specifier+except",
+      "coupling": [
+        "non-TUI files must not import tui/helpers/"
+      ],
+      "options": [
+        "zones entry"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "eslint",
+          "rule": "no-restricted-imports",
+          "kind": "related"
+        },
+        {
+          "tool": "eslint-plugin-import",
+          "rule": "no-restricted-paths",
+          "kind": "related"
+        },
+        {
+          "tool": "oxlint",
+          "rule": "eslint/no-restricted-imports",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "import { h } from \"../../../apps/tui/src/helpers/h.ts\";\nexport { h };\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "cli-boundary-services",
+      "origin": "catalog",
+      "outcome": "zone",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "import-boundaries",
+          "step": 8
+        }
+      ],
+      "mechanism": "options",
+      "zoneForm": "specifier",
+      "coupling": [
+        "CLI command, handler, and builder files must not import (../)+services/ except adapters/"
+      ],
+      "options": [
+        "zones entry"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "eslint",
+          "rule": "no-restricted-imports",
+          "kind": "related"
+        },
+        {
+          "tool": "eslint-plugin-import",
+          "rule": "no-restricted-paths",
+          "kind": "related"
+        },
+        {
+          "tool": "oxlint",
+          "rule": "eslint/no-restricted-imports",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "apps/exactl/src/commands/a.ts",
+          "code": "import { s } from \"../../services/s.ts\";\nexport { s };\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "cli-boundary-config",
+      "origin": "catalog",
+      "outcome": "zone",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "import-boundaries",
+          "step": 8
+        }
+      ],
+      "mechanism": "options",
+      "zoneForm": "specifier",
+      "coupling": [
+        "CLI command, handler, and builder files must not import (../)+config/service"
+      ],
+      "options": [
+        "zones entry"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "eslint",
+          "rule": "no-restricted-imports",
+          "kind": "related"
+        },
+        {
+          "tool": "eslint-plugin-import",
+          "rule": "no-restricted-paths",
+          "kind": "related"
+        },
+        {
+          "tool": "oxlint",
+          "rule": "eslint/no-restricted-imports",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "apps/exactl/src/commands/a.ts",
+          "code": "import { c } from \"../../config/service.ts\";\nexport { c };\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "core-boundary-cli-helpers",
+      "origin": "catalog",
+      "outcome": "zone",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "import-boundaries",
+          "step": 8
+        }
+      ],
+      "mechanism": "options",
+      "zoneForm": "specifier+except",
+      "coupling": [
+        "non-CLI files must not import exactl/src/helpers/"
+      ],
+      "options": [
+        "zones entry"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "eslint",
+          "rule": "no-restricted-imports",
+          "kind": "related"
+        },
+        {
+          "tool": "eslint-plugin-import",
+          "rule": "no-restricted-paths",
+          "kind": "related"
+        },
+        {
+          "tool": "oxlint",
+          "rule": "eslint/no-restricted-imports",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "import { h } from \"../../../apps/exactl/src/helpers/h.ts\";\nexport { h };\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "package-src-boundary",
+      "origin": "catalog",
+      "outcome": "zone",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "import-boundaries",
+          "step": 8
+        }
+      ],
+      "mechanism": "options",
+      "zoneForm": "target",
+      "coupling": [
+        "package files must not import the retired root implementation paths (resolved path in a set)"
+      ],
+      "options": [
+        "zones entry"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "eslint",
+          "rule": "no-restricted-imports",
+          "kind": "related"
+        },
+        {
+          "tool": "eslint-plugin-import",
+          "rule": "no-restricted-paths",
+          "kind": "related"
+        },
+        {
+          "tool": "oxlint",
+          "rule": "eslint/no-restricted-imports",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "import { s } from \"../../../src/s.ts\";\nexport { s };\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "package-tests-boundary",
+      "origin": "emitted",
+      "outcome": "zone",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "import-boundaries",
+          "step": 8
+        }
+      ],
+      "mechanism": "options",
+      "zoneForm": "target",
+      "coupling": [
+        "production files must not import from tests/ (resolved path)"
+      ],
+      "options": [
+        "zones entry"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "eslint",
+          "rule": "no-restricted-imports",
+          "kind": "related"
+        },
+        {
+          "tool": "eslint-plugin-import",
+          "rule": "no-restricted-paths",
+          "kind": "related"
+        },
+        {
+          "tool": "oxlint",
+          "rule": "eslint/no-restricted-imports",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "import { t } from \"../../../tests/t.ts\";\nexport { t };\n"
+        }
+      ],
+      "ported": false,
+      "note": "Emitted by the checker but absent from the catalog and from INLINE_SCRIPT_RULE_IDS."
+    },
+    {
+      "id": "package-entrypoint-root-src-reexport",
+      "origin": "catalog",
+      "outcome": "zone",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "import-boundaries",
+          "step": 8
+        }
+      ],
+      "mechanism": "options",
+      "zoneForm": "specifier+files",
+      "coupling": [
+        "package root entrypoints must not re-export from src/ or ../src/"
+      ],
+      "options": [
+        "zones entry"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "eslint",
+          "rule": "no-restricted-imports",
+          "kind": "related"
+        },
+        {
+          "tool": "eslint-plugin-import",
+          "rule": "no-restricted-paths",
+          "kind": "related"
+        },
+        {
+          "tool": "oxlint",
+          "rule": "eslint/no-restricted-imports",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "repo walk, .ts files",
+        "decision": "extend-scripts-run",
+        "dropped": [
+          "non-root-ts"
+        ]
+      },
+      "positive": [
+        {
+          "path": "packages/x/mod.ts",
+          "code": "export { s } from \"src/s.ts\";\n"
+        }
+      ],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "edition-leak",
+      "origin": "catalog",
+      "outcome": "exaix",
+      "parts": [
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "edition-leak"
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "reads edition tier order from path and specifier; a dynamic import needs an editionType guard (graph-like analysis)"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk",
+        "decision": "not-applicable",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "edition-conditional-outside-composer",
+      "origin": "catalog",
+      "outcome": "exaix",
+      "parts": [
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "edition-conditional-outside-composer"
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "text pattern EXAIX_EDITION or edition === outside the edition composer"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk",
+        "decision": "not-applicable",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "concrete-cross-domain",
+      "origin": "catalog",
+      "outcome": "exaix",
+      "parts": [
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "concrete-cross-domain"
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "TypeScript AST with Exaix domain-package classification"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk",
+        "decision": "not-applicable",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "layer-constant-leak",
+      "origin": "catalog",
+      "outcome": "exaix",
+      "parts": [
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "layer-constant-leak"
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "TypeScript AST with Exaix layer knowledge"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk",
+        "decision": "not-applicable",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "package-boundary",
+      "origin": "catalog",
+      "outcome": "exaix",
+      "parts": [
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "package-boundary"
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "cross-package imports need the file's own package root (dynamic per-package glob)"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk",
+        "decision": "not-applicable",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "package-subpath-promotion",
+      "origin": "catalog",
+      "outcome": "exaix",
+      "parts": [
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "package-subpath-promotion"
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "uses the discovered workspace package aliases from deno.json"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk",
+        "decision": "not-applicable",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "package-testing-import",
+      "origin": "catalog",
+      "outcome": "exaix",
+      "parts": [
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "package-testing-import"
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "uses the discovered workspace package testing aliases"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk",
+        "decision": "not-applicable",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "package-canonical-import",
+      "origin": "catalog",
+      "outcome": "exaix",
+      "parts": [
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "package-canonical-import"
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "uses the discovered workspace public package aliases"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk",
+        "decision": "not-applicable",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "package-related-files-boundary",
+      "origin": "catalog",
+      "outcome": "exaix",
+      "parts": [
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "package-related-files-boundary"
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "reads @related-files header content for retired root paths"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk",
+        "decision": "not-applicable",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "package-instantiates-event-logger",
+      "origin": "catalog",
+      "outcome": "exaix",
+      "parts": [
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "package-instantiates-event-logger"
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "Exaix class EventLogger"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk",
+        "decision": "not-applicable",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "package-concrete-logger-type",
+      "origin": "catalog",
+      "outcome": "exaix",
+      "parts": [
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "package-concrete-logger-type"
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "Exaix import of EventLogger from @exaix/core"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk",
+        "decision": "not-applicable",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "package-uses-config-reader",
+      "origin": "catalog",
+      "outcome": "exaix",
+      "parts": [
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "package-uses-config-reader"
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "Exaix ConfigService usage"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk",
+        "decision": "not-applicable",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "module-header-tag",
+      "origin": "catalog",
+      "outcome": "exaix",
+      "parts": [
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "module-header-tag"
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "Exaix mandatory header tags @module @path @description"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk",
+        "decision": "not-applicable",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "script-placement",
+      "origin": "catalog",
+      "outcome": "exaix",
+      "parts": [
+        {
+          "part": "exaix",
+          "pack": "exaix",
+          "key": "script-placement"
+        }
+      ],
+      "mechanism": "none",
+      "coupling": [
+        "debug_ and tmp_ file names under scripts/"
+      ],
+      "options": [],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [],
+      "scope": {
+        "script": "repo walk",
+        "decision": "not-applicable",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": ""
+    },
+    {
+      "id": "exaix/exported-interface-naming",
+      "origin": "plugin",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "exported-interface-naming",
+          "step": 7
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "I-prefix convention; lives in the Exaix pack today"
+      ],
+      "options": [
+        "prefix (default I)",
+        "off by default in the engine example catalog"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "typescript-eslint",
+          "rule": "naming-convention",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "plugin rule in deno lint roots",
+        "decision": "unchanged",
+        "dropped": []
+      },
+      "positive": [
+        {
+          "path": "packages/x/src/a.ts",
+          "code": "export interface Thing {\n  readonly a: number;\n}\n"
+        }
+      ],
+      "ported": false,
+      "note": "Moves out of the Exaix pack; the catalog id exaix/exported-interface-naming does not change."
+    },
+    {
+      "id": "magic-literals",
+      "origin": "checker",
+      "outcome": "generic",
+      "parts": [
+        {
+          "part": "generic",
+          "pack": "typescript",
+          "key": "magic-literals",
+          "step": 5
+        }
+      ],
+      "mechanism": "options",
+      "coupling": [
+        "detector in check_magic_values.ts: thresholds, structural-literal skips, constants.ts and enums.ts path suffixes",
+        "uses catalog scopes through classifyPath",
+        "Exaix layer allow-list stays in lint-policy"
+      ],
+      "options": [
+        "thresholds",
+        "constant file suffixes",
+        "skip lists"
+      ],
+      "overlap": {
+        "kind": "none",
+        "builtins": [],
+        "related": []
+      },
+      "counterparts": [
+        {
+          "tool": "eslint",
+          "rule": "no-magic-numbers",
+          "kind": "related"
+        },
+        {
+          "tool": "typescript-eslint",
+          "rule": "no-magic-numbers",
+          "kind": "related"
+        },
+        {
+          "tool": "oxlint",
+          "rule": "eslint/no-magic-numbers",
+          "kind": "related"
+        }
+      ],
+      "scope": {
+        "script": "check:magic walks .ts under the repository",
+        "decision": "unchanged",
+        "dropped": []
+      },
+      "positive": [],
+      "ported": false,
+      "note": "Conditional on Step 5: dropped and recorded if the coupling cannot become options."
+    }
+  ]
+}
