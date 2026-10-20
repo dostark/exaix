@@ -144,14 +144,14 @@ Deno.test("the generic rule areas name no Exaix symbol", async () => {
 });
 
 Deno.test("every catalog codeStyle target resolves to an existing heading", async () => {
-  const codeStyleDoc = await Deno.readTextFile(join(REPO_ROOT, "CODE_STYLE.md"));
+  const codeStyleDoc = await Deno.readTextFile(join(REPO_ROOT, "docs/CODE_STYLE.md"));
   const anchorsOf = (text: string) => new Set([...text.matchAll(/\{#([^}]+)\}/g)].map((m) => m[1]));
-  const docs: Record<string, Set<string>> = { "CODE_STYLE.md": anchorsOf(codeStyleDoc) };
+  const docs: Record<string, Set<string>> = { "docs/CODE_STYLE.md": anchorsOf(codeStyleDoc) };
   for (const extra of GUIDE_DOCS) {
     try {
       docs[extra] = anchorsOf(await Deno.readTextFile(join(REPO_ROOT, extra)));
     } catch {
-      // The guide is added by a later step; fall back to CODE_STYLE.md anchors.
+      // The guide is added by a later step; fall back to docs/CODE_STYLE.md anchors.
     }
   }
   for (const [id, entry] of Object.entries(catalog.rules)) {

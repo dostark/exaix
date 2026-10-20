@@ -368,7 +368,7 @@ and the `impact:` component before `:` must appear verbatim in `what:`.
 
 ## Related
 
-- [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+- [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ## Output Format
 

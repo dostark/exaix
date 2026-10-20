@@ -21,7 +21,7 @@
     },
     {
       "path": "references/CODE_STYLE.md",
-      "reason": "Backward-compat alias to the repo-root CODE_STYLE.md (documentation, exempt)."
+      "reason": "Backward-compat alias to docs/CODE_STYLE.md (documentation, exempt)."
     }
   ]
 }

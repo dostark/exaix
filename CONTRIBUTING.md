@@ -15,7 +15,7 @@ Thank you for your interest in contributing to Exaix! This guide details the dev
 ## 1. Coding Standards
 
 All coding conventions and style rules are now maintained in
-[CODE_STYLE.md](./CODE_STYLE.md). This document is the single source of truth
+[docs/CODE_STYLE.md](./docs/CODE_STYLE.md). This document is the single source of truth
 for typing, imports, dependency injection, constants, environment variables,
 and related topics. Please review it before making any changes to source
 code.
@@ -27,7 +27,7 @@ response-contract guidance, structured status prose, and source comments —
 follow **ASD-STE100** and the **Exaix STE Extension v1**: state the result or
 action first, omit non-essential detail, self-reflection, and repetition, and
 use bullets when they make steps easier to scan. See
-[AGENTS.md](./AGENTS.md) §5 and `CODE_STYLE.md` §16 (Comment Discipline).
+[AGENTS.md](./AGENTS.md) §5 and `docs/CODE_STYLE.md`#comment-discipline (Comment Discipline).
 
 Two authoring gates enforce the shared rule set:
 
@@ -134,7 +134,7 @@ host (or enable Docker-in-Docker first). Manual cutover verification is
 
 ## 3. Migration Guide
 
-If you are updating legacy code, refer to `CODE_STYLE.md` §2 (No Magic Numbers or Strings) for the authoritative rules on replacing hardcoded values with the new configuration system.
+If you are updating legacy code, refer to `docs/CODE_STYLE.md#no-magic-values` (No Magic Numbers or Strings) for the authoritative rules on replacing hardcoded values with the new configuration system.
 
 ## 4. Safe Git Workflow
 
@@ -455,8 +455,8 @@ _Claude Code shorthand: `/commit`_
 - [ ] All items in the [AGENTS.md Task Checklist](AGENTS.md#task-checklist) are satisfied.
 - [ ] New configuration options added to `exa.config.sample.toml`.
 - [ ] Zod schema updated in `packages/schemas/src/config.ts`.
-- [ ] **Type Safety:** No `any`, no `unknown` as stored type, no `as any` casting (see `CODE_STYLE.md` §1).
-- [ ] **Dependency Injection:** Injectable services expose an `IFoo` interface; constructors accept `IFoo`, not `Foo`; test mocks implement the full interface (see `CODE_STYLE.md` §5).
+- [ ] **Type Safety:** No `any`, no `unknown` as stored type, no `as any` casting (see `unslop-ts/docs/style_guide.md#strict-type-safety`).
+- [ ] **Dependency Injection:** Injectable services expose an `IFoo` interface; constructors accept `IFoo`, not `Foo`; test mocks implement the full interface (see `docs/CODE_STYLE.md#di-and-interfaces`).
 - [ ] **Environment Variables:** If using `EXA_LLM_*` vars, validated via `getValidatedEnvOverrides()` (no direct `Deno.env.get()`).
 - [ ] **Test Variables:** Test-related env vars use `EXA_TEST_*` prefix and helper functions (`isTestMode()`, `isCIMode()`).
 - [ ] Tests added for new configuration options.

@@ -19,7 +19,7 @@ const REPO_ROOT = new URL("../../../", import.meta.url);
 const GUIDE_HEADING = "### Parallel tool calls";
 const ARCHITECTURE_HEADING = "#### Parallel tool-round policy and provider profiles";
 const TOOLS_HEADING = "## Native Tool Calls per Response";
-const CODE_STYLE_HEADING = "## 18. Native Tool-Round Replay";
+const CODE_STYLE_HEADING = "## Native Tool-Round Replay";
 const EVENT_HEADING = "## Event Taxonomy";
 const REQUIRED_EVENT_MEMBERS = [
   "AgentDynamicToolCall",
@@ -90,7 +90,7 @@ const guide = await readDoc("docs/Exaix_User_Guide.md");
 const architecture = await readDoc("ARCHITECTURE.md");
 const referenceData = await readDoc("docs/Reference_Data.md");
 const tools = await readDoc(".copilot/docs/TOOLS.md");
-const codeStyle = await readDoc("CODE_STYLE.md");
+const codeStyle = await readDoc("docs/CODE_STYLE.md");
 
 Deno.test("[model_tool_round_docs] every parallel tool-call TOML example parses through ConfigSchema", () => {
   const blocks = tomlBlocks(sectionOf(guide, GUIDE_HEADING));

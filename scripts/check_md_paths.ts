@@ -778,22 +778,24 @@ export async function checkMdPaths(root: string, options: ICheckOptions = {}): P
     if (isHistoricalPhaseDoc(entry.path) && !isStagedEdit) continue;
     if (options.parentOnly && rel.startsWith("exaix-dev-docs/")) continue;
     if (options.onlyFiles && !options.onlyFiles.has(rel)) continue;
+    const documentPath = await Deno.realPath(entry.path);
+    const documentRel = relative(absRoot, documentPath).replaceAll("\\", "/");
     const text = await Deno.readTextFile(entry.path);
     const { refs, anchorRefs } = extractReferences(text);
     for (const { ref, line, isLink, isBareProse } of refs) {
       // Skip references into declared submodules whose working trees are not populated.
       const top = repoRootTarget(ref)?.split("/")[0];
       if (top !== undefined && absentSubs.has(top)) continue;
-      const resolves = referenceResolves(absRoot, entry.path, ref);
+      const resolves = referenceResolves(absRoot, documentPath, ref);
       if (!resolves) {
-        violations.push({ file: rel, line, reference: ref, isLink, suggestion: suggestFor(ref, rel, index) });
+        violations.push({ file: rel, line, reference: ref, isLink, suggestion: suggestFor(ref, documentRel, index) });
         continue;
       }
       // Resolvable + bare-in-prose ⇒ style nag: it should be wrapped in backticks.
       if (isBareProse) styleViolations.push({ file: rel, line, reference: ref });
     }
     for (const { raw, line } of anchorRefs) {
-      const v = await checkAnchorRef(absRoot, entry.path, rel, raw, line, headingsCache);
+      const v = await checkAnchorRef(absRoot, documentPath, rel, raw, line, headingsCache);
       if (v) anchorViolations.push(v);
     }
   }

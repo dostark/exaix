@@ -151,16 +151,16 @@ Deno.test({
         "### Symlinked root docs",
         "",
         "- [ARCHITECTURE.md](../../ARCHITECTURE.md): System architecture.",
-        "- [CODE_STYLE.md](../../CODE_STYLE.md): Coding standards.",
+        "- [CODE_STYLE.md](../../docs/CODE_STYLE.md): Coding standards.",
         "- [GLOSSARY.md](../../GLOSSARY.md): Concept-level glossary.",
         "",
       ].join("\n"),
       "docs/GLOSSARY.md": "---\ntitle: Exaix Developer Glossary\n---\n",
       "../ARCHITECTURE.md": "# architecture",
-      "../CODE_STYLE.md": "# style",
+      "../docs/CODE_STYLE.md": "# style",
       "../GLOSSARY.md": "# concept glossary",
       "manifest.json": JSON.stringify({ docs: [] }),
-    }, { "docs/ARCHITECTURE.md": "../../ARCHITECTURE.md", "docs/CODE_STYLE.md": "../../CODE_STYLE.md" });
+    }, { "docs/ARCHITECTURE.md": "../../ARCHITECTURE.md", "docs/CODE_STYLE.md": "../../docs/CODE_STYLE.md" });
     const result = await runCheck(copilotDir);
     assertEquals(result.code, 1, "should exit 1 when a documented symlink is not present");
     assertStringIncludes(result.output, "docs-readme-symlink-list");
@@ -176,18 +176,32 @@ Deno.test({
         "### Symlinked root docs",
         "",
         "- [ARCHITECTURE.md](../../ARCHITECTURE.md): System architecture.",
-        "- [CODE_STYLE.md](../../CODE_STYLE.md): Coding standards.",
+        "- [CODE_STYLE.md](../../docs/CODE_STYLE.md): Coding standards.",
         "",
       ].join("\n"),
       "../ARCHITECTURE.md": "# architecture",
-      "../CODE_STYLE.md": "# style",
+      "../docs/CODE_STYLE.md": "# style",
       "manifest.json": JSON.stringify({ docs: [] }),
     }, {
       "docs/ARCHITECTURE.md": "../../ARCHITECTURE.md",
-      "docs/CODE_STYLE.md": "../../CODE_STYLE.md",
+      "docs/CODE_STYLE.md": "../../docs/CODE_STYLE.md",
     });
     const result = await runCheck(copilotDir);
     assertEquals(result.code, 0, "should exit 0 when documented symlinks match reality");
+    Deno.removeSync(join(copilotDir, ".."), { recursive: true });
+  },
+});
+
+Deno.test({
+  name: "check:agent-docs-integrity — (j) a docs symlink that still targets the old root path → FAIL",
+  fn: async () => {
+    const copilotDir = createTempCorpus({
+      "../docs/CODE_STYLE.md": "# style",
+      "manifest.json": JSON.stringify({ docs: [] }),
+    }, { "docs/CODE_STYLE.md": "../../" + "docs/CODE_STYLE.md".split("/")[1] });
+    const result = await runCheck(copilotDir);
+    assertEquals(result.code, 1, "should exit 1 when the symlink targets a path that no longer exists");
+    assertStringIncludes(result.output, "dangling-docs-symlink");
     Deno.removeSync(join(copilotDir, ".."), { recursive: true });
   },
 });

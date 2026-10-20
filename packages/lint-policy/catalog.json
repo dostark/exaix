@@ -221,25 +221,25 @@
       "description": "Rules that find restated or duplicated declarations"
     },
     "type-safety": {
-      "description": "Rules that keep type evidence (CODE_STYLE.md 1)."
+      "description": "Rules that keep type evidence (unslop-ts/docs/style_guide.md#strict-type-safety)."
     },
     "imports": {
-      "description": "Import shape and placement rules (CODE_STYLE.md 3)."
+      "description": "Import shape and placement rules (docs/CODE_STYLE.md#import-statements)."
     },
     "magic-values": {
-      "description": "No magic numbers or strings (CODE_STYLE.md 2)."
+      "description": "No magic numbers or strings (docs/CODE_STYLE.md#no-magic-values)."
     },
     "module-structure": {
-      "description": "Module headers and placement (CODE_STYLE.md 7)."
+      "description": "Module headers and placement (docs/CODE_STYLE.md#module-structure)."
     },
     "complexity": {
-      "description": "Function and method size limits (CODE_STYLE.md 11)."
+      "description": "Function and method size limits (unslop-ts/docs/style_guide.md#complexity-rules)."
     },
     "comments": {
-      "description": "Comment discipline (CODE_STYLE.md 16)."
+      "description": "Comment discipline (docs/CODE_STYLE.md#comment-discipline)."
     },
     "scripts": {
-      "description": "Utility script headers (CODE_STYLE.md 12)."
+      "description": "Utility script headers (docs/CODE_STYLE.md#utility-scripts)."
     },
     "test-quality": {
       "description": "Rules on test code and fixtures."
@@ -248,10 +248,10 @@
       "description": "Cross-boundary import rules."
     },
     "tui": {
-      "description": "TUI isolation boundary (CODE_STYLE.md 8)."
+      "description": "TUI isolation boundary (docs/CODE_STYLE.md#tui-boundaries)."
     },
     "cli": {
-      "description": "CLI isolation boundary (CODE_STYLE.md 9)."
+      "description": "CLI isolation boundary (docs/CODE_STYLE.md#cli-boundaries)."
     },
     "package": {
       "description": "Package structure and purity."
@@ -260,7 +260,7 @@
       "description": "Edition tier import boundary."
     },
     "di": {
-      "description": "Dependency injection and interfaces (CODE_STYLE.md 5)."
+      "description": "Dependency injection and interfaces (docs/CODE_STYLE.md#di-and-interfaces)."
     },
     "deslop": {
       "description": "Rule idea taken from maharshi365/deslop or dmmulroy/anti-slop."
@@ -392,7 +392,7 @@
       "reason": "Opt-in: the bare-optional check is a staged-file ratchet today, not a full-tree gate.",
       "scope": "all",
       "optIn": true,
-      "codeStyle": "CODE_STYLE.md#optional-params",
+      "codeStyle": "docs/CODE_STYLE.md#optional-params",
       "tags": [
         "type-safety",
         "deslop"
@@ -443,7 +443,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "test",
       "optIn": true,
-      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
+      "codeStyle": "docs/CODE_STYLE.md#package-test-boundaries",
       "tags": [
         "test-quality",
         "deslop"
@@ -459,7 +459,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "test",
       "optIn": true,
-      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
+      "codeStyle": "docs/CODE_STYLE.md#package-test-boundaries",
       "tags": [
         "test-quality",
         "deslop"
@@ -475,7 +475,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "test",
       "optIn": true,
-      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
+      "codeStyle": "docs/CODE_STYLE.md#package-test-boundaries",
       "tags": [
         "test-quality",
         "deslop"
@@ -1009,7 +1009,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#module-structure",
+      "codeStyle": "docs/CODE_STYLE.md#module-structure",
       "tags": [
         "module-structure"
       ]
@@ -1149,7 +1149,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#layer-aware-constant-imports",
+      "codeStyle": "docs/CODE_STYLE.md#layer-aware-constant-imports",
       "tags": [
         "edition",
         "boundary"
@@ -1172,7 +1172,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#layer-aware-constant-imports",
+      "codeStyle": "docs/CODE_STYLE.md#layer-aware-constant-imports",
       "tags": [
         "edition",
         "boundary"
@@ -1225,7 +1225,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "CODE_STYLE.md#utility-scripts",
+      "codeStyle": "docs/CODE_STYLE.md#utility-scripts",
       "tags": [
         "scripts"
       ]
@@ -1234,7 +1234,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#module-structure",
+      "codeStyle": "docs/CODE_STYLE.md#module-structure",
       "tags": [
         "package",
         "boundary"
@@ -1244,7 +1244,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#module-structure",
+      "codeStyle": "docs/CODE_STYLE.md#module-structure",
       "tags": [
         "package",
         "boundary"
@@ -1254,7 +1254,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#module-structure",
+      "codeStyle": "docs/CODE_STYLE.md#module-structure",
       "tags": [
         "package",
         "boundary"
@@ -1264,7 +1264,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "test",
-      "codeStyle": "CODE_STYLE.md#package-test-boundaries",
+      "codeStyle": "docs/CODE_STYLE.md#package-test-boundaries",
       "tags": [
         "package",
         "test-quality"
@@ -1274,7 +1274,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#module-structure",
+      "codeStyle": "docs/CODE_STYLE.md#module-structure",
       "tags": [
         "package",
         "imports"
@@ -1284,7 +1284,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#package-module-purity",
+      "codeStyle": "docs/CODE_STYLE.md#package-module-purity",
       "tags": [
         "package",
         "di"
@@ -1294,7 +1294,7 @@
       "engine": "script",
       "severity": "warn",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#package-module-purity",
+      "codeStyle": "docs/CODE_STYLE.md#package-module-purity",
       "tags": [
         "package",
         "di"
@@ -1304,7 +1304,7 @@
       "engine": "script",
       "severity": "warn",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#package-module-purity",
+      "codeStyle": "docs/CODE_STYLE.md#package-module-purity",
       "tags": [
         "package",
         "di"
@@ -1329,7 +1329,7 @@
       "engine": "script",
       "severity": "warn",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#layer-aware-constant-imports",
+      "codeStyle": "docs/CODE_STYLE.md#layer-aware-constant-imports",
       "tags": [
         "boundary",
         "di"
@@ -1339,7 +1339,7 @@
       "engine": "script",
       "severity": "warn",
       "scope": "prod",
-      "codeStyle": "CODE_STYLE.md#layer-aware-constant-imports",
+      "codeStyle": "docs/CODE_STYLE.md#layer-aware-constant-imports",
       "tags": [
         "boundary"
       ],

@@ -18,10 +18,10 @@ The directory mirrors the Claude Code `docs/` convention and is reachable as `.a
 
 ### Symlinked root docs
 
-These files stay canonical at the repo root but are discoverable here via symlink:
+These files stay canonical in the repository (at the root or in `docs/`) but are discoverable here via symlink:
 
 - [ARCHITECTURE.md](../../ARCHITECTURE.md): System architecture.
-- [CODE_STYLE.md](../../CODE_STYLE.md): Coding standards.
+- [CODE_STYLE.md](../../docs/CODE_STYLE.md): Coding standards.
 
 ### Root docs linked, not symlinked
 

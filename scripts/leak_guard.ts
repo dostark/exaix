@@ -115,7 +115,7 @@ export async function runLeakGuard(options: ILeakGuardOptions = {}): Promise<ILe
       if (relativePath === ".copilot/skills/edition-development/SKILL.md") continue;
       if (relativePath === "tests/fixtures/skills/dogfood_baseline.json") continue;
       if (relativePath === "deno.json") continue;
-      if (relativePath === "CODE_STYLE.md") continue;
+      if (relativePath === "docs/CODE_STYLE.md") continue;
       if (relativePath === "packages/lint-policy/docs/style_rules.md") continue;
 
       // Check 1: Leak paths in file content — flag only actual imports or

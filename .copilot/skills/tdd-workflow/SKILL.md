@@ -117,7 +117,7 @@ Workflow chain:
 ## Related
 
 - [AGENTS.md](../../../AGENTS.md#behavioral-guidelines) — behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
-- [CODE_STYLE.md](../../../CODE_STYLE.md) — naming, type, import, constants rules
+- [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md) — naming, type, import, constants rules
 
 ## Output format
 

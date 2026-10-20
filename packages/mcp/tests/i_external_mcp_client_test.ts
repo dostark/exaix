@@ -4,7 +4,7 @@
  * @description Type-only compile-time smoke test: a minimal object literal must
  * satisfy `IExternalMcpClient` under `deno check`/`deno test`. This is a
  * positive-only compile-time assertion — the repo bans TypeScript suppression
- * pragmas that bypass the compiler (see `CODE_STYLE.md`'s "No TypeScript
+ * pragmas that bypass the compiler (see `docs/CODE_STYLE.md`'s "No TypeScript
  * suppression pragmas" rule, enforced by the `exaix/ts-suppression-pragmas` lint rule and the
  * built-in `ban-ts-comment` rule), so there is deliberately no negative
  * "missing method" case (Pre-Gap Analysis GAP-1).

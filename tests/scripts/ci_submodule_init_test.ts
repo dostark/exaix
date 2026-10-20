@@ -118,9 +118,9 @@ Deno.test({
     const devTest = dockerfile.slice(dockerfile.indexOf("AS dev-test"));
     const cacheLine = devTest.split("\n").find((line) => line.includes("RUN deno cache")) ?? "";
     assertStringIncludes(cacheLine, "unslop-ts/");
-    assertStringIncludes(devTest, "COPY CODE_STYLE.md ./");
+    assertStringIncludes(devTest, "COPY docs/CODE_STYLE.md docs/CODE_STYLE.md");
     const dockerignore = await Deno.readTextFile(join(REPO_ROOT, ".dockerignore"));
-    assertStringIncludes(dockerignore, "!CODE_STYLE.md");
+    assertStringIncludes(dockerignore, "!docs/CODE_STYLE.md");
   },
 });
 

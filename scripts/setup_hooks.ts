@@ -176,7 +176,7 @@ fi
 deno task check:event-strings
 if [ $? -ne 0 ]; then
   echo "❌ Error: Inline event string literals detected. Use DomainEventType members instead."
-  echo "    See CODE_STYLE.md#event-type-strings for guidance."
+  echo "    See docs/CODE_STYLE.md#event-type-strings for guidance."
   exit 1
 fi
 

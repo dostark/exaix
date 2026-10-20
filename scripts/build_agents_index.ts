@@ -16,6 +16,8 @@ import type { JSONObject } from "@exaix/core/types";
 
 const AGENTS_DIR = ".copilot";
 const SUBMODULE_DIR = "exaix-dev-docs";
+const KNOWLEDGE_DIRS = [".", "docs"];
+const KNOWLEDGE_DEPTH = 1;
 
 function extractFrontmatter(md: string): string | null {
   const match = md.match(/^---\n([\s\S]*?)\n---/);
@@ -56,26 +58,27 @@ export async function generateManifestObject(includeSubmodule = false): Promise<
     }
   }
 
-  // Include root-level markdown files that are marked as copilot knowledge base.
-  // maxDepth: 1 limits the walk to the root directory only (no subdirectory recursion).
-  for await (const entry of walk(".", { exts: [".md"], maxDepth: 1 })) {
-    if (!entry.isFile) continue;
-    const md = await Deno.readTextFile(entry.path);
-    const fmRaw = extractFrontmatter(md);
-    if (!fmRaw) continue;
-    const fm = parse(fmRaw) as JSONObject;
-    if (!fm["copilot_knowledge_base"]) continue;
+  // Read marked documents directly under each knowledge directory.
+  for (const dir of KNOWLEDGE_DIRS) {
+    for await (const entry of walk(dir, { exts: [".md"], maxDepth: KNOWLEDGE_DEPTH })) {
+      if (!entry.isFile) continue;
+      const md = await Deno.readTextFile(entry.path);
+      const fmRaw = extractFrontmatter(md);
+      if (!fmRaw) continue;
+      const fm = parse(fmRaw) as JSONObject;
+      if (!fm["copilot_knowledge_base"]) continue;
 
-    docs.push({
-      path: entry.path,
-      agent: fm["agent"],
-      scope: fm["scope"],
-      title: fm["title"],
-      short_summary: String(fm["short_summary"] ?? fm["description"] ?? ""),
-      version: fm["version"],
-      topics: fm["topics"],
-      qwen_skill: fm["qwen_skill"],
-    });
+      docs.push({
+        path: entry.path,
+        agent: fm["agent"],
+        scope: fm["scope"],
+        title: fm["title"],
+        short_summary: String(fm["short_summary"] ?? fm["description"] ?? ""),
+        version: fm["version"],
+        topics: fm["topics"],
+        qwen_skill: fm["qwen_skill"],
+      });
+    }
   }
 
   // No `generated_at` timestamp: it made the committed manifest churn on every

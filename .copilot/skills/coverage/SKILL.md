@@ -148,4 +148,4 @@ No new UNGROUNDED files, no lint errors.
 
 ## Related
 
-- [CODE_STYLE.md](../../../CODE_STYLE.md) — naming, type, import, constants rules for test code
+- [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md) — naming, type, import, constants rules for test code

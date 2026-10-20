@@ -2,7 +2,7 @@
 /**
  * @module CheckCodeStyle
  * @path packages/lint-policy/src/checkers/check_code_style.ts
- * @description Scans all .ts and .tsx files for code style violations defined in CODE_STYLE.md.
+ * @description Scans all .ts and .tsx files for code style violations defined in docs/CODE_STYLE.md.
  * @architectural-layer Tooling
  * @dependencies [typescript, @std/fs, @std/path, zod, @dostark/unslop-ts]
  * @related-files [packages/lint-policy/src/checkers/check_magic_values.ts]
@@ -508,7 +508,7 @@ Options:
 
 Description:
   Scans all .ts and .tsx files in the Exaix repository for code style violations
-  defined in CODE_STYLE.md. Exits with code 1 if any errors are found.
+  defined in docs/CODE_STYLE.md. Exits with code 1 if any errors are found.
   `);
   Deno.exit(0);
 }
@@ -636,7 +636,7 @@ function reportConcreteCrossDomain(
         `Concrete class '${name}' imported from '${info.specifier}' ` +
         `and instantiated via \`new ${name}(\` in a different-domain file ` +
         `(${repoPath}). Accept an interface via DI instead of importing ` +
-        `the concrete class. See CODE_STYLE.md §5 (DI) and §15.`,
+        `the concrete class. See docs/CODE_STYLE.md#di-and-interfaces (DI) and docs/CODE_STYLE.md#layer-aware-constant-imports.`,
     );
     if (convertWarnings) errorCount++;
     else warnCount++;
@@ -682,7 +682,7 @@ function reportLayerConstantLeaks(
         `in a different-domain file (${repoPath}). ` +
         `Low-level constants belong behind the service that owns them; ` +
         `avoid importing them in composition-root code. ` +
-        `See CODE_STYLE.md §15.`,
+        `See docs/CODE_STYLE.md#layer-aware-constant-imports.`,
     );
     if (convertWarnings) errorCount++;
     else warnCount++;
@@ -720,7 +720,7 @@ function checkLayerLeaks(sourceFile: ts.SourceFile, repoPath: string): void {
   reportLayerConstantLeaks(imported, sourceFile, repoPath);
 }
 
-// The rules match the code style guidelines in CODE_STYLE.md.
+// The rules match the code style guidelines in docs/CODE_STYLE.md.
 // A violation prints a plain-language explanation.
 // The script exits non-zero when it finds any error, so hooks and CI can gate on it.
 const rules: Rule[] = [
@@ -771,7 +771,7 @@ export const IMPLEMENTED_SCRIPT_RULE_IDS: ReadonlySet<string> = new Set([
 let errorCount = 0;
 let warnCount = 0;
 
-/** Module header tag and script placement checks (CODE_STYLE.md 7 and 12). */
+/** Module header tag and script placement checks (docs/CODE_STYLE.md#module-structure and docs/CODE_STYLE.md#utility-scripts). */
 function checkModuleHeader(path: string, repoPath: string, lines: string[], headerFound: boolean): void {
   if (!headerFound) return;
   if (path.includes(LAYOUT.testsSegment)) return;
@@ -797,7 +797,7 @@ function checkModuleHeader(path: string, repoPath: string, lines: string[], head
   checkScriptPlacement(path);
 }
 
-/** Maintenance-script placement check (CODE_STYLE.md 12). */
+/** Maintenance-script placement check (docs/CODE_STYLE.md#utility-scripts). */
 function checkScriptPlacement(path: string): void {
   if (!path.includes(LAYOUT.scriptsSegment) || path.includes(LAYOUT.testsSegment)) return;
   const fileName = path.split("/").pop() || "";
@@ -816,7 +816,7 @@ function isConfigServiceConfigUsage(trimmedLine: string, line: string): boolean 
   return isImport || isUsage;
 }
 
-/** Reports the package-purity violations for one source line (CODE_STYLE.md 13). */
+/** Reports the package-purity violations for one source line (docs/CODE_STYLE.md#package-module-purity). */
 function reportPackagePurityViolations(repoPath: string, line: string, trimmedLine: string, idx: number): void {
   if (line.match(/\bnew\s+EventLogger\s*\(/)) {
     console.log(
@@ -854,7 +854,7 @@ function reportPackagePurityViolations(repoPath: string, line: string, trimmedLi
   }
 }
 
-/** Package module purity (CODE_STYLE.md 13): no runtime infrastructure in package src/. */
+/** Package module purity (docs/CODE_STYLE.md#package-module-purity): no runtime infrastructure in package src/. */
 function checkPackagePurity(repoPath: string, lines: string[]): void {
   const match = repoPath.match(RE_PACKAGE_SRC_CAPTURE);
   if (!match || match[1] === "core" || repoPath.startsWith(LAYOUT.mcpServerPrefix)) return;
@@ -1345,7 +1345,7 @@ function checkFileFromText(path: string, text: string, catalog: ICatalog): void 
 
   checkModuleHeader(path, repoPath, lines, scan.headerFound);
 
-  // Package Module Purity (CODE_STYLE.md 13)
+  // Package Module Purity (docs/CODE_STYLE.md#package-module-purity)
   checkPackagePurity(repoPath, lines);
 
   evaluateStyleRules({

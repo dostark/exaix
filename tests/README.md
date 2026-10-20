@@ -345,7 +345,7 @@ import { createMcpTestSetup } from "@exaix/mcp/testing";
 
 ## Code Style
 
-Follow [CODE_STYLE.md](../CODE_STYLE.md) for naming conventions, import organization, error handling patterns, and async/await usage.
+Follow [docs/CODE_STYLE.md](../docs/CODE_STYLE.md) for naming conventions, import organization, error handling patterns, and async/await usage.
 
 ### Test-Specific Style
 
@@ -424,7 +424,7 @@ EXA_TEST_ENABLE_PAID_LLM=1 deno task test
 
 ## See Also
 
-- [CODE_STYLE.md](../CODE_STYLE.md) — General coding style
+- [docs/CODE_STYLE.md](../docs/CODE_STYLE.md) — General coding style
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — Contribution guidelines
 - [ARCHITECTURE.md](../ARCHITECTURE.md) — System architecture
 - [`exaix-dev-docs/dev/Exaix_Packages.md`](../exaix-dev-docs/dev/Exaix_Packages.md) — Package boundaries + test migration plan

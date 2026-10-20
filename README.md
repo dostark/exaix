@@ -206,16 +206,16 @@ source-code replacement; manage the source repository and runtime workspace sepa
 
 ## Choose the right workflow
 
-| If you need to...                                | Start here                                                      |
-| ------------------------------------------------ | --------------------------------------------------------------- |
-| Submit, inspect, and operate ordinary AI work    | [User Guide](docs/Exaix_User_Guide.md)                          |
-| Understand architecture and invariants           | [Architecture](ARCHITECTURE.md)                                 |
-| Learn the project vocabulary                     | [Glossary](GLOSSARY.md)                                         |
-| Run a sandboxed Exaix-on-Exaix development cycle | [Dogfooding Guide](docs/Exaix_Dogfooding.md)                    |
-| Build or score scenario evaluations              | [Evaluation Guide](docs/Exaix_Evaluation.md)                    |
-| Set up a contributor workspace                   | [Contributing](CONTRIBUTING.md)                                 |
-| Contribute code                                  | [Contributing](CONTRIBUTING.md) and [Code Style](CODE_STYLE.md) |
-| Review MCP tool contracts                        | [Tool reference](.copilot/docs/TOOLS.md)                        |
+| If you need to...                                | Start here                                                           |
+| ------------------------------------------------ | -------------------------------------------------------------------- |
+| Submit, inspect, and operate ordinary AI work    | [User Guide](docs/Exaix_User_Guide.md)                               |
+| Understand architecture and invariants           | [Architecture](ARCHITECTURE.md)                                      |
+| Learn the project vocabulary                     | [Glossary](GLOSSARY.md)                                              |
+| Run a sandboxed Exaix-on-Exaix development cycle | [Dogfooding Guide](docs/Exaix_Dogfooding.md)                         |
+| Build or score scenario evaluations              | [Evaluation Guide](docs/Exaix_Evaluation.md)                         |
+| Set up a contributor workspace                   | [Contributing](CONTRIBUTING.md)                                      |
+| Contribute code                                  | [Contributing](CONTRIBUTING.md) and [Code Style](docs/CODE_STYLE.md) |
+| Review MCP tool contracts                        | [Tool reference](.copilot/docs/TOOLS.md)                             |
 
 ## Testing and contributing
 

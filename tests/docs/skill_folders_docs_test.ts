@@ -25,7 +25,7 @@ const ACTIVE_GUIDANCE = [
   GUIDE,
   REFERENCE,
   "ARCHITECTURE.md",
-  "CODE_STYLE.md",
+  "docs/CODE_STYLE.md",
   ".copilot/README.md",
   `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/README.md`,
   "packages/execution/README.md",

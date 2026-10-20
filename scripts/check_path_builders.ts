@@ -9,7 +9,7 @@
  *   Usage: deno task check:path-builders
  * @architectural-layer Script
  * @dependencies [typescript, @std/fs, @std/path]
- * @related-files [packages/shared/src/paths.ts, CODE_STYLE.md]
+ * @related-files [packages/shared/src/paths.ts, docs/CODE_STYLE.md]
  */
 
 import ts from "typescript";
@@ -344,7 +344,7 @@ if (import.meta.main) {
       console.error(`  ${violation.file}:${violation.line}  ${violation.detail}`);
     }
     console.error(
-      `\nBuild the path with the matching helper from @exaix/shared (see CODE_STYLE.md#exaix-path-construction).`,
+      `\nBuild the path with the matching helper from @exaix/shared (see docs/CODE_STYLE.md#exaix-path-construction).`,
     );
     Deno.exit(1);
   }

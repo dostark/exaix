@@ -75,7 +75,7 @@ Phase 2 — Type errors (highest priority)
   5. Fix every `deno task check` error: no `any` (use a specific interface); fix TS2307
      with stubs or imports; never `as any`. The `check:style` `explicit-unknown` and
      `record-unknown` rules reject a stored `unknown` type and `Record<string, unknown>`
-     (CODE_STYLE.md §30, §75); do not reach for either to satisfy the checker. (`deno check
+     (unslop-ts/docs/style_guide.md#strict-type-safety); do not reach for either to satisfy the checker. (`deno check
      packages/ apps/ tests/` for Solo-only scope.)
   6. Re-run `deno task check` — 0 errors.
 
@@ -211,7 +211,7 @@ Phase 25 — Pre-commit-hook parity gates
      `check:blueprint-integrity` (orphan Blueprint reference — resolve/remove);
      `check:skill-index` (run without `--check` to regenerate);
      `check:qwen-skills-sync` (add/update the missing qwen_skill entry);
-     `check:config-keys` (two `configurable()` same key — rename; CODE_STYLE.md §2);
+     `check:config-keys` (two `configurable()` same key — rename; docs/CODE_STYLE.md#no-magic-values);
      `check:event-coverage --fail-on-tagged` (`@visible` gap — add the DomainEventType or
      verify by hand, see #review-phase-code Phase 6);
      `docs-bench` (doc drifted from encoded ground truth — fix the doc, not the test).
@@ -248,7 +248,7 @@ Workflow chain: **#clean-codebase** → #commit
 ## Related
 
 - [AGENTS.md](../../../AGENTS.md#behavioral-guidelines) — behavioral guidelines
-- [CODE_STYLE.md](../../../CODE_STYLE.md) — naming, type, import, constants rules
+- [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md) — naming, type, import, constants rules
 
 ## See also
 

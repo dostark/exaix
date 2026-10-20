@@ -180,7 +180,7 @@ Related
 - #audit-security — full audit when refactor exposes 3+ control gaps
 - Blueprints/Skills/security-first/SKILL.md — portal code checklist (input/path/injection/auth)
 - AGENTS.md#behavioral-guidelines — think before coding, simplicity, surgical changes
-- CODE_STYLE.md — naming, type, import, constants rules
+- docs/CODE_STYLE.md — naming, type, import, constants rules
 ```
 
 ## Output Format

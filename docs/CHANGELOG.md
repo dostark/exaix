@@ -351,7 +351,7 @@
   gates: the staged variant runs in the pre-commit hook and CI and grades only comment
   lines added or modified by a staged change, so pre-existing non-compliant comments stay
   grandfathered and never block unrelated commits.
-- `CODE_STYLE.md` Comment Discipline now requires ASD-STE100 prose for line/block
+- `docs/CODE_STYLE.md` Comment Discipline now requires ASD-STE100 prose for line/block
   comments, module headers, and JSDoc descriptions (20-word sentences, no semicolons,
   six-sentence paragraph limit), preserving directives, tags, identifiers, and literals.
 

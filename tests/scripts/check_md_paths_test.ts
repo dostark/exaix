@@ -160,23 +160,23 @@ Deno.test("[md-paths] --fix rewrites a stale path when its basename has exactly 
 Deno.test("[md-paths] a relative markdown link's suggestion stays relative-correct from the MD file", async () => {
   const { root, cleanup } = await sandbox();
   try {
-    // Real file at repo root.
-    await Deno.writeTextFile(join(root, "CODE_STYLE.md"), "# style\n");
+    // The guide lives directly under docs.
+    await ensureDir(join(root, "docs"));
+    await Deno.writeTextFile(join(root, "docs/CODE_STYLE.md"), "# style\n");
     // A deeply-nested doc with a WRONG relative link (`../../` doesn't reach root).
     await ensureDir(join(root, "a", "b", "c"));
     const doc = join(root, "a", "b", "c", "SKILL.md");
-    await Deno.writeTextFile(doc, "See [style](../../CODE_STYLE.md).\n");
+    await Deno.writeTextFile(doc, "See [style](../../docs/CODE_STYLE.md).\n");
 
     const r = await checkMdPaths(root);
-    const v = r.violations.find((x) => x.reference === "../../CODE_STYLE.md");
+    const v = r.violations.find((x) => x.reference === "../../docs/CODE_STYLE.md");
     assert(v, "the broken relative link is flagged");
-    // The suggestion must be the correct RELATIVE path from a/b/c/ → ../../../CODE_STYLE.md,
-    // NOT the repo-root path CODE_STYLE.md (which would render as a broken link).
-    assertEquals(v!.suggestion, "../../../CODE_STYLE.md");
+    // The suggestion stays relative to the deeply nested document.
+    assertEquals(v!.suggestion, "../../../docs/CODE_STYLE.md");
 
     await applyFix(root, r.violations);
     const after = await Deno.readTextFile(doc);
-    assert(after.includes("(../../../CODE_STYLE.md)"), `relative-correct: ${after}`);
+    assert(after.includes("(../../../docs/CODE_STYLE.md)"), `relative-correct: ${after}`);
     // And the fix genuinely resolves now.
     const r2 = await checkMdPaths(root);
     assertEquals(r2.violations.length, 0, JSON.stringify(r2.violations));
@@ -793,6 +793,24 @@ Deno.test("[md-paths] a missing file inside a POPULATED submodule is still flagg
       r.violations.some((v) => v.reference.includes("gone.ts")),
       JSON.stringify(r.violations),
     );
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] links inside a document symlink resolve from its canonical directory", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "docs"));
+    await ensureDir(join(root, ".copilot", "docs"));
+    await ensureDir(join(root, "guide"));
+    await Deno.writeTextFile(join(root, "guide", "rules.md"), "## Rules {#rules}\n");
+    await Deno.writeTextFile(join(root, "docs", "style.md"), "[Rules](../guide/rules.md#rules)\n");
+    await Deno.symlink("../../docs/style.md", join(root, ".copilot", "docs", "style.md"));
+    const result = await checkMdPaths(root);
+    assertEquals(result.violations, []);
+    assertEquals(result.anchorViolations, []);
+    assertEquals(result.ok, true);
   } finally {
     cleanup();
   }

@@ -12,7 +12,7 @@ links:
 > The Exaix-specific additions to the generic TypeScript style rules in
 > [unslop-ts/docs/style_guide.md](../../../unslop-ts/docs/style_guide.md). Rule ids and
 > severities come from `packages/lint-policy/catalog.json`; the generated reference is
-> [style_rules.md](./style_rules.md). `CODE_STYLE.md` holds the remaining Exaix rules.
+> [style_rules.md](./style_rules.md). `docs/CODE_STYLE.md` holds the remaining Exaix rules.
 
 ## Magic Values {#magic-values}
 

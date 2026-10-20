@@ -6,16 +6,16 @@ copilot_knowledge_base: true
 version: 1.3
 capabilities: [linting_rules, naming_conventions, testing_patterns]
 links:
-  - "packages/core/src/constants.ts"
-  - "packages/lint-policy/src/checkers/check_code_style.ts"
-  - "packages/lint-policy/docs/style_rules.md"
-  - "packages/lint-policy/docs/style_guide.md"
-  - "unslop-ts/docs/style_guide.md"
-copilot_instructions: .copilot/blueprints/senior-coder.md
+  - "../packages/core/src/types/constants.ts"
+  - "../packages/lint-policy/src/checkers/check_code_style.ts"
+  - "../packages/lint-policy/docs/style_rules.md"
+  - "../packages/lint-policy/docs/style_guide.md"
+  - "../unslop-ts/docs/style_guide.md"
+copilot_instructions: ../Blueprints/Agents/senior-coder.md
 ---
 
-> The generic TypeScript rules live in [unslop-ts/docs/style_guide.md](./unslop-ts/docs/style_guide.md),
-> with the Exaix additions in [packages/lint-policy/docs/style_guide.md](./packages/lint-policy/docs/style_guide.md).
+> The generic TypeScript rules live in [unslop-ts/docs/style_guide.md](../unslop-ts/docs/style_guide.md),
+> with the Exaix additions in [packages/lint-policy/docs/style_guide.md](../packages/lint-policy/docs/style_guide.md).
 > This file holds the Exaix-specific rules.
 
 ---
@@ -23,7 +23,7 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 ## No Magic Values {#no-magic-values}
 
 The generic rule (name every value, use an enum for a fixed set of strings) is in the
-[style guide](unslop-ts/docs/style_guide.md#no-magic-values). Exaix adds the following.
+[style guide](../unslop-ts/docs/style_guide.md#no-magic-values). Exaix adds the following.
 
 - **User‑configurable values** — every tunable `DEFAULT_*` constant,
   regardless of which package it lives in, **must** be wrapped with
@@ -123,7 +123,7 @@ Search helpers are provided in the repository to locate inadvertent magic values
 ## Import Statements {#import-statements}
 
 The generic import rules (imports at the top, no re-exporting, dynamic imports, no inline type
-imports) are in the [style guide](unslop-ts/docs/style_guide.md#imports-at-the-top). Exaix adds the
+imports) are in the [style guide](../unslop-ts/docs/style_guide.md#imports-at-the-top). Exaix adds the
 following.
 
 ### No Production Dependency on `tests/`
@@ -197,7 +197,7 @@ These rules are enforced in part by the retired-root-import zone of `exaix/impor
 ## Dependency Injection & Interfaces {#di-and-interfaces}
 
 - **Interface conventions:** exported interfaces use the `I` prefix and sit at the top of the module,
-  as the [style guide](unslop-ts/docs/style_guide.md#interface-conventions) describes. The lint rules
+  as the [style guide](../unslop-ts/docs/style_guide.md#interface-conventions) describes. The lint rules
   `exaix/exported-interface-naming`, `exaix/exported-interface-placement`, and
   `exaix/no-interface-rename-on-import` check them.
 - Every injectable class `Foo` **must** export a companion interface `IFoo`.
@@ -245,7 +245,7 @@ runtime bugs.
 
 ## Module Structure & Placement {#module-structure}
 
-- **Module structure order:** every module follows the order of the [style guide](unslop-ts/docs/style_guide.md#module-order): header comment, imports, exports, functional code. The Exaix header comment also names the Implementation Plan step that the module satisfies.
+- **Module structure order:** every module follows the order of the [style guide](../unslop-ts/docs/style_guide.md#module-order): header comment, imports, exports, functional code. The Exaix header comment also names the Implementation Plan step that the module satisfies.
 
 ### JSDoc Header Tags (`@visible`) {#jsdoc-header-tags}
 
@@ -527,11 +527,11 @@ These rules are enforced by:
 
 This file is the single authoritative source for code style. The following documents reference it but do not duplicate its content:
 
-- [`AGENTS.md`](AGENTS.md) — delegates to this file for all style rules
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — links to this file for coding standards
-- [`packages/lint-policy/docs/style_rules.md`](packages/lint-policy/docs/style_rules.md) — companion reference for the code-style checker and boundary-oriented import rules
-- [`.copilot/skills/exaix-development/SKILL.md`](.copilot/skills/exaix-development/SKILL.md)
-- [`.copilot/README.md`](.copilot/README.md)
+- [`AGENTS.md`](../AGENTS.md) — delegates to this file for all style rules
+- [`CONTRIBUTING.md`](../CONTRIBUTING.md) — links to this file for coding standards
+- [`packages/lint-policy/docs/style_rules.md`](../packages/lint-policy/docs/style_rules.md) — companion reference for the code-style checker and boundary-oriented import rules
+- [`.copilot/skills/exaix-development/SKILL.md`](../.copilot/skills/exaix-development/SKILL.md)
+- [`.copilot/README.md`](../.copilot/README.md)
 
 ---
 
@@ -540,7 +540,7 @@ This file is the single authoritative source for code style. The following docum
 ## Utility Scripting & Headers {#utility-scripts}
 
 - **Preferred Runtime**: Deno TypeScript is the strictly preferred runtime for all repository maintenance, automation, and CI/CD utility scripts. Avoid Bash or standalone Node.js scripts to leverage type safety and the Deno standard library.
-- **Shebang and usage**: every script in `scripts/` follows the [Deno scripts rules](unslop-ts/docs/style_guide.md#deno-scripts) of the style guide: the standard Deno shebang
+- **Shebang and usage**: every script in `scripts/` follows the [Deno scripts rules](../unslop-ts/docs/style_guide.md#deno-scripts) of the style guide: the standard Deno shebang
   `#!/usr/bin/env -S deno run -A` on line 1, and a `Usage:` section in the header.
 - **Standardized Header**: All scripts must feature a unified JSDoc-style header immediately following the shebang.
 - **Mandatory Metadata Tags**:
@@ -570,7 +570,7 @@ Example:
 
 A _pure package module_ can be consumed by an external project with no
 knowledge of the Exaix daemon. The canonical test is in
-[`ARCHITECTURE.md §"Packages vs. Services — Placement Model"`](./ARCHITECTURE.md).
+[`ARCHITECTURE.md §"Packages vs. Services — Placement Model"`](../ARCHITECTURE.md).
 The rules in this section are the **enforceable subset** of that model — they
 target the most common ways packages accidentally acquire daemon-awareness.
 
@@ -665,7 +665,7 @@ actual call-site usage contradicts that intent, the `?` becomes a liability
 
 Three anti-patterns are enforced by `deno task check:optional-params` (Gate 14). The generic
 REDUNDANT_OPTIONAL and UNUSED_OPTIONAL patterns are in the
-[style guide](unslop-ts/docs/style_guide.md#complexity-rules). Exaix adds the `Opt<T, R>` marker.
+[style guide](../unslop-ts/docs/style_guide.md#complexity-rules). Exaix adds the `Opt<T, R>` marker.
 
 ### Optional marker on a required parameter — `Opt<T, R>`
 
@@ -890,7 +890,7 @@ counts, and per-file breakdown.
 
 ## Comment Discipline {#comment-discipline}
 
-The rules are in the [style guide](unslop-ts/docs/style_guide.md#comment-discipline).
+The rules are in the [style guide](../unslop-ts/docs/style_guide.md#comment-discipline).
 
 ### Automated enforcement
 
@@ -933,7 +933,7 @@ in both catalogs. Add every literal intersection to `SHARED_TOOL_OPERATIONS`; th
 `check:tool-naming` gate verifies those declarations and shared names. It cannot infer that
 two differently named, unmatched tools have the same meaning. Review each new unmatched
 export and declare whether it is distinct or add it to the shared-operation table. See
-[ARCHITECTURE.md](ARCHITECTURE.md#tool-catalog-parity-toolregistry-vs-tool_manifest).
+[ARCHITECTURE.md](../ARCHITECTURE.md#tool-catalog-parity-toolregistry-vs-tool_manifest).
 
 ---
 
@@ -981,13 +981,13 @@ This is enforced by `deno task check:path-builders`.
 ## Lint Policy {#lint-policy}
 
 Exaix lint rules live in two places. `packages/lint-policy` holds the Exaix rules, the rule catalog, and the
-reference [`style_rules.md`](packages/lint-policy/docs/style_rules.md). Its guide,
-[`style_guide.md`](packages/lint-policy/docs/style_guide.md), holds the Exaix additions. The generic TypeScript rules
-live in the `unslop-ts` engine, and [`unslop-ts/docs/style_guide.md`](unslop-ts/docs/style_guide.md) is their guide.
+reference [`style_rules.md`](../packages/lint-policy/docs/style_rules.md). Its guide,
+[`style_guide.md`](../packages/lint-policy/docs/style_guide.md), holds the Exaix additions. The generic TypeScript rules
+live in the `unslop-ts` engine, and [`unslop-ts/docs/style_guide.md`](../unslop-ts/docs/style_guide.md) is their guide.
 Run `deno task lint` for the plugin rules and `deno task check:style` for the script checkers.
 
 ---
 
 ## Footer — Agent Knowledge Base
 
-- **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)
+- **Manifest**: [.copilot/manifest.json](../.copilot/manifest.json)

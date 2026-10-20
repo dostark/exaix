@@ -16,7 +16,7 @@ triggers:
     - quality
 constraints:
   - 'Check correctness, security, test coverage, architecture, style'
-  - 'Reference Exaix conventions (CODE_STYLE.md, ARCHITECTURE.md)'
+  - 'Reference Exaix conventions (docs/CODE_STYLE.md, ARCHITECTURE.md)'
   - Do not implement changes — report findings only
   - Work through all 10 phases in order
   - Apply Phase 3b security for any input/FS/auth/secrets/network change

@@ -170,7 +170,7 @@ RUN printf '#!/bin/sh\nexec deno run --allow-all --config /workspaces/exaix/deno
 
 COPY tests/ tests/
 COPY scripts/ scripts/
-COPY CODE_STYLE.md ./
+COPY docs/CODE_STYLE.md docs/CODE_STYLE.md
 
 # Warm the driver entrypoint's import graph (plus the test/package/app graph) so the
 # worker resolves every module with `--network none`. Cache the entrypoint, not the

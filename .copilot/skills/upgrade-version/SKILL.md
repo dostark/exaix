@@ -95,7 +95,7 @@ Workflow chain: #review-phase-plan (if part of a phase) → **#upgrade-version**
 
 ## Related
 
-- [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+- [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ## Output format
 

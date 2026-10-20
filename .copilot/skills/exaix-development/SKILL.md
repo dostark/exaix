@@ -263,7 +263,7 @@ Prohibited anti-patterns
   - **Layer-violating constant imports** — a high-level class (orchestrator,
     coordinator) importing low-level implementation constants from packages whose
     services it delegates to. E.g. `AgentComposer` importing `SafeSubprocess`,
-    `DEFAULT_GIT_*`, or `ToolRegistry`. See [CODE_STYLE.md §15](../docs/CODE_STYLE.md#layer-aware-constant-imports).
+    `DEFAULT_GIT_*`, or `ToolRegistry`. See [docs/CODE_STYLE.md#layer-aware-constant-imports](../../../docs/CODE_STYLE.md#layer-aware-constant-imports).
   - Record<string, unknown> — define a specific interface instead.
   - import * from — explicit named imports only.
   - console.log for production logging — use EventLogger or Logger.

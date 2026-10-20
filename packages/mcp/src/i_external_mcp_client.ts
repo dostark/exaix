@@ -15,6 +15,7 @@
  */
 
 import type { JSONValue } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IExternalMcpToolDefinition {
   name: string;
@@ -24,7 +25,9 @@ export interface IExternalMcpToolDefinition {
 
 export interface IExternalMcpCallResult {
   content: Array<{ type: "text"; text: string } | { type: "image"; data: string; mimeType: string }>;
-  /** Present when the called tool declares an `outputSchema`. The official SDK types this `unknown` (`docs/clients/calling.md`); Exaix's `CODE_STYLE.md` forbids storing a bare `unknown` field, so it is narrowed to `JSONValue` here — a safe fit since MCP content is JSON-serialized by protocol definition. Omitted (not silently dropped) when the server does not return it. */
+  /** Present only when a tool with `outputSchema` returns it. The SDK exposes `unknown` in `docs/clients/calling.md`.
+   * `docs/CODE_STYLE.md` requires a stored JSON type. Protocol content is JSON, so `JSONValue` preserves that contract.
+   */
   structuredContent?: JSONValue;
   isError?: boolean;
 }
@@ -37,7 +40,7 @@ export interface IExternalMcpConnectOptions {
 
 export interface IExternalMcpClient {
   /** Connects, trying Streamable HTTP first and falling back to legacy SSE on failure. */
-  connect(endpoint: URL, options?: IExternalMcpConnectOptions): Promise<void>;
+  connect(endpoint: URL, options?: Opt<IExternalMcpConnectOptions, Reason.OptionalInput>): Promise<void>;
   listTools(): Promise<IExternalMcpToolDefinition[]>;
   callTool(name: string, args: Record<string, JSONValue>): Promise<IExternalMcpCallResult>;
   /** Which transport actually connected — "streamable-http" | "sse" — for logging/diagnostics. */

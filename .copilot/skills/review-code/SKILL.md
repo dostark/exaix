@@ -161,7 +161,7 @@ conventions in the existing file:
 1. **Exports.** Every new interface/type is exported from the appropriate index file.
 1. **check:arch.** Would it pass? All new files GROUNDED (or explicitly tagged
    `@ungrounded`) — `@visible` uses the same JSDoc-tag mechanism for observability
-   coverage, not architecture grounding (see CODE_STYLE.md "JSDoc Header Tags").
+   coverage, not architecture grounding (see `docs/CODE_STYLE.md#jsdoc-header-tags`).
 
 ### Phase 5 — TypeScript Idiomacy & Type Safety
 
@@ -235,7 +235,7 @@ If the change introduces or modifies:
 - A CLI flag or user-facing behaviour → `docs/Exaix_User_Guide.md` MUST update in the
   same commit. Grep the file for the feature name — absent means blocked.
 - An MCP tool handler → `TOOLS.md` (`deno task docs-sync-schemas`).
-- A new pattern/convention → mention in `CODE_STYLE.md`.
+- A new pattern/convention → mention in `docs/CODE_STYLE.md`.
 
 Missing User Guide updates: 🔴 Critical (blocking). Other missing doc updates: 🟡 Major.
 
@@ -260,7 +260,7 @@ Severity scale:
 ## Related
 
 - [AGENTS.md](../../../AGENTS.md#behavioral-guidelines) — behavioral guidelines
-- [CODE_STYLE.md](../../../CODE_STYLE.md) — naming, type, import, constants rules
+- [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md) — naming, type, import, constants rules
 
 ## Output Format
 

@@ -38,4 +38,4 @@ fallback for a rule that needs the whole repository.
 
 - [unslop-ts](../../unslop-ts/README.md) — the generic lint engine.
 - `deno task unslop-ts:deploy` — moves the engine pointer after a compatibility check.
-- [CODE_STYLE.md](../../CODE_STYLE.md) — the other Exaix style rules.
+- [docs/CODE_STYLE.md](../../docs/CODE_STYLE.md) — the other Exaix style rules.

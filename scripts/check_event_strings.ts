@@ -121,5 +121,5 @@ for (const v of violations) {
   console.error();
 }
 console.error("Replace inline strings with DomainEventType members from @exaix/core/events.");
-console.error("See CODE_STYLE.md#event-type-strings and docs/Reference_Data.md#event-taxonomy.");
+console.error("See docs/CODE_STYLE.md#event-type-strings and docs/Reference_Data.md#event-taxonomy.");
 Deno.exit(1);

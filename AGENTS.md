@@ -63,7 +63,7 @@ The full task → doc catalog is auto-generated and always current: **[.copilot/
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Behavioral guidelines       | [§ below](#behavioral-guidelines)                                                                                                          |
 | Architecture (ground truth) | [ARCHITECTURE.md](./ARCHITECTURE.md)                                                                                                       |
-| Coding standards            | [CODE_STYLE.md](./CODE_STYLE.md)                                                                                                           |
+| Coding standards            | [docs/CODE_STYLE.md](./docs/CODE_STYLE.md)                                                                                                 |
 | Spec-driven development     | [docs/Exaix_SDD.md](docs/Exaix_SDD.md)                                                                                                     |
 | Commit messages             | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                                                                         |
 | Plan-driven multi-step work | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md), [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md) |
@@ -144,8 +144,7 @@ For the full RED → GREEN → REFACTOR workflow, CI gates per phase, and covera
 
 ### Coding Standards
 
-All style rules live in [CODE_STYLE.md](./CODE_STYLE.md) (the Exaix-specific rules, with a stub for
-each moved section), [packages/lint-policy/docs/style_guide.md](./packages/lint-policy/docs/style_guide.md)
+All style rules live in [docs/CODE_STYLE.md](./docs/CODE_STYLE.md) (the Exaix-specific rules), [packages/lint-policy/docs/style_guide.md](./packages/lint-policy/docs/style_guide.md)
 (the Exaix additions to the generic rules), and
 [unslop-ts/docs/style_guide.md](./unslop-ts/docs/style_guide.md) (the generic
 TypeScript rules). Please consult all three for the authoritative, up-to-date guidelines on
@@ -164,7 +163,7 @@ Complete this checklist for every implementation task, in order.
 3. Do not add new `*_test.ts` files next to source files or under retired legacy test directories.
 4. Use established test helpers (`initTestDbService`, `createCliTestContext`, `TestEnvironment.create`, `withEnv`, `MockLLMProvider`, etc.) — see [.copilot/skills/test-development/SKILL.md](.copilot/skills/test-development/SKILL.md) for the full list; do not hand-roll setup a helper already covers.
 5. Rerun the failing or behavior-scoped test for the changed slice; if the changed code belongs to a package or app with its own test command, run that next.
-6. **Configurable constants:** when adding a new `DEFAULT_*` constant, determine if it is a tunable user-facing default. If yes, wrap it with `configurable()` from `@exaix/core/config` at the definition site — the exported value stays byte-identical. See [CODE_STYLE.md §2](./CODE_STYLE.md#no-magic-values) for required fields and exclusions. Run `deno task check:config-keys` to verify no duplicate keys across all packages.
+6. **Configurable constants:** when adding a new `DEFAULT_*` constant, determine if it is a tunable user-facing default. If yes, wrap it with `configurable()` from `@exaix/core/config` at the definition site — the exported value stays byte-identical. See [docs/CODE_STYLE.md#no-magic-values](./docs/CODE_STYLE.md#no-magic-values) for required fields and exclusions. Run `deno task check:config-keys` to verify no duplicate keys across all packages.
 
 ### Before Claiming Complete
 
@@ -172,7 +171,7 @@ Complete this checklist for every implementation task, in order.
    expand to the owning package or app only when cross-file type relationships require it.
 2. Do not use raw SQL table creation in tests when project helpers already cover the setup.
 3. Do not bypass failing checks or ignore pre-commit failures.
-4. Do not introduce magic numbers or strings — see [CODE_STYLE.md §2](./CODE_STYLE.md#no-magic-values).
+4. Do not introduce magic numbers or strings — see [docs/CODE_STYLE.md#no-magic-values](./docs/CODE_STYLE.md#no-magic-values).
 5. Do not place imports anywhere other than the top of the file.
 6. Preserve public APIs unless the task explicitly requires a change.
 7. Avoid introducing new dependencies unless necessary.

@@ -351,7 +351,7 @@ reasonably even; compare actual complexity and testing effort, not just the numb
 Final step covering: `ARCHITECTURE.md` (new components/flows); `docs/Exaix_User_Guide.md`
 (REQUIRED for every user-facing CLI/config/env change — Planned Tests must include "User
 Guide updated", and the commit must include the edit; grep the guide before closing);
-`TOOLS.md` (MCP schema changes → `deno task docs-sync-schemas`); `CODE_STYLE.md` (new
+`TOOLS.md` (MCP schema changes → `deno task docs-sync-schemas`); `docs/CODE_STYLE.md` (new
 patterns).
 
 ### 3E. Scenario framework coverage

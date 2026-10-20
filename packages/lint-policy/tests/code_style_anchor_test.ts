@@ -1,7 +1,7 @@
 /**
  * @module CodeStyleAnchorTest
  * @path packages/lint-policy/tests/code_style_anchor_test.ts
- * @description Checks that CODE_STYLE.md holds Exaix rules only, and that the generic guide holds every generic section with the rule ids it names.
+ * @description Checks that docs/CODE_STYLE.md holds Exaix rules only, and that the generic guide holds every generic section with the rule ids it names.
  * @architectural-layer Test
  * @dependencies [@std/assert, @std/path]
  * @related-files [packages/lint-policy/catalog.json, packages/lint-policy/tests/check_code_style_catalog_parity_test.ts]
@@ -12,7 +12,7 @@ import { fromFileUrl, join } from "@std/path";
 import catalogJson from "../catalog.json" with { type: "json" };
 
 const REPO_ROOT = fromFileUrl(new URL("../../..", import.meta.url));
-const CODE_STYLE = "CODE_STYLE.md";
+const CODE_STYLE = "docs/CODE_STYLE.md";
 const GUIDE = "unslop-ts/docs/style_guide.md";
 const ANCHOR = /\{#([^}]+)\}/g;
 const STUB = /\bmoved to the\b/i;
@@ -58,18 +58,18 @@ function sectionOf(guide: string, anchor: string): string {
   return next === -1 ? guide.slice(headingStart) : guide.slice(headingStart, start + next);
 }
 
-Deno.test("CODE_STYLE.md has no moved stub, no numbered heading, and no generic-rule heading", async () => {
+Deno.test("docs/CODE_STYLE.md has no moved stub, no numbered heading, and no generic-rule heading", async () => {
   const text = await read(CODE_STYLE);
   assertEquals(STUB.test(text), false, "a moved stub remains");
   assertEquals(NUMBERED_HEADING.test(text), false, "a numbered heading remains");
   const headings = text.split("\n").filter((line) => /^#{2,4} /.test(line));
   for (const generic of GENERIC_HEADINGS) {
     const match = headings.find((heading) => heading.includes(generic));
-    assertEquals(match, undefined, `CODE_STYLE.md holds the generic heading: ${generic}`);
+    assertEquals(match, undefined, `docs/CODE_STYLE.md holds the generic heading: ${generic}`);
   }
 });
 
-Deno.test("every anchor that CODE_STYLE.md declares is unique", async () => {
+Deno.test("every anchor that docs/CODE_STYLE.md declares is unique", async () => {
   const anchors = [...(await read(CODE_STYLE)).matchAll(ANCHOR)].map((match) => match[1]);
   assertEquals(new Set(anchors).size, anchors.length);
 });

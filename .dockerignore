@@ -22,5 +22,5 @@ Dockerfile
 # Re-include tests/ for the dev-test image stage (Phase 207), which copies and caches
 # the test graph. Later patterns win, so this overrides the `tests` exclusion above.
 !tests/
-# The lint-policy tests read the style guide that the `*.md` exclusion above would drop.
-!CODE_STYLE.md
+# The lint-policy tests read the style guide that the `docs` and `*.md` exclusions above would drop.
+!docs/CODE_STYLE.md

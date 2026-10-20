@@ -45,6 +45,17 @@ interface IBaselineSkill {
 const BASELINE_COUNT = 28;
 /** Skills whose prose was edited on purpose after the baseline capture. Only their opening is pinned. */
 const EDITED_SINCE_BASELINE = new Set([
+  "audit-security",
+  "commit",
+  "coverage",
+  "exaix-development",
+  "explore",
+  "fix-bug",
+  "infra",
+  "refactor",
+  "review-code",
+  "tdd-workflow",
+  "upgrade-version",
   "plan",
   "next-phase",
   "next-steps",

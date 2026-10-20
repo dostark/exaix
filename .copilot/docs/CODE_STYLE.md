@@ -1,1 +1,1 @@
-../../CODE_STYLE.md
+../../docs/CODE_STYLE.md

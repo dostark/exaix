@@ -329,7 +329,7 @@ Workflow chain (typical):
 ## Related
 
 - [AGENTS.md](../../../AGENTS.md#behavioral-guidelines) — behavioral guidelines
-- [CODE_STYLE.md](../../../CODE_STYLE.md) — naming, type, import, constants rules
+- [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md) — naming, type, import, constants rules
 
 ## Output format
 

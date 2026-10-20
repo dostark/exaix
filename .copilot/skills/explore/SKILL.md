@@ -62,7 +62,7 @@ Do / Don't
 - ❌ Conflate "file exists" with "actively used" — check for dead code paths.
 
 Related
-- CODE_STYLE.md — authoritative naming, type, import, and layer-boundary rules
+- docs/CODE_STYLE.md — authoritative naming, type, import, and layer-boundary rules
 ```
 
 ## Examples

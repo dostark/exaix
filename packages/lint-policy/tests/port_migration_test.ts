@@ -23,6 +23,8 @@ const CATALOG_PATH = "packages/lint-policy/catalog.json";
 const PARITY_TEST_SUFFIX = "_parity_test.ts";
 const GUARD_PATHS = [
   TABLE_PATH,
+  // Documentation assertions name generic engine rule IDs, rather than activating catalog rules.
+  "packages/lint-policy/tests/code_style_anchor_test.ts",
   "packages/lint-policy/tests/port_migration_test.ts",
   "packages/lint-policy/tests/port_split_table_test.ts",
   "packages/lint-policy/tests/port_scope_test.ts",

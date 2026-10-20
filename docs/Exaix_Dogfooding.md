@@ -917,6 +917,6 @@ final sign-off.
 - [Exaix User Guide](Exaix_User_Guide.md) — General usage and deployment
 - [Exaix Evaluation Guide](Exaix_Evaluation.md) — Scenario framework and `exactl eval`
 - `TOOLS.md` — All agent-accessible MCP tools
-- `CODE_STYLE.md` — Coding standards and conventions
+- `docs/CODE_STYLE.md` — Coding standards and conventions
 - `.copilot/skills/` — Available agent skills for plans and execution
 - `docs/Reference_Data.md` — Event taxonomy, edition matrix, module index

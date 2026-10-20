@@ -75,7 +75,7 @@ Do / Don't
 - ❌ Skip deno check after schema changes — type errors cascade silently.
 
 Related
-- [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+- [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 ```
 
 ## Output Format

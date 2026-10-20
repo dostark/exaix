@@ -83,4 +83,4 @@ repository-wide migration is out of scope for this gate.
 
 - `scripts/check_agent_prose.ts` — the companion instruction-prose gate (same rule core).
 - `scripts/ste100_prose_rules.ts` — the shared normalization and counting core.
-- `CODE_STYLE.md` §16 Comment Discipline — authoring rules this gate enforces.
+- `docs/CODE_STYLE.md`#comment-discipline Comment Discipline — authoring rules this gate enforces.

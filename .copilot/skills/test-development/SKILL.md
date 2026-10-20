@@ -32,7 +32,7 @@ See also
   Helpers       → [packages/testing/README.md](../../packages/testing/README.md)
   Integration   → [tests/integration/README.md](../../tests/integration/README.md)
   Scenario/eval → [tests/scenario_framework/README.md](../../tests/scenario_framework/README.md)
-  Style         → [CODE_STYLE.md](../../../CODE_STYLE.md)
+  Style         → [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md)
 
 Unified helpers (prefer over bespoke setup):
   - initTestDbService()      — DatabaseService + tempdir

@@ -201,7 +201,7 @@ Deno.test("[section-refs] a numbered §-citation (§2, §F) is never validated",
   try {
     await Deno.writeTextFile(
       join(root, "SKILL.md"),
-      "See CODE_STYLE.md §2 for magic-value rules and §F for the template.\n",
+      "See STYLE_GUIDE.md §2 for magic-value rules and §F for the template.\n",
     );
     const r = await checkDocSectionRefs(root);
     assertEquals(r.violations.length, 0, JSON.stringify(r.violations));

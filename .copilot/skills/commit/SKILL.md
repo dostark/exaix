@@ -85,7 +85,7 @@ Required validation before commit
   staged non-canonical `.copilot/` doc edit can drop out of the commit. Confirm the
   committed file set with `git show --stat HEAD` afterwards.
 - Comments you add must pass `check:ste100-comments:staged`: keep every comment sentence to
-  20 words or fewer with no semicolons (CODE_STYLE.md comment-prose limits, STE-6.3/STE-8.1).
+  20 words or fewer with no semicolons (docs/CODE_STYLE.md comment-prose limits, STE-6.3/STE-8.1).
 - A required check you did not run: state it in `tests:` and treat it as blocking.
 - Do not present a `git commit` as ready while known checks fail.
 
@@ -207,7 +207,7 @@ Expected response pattern:
 
 ## Related
 
-- [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+- [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ## See also
 
