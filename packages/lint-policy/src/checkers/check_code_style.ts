@@ -28,6 +28,12 @@ import {
   ruleSettings,
   type ScriptRuleSchemas,
 } from "@dostark/unslop-ts";
+import {
+  DuplicateConstantOptionsSchema,
+  DuplicateTypeOptionsSchema,
+  findDuplicateTypes,
+  validateTypeAllowEntries,
+} from "@dostark/unslop-ts/whole-tree";
 import styleRuleCatalog from "../../catalog.json" with { type: "json" };
 import { EXAIX_REGISTRY } from "../rule_packs.ts";
 import {
@@ -50,18 +56,8 @@ const REPO_ROOT = resolveRepoRoot();
 /** Option schemas for the script rules that read catalog options. */
 const SCRIPT_RULE_SCHEMAS: ScriptRuleSchemas = {
   "max-params": z.object({ max: z.number().int().positive().default(7) }).strict(),
-  "duplicate-constant": z.object({
-    namePattern: z.string().default("^[A-Z][A-Z0-9_]*$"),
-    allow: z.array(
-      z.object({ name: z.string(), files: z.array(z.string()), reason: z.string() }).strict(),
-    ).default([]),
-  }).strict(),
-  "duplicate-type": z.object({
-    minProperties: z.number().int().positive().default(2),
-    allow: z.array(
-      z.object({ name: z.string(), files: z.array(z.string()), reason: z.string() }).strict(),
-    ).default([]),
-  }).strict(),
+  "duplicate-constant": DuplicateConstantOptionsSchema,
+  "duplicate-type": DuplicateTypeOptionsSchema,
   "long-comment": z.object({
     maxLines: z.number().int().positive().default(3),
     extensions: z.array(z.string().min(2)).default([".ts", ".tsx", ".yaml", ".yml", ".toml", ".jsonc"]),
@@ -87,126 +83,6 @@ const CATALOG: ICatalog = parseCatalog(styleRuleCatalog, {
 /** Classifies a repository-relative path with the shared catalog scopes. */
 export function classifyRepoPath(repoPath: string): PathClass {
   return classifyPath(repoPath, CATALOG.scopes);
-}
-
-interface ITypeUnit {
-  readonly path: string;
-  readonly text: string;
-}
-
-interface ITypeAllowEntry {
-  readonly name: string;
-  readonly files: readonly string[];
-  readonly reason: string;
-}
-
-interface IDuplicateTypeOptions {
-  readonly minProperties?: number;
-  readonly allow?: readonly ITypeAllowEntry[];
-}
-
-interface IDuplicateType {
-  readonly name: string;
-  readonly firstFile: string;
-  readonly laterFile: string;
-}
-
-interface ITypeShape {
-  readonly name: string;
-  readonly members: string[];
-}
-
-const DEFAULT_MIN_PROPERTIES = 2;
-const GROUP_SEPARATOR = "\u0000";
-const MEMBER_SEPARATOR = "\u0001";
-
-/** Whitespace-normalized text for one type member. */
-function memberSignature(member: ts.TypeElement): string {
-  return member.getText().replace(/\s+/g, " ").trim();
-}
-
-function canonicalMembers(members: readonly string[]): string {
-  return [...members].sort().join(MEMBER_SEPARATOR);
-}
-
-/** The name and member signatures of an interface or object type alias, or null. */
-function typeShapeOf(statement: ts.Statement): ITypeShape | null {
-  if (ts.isInterfaceDeclaration(statement)) {
-    return { name: statement.name.text, members: statement.members.map(memberSignature) };
-  }
-  if (ts.isTypeAliasDeclaration(statement) && ts.isTypeLiteralNode(statement.type)) {
-    return { name: statement.name.text, members: statement.type.members.map(memberSignature) };
-  }
-  return null;
-}
-
-/** The `interface NAME` / `type NAME = { ... }` member sets at the top level of a unit. */
-function topLevelTypes(unit: ITypeUnit, minProperties: number): Map<string, string> {
-  const result = new Map<string, string>();
-  const source = ts.createSourceFile(unit.path, unit.text, ts.ScriptTarget.Latest, true);
-  for (const statement of source.statements) {
-    const shape = typeShapeOf(statement);
-    if (shape === null || shape.members.length < minProperties) continue;
-    result.set(shape.name, canonicalMembers(shape.members));
-  }
-  return result;
-}
-
-function groupTypes(units: readonly ITypeUnit[], minProperties: number): Map<string, string[]> {
-  const groups = new Map<string, string[]>();
-  for (const unit of units) {
-    for (const [name, signature] of topLevelTypes(unit, minProperties)) {
-      const key = `${name}${GROUP_SEPARATOR}${signature}`;
-      const files = groups.get(key) ?? [];
-      if (!files.includes(unit.path)) files.push(unit.path);
-      groups.set(key, files);
-    }
-  }
-  return groups;
-}
-
-/** Duplicate `interface`/object-type members with the same name across separate files. */
-export function findDuplicateTypes(
-  units: readonly ITypeUnit[],
-  options: IDuplicateTypeOptions,
-): IDuplicateType[] {
-  const minProperties = options.minProperties ?? DEFAULT_MIN_PROPERTIES;
-  const allow = options.allow ?? [];
-  const groups = groupTypes(units, minProperties);
-
-  const duplicates: IDuplicateType[] = [];
-  for (const [key, files] of groups) {
-    if (files.length < 2) continue;
-    const [name] = key.split(GROUP_SEPARATOR);
-    const sorted = [...files].sort();
-    const first = sorted[0];
-    for (const later of sorted.slice(1)) {
-      const allowed = allow.some((entry) =>
-        entry.name === name && entry.files.includes(first) && entry.files.includes(later)
-      );
-      if (!allowed) duplicates.push({ name, firstFile: first, laterFile: later });
-    }
-  }
-  return duplicates;
-}
-
-/** Names allow entries that no longer match a current duplicate. */
-export function validateTypeAllowEntries(
-  units: readonly ITypeUnit[],
-  options: IDuplicateTypeOptions,
-): string[] {
-  const minProperties = options.minProperties ?? DEFAULT_MIN_PROPERTIES;
-  const groups = groupTypes(units, minProperties);
-  const stale: string[] = [];
-  for (const entry of options.allow ?? []) {
-    const matches = [...groups.entries()].some(([key, files]) =>
-      key.split(GROUP_SEPARATOR)[0] === entry.name &&
-      entry.files.every((file) => files.includes(file)) &&
-      files.length >= 2
-    );
-    if (!matches) stale.push(entry.name);
-  }
-  return stale;
 }
 
 /** `style-exclude:CODE` reasons, read from each rule's `exclusionCodes` catalog entry. */
@@ -1571,11 +1447,7 @@ async function checkFile(path: string) {
 /** Whole-tree duplicate type-contract pass, run after the per-file checks. */
 function runDuplicateTypePass(): void {
   const settings = ruleSettings(CATALOG, "duplicate-type", EXAIX_REGISTRY);
-  // SAFETY: the catalog loader validates rule options against their schema before this read.
-  const options = settings.options as {
-    minProperties?: number;
-    allow?: Array<{ name: string; files: string[]; reason: string }>;
-  };
+  const options = DuplicateTypeOptionsSchema.parse(settings.options);
   const include = settings.include ?? [];
   const prodUnits = SOURCE_UNITS.filter((unit) =>
     classifyRepoPath(unit.path) === "prod" &&

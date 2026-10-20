@@ -1,0 +1,142 @@
+{
+  "same interface in two files": {
+    "duplicates": [
+      {
+        "name": "IThing",
+        "firstFile": "packages/a/src/a.ts",
+        "laterFile": "packages/b/src/b.ts"
+      }
+    ],
+    "stale": []
+  },
+  "same interface in three files, listed out of order": {
+    "duplicates": [
+      {
+        "name": "IThing",
+        "firstFile": "packages/a/src/a.ts",
+        "laterFile": "packages/b/src/b.ts"
+      },
+      {
+        "name": "IThing",
+        "firstFile": "packages/a/src/a.ts",
+        "laterFile": "packages/c/src/c.ts"
+      }
+    ],
+    "stale": []
+  },
+  "member order differs": {
+    "duplicates": [
+      {
+        "name": "IThing",
+        "firstFile": "packages/a/src/a.ts",
+        "laterFile": "packages/b/src/b.ts"
+      }
+    ],
+    "stale": []
+  },
+  "one-member interface under the default": {
+    "duplicates": [],
+    "stale": []
+  },
+  "one-member interface with minProperties 1": {
+    "duplicates": [
+      {
+        "name": "IThing",
+        "firstFile": "packages/a/src/a.ts",
+        "laterFile": "packages/b/src/b.ts"
+      }
+    ],
+    "stale": []
+  },
+  "member type differs": {
+    "duplicates": [],
+    "stale": []
+  },
+  "object type alias in two files": {
+    "duplicates": [
+      {
+        "name": "TThing",
+        "firstFile": "packages/a/src/a.ts",
+        "laterFile": "packages/b/src/b.ts"
+      }
+    ],
+    "stale": []
+  },
+  "interface with extends against a plain interface": {
+    "duplicates": [
+      {
+        "name": "IThing",
+        "firstFile": "packages/a/src/a.ts",
+        "laterFile": "packages/b/src/b.ts"
+      }
+    ],
+    "stale": []
+  },
+  "allowed pair of interfaces": {
+    "duplicates": [],
+    "stale": []
+  },
+  "stale allow entry for a type": {
+    "duplicates": [],
+    "stale": [
+      "IMISSING"
+    ]
+  },
+  "same constant and value in two files": {
+    "duplicates": [
+      {
+        "name": "MAX_RETRIES",
+        "firstFile": "packages/a/src/a.ts",
+        "laterFile": "packages/b/src/b.ts"
+      }
+    ],
+    "stale": []
+  },
+  "same constant name with a different value": {
+    "duplicates": [],
+    "stale": []
+  },
+  "same value under a different name": {
+    "duplicates": [],
+    "stale": []
+  },
+  "static array and object constants": {
+    "duplicates": [
+      {
+        "name": "LIST",
+        "firstFile": "packages/a/src/a.ts",
+        "laterFile": "packages/b/src/b.ts"
+      },
+      {
+        "name": "TABLE",
+        "firstFile": "packages/a/src/a.ts",
+        "laterFile": "packages/b/src/b.ts"
+      }
+    ],
+    "stale": []
+  },
+  "constant from a call": {
+    "duplicates": [],
+    "stale": []
+  },
+  "lower-case constant under the default and a custom pattern": {
+    "duplicates": [
+      {
+        "name": "limit",
+        "firstFile": "packages/a/src/a.ts",
+        "laterFile": "packages/b/src/b.ts"
+      }
+    ],
+    "stale": []
+  },
+  "allowed pair of constants": {
+    "duplicates": [],
+    "stale": []
+  },
+  "stale allow entry for a constant": {
+    "duplicates": [],
+    "stale": [
+      "MISSING"
+    ]
+  }
+}

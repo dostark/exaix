@@ -536,7 +536,7 @@
       "positive": [],
       "ported": false,
       "parked": false,
-      "note": "Whole-tree analysis: interface and object type alias members after whitespace normalization. Library function called by check:style."
+      "note": "Whole-tree analysis: interface and object type alias members after whitespace normalization. Moved to @dostark/unslop-ts/whole-tree in Step 4. The id stays a catalog script rule, because check_code_style.ts runs the library in-process."
     },
     {
       "id": "duplicate-constant",
@@ -573,7 +573,7 @@
       "positive": [],
       "ported": false,
       "parked": false,
-      "note": "Whole-tree analysis: top-level named constants with a static value. Library function called by check:style."
+      "note": "Whole-tree analysis: top-level named constants with a static value. Moved to @dostark/unslop-ts/whole-tree in Step 4. The id stays a catalog script rule, because check_magic_values.ts runs the library in-process."
     },
     {
       "id": "max-params",
