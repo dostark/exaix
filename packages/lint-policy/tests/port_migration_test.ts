@@ -7,10 +7,12 @@
  * @related-files [packages/lint-policy/tests/helpers/port_migration.ts, packages/lint-policy/tests/fixtures/port/port_tables.json]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { join } from "@std/path";
 import {
   findBareIdReferences,
   findStyleExcludeSites,
+  type ITrackedFileSource,
   migrateStyleExclude,
   portReferenceFiles,
   trackedTextFiles,
@@ -77,4 +79,79 @@ Deno.test("a ported rule has no style-exclude site and no bare id left in the tr
     const searched = row.outcome === "zone" ? new Map([...files].filter(([path]) => path !== CATALOG_PATH)) : files;
     assertEquals(findBareIdReferences(searched, row.id), [], `${row.id} is still referenced by its bare id`);
   }
+});
+
+const GUARD_TEST = new URL("./generic_rules_ported_test.ts", import.meta.url).pathname;
+const GUARD_NAME = "active tracked consumers name no bare ported rule id";
+const GIT_FAILURE_EXIT = 128;
+
+Deno.test("failed_git_inventory_fails_terminal_guard", async () => {
+  const bin = await Deno.makeTempDir({ prefix: "failing_git_" });
+  try {
+    const fake = join(bin, "git");
+    await Deno.writeTextFile(fake, `#!/bin/sh\necho "fatal: not a git repository" >&2\nexit ${GIT_FAILURE_EXIT}\n`);
+    await Deno.chmod(fake, 0o755);
+    const result = await new Deno.Command(Deno.execPath(), {
+      args: ["test", "--allow-all", GUARD_TEST, "--filter", GUARD_NAME],
+      env: { PATH: `${bin}:${Deno.env.get("PATH") ?? ""}` },
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    const output = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
+    assertEquals(result.success, false, output);
+    assertStringIncludes(output, `git ls-files failed with exit code ${GIT_FAILURE_EXIT}`);
+  } finally {
+    await Deno.remove(bin, { recursive: true });
+  }
+});
+
+function fakeSource(
+  entries: Readonly<Record<string, string | Error>>,
+  nonFiles: readonly string[] = [],
+): ITrackedFileSource {
+  return {
+    list: () => Promise.resolve(Object.keys(entries)),
+    read: (path) => {
+      const entry = entries[path];
+      return entry instanceof Error ? Promise.reject(entry) : Promise.resolve(entry);
+    },
+    isNonFile: (path) => Promise.resolve(nonFiles.includes(path)),
+  };
+}
+
+Deno.test("unreadable_included_file_fails_inventory", async () => {
+  const unreadable = fakeSource({
+    "packages/a/src/x.ts": new Deno.errors.PermissionDenied("no access"),
+    "docs/y.md": "text",
+  });
+  await assertRejects(() => trackedTextFiles([]), Error).catch(() => undefined);
+  await assertRejects(() => trackedTextFiles([], unreadable), Error, "packages/a/src/x.ts could not be read");
+});
+
+Deno.test("explicit_skips_stay_allowed_in_the_inventory", async () => {
+  const source = fakeSource(
+    {
+      "packages/a/src/x.ts": "export const a = 1;",
+      "exaix-dev-docs/planning/old.md": new Error("never read"),
+      "tests/fixtures/port/golden.json": new Error("never read"),
+      "assets/logo.png": new Error("never read"),
+      ".github/prompts": new Error("never read"),
+    },
+    [".github/prompts"],
+  );
+  const files = await trackedTextFiles(["tests/fixtures/port/"], source);
+  assertEquals([...files.keys()], ["packages/a/src/x.ts"]);
+});
+
+Deno.test("an_empty_inventory_fails", async () => {
+  await assertRejects(() => trackedTextFiles([], fakeSource({ "assets/logo.png": "" })), Error, "inventory is empty");
+});
+
+Deno.test("successful_inventory_is_populated_and_checks_ids", async () => {
+  const files = await trackedTextFiles([]);
+  assert(files.size > 0);
+  assert(files.has("packages/lint-policy/catalog.json"));
+  const staleId = ["never", "a", "real", "rule", "id"].join("-");
+  const seeded = new Map(files).set("seeded/stale.md", `See [${staleId}] for details.\n`);
+  assertEquals(findBareIdReferences(seeded, staleId), ["seeded/stale.md:1"]);
 });

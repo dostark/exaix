@@ -628,3 +628,74 @@ Deno.test("a ported import violation runs through the plugin rather than the scr
     assertEquals(diagnostics.map((diagnostic) => diagnostic.id), [PORTED_DYNAMIC_ID]);
   });
 });
+
+const HOST_FILES: readonly string[] = [
+  `${POLICY_ROOT}/src/checkers/check_magic_values.ts`,
+  `${POLICY_ROOT}/src/repo_layout.ts`,
+];
+const NUMBER_FIXTURE = Array.from({ length: 5 }, (_, index) => `export const value${index} = [12345];`).join("\n") +
+  "\n";
+
+interface IMagicHostRun {
+  readonly checkNumbers: boolean;
+  readonly args: readonly string[];
+}
+
+/** Runs a copy of the magic-value host, with a catalog that sets `checkNumbers`, over a tree of numeric literals. */
+async function runIsolatedMagicHost(run: IMagicHostRun): Promise<{ code: number; output: string }> {
+  const sandbox = await Deno.makeTempDir({ prefix: "magic_host_" });
+  try {
+    const hostRoot = join(sandbox, "policy");
+    await Deno.mkdir(join(hostRoot, "src", "checkers"), { recursive: true });
+    for (const file of HOST_FILES) {
+      const target = join(hostRoot, file.slice(POLICY_ROOT.length + 1));
+      await Deno.copyFile(join(REPO_ROOT, file), target);
+    }
+    const catalog = structuredClone(catalogJson) as typeof catalogJson;
+    catalog.wholeTree.magicLiterals = {
+      ...catalog.wholeTree.magicLiterals,
+      checkNumbers: run.checkNumbers,
+    } as typeof catalog.wholeTree.magicLiterals;
+    catalog.rules["duplicate-constant"].options.allow = [];
+    await Deno.writeTextFile(join(hostRoot, "catalog.json"), JSON.stringify(catalog));
+    const treeRoot = join(sandbox, "tree");
+    await Deno.mkdir(join(treeRoot, "packages", "demo", "src"), { recursive: true });
+    await Deno.writeTextFile(join(treeRoot, "packages", "demo", "src", "numbers.ts"), NUMBER_FIXTURE);
+    const command = new Deno.Command(Deno.execPath(), {
+      args: [
+        "run",
+        "-A",
+        `--config=${join(REPO_ROOT, "deno.json")}`,
+        join(hostRoot, "src", "checkers", "check_magic_values.ts"),
+        `--root=${treeRoot}`,
+        ...run.args,
+      ],
+      cwd: REPO_ROOT,
+      stdout: "piped",
+      stderr: "piped",
+    });
+    const result = await command.output();
+    const decoder = new TextDecoder();
+    return { code: result.code, output: decoder.decode(result.stdout) + decoder.decode(result.stderr) };
+  } finally {
+    await Deno.remove(sandbox, { recursive: true });
+  }
+}
+
+Deno.test("configured_check_numbers_false_reaches_magic_host", async () => {
+  const result = await runIsolatedMagicHost({ checkNumbers: false, args: [] });
+  assertEquals(result.code, 0, result.output);
+  assertStringIncludes(result.output, "No magic value violations detected");
+  assertFalse(result.output.includes("12345"), result.output);
+});
+
+Deno.test("magic_cli_disable_flags_override_true", async () => {
+  const enabled = await runIsolatedMagicHost({ checkNumbers: true, args: [] });
+  assertEquals(enabled.code, 1, enabled.output);
+  assertStringIncludes(enabled.output, "12345");
+  for (const flag of ["--no-numbers", "--strings-only"]) {
+    const result = await runIsolatedMagicHost({ checkNumbers: true, args: [flag] });
+    assertEquals(result.code, 0, `${flag}: ${result.output}`);
+    assertFalse(result.output.includes("12345"), `${flag}: ${result.output}`);
+  }
+});

@@ -11,7 +11,7 @@ import { fromFileUrl } from "@std/path";
 
 const EXCLUDE_PATTERN = /^(\s*)\/\/\s*style-exclude:([A-Z0-9_]+)\s*-\s*(.+)$/;
 const HISTORY_PREFIX = "exaix-dev-docs/planning/";
-const TEXT_EXTENSIONS = [".ts", ".tsx", ".json", ".md", ".yml", ".yaml", ".sh", ".toml", ".jsonc", ""];
+const BINARY_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".ico", ".pdf", ".wasm", ".zip", ".DAT", ".pkl"];
 const BARE_ID_BOUNDARY_BEFORE = String.raw`(?<=[\[\`"'])`;
 const BARE_ID_BOUNDARY_AFTER = String.raw`(?=[\]\`"'])`;
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
@@ -68,24 +68,63 @@ export function findBareIdReferences(files: ReadonlyMap<string, string>, bareId:
   return references;
 }
 
-/** Reads the tracked text files of the repository and its submodules, minus planning documents and the exempt prefixes. */
-export async function trackedTextFiles(exemptPrefixes: readonly string[]): Promise<Map<string, string>> {
-  const listing = await new Deno.Command("git", {
-    args: ["ls-files", "-z", "--recurse-submodules"],
-    cwd: REPO_ROOT,
-    stdout: "piped",
-  }).output();
-  const paths = new TextDecoder().decode(listing.stdout).split("\0").filter((path) => path.length > 0);
-  const files = new Map<string, string>();
-  for (const path of paths) {
-    const skipped = path.startsWith(HISTORY_PREFIX) || exemptPrefixes.some((prefix) => path.startsWith(prefix));
-    if (skipped || !TEXT_EXTENSIONS.some((extension) => path.endsWith(extension))) continue;
+/** Where the inventory gets its tracked paths and file contents. */
+export interface ITrackedFileSource {
+  list(): Promise<readonly string[]>;
+  read(path: string): Promise<string>;
+  /** True for a tracked entry that holds no text: a directory link, or a link with a missing target. */
+  isNonFile(path: string): Promise<boolean>;
+}
+
+/** The tracked files of the repository and its submodules, from git. A failed listing throws. */
+export const GIT_FILE_SOURCE: ITrackedFileSource = {
+  async list(): Promise<readonly string[]> {
+    const listing = await new Deno.Command("git", {
+      args: ["ls-files", "-z", "--recurse-submodules"],
+      cwd: REPO_ROOT,
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    if (!listing.success) {
+      const reason = new TextDecoder().decode(listing.stderr).trim();
+      throw new Error(`git ls-files failed with exit code ${listing.code}: ${reason}`);
+    }
+    return new TextDecoder().decode(listing.stdout).split("\0").filter((path) => path.length > 0);
+  },
+  read: (path) => Deno.readTextFile(`${REPO_ROOT}${path}`),
+  async isNonFile(path): Promise<boolean> {
+    const full = `${REPO_ROOT}${path}`;
     try {
-      files.set(path, await Deno.readTextFile(`${REPO_ROOT}${path}`));
-    } catch {
-      continue;
+      return !(await Deno.stat(full)).isFile;
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound && (await Deno.lstat(full)).isSymlink) return true;
+      throw error;
+    }
+  },
+};
+
+/**
+ * Reads the tracked text files, minus planning documents and the exempt prefixes.
+ * A non-file entry, a binary extension, a planning document, and an exempt prefix are skipped on purpose.
+ * Any other failure to read an included file, and an empty inventory, throw.
+ */
+export async function trackedTextFiles(
+  exemptPrefixes: readonly string[],
+  source: ITrackedFileSource = GIT_FILE_SOURCE,
+): Promise<Map<string, string>> {
+  const files = new Map<string, string>();
+  for (const path of await source.list()) {
+    const skipped = path.startsWith(HISTORY_PREFIX) || exemptPrefixes.some((prefix) => path.startsWith(prefix));
+    if (skipped || BINARY_EXTENSIONS.some((extension) => path.endsWith(extension))) continue;
+    try {
+      if (await source.isNonFile(path)) continue;
+      files.set(path, await source.read(path));
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new Error(`the tracked file ${path} could not be read: ${reason}`);
     }
   }
+  if (files.size === 0) throw new Error("the tracked file inventory is empty");
   return files;
 }
 

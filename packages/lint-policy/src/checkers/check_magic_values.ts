@@ -44,7 +44,7 @@ const CATALOG_SCOPES = catalogJson.scopes as { test: string[]; fixture: string[]
 // CLI flags
 
 const args = new Set(Deno.args);
-const checkNumbers = !args.has("--no-numbers") && !args.has("--strings-only");
+const numbersDisabledByFlag = args.has("--no-numbers") || args.has("--strings-only");
 const includeTests = args.has("--include-tests");
 
 function getNumericFlagValue(flag: string): number | undefined {
@@ -122,7 +122,7 @@ function detectorOptions() {
   const thresholds = configured.thresholds;
   return {
     ...configured,
-    checkNumbers,
+    checkNumbers: configured.checkNumbers && !numbersDisabledByFlag,
     thresholds: {
       localString: getNumericFlagValue("--local-string-threshold") ?? thresholds.localString,
       globalString: getNumericFlagValue("--global-string-threshold") ?? thresholds.globalString,

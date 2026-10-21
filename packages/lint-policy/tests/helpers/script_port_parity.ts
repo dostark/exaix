@@ -91,3 +91,81 @@ export function pluginRuleFindings(key: string, catalog: ICatalog, unit: ISource
       line: unit.text.slice(0, diagnostic.range[0]).split(LINE_SPLIT).length,
     }));
 }
+
+/** One finding of a rule at a repository-relative file and line. */
+export interface IRuleFinding {
+  readonly rule: string;
+  readonly file: string;
+  readonly line: number;
+}
+
+/** A finding that differs between the two sides, with its accepted reason, or null when none applies. */
+export interface IAcceptedDifference {
+  readonly finding: IRuleFinding;
+  readonly reason: string;
+}
+
+export interface IProductionParity {
+  readonly compared: number;
+  readonly accepted: readonly IAcceptedDifference[];
+  readonly unexplainedMissing: readonly IRuleFinding[];
+  readonly unexplainedExtra: readonly IRuleFinding[];
+}
+
+export interface IProductionParityInput {
+  readonly baseline: readonly IRuleFinding[];
+  readonly current: readonly IRuleFinding[];
+  /** The reason a finding of the old side may be absent from the new side, or null when none applies. */
+  readonly explainMissing: (finding: IRuleFinding) => string | null;
+  /** The reason a finding of the new side may be absent from the old side, or null when none applies. */
+  readonly explainExtra: (finding: IRuleFinding) => string | null;
+}
+
+const STYLE_LINE = /^(?:ERROR|WARN) \[([^\]]+)\] (.*?):(\d+) – /;
+
+function findingKey(finding: IRuleFinding): string {
+  return `${finding.rule}\u0000${finding.file}\u0000${finding.line}`;
+}
+
+/** The findings that the style checker printed, with paths made relative to `root`. */
+export function parseStyleFindings(output: string, root: string): IRuleFinding[] {
+  const prefix = root.endsWith("/") ? root : `${root}/`;
+  const findings: IRuleFinding[] = [];
+  for (const text of output.split(LINE_SPLIT)) {
+    const match = STYLE_LINE.exec(text);
+    if (match) findings.push({ rule: match[1], file: match[2].replace(prefix, ""), line: Number(match[3]) });
+  }
+  return findings;
+}
+
+/** Compares two finding lists of the same rules over the same files, and sorts each difference into accepted or unexplained. */
+export function compareProductionFindings(input: IProductionParityInput): IProductionParity {
+  const baselineKeys = new Set(input.baseline.map(findingKey));
+  const currentKeys = new Set(input.current.map(findingKey));
+  const accepted: IAcceptedDifference[] = [];
+  const unexplainedMissing: IRuleFinding[] = [];
+  const unexplainedExtra: IRuleFinding[] = [];
+  for (const finding of input.baseline) {
+    if (currentKeys.has(findingKey(finding))) continue;
+    const reason = input.explainMissing(finding);
+    if (reason === null) unexplainedMissing.push(finding);
+    else accepted.push({ finding, reason });
+  }
+  for (const finding of input.current) {
+    if (baselineKeys.has(findingKey(finding))) continue;
+    const reason = input.explainExtra(finding);
+    if (reason === null) unexplainedExtra.push(finding);
+    else accepted.push({ finding, reason });
+  }
+  const compared = new Set([...baselineKeys, ...currentKeys]).size;
+  return { compared, accepted, unexplainedMissing, unexplainedExtra };
+}
+
+/** The files that only one side covers and whose surface no scope decision declares as dropped. */
+export function undeclaredDrops(
+  partition: IFilePartition,
+  categoryOf: (file: string) => string,
+  declared: ReadonlySet<string>,
+): string[] {
+  return [...partition.scriptOnly, ...partition.pluginOnly].filter((file) => !declared.has(categoryOf(file)));
+}
