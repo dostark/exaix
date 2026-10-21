@@ -44,6 +44,8 @@ A catalog `codeStyle` anchor replaces an engine rule's default guide link.
 
 - `deno task lint` — runs the plugin with every enabled rule.
 - `deno task check:style` and `deno task check:magic` — run the two checkers.
+  `check:magic` keeps the configured `wholeTree.magicLiterals.checkNumbers` value unless `--no-numbers`
+  or `--strings-only` is present. Either flag turns number checks off, and no flag turns them on.
 - `deno task docs:style-rules` — regenerates the rule reference.
 - `deno task unslop-ts:deploy` — moves the engine pointer after a compatibility check.
 
