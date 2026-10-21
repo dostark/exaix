@@ -9,58 +9,82 @@ links:
   - "packages/lint-policy/docs/style_rules.md"
 ---
 
-> The Exaix-specific additions to the generic TypeScript style rules in
-> [unslop-ts/docs/style_guide.md](../../../unslop-ts/docs/style_guide.md). Rule ids and
-> severities come from `packages/lint-policy/catalog.json`; the generated reference is
-> [style_rules.md](./style_rules.md). `docs/CODE_STYLE.md` holds the remaining Exaix rules.
+> The Exaix additions to the generic TypeScript rules in
+> [unslop-ts/docs/style_guide.md](../../../unslop-ts/docs/style_guide.md). Read the generic guide first. This
+> guide changes a rule only where it says so.
+>
+> - `packages/lint-policy/catalog.json` sets every rule id, severity, scope, and option.
+> - [style_rules.md](./style_rules.md) is the generated reference for the catalog.
+> - [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md) holds the rules that exist only because of the Exaix
+>   architecture.
 
 ## Magic Values {#magic-values}
 
-### Automated Enforcement
+The generic guide defines the rule and the detector: [No Magic Values](../../../unslop-ts/docs/style_guide.md#no-magic-values).
+This section records how Exaix runs it.
 
-A dedicated AST-based script (`packages/lint-policy/src/checkers/check_magic_values.ts`) scans the entire
-codebase using the TypeScript compiler API to detect repeated literals that
-should be extracted into named constants or enums. It is invoked as part of the
-pre-commit gates via `deno task check:magic` (or directly:
-`deno run -A packages/lint-policy/src/checkers/check_magic_values.ts`).
+### Running the check
 
-**Detection thresholds** (the script's actual defaults — keep this table in sync with
-`packages/lint-policy/src/checkers/check_magic_values.ts` `--local-*-threshold` / `--global-*-threshold`):
+Run `deno task check:magic`. The host script `packages/lint-policy/src/checkers/check_magic_values.ts`
+reads every `.ts` and `.tsx` file of the repository and calls the engine detector. The pre-commit hook and
+`deno run -A scripts/ci.ts check` run it as a gate.
 
-| Scope  | String literals | Number literals |
-| ------ | --------------- | --------------- |
-| Module | > 3 occurrences | > 4 occurrences |
-| Global | > 5 occurrences | > 6 occurrences |
+The host skips these files:
 
-**Whitelisted values (never flagged):**
+- test files, unless you pass `--include-tests`;
+- fixtures under `tests/fixtures/`;
+- the `scripts/` and `.copilot/` folders;
+- the engine submodule and the checkers' own sources.
 
-- Strings: `""`, `" "`, `"\n"`, `"\t"`, `"true"`, `"false"`, `"null"`,
-  `"undefined"`
-- Numbers: `0`, `1`, `-1`, `100`, `1000`
-- Strings shorter than 3 characters that don't start with a lowercase letter
-  (e.g., `"ID"`, `"OK"` are allowed; `"ab"` is not flagged)
+| Option                             | Effect                                                 |
+| ---------------------------------- | ------------------------------------------------------ |
+| `--no-numbers` or `--strings-only` | Skips number literals                                  |
+| `--include-tests`                  | Scans test files                                       |
+| `--local-string-threshold=N`       | Overrides the module threshold for strings (default 3) |
+| `--global-string-threshold=N`      | Overrides the global threshold for strings (default 5) |
+| `--local-number-threshold=N`       | Overrides the module threshold for numbers (default 4) |
+| `--global-number-threshold=N`      | Overrides the global threshold for numbers (default 6) |
 
-- **Magic string unions.** Avoid inline string literal unions (e.g., `"a" | "b"`)
-  directly in functional code. These are difficult to maintain and track.
-  Instead, define a TypeScript `enum` in the appropriate package or a shared named type alias.
-  This rule is enforced as an error in production code.
+The thresholds are the engine defaults, because the catalog does not change them. The `wholeTree.magicLiterals`
+section of the catalog adds three things: the extra string `other`, a list of domain status words
+(`pending`, `resumed`, `fulfilled`, `rejected`, `amended`, `expired`, `cancelled`), and the structural list
+properties `capabilities` and `tags` on top of the engine defaults. A `checkNumbers: false` value in the catalog
+turns number checks off. A command-line flag can turn them off, but no flag turns them on.
+
+### Duplicate constants
+
+The same pass looks for a top-level constant that two files in `packages/` or `apps/` declare with the same name
+and value. Keep one owner and import it. An allow entry in the catalog needs a reason, and the check fails when
+an entry no longer matches a duplicate.
+
+### Union types
+
+Define an inline union of string literals as an enum in `packages/core/src/types/enums.ts`, or as a shared
+named union type. The `exaix/magic-union-type` rule finds them. It is parked, so it is off by default. See
+[Enforcement Status](#enforcement-status).
 
 ## Canonical Subpackage Boundary {#canonical-subpackage-boundary}
 
-Extends the generic "No Re-exporting" rule.
+Extends [No Re-exporting](../../../unslop-ts/docs/style_guide.md#no-re-exporting) for package entry points.
 
-**Canonical subpackage boundary:** if the root import map exposes an exact canonical subpackage alias such as `@exaix/core/status` or `@exaix/ai/providers`, the parent package entrypoint must not promote that subpackage's exports through `@exaix/core` or `@exaix/ai`. Keep the boundary explicit: consumers import subpackage-owned symbols from the canonical subpackage barrel, not from the parent package barrel.
+### Package entry points
 
-**Root-owned surface exception:** a package may still expose symbols from modules that define the parent package's primary root API even if the import map also offers a convenience grouping alias for that root-owned surface. In this repository, `@exaix/core/types` is treated as a root-owned grouping, so `@exaix/core` may continue to export those contracts.
+A package entry point, such as `mod.ts` or `index.ts`, may re-export interfaces, types, and values that other
+modules of the same package define. The catalog excludes these files from `exaix/re-export-imported`. An entry
+point must not re-export from another package or from the retired root `src/` folder. The `package-boundary`
+check reports a relative import that reaches another package or the retired folder. The
+entry-point zone of `exaix/import-boundaries` reports an entry point that names the retired folder.
 
 ```ts
 // packages/core/mod.ts
-export type { IToolRegistry } from "./src/interfaces/i_tool_registry.ts";
-export type { IActivityRecord } from "./src/types/database.ts";
-export { PortalOperation } from "./src/enums.ts";
+export * from "../ai/src/provider.ts"; // ❌ Forwards code of another package
 ```
 
-**Prohibited in parent package entrypoints when a canonical subpackage barrel exists:**
+### Canonical subpackages
+
+When the root import map exposes an exact alias for a subpackage, such as `@exaix/core/status` or
+`@exaix/ai/providers`, the parent package entry point must not re-export that subpackage. Consumers import
+subpackage symbols from the subpackage alias. The `package-subpath-promotion` check reports a violation.
 
 ```ts
 // packages/core/mod.ts
@@ -68,39 +92,76 @@ export * from "./src/status/mod.ts"; // ❌ Import from @exaix/core/status inste
 export { RetryPolicy } from "./src/request/retry_policy.ts"; // ❌ Import from @exaix/core/request instead
 ```
 
+**Exception:** a package may export the symbols of the modules that define its own root API, even when the
+import map also has a grouping alias for them. The check treats `@exaix/core/types` as such a grouping, so
+`@exaix/core` may export those contracts.
+
+```ts
+// packages/core/mod.ts
+export { PortalAnalysisMode, PortalExecutionStrategy, PortalOperation, PortalStatus } from "./src/types/portal.ts";
+```
+
 ## Interface Aliasing Exception {#interface-aliasing-exception}
 
-Extends the generic "No Aliasing Interfaces on Import" rule.
+Extends [Interface Conventions](../../../unslop-ts/docs/style_guide.md#interface-conventions).
 
-**Exception:** Aliasing is permitted in `packages/core/src/parsing/markdown.ts` when used for backward compatibility shims or interface compatibility bridges.
+The catalog excludes one file, `packages/core/src/parsing/markdown.ts`, from `exaix/no-interface-rename-on-import`.
+Do not rename an interface on import anywhere else. The file has no interface rename now, so the exclusion has
+no effect today.
 
 ## Comment Discipline Additions {#comment-discipline-additions}
 
-Extends the generic "Comment Discipline" rules. Longer explanations belong in a README,
-`ARCHITECTURE.md`, or the relevant `exaix-dev-docs/` document, not inline in source.
+Extends [Comment Discipline](../../../unslop-ts/docs/style_guide.md#comment-discipline).
 
-- **Comment prose follows ASD-STE100 and Exaix STE Extension v1.** Write
-  line/block comments, module headers, and JSDoc descriptions as concise,
-  result-first prose under the shared Issue 9 limits: at most 20 words per
-  sentence, no semicolons in eligible prose, and at most six descriptive
-  sentences per paragraph.
-  Preserve directives, JSDoc tags, identifiers, commands, one-line literal
-  spans, and exact quotations. Keep necessary invariants and rationale;
-  omit self-reflection and facts already clear from the code. Bullets are
-  allowed when they make steps easier to scan, within the existing
-  three-line limit. Documentation-file exemptions do **not** exempt
-  source-comment prose.
+- **Phrases to avoid.** The catalog adds these phrases to `exaix/ephemeral-comment`: a phase or step number, a
+  GAP identifier, a pre-gap or post-gap reference, gap analysis details, "tried", "didn't work", and the `§`
+  symbol for a section reference. The module header follows the same rule. It names no plan phase or step.
+- **Where long explanations go.** Put a longer explanation in a README, in `ARCHITECTURE.md`, or in the matching
+  document under `exaix-dev-docs/`. Do not put it in the source.
+- **Write comments in ASD-STE100 and the Exaix STE Extension v1.** This applies to line comments, block
+  comments, module headers, and JSDoc descriptions. Write short, result-first prose:
+  - at most 20 words in a sentence;
+  - no semicolons;
+  - at most six descriptive sentences in a paragraph.
+
+  Keep directives, JSDoc tags, identifiers, commands, one-line literals, and exact quotations as they are. Keep
+  the invariants and the reason that a reader needs. Leave out self-reflection and facts that the code already
+  shows. Bullets are allowed when they make steps easier to scan, within the three-line comment limit. The
+  exemption that applies to documentation files does not apply to comments in source. The
+  `deno task check:ste100-comments:staged` gate checks staged files.
 
 ## Enforcement Status {#enforcement-status}
 
-How the generic type-safety rules are enforced in this repository today. Severities come from
-`packages/lint-policy/catalog.json`.
+The catalog gives every rule a status. Check `packages/lint-policy/catalog.json` or the generated
+[style_rules.md](./style_rules.md) for the details of one rule.
 
-- **Gates (`severity: error`):** `exaix/no-chained-type-assertions`,
-  `exaix/no-pass-through-type-alias`, `exaix/no-forbidden-lint-ignore`,
-  `exaix/ts-suppression-pragmas`, and `exaix/promise-response-alias`.
-- **Parked (`severity: off`, opt-in):** `exaix/no-explicit-unknown`,
-  `exaix/no-typeof-escape`, `exaix/no-unsafe-dictionary`,
-  `exaix/no-object-parameters`, and `exaix/promise-response-return`. The rule-ceiling ratchet holds each one at a
-  measured count, so the count can only fall. Each rule becomes a gate when its
-  count reaches zero.
+- **Plugin gates (`severity: error`):** `exaix/decorative-comment`, `exaix/dynamic-import`,
+  `exaix/ephemeral-filename`, `exaix/exported-interface-naming`, `exaix/ignore-needs-reason`,
+  `exaix/import-boundaries`, `exaix/import-inside-statement`, `exaix/inline-type-import`,
+  `exaix/max-cyclomatic-complexity`, `exaix/no-chained-type-assertions`, `exaix/no-forbidden-lint-ignore`,
+  `exaix/no-pass-through-type-alias`, `exaix/promise-response-alias`, `exaix/require-deno-shebang`,
+  `exaix/require-module-header`, `exaix/require-script-usage`, and `exaix/ts-suppression-pragmas`.
+- **Parked plugin rules (`severity: off`, opt-in):** `exaix/ephemeral-comment`,
+  `exaix/exported-interface-placement`, `exaix/import-placement`, `exaix/long-comment`,
+  `exaix/magic-union-type`, `exaix/max-class-size`, `exaix/max-params`, `exaix/no-boolean-assert`,
+  `exaix/no-conditional-empty-object-spread`, `exaix/no-constant-substring-assert`,
+  `exaix/no-explicit-unknown`, `exaix/no-interface-rename-on-import`, `exaix/no-object-parameters`,
+  `exaix/no-repeated-assert-call`, `exaix/no-runtime-typeof`, `exaix/no-typeof-escape`,
+  `exaix/no-unsafe-dictionary`, `exaix/promise-response-return`, `exaix/re-export-imported`,
+  `exaix/require-optional-wrapper`, `exaix/require-safety-comment`, and
+  `exaix/test-inline-multiline-fixture`.
+- **Script gates (`engine: script`, `severity: error`):** `duplicate-constant`, `duplicate-type`,
+  `edition-conditional-outside-composer`, `edition-leak`, `module-header-tag`, `package-boundary`,
+  `package-canonical-import`, `package-instantiates-event-logger`, `package-related-files-boundary`,
+  `package-subpath-promotion`, `package-testing-import`, and `script-placement`.
+- **Script warnings (`engine: script`, `severity: warn`):** `concrete-cross-domain`, `layer-constant-leak`,
+  `package-concrete-logger-type`, and `package-uses-config-reader`.
+
+Plugin rules run with `deno task lint`. Script rules run with `deno task check:style` and
+`deno task check:magic`. To run a parked rule, list it in the `EXAIX_LINT_RULES` environment variable.
+
+A parked rule has findings that nobody has fixed yet. The rule-ceiling ratchet holds each of them at a measured
+count per package, in `packages/lint-policy/rule_ceilings.json`. The count can fall but cannot rise, and a rule
+becomes a gate when its count reaches zero. Two parked rules have no ceiling for other reasons:
+`exaix/max-class-size` runs through a separate manual task, and `exaix/require-optional-wrapper` is enforced on
+staged files by `deno task check:optional-params:staged`.

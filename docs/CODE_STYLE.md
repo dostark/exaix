@@ -3,7 +3,7 @@ title: "Code Style & Standards"
 description: Coding standards and stylistic requirements for Exaix
 agent_priority: mandatory
 copilot_knowledge_base: true
-version: 1.3
+version: 1.4
 capabilities: [linting_rules, naming_conventions, testing_patterns]
 links:
   - "../packages/core/src/types/constants.ts"
@@ -14,545 +14,784 @@ links:
 copilot_instructions: ../Blueprints/Agents/senior-coder.md
 ---
 
-> The generic TypeScript rules live in [unslop-ts/docs/style_guide.md](../unslop-ts/docs/style_guide.md),
-> with the Exaix additions in [packages/lint-policy/docs/style_guide.md](../packages/lint-policy/docs/style_guide.md).
-> This file holds the Exaix-specific rules.
+> This guide holds the rules that exist because of the Exaix architecture. The generic TypeScript rules are in
+> the [generic style guide](../unslop-ts/docs/style_guide.md). The Exaix additions to those rules are in the
+> [lint-policy guide](../packages/lint-policy/docs/style_guide.md). Read the generic guide first.
 
----
+## Related Documents {#related-docs}
+
+| Document                                                         | Holds                                                               |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------- |
+| [Generic style guide](../unslop-ts/docs/style_guide.md)          | The generic TypeScript and Deno rules, owned by the lint engine     |
+| [Lint-policy guide](../packages/lint-policy/docs/style_guide.md) | The Exaix additions to the generic rules and the rule status        |
+| [Rule reference](../packages/lint-policy/docs/style_rules.md)    | The generated table of every rule, its severity, scope, and options |
+| This guide                                                       | The rules that depend on the Exaix architecture                     |
+
+[`AGENTS.md`](../AGENTS.md), [`CONTRIBUTING.md`](../CONTRIBUTING.md),
+[`.copilot/skills/exaix-development/SKILL.md`](../.copilot/skills/exaix-development/SKILL.md), and
+[`.copilot/README.md`](../.copilot/README.md) point to this guide and do not repeat it.
+
+Find a rule by topic:
+
+- **Constants, settings, and event names:** [No Magic Values](#no-magic-values),
+  [Event Type Strings](#event-type-strings)
+- **Imports and package surfaces:** [Import Statements](#import-statements), [Package Imports](#package-imports),
+  [Package Test Boundary Isolation](#package-test-boundaries)
+- **Layer and edition boundaries:** [TUI](#tui-boundaries), [CLI](#cli-boundaries),
+  [Edition Tier](#edition-tier-boundary), [Package Purity](#package-module-purity),
+  [Layer-Aware Constants](#layer-aware-constant-imports)
+- **Design conventions:** [Interfaces](#di-and-interfaces), [Environment Variables](#env-vars),
+  [Optional Parameters](#optional-params), [Workspace Paths](#exaix-path-construction),
+  [Tool Names](#tool-naming)
+- **Module structure and observability:** [Module Structure](#module-structure),
+  [Event Logging Decorators](#log-method-family)
+- **Runtime behavior:** [Native Tool-Round Replay](#native-tool-round-replay),
+  [Filesystem Watching](#fs-watching), [Skill Folders](#skill-folders)
+- **Scripts, comments, and lint:** [Utility Scripts](#utility-scripts),
+  [Comment Discipline](#comment-discipline), [Lint Policy](#lint-policy)
 
 ## No Magic Values {#no-magic-values}
 
-The generic rule (name every value, use an enum for a fixed set of strings) is in the
-[style guide](../unslop-ts/docs/style_guide.md#no-magic-values). Exaix adds the following.
+The generic rule is in the [generic guide](../unslop-ts/docs/style_guide.md#no-magic-values): name every
+value, and use an enum for a fixed set of strings. Exaix adds these rules.
 
-- **User‑configurable values** — every tunable `DEFAULT_*` constant,
-  regardless of which package it lives in, **must** be wrapped with
-  `configurable({key, default, type, description, min?, max?, enum?, swap?})`.
-  Import `configurable` from `@exaix/core/config` (or from `./packages/core/src/config/registry.ts` for code inside `packages/core/src/`). Example:
-  The `configurable()` call registers the constant in the runtime registry,
-  making it visible to `exactl config get/set`, MCP config tools, and the
-  daemon's in-memory store. See `packages/core/src/config/registry.ts` for
-  the `configurable()` signature and `packages/core/src/types/constants.ts`
-  for existing examples.
-  - **Required fields:** `key` (dotted path), `default` (value, byte-identical to
-    the old `= value`), `type` (`ConfigValueType.NUMBER`/`STRING`/`BOOLEAN`),
-    `description` (agent-facing), `swap` (`SwapClass.HOT` or `SwapClass.RESTART`).
-  - **Optional fields:** `min`, `max` (validation bounds), `enum` (allowed values).
-  - **Exclusions:** Do NOT wrap structual enums whose TypeScript literal type
-    must be preserved for Zod schema compatibility (e.g. `MockStrategy`,
-    `McpTransportType`). Do NOT wrap array/object values, sentinel placeholders
-    (`"default"`, `"Unknown"`), or structural event-name strings.
-  - **Verification:** `deno task check:config-keys` (pre-commit Gate 6) detects
-    duplicate keys and prints the total count.
-- **Schema validation bounds** — when a Zod schema needs min/max validation for a
-  configurable key, use `resolveConfigurableBounds(key)` from
-  `@exaix/core/config` (or the `c(key)`/`cBounds(key)` helpers in
-  `packages/schemas/src/config.ts`) instead of importing separate MIN/MAX named
-  constants. This keeps the registry as the single source of truth for bounds.
-- **Internal constants** belong in a module‑scoped `constants.ts` file within the relevant package. Use descriptive names and group related values.
-- **CLI/TUI defaults** go in `packages/cli/src/config.ts` or
-  `packages/tui/src/config.ts` respectively.
-- **Test‑specific constants** belong in `packages/testing/src/constants.ts` (e.g.
-  prompts, mock keys, environment variable names).
-- **Enums.** Whenever a set of fixed strings is used (statuses, types,
-  providers), define a TypeScript `enum` in the appropriate package (e.g. `packages/core/src/types/enums.ts`) and reference it.
-  Compare against `RequestStatus.PENDING`, never the literal string.
+### Tunable defaults
 
-### Event Type Strings {#event-type-strings}
-
-Every event action argument passed to `IEventLogger.info()`, `.warn()`, `.error()`, `.fatal()`, or `.debug()` — and to `IEventRegistry.emit()` — **must** be a `DomainEventType` member imported from `@exaix/core/events`. Inline string literals are forbidden at these call sites.
-
-**Prohibited:**
+Wrap every user-tunable `DEFAULT_*` constant, in any package, with `configurable()`. Import it from
+`@exaix/core/config`. Inside `packages/core/src/`, import it from `packages/core/src/config/registry.ts`.
 
 ```ts
-await this.logger.info("execution.started", traceId, payload); // ← inline string
+export const OPENAI_COMPATIBLE_MAX_RESPONSE_BYTES: number = configurable({
+  key: "openai_compatible.max_response_bytes",
+  default: 8 * 1024 * 1024,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum compatible Chat Completions response body size in bytes",
+  min: 1,
+  max: 64 * 1024 * 1024,
+  swap: SwapClass.RESTART,
+});
 ```
 
-**Required:**
+The call registers the constant, so `exactl config get` and `set`, the MCP config tools, and the in-memory store
+of the daemon can see it. The exported value does not change.
+
+| Field                | Rule                                                               |
+| -------------------- | ------------------------------------------------------------------ |
+| `key`                | Required. A dotted path that is unique in the repository           |
+| `default`            | Required. Byte-identical to the value that the constant had before |
+| `type`               | Required. `ConfigValueType.NUMBER`, `STRING`, or `BOOLEAN`         |
+| `description`        | Required. Written for agents                                       |
+| `swap`               | Required. `SwapClass.HOT` or `SwapClass.RESTART`                   |
+| `min`, `max`, `enum` | Optional. Validation bounds and allowed values                     |
+
+`IConfigurableOpts` in `packages/core/src/config/registry.ts` lists the other fields. Do not wrap:
+
+- structural enums whose TypeScript literal type must stay intact for a Zod schema, such as `MockStrategy` and
+  `McpTransportType`;
+- array or object values;
+- sentinel placeholders, such as `"default"` and `"Unknown"`;
+- structural event-name strings.
+
+Run `deno task check:config-keys` to find duplicate keys. It prints the number of keys.
+
+### Schema bounds
+
+When a Zod schema needs minimum and maximum values for a configurable key, read them from the registry with
+`resolveConfigurableBounds(key)` from `@exaix/core/config`. `packages/schemas/src/config.ts` wraps this in its
+local helpers `c(key)` and `cBounds(key)`. Do not declare separate MIN and MAX constants. The registry is the
+only source of bounds.
+
+### Other constants
+
+- Internal constants go in a `constants.ts` file in the module's package. Use descriptive names and group related
+  values.
+- Defaults for the CLI and the TUI go in `packages/cli/src/config.ts` and `packages/tui/src/config.ts`.
+- Constants that only tests use, such as prompts, mock keys, and environment variable names, go in
+  `packages/testing/src/constants.ts`.
+- Define a fixed set of strings, such as statuses, types, and providers, as an enum in the package that owns the
+  concept, for example `packages/core/src/types/enums.ts`. Compare with `RequestStatus.PENDING`, never with the
+  literal string.
+
+## Event Type Strings {#event-type-strings}
+
+Every event name that you pass to `IEventLogger.info()`, `.warn()`, `.error()`, `.fatal()`, or `.debug()`, or to
+`IEventRegistry.emit()`, must be a `DomainEventType` member from `@exaix/core/events`. Do not write the string.
 
 ```ts
+// ❌ Inline string
+await this.logger.info("execution.started", traceId, payload);
+```
+
+```ts
+// ✅ Registered member
 import { DomainEventType } from "@exaix/core/events";
+
 await this.logger.info(DomainEventType.ExecutionStarted, traceId, payload);
 ```
 
-This is enforced by `deno task check:event-strings` (Gate 13 in the pre-commit pipeline). For the full event type table, see `docs/Reference_Data.md#event-taxonomy`.
+`deno task check:event-strings` reports a string literal in these calls. It runs in the pre-commit hook and in
+`deno run -A scripts/ci.ts check`. The table of event types is in
+[`docs/Reference_Data.md`](./Reference_Data.md#event-taxonomy).
 
-### Adding a New Event Type — Contributor Checklist {#add-event-type}
+### Adding a New Event Type {#add-event-type}
 
-Follow these steps every time a new event type is needed:
-
-1. **Add the member to `DomainEventType`** in `packages/core/src/events/domain_event_types.ts`.
-   - Use `DomainVerb` naming: `ExecutionStarted`, `FlowStepCompleted`, `GitCommitted`.
-   - Use `domain.subdomain.verb` string values: `"execution.started"`, `"flow.step.completed"`.
-   - Group it with related members using a comment block.
-
-1. **Register the publisher** at bootstrap (typically in the relevant `apps/` init file):
+1. Add the member to `DomainEventType` in `packages/core/src/events/domain_event_types.ts`.
+   - Name the member `DomainVerb`, such as `ExecutionStarted`, `FlowStepCompleted`, or `GitCommitted`.
+   - Give it a `domain.subdomain.verb` value, such as `"execution.started"` or `"flow.step.completed"`.
+   - Place it with related members.
+1. Register the publisher at bootstrap, usually in the init file of the owning app:
 
    ```ts
    registry.registerPublisher("my_service", [...existing, DomainEventType.MyNewEvent]);
    ```
 
-1. **Emit at the call site** using `registry.emit()` for domain events or `logger.info()` for internal infrastructure events:
+1. Emit the event at the call site. Use `registry.emit()` for a domain event and `logger.info()` for an internal
+   infrastructure event:
 
    ```ts
    await registry.emit("my_service", DomainEventType.MyNewEvent, { traceId, ...payload });
    ```
 
-1. **Update `docs/Reference_Data.md#event-taxonomy`** — add a row with the member name, string value, and domain.
-
-1. **Run `deno task check:event-strings`** — must pass with zero violations.
-
-**What is skipped (not counted):**
-
-- Property/enum member names (e.g., `{ foo: "bar" }` — `"foo"` is a name, not a
-  value)
-- Import/export paths and module declarations
-- Decorator arguments (framework metadata)
-- JSX attribute values
-- Template literal tokens
-- Type literal strings (e.g., `type Foo = "a" | "b"`)
-
-When a violation is found the script prints the value, kind, occurrence count,
-and file/line location, then exits with code 1.
-
-Search helpers are provided in the repository to locate inadvertent magic values
-(`grep -rEn ...` commands are included in older docs).
-
----
+1. Add a row with the member name, the string value, and the domain to the
+   [event taxonomy](./Reference_Data.md#event-taxonomy).
+1. Run `deno task check:event-strings`. It must report no violation.
 
 ## Import Statements {#import-statements}
 
-The generic import rules (imports at the top, no re-exporting, dynamic imports, no inline type
-imports) are in the [style guide](../unslop-ts/docs/style_guide.md#imports-at-the-top). Exaix adds the
-following.
+The generic import rules are in the [generic guide](../unslop-ts/docs/style_guide.md#imports): imports at the
+top, dynamic imports, inline type imports, and re-exports. Exaix adds the rule below. The next two sections cover
+[package surfaces](#package-imports) and [test isolation](#package-test-boundaries).
 
-### No Production Dependency on `tests/`
+### No production dependency on `tests/`
 
-Functional, deployable modules under `packages/`, `exaix-team/`, and `apps/` **must not** import from the repository's `tests/` folder. Test code is **excluded from a deployed workspace**, so a production module that imports it (even a type-only or transitively dead import) fails to resolve at module load in a deploy, breaking the deployed `exactl`/daemon. This is the layering bug that originally placed `EvalSqliteStore` under `tests/scenario_framework/` and was imported by the production `exactl eval` command — relocate such shared code into a real package under `packages/` instead.
-
-**Prohibited (in any `packages/`, `exaix-team/`, or `apps/` non-test module):**
+A deployable module under `packages/`, `exaix-team/`, or `apps/` must not import from the `tests/` folder of the
+repository. A deployed workspace leaves out test code. A production module that imports it, even for a type or
+through a dead path, fails to resolve when it loads and breaks the deployed `exactl` and daemon.
 
 ```ts
 // apps/exactl/src/commands/eval_commands.ts
 import { EvalSqliteStore } from "../../../../tests/scenario_framework/runner/history_sqlite.ts"; // ❌
+import { EvalSqliteStore } from "@exaix/eval-history"; // ✅ the shared code lives in a package
 ```
 
-**Correct — relocate the shared code to a package and import the alias:**
-
-```ts
-// apps/exactl/src/commands/eval_commands.ts
-import { EvalSqliteStore } from "@exaix/eval-history"; // ✅ package-owned, deployable
-```
+When production code needs shared test-side code, move that code into a package under `packages/` and import
+the package alias.
 
 **Exemptions:**
 
-- **Test files** (paths containing `/tests/` or ending in `_test.ts` / `.test.ts`) may import test helpers and fixtures from `tests/`.
-- **Test-infrastructure modules** — the `@exaix/testing` package (`packages/testing/`) and any `*/testing/` compatibility shim — exist solely to provide shared test helpers and never ship in a production deploy, so they may bridge to `tests/`.
+- Test files, which are paths that contain `/tests/` or end in `_test.ts` or `.test.ts`, may import helpers and
+  fixtures from `tests/`.
+- Test-infrastructure modules, which are the `@exaix/testing` package and any `*/testing/` shim, never ship, so
+  they may bridge to `tests/`.
 
-The production-to-tests zone of `exaix/import-boundaries` enforces this in `deno task lint`.
+The production-to-tests zone of `exaix/import-boundaries` enforces this rule in `deno task lint`.
+
+## Package Imports {#package-imports}
+
+Import another package through its public alias, never through its file path.
+
+- **Use the exact alias.** When the root import map declares an alias for a package or subpackage, such as
+  `@exaix/mcp/server`, `@exaix/git/testing`, or `@exaix/core/types`, import through that alias. Do not
+  deep-import the file path (`packages/...`), and do not append a file path to the alias (for example
+  `@exaix/mcp/server/resources.ts`).
+- **A root alias is not a path.** `@exaix/<package>` gives only the symbols that the package root exports.
+  Use the declared subpath aliases for narrower surfaces.
+- **No cross-package relative imports.** A module in `packages/<package>/` does not reach into another package
+  with a relative path.
+- **No retired root paths.** A package module does not import the retired root `src/` folder. Use the package
+  that owns the code now. Only `packages/mcp/server/` and its tests are exempt.
+- **No promotion.** A parent package entry point does not re-export a subpackage that has its own alias. See
+  [Canonical Subpackage Boundary](../packages/lint-policy/docs/style_guide.md#canonical-subpackage-boundary).
+
+| Check                       | Reports                                                                        |
+| --------------------------- | ------------------------------------------------------------------------------ |
+| `package-canonical-import`  | A deep import of a package path or an alias subpath that has an exact alias    |
+| `package-boundary`          | A relative import into another package, or into the retired root `src/` folder |
+| `package-subpath-promotion` | A parent entry point that re-exports a canonical subpackage                    |
+| `exaix/import-boundaries`   | The retired-root zone: a package module that imports a retired root path       |
 
 ## Package Test Boundary Isolation {#package-test-boundaries}
 
-Package-local tests under `packages/<package>/tests/` must remain self-contained and must not import test fixtures, helpers, or other test modules from outside the package boundary.
+A test in `packages/<package>/tests/` depends on its own package only. It does not borrow fixtures, helpers, or
+test modules from outside the package. This keeps each package portable.
 
-- **No cross-package test imports:** `packages/<package>/tests/` files must not import from root-level `tests/`, from other packages' test directories, or from any module outside their own package.
-- **Fixtures belong inside the package:** Store package-specific test fixtures under `packages/<package>/tests/fixtures/` or package-local helper code under `packages/<package>/tests/helpers/`.
-- **Use package testing subpaths when they exist:** If a package exposes a public testing surface such as `@exaix/<package>/testing`, any tests outside that package must import package-specific helpers, config builders, fixtures, or test-only data structures through that public subpath.
-- **No deep imports into another package's test internals:** Once a package-specific testing subpath exists, outside consumers must not import from `packages/<package>/tests/...` or equivalent relative deep paths.
-- **No root shim indirection for package-owned test support:** When `@exaix/<package>/testing` exists, do not keep routing package-specific test helpers through root `tests/helpers/*` shims except as temporary compatibility layers being actively drained.
-- **Use canonical public package barrels:** When the workspace root import map declares an exact package or subpackage alias such as `@exaix/mcp/server`, `@exaix/git/testing`, or `@exaix/core/types`, outside consumers must import through that exact alias. Do not deep-import the underlying repository path like `packages/...`, and do not deep-import file paths beneath the canonical alias such as `@exaix/mcp/server/resources.ts` or `@exaix/core/types/json.ts`.
-- **Package root aliases are not a license for arbitrary source imports:** `@exaix/<package>` is only valid for the symbols exported by that package root barrel. Use only explicitly declared canonical subpath barrels for narrower public surfaces.
-- **Avoid inline multiline structured text in tests:** It is highly recommended to avoid embedding YAML frontmatter, markdown documents, JSON payloads, or other multiline fixture text directly in a test file using backtick template literals. Move this content into a package-local fixture and load it from the test instead to keep test files readable.
-- **Package tests may depend on package source code only:** They may import from `packages/<package>/src/` and from shared runtime dependencies, but not from external test infrastructure.
-- **Package-owned modules must not import retired root implementation paths:** Files under package-owned runtime or support surfaces such as `packages/<package>/server/`, `packages/<package>/testing/`, or `packages/<package>/src/` must not import retired root implementation modules. Use the package-owned source-of-truth path or canonical package alias instead.
-- **`@related-files` entries must name files of this repository:** `deno task check:arch` resolves each entry in a `packages/`, `apps/`, or `tests/` header against the tracked source, test, and package files. A path in a submodule, a sibling repository, a workflow file, or the Dockerfile fails with `does not resolve to a known file or module`. Name a source or test file of this repository instead.
-- **Package headers must not point at retired root ownership paths:** In package-owned modules, `@related-files` must not reference retired root compatibility modules. Header metadata must point at the package-owned source-of-truth path, not the old root shim or legacy runtime location.
-- **Boundary enforcement:** This prevents one package's test setup from leaking into another package or into repository-wide test fixtures, preserving package portability and isolation.
-
-**Prohibited when a testing subpath exists:**
-
-```ts
-import { TEST_DEFAULT_BRANCH } from "../../packages/git/tests/helpers/constants.ts";
-import { setupGitRepo } from "../helpers/git_test_helper.ts";
-```
-
-**Required:**
+- **Allowed imports:** the package source under `packages/<package>/src/` and shared runtime dependencies.
+- **Package-local support:** keep fixtures in `packages/<package>/tests/fixtures/` and helpers in
+  `packages/<package>/tests/helpers/`.
+- **No cross-package test imports:** do not import from root-level `tests/` or from the test folders of other
+  packages. The checker makes two exceptions: the root `tests/helpers/` folder, and the use of
+  `packages/ai/tests/` by `@exaix/testing`.
+- **Public testing subpaths:** when a package exposes `@exaix/<package>/testing`, every test outside that
+  package imports its helpers, builders, and fixtures from that subpath. Nobody deep-imports
+  `packages/<package>/tests/...`, and nobody routes the helpers through a root `tests/helpers/*` shim. The only
+  exception is a temporary shim that you are removing.
+- **Fixtures as files:** do not embed multi-line YAML, Markdown, JSON, or other structured text in a test with
+  a template literal. Put it in a package-local fixture and load it. See
+  [Test Fixtures](../unslop-ts/docs/style_guide.md#test-fixtures).
 
 ```ts
-import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+import { TEST_DEFAULT_BRANCH } from "../../packages/git/tests/helpers/constants.ts"; // ❌
+import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing"; // ✅
 ```
 
-These rules are enforced in part by the retired-root-import zone of `exaix/import-boundaries` and, in `packages/lint-policy/src/checkers/check_code_style.ts`, by the `[package-related-files-boundary]` and `[package-testing-import]` error tags. The public testing-subpath import rule must be followed wherever a package exposes `@exaix/<package>/testing`.
+| Check                                 | Reports                                                                          |
+| ------------------------------------- | -------------------------------------------------------------------------------- |
+| `package-boundary`                    | A package test that imports root `tests/` fixtures (other than `tests/helpers/`) |
+| `package-testing-import`              | A test outside a package that deep-imports its tests instead of `/testing`       |
+| `exaix/test-inline-multiline-fixture` | A multi-line structured fixture inline in a test (opt-in)                        |
 
-- Barrel re-export violations from source are reported as `[src-barrel-re-export]`.
+## Module Boundaries & TUI Isolation {#tui-boundaries}
 
-- Canonical package and subpackage barrel enforcement is reported as `[package-canonical-import]`.
+The terminal UI (`apps/tui/src/`) shows data and takes input. It reaches core behavior through service
+interfaces. It does not depend on the CLI app or on core classes.
 
-- Production-module imports from the `tests/` folder are reported by the production-to-tests zone of `exaix/import-boundaries` (see [No Production Dependency on `tests/`](#no-production-dependency-on-tests)).
+- Do not import code from the CLI app (`apps/exactl/src/`) in new TUI code.
+- Do not import the retired `services/`, `config/`, or `helpers/` folders by a relative path. The code now lives in
+  `packages/core/src/services/`, `packages/core/src/config/`, and `packages/tui/src/helpers/`. Import the
+  `@exaix/*` aliases instead.
+- Use the service interfaces in `packages/core/src/types/`. A view does not instantiate a core service class.
+  Views receive their services from the service factory and the view registry.
+- Put helpers for terminal drawing and interaction, such as keyboard handling, tree views, and spinners, in
+  `packages/tui/src/helpers/`. Only TUI code imports them.
+- Other code starts the dashboard only through its entry point, `apps/tui/main.ts`, as a subprocess.
+- TUI code may depend on other modules of `apps/tui/src/` through relative paths, and on shared assets, enums,
+  schemas, and types in `packages/`.
 
-- Structured multiline test fixtures are also flagged as `exaix/test-inline-multiline-fixture` in test files.
+Zones of `exaix/import-boundaries` in `packages/lint-policy/catalog.json` enforce these rules. They cover:
 
----
+- TUI sources and TUI tests that import the retired CLI, services, config, or helpers folders;
+- other code that imports the TUI helpers.
+
+No zone checks a direct import of `apps/exactl/src/`. The service factory
+`apps/tui/src/services/tui_service_factory.ts` still imports CLI command classes to build the adapters that the
+views use.
+
+## Module Boundaries & CLI Isolation {#cli-boundaries}
+
+The CLI command layer reaches the core only through the package aliases. The boundary covers
+`apps/exactl/src/commands/`, `apps/exactl/src/handlers/`, and `apps/exactl/src/command_builders/`.
+
+- Do not import the retired `services/` folder by a relative path. The adapters folder is the only exception.
+- Do not import the config service file by a relative path. Use the `@exaix/core` alias.
+- `apps/exactl/src/helpers/` belongs to the CLI. Modules outside `apps/exactl/src/` do not import it.
+
+Zones of `exaix/import-boundaries` in `packages/lint-policy/catalog.json` enforce these rules.
+
+## Edition Tier Import Boundary {#edition-tier-boundary}
+
+Exaix has three editions: **Solo** (Apache 2.0; `packages/` and `apps/`), **Team** (`exaix-team/`, BSL), and
+**Enterprise** (`exaix-enterprise/`). A lower edition must not import from a higher edition. Such an import
+couples the free source and build to code with a different license. For example, a Solo app that imports Team
+code would ship Team source in the free deployment.
+
+```ts
+import { TeamComposer } from "@exaix-team/team-composer"; // ❌ Solo → Team, in apps/exactl/src/init.ts
+import { Y } from "@exaix-enterprise/mod.ts"; // ❌ Team → Enterprise, in exaix-team/
+```
+
+Two references to a higher edition are allowed:
+
+```ts
+// 1. A type-only import. The compiler erases it.
+import type { TeamComposer } from "@exaix-team/team-composer";
+
+// 2. A dynamic import in a dispatch entry, behind an edition guard.
+if (editionType === EDITION_TEAM) {
+  const { TeamComposer } = await import("@exaix-team/team-composer");
+}
+```
+
+A dispatch entry is a file under `apps/daemon/`, `apps/exactl/`, or the same folders of `exaix-team/apps/`. The
+guard `editionType === EDITION_…` must appear in the 12 lines above the import. A dynamic import without the
+guard is a violation, because it loads Team code in a Solo run.
+
+**Exemptions:**
+
+- Test files and `*/testing/` shims.
+- The Team-tier module `apps/daemon/src/bootstrap_team.ts`. It is loaded only in the Team branch and may import
+  `@exaix-team/*` statically. `exaix-team/apps/mcp-server/` is a Team-tier app inside the `exaix-team` submodule.
+
+**Remediation:** when lower-edition code needs a type from a higher edition, move the interface into
+`packages/core/src/types/`, and let both sides depend on it. When it needs a value, use the guarded dynamic
+import in the dispatch entry.
+
+Edition-selection code, such as `edition ===` and `EXAIX_EDITION`, belongs only in the edition composer. The
+`edition-conditional-outside-composer` check reports it elsewhere. The catalog lists the folders that it exempts.
+
+| Check                                  | Reports                                              |
+| -------------------------------------- | ---------------------------------------------------- |
+| `edition-leak`                         | A lower-edition module that imports a higher edition |
+| `edition-conditional-outside-composer` | An edition conditional outside the composer          |
+
+### Why the static rule is the guarantee {#edition-static-guarantee}
+
+`edition-leak` guards the artifact that Exaix ships: the source-run deploy of `scripts/deploy_workspace.ts`. The
+rule keeps one invariant. Every reference from lower-edition source to a higher edition is type-only or an
+edition-guarded dynamic import. A Solo run therefore never executes an upper-edition import. The deploy can
+leave `exaix-team/` out of the workspace and rewrite the `workspace` list in `deno.json`, and Solo still starts.
+
+`deno compile` is the exception, and it is not the shipped artifact. It embeds the whole resolved module graph,
+including dynamic imports, so a compiled Solo binary still contains Team code. No source rule can change that.
+A Team-free binary would need a Solo import map that points `@exaix-team/*` at stub modules. That map does not
+exist yet. Use the source-run deploy for a Team-free Solo distribution. See
+`exaix-dev-docs/dev/Exaix_Edition_Architecture.md`.
+
+### The graph gate {#edition-graph-gate}
+
+`edition-leak` reads source text, so a gap in its patterns could let a leak pass. `deno task check:edition-graph`
+(`scripts/check_edition_graph.ts`) double-checks it. It resolves the daemon and exactl module graphs with
+`deno info --json` and fails on a static runtime edge from a lower edition into a higher one. It uses the same
+`editionTierOfPath` classification as the rule. Guarded dynamic edges and type-only edges are not leaks. On a
+clean tree both gates agree. The graph gate runs in the code-quality workflow, in `deno run -A scripts/ci.ts check`,
+and in the pre-commit hook after `check:style`.
+
+## Package Module Purity {#package-module-purity}
+
+A pure package module is usable by a project that knows nothing about the Exaix daemon. The test is in
+[`ARCHITECTURE.md`](../ARCHITECTURE.md). The rules below are the enforceable part. They stop packages from
+acquiring daemon knowledge.
+
+### No runtime infrastructure in a package
+
+Source files under `packages/<name>/src/` must not create runtime infrastructure.
+
+- **No `new EventLogger(...)`.** A package does not own audit-event infrastructure. Accept an `IEventLogger`
+  as an optional constructor parameter. The service layer creates it and passes it in.
+- **No `new ConfigService(...)`.** A package receives a typed `Config` value from its caller. It does not read
+  config files.
+
+```ts
+import { EventLogger } from "@exaix/core/logger";
+class MemoryBankService {
+  private logger = new EventLogger({ prefix: "[Memory]" }); // ❌ creates runtime infrastructure
+}
+
+import type { IEventLogger } from "@exaix/core/logger";
+class MemoryBankService {
+  constructor(private readonly logger?: IEventLogger) {} // ✅ injected by the service layer
+}
+```
+
+### Depend on interfaces
+
+Type a logger field or parameter as `IEventLogger`, not as the concrete `EventLogger` class. The class ties the
+package to the runtime logger.
+
+### Receive configuration
+
+Take configuration as a typed `Config` constructor parameter. The service layer reads the file and injects the
+plain value. A package may use `isTestMode()` and `isCIMode()` for test-conditional behavior only. The checker
+does not detect direct `Deno.env` reads, so review them by hand.
+
+```ts
+import type { Config } from "@exaix/schemas";
+constructor(private readonly config: Config) {} // ✅
+```
+
+### Enforcement
+
+`packages/lint-policy/src/checkers/check_code_style.ts` checks `packages/<name>/src/`, except `packages/core/`
+(which defines the runtime entities) and `packages/mcp/server/` (the declared bridge between package contracts
+and runtime wiring). It skips comment lines.
+
+| Tag                                   | Severity | Reports                                                                  |
+| ------------------------------------- | -------- | ------------------------------------------------------------------------ |
+| `[package-instantiates-event-logger]` | error    | `new EventLogger(`                                                       |
+| `[package-concrete-logger-type]`      | warn     | An import of the concrete `EventLogger` from `@exaix/core`               |
+| `[package-uses-config-reader]`        | warn     | An import of `ConfigService` from `@exaix/core`, or `new ConfigService(` |
+
+## Layer-Aware Constant Imports {#layer-aware-constant-imports}
+
+A high-level class, such as an orchestrator, coordinator, or controller, does not import the implementation
+details of the services that it delegates to.
+
+**Rule:** when class `A` delegates a concern to service `S`, and `S` needs a constant, primitive, or class `C` to
+do the work, `S` imports `C`. `A` does not.
+
+**You have a layer violation when:**
+
+- an orchestrator imports a subprocess runner that only the delegated git service uses;
+- a coordinator imports a `DEFAULT_*` timeout for a git command that it never runs;
+- a high-level class builds a concrete class with `new` instead of accepting its interface;
+- a composition root imports a token-estimation constant when the context service already exposes
+  `estimateTokensSync()`.
+
+```ts
+// ❌ The git timeout belongs to the delegated service
+import { DEFAULT_GIT_STATUS_TIMEOUT_MS } from "@exaix/git";
+await SafeSubprocess.run("git", ["status"], { timeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS });
+
+// ❌ A concrete class: accept the interface through the constructor
+import { ToolRegistry } from "@exaix/tool-runtime";
+this._toolRegistry = new ToolRegistry({/* … */});
+
+// ❌ An encapsulated constant: call the service method instead
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
+const tokens = Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN); // use ctx.estimateTokensSync(text)
+```
+
+**Acceptable at a high level:** framework enums that drive the class's own dispatch (for example
+`ExecutionStrategyName` and `SecurityMode`), the names of events that the class emits itself, and type-only
+imports of service interfaces.
+
+**Remediation:**
+
+1. Move the constant into the module of the service that uses it.
+1. When the service must expose a computation, add a wrapper method, such as `estimateTokensSync()` on
+   `ExecutionContextService`. Do not export the raw constant.
+1. For a concrete class, remove the inline `new`, accept the interface through the constructor, and let the
+   caller inject the instance.
+
+### Enforcement
+
+Two AST checks in `packages/lint-policy/src/checkers/check_code_style.ts` apply to `packages/` source. They use
+the TypeScript compiler API and name no symbols.
+
+| Tag                       | Severity | Reports                                                                  |
+| ------------------------- | -------- | ------------------------------------------------------------------------ |
+| `[concrete-cross-domain]` | warn     | `new X()` for a class that the file imported from another domain package |
+| `[layer-constant-leak]`   | warn     | A bare constant value imported from another domain package               |
+
+Both skip the framework packages (`@exaix/core`, `@exaix/schemas`, `@exaix/shared`, `@exaix/ai` and its
+`@exaix/ai-*` providers, `@exaix/cli`, `@exaix/tui`, and `@exaix/testing`), same-package imports, test files, and
+the bridge files that the catalog lists under `layout.layerLeakExempt`. Imports from the framework packages are
+therefore a review concern, not a checked one. See the [rule reference](../packages/lint-policy/docs/style_rules.md).
 
 ## Dependency Injection & Interfaces {#di-and-interfaces}
 
-- **Interface conventions:** exported interfaces use the `I` prefix and sit at the top of the module,
-  as the [style guide](../unslop-ts/docs/style_guide.md#interface-conventions) describes. The lint rules
-  `exaix/exported-interface-naming`, `exaix/exported-interface-placement`, and
-  `exaix/no-interface-rename-on-import` check them.
-- Every injectable class `Foo` **must** export a companion interface `IFoo`.
-  Consumers depend on the interface, never on the concrete implementation.
-- Dependencies are supplied via constructors; module‑level singletons or static
-  accessors are prohibited.
-- Test mocks **must** implement the full interface; avoid `as any` or partial
-  objects unless the test explicitly documents why the missing members aren’t
-  invoked.
-- Factory functions and registries reference `IFoo`, not `Foo`.
-- Prefer narrow interfaces: if a consumer only needs two methods, define an
-  interface with those two rather than importing a fat interface.
+The naming and placement of interfaces are in the
+[generic guide](../unslop-ts/docs/style_guide.md#interface-conventions): the `I` prefix, exported interfaces at
+the top of the module, and no rename on import. Exaix adds these rules.
 
-Example:
+- Every injectable class `Foo` exports a companion interface `IFoo`. Consumers depend on the interface, never
+  on the concrete class.
+- Supply dependencies through constructors. Module-level singletons and static accessors are prohibited.
+- Factories and registries refer to `IFoo`, not to `Foo`.
+- Prefer a narrow interface. When a consumer needs two methods, define an interface with those two.
+- A test mock implements the full interface. Do not use `as any` or a partial object, unless the test says why
+  the missing members are never called.
 
 ```ts
-export interface IGitService { commit(msg: string): Promise<void>; }
-export class GitService implements IGitService { ... }
+export interface IGitService {
+  commit(msg: string): Promise<void>;
+}
+export class GitService implements IGitService {}
 
 export class PlanExecutor {
   constructor(private git: IGitService, private db: IDatabaseService) {}
 }
 ```
 
----
-
 ## Environment Variables {#env-vars}
 
-Environment‑variable rules were formalised in configuration cleanup and are part of the
-style guide:
+Settings belong in configuration. Add a `configurable()` key, as described in [No Magic Values](#no-magic-values),
+instead of a new environment variable.
 
-- **Production overrides** are limited to the `EXA_LLM_*` family:
-  `PROVIDER`, `MODEL`, `BASE_URL`, and `TIMEOUT_MS`.
-- **All** env vars **must** be validated via the Zod schema in
-  `packages/core/src/config/env_schema.ts` – use `getValidatedEnvOverrides()`, not
-  `Deno.env.get()` directly.
-- **Test variables** use the `EXA_TEST_*` prefix and helpers such as
-  `isTestMode()` and `isCIMode()` for detection.
-- Never read `EXA_LLM_*` vars without validation; direct access is prohibited.
+- **Production overrides** are the `EXA_LLM_*` family: `EXA_LLM_PROVIDER`, `EXA_LLM_MODEL`,
+  `EXA_LLM_BASE_URL`, and `EXA_LLM_TIMEOUT_MS`. `EXA_LLM_ENDPOINT` is the older name of the base URL. The code
+  that reads them is `ProviderFactory` in `packages/ai/src/provider_factory.ts` and the default routing
+  strategy in `packages/ai/src/routing/`.
+- **Test variables** use the `EXA_TEST_*` prefix. Detect test and CI runs with `isTestMode()` and `isCIMode()`
+  from `packages/core/src/config/env_schema.ts`. `isTestMode()` reads `EXA_TEST_MODE` and `EXA_TEST_CLI_MODE`.
+  `isCIMode()` reads `EXA_CI_MODE` and then `CI`.
 
-These guidelines ensure consistent error handling and prevent a class of
-runtime bugs.
+## Optional Parameter Usage {#optional-params}
 
----
+The generic rules for the four optional-parameter cases (redundant, unused, marked but not optional, and bare)
+are in the [generic guide](../unslop-ts/docs/style_guide.md#optional-parameters). Exaix configures the optional
+wrapper and runs the checks as described here.
 
-## Module Structure & Placement {#module-structure}
+### The `Opt<T, R>` wrapper
 
-- **Module structure order:** every module follows the order of the [style guide](../unslop-ts/docs/style_guide.md#module-order): header comment, imports, exports, functional code. The Exaix header comment also names the Implementation Plan step that the module satisfies.
+`Opt` and `Reason` are in `packages/core/src/types/optional_marker.ts` and are exported from
+`@exaix/core/types`. `Opt<T, R>` is `T | undefined` at run time and adds no cost.
 
-### JSDoc Header Tags (`@visible`) {#jsdoc-header-tags}
+Wrap the type of every optional parameter with `Opt<T, Reason.X>`, and also give it `?` or a default value. The
+second type argument must be a member of the closed `Reason` enum. It proves that someone reviewed the choice.
+A wrapped parameter is exempt from the call-site checks.
 
-A class's leading JSDoc comment may carry the `@visible` tag to declare it explicitly
-load-bearing for ARCHITECTURE.md's Execution Semantics "Visibility" guarantee ("every
-significant runtime transition emits a typed, versioned, trace-linked domain event").
-Tagging a class is a real, tool-enforced commitment, not documentation:
+```ts
+// An abstract method: implementations vary
+protected abstract attemptGenerate(prompt: string, options?: Opt<IModelOptions, Reason.AbstractBoundary>): Promise<IGenerateResult>;
 
-- **Effect:** `scripts/check_event_coverage.ts --fail-on-tagged` treats any coverage
-  finding on an `@visible`-tagged class as **blocking**, not advisory — wired into the
-  pre-commit hook's staged-files gate. A finding is not just "no logger call anywhere in
-  the class"; a call whose action argument isn't a registered `DomainEventType` member
-  (a literal `DomainEventType.X`, or a same-class private-helper parameter/field typed
-  `TDomainEventType`, resolved one level deep) is equally rejected — the tag requires
-  taxonomy-conformant coverage, not merely logger-call presence.
-- **Runtime verification:** a static `check:event-coverage` pass is not sufficient proof
-  the tag's commitment is met — a `@visible` class needs a real Tier A (package-level,
-  real `EventLogger`/db, no daemon) or Tier B (scenario e2e, full daemon boot) test
-  proving its primary events actually fire with a sane payload at runtime. The static
-  check only proves the decorator/logger-call shape exists in source; it cannot prove
-  the call site is reached by a real production caller, that the payload is populated,
-  or that the trace ID is correct. See `.copilot/skills/plan/SKILL.md` §2H and
-  `exaix-dev-docs/planning/phase-169-visible-event-runtime-verification.md`, which found
-  multiple `@visible` classes with a clean static pass yet zero real runtime coverage —
-  including one event that never fired in production at all because its logger
-  dependency was never injected at either production call site.
-- **Trace correlation:** for a `@visible` class whose method emits more than one
-  lifecycle event for the same operation (e.g. started/completed/failed), pass that
-  operation's trace ID as the logger call's fourth positional argument
-  (`logger.info(action, target, payload, traceId)`) on every one of them — embedding
-  `trace_id` only inside `payload` is not enough, since `EventLogger.log` mints a new
-  random trace ID for any event whose fourth argument is absent, breaking the events'
-  journal-level correlation (see `packages/ai/src/traced_provider.ts` for the pattern).
-- **Streaming/generator lifecycle:** a `@visible` class's streaming or async-generator
-  method must emit exactly one terminal event covering every exit path — normal
-  exhaustion, a thrown error, AND early consumer cancellation (the caller stops
-  iterating, e.g. `break`/`return()` from a `for await` loop) — not just the first two.
-  The `TracedProvider.generateStream` pattern: track whether a terminal event already
-  fired (success or failure), and in a `finally` block, emit a dedicated cancellation
-  event only if neither did.
-- **Placement:** on the class's own leading comment, scoped via `ts.getLeadingCommentRanges`
-  at the class node's full start — not the file's `@module` header — since one file may
-  declare more than one class.
-- **When to add it:** a class on the request → plan → execution → review → memory
-  critical path, or otherwise security- or observability-sensitive, whose coverage must
-  never silently regress.
-- **Precedent:** parsed the same minimal way `scripts/validate_architecture.ts` already
-  parses `@ungrounded` (a plain regex over the comment text) — see that tag's own
-  documentation in `.copilot/skills/clean-codebase/SKILL.md`,
-  `.copilot/skills/edition-development/SKILL.md`, and
-  `.copilot/skills/review-code/SKILL.md`.
+// A test factory with default overrides
+function createStub(overrides: Opt<Partial<IDatabaseService>, Reason.TestOverride> = {}): IDatabaseService;
+```
 
-Example:
+Wrapping a parameter that has neither `?` nor a default value is an error (`MARKED_NOT_OPTIONAL`).
 
-```typescript
+| Reason                        | Use it for                                         | Typical pattern                      |
+| ----------------------------- | -------------------------------------------------- | ------------------------------------ |
+| `Reason.TestOverride`         | A test factory                                     | `overrides: Partial<T> = {}`         |
+| `Reason.TestStub`             | A test stub                                        | `responseContent = "..."`            |
+| `Reason.RecursiveOmit`        | A recursive helper                                 | `depth = 0`, `prefix = ""`           |
+| `Reason.CoercionDefault`      | A coercion fallback                                | `fallback = Status.PENDING`          |
+| `Reason.FactoryPreset`        | A factory preset                                   | `config?: IFooConfig`                |
+| `Reason.SensibleDefault`      | A sensible constant default                        | `limit = 10`, `minLength = 3`        |
+| `Reason.UiDefault`            | A UI rendering default                             | `char = " "`, `disabled = false`     |
+| `Reason.AbstractBoundary`     | An abstract or interface boundary                  | `options?` on a base method          |
+| `Reason.OptionalDependency`   | A dependency that only some paths need             | `logger?`, `costTracker?`            |
+| `Reason.TraceAbsent`          | A trace ID that is absent in some contexts         | `traceId?: string`                   |
+| `Reason.CancellationOptional` | A cancellation signal that callers may omit        | `options?: { signal?: AbortSignal }` |
+| `Reason.QueryFilter`          | A query filter                                     | `options?: IBuildSnapshotOptions`    |
+| `Reason.OptionalInput`        | A data input that enriches the output              | `analysis?`, `frontmatter?`          |
+| `Reason.ExecutionConfig`      | An execution setting that falls back to config     | `timeoutS?`, `modelId?`              |
+| `Reason.OptionalContext`      | Context that enriches logs and events              | `requestId?`, `portal?`              |
+| `Reason.ShapeValidation`      | A value from an untyped input, checked at run time | A retired parameter shape            |
+
+There is no catch-all. When no reason fits, add a new member to the `Reason` enum.
+
+### Enforcement
+
+The whole-tree check `optional-params` (`unslop-ts/src/rules/whole_tree/optional_params.ts`, run through
+`unslop-ts/src/cli/whole_tree.ts`) reads production `.ts` and `.tsx` files with the TypeScript compiler API. It
+compares each function that has optional parameters with every call site of the same name.
+
+| Task                                     | Reports                                                   | Runs in                        |
+| ---------------------------------------- | --------------------------------------------------------- | ------------------------------ |
+| `deno task check:optional-params --fail` | Redundant, unused, and marked-but-not-optional parameters | `ci.ts check`                  |
+| `deno task check:optional-params:staged` | Bare optional parameters in staged files                  | Pre-commit hook, `ci.ts check` |
+
+Without `--fail` the first task is advice. Bare optional parameters that already exist are reported as advice
+only, and the staged task stops new ones. The opt-in plugin rule `exaix/require-optional-wrapper` finds bare
+optional parameters during linting.
+
+## Workspace Path Construction {#exaix-path-construction}
+
+Build Exaix workspace paths with the helper functions of `@exaix/shared`. Do not join the default segments in
+the caller. The helpers are in `packages/shared/src/paths.ts`.
+
+- Build `<root>/Workspace/Requests/...` with `requestsPath(root, ...)`. Use the siblings `plansPath`,
+  `activePath`, `archivePath`, `rejectedPath`, `workspacePath`, and `runtimePath` for the other folders.
+- Build the blueprint and memory branches with `blueprintsPath`, `agentsPath`, `flowsPath`, `memoryPath`, and the
+  `memory*Path` family.
+- A caller that joins a `DEFAULT_*_PATH` constant, or writes a root segment as a literal, re-derives the
+  layout. A layout change then misses that caller. The helpers own the default, so no caller repeats it.
+- Read `config.paths.<key>` directly. The schema fills a missing key, so a `paths.<key> ?? "<default>"` fallback
+  repeats the default and is dead code.
+- A shipped config under `configs/` does not restate a `[paths]` default. The schema fills a missing key from
+  the same constant, so a restated value is a second owner of the layout.
+
+In tests:
+
+- A `paths` object spreads `ExaPathDefaults` and names only the keys that it overrides. Listing every key with
+  its default constant re-spells the table.
+- A test reads a config document from a fixture. See
+  [Test Fixtures](../unslop-ts/docs/style_guide.md#test-fixtures).
+- A scenario step names a config fixture with `content_from`, not with an inline `content` block.
+
+**Exception:** a test may compose the segments when the composition is the rule under test (for example the
+flow-catalog guard), or when the literal must stay a shell variable or a glob. Mark that line with
+`path-builder-exclude` and the reason.
+
+`deno task check:path-builders` enforces this section.
+
+## Tool Naming {#tool-naming}
+
+A canonical tool name is `<verb>_<object>` in snake_case. The first token is one of `read`, `write`, `list`,
+`search`, `create`, `run`, `fetch`, `move`, `copy`, `delete`, `patch`, `find`, `query`, `get`, and `remember`.
+Git tools use the `git_<verb>` namespace. Exaix control-plane tools use the MCP-only `exaix_<verb>_<object>`
+namespace (`TOOL_NAME_VERBS` in `packages/core/src/types/constants.ts` lists the first tokens).
+
+- Native Exaix names match exactly. Do not add case folding, whitespace trimming, or compatibility aliases.
+- General-purpose aliases live in the shared alias map. An alias must not shadow a canonical name or point to a
+  different operation.
+- When a rename retires a native name, reject the old name in runtime calls and in raw permission and approval
+  rules.
+- When one operation exists in both `ToolName` and `McpToolName`, use the same canonical name in both catalogs.
+  Add every literal intersection to `SHARED_TOOL_OPERATIONS`.
+
+`deno task check:tool-naming` checks the verbs, the shared-operation declarations, and the shared names. It cannot
+tell that two differently named tools mean the same thing. Review each new unmatched export, and either declare
+it distinct or add it to the shared-operation table. See
+[the tool catalog parity section](../ARCHITECTURE.md#tool-catalog-parity-toolregistry-vs-tool_manifest).
+
+## Native Tool-Round Replay {#native-tool-round-replay}
+
+A provider response that carries tool calls replays as one round. Code that builds or reads a round follows these
+rules.
+
+- Store the assistant artifacts of the response in their original order, as one unit. Do not rebuild them from
+  the canonical calls.
+- A per-call provider signature, such as the `thoughtSignature` of Gemini, stays on the call that carries it. The
+  replay keeps that call first and returns the other calls as transcript blocks.
+- Dispatch runs the calls in the order that the model returned them. Replay bytes and dispatch order are separate
+  concerns.
+- Enforce the cap before a call runs. A refused call still gets a result, in its original position.
+
+Tests: `packages/execution/tests/planning_tool_loop_test.ts` and
+`packages/ai-google/tests/google_provider_tools_request_test.ts`.
+
+## Filesystem Watching {#fs-watching}
+
+`Deno.watchFs` is not idempotent. It can emit several events for one change, and the order differs by operating
+system ([denoland/deno#12874](https://github.com/denoland/deno/issues/12874)). A plain `for await` loop over the
+watcher processes every change twice, and one uncaught error in the loop stops the whole watcher and often the
+daemon.
+
+- Consume the watcher through `consumeFsEvents` or `watchFsDebounced` from `@exaix/core/fs`. They debounce per
+  path, filter write events, isolate the error of each event with `onError`, and accept an optional
+  `shouldProcess` guard.
+- If you must write the loop yourself, it must:
+  - debounce or otherwise collapse duplicate events;
+  - make the action idempotent by comparing content or state before it acts, and never call an operation that
+    throws when it runs a second time, such as a state-machine `resume()`;
+  - catch errors so that the failure of one event cannot leave the loop.
+
+## Skill Folders {#skill-folders}
+
+- A skill is a folder `<name>/SKILL.md` with an optional `exaix.yaml` sidecar and a `references/` folder. Read
+  it only through `SkillFolderLoader` or `SkillsService`. Feature code does not parse the files.
+- Resource limits and fallback settings come from the `skills.*` config keys, through the root plan of the
+  current config generation. Do not add a literal limit next to them.
+- Parse and render each skill once. `renderSkillEntry` is the only function that turns a skill into prompt text,
+  so budgets, pins, and usage rows all measure the same block.
+- Change status through the service lifecycle (`approveSkill`, `deprecateSkill`). An approval names the
+  reviewed revision, and a content update returns the skill to draft.
+- Never write skill bodies or host paths into events or CLI errors. Use typed reasons.
+
+## Module Structure {#module-structure}
+
+Every module follows the order of the [generic guide](../unslop-ts/docs/style_guide.md#module-order): header
+comment, imports, exported types, then code.
+
+### Module headers {#module-headers}
+
+Each source file starts with a JSDoc header. The tags are:
+
+| Tag                    | Required | Content                                                     |
+| ---------------------- | -------- | ----------------------------------------------------------- |
+| `@module`              | Yes      | The logical name                                            |
+| `@path`                | Yes      | The path of the file                                        |
+| `@description`         | Yes      | A short summary                                             |
+| `@architectural-layer` | Yes      | The layer of the module                                     |
+| `@related-files`       | Yes      | Files of this repository that explain the module, as a list |
+| `@ungrounded`          | No       | Exempts the file from the architecture grounding check      |
+
+The header names no plan phase or step. See [Comment Discipline](#comment-discipline).
+
+`deno task check:arch` resolves each `@related-files` entry against the tracked source, test, and package files
+of this repository. An entry that names a path in a submodule, a sibling repository, a workflow file, or the
+Dockerfile fails with `does not resolve to a known file or module`. Name a source or test file of this
+repository instead. In a package module, an entry must also not name a retired root compatibility path.
+
+| Check                            | Reports                                                                                        |
+| -------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `module-header-tag`              | A non-test file whose header lacks `@module`, `@path`, or `@description` in the first 15 lines |
+| `package-related-files-boundary` | A package header that names a retired root path in `@related-files`                            |
+| `exaix/require-module-header`    | A file that does not start with a header comment                                               |
+
+### JSDoc header tag `@visible` {#jsdoc-header-tags}
+
+Tag a class with `@visible` in its own leading JSDoc comment to declare it load-bearing for the visibility
+guarantee in `ARCHITECTURE.md`: every significant runtime transition emits a typed, versioned, trace-linked domain
+event. The tag is a commitment that tools enforce, not documentation.
+
+```ts
 /**
  * @module ReviewRegistry
  * @path packages/core/src/artifact/review_registry.ts
  * @visible
  */
-export class ReviewRegistry { ... }
+export class ReviewRegistry {}
 ```
 
-### Automated Execution Logging (`LogMethod` / `LogSyncMethod` / `LogGeneratorMethod`) {#log-method-family}
+- **When to tag:** a class on the request, plan, execution, review, and memory path, or a class that is
+  sensitive for security or observability and whose coverage must never regress silently.
+- **Where:** on the leading comment of the class, not in the `@module` header of the file. One file can declare
+  more than one class.
+- **Static check:** `scripts/check_event_coverage.ts --fail-on-tagged` treats a coverage finding on a tagged class
+  as blocking. The pre-commit hook runs it on staged files. A finding is a class with no logger call, and also a
+  call whose event name is not a registered `DomainEventType` member. A literal `DomainEventType.X` counts, and so
+  does a parameter or field of a private helper in the same class that is typed `TDomainEventType`, resolved one
+  level deep.
+- **Runtime proof:** a clean static check is not enough. A tagged class needs a Tier A test (package level, real
+  `EventLogger` and database, no daemon) or a Tier B test (scenario end to end, full daemon) that shows its main
+  events fire at run time with a sound payload. The static check cannot prove that a production caller reaches
+  the call site, that the payload is filled, or that the trace ID is right. A logger that no production call site
+  injects is the usual cause of an event that never fires. See `.copilot/skills/plan/SKILL.md`.
+- **Trace correlation:** when a method emits more than one lifecycle event for the same operation, such as
+  started, completed, and failed, pass the trace ID of the operation as the fourth argument of every logger
+  call: `logger.info(action, target, payload, traceId)`. A trace ID inside `payload` only is not enough.
+  `EventLogger.log` creates a new random trace ID for an event with no fourth argument, and that breaks the
+  correlation in the journal. `packages/ai/src/traced_provider.ts` shows the pattern.
+- **Streams and generators:** a streaming or generator method emits exactly one terminal event for every way out:
+  normal end, an error, and early cancellation by the consumer (`break` or `return()` in a `for await` loop).
+  Track whether a terminal event has fired. In a `finally` block, emit a cancellation event only when neither
+  success nor failure fired. `TracedProvider.generateStream` shows the pattern.
 
-`packages/core/src/logger/decorator.ts` exports a family of TC39 Stage 3 method
-decorators that wrap a method and automatically emit `started`/`completed`/`failed`
-lifecycle events through the supplied `EventLogger` — replacing hand-rolled
-try/catch-and-log boilerplate at the call site:
+`scripts/validate_architecture.ts` reads the `@ungrounded` tag the same way: a plain regular expression over the
+comment text. The skills `.copilot/skills/clean-codebase/SKILL.md`, `.copilot/skills/edition-development/SKILL.md`,
+and `.copilot/skills/review-code/SKILL.md` describe that tag.
 
-- **`LogMethod`** — wraps an `async` method returning `Promise<Return>`.
-- **`LogSyncMethod`** — wraps a synchronous method; the wrapper never `await`s the
-  target call.
-- **`LogGeneratorMethod`** — wraps an async generator method (`AsyncGenerator<Yield>`);
-  brackets the _iteration_ lifecycle (started before the first pull, completed after
-  the source generator returns, failed on a synchronous pre-generator throw or a
-  mid-iteration throw), not the invocation.
+## Event Logging Decorators {#log-method-family}
 
-Each accepts a logger source and a mandatory `{ action, ... }`: `action` (never omittable,
-decorators never derive a raw action name from the class/method name) is either a single
-`TDomainEventType` shared by every phase (the `target` field distinguishes them: `"started"`/
-`"completed"`/`"failed"`/`"cancelled"`), or an `ILifecycleActions` object (`LogGeneratorMethod`:
-`IGeneratorLifecycleActions`, adding `cancelled`) giving each lifecycle phase its own
-registered `TDomainEventType` — for an operation whose phases must remain independently
-taxonomy-distinguishable (e.g. `TracedProvider`'s `LlmCallStarted`/`LlmStreamCompleted`/
-`LlmStreamFailed`/`LlmStreamCancelled`).
+`packages/core/src/logger/decorator.ts` exports three TC39 Stage 3 method decorators. They emit `started`,
+`completed`, and `failed` events through an event logger, instead of hand-written try/catch and log code.
 
-**Canonical trace correlation:** every wrapped invocation generates one `crypto.randomUUID()`
-trace ID and passes it as the logger call's fourth argument on every phase it emits — the
-started/completed/failed(/cancelled) events for one call are always joinable in the Activity
-Journal by that shared ID, never independently random per event.
+| Decorator            | Wraps                                      | Notes                                                          |
+| -------------------- | ------------------------------------------ | -------------------------------------------------------------- |
+| `LogMethod`          | An `async` method that returns a `Promise` |                                                                |
+| `LogSyncMethod`      | A synchronous method                       | Never awaits the call                                          |
+| `LogGeneratorMethod` | An async generator method                  | Brackets the iteration, not the call. Adds a `cancelled` phase |
 
-**Payload shaping:** `LogMethod`/`LogSyncMethod`'s `payloadMapper: (args, result?) =>
-IMethodLogPayload` shapes the `completed` event's payload from the call's arguments and
-return value; omitted, it defaults to `{ duration_ms }`. `LogGeneratorMethod` has no single
-`result` (a generator yields many values), so it takes two purpose-built mappers instead:
-`startedPayloadMapper: (args) => IMethodLogPayload` (default: `{ args: toSafeJson(args) }`,
-the raw call arguments JSON-serialized — override when a raw argument is unsuitable for the
-audit journal, e.g. a large prompt that should be summarized by length, not logged verbatim)
-and `payloadMapper: (args, yieldCount, durationMs) => IMethodLogPayload` for `completed`
-(default: `{ duration_ms }`). Whichever mapper is supplied REPLACES the default payload
-entirely — it does not merge with it — so a mapper wanting `duration_ms` must include it
-explicitly (the generator mappers receive `durationMs`/`yieldCount` for exactly this reason).
-**Payload mappers cannot read instance fields** (`this`) — decorator options are evaluated
-in a plain function, not a class method — only the call's own arguments and the values the
-decorator itself tracks (yield count, duration).
+For a generator, `started` fires before the first pull. `completed` fires after the source generator returns.
+`failed` fires on a throw before the generator starts or during iteration.
 
-**Logger source — static or resolved:** `loggerSource` accepts either a concrete
-`IEventLogger` (evaluated once at class-_definition_ time — `@LogSyncMethod(this.logger,
-...)` is not valid syntax in this form) or a `LoggerResolver<This> = (instance: This) =>
-IEventLogger | undefined` function, resolved at _invocation_ time against the actual
-instance — enabling the family on a class with a constructor-injected logger outside
-`packages/core/` (`@LogSyncMethod((self: Calculator) => self.logger, { action: ... })`).
-Self-constructing `new EventLogger(...)` at the decorator site (the static form) is only
-compliant with `[package-instantiates-event-logger]` inside `packages/core/` (e.g.
-`HealthCheckService`).
+**Action.** The option `action` is required. The decorators never derive an event name from the class or method
+name. Pass one `TDomainEventType`, which every phase shares and the `target` field tells apart (`"started"`,
+`"completed"`, `"failed"`, `"cancelled"`). Or pass an `ILifecycleActions` object that gives each phase its own
+registered type. `LogGeneratorMethod` takes `IGeneratorLifecycleActions`, which adds `cancelled`. Use the
+per-phase form when the phases must stay separate in the taxonomy, as the `Llm…` events of `TracedProvider` do.
 
-`scripts/check_event_coverage.ts`'s `isDecoratorCovered` recognizes a method decorated
-with any of the three as covered ONLY when the decorator's own `action` option is a
-literal `DomainEventType.X` — the same way it recognizes a direct `.info()`/`.warn()`/
-`.error()` call in the method's own body (or, one level removed, in a same-class private
-helper's body whose action parameter is typed `TDomainEventType`).
+**Trace ID.** Each wrapped call gets one trace ID and passes it as the fourth argument of every phase it emits.
+By default it is `crypto.randomUUID()`. For `LogMethod` and `LogSyncMethod`, the option `traceIdMapper` can
+supply it from the arguments. The events of one call can always be joined in the Activity Journal.
 
-### Filesystem Watching (`Deno.watchFs`) {#fs-watching}
+**Payloads.** A mapper replaces the default payload. It does not merge with it, so a mapper that needs
+`duration_ms` must include it.
 
-`Deno.watchFs` has **no built-in idempotency**: it emits multiple/duplicate `FsEvent`s for a single
-change, and event ordering varies by OS ([denoland/deno#12874](https://github.com/denoland/deno/issues/12874)).
-A naive `for await (const e of watcher)` loop therefore **double-processes** every change, and an
-uncaught throw inside the loop **tears down the whole watcher** (and often the daemon — this was the
-delegate permission hardening reconcile crash).
+| Decorator                    | Option                                                           | Default                      |
+| ---------------------------- | ---------------------------------------------------------------- | ---------------------------- |
+| `LogMethod`, `LogSyncMethod` | `payloadMapper(args, result?)` shapes the `completed` payload    | `{ duration_ms }`            |
+| `LogGeneratorMethod`         | `startedPayloadMapper(args)` shapes the `started` payload        | `{ args: toSafeJson(args) }` |
+| `LogGeneratorMethod`         | `payloadMapper(args, yieldCount, durationMs)` shapes `completed` | `{ duration_ms }`            |
 
-- **Consume `Deno.watchFs` via `consumeFsEvents` / `watchFsDebounced` from `@exaix/core/fs`** rather
-  than hand-rolling a `for await` loop. The helper provides per-path debounce, write-kind filtering,
-  per-event error isolation (`onError`), and an optional `shouldProcess` dedup/content guard.
-- If you must hand-roll a loop, it **must** at minimum: debounce (or otherwise collapse) duplicate
-  events, make the per-event action **idempotent** (compare content/state before acting — never call
-  an operation that throws on re-entry, e.g. a state-machine `resume()`), and wrap the body so a
-  single event's failure cannot escape the loop.
+Override `startedPayloadMapper` when the raw arguments are unsuitable for the audit journal, for example a large
+prompt that you want to log as its length. A generator has no single result, so it takes `yieldCount` and
+`durationMs` instead. A payload mapper cannot read instance fields (`this`). The options are evaluated in a plain
+function and not in a class method. A mapper sees only the call arguments and the values that the decorator
+tracks.
 
----
+**Logger source.** The first argument is either an `IEventLogger`, evaluated once when the class is defined, or a
+`LoggerResolver<This>`, which is `(instance: This) => IEventLogger | undefined` and is resolved at call time
+against the instance. Use the resolver outside `packages/core/` for a class whose logger comes through its
+constructor: `@LogSyncMethod((self: Calculator) => self.logger, { action: … })`. The static form, such as
+`@LogSyncMethod(this.logger, …)`, is not valid syntax, and a self-constructed `new EventLogger(...)` at the
+decorator is allowed by `[package-instantiates-event-logger]` only inside `packages/core/`.
 
-### Skill Folders {#skill-folders}
-
-- A skill is a folder `<name>/SKILL.md` with an optional `exaix.yaml` sidecar and `references/`. Read it only through `SkillFolderLoader` or `SkillsService`, never by parsing files in feature code.
-- Resource limits and fallback settings come from the `skills.*` config keys through the root plan of the current config generation. Do not add a literal cap beside them.
-- Parse and render each skill once. `renderSkillEntry` is the only function that turns a skill into prompt text, so budgets, pins and usage rows all measure the same block.
-- Status changes go through the service lifecycle (`approveSkill`, `deprecateSkill`). An approve names the reviewed revision, and a content update returns the skill to draft.
-- Never write skill bodies or host paths into events or CLI errors. Use typed reasons.
-
-## Module Boundaries & TUI Isolation {#tui-boundaries}
-
-Exaix enforces a strict boundary between the Terminal User Interface (TUI) and the core system. This decoupling is essential for maintainability and independent evolution of the layers.
-
-- **Strict TUI Isolation**: Code in `apps/tui/src/` is prohibited from importing any modules from `apps/exactl/src/`, or `packages/core/src/config/`.
-- **Communication via Interfaces**: TUI components must interact with core functionality exclusively through service interfaces defined in `packages/core/src/types/`.
-- **Allowed TUI Dependencies**:
-  - Other modules within `apps/tui/src/` (using relative paths).
-  - Shared assets, enums, schemas, types in `packages/schemas/` and `packages/core/`, and other packages under `packages/`.
-- **No Direct Instantiation**: TUI code must never instantiate core service classes. Instead, services must be accessed through the `ITuiApplicationContext` or provided via dependency injection.
-- **TUI-owned Helpers**: Utilities specifically for terminal rendering and interaction (e.g., keyboard handling, tree views, spinners) must reside in `packages/tui/src/helpers/`. These are private to the TUI and must not be imported by Core modules.
-- **Core-to-TUI Direction**: External callers may only invoke the TUI entry point (`apps/tui/main.ts` via `Deno.Command` subprocess) to launch the dashboard interface.
-
-These rules are enforced by the `exaix/import-boundaries` lint rule. Its zones are catalog data in
-`packages/lint-policy/catalog.json`: one zone for each of the TUI imports of the CLI, the retired services
-folder, the retired config folder, and the retired helpers folder (for TUI sources and for TUI tests), one
-for non-TUI imports of the TUI helpers, and one for package imports of retired root paths.
-
-Boundary checks run as part of the standard quality gates in pre-commit hooks and CI.
-
-### Edition Tier Import Boundary {#edition-tier-boundary}
-
-Exaix is edition-separated by license and distribution: **Solo** (Apache 2.0; `packages/`, `apps/`) <
-**Team** (`exaix-team/`, BSL) < **Enterprise** (`exaix-enterprise/`). A **lower-edition module must
-not import from a higher edition.** Doing so couples the lower edition's source and build to code that
-is licensed and shipped separately — e.g. a Solo app importing BSL Team code, which ships Team
-source into the free deployment and pulls it into the Solo binary (the Team-into-Solo leak).
-
-**Prohibited (in any lower-edition non-test source module):**
-
-```ts
-// apps/exactl/src/init.ts (Solo)
-import { TeamComposer } from "@exaix-team/team-composer"; // ❌ Solo → Team
-
-// exaix-team/packages/voting/src/x.ts (Team)
-import { Y } from "@exaix-enterprise/mod.ts"; // ❌ Team → Enterprise
-```
-
-**Allowed — the two sanctioned cross-tier references:**
-
-```ts
-// 1. Type-only imports (erased at compile time, never enter a build):
-import type { TeamComposer } from "@exaix-team/team-composer"; // ✅
-
-// 2. An edition-gated DYNAMIC import in a dispatch entry (apps/daemon, apps/exactl),
-//    loaded only in the editionType !== "solo" branch so a Solo run never references it:
-if (editionType === EDITION_TEAM) {
-  const { TeamComposer } = await import("@exaix-team/team-composer"); // ✅
-}
-```
-
-**Exemptions:**
-
-- **Test files** (`/tests/`, `_test.ts`, `.test.ts`) — integration tests may exercise higher tiers.
-- **Test-infra** (`*/testing/` shims) — never deployed.
-- **Team-tier modules that live under `apps/`** — `apps/daemon/src/bootstrap_team.ts` (edition glue,
-  loaded only in the Team branch) may statically import `@exaix-team/*`. `exaix-team/apps/mcp-server/`
-  is itself a Team-tier app (mounted inside the `exaix-team` submodule), not a Solo-tree exception.
-
-**Remediation**: When lower-edition source needs a _type_ from higher-edition code, extract the
-interface into `packages/core/types/` and have both sides depend on the Solo home; when it needs a
-_value_, use the edition-gated dynamic import in the dispatch entry.
-
-Enforced by `packages/lint-policy/src/checkers/check_code_style.ts` via `[edition-leak]` (supersedes the former
-`[mit-team-import]` rule, which only covered `packages/` → Team).
-
-#### Why the static rule is the enforceable guarantee {#edition-static-guarantee}
-
-`[edition-leak]` is the **complete, hard** edition-bundle guard for the artifact Exaix actually ships
-— the **source-run deploy** (`deploy_workspace.ts`). The invariant it enforces is: in a lower-edition
-source module, **every** upper-edition reference is either type-only (erased at compile) or a
-genuinely **edition-gated** dynamic import (preceded by an `editionType` guard, in a dispatch entry).
-Given that invariant, a Solo run never executes any upper-edition import, so `exaix-team/` can be
-physically absent from the deployed workspace and Solo still boots — which is exactly what
-`deploy_workspace.ts` does (it omits `exaix-team/` and rewrites `deno.json`'s `workspace[]`).
-
-The guard is **strict about "edition-gated"**: a dynamic `import("@exaix-team/...")` that is NOT
-inside an `editionType` guard is still flagged — it would load Team code unconditionally, even in
-Solo. Only `apps/daemon/` and `apps/exactl/` may host these guarded dynamic imports.
-
-> ⚠️ **`deno compile` is the exception — and it is not the shipped artifact.** `deno compile` is a
-> whole-program bundler: it embeds the entire resolved module graph, following dynamic imports, and
-> neither dynamic imports nor `--exclude` drop them (verified). So a `build:solo` **binary** still
-> contains compiled Team code. The static rule cannot change this — no source discipline keeps code
-> out of a `deno compile` artifact. Making the **binary** Team-free requires a Solo-specific import
-> map pointing `@exaix-team/*` at stub modules (not yet implemented). Until then, prefer the
-> source-run deploy for a genuinely Team-free Solo distribution. See `exaix-dev-docs/dev/Exaix_Edition_Architecture.md`.
-
-#### Graph gate: a defense-in-depth double-check {#edition-graph-gate}
-
-`[edition-leak]` is a source-text rule, so its correctness depends on its own regex/parsing. A bug
-there — an import specifier shape it fails to match, a guard it mis-reads — could let a real leak pass
-with `check:style` green. `scripts/check_edition_graph.ts` (task `check:edition-graph`) guards exactly
-that failure mode: it resolves the daemon + exactl module graphs with `deno info --json` and fails on
-any **static (non-dynamic) runtime `code` edge** from a lower edition tier into a higher one, using the
-**same** `editionTierOfPath` classification the static rule uses. It mirrors the static rule's
-exemptions — edition-gated **dynamic** edges (`isDynamic`) and **type-only** edges (which carry no
-`code` edge) are not leaks — so on a clean tree the two gates agree (verified: 0 static leaks across
-both entry graphs). It is **not** the retired build-artifact gate (which measured the `deno compile`
-graph and could never go green); it measures the source-run deploy's real static edges, the same
-artifact `[edition-leak]` governs, and goes green today. It runs in CI **Gate 3b**, in
-`scripts/ci.ts check`, and in the pre-commit hook, immediately after `check:style`.
-
----
-
-## Module Boundaries & CLI Isolation {#cli-boundaries}
-
-Exaix enforces a strict boundary between the CLI command layer and core implementations to preserve interface-driven separation.
-
-- **CLI boundary scope**: `apps/exactl/src/commands/`, `apps/exactl/src/handlers/`, and `apps/exactl/src/command_builders/`.
-- **No direct core service imports**: Files in the CLI boundary scope must not import directly from package internals except through canonical `@exaix/*` aliases.
-- **No direct config service imports**: Files in the CLI boundary scope must not import `packages/core/src/config/service.ts` directly — use the `@exaix/core` alias.
-- **Allowed dependencies in CLI boundary scope**:
-  - `@exaix/schemas` (interfaces, types, enums, constants, schemas, status)
-  - `@exaix/cli` (context, base class, CLI-owned helpers)
-  - `@exaix/core/parsing` (cross-cutting parser utility)
-  - `@exaix/ai` (`IModelProvider` interface only)
-- **CLI helpers ownership rule**: `packages/cli/helpers/**` is CLI-owned; modules outside `apps/exactl/src/` must not import it.
-
-These rules are enforced by:
-
-- `exaix/import-boundaries` — the CLI zones (retired services and config imports, and non-CLI imports of the
-  CLI helpers) in `packages/lint-policy/catalog.json`
-- `packages/lint-policy/src/checkers/check_magic_values.ts` — AST-based magic value detection
-  (`[MODULE]`, `[GLOBAL]` violation tags)
-
----
-
-## Related Documents {#related-docs}
-
-This file is the single authoritative source for code style. The following documents reference it but do not duplicate its content:
-
-- [`AGENTS.md`](../AGENTS.md) — delegates to this file for all style rules
-- [`CONTRIBUTING.md`](../CONTRIBUTING.md) — links to this file for coding standards
-- [`packages/lint-policy/docs/style_rules.md`](../packages/lint-policy/docs/style_rules.md) — companion reference for the code-style checker and boundary-oriented import rules
-- [`.copilot/skills/exaix-development/SKILL.md`](../.copilot/skills/exaix-development/SKILL.md)
-- [`.copilot/README.md`](../.copilot/README.md)
-
----
-
----
+**Coverage check.** `scripts/check_event_coverage.ts` treats a method as covered when it carries one of the three
+decorators and the `action` option is a literal `DomainEventType.X`. This is the same way it treats a direct
+`.info()`, `.warn()`, or `.error()` call in the method body, or in a private helper of the same class whose action
+parameter is typed `TDomainEventType`, one level deep.
 
 ## Utility Scripting & Headers {#utility-scripts}
 
-- **Preferred Runtime**: Deno TypeScript is the strictly preferred runtime for all repository maintenance, automation, and CI/CD utility scripts. Avoid Bash or standalone Node.js scripts to leverage type safety and the Deno standard library.
-- **Shebang and usage**: every script in `scripts/` follows the [Deno scripts rules](../unslop-ts/docs/style_guide.md#deno-scripts) of the style guide: the standard Deno shebang
-  `#!/usr/bin/env -S deno run -A` on line 1, and a `Usage:` section in the header.
-- **Standardized Header**: All scripts must feature a unified JSDoc-style header immediately following the shebang.
-- **Mandatory Metadata Tags**:
-  - `@module [Name]`: The logical name of the utility.
-  - `@path scripts/[filename].ts`: The relative path to the script.
-  - `@description [Text]`: A concise summary of the script's purpose.
-- **Usage Context**: following the metadata, the `Usage:` section gives at least one example command (e.g., `deno run -A scripts/ci.ts`). For complex utilities, also include `Options:` and `Commands:` blocks.
-- **Temporary & Debug Scripts**: All scripts intended for one-off debugging or temporary use must be created outside of the `scripts/` directory (e.g., in the repository root or a dedicated `tmp/` folder) and must clearly indicate their ephemeral purpose in the filename (e.g., `debug_test_failure.ts` or `tmp_fix_metadata.ts`). The `scripts/` directory is reserved for permanent, well-documented repository utilities that are integrated into the project's quality gates.
+- **Use Deno TypeScript** for repository maintenance, automation, and CI scripts. Avoid Bash and standalone
+  Node.js scripts, so that scripts keep type safety and the Deno standard library.
+- **Start with the shebang and the header.** Every script in `scripts/` follows the
+  [Deno script rules](../unslop-ts/docs/style_guide.md#deno-scripts): the shebang
+  `#!/usr/bin/env -S deno run -A` on line 1, then a JSDoc header, then the code.
+- **Give the header its tags:** `@module` (the logical name), `@path` (`scripts/<file>.ts`), and
+  `@description` (a short summary).
+- **Add a `Usage:` section** after the tags with at least one example command, such as
+  `deno run -A scripts/ci.ts`. A complex utility also lists `Options:` and `Commands:`.
+- **Keep temporary scripts out of `scripts/`.** Put a one-off or debug script elsewhere, for example in the
+  repository root or a `tmp/` folder, and name it so that its purpose is clear, such as `debug_test_failure.ts`
+  or `tmp_fix_metadata.ts`. The `scripts/` folder holds permanent, documented utilities that the quality gates
+  use. The `script-placement` check reports a `debug_` or `tmp_` file in `scripts/`.
 
-Example:
-
-```typescript
+```ts
 #!/usr/bin/env -S deno run -A
 /**
  * @module MyUtility
@@ -564,430 +803,36 @@ Example:
  */
 ```
 
----
-
-## Package Module Purity {#package-module-purity}
-
-A _pure package module_ can be consumed by an external project with no
-knowledge of the Exaix daemon. The canonical test is in
-[`ARCHITECTURE.md §"Packages vs. Services — Placement Model"`](../ARCHITECTURE.md).
-The rules in this section are the **enforceable subset** of that model — they
-target the most common ways packages accidentally acquire daemon-awareness.
-
-### No instantiation of runtime infrastructure
-
-Package source files under `packages/<name>/src/` must not create runtime
-infrastructure instances:
-
-- **No `new EventLogger(...)`** — Packages do not own audit-event infrastructure.
-  If a package needs to surface trace information, accept `IEventLogger` as an
-  _optional_ constructor parameter. The service layer creates and passes the
-  logger instance.
-- **No `new ConfigService(...)`** — Packages receive a typed `Config` value
-  from their callers; they do not read config files or environment variables.
-
-```ts
-// ❌ Wrong — bootstraps runtime infrastructure inside a package
-import { EventLogger } from "@exaix/core/logger";
-
-class MemoryBankService {
-  private logger = new EventLogger({ prefix: "[Memory]" }); // ← runtime infra
-}
-
-// ✅ Correct — logger is injected by the service layer
-import type { IEventLogger } from "@exaix/core/logger";
-
-class MemoryBankService {
-  constructor(private readonly logger?: IEventLogger) {}
-}
-```
-
-### Prefer `IEventLogger` over the concrete `EventLogger` class
-
-Package source files should use `IEventLogger` (the interface) rather than the
-concrete `EventLogger` class for field types, constructor parameters, and type
-annotations. The concrete class couples the package to the runtime logger
-implementation.
-
-```ts
-// ⚠️ Avoid — couples package type to a concrete runtime class
-import type { EventLogger } from "@exaix/core/logger";
-protected readonly logger?: EventLogger;
-
-// ✅ Prefer — depends on the public interface contract only
-import type { IEventLogger } from "@exaix/core/logger";
-protected readonly logger?: IEventLogger;
-```
-
-### No reading runtime config or environment variables
-
-Package source files must not call `getValidatedEnvOverrides()` or instantiate
-`ConfigService`. Both read runtime state (env vars, TOML files) that belongs
-exclusively to the app startup layer (e.g. `apps/daemon/`).
-
-- Receive config as a typed `Config` constructor parameter — the service layer
-  reads the config file and injects the plain value object.
-- `isTestMode()` / `isCIMode()` are permitted in packages for test-conditional
-  behaviour only.
-
-```ts
-// ❌ Wrong — reads env vars inside a package
-import { getValidatedEnvOverrides } from "@exaix/core/config";
-const overrides = getValidatedEnvOverrides();
-
-// ✅ Correct — config is passed in as a plain typed value
-import type { Config } from "@exaix/schemas";
-constructor(private readonly config: Config) {}
-```
-
-### Automated enforcement
-
-`packages/lint-policy/src/checkers/check_code_style.ts` enforces these rules for all files under
-`packages/<name>/src/`, with two exemptions:
-
-- `packages/core/` — defines the runtime entities themselves
-- `packages/mcp/server/` — the declared bridge zone between package contracts
-  and runtime wiring
-
-| Error tag                             | Severity | What it detects                                                                    |
-| ------------------------------------- | -------- | ---------------------------------------------------------------------------------- |
-| `[package-instantiates-event-logger]` | error    | `new EventLogger(` inside a package `src/` file                                    |
-| `[package-concrete-logger-type]`      | warn     | Importing concrete `EventLogger` instead of `IEventLogger` from `@exaix/core`      |
-| `[package-uses-config-reader]`        | warn     | `getValidatedEnvOverrides` or `new ConfigService(` imported or called in a package |
-
----
-
-## Optional Parameter Usage {#optional-params}
-
-The `?` annotation communicates intent: "this parameter may be omitted." When
-actual call-site usage contradicts that intent, the `?` becomes a liability
-— either misleading readers or hiding wiring gaps.
-
-Three anti-patterns are enforced by `deno task check:optional-params` (Gate 14). The generic
-REDUNDANT_OPTIONAL and UNUSED_OPTIONAL patterns are in the
-[style guide](../unslop-ts/docs/style_guide.md#complexity-rules). Exaix adds the `Opt<T, R>` marker.
-
-### Optional marker on a required parameter — `Opt<T, R>`
-
-A parameter is wrapped with `Opt<T, Reason.R>` (declaring it intentionally
-optional) but lacks both `?` and a default value — the marker is a lie. Every
-`Opt` usage must correspond to a truly optional parameter.
-
-```ts
-// ❌ MARKED_NOT_OPTIONAL — wrapped but not optional
-function process(param: Opt<string, Reason.OptionalInput>) { ... }
-
-// ✅ Correct — truly optional
-function process(param?: Opt<string, Reason.OptionalInput>) { ... }
-function process(param: Opt<string, Reason.SensibleDefault> = "") { ... }
-```
-
----
-
-### Exempting intentional optionality with `Opt<T, Reason.R>`
-
-When a parameter is legitimately optional by design (abstract boundary, factory
-preset, sensible default, test override, etc.), wrap the type with
-`Opt<T, Reason.R>` to suppress false positives.
-
-```ts
-// Legitimate: abstract method — implementations vary
-protected abstract attemptGenerate(prompt: string, options?: Opt<IModelOptions, Reason.AbstractBoundary>): Promise<IGenerateResult>;
-
-// Legitimate: test factory with default overrides
-function createStub(overrides: Opt<Partial<IDatabaseService>, Reason.TestOverride> = {}): IDatabaseService;
-```
-
-The second type argument **must** be a member of the `Reason` enum — a codified
-reason that proves the decision was reviewed, not mechanical.
-
-| Category                    | Enum member                   | Typical pattern                      |
-| --------------------------- | ----------------------------- | ------------------------------------ |
-| Test factory                | `Reason.TestOverride`         | `overrides: Partial<T> = {}`         |
-| Test stub                   | `Reason.TestStub`             | `responseContent = "..."`            |
-| Recursive helper            | `Reason.RecursiveOmit`        | `depth = 0`, `prefix = ""`           |
-| Coercion fallback           | `Reason.CoercionDefault`      | `fallback = Status.PENDING`          |
-| Factory preset              | `Reason.FactoryPreset`        | `config?: IFooConfig`                |
-| Sensible default            | `Reason.SensibleDefault`      | `limit = 10`, `minLength = 3`        |
-| UI rendering default        | `Reason.UiDefault`            | `char = " "`, `disabled = false`     |
-| Abstract/interface boundary | `Reason.AbstractBoundary`     | `options?` on base method            |
-| Optional DI dependency      | `Reason.OptionalDependency`   | `logger?`, `costTracker?`            |
-| Trace absent                | `Reason.TraceAbsent`          | `traceId?: string`                   |
-| Cancellation optional       | `Reason.CancellationOptional` | `options?: { signal?: AbortSignal }` |
-| Query filter                | `Reason.QueryFilter`          | `options?: IBuildSnapshotOptions`    |
-| Optional data input         | `Reason.OptionalInput`        | `analysis?`, `frontmatter?`          |
-| Execution config            | `Reason.ExecutionConfig`      | `timeoutS?`, `modelId?`              |
-| Optional context            | `Reason.OptionalContext`      | `requestId?`, `portal?`              |
-
-There is no catch-all. If none of these categories fits, a new one **must** be
-added to the `Reason` enum in `packages/core/src/types/optional_marker.ts`.
-
-**Marking without `?` or a default is a type error** — the checker reports
-`MARKED_NOT_OPTIONAL`.
-
----
-
-### Opt type and Reason enum
-
-Both are defined in `packages/core/src/types/optional_marker.ts` and exported
-from `@exaix/core/types`:
-
-```ts
-import { Opt, Reason } from "@exaix/core/types";
-
-type Opt<T, R extends Reason> = T | undefined;
-```
-
-`Opt` is `T | undefined` at runtime — it adds no overhead. The `Reason` enum
-provides the closed set of codified categories (no catch-all).
-
-### Automated Enforcement
-
-`unslop-ts/src/rules/whole_tree/optional_params.ts` (run through
-`unslop-ts/src/cli/whole_tree.ts`) scans production `.ts` and `.tsx` files using
-the TypeScript compiler API. It compares each function/method declaration with
-optional parameters against all name-matched call sites and reports mismatches.
-
-```bash
-deno task check:optional-params --fail    # hard gate
-deno task check:optional-params           # advisory (no --fail)
-```
-
-The check is integrated as `deno task check:optional-params --fail` and runs as
-part of the CI pipeline (Gate 14). Run without `--fail` locally for advisory
-feedback during development.
-
----
-
-## Layer-Aware Constant Imports {#layer-aware-constant-imports}
-
-A high-level class (orchestrator, coordinator, controller) must not directly
-import low-level implementation constants from packages that provide services it
-delegates to. The constants are implementation details of those services, not of
-the class that orchestrates them.
-
-### Story — the `AgentComposer` cleanup
-
-`AgentComposer` was the composition root for agent execution — it delegated
-blueprint loading, git auditing, prompt building, history management, output
-parsing, and strategy dispatch to seven injected services. Yet it still
-imported constants from four packages it delegated to:
-
-| Imported constant          | Source package        | What it exposed                |
-| -------------------------- | --------------------- | ------------------------------ |
-| `SafeSubprocess`           | `@exaix/core`         | Subprocess execution primitive |
-| `TOKEN_ESTIMATION_...`     | `@exaix/core`         | Token estimation heuristic     |
-| `DEFAULT_GIT_*_TIMEOUT_MS` | `@exaix/git`          | Git operation timeout defaults |
-| `ToolRegistry` (class)     | `@exaix/tool-runtime` | Concrete tool registry class   |
-| `DomainEventType`          | `@exaix/core/events`  | Event type for audit logging   |
-| `AGENT_EVENT_OUTPUT`       | `@exaix/core`         | Agent output event name        |
-
-Each of these constants belongs to a lower-level concern that the orchestrator
-shouldn't know about — they should be encapsulated behind the corresponding
-service boundary (`GitAuditService`, `ExecutionContextService`, etc.).
-
-**Fix pattern:**
-
-```text
-Before:                     After:
-  AgentComposer              AgentComposer
-  ├── import SafeSubprocess  └── depends on GitAuditService interface
-  ├── import GIT_CMD_*            └── GitAuditService imports SafeSubprocess
-  └── import ToolRegistry          └── imports ToolRegistry
-```
-
-The rule is simple: if a constant (or class, or primitive) is consumed by a
-service you delegate to, then it must be imported by that service — not by you.
-
-### Rule
-
-When a class `A` delegates a concern to service `S`, any constant `C` that is
-consumed by `S` in fulfilling that concern must be imported by `S`, not by `A`.
-
-**Signal — you have a layer violation if:**
-
-- `AgentComposer` imports `SafeSubprocess` (it's the subprocess runner that
-  `GitAuditService` uses — the orchestrator should never spawn subprocesses
-  directly).
-- A coordinator imports a `DEFAULT_*` timeout for a git command it never invokes
-  (the command lives in `GitAuditService`).
-- A high-level class creates a `new ToolRegistry({...})` instead of accepting
-  `IToolRegistry` via DI.
-- A composition root imports `TOKEN_ESTIMATION_CHARS_PER_TOKEN` to compute
-  token estimates (the `ExecutionContextService` already
-  encapsulates this via `estimateTokensSync()`).
-
-**Examples of acceptable high-level constant usage:**
-
-```ts
-// ✅ Framework-level enums — define the class's own dispatch logic
-import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
-
-// ✅ Event names — the class emits its own events
-import { AGENT_EVENT_EXECUTION_STARTED } from "@exaix/core";
-
-// ✅ Type-only references to service interfaces
-import type { IToolRegistry } from "@exaix/core/types";
-```
-
-**Violations:**
-
-```ts
-// ❌ Concern-specific primitive — belongs in the delegated service
-import { SafeSubprocess } from "@exaix/core";
-async auditAndRevertChanges() {
-  return SafeSubprocess.run("git", ...); // ← belongs in GitAuditService
-}
-
-// ❌ Concern-specific timeout — belongs in the delegated service
-import { DEFAULT_GIT_STATUS_TIMEOUT_MS } from "@exaix/git";
-async auditAndRevertChanges() {
-  await SafeSubprocess.run("git", ["status", ...], {
-    timeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS, // ← belongs in GitAuditService
-  });
-}
-
-// ❌ Concrete implementation — accept interface via DI instead
-import { ToolRegistry } from "@exaix/tool-runtime";
-get toolRegistry() {
-  if (!this._toolRegistry) this._toolRegistry = new ToolRegistry({...});
-  return this._toolRegistry;
-}
-
-// ❌ Encapsulated constant — use the service's wrapper method
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
-const tokens = Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
-// → use ctx.estimateTokensSync(text) instead
-```
-
-### Remediation
-
-1. **Move the constant into the service's module** — the service that actually
-   uses it imports it.
-1. **If the service needs to expose a computation**, add a wrapper method
-   (e.g. `estimateTokensSync()` on `ExecutionContextService`) rather than
-   exporting the raw constant.
-1. **For concrete class dependencies**, remove the inline `new` expression and
-   accept the interface via constructor injection. Update the callers that
-   create the high-level class to inject the concrete instance.
-
-### Automated enforcement
-
-Two structural AST checks in `packages/lint-policy/src/checkers/check_code_style.ts`. Both use the
-TypeScript compiler API (no hardcoded symbol names):
-
-| Tag                       | Detects                                                                   |
-| ------------------------- | ------------------------------------------------------------------------- |
-| `[concrete-cross-domain]` | `new ConcreteClass()` — value-importing and instantiating a foreign class |
-| `[layer-constant-leak]`   | Bare constant value imported from another domain package                  |
-
-Both skip framework packages (`@exaix/core`, `@exaix/schemas`, `@exaix/ai`,
-`@exaix/cli`, `@exaix/tui`), same-package imports, and test files. See
-`packages/lint-policy/docs/style_rules.md` for the full tag reference, current warning
-counts, and per-file breakdown.
-
----
-
 ## Comment Discipline {#comment-discipline}
 
-The rules are in the [style guide](../unslop-ts/docs/style_guide.md#comment-discipline).
+The rules are in the [generic guide](../unslop-ts/docs/style_guide.md#comment-discipline), with the Exaix
+additions in the [lint-policy guide](../packages/lint-policy/docs/style_guide.md#comment-discipline-additions).
+The `deno lint` plugin checks the comments. It applies the date rule to every comment and the other rules to
+comments after the module header.
 
-### Automated enforcement
-
-The `deno lint` plugin checks every comment for calendar dates and applies the remaining rules past a
-module's own header block:
-
-| Rule                       | Detects                                                                                                                                       |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `exaix/long-comment`       | A block comment or line-comment run longer than three physical lines                                                                          |
-| `exaix/ephemeral-comment`  | A comment containing a calendar date or mentioning a phase/step number, GAP identifier, pre/post-gap, prior attempt, or `§` section reference |
-| `exaix/decorative-comment` | A comment line using a repeated-punctuation separator or dash-wrapped text                                                                    |
-| `exaix/ephemeral-filename` | A test file's own name embeds a numbered plan-phase reference (`phase147_...`) — bare "phase" and any "step" form are exempt                  |
+| Rule                       | Reports                                                                                                                                |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `exaix/long-comment`       | A block comment or a run of line comments longer than three lines                                                                      |
+| `exaix/ephemeral-comment`  | A calendar date, or a phase or step number, a GAP identifier, a pre- or post-gap reference, "tried", "didn't work", or a `§` reference |
+| `exaix/decorative-comment` | A comment line with a repeated-punctuation separator or dash-wrapped text                                                              |
+| `exaix/ephemeral-filename` | A test file name with a numbered plan phase (`phase147_…`). The words "phase" and "step" without a number are allowed.                 |
 
 `exaix/decorative-comment` and `exaix/ephemeral-filename` are errors. `exaix/long-comment` and
-`exaix/ephemeral-comment` are opt-in while existing findings remain: select them with
-`EXAIX_LINT_RULES` to see the findings. The rules read TypeScript only, so a YAML, TOML, or JSONC
-comment is not checked.
-
----
-
-> ⚠️ Keep this file short and focused. Architectural patterns such as timeout
-> protection, file locking, or error classification belong in other guides
-> (e.g. `.copilot/skills/exaix-development/SKILL.md`) and **are not** repeated here unless they
-> directly impact the way code is written.
-
-## Tool Naming
-
-Canonical tool names use `<verb>_<object>` in snake_case. Allowed first tokens are
-`read`, `write`, `list`, `search`, `create`, `run`, `fetch`, `move`, `copy`, `delete`,
-`patch`, `find`, `query`, `get`, and `remember`. Git tools use the `git_<verb>` namespace.
-Exaix control-plane tools use the MCP-only `exaix_<verb>_<object>` namespace. Native Exaix
-names are exact-only; do not add case folding, whitespace trimming, or compatibility aliases.
-
-General-purpose aliases belong in the shared alias map and must not shadow a canonical name
-or target a different operation. When a rename retires a native name, reject the old name in
-runtime calls and raw permission or approval rules.
-
-When one operation exists in both `ToolName` and `McpToolName`, use the same canonical name
-in both catalogs. Add every literal intersection to `SHARED_TOOL_OPERATIONS`; the
-`check:tool-naming` gate verifies those declarations and shared names. It cannot infer that
-two differently named, unmatched tools have the same meaning. Review each new unmatched
-export and declare whether it is distinct or add it to the shared-operation table. See
-[ARCHITECTURE.md](../ARCHITECTURE.md#tool-catalog-parity-toolregistry-vs-tool_manifest).
-
----
-
-## Native Tool-Round Replay {#native-tool-round-replay}
-
-A provider response that carries tool calls replays as one round. Code that builds or reads a round follows these rules:
-
-- Store the response's assistant artifacts in their original order, as one unit. Do not rebuild them from the canonical calls.
-- A per-call provider signature, such as Gemini's `thoughtSignature`, stays on the call that carries it. The replay keeps that call first and returns the other calls as transcript blocks.
-- Dispatch runs the calls in the order the model returned them. Replay bytes and dispatch order are separate concerns.
-- Enforce the cap before a call runs. A refused call still gets a result, in its original position.
-
-Tests: `packages/execution/tests/planning_tool_loop_test.ts` and `packages/ai-google/tests/google_provider_tools_request_test.ts`.
-
-## Workspace Path Construction {#exaix-path-construction}
-
-Exaix workspace paths are built by the helper functions in `@exaix/shared`, never by composing the
-default segments in the caller.
-
-- Build `<root>/Workspace/Requests/...` with `requestsPath(root, ...)`, and its siblings with
-  `plansPath`, `activePath`, `archivePath`, `rejectedPath`, `workspacePath`, and `runtimePath`.
-- Build the blueprint and memory branches with `blueprintsPath`, `agentsPath`, `flowsPath`,
-  `memoryPath`, and the `memory*Path` family.
-- A caller that joins `DEFAULT_*_PATH` or spells a root segment in a literal re-derives the layout,
-  so a layout change misses that caller. The helpers own the default, so no caller repeats it.
-- A shipped config under `configs/` does not restate a `[paths]` default. The schema fills a missing
-  key from the same constant, so a restated value is a second owner of the layout.
-- A caller reads `config.paths.<key>` directly. The schema fills a missing key, so a
-  `paths.<key> ?? "<default>"` fallback repeats the default and is dead code.
-- A `paths` object in a test spreads `ExaPathDefaults` and then names only the keys it overrides.
-  Listing the keys with their default constants re-spells the table.
-- A test reads a config document from a fixture. The `exaix/test-inline-multiline-fixture` rule requires
-  that of any multi-line test input.
-- A scenario step names a config fixture with `content_from` instead of an inline `content` block.
-- The helpers live in `packages/shared/src/paths.ts`.
-
-**Exception:** a test may compose the segments when the composition itself is the rule under test,
-such as the flow-catalog guard, or when the literal must stay a shell variable or a glob. Mark such
-a line with `path-builder-exclude` and the reason.
-
-This is enforced by `deno task check:path-builders`.
-
----
+`exaix/ephemeral-comment` are opt-in while existing findings remain. Select them with `EXAIX_LINT_RULES` to see
+the findings. The rules read TypeScript only, so they do not check a YAML, TOML, or JSONC comment.
 
 ## Lint Policy {#lint-policy}
 
-Exaix lint rules live in two places. `packages/lint-policy` holds the Exaix rules, the rule catalog, and the
-reference [`style_rules.md`](../packages/lint-policy/docs/style_rules.md). Its guide,
-[`style_guide.md`](../packages/lint-policy/docs/style_guide.md), holds the Exaix additions. The generic TypeScript rules
-live in the `unslop-ts` engine, and [`unslop-ts/docs/style_guide.md`](../unslop-ts/docs/style_guide.md) is their guide.
-Run `deno task lint` for the plugin rules and `deno task check:style` for the script checkers.
+The Exaix lint rules live in two places. `packages/lint-policy` holds the Exaix rules, the rule catalog, and the
+[rule reference](../packages/lint-policy/docs/style_rules.md), and its
+[guide](../packages/lint-policy/docs/style_guide.md) holds the Exaix additions. The `unslop-ts` engine holds the
+generic rules, and its [guide](../unslop-ts/docs/style_guide.md) describes them.
 
----
+| Task                         | Runs                                            |
+| ---------------------------- | ----------------------------------------------- |
+| `deno task lint`             | The plugin rules                                |
+| `deno task check:style`      | The script checks of `check_code_style.ts`      |
+| `deno task check:magic`      | The magic-value and duplicate-constant checks   |
+| `deno task docs:style-rules` | Regenerates the rule reference from the catalog |
 
-## Footer — Agent Knowledge Base
-
-- **Manifest**: [.copilot/manifest.json](../.copilot/manifest.json)
+[Agent knowledge base manifest](../.copilot/manifest.json)

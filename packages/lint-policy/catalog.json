@@ -443,7 +443,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "test",
       "optIn": true,
-      "codeStyle": "docs/CODE_STYLE.md#package-test-boundaries",
+      "codeStyle": "unslop-ts/docs/style_guide.md#test-assertions",
       "tags": [
         "test-quality",
         "deslop"
@@ -459,7 +459,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "test",
       "optIn": true,
-      "codeStyle": "docs/CODE_STYLE.md#package-test-boundaries",
+      "codeStyle": "unslop-ts/docs/style_guide.md#test-assertions",
       "tags": [
         "test-quality",
         "deslop"
@@ -475,7 +475,7 @@
       "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "test",
       "optIn": true,
-      "codeStyle": "docs/CODE_STYLE.md#package-test-boundaries",
+      "codeStyle": "unslop-ts/docs/style_guide.md#test-assertions",
       "tags": [
         "test-quality",
         "deslop"
@@ -1009,7 +1009,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "all",
-      "codeStyle": "docs/CODE_STYLE.md#module-structure",
+      "codeStyle": "docs/CODE_STYLE.md#module-headers",
       "tags": [
         "module-structure"
       ]
@@ -1149,7 +1149,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#layer-aware-constant-imports",
+      "codeStyle": "docs/CODE_STYLE.md#edition-tier-boundary",
       "tags": [
         "edition",
         "boundary"
@@ -1172,7 +1172,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#layer-aware-constant-imports",
+      "codeStyle": "docs/CODE_STYLE.md#edition-tier-boundary",
       "tags": [
         "edition",
         "boundary"
@@ -1234,7 +1234,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#module-structure",
+      "codeStyle": "docs/CODE_STYLE.md#package-imports",
       "tags": [
         "package",
         "boundary"
@@ -1244,7 +1244,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#module-structure",
+      "codeStyle": "docs/CODE_STYLE.md#module-headers",
       "tags": [
         "package",
         "boundary"
@@ -1254,7 +1254,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#module-structure",
+      "codeStyle": "docs/CODE_STYLE.md#package-imports",
       "tags": [
         "package",
         "boundary"
@@ -1274,7 +1274,7 @@
       "engine": "script",
       "severity": "error",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#module-structure",
+      "codeStyle": "docs/CODE_STYLE.md#package-imports",
       "tags": [
         "package",
         "imports"
