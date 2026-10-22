@@ -7,8 +7,11 @@
  * @related-files [packages/lint-policy/unslop.project.ts]
  */
 
-import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
+import { checkRepository as checkConstantRestatement } from "../../unslop-ts/src/rules/whole_tree/constant_restatement.ts";
+import { checkRepository as checkOptionalParams } from "../../unslop-ts/src/rules/whole_tree/optional_params.ts";
+import { checkRepository as checkUnusedExports } from "../../unslop-ts/src/rules/whole_tree/unused_exports.ts";
 
 const REPO_ROOT = fromFileUrl(new URL("../../", import.meta.url));
 
@@ -157,8 +160,25 @@ Deno.test("inline_control_refusal_and_supported_edit_match_host", async () => {
   );
   assertEquals(refused.code, 2);
   assertStringIncludes(refused.stderr, "does not allow editing level");
-  const supported = await runTask("unslop:write", ["rules", "set", "edition-leak", "soloTier=1", "--dry-run"]);
-  assertEquals(supported.code, 0, supported.stderr);
+  const magicFixture = join(REPO_ROOT, "packages", "lint-policy", "edit_magic_fixture.ts");
+  try {
+    await Deno.writeTextFile(
+      magicFixture,
+      Array.from({ length: 8 }, (_, index) => `export const v${index} = 12345;`).join("\n"),
+    );
+    const beforeHost = await runTask("check:magic", []);
+    assertEquals(beforeHost.code, 1, beforeHost.stderr);
+    const supported = await runTask("unslop:write", ["rules", "set", "magic-literals", "checkNumbers=false"]);
+    assertEquals(supported.code, 0, supported.stderr);
+    assertNotEquals(await Deno.readTextFile(configPath), before);
+    const afterHost = await runTask("check:magic", []);
+    assertEquals(afterHost.code, 0, afterHost.stderr);
+  } finally {
+    await Deno.writeTextFile(configPath, before);
+    await Deno.remove(magicFixture).catch(() => {});
+  }
+  const dryRun = await runTask("unslop:write", ["rules", "set", "edition-leak", "soloTier=1", "--dry-run"]);
+  assertEquals(dryRun.code, 0, dryRun.stderr);
   assertEquals(await Deno.readTextFile(configPath), before);
 });
 
@@ -240,7 +260,7 @@ const BENCH_ENV: Record<string, string> = Object.fromEntries(
   ),
 );
 
-async function timeCommand(args: readonly string[]): Promise<{ ms: number; bytes: number }> {
+async function timeCommand(args: readonly string[]): Promise<{ ms: number; bytes: number; code: number }> {
   const start = performance.now();
   const result = await new Deno.Command(Deno.execPath(), {
     args: [...args],
@@ -250,7 +270,7 @@ async function timeCommand(args: readonly string[]): Promise<{ ms: number; bytes
     stdout: "piped",
     stderr: "piped",
   }).output();
-  return { ms: performance.now() - start, bytes: result.stdout.length + result.stderr.length };
+  return { ms: performance.now() - start, bytes: result.stdout.length + result.stderr.length, code: result.code };
 }
 
 function median(values: readonly number[]): number {
@@ -269,7 +289,10 @@ Deno.test("matched_host_report_benchmark_records_equivalent_samples", async () =
   }
   const rawSamples: number[] = [];
   const reportSamples: number[] = [];
-  const samples: { raw: { ms: number; bytes: number }; report: { ms: number; bytes: number } }[] = [];
+  const samples: {
+    raw: { ms: number; bytes: number; code: number };
+    report: { ms: number; bytes: number; code: number };
+  }[] = [];
   for (let index = 0; index < REPORT_BENCH_SAMPLE_PAIRS; index++) {
     const first = index % 2 === 0 ? await timeCommand(raw) : await timeCommand(report);
     const second = index % 2 === 0 ? await timeCommand(report) : await timeCommand(raw);
@@ -277,9 +300,58 @@ Deno.test("matched_host_report_benchmark_records_equivalent_samples", async () =
     const reportSample = index % 2 === 0 ? second : first;
     rawSamples.push(rawSample.ms);
     reportSamples.push(reportSample.ms);
+    assertEquals(reportSample.code, rawSample.code);
     samples.push({ raw: rawSample, report: reportSample });
   }
   const ratio = median(reportSamples) / median(rawSamples);
   console.log(JSON.stringify({ reportBenchmark: { samples, ratio, maxRatio: REPORT_BENCH_MAX_RATIO } }));
   assert(ratio <= REPORT_BENCH_MAX_RATIO, `report median ratio ${ratio}`);
+});
+
+Deno.test("configured_options_reach_four_whole_tree_sections", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "whole_tree_options_" });
+  try {
+    await Deno.mkdir(join(dir, "src"), { recursive: true });
+    await Deno.mkdir(join(dir, "tests"), { recursive: true });
+    await Deno.writeTextFile(join(dir, "src", "constants.ts"), 'export const HOSTS = ["a.test", "b.test"];\n');
+    await Deno.writeTextFile(join(dir, "tests", "hosts_test.ts"), "export const FLAG = 'a.test,b.test';\n");
+    const restatement = {
+      constantModules: ["src/constants.ts"],
+      testRoots: ["tests"],
+      minRestatedElements: 2,
+    };
+    assert((await checkConstantRestatement(dir, restatement)).length > 0);
+    assert((await checkConstantRestatement(dir, { ...restatement, minRestatedElements: 3 })).length === 0);
+
+    await Deno.writeTextFile(join(dir, "src", "optional.ts"), "export function f(value?: number) { return value; }\n");
+    const optional = {
+      wrapperType: "Opt",
+      wrapperImport: "@demo/types",
+      reasonExamples: ["OptionalInput"],
+      testSegments: ["tests/"],
+      testSuffixes: ["_test.ts"],
+      skipSegments: [],
+      walkSkipSegments: [],
+      pluginRuleId: "demo/require-optional",
+    };
+    assert((await checkOptionalParams(dir, false, optional)).length > 0);
+    assert((await checkOptionalParams(dir, false, { ...optional, skipSegments: ["src/optional.ts"] })).length === 0);
+
+    await Deno.writeTextFile(join(dir, "src", "unused.ts"), "export const neverUsed = 1;\n");
+    const unused = {
+      productionRoots: ["src"],
+      testSegments: ["tests"],
+      testSuffixes: ["_test.ts"],
+      entrypointSuffixes: ["mod.ts"],
+      mainEntrypointSuffixes: ["main.ts"],
+      scriptRoot: "scripts",
+      walkSkipPatterns: [],
+      strictSkipPrefixes: [],
+      strictSkipSegments: [],
+    };
+    assert((await checkUnusedExports(dir, false, unused)).findings.length > 0);
+    assert((await checkUnusedExports(dir, false, { ...unused, productionRoots: ["other"] })).findings.length === 0);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
 });
