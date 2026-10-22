@@ -35,7 +35,7 @@
 
 - The generic TypeScript rules are described in the `unslop-ts` style guide, the Exaix
   additions in the lint-policy style guide, and the rules that depend on the Exaix architecture
-  in [the style guide](CODE_STYLE.md), whose section-number references are now stable anchors.
+  in [the style guide](../docs/CODE_STYLE.md), whose section-number references are now stable anchors.
 - The checks for duplicate types, duplicate constants and repeated literals keep their task
   names and output, and now run from the `unslop-ts` engine library.
 - A TypeScript suppression pragma that carries a description is reported by the

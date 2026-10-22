@@ -39,17 +39,13 @@ export interface IRepoLayout {
 
 export const LAYOUT: IRepoLayout = catalogJson.layout;
 
-export function escapeRegExp(value: string): string {
+function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /** `^packages/<name>/mod.ts|index.ts$` — package root entrypoint. */
 export const RE_PACKAGE_ROOT_ENTRYPOINT = new RegExp(
   `^${escapeRegExp(LAYOUT.packageRoot)}[^/]+/(mod|index)\\.ts$`,
-);
-/** `^packages/<name>/tests/helpers/` — package-local test helper. */
-export const RE_PACKAGE_TEST_HELPERS = new RegExp(
-  `^${escapeRegExp(LAYOUT.packageRoot)}[^/]+/${escapeRegExp(LAYOUT.testsRoot)}helpers/`,
 );
 /** `^packages/<name>/tests/` with the package name captured. */
 export const RE_PACKAGE_TESTS_CAPTURE = new RegExp(
