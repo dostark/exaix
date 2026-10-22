@@ -143,15 +143,11 @@ Config constants & magic numbers
 
 Environment variables
 
-  4 production overrides validated via Zod in @exaix/core/config/env_schema.ts:
+  4 production overrides, read by ProviderFactory in packages/ai:
   EXA_LLM_PROVIDER, EXA_LLM_MODEL, EXA_LLM_BASE_URL, EXA_LLM_TIMEOUT_MS.
-  Use getValidatedEnvOverrides() — never Deno.env.get() directly.
-  Test env vars use EXA_TEST_* prefix. Use isTestMode() / isCIMode() helpers.
-
-  // GOOD
-  import { getValidatedEnvOverrides } from "../config/env_schema.ts";
-  const envOverrides = getValidatedEnvOverrides();
-  const provider = envOverrides.EXA_LLM_PROVIDER ?? config.ai?.provider ?? DEFAULT;
+  A new setting is a configurable() key, not a new environment variable.
+  Test env vars use EXA_TEST_* prefix. Use isTestMode() / isCIMode() helpers
+  from packages/core/src/config/env_schema.ts.
 
 Config DB, schema-first design, and event names
 

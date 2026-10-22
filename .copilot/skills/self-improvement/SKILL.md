@@ -218,6 +218,9 @@ restructure the sentence so no single backtick span straddles a probable wrap po
      - `deno run --allow-read scripts/verify_manifest_fresh.ts`
    - Validate agent docs:
      - `deno run --allow-read scripts/validate_agents_docs.ts`
+   - Run the tests that read skill text (the pre-commit hook does not):
+     - `deno test --allow-all tests/agents tests/scripts/dogfood_skill_folders_test.ts`
+     - A skill that the baseline test does not list in `EDITED_SINCE_BASELINE` fails it after any edit.
 
 5. **Add enforcement (when it prevents recurrence)**
    - If a gap caused real friction, add/extend a focused test under `tests/agents/`.

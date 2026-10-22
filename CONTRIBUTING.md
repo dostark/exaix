@@ -457,7 +457,7 @@ _Claude Code shorthand: `/commit`_
 - [ ] Zod schema updated in `packages/schemas/src/config.ts`.
 - [ ] **Type Safety:** No `any`, no `unknown` as stored type, no `as any` casting (see `unslop-ts/docs/style_guide.md#strict-type-safety`).
 - [ ] **Dependency Injection:** Injectable services expose an `IFoo` interface; constructors accept `IFoo`, not `Foo`; test mocks implement the full interface (see `docs/CODE_STYLE.md#di-and-interfaces`).
-- [ ] **Environment Variables:** If using `EXA_LLM_*` vars, validated via `getValidatedEnvOverrides()` (no direct `Deno.env.get()`).
+- [ ] **Environment Variables:** A new setting is a `configurable()` key, not a new environment variable; production overrides stay in the `EXA_LLM_*` family.
 - [ ] **Test Variables:** Test-related env vars use `EXA_TEST_*` prefix and helper functions (`isTestMode()`, `isCIMode()`).
 - [ ] Tests added for new configuration options.
 - [ ] Documentation updated if behavior changes.

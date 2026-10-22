@@ -20,7 +20,7 @@ Key points
 
 - Config DB (.exa/config.db) is the canonical store; TOML (exa.config.toml) is bootstrap-only (system.root).
 - Tunable DEFAULT_* constants use `configurable()` from `@exaix/core/config`; override via `exactl config set`.
-- Validate new env vars via Zod: getValidatedEnvOverrides() for EXA_LLM_* overrides.
+- New settings are `configurable()` keys, not new env vars; production overrides stay in the EXA_LLM_* family.
 - Send all new file paths through PathResolver / PathSecurity.resolveAndValidate() — never raw concatenation.
 - Run `deno check packages/ apps/ tests/` after any config-schema change — catches type propagation early.
 - Define the rollback path before any shared-config change.
@@ -47,12 +47,7 @@ Config patterns
   # Override at runtime:
   exactl config set my.setting 50
 
-  # Never use direct Deno.env.get() for EXA_LLM_* without validation
-  # ✅ GOOD:
-  import { getValidatedEnvOverrides } from "@exaix/core/config/env_schema.ts";
-  const overrides = getValidatedEnvOverrides();
-
-  # Supported production env vars (validated, typed):
+  # Supported production env vars (read by ProviderFactory in packages/ai):
   # EXA_LLM_PROVIDER  EXA_LLM_MODEL  EXA_LLM_BASE_URL  EXA_LLM_TIMEOUT_MS
   # Test/CI env vars use EXA_TEST_*; use isTestMode() / isCIMode()
 
@@ -68,9 +63,9 @@ Submodule config changes → .copilot/skills/submodule-workflow/SKILL.md
 Do / Don't
 - ✅ Add a Zod schema for every new TOML section.
 - ✅ Use PathSecurity.resolveAndValidate() for any new configurable path.
-- ✅ Use getValidatedEnvOverrides() for EXA_LLM_* env vars.
+- ✅ Add a `configurable()` key instead of a new environment variable.
 - ✅ Document rollback steps before applying.
-- ❌ Use Deno.env.get("EXA_LLM_*") without validation.
+- ❌ Add a production environment variable outside the EXA_LLM_* family.
 - ❌ Add raw numeric/string defaults in TOML without corresponding Zod defaults.
 - ❌ Skip deno check after schema changes — type errors cascade silently.
 

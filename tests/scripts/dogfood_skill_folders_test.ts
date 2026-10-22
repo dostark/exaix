@@ -48,6 +48,7 @@ const EDITED_SINCE_BASELINE = new Set([
   "audit-security",
   "commit",
   "coverage",
+  "doc",
   "exaix-development",
   "explore",
   "fix-bug",

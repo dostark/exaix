@@ -178,7 +178,7 @@
       "obligations": [
         "Treat .exa/config.db as the canonical store and TOML as bootstrap-only",
         "Use configurable() for tunable constants, overridable via exactl config set",
-        "Validate EXA_LLM_* env vars via getValidatedEnvOverrides()",
+        "Add a configurable() key instead of a new environment variable",
         "Route all new file paths through PathSecurity.resolveAndValidate()",
         "Run deno check packages/ apps/ tests/ after config-schema changes",
         "Document the rollback path before any shared-config change"

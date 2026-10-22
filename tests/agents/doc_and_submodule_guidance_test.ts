@@ -7,7 +7,7 @@
  * @related-files [.copilot/skills/submodule-workflow/SKILL.md, .copilot/skills/doc/SKILL.md]
  */
 
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 
 async function skill(name: string): Promise<string> {
   return await Deno.readTextFile(`.copilot/skills/${name}/SKILL.md`);
@@ -40,4 +40,25 @@ Deno.test("Agent docs: plan formats only a new plan document", async () => {
   const md = await skill("plan");
   assert(md.includes("A NEW plan that no commit holds yet may"), "the new-plan formatting rule is missing");
   assert(md.includes("Never\n   format a committed plan"), "the committed-plan prohibition is missing");
+});
+
+Deno.test("Agent docs: active guidance cites no environment validation function that the code lacks", async () => {
+  const files = [
+    "CONTRIBUTING.md",
+    "docs/CODE_STYLE.md",
+    ".copilot/skills/infra/SKILL.md",
+    ".copilot/skills/exaix-development/SKILL.md",
+  ];
+  const stale = "getValidatedEnvOverrides";
+  const holders: string[] = [];
+  for (const path of files) {
+    if ((await Deno.readTextFile(path)).includes(stale)) holders.push(path);
+  }
+  assertEquals(holders, []);
+});
+
+Deno.test("Agent docs: self-improvement runs the skill-reading tests after a patch", async () => {
+  const md = await skill("self-improvement");
+  assert(md.includes("tests/scripts/dogfood_skill_folders_test.ts"), "the baseline test command is missing");
+  assert(md.includes("EDITED_SINCE_BASELINE"), "the baseline list rule is missing");
 });
