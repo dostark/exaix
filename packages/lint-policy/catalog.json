@@ -684,6 +684,13 @@
               "^@exaix-team/",
               "^\\./src/bootstrap_team"
             ]
+          },
+          {
+            "files": [
+              "**/unslop-ts/src/cli/project_loader.ts",
+              "src/cli/project_loader.ts"
+            ],
+            "specifiers": []
           }
         ]
       }
@@ -709,6 +716,20 @@
               "^@exaix-team/",
               "^\\./src/bootstrap_team"
             ]
+          },
+          {
+            "files": [
+              "**/unslop-ts/src/cli/project_loader.ts",
+              "src/cli/project_loader.ts"
+            ],
+            "specifiers": []
+          },
+          {
+            "files": [
+              "**/unslop-ts/src/cli/project_loader.ts",
+              "src/cli/project_loader.ts"
+            ],
+            "specifiers": []
           }
         ]
       }
