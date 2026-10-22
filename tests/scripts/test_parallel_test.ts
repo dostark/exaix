@@ -199,6 +199,7 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
   "tests/security/calibration_sandbox_security_test.ts",
   "tests/scenario_framework/tests/portal_knowledge_strategies_scenario_test.ts",
+  "tests/scenario_framework/tests/integration/skill_review_approve_scenario_test.ts",
   "apps/daemon/tests/deploy_workspace_test.ts",
   "tests/integration/cli_commands_test.ts",
   "tests/integration/agent/mcp_handshake_test.ts",
@@ -260,6 +261,7 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "packages/ai/tests/provider_factory_compatible_config_test.ts",
   "packages/ai/tests/providers/mock_strict_env_test.ts",
   "tests/scenario_framework/tests/unit/strict_scoped_per_step_test.ts",
+  "packages/lint-policy/tests/shared_tree_parity_test.ts",
 ];
 
 Deno.test("SEQUENTIAL_FILES matches the required isolation files and order", () => {

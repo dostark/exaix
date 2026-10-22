@@ -165,6 +165,10 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
     file: "tests/scenario_framework/tests/portal_knowledge_strategies_scenario_test.ts",
     reasons: [IsolationReason.moduleCache, IsolationReason.pressure],
   },
+  {
+    file: "tests/scenario_framework/tests/integration/skill_review_approve_scenario_test.ts",
+    reasons: [IsolationReason.pressure],
+  },
   // Deploys a fresh workspace and runs `deno task setup`, which resolves npm deps at run
   // time. That egress cannot run under `--network none`, so it runs host-serial.
   {
@@ -345,6 +349,7 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
   // These files set or clear MOCK_STRICT on the shared process, which the strict wiring test reads.
   { file: "packages/ai/tests/providers/mock_strict_env_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "tests/scenario_framework/tests/unit/strict_scoped_per_step_test.ts", reasons: [IsolationReason.processEnv] },
+  { file: "packages/lint-policy/tests/shared_tree_parity_test.ts", reasons: [IsolationReason.pressure] },
 ];
 
 /** Derived so the Parallel Batch's `--ignore` list is unchanged. Content and order come from SEQUENTIAL_TESTS. */

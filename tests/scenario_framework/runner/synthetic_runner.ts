@@ -354,6 +354,14 @@ async function buildJudgeBindingScopes(input: {
 export async function runSyntheticScenario(
   options: IRunSyntheticScenarioOptions,
 ): Promise<IRunSyntheticScenarioResult> {
+  const configuredExactl = Deno.env.get("EXA_BIN_PATH");
+  if (options.exactlExecutable === undefined && configuredExactl !== undefined) {
+    try {
+      if (Deno.statSync(configuredExactl).isFile) options.exactlExecutable = configuredExactl;
+    } catch {
+      // Fall back to the PATH executable when the override is absent (for example in a container).
+    }
+  }
   // Sandbox workspace may not exist yet (sibling-of-repo default), and the step executor
   // spawns commands with it as cwd — create it unconditionally so every run mode is covered.
   await ensureDir(options.workspaceRoot);

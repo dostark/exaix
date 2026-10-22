@@ -155,6 +155,9 @@ Deno.test("the whole-tree counts match the committed ceilings", async () => {
     const code = diagnostic.code;
     const filename = diagnostic.filename;
     if (!code || !filename) continue;
+    // Other tests seed untracked `__temp_` files into the tree. A walk that overlaps one of
+    // them must not read the seed as a committed count.
+    if (filename.includes("__temp_")) continue;
     const pkg = packageOf(filename, REPO_ROOT);
     if (!pkg || !knownPackages.includes(pkg)) continue;
     counts[code] ??= {};

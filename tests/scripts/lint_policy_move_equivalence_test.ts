@@ -477,7 +477,13 @@ async function runWholeTree(cwd: string, args: readonly string[]): Promise<IWhol
     stderr: "piped",
   }).output();
   const decoder = new TextDecoder();
-  return { args, code: result.code, stdout: decoder.decode(result.stdout), stderr: decoder.decode(result.stderr) };
+  // Parallel workers share the repository's node_modules. Deno prints this wait notice on stderr
+  // while another process holds the install lock. The notice is not CLI output.
+  const stderr = decoder.decode(result.stderr)
+    .split("\n")
+    .filter((line) => !line.includes("Blocking waiting for file lock on node_modules directory"))
+    .join("\n");
+  return { args, code: result.code, stdout: decoder.decode(result.stdout), stderr };
 }
 
 Deno.test("the whole-tree CLI prints the findings recorded before the engine took its settings from --catalog", async () => {
