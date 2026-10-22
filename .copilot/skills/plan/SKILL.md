@@ -388,7 +388,9 @@ invariants).
    Prefer check-only. `--fix` on a doc that carries step-manifests can reflow a fence and
    drop its `step: N` key — it has misread a `# step-manifest` comment inside a fence as a
    heading. If you did run `--fix`, re-verify immediately with the step-manifest checker
-   (see "Editing an existing plan doc safely" below).
+   (see "Editing an existing plan doc safely" below). A NEW plan that no commit holds yet may
+   take `deno fmt` to clear table-alignment warnings; re-run the manifest checker after. Never
+   format a committed plan: it rewrites the whole file.
 1. Third-party integration? A Sources block (URLs, official vs community, date).
 1. Recommend `#review-phase-plan`.
 1. Commit payload — use `#commit`.

@@ -69,7 +69,8 @@ Package ownership, layout, and authoring (create new / refine existing)
     specifiers (lint `no-import-prefix`); normalise direct package-file imports with
     `deno run --allow-read --allow-write scripts/package_import_canonize.ts --edit`.
   - Every new file needs the module-header JSDoc (@module, @path, @architectural-layer,
-    @dependencies, @related-files) so check:arch stays grounded.
+    @dependencies, @related-files) so check:arch stays grounded. A `@related-files` entry names
+    a tracked source or test file of this repository; a path inside a submodule fails check:arch.
 
   TESTS —
   - `packages/<package>/tests/` is the ONLY package test folder. All `*_test.ts` live there

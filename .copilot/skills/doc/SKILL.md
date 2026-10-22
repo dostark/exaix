@@ -69,6 +69,9 @@ Do / Don't
 - ✅ Run deno task docs-sync-schemas after MCP handler changes.
 - ✅ Follow submodule-workflow skill for exaix-dev-docs changes.
 - ✅ Link back to the implementation plan step the doc covers.
+- ✅ Check every code-facing claim (function, task, rule id, severity, tag) against the code before
+  writing it, and guard rule and task names with a test, as
+  `packages/lint-policy/tests/style_guide_claims_test.ts` does for the style guides.
 - ❌ Edit TOOLS.md MCP section manually — it is auto-generated.
 - ❌ Create new docs/ files without matching implementation-plan entries.
 ```

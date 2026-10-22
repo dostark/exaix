@@ -51,6 +51,8 @@ Do / Don't
   real pre-commit gate (lint, style, magic, complexity, arch, event-coverage). A bare
   `deno task check` is ONLY the type-checker and misses the rest (Phase 168 retro: a
   remediation using only it shipped two regressions).
+- ✅ Stage the step's files BEFORE `ci.ts check`. The comment-STE, bare-optional, and
+  commit-message gates read only staged files and pass vacuously on an empty index.
 - ✅ Mark the remediation step's criteria/tests done in the plan doc and commit via
   `scripts/commit_plan_step.ts` with a `plan:` field.
 - ✅ Verify each remediation step header is an integer `### Step N` that matches its

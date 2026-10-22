@@ -41,6 +41,9 @@ Core policy
 3. In the parent, `git add exaix-dev-docs` (or exaix-team) after the submodule commit exists.
 4. Commit the pointer update, referencing the submodule SHA.
 5. Keep matching branch names: `feat/<feature>` + `feat/<feature>-docs`.
+6. Push only when the user directly asks for it (AGENTS.md hard rule 2). The push commands below
+   are the sequence for that request. Merge a feature branch with `--ff-only`, in each submodule
+   first and the parent last; that needs no hook bypass.
 
 Plan-step commits (exception — commit both together, staged)
 
