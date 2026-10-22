@@ -7,7 +7,7 @@
  * @related-files [packages/lint-policy/unslop.project.ts]
  */
 
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 
 const REPO_ROOT = fromFileUrl(new URL("../../", import.meta.url));
@@ -154,4 +154,79 @@ Deno.test("configured_options_reach_four_whole_tree_sections", async () => {
     const result = await runTask(task, []);
     assertEquals(result.code, 0, `${task}: ${result.stderr}`);
   }
+});
+
+Deno.test("final_report_and_management_path", async () => {
+  const listed = await runTask("unslop", ["rules", "list", "--format=json"]);
+  assertEquals(listed.code, 0, listed.stderr);
+  assertEquals((JSON.parse(listed.stdout) as { rules: unknown[] }).rules.length, 59);
+  const config = await runTask("unslop", ["config", "print"]);
+  assertEquals(config.code, 0, config.stderr);
+});
+
+Deno.test("final_gate_and_cli_equivalence", async () => {
+  const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json"))) as {
+    tasks: Record<string, string>;
+  };
+  for (
+    const task of [
+      "check:style",
+      "check:magic",
+      "check:constant-restatement",
+      "check:unused-exports",
+      "check:optional-params",
+    ]
+  ) {
+    assert(config.tasks[task]);
+    assertFalse(config.tasks[task].includes("catalog.json"));
+  }
+  const result = await runTask("check:constant-restatement", []);
+  assertEquals(result.code, 0, result.stderr);
+});
+
+const REPORT_BENCH_WARMUP_RUNS = 1;
+const REPORT_BENCH_SAMPLE_PAIRS = 5;
+const REPORT_BENCH_MAX_RATIO = 2;
+const BENCH_FILE = "packages/lint-policy/src/policy_config.ts";
+
+async function timeCommand(args: readonly string[]): Promise<{ ms: number; bytes: number }> {
+  const start = performance.now();
+  const result = await new Deno.Command(Deno.execPath(), {
+    args: [...args],
+    cwd: REPO_ROOT,
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  return { ms: performance.now() - start, bytes: result.stdout.length + result.stderr.length };
+}
+
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((left, right) => left - right);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+Deno.test("matched_host_report_benchmark_records_equivalent_samples", async () => {
+  const absolute = join(REPO_ROOT, BENCH_FILE);
+  const config = join(REPO_ROOT, "deno.json");
+  const raw = ["lint", "--json", `--config=${config}`, absolute];
+  const report = ["task", "lint:report", "--format=table", BENCH_FILE];
+  for (let index = 0; index < REPORT_BENCH_WARMUP_RUNS; index++) {
+    await timeCommand(raw);
+    await timeCommand(report);
+  }
+  const rawSamples: number[] = [];
+  const reportSamples: number[] = [];
+  const samples: { raw: { ms: number; bytes: number }; report: { ms: number; bytes: number } }[] = [];
+  for (let index = 0; index < REPORT_BENCH_SAMPLE_PAIRS; index++) {
+    const first = index % 2 === 0 ? await timeCommand(raw) : await timeCommand(report);
+    const second = index % 2 === 0 ? await timeCommand(report) : await timeCommand(raw);
+    const rawSample = index % 2 === 0 ? first : second;
+    const reportSample = index % 2 === 0 ? second : first;
+    rawSamples.push(rawSample.ms);
+    reportSamples.push(reportSample.ms);
+    samples.push({ raw: rawSample, report: reportSample });
+  }
+  const ratio = median(reportSamples) / median(rawSamples);
+  console.log(JSON.stringify({ reportBenchmark: { samples, ratio, maxRatio: REPORT_BENCH_MAX_RATIO } }));
+  assert(ratio <= REPORT_BENCH_MAX_RATIO, `report median ratio ${ratio}`);
 });

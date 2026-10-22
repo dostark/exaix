@@ -778,3 +778,25 @@ Deno.test("configured_options_reach_both_duplication_hosts", async () => {
     assertEquals(result.code, 0, `${task}: ${new TextDecoder().decode(result.stderr)}`);
   }
 });
+
+Deno.test("final_gate_and_cli_equivalence", async () => {
+  const config = await readRepoJson("deno.json") as { tasks: Record<string, string> };
+  for (
+    const task of [
+      "check:style",
+      "check:magic",
+      "check:constant-restatement",
+      "check:unused-exports",
+      "check:optional-params",
+    ]
+  ) {
+    assertFalse(config.tasks[task].includes("catalog.json"), task);
+  }
+  const result = await new Deno.Command(Deno.execPath(), {
+    args: ["task", "check:constant-restatement"],
+    cwd: REPO_ROOT,
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(result.code, 0, new TextDecoder().decode(result.stderr));
+});

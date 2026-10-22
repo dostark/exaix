@@ -234,3 +234,21 @@ Deno.test("the deploy script never commits or pushes", async () => {
   assertStringIncludes(source, "[--yes]");
   assertStringIncludes(source, "not a hostile ref");
 });
+
+Deno.test("deploy_compatibility_uses_exact_scoped_grants", () => {
+  const args = compatCommandArgs("/repo", "/tmp/scratch");
+  assertEquals(args.slice(0, 6), [
+    "test",
+    "--allow-read=/repo,/tmp/scratch",
+    "--allow-write=/tmp/scratch",
+    "--allow-run=deno,git",
+    "--allow-env=" + args[4].slice("--allow-env=".length),
+    args[5],
+  ]);
+  assertEquals(args[1], "--allow-read=/repo,/tmp/scratch");
+  assertEquals(args[2], "--allow-write=/tmp/scratch");
+  assertEquals(args[3], "--allow-run=deno,git");
+  assertStringIncludes(args[4], "DEMO_LINT_RULES");
+  const env = compatEnv({ HOME: "/home/test", LD_PRELOAD: "bad.so", DYLD_LIBRARY_PATH: "bad" });
+  assertEquals(env, { HOME: "/home/test" });
+});
