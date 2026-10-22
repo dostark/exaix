@@ -1,0 +1,58 @@
+{
+  "packageRoot": "packages/",
+  "appRoot": "apps/",
+  "teamRoot": "exaix-team/",
+  "enterpriseRoot": "exaix-enterprise/",
+  "testsRoot": "tests/",
+  "scriptsRoot": "scripts/",
+  "srcRoot": "src/",
+  "testsSegment": "/tests/",
+  "testingSegment": "/testing/",
+  "srcSegment": "/src/",
+  "scriptsSegment": "/scripts/",
+  "copilotSegment": "/.copilot/",
+  "fixturesSegment": "/tests/fixtures/",
+  "rootTestHelpers": "tests/helpers/",
+  "testingPackageRoot": "packages/testing/",
+  "testingPackageRootBare": "packages/testing",
+  "aiTestAllow": "packages/ai/tests/",
+  "mcpServerPrefix": "packages/mcp/server/",
+  "mcpTestsPrefix": "packages/mcp/tests/",
+  "packageRootPattern": "^packages/[^/]+/(mod|index)\\.ts$",
+  "editionAppPrefixes": [
+    "apps/daemon/",
+    "apps/exactl/",
+    "exaix-team/apps/daemon/",
+    "exaix-team/apps/exactl/"
+  ],
+  "teamAppBootstrap": "apps/daemon/src/bootstrap_team.ts",
+  "retiredRootHeaderRelatedFiles": [
+    "src/services/core/db.ts"
+  ],
+  "layerLeakExempt": [
+    {
+      "path": "packages/execution/src/git_audit_service.ts",
+      "reason": "Known bridge file exempt from layer-leak checks."
+    },
+    {
+      "path": "packages/execution/src/execution_context_service.ts",
+      "reason": "Known bridge file exempt from layer-leak checks."
+    },
+    {
+      "path": "packages/core/src/planning/plan_executor.ts",
+      "reason": "Known bridge file exempt from layer-leak checks."
+    },
+    {
+      "path": "packages/flow/src/agent_composer_adapter.ts",
+      "reason": "Builds a fresh per-call AgentComposer; a pre-built DI instance would violate the planWrittenFiles invariant."
+    },
+    {
+      "path": "packages/lint-policy/src/rule_packs.ts",
+      "reason": "Composes the engine rule pack and the Exaix rule pack into one registry; the pack constants are rule data, not service state."
+    },
+    {
+      "path": "packages/execution/src/agent_runner.ts",
+      "reason": "Builds a PortalPermissionsService per request from the matched portal; a boot-time instance would pin the wrong portal."
+    }
+  ]
+}

@@ -21,7 +21,7 @@ import { loadPortTables } from "./helpers/port_tables.ts";
 
 const CODES = ["REQUIRED_FOR_TEST", "PLUGINS"];
 const IMPORT_KEYWORD = "import";
-const CATALOG_PATH = "packages/lint-policy/catalog.json";
+const CATALOG_PATH = "packages/lint-policy/tests/fixtures/catalog_v1.json";
 
 Deno.test("a style-exclude comment of the rule becomes a deno-lint-ignore comment with the same reason", () => {
   const before = [
@@ -71,7 +71,7 @@ Deno.test("the tracked text files exclude the historical planning documents", as
 Deno.test("a ported rule has no style-exclude site and no bare id left in the tracked files", async () => {
   const tables = await loadPortTables();
   const files = await portReferenceFiles();
-  const catalog = JSON.parse(await Deno.readTextFile(new URL("../catalog.json", import.meta.url)));
+  const catalog = JSON.parse(await Deno.readTextFile(new URL("./fixtures/catalog_v1.json", import.meta.url)));
   for (const row of tables.rules.filter((candidate) => candidate.ported)) {
     const codes = Object.keys(catalog.rules[row.id]?.exclusionCodes ?? {});
     assertEquals(findStyleExcludeSites(files, codes), [], `${row.id} still has style-exclude sites`);
@@ -150,7 +150,7 @@ Deno.test("an_empty_inventory_fails", async () => {
 Deno.test("successful_inventory_is_populated_and_checks_ids", async () => {
   const files = await trackedTextFiles([]);
   assert(files.size > 0);
-  assert(files.has("packages/lint-policy/catalog.json"));
+  assert(files.has("packages/lint-policy/tests/fixtures/catalog_v1.json"));
   const staleId = ["never", "a", "real", "rule", "id"].join("-");
   const seeded = new Map(files).set("seeded/stale.md", `See [${staleId}] for details.\n`);
   assertEquals(findBareIdReferences(seeded, staleId), ["seeded/stale.md:1"]);

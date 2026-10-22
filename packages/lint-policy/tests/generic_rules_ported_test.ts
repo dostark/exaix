@@ -8,7 +8,7 @@
  */
 
 import { assert, assertArrayIncludes, assertEquals, assertFalse } from "@std/assert";
-import catalogJson from "../catalog.json" with { type: "json" };
+import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 import { IMPLEMENTED_SCRIPT_RULE_IDS } from "../src/checkers/check_code_style.ts";
 import { EXAIX_PLUGIN_NAME } from "../src/rule_pack/mod.ts";
 import { findBareIdReferences, portReferenceFiles } from "./helpers/port_migration.ts";
@@ -99,7 +99,7 @@ Deno.test("active tracked consumers name no bare ported rule id", async () => {
   const files = await portReferenceFiles();
   for (const row of tables.rules.filter((row) => row.ported)) {
     const searched = row.outcome === PORT_OUTCOME.zone
-      ? new Map([...files].filter(([path]) => path !== "packages/lint-policy/catalog.json"))
+      ? new Map([...files].filter(([path]) => path !== "packages/lint-policy/tests/fixtures/catalog_v1.json"))
       : files;
     assertEquals(findBareIdReferences(searched, row.id), [], `${row.id} still has a bare consumer`);
   }

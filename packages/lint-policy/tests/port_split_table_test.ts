@@ -81,7 +81,7 @@ Deno.test("every generic, split, and zone row records its counterparts in other 
 
 /** The ids of the catalog entries whose engine is `script`. */
 async function catalogScriptRuleIds(): Promise<Set<string>> {
-  const catalog = JSON.parse(await Deno.readTextFile(new URL("../catalog.json", import.meta.url)));
+  const catalog = JSON.parse(await Deno.readTextFile(new URL("./fixtures/catalog_v1.json", import.meta.url)));
   const ids = new Set<string>();
   for (const [id, entry] of Object.entries<{ engine: string }>(catalog.rules)) {
     if (entry.engine === "script") ids.add(id);

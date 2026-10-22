@@ -6,7 +6,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { CatalogError, type JsonValue } from "@dostark/unslop-ts";
-import catalogJson from "../catalog.json" with { type: "json" };
+import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 import { loadPolicyCatalog } from "./helpers/catalog.ts";
 
 function cloneCatalog(): Record<string, JsonValue> {

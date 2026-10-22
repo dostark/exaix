@@ -257,7 +257,7 @@ interfaces. It does not depend on the CLI app or on core classes.
 - TUI code may depend on other modules of `apps/tui/src/` through relative paths, and on shared assets, enums,
   schemas, and types in `packages/`.
 
-Zones of `exaix/import-boundaries` in `packages/lint-policy/catalog.json` enforce these rules. They cover:
+Zones of `exaix/import-boundaries` in `packages/lint-policy/tests/fixtures/catalog_v1.json` enforce these rules. They cover:
 
 - TUI sources and TUI tests that import the retired CLI, services, config, or helpers folders;
 - other code that imports the TUI helpers.
@@ -275,7 +275,7 @@ The CLI command layer reaches the core only through the package aliases. The bou
 - Do not import the config service file by a relative path. Use the `@exaix/core` alias.
 - `apps/exactl/src/helpers/` belongs to the CLI. Modules outside `apps/exactl/src/` do not import it.
 
-Zones of `exaix/import-boundaries` in `packages/lint-policy/catalog.json` enforce these rules.
+Zones of `exaix/import-boundaries` in `packages/lint-policy/tests/fixtures/catalog_v1.json` enforce these rules.
 
 ## Edition Tier Import Boundary {#edition-tier-boundary}
 

@@ -4,13 +4,13 @@
  * @description Checks that the Exaix import-boundaries zones report what the old TUI, CLI, and package boundary script rules reported.
  * @architectural-layer Test
  * @dependencies [@std/assert, zod, @dostark/unslop-ts]
- * @related-files [packages/lint-policy/tests/fixtures/port/boundary_rules_corpus.ts, packages/lint-policy/catalog.json]
+ * @related-files [packages/lint-policy/tests/fixtures/port/boundary_rules_corpus.ts, packages/lint-policy/tests/fixtures/catalog_v1.json]
  */
 
 import { assertEquals } from "@std/assert";
 import { z } from "zod";
 import { createLintPlugin, runPlugin } from "@dostark/unslop-ts";
-import catalogJson from "../catalog.json" with { type: "json" };
+import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 import { EXAIX_PLUGIN_NAME } from "../src/rule_pack/mod.ts";
 import { EXAIX_RULE_PACKS } from "../src/rule_packs.ts";
 import { loadPolicyCatalog } from "./helpers/catalog.ts";

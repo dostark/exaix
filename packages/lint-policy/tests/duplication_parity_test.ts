@@ -18,7 +18,7 @@ import {
   validateTypeAllowEntries,
 } from "@dostark/unslop-ts/whole-tree";
 import { classifyRepoPath } from "../src/checkers/check_code_style.ts";
-import catalogJson from "../catalog.json" with { type: "json" };
+import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 import { loadPolicyCatalog } from "./helpers/catalog.ts";
 import { DUPLICATION_CORPUS } from "./fixtures/port/duplication_corpus.ts";
 import goldenJson from "./fixtures/port/duplication_golden.json" with { type: "json" };

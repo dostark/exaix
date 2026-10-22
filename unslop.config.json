@@ -1,6 +1,8 @@
 {
-  "version": "1",
-  "scopes": {
+  "version": 2,
+  "plugin": "exaix",
+  "docsBase": "unslop-ts/docs/style_guide.md",
+  "paths": {
     "test": [
       "**/tests/**",
       "**/*_test.ts",
@@ -10,239 +12,70 @@
     "fixture": [
       "tests/scenario_framework/fixtures/**",
       "**/tests/fixtures/**"
-    ]
-  },
-  "layout": {
-    "packageRoot": "packages/",
-    "appRoot": "apps/",
-    "teamRoot": "exaix-team/",
-    "enterpriseRoot": "exaix-enterprise/",
-    "testsRoot": "tests/",
-    "scriptsRoot": "scripts/",
-    "srcRoot": "src/",
-    "testsSegment": "/tests/",
-    "testingSegment": "/testing/",
-    "srcSegment": "/src/",
-    "scriptsSegment": "/scripts/",
-    "copilotSegment": "/.copilot/",
-    "fixturesSegment": "/tests/fixtures/",
-    "rootTestHelpers": "tests/helpers/",
-    "testingPackageRoot": "packages/testing/",
-    "testingPackageRootBare": "packages/testing",
-    "aiTestAllow": "packages/ai/tests/",
-    "mcpServerPrefix": "packages/mcp/server/",
-    "mcpTestsPrefix": "packages/mcp/tests/",
-    "packageRootPattern": "^packages/[^/]+/(mod|index)\\.ts$",
-    "editionAppPrefixes": [
-      "apps/daemon/",
-      "apps/exactl/",
-      "exaix-team/apps/daemon/",
-      "exaix-team/apps/exactl/"
     ],
-    "teamAppBootstrap": "apps/daemon/src/bootstrap_team.ts",
-    "retiredRootHeaderRelatedFiles": [
-      "src/services/core/db.ts"
-    ],
-    "layerLeakExempt": [
+    "ignore": [
       {
-        "path": "packages/execution/src/git_audit_service.ts",
-        "reason": "Known bridge file exempt from layer-leak checks."
+        "glob": "**/unslop-ts/**",
+        "reason": "Engine repository, linted by its own CI."
       },
       {
-        "path": "packages/execution/src/execution_context_service.ts",
-        "reason": "Known bridge file exempt from layer-leak checks."
+        "glob": "**/.git/**",
+        "reason": "Version-control metadata."
       },
       {
-        "path": "packages/core/src/planning/plan_executor.ts",
-        "reason": "Known bridge file exempt from layer-leak checks."
+        "glob": "**/node_modules/**",
+        "reason": "Installed dependencies."
       },
       {
-        "path": "packages/flow/src/agent_composer_adapter.ts",
-        "reason": "Builds a fresh per-call AgentComposer; a pre-built DI instance would violate the planWrittenFiles invariant."
+        "glob": "**/check_code_style.ts",
+        "reason": "Self-exemption: the checker's own rule regexes and messages trip its rules."
       },
       {
-        "path": "packages/lint-policy/src/rule_packs.ts",
-        "reason": "Composes the engine rule pack and the Exaix rule pack into one registry; the pack constants are rule data, not service state."
+        "glob": "**/check_code_style_rules_test.ts",
+        "reason": "Rule-case snippets are intentional violation shapes for the rule-level tests."
       },
       {
-        "path": "packages/execution/src/agent_runner.ts",
-        "reason": "Builds a PortalPermissionsService per request from the matched portal; a boot-time instance would pin the wrong portal."
+        "glob": "**/scenario_framework/fixtures/**",
+        "reason": "Fixture scope: fixtures intentionally contain violation shapes."
+      },
+      {
+        "glob": "**/dist/**",
+        "reason": "Build output."
+      },
+      {
+        "glob": "**/coverage/**",
+        "reason": "Coverage output."
+      },
+      {
+        "glob": "**/.copilot/**",
+        "reason": "Agent guidance, not production code."
       }
     ]
   },
-  "ignore": [
-    {
-      "glob": "**/unslop-ts/**",
-      "reason": "Engine repository, linted by its own CI."
+  "tags": {
+    "magic-values": {
+      "description": "No magic numbers or strings (docs/CODE_STYLE.md#no-magic-values)."
     },
-    {
-      "glob": "**/.git/**",
-      "reason": "Version-control metadata."
-    },
-    {
-      "glob": "**/node_modules/**",
-      "reason": "Installed dependencies."
-    },
-    {
-      "glob": "**/check_code_style.ts",
-      "reason": "Self-exemption: the checker's own rule regexes and messages trip its rules."
-    },
-    {
-      "glob": "**/check_code_style_rules_test.ts",
-      "reason": "Rule-case snippets are intentional violation shapes for the rule-level tests."
-    },
-    {
-      "glob": "**/scenario_framework/fixtures/**",
-      "reason": "Fixture scope: fixtures intentionally contain violation shapes."
-    },
-    {
-      "glob": "**/dist/**",
-      "reason": "Build output."
-    },
-    {
-      "glob": "**/coverage/**",
-      "reason": "Coverage output."
-    },
-    {
-      "glob": "**/.copilot/**",
-      "reason": "Agent guidance, not production code."
-    }
-  ],
-  "wholeTree": {
-    "optionalParams": {
-      "wrapperType": "Opt",
-      "wrapperImport": "@exaix/core/types",
-      "reasonExamples": [
-        "TraceAbsent",
-        "OptionalInput",
-        "OptionalContext"
-      ],
-      "testSegments": [
-        "/tests/"
-      ],
-      "testSuffixes": [
-        "_test.ts"
-      ],
-      "skipSegments": [
-        "/scripts/",
-        "/tests/fixtures/"
-      ],
-      "walkSkipSegments": [
-        "/.copilot/",
-        "/.exa/",
-        "/types/"
-      ],
-      "pluginRuleId": "exaix/require-optional-wrapper"
-    },
-    "unusedExports": {
-      "productionRoots": [
-        "packages/",
-        "exaix-team/",
-        "apps/"
-      ],
-      "testSegments": [
-        "/tests/",
-        "/testing/"
-      ],
-      "testSuffixes": [
-        "_test.ts",
-        ".test.ts"
-      ],
-      "entrypointSuffixes": [
-        "/mod.ts",
-        "/index.ts"
-      ],
-      "mainEntrypointSuffixes": [
-        "/main.ts"
-      ],
-      "scriptRoot": "scripts",
-      "walkSkipPatterns": [
-        "\\.git",
-        "node_modules",
-        "\\.copilot",
-        "\\.exa",
-        "Blueprints",
-        "Memory",
-        "Workspace",
-        "Portals",
-        "coverage",
-        "exaix-dev-docs",
-        "exaix-enterprise",
-        "tests/scenario_framework"
-      ],
-      "strictSkipPrefixes": [
-        "packages/tui/",
-        "apps/tui/",
-        "exaix-team/",
-        "packages/schemas/",
-        "apps/daemon/src/",
-        "apps/common/"
-      ],
-      "strictSkipSegments": [
-        "/commands/",
-        "/handlers/"
-      ]
-    },
-    "constantRestatement": {
-      "constantModules": [
-        "packages/core/src/types/constants.ts"
-      ],
-      "testRoots": [
-        "apps",
-        "packages",
-        "tests"
-      ],
-      "minRestatedElements": 2
-    },
-    "magicLiterals": {
-      "additionalStrings": [
-        "other"
-      ],
-      "statusLiterals": [
-        "pending",
-        "resumed",
-        "fulfilled",
-        "rejected",
-        "amended",
-        "expired",
-        "cancelled"
-      ],
-      "structuralArrayProperties": [
-        "required",
-        "args",
-        "enum",
-        "capabilities",
-        "tags"
-      ]
-    }
-  },
-  "tagVocabulary": {
     "duplication": {
       "description": "Rules that find restated or duplicated declarations"
+    },
+    "deslop": {
+      "description": "Rule idea taken from maharshi365/deslop or dmmulroy/anti-slop."
     },
     "type-safety": {
       "description": "Rules that keep type evidence (unslop-ts/docs/style_guide.md#strict-type-safety)."
     },
-    "imports": {
-      "description": "Import shape and placement rules (docs/CODE_STYLE.md#import-statements)."
-    },
-    "magic-values": {
-      "description": "No magic numbers or strings (docs/CODE_STYLE.md#no-magic-values)."
+    "complexity": {
+      "description": "Function and method size limits (unslop-ts/docs/style_guide.md#complexity-rules)."
     },
     "module-structure": {
       "description": "Module headers and placement (docs/CODE_STYLE.md#module-structure)."
     },
-    "complexity": {
-      "description": "Function and method size limits (unslop-ts/docs/style_guide.md#complexity-rules)."
-    },
-    "comments": {
-      "description": "Comment discipline (docs/CODE_STYLE.md#comment-discipline)."
-    },
-    "scripts": {
-      "description": "Utility script headers (docs/CODE_STYLE.md#utility-scripts)."
-    },
     "test-quality": {
       "description": "Rules on test code and fixtures."
+    },
+    "imports": {
+      "description": "Import shape and placement rules (docs/CODE_STYLE.md#import-statements)."
     },
     "boundary": {
       "description": "Cross-boundary import rules."
@@ -256,31 +89,22 @@
     "package": {
       "description": "Package structure and purity."
     },
-    "edition": {
-      "description": "Edition tier import boundary."
-    },
     "di": {
       "description": "Dependency injection and interfaces (docs/CODE_STYLE.md#di-and-interfaces)."
     },
-    "deslop": {
-      "description": "Rule idea taken from maharshi365/deslop or dmmulroy/anti-slop."
+    "comments": {
+      "description": "Comment discipline (docs/CODE_STYLE.md#comment-discipline)."
+    },
+    "edition": {
+      "description": "Edition tier import boundary."
+    },
+    "scripts": {
+      "description": "Utility script headers (docs/CODE_STYLE.md#utility-scripts)."
     }
   },
   "rules": {
     "duplicate-constant": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "prod",
-      "include": [
-        "packages/**",
-        "apps/**"
-      ],
-      "codeStyle": "unslop-ts/docs/style_guide.md#no-magic-values",
-      "tags": [
-        "magic-values",
-        "duplication",
-        "deslop"
-      ],
+      "level": "error",
       "options": {
         "namePattern": "^[A-Z][A-Z0-9_]*$",
         "allow": [
@@ -318,21 +142,20 @@
           }
         ]
       },
-      "limits": "Compares top-level named constants with a static value; values from a call, identifier, or interpolation are out of scope."
-    },
-    "duplicate-type": {
-      "engine": "script",
-      "severity": "error",
       "scope": "prod",
       "include": [
         "packages/**",
         "apps/**"
       ],
-      "codeStyle": "unslop-ts/docs/style_guide.md#no-magic-values",
+      "limits": "Compares top-level named constants with a static value; values from a call, identifier, or interpolation are out of scope.",
       "tags": [
+        "magic-values",
         "duplication",
         "deslop"
-      ],
+      ]
+    },
+    "duplicate-type": {
+      "level": "error",
       "options": {
         "minProperties": 2,
         "allow": [
@@ -370,116 +193,100 @@
           }
         ]
       },
-      "limits": "Compares interface and object type alias members after whitespace normalization. Imported aliases are not resolved."
+      "scope": "prod",
+      "include": [
+        "packages/**",
+        "apps/**"
+      ],
+      "limits": "Compares interface and object type alias members after whitespace normalization. Imported aliases are not resolved.",
+      "tags": [
+        "duplication",
+        "deslop"
+      ]
     },
     "exaix/ignore-needs-reason": {
-      "engine": "plugin",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
-      "tags": [
-        "type-safety",
-        "deslop"
-      ],
+      "level": "error",
       "options": {
         "separator": "--"
       },
-      "limits": "Only ignores that name an exaix rule are checked."
-    },
-    "exaix/require-optional-wrapper": {
-      "engine": "plugin",
-      "severity": "off",
-      "reason": "Opt-in: the bare-optional check is a staged-file ratchet today, not a full-tree gate.",
-      "scope": "all",
-      "optIn": true,
-      "codeStyle": "docs/CODE_STYLE.md#optional-params",
+      "limits": "Only ignores that name an exaix rule are checked.",
       "tags": [
         "type-safety",
         "deslop"
-      ],
+      ]
+    },
+    "exaix/require-optional-wrapper": {
+      "level": "off",
       "options": {
         "wrapperType": "Opt"
       },
-      "limits": "Only function and method parameters are checked."
+      "optIn": true,
+      "reason": "Opt-in: the bare-optional check is a staged-file ratchet today, not a full-tree gate.",
+      "docs": "docs/CODE_STYLE.md#optional-params",
+      "limits": "Only function and method parameters are checked.",
+      "tags": [
+        "type-safety",
+        "deslop"
+      ]
     },
     "exaix/max-cyclomatic-complexity": {
-      "engine": "plugin",
-      "severity": "error",
+      "level": "error",
+      "options": {
+        "max": 15
+      },
       "scope": "prod",
       "include": [
         "packages/*/src/**",
         "apps/*/src/**"
       ],
-      "codeStyle": "unslop-ts/docs/style_guide.md#complexity-rules",
+      "limits": "A SwitchCase counts only with a test, and a LogicalExpression only for '||' and '&&'. Nested function bodies are excluded.",
       "tags": [
         "complexity",
         "deslop"
-      ],
-      "options": {
-        "max": 15
-      },
-      "limits": "A SwitchCase counts only with a test, and a LogicalExpression only for '||' and '&&'. Nested function bodies are excluded."
+      ]
     },
     "exaix/max-class-size": {
-      "engine": "plugin",
-      "severity": "off",
-      "optIn": true,
-      "reason": "Manual today: check:god-objects is a separate manual task, so the rule runs only when selected.",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#complexity-rules",
-      "tags": [
-        "complexity",
-        "module-structure"
-      ],
+      "level": "off",
       "options": {
         "minClassLines": 200,
         "threshold": 60
       },
-      "limits": "Score is per class; a class under minClassLines is skipped before scoring."
+      "optIn": true,
+      "reason": "Manual today: check:god-objects is a separate manual task, so the rule runs only when selected.",
+      "limits": "Score is per class; a class under minClassLines is skipped before scoring.",
+      "tags": [
+        "complexity",
+        "module-structure"
+      ]
     },
     "exaix/no-repeated-assert-call": {
-      "engine": "plugin",
-      "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
-      "scope": "test",
-      "optIn": true,
-      "codeStyle": "unslop-ts/docs/style_guide.md#test-assertions",
-      "tags": [
-        "test-quality",
-        "deslop"
-      ],
+      "level": "off",
       "options": {
         "assertPrefix": "assert"
       },
-      "limits": "Only adjacent statements inside one block are compared; a non-block body is not scanned."
-    },
-    "exaix/no-constant-substring-assert": {
-      "engine": "plugin",
-      "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "test",
       "optIn": true,
-      "codeStyle": "unslop-ts/docs/style_guide.md#test-assertions",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "tags": [
         "test-quality",
         "deslop"
-      ],
+      ]
+    },
+    "exaix/no-constant-substring-assert": {
+      "level": "off",
       "options": {
         "constantPattern": "^[A-Z][A-Z0-9_]*$"
       },
-      "limits": "Only named imports are considered; a namespace or default import is not matched."
-    },
-    "exaix/no-boolean-assert": {
-      "engine": "plugin",
-      "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "test",
       "optIn": true,
-      "codeStyle": "unslop-ts/docs/style_guide.md#test-assertions",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "tags": [
         "test-quality",
         "deslop"
-      ],
+      ]
+    },
+    "exaix/no-boolean-assert": {
+      "level": "off",
       "options": {
         "methods": [
           "includes",
@@ -492,83 +299,68 @@
           "assertStrictEquals"
         ]
       },
-      "limits": "Only a direct call subject is matched; a message argument does not clear the report."
+      "scope": "test",
+      "optIn": true,
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
+      "tags": [
+        "test-quality",
+        "deslop"
+      ]
     },
     "exaix/require-safety-comment": {
-      "engine": "plugin",
-      "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
-      "scope": "prod",
-      "optIn": true,
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
-      "tags": [
-        "type-safety",
-        "deslop"
-      ],
+      "level": "off",
       "options": {
         "markers": [
           "SAFETY"
         ]
       },
-      "limits": "Only non-const assertions in production files are checked."
-    },
-    "exaix/no-runtime-typeof": {
-      "engine": "plugin",
-      "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "prod",
       "optIn": true,
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "tags": [
         "type-safety",
         "deslop"
-      ],
+      ]
+    },
+    "exaix/no-runtime-typeof": {
+      "level": "off",
       "options": {
         "allowInTypeGuards": true
       },
-      "limits": "An existence probe against \"undefined\" is allowed."
-    },
-    "exaix/no-conditional-empty-object-spread": {
-      "engine": "plugin",
-      "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "scope": "prod",
       "optIn": true,
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
+      "limits": "An existence probe against \"undefined\" is allowed.",
       "tags": [
         "type-safety",
         "deslop"
-      ],
-      "limits": "Only a conditional with an empty object branch is checked."
+      ]
+    },
+    "exaix/no-conditional-empty-object-spread": {
+      "level": "off",
+      "scope": "prod",
+      "optIn": true,
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
+      "tags": [
+        "type-safety",
+        "deslop"
+      ]
     },
     "exaix/no-explicit-unknown": {
-      "engine": "plugin",
-      "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
-      "scope": "all",
-      "optIn": true,
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
-      "tags": [
-        "type-safety",
-        "deslop"
-      ],
+      "level": "off",
       "options": {
         "allowCatchBinding": true,
         "allowTypePredicateSubject": true
       },
-      "limits": "Imported aliases are not resolved; only syntactic shapes in this file are seen."
-    },
-    "exaix/no-unsafe-dictionary": {
-      "engine": "plugin",
-      "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
-      "scope": "all",
       "optIn": true,
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "tags": [
         "type-safety",
         "deslop"
-      ],
+      ]
+    },
+    "exaix/no-unsafe-dictionary": {
+      "level": "off",
       "options": {
         "forbiddenValueTypes": [
           "unknown",
@@ -577,100 +369,66 @@
           "{}"
         ]
       },
-      "limits": "Local aliases and union members are resolved. Wrapper types, intersections, interfaces, mapped-type signatures, and generic alias expansion are not followed. Map<K, V> is checked; a generic constraint is allowed."
-    },
-    "exaix/no-typeof-escape": {
-      "engine": "plugin",
-      "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
-      "scope": "all",
       "optIn": true,
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
+      "limits": "Local aliases and union members are resolved. Wrapper types, intersections, interfaces, mapped-type signatures, and generic alias expansion are not followed. Map<K, V> is checked; a generic constraint is allowed.",
       "tags": [
         "type-safety",
         "deslop"
-      ],
+      ]
+    },
+    "exaix/no-typeof-escape": {
+      "level": "off",
       "options": {
         "allowedTypeofTargets": [
           "globalThis.fetch"
         ]
       },
-      "limits": "Only an as typeof cast is reported; the built-in no-explicit-any reports any. The typeof target is compared as source text, and only test files may use an allowed target."
-    },
-    "exaix/no-pass-through-type-alias": {
-      "engine": "plugin",
-      "severity": "error",
-      "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
-      "tags": [
-        "type-safety",
-        "deslop"
-      ],
-      "limits": "Only aliases that name another top-level local alias are reported."
-    },
-    "exaix/no-object-parameters": {
-      "engine": "plugin",
-      "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
-      "scope": "all",
       "optIn": true,
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
+      "limits": "Only an as typeof cast is reported; the built-in no-explicit-any reports any. The typeof target is compared as source text, and only test files may use an allowed target.",
       "tags": [
         "type-safety",
         "deslop"
-      ],
-      "limits": "Only a direct object annotation is checked. A parameter with a default value, and a local alias of object, are not resolved."
-    },
-    "exaix/promise-response-alias": {
-      "engine": "plugin",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
-      "tags": [
-        "type-safety"
       ]
     },
-    "exaix/promise-response-return": {
-      "engine": "plugin",
-      "severity": "off",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
+    "exaix/no-pass-through-type-alias": {
+      "level": "error",
+      "reason": "Deferred: the codebase-wide type cleanup is tracked in the Step 6 Reachability Ledger.",
       "tags": [
-        "type-safety"
-      ],
+        "type-safety",
+        "deslop"
+      ]
+    },
+    "exaix/no-object-parameters": {
+      "level": "off",
+      "optIn": true,
+      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
+      "limits": "Only a direct object annotation is checked. A parameter with a default value, and a local alias of object, are not resolved.",
+      "tags": [
+        "type-safety",
+        "deslop"
+      ]
+    },
+    "exaix/promise-response-alias": {
+      "level": "error"
+    },
+    "exaix/promise-response-return": {
+      "level": "off",
       "optIn": true,
       "reason": "Parked: The AST rule also reports a parameter, a variable, and a function type that the line scanner missed. Phase 230 burns them down and turns the rule on."
     },
     "exaix/ts-suppression-pragmas": {
-      "engine": "plugin",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
-      "tags": [
-        "type-safety"
-      ]
+      "level": "error"
     },
     "exaix/no-forbidden-lint-ignore": {
-      "engine": "plugin",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
-      "tags": [
-        "type-safety"
-      ],
+      "level": "error",
       "options": {
         "includeFileIgnores": false
       }
     },
     "exaix/import-inside-statement": {
-      "engine": "plugin",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#dynamic-imports",
-      "tags": [
-        "imports"
-      ],
+      "level": "error",
       "options": {
         "allowDynamicImports": [
           {
@@ -693,16 +451,11 @@
             "specifiers": []
           }
         ]
-      }
+      },
+      "docs": "unslop-ts/docs/style_guide.md#dynamic-imports"
     },
     "exaix/dynamic-import": {
-      "engine": "plugin",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#dynamic-imports",
-      "tags": [
-        "imports"
-      ],
+      "level": "error",
       "options": {
         "allowDynamicImports": [
           {
@@ -735,22 +488,10 @@
       }
     },
     "exaix/inline-type-import": {
-      "engine": "plugin",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#no-inline-type-imports",
-      "tags": [
-        "imports"
-      ]
+      "level": "error"
     },
     "exaix/re-export-imported": {
-      "engine": "plugin",
-      "severity": "off",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#no-re-exporting",
-      "tags": [
-        "imports"
-      ],
+      "level": "off",
       "exclude": [
         "**/mod.ts",
         "**/index.ts",
@@ -758,21 +499,11 @@
         "tests/helpers/**",
         "packages/*/tests/helpers/**"
       ],
-      "reason": "Entrypoints and the compatibility shim legitimately re-export; the code keeps the isTestingCompatibilityShim call. Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on.",
-      "optIn": true
+      "optIn": true,
+      "reason": "Entrypoints and the compatibility shim legitimately re-export; the code keeps the isTestingCompatibilityShim call. Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on."
     },
     "exaix/import-boundaries": {
-      "engine": "plugin",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#import-boundaries",
-      "tags": [
-        "boundary",
-        "tui",
-        "cli",
-        "package",
-        "imports"
-      ],
+      "level": "error",
       "options": {
         "zones": [
           {
@@ -971,117 +702,86 @@
             ]
           }
         ]
-      }
+      },
+      "tags": [
+        "boundary",
+        "tui",
+        "cli",
+        "package",
+        "imports"
+      ]
     },
     "exaix/no-interface-rename-on-import": {
-      "engine": "plugin",
-      "severity": "off",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#interface-conventions",
-      "tags": [
-        "imports",
-        "di"
-      ],
-      "exclude": [
-        "packages/core/src/parsing/markdown.ts"
-      ],
+      "level": "off",
       "options": {
         "prefix": "I"
       },
+      "exclude": [
+        "packages/core/src/parsing/markdown.ts"
+      ],
       "optIn": true,
-      "reason": "Parked: the AST rule reads specifiers on their own lines, which the line scanner skipped. Phase 230 burns them down and turns the rule on."
+      "reason": "Parked: the AST rule reads specifiers on their own lines, which the line scanner skipped. Phase 230 burns them down and turns the rule on.",
+      "tags": [
+        "imports",
+        "di"
+      ]
     },
     "exaix/import-placement": {
-      "engine": "plugin",
-      "severity": "off",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#imports-at-the-top",
+      "level": "off",
+      "optIn": true,
+      "reason": "Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on.",
       "tags": [
         "imports",
         "module-structure"
-      ],
-      "optIn": true,
-      "reason": "Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on."
+      ]
     },
     "exaix/magic-union-type": {
-      "engine": "plugin",
-      "severity": "off",
-      "scope": "prod",
-      "codeStyle": "unslop-ts/docs/style_guide.md#no-magic-values",
-      "tags": [
-        "magic-values"
-      ],
+      "level": "off",
       "options": {
         "hint": "Define an enum in packages/core/src/types/enums.ts or use a shared named union type."
       },
+      "scope": "prod",
       "optIn": true,
       "reason": "Parked: The AST rule exempts only a union that is the whole alias body, so it finds inline unions that the line scanner skipped. Phase 230 burns them down and turns the rule on."
     },
     "exaix/require-module-header": {
-      "engine": "plugin",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#module-order",
-      "tags": [
-        "module-structure"
-      ]
+      "level": "error"
     },
     "module-header-tag": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "docs/CODE_STYLE.md#module-headers",
-      "tags": [
-        "module-structure"
-      ]
+      "level": "error"
     },
     "exaix/exported-interface-naming": {
-      "engine": "plugin",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#interface-conventions",
-      "tags": [
-        "di"
-      ],
+      "level": "error",
       "options": {
         "prefix": "I"
-      }
+      },
+      "tags": [
+        "di"
+      ]
     },
     "exaix/exported-interface-placement": {
-      "engine": "plugin",
-      "severity": "off",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#interface-conventions",
+      "level": "off",
+      "optIn": true,
+      "reason": "Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on.",
       "tags": [
         "di",
         "module-structure"
-      ],
-      "optIn": true,
-      "reason": "Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on."
+      ]
     },
     "exaix/max-params": {
-      "engine": "plugin",
-      "severity": "off",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#complexity-rules",
-      "tags": [
-        "complexity",
-        "module-structure"
-      ],
+      "level": "off",
       "options": {
         "max": 7
       },
       "optIn": true,
-      "reason": "Parked: the AST rule counts arrows and methods that the line scanner skipped. Phase 230 burns them down and turns the rule on."
+      "reason": "Parked: the AST rule counts arrows and methods that the line scanner skipped. Phase 230 burns them down and turns the rule on.",
+      "tags": [
+        "complexity",
+        "module-structure"
+      ]
     },
     "exaix/long-comment": {
-      "engine": "plugin",
-      "severity": "off",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#comment-discipline",
-      "tags": [
-        "comments"
-      ],
+      "level": "off",
       "options": {
         "maxLines": 3
       },
@@ -1089,13 +789,7 @@
       "reason": "Parked: one comment in scripts/ is over the limit. Phase 230 shortens it and turns the rule on."
     },
     "exaix/ephemeral-comment": {
-      "engine": "plugin",
-      "severity": "off",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#comment-discipline",
-      "tags": [
-        "comments"
-      ],
+      "level": "off",
       "options": {
         "phrases": [
           {
@@ -1149,32 +843,15 @@
       "reason": "Parked: one test helper comment names a phase. Phase 230 rewrites it and turns the rule on."
     },
     "exaix/ephemeral-filename": {
-      "engine": "plugin",
-      "severity": "error",
-      "scope": "test",
-      "codeStyle": "unslop-ts/docs/style_guide.md#comment-discipline",
-      "tags": [
-        "comments"
-      ]
+      "level": "error",
+      "scope": "test"
     },
     "exaix/decorative-comment": {
-      "engine": "plugin",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#comment-discipline",
-      "tags": [
-        "comments"
-      ]
+      "level": "error"
     },
     "edition-conditional-outside-composer": {
-      "engine": "script",
-      "severity": "error",
+      "level": "error",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#edition-tier-boundary",
-      "tags": [
-        "edition",
-        "boundary"
-      ],
       "exclude": [
         "**/check_code_style.ts",
         "**/check_no_edition_conditionals.ts",
@@ -1187,18 +864,14 @@
         "apps/common/**",
         "tests/scenario_framework/runner/modes.ts",
         "scripts/test_parallel.ts"
-      ]
-    },
-    "edition-leak": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#edition-tier-boundary",
+      ],
       "tags": [
         "edition",
         "boundary"
-      ],
-      "limits": "Reads source text; check:edition-graph is its resolved-graph double check.",
+      ]
+    },
+    "edition-leak": {
+      "level": "error",
       "options": {
         "soloTier": 0,
         "teamTier": 1,
@@ -1216,169 +889,271 @@
         "teamAppPaths": [
           "apps/daemon/src/bootstrap_team.ts"
         ]
-      }
+      },
+      "scope": "prod",
+      "tags": [
+        "edition",
+        "boundary"
+      ]
     },
     "exaix/require-deno-shebang": {
-      "engine": "plugin",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#deno-scripts",
-      "tags": [
-        "scripts"
-      ],
+      "level": "error",
       "include": [
         "scripts/**"
       ]
     },
     "exaix/require-script-usage": {
-      "engine": "plugin",
-      "severity": "error",
+      "level": "error",
       "scope": "prod",
-      "codeStyle": "unslop-ts/docs/style_guide.md#deno-scripts",
-      "tags": [
-        "scripts"
-      ],
       "include": [
         "scripts/**"
       ]
     },
     "script-placement": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "docs/CODE_STYLE.md#utility-scripts",
-      "tags": [
-        "scripts"
-      ]
+      "level": "error"
     },
     "package-boundary": {
-      "engine": "script",
-      "severity": "error",
+      "level": "error",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#package-imports",
       "tags": [
         "package",
         "boundary"
       ]
     },
     "package-related-files-boundary": {
-      "engine": "script",
-      "severity": "error",
+      "level": "error",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#module-headers",
       "tags": [
         "package",
         "boundary"
       ]
     },
     "package-subpath-promotion": {
-      "engine": "script",
-      "severity": "error",
+      "level": "error",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#package-imports",
       "tags": [
         "package",
         "boundary"
       ]
     },
     "package-testing-import": {
-      "engine": "script",
-      "severity": "error",
+      "level": "error",
       "scope": "test",
-      "codeStyle": "docs/CODE_STYLE.md#package-test-boundaries",
       "tags": [
         "package",
         "test-quality"
       ]
     },
     "package-canonical-import": {
-      "engine": "script",
-      "severity": "error",
+      "level": "error",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#package-imports",
       "tags": [
         "package",
         "imports"
       ]
     },
     "package-instantiates-event-logger": {
-      "engine": "script",
-      "severity": "error",
+      "level": "error",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#package-module-purity",
       "tags": [
         "package",
         "di"
       ]
     },
     "package-concrete-logger-type": {
-      "engine": "script",
-      "severity": "warn",
+      "level": "warn",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#package-module-purity",
       "tags": [
         "package",
         "di"
       ]
     },
     "package-uses-config-reader": {
-      "engine": "script",
-      "severity": "warn",
+      "level": "warn",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#package-module-purity",
       "tags": [
         "package",
         "di"
       ]
     },
     "exaix/test-inline-multiline-fixture": {
-      "engine": "plugin",
-      "severity": "off",
-      "scope": "test",
-      "codeStyle": "unslop-ts/docs/style_guide.md#test-fixtures",
-      "tags": [
-        "test-quality"
-      ],
+      "level": "off",
       "options": {
         "minLines": 7,
         "fixturesDirectory": "tests/fixtures/"
       },
+      "scope": "test",
       "optIn": true,
       "reason": "Parked: the AST rule reads templates that hold escaped backticks, which the line scanner ended early. Phase 230 burns them down and turns the rule on."
     },
     "concrete-cross-domain": {
-      "engine": "script",
-      "severity": "warn",
+      "level": "warn",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#layer-aware-constant-imports",
       "tags": [
         "boundary",
         "di"
       ]
     },
     "layer-constant-leak": {
-      "engine": "script",
-      "severity": "warn",
+      "level": "warn",
       "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#layer-aware-constant-imports",
       "tags": [
         "boundary"
-      ],
-      "limits": "AST-based over this file only; dynamic imports and re-exports are not followed."
+      ]
     },
     "exaix/no-chained-type-assertions": {
-      "engine": "plugin",
-      "severity": "error",
-      "scope": "all",
-      "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
-      "tags": [
-        "type-safety",
-        "deslop"
-      ],
-      "limits": "Imported aliases are not resolved; only syntactic assertions in this file are seen.",
+      "level": "error",
       "options": {
         "allowPartialMockInTests": true,
         "allowNeverAnyMockInTests": true
+      },
+      "tags": [
+        "type-safety",
+        "deslop"
+      ]
+    },
+    "magic-literals": {
+      "level": "error",
+      "options": {
+        "checkNumbers": true,
+        "thresholds": {
+          "localString": 3,
+          "globalString": 5,
+          "localNumber": 4,
+          "globalNumber": 6
+        },
+        "additionalStrings": [
+          "other"
+        ],
+        "minStringLength": 4,
+        "minNumber": 100,
+        "roundNumberStep": 50,
+        "roundNumberMax": 1000,
+        "httpStatusRange": [
+          100,
+          599
+        ],
+        "metadataProperties": [
+          "description",
+          "title",
+          "label",
+          "placeholder"
+        ],
+        "structuralArrayProperties": [
+          "required",
+          "args",
+          "enum",
+          "capabilities",
+          "tags"
+        ],
+        "statusLiterals": [
+          "pending",
+          "resumed",
+          "fulfilled",
+          "rejected",
+          "amended",
+          "expired",
+          "cancelled"
+        ],
+        "definitionFileSuffixes": [
+          "constants.ts",
+          "enums.ts"
+        ],
+        "testScaffoldPattern": "^(test|mock|fake|dummy)[-_]"
+      }
+    },
+    "constant-restatement": {
+      "level": "error",
+      "options": {
+        "constantModules": [
+          "packages/core/src/types/constants.ts"
+        ],
+        "testRoots": [
+          "apps",
+          "packages",
+          "tests"
+        ],
+        "minRestatedElements": 2
+      }
+    },
+    "unused-exports": {
+      "level": "warn",
+      "options": {
+        "productionRoots": [
+          "packages/",
+          "exaix-team/",
+          "apps/"
+        ],
+        "testSegments": [
+          "/tests/",
+          "/testing/"
+        ],
+        "testSuffixes": [
+          "_test.ts",
+          ".test.ts"
+        ],
+        "entrypointSuffixes": [
+          "/mod.ts",
+          "/index.ts"
+        ],
+        "mainEntrypointSuffixes": [
+          "/main.ts"
+        ],
+        "scriptRoot": "scripts",
+        "walkSkipPatterns": [
+          "\\.git",
+          "node_modules",
+          "\\.copilot",
+          "\\.exa",
+          "Blueprints",
+          "Memory",
+          "Workspace",
+          "Portals",
+          "coverage",
+          "exaix-dev-docs",
+          "exaix-enterprise",
+          "tests/scenario_framework"
+        ],
+        "strictSkipPrefixes": [
+          "packages/tui/",
+          "apps/tui/",
+          "exaix-team/",
+          "packages/schemas/",
+          "apps/daemon/src/",
+          "apps/common/"
+        ],
+        "strictSkipSegments": [
+          "/commands/",
+          "/handlers/"
+        ]
+      }
+    },
+    "optional-params": {
+      "level": "warn",
+      "options": {
+        "wrapperType": "Opt",
+        "wrapperImport": "@exaix/core/types",
+        "reasonExamples": [
+          "TraceAbsent",
+          "OptionalInput",
+          "OptionalContext"
+        ],
+        "testSegments": [
+          "/tests/"
+        ],
+        "testSuffixes": [
+          "_test.ts"
+        ],
+        "skipSegments": [
+          "/scripts/",
+          "/tests/fixtures/"
+        ],
+        "walkSkipSegments": [
+          "/.copilot/",
+          "/.exa/",
+          "/types/"
+        ],
+        "pluginRuleId": "exaix/require-optional-wrapper"
       }
     }
   }

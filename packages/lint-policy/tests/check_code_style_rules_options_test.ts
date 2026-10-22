@@ -6,7 +6,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { checkSource } from "../src/checkers/check_code_style.ts";
-import catalogJson from "../catalog.json" with { type: "json" };
+import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 import { loadPolicyCatalog } from "./helpers/catalog.ts";
 import { LAYOUT } from "../src/repo_layout.ts";
 import { SCRIPT_RULE_SCHEMAS } from "../src/script_rule_schemas.ts";

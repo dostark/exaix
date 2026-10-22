@@ -4,7 +4,7 @@
  * @description The Exaix rule pack: the extension point for plugin rules that encode Exaix conventions. It holds no rule today.
  * @architectural-layer Tooling
  * @dependencies [@dostark/unslop-ts]
- * @related-files [packages/lint-policy/src/rule_packs.ts, packages/lint-policy/catalog.json]
+ * @related-files [packages/lint-policy/src/rule_packs.ts, packages/lint-policy/tests/fixtures/catalog_v1.json]
  */
 
 import type { IRulePack } from "@dostark/unslop-ts";

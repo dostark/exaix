@@ -234,13 +234,22 @@ function hostCommand(task: string): readonly string[] {
   return [DENO, TASK, task];
 }
 
+const DUPLICATE_CONTROLS: IRuleControls = {
+  editable: ["options", "scope", "include", "exclude"],
+  fixedLevel: ERROR,
+  fixedScope: null,
+  fixedInclude: null,
+  fixedExclude: null,
+  hostModes: { default: ERROR },
+};
+
 export const WHOLE_TREE_HOSTS: Readonly<Record<string, IWholeTreeHostSpec>> = {
   "duplicate-type": {
-    controls: WHOLE_TREE_CHECKS["duplicate-type"].controls,
+    controls: DUPLICATE_CONTROLS,
     command: hostCommand(CHECK_STYLE),
   },
   "duplicate-constant": {
-    controls: WHOLE_TREE_CHECKS["duplicate-constant"].controls,
+    controls: DUPLICATE_CONTROLS,
     command: hostCommand("check:magic"),
   },
   "magic-literals": {

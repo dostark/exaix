@@ -12,13 +12,13 @@ import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { IMPLEMENTED_SCRIPT_RULE_IDS } from "../src/checkers/check_code_style.ts";
 import { createLintPlugin, DENO_RULE_PACK, parseCatalog, runPlugin, TYPESCRIPT_RULE_PACK } from "@dostark/unslop-ts";
-import catalogJson from "../catalog.json" with { type: "json" };
+import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 import { EXAIX_PLUGIN_NAME } from "../src/rule_pack/mod.ts";
 import { EXAIX_REGISTRY, EXAIX_RULE_PACKS } from "../src/rule_packs.ts";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
 const DOC_PATH = join(REPO_ROOT, "packages/lint-policy/docs/style_rules.md");
-const CATALOG_PATH = join(REPO_ROOT, "packages/lint-policy/catalog.json");
+const CATALOG_PATH = join(REPO_ROOT, "packages/lint-policy/tests/fixtures/catalog_v1.json");
 const ENGINE_SRC = "unslop-ts/src";
 const POLICY_SRC = "packages/lint-policy/src";
 

@@ -29,7 +29,7 @@ const POLICY_FILES: readonly string[] = [
   `${POLICY_ROOT}/deno.json`,
   `${POLICY_ROOT}/mod.ts`,
   `${POLICY_ROOT}/README.md`,
-  `${POLICY_ROOT}/catalog.json`,
+  `${POLICY_ROOT}/tests/fixtures/catalog_v1.json`,
   `${POLICY_ROOT}/plugin.ts`,
   `${POLICY_ROOT}/rule_ceilings.json`,
   `${POLICY_ROOT}/src/checkers/check_code_style.ts`,
@@ -134,7 +134,7 @@ Deno.test("the root deno.json registers lint-policy and points the gates at it",
   assert(workspace.includes(`./${POLICY_ROOT}`));
   assertEquals(imports["@exaix/lint-policy"], `./${POLICY_ROOT}/mod.ts`);
   assertEquals(imports["@exaix/lint-policy/"], `./${POLICY_ROOT}/src/`);
-  assertEquals(imports["@exaix/lint-policy/catalog.json"], `./${POLICY_ROOT}/catalog.json`);
+  assertEquals(imports["@exaix/lint-policy/catalog.json"], `./${POLICY_ROOT}/tests/fixtures/catalog_v1.json`);
   assertEquals(lint.plugins, [`./${POLICY_ROOT}/plugin.ts`]);
   assertStringIncludes(tasks["check:style"], `${POLICY_ROOT}/src/checkers/check_code_style.ts`);
   assertStringIncludes(tasks["check:magic"], `${POLICY_ROOT}/src/checkers/check_magic_values.ts`);
@@ -376,7 +376,7 @@ Deno.test("the lint task also runs the two Deno rules over scripts/", async () =
 });
 
 const WHOLE_TREE_CLI = join(REPO_ROOT, ENGINE_ROOT, "src/cli/whole_tree.ts");
-const CATALOG_PATH = join(REPO_ROOT, POLICY_ROOT, "catalog.json");
+const DESCRIPTOR_PATH = join(REPO_ROOT, POLICY_ROOT, "unslop.project.ts");
 const WHOLE_TREE_TASKS: readonly string[] = [
   "check:constant-restatement",
   "check:unused-exports",
@@ -471,7 +471,7 @@ const WHOLE_TREE_CASES: readonly IWholeTreeCase[] = [
 
 async function runWholeTree(cwd: string, args: readonly string[]): Promise<IWholeTreeCase> {
   const result = await new Deno.Command(Deno.execPath(), {
-    args: ["run", "-A", WHOLE_TREE_CLI, `--catalog=${CATALOG_PATH}`, ...args],
+    args: ["run", "-A", WHOLE_TREE_CLI, `--descriptor=${DESCRIPTOR_PATH}`, ...args],
     cwd,
     stdout: "piped",
     stderr: "piped",
@@ -517,7 +517,7 @@ Deno.test("the committed catalog gives the whole-tree settings and the selection
 Deno.test("each whole-tree task passes the policy catalog to the CLI", async () => {
   const tasks = (await readRepoJson("deno.json")).tasks as { [name: string]: string };
   for (const name of WHOLE_TREE_TASKS) {
-    assertStringIncludes(tasks[name], `--catalog=${POLICY_ROOT}/catalog.json`);
+    assertStringIncludes(tasks[name], `--descriptor=${POLICY_ROOT}/unslop.project.ts`);
   }
 });
 
@@ -638,6 +638,12 @@ Deno.test("a ported import violation runs through the plugin rather than the scr
 const HOST_FILES: readonly string[] = [
   `${POLICY_ROOT}/src/checkers/check_magic_values.ts`,
   `${POLICY_ROOT}/src/repo_layout.ts`,
+  `${POLICY_ROOT}/src/policy_config.ts`,
+  `${POLICY_ROOT}/src/script_rules.ts`,
+  `${POLICY_ROOT}/src/script_rule_schemas.ts`,
+  `${POLICY_ROOT}/src/rule_packs.ts`,
+  `${POLICY_ROOT}/src/rule_pack/mod.ts`,
+  `${POLICY_ROOT}/unslop.project.ts`,
 ];
 const NUMBER_FIXTURE = Array.from({ length: 5 }, (_, index) => `export const value${index} = [12345];`).join("\n") +
   "\n";
@@ -651,19 +657,24 @@ interface IMagicHostRun {
 async function runIsolatedMagicHost(run: IMagicHostRun): Promise<{ code: number; output: string }> {
   const sandbox = await Deno.makeTempDir({ prefix: "magic_host_" });
   try {
-    const hostRoot = join(sandbox, "policy");
+    const repoRoot = join(sandbox, "repo");
+    const hostRoot = join(repoRoot, POLICY_ROOT);
     await Deno.mkdir(join(hostRoot, "src", "checkers"), { recursive: true });
     for (const file of HOST_FILES) {
       const target = join(hostRoot, file.slice(POLICY_ROOT.length + 1));
+      await Deno.mkdir(join(target, ".."), { recursive: true });
       await Deno.copyFile(join(REPO_ROOT, file), target);
     }
-    const catalog = structuredClone(catalogJson) as typeof catalogJson;
-    catalog.wholeTree.magicLiterals = {
-      ...catalog.wholeTree.magicLiterals,
+    const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "unslop.config.json"))) as {
+      rules: Record<string, { options?: Record<string, unknown> }>;
+    };
+    config.rules["magic-literals"].options = {
+      ...config.rules["magic-literals"].options,
       checkNumbers: run.checkNumbers,
-    } as typeof catalog.wholeTree.magicLiterals;
-    catalog.rules["duplicate-constant"].options.allow = [];
-    await Deno.writeTextFile(join(hostRoot, "catalog.json"), JSON.stringify(catalog));
+    };
+    config.rules["duplicate-constant"].options = { ...config.rules["duplicate-constant"].options, allow: [] };
+    await Deno.writeTextFile(join(repoRoot, "unslop.config.json"), JSON.stringify(config, null, 2));
+    await Deno.copyFile(join(REPO_ROOT, "layout.json"), join(repoRoot, "layout.json"));
     const treeRoot = join(sandbox, "tree");
     await Deno.mkdir(join(treeRoot, "packages", "demo", "src"), { recursive: true });
     await Deno.writeTextFile(join(treeRoot, "packages", "demo", "src", "numbers.ts"), NUMBER_FIXTURE);
@@ -703,5 +714,50 @@ Deno.test("magic_cli_disable_flags_override_true", async () => {
     const result = await runIsolatedMagicHost({ checkNumbers: true, args: [flag] });
     assertEquals(result.code, 0, `${flag}: ${result.output}`);
     assertFalse(result.output.includes("12345"), `${flag}: ${result.output}`);
+  }
+});
+
+Deno.test("active_readers_use_new_policy_and_layout", async () => {
+  const readers = [
+    "packages/lint-policy/plugin.ts",
+    "packages/lint-policy/src/checkers/check_code_style.ts",
+    "packages/lint-policy/src/checkers/check_magic_values.ts",
+    "packages/lint-policy/src/repo_layout.ts",
+    "scripts/generate_style_rules_doc.ts",
+  ];
+  for (const path of readers) {
+    const text = await Deno.readTextFile(join(REPO_ROOT, path));
+    assertFalse(/from\s+["'][^"']*catalog\.json/.test(text), path);
+    assert(
+      text.includes("policy_config") || text.includes("layout.json"),
+      `${path} does not read the new policy or layout`,
+    );
+  }
+  const root = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json"))) as {
+    tasks: Record<string, string>;
+  };
+  for (
+    const task of [
+      "check:constant-restatement",
+      "check:unused-exports",
+      "check:unused-exports:strict",
+      "check:optional-params",
+      "check:optional-params:staged",
+    ]
+  ) {
+    assertStringIncludes(root.tasks[task], "--descriptor=packages/lint-policy/unslop.project.ts", task);
+    assertFalse(root.tasks[task].includes("catalog.json"), task);
+  }
+});
+
+Deno.test("all_existing_whole_tree_tasks_survive_catalog_removal", async () => {
+  const root = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json"))) as {
+    tasks: Record<string, string>;
+  };
+  for (const task of ["check:constant-restatement", "check:unused-exports", "check:optional-params"]) {
+    assertFalse(root.tasks[task].includes("catalog.json"), task);
+  }
+  for (const task of ["check:style", "check:magic"]) {
+    assertFalse(root.tasks[task].includes("catalog.json"), task);
   }
 });

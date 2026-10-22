@@ -7,7 +7,7 @@
  * @related-files [packages/lint-policy/src/checkers/check_code_style.ts]
  */
 
-import catalogJson from "../catalog.json" with { type: "json" };
+import layoutJson from "../../../layout.json" with { type: "json" };
 
 /** Repository path tokens, defined once in the catalog's `layout` section. */
 export interface IRepoLayout {
@@ -37,7 +37,7 @@ export interface IRepoLayout {
   readonly layerLeakExempt: readonly { readonly path: string; readonly reason: string }[];
 }
 
-export const LAYOUT: IRepoLayout = catalogJson.layout;
+export const LAYOUT: IRepoLayout = layoutJson;
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

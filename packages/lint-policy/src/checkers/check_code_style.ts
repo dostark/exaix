@@ -18,22 +18,14 @@
 import ts from "typescript";
 import { walk } from "@std/fs";
 import { dirname, globToRegExp, join, normalize, relative } from "@std/path";
-import {
-  classifyPath,
-  type ICatalog,
-  type JsonValue,
-  parseCatalog,
-  type PathClass,
-  ruleSettings,
-} from "@dostark/unslop-ts";
+import { classifyPath, type ICatalog, type JsonValue, type PathClass, ruleSettings } from "@dostark/unslop-ts";
 import {
   DuplicateTypeOptionsSchema,
   findDuplicateTypes,
   validateTypeAllowEntries,
 } from "@dostark/unslop-ts/whole-tree";
-import styleRuleCatalog from "../../catalog.json" with { type: "json" };
 import { EXAIX_REGISTRY } from "../rule_packs.ts";
-import { SCRIPT_RULE_SCHEMAS } from "../script_rule_schemas.ts";
+import { POLICY_CATALOG } from "../policy_config.ts";
 import {
   LAYOUT,
   RE_PACKAGE_NAME_CAPTURE,
@@ -50,10 +42,7 @@ function resolveRepoRoot(): string {
 
 const REPO_ROOT = resolveRepoRoot();
 
-const CATALOG: ICatalog = parseCatalog(styleRuleCatalog, {
-  scriptRuleSchemas: SCRIPT_RULE_SCHEMAS,
-  registry: EXAIX_REGISTRY,
-});
+const CATALOG: ICatalog = POLICY_CATALOG;
 
 /** Classifies a repository-relative path with the shared catalog scopes. */
 export function classifyRepoPath(repoPath: string): PathClass {

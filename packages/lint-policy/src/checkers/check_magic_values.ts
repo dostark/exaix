@@ -36,10 +36,10 @@ import {
   validateConstantAllowEntries,
 } from "@dostark/unslop-ts/whole-tree";
 import { LAYOUT } from "../repo_layout.ts";
-import catalogJson from "../../catalog.json" with { type: "json" };
+import { POLICY_CATALOG } from "../policy_config.ts";
 
 // SAFETY: the catalog loader validates the scopes section against its schema.
-const CATALOG_SCOPES = catalogJson.scopes as { test: string[]; fixture: string[] };
+const CATALOG_SCOPES = POLICY_CATALOG.scopes;
 
 // CLI flags
 
@@ -118,7 +118,7 @@ const REPO_ROOT = resolveRepoRoot();
 
 /** The detector options: the catalog section, with the command-line thresholds and flags on top. */
 function detectorOptions() {
-  const configured = MagicLiteralOptionsSchema.parse(catalogJson.wholeTree.magicLiterals);
+  const configured = MagicLiteralOptionsSchema.parse(POLICY_CATALOG.wholeTree?.magicLiterals);
   const thresholds = configured.thresholds;
   return {
     ...configured,
@@ -138,9 +138,9 @@ const DUPLICATE_UNITS: Array<{ path: string; text: string }> = [];
 
 /** Whole-tree duplicate-constant pass, run after the per-file checks. */
 function runDuplicateConstantPass(): number {
-  const options = DuplicateConstantOptionsSchema.parse(catalogJson.rules["duplicate-constant"]?.options ?? {});
+  const options = DuplicateConstantOptionsSchema.parse(POLICY_CATALOG.rules["duplicate-constant"]?.options ?? {});
   // SAFETY: the catalog loader validates the duplicate-constant include list against its schema.
-  const include = (catalogJson.rules["duplicate-constant"]?.include ?? []) as string[];
+  const include = (POLICY_CATALOG.rules["duplicate-constant"]?.include ?? []) as string[];
   const units = DUPLICATE_UNITS.filter((unit) =>
     unit.path.startsWith(LAYOUT.packageRoot) || unit.path.startsWith(LAYOUT.appRoot)
   )

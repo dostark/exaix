@@ -13,10 +13,16 @@ import {
   ConfigError,
   DESCRIPTION_MAX_LENGTH,
   type ICompiledConfig,
+  type IEditContext,
   type JsonValue,
+  migrateCatalog,
+  semanticCatalogProjection,
+  semanticCompiledProjection,
+  setOption,
 } from "@dostark/unslop-ts";
 import catalog from "./fixtures/catalog_v1.json" with { type: "json" };
 import { descriptor } from "../unslop.project.ts";
+import { POLICY_CATALOG, POLICY_COMPILED, POLICY_CONFIG } from "../src/policy_config.ts";
 import { SCRIPT_RULES } from "../src/script_rules.ts";
 
 const SCRIPT_IDS = [
@@ -113,4 +119,70 @@ Deno.test("consumer_host_commands_match_all_six_task_definitions", async () => {
   assertEquals(model.rules["duplicate-type"].command, ["deno", "task", "check:style"]);
   assertEquals(model.rules["duplicate-constant"].command, ["deno", "task", "check:magic"]);
   assertEquals(model.rules["magic-literals"].command, ["deno", "task", "check:magic"]);
+});
+
+function originalIds(v1: typeof catalog): string[] {
+  const ids = Object.keys(v1.rules);
+  const sections: ReadonlyArray<readonly [string, string]> = [
+    ["constantRestatement", "constant-restatement"],
+    ["unusedExports", "unused-exports"],
+    ["optionalParams", "optional-params"],
+  ];
+  const wholeTree = v1.wholeTree as Record<string, unknown> | undefined;
+  for (const [section, id] of sections) {
+    if (wholeTree?.[section] !== undefined) ids.push(id);
+  }
+  return ids;
+}
+
+Deno.test("the_compiled_exaix_model_preserves_the_version_1_projection", async () => {
+  const ids = originalIds(catalog);
+  assertEquals(
+    semanticCompiledProjection(POLICY_COMPILED, descriptor, ids),
+    semanticCatalogProjection(catalog as JsonValue, descriptor, ids),
+  );
+  const layout = JSON.parse(await Deno.readTextFile(new URL("../../../layout.json", import.meta.url)));
+  assertEquals(layout, (catalog as { layout?: unknown }).layout);
+  const configured = (POLICY_CONFIG as { rules: Record<string, { limits?: string }> }).rules;
+  assertEquals(
+    Object.values(configured).filter((rule) => typeof rule === "object" && rule.limits !== undefined).length,
+    10,
+  );
+  assertEquals(POLICY_CATALOG.rules["duplicate-type"].limits, configured["duplicate-type"].limits);
+});
+
+Deno.test("pure_policy_import_has_no_plugin_side_effects", async () => {
+  const policyUrl = new URL("../src/policy_config.ts", import.meta.url).href;
+  const script =
+    `import { POLICY_COMPILED } from "${policyUrl}"; console.log(POLICY_COMPILED.catalog.rules["duplicate-type"].engine);`;
+  const command = new Deno.Command(Deno.execPath(), {
+    args: ["eval", "--allow-read", script],
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const result = await command.output();
+  assertEquals(result.code, 0, new TextDecoder().decode(result.stderr));
+  assertEquals(new TextDecoder().decode(result.stdout).trim(), "script");
+});
+
+Deno.test("consumer_limits_survive_migration_and_edit", () => {
+  const ids = originalIds(catalog);
+  const migrated = migrateCatalog(catalog as JsonValue, descriptor);
+  const compiled = compileConfig(migrated.config, descriptor);
+  assertEquals(
+    semanticCompiledProjection(compiled, descriptor, ids),
+    semanticCatalogProjection(catalog as JsonValue, descriptor, ids),
+  );
+  const configured = migrated.config as { rules: Record<string, { limits?: string }> };
+  const limits = Object.values(configured.rules).filter((rule) =>
+    typeof rule === "object" && rule.limits !== undefined
+  );
+  assertEquals(limits.length, 10);
+  const context: IEditContext = { descriptor, compiled };
+  const edited = setOption(migrated.config, context, "duplicate-constant", "namePattern", "^[A-Z][A-Z0-9_]*$");
+  const editedRule = (edited as { rules: Record<string, { limits?: string }> }).rules["duplicate-constant"];
+  assertEquals(
+    editedRule.limits,
+    "Compares top-level named constants with a static value; values from a call, identifier, or interpolation are out of scope.",
+  );
 });

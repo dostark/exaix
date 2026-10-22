@@ -9,7 +9,7 @@
 
 import { assertEquals } from "@std/assert";
 import { z } from "zod";
-import catalogJson from "../catalog.json" with { type: "json" };
+import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 import { loadPolicyCatalog } from "./helpers/catalog.ts";
 import { pluginRuleFindings } from "./helpers/script_port_parity.ts";
 import { COMMENT_RULES_CORPUS } from "./fixtures/port/comment_rules_corpus.ts";

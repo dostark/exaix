@@ -4,7 +4,7 @@
  * @description Rewrites style-exclude comments to deno-lint-ignore comments and finds leftovers of a ported rule.
  * @architectural-layer Test
  * @dependencies [@std/path]
- * @related-files [packages/lint-policy/catalog.json, packages/lint-policy/tests/fixtures/port/port_tables.json]
+ * @related-files [packages/lint-policy/tests/fixtures/catalog_v1.json, packages/lint-policy/tests/fixtures/port/port_tables.json]
  */
 
 import { fromFileUrl } from "@std/path";
@@ -29,6 +29,11 @@ const PORT_REFERENCE_EXEMPTIONS = [
   "packages/lint-policy/tests/fixtures/port/",
   "docs/CHANGELOG.md",
   "unslop-ts/",
+  // Whole-tree host ids are the version 2 descriptor contract.
+  "packages/lint-policy/unslop.project.ts",
+  "packages/lint-policy/src/script_rules.ts",
+  "packages/lint-policy/tests/policy_config_test.ts",
+  "tests/scripts/lint_policy_move_equivalence_test.ts",
 ];
 
 /** Rewrites each `// style-exclude:CODE - reason` of the given codes to `// deno-lint-ignore <id> -- reason`. */

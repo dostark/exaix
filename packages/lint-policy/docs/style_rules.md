@@ -141,7 +141,7 @@ deno run -A packages/lint-policy/src/checkers/check_code_style.ts --convert-warn
 
 ## Configuring rules
 
-Every rule setting lives in `packages/lint-policy/catalog.json`. `parseCatalog` validates
+Every rule setting lives in `packages/lint-policy/tests/fixtures/catalog_v1.json`. `parseCatalog` validates
 the file and rejects an unknown key with its JSON path. The fields per rule:
 
 | Field                 | Meaning                                                                                     | Example                                |
@@ -181,7 +181,7 @@ Deno's `--rules-tags=` disables the built-in rules.
 
 Warnings (not errors) may be suppressed with a `// style-exclude:<CODE> - <rationale>` comment
 on the line immediately above the flagged line. Valid codes are listed in each rule's
-`exclusionCodes` entry in `packages/lint-policy/catalog.json`. Errors cannot be suppressed this way.
+`exclusionCodes` entry in `packages/lint-policy/tests/fixtures/catalog_v1.json`. Errors cannot be suppressed this way.
 
 ---
 

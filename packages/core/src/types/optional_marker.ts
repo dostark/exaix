@@ -5,7 +5,7 @@
  * is by design. Every Opt<T, R> usage must include a codified
  * reason proving the decision was reviewed, not mechanical.
  * @architectural-layer Core
- * @related-files [packages/lint-policy/catalog.json]
+ * @related-files [packages/lint-policy/tests/fixtures/catalog_v1.json]
  */
 
 /**

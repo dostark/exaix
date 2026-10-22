@@ -10,7 +10,7 @@
 import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import { fromFileUrl, globToRegExp, join } from "@std/path";
 import ts from "typescript";
-import catalogJson from "../catalog.json" with { type: "json" };
+import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 import { GIT_FILE_SOURCE } from "./helpers/port_migration.ts";
 import { loadPortTables } from "./helpers/port_tables.ts";
 import { runBaseChecker, withPhaseBaseCheckers } from "./helpers/phase_base_checker.ts";

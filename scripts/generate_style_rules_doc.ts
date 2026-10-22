@@ -3,16 +3,17 @@
  * @module GenerateStyleRulesDoc
  * @path scripts/generate_style_rules_doc.ts
  * @description Regenerates the rule reference, tag index, and analysis-boundaries sections
- *   of packages/lint-policy/docs/style_rules.md from packages/lint-policy/catalog.json.
+ *   of packages/lint-policy/docs/style_rules.md from packages/lint-policy/tests/fixtures/catalog_v1.json.
  *
  * Usage:
  *   deno run -A scripts/generate_style_rules_doc.ts   # rewrite the generated block
  *
  * @architectural-layer Tooling
  * @dependencies [@std/path]
- * @related-files [packages/lint-policy/docs/style_rules.md, packages/lint-policy/catalog.json]
+ * @related-files [packages/lint-policy/docs/style_rules.md, packages/lint-policy/tests/fixtures/catalog_v1.json]
  */
 
+import { POLICY_CATALOG } from "../packages/lint-policy/src/policy_config.ts";
 import { join } from "@std/path";
 
 const BEGIN_MARKER = "<!-- BEGIN GENERATED RULE REFERENCE -->";
@@ -31,7 +32,6 @@ interface ICatalog {
   readonly rules: Record<string, IRuleEntry>;
 }
 
-const catalogPath = "packages/lint-policy/catalog.json";
 const docPath = "packages/lint-policy/docs/style_rules.md";
 
 interface ICellTable {
@@ -110,7 +110,7 @@ function replaceBlock(doc: string, block: string): string {
 }
 
 async function main(): Promise<void> {
-  const catalog = JSON.parse(await Deno.readTextFile(catalogPath)) as ICatalog;
+  const catalog: ICatalog = POLICY_CATALOG;
   const doc = await Deno.readTextFile(docPath);
   const updated = replaceBlock(doc, buildGeneratedBlock(catalog));
   await Deno.writeTextFile(docPath, updated);

@@ -4,12 +4,12 @@
  * @description Proves that the rule status, the check tags, and the tasks that the Exaix style guides name match the catalog and deno.json.
  * @architectural-layer Test
  * @dependencies [@std/assert, @std/path]
- * @related-files [packages/lint-policy/catalog.json, packages/lint-policy/tests/code_style_anchor_test.ts]
+ * @related-files [packages/lint-policy/tests/fixtures/catalog_v1.json, packages/lint-policy/tests/code_style_anchor_test.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
-import catalogJson from "../catalog.json" with { type: "json" };
+import { POLICY_CATALOG } from "../src/policy_config.ts";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../", import.meta.url));
 const POLICY_GUIDE = "packages/lint-policy/docs/style_guide.md";
@@ -35,7 +35,7 @@ interface IDenoConfig {
   readonly tasks: Readonly<Record<string, string>>;
 }
 
-const RULES: Readonly<Record<string, ICatalogRule>> = catalogJson.rules;
+const RULES: Readonly<Record<string, ICatalogRule>> = POLICY_CATALOG.rules;
 
 async function read(path: string): Promise<string> {
   return await Deno.readTextFile(join(REPO_ROOT, path));

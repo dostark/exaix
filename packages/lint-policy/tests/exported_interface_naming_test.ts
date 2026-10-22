@@ -3,14 +3,14 @@
  * @path packages/lint-policy/tests/exported_interface_naming_test.ts
  * @description Named valid and invalid cases for the exaix/exported-interface-naming plugin rule.
  * @architectural-layer Test
- * @related-files [packages/lint-policy/catalog.json, packages/lint-policy/src/rule_packs.ts]
+ * @related-files [packages/lint-policy/tests/fixtures/catalog_v1.json, packages/lint-policy/src/rule_packs.ts]
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { createLintPlugin, runPlugin } from "@dostark/unslop-ts";
 import { EXAIX_PLUGIN_NAME } from "../src/rule_pack/mod.ts";
 import { EXAIX_RULE_PACKS } from "../src/rule_packs.ts";
-import catalogJson from "../catalog.json" with { type: "json" };
+import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 import { loadPolicyCatalog } from "./helpers/catalog.ts";
 
 const RULE_ID = "exaix/exported-interface-naming";

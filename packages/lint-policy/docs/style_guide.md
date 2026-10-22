@@ -13,7 +13,7 @@ links:
 > [unslop-ts/docs/style_guide.md](../../../unslop-ts/docs/style_guide.md). Read the generic guide first. This
 > guide changes a rule only where it says so.
 >
-> - `packages/lint-policy/catalog.json` sets every rule id, severity, scope, and option.
+> - `packages/lint-policy/tests/fixtures/catalog_v1.json` sets every rule id, severity, scope, and option.
 > - [style_rules.md](./style_rules.md) is the generated reference for the catalog.
 > - [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md) holds the rules that exist only because of the Exaix
 >   architecture.
@@ -132,7 +132,7 @@ Extends [Comment Discipline](../../../unslop-ts/docs/style_guide.md#comment-disc
 
 ## Enforcement Status {#enforcement-status}
 
-The catalog gives every rule a status. Check `packages/lint-policy/catalog.json` or the generated
+The catalog gives every rule a status. Check `packages/lint-policy/tests/fixtures/catalog_v1.json` or the generated
 [style_rules.md](./style_rules.md) for the details of one rule.
 
 - **Plugin gates (`severity: error`):** `exaix/decorative-comment`, `exaix/dynamic-import`,
