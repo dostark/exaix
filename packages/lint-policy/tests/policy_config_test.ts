@@ -92,7 +92,14 @@ Deno.test("consumer_descriptor_loads_without_compiled_policy", async () => {
     ConfigError,
   );
 
-  for (const path of ["../unslop.project.ts", "../src/script_rules.ts", "../src/script_rule_schemas.ts"]) {
+  for (
+    const path of [
+      "../unslop.project.ts",
+      "../src/policy_config.ts",
+      "../src/script_rules.ts",
+      "../src/script_rule_schemas.ts",
+    ]
+  ) {
     const text = await Deno.readTextFile(new URL(path, import.meta.url));
     assert(!text.includes("createLintPlugin"), path);
     assert(!/from\s+["'][^"']*check_code_style/.test(text), path);

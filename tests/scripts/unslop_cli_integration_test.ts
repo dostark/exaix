@@ -73,6 +73,9 @@ Deno.test("exaix_unslop_cli_lists_59_rules_and_reports_a_seeded_violation", asyn
     const observed = report.rules.filter((rule) => rule.observedChecked > 0);
     assert(observed.length > 0);
     assert(observed.some((rule) => rule.coverage === "complete" || rule.coverage === "partial"));
+    const moduleHeader = report.rules.find((rule) => rule.rule.id === "exaix/require-module-header");
+    assert(moduleHeader);
+    assertEquals(moduleHeader.observedChecked, 1);
   } finally {
     await Deno.remove(fixture);
   }
@@ -92,6 +95,23 @@ Deno.test("all_not_run_commands_resolve_in_the_consumer", async () => {
     assertEquals(shown.code, 0, `${id}: ${shown.stderr}`);
     const command = (JSON.parse(shown.stdout) as { rule: { command: string[] } }).rule.command;
     assertEquals(command, ["deno", "task", task], id);
+  }
+  const fixture = join(REPO_ROOT, "scripts", ".not_run_fixture.ts");
+  try {
+    await Deno.writeTextFile(fixture, "export const value = 1;\n");
+    const reported = await runTask("lint:report", ["--format=json", "scripts/.not_run_fixture.ts"]);
+    assert(reported.code === 0 || reported.code === 1, reported.stderr);
+    const notRun = (JSON.parse(reported.stdout) as {
+      notRun: { id: string; command: string[]; mode: string }[];
+    }).notRun;
+    for (const [id, task] of Object.entries(expected)) {
+      const row = notRun.find((entry) => entry.id === id);
+      assert(row, id);
+      assertEquals(row.command, ["deno", "task", task], id);
+      assertEquals(row.mode, "default", id);
+    }
+  } finally {
+    await Deno.remove(fixture);
   }
 });
 
@@ -162,6 +182,31 @@ Deno.test("final_report_and_management_path", async () => {
   assertEquals((JSON.parse(listed.stdout) as { rules: unknown[] }).rules.length, 59);
   const config = await runTask("unslop", ["config", "print"]);
   assertEquals(config.code, 0, config.stderr);
+  const parked = join(REPO_ROOT, "scripts", ".final_parked.ts");
+  const broken = join(REPO_ROOT, "scripts", ".final_broken.ts");
+  try {
+    await Deno.writeTextFile(parked, "export interface Foo { x: string; }\n");
+    const report = await runTask(
+      "lint:report",
+      ["--format=json", "--select=exaix/exported-interface-naming", "scripts/.final_parked.ts"],
+    );
+    assertEquals(report.code, 1, report.stderr);
+    const parsed = JSON.parse(report.stdout) as {
+      findings: { ruleId: string; effectiveLevel: string }[];
+    };
+    assert(
+      parsed.findings.some((finding) =>
+        finding.ruleId === "exaix/exported-interface-naming" && finding.effectiveLevel === "error"
+      ),
+    );
+    await Deno.writeTextFile(broken, "export const = ;\n");
+    const failed = await runTask("lint:report", ["--format=json", "scripts/.final_broken.ts"]);
+    assertEquals(failed.code, 1, failed.stderr);
+    assertEquals((JSON.parse(failed.stdout) as { completion: string }).completion, "failed");
+  } finally {
+    await Deno.remove(parked).catch(() => {});
+    await Deno.remove(broken).catch(() => {});
+  }
 });
 
 Deno.test("final_gate_and_cli_equivalence", async () => {
@@ -189,11 +234,19 @@ const REPORT_BENCH_SAMPLE_PAIRS = 5;
 const REPORT_BENCH_MAX_RATIO = 2;
 const BENCH_FILE = "packages/lint-policy/src/policy_config.ts";
 
+const BENCH_ENV: Record<string, string> = Object.fromEntries(
+  Object.entries(Deno.env.toObject()).filter(([name]) =>
+    !name.startsWith("LD_") && !name.startsWith("DYLD_") && !name.startsWith("DEMO_") && !name.startsWith("EXAIX_")
+  ),
+);
+
 async function timeCommand(args: readonly string[]): Promise<{ ms: number; bytes: number }> {
   const start = performance.now();
   const result = await new Deno.Command(Deno.execPath(), {
     args: [...args],
     cwd: REPO_ROOT,
+    env: BENCH_ENV,
+    clearEnv: true,
     stdout: "piped",
     stderr: "piped",
   }).output();
@@ -209,7 +262,7 @@ Deno.test("matched_host_report_benchmark_records_equivalent_samples", async () =
   const absolute = join(REPO_ROOT, BENCH_FILE);
   const config = join(REPO_ROOT, "deno.json");
   const raw = ["lint", "--json", `--config=${config}`, absolute];
-  const report = ["task", "lint:report", "--format=table", BENCH_FILE];
+  const report = ["task", "lint:report", "--format=table", absolute];
   for (let index = 0; index < REPORT_BENCH_WARMUP_RUNS; index++) {
     await timeCommand(raw);
     await timeCommand(report);

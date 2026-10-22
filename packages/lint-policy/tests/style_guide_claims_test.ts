@@ -112,3 +112,11 @@ Deno.test("final_guide_claims_match_policy_and_engine", async () => {
   assertEquals(POLICY_CATALOG.rules["duplicate-type"].limits !== null, true);
   assertEquals(POLICY_CATALOG.rules["exaix/no-explicit-unknown"].engine, "plugin");
 });
+
+Deno.test("guide_claims_follow_the_compiled_policy", async () => {
+  const guide = await read(POLICY_GUIDE);
+  for (const token of ["unslop.config.json", "layout.json", "lint:report", "tests/fixtures/catalog_v1.json"]) {
+    assert(guide.includes(token), `the guide does not name ${token}`);
+  }
+  assertEquals(POLICY_CATALOG.rules["exaix/no-explicit-unknown"].engine, "plugin");
+});

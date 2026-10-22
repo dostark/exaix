@@ -17,6 +17,7 @@ import {
 } from "@dostark/unslop-ts";
 import { EXAIX_PLUGIN_NAME, EXAIX_RULE_PACK } from "../src/rule_pack/mod.ts";
 import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
+import { POLICY_COMPILED } from "../src/policy_config.ts";
 
 const PACKS = [TYPESCRIPT_RULE_PACK, DENO_RULE_PACK, EXAIX_RULE_PACK];
 const PLUGIN_ENGINE = "plugin";
@@ -42,4 +43,11 @@ Deno.test("every plugin rule id in the Exaix catalog resolves to a rule and an o
 Deno.test("the embedded engine reads the whole-tree settings of the Exaix catalog", () => {
   const settings = parseWholeTreeSettings(catalogJson);
   assertEquals(settings.optionalParams?.pluginRuleId, `${EXAIX_PLUGIN_NAME}/require-optional-wrapper`);
+});
+
+Deno.test("embedded_engine_accepts_compiled_consumer_policy", () => {
+  assertEquals(Object.keys(POLICY_COMPILED.rules).length, 59);
+  assertEquals(POLICY_COMPILED.rules["exaix/no-explicit-unknown"].engine, "plugin");
+  assertEquals(POLICY_COMPILED.rules["duplicate-type"].command, ["deno", "task", "check:style"]);
+  assertEquals(POLICY_COMPILED.catalog.rules["duplicate-constant"].limits !== undefined, true);
 });

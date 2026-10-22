@@ -13,13 +13,16 @@ import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, relative } from "@std/path";
 import {
   createLintPlugin,
+  type JsonValue,
   parseCatalog,
   parseWholeTreeSettings,
   runPlugin,
   selectionEnvName,
 } from "@dostark/unslop-ts";
 import { EXAIX_PLUGIN_NAME } from "@exaix/lint-policy/rule_pack/mod.ts";
+import { checkDuplicates } from "../../unslop-ts/src/rules/whole_tree/duplicate_check.ts";
 import { EXAIX_REGISTRY, EXAIX_RULE_PACKS } from "@exaix/lint-policy/rule_packs.ts";
+import { POLICY_CATALOG } from "../../packages/lint-policy/src/policy_config.ts";
 import catalogJson from "@exaix/lint-policy/catalog.json" with { type: "json" };
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
@@ -754,21 +757,16 @@ Deno.test("all_existing_whole_tree_tasks_survive_catalog_removal", async () => {
   const root = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json"))) as {
     tasks: Record<string, string>;
   };
-  for (const task of ["check:constant-restatement", "check:unused-exports", "check:optional-params"]) {
+  for (
+    const task of [
+      "check:constant-restatement",
+      "check:unused-exports",
+      "check:optional-params",
+      "check:style",
+      "check:magic",
+    ]
+  ) {
     assertFalse(root.tasks[task].includes("catalog.json"), task);
-  }
-  for (const task of ["check:style", "check:magic"]) {
-    assertFalse(root.tasks[task].includes("catalog.json"), task);
-  }
-});
-
-Deno.test("configured_options_reach_both_duplication_hosts", async () => {
-  const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "unslop.config.json"))) as {
-    rules: Record<string, { options?: { minProperties?: number; namePattern?: string } }>;
-  };
-  assertEquals(config.rules["duplicate-type"].options?.minProperties, 2);
-  assertEquals(config.rules["duplicate-constant"].options?.namePattern, "^[A-Z][A-Z0-9_]*$");
-  for (const task of ["check:style", "check:magic"]) {
     const result = await new Deno.Command(Deno.execPath(), {
       args: ["task", task],
       cwd: REPO_ROOT,
@@ -799,4 +797,41 @@ Deno.test("final_gate_and_cli_equivalence", async () => {
     stderr: "piped",
   }).output();
   assertEquals(result.code, 0, new TextDecoder().decode(result.stderr));
+});
+
+Deno.test("configured_options_reach_both_duplication_hosts", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "duplicate_host_" });
+  try {
+    await Deno.mkdir(join(dir, "packages", "demo", "src"), { recursive: true });
+    await Deno.writeTextFile(
+      join(dir, "packages", "demo", "src", "a.ts"),
+      "export interface Foo { a: string; b: string; }\n",
+    );
+    await Deno.writeTextFile(
+      join(dir, "packages", "demo", "src", "b.ts"),
+      "export interface Foo { a: string; b: string; }\n",
+    );
+    const catalog = structuredClone(POLICY_CATALOG);
+    catalog.rules["duplicate-type"].options = { minProperties: 2, allow: [] };
+    const found = await checkDuplicates(dir, catalog as JsonValue, "duplicate-type");
+    assert(found.duplicates.length > 0, JSON.stringify(found));
+    catalog.rules["duplicate-type"].options = { minProperties: 10, allow: [] };
+    const none = await checkDuplicates(dir, catalog as JsonValue, "duplicate-type");
+    assertEquals(none.duplicates, []);
+    await Deno.writeTextFile(join(dir, "packages", "demo", "src", "c.ts"), "export const FOO = 1;\n");
+    await Deno.writeTextFile(join(dir, "packages", "demo", "src", "d.ts"), "export const FOO = 1;\n");
+    catalog.rules["duplicate-constant"].options = { namePattern: "^[A-Z]+$", allow: [] };
+    const constants = await checkDuplicates(dir, catalog as JsonValue, "duplicate-constant");
+    assert(constants.duplicates.length > 0, JSON.stringify(constants));
+    catalog.rules["duplicate-constant"].options = { namePattern: "^[a-z]+$", allow: [] };
+    const noConstants = await checkDuplicates(dir, catalog as JsonValue, "duplicate-constant");
+    assertEquals(noConstants.duplicates, []);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+  const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "unslop.config.json"))) as {
+    rules: Record<string, { options?: { minProperties?: number; namePattern?: string } }>;
+  };
+  assertEquals(config.rules["duplicate-type"].options?.minProperties, 2);
+  assertEquals(config.rules["duplicate-constant"].options?.namePattern, "^[A-Z][A-Z0-9_]*$");
 });

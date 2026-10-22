@@ -7,12 +7,15 @@
  * @related-files [packages/lint-policy/unslop.project.ts, packages/lint-policy/plugin.ts]
  */
 
-import { compileConfig, type ICompiledConfig, type JsonValue } from "@dostark/unslop-ts";
+import { compileConfig, ConfigError, type ICompiledConfig, type JsonValue } from "@dostark/unslop-ts";
 import { descriptor } from "../unslop.project.ts";
 
-const config = JSON.parse(
-  Deno.readTextFileSync(new URL("../../../unslop.config.json", import.meta.url)),
-) as JsonValue;
+let config: JsonValue;
+try {
+  config = JSON.parse(Deno.readTextFileSync(descriptor.configUrl)) as JsonValue;
+} catch (error) {
+  throw new ConfigError(descriptor.configUrl.href, error instanceof Error ? error.message : String(error));
+}
 
 export const POLICY_CONFIG = config;
 export const POLICY_COMPILED: ICompiledConfig = compileConfig(config as JsonValue, descriptor);
