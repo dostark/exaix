@@ -5,15 +5,17 @@ style checkers that still run as standalone scripts.
 
 ## Layout
 
-- `catalog.json` — the validated rule catalog: severity, scope, options, tags, and exclusions.
-- `plugin.ts` — the `deno lint` plugin entry, loaded through `deno.json` `lint.plugins`.
+- `unslop.config.json` — the version 2 policy: severity, scope, options, tags, limits, and exclusions.
+- `layout.json` — the repository path tokens that the checkers read.
+- `src/policy_config.ts` — the pure compiler that exports `POLICY_CONFIG` and `POLICY_CATALOG`.
+- `plugin.ts` — the `deno lint` plugin entry and compiled project view, loaded through `deno.json` `lint.plugins`.
 - `rule_ceilings.json` — the per-package counts that hold each parked rule at a measured ceiling.
 - `src/checkers/` — `check_code_style.ts` and `check_magic_values.ts`, run by `deno task check:style` and `deno task check:magic`.
 - `src/rule_pack/` — `EXAIX_RULE_PACK`: the extension point for plugin rules that encode Exaix conventions. It is
   currently empty. Generic interface conventions live in the TypeScript pack.
 - `src/rule_packs.ts` — the rule packs and the registry that `plugin.ts` and the style checker share.
-- `src/repo_layout.ts` — the repository path tokens the checkers read from the catalog.
-- `docs/style_rules.md` — the rule reference, generated from the catalog by `deno task docs:style-rules`.
+- `src/repo_layout.ts` — the checkers' reader for `layout.json`.
+- `docs/style_rules.md` — the rule reference, generated from the compiled policy by `deno task docs:style-rules`.
 - `docs/style_guide.md` — the Exaix additions to the generic style guide in `unslop-ts/docs/`.
 - `tests/` — the tests for the checkers and the catalog.
 
@@ -21,7 +23,7 @@ style checkers that still run as standalone scripts.
 
 1. Implement `create(context, ctx)` in `src/rule_pack/<rule>.ts`, using the engine rule-pack contract.
 1. Register it in `EXAIX_RULE_PACK` (`src/rule_pack/mod.ts`) under its bare rule key, with an option schema.
-1. Add the catalog entry `exaix/<rule key>` to `catalog.json` with `engine: "plugin"`, `severity`, `scope`, `codeStyle`, and `tags`.
+1. Add the `exaix/<rule key>` entry to `unslop.config.json` with its level, scope, docs, and tags.
 1. Add named valid and invalid cases under `tests/`, then run `deno task docs:style-rules`.
 
 A rule that is not specific to Exaix belongs in `unslop-ts` instead. A script checker (`engine: "script"`) is the
@@ -54,3 +56,17 @@ A catalog `codeStyle` anchor replaces an engine rule's default guide link.
 - [unslop-ts](../../unslop-ts/README.md) — the generic lint engine.
 - `deno task unslop-ts:deploy` — moves the engine pointer after a compatibility check.
 - [docs/CODE_STYLE.md](../../docs/CODE_STYLE.md) — the other Exaix style rules.
+
+## Tasks and reports
+
+- `deno task unslop rules list --format=json` lists the 59 resolved rules and checks.
+- `deno task unslop:write rules set <id> <option>=<json> --dry-run` previews an authored edit; drop
+  `--dry-run` to write it.
+- `deno task lint:report --format=json <paths>` runs the real lint host and reports observed coverage.
+  `--format=markdown` and `--format=sarif` select the other formats.
+- `deno task lint:report:write --format=json --out=report.json <paths>` writes a no-clobber report.
+
+The descriptor is `unslop.project.ts`. The five existing whole-tree tasks pass
+the descriptor flag; `check:constant-restatement` retains only
+`--allow-read` and `--allow-env`. The historical version 1 snapshot is
+`tests/fixtures/catalog_v1.json`, not an active input.

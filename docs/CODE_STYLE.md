@@ -823,7 +823,7 @@ the findings. The rules read TypeScript only, so they do not check a YAML, TOML,
 
 ## Lint Policy {#lint-policy}
 
-The Exaix lint rules live in two places. `packages/lint-policy` holds the Exaix rules, the rule catalog, and the
+The Exaix lint rules live in two places. `packages/lint-policy` holds the Exaix rules, the version 2 policy, and the
 [rule reference](../packages/lint-policy/docs/style_rules.md), and its
 [guide](../packages/lint-policy/docs/style_guide.md) holds the Exaix additions. The `unslop-ts` engine holds the
 generic rules, and its [guide](../unslop-ts/docs/style_guide.md) describes them.
