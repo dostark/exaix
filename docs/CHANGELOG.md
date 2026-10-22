@@ -18,6 +18,14 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 231 (unslop-ts Configuration and Rule CLI)
+
+### Changed
+
+- The Exaix lint catalog permits the `unslop-ts` project loader's dynamic import, so the engine
+  CLI can load a project entry without a lint exception (see the
+  [engine guide](../unslop-ts/README.md)).
+
 ## Unreleased — Phase 227 (Generic Style Rules in unslop-ts)
 
 ### Added
