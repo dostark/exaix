@@ -20,6 +20,11 @@ const DENO = "deno";
 const TASK = "task";
 const CHECK_STYLE = "check:style";
 const ERROR = "error";
+const LEVEL = "level";
+const OPTIONS = "options";
+const SCOPE = "scope";
+const INCLUDE = "include";
+const EXCLUDE = "exclude";
 const BOUNDARIES = "boundaries";
 const PROD = "prod";
 const TEST = "test";
@@ -197,9 +202,19 @@ const SCRIPT_ROWS: readonly IScriptRow[] = [
 ];
 
 function controlsFor(row: IScriptRow): IRuleControls {
+  if (row.id === "package-instantiates-event-logger") {
+    return {
+      editable: [SCOPE, INCLUDE, EXCLUDE],
+      fixedLevel: ERROR,
+      fixedScope: null,
+      fixedInclude: null,
+      fixedExclude: null,
+      hostModes: { default: ERROR },
+    };
+  }
   const editable: IRuleControls["editable"] = row.hasOptions
-    ? ["level", "scope", "include", "exclude", "options"]
-    : ["level", "scope", "include", "exclude"];
+    ? [LEVEL, SCOPE, INCLUDE, EXCLUDE, OPTIONS]
+    : [LEVEL, SCOPE, INCLUDE, EXCLUDE];
   return {
     editable,
     fixedLevel: null,
@@ -235,7 +250,7 @@ function hostCommand(task: string): readonly string[] {
 }
 
 const DUPLICATE_CONTROLS: IRuleControls = {
-  editable: ["options", "scope", "include", "exclude"],
+  editable: [OPTIONS, SCOPE, INCLUDE, EXCLUDE],
   fixedLevel: ERROR,
   fixedScope: null,
   fixedInclude: null,

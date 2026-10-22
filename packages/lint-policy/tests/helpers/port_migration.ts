@@ -34,6 +34,8 @@ const PORT_REFERENCE_EXEMPTIONS = [
   "packages/lint-policy/src/script_rules.ts",
   "packages/lint-policy/tests/policy_config_test.ts",
   "tests/scripts/lint_policy_move_equivalence_test.ts",
+  "tests/scripts/unslop_cli_integration_test.ts",
+  "unslop.config.json",
 ];
 
 /** Rewrites each `// style-exclude:CODE - reason` of the given codes to `// deno-lint-ignore <id> -- reason`. */

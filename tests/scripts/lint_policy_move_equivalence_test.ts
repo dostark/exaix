@@ -761,3 +761,20 @@ Deno.test("all_existing_whole_tree_tasks_survive_catalog_removal", async () => {
     assertFalse(root.tasks[task].includes("catalog.json"), task);
   }
 });
+
+Deno.test("configured_options_reach_both_duplication_hosts", async () => {
+  const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "unslop.config.json"))) as {
+    rules: Record<string, { options?: { minProperties?: number; namePattern?: string } }>;
+  };
+  assertEquals(config.rules["duplicate-type"].options?.minProperties, 2);
+  assertEquals(config.rules["duplicate-constant"].options?.namePattern, "^[A-Z][A-Z0-9_]*$");
+  for (const task of ["check:style", "check:magic"]) {
+    const result = await new Deno.Command(Deno.execPath(), {
+      args: ["task", task],
+      cwd: REPO_ROOT,
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    assertEquals(result.code, 0, `${task}: ${new TextDecoder().decode(result.stderr)}`);
+  }
+});
