@@ -18,7 +18,6 @@
 import ts from "typescript";
 import { walk } from "@std/fs";
 import { dirname, globToRegExp, join, normalize, relative } from "@std/path";
-import { z } from "zod";
 import {
   classifyPath,
   type ICatalog,
@@ -26,16 +25,15 @@ import {
   parseCatalog,
   type PathClass,
   ruleSettings,
-  type ScriptRuleSchemas,
 } from "@dostark/unslop-ts";
 import {
-  DuplicateConstantOptionsSchema,
   DuplicateTypeOptionsSchema,
   findDuplicateTypes,
   validateTypeAllowEntries,
 } from "@dostark/unslop-ts/whole-tree";
 import styleRuleCatalog from "../../catalog.json" with { type: "json" };
 import { EXAIX_REGISTRY } from "../rule_packs.ts";
+import { SCRIPT_RULE_SCHEMAS } from "../script_rule_schemas.ts";
 import {
   LAYOUT,
   RE_PACKAGE_NAME_CAPTURE,
@@ -51,21 +49,6 @@ function resolveRepoRoot(): string {
 }
 
 const REPO_ROOT = resolveRepoRoot();
-
-/** Option schemas for the script rules that read catalog options. */
-const SCRIPT_RULE_SCHEMAS: ScriptRuleSchemas = {
-  "duplicate-constant": DuplicateConstantOptionsSchema,
-  "duplicate-type": DuplicateTypeOptionsSchema,
-  "edition-leak": z.object({
-    soloTier: z.number().int().default(0),
-    teamTier: z.number().int().default(1),
-    enterpriseTier: z.number().int().default(2),
-    soloPrefixes: z.array(z.string()).default([LAYOUT.packageRoot, LAYOUT.appRoot]),
-    teamPrefixes: z.array(z.string()).default([LAYOUT.teamRoot]),
-    enterprisePrefixes: z.array(z.string()).default([LAYOUT.enterpriseRoot]),
-    teamAppPaths: z.array(z.string()).default([LAYOUT.teamAppBootstrap]),
-  }).strict(),
-};
 
 const CATALOG: ICatalog = parseCatalog(styleRuleCatalog, {
   scriptRuleSchemas: SCRIPT_RULE_SCHEMAS,
