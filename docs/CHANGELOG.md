@@ -18,6 +18,35 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 227 (Generic Style Rules in unslop-ts)
+
+### Added
+
+- The generic TypeScript style rules, the import and placement rules, the comment, parameter and
+  fixture rules, and the interface naming rules now run as `deno lint` plugin rules from the
+  `unslop-ts` engine, so each finding points to the exact node in the syntax tree (see
+  [Style rules](../packages/lint-policy/docs/style_rules.md)).
+- The eleven repository boundary rules are now zones of one `import-boundaries` rule, and a
+  project adds a zone by editing the rule catalog instead of writing a new checker.
+- A rule that still has findings stays off by default, runs when `EXAIX_LINT_RULES` selects it,
+  and is held to its measured finding count by the rule-ceiling ratchet.
+
+### Changed
+
+- The generic TypeScript rules are described in the `unslop-ts` style guide, the Exaix
+  additions in the lint-policy style guide, and the rules that depend on the Exaix architecture
+  in [the style guide](CODE_STYLE.md), whose section-number references are now stable anchors.
+- The checks for duplicate types, duplicate constants and repeated literals keep their task
+  names and output, and now run from the `unslop-ts` engine library.
+- A TypeScript suppression pragma that carries a description is reported by the
+  `ts-suppression-pragmas` rule, and a pragma without a description by the built-in
+  `ban-ts-comment` rule.
+
+### Removed
+
+- The `style-exclude` comment no longer silences a rule that moved to the plugin; write
+  `deno-lint-ignore exaix/<rule> -- <reason>` instead.
+
 ## Unreleased — Phase 213 (AST Style Rules and deslop Adoption)
 
 ### Added
