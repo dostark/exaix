@@ -68,6 +68,14 @@ For these, do NOT commit the submodule first:
    exaix-dev-docs <staged parent files> && git commit -F <fixed-msg>` — skipping
    `commit_plan_step.ts` (it would re-commit nothing staged).
 
+Source-submodule plan step (the plan doc is in `exaix-dev-docs`, the code is in `unslop-ts`, and the phase forbids moving the parent pointer):
+
+1. Commit the source submodule first. Use a normal structured message with no `plan:` field.
+2. Commit the plan-doc changes in `exaix-dev-docs`.
+3. Commit the parent docs pointer and the phase's non-source changes. Cite the source SHA in the message. Do not stage the source submodule.
+
+Do not run `commit_plan_step.ts`: it needs every `→` path staged in the parent, and that would move the pointer. Record each `→` path with the source-submodule path for traceability.
+
 The submodule-first rule governs all NON-plan-step changes.
 
 Local workflow (`exaix-team` variant: substitute the name, use `feat:`/`fix:` type)

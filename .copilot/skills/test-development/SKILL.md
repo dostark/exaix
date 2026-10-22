@@ -227,8 +227,10 @@ Execution-time budget — avoid time bottlenecks
      `process-env`, `port`, `shared-path`, `pressure`). Mark a `dist/bin` writer
      `serializedOutput: true`, a repo-shared writer `exclusive: true`, and an
      egress-dependent file `network: true`. `SEQUENTIAL_FILES` is derived from
-     `SEQUENTIAL_TESTS`, so its order stays authoritative. Do not weaken the assertion or
-     drop the parallelism only for it.
+     `SEQUENTIAL_TESTS`, so its order stays authoritative. Also update
+     `EXPECTED_SEQUENTIAL_FILES` in `tests/scripts/test_parallel_test.ts`; the two lists must match
+     in order. A test that seeds a file into the repo must use a `__temp_` prefix, and a whole-tree
+     count must ignore that prefix. Do not weaken the assertion or drop the parallelism only for it.
 
   A time win is not done until the same tests still pass. Re-run the changed files (and
   the pack that owns them), confirm identical pass/fail counts, then record before/after

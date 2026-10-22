@@ -222,7 +222,9 @@ Planning doc update
 
 Commit (plan-step — spans submodule plan doc + parent code)
   25. Stage BOTH repos: submodule plan doc (the ✅/deferred lines must be added lines of this
-      diff) AND the parent src/test files (every `→ path` a staged file). Criterion/test
+      diff) AND the parent src/test files (every `→ path` a staged file). When the step's code
+      is in a source submodule whose pointer must not move, use the source-submodule flow in
+      #submodule-workflow instead of `commit_plan_step.ts`. Criterion/test
       whose module IS the plan doc uses the gitlink arrow `→ `exaix-dev-docs`` — never the
       internal `exaix-dev-docs/planning/<phase>.md` path (not a parent staged file — the
       gate rejects it with "not among this commit's changed files").
@@ -266,6 +268,9 @@ G5. Every test implemented was EXECUTED and passed, including scenario/E2E. Agen
       finding on a phase-touched file; a confirmed gap is BLOCKING (add the event or
       document why none applies). Findings on untouched files are pre-existing debt, out of
       scope. Any finding on an `@visible`-tagged class is BLOCKING regardless.
+  G8. Delegated review report: if #review-phase-code delegated Phase 7 to #review-code, that
+      report must exist before either status field moves to COMPLETED. If it was not run, leave
+      both fields open as "review-code pending".
   G7. Phase-doc status hygiene: bump BOTH the frontmatter `status:` (line 2) and the prose
       `**Status**:` header in the SAME closing commit — two separate fields; one without the
       other leaves the phase invisible to `grep -l '^status: COMPLETED'` or stuck as open.

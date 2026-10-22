@@ -237,7 +237,8 @@ with no `@visible` awareness → 🔵 Conceptual.
 
 Delegated to `#review-code`. Run it on every touched source file; a finding INTRODUCED by
 this phase's implementation is a gap classified per below — use #review-code's report, do
-not re-evaluate.
+not re-evaluate. A phase whose status says "review-code pending" is not closeable. Record the
+delegated report in the Post-Gap Analysis, or leave both status fields open.
 
 ### Phase 8 — Gap Classification
 

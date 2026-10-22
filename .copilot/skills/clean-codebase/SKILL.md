@@ -176,6 +176,13 @@ Phase 22 — Agent docs validation
  45. Fix, re-run — 0.
 
 Phase 23 — Final full-suite validation
+
+  Preflight the runner state before the first `test_all`:
+  - Docker client and buildx state, the scenario sandbox base, and any installed CLI state must be
+    writable. A read-only `~/.docker` or `~/.deno` fails the image build or the installed CLI.
+    Point `DOCKER_CONFIG`, `BUILDX_CONFIG`, `EXA_SANDBOX_BASE`, and `EXA_BIN_PATH` at writable paths.
+  - Never put `DENO_DIR` or another tool cache inside the worktree. Whole-tree gates walk it and
+    report the cache's `.ts` files as violations.
  46. Fastest path first:
      a. `deno run -A scripts/ci.ts check` — ONE command, all static gates (do NOT
         hand-chain `deno task check:X`; a second hand-maintained list is how gates went

@@ -70,3 +70,35 @@ Deno.test("Docs: the integration README points new flow-binding tests at the sha
   const md = (await Deno.readTextFile("tests/integration/README.md")).replace(/\s+/g, " ");
   assert(md.includes("helpers/flow_binding_harness.ts"), "integration README should name the shared binding harness");
 });
+
+Deno.test("Agent docs: submodule-workflow covers a plan step whose source is a source submodule", async () => {
+  requireAll(await skill("submodule-workflow"), "submodule-workflow", [
+    "Source-submodule plan step",
+    "Do not run `commit_plan_step.ts`",
+  ]);
+});
+
+Deno.test("Agent docs: a delegated review-code report is required before closure", async () => {
+  requireAll(await skill("next-steps"), "next-steps", [
+    "G8. Delegated review report",
+    "review-code pending",
+  ]);
+  requireAll(await skill("review-phase-code"), "review-phase-code", [
+    "is not closeable",
+  ]);
+});
+
+Deno.test("Agent docs: clean-codebase preflights writable Docker and sandbox state", async () => {
+  requireAll(await skill("clean-codebase"), "clean-codebase", [
+    "DOCKER_CONFIG",
+    "EXA_SANDBOX_BASE",
+    "Never put `DENO_DIR`",
+  ]);
+});
+
+Deno.test("Agent docs: test-development names the second pinned serial list", async () => {
+  requireAll(await skill("test-development"), "test-development", [
+    "EXPECTED_SEQUENTIAL_FILES",
+    "__temp_",
+  ]);
+});
