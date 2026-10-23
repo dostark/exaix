@@ -151,35 +151,41 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
-Deno.test("inline_control_refusal_and_supported_edit_match_host", async () => {
-  const configPath = join(REPO_ROOT, "unslop.config.json");
-  const before = await Deno.readTextFile(configPath);
-  const refused = await runTask(
-    "unslop:write",
-    ["rules", "disable", "package-instantiates-event-logger", "--reason=Not_used.", "--dry-run"],
-  );
-  assertEquals(refused.code, 2);
-  assertStringIncludes(refused.stderr, "does not allow editing level");
-  const magicFixture = join(REPO_ROOT, "packages", "lint-policy", "edit_magic_fixture.ts");
-  try {
-    await Deno.writeTextFile(
-      magicFixture,
-      Array.from({ length: 8 }, (_, index) => `export const v${index} = 12345;`).join("\n"),
+const RUNNING_IN_PARALLEL_BATCH = Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") === "1";
+
+Deno.test({
+  name: "inline_control_refusal_and_supported_edit_match_host",
+  ignore: RUNNING_IN_PARALLEL_BATCH,
+  fn: async () => {
+    const configPath = join(REPO_ROOT, "unslop.config.json");
+    const before = await Deno.readTextFile(configPath);
+    const refused = await runTask(
+      "unslop:write",
+      ["rules", "disable", "package-instantiates-event-logger", "--reason=Not_used.", "--dry-run"],
     );
-    const beforeHost = await runTask("check:magic", []);
-    assertEquals(beforeHost.code, 1, beforeHost.stderr);
-    const supported = await runTask("unslop:write", ["rules", "set", "magic-literals", "checkNumbers=false"]);
-    assertEquals(supported.code, 0, supported.stderr);
-    assertNotEquals(await Deno.readTextFile(configPath), before);
-    const afterHost = await runTask("check:magic", []);
-    assertEquals(afterHost.code, 0, afterHost.stderr);
-  } finally {
-    await Deno.writeTextFile(configPath, before);
-    await Deno.remove(magicFixture).catch(() => {});
-  }
-  const dryRun = await runTask("unslop:write", ["rules", "set", "edition-leak", "soloTier=1", "--dry-run"]);
-  assertEquals(dryRun.code, 0, dryRun.stderr);
-  assertEquals(await Deno.readTextFile(configPath), before);
+    assertEquals(refused.code, 2);
+    assertStringIncludes(refused.stderr, "does not allow editing level");
+    const magicFixture = join(REPO_ROOT, "packages", "lint-policy", "edit_magic_fixture.ts");
+    try {
+      await Deno.writeTextFile(
+        magicFixture,
+        Array.from({ length: 8 }, (_, index) => `export const v${index} = 12345;`).join("\n"),
+      );
+      const beforeHost = await runTask("check:magic", []);
+      assertEquals(beforeHost.code, 1, beforeHost.stderr);
+      const supported = await runTask("unslop:write", ["rules", "set", "magic-literals", "checkNumbers=false"]);
+      assertEquals(supported.code, 0, supported.stderr);
+      assertNotEquals(await Deno.readTextFile(configPath), before);
+      const afterHost = await runTask("check:magic", []);
+      assertEquals(afterHost.code, 0, afterHost.stderr);
+    } finally {
+      await Deno.writeTextFile(configPath, before);
+      await Deno.remove(magicFixture).catch(() => {});
+    }
+    const dryRun = await runTask("unslop:write", ["rules", "set", "edition-leak", "soloTier=1", "--dry-run"]);
+    assertEquals(dryRun.code, 0, dryRun.stderr);
+    assertEquals(await Deno.readTextFile(configPath), before);
+  },
 });
 
 Deno.test("configured_options_reach_four_whole_tree_sections", async () => {

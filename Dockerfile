@@ -27,6 +27,7 @@ RUN apt-get update \
 
 # Copy the module-graph inputs first so dependency caching is its own layer.
 COPY deno.json deno.lock ./
+COPY unslop.config.json layout.json ./
 COPY packages/ packages/
 COPY apps/ apps/
 COPY exaix-team/ exaix-team/
@@ -102,6 +103,7 @@ RUN groupadd --gid 10001 exaix \
 WORKDIR /app
 COPY --from=builder --chown=10001:10001 /deno-dir /deno-dir
 COPY --chown=10001:10001 deno.json deno.lock ./
+COPY --chown=10001:10001 unslop.config.json layout.json ./
 COPY --chown=10001:10001 packages/ packages/
 COPY --chown=10001:10001 apps/ apps/
 

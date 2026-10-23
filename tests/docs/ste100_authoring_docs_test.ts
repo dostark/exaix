@@ -20,8 +20,10 @@ const DENO_JSON_PATH = "deno.json";
 const DOT_COPILOT_README_PATH = ".copilot/README.md";
 const BUILDING_WITH_AI_AGENTS_PATH = "exaix-dev-docs/dev/Building_with_AI_Agents.md";
 
+const REPO_ROOT = new URL("../..", import.meta.url);
+
 async function read(path: string): Promise<string> {
-  return await Deno.readTextFile(path);
+  return await Deno.readTextFile(new URL(path, REPO_ROOT));
 }
 
 Deno.test("CONTRIBUTING states the STE requirement and its documentation exception", async () => {

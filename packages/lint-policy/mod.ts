@@ -9,3 +9,4 @@
 
 export { EDITION_TIERS, editionTierOfPath } from "./src/checkers/check_code_style.ts";
 export { EXAIX_RULE_PACK } from "./src/rule_pack/mod.ts";
+export { project } from "./plugin.ts";

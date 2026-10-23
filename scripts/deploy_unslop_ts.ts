@@ -36,6 +36,17 @@ const COMPAT_TESTS: readonly string[] = [
 /** Variables the engine tests and the typescript package read. The compatibility check grants no other. */
 const COMPAT_ENV: readonly string[] = [
   "DEMO_LINT_RULES",
+  "DEMO_LINT_TRACE",
+  "HOME",
+  "PATH",
+  "DENO_DIR",
+  "TMPDIR",
+  "TMP",
+  "TEMP",
+  "USER",
+  "LANG",
+  "LC_ALL",
+  "CI",
   "OTHER_LINT_RULES",
   "TSC_*",
   "NODE_INSPECTOR_IPC",
