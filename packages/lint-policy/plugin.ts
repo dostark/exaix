@@ -7,7 +7,7 @@
  * @related-files [packages/lint-policy/src/policy_config.ts, packages/lint-policy/unslop.project.ts]
  */
 
-import { createLintPlugin } from "@dostark/unslop-ts";
+import { createDenoPlugin } from "@dostark/unslop-ts/deno";
 import { POLICY_CATALOG, POLICY_COMPILED, POLICY_CONFIG } from "./src/policy_config.ts";
 import { EXAIX_PLUGIN_NAME } from "./src/rule_pack/mod.ts";
 import { EXAIX_RULE_PACKS } from "./src/rule_packs.ts";
@@ -17,6 +17,6 @@ export const project = {
   descriptor,
   config: POLICY_CONFIG,
   compiled: POLICY_COMPILED,
-  plugin: createLintPlugin(EXAIX_PLUGIN_NAME, POLICY_CATALOG, { rulePacks: EXAIX_RULE_PACKS }),
+  plugin: createDenoPlugin(EXAIX_PLUGIN_NAME, POLICY_CATALOG, { rulePacks: EXAIX_RULE_PACKS }),
 };
 export default project.plugin;

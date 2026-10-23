@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { createLintPlugin, runPlugin } from "@dostark/unslop-ts";
+import { createDenoPlugin, runPlugin } from "@dostark/unslop-ts/deno";
 import { EXAIX_PLUGIN_NAME } from "../src/rule_pack/mod.ts";
 import { EXAIX_RULE_PACKS } from "../src/rule_packs.ts";
 import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
@@ -22,7 +22,7 @@ function diagnosticsFor(source: string): { id: string; message: string }[] {
   const previous = Deno.env.get(SELECTION_VARIABLE) ?? null;
   try {
     Deno.env.delete(SELECTION_VARIABLE);
-    const plugin = createLintPlugin(EXAIX_PLUGIN_NAME, loadPolicyCatalog(catalogJson), {
+    const plugin = createDenoPlugin(EXAIX_PLUGIN_NAME, loadPolicyCatalog(catalogJson), {
       rulePacks: EXAIX_RULE_PACKS,
     });
     return runPlugin(plugin, FILE, source).filter((diagnostic) => diagnostic.id === RULE_ID);

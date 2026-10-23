@@ -7,7 +7,8 @@
  * @related-files [packages/lint-policy/src/checkers/check_code_style.ts, packages/lint-policy/plugin.ts]
  */
 
-import { createLintPlugin, type ICatalog, runPlugin } from "@dostark/unslop-ts";
+import type { ICatalog } from "@dostark/unslop-ts";
+import { createDenoPlugin, runPlugin } from "@dostark/unslop-ts/deno";
 import { checkSource } from "../../src/checkers/check_code_style.ts";
 import { EXAIX_PLUGIN_NAME } from "../../src/rule_pack/mod.ts";
 import { EXAIX_RULE_PACKS } from "../../src/rule_packs.ts";
@@ -83,7 +84,7 @@ export function scriptRuleFindings(ruleId: string, catalog: ICatalog, unit: ISou
 /** The findings of one plugin rule (by bare key) on one source unit, keyed by file and line. The rule is selected, so a parked rule runs. */
 export function pluginRuleFindings(key: string, catalog: ICatalog, unit: ISourceUnit): IFindingKey[] {
   const id = `${EXAIX_PLUGIN_NAME}/${key}`;
-  const plugin = createLintPlugin(EXAIX_PLUGIN_NAME, catalog, { rulePacks: EXAIX_RULE_PACKS, selection: id });
+  const plugin = createDenoPlugin(EXAIX_PLUGIN_NAME, catalog, { rulePacks: EXAIX_RULE_PACKS, selection: id });
   return runPlugin(plugin, unit.file, unit.text)
     .filter((diagnostic) => diagnostic.id === id)
     .map((diagnostic) => ({

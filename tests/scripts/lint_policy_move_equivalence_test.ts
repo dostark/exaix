@@ -11,14 +11,8 @@
 import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, relative } from "@std/path";
-import {
-  createLintPlugin,
-  type JsonValue,
-  parseCatalog,
-  parseWholeTreeSettings,
-  runPlugin,
-  selectionEnvName,
-} from "@dostark/unslop-ts";
+import { type JsonValue, parseCatalog, parseWholeTreeSettings, selectionEnvName } from "@dostark/unslop-ts";
+import { createDenoPlugin, runPlugin } from "@dostark/unslop-ts/deno";
 import { EXAIX_PLUGIN_NAME } from "@exaix/lint-policy/rule_pack/mod.ts";
 import { checkDuplicates } from "../../unslop-ts/src/rules/whole_tree/duplicate_check.ts";
 import { EXAIX_REGISTRY, EXAIX_RULE_PACKS } from "@exaix/lint-policy/rule_packs.ts";
@@ -345,7 +339,7 @@ function pluginLines(testCase: IParityCase): number[] {
   try {
     Deno.env.delete(SELECTION_VARIABLE);
     const catalog = parseCatalog(catalogJson, { scriptRuleSchemas: null, registry: EXAIX_REGISTRY });
-    const plugin = createLintPlugin(EXAIX_PLUGIN_NAME, catalog, { rulePacks: EXAIX_RULE_PACKS });
+    const plugin = createDenoPlugin(EXAIX_PLUGIN_NAME, catalog, { rulePacks: EXAIX_RULE_PACKS });
     return runPlugin(plugin, testCase.path, testCase.source)
       .filter((diagnostic) => diagnostic.id === testCase.ruleId)
       .map((diagnostic) => testCase.source.slice(0, diagnostic.range[0]).split("\n").length);
@@ -629,7 +623,7 @@ Deno.test("a ported import violation runs through the plugin rather than the scr
     const script = await runTask("check:style", [file]);
     assertEquals(script.code, 0, script.output);
     const parsed = parseCatalog(catalogJson, { scriptRuleSchemas: null, registry: EXAIX_REGISTRY });
-    const plugin = createLintPlugin(EXAIX_PLUGIN_NAME, parsed, {
+    const plugin = createDenoPlugin(EXAIX_PLUGIN_NAME, parsed, {
       rulePacks: EXAIX_RULE_PACKS,
       selection: PORTED_DYNAMIC_ID,
     });

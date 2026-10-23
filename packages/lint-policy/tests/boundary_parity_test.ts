@@ -9,7 +9,7 @@
 
 import { assertEquals } from "@std/assert";
 import { z } from "zod";
-import { createLintPlugin, runPlugin } from "@dostark/unslop-ts";
+import { createDenoPlugin, runPlugin } from "@dostark/unslop-ts/deno";
 import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 import { EXAIX_PLUGIN_NAME } from "../src/rule_pack/mod.ts";
 import { EXAIX_RULE_PACKS } from "../src/rule_packs.ts";
@@ -55,7 +55,7 @@ function normalize(pairs: readonly ZoneLine[]): string {
 }
 
 function pluginPairs(path: string, text: string): ZoneLine[] {
-  const plugin = createLintPlugin(EXAIX_PLUGIN_NAME, catalog, {
+  const plugin = createDenoPlugin(EXAIX_PLUGIN_NAME, catalog, {
     rulePacks: EXAIX_RULE_PACKS,
     selection: RULE_ID,
   });

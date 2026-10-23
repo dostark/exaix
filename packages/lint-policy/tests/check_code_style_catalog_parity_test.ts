@@ -11,7 +11,8 @@ import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/as
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { IMPLEMENTED_SCRIPT_RULE_IDS } from "../src/checkers/check_code_style.ts";
-import { createLintPlugin, DENO_RULE_PACK, parseCatalog, runPlugin, TYPESCRIPT_RULE_PACK } from "@dostark/unslop-ts";
+import { DENO_RULE_PACK, parseCatalog, TYPESCRIPT_RULE_PACK } from "@dostark/unslop-ts";
+import { createDenoPlugin, runPlugin } from "@dostark/unslop-ts/deno";
 import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 import { EXAIX_PLUGIN_NAME } from "../src/rule_pack/mod.ts";
 import { EXAIX_REGISTRY, EXAIX_RULE_PACKS } from "../src/rule_packs.ts";
@@ -202,7 +203,7 @@ Deno.test("the generated reference renders every tag", () => {
 Deno.test("the production catalog overrides the engine default type-safety guide", () => {
   const id = "exaix/no-chained-type-assertions";
   const parsed = parseCatalog(catalogJson, { scriptRuleSchemas: null, registry: EXAIX_REGISTRY });
-  const plugin = createLintPlugin(EXAIX_PLUGIN_NAME, parsed, { rulePacks: EXAIX_RULE_PACKS, selection: id });
+  const plugin = createDenoPlugin(EXAIX_PLUGIN_NAME, parsed, { rulePacks: EXAIX_RULE_PACKS, selection: id });
   const diagnostics = runPlugin(plugin, "packages/demo/src/value.ts", "const value = input as unknown as User;");
   assertEquals(diagnostics.length, 1);
   assertEquals(diagnostics[0].id, id);
