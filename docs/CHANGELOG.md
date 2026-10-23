@@ -18,6 +18,14 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 228 (unslop-ts Linter and Runtime Interoperability)
+
+### Changed
+
+- The Exaix lint policy now consumes the published `unslop-ts` engine through its Deno host entry, so
+  the Exaix rule catalog, presets, and reports stay aligned with the engine release (see the
+  [engine guide](../unslop-ts/README.md)).
+
 ## Unreleased — Phase 231 (unslop-ts Configuration and Rule CLI)
 
 ### Changed
