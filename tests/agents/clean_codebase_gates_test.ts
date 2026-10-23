@@ -23,4 +23,10 @@ Deno.test("Agent docs: clean-codebase separates active gates from baseline diagn
     normalized.includes("not yet CI gates"),
     "clean-codebase should distinguish failing baseline diagnostics from active CI gates",
   );
+  assert(md.includes("EXA_DAEMON_SCRIPT"), "clean-codebase should name the daemon script override");
+  assert(
+    normalized.includes("stat it with `isFile`"),
+    "clean-codebase should state that EXA_BIN_PATH is a file for the direct synthetic runner",
+  );
+  assert(md.includes("DENO_DIR"), "clean-codebase should name the writable compile cache variable");
 });

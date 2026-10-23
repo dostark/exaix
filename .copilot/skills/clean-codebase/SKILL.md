@@ -183,6 +183,16 @@ Phase 23 — Final full-suite validation
     Point `DOCKER_CONFIG`, `BUILDX_CONFIG`, `EXA_SANDBOX_BASE`, and `EXA_BIN_PATH` at writable paths.
   - Never put `DENO_DIR` or another tool cache inside the worktree. Whole-tree gates walk it and
     report the cache's `.ts` files as violations.
+  - `deno compile` writes `denort` into `DENO_DIR`. A read-only `~/.cache/deno` fails the build
+    with "Read-only file system (os error 30)"; export `DENO_DIR` to a writable path outside the
+    worktree for the whole run.
+  - Scenario tests need a runnable `exactl` and a daemon script. After the build, make a shell
+    shim that execs `dist/bin/exactl-solo-<target>`, then set `EXA_BIN_PATH` to the shim FILE:
+    tests that call `runSyntheticScenario` directly stat it with `isFile`, not as a directory.
+    Set `EXA_DAEMON_SCRIPT="$PWD/apps/daemon/main.ts"`, because a compiled `exactl` resolves
+    `import.meta.url` inside its compile temp dir and cannot find `apps/daemon/main.ts`.
+  - Attribute a failed full run before calling it a regression: re-run each failed file with these
+    variables. Scenario and build failures under a read-only cache all clear with writable paths.
  46. Fastest path first:
      a. `deno run -A scripts/ci.ts check` — ONE command, all static gates (do NOT
         hand-chain `deno task check:X`; a second hand-maintained list is how gates went

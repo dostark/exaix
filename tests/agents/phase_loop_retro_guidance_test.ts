@@ -102,3 +102,20 @@ Deno.test("Agent docs: test-development names the second pinned serial list", as
     "__temp_",
   ]);
 });
+
+Deno.test("Agent docs: test-development covers scoped-permission runs", async () => {
+  const md = await skill("test-development");
+  assert(md.includes("Scoped-permission runs"), "test-development should name scoped-permission runs");
+  assert(md.includes("`Deno.symlink`"), "test-development should name the symlink restriction");
+  assert(md.includes("skip the case when the run is scoped"), "test-development should prescribe a skip");
+});
+
+Deno.test("Agent docs: self-improvement keeps an externally blocked phase open", async () => {
+  const md = await skill("self-improvement");
+  assert(md.includes("external closure rows"), "self-improvement should allow external closure rows");
+  assert(
+    md.includes("`#review-phase-code` pass can reopen a phase"),
+    "self-improvement should warn that a review can reopen the phase",
+  );
+  assert(md.includes("do not flatten the"), "self-improvement should forbid a flat complete status");
+});

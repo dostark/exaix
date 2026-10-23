@@ -56,7 +56,13 @@ Use this at the start of a session or before a multi-step change.
 ## Phase-loop retro (terminal step: self-improvement-retro)
 
 Run this ONCE per phase, after `#remediate-code-gaps` closes and before the phase is
-declared done. Its purpose is to make the NEXT phase easier: every friction point of the
+declared done.
+
+Run it when the code loop closes, even if external closure rows remain. A later
+`#review-phase-code` pass can reopen a phase after an earlier completion: read the current
+frontmatter, prose header, and ledger before writing the Retrospective. If the ledger still has
+external rows (push, publish, branch protection), keep the header caveat and do not flatten the
+status to complete. Its purpose is to make the NEXT phase easier: every friction point of the
 loop just completed becomes a concrete improvement to the agent instructions.
 
 Position in the loop — this skill is the terminal step:

@@ -98,6 +98,10 @@ Do / Don't
 - Relative paths for internal links; file paths when referencing code
 - Changes bound to Implementation Plan steps
 - Consistent capitalization; add new terms to the Terminology Reference
+- The title and introduction state the current scope; an introduction that names one host or one
+  runtime after the product supports several is a stale claim
+- Command names match the shipped executable or task; document the canonical name and check
+  aliases against `deno.json`
 
 ## Version Synchronization
 

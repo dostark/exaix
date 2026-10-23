@@ -300,6 +300,12 @@ Permissions: some npm packages read env at module-init (`typescript` reads
 `TSC_WATCHFILE`), so a bare `deno test <file>` can fail NotCapable — run standalone script
 tests with `deno test --allow-all <file>`.
 
+Scoped-permission runs: a test may run under path-scoped grants (the engine deploy
+compatibility check uses `--allow-read=<repo>,<tmp> --allow-write=<tmp>` with no loader
+variables). It must not call APIs that need unscoped grants: `Deno.symlink` is the common
+one. Probe for the capability and skip the case when the run is scoped; verify the test with
+the scoped command, not only `deno test --allow-all`.
+
 Private state: `check:style` rejects `as unknown as`. Expose a `public readonly` field, or narrow
 with `instanceof` on the exported class. A test that needs a private value usually points to a
 value that should be observable behavior.

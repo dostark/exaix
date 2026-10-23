@@ -36,6 +36,12 @@ Deno.test("Agent docs: doc checks code claims and names the claims test", async 
   assert(md.includes("style_guide_claims_test.ts"), "the example claims test is missing");
 });
 
+Deno.test("Agent docs: doc refreshes the title and checks command names", async () => {
+  const md = await skill("doc");
+  assert(md.includes("title and introduction state the current scope"), "the title rule is missing");
+  assert(md.includes("Command names match the shipped executable or task"), "the command-name rule is missing");
+});
+
 Deno.test("Agent docs: plan formats only a new plan document", async () => {
   const md = await skill("plan");
   assert(md.includes("A NEW plan that no commit holds yet may"), "the new-plan formatting rule is missing");
