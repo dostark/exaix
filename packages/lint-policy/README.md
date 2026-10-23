@@ -70,3 +70,6 @@ The descriptor is `unslop.project.ts`. The five existing whole-tree tasks pass
 the descriptor flag; `check:constant-restatement` retains only
 `--allow-read` and `--allow-env`. The historical version 1 snapshot is
 `tests/fixtures/catalog_v1.json`, not an active input.
+
+Exaix uses the Deno host through `@dostark/unslop-ts/deno`. The `@dostark/unslop-ts/eslint` entry
+exists for ESLint and Oxlint consumers; no Exaix runtime path imports it.
