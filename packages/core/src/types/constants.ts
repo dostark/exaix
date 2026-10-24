@@ -4119,3 +4119,46 @@ export const SCHEME_HTTP = "http:";
 
 /** Default debounce for file watchers. */
 export const DEFAULT_DEBOUNCE_MS = 100;
+
+// Portal unslop verification identities (Phase 229)
+
+/** The plugin name every packaged portal catalog uses. */
+export const UNSLOP_PLUGIN_NAME = "unslop";
+
+/** The trusted runtime directory name below the resolved runtime root. */
+export const UNSLOP_RUNTIME_DIR = "unslop";
+
+/** The default trusted asset directory, relative to the system root. */
+export const UNSLOP_PORTAL_ASSET_DIR = "lint";
+
+/** The packaged engine bundle file name. */
+export const UNSLOP_PORTAL_ENGINE_FILENAME = "unslop_engine.js";
+
+/** The packaged TypeScript-only portal catalog file name. */
+export const UNSLOP_PORTAL_CATALOG_FILENAME = "unslop_portal_catalog.json";
+
+/** The packaged TypeScript plus Deno portal catalog file name. */
+export const UNSLOP_PORTAL_DENO_CATALOG_FILENAME = "unslop_portal_deno_catalog.json";
+
+/** The packaged provenance manifest file name. */
+export const UNSLOP_PORTAL_MANIFEST_FILENAME = "manifest.json";
+
+/** The packaged provenance manifest format version. */
+export const UNSLOP_PORTAL_MANIFEST_FORMAT_VERSION = 1;
+
+/** The packaged portal policy version. */
+export const UNSLOP_PORTAL_POLICY_VERSION = 1;
+
+/** Test path globs the packaged catalog classifies as test files. */
+export const UNSLOP_PORTAL_TEST_GLOBS: readonly string[] = [
+  "**/*_test.ts",
+  "**/*.test.ts",
+  "**/*.spec.ts",
+  "tests/**",
+  "**/tests/**",
+  "test/**",
+  "**/test/**",
+];
+
+/** File extensions the portal verification check can lint. */
+export const UNSLOP_PORTAL_SOURCE_EXTENSIONS: readonly string[] = [".ts", ".tsx", ".mts", ".cts"];
