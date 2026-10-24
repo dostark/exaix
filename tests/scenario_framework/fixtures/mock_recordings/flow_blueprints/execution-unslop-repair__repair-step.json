@@ -1,6 +1,6 @@
 {
   "promptHash": "execution-unslop-repair-step",
-  "promptPreview": "AGENT ROLE: Verification Unslop Coder\n",
+  "promptPreview": "AGENT ROLE: Verification Unslop Repair Coder\n",
   "response": "THOUGHT: The verification adapter reported a chained type assertion on seed.ts. I will replace it with the precise type.\n```toml\n[[actions]]\ntool = \"write_file\"\n[actions.params]\npath = \"seed.ts\"\ncontent = \"export const seed = 1;\\n\"\n```\nSTATUS: COMPLETE\nSUMMARY: Removed the chained cast from seed.ts.",
   "model": "mock-model",
   "tokens": {

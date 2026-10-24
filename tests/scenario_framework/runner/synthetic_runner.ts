@@ -883,6 +883,59 @@ async function appendPortalVerification(workspaceRoot: string, verification: IPo
   await Deno.writeTextFile(configPath, updated);
 }
 
+/** The alias a portal region declares, or undefined when the region names none. */
+function portalRegionAlias(region: readonly string[]): Opt<string, Reason.OptionalInput> {
+  for (const line of region) {
+    const match = /^\s*alias\s*=\s*["']([^"']+)["']\s*$/.exec(line);
+    if (match) return match[1];
+  }
+  return undefined;
+}
+
+/** Removes every `[[portals]]` region of one alias from a sandbox config text.
+ *  A mount always appends an entry, so a shared sandbox grows one region per mount.
+ *  The first matching entry would otherwise shadow the newest verification block. */
+export function withoutPortalRegions(configText: string, alias: string): string {
+  const kept: string[] = [];
+  let region: string[] | undefined;
+  const finishRegion = () => {
+    if (region !== undefined && portalRegionAlias(region) !== alias) kept.push(...region);
+    region = undefined;
+  };
+
+  for (const line of configText.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed === "[[portals]]") {
+      finishRegion();
+      region = [line];
+      continue;
+    }
+    if (region !== undefined) {
+      const header = /^\[\[?(.+?)\]\]?$/.exec(trimmed);
+      // A portal's own sub-tables stay in its region. Any other table starts the next section.
+      if (header !== null && !header[1].startsWith("portals.")) {
+        finishRegion();
+        kept.push(line);
+        continue;
+      }
+      region.push(line);
+      continue;
+    }
+    kept.push(line);
+  }
+  finishRegion();
+  return kept.join("\n");
+}
+
+/** Drops the alias's older portal regions so `portal add` owns the only remaining entry. */
+async function dropStalePortalEntries(workspaceRoot: string, alias: string): Promise<void> {
+  const configPath = join(workspaceRoot, WORKSPACE_CONFIG_FILE);
+  const existing = await Deno.readTextFile(configPath).catch(() => undefined);
+  if (existing === undefined) return;
+  const rewritten = withoutPortalRegions(existing, alias);
+  if (rewritten !== existing) await Deno.writeTextFile(configPath, rewritten);
+}
+
 /** Register a portal via `portal add` (idempotent for an identical target). Best-effort: a
  *  failed mount is surfaced as a warning and the scenario's own portal assertions report it. */
 async function mountPortal(
@@ -893,6 +946,8 @@ async function mountPortal(
   verification?: Opt<IPortalVerification, Reason.OptionalContext>,
 ): Promise<boolean> {
   let mounted = false;
+  // A pack shares one sandbox, so an earlier mount of this alias leaves its entry behind.
+  await dropStalePortalEntries(options.workspaceRoot, alias);
   try {
     const result = await new Deno.Command(options.exactlExecutable ?? "exactl", {
       args: ["portal", "add", targetPath, alias],

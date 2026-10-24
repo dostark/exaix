@@ -12,6 +12,18 @@ portals:
     target_path: "$WORKSPACE_ROOT/verify-app"
     git_init: true
 steps:
+  # A scenario pack shares one sandbox, so a sibling that stages the lint assets would
+  # leave them here. Removing them first makes "no asset dependency" a real assertion:
+  # this run must neither stage them back nor read them.
+  - id: "remove-lint-assets"
+    type: "remove-files"
+    name: "Remove any lint assets a sibling scenario staged"
+    args: ["lint/**"]
+    output_criteria:
+      - id: "assets-removed"
+        kind: "command-exit-code"
+        equals: 0
+
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
@@ -31,7 +43,7 @@ steps:
     path: "Workspace/Active/execution-unslop-disabled_plan.md"
     content: |
       ---
-      trace_id: "22900000-0000-4000-8000-000000000229"
+      trace_id: "22b00000-0000-4000-8000-000000000231"
       request_id: "execution-unslop-disabled"
       status: approved
       portal: verify-app
@@ -66,6 +78,96 @@ steps:
         score_weight: 0.1
         kind: "command-exit-code"
         equals: 0
+
+  # An injected plan emits no request.created, so trace_scoped has nothing to resolve.
+  # Every verification event carries the plan's request_id, which scopes them instead.
+  - id: "assert-not-configured"
+    type: "journal-assert"
+    action_type: "execution.completed"
+    payload_equals:
+      - path: "request_id"
+        value: "execution-unslop-disabled"
+      - path: "verification_status"
+        value: "not_configured"
+    expect_count: 1
+    output_criteria:
+      - id: "verification-not-configured"
+        class: "security"
+        score_weight: 0.3
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-no-verification-started"
+    type: "journal-assert"
+    action_type: "execution.verification.started"
+    payload_equals:
+      - path: "request_id"
+        value: "execution-unslop-disabled"
+    expect_count: 0
+    output_criteria:
+      - id: "no-verification-run"
+        class: "security"
+        score_weight: 0.2
+        kind: "command-exit-code"
+        equals: 0
+
+  # The adapter emits one started and one completed event per invocation, including a
+  # zero-selection run. Neither may appear for a portal without the check.
+  - id: "assert-no-lint-spawn"
+    type: "journal-assert"
+    action_type: "execution.verification.lint_check.started"
+    payload_equals:
+      - path: "request_id"
+        value: "execution-unslop-disabled"
+    expect_count: 0
+    output_criteria:
+      - id: "no-lint-child"
+        class: "security"
+        score_weight: 0.3
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-no-snapshot"
+    type: "journal-assert"
+    action_type: "execution.verification.lint_findings"
+    payload_equals:
+      - path: "request_id"
+        value: "execution-unslop-disabled"
+    expect_count: 0
+    output_criteria:
+      - id: "no-terminal-snapshot"
+        class: "security"
+        score_weight: 0.2
+        kind: "command-exit-code"
+        equals: 0
+
+  # The run must not stage the packaged lint assets back into the sandbox.
+  - id: "assert-no-assets"
+    type: "file-contains"
+    file_pattern: "lint/manifest.json"
+    output_criteria:
+      - id: "no-staged-assets"
+        class: "security"
+        score_weight: 0.3
+        kind: "file-not-exists"
+        path: "lint/manifest.json"
+
+  # The reviewer view carries the status and no findings summary at all.
+  - id: "review-show"
+    type: "exactl"
+    command: "review"
+    args: ["show", "feat/execution-unslop-disabled-22b00000"]
+    output_criteria:
+      - id: "review-shows-not-configured"
+        class: "security"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["verification: not_configured"]
+      - id: "review-has-no-unslop-summary"
+        class: "security"
+        score_weight: 0.2
+        kind: "command-output-not-contains"
+        not_contains: ["unslop:"]
 
   - id: "stop-daemon"
     type: "exactl"

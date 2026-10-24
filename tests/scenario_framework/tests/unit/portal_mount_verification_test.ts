@@ -15,8 +15,32 @@ import { join } from "@std/path";
 import { ConfigSchema, isDenoTaskCheck } from "@exaix/schemas";
 import { PortalMountSchema } from "../../schema/step_schema.ts";
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";
-import { stageUnslopAssets, verificationToml } from "../../runner/synthetic_runner.ts";
+import { stageUnslopAssets, verificationToml, withoutPortalRegions } from "../../runner/synthetic_runner.ts";
 import { buildUnslopPortalAssets } from "../../../../scripts/build_unslop_portal_bundle.ts";
+
+Deno.test("[scenario-schema] re-mounting an alias drops its older portal entries and verification blocks", () => {
+  const first =
+    '\n[[portals]]\nalias = "verify-app"\ntarget_path = "/ws/verify-app"\ncreated = "2026-10-24T00:00:00.000Z"\n';
+  const second =
+    '\n[[portals]]\nalias = "verify-app"\ntarget_path = "/ws/verify-app"\ncreated = "2026-10-24T00:01:00.000Z"\n' +
+    verificationToml({
+      checks: [{ kind: "unslop", packs: ["typescript"], include: ["**/*.ts"] }],
+      max_repair_attempts: 1,
+      check_timeout_ms: 20_000,
+      output_max_chars: 4_000,
+    });
+  const other =
+    '\n[[portals]]\nalias = "other-app"\ntarget_path = "/ws/other-app"\ncreated = "2026-10-24T00:02:00.000Z"\n';
+  const config = `[system]\nroot = "."\n${first}${second}${other}[skills]\ncontext_budget_chars = 4000\n`;
+
+  const rewritten = withoutPortalRegions(config, "verify-app");
+  const parsed = ConfigSchema.parse(parseToml(rewritten));
+
+  // Exactly one surviving portal, and the unrelated alias and top-level table are untouched.
+  assertEquals(parsed.portals.map((portal) => portal.alias), ["other-app"]);
+  assertEquals(parsed.skills.context_budget_chars, 4000);
+  assert(!rewritten.includes("verify-app"), "no stale verify-app entry or verification block may survive");
+});
 
 const BASE_CONFIG = await Deno.readTextFile(
   new URL("../../fixtures/configs/portal-mount-verification-base.toml", import.meta.url),
@@ -134,6 +158,32 @@ Deno.test("[scenario-schema] stageUnslopAssets copies a verified set and rejects
     } finally {
       await Deno.remove(emptyRoot, { recursive: true });
     }
+  } finally {
+    await Deno.remove(repoRoot, { recursive: true }).catch(() => {});
+    await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("[scenario-schema] stageUnslopAssets rejects a corrupt prebuilt asset set", async () => {
+  const repoRoot = await Deno.makeTempDir({ prefix: "unslop-corrupt-source-" });
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "unslop-corrupt-workspace-" });
+  try {
+    await buildUnslopPortalAssets({
+      root: new URL("../../../../", import.meta.url).pathname,
+      out: join(repoRoot, "lint"),
+    });
+    // Same length, different bytes: only the checksum can catch this.
+    const enginePath = join(repoRoot, "lint", "unslop_engine.js");
+    const engineBytes = await Deno.readFile(enginePath);
+    engineBytes[0] = (engineBytes[0] ?? 0) ^ 0xff;
+    await Deno.writeFile(enginePath, engineBytes);
+    await assertRejects(
+      () => stageUnslopAssets(repoRoot, workspaceRoot),
+      Error,
+      "checksum mismatch",
+    );
+    // Nothing was staged: a rejected source never leaves a partial destination behind.
+    assertEquals(await exists(join(workspaceRoot, "lint")), false);
   } finally {
     await Deno.remove(repoRoot, { recursive: true }).catch(() => {});
     await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});

@@ -14,7 +14,8 @@ import { type IRuntimeConfig, resolveRuntimeConfigForExecution, ScenarioCiProfil
 import { applySandboxCleanup, describeRetention, planSandboxCleanup, SandboxRetention } from "./sandbox_lifecycle.ts";
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
 import { type IScenarioCatalogEntry, loadScenarioCatalog } from "./scenario_catalog.ts";
-import { runSyntheticScenario } from "./synthetic_runner.ts";
+import { resolveScenarioRepoRoot, runSyntheticScenario } from "./synthetic_runner.ts";
+import { ensureUnslopAssets } from "./unslop_asset_preflight.ts";
 import { applyCaptureFixturesFlag, copyCapturedFixtures, reportCaptureFlakiness } from "./capture_fixtures_flag.ts";
 import { applyCaptureCalibrationEvidenceFlag } from "./capture_calibration_evidence_flag.ts";
 import type { IRunManifest } from "./evidence_collector.ts";
@@ -177,6 +178,8 @@ await new Command()
       Deno.exit(0);
     }
     // 7. Resolve score threshold and trials (eval-mode only; defaults from configurable constants)
+    // A selection that stages the packaged lint assets builds them once, before any scenario runs.
+    await ensureUnslopAssets(selectedEntries, resolveScenarioRepoRoot(import.meta.dirname!));
     const scoreThreshold = options.evalMode ? (options.scoreThreshold ?? DEFAULT_EVAL_SCORE_THRESHOLD) : undefined;
     const trials = options.evalMode ? (options.trials ?? DEFAULT_EVAL_TRIALS) : 1;
 
