@@ -19,7 +19,7 @@ import { enrichWithRequest } from "../helpers/request_enricher.ts";
 import { isReviewStatus, ReviewStatus } from "@exaix/core/status";
 import type { IReviewStatus } from "@exaix/core/status";
 import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "@exaix/schemas/artifact.ts";
-import { VerificationStatus } from "@exaix/schemas";
+import { ExecutionVerificationLintFindingsEventPayloadSchema, VerificationStatus } from "@exaix/schemas";
 import type { IGitService, Opt, Reason } from "@exaix/core/types";
 import { type ArtifactSubtype, ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "@exaix/core";
 import { classifyTraceAnomalies, DomainEventType, summarizeAnomalies } from "@exaix/core/events";
@@ -80,6 +80,44 @@ export interface IReviewDetails extends IReviewMetadata {
   anomalies?: IAnomalyFinding[];
   /** Post-execution verification outcome from the trace's execution.completed row. */
   verification_status?: VerificationStatus;
+  /** Validated terminal unslop findings summary of the review run. */
+  unslop?: IReviewUnslopSummary;
+}
+
+/** One configured unslop check outcome in the review. */
+export interface IReviewUnslopCheck {
+  check_index: number;
+  outcome: string;
+  total: number | null;
+  error_class: string | null;
+}
+
+/** The validated terminal unslop summary of one review run. */
+export interface IReviewUnslopSummary {
+  total: number | null;
+  findings: Array<{ file: string; line: number; rule: string }>;
+  truncated: boolean;
+  checks: IReviewUnslopCheck[];
+  /** True when the completed run has no loadable final snapshot. */
+  unavailable?: boolean;
+}
+
+/** Formats the review unslop summary as display-safe lines. */
+export function formatUnslopSummary(summary: IReviewUnslopSummary): string[] {
+  if (summary.unavailable === true) return ["unslop: lint details unavailable"];
+  if (summary.total === 0) return ["unslop: no findings remain"];
+  const lines = [
+    summary.total === null ? "unslop: findings count incomplete" : `unslop: ${summary.total} remaining finding(s)`,
+  ];
+  for (const finding of summary.findings) lines.push(`  ${finding.file}:${finding.line} ${finding.rule}`);
+  if (summary.truncated && summary.total !== null) {
+    lines.push(`  (${summary.total - summary.findings.length} more not listed)`);
+  }
+  const incomplete = summary.checks.filter((check) =>
+    check.outcome === "not_run" || check.outcome === VerificationStatus.ERROR
+  );
+  if (incomplete.length > 0) lines.push("  (coverage incomplete)");
+  return lines;
 }
 
 export type ReviewTypeFilter = ReviewFilterEnum;
@@ -93,6 +131,19 @@ export function verificationWarning(
 ): string | undefined {
   if (!status || !WARNED_VERIFICATION_STATUSES.includes(status)) return undefined;
   return `post-execution verification ${status}: the committed change did not pass its configured checks`;
+}
+
+/** The generic note for a completed unslop run without a loadable snapshot. */
+function unavailableUnslop(): IReviewUnslopSummary {
+  return { total: null, findings: [], truncated: false, checks: [], unavailable: true };
+}
+
+/** True when text carries no raw control character that could spoof a terminal. */
+export function isDisplaySafeText(value: string): boolean {
+  return ![...value].some((char) => {
+    const code = char.codePointAt(0) ?? 0;
+    return code < 0x20 || code === 0x7f;
+  });
 }
 
 type ArtifactFrontmatterData = {
@@ -1144,27 +1195,71 @@ export class ReviewCommands extends BaseCommand {
     const enrichedMetadata = await this.extractReviewMetadataWithContext(basicMetadata);
 
     const anomalyPayload = await this.loadAnomalyPayload(storedTraceId ?? trace_id);
-    const verificationStatus = await this.loadVerificationStatus(storedTraceId ?? trace_id);
+    const verification = await this.loadVerificationProjection(storedTraceId ?? trace_id, commits[0]?.sha);
 
     return {
       ...enrichedMetadata,
       diff,
       commits,
       ...anomalyPayload,
-      ...(verificationStatus ? { verification_status: verificationStatus } : {}),
+      ...(verification.status ? { verification_status: verification.status } : {}),
+      ...(verification.unslop ? { unslop: verification.unslop } : {}),
     };
   }
 
-  /** The verification_status journaled on the trace's execution.completed row, if any. */
-  private async loadVerificationStatus(traceId: string): Promise<VerificationStatus | undefined> {
+  /** Reads the verification status and the terminal unslop snapshot of the review commit. */
+  private async loadVerificationProjection(
+    traceId: string,
+    commitSha: Opt<string, Reason.OptionalInput>,
+  ): Promise<{ status?: VerificationStatus; unslop?: IReviewUnslopSummary }> {
     try {
       const activities = await this.db.getActivitiesByTraceSafe(traceId);
       const completed = activities.findLast((row) => row.action_type === DomainEventType.ExecutionCompleted);
-      if (!completed) return undefined;
-      const payload = JSON.parse(completed.payload) as { verification_status?: VerificationStatus };
-      return payload.verification_status;
+      if (!completed) return {};
+      const payload = JSON.parse(completed.payload) as {
+        request_id?: string;
+        verification_status?: VerificationStatus;
+        verification_run_id?: string;
+      };
+      const status = payload.verification_status;
+      if (payload.verification_run_id === undefined) return { status };
+      const snapshot = activities.findLast((row) => {
+        if (row.action_type !== DomainEventType.ExecutionVerificationLintFindings) return false;
+        const candidate = JSON.parse(row.payload) as {
+          request_id?: string;
+          run_id?: string;
+          commit_sha?: string | null;
+        };
+        return candidate.run_id === payload.verification_run_id &&
+          candidate.request_id === payload.request_id &&
+          (commitSha === undefined || candidate.commit_sha === commitSha);
+      });
+      if (!snapshot) return { status, unslop: unavailableUnslop() };
+      const parsed = ExecutionVerificationLintFindingsEventPayloadSchema.safeParse(JSON.parse(snapshot.payload));
+      if (!parsed.success) return { status, unslop: unavailableUnslop() };
+      if (parsed.data.findings.some((finding) => !isDisplaySafeText(finding.file))) {
+        return { status, unslop: unavailableUnslop() };
+      }
+      return {
+        status,
+        unslop: {
+          total: parsed.data.total,
+          findings: parsed.data.findings.map((finding) => ({
+            file: finding.file,
+            line: finding.line,
+            rule: finding.rule,
+          })),
+          truncated: parsed.data.truncated,
+          checks: parsed.data.checks.map((check) => ({
+            check_index: check.check_index,
+            outcome: check.outcome,
+            total: check.total,
+            error_class: check.error_class,
+          })),
+        },
+      };
     } catch {
-      return undefined;
+      return { status: undefined, unslop: unavailableUnslop() };
     }
   }
 
