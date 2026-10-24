@@ -54,12 +54,34 @@ export interface IVerificationCheckFailure {
   output: string;
 }
 
+/** One configured unslop check state after an attempt. */
+export interface IVerificationCheckRunState {
+  check_index: number;
+  outcome: UnslopCheckRunOutcome;
+  total: number | null;
+  error_class: UnslopErrorClass | null;
+}
+
+/** One retained unslop finding before safe projection. */
+export interface IVerificationLintFinding {
+  check_index: number;
+  file: string;
+  line: number;
+  rule: string;
+}
+
 /** Result of one verification run. */
 export interface IVerificationResult {
   passed: boolean;
   /** true when a check could not run (timeout, spawn failure, confinement violation). */
   error: boolean;
   failures: IVerificationCheckFailure[];
+  /** Run identity of the attempt, when the run had scoped unslop context. */
+  run_id?: string;
+  /** Per-check state of every configured unslop check. */
+  lint_checks?: IVerificationCheckRunState[];
+  /** Retained findings of the attempt, before safe projection. */
+  lint_findings?: IVerificationLintFinding[];
 }
 
 /** Parent path segment rejected anywhere in a check path. */

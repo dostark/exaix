@@ -15,7 +15,8 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { type ISubprocessOptions, SafeSubprocess, VERIFICATION_OUTPUT_REDACTION_MARGIN_CHARS } from "@exaix/core";
 import type { LogMetadata } from "@exaix/core/types";
 import { type IPortalVerification, PortalVerificationSchema, UserRequestSchema } from "@exaix/schemas";
-import { prepareVerificationOutput, VerificationRunner } from "@exaix/execution";
+import { buildUnslopSnapshot, prepareVerificationOutput, VerificationRunner } from "@exaix/execution";
+import { VerificationStatus } from "@exaix/schemas";
 import { withEnv } from "@exaix/testing";
 
 interface ICapturedEvent {
@@ -85,7 +86,11 @@ Deno.test("[verification-runner] passing checks return passed and emit started+p
       executionRoot: root,
     });
 
-    assertEquals(result, { passed: true, error: false, failures: [] });
+    assertEquals(result.passed, true);
+    assertEquals(result.error, false);
+    assertEquals(result.failures, []);
+    assertEquals(result.lint_checks, []);
+    assertEquals(result.lint_findings, []);
     const started = captured.filter((e) => e.action === DomainEventType.ExecutionVerificationStarted);
     const passed = captured.filter((e) => e.action === DomainEventType.ExecutionVerificationPassed);
     assertEquals(started.length, 1);
@@ -347,4 +352,41 @@ Deno.test("[execution-verification] the shared output helper redacts secrets and
   assertFalse(prepared.includes("secret-value"));
   assertFalse(prepared.includes("\u001b"));
   assertStringIncludes(prepared, "&lt;script>");
+});
+
+Deno.test("snapshot-cap-and-settings", () => {
+  const checks = [{ check_index: 0, outcome: VerificationStatus.FAILED, total: 2, error_class: null }];
+  const findings = [
+    { check_index: 0, file: "src/b.ts", line: 3, rule: "unslop/no-explicit-unknown" },
+    { check_index: 0, file: "src/a.ts", line: 1, rule: "unslop/no-chained-type-assertions" },
+  ];
+  const capped = buildUnslopSnapshot({
+    requestId: "request-1",
+    runId: "8f2a3d1c-2b4e-4f6a-9c1d-0e2f3a4b5c6d",
+    attempt: 1,
+    commitSha: "a".repeat(40),
+    status: VerificationStatus.FAILED,
+    checks,
+    findings,
+    limit: 1,
+    knownSecrets: [],
+  });
+  assertEquals(capped.total, 2);
+  assertEquals(capped.findings.length, 1);
+  assertEquals(capped.findings[0].file, "src/a.ts");
+  assertEquals(capped.truncated, true);
+
+  const incomplete = buildUnslopSnapshot({
+    requestId: "request-1",
+    runId: "8f2a3d1c-2b4e-4f6a-9c1d-0e2f3a4b5c6d",
+    attempt: 1,
+    commitSha: null,
+    status: VerificationStatus.ERROR,
+    checks: [{ check_index: 0, outcome: "not_run" as const, total: null, error_class: null }],
+    findings: [],
+    limit: 50,
+    knownSecrets: [],
+  });
+  assertEquals(incomplete.total, null);
+  assertEquals(incomplete.truncated, false);
 });

@@ -32,6 +32,7 @@ export * from "./src/reflexive_agent.ts";
 export * from "./src/execution_loop.ts";
 export * from "./src/verification_runner.ts";
 export * from "./src/unslop_check_types.ts";
+export * from "./src/unslop_snapshot.ts";
 export * from "./src/unslop_check_runner.ts";
 export * from "./src/unslop_lint_process.ts";
 export * from "./src/verification_output.ts";

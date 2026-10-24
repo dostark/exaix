@@ -390,6 +390,11 @@ Deno.test("[execution-verification] a real unslop failure is repaired by the bou
     assert(lintChecks.length >= 2, "the adapter ran before and after the repair");
     const last = JSON.parse(lintChecks.at(-1)!.payload) as Record<string, unknown>;
     assertEquals(last.outcome, "passed");
+    const snapshots = lintSnapshots(handle.db, handle.traceId);
+    assertEquals(snapshots.length, 1);
+    assertEquals(snapshots[0].verification_status, "repaired");
+    assertEquals(snapshots[0].total, 0);
+    assertEquals(snapshots[0].findings, []);
     const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
     assertEquals(reviews.length, 1);
   } finally {
@@ -437,6 +442,112 @@ Deno.test("[execution-verification] the default factory applies the resolved uns
     const payload = JSON.parse(completed[0].payload) as Record<string, unknown>;
     assertEquals(payload.outcome, "failed");
     assert(typeof payload.total === "number" && payload.total > 0);
+  } finally {
+    await handle.cleanupDb();
+    await Deno.remove(handle.rootDir, { recursive: true });
+  }
+});
+
+/** Parsed terminal lint snapshots on one trace. */
+function lintSnapshots(
+  db: IScenarioHandle["db"],
+  traceId: string,
+): Array<Record<string, unknown>> {
+  return db.getActivitiesByTrace(traceId)
+    .filter((row) => row.action_type === "execution.verification.lint_findings")
+    .map((row) => JSON.parse(row.payload) as Record<string, unknown>);
+}
+
+Deno.test("terminal-attempt-matrix", async () => {
+  const zeroRepair = await makeVerificationLoop({
+    prefix: "exec-verif-unslop-zero-",
+    verification: PortalVerificationSchema.parse({
+      checks: [{ kind: "unslop" }],
+      max_repair_attempts: 0,
+    }),
+    planAction: writeAction("seed.ts", "export const seed = 1 as unknown as string;\n"),
+    requestId: "verify-unslop-zero",
+    unslop: true,
+  });
+  try {
+    await zeroRepair.db.waitForFlush();
+    assertEquals(completedStatus(zeroRepair.db, zeroRepair.traceId), "failed");
+    const snapshots = lintSnapshots(zeroRepair.db, zeroRepair.traceId);
+    assertEquals(snapshots.length, 1);
+    assertEquals(snapshots[0].verification_status, "failed");
+    assert(typeof snapshots[0].total === "number" && (snapshots[0].total as number) > 0);
+    const checks = snapshots[0].checks as Array<Record<string, unknown>>;
+    assertEquals(checks.length, 1);
+    assertEquals(checks[0].outcome, "failed");
+    const completed = zeroRepair.db.getActivitiesByTrace(zeroRepair.traceId)
+      .filter((row) => row.action_type === "execution.completed");
+    assertEquals(completed.length, 1);
+    assertEquals(JSON.parse(completed[0].payload).verification_run_id, snapshots[0].run_id);
+  } finally {
+    await zeroRepair.cleanupDb();
+    await Deno.remove(zeroRepair.rootDir, { recursive: true });
+  }
+
+  const twoChecks = await makeVerificationLoop({
+    prefix: "exec-verif-unslop-two-",
+    verification: PortalVerificationSchema.parse({
+      checks: [{ kind: "unslop" }, { kind: "unslop", include: ["other.ts"] }],
+      max_repair_attempts: 0,
+    }),
+    planAction: writeAction("seed.ts", "export const seed = 1 as unknown as string;\n"),
+    requestId: "verify-unslop-two",
+    unslop: true,
+  });
+  try {
+    await twoChecks.db.waitForFlush();
+    const snapshots = lintSnapshots(twoChecks.db, twoChecks.traceId);
+    assertEquals(snapshots.length, 1);
+    const checks = snapshots[0].checks as Array<Record<string, unknown>>;
+    assertEquals(checks.length, 2);
+    assertEquals(checks[0].outcome, "failed");
+    assertEquals(checks[1].outcome, "passed");
+    assertEquals(snapshots[0].total, checks[0].total);
+  } finally {
+    await twoChecks.cleanupDb();
+    await Deno.remove(twoChecks.rootDir, { recursive: true });
+  }
+});
+
+Deno.test("same-trace-run-identity", async () => {
+  const handle = await makeVerificationLoop({
+    prefix: "exec-verif-unslop-trace-",
+    verification: PortalVerificationSchema.parse({
+      checks: [{ kind: "unslop" }],
+      max_repair_attempts: 0,
+    }),
+    planAction: writeAction("seed.ts", "export const seed = 1 as unknown as string;\n"),
+    requestId: "verify-unslop-first",
+    unslop: true,
+  });
+  try {
+    await Deno.remove(join(handle.rootDir, ".exa", "worktrees"), { recursive: true }).catch(() => {});
+    await new Deno.Command("git", { args: ["worktree", "prune"], cwd: join(handle.rootDir, "my-portal") }).output();
+    const secondPlanPath = join(handle.rootDir, "Workspace", "Active", "verify-unslop-second.md");
+    await ensureDir(join(handle.rootDir, "Workspace", "Active"));
+    await Deno.writeTextFile(
+      secondPlanPath,
+      planWithAction(handle.traceId, "verify-unslop-second", writeAction("other.ts", "export const other = 1;\n")),
+    );
+    const second = await handle.loop.processTask(secondPlanPath);
+    assert(second.success, second.error);
+    await handle.db.waitForFlush();
+
+    const completed = handle.db.getActivitiesByTrace(handle.traceId)
+      .filter((row) => row.action_type === "execution.completed")
+      .map((row) => JSON.parse(row.payload) as Record<string, unknown>);
+    assertEquals(completed.length, 2);
+    const snapshots = lintSnapshots(handle.db, handle.traceId);
+    assertEquals(snapshots.length, 2);
+    assertEquals(new Set(completed.map((row) => row.verification_run_id)).size, 2);
+    assertEquals(
+      new Set(completed.map((row) => row.verification_run_id)).size,
+      new Set(snapshots.map((row) => row.run_id)).size,
+    );
   } finally {
     await handle.cleanupDb();
     await Deno.remove(handle.rootDir, { recursive: true });

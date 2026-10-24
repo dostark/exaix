@@ -13,13 +13,20 @@
 import { join, SEPARATOR } from "@std/path";
 import { VERIFICATION_FMT_CHECK_FLAG, VERIFICATION_OUTPUT_REDACTION_MARGIN_CHARS } from "@exaix/core";
 import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
+import { completeCheckStates } from "./unslop_snapshot.ts";
 import { buildVerificationCheckEnv, prepareVerificationOutput } from "./verification_output.ts";
 import { UNSLOP_CHECK_KIND } from "@exaix/core";
 import { checkName, denoTaskOf, VerificationStatus } from "@exaix/schemas";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { JSONValue, LogMetadata } from "@exaix/core/types";
 import type { IGitService } from "@exaix/core/types";
-import type { IPortalVerification, IVerificationCheckFailure, IVerificationResult } from "@exaix/schemas";
+import type {
+  IPortalVerification,
+  IVerificationCheckFailure,
+  IVerificationCheckRunState,
+  IVerificationLintFinding,
+  IVerificationResult,
+} from "@exaix/schemas";
 import type { IUnslopCheckContext, IUnslopCheckOutcome } from "./unslop_check_types.ts";
 import { runDenoTask } from "@exaix/tool-runtime";
 
@@ -78,6 +85,9 @@ export class VerificationRunner implements IVerificationRunner {
 
   async run(config: IPortalVerification, context: IVerificationRunContext): Promise<IVerificationResult> {
     const failures: IVerificationCheckFailure[] = [];
+    const lintChecks: IVerificationCheckRunState[] = [];
+    const lintFindings: IVerificationLintFinding[] = [];
+    const unslopIndexes = config.checks.flatMap((check, index) => check.kind === UNSLOP_CHECK_KIND ? [index] : []);
     let hadError = false;
 
     await this.emit(DomainEventType.ExecutionVerificationStarted, context, {
@@ -91,11 +101,34 @@ export class VerificationRunner implements IVerificationRunner {
     for (const [checkIndex, check] of config.checks.entries()) {
       if (check.kind === UNSLOP_CHECK_KIND) {
         const outcome = await this.runUnslopCheck(checkIndex, check, config, context);
-        if (outcome.kind === VerificationStatus.PASSED) continue;
+        if (outcome.kind === VerificationStatus.PASSED) {
+          lintChecks.push({ check_index: checkIndex, outcome: VerificationStatus.PASSED, total: 0, error_class: null });
+          continue;
+        }
         if (outcome.kind === VerificationStatus.FAILED) {
+          lintChecks.push({
+            check_index: checkIndex,
+            outcome: VerificationStatus.FAILED,
+            total: outcome.total,
+            error_class: null,
+          });
+          for (const finding of outcome.findings) {
+            lintFindings.push({
+              check_index: checkIndex,
+              file: finding.file,
+              line: finding.start_line,
+              rule: finding.rule,
+            });
+          }
           failures.push({ check: UNSLOP_CHECK_KIND, exit_code: 1, output: outcome.output });
           continue;
         }
+        lintChecks.push({
+          check_index: checkIndex,
+          outcome: VerificationStatus.ERROR,
+          total: null,
+          error_class: outcome.error_class,
+        });
         failures.push({ check: UNSLOP_CHECK_KIND, exit_code: null, output: outcome.output });
         hadError = true;
         break;
@@ -139,12 +172,17 @@ export class VerificationRunner implements IVerificationRunner {
       break;
     }
 
+    const lintState = {
+      ...(context.unslop === undefined ? {} : { run_id: context.unslop.runId }),
+      lint_checks: completeCheckStates(lintChecks, unslopIndexes),
+      lint_findings: lintFindings,
+    };
     if (failures.length === 0) {
       await this.emit(DomainEventType.ExecutionVerificationPassed, context, {
         request_id: context.requestId,
         attempt: context.attempt,
       });
-      return { passed: true, error: false, failures: [] };
+      return { passed: true, error: false, failures: [], ...lintState };
     }
 
     const failedChecks: JSONValue[] = failures.map((failure) => {
@@ -157,7 +195,7 @@ export class VerificationRunner implements IVerificationRunner {
       failed_checks: failedChecks,
     });
 
-    return { passed: false, error: hadError, failures };
+    return { passed: false, error: hadError, failures, ...lintState };
   }
 
   /** Dispatches one unslop check to the adapter. A missing adapter or scope is a categorical error. */
