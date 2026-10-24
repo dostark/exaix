@@ -11,6 +11,7 @@
  */
 
 import { basename, fromFileUrl, join } from "@std/path";
+import { exists } from "@std/fs";
 import { z } from "zod";
 import {
   DOT_REPORTER_SYMBOLS_PATTERN,
@@ -175,6 +176,12 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
     file: "apps/daemon/tests/deploy_workspace_test.ts",
     reasons: [IsolationReason.pressure],
     network: true,
+  },
+  // Builds the deployed asset set and runs the lint child with an empty DENO_DIR. It needs no
+  // egress, so it pins the network-none lane for the deployed adapter.
+  {
+    file: "apps/daemon/tests/deploy_unslop_offline_test.ts",
+    reasons: [IsolationReason.pressure],
   },
   {
     file: "tests/integration/cli_commands_test.ts",
@@ -354,6 +361,14 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
 
 /** Derived so the Parallel Batch's `--ignore` list is unchanged. Content and order come from SEQUENTIAL_TESTS. */
 export const SEQUENTIAL_FILES: string[] = SEQUENTIAL_TESTS.map((test) => test.file);
+
+/** The Batch-2 file that needs the packaged portal lint asset set on the mounted repo. */
+export const OFFLINE_UNSLOP_TEST_FILE = "apps/daemon/tests/deploy_unslop_offline_test.ts";
+
+/** True when the batch needs a host-side asset build because the mounted set is absent. */
+export function needsPortalLintAssets(files: readonly string[], manifestExists: boolean): boolean {
+  return !manifestExists && files.includes(OFFLINE_UNSLOP_TEST_FILE);
+}
 
 /** An explicit `--ignore` on the CLI overrides deno.json's config `exclude` for the walk, so fixtures excluded there (e.g. broken-on-purpose portal sources) must be re-listed here or they leak back into type-checking. */
 const PARALLEL_IGNORE_PATHS: string[] = [
@@ -804,6 +819,22 @@ const HEADER_NUMS = `${"PASS".padStart(NUM_W)}  ${"FAIL".padStart(NUM_W)}  ${"SK
   "TIME".padStart(TIME_W)
 }`;
 
+/** Builds the packaged lint assets on the host so the network-none worker stages a verified set. */
+async function preparePortalLintAssetsForOfflineTest(): Promise<void> {
+  const manifestExists = await exists(join(REPO_ROOT, "lint", "manifest.json"));
+  if (!needsPortalLintAssets(SEQUENTIAL_FILES, manifestExists)) return;
+  console.log("› Building packaged portal lint assets for the offline adapter test...");
+  const status = await new Deno.Command("deno", {
+    args: ["task", "unslop-ts:bundle"],
+    cwd: REPO_ROOT,
+    stdout: "inherit",
+    stderr: "inherit",
+  }).spawn().status;
+  if (!status.success) {
+    throw new Error("packaged portal lint assets could not be built for the offline adapter test");
+  }
+}
+
 export async function main(args: string[]): Promise<number> {
   const reporter = resolveReporter(args);
   const forwardedArgs = stripTestControlArgs(stripReporterArgs(args));
@@ -868,6 +899,7 @@ export async function main(args: string[]): Promise<number> {
     const image = Deno.env.get(TEST_CONTAINER_IMAGE_ENV) ?? DEFAULT_TEST_CONTAINER_IMAGE;
     const bounds = resolveContainerResourceBounds(Deno.env.toObject());
     await ensureDevTestImage(image);
+    await preparePortalLintAssetsForOfflineTest();
     const results = await runBatch2InContainers(SEQUENTIAL_TESTS, {
       repoRoot: REPO_ROOT,
       image,

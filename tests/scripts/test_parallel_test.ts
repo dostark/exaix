@@ -20,6 +20,8 @@ import {
   formatRunHeader,
   IsolationReason,
   killActiveChildGroups,
+  needsPortalLintAssets,
+  OFFLINE_UNSLOP_TEST_FILE,
   parseDotReporterCounts,
   parseSummaryLine,
   parseTapOutput,
@@ -37,6 +39,13 @@ import {
 } from "../../scripts/test_parallel.ts";
 import type { IContainerRunResult } from "../../scripts/test_container_driver.ts";
 import * as testOutputParse from "../../scripts/test_output_parse.ts";
+
+Deno.test("needsPortalLintAssets builds only when the mounted lint set is absent", () => {
+  assertEquals(needsPortalLintAssets([OFFLINE_UNSLOP_TEST_FILE], true), false);
+  assertEquals(needsPortalLintAssets([OFFLINE_UNSLOP_TEST_FILE], false), true);
+  assertEquals(needsPortalLintAssets(["apps/daemon/tests/deploy_workspace_test.ts"], false), false);
+  assertEquals(SEQUENTIAL_FILES.includes(OFFLINE_UNSLOP_TEST_FILE), true);
+});
 
 Deno.test("resolveReporter defaults to pretty output", () => {
   assertEquals(resolveReporter([]), "pretty");
@@ -201,6 +210,7 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "tests/scenario_framework/tests/portal_knowledge_strategies_scenario_test.ts",
   "tests/scenario_framework/tests/integration/skill_review_approve_scenario_test.ts",
   "apps/daemon/tests/deploy_workspace_test.ts",
+  "apps/daemon/tests/deploy_unslop_offline_test.ts",
   "tests/integration/cli_commands_test.ts",
   "tests/integration/agent/mcp_handshake_test.ts",
   "tests/scenario_framework/tests/plan_amendment_scenario_test.ts",
