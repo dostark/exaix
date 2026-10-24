@@ -16,7 +16,14 @@ import {
   VERIFICATION_MAX_REPAIR_ATTEMPTS_LIMIT,
 } from "@exaix/core";
 import { PortalPermissionsSchema } from "@exaix/schemas/portal_permissions.ts";
-import { PortalVerificationSchema, VerificationCheckSchema } from "@exaix/schemas/portal_verification.ts";
+import {
+  checkName,
+  ExecutionVerificationLintFindingsEventPayloadSchema,
+  type IVerificationCheckFailure,
+  PortalVerificationSchema,
+  UnslopErrorClass,
+  VerificationCheckSchema,
+} from "@exaix/schemas/portal_verification.ts";
 
 const BASE_CHECKS = [{ kind: "deno_task" as const, task: "test" as const }];
 
@@ -162,5 +169,82 @@ Deno.test("[verification-schema] scoped --allow-<name>=<values> and non-permissi
     const arg of ["--allow-read=.", "--allow-env=FOO", "--allow-run=bash", "--no-check", "--parallel", "--filter=x"]
   ) {
     assert(argsAccepted([arg]), `expected ${arg} to be accepted`);
+  }
+});
+
+/** A complete lint findings snapshot for one configured unslop terminal run. */
+function validSnapshot(): Record<string, unknown> {
+  return {
+    request_id: "request-1",
+    run_id: "8f2a3d1c-2b4e-4f6a-9c1d-0e2f3a4b5c6d",
+    attempt: 1,
+    commit_sha: "a".repeat(40),
+    verification_status: "failed",
+    total: 2,
+    checks: [{ check_index: 0, outcome: "failed", total: 2, error_class: null }],
+    findings: [{ check_index: 0, file: "src/seed.ts", line: 3, rule: "unslop/no-chained-type-assertions" }],
+    truncated: false,
+  };
+}
+
+Deno.test("[verification-schema] failures carry a check name and checkName maps a Deno task", () => {
+  const failure: IVerificationCheckFailure = { check: "lint", exit_code: 1, output: "boom" };
+  assertEquals(failure.check, "lint");
+  assertEquals(checkName({ kind: "deno_task", task: "lint", path: ".", args: [] }), "lint");
+  assertEquals(checkName({ kind: "deno_task", task: "fmt", path: ".", args: [] }), "fmt");
+});
+
+Deno.test("[verification-schema] the public check schema still rejects a kind without dispatch", () => {
+  assertEquals(VerificationCheckSchema.safeParse({ kind: "unslop" }).success, false);
+});
+
+Deno.test("[verification-schema] the final snapshot schema accepts the authoritative payload", () => {
+  const parsed = ExecutionVerificationLintFindingsEventPayloadSchema.parse(validSnapshot());
+  assertEquals(parsed.total, 2);
+  assertEquals(parsed.checks.length, 1);
+  assertEquals(parsed.findings[0].line, 3);
+  assertEquals(parsed.findings[0].rule, "unslop/no-chained-type-assertions");
+  assertEquals(parsed.truncated, false);
+  assertEquals(parsed.verification_status, "failed");
+});
+
+Deno.test("[verification-schema] the final snapshot schema rejects incomplete or malformed payloads", () => {
+  const schema = ExecutionVerificationLintFindingsEventPayloadSchema;
+  const remove = (field: string): Record<string, unknown> => {
+    const copy = validSnapshot();
+    delete copy[field];
+    return copy;
+  };
+  const malformed: Record<string, unknown>[] = [
+    remove("run_id"),
+    { ...validSnapshot(), attempt: -1 },
+    { ...validSnapshot(), total: -2 },
+    { ...validSnapshot(), truncated: "no" },
+    {
+      ...validSnapshot(),
+      findings: [{ check_index: 0, file: "", line: 1, rule: "unslop/no-chained-type-assertions" }],
+    },
+    {
+      ...validSnapshot(),
+      findings: [{ check_index: 0, file: "src/a.ts", line: 0, rule: "unslop/no-chained-type-assertions" }],
+    },
+    { ...validSnapshot(), checks: [{ check_index: 0, outcome: "skipped", total: 0, error_class: null }] },
+    { ...validSnapshot(), checks: [{ check_index: 0, outcome: "error", total: null, error_class: "UnslopUnknown" }] },
+  ];
+  for (const payload of malformed) {
+    assertEquals(schema.safeParse(payload).success, false);
+  }
+});
+
+Deno.test("[verification-schema] every closed unslop error class is a valid snapshot value", () => {
+  for (const errorClass of Object.values(UnslopErrorClass)) {
+    const payload = {
+      ...validSnapshot(),
+      checks: [{ check_index: 0, outcome: "error", total: null, error_class: errorClass }],
+    };
+    assert(
+      ExecutionVerificationLintFindingsEventPayloadSchema.safeParse(payload).success,
+      `expected ${errorClass} to be accepted`,
+    );
   }
 });

@@ -23,9 +23,22 @@ import {
   VERIFICATION_PERMISSION_SHORT_FLAGS,
 } from "@exaix/core";
 
+/** Every check name a verification run can report. The public union activates in Step 5. */
+export type VerificationCheckName = IVerificationCheck["task"] | "unslop";
+
+/** The reported name of one configured check. */
+export function checkName(check: IVerificationCheck): VerificationCheckName {
+  return check.task;
+}
+
+/** The Deno task behind a check name, or null for a name without a Deno task. */
+export function denoTaskOf(name: VerificationCheckName): IVerificationCheck["task"] | null {
+  return name === "unslop" ? null : name;
+}
+
 /** One failed check as it appears in `IVerificationResult` and the repair prompt. */
 export interface IVerificationCheckFailure {
-  task: IVerificationCheck["task"];
+  check: VerificationCheckName;
   /** null when the check timed out or could not start. */
   exit_code: number | null;
   /** stdout + stderr, truncated to output_max_chars (tail kept). */
@@ -108,3 +121,93 @@ export const VerificationStatus = {
 } as const;
 
 export type VerificationStatus = `${typeof VerificationStatus[keyof typeof VerificationStatus]}`;
+
+/** The closed set of categorical unslop errors. Messages never carry portal text. */
+export const UNSLOP_ERROR_CLASSES = [
+  "UnslopEngineMissing",
+  "UnslopAssetInvalid",
+  "UnslopCatalogInvalid",
+  "UnslopSnapshotInvalid",
+  "UnslopGitFailed",
+  "UnslopSourceInvalid",
+  "UnslopHostProtocolInvalid",
+  "UnslopTimeout",
+  "UnslopSpawnFailed",
+  "UnslopLimitExceeded",
+  "UnslopSuppressionForbidden",
+] as const;
+
+export type UnslopErrorClass = (typeof UNSLOP_ERROR_CLASSES)[number];
+
+/** Named access to the closed unslop error classes. */
+export const UnslopErrorClass = {
+  ENGINE_MISSING: "UnslopEngineMissing",
+  ASSET_INVALID: "UnslopAssetInvalid",
+  CATALOG_INVALID: "UnslopCatalogInvalid",
+  SNAPSHOT_INVALID: "UnslopSnapshotInvalid",
+  GIT_FAILED: "UnslopGitFailed",
+  SOURCE_INVALID: "UnslopSourceInvalid",
+  HOST_PROTOCOL_INVALID: "UnslopHostProtocolInvalid",
+  TIMEOUT: "UnslopTimeout",
+  SPAWN_FAILED: "UnslopSpawnFailed",
+  LIMIT_EXCEEDED: "UnslopLimitExceeded",
+  SUPPRESSION_FORBIDDEN: "UnslopSuppressionForbidden",
+} as const satisfies Record<string, UnslopErrorClass>;
+
+/** The outcome of one configured unslop check in the terminal snapshot. */
+export const UNSLOP_CHECK_RUN_OUTCOMES = [
+  GeneralStatus.PASSED,
+  GeneralStatus.FAILED,
+  GeneralStatus.ERROR,
+  "not_run",
+] as const;
+
+export type UnslopCheckRunOutcome = (typeof UNSLOP_CHECK_RUN_OUTCOMES)[number];
+
+/** The verification status wire values, for runtime validation. */
+export const VERIFICATION_STATUS_VALUES = [
+  VerificationStatus.NOT_CONFIGURED,
+  VerificationStatus.SKIPPED,
+  VerificationStatus.PASSED,
+  VerificationStatus.REPAIRED,
+  VerificationStatus.FAILED,
+  VerificationStatus.ERROR,
+] as const;
+
+export const VerificationStatusSchema = z.enum(VERIFICATION_STATUS_VALUES);
+
+const UnslopCheckIndexSchema = z.number().int().nonnegative();
+const UnslopTotalSchema = z.number().int().nonnegative().nullable();
+
+/** One configured unslop check in the terminal snapshot. */
+export const UnslopCheckSnapshotSchema = z.object({
+  check_index: UnslopCheckIndexSchema,
+  outcome: z.enum(UNSLOP_CHECK_RUN_OUTCOMES),
+  total: UnslopTotalSchema,
+  error_class: z.enum(UNSLOP_ERROR_CLASSES).nullable(),
+}).strict();
+
+/** One persisted finding. The file is a display-safe repo-relative path. */
+export const UnslopFindingSnapshotSchema = z.object({
+  check_index: UnslopCheckIndexSchema,
+  file: z.string().min(1),
+  line: z.number().int().positive(),
+  rule: z.string().min(1),
+}).strict();
+
+/** The authoritative terminal findings snapshot of one configured unslop run. */
+export const ExecutionVerificationLintFindingsEventPayloadSchema = z.object({
+  request_id: z.string().min(1),
+  run_id: z.string().uuid(),
+  attempt: z.number().int().nonnegative(),
+  commit_sha: z.string().min(1).nullable(),
+  verification_status: VerificationStatusSchema,
+  total: UnslopTotalSchema,
+  checks: z.array(UnslopCheckSnapshotSchema),
+  findings: z.array(UnslopFindingSnapshotSchema),
+  truncated: z.boolean(),
+}).strict();
+
+export type IExecutionVerificationLintFindingsEventPayload = z.infer<
+  typeof ExecutionVerificationLintFindingsEventPayloadSchema
+>;

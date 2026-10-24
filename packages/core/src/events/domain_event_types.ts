@@ -12,10 +12,14 @@
 import type {
   EffortResolutionBasis,
   EffortTier,
+  IExecutionVerificationLintFindingsEventPayload,
   IRouteReason,
-  IVerificationCheckFailure,
+  IVerificationCheck,
   ModelResolutionReason,
   TaskTypeSource,
+  UnslopCheckRunOutcome,
+  UnslopErrorClass,
+  VerificationCheckName,
 } from "@exaix/schemas";
 import type { EffortDeclarationSource, IEffortDeclarationPair, TaskComplexitySource } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core/types";
@@ -752,8 +756,36 @@ export interface IExecutionVerificationPassedEventPayload {
 export interface IExecutionVerificationFailedEventPayload {
   request_id: string;
   attempt: number;
-  failed_checks: Array<{ task: IVerificationCheckFailure["task"]; exit_code: number | null }>;
+  failed_checks: Array<{
+    check: VerificationCheckName;
+    task?: IVerificationCheck["task"];
+    exit_code: number | null;
+  }>;
 }
+
+/** Payload of `execution.verification.lint_check.started`. */
+export interface IExecutionVerificationLintCheckStartedEventPayload {
+  request_id: string;
+  run_id: string;
+  attempt: number;
+  check_index: number;
+  target_sha: string;
+}
+
+/** Payload of `execution.verification.lint_check.completed`. */
+export interface IExecutionVerificationLintCheckCompletedEventPayload {
+  request_id: string;
+  run_id: string;
+  attempt: number;
+  check_index: number;
+  target_sha: string;
+  outcome: UnslopCheckRunOutcome;
+  total: number | null;
+  error_class: UnslopErrorClass | null;
+}
+
+/** Payload of `execution.verification.lint_findings`. It is the terminal snapshot. */
+export type IExecutionVerificationLintFindingsEventPayloadContract = IExecutionVerificationLintFindingsEventPayload;
 
 /** Payload of `execution.repair.started`. */
 export interface IExecutionRepairStartedEventPayload {
@@ -879,6 +911,9 @@ export const DomainEventType = {
   ExecutionNoChanges: "execution.no_changes",
   // Post-execution verification and repair events (verification_runner.ts, execution_loop.ts)
   ExecutionVerificationStarted: "execution.verification.started",
+  ExecutionVerificationLintCheckStarted: "execution.verification.lint_check.started",
+  ExecutionVerificationLintCheckCompleted: "execution.verification.lint_check.completed",
+  ExecutionVerificationLintFindings: "execution.verification.lint_findings",
   ExecutionVerificationPassed: "execution.verification.passed",
   ExecutionVerificationFailed: "execution.verification.failed",
   ExecutionRepairStarted: "execution.repair.started",

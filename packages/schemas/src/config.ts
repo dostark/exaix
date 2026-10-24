@@ -22,6 +22,7 @@ import {
   DEFAULT_WORKSPACE_PATH,
   ExaPathDefaults,
 } from "@exaix/shared";
+import { isAbsolute, normalize, SEPARATOR } from "@std/path";
 import { z } from "zod";
 import {
   type AiConfig,
@@ -43,6 +44,7 @@ import {
   DEFAULT_AI_TIMEOUT_MS,
   DEFAULT_FAST_MODEL_NAME,
   DEFAULT_LOCAL_MODEL_NAME,
+  DEFAULT_UNSLOP_ASSET_DIR,
   MOCK_DELAY_MS,
   MOCK_INPUT_TOKENS,
   MOCK_OUTPUT_TOKENS,
@@ -53,6 +55,7 @@ import {
   PROVIDER_OPENAI,
   PROVIDER_OPENROUTER,
   PROVIDER_VERTEX,
+  UNSLOP_PORTAL_ASSET_DIR,
 } from "@exaix/core";
 import { resolveConfigurableBounds } from "@exaix/core/config";
 import {
@@ -330,9 +333,35 @@ export const OtelExportConfigSchema = z.object({
   headers_env: z.string().regex(/^[A-Z_][A-Z0-9_]*$/).default(DEFAULTS.DEFAULT_OTEL_EXPORT_HEADERS_ENV),
 });
 
+/** True when `value` is a relative directory at or below the trusted lint asset root. */
+export function isUnslopAssetDir(value: string): boolean {
+  if (value.length === 0 || isAbsolute(value)) return false;
+  return normalize(value).split(SEPARATOR)[0] === UNSLOP_PORTAL_ASSET_DIR;
+}
+
+/** Bounded operator settings of the portal unslop verification check. */
+export const UnslopSettingsSchema = z.object({
+  asset_dir: z.string().default(DEFAULT_UNSLOP_ASSET_DIR)
+    .refine(isUnslopAssetDir, "asset_dir must be a relative path at or below the lint directory"),
+  findings_limit: cInt("verification.unslop.findings_limit"),
+  json_max_bytes: cInt("verification.unslop.json_max_bytes"),
+  stderr_max_bytes: cInt("verification.unslop.stderr_max_bytes"),
+  candidate_max_count: cInt("verification.unslop.candidate_max_count"),
+  file_max_bytes: cInt("verification.unslop.file_max_bytes"),
+  catalog_max_bytes: cInt("verification.unslop.catalog_max_bytes"),
+  git_max_bytes: cInt("verification.unslop.git_max_bytes"),
+  batch_max_files: cInt("verification.unslop.batch_max_files"),
+  argv_max_bytes: cInt("verification.unslop.argv_max_bytes"),
+}).strict();
+
+export type IUnslopSettings = z.infer<typeof UnslopSettingsSchema>;
+
 const ConfigObjectSchema = z.object({
   tools: ToolsConfigSchema.optional().prefault({}),
   otel_export: OtelExportConfigSchema.optional().prefault({}),
+  verification: z.object({
+    unslop: UnslopSettingsSchema.optional().prefault({}),
+  }).optional().prefault({}),
   system: z.object({
     root: z.string().default(getCwdSafe()),
     log_level: z.nativeEnum(LogLevel).default(LogLevel.INFO),

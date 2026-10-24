@@ -112,7 +112,7 @@ Deno.test("[verification-runner] a failing check returns its exit code and the t
     assertEquals(result.passed, false);
     assertEquals(result.error, false);
     assertEquals(result.failures.length, 1);
-    assertEquals(result.failures[0].task, "test");
+    assertEquals(result.failures[0].check, "test");
     assertEquals(result.failures[0].exit_code, 1);
     assertEquals(result.failures[0].output, "A".repeat(10) + "B".repeat(30));
   } finally {
@@ -215,7 +215,7 @@ Deno.test("[verification-runner] a timed-out check is an error with exit_code nu
 
     assertEquals(result.error, true);
     assertEquals(result.failures.length, 1);
-    assertEquals(result.failures[0].task, "test");
+    assertEquals(result.failures[0].check, "test");
     assertEquals(result.failures[0].exit_code, null);
   } finally {
     await Deno.remove(root, { recursive: true });

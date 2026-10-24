@@ -19,6 +19,7 @@ import {
 } from "@exaix/core";
 import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
 import { redactKnownSecrets } from "@exaix/core/func";
+import { checkName, denoTaskOf } from "@exaix/schemas";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { JSONValue, LogMetadata } from "@exaix/core/types";
 import type { IPortalVerification, IVerificationCheckFailure, IVerificationResult } from "@exaix/schemas";
@@ -88,7 +89,7 @@ export class VerificationRunner implements IVerificationRunner {
     await this.emit(DomainEventType.ExecutionVerificationStarted, context, {
       request_id: context.requestId,
       attempt: context.attempt,
-      checks: config.checks.map((check) => check.task),
+      checks: config.checks.map(checkName),
     });
 
     const { env, clearEnv } = this.buildCheckEnv();
@@ -97,7 +98,7 @@ export class VerificationRunner implements IVerificationRunner {
       const resolved = join(context.executionRoot, check.path);
 
       if (!(await isConfined(context.executionRoot, resolved))) {
-        failures.push({ task: check.task, exit_code: null, output: "" });
+        failures.push({ check: checkName(check), exit_code: null, output: "" });
         hadError = true;
         break;
       }
@@ -120,14 +121,14 @@ export class VerificationRunner implements IVerificationRunner {
       if (outcome.kind === "exited") {
         if (outcome.code === 0) continue;
         failures.push({
-          task: check.task,
+          check: checkName(check),
           exit_code: outcome.code,
           output: this.prepareOutput(outcome.stdout + outcome.stderr, config.output_max_chars),
         });
         continue;
       }
 
-      failures.push({ task: check.task, exit_code: null, output: "" });
+      failures.push({ check: checkName(check), exit_code: null, output: "" });
       hadError = true;
       break;
     }
@@ -140,10 +141,10 @@ export class VerificationRunner implements IVerificationRunner {
       return { passed: true, error: false, failures: [] };
     }
 
-    const failedChecks: JSONValue[] = failures.map((failure) => ({
-      task: failure.task,
-      exit_code: failure.exit_code,
-    }));
+    const failedChecks: JSONValue[] = failures.map((failure) => {
+      const task = denoTaskOf(failure.check);
+      return { check: failure.check, ...(task === null ? {} : { task }), exit_code: failure.exit_code };
+    });
     await this.emit(DomainEventType.ExecutionVerificationFailed, context, {
       request_id: context.requestId,
       attempt: context.attempt,

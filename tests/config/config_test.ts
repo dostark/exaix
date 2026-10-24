@@ -892,3 +892,77 @@ Deno.test("ConfigSchema validation: rejects invalid fallback_chain target (with 
 
   assertParseFailsWith(config, "fallback_chains", "unknown target");
 });
+
+const UNSLOP_UNSLOP_BASE = {
+  system: { log_level: "info" },
+  paths: { ...ExaPathDefaults },
+};
+
+Deno.test("ConfigSchema fills every unslop verification setting default", () => {
+  const parsed = ConfigSchema.parse(UNSLOP_UNSLOP_BASE).verification.unslop;
+
+  assertEquals(parsed.asset_dir, "lint");
+  assertEquals(parsed.findings_limit, 50);
+  assertEquals(parsed.json_max_bytes, 8_388_608);
+  assertEquals(parsed.stderr_max_bytes, 65_536);
+  assertEquals(parsed.candidate_max_count, 512);
+  assertEquals(parsed.file_max_bytes, 2_097_152);
+  assertEquals(parsed.catalog_max_bytes, 1_048_576);
+  assertEquals(parsed.git_max_bytes, 16_777_216);
+  assertEquals(parsed.batch_max_files, 32);
+  assertEquals(parsed.argv_max_bytes, 32_768);
+});
+
+Deno.test("ConfigSchema keeps unslop defaults when one field is set", () => {
+  const parsed = ConfigSchema.parse({
+    ...UNSLOP_UNSLOP_BASE,
+    verification: { unslop: { findings_limit: 1 } },
+  }).verification.unslop;
+
+  assertEquals(parsed.findings_limit, 1);
+  assertEquals(parsed.json_max_bytes, 8_388_608);
+});
+
+Deno.test("ConfigSchema accepts an alternate confined unslop asset directory", () => {
+  const parsed = ConfigSchema.parse({
+    ...UNSLOP_UNSLOP_BASE,
+    verification: { unslop: { asset_dir: "lint/alternate" } },
+  }).verification.unslop;
+
+  assertEquals(parsed.asset_dir, "lint/alternate");
+});
+
+Deno.test("ConfigSchema rejects an unslop asset directory outside the trusted lint root", () => {
+  for (const assetDir of ["", "/lint", "../lint", "lint/../escape", "other"]) {
+    const result = ConfigSchema.safeParse({
+      ...UNSLOP_UNSLOP_BASE,
+      verification: { unslop: { asset_dir: assetDir } },
+    });
+    assertEquals(result.success, false, `expected ${JSON.stringify(assetDir)} to be rejected`);
+  }
+});
+
+Deno.test("ConfigSchema rejects an unslop setting outside its bounds or as a fraction", () => {
+  const invalid: Record<string, number>[] = [
+    { findings_limit: 0 },
+    { findings_limit: 1_001 },
+    { findings_limit: 1.5 },
+    { json_max_bytes: 65_535 },
+    { json_max_bytes: 67_108_865 },
+    { stderr_max_bytes: 1_023 },
+    { candidate_max_count: 0 },
+    { candidate_max_count: 4_097 },
+    { file_max_bytes: 1_023 },
+    { catalog_max_bytes: 8_388_609 },
+    { git_max_bytes: 65_535 },
+    { batch_max_files: 129 },
+    { argv_max_bytes: 4_095 },
+  ];
+  for (const override of invalid) {
+    const result = ConfigSchema.safeParse({
+      ...UNSLOP_UNSLOP_BASE,
+      verification: { unslop: override },
+    });
+    assertEquals(result.success, false, `expected ${JSON.stringify(override)} to be rejected`);
+  }
+});

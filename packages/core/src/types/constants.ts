@@ -162,6 +162,49 @@ export const DEFAULT_AMENDMENT_ON_TIMEOUT: AmendmentTimeoutAction = configurable
   swap: SwapClass.RESTART,
 });
 
+// Portal unslop verification identities (Phase 229)
+
+/** The plugin name every packaged portal catalog uses. */
+export const UNSLOP_PLUGIN_NAME = "unslop";
+
+/** The trusted runtime directory name below the resolved runtime root. */
+export const UNSLOP_RUNTIME_DIR = "unslop";
+
+/** The default trusted asset directory, relative to the system root. */
+export const UNSLOP_PORTAL_ASSET_DIR = "lint";
+
+/** The packaged engine bundle file name. */
+export const UNSLOP_PORTAL_ENGINE_FILENAME = "unslop_engine.js";
+
+/** The packaged TypeScript-only portal catalog file name. */
+export const UNSLOP_PORTAL_CATALOG_FILENAME = "unslop_portal_catalog.json";
+
+/** The packaged TypeScript plus Deno portal catalog file name. */
+export const UNSLOP_PORTAL_DENO_CATALOG_FILENAME = "unslop_portal_deno_catalog.json";
+
+/** The packaged provenance manifest file name. */
+export const UNSLOP_PORTAL_MANIFEST_FILENAME = "manifest.json";
+
+/** The packaged provenance manifest format version. */
+export const UNSLOP_PORTAL_MANIFEST_FORMAT_VERSION = 1;
+
+/** The packaged portal policy version. */
+export const UNSLOP_PORTAL_POLICY_VERSION = 1;
+
+/** Test path globs the packaged catalog classifies as test files. */
+export const UNSLOP_PORTAL_TEST_GLOBS: readonly string[] = [
+  "**/*_test.ts",
+  "**/*.test.ts",
+  "**/*.spec.ts",
+  "tests/**",
+  "**/tests/**",
+  "test/**",
+  "**/test/**",
+];
+
+/** File extensions the portal verification check can lint. */
+export const UNSLOP_PORTAL_SOURCE_EXTENSIONS: readonly string[] = [".ts", ".tsx", ".mts", ".cts"];
+
 // Post-execution verification constants
 /** Hard cap on post-execution repair attempts, independent of the configurable default. */
 export const VERIFICATION_MAX_REPAIR_ATTEMPTS_LIMIT = 5;
@@ -190,6 +233,114 @@ export const DEFAULT_VERIFICATION_OUTPUT_MAX_CHARS: number = configurable({
   description: "Maximum characters of a failed verification check's output kept for the repair prompt",
   min: 100,
   max: 1_000_000,
+  swap: SwapClass.RESTART,
+});
+
+/** Trusted asset directory of the portal unslop verification check. */
+export const DEFAULT_UNSLOP_ASSET_DIR: string = configurable({
+  key: "verification.unslop.asset_dir",
+  default: UNSLOP_PORTAL_ASSET_DIR,
+  type: ConfigValueType.STRING,
+  description: "Relative asset directory of the portal unslop verification check",
+  swap: SwapClass.RESTART,
+});
+
+/** Global cap on the persisted findings snapshot of one unslop verification run. */
+export const DEFAULT_UNSLOP_FINDINGS_LIMIT: number = configurable({
+  key: "verification.unslop.findings_limit",
+  default: 50,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum findings kept in one portal unslop verification snapshot",
+  min: 1,
+  max: 1_000,
+  swap: SwapClass.RESTART,
+});
+
+/** Complete stdout budget of one unslop lint batch. */
+export const DEFAULT_UNSLOP_JSON_MAX_BYTES: number = configurable({
+  key: "verification.unslop.json_max_bytes",
+  default: 8_388_608,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum complete stdout bytes of one portal unslop lint batch",
+  min: 65_536,
+  max: 67_108_864,
+  swap: SwapClass.RESTART,
+});
+
+/** Complete stderr budget of one unslop lint batch. */
+export const DEFAULT_UNSLOP_STDERR_MAX_BYTES: number = configurable({
+  key: "verification.unslop.stderr_max_bytes",
+  default: 65_536,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum complete stderr bytes of one portal unslop lint batch",
+  min: 1_024,
+  max: 1_048_576,
+  swap: SwapClass.RESTART,
+});
+
+/** Maximum changed eligible files per unslop check. */
+export const DEFAULT_UNSLOP_CANDIDATE_MAX_COUNT: number = configurable({
+  key: "verification.unslop.candidate_max_count",
+  default: 512,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum changed eligible files in one portal unslop check",
+  min: 1,
+  max: 4_096,
+  swap: SwapClass.RESTART,
+});
+
+/** Maximum bytes of one selected portal source file. */
+export const DEFAULT_UNSLOP_FILE_MAX_BYTES: number = configurable({
+  key: "verification.unslop.file_max_bytes",
+  default: 2_097_152,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum bytes of one selected portal source file",
+  min: 1_024,
+  max: 16_777_216,
+  swap: SwapClass.RESTART,
+});
+
+/** Maximum bytes of one portal lint catalog. */
+export const DEFAULT_UNSLOP_CATALOG_MAX_BYTES: number = configurable({
+  key: "verification.unslop.catalog_max_bytes",
+  default: 1_048_576,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum bytes of one portal unslop lint catalog",
+  min: 1_024,
+  max: 8_388_608,
+  swap: SwapClass.RESTART,
+});
+
+/** Maximum total Git query output of one unslop check. */
+export const DEFAULT_UNSLOP_GIT_MAX_BYTES: number = configurable({
+  key: "verification.unslop.git_max_bytes",
+  default: 16_777_216,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum total Git query output bytes of one portal unslop check",
+  min: 65_536,
+  max: 67_108_864,
+  swap: SwapClass.RESTART,
+});
+
+/** Maximum files in one unslop lint batch. */
+export const DEFAULT_UNSLOP_BATCH_MAX_FILES: number = configurable({
+  key: "verification.unslop.batch_max_files",
+  default: 32,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum files in one portal unslop lint batch",
+  min: 1,
+  max: 128,
+  swap: SwapClass.RESTART,
+});
+
+/** Maximum encoded argv bytes of one unslop lint batch. */
+export const DEFAULT_UNSLOP_ARGV_MAX_BYTES: number = configurable({
+  key: "verification.unslop.argv_max_bytes",
+  default: 32_768,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum encoded argv bytes of one portal unslop lint batch",
+  min: 4_096,
+  max: 131_072,
   swap: SwapClass.RESTART,
 });
 /** Timeout for one `run_deno_task` agent tool invocation. It was previously unbounded. */
@@ -4119,46 +4270,3 @@ export const SCHEME_HTTP = "http:";
 
 /** Default debounce for file watchers. */
 export const DEFAULT_DEBOUNCE_MS = 100;
-
-// Portal unslop verification identities (Phase 229)
-
-/** The plugin name every packaged portal catalog uses. */
-export const UNSLOP_PLUGIN_NAME = "unslop";
-
-/** The trusted runtime directory name below the resolved runtime root. */
-export const UNSLOP_RUNTIME_DIR = "unslop";
-
-/** The default trusted asset directory, relative to the system root. */
-export const UNSLOP_PORTAL_ASSET_DIR = "lint";
-
-/** The packaged engine bundle file name. */
-export const UNSLOP_PORTAL_ENGINE_FILENAME = "unslop_engine.js";
-
-/** The packaged TypeScript-only portal catalog file name. */
-export const UNSLOP_PORTAL_CATALOG_FILENAME = "unslop_portal_catalog.json";
-
-/** The packaged TypeScript plus Deno portal catalog file name. */
-export const UNSLOP_PORTAL_DENO_CATALOG_FILENAME = "unslop_portal_deno_catalog.json";
-
-/** The packaged provenance manifest file name. */
-export const UNSLOP_PORTAL_MANIFEST_FILENAME = "manifest.json";
-
-/** The packaged provenance manifest format version. */
-export const UNSLOP_PORTAL_MANIFEST_FORMAT_VERSION = 1;
-
-/** The packaged portal policy version. */
-export const UNSLOP_PORTAL_POLICY_VERSION = 1;
-
-/** Test path globs the packaged catalog classifies as test files. */
-export const UNSLOP_PORTAL_TEST_GLOBS: readonly string[] = [
-  "**/*_test.ts",
-  "**/*.test.ts",
-  "**/*.spec.ts",
-  "tests/**",
-  "**/tests/**",
-  "test/**",
-  "**/test/**",
-];
-
-/** File extensions the portal verification check can lint. */
-export const UNSLOP_PORTAL_SOURCE_EXTENSIONS: readonly string[] = [".ts", ".tsx", ".mts", ".cts"];

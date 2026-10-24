@@ -68,6 +68,29 @@ describe("ReviewVerificationStatus", () => {
     assert(verificationWarning("error")?.includes("error"));
   });
 
+  it("[review-show] a historical completed row stays status-only and invents no lint details", async () => {
+    const branch = await createFeatureBranch(tempDir, "request-210", "vrf-historic");
+    db.logActivity(
+      "daemon",
+      DomainEventType.ExecutionCompleted,
+      null,
+      {
+        request_id: "request-210",
+        verification_status: "failed",
+        failures: [{ task: "lint", exit_code: 1 }],
+      },
+      "vrf-historic",
+      null,
+    );
+    await db.waitForFlush();
+
+    const details = await reviewCommands.show(branch);
+
+    assertEquals(details.verification_status, "failed");
+    assertEquals(Object.hasOwn(details, "unslop"), false);
+    assert(verificationWarning(details.verification_status)?.includes("failed"));
+  });
+
   it("[review-show] a review with no verification block shows not_configured", async () => {
     const branch = await createFeatureBranch(tempDir, "request-209", "vrf-none");
     db.logActivity(

@@ -16,4 +16,7 @@ Deno.test("execution verification event strings", () => {
   assertEquals(DomainEventType.ExecutionRepairStarted, "execution.repair.started");
   assertEquals(DomainEventType.ExecutionRepairCompleted, "execution.repair.completed");
   assertEquals(DomainEventType.ExecutionVerificationExhausted, "execution.verification.exhausted");
+  assertEquals(DomainEventType.ExecutionVerificationLintCheckStarted, "execution.verification.lint_check.started");
+  assertEquals(DomainEventType.ExecutionVerificationLintCheckCompleted, "execution.verification.lint_check.completed");
+  assertEquals(DomainEventType.ExecutionVerificationLintFindings, "execution.verification.lint_findings");
 });
