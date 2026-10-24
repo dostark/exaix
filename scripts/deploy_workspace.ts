@@ -13,9 +13,10 @@
  */
 
 import { parse } from "@std/flags";
-import { ensureDir } from "@std/fs";
+import { ensureDir, exists } from "@std/fs";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { copy, type CopyOptions } from "@std/fs/copy";
+import { buildUnslopPortalAssets } from "./build_unslop_portal_bundle.ts";
 
 // Source directories a **Solo** deploy copies into a standalone workspace. `exaix-team/`
 // is deliberately EXCLUDED: it is BSL-licensed Team code that must not ship in a Solo
@@ -74,6 +75,86 @@ export function stripDevOnlyConfig<T extends IDenoConfigShape>(denoConfig: T): T
     );
   }
   return stripped;
+}
+
+/** The trusted portal lint asset directory a deploy installs. */
+export const UNSLOP_DEPLOY_ASSET_DIR = "lint";
+
+/** The packaged files every deployment must carry. */
+export const UNSLOP_DEPLOY_ASSET_FILES: readonly string[] = [
+  "unslop_engine.js",
+  "unslop_portal_catalog.json",
+  "unslop_portal_deno_catalog.json",
+];
+
+/** Verifies the manifest hashes and sizes of one packaged asset set. */
+export async function verifyUnslopAssetSet(dir: string): Promise<void> {
+  const manifestPath = join(dir, "manifest.json");
+  if (!(await exists(manifestPath))) throw new Error(`unslop assets missing: ${manifestPath}`);
+  const manifest = JSON.parse(await Deno.readTextFile(manifestPath)) as {
+    format_version?: number;
+    policy_version?: number;
+    files?: Record<string, { sha256?: string; bytes?: number }>;
+  };
+  if (manifest.format_version !== 1 || manifest.policy_version !== 1 || manifest.files === undefined) {
+    throw new Error(`unslop asset manifest is invalid: ${manifestPath}`);
+  }
+  for (const name of UNSLOP_DEPLOY_ASSET_FILES) {
+    const entry = manifest.files[name];
+    if (entry?.sha256 === undefined || entry.bytes === undefined) {
+      throw new Error(`unslop asset manifest omits ${name}`);
+    }
+    const bytes = await Deno.readFile(join(dir, name)).catch(() => null);
+    if (bytes === null) throw new Error(`unslop asset missing: ${name}`);
+    if (bytes.byteLength !== entry.bytes) throw new Error(`unslop asset size mismatch: ${name}`);
+    const digest = await crypto.subtle.digest("SHA-256", bytes);
+    const actual = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    if (actual !== entry.sha256) throw new Error(`unslop asset checksum mismatch: ${name}`);
+  }
+}
+
+/** Installs a verified asset set, replacing the destination only after staging validates. */
+export async function installUnslopAssets(sourceDir: string, destDir: string): Promise<void> {
+  await verifyUnslopAssetSet(sourceDir);
+  const staging = `${destDir}.staging-${crypto.randomUUID()}`;
+  await ensureDir(staging);
+  try {
+    for (const name of [...UNSLOP_DEPLOY_ASSET_FILES, "manifest.json"]) {
+      await copy(join(sourceDir, name), join(staging, name), { overwrite: true });
+    }
+    await verifyUnslopAssetSet(staging);
+    const backup = `${destDir}.previous-${crypto.randomUUID()}`;
+    const hadDestination = await exists(destDir);
+    if (hadDestination) await Deno.rename(destDir, backup);
+    try {
+      await Deno.rename(staging, destDir);
+    } catch (error) {
+      if (hadDestination) await Deno.rename(backup, destDir).catch(() => {});
+      throw error;
+    }
+    if (hadDestination) await Deno.remove(backup, { recursive: true }).catch(() => {});
+  } finally {
+    await Deno.remove(staging, { recursive: true }).catch(() => {});
+  }
+}
+
+/** Builds assets in a source checkout, or copies an existing verified set in a deployed workspace. */
+export async function deployUnslopAssets(repoRoot: string, dest: string): Promise<void> {
+  if (resolve(repoRoot) === resolve(dest)) {
+    throw new Error("unslop deploy refused: source and destination are identical");
+  }
+  const engineSource = join(repoRoot, "unslop-ts", "scripts", "bundle.ts");
+  if (await exists(engineSource)) {
+    await buildUnslopPortalAssets({ root: repoRoot, out: join(dest, UNSLOP_DEPLOY_ASSET_DIR) });
+    return;
+  }
+  const sourceAssets = join(repoRoot, UNSLOP_DEPLOY_ASSET_DIR);
+  if (!(await exists(join(sourceAssets, "manifest.json")))) {
+    throw new Error(
+      "unslop assets unavailable: initialize the engine source with `deno task unslop-ts:deploy --init` in a source checkout, or redeploy from a workspace that already carries lint/ assets",
+    );
+  }
+  await installUnslopAssets(sourceAssets, join(dest, UNSLOP_DEPLOY_ASSET_DIR));
 }
 
 /** Copy each existing WORKSPACE_COPY_DIRS entry from repoRoot into dest. */
@@ -217,6 +298,9 @@ async function main() {
       ], { cwd: dest });
     }
   }
+
+  console.log("Installing portal lint assets...");
+  await deployUnslopAssets(repoRoot, dest);
 
   console.log(`\nDeployment complete. User workspace at: ${dest}`);
   console.log("\nNext steps:");

@@ -6,13 +6,21 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { assert, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { getDefaultPaths } from "@exaix/core/config";
 import { withCliProcessMutex } from "../../../tests/helpers/cli_process_mutex.ts";
 import { ALLOWED_UNDEPLOYED_DIRS, undeployedDirsNamedBy } from "../../../tests/helpers/deployed_task_dirs.ts";
 import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
+import {
+  DEPLOYED_SCRIPT_FILES,
+  deployUnslopAssets,
+  installUnslopAssets,
+  stripDevOnlyConfig,
+  UNSLOP_DEPLOY_ASSET_FILES,
+  verifyUnslopAssetSet,
+} from "../../../scripts/deploy_workspace.ts";
 
 const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
 
@@ -428,4 +436,64 @@ parallelSafeTest({
   },
   sanitizeResources: false,
   sanitizeOps: false,
+});
+
+parallelSafeTest("source-and-two-hop-deploy", async () => {
+  const dest1 = await Deno.makeTempDir({ prefix: "exaix-deploy-assets-a-" });
+  const dest2 = await Deno.makeTempDir({ prefix: "exaix-deploy-assets-b-" });
+  try {
+    await deployUnslopAssets(REPO_ROOT, dest1);
+    await verifyUnslopAssetSet(join(dest1, "lint"));
+    await installUnslopAssets(join(dest1, "lint"), join(dest2, "lint"));
+    await verifyUnslopAssetSet(join(dest2, "lint"));
+    for (const name of UNSLOP_DEPLOY_ASSET_FILES) {
+      assert(await exists(join(dest2, "lint", name)), name);
+    }
+    assertEquals(await exists(join(dest2, "lint", "manifest.json")), true);
+  } finally {
+    await Deno.remove(dest1, { recursive: true }).catch(() => {});
+    await Deno.remove(dest2, { recursive: true }).catch(() => {});
+  }
+});
+
+parallelSafeTest("deploy-artifact-errors", async () => {
+  const emptyRoot = await Deno.makeTempDir({ prefix: "exaix-deploy-empty-" });
+  const dest = await Deno.makeTempDir({ prefix: "exaix-deploy-corrupt-" });
+  const source = await Deno.makeTempDir({ prefix: "exaix-deploy-source-" });
+  try {
+    const missing = await assertRejects(
+      () => deployUnslopAssets(emptyRoot, dest),
+      Error,
+      "unslop assets unavailable",
+    );
+    assertStringIncludes(missing.message, "unslop-ts:deploy --init");
+
+    const same = await assertRejects(
+      () => deployUnslopAssets(REPO_ROOT, REPO_ROOT),
+      Error,
+      "identical",
+    );
+    assertStringIncludes(same.message, "identical");
+
+    await deployUnslopAssets(REPO_ROOT, source);
+    await installUnslopAssets(join(source, "lint"), join(dest, "lint"));
+    const enginePath = join(dest, "lint", "unslop_engine.js");
+    const bytes = await Deno.readFile(enginePath);
+    bytes[0] = bytes[0] ^ 0xff;
+    await Deno.writeFile(enginePath, bytes);
+    const corrupt = await assertRejects(() => verifyUnslopAssetSet(join(dest, "lint")), Error, "checksum");
+    assertStringIncludes(corrupt.message, "checksum");
+  } finally {
+    for (const dir of [emptyRoot, dest, source]) {
+      await Deno.remove(dir, { recursive: true }).catch(() => {});
+    }
+  }
+});
+
+parallelSafeTest("deployed-config-closure", async () => {
+  const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json")));
+  const stripped = stripDevOnlyConfig(config);
+  assertEquals("unslop-ts:bundle" in (stripped.tasks ?? {}), false);
+  assertEquals(DEPLOYED_SCRIPT_FILES.includes("build_unslop_portal_bundle.ts"), false);
+  assertEquals(stripped.workspace?.includes("./unslop-ts"), false);
 });
