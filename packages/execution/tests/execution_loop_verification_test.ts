@@ -24,7 +24,24 @@ import { EventLogger } from "@exaix/core/logger";
 import type { IEventLogger } from "@exaix/core/logger";
 import { PortalOperation } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
-import { type IPortalVerification, PortalVerificationSchema, type VerificationStatus } from "@exaix/schemas";
+import {
+  type IPortalVerification,
+  type IUnslopSettings,
+  PortalVerificationSchema,
+  type VerificationStatus,
+} from "@exaix/schemas";
+import { buildUnslopPortalAssets } from "../../../scripts/build_unslop_portal_bundle.ts";
+
+const STUB_PROVIDER = {
+  id: "stub",
+  generate: () =>
+    Promise.resolve({
+      content: "",
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      model: "",
+      provider: "",
+    }),
+};
 
 interface IScenarioHandle {
   rootDir: string;
@@ -86,6 +103,10 @@ async function makeVerificationLoop(options: {
   requestId: string;
   readOnlyAgent?: boolean;
   factory?: (logger: IEventLogger, knownSecrets: readonly string[]) => IVerificationRunner;
+  unslop?: boolean;
+  unslopSettings?: Partial<IUnslopSettings>;
+  llmProvider?: unknown;
+  onCodeChangesDelegate?: unknown;
 }): Promise<IScenarioHandle> {
   const rootDir = await Deno.makeTempDir({ prefix: options.prefix });
   const portalDir = join(rootDir, "my-portal");
@@ -114,6 +135,18 @@ async function makeVerificationLoop(options: {
     }],
   });
 
+  if (options.unslop) {
+    const assetDir = options.unslopSettings?.asset_dir ?? "lint";
+    await buildUnslopPortalAssets({
+      root: new URL("../../../", import.meta.url).pathname,
+      out: join(rootDir, assetDir),
+    });
+    await ensureDir(join(rootDir, config.paths.runtime));
+    if (options.unslopSettings !== undefined) {
+      config.verification.unslop = { ...config.verification.unslop, ...options.unslopSettings };
+    }
+  }
+
   const activeDir = pathBuilders.activePath(join(rootDir, config.paths.workspace));
   await ensureDir(activeDir);
 
@@ -126,6 +159,8 @@ async function makeVerificationLoop(options: {
     agentRole: "test-agent",
     reviewRegistry,
     ...(options.factory ? { verificationRunnerFactory: options.factory } : {}),
+    ...(options.llmProvider ? { llmProvider: options.llmProvider as never } : {}),
+    ...(options.onCodeChangesDelegate ? { onCodeChangesDelegate: options.onCodeChangesDelegate as never } : {}),
     gitServiceFactory: {
       createGitService(repoPath: string, trace: string) {
         return new GitService({ config, traceId: trace, agentRole: "test-agent", repoPath });
@@ -321,6 +356,87 @@ Deno.test("[execution-verification] a verification runner that throws completes 
     assertEquals(reviews.length, 1, "the review must be registered on the committed work");
     const worktree = pathBuilders.runtimePath(handle.rootDir, "worktrees", "my-portal", handle.traceId);
     assert(await exists(worktree), "the worktree must be kept");
+  } finally {
+    await handle.cleanupDb();
+    await Deno.remove(handle.rootDir, { recursive: true });
+  }
+});
+
+Deno.test("[execution-verification] a real unslop failure is repaired by the bounded repair loop", async () => {
+  const handle = await makeVerificationLoop({
+    prefix: "exec-verif-unslop-repair-",
+    verification: PortalVerificationSchema.parse({
+      checks: [{ kind: "unslop" }],
+      max_repair_attempts: 1,
+    }),
+    planAction: writeAction("seed.ts", "export const seed = 1 as unknown as string;\n"),
+    requestId: "verify-unslop-repair",
+    unslop: true,
+    llmProvider: STUB_PROVIDER,
+    onCodeChangesDelegate: async (
+      _trace: string,
+      _step: unknown,
+      worktreePath: string,
+    ) => {
+      await Deno.writeTextFile(join(worktreePath, "seed.ts"), "export const seed = 1;\n");
+      return "changes_made" as const;
+    },
+  });
+  try {
+    await handle.db.waitForFlush();
+    assertEquals(completedStatus(handle.db, handle.traceId), "repaired");
+    const rows = handle.db.getActivitiesByTrace(handle.traceId);
+    const lintChecks = rows.filter((row) => row.action_type === "execution.verification.lint_check.completed");
+    assert(lintChecks.length >= 2, "the adapter ran before and after the repair");
+    const last = JSON.parse(lintChecks.at(-1)!.payload) as Record<string, unknown>;
+    assertEquals(last.outcome, "passed");
+    const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
+    assertEquals(reviews.length, 1);
+  } finally {
+    await handle.cleanupDb();
+    await Deno.remove(handle.rootDir, { recursive: true });
+  }
+});
+
+Deno.test("[execution-verification] an opted-out portal journals no unslop lifecycle event", async () => {
+  const handle = await makeVerificationLoop({
+    prefix: "exec-verif-unslop-off-",
+    planAction: writeAction("pass_test.ts", 'Deno.test("ok", () => {});\n'),
+    requestId: "verify-unslop-off",
+  });
+  try {
+    await handle.db.waitForFlush();
+    assertEquals(completedStatus(handle.db, handle.traceId), "not_configured");
+    const lintEvents = handle.db.getActivitiesByTrace(handle.traceId)
+      .filter((row) => row.action_type.startsWith("execution.verification.lint"));
+    assertEquals(lintEvents.length, 0);
+  } finally {
+    await handle.cleanupDb();
+    await Deno.remove(handle.rootDir, { recursive: true });
+  }
+});
+
+Deno.test("[execution-verification] the default factory applies the resolved unslop asset directory", async () => {
+  const handle = await makeVerificationLoop({
+    prefix: "exec-verif-unslop-settings-",
+    verification: PortalVerificationSchema.parse({
+      checks: [{ kind: "unslop" }],
+      max_repair_attempts: 0,
+    }),
+    planAction: writeAction("seed.ts", "export const seed = 1 as unknown as string;\n"),
+    requestId: "verify-unslop-settings",
+    unslop: true,
+    unslopSettings: { asset_dir: "lint/alternate", findings_limit: 1 },
+  });
+  try {
+    await handle.db.waitForFlush();
+    assertEquals(completedStatus(handle.db, handle.traceId), "failed");
+    const rows = handle.db.getActivitiesByTrace(handle.traceId);
+    const completed = rows.filter((row) => row.action_type === "execution.verification.lint_check.completed");
+    assertEquals(completed.length, 1);
+    const payload = JSON.parse(completed[0].payload) as Record<string, unknown>;
+    assertEquals(payload.outcome, "failed");
+    assert(typeof payload.total === "number" && payload.total > 0);
   } finally {
     await handle.cleanupDb();
     await Deno.remove(handle.rootDir, { recursive: true });

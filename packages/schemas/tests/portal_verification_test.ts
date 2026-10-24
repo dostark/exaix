@@ -19,6 +19,9 @@ import { PortalPermissionsSchema } from "@exaix/schemas/portal_permissions.ts";
 import {
   checkName,
   ExecutionVerificationLintFindingsEventPayloadSchema,
+  type IDenoTaskCheck,
+  isDenoTaskCheck,
+  type IVerificationCheck,
   type IVerificationCheckFailure,
   PortalVerificationSchema,
   UnslopErrorClass,
@@ -26,6 +29,12 @@ import {
 } from "@exaix/schemas/portal_verification.ts";
 
 const BASE_CHECKS = [{ kind: "deno_task" as const, task: "test" as const }];
+
+/** Narrows a check to a Deno task check, failing the test otherwise. */
+function asDenoTask(check: IVerificationCheck | undefined): IDenoTaskCheck {
+  if (check === undefined || !isDenoTaskCheck(check)) throw new Error("expected a deno_task check");
+  return check;
+}
 
 Deno.test("[verification-schema] a portal without verification parses unchanged", () => {
   const parsed = PortalPermissionsSchema.parse({
@@ -44,7 +53,7 @@ Deno.test("[verification-schema] a portal carries a parsed verification block", 
   });
 
   assertEquals(parsed.verification?.checks.length, 1);
-  assertEquals(parsed.verification?.checks[0].task, "test");
+  assertEquals(asDenoTask(parsed.verification?.checks[0]).task, "test");
 });
 
 Deno.test("[verification-schema] defaults fill max_repair_attempts, check_timeout_ms and output_max_chars", () => {
@@ -53,8 +62,8 @@ Deno.test("[verification-schema] defaults fill max_repair_attempts, check_timeou
   assertEquals(parsed.max_repair_attempts, DEFAULT_VERIFICATION_MAX_REPAIR_ATTEMPTS);
   assertEquals(parsed.check_timeout_ms, DEFAULT_VERIFICATION_CHECK_TIMEOUT_MS);
   assertEquals(parsed.output_max_chars, DEFAULT_VERIFICATION_OUTPUT_MAX_CHARS);
-  assertEquals(parsed.checks[0].path, ".");
-  assertEquals(parsed.checks[0].args, []);
+  assertEquals(asDenoTask(parsed.checks[0]).path, ".");
+  assertEquals(asDenoTask(parsed.checks[0]).args, []);
 });
 
 Deno.test("[verification-schema] max_repair_attempts above the hard cap and unknown task names are rejected", () => {
@@ -194,8 +203,23 @@ Deno.test("[verification-schema] failures carry a check name and checkName maps 
   assertEquals(checkName({ kind: "deno_task", task: "fmt", path: ".", args: [] }), "fmt");
 });
 
-Deno.test("[verification-schema] the public check schema still rejects a kind without dispatch", () => {
-  assertEquals(VerificationCheckSchema.safeParse({ kind: "unslop" }).success, false);
+Deno.test("[verification-schema] the public check schema activates the TypeScript unslop member", () => {
+  const parsed = VerificationCheckSchema.parse({ kind: "unslop" });
+  assertEquals(checkName(parsed), "unslop");
+  assertEquals(isDenoTaskCheck(parsed), false);
+  assertEquals(parsed.kind === "unslop" ? parsed.packs : [], ["typescript"]);
+  assertEquals(parsed.kind === "unslop" ? parsed.include.length : 0, 4);
+  assertEquals(VerificationCheckSchema.safeParse({ kind: "unslop", packs: ["deno"] }).success, false);
+  const withCatalog = VerificationCheckSchema.safeParse({
+    kind: "unslop",
+    packs: ["typescript"],
+    catalog: "catalog/portal.json",
+  });
+  assertEquals(withCatalog.success, true);
+  assertEquals(
+    VerificationCheckSchema.safeParse({ kind: "unslop", packs: ["typescript", "typescript"] }).success,
+    false,
+  );
 });
 
 Deno.test("[verification-schema] the final snapshot schema accepts the authoritative payload", () => {
@@ -245,6 +269,36 @@ Deno.test("[verification-schema] every closed unslop error class is a valid snap
     assert(
       ExecutionVerificationLintFindingsEventPayloadSchema.safeParse(payload).success,
       `expected ${errorClass} to be accepted`,
+    );
+  }
+});
+
+Deno.test("[verification-schema] pack policy accepts exactly one TypeScript pack and at most one Deno pack", () => {
+  const omitted = VerificationCheckSchema.parse({ kind: "unslop" });
+  assertEquals(omitted.kind === "unslop" ? omitted.packs : [], ["typescript"]);
+
+  for (const packs of [["typescript", "deno"], ["deno", "typescript"]]) {
+    const parsed = VerificationCheckSchema.parse({ kind: "unslop", packs });
+    assertEquals(parsed.kind === "unslop" ? parsed.packs : [], ["typescript", "deno"]);
+  }
+  for (const packs of [["deno"], ["typescript", "typescript"], ["typescript", "deno", "deno"], ["rust"]]) {
+    assertEquals(VerificationCheckSchema.safeParse({ kind: "unslop", packs }).success, false, JSON.stringify(packs));
+  }
+});
+
+Deno.test("[verification-schema] the catalog option accepts only a literal repo file path", () => {
+  for (const catalog of ["a.json", "dir/a.json"]) {
+    assertEquals(
+      VerificationCheckSchema.safeParse({ kind: "unslop", catalog }).success,
+      true,
+      catalog,
+    );
+  }
+  for (const catalog of ["", ".", "/abs.json", "../a.json", "dir/../a.json", "C:\\a.json", "dir/a\u0000.json"]) {
+    assertEquals(
+      VerificationCheckSchema.safeParse({ kind: "unslop", catalog }).success,
+      false,
+      JSON.stringify(catalog),
     );
   }
 });

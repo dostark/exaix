@@ -35,7 +35,7 @@ import type { MemoryBankService, SessionMemoryService } from "@exaix/memory";
 import { MissionReporter } from "@exaix/core/artifact";
 import { type IPlanExecutorOptions, PlanExecutor } from "@exaix/core/planning";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
-import { ExecutionStatus } from "@exaix/core";
+import { ExecutionStatus, UNSLOP_CHECK_KIND } from "@exaix/core";
 import type { PortalExecutionStrategy } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import type { IHitlPolicyEvaluator, IModelRegistry, IToolConfirmationInterceptor } from "@exaix/core/types";
@@ -61,7 +61,13 @@ import {
 import type { IEffortDeclarationPair, IEffortResolver } from "@exaix/ai";
 import { ConfidenceScorer } from "./confidence_scorer.ts";
 import { GitExecutionSetupService } from "./git_execution_setup_service.ts";
-import { type IVerificationRunner, VerificationRunner } from "./verification_runner.ts";
+import {
+  type IVerificationRunner,
+  type IVerificationUnslopContext,
+  VerificationRunner,
+} from "./verification_runner.ts";
+import { UnslopCheckRunner } from "./unslop_check_runner.ts";
+import { resolveUnslopSettings } from "./unslop_settings.ts";
 import {
   DEFAULT_AGENT_ROLE,
   DEFAULT_AMENDMENT_EXPIRY_MS,
@@ -74,7 +80,8 @@ import {
   VERIFICATION_REPAIR_INSTRUCTION,
   VERIFICATION_REPAIR_PHASE,
 } from "@exaix/core";
-import { listChangedFilesBetween, readHeadSha } from "@exaix/git";
+import { listChangedFilesBetween, readHeadSha, resolveImmutableCommit } from "@exaix/git";
+import { PathResolver } from "@exaix/portal";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -252,7 +259,7 @@ export class ExecutionLoop {
     this.memoryBank = config.memoryBank ?? ctx?.memoryBank;
     this.knownSecrets = config.knownSecrets ?? [];
     this.verificationRunnerFactory = config.verificationRunnerFactory ??
-      ((logger, secrets) => new VerificationRunner(logger, secrets));
+      ((logger, secrets) => this.buildDefaultVerificationRunner(logger, secrets));
     this.gitExecutionSetupService = new GitExecutionSetupService(this.config, this.gitServiceFactory);
     this.plansDir = join(this.config.system.root, this.config.paths.workspace, this.config.paths.active);
     this.blueprintLoader = new IBlueprintLoader({
@@ -354,6 +361,7 @@ export class ExecutionLoop {
         createWorktreeExecutionPointer: this.createWorktreeExecutionPointer.bind(this),
       });
       worktreePath = gitSetup.worktreePath;
+      const baseSha = await this.captureImmutableCommit(gitSetup.executionGitService);
 
       const workResult = await this.executePlanWork({
         structuredPlan: prepared.structuredPlan,
@@ -400,6 +408,7 @@ export class ExecutionLoop {
         planPath,
         executionGitService: gitSetup.executionGitService,
         originalStepTitles,
+        baseSha,
       });
 
       // Register review
@@ -471,6 +480,7 @@ export class ExecutionLoop {
       planPath: string;
       executionGitService: IGitService;
       originalStepTitles: string[];
+      baseSha: string | null;
     },
   ): Promise<IVerificationOutcome> {
     const verification = this.resolvePortalVerification(frontmatter);
@@ -480,9 +490,31 @@ export class ExecutionLoop {
     }
 
     const runner = this.verificationRunnerFactory(this.logger ?? createNoopEventLogger(), this.knownSecrets);
-    let lastCommitSha = context.commitSha;
+    const usesUnslop = verification.checks.some((check) => check.kind === UNSLOP_CHECK_KIND);
+    const runId = crypto.randomUUID();
+    const runOnce = (attempt: number) =>
+      this.runVerificationGuarded(runner, verification, context, attempt, runId, usesUnslop);
+    return await this.runRepairLoop(frontmatter, verification, context, runOnce, context.commitSha);
+  }
+
+  /** Runs the bounded repair loop and returns the terminal verification outcome. */
+  private async runRepairLoop(
+    frontmatter: PlanFrontmatter,
+    verification: IPortalVerification,
+    context: {
+      requestId: string;
+      traceId: string;
+      executionRoot: string;
+      planPath: string;
+      executionGitService: IGitService;
+      originalStepTitles: string[];
+    },
+    runOnce: (attempt: number) => Promise<IVerificationResult | undefined>,
+    initialCommit: string,
+  ): Promise<IVerificationOutcome> {
+    let lastCommitSha = initialCommit;
     let attempt = 0;
-    let result = await this.runVerificationGuarded(runner, verification, context, attempt);
+    let result = await runOnce(attempt);
     if (!result) return { status: VerificationStatus.ERROR, commitSha: lastCommitSha };
 
     while (!result.passed && !result.error && attempt < verification.max_repair_attempts) {
@@ -491,7 +523,7 @@ export class ExecutionLoop {
       if (repair.failed) return { status: VerificationStatus.FAILED, commitSha: lastCommitSha };
       if (repair.commitSha) lastCommitSha = repair.commitSha;
 
-      result = await this.runVerificationGuarded(runner, verification, context, attempt);
+      result = await runOnce(attempt);
       if (!result) return { status: VerificationStatus.ERROR, commitSha: lastCommitSha };
       if (result.passed) return { status: VerificationStatus.REPAIRED, commitSha: lastCommitSha };
     }
@@ -510,19 +542,70 @@ export class ExecutionLoop {
   private async runVerificationGuarded(
     runner: IVerificationRunner,
     verification: IPortalVerification,
-    context: { requestId: string; traceId: string; executionRoot: string },
+    context: {
+      requestId: string;
+      traceId: string;
+      executionRoot: string;
+      executionGitService: IGitService;
+      baseSha: string | null;
+    },
     attempt: number,
+    runId: string,
+    usesUnslop: boolean,
   ): Promise<IVerificationResult | undefined> {
+    if (usesUnslop && context.baseSha === null) return undefined;
+    const unslop = usesUnslop
+      ? await this.buildUnslopContext(runId, context.baseSha, context.executionGitService)
+      : undefined;
+    if (usesUnslop && unslop === undefined) return undefined;
     try {
       return await runner.run(verification, {
         requestId: context.requestId,
         traceId: context.traceId,
         attempt,
         executionRoot: context.executionRoot,
+        ...(unslop === undefined ? {} : { unslop }),
       });
     } catch {
       return undefined;
     }
+  }
+
+  /** Resolves the immutable target commit of the current attempt. */
+  private async buildUnslopContext(
+    runId: string,
+    baseSha: string | null,
+    gitService: IGitService,
+  ): Promise<IVerificationUnslopContext | undefined> {
+    if (baseSha === null) return undefined;
+    const targetSha = await this.captureImmutableCommit(gitService);
+    if (targetSha === null) return undefined;
+    return { runId, baseSha, targetSha, git: gitService };
+  }
+
+  /** Reads and validates an immutable commit id, or returns null. */
+  private async captureImmutableCommit(gitService: IGitService): Promise<string | null> {
+    const head = await readHeadSha(gitService);
+    if (head.length === 0) return null;
+    const resolved = await resolveImmutableCommit(gitService, head);
+    return resolved.ok ? resolved.value : null;
+  }
+
+  /** Builds the default runner with the unslop adapter bound to resolved settings. */
+  private buildDefaultVerificationRunner(
+    logger: IEventLogger,
+    secrets: readonly string[],
+  ): IVerificationRunner {
+    const pathResolver = new PathResolver(this.config, { logger });
+    const settings = resolveUnslopSettings(this.config, this.context?.configAdapter);
+    const unslop = new UnslopCheckRunner(logger, {
+      settings,
+      systemRoot: this.config.system.root,
+      logger,
+      pathResolver,
+      knownSecrets: secrets,
+    });
+    return new VerificationRunner(logger, secrets, { unslop });
   }
 
   /** Runs one repair attempt as a one-step plan. A throw returns failed with a categorical error_class.
@@ -606,7 +689,11 @@ export class ExecutionLoop {
         number: 1,
         title: `Fix failing verification (attempt ${attempt})`,
         content: this.buildRepairContent(context.originalStepTitles, result.failures),
-        successCriteria: verification.checks.map((check) => `deno ${check.task} ${check.path} exits 0`),
+        successCriteria: verification.checks.map((check) =>
+          check.kind === UNSLOP_CHECK_KIND
+            ? "unslop reports no findings on changed lines"
+            : `deno ${check.task} ${check.path} exits 0`
+        ),
       }],
     };
   }

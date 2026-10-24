@@ -16,6 +16,10 @@ import {
   DEFAULT_VERIFICATION_MAX_REPAIR_ATTEMPTS,
   DEFAULT_VERIFICATION_OUTPUT_MAX_CHARS,
   GeneralStatus,
+  UNSLOP_CHECK_KIND,
+  UNSLOP_DENO_PACK,
+  UNSLOP_PORTAL_INCLUDE_GLOBS,
+  UNSLOP_TS_PACK,
   VERIFICATION_ALLOW_FLAG_PREFIX,
   VERIFICATION_FORBIDDEN_ARGS,
   VERIFICATION_MAX_REPAIR_ATTEMPTS_LIMIT,
@@ -24,16 +28,21 @@ import {
 } from "@exaix/core";
 
 /** Every check name a verification run can report. The public union activates in Step 5. */
-export type VerificationCheckName = IVerificationCheck["task"] | "unslop";
+export type VerificationCheckName = IDenoTaskCheck["task"] | "unslop";
 
 /** The reported name of one configured check. */
 export function checkName(check: IVerificationCheck): VerificationCheckName {
-  return check.task;
+  return check.kind === UNSLOP_CHECK_KIND ? UNSLOP_CHECK_KIND : check.task;
+}
+
+/** True when the check is a Deno task check, so its task, path and args are readable. */
+export function isDenoTaskCheck(check: IVerificationCheck): check is IDenoTaskCheck {
+  return check.kind === "deno_task";
 }
 
 /** The Deno task behind a check name, or null for a name without a Deno task. */
-export function denoTaskOf(name: VerificationCheckName): IVerificationCheck["task"] | null {
-  return name === "unslop" ? null : name;
+export function denoTaskOf(name: VerificationCheckName): IDenoTaskCheck["task"] | null {
+  return name === UNSLOP_CHECK_KIND ? null : name;
 }
 
 /** One failed check as it appears in `IVerificationResult` and the repair prompt. */
@@ -87,8 +96,8 @@ export function hasNoForbiddenVerificationArgs(args: readonly string[]): boolean
   return !args.some(isForbiddenVerificationArg);
 }
 
-/** One operator-configured post-execution check. */
-export const VerificationCheckSchema = z.object({
+/** One operator-configured Deno task check. */
+export const DenoTaskCheckSchema = z.object({
   kind: z.literal("deno_task"),
   task: z.enum(["test", "lint", "check", "fmt"]),
   /** Relative to the worktree root, defaulting to ".". Absolute paths and ".." segments are rejected. */
@@ -96,6 +105,58 @@ export const VerificationCheckSchema = z.object({
   /** Operator-supplied flags, e.g. ["--allow-read=."]. Never model-supplied. Permission flags must be scoped. */
   args: z.array(z.string()).default([]).refine(hasNoForbiddenVerificationArgs, "forbidden verification arg"),
 });
+
+export type IDenoTaskCheck = z.infer<typeof DenoTaskCheckSchema>;
+
+/** The discriminator field name every verification check carries. */
+const CHECK_KIND_FIELD = "kind";
+
+/** True when an include glob stays repo-relative and carries no NUL or escape. */
+export function isSafeIncludeGlob(glob: string): boolean {
+  if (glob.includes("\u0000") || glob.startsWith("/") || glob.startsWith("\\")) return false;
+  return !glob.split("/").includes("..");
+}
+
+/** True when a value is a literal repo file path with no escape or platform prefix. */
+export function isLiteralRepoFilePath(value: string): boolean {
+  if (value.length === 0 || value === "." || value.startsWith("/")) return false;
+  if (value.includes("\u0000") || value.startsWith("\\")) return false;
+  if (/^[A-Za-z]:/.test(value)) return false;
+  const segments = value.replaceAll("\\", "/").split("/");
+  return !segments.includes("..") && !segments.includes(".");
+}
+
+/** True when the packs carry exactly one TypeScript pack and at most one Deno pack. */
+function hasExactlyOneTypeScriptAndAtMostOneDeno(packs: readonly string[]): boolean {
+  const typescript = packs.filter((pack) => pack === UNSLOP_TS_PACK).length;
+  const deno = packs.filter((pack) => pack === UNSLOP_DENO_PACK).length;
+  return typescript === 1 && deno <= 1;
+}
+
+/** Orders packs canonically: TypeScript first, then Deno. */
+function canonicalPackOrder(packs: readonly string[]): readonly string[] {
+  return [...packs].sort((left, right) => left === right ? 0 : left === UNSLOP_TS_PACK ? -1 : 1);
+}
+
+/** One operator-configured unslop lint check with the validated pack and catalog contract. */
+export const UnslopCheckSchema = z.object({
+  kind: z.literal(UNSLOP_CHECK_KIND),
+  packs: z.array(z.enum([UNSLOP_TS_PACK, UNSLOP_DENO_PACK]))
+    .min(1)
+    .max(2)
+    .default([UNSLOP_TS_PACK])
+    .refine(hasExactlyOneTypeScriptAndAtMostOneDeno, "typescript is required; duplicates are forbidden")
+    .transform(canonicalPackOrder),
+  catalog: z.string().min(1).refine(isLiteralRepoFilePath, "catalog must be a literal repo file path").optional(),
+  include: z.array(z.string().min(1).refine(isSafeIncludeGlob, "include glob must be repo-relative"))
+    .min(1)
+    .default([...UNSLOP_PORTAL_INCLUDE_GLOBS]),
+}).strict();
+
+export type IUnslopCheck = z.infer<typeof UnslopCheckSchema>;
+
+/** One operator-configured post-execution check of any supported kind. */
+export const VerificationCheckSchema = z.discriminatedUnion(CHECK_KIND_FIELD, [DenoTaskCheckSchema, UnslopCheckSchema]);
 
 export type IVerificationCheck = z.infer<typeof VerificationCheckSchema>;
 

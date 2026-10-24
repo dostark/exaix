@@ -67,6 +67,10 @@ export interface IUnslopCheckRunState {
 /** One configured portal unslop check at the Step 4 contract. */
 export interface IUnslopCheckConfig {
   readonly kind: "unslop";
+  /** Validated rule packs, canonically ordered. */
+  readonly packs?: readonly string[];
+  /** Optional literal repo path of a base-commit replacement catalog. */
+  readonly catalog?: string;
   /** Repo-relative globs the operator selected. The adapter keeps only matching files. */
   readonly include?: readonly string[];
 }

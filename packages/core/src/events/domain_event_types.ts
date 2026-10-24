@@ -12,9 +12,9 @@
 import type {
   EffortResolutionBasis,
   EffortTier,
+  IDenoTaskCheck,
   IExecutionVerificationLintFindingsEventPayload,
   IRouteReason,
-  IVerificationCheck,
   ModelResolutionReason,
   TaskTypeSource,
   UnslopCheckRunOutcome,
@@ -758,7 +758,7 @@ export interface IExecutionVerificationFailedEventPayload {
   attempt: number;
   failed_checks: Array<{
     check: VerificationCheckName;
-    task?: IVerificationCheck["task"];
+    task?: IDenoTaskCheck["task"];
     exit_code: number | null;
   }>;
 }

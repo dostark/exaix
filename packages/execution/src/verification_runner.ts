@@ -14,11 +14,22 @@ import { join, SEPARATOR } from "@std/path";
 import { VERIFICATION_FMT_CHECK_FLAG, VERIFICATION_OUTPUT_REDACTION_MARGIN_CHARS } from "@exaix/core";
 import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
 import { buildVerificationCheckEnv, prepareVerificationOutput } from "./verification_output.ts";
-import { checkName, denoTaskOf } from "@exaix/schemas";
+import { UNSLOP_CHECK_KIND } from "@exaix/core";
+import { checkName, denoTaskOf, VerificationStatus } from "@exaix/schemas";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { JSONValue, LogMetadata } from "@exaix/core/types";
+import type { IGitService } from "@exaix/core/types";
 import type { IPortalVerification, IVerificationCheckFailure, IVerificationResult } from "@exaix/schemas";
+import type { IUnslopCheckContext, IUnslopCheckOutcome } from "./unslop_check_types.ts";
 import { runDenoTask } from "@exaix/tool-runtime";
+
+/** The scoped Git and run identity of one unslop attempt. */
+export interface IVerificationUnslopContext {
+  runId: string;
+  baseSha: string;
+  targetSha: string;
+  git: IGitService;
+}
 
 /** Inputs for one verification run. */
 export interface IVerificationRunContext {
@@ -26,6 +37,19 @@ export interface IVerificationRunContext {
   traceId: string;
   attempt: number;
   executionRoot: string;
+  /** Required when the block contains an unslop check. */
+  unslop?: IVerificationUnslopContext;
+}
+
+/** The adapter contract the runner dispatches an unslop check to. */
+export interface IUnslopCheckExecutor {
+  run(context: IUnslopCheckContext): Promise<IUnslopCheckOutcome>;
+}
+
+/** Optional runners of non-Deno check kinds. */
+export interface IVerificationRunnerOptions {
+  /** Required when a block contains an unslop check. */
+  unslop?: IUnslopCheckExecutor;
 }
 
 /** Runs a portal verification block against one execution worktree. */
@@ -49,6 +73,7 @@ export class VerificationRunner implements IVerificationRunner {
   constructor(
     private readonly logger: IEventLogger,
     private readonly knownSecrets: readonly string[],
+    private readonly options: IVerificationRunnerOptions = {},
   ) {}
 
   async run(config: IPortalVerification, context: IVerificationRunContext): Promise<IVerificationResult> {
@@ -63,7 +88,19 @@ export class VerificationRunner implements IVerificationRunner {
 
     const { env, clearEnv } = this.buildCheckEnv();
 
-    for (const check of config.checks) {
+    for (const [checkIndex, check] of config.checks.entries()) {
+      if (check.kind === UNSLOP_CHECK_KIND) {
+        const outcome = await this.runUnslopCheck(checkIndex, check, config, context);
+        if (outcome.kind === VerificationStatus.PASSED) continue;
+        if (outcome.kind === VerificationStatus.FAILED) {
+          failures.push({ check: UNSLOP_CHECK_KIND, exit_code: 1, output: outcome.output });
+          continue;
+        }
+        failures.push({ check: UNSLOP_CHECK_KIND, exit_code: null, output: outcome.output });
+        hadError = true;
+        break;
+      }
+
       const resolved = join(context.executionRoot, check.path);
 
       if (!(await isConfined(context.executionRoot, resolved))) {
@@ -121,6 +158,40 @@ export class VerificationRunner implements IVerificationRunner {
     });
 
     return { passed: false, error: hadError, failures };
+  }
+
+  /** Dispatches one unslop check to the adapter. A missing adapter or scope is a categorical error. */
+  private async runUnslopCheck(
+    checkIndex: number,
+    check: Extract<IPortalVerification["checks"][number], { kind: "unslop" }>,
+    config: IPortalVerification,
+    context: IVerificationRunContext,
+  ): Promise<IUnslopCheckOutcome> {
+    const adapter = this.options.unslop;
+    const bound = context.unslop;
+    if (adapter === undefined || bound === undefined) {
+      return {
+        kind: VerificationStatus.ERROR,
+        error_class: "UnslopHostProtocolInvalid",
+        total: null,
+        findings: [],
+        output: "",
+      };
+    }
+    return await adapter.run({
+      requestId: context.requestId,
+      traceId: context.traceId,
+      attempt: context.attempt,
+      executionRoot: context.executionRoot,
+      runId: bound.runId,
+      baseSha: bound.baseSha,
+      targetSha: bound.targetSha,
+      git: bound.git,
+      checkIndex,
+      check: { kind: "unslop", packs: check.packs, catalog: check.catalog, include: check.include },
+      timeoutMs: config.check_timeout_ms,
+      outputMaxChars: config.output_max_chars,
+    });
   }
 
   /** Build the allowlist child env plus only the deno cache keys from the daemon env. */

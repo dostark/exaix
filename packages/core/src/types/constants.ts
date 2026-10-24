@@ -167,6 +167,15 @@ export const DEFAULT_AMENDMENT_ON_TIMEOUT: AmendmentTimeoutAction = configurable
 /** The plugin name every packaged portal catalog uses. */
 export const UNSLOP_PLUGIN_NAME = "unslop";
 
+/** The verification check kind of the portal unslop check. */
+export const UNSLOP_CHECK_KIND = "unslop";
+
+/** The rule pack name of the TypeScript rule pack. */
+export const UNSLOP_TS_PACK = "typescript";
+
+/** The rule pack name of the Deno rule pack. */
+export const UNSLOP_DENO_PACK = "deno";
+
 /** The trusted runtime directory name below the resolved runtime root. */
 export const UNSLOP_RUNTIME_DIR = "unslop";
 

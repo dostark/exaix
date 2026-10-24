@@ -37,10 +37,11 @@ async function makeScope(): Promise<IScope> {
     system: { log_level: "info", root: ctx.tempDir },
     paths: { ...ExaPathDefaults },
   }).verification.unslop;
-  const runner = new UnslopCheckRunner({
+  const logger = new EventLogger({ db: ctx.db });
+  const runner = new UnslopCheckRunner(logger, {
     settings,
     systemRoot: ctx.tempDir,
-    logger: new EventLogger({ db: ctx.db }),
+    logger,
     pathResolver: new PathResolver(ctx.config),
     knownSecrets: [],
   });
@@ -203,6 +204,36 @@ Deno.test("[security] the adapter never writes into the execution worktree", asy
     assertEquals(new TextDecoder().decode(after), new TextDecoder().decode(before));
     const status = await scope.ctx.git.runGitCommand(["status", "--porcelain"]);
     assert(status.output.trim() === "");
+  } finally {
+    await scope.ctx.cleanup();
+  }
+});
+
+Deno.test("[security] a replacement catalog cannot disable the suppression control", async () => {
+  const scope = await makeScope();
+  try {
+    await setupGitRepo(scope.ctx.repoDir, { initialCommit: true });
+    const packagedPath = join(scope.ctx.tempDir, "lint", "unslop_portal_catalog.json");
+    const packaged = JSON.parse(await Deno.readTextFile(packagedPath)) as {
+      rules: Record<string, { severity: string; reason?: string }>;
+    };
+    for (const entry of Object.values(packaged.rules)) {
+      entry.severity = "off";
+      entry.reason = "Disabled by the test catalog.";
+    }
+    await Deno.writeTextFile(join(scope.ctx.repoDir, "catalog.json"), JSON.stringify(packaged));
+    await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), CLEAN);
+    const base = await commitAll(scope, "seed");
+
+    await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), `${MARKER}${CLEAN}`);
+    const target = await commitAll(scope, "marker");
+
+    const result = await scope.runner.run({
+      ...contextFor(scope, base, target),
+      check: { kind: "unslop", catalog: "catalog.json" },
+    });
+    assertEquals(result.kind, "error");
+    assertEquals(result.kind === "error" ? result.error_class : "", "UnslopSuppressionForbidden");
   } finally {
     await scope.ctx.cleanup();
   }

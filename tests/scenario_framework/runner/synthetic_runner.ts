@@ -855,10 +855,13 @@ export function verificationToml(verification: IPortalVerification): string {
     `output_max_chars = ${verification.output_max_chars}`,
   ];
   for (const check of verification.checks) {
+    lines.push("", "[[portals.verification.checks]]", `kind = ${JSON.stringify(check.kind)}`);
+    if (check.kind === "unslop") {
+      lines.push(`packs = ${JSON.stringify(check.packs)}`, `include = ${JSON.stringify(check.include)}`);
+      if (check.catalog !== undefined) lines.push(`catalog = ${JSON.stringify(check.catalog)}`);
+      continue;
+    }
     lines.push(
-      "",
-      "[[portals.verification.checks]]",
-      `kind = ${JSON.stringify(check.kind)}`,
       `task = ${JSON.stringify(check.task)}`,
       `path = ${JSON.stringify(check.path)}`,
       `args = ${JSON.stringify(check.args)}`,

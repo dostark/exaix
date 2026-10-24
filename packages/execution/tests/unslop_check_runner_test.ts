@@ -44,10 +44,11 @@ async function makeScope(): Promise<IScope> {
     system: { log_level: "info", root: ctx.tempDir },
     paths: { ...ExaPathDefaults },
   }).verification.unslop;
-  const runner = new UnslopCheckRunner({
+  const logger = new EventLogger({ db: ctx.db });
+  const runner = new UnslopCheckRunner(logger, {
     settings,
     systemRoot: ctx.tempDir,
-    logger: new EventLogger({ db: ctx.db }),
+    logger,
     pathResolver: new PathResolver(ctx.config),
     knownSecrets: [],
   });
@@ -262,6 +263,100 @@ Deno.test("adapter-events-and-options", async () => {
     assert(typeof last.total === "number" && last.total > 0);
     assertEquals(last.error_class, null);
     assertFalse(JSON.stringify(last).includes(SEED_CAST), "the event carries no source text");
+  } finally {
+    await scope.ctx.cleanup();
+  }
+});
+
+/** The packaged engine bundle surface this test needs. */
+interface IEngineBundle {
+  readonly createDenoPlugin: (
+    name: string,
+    catalog: unknown,
+    options: { rulePacks: readonly unknown[]; selection?: string },
+  ) => Deno.lint.Plugin;
+  readonly parseCatalog: (input: unknown, options: { scriptRuleSchemas: null; registry: unknown }) => unknown;
+  readonly createRuleRegistry: (name: string, packs: readonly unknown[]) => unknown;
+  readonly TYPESCRIPT_RULE_PACK: unknown;
+  readonly DENO_RULE_PACK: unknown;
+}
+
+Deno.test("deno-policy-enabled", async () => {
+  const root = await Deno.makeTempDir({ prefix: "unslop-deno-policy-" });
+  try {
+    await buildUnslopPortalAssets({ root: REPO_ROOT, out: root });
+    // deno-lint-ignore exaix/dynamic-import exaix/import-inside-statement -- Generated bundle path is known only after the build.
+    const engine = await import(`file://${join(root, "unslop_engine.js")}`) as IEngineBundle;
+    const catalog = engine.parseCatalog(
+      JSON.parse(await Deno.readTextFile(join(root, "unslop_portal_deno_catalog.json"))),
+      {
+        scriptRuleSchemas: null,
+        registry: engine.createRuleRegistry("unslop", [engine.TYPESCRIPT_RULE_PACK, engine.DENO_RULE_PACK]),
+      },
+    );
+    const plugin = engine.createDenoPlugin("unslop", catalog, {
+      rulePacks: [engine.TYPESCRIPT_RULE_PACK, engine.DENO_RULE_PACK],
+      selection: "",
+    });
+    const source = "// deno-lint-ignore no-explicit-any\nexport const value: any = 1;\n";
+    const ids = Deno.lint.runPlugin(plugin, "seed.ts", source).map((diagnostic) =>
+      (diagnostic as Deno.lint.Diagnostic & { readonly id: string }).id
+    );
+    assert(ids.includes("unslop/no-forbidden-lint-ignore"), ids.join(","));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("base-catalog-replacement", async () => {
+  const scope = await makeScope();
+  try {
+    await setupGitRepo(scope.ctx.repoDir, { initialCommit: true });
+    const packagedPath = join(scope.ctx.tempDir, "lint", "unslop_portal_catalog.json");
+    const packaged = JSON.parse(await Deno.readTextFile(packagedPath)) as {
+      rules: Record<string, { severity: string; reason?: string }>;
+    };
+    for (const entry of Object.values(packaged.rules)) {
+      entry.severity = "off";
+      entry.reason = "Disabled by the test catalog.";
+    }
+    await Deno.writeTextFile(join(scope.ctx.repoDir, "catalog.json"), JSON.stringify(packaged));
+    await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), CLEAN_LINE);
+    const base = await commitAll(scope, "seed");
+
+    for (const entry of Object.values(packaged.rules)) entry.severity = "error";
+    await Deno.writeTextFile(join(scope.ctx.repoDir, "catalog.json"), JSON.stringify(packaged));
+    await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), SEED_CAST);
+    const target = await commitAll(scope, "change");
+
+    const withCatalog = await scope.runner.run(contextFor(scope, base, target, {
+      check: { kind: "unslop", catalog: "catalog.json" },
+    }));
+    assertEquals(withCatalog.kind, "passed", "the base catalog, not the edited target catalog, applies");
+
+    const withoutCatalog = await scope.runner.run(contextFor(scope, base, target));
+    assertEquals(withoutCatalog.kind, "failed");
+
+    const invalid = [
+      { ...packaged, rules: { "unslop/not-a-rule": { engine: "plugin", severity: "off", scope: "all", tags: [] } } },
+      {
+        ...packaged,
+        rules: { "unslop/no-chained-type-assertions": { engine: "script", severity: "off", scope: "all", tags: [] } },
+      },
+      { ...packaged, layout: { src: ["packages"] } },
+    ];
+    for (const document of invalid) {
+      await Deno.writeTextFile(join(scope.ctx.repoDir, "catalog.json"), JSON.stringify(document));
+      await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), CLEAN_LINE);
+      const badBase = await commitAll(scope, "invalid catalog");
+      await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), SEED_CAST);
+      const badTarget = await commitAll(scope, "cast");
+      const result = await scope.runner.run(contextFor(scope, badBase, badTarget, {
+        check: { kind: "unslop", catalog: "catalog.json" },
+      }));
+      assertEquals(result.kind, "error");
+      assertEquals(result.kind === "error" ? result.error_class : "", "UnslopCatalogInvalid");
+    }
   } finally {
     await scope.ctx.cleanup();
   }
