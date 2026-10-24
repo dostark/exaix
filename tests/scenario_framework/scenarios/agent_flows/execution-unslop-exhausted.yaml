@@ -17,6 +17,27 @@ portals:
       max_repair_attempts: 0
       check_timeout_ms: 20000
 steps:
+  - id: "write-repair-agent"
+    type: "write-file"
+    name: "Write the unslop repair agent blueprint"
+    path: "Blueprints/Agents/verification-unslop-coder.md"
+    content: |
+      ---
+      agent_role: "verification-unslop-coder"
+      name: "Verification Unslop Coder"
+      model: "mock:test"
+      capabilities: ["read_file", "write_file"]
+      created: "2026-10-24T00:00:00Z"
+      created_by: "test"
+      version: "1.0.0"
+      ---
+
+      # Verification Unslop Coder
+    output_criteria:
+      - id: "agent-written"
+        kind: "command-exit-code"
+        equals: 0
+
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
@@ -40,7 +61,7 @@ steps:
       request_id: "execution-unslop-exhausted"
       status: approved
       portal: verify-app
-      agent_role: verification-repair-coder
+      agent_role: verification-unslop-coder
       ---
 
       # Unslop plan

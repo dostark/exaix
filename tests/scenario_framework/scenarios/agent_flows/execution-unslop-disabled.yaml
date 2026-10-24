@@ -35,7 +35,7 @@ steps:
       request_id: "execution-unslop-disabled"
       status: approved
       portal: verify-app
-      agent_role: verification-repair-coder
+      agent_role: senior-coder
       ---
 
       # Unslop plan
