@@ -7,11 +7,16 @@
  *   sandbox config, and that an invalid block fails scenario load.
  */
 
-import { assert, assertEquals, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
+import { parse as parseYaml } from "@std/yaml";
+import { exists } from "@std/fs";
+import { join } from "@std/path";
 import { ConfigSchema, isDenoTaskCheck } from "@exaix/schemas";
 import { PortalMountSchema } from "../../schema/step_schema.ts";
-import { verificationToml } from "../../runner/synthetic_runner.ts";
+import { ScenarioSchema } from "../../schema/scenario_schema.ts";
+import { stageUnslopAssets, verificationToml } from "../../runner/synthetic_runner.ts";
+import { buildUnslopPortalAssets } from "../../../../scripts/build_unslop_portal_bundle.ts";
 
 const BASE_CONFIG = await Deno.readTextFile(
   new URL("../../fixtures/configs/portal-mount-verification-base.toml", import.meta.url),
@@ -96,4 +101,41 @@ Deno.test("[scenario-schema] the final pack, catalog and include contract round-
   assertEquals(check.packs, ["typescript", "deno"]);
   assertEquals(check.catalog, "catalogs/portal.json");
   assertEquals(check.include, ["packages/**/*.ts"]);
+});
+
+Deno.test("[scenario-schema] unslop_assets defaults off and accepts an explicit flag", async () => {
+  const yaml = await Deno.readTextFile(
+    new URL("../../scenarios/agent_flows/execution-verification-repair.yaml", import.meta.url),
+  );
+  const parsed = ScenarioSchema.parse(parseYaml(yaml) as Record<string, unknown>);
+  assertEquals(parsed.unslop_assets, false);
+  const enabled = ScenarioSchema.parse({ ...parseYaml(yaml) as Record<string, unknown>, unslop_assets: true });
+  assertEquals(enabled.unslop_assets, true);
+});
+Deno.test("[scenario-schema] stageUnslopAssets copies a verified set and rejects a missing one", async () => {
+  const repoRoot = await Deno.makeTempDir({ prefix: "unslop-stage-source-" });
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "unslop-stage-workspace-" });
+  try {
+    await buildUnslopPortalAssets({
+      root: new URL("../../../../", import.meta.url).pathname,
+      out: join(repoRoot, "lint"),
+    });
+    await stageUnslopAssets(repoRoot, workspaceRoot);
+    assert(await exists(join(workspaceRoot, "lint", "manifest.json")));
+    assert(await exists(join(workspaceRoot, "lint", "unslop_engine.js")));
+
+    const emptyRoot = await Deno.makeTempDir({ prefix: "unslop-stage-empty-" });
+    try {
+      await assertRejects(
+        () => stageUnslopAssets(emptyRoot, workspaceRoot),
+        Error,
+        "unslop assets missing",
+      );
+    } finally {
+      await Deno.remove(emptyRoot, { recursive: true });
+    }
+  } finally {
+    await Deno.remove(repoRoot, { recursive: true }).catch(() => {});
+    await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});
+  }
 });

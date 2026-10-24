@@ -9,6 +9,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
+import { installUnslopAssets } from "../../../scripts/deploy_workspace.ts";
 import { DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { dirname, join, resolve } from "@std/path";
 import { copy, ensureDir } from "@std/fs";
@@ -518,6 +519,9 @@ export async function runSyntheticScenario(
   // daemon actually boots with — mounting before it risks the entry being silently
   // overwritten by the materialized cell config, failing with "Portal not found".
   await prepareDeclaredPortals(loadedScenario.scenario.portals, options, envForExpansion);
+  if (loadedScenario.scenario.unslop_assets) {
+    await stageUnslopAssets(REPO_ROOT, options.workspaceRoot);
+  }
   if (loadedScenario.scenario.pack === "persona_response_eval") {
     const config = new ConfigService(join(options.workspaceRoot, WORKSPACE_CONFIG_FILE)).get();
     await preparePersonaJudgeContext(
@@ -1442,4 +1446,9 @@ function expandInString(str: string, env: Record<string, string>): string {
     const value = env[name];
     return value !== undefined ? value : match;
   });
+}
+
+/** Stages the verified portal lint asset set into one scenario sandbox. */
+export async function stageUnslopAssets(repoRoot: string, workspaceRoot: string): Promise<void> {
+  await installUnslopAssets(join(repoRoot, "lint"), join(workspaceRoot, "lint"));
 }

@@ -123,6 +123,8 @@ export const ScenarioSchema = z.object({
    *  The shared framework config then stays untouched for every other pack. */
   workspace_config: WorkspaceConfigOverridesSchema.optional(),
   description: z.string().min(1).optional(),
+  /** Stage the prebuilt portal lint asset set into the sandbox before steps run. */
+  unslop_assets: z.boolean().default(false),
   risk: z.string().min(1).optional(),
   ci_profile: z.string().min(1).optional(),
   cleanup: z.array(z.string().min(1)).optional(),
