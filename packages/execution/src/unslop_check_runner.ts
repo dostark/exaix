@@ -83,8 +83,8 @@ interface ISelection {
   readonly files: readonly string[];
 }
 
-function errorOutcome(errorClass: UnslopErrorClass, output = ""): IUnslopCheckOutcome {
-  return { kind: VerificationStatus.ERROR, error_class: errorClass, total: null, findings: [], output };
+function errorOutcome(errorClass: UnslopErrorClass): IUnslopCheckOutcome {
+  return { kind: VerificationStatus.ERROR, error_class: errorClass, total: null, findings: [], output: "" };
 }
 
 function passedOutcome(): IUnslopCheckOutcome {

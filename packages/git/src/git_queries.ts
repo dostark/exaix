@@ -6,7 +6,7 @@
  * @description Read-only git queries over an IGitService. Callers use them so the git subcommand constants stay inside this package.
  */
 
-import type { IGitService } from "@exaix/core/types";
+import type { IGitService, Opt, Reason } from "@exaix/core/types";
 import {
   GIT_CMD_CAT_FILE,
   GIT_CMD_DIFF,
@@ -173,7 +173,7 @@ export function intersectsChangedLines(
 export async function resolveImmutableCommit(
   gitService: IGitService,
   objectId: string,
-  options: IGitCommitQueryOptions = {},
+  options: Opt<IGitCommitQueryOptions, Reason.OptionalContext> = {},
 ): Promise<GitQueryResult<string>> {
   if (!isFullObjectId(objectId)) return queryFailure(QUERY_FAILURE_CODE.invalidObject);
   try {
