@@ -89,7 +89,9 @@ function failingGitCommand(failure: GitFailure, armed: () => boolean) {
     function (this: GitService, args: string[], options?: { throwOnError?: boolean }) {
       const matches = failure === "head" ? args[0] === "rev-parse" && args[1] === "HEAD" : args[0] === "diff";
       if (!armed() || !matches) return original.call(this, args, options);
-      if (options?.throwOnError === false) return Promise.resolve({ output: "", exitCode: 128 });
+      if (options?.throwOnError === false) {
+        return Promise.resolve({ output: "", exitCode: 128, stdoutBytes: new TextEncoder().encode("") });
+      }
       return Promise.reject(new Error(`git ${args[0]} failed`));
     },
   );
@@ -110,12 +112,12 @@ const PASSED: IVerificationResult = { passed: true, error: false, failures: [] }
 const FAILED: IVerificationResult = {
   passed: false,
   error: false,
-  failures: [{ task: "test", exit_code: 1, output: "boom" }],
+  failures: [{ check: "test", exit_code: 1, output: "boom" }],
 };
 const ERRORED: IVerificationResult = {
   passed: false,
   error: true,
-  failures: [{ task: "test", exit_code: null, output: "" }],
+  failures: [{ check: "test", exit_code: null, output: "" }],
 };
 
 async function initPortalRepo(portalDir: string): Promise<void> {
@@ -533,7 +535,7 @@ Deno.test("[execution-repair] the repair step content fits the agent request lim
   const bigFailures: IVerificationResult = {
     passed: false,
     error: false,
-    failures: tasks.map((task) => ({ task, exit_code: 1, output: "x".repeat(4000) + marker(task) })),
+    failures: tasks.map((task) => ({ check: task, exit_code: 1, output: "x".repeat(4000) + marker(task) })),
   };
   const { handle, calls } = await runRepairScenario({
     prefix: "exec-repair-budget-",
