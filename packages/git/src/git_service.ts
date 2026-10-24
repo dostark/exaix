@@ -29,10 +29,13 @@ import {
   GIT_CLEAN_DESTRUCTIVE_SHORT_FLAGS,
   GIT_CMD_ADD,
   GIT_CMD_BRANCH,
+  GIT_CMD_CAT_FILE,
   GIT_CMD_CLEAN,
   GIT_CMD_CONFIG,
+  GIT_CMD_DIFF,
   GIT_CMD_INIT,
   GIT_CMD_LIST,
+  GIT_CMD_LS_TREE,
   GIT_CMD_REMOVE,
   GIT_CMD_RESET,
   GIT_CMD_REV_PARSE,
@@ -91,6 +94,14 @@ export class GitTimeoutError extends GitError {
   }
 }
 
+/** A Git command exceeded its captured-output byte cap. The child was reaped. */
+export class GitOutputLimitError extends GitError {
+  constructor(message: string) {
+    super(message);
+    this.name = "GitOutputLimitError";
+  }
+}
+
 export class GitLockError extends GitError {
   constructor(message: string) {
     super(message);
@@ -124,6 +135,82 @@ export class GitSecurityError extends GitError {
     super(message);
     this.name = "GitSecurityError";
   }
+}
+
+/** The audit mode that omits raw argv and error text from Git events. */
+const GIT_AUDIT_MODE_CATEGORICAL = "categorical";
+
+/** Resolved settings of one Git command run. */
+interface TGitCommandSettings {
+  readonly throwOnError: boolean;
+  readonly timeoutMs: number;
+  readonly retryOnLock: boolean;
+  readonly maxOutputBytes?: number;
+  readonly categorical: boolean;
+  readonly operation: string;
+  readonly maxRetries: number;
+  readonly startTime: number;
+}
+
+type TGitAttemptOutcome =
+  | { readonly retry: false; readonly result: { output: string; exitCode: number; stdoutBytes: Uint8Array } }
+  | { readonly retry: true };
+
+function emptyGitResult(): { output: string; exitCode: number; stdoutBytes: Uint8Array } {
+  return { output: "", exitCode: -1, stdoutBytes: new Uint8Array() };
+}
+
+function gitCommandSettings(args: readonly string[], options: IGitCommandOptions): TGitCommandSettings {
+  const retryOnLock = options.retryOnLock ?? true;
+  return {
+    throwOnError: options.throwOnError ?? true,
+    timeoutMs: options.timeoutMs ?? DEFAULT_GIT_COMMAND_TIMEOUT_MS,
+    retryOnLock,
+    maxOutputBytes: options.maxOutputBytes,
+    categorical: options.auditMode === GIT_AUDIT_MODE_CATEGORICAL,
+    operation: categoricalOperation(args),
+    maxRetries: retryOnLock ? DEFAULT_GIT_MAX_RETRIES : 0,
+    startTime: Date.now(),
+  };
+}
+
+/** The captured result of one Git command run. */
+interface TGitCaptured {
+  readonly stdout: Uint8Array;
+  readonly stderr: Uint8Array;
+  readonly code: number;
+}
+
+type TGitCapture =
+  | (TGitCaptured & { readonly timedOut: false; readonly overflowed: false })
+  | { readonly timedOut: true; readonly overflowed: false }
+  | { readonly timedOut: false; readonly overflowed: true };
+
+/** Concatenates captured chunks into one buffer. */
+function concatChunks(chunks: readonly Uint8Array[]): Uint8Array {
+  const total = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+  const joined = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    joined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return joined;
+}
+
+/** Fixed operation categories a categorical Git event may carry. */
+const CATEGORICAL_GIT_OPERATIONS: readonly string[] = [
+  GIT_CMD_DIFF,
+  GIT_CMD_REV_PARSE,
+  GIT_CMD_LS_TREE,
+  GIT_CMD_CAT_FILE,
+  GIT_CMD_STATUS,
+];
+
+/** Maps one command to a fixed operation label. No raw operand text is returned. */
+function categoricalOperation(args: readonly string[]): string {
+  const first = args.find((arg) => !arg.startsWith("-"));
+  return first !== undefined && CATEGORICAL_GIT_OPERATIONS.includes(first) ? first : "other";
 }
 
 // GitService Implementation
@@ -754,100 +841,206 @@ export class GitService implements IGitService {
   public async runGitCommand(
     args: string[],
     options: IGitCommandOptions = {},
-  ): Promise<{ output: string; exitCode: number }> {
-    // Security validation
+  ): Promise<{ output: string; exitCode: number; stdoutBytes: Uint8Array }> {
     this.validateGitCommandSecurity(args);
-
-    const {
-      throwOnError = true,
-      timeoutMs = DEFAULT_GIT_COMMAND_TIMEOUT_MS,
-      retryOnLock = true,
-    } = options;
-
-    const startTime = Date.now();
+    const settings = gitCommandSettings(args, options);
     let attempt = 0;
-    const maxRetries = retryOnLock ? DEFAULT_GIT_MAX_RETRIES : 0;
-
-    while (attempt <= maxRetries) {
-      let timeoutId: ReturnType<typeof setTimeout> | undefined;
-      try {
-        const controller = new AbortController();
-        timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-        const cmd = new Deno.Command("git", {
-          args,
-          cwd: this.repoPath,
-          stdout: "piped",
-          stderr: "piped",
-          signal: controller.signal,
-        });
-
-        const result = await cmd.output();
-        clearTimeout(timeoutId);
-
-        const output = new TextDecoder().decode(result.stdout);
-        const errorOutput = new TextDecoder().decode(result.stderr);
-
-        // Handle specific git error conditions
-        if (result.code !== 0) {
-          const gitError = this.classifyGitError(result.code, this.errorDetail(errorOutput, output), args);
-
-          if (throwOnError) {
-            throw gitError;
-          }
-        }
-
-        // Log successful command
-        this.logActivity(DomainEventType.GitCommandSuccess, {
-          command: `git ${args.join(" ")}`,
-          exit_code: result.code,
-          duration_ms: Date.now() - startTime,
-          attempt: attempt + 1,
-        });
-
-        return {
-          output: output || errorOutput,
-          exitCode: result.code,
-        };
-      } catch (error) {
-        if (timeoutId) clearTimeout(timeoutId);
-
-        // Handle timeout
-        if (error instanceof Error && error.name === "AbortError") {
-          const timeoutError = new GitTimeoutError(
-            `Git command timed out after ${timeoutMs}ms: git ${args.join(" ")}`,
-          );
-
-          if (throwOnError) {
-            throw timeoutError;
-          }
-
-          this.logActivity("git.command.timeout", {
-            command: `git ${args.join(" ")}`,
-            timeout_ms: timeoutMs,
-            attempt: attempt + 1,
-          });
-
-          return { output: "", exitCode: -1 };
-        }
-
-        // Handle lock conflicts with retry
-        if (retryOnLock && attempt < maxRetries && this.isLockError(error as GitServiceError)) {
-          attempt++;
-          const delay = Math.pow(2, attempt) * DEFAULT_GIT_RETRY_BACKOFF_BASE_MS; // Exponential backoff
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          continue;
-        }
-
-        if (throwOnError) {
-          throw error;
-        }
-
-        return { output: "", exitCode: -1 };
+    while (attempt <= settings.maxRetries) {
+      const outcome = await this.runGitCommandAttempt(args, settings, attempt);
+      if (outcome.retry) {
+        attempt++;
+        const delay = Math.pow(2, attempt) * DEFAULT_GIT_RETRY_BACKOFF_BASE_MS;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
       }
+      return outcome.result;
     }
+    throw new GitError(`Git command failed after ${settings.maxRetries + 1} attempts`);
+  }
 
-    throw new GitError(`Git command failed after ${maxRetries + 1} attempts: git ${args.join(" ")}`);
+  /** Runs one attempt and classifies timeout, overflow and lock-retry outcomes. */
+  private async runGitCommandAttempt(
+    args: string[],
+    settings: TGitCommandSettings,
+    attempt: number,
+  ): Promise<TGitAttemptOutcome> {
+    try {
+      const captured = await this.captureGitCommand(args, settings);
+      if (captured.timedOut) {
+        this.logGitTimeout(settings.categorical, settings.operation, settings.timeoutMs, attempt);
+        if (settings.throwOnError) throw this.timeoutError(args, settings);
+        return { retry: false, result: emptyGitResult() };
+      }
+      if (captured.overflowed) {
+        if (settings.throwOnError) {
+          throw new GitOutputLimitError("Git command output exceeded its configured byte cap");
+        }
+        return { retry: false, result: emptyGitResult() };
+      }
+      return { retry: false, result: this.finishGitCommand(args, settings, captured, attempt) };
+    } catch (error) {
+      if (error instanceof GitTimeoutError) {
+        this.logGitTimeout(settings.categorical, settings.operation, settings.timeoutMs, attempt);
+        if (settings.throwOnError) throw error;
+        return { retry: false, result: emptyGitResult() };
+      }
+      if (error instanceof GitOutputLimitError) throw error;
+      if (settings.retryOnLock && attempt < settings.maxRetries && this.isLockError(error as GitServiceError)) {
+        return { retry: true };
+      }
+      if (settings.throwOnError) throw error;
+      return { retry: false, result: emptyGitResult() };
+    }
+  }
+
+  /** Chooses the capture mode and runs the Git child. */
+  private captureGitCommand(args: string[], settings: TGitCommandSettings): Promise<TGitCapture> {
+    return settings.maxOutputBytes === undefined
+      ? this.runUnboundedGitCommand(args, settings.timeoutMs)
+      : this.runBoundedGitCommand(args, settings.timeoutMs, settings.maxOutputBytes);
+  }
+
+  /** Classifies a captured result, logs the event and returns the caller result. */
+  private finishGitCommand(
+    args: string[],
+    settings: TGitCommandSettings,
+    captured: TGitCaptured,
+    attempt: number,
+  ): { output: string; exitCode: number; stdoutBytes: Uint8Array } {
+    const output = new TextDecoder().decode(captured.stdout);
+    const errorOutput = new TextDecoder().decode(captured.stderr);
+    if (captured.code !== 0) {
+      const gitError = this.classifyGitError(captured.code, this.errorDetail(errorOutput, output), args);
+      if (settings.throwOnError) throw gitError;
+    }
+    this.logActivity(
+      DomainEventType.GitCommandSuccess,
+      settings.categorical
+        ? {
+          operation: settings.operation,
+          exit_code: captured.code,
+          duration_ms: Date.now() - settings.startTime,
+          attempt: attempt + 1,
+        }
+        : {
+          command: `git ${args.join(" ")}`,
+          exit_code: captured.code,
+          duration_ms: Date.now() - settings.startTime,
+          attempt: attempt + 1,
+        },
+    );
+    return { output: output || errorOutput, exitCode: captured.code, stdoutBytes: captured.stdout };
+  }
+
+  /** Runs one Git command with the historical unbounded capture. */
+  private async runUnboundedGitCommand(
+    args: string[],
+    timeoutMs: number,
+  ): Promise<TGitCapture> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const cmd = new Deno.Command("git", {
+        args,
+        cwd: this.repoPath,
+        stdout: "piped",
+        stderr: "piped",
+        signal: controller.signal,
+      });
+      const result = await cmd.output();
+      return { timedOut: false, overflowed: false, stdout: result.stdout, stderr: result.stderr, code: result.code };
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return { timedOut: true, overflowed: false };
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  /** Runs one Git command and stops it at the captured-output cap or the deadline. */
+  private async runBoundedGitCommand(
+    args: string[],
+    timeoutMs: number,
+    maxOutputBytes: number,
+  ): Promise<TGitCapture> {
+    const child = new Deno.Command("git", {
+      args,
+      cwd: this.repoPath,
+      stdout: "piped",
+      stderr: "piped",
+    }).spawn();
+    const budget = { remaining: maxOutputBytes };
+    let timedOut = false;
+    let overflowed = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      try {
+        child.kill();
+      } catch {
+        // The child already exited.
+      }
+    }, timeoutMs);
+    const pump = async (stream: ReadableStream<Uint8Array>): Promise<Uint8Array[]> => {
+      const chunks: Uint8Array[] = [];
+      const reader = stream.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) return chunks;
+          if (value === undefined) continue;
+          if (value.byteLength > budget.remaining) {
+            overflowed = true;
+            try {
+              child.kill();
+            } catch {
+              // The child already exited.
+            }
+            return chunks;
+          }
+          budget.remaining -= value.byteLength;
+          chunks.push(value);
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    };
+    const [stdoutChunks, stderrChunks, status] = await Promise.all([
+      pump(child.stdout),
+      pump(child.stderr),
+      child.status,
+    ]);
+    clearTimeout(timer);
+    if (timedOut) return { timedOut: true, overflowed: false };
+    if (overflowed) return { timedOut: false, overflowed: true };
+    return {
+      timedOut: false,
+      overflowed: false,
+      stdout: concatChunks(stdoutChunks),
+      stderr: concatChunks(stderrChunks),
+      code: status.code,
+    };
+  }
+
+  /** Builds the timeout error. Categorical mode keeps the raw argv out of it. */
+  private timeoutError(args: readonly string[], settings: TGitCommandSettings): GitTimeoutError {
+    return settings.categorical
+      ? new GitTimeoutError(`Git command timed out after ${settings.timeoutMs}ms`)
+      : new GitTimeoutError(`Git command timed out after ${settings.timeoutMs}ms: git ${args.join(" ")}`);
+  }
+
+  /** Logs the timeout event. Categorical mode carries no command text. */
+  private logGitTimeout(
+    categorical: boolean,
+    operation: string,
+    timeoutMs: number,
+    attempt: number,
+  ): void {
+    this.logActivity(
+      "git.command.timeout",
+      categorical
+        ? { operation, timeout_ms: timeoutMs, attempt: attempt + 1 }
+        : { command: `git ${operation}`, timeout_ms: timeoutMs, attempt: attempt + 1 },
+    );
   }
 
   /**

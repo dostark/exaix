@@ -57,6 +57,25 @@ export const DEFAULT_GIT_REV_PARSE_TIMEOUT_MS: number = configurable({
 /** Git subcommand constants */
 export const GIT_CMD_REV_PARSE = "rev-parse";
 export const GIT_CMD_DIFF = "diff";
+export const GIT_CMD_LS_TREE = "ls-tree";
+export const GIT_CMD_CAT_FILE = "cat-file";
+/** A git global option that stops pathspec glob interpretation. */
+export const GIT_FLAG_LITERAL_PATHSPECS = "--literal-pathspecs";
+export const GIT_FLAG_NAME_STATUS = "--name-status";
+/** NUL-delimited name output. */
+export const GIT_FLAG_NUL = "-z";
+export const GIT_FLAG_NO_RENAMES = "--no-renames";
+export const GIT_FLAG_NO_EXT_DIFF = "--no-ext-diff";
+export const GIT_FLAG_NO_TEXT_CONV = "--no-textconv";
+export const GIT_FLAG_DIFF_FILTER_AMT = "--diff-filter=AMT";
+export const GIT_FLAG_TEXT = "--text";
+export const GIT_FLAG_NO_COLOR = "--no-color";
+export const GIT_FLAG_NO_INDENT_HEURISTIC = "--no-indent-heuristic";
+export const GIT_FLAG_DIFF_ALGORITHM_MYERS = "--diff-algorithm=myers";
+export const GIT_FLAG_UNIFIED_ZERO = "-U0";
+export const GIT_FLAG_VERIFY = "--verify";
+/** Suffix that peels a commit-ish to its commit object. */
+export const GIT_COMMIT_PEEL_SUFFIX = "^{commit}";
 /** Print only the changed paths, not the patch body. */
 export const GIT_FLAG_NAME_ONLY = "--name-only";
 export const GIT_CMD_WORKTREE = "worktree";

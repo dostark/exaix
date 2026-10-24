@@ -17,10 +17,17 @@ export interface ICommitOptions {
   traceId: string;
 }
 
+/** How much detail a Git command event carries. `categorical` omits raw argv and error text. */
+export type GitAuditMode = "full" | "categorical";
+
 export interface IGitCommandOptions {
   throwOnError?: boolean;
   timeoutMs?: number;
   retryOnLock?: boolean;
+  /** Cap on captured stdout plus stderr bytes. A breach reaps the child. */
+  maxOutputBytes?: number;
+  /** Default `full` keeps the existing event payload. */
+  auditMode?: GitAuditMode;
 }
 
 export interface IWorktreeInfo {
@@ -52,6 +59,6 @@ export interface IGitService {
   runGitCommand(
     args: string[],
     options?: IGitCommandOptions,
-  ): Promise<{ output: string; exitCode: number }>;
+  ): Promise<{ output: string; exitCode: number; stdoutBytes?: Uint8Array }>;
   validateArgs(args: string[]): { valid: boolean; reason?: string };
 }
