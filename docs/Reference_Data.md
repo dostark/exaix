@@ -470,206 +470,209 @@ journals one row, and its `resultSummary` carries the refusal. The row count is 
 `planning.tools.completed` reports `toolCalls`, which counts the calls within the round cap. No batch event exists yet.
 Typed batch and call payloads for parallel dispatch are not available yet. Until then, each call journals one row.
 
-| Enum Member                              | String Value                                  | Domain                          |
-| ---------------------------------------- | --------------------------------------------- | ------------------------------- |
-| `FlowStepExecuted`                       | `flow.step.executed`                          | Flow                            |
-| `FlowStepReplayed`                       | `flow.step.replayed`                          | Flow                            |
-| `FlowStepInvalidated`                    | `flow.step.invalidated`                       | Flow                            |
-| `FlowValidating`                         | `flow.validating`                             | Flow                            |
-| `FlowValidated`                          | `flow.validated`                              | Flow                            |
-| `FlowStarted`                            | `flow.started`                                | Flow                            |
-| `FlowDependenciesResolving`              | `flow.dependencies.resolving`                 | Flow                            |
-| `FlowDependenciesResolved`               | `flow.dependencies.resolved`                  | Flow                            |
-| `FlowWaveStarted`                        | `flow.wave.started`                           | Flow                            |
-| `FlowWaveResumeSkipped`                  | `flow.wave.resume.skipped`                    | Flow                            |
-| `FlowWaveCompleted`                      | `flow.wave.completed`                         | Flow                            |
-| `FlowWaveErrors`                         | `flow.wave.errors`                            | Flow                            |
-| `FLOW_EVENT_PARALLEL_GROUP_STARTED`      | `flow.parallel_group.started`                 | Flow / Parallel Groups          |
-| `FLOW_EVENT_PARALLEL_GROUP_COMPLETED`    | `flow.parallel_group.completed`               | Flow / Parallel Groups          |
-| `FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED` | `flow.parallel_group.merge_failed`            | Flow / Parallel Groups          |
-| `FlowStepProcessingError`                | `flow.step.processing_error`                  | Flow                            |
-| `FlowOutputAggregating`                  | `flow.output.aggregating`                     | Flow                            |
-| `FlowOutputAggregated`                   | `flow.output.aggregated`                      | Flow                            |
-| `FlowStepQueued`                         | `flow.step.queued`                            | Flow                            |
-| `FlowStepStarted`                        | `flow.step.started`                           | Flow                            |
-| `FlowStepConditionEvaluated`             | `flow.step.condition.evaluated`               | Flow                            |
-| `FlowStepCompleted`                      | `flow.step.completed`                         | Flow                            |
-| `FlowStepFailed`                         | `flow.step.failed`                            | Flow                            |
-| `FlowStepInputPrepared`                  | `flow.step.input.prepared`                    | Flow                            |
-| `FlowStepTransformApplied`               | `flow.step.transform.applied`                 | Flow                            |
-| `FlowStepUnexpectedError`                | `flow.step.unexpected_error`                  | Flow                            |
-| `FlowTokenSummary`                       | `flow.token_summary`                          | Flow                            |
-| `FlowTokenSummaryError`                  | `flow.token_summary.error`                    | Flow                            |
-| `FlowGateCriteriaNoAnalysis`             | `flow.gate.criteria.no_analysis`              | Flow                            |
-| `FlowGateEvaluated`                      | `flow.gate.evaluated`                         | Flow                            |
-| `WaitStateCreated`                       | `wait_state.created`                          | Flow / Wait States              |
-| `WaitStateResolved`                      | `wait_state.resolved`                         | Flow / Wait States              |
-| `ExecutionSkipped`                       | `execution.skipped`                           | Execution                       |
-| `ExecutionStarted`                       | `execution.started`                           | Execution                       |
-| `ExecutionReadonlyPlanSkipped`           | `execution.readonly_structured_plan_skipped`  | Execution                       |
-| `ExecutionReadonlyPlanExecuted`          | `execution.readonly_structured_plan_executed` | Execution                       |
-| `ExecutionActionStarted`                 | `execution.action_started`                    | Execution                       |
-| `ExecutionActionCompleted`               | `execution.action_completed`                  | Execution                       |
-| `ExecutionActionFailed`                  | `execution.action_failed`                     | Execution                       |
-| `ExecutionLeaseAcquired`                 | `execution.lease_acquired`                    | Execution                       |
-| `ExecutionLeaseReleased`                 | `execution.lease_released`                    | Execution                       |
-| `ExecutionCompleted`                     | `execution.completed`                         | Execution                       |
-| `ExecutionFailed`                        | `execution.failed`                            | Execution                       |
-| `ExecutionAmendmentPending`              | `execution.amendment_pending`                 | Execution                       |
-| `ExecutionNoChanges`                     | `execution.no_changes`                        | Execution                       |
-| `ExecutionVerificationStarted`           | `execution.verification.started`              | Execution                       |
-| `ExecutionVerificationPassed`            | `execution.verification.passed`               | Execution                       |
-| `ExecutionVerificationFailed`            | `execution.verification.failed`               | Execution                       |
-| `ExecutionVerificationExhausted`         | `execution.verification.exhausted`            | Execution                       |
-| `ExecutionRepairStarted`                 | `execution.repair.started`                    | Execution                       |
-| `ExecutionRepairCompleted`               | `execution.repair.completed`                  | Execution                       |
-| `ExecutionContextCompacted`              | `execution.context.compacted`                 | Execution                       |
-| `ReportGenerated`                        | `report.generated`                            | Execution                       |
-| `ReportError`                            | `report.error`                                | Execution                       |
-| `PlanExecutionStarted`                   | `plan.execution_started`                      | Plan                            |
-| `PlanExecutionCompleted`                 | `plan.execution_completed`                    | Plan                            |
-| `PlanExecutionFailed`                    | `plan.execution_failed`                       | Plan                            |
-| `PlanAmendmentTriggered`                 | `plan.amendment_triggered`                    | Plan                            |
-| `PlanAmendmentProposed`                  | `plan.amendment.proposed`                     | Plan                            |
-| `PlanAmendmentAwaitingApproval`          | `plan.amendment.awaiting_approval`            | Plan                            |
-| `PlanAmendmentApproved`                  | `plan.amendment.approved`                     | Plan                            |
-| `PlanAmendmentRejected`                  | `plan.amendment.rejected`                     | Plan                            |
-| `PlanAmendmentExpired`                   | `plan.amendment.expired`                      | Plan                            |
-| `PlanAmendmentApplied`                   | `plan.amendment.applied`                      | Plan                            |
-| `ToolAliasRewritten`                     | `tool.alias.rewritten`                        | Tool runtime                    |
-| `ToolParamUnknown`                       | `tool.param.unknown`                          | Tool runtime                    |
-| `PlanningToolLoopCompleted`              | `planning.tools.completed`                    | Planning                        |
-| `PlanningToolLoopAborted`                | `planning.tools.aborted`                      | Planning                        |
-| `PlanningToolsSkipped`                   | `planning.tools.skipped`                      | Planning                        |
-| `AgentDynamicToolCall`                   | `dynamic_tool_call`                           | Agent                           |
-| `RequestProcessStarted`                  | `request.process.started`                     | Request                         |
-| `RequestProcessing`                      | `request.processing`                          | Request                         |
-| `RequestSkipped`                         | `request.skipped`                             | Request                         |
-| `RequestValidationRetry`                 | `plan.validation.retry`                       | Request                         |
-| `RequestValidationErrorDetected`         | `plan.validation.error.detected`              | Request                         |
-| `RequestSavedRejected`                   | `plan.saved_rejected`                         | Request                         |
-| `RequestFailed`                          | `request.failed`                              | Request                         |
-| `RequestPlanned`                         | `request.planned`                             | Request                         |
-| `RequestInvalid`                         | `request.invalid`                             | Request                         |
-| `RequestProcessingError`                 | `request.processing.error`                    | Request                         |
-| `RequestProcessingDuration`              | `request.processing.duration`                 | Request                         |
-| `RequestQualityGateFailed`               | `request.quality_gate.failed`                 | Request                         |
-| `RequestMemoryEnhanceFailed`             | `memory.enhance_failed`                       | Request                         |
-| `RequestFlowValidated`                   | `request.flow.validated`                      | Request / Routing               |
-| `RequestFlowValidationReportFailed`      | `request.flow.validation.failed`              | Request / Routing               |
-| `RequestRoutingFlow`                     | `request.routing.flow`                        | Request / Routing               |
-| `RequestRoutingAgentRole`                | `request.routing.agent_role`                  | Request / Routing               |
-| `RequestRoutingDefault`                  | `request.routing.default`                     | Request / Routing               |
-| `RequestRoutingError`                    | `request.routing.error`                       | Request / Routing               |
-| `RequestRoutingPolicyFailed`             | `request.routing.policy.failed`               | Request / Routing               |
-| `RoutingDecision`                        | `routing.decision`                            | Request / Routing               |
-| `RoutingFallbackUsed`                    | `routing.fallback_used`                       | Request / Routing               |
-| `RoutingExperimentApplied`               | `routing.experiment_applied`                  | Request / Routing               |
-| `FrontmatterNotFound`                    | `file.not_found`                              | Frontmatter                     |
-| `FrontmatterInvalid`                     | `frontmatter.invalid`                         | Frontmatter                     |
-| `FrontmatterMissingTraceId`              | `frontmatter.missing_trace_id`                | Frontmatter                     |
-| `FrontmatterParseFailed`                 | `file.parse_failed`                           | Frontmatter                     |
-| `FrontmatterAcceptanceCriteriaMalformed` | `frontmatter.acceptance_criteria.malformed`   | Frontmatter                     |
-| `FrontmatterExpectedOutcomesMalformed`   | `frontmatter.expected_outcomes.malformed`     | Frontmatter                     |
-| `FrontmatterScopeMalformed`              | `frontmatter.scope.malformed`                 | Frontmatter                     |
-| `MemoryProjectCreated`                   | `memory.project.created`                      | Memory                          |
-| `MemoryProjectUpdated`                   | `memory.project.updated`                      | Memory                          |
-| `MemoryPatternAdded`                     | `memory.pattern.added`                        | Memory                          |
-| `MemoryDecisionAdded`                    | `memory.decision.added`                       | Memory                          |
-| `MemoryExecutionRecorded`                | `memory.execution.recorded`                   | Memory                          |
-| `MemoryGlobalInitialized`                | `memory.global.initialized`                   | Memory                          |
-| `MemoryGlobalLearningAdded`              | `memory.global.learning.added`                | Memory                          |
-| `MemoryLearningPromoted`                 | `memory.learning.promoted`                    | Memory                          |
-| `MemoryLearningDemoted`                  | `memory.learning.demoted`                     | Memory                          |
-| `MemoryLearningExtracted`                | `memory.learning.extracted`                   | Memory                          |
-| `MemoryCostRecorded`                     | `memory.cost.recorded`                        | Memory                          |
-| `MemoryIndicesRebuilt`                   | `memory.indices.rebuilt`                      | Memory                          |
-| `MemoryEmbeddingsRebuilt`                | `memory.embeddings.rebuilt`                   | Memory                          |
-| `MemoryPendingDigest`                    | `memory.pending_digest`                       | Memory                          |
-| `MemoryInitFailed`                       | `memory.init_failed`                          | Memory                          |
-| `MemoryAutoApprovalCycle`                | `memory.auto_approval_cycle`                  | Memory                          |
-| `MemoryMaintenanceCycleFailed`           | `memory.maintenance_cycle_failed`             | Memory                          |
-| `MemoryTierPromotion`                    | `memory.tier_promotion`                       | Memory                          |
-| `MemoryTierPromotionFailed`              | `memory.tier_promotion_failed`                | Memory                          |
-| `MemoryIndexRebuildFailed`               | `memory.index_rebuild_failed`                 | Memory                          |
-| `ReviewCreated`                          | `review.created`                              | Review                          |
-| `ReviewApproved`                         | `review.approved`                             | Review                          |
-| `ReviewRejected`                         | `review.rejected`                             | Review                          |
-| `GitCheck`                               | `git.check`                                   | Git                             |
-| `GitInit`                                | `git.init`                                    | Git                             |
-| `GitIdentityCheck`                       | `git.identity_check`                          | Git                             |
-| `GitIdentityConfigured`                  | `git.identity_configured`                     | Git                             |
-| `GitBranchCreated`                       | `git.branch_created`                          | Git                             |
-| `GitCommitted`                           | `git.committed`                               | Git                             |
-| `GitCheckout`                            | `git.checkout`                                | Git                             |
-| `GitCommandSuccess`                      | `git.command.success`                         | Git                             |
-| `GitAuditTimeout`                        | `git.audit.timeout`                           | Git                             |
-| `GitAuditFailed`                         | `git.audit.failed`                            | Git                             |
-| `GitRevertCompleted`                     | `git.revert.completed`                        | Git                             |
-| `GitRevertPartialFailure`                | `git.revert.partial_failure`                  | Git                             |
-| `DaemonStarting`                         | `daemon.starting`                             | Daemon                          |
-| `DaemonStarted`                          | `daemon.started`                              | Daemon                          |
-| `DaemonStopping`                         | `daemon.stopping`                             | Daemon                          |
-| `DaemonStopped`                          | `daemon.stopped`                              | Daemon                          |
-| `DaemonForceStopping`                    | `daemon.force_stopping`                       | Daemon                          |
-| `DaemonRestarting`                       | `daemon.restarting`                           | Daemon                          |
-| `DaemonRestarted`                        | `daemon.restarted`                            | Daemon                          |
-| `DaemonNotRunning`                       | `daemon.not_running`                          | Daemon                          |
-| `DaemonNoLogs`                           | `daemon.no_logs`                              | Daemon                          |
-| `DaemonStartFailed`                      | `daemon.start_failed`                         | Daemon                          |
-| `WatcherFileReady`                       | `watcher.file_ready`                          | Watcher                         |
-| `WatcherFileError`                       | `watcher.file_error`                          | Watcher                         |
-| `WatcherFileStable`                      | `watcher.file_stable`                         | Watcher                         |
-| `WatcherFileUnstable`                    | `watcher.file_unstable`                       | Watcher                         |
-| `WatcherFileAlreadyProcessing`           | `watcher.file_already_processing`             | Watcher                         |
-| `WatcherError`                           | `watcher.error`                               | Watcher                         |
-| `ConfigLoaded`                           | `config.loaded`                               | Config                          |
-| `ConfigUpdated`                          | `config.updated`                              | Config                          |
-| `DatabaseConnected`                      | `database.connected`                          | Database                        |
-| `SecurityFileValidationFilteredAll`      | `security.file_validation_filtered_all`       | Security                        |
-| `SecuritySymlinkDetected`                | `symlink_detected`                            | Security                        |
-| `SecurityViolation`                      | `security.violation`                          | Security                        |
-| `SecurityPathTraversalAttempted`         | `security.path_traversal_attempted`           | Security                        |
-| `SecurityPathAccessDenied`               | `security.path_access_denied`                 | Security                        |
-| `PathResolved`                           | `path.resolved`                               | Portal                          |
-| `PathResolutionFailed`                   | `path.resolution_failed`                      | Portal                          |
-| `PathResolutionError`                    | `path.resolution_error`                       | Portal                          |
-| `PathInvalidAlias`                       | `path.invalid_alias`                          | Portal                          |
-| `PathAccessDenied`                       | `path.access_denied`                          | Portal                          |
-| `PortalAnalyzed`                         | `portal.analyzed`                             | Portal                          |
-| `RequestStatusUpdateFailed`              | `request.status_update_failed`                | Request                         |
-| `RequestFlowValidationFailed`            | `flow.validation.failed`                      | Request                         |
-| `RequestProviderSelected`                | `provider.selected`                           | Request                         |
-| `RequestProviderSelectionFailed`         | `provider.selection_failed`                   | Request                         |
-| `RequestBlueprintNotFound`               | `blueprint.not_found`                         | Request                         |
-| `RequestBlueprintLoadedFallback`         | `blueprint.loaded_fallback`                   | Request                         |
-| `RequestPlanSaveRejectedFailed`          | `plan.save_rejected_failed`                   | Request                         |
-| `McpPromptsExecutePlan`                  | `mcp.prompts.execute_plan`                    | MCP                             |
-| `McpPromptsCreateReview`                 | `mcp.prompts.create_review`                   | MCP                             |
-| `McpPromptsCommitMessage`                | `mcp.prompts.commit_message`                  | MCP                             |
-| `McpResourcesDiscovered`                 | `mcp.resources.discovered`                    | MCP                             |
-| `DaemonRequestProcessorInitialized`      | `request_processor.initialized`               | Daemon                          |
-| `DaemonFileDetected`                     | `file.detected`                               | Daemon                          |
-| `PlanGenerated`                          | `plan.generated`                              | Plan                            |
-| `PlanDetected`                           | `plan.detected`                               | Plan                            |
-| `PlanExecutionManaged`                   | `plan.execution_managed`                      | Plan                            |
-| `PlanExecutionManagedFailure`            | `plan.execution_managed_failure`              | Plan                            |
-| `ShutdownWatchersStopped`                | `shutdown.watchers_stopped`                   | Daemon                          |
-| `ShutdownAutoApprovalStopped`            | `shutdown.auto_approval_stopped`              | Daemon                          |
-| `ShutdownDatabaseClosed`                 | `shutdown.database_closed`                    | Daemon                          |
-| `SafeErrorInternalDetails`               | `safe_error.internal_details`                 | Error Handling                  |
-| `ProviderRetryScheduled`                 | `provider.retry.scheduled`                    | LLM                             |
-| `LlmProviderInitialized`                 | `llm.provider.initialized`                    | LLM                             |
-| `LlmCallStarted`                         | `llm.call.started`                            | LLM                             |
-| `LlmCallCompleted`                       | `llm.call.completed`                          | LLM                             |
-| `LlmCallFailed`                          | `llm.call.failed`                             | LLM                             |
-| `LlmUsageRecorded`                       | `llm.usage`                                   | LLM                             |
-| `OpenRouterCapabilityLookupFailed`       | `openrouter.capability_lookup.failed`         | LLM                             |
-| `ChildRunSpawned` _(reserved)_           | `child_run.spawned`                           | Reserved (delegated child runs) |
-| `ChildRunCompleted` _(reserved)_         | `child_run.completed`                         | Reserved (delegated child runs) |
-| `ResourceLockAcquired` _(reserved)_      | `resource_lock.acquired`                      | Reserved (concurrency policies) |
-| `ResourceLockBlocked` _(reserved)_       | `resource_lock.blocked`                       | Reserved (concurrency policies) |
-| `ResourceLockReleased` _(reserved)_      | `resource_lock.released`                      | Reserved (concurrency policies) |
+| Enum Member                               | String Value                                  | Domain                          |
+| ----------------------------------------- | --------------------------------------------- | ------------------------------- |
+| `FlowStepExecuted`                        | `flow.step.executed`                          | Flow                            |
+| `FlowStepReplayed`                        | `flow.step.replayed`                          | Flow                            |
+| `FlowStepInvalidated`                     | `flow.step.invalidated`                       | Flow                            |
+| `FlowValidating`                          | `flow.validating`                             | Flow                            |
+| `FlowValidated`                           | `flow.validated`                              | Flow                            |
+| `FlowStarted`                             | `flow.started`                                | Flow                            |
+| `FlowDependenciesResolving`               | `flow.dependencies.resolving`                 | Flow                            |
+| `FlowDependenciesResolved`                | `flow.dependencies.resolved`                  | Flow                            |
+| `FlowWaveStarted`                         | `flow.wave.started`                           | Flow                            |
+| `FlowWaveResumeSkipped`                   | `flow.wave.resume.skipped`                    | Flow                            |
+| `FlowWaveCompleted`                       | `flow.wave.completed`                         | Flow                            |
+| `FlowWaveErrors`                          | `flow.wave.errors`                            | Flow                            |
+| `FLOW_EVENT_PARALLEL_GROUP_STARTED`       | `flow.parallel_group.started`                 | Flow / Parallel Groups          |
+| `FLOW_EVENT_PARALLEL_GROUP_COMPLETED`     | `flow.parallel_group.completed`               | Flow / Parallel Groups          |
+| `FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED`  | `flow.parallel_group.merge_failed`            | Flow / Parallel Groups          |
+| `FlowStepProcessingError`                 | `flow.step.processing_error`                  | Flow                            |
+| `FlowOutputAggregating`                   | `flow.output.aggregating`                     | Flow                            |
+| `FlowOutputAggregated`                    | `flow.output.aggregated`                      | Flow                            |
+| `FlowStepQueued`                          | `flow.step.queued`                            | Flow                            |
+| `FlowStepStarted`                         | `flow.step.started`                           | Flow                            |
+| `FlowStepConditionEvaluated`              | `flow.step.condition.evaluated`               | Flow                            |
+| `FlowStepCompleted`                       | `flow.step.completed`                         | Flow                            |
+| `FlowStepFailed`                          | `flow.step.failed`                            | Flow                            |
+| `FlowStepInputPrepared`                   | `flow.step.input.prepared`                    | Flow                            |
+| `FlowStepTransformApplied`                | `flow.step.transform.applied`                 | Flow                            |
+| `FlowStepUnexpectedError`                 | `flow.step.unexpected_error`                  | Flow                            |
+| `FlowTokenSummary`                        | `flow.token_summary`                          | Flow                            |
+| `FlowTokenSummaryError`                   | `flow.token_summary.error`                    | Flow                            |
+| `FlowGateCriteriaNoAnalysis`              | `flow.gate.criteria.no_analysis`              | Flow                            |
+| `FlowGateEvaluated`                       | `flow.gate.evaluated`                         | Flow                            |
+| `WaitStateCreated`                        | `wait_state.created`                          | Flow / Wait States              |
+| `WaitStateResolved`                       | `wait_state.resolved`                         | Flow / Wait States              |
+| `ExecutionSkipped`                        | `execution.skipped`                           | Execution                       |
+| `ExecutionStarted`                        | `execution.started`                           | Execution                       |
+| `ExecutionReadonlyPlanSkipped`            | `execution.readonly_structured_plan_skipped`  | Execution                       |
+| `ExecutionReadonlyPlanExecuted`           | `execution.readonly_structured_plan_executed` | Execution                       |
+| `ExecutionActionStarted`                  | `execution.action_started`                    | Execution                       |
+| `ExecutionActionCompleted`                | `execution.action_completed`                  | Execution                       |
+| `ExecutionActionFailed`                   | `execution.action_failed`                     | Execution                       |
+| `ExecutionLeaseAcquired`                  | `execution.lease_acquired`                    | Execution                       |
+| `ExecutionLeaseReleased`                  | `execution.lease_released`                    | Execution                       |
+| `ExecutionCompleted`                      | `execution.completed`                         | Execution                       |
+| `ExecutionFailed`                         | `execution.failed`                            | Execution                       |
+| `ExecutionAmendmentPending`               | `execution.amendment_pending`                 | Execution                       |
+| `ExecutionNoChanges`                      | `execution.no_changes`                        | Execution                       |
+| `ExecutionVerificationStarted`            | `execution.verification.started`              | Execution                       |
+| `ExecutionVerificationLintCheckStarted`   | `execution.verification.lint_check.started`   | Execution                       |
+| `ExecutionVerificationLintCheckCompleted` | `execution.verification.lint_check.completed` | Execution                       |
+| `ExecutionVerificationLintFindings`       | `execution.verification.lint_findings`        | Execution                       |
+| `ExecutionVerificationPassed`             | `execution.verification.passed`               | Execution                       |
+| `ExecutionVerificationFailed`             | `execution.verification.failed`               | Execution                       |
+| `ExecutionVerificationExhausted`          | `execution.verification.exhausted`            | Execution                       |
+| `ExecutionRepairStarted`                  | `execution.repair.started`                    | Execution                       |
+| `ExecutionRepairCompleted`                | `execution.repair.completed`                  | Execution                       |
+| `ExecutionContextCompacted`               | `execution.context.compacted`                 | Execution                       |
+| `ReportGenerated`                         | `report.generated`                            | Execution                       |
+| `ReportError`                             | `report.error`                                | Execution                       |
+| `PlanExecutionStarted`                    | `plan.execution_started`                      | Plan                            |
+| `PlanExecutionCompleted`                  | `plan.execution_completed`                    | Plan                            |
+| `PlanExecutionFailed`                     | `plan.execution_failed`                       | Plan                            |
+| `PlanAmendmentTriggered`                  | `plan.amendment_triggered`                    | Plan                            |
+| `PlanAmendmentProposed`                   | `plan.amendment.proposed`                     | Plan                            |
+| `PlanAmendmentAwaitingApproval`           | `plan.amendment.awaiting_approval`            | Plan                            |
+| `PlanAmendmentApproved`                   | `plan.amendment.approved`                     | Plan                            |
+| `PlanAmendmentRejected`                   | `plan.amendment.rejected`                     | Plan                            |
+| `PlanAmendmentExpired`                    | `plan.amendment.expired`                      | Plan                            |
+| `PlanAmendmentApplied`                    | `plan.amendment.applied`                      | Plan                            |
+| `ToolAliasRewritten`                      | `tool.alias.rewritten`                        | Tool runtime                    |
+| `ToolParamUnknown`                        | `tool.param.unknown`                          | Tool runtime                    |
+| `PlanningToolLoopCompleted`               | `planning.tools.completed`                    | Planning                        |
+| `PlanningToolLoopAborted`                 | `planning.tools.aborted`                      | Planning                        |
+| `PlanningToolsSkipped`                    | `planning.tools.skipped`                      | Planning                        |
+| `AgentDynamicToolCall`                    | `dynamic_tool_call`                           | Agent                           |
+| `RequestProcessStarted`                   | `request.process.started`                     | Request                         |
+| `RequestProcessing`                       | `request.processing`                          | Request                         |
+| `RequestSkipped`                          | `request.skipped`                             | Request                         |
+| `RequestValidationRetry`                  | `plan.validation.retry`                       | Request                         |
+| `RequestValidationErrorDetected`          | `plan.validation.error.detected`              | Request                         |
+| `RequestSavedRejected`                    | `plan.saved_rejected`                         | Request                         |
+| `RequestFailed`                           | `request.failed`                              | Request                         |
+| `RequestPlanned`                          | `request.planned`                             | Request                         |
+| `RequestInvalid`                          | `request.invalid`                             | Request                         |
+| `RequestProcessingError`                  | `request.processing.error`                    | Request                         |
+| `RequestProcessingDuration`               | `request.processing.duration`                 | Request                         |
+| `RequestQualityGateFailed`                | `request.quality_gate.failed`                 | Request                         |
+| `RequestMemoryEnhanceFailed`              | `memory.enhance_failed`                       | Request                         |
+| `RequestFlowValidated`                    | `request.flow.validated`                      | Request / Routing               |
+| `RequestFlowValidationReportFailed`       | `request.flow.validation.failed`              | Request / Routing               |
+| `RequestRoutingFlow`                      | `request.routing.flow`                        | Request / Routing               |
+| `RequestRoutingAgentRole`                 | `request.routing.agent_role`                  | Request / Routing               |
+| `RequestRoutingDefault`                   | `request.routing.default`                     | Request / Routing               |
+| `RequestRoutingError`                     | `request.routing.error`                       | Request / Routing               |
+| `RequestRoutingPolicyFailed`              | `request.routing.policy.failed`               | Request / Routing               |
+| `RoutingDecision`                         | `routing.decision`                            | Request / Routing               |
+| `RoutingFallbackUsed`                     | `routing.fallback_used`                       | Request / Routing               |
+| `RoutingExperimentApplied`                | `routing.experiment_applied`                  | Request / Routing               |
+| `FrontmatterNotFound`                     | `file.not_found`                              | Frontmatter                     |
+| `FrontmatterInvalid`                      | `frontmatter.invalid`                         | Frontmatter                     |
+| `FrontmatterMissingTraceId`               | `frontmatter.missing_trace_id`                | Frontmatter                     |
+| `FrontmatterParseFailed`                  | `file.parse_failed`                           | Frontmatter                     |
+| `FrontmatterAcceptanceCriteriaMalformed`  | `frontmatter.acceptance_criteria.malformed`   | Frontmatter                     |
+| `FrontmatterExpectedOutcomesMalformed`    | `frontmatter.expected_outcomes.malformed`     | Frontmatter                     |
+| `FrontmatterScopeMalformed`               | `frontmatter.scope.malformed`                 | Frontmatter                     |
+| `MemoryProjectCreated`                    | `memory.project.created`                      | Memory                          |
+| `MemoryProjectUpdated`                    | `memory.project.updated`                      | Memory                          |
+| `MemoryPatternAdded`                      | `memory.pattern.added`                        | Memory                          |
+| `MemoryDecisionAdded`                     | `memory.decision.added`                       | Memory                          |
+| `MemoryExecutionRecorded`                 | `memory.execution.recorded`                   | Memory                          |
+| `MemoryGlobalInitialized`                 | `memory.global.initialized`                   | Memory                          |
+| `MemoryGlobalLearningAdded`               | `memory.global.learning.added`                | Memory                          |
+| `MemoryLearningPromoted`                  | `memory.learning.promoted`                    | Memory                          |
+| `MemoryLearningDemoted`                   | `memory.learning.demoted`                     | Memory                          |
+| `MemoryLearningExtracted`                 | `memory.learning.extracted`                   | Memory                          |
+| `MemoryCostRecorded`                      | `memory.cost.recorded`                        | Memory                          |
+| `MemoryIndicesRebuilt`                    | `memory.indices.rebuilt`                      | Memory                          |
+| `MemoryEmbeddingsRebuilt`                 | `memory.embeddings.rebuilt`                   | Memory                          |
+| `MemoryPendingDigest`                     | `memory.pending_digest`                       | Memory                          |
+| `MemoryInitFailed`                        | `memory.init_failed`                          | Memory                          |
+| `MemoryAutoApprovalCycle`                 | `memory.auto_approval_cycle`                  | Memory                          |
+| `MemoryMaintenanceCycleFailed`            | `memory.maintenance_cycle_failed`             | Memory                          |
+| `MemoryTierPromotion`                     | `memory.tier_promotion`                       | Memory                          |
+| `MemoryTierPromotionFailed`               | `memory.tier_promotion_failed`                | Memory                          |
+| `MemoryIndexRebuildFailed`                | `memory.index_rebuild_failed`                 | Memory                          |
+| `ReviewCreated`                           | `review.created`                              | Review                          |
+| `ReviewApproved`                          | `review.approved`                             | Review                          |
+| `ReviewRejected`                          | `review.rejected`                             | Review                          |
+| `GitCheck`                                | `git.check`                                   | Git                             |
+| `GitInit`                                 | `git.init`                                    | Git                             |
+| `GitIdentityCheck`                        | `git.identity_check`                          | Git                             |
+| `GitIdentityConfigured`                   | `git.identity_configured`                     | Git                             |
+| `GitBranchCreated`                        | `git.branch_created`                          | Git                             |
+| `GitCommitted`                            | `git.committed`                               | Git                             |
+| `GitCheckout`                             | `git.checkout`                                | Git                             |
+| `GitCommandSuccess`                       | `git.command.success`                         | Git                             |
+| `GitAuditTimeout`                         | `git.audit.timeout`                           | Git                             |
+| `GitAuditFailed`                          | `git.audit.failed`                            | Git                             |
+| `GitRevertCompleted`                      | `git.revert.completed`                        | Git                             |
+| `GitRevertPartialFailure`                 | `git.revert.partial_failure`                  | Git                             |
+| `DaemonStarting`                          | `daemon.starting`                             | Daemon                          |
+| `DaemonStarted`                           | `daemon.started`                              | Daemon                          |
+| `DaemonStopping`                          | `daemon.stopping`                             | Daemon                          |
+| `DaemonStopped`                           | `daemon.stopped`                              | Daemon                          |
+| `DaemonForceStopping`                     | `daemon.force_stopping`                       | Daemon                          |
+| `DaemonRestarting`                        | `daemon.restarting`                           | Daemon                          |
+| `DaemonRestarted`                         | `daemon.restarted`                            | Daemon                          |
+| `DaemonNotRunning`                        | `daemon.not_running`                          | Daemon                          |
+| `DaemonNoLogs`                            | `daemon.no_logs`                              | Daemon                          |
+| `DaemonStartFailed`                       | `daemon.start_failed`                         | Daemon                          |
+| `WatcherFileReady`                        | `watcher.file_ready`                          | Watcher                         |
+| `WatcherFileError`                        | `watcher.file_error`                          | Watcher                         |
+| `WatcherFileStable`                       | `watcher.file_stable`                         | Watcher                         |
+| `WatcherFileUnstable`                     | `watcher.file_unstable`                       | Watcher                         |
+| `WatcherFileAlreadyProcessing`            | `watcher.file_already_processing`             | Watcher                         |
+| `WatcherError`                            | `watcher.error`                               | Watcher                         |
+| `ConfigLoaded`                            | `config.loaded`                               | Config                          |
+| `ConfigUpdated`                           | `config.updated`                              | Config                          |
+| `DatabaseConnected`                       | `database.connected`                          | Database                        |
+| `SecurityFileValidationFilteredAll`       | `security.file_validation_filtered_all`       | Security                        |
+| `SecuritySymlinkDetected`                 | `symlink_detected`                            | Security                        |
+| `SecurityViolation`                       | `security.violation`                          | Security                        |
+| `SecurityPathTraversalAttempted`          | `security.path_traversal_attempted`           | Security                        |
+| `SecurityPathAccessDenied`                | `security.path_access_denied`                 | Security                        |
+| `PathResolved`                            | `path.resolved`                               | Portal                          |
+| `PathResolutionFailed`                    | `path.resolution_failed`                      | Portal                          |
+| `PathResolutionError`                     | `path.resolution_error`                       | Portal                          |
+| `PathInvalidAlias`                        | `path.invalid_alias`                          | Portal                          |
+| `PathAccessDenied`                        | `path.access_denied`                          | Portal                          |
+| `PortalAnalyzed`                          | `portal.analyzed`                             | Portal                          |
+| `RequestStatusUpdateFailed`               | `request.status_update_failed`                | Request                         |
+| `RequestFlowValidationFailed`             | `flow.validation.failed`                      | Request                         |
+| `RequestProviderSelected`                 | `provider.selected`                           | Request                         |
+| `RequestProviderSelectionFailed`          | `provider.selection_failed`                   | Request                         |
+| `RequestBlueprintNotFound`                | `blueprint.not_found`                         | Request                         |
+| `RequestBlueprintLoadedFallback`          | `blueprint.loaded_fallback`                   | Request                         |
+| `RequestPlanSaveRejectedFailed`           | `plan.save_rejected_failed`                   | Request                         |
+| `McpPromptsExecutePlan`                   | `mcp.prompts.execute_plan`                    | MCP                             |
+| `McpPromptsCreateReview`                  | `mcp.prompts.create_review`                   | MCP                             |
+| `McpPromptsCommitMessage`                 | `mcp.prompts.commit_message`                  | MCP                             |
+| `McpResourcesDiscovered`                  | `mcp.resources.discovered`                    | MCP                             |
+| `DaemonRequestProcessorInitialized`       | `request_processor.initialized`               | Daemon                          |
+| `DaemonFileDetected`                      | `file.detected`                               | Daemon                          |
+| `PlanGenerated`                           | `plan.generated`                              | Plan                            |
+| `PlanDetected`                            | `plan.detected`                               | Plan                            |
+| `PlanExecutionManaged`                    | `plan.execution_managed`                      | Plan                            |
+| `PlanExecutionManagedFailure`             | `plan.execution_managed_failure`              | Plan                            |
+| `ShutdownWatchersStopped`                 | `shutdown.watchers_stopped`                   | Daemon                          |
+| `ShutdownAutoApprovalStopped`             | `shutdown.auto_approval_stopped`              | Daemon                          |
+| `ShutdownDatabaseClosed`                  | `shutdown.database_closed`                    | Daemon                          |
+| `SafeErrorInternalDetails`                | `safe_error.internal_details`                 | Error Handling                  |
+| `ProviderRetryScheduled`                  | `provider.retry.scheduled`                    | LLM                             |
+| `LlmProviderInitialized`                  | `llm.provider.initialized`                    | LLM                             |
+| `LlmCallStarted`                          | `llm.call.started`                            | LLM                             |
+| `LlmCallCompleted`                        | `llm.call.completed`                          | LLM                             |
+| `LlmCallFailed`                           | `llm.call.failed`                             | LLM                             |
+| `LlmUsageRecorded`                        | `llm.usage`                                   | LLM                             |
+| `OpenRouterCapabilityLookupFailed`        | `openrouter.capability_lookup.failed`         | LLM                             |
+| `ChildRunSpawned` _(reserved)_            | `child_run.spawned`                           | Reserved (delegated child runs) |
+| `ChildRunCompleted` _(reserved)_          | `child_run.completed`                         | Reserved (delegated child runs) |
+| `ResourceLockAcquired` _(reserved)_       | `resource_lock.acquired`                      | Reserved (concurrency policies) |
+| `ResourceLockBlocked` _(reserved)_        | `resource_lock.blocked`                       | Reserved (concurrency policies) |
+| `ResourceLockReleased` _(reserved)_       | `resource_lock.released`                      | Reserved (concurrency policies) |
 
 Reserved members exist in the enum but have no active emission site — their phases were postponed or cancelled. They are excluded from `EventRegistry.registeredPublishers()` assertions.
 

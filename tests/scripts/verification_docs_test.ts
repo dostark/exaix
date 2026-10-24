@@ -6,10 +6,89 @@
  * @description Doc-content assertions for the post-execution verification feature.
  */
 
-import { assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
+import { parse as parseToml } from "@std/toml";
+import { ConfigSchema } from "@exaix/schemas";
 
 const ROOT = new URL("../..", import.meta.url).pathname;
+
+/** Every fenced TOML block in a Markdown document, in document order. */
+function fencedTomlBlocks(markdown: string): string[] {
+  return [...markdown.matchAll(/```toml\n([\s\S]*?)```/g)].map((match) => match[1]);
+}
+
+Deno.test("User Guide both-kind verification example parses through ConfigSchema", async () => {
+  const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
+  const block = fencedTomlBlocks(guide).find((candidate) =>
+    candidate.includes('kind = "unslop"') && candidate.includes('kind = "deno_task"')
+  );
+  assert(block, "the guide must carry one example with both check kinds");
+
+  // The guide shows the portal fragment of exa.config.toml, so the example omits the workspace header.
+  const config = ConfigSchema.parse(parseToml(`[system]\nroot = "."\n${block}`));
+  const verification = config.portals[0]?.verification;
+  assert(verification, "the example must configure portal verification");
+  assertEquals(verification.max_repair_attempts, 2);
+  assertEquals(verification.check_timeout_ms, 300_000);
+  assertEquals(verification.output_max_chars, 4_000);
+  assertEquals(verification.checks.length, 2);
+
+  const unslop = verification.checks[0];
+  assert(unslop.kind === "unslop");
+  assertEquals(unslop.packs, ["typescript", "deno"]);
+  assertEquals(unslop.catalog, "catalogs/portal.json");
+  assertEquals(unslop.include, ["src/**/*.ts", "packages/**/*.tsx"]);
+
+  const denoTask = verification.checks[1];
+  assert(denoTask.kind === "deno_task");
+  assertEquals(denoTask.task, "test");
+  assertEquals(denoTask.path, ".");
+  assertEquals(denoTask.args, ["--allow-read=src"]);
+});
+
+Deno.test("User Guide documents the unslop policy, defaults and failure classes", async () => {
+  const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
+  for (
+    const token of [
+      'packs = ["typescript", "deno"]',
+      "**/*.mts",
+      "**/*.cts",
+      "deno-lint-ignore",
+      "UnslopSuppressionForbidden",
+      "UnslopCatalogInvalid",
+      "verification.unslop.findings_limit",
+      "findings count incomplete",
+    ]
+  ) {
+    assertStringIncludes(guide, token);
+  }
+});
+
+Deno.test("both lint READMEs agree on packaging, provenance and redeploy", async () => {
+  const policyReadme = await Deno.readTextFile(join(ROOT, "packages", "lint-policy", "README.md"));
+  const engineReadme = await Deno.readTextFile(join(ROOT, "unslop-ts", "README.md"));
+  assertStringIncludes(policyReadme, "unslop-ts:bundle");
+  for (const readme of [policyReadme, engineReadme]) {
+    for (const token of ["unslop_engine.js", "manifest.json", "checksum", "redeploy", "offline"]) {
+      assertStringIncludes(readme, token);
+    }
+  }
+});
+
+Deno.test("ARCHITECTURE describes the terminal unslop snapshot and review join", async () => {
+  const architecture = await Deno.readTextFile(join(ROOT, "ARCHITECTURE.md"));
+  for (
+    const token of [
+      "execution.verification.lint_findings",
+      "verification_run_id",
+      "UnslopCheckRunner",
+      "formatUnslopSummary",
+    ]
+  ) {
+    assertStringIncludes(architecture, token);
+  }
+});
 
 Deno.test("User Guide documents portals[].verification", async () => {
   const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
@@ -42,6 +121,9 @@ Deno.test("ARCHITECTURE and the event taxonomy describe the verification stage",
   for (
     const event of [
       "execution.verification.started",
+      "execution.verification.lint_check.started",
+      "execution.verification.lint_check.completed",
+      "execution.verification.lint_findings",
       "execution.verification.passed",
       "execution.verification.failed",
       "execution.verification.exhausted",

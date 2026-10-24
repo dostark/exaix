@@ -537,16 +537,38 @@ inspect but never mutate the portal.
 
 After a plan's work is committed and before the review is registered, the `ExecutionLoop`
 runs the portal's optional post-execution verification (`portals[].verification`). A
-`VerificationRunner` runs the configured `deno_task` checks in the execution worktree
-through the middleware-free `runDenoTask` (so check output never enters the registry
-journal), confines each path to the worktree, and redacts the daemon's known secrets. When a
-check fails and `max_repair_attempts` remain, the loop builds a one-step structured repair
-plan from the truncated failures, runs it through the same `PlanExecutor` path, and
-re-verifies; it stops when the checks pass, an error occurs, or the attempts run out. The
-outcome is journaled as `execution.verification.*` and `execution.repair.*` events on the
-request trace and written as `verification_status` on `execution.completed`; the review is
-always registered on the last commit. See the `execution` package (`VerificationRunner`,
-`ExecutionLoop`).
+`VerificationRunner` dispatches each configured check kind in the execution worktree. The
+`deno_task` kind runs through the middleware-free `runDenoTask` (so check output never enters
+the registry journal), confines each path to the worktree, and redacts the daemon's known
+secrets.
+
+The `unslop` kind runs through `UnslopCheckRunner`. The loop captures the immutable commit that
+preceded execution as the original base and the current commit as the per-attempt target, so the
+check reads both through strict Git queries (`--no-ext-diff`, `--no-textconv`,
+`--literal-pathspecs`, NUL-safe). The adapter rejects a selected file that carries the literal
+`deno-lint-ignore` marker, verifies the packaged `lint/` assets against their manifest checksums,
+generates a private plugin and `deno.json` in an exclusive runtime directory, and runs
+`deno lint --deny-import` in bounded batches with a cleared child environment. It keeps only
+diagnostics whose ranges intersect a changed destination line and returns pass, retained findings
+or one categorical error. It never writes to the worktree.
+
+One verification run mints one run id. The adapter journals `execution.verification.lint_check.started`
+and `execution.verification.lint_check.completed` per check with that run id, the attempt, the
+check index, the target SHA, the exact or null total and a categorical error class. On a terminal
+configured unslop run, the loop journals exactly one `execution.verification.lint_findings`
+snapshot: request and run ids, attempt, commit, status, per-check outcomes, sorted and capped safe
+findings, and an exact or null total with a `truncated` flag. `execution.completed` carries the
+same `verification_run_id`.
+
+When a check fails and `max_repair_attempts` remain, the loop builds a one-step structured repair
+plan from the truncated failures, runs it through the same `PlanExecutor` path, and re-verifies;
+it stops when the checks pass, an error occurs, or the attempts run out. The outcome is journaled
+as `execution.verification.*` and `execution.repair.*` events on the request trace and written as
+`verification_status` on `execution.completed`; the review is always registered on the last
+commit. `ReviewCommands.show` joins the latest completed row by trace and review commit, loads
+that run's snapshot, and `formatUnslopSummary` renders the exact total, the capped `file:line rule`
+entries and any incomplete note through `renderReviewShow`. See the `execution` package
+(`VerificationRunner`, `UnslopCheckRunner`, `ExecutionLoop`).
 
 ---
 

@@ -73,3 +73,45 @@ the descriptor flag; `check:constant-restatement` retains only
 
 Exaix uses the Deno host through `@dostark/unslop-ts/deno`. The `@dostark/unslop-ts/eslint` entry
 exists for ESLint and Oxlint consumers; no Exaix runtime path imports it.
+
+## Portal verification packaging
+
+The daemon's `unslop` post-execution check never imports this package or the engine source. It reads
+a packaged asset set from `<system root>/lint`:
+
+| File                              | Content                                                                                   |
+| --------------------------------- | ----------------------------------------------------------------------------------------- |
+| `unslop_engine.js`                | the engine bundle built by the engine's own `bundle` task                                 |
+| `unslop_portal_catalog.json`      | the compiled TypeScript-only portal catalog                                               |
+| `unslop_portal_deno_catalog.json` | the compiled TypeScript and Deno portal catalog                                           |
+| `manifest.json`                   | format and policy versions, Deno version, engine Git SHA and package version, file hashes |
+
+`deno task unslop-ts:bundle` is the single builder. It runs the engine bundle task once, verifies the
+engine's published checksum, compiles both catalogs from the strict portal policy (`unslop:strict`,
+no script rules, no whole-tree hosts), validates each catalog with the packaged registry, and writes
+the manifest last. A failed build therefore leaves no complete asset set behind.
+
+Provenance: the manifest records the engine Git SHA, the engine package version and the Deno version.
+A consumer verifies every file against its recorded size and SHA-256 before use. A size or checksum
+mismatch raises `UnslopAssetInvalid` and never falls back to engine source or the network.
+
+Deployment: a source checkout builds the set and copies it into `<deploy>/lint`. A redeploy from a
+deployed workspace has no engine source and no builder, so it verifies the existing four files and
+copies them to the new destination. It never downloads, re-initializes, or recompiles the engine. The
+deployed `deno.json` drops the `unslop-ts` workspace member and every task that runs this package or
+the builder.
+
+Offline scope: the lint child runs `deno lint --deny-import` with a generated local `deno.json` and a
+cleared environment that forwards only `DENO_DIR`, `DENO_NO_UPDATE_CHECK` and `XDG_CACHE_HOME`.
+Remote imports are denied, so the check needs only the local asset set plus the daemon's warm Deno
+cache. A cold-cache offline boot of the whole daemon is out of scope.
+
+Recovery: a source checkout runs `deno task unslop-ts:bundle`, then redeploys. A deployed workspace
+with missing or corrupt assets must redeploy from an initialized source checkout, because it cannot
+repair itself.
+
+Capped review output: the terminal `execution.verification.lint_findings` snapshot keeps at most
+`verification.unslop.findings_limit` findings (default `50`). The review prints the exact total plus
+the listed `file:line rule` entries, `(<n> more not listed)` when the total is larger, and
+`(coverage incomplete)` when a check did not complete. A null total means unknown, never zero. A
+`repaired` or `passed` run lists no findings.
