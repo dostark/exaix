@@ -205,6 +205,9 @@ export const UNSLOP_PORTAL_TEST_GLOBS: readonly string[] = [
 /** File extensions the portal verification check can lint. */
 export const UNSLOP_PORTAL_SOURCE_EXTENSIONS: readonly string[] = [".ts", ".tsx", ".mts", ".cts"];
 
+/** Default include globs of the portal unslop check. */
+export const UNSLOP_PORTAL_INCLUDE_GLOBS: readonly string[] = ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"];
+
 // Post-execution verification constants
 /** Hard cap on post-execution repair attempts, independent of the configurable default. */
 export const VERIFICATION_MAX_REPAIR_ATTEMPTS_LIMIT = 5;

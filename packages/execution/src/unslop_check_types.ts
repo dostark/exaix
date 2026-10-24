@@ -7,7 +7,10 @@
  * @related-files [packages/execution/src/verification_runner.ts, packages/schemas/src/portal_verification.ts]
  */
 
-import type { UnslopErrorClass } from "@exaix/schemas";
+import type { IEventLogger } from "@exaix/core/logger";
+import type { IGitService } from "@exaix/core/types";
+import type { IUnslopSettings, UnslopErrorClass, VerificationStatus } from "@exaix/schemas";
+import type { PathResolver } from "@exaix/portal";
 
 /** One retained diagnostic. Every path is an internal raw repo path until safe projection. */
 export interface IUnslopFinding {
@@ -22,7 +25,7 @@ export interface IUnslopFinding {
 
 /** A check that retained no finding. */
 export interface IUnslopCheckOutcomePassed {
-  readonly kind: "passed";
+  readonly kind: typeof VerificationStatus.PASSED;
   readonly hostExitCodes: readonly number[];
   readonly total: 0;
   readonly findings: readonly [];
@@ -31,7 +34,7 @@ export interface IUnslopCheckOutcomePassed {
 
 /** A check that retained findings on changed lines. */
 export interface IUnslopCheckOutcomeFailed {
-  readonly kind: "failed";
+  readonly kind: typeof VerificationStatus.FAILED;
   readonly hostExitCodes: readonly number[];
   readonly total: number;
   readonly findings: readonly IUnslopFinding[];
@@ -40,7 +43,7 @@ export interface IUnslopCheckOutcomeFailed {
 
 /** A check that could not produce a valid result. */
 export interface IUnslopCheckOutcomeError {
-  readonly kind: "error";
+  readonly kind: typeof VerificationStatus.ERROR;
   readonly error_class: UnslopErrorClass;
   readonly total: null;
   readonly findings: readonly [];
@@ -59,4 +62,43 @@ export interface IUnslopCheckRunState {
   readonly outcome: "passed" | "failed" | "error" | "not_run";
   readonly total: number | null;
   readonly error_class: UnslopErrorClass | null;
+}
+
+/** One configured portal unslop check at the Step 4 contract. */
+export interface IUnslopCheckConfig {
+  readonly kind: "unslop";
+  /** Repo-relative globs the operator selected. The adapter keeps only matching files. */
+  readonly include?: readonly string[];
+}
+
+/** Narrow confinement contract the adapter needs from the path resolver. */
+export interface IPathConfinement {
+  validatePath(path: string, allowedRoots: string[]): Promise<string>;
+  resolve(alias: string): Promise<string>;
+}
+
+/** Inputs of the unslop adapter. They never infer a root from the process directory. */
+export interface IUnslopCheckRunnerOptions {
+  readonly settings: IUnslopSettings;
+  readonly systemRoot: string;
+  readonly logger: IEventLogger;
+  readonly pathResolver: PathResolver | IPathConfinement;
+  /** Known secrets redacted from the repair text. */
+  readonly knownSecrets?: readonly string[];
+}
+
+/** One adapter invocation, bound to the immutable base and one target commit. */
+export interface IUnslopCheckContext {
+  readonly requestId: string;
+  readonly traceId: string;
+  readonly attempt: number;
+  readonly executionRoot: string;
+  readonly runId: string;
+  readonly baseSha: string;
+  readonly targetSha: string;
+  readonly git: IGitService;
+  readonly checkIndex: number;
+  readonly check: IUnslopCheckConfig;
+  readonly timeoutMs: number;
+  readonly outputMaxChars: number;
 }

@@ -11,14 +11,9 @@
  */
 
 import { join, SEPARATOR } from "@std/path";
-import {
-  buildChildEnv,
-  VERIFICATION_DENO_ENV_KEYS,
-  VERIFICATION_FMT_CHECK_FLAG,
-  VERIFICATION_OUTPUT_REDACTION_MARGIN_CHARS,
-} from "@exaix/core";
+import { VERIFICATION_FMT_CHECK_FLAG, VERIFICATION_OUTPUT_REDACTION_MARGIN_CHARS } from "@exaix/core";
 import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
-import { redactKnownSecrets } from "@exaix/core/func";
+import { buildVerificationCheckEnv, prepareVerificationOutput } from "./verification_output.ts";
 import { checkName, denoTaskOf } from "@exaix/schemas";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { JSONValue, LogMetadata } from "@exaix/core/types";
@@ -36,32 +31,6 @@ export interface IVerificationRunContext {
 /** Runs a portal verification block against one execution worktree. */
 export interface IVerificationRunner {
   run(config: IPortalVerification, context: IVerificationRunContext): Promise<IVerificationResult>;
-}
-
-/** Escape character that opens an ANSI terminal sequence. */
-const ESCAPE_CHAR = String.fromCharCode(0x1b);
-/** ANSI CSI sequences (colors, cursor moves) that coloured tool output emits. */
-const ANSI_CSI_PATTERN = new RegExp(`${ESCAPE_CHAR}\\[[0-?]*[ -/]*[@-~]`, "g");
-/** First printable character code. Lower codes are control characters. */
-const FIRST_PRINTABLE_CHAR_CODE = 0x20;
-/** DEL, the only control character above the printable range. */
-const DELETE_CHAR_CODE = 0x7f;
-/** Whitespace control characters agent input validation accepts. */
-const ALLOWED_CONTROL_CHARS = new Set(["\t", "\n", "\r"]);
-/** The `<` that opens a markup tag agent input validation rejects. */
-const REJECTED_TAG_OPENING_PATTERN = /<(?=\/?(?:script|iframe|img)\b)/gi;
-const ESCAPED_LESS_THAN = "&lt;";
-
-/** Make check output safe to embed in an agent prompt. Removes ANSI escapes and non-whitespace
- *  control characters, and escapes the markup tags that agent input validation rejects. */
-function sanitizeCheckOutput(output: string): string {
-  const withoutAnsi = output.replace(ANSI_CSI_PATTERN, "");
-  const printable = [...withoutAnsi].filter((char) => {
-    const code = char.charCodeAt(0);
-    if (ALLOWED_CONTROL_CHARS.has(char)) return true;
-    return code >= FIRST_PRINTABLE_CHAR_CODE && code !== DELETE_CHAR_CODE;
-  }).join("");
-  return printable.replace(REJECTED_TAG_OPENING_PATTERN, ESCAPED_LESS_THAN);
 }
 
 /** True when the real path of `resolved` lies at or under the real worktree path. */
@@ -156,19 +125,12 @@ export class VerificationRunner implements IVerificationRunner {
 
   /** Build the allowlist child env plus only the deno cache keys from the daemon env. */
   private buildCheckEnv(): { env: Record<string, string>; clearEnv: boolean } {
-    const daemonEnv = Deno.env.toObject();
-    const overlay: Record<string, string> = {};
-    for (const key of VERIFICATION_DENO_ENV_KEYS) {
-      const value = daemonEnv[key];
-      if (value !== undefined) overlay[key] = value;
-    }
-    return buildChildEnv({ mode: "allowlist", env: overlay });
+    return buildVerificationCheckEnv();
   }
 
   /** Sanitize, redact known secrets, then keep only the last `maxChars` characters. */
   private prepareOutput(output: string, maxChars: number): string {
-    const redacted = redactKnownSecrets(sanitizeCheckOutput(output), this.knownSecrets).text;
-    return redacted.length > maxChars ? redacted.slice(redacted.length - maxChars) : redacted;
+    return prepareVerificationOutput(output, maxChars, this.knownSecrets);
   }
 
   private emit(action: TDomainEventType, context: IVerificationRunContext, payload: LogMetadata): Promise<void> {

@@ -7,7 +7,7 @@
  *   truncation, worktree-safe fmt and the cleared allowlist child environment.
  */
 
-import { assert, assertEquals, assertFalse } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { stub } from "@std/testing/mock";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
@@ -15,7 +15,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { type ISubprocessOptions, SafeSubprocess, VERIFICATION_OUTPUT_REDACTION_MARGIN_CHARS } from "@exaix/core";
 import type { LogMetadata } from "@exaix/core/types";
 import { type IPortalVerification, PortalVerificationSchema, UserRequestSchema } from "@exaix/schemas";
-import { VerificationRunner } from "@exaix/execution";
+import { prepareVerificationOutput, VerificationRunner } from "@exaix/execution";
 import { withEnv } from "@exaix/testing";
 
 interface ICapturedEvent {
@@ -335,4 +335,16 @@ Deno.test("[verification-runner] check output is stripped of ANSI escapes and co
     s.restore();
     await Deno.remove(root, { recursive: true });
   }
+});
+
+Deno.test("[execution-verification] the shared output helper redacts secrets and sanitizes control text", () => {
+  const prepared = prepareVerificationOutput(
+    "\u001b[31msecret-value\u001b[0m\n<script>alert(1)</script>",
+    200,
+    ["secret-value"],
+  );
+
+  assertFalse(prepared.includes("secret-value"));
+  assertFalse(prepared.includes("\u001b"));
+  assertStringIncludes(prepared, "&lt;script>");
 });

@@ -111,7 +111,7 @@ export class PathResolver {
 
   /** Resolves symlinks on BOTH the root and the target before the within-root check —
    *  a string prefix check alone would let an in-portal symlink escape the portal. */
-  private async validatePath(path: string, allowedRoots: string[]): Promise<string> {
+  async validatePath(path: string, allowedRoots: string[]): Promise<string> {
     const normalizedPath = join(path);
     const physicalPath = await this.resolvePhysicalPath(normalizedPath);
 
