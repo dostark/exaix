@@ -1,0 +1,11 @@
+{
+  "promptHash": "execution-unslop-exhausted-step",
+  "promptPreview": "AGENT ROLE: Verification Unslop Coder\n",
+  "response": "THOUGHT: The finding is on seed.ts but the repair budget is exhausted; I will leave the source unchanged.\nSTATUS: COMPLETE\nSUMMARY: Left seed.ts unchanged.",
+  "model": "mock-model",
+  "tokens": {
+    "input": 1000,
+    "output": 200
+  },
+  "recordedAt": "2026-10-24T00:00:00.000Z"
+}
