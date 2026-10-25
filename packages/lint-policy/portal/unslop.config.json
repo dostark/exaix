@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "plugin": "unslop",
+  "extends": ["unslop:strict"],
+  "docsBase": "",
+  "paths": {
+    "test": [
+      "**/*_test.ts",
+      "**/*.test.ts",
+      "**/*.spec.ts",
+      "tests/**",
+      "**/tests/**",
+      "test/**",
+      "**/test/**"
+    ],
+    "fixture": [],
+    "ignore": []
+  },
+  "rules": {
+    "unslop/no-forbidden-lint-ignore": {
+      "level": "error",
+      "options": {
+        "forbiddenRules": ["unslop/*"],
+        "includeFileIgnores": true
+      }
+    },
+    "unslop/require-deno-shebang": {
+      "level": "off",
+      "reason": "Portal sources are library files, not Deno scripts."
+    },
+    "unslop/require-script-usage": {
+      "level": "off",
+      "reason": "Portal sources are library files, not Deno scripts."
+    }
+  }
+}

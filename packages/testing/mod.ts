@@ -20,6 +20,7 @@ export { getFixturePath, readFixtureTextSync } from "./src/helpers/fixtures.ts";
 export { initActivityTableSchema, initTestDbService, REGISTRY_TABLES_SQL } from "./src/helpers/init_db.ts";
 export { isCi, withEnv } from "./src/helpers/env.ts";
 export { REPO_ROOT, withRepoRoot } from "./src/helpers/repo_root.ts";
+export { installLintPolicyForTest, LINT_POLICY_DIR, LINT_POLICY_TASK } from "./src/helpers/lint_policy.ts";
 export { StubSkillsService, stubSkillsServiceWith } from "./src/helpers/stub_skills_service.ts";
 export {
   createSkillLoaderFor,
