@@ -82,19 +82,20 @@ Deno.test("Self-improvement loop: routes domain-specific findings to domain docs
   );
 });
 
-Deno.test("phase-registry-current: completed Phase 233 has no open row and Phase 229 is not schedulable", async () => {
-  const plan = await Deno.readTextFile("exaix-dev-docs/planning/phase-233-lean-portal-lint-verification.md");
-  assert(/^status: COMPLETED$/m.test(plan), "Phase 233 must be COMPLETED");
-  const registry = await Deno.readTextFile("exaix-dev-docs/planning/PHASE_REGISTRY.md");
-  const lines = registry.split("\n");
-  assert(
-    !lines.some((line) => /^\|\s*\d+\s*\|\s*233\s*\|/.test(line)),
-    "a completed phase must leave the open-work registry",
-  );
-  const row229 = lines.find((line) => /^\|.*\|\s*229\s*\|/.test(line));
-  assert(row229 !== undefined, "Phase 229 must stay visible as superseded");
-  assert(!/^\|\s*1\s*\|\s*229\s*\|/.test(row229), "Phase 229 must not be the first pickup");
-  assert(row229.includes("Do not pick"), "Phase 229 must not be schedulable");
+Deno.test("phase-registry-current: completed and superseded phases have no open rows", async () => {
+  const [phase233, phase229] = await Promise.all([
+    Deno.readTextFile("exaix-dev-docs/planning/phase-233-lean-portal-lint-verification.md"),
+    Deno.readTextFile("exaix-dev-docs/planning/phase-229-portal-unslop-verification.md"),
+  ]);
+  assert(/^status: COMPLETED$/m.test(phase233), "Phase 233 must be COMPLETED");
+  assert(/^status: SUPERSEDED$/m.test(phase229), "Phase 229 must be SUPERSEDED");
+  const lines = (await Deno.readTextFile("exaix-dev-docs/planning/PHASE_REGISTRY.md")).split("\n");
+  for (const phase of [229, 233]) {
+    assert(
+      !lines.some((line) => new RegExp(`^\\|\\s*\\d+\\s*\\|\\s*${phase}\\s*\\|`).test(line)),
+      `Phase ${phase} must leave the open-work registry`,
+    );
+  }
 });
 
 Deno.test("process-guards: the review-remediation-retro guardrails stay pinned", async () => {
