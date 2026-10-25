@@ -290,6 +290,28 @@ Deno.test("deno-lint-check", async (test) => {
       }
     });
 
+    await test.step("guard-deadline-bounded", async () => {
+      const repo = await makeRepo("deno-lint-guard-deadline-", { "a.ts": CLEAN_SEED, "b.ts": CLEAN_SEED });
+      try {
+        let reads = 0;
+        let clock = 0;
+        const outcome = errored(
+          await runnerFor(systemRoot, settingsOf(), {
+            readSource: () => {
+              reads++;
+              clock = 20_000;
+              return Promise.resolve(CLEAN_SEED);
+            },
+            now: () => clock,
+          }).run(contextFor(repo, 10_000)),
+        );
+        assertEquals(outcome.error_class, "LintTimeout");
+        assertEquals(reads, 1);
+      } finally {
+        await repo.cleanup();
+      }
+    });
+
     await test.step("portal-config-cannot-hide-files", async () => {
       const repo = await makeRepo(
         "deno-lint-hidden-",
@@ -312,5 +334,25 @@ Deno.test("deno-lint-check", async (test) => {
     });
   } finally {
     await Deno.remove(systemRoot, { recursive: true });
+  }
+});
+
+Deno.test("lint-dead-surface", async () => {
+  const [snapshotSource, checkSource] = await Promise.all([
+    Deno.readTextFile(new URL("../src/lint_snapshot.ts", import.meta.url)),
+    Deno.readTextFile(new URL("../src/deno_lint_check.ts", import.meta.url)),
+  ]);
+  assertEquals(snapshotSource.includes("ILintCollectedFindings"), false);
+  assertEquals(checkSource.includes("hostExitCodes"), false);
+
+  const systemRoot = await Deno.makeTempDir({ prefix: "deno-lint-surface-" });
+  const repo = await makeRepo("deno-lint-surface-repo-", { "seed.ts": CAST_SEED });
+  try {
+    await installLintPolicyForTest(join(systemRoot, "lint"));
+    const outcome = await runnerFor(systemRoot, settingsOf()).run(contextFor(repo));
+    assertEquals("hostExitCodes" in outcome, false);
+  } finally {
+    await repo.cleanup();
+    await Deno.remove(systemRoot, { recursive: true }).catch(() => {});
   }
 });

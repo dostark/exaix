@@ -101,13 +101,6 @@ export interface ILintFinding {
   readonly rule: string;
 }
 
-/** One bounded aggregate. Batches have disjoint validated file sets. */
-export interface ILintCollectedFindings {
-  readonly findings: ILintFinding[];
-  readonly total: number;
-  readonly hostExitCodes: number[];
-}
-
 /** Orders findings before any safe display projection. */
 export function compareLintFindings(left: ILintFinding, right: ILintFinding): number {
   return left.file.localeCompare(right.file) || left.start_line - right.start_line ||

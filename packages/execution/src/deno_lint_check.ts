@@ -33,7 +33,6 @@ export type IDenoLintFinding = ILintFinding;
 /** A check that retained no finding. */
 export interface IDenoLintCheckOutcomePassed {
   readonly kind: typeof VerificationStatus.PASSED;
-  readonly hostExitCodes: readonly number[];
   readonly total: 0;
   readonly findings: readonly [];
   readonly output: "";
@@ -42,7 +41,6 @@ export interface IDenoLintCheckOutcomePassed {
 /** A check that retained findings. */
 export interface IDenoLintCheckOutcomeFailed {
   readonly kind: typeof VerificationStatus.FAILED;
-  readonly hostExitCodes: readonly number[];
   readonly total: number;
   readonly findings: readonly IDenoLintFinding[];
   readonly output: string;
@@ -97,6 +95,10 @@ export interface IDenoLintCheckRunnerOptions {
   readonly knownSecrets?: readonly string[];
   /** Host batch override for tests that do not spawn. */
   readonly runBatch?: IDenoLintBatchRunner;
+  /** Source-reader override for tests that simulate a slow guard. */
+  readonly readSource?: (path: string) => Promise<string | null>;
+  /** Clock override for tests that advance the deadline. */
+  readonly now?: () => number;
 }
 
 /** A categorical failure raised inside the check body. */
@@ -118,12 +120,12 @@ function errorOutcome(errorClass: LintErrorClass): IDenoLintCheckOutcome {
 }
 
 function passedOutcome(): IDenoLintCheckOutcome {
-  return { kind: VerificationStatus.PASSED, hostExitCodes: [], total: 0, findings: [], output: "" };
+  return { kind: VerificationStatus.PASSED, total: 0, findings: [], output: "" };
 }
 
 /** Reads the remaining whole-check budget, or raises the timeout outcome. */
-function remainingMs(deadline: number): number {
-  const remaining = deadline - Date.now();
+function remainingMs(deadline: number, now: () => number): number {
+  const remaining = deadline - now();
   if (remaining <= 0) throw new DenoLintCheckError(LintErrorClass.TIMEOUT);
   return remaining;
 }
@@ -191,10 +193,11 @@ export class DenoLintCheckRunner {
   /** Runs one configured Deno lint check and returns its typed outcome. */
   async run(context: IDenoLintCheckContext): Promise<IDenoLintCheckOutcome> {
     await this.emitStarted(context);
-    const deadline = Date.now() + context.timeoutMs;
+    const now = this.options.now ?? Date.now;
+    const deadline = now() + context.timeoutMs;
     let outcome: IDenoLintCheckOutcome;
     try {
-      outcome = await this.execute(context, deadline);
+      outcome = await this.execute(context, deadline, now);
     } catch (error) {
       outcome = errorOutcome(
         error instanceof DenoLintCheckError ? error.errorClass : LintErrorClass.HOST_FAILED,
@@ -205,23 +208,26 @@ export class DenoLintCheckRunner {
   }
 
   /** The check body. Exceptions map to a categorical error in `run`. */
-  private async execute(context: IDenoLintCheckContext, deadline: number): Promise<IDenoLintCheckOutcome> {
+  private async execute(
+    context: IDenoLintCheckContext,
+    deadline: number,
+    now: () => number,
+  ): Promise<IDenoLintCheckOutcome> {
     const configPath = await this.resolvePolicyConfig(context);
     const listed = await listTrackedFiles(context.git, context.targetSha, {
       maxOutputBytes: this.options.settings.git_max_bytes,
-      timeoutMs: remainingMs(deadline),
+      timeoutMs: remainingMs(deadline, now),
     });
     if (!listed.ok) throw new DenoLintCheckError(LintErrorClass.GIT_FAILED);
     const selected = listed.value.filter((path) =>
       matchesAnyGlob(path, context.check.include) && !matchesAnyGlob(path, context.check.exclude)
     );
     if (selected.length === 0) return passedOutcome();
-    await this.assertNoFileIgnore(context, selected);
+    await this.assertNoFileIgnore(context, selected, deadline, now);
 
     const { env, clearEnv } = buildVerificationCheckEnv();
     const runBatch = this.options.runBatch ?? runDenoLintBatch;
     const findings: IDenoLintFinding[] = [];
-    const hostExitCodes: number[] = [];
     for (const batch of chunk(selected, this.options.settings.batch_max_files)) {
       const result = await runBatch({
         configPath,
@@ -229,12 +235,11 @@ export class DenoLintCheckRunner {
         cwd: context.executionRoot,
         env,
         clearEnv,
-        timeoutMs: remainingMs(deadline),
+        timeoutMs: remainingMs(deadline, now),
         jsonMaxBytes: this.options.settings.json_max_bytes,
         stderrMaxBytes: this.options.settings.stderr_max_bytes,
       });
       if (result.kind !== "diagnostics") throw new DenoLintCheckError(batchErrorClass(result.kind));
-      hostExitCodes.push(...result.hostExitCodes);
       for (const diagnostic of result.diagnostics) {
         if (!RULE_PATTERN.test(diagnostic.code)) throw new DenoLintCheckError(LintErrorClass.HOST_FAILED);
         const file = await hostRepoPath(context.executionRoot, diagnostic.filename);
@@ -249,7 +254,7 @@ export class DenoLintCheckRunner {
         });
       }
     }
-    return this.buildOutcome(context, findings, hostExitCodes);
+    return this.buildOutcome(context, findings);
   }
 
   /** Resolves the installed policy config and rejects an untrusted directory. */
@@ -293,9 +298,14 @@ export class DenoLintCheckRunner {
   private async assertNoFileIgnore(
     context: IDenoLintCheckContext,
     files: readonly string[],
+    deadline: number,
+    now: () => number,
   ): Promise<void> {
+    const readSource = this.options.readSource ??
+      ((path: string) => readBoundedSource(path, MAX_SOURCE_BYTES));
     for (const file of files) {
-      const text = await readBoundedSource(join(context.executionRoot, file), MAX_SOURCE_BYTES);
+      remainingMs(deadline, now);
+      const text = await readSource(join(context.executionRoot, file));
       if (text === null) throw new DenoLintCheckError(LintErrorClass.SOURCE_INVALID);
       if (text.split(LINE_BREAK).some((line) => FILE_IGNORE_DIRECTIVE.test(line))) {
         throw new DenoLintCheckError(LintErrorClass.SUPPRESSION_FORBIDDEN);
@@ -307,7 +317,6 @@ export class DenoLintCheckRunner {
   private buildOutcome(
     context: IDenoLintCheckContext,
     findings: readonly IDenoLintFinding[],
-    hostExitCodes: readonly number[],
   ): IDenoLintCheckOutcome {
     const unique = uniqueLintBatch(findings);
     if (unique.length === 0) return passedOutcome();
@@ -316,7 +325,6 @@ export class DenoLintCheckRunner {
     const output = prepareVerificationOutput(text, context.outputMaxChars, this.options.knownSecrets ?? []);
     return {
       kind: VerificationStatus.FAILED,
-      hostExitCodes,
       total: unique.length,
       findings: kept,
       output,
