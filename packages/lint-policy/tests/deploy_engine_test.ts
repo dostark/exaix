@@ -1,18 +1,18 @@
 /**
- * @module DeployUnslopTsTest
- * @path tests/scripts/deploy_unslop_ts_test.ts
- * @description Drives scripts/deploy_unslop_ts.ts against temp git repositories: usage errors, refusals, a successful move, a failed compatibility check, and --init.
+ * @module DeployEngineTest
+ * @path packages/lint-policy/tests/deploy_engine_test.ts
+ * @description Drives the engine deploy tool against temp git repositories: usage errors, refusals, a successful move, a failed compatibility check, and --init.
  * @architectural-layer Tooling
  * @dependencies [@std/assert, @std/path]
- * @related-files [scripts/deploy_unslop_ts.ts, packages/lint-policy/tests/unslop_ts_compat_test.ts]
+ * @related-files [packages/lint-policy/src/tools/deploy_engine.ts, packages/lint-policy/tests/unslop_ts_compat_test.ts]
  */
 
 import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
-import { compatCommandArgs, compatEnv, isApprovalAnswer } from "../../scripts/deploy_unslop_ts.ts";
+import { compatCommandArgs, compatEnv, isApprovalAnswer } from "../src/tools/deploy_engine.ts";
 
-const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
-const SCRIPT = join(REPO_ROOT, "scripts", "deploy_unslop_ts.ts");
+const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
+const SCRIPT = join(REPO_ROOT, "packages", "lint-policy", "src", "tools", "deploy_engine.ts");
 const SUBMODULE = "unslop-ts";
 const COMPAT_TEST = "packages/lint-policy/tests/unslop_ts_compat_test.ts";
 const USAGE_EXIT = 2;

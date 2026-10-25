@@ -205,7 +205,7 @@ member of the root `deno.json`. An empty `unslop-ts/` directory makes every `den
 `Could not find config file for workspace member`, so a clone needs it: clone with
 `--recurse-submodules`, or run `git submodule update --init unslop-ts`. On a fresh clone `deno task`
 does not start yet, so use `deno run --no-config --allow-run --allow-read --allow-env
-scripts/deploy_unslop_ts.ts --init`, which also runs the compatibility check. The `exaix-team/`
+packages/lint-policy/src/tools/deploy_engine.ts --init`, which also runs the compatibility check. The `exaix-team/`
 members are nested paths, so an empty `exaix-team/` only prints skip warnings.
 
 To move the engine, run `deno task unslop-ts:deploy --ref=vX.Y.Z` (a release tag or a commit on

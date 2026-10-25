@@ -1,6 +1,6 @@
 /**
  * @module LintPolicyMoveEquivalenceTest
- * @path tests/scripts/lint_policy_move_equivalence_test.ts
+ * @path packages/lint-policy/tests/lint_policy_move_equivalence_test.ts
  * @description Proves that all Exaix lint policy lives in packages/lint-policy, that the engine
  *   package holds no Exaix code, and that the moved style checkers still run through their tasks.
  * @architectural-layer Tooling
@@ -14,12 +14,12 @@ import { dirname, fromFileUrl, join, relative } from "@std/path";
 import { type JsonValue, parseCatalog, parseWholeTreeSettings, selectionEnvName } from "@dostark/unslop-ts";
 import { createDenoPlugin, runPlugin } from "@dostark/unslop-ts/deno";
 import { EXAIX_PLUGIN_NAME } from "@exaix/lint-policy/rule_pack/mod.ts";
-import { checkDuplicates } from "../../unslop-ts/src/rules/whole_tree/duplicate_check.ts";
+import { checkDuplicates } from "../../../unslop-ts/src/rules/whole_tree/duplicate_check.ts";
 import { EXAIX_REGISTRY, EXAIX_RULE_PACKS } from "@exaix/lint-policy/rule_packs.ts";
-import { POLICY_CATALOG } from "../../packages/lint-policy/src/policy_config.ts";
-import catalogJson from "@exaix/lint-policy/catalog.json" with { type: "json" };
+import { POLICY_CATALOG } from "../src/policy_config.ts";
+import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 
-const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
+const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
 const POLICY_ROOT = "packages/lint-policy";
 const ENGINE_ROOT = "unslop-ts";
 const POLICY_FILES: readonly string[] = [
@@ -640,6 +640,7 @@ const HOST_FILES: readonly string[] = [
   `${POLICY_ROOT}/src/script_rule_schemas.ts`,
   `${POLICY_ROOT}/src/rule_packs.ts`,
   `${POLICY_ROOT}/src/rule_pack/mod.ts`,
+  `${POLICY_ROOT}/src/rule_pack/unslop_isolation.ts`,
   `${POLICY_ROOT}/unslop.project.ts`,
 ];
 const NUMBER_FIXTURE = Array.from({ length: 5 }, (_, index) => `export const value${index} = [12345];`).join("\n") +

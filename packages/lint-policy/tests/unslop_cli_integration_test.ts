@@ -1,6 +1,6 @@
 /**
  * @module UnslopCliIntegrationTest
- * @path tests/scripts/unslop_cli_integration_test.ts
+ * @path packages/lint-policy/tests/unslop_cli_integration_test.ts
  * @description The real constant-restatement task keeps its scoped read/env grants and descriptor input.
  * @architectural-layer Tooling
  * @dependencies [@std/assert, @std/path]
@@ -9,11 +9,11 @@
 
 import { assert, assertEquals, assertFalse, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
-import { checkRepository as checkConstantRestatement } from "../../unslop-ts/src/rules/whole_tree/constant_restatement.ts";
-import { checkRepository as checkOptionalParams } from "../../unslop-ts/src/rules/whole_tree/optional_params.ts";
-import { checkRepository as checkUnusedExports } from "../../unslop-ts/src/rules/whole_tree/unused_exports.ts";
+import { checkRepository as checkConstantRestatement } from "../../../unslop-ts/src/rules/whole_tree/constant_restatement.ts";
+import { checkRepository as checkOptionalParams } from "../../../unslop-ts/src/rules/whole_tree/optional_params.ts";
+import { checkRepository as checkUnusedExports } from "../../../unslop-ts/src/rules/whole_tree/unused_exports.ts";
 
-const REPO_ROOT = fromFileUrl(new URL("../../", import.meta.url));
+const REPO_ROOT = fromFileUrl(new URL("../../../", import.meta.url));
 
 Deno.test("constant_restatement_descriptor_preserves_scoped_permissions", async () => {
   const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json"))) as {
@@ -53,11 +53,11 @@ async function runTask(task: string, args: readonly string[]): Promise<ITaskResu
   };
 }
 
-Deno.test("exaix_unslop_cli_lists_59_rules_and_reports_a_seeded_violation", async () => {
+Deno.test("exaix_unslop_cli_lists_60_rules_and_reports_a_seeded_violation", async () => {
   const listed = await runTask("unslop", ["rules", "list", "--format=json"]);
   assertEquals(listed.code, 0, listed.stderr);
   const rules = (JSON.parse(listed.stdout) as { rules: unknown[] }).rules;
-  assertEquals(rules.length, 59);
+  assertEquals(rules.length, 60);
 
   const fixture = join(REPO_ROOT, "scripts", ".report_fixture.ts");
   try {
@@ -205,7 +205,7 @@ Deno.test("configured_options_reach_four_whole_tree_sections", async () => {
 Deno.test("final_report_and_management_path", async () => {
   const listed = await runTask("unslop", ["rules", "list", "--format=json"]);
   assertEquals(listed.code, 0, listed.stderr);
-  assertEquals((JSON.parse(listed.stdout) as { rules: unknown[] }).rules.length, 59);
+  assertEquals((JSON.parse(listed.stdout) as { rules: unknown[] }).rules.length, 60);
   const config = await runTask("unslop", ["config", "print"]);
   assertEquals(config.code, 0, config.stderr);
   const parked = join(REPO_ROOT, "scripts", ".final_parked.ts");

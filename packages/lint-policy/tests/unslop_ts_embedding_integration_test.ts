@@ -1,16 +1,16 @@
 /**
  * @module UnslopTsEmbeddingIntegrationTest
- * @path tests/scripts/unslop_ts_embedding_integration_test.ts
+ * @path packages/lint-policy/tests/unslop_ts_embedding_integration_test.ts
  * @description Clones the repository without submodules, initializes unslop-ts through the deploy script, and drives the real lint and check tasks in the clone: seeded violations are reported by the Exaix, TypeScript, and Deno rule packs, and a clean tree passes every gate.
  * @architectural-layer Tooling
  * @dependencies [@std/assert, @std/path]
- * @related-files [scripts/deploy_unslop_ts.ts, tests/scripts/ci_wiring_test.ts]
+ * @related-files [packages/lint-policy/src/tools/deploy_engine.ts, tests/scripts/ci_wiring_test.ts]
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 
-const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
+const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
 const ENGINE_SUBMODULE = "unslop-ts";
 const TEAM_SUBMODULE = "exaix-team";
 const PACKAGE_SEED = "packages/core/src/__temp_embedding_seed.ts";
@@ -34,7 +34,7 @@ const BOOTSTRAP_ARGS: readonly string[] = [
   "--allow-run",
   "--allow-read",
   "--allow-env",
-  "scripts/deploy_unslop_ts.ts",
+  "packages/lint-policy/src/tools/deploy_engine.ts",
 ];
 const SHEBANG_RULE = "exaix/require-deno-shebang";
 const CLEAN_TASKS: readonly string[] = ["lint", "check:style", "check:complexity", "check:unused-exports"];

@@ -14,8 +14,13 @@ import { EXAIX_RULE_PACKS } from "../src/rule_packs.ts";
 import { POLICY_CATALOG } from "../src/policy_config.ts";
 
 const RULE_ID = "exaix/unslop-isolation";
+/** The Phase 229 flat installation path, deleted in Step 11. */
+const PHASE_229_FLAT_ASSETS = [
+  "scripts/build_unslop_portal_bundle.ts",
+  "tests/scripts/build_unslop_portal_bundle_test.ts",
+];
 const REPO_ROOT = fromFileUrl(new URL("../../../", import.meta.url));
-/** Phase 233 Step 8 deletes these Phase 229 adapter modules and their catalog exclusions. */
+/** Phase 233 Step 11 deletes these adapter exclusions. */
 const PHASE_229_ADAPTER = [
   "packages/execution/src/unslop_assets.ts",
   "packages/execution/src/unslop_budget.ts",
@@ -34,6 +39,24 @@ const ENGINE_IMPORT = 'import { parseCatalog } from "@dostark/unslop-ts";\n';
 /** Runs only the isolation rule of the real compiled policy on one source. */
 function diagnosticsFor(file: string, source: string): { id: string; message: string }[] {
   const plugin = createDenoPlugin(EXAIX_PLUGIN_NAME, POLICY_CATALOG, {
+    rulePacks: EXAIX_RULE_PACKS,
+    selection: RULE_ID,
+  });
+  return runPlugin(plugin, file, source).filter((diagnostic) => diagnostic.id === RULE_ID);
+}
+
+/** The same compiled policy with the rule's scope and path exclusions removed. */
+const UNRESTRICTED_CATALOG = {
+  ...POLICY_CATALOG,
+  rules: {
+    ...POLICY_CATALOG.rules,
+    [RULE_ID]: { ...POLICY_CATALOG.rules[RULE_ID], scope: "all" as const, exclude: [] },
+  },
+};
+
+/** Runs only the isolation rule with no catalog scope or path exclusion. */
+function unrestrictedDiagnostics(file: string, source: string): { id: string; message: string }[] {
+  const plugin = createDenoPlugin(EXAIX_PLUGIN_NAME, UNRESTRICTED_CATALOG, {
     rulePacks: EXAIX_RULE_PACKS,
     selection: RULE_ID,
   });
@@ -98,6 +121,21 @@ Deno.test("no production module outside lint-policy is an unslop module or impor
     const text = await Deno.readTextFile(`${REPO_ROOT}${file}`);
     if (!/unslop/i.test(file) && !text.includes("unslop-ts")) continue;
     for (const diagnostic of diagnosticsFor(file, text)) findings.push(`${file}: ${diagnostic.message}`);
+  }
+  assertEquals(findings, []);
+});
+
+Deno.test("no-unslop-tooling-outside-owners: scripts and their tests name no unslop module", async () => {
+  const listed = await new Deno.Command("git", { args: ["ls-files", "*.ts"], cwd: REPO_ROOT }).output();
+  const files = new TextDecoder().decode(listed.stdout).split("\n").filter((file) => file.length > 0);
+  const findings: string[] = [];
+  for (const file of files) {
+    if (!file.startsWith("scripts/") && !file.startsWith("tests/scripts/")) continue;
+    // The Phase 229 flat builder and its test are the named exemptions until Step 11 deletes them.
+    if (PHASE_229_FLAT_ASSETS.includes(file)) continue;
+    const text = await Deno.readTextFile(`${REPO_ROOT}${file}`);
+    if (!/unslop/i.test(file) && !text.includes("unslop-ts")) continue;
+    for (const diagnostic of unrestrictedDiagnostics(file, text)) findings.push(`${file}: ${diagnostic.message}`);
   }
   assertEquals(findings, []);
 });

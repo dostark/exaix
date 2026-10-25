@@ -1,16 +1,16 @@
 /**
  * @module LintPolicyLocalCutoverTest
- * @path tests/scripts/lint_policy_local_cutover_test.ts
+ * @path packages/lint-policy/tests/lint_policy_local_cutover_test.ts
  * @description Guards the local cutover after the remediation steps: no rule ceiling rose since the first cutover and the engine checkout matches the recorded pointer.
  * @architectural-layer Test
  * @dependencies [@std/assert, @std/path]
- * @related-files [packages/lint-policy/rule_ceilings.json, tests/scripts/rule_ceiling_ratchet_test.ts]
+ * @related-files [packages/lint-policy/rule_ceilings.json, packages/lint-policy/tests/rule_ceilings_test.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 
-const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
+const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
 const CEILINGS_PATH = "packages/lint-policy/rule_ceilings.json";
 const FIRST_CUTOVER_COMMIT = "772fbc96c081baedec792cf77bb5eb2b7f27bf75";
 const ENGINE_SUBMODULE = "unslop-ts";

@@ -79,7 +79,7 @@ Deno.test("[deploy_workspace] stripDevOnlyConfig drops tasks that run files the 
     setup: "deno run -A scripts/setup_db.ts",
     "check:style": "deno run packages/lint-policy/src/checkers/check_code_style.ts",
     "check:magic": "deno run scripts/check_magic.ts",
-    "unslop-ts:deploy": "deno run scripts/deploy_unslop_ts.ts",
+    "unslop-ts:deploy": "deno run packages/lint-policy/src/tools/deploy_engine.ts",
     "docs:style-rules": "deno run scripts/generate_style_rules_doc.ts",
     "check:complexity": "deno run unslop-ts/src/cli/rule_report.ts --rule=x",
     lint: "EXAIX_LINT_RULES= deno lint tests/ packages/ && deno lint --rules-tags= scripts/",

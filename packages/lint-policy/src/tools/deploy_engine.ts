@@ -1,11 +1,11 @@
 #!/usr/bin/env -S deno run -A
 /**
- * @module DeployUnslopTs
- * @path scripts/deploy_unslop_ts.ts
+ * @module DeployEngine
+ * @path packages/lint-policy/src/tools/deploy_engine.ts
  * @description Moves or initializes the unslop-ts submodule pointer after it checks that the ref is published and that the engine still accepts the Exaix catalog.
  * @architectural-layer Tooling
  * @dependencies []
- * @related-files [packages/lint-policy/tests/unslop_ts_compat_test.ts, tests/scripts/deploy_unslop_ts_test.ts]
+ * @related-files [packages/lint-policy/tests/unslop_ts_compat_test.ts, packages/lint-policy/tests/deploy_engine_test.ts]
  * @public Exports are the unit-test surface of this module.
  *
  * Usage:
@@ -13,7 +13,7 @@
  *                                                      Show the incoming log, ask for approval, check out the ref,
  *                                                      run the compatibility check, stage the pointer.
  *                                                      Without a terminal the script stops unless --yes is given.
- *   deno run --no-config --allow-run --allow-read --allow-env scripts/deploy_unslop_ts.ts --init
+ *   deno run --no-config --allow-run --allow-read --allow-env packages/lint-policy/src/tools/deploy_engine.ts --init
  *                                                      Initialize the submodule at the recorded pointer, then run the check.
  *                                                      Use this form on a fresh clone, where the empty submodule directory stops `deno task`.
  *
@@ -29,6 +29,9 @@ const REMOTE = "origin";
 const REMOTE_MAIN = `${REMOTE}/main`;
 const TAG_PATTERN = /^v\d+\.\d+\.\d+$/;
 const COMMIT_PATTERN = /^[0-9a-f]{7,40}$/;
+const DEPLOY_GIT_REV_PARSE = "rev-parse";
+const DEPLOY_GIT_STATUS = "status";
+const DEPLOY_GIT_CHECKOUT = "checkout";
 const COMPAT_TESTS: readonly string[] = [
   `${SUBMODULE}/tests`,
   "packages/lint-policy/tests/unslop_ts_compat_test.ts",
@@ -194,20 +197,20 @@ async function initialize(root: string): Promise<void> {
 
 async function moveTo(root: string, ref: string, approved: boolean): Promise<void> {
   const submodule = `${root}/${SUBMODULE}`;
-  const initialized = await git(submodule, ["rev-parse", "--git-dir"]);
+  const initialized = await git(submodule, [DEPLOY_GIT_REV_PARSE, "--git-dir"]);
   if (!initialized.ok) throw new DeployError(`${SUBMODULE} is not initialized. Run with --init first.`, FAILURE_EXIT);
-  if ((await gitOrThrow(submodule, ["status", "--porcelain"])) !== "") {
+  if ((await gitOrThrow(submodule, [DEPLOY_GIT_STATUS, "--porcelain"])) !== "") {
     throw new DeployError(`The ${SUBMODULE} worktree is not clean. Commit or discard its changes first.`, FAILURE_EXIT);
   }
-  const previous = await gitOrThrow(submodule, ["rev-parse", "HEAD"]);
+  const previous = await gitOrThrow(submodule, [DEPLOY_GIT_REV_PARSE, "HEAD"]);
   await gitOrThrow(submodule, ["fetch", "--tags", REMOTE]);
   await assertPublished(submodule, ref);
   console.log(`Incoming changes ${previous.slice(0, 10)}..${ref}:`);
   console.log(await gitOrThrow(submodule, ["log", "--oneline", `${previous}..${ref}`]));
   requireApproval(ref, approved);
-  await gitOrThrow(submodule, ["checkout", "-q", "--detach", ref]);
+  await gitOrThrow(submodule, [DEPLOY_GIT_CHECKOUT, "-q", "--detach", ref]);
   if (!(await runCompatCheck(root))) {
-    await gitOrThrow(submodule, ["checkout", "-q", "--detach", previous]);
+    await gitOrThrow(submodule, [DEPLOY_GIT_CHECKOUT, "-q", "--detach", previous]);
     throw new DeployError(
       `The compatibility check failed for ${ref}. Restored ${previous.slice(0, 10)}.`,
       FAILURE_EXIT,

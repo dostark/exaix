@@ -142,7 +142,7 @@
     "unslop:write": "deno run --allow-read --allow-env --allow-write unslop-ts/src/cli/unslop.ts",
     "lint:report": "deno run --allow-read --allow-env --allow-run=deno unslop-ts/src/cli/unslop.ts report",
     "lint:report:write": "deno run --allow-read --allow-env --allow-run=deno --allow-write unslop-ts/src/cli/unslop.ts report",
-    "unslop-ts:deploy": "deno run --allow-run --allow-read --allow-env scripts/deploy_unslop_ts.ts",
+    "unslop-ts:deploy": "deno run --allow-run --allow-read --allow-env packages/lint-policy/src/tools/deploy_engine.ts",
     "unslop-ts:bundle": "deno run -A scripts/build_unslop_portal_bundle.ts",
     "unslop-ts:policy": "deno run -A packages/lint-policy/src/tools/install_portal_policy.ts",
     "check:optional-params:staged": "deno run -A unslop-ts/src/cli/whole_tree.ts --descriptor=packages/lint-policy/unslop.project.ts --rule=optional-params --staged",

@@ -4,7 +4,7 @@
  * @description Proves that the embedded unslop-ts engine accepts the Exaix catalog: every plugin rule id resolves, and the whole-tree settings parse. The deploy task runs this test before it stages a new engine pointer.
  * @architectural-layer Test
  * @dependencies [@dostark/unslop-ts]
- * @related-files [scripts/deploy_unslop_ts.ts, packages/lint-policy/tests/fixtures/catalog_v1.json]
+ * @related-files [packages/lint-policy/src/tools/deploy_engine.ts, packages/lint-policy/tests/fixtures/catalog_v1.json]
  */
 
 import { assertEquals, assertNotEquals } from "@std/assert";
