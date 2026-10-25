@@ -2,10 +2,11 @@
  * @module TypeScriptApiSurfaceTest
  * @path tests/scripts/typescript_api_surface_test.ts
  * @description Phase 165 (P4): freezes the legacy TypeScript compiler-API surface consumed by
- * the five gate scripts. (a) a functional createSourceFile + forEachChild walk proves the API
+ * the two Exaix style checkers. (a) a functional createSourceFile + forEachChild walk proves the API
  * still behaves; (b) an allowlist guard scans the consumers for ts.<ident> usages and fails on
- * any identifier outside the recorded 51-token surface, so API expansion is a reviewed event
- * (see exaix-dev-docs/dev/TypeScript7_Migration.md for the migration paths).
+ * any identifier outside the recorded 2-token surface, so API expansion is a reviewed event
+ * (see exaix-dev-docs/dev/TypeScript7_Migration.md for the migration paths). The engine files
+ * are covered by the engine's own tests/typescript_api_surface_test.ts.
  * NOTE: the (b) scan is a heuristic tripwire — it matches dotted access on the literal `ts`
  * identifier only; bracket access (ts["x"]), destructuring (const { x } = ts), or alias
  * renames (import tsc from "typescript") bypass it. Genuine coverage is enforced by the (a)
@@ -15,73 +16,13 @@
 import ts from "typescript";
 
 const CONSUMER_FILES = [
-  "unslop-ts/src/rules/whole_tree/optional_params.ts",
   "packages/lint-policy/src/checkers/check_code_style.ts",
   "packages/lint-policy/src/checkers/check_magic_values.ts",
-  "unslop-ts/src/rules/whole_tree/unused_exports.ts",
-  "unslop-ts/tests/whole_tree_optional_params_test.ts",
 ] as const;
 
 const TS_API_ALLOWLIST = [
-  "ConciseBody",
-  "ExportDeclaration",
-  "FunctionBody",
-  "Modifier",
-  "NamedExports",
-  "Node",
-  "NodeFlags",
-  "NumericLiteral",
-  "ParameterDeclaration",
   "ScriptTarget",
-  "SignatureDeclaration",
-  "SourceFile",
-  "Statement",
-  "StringLiteral",
-  "SyntaxKind",
-  "TypeElement",
   "createSourceFile",
-  "forEachChild",
-  "isArrayLiteralExpression",
-  "isArrowFunction",
-  "isBlock",
-  "isCallExpression",
-  "isClassDeclaration",
-  "isConstructorDeclaration",
-  "isDecorator",
-  "isElementAccessExpression",
-  "isEnumDeclaration",
-  "isEnumMember",
-  "isExportAssignment",
-  "isExportDeclaration",
-  "isFunctionDeclaration",
-  "isFunctionExpression",
-  "isIdentifier",
-  "isImportDeclaration",
-  "isIndexedAccessTypeNode",
-  "isInterfaceDeclaration",
-  "isJsxAttribute",
-  "isLiteralTypeNode",
-  "isMethodDeclaration",
-  "isModuleDeclaration",
-  "isNamedExports",
-  "isNamedImports",
-  "isNamespaceImport",
-  "isNewExpression",
-  "isNoSubstitutionTemplateLiteral",
-  "isNumericLiteral",
-  "isObjectLiteralExpression",
-  "isParameter",
-  "isPropertyAccessExpression",
-  "isPropertyAssignment",
-  "isShorthandPropertyAssignment",
-  "isStringLiteral",
-  "isTemplateLiteralToken",
-  "isTypeAliasDeclaration",
-  "isTypeLiteralNode",
-  "isTypeReferenceNode",
-  "isUnionTypeNode",
-  "isVariableDeclaration",
-  "isVariableStatement",
 ] as const;
 
 const allowlist = new Set<string>(TS_API_ALLOWLIST);

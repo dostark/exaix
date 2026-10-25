@@ -1,7 +1,7 @@
 /**
  * @module RuleCeilingRatchetTest
  * @path tests/scripts/rule_ceiling_ratchet_test.ts
- * @description Behaviour of the rule-ceiling ratchet evaluator.
+ * @description Exaix rule ceilings: the committed file names only known rules and packages, and the whole-tree counts match it. The evaluator itself is tested in the engine suite.
  * @architectural-layer Test
  * @related-files [packages/lint-policy/tests/check_code_style_catalog_parity_test.ts]
  */
@@ -34,64 +34,6 @@ const RATCHETED_RULES = [
   "exaix/test-inline-multiline-fixture",
 ];
 const ROOT_BUCKETS = ["tests", "exaix-team", "scripts"];
-
-const KNOWN_RULES = ["exaix/require-safety-comment", "exaix/no-runtime-typeof"];
-const KNOWN_PACKAGES = ["packages/flow", "packages/core"];
-
-Deno.test("a count above the ceiling is reported with its delta", () => {
-  const result = evaluateCeilings(
-    { "exaix/no-runtime-typeof": { "packages/flow": 3 } },
-    { "exaix/no-runtime-typeof": { "packages/flow": 5 } },
-    KNOWN_RULES,
-    KNOWN_PACKAGES,
-  );
-  assertEquals(result.over.length, 1);
-  assertEquals(result.over[0].delta, 2);
-  assertEquals(result.under.length, 0);
-});
-
-Deno.test("a count below the ceiling must be written back", () => {
-  const result = evaluateCeilings(
-    { "exaix/no-runtime-typeof": { "packages/flow": 5 } },
-    { "exaix/no-runtime-typeof": { "packages/flow": 3 } },
-    KNOWN_RULES,
-    KNOWN_PACKAGES,
-  );
-  assertEquals(result.under.length, 1);
-  assertEquals(result.under[0].count, 3);
-  assertEquals(result.over.length, 0);
-});
-
-Deno.test("a count equal to the ceiling is clean", () => {
-  const result = evaluateCeilings(
-    { "exaix/no-runtime-typeof": { "packages/flow": 5 } },
-    { "exaix/no-runtime-typeof": { "packages/flow": 5 } },
-    KNOWN_RULES,
-    KNOWN_PACKAGES,
-  );
-  assertEquals(result.over, []);
-  assertEquals(result.under, []);
-});
-
-Deno.test("an unknown rule id is rejected", () => {
-  const result = evaluateCeilings(
-    { "exaix/not-a-rule": { "packages/flow": 1 } },
-    {},
-    KNOWN_RULES,
-    KNOWN_PACKAGES,
-  );
-  assertEquals(result.unknownRules, ["exaix/not-a-rule"]);
-});
-
-Deno.test("an unknown package key is rejected", () => {
-  const result = evaluateCeilings(
-    { "exaix/no-runtime-typeof": { "packages/ghost": 1 } },
-    {},
-    KNOWN_RULES,
-    KNOWN_PACKAGES,
-  );
-  assertEquals(result.unknownPackages, ["packages/ghost"]);
-});
 
 interface ILintDiagnostic {
   readonly code?: string;
