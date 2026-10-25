@@ -58,7 +58,7 @@ export interface IVerificationCheckRunState {
   error_class: LintErrorClass | null;
 }
 
-/** One retained unslop finding before safe projection. */
+/** One retained lint finding before safe projection. */
 export interface IVerificationLintFinding {
   check_index: number;
   file: string;
@@ -72,9 +72,9 @@ export interface IVerificationResult {
   /** true when a check could not run (timeout, spawn failure, confinement violation). */
   error: boolean;
   failures: IVerificationCheckFailure[];
-  /** Run identity of the attempt, when the run had scoped unslop context. */
+  /** Run identity of the attempt, when the run had scoped lint context. */
   run_id?: string;
-  /** Per-check state of every configured unslop check. */
+  /** Per-check state of every configured lint check. */
   lint_checks?: IVerificationCheckRunState[];
   /** Retained findings of the attempt, before safe projection. */
   lint_findings?: IVerificationLintFinding[];
@@ -267,14 +267,14 @@ export type IExecutionCompletedVerification =
     verification_status: VerificationStatus;
   };
 
-const UnslopCheckIndexSchema = z.number().int().nonnegative();
-const UnslopTotalSchema = z.number().int().nonnegative().nullable();
+const LintCheckIndexSchema = z.number().int().nonnegative();
+const LintTotalSchema = z.number().int().nonnegative().nullable();
 
 /** One configured lint check in the terminal snapshot. */
 export const LintCheckSnapshotSchema = z.object({
-  check_index: UnslopCheckIndexSchema,
+  check_index: LintCheckIndexSchema,
   outcome: z.enum(LINT_CHECK_RUN_OUTCOMES),
-  total: UnslopTotalSchema,
+  total: LintTotalSchema,
   error_class: z.enum(LINT_ERROR_CLASSES).nullable(),
 }).strict();
 
@@ -288,20 +288,20 @@ function isSafeFindingPath(value: string): boolean {
 
 /** One persisted finding. The file is a display-safe repo-relative path. */
 export const LintFindingSnapshotSchema = z.object({
-  check_index: UnslopCheckIndexSchema,
+  check_index: LintCheckIndexSchema,
   file: z.string().min(1).refine(isSafeFindingPath, "unsafe display path"),
   line: z.number().int().positive(),
   rule: z.string().regex(/^([a-z][a-z0-9-]*\/)?[a-z][a-z0-9-]*$/),
 }).strict();
 
-/** The authoritative terminal findings snapshot of one configured unslop run. */
+/** The authoritative terminal findings snapshot of one configured lint run. */
 export const ExecutionVerificationLintFindingsEventPayloadSchema = z.object({
   request_id: z.string().min(1),
   run_id: z.string().uuid(),
   attempt: z.number().int().nonnegative(),
   commit_sha: z.string().min(1).nullable(),
   verification_status: VerificationStatusSchema,
-  total: UnslopTotalSchema,
+  total: LintTotalSchema,
   checks: z.array(LintCheckSnapshotSchema).min(1),
   findings: z.array(LintFindingSnapshotSchema),
   truncated: z.boolean(),

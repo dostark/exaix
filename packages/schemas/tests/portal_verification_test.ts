@@ -323,3 +323,8 @@ Deno.test("[verification-schema] the finding rule pattern accepts plugin and bui
     );
   }
 });
+
+Deno.test("[verification-schema] schema-names-generic: the snapshot module keeps no Unslop identifier", async () => {
+  const source = await Deno.readTextFile(new URL("../src/portal_verification.ts", import.meta.url));
+  assertEquals(source.includes("Unslop"), false);
+});

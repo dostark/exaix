@@ -290,6 +290,29 @@ Deno.test("deno-lint-check", async (test) => {
       }
     });
 
+    await test.step("large-source-is-guarded", async () => {
+      const pad = `const pad = "${"x".repeat(2_100_000)}";\n`;
+      const guarded = await makeRepo("deno-lint-large-guarded-", {
+        "seed.ts": pad + "// deno-lint-ignore-file\nexport const seed = 1 as unknown as string;\n",
+      });
+      try {
+        const outcome = errored(await runnerFor(systemRoot, settingsOf()).run(contextFor(guarded)));
+        assertEquals(outcome.error_class, "LintSuppressionForbidden");
+      } finally {
+        await guarded.cleanup();
+      }
+
+      const plain = await makeRepo("deno-lint-large-plain-", {
+        "seed.ts": pad + "export const seed = 1 as unknown as string;\n",
+      });
+      try {
+        const outcome = failed(await runnerFor(systemRoot, settingsOf()).run(contextFor(plain)));
+        assert(outcome.findings.some((finding) => finding.rule === CAST_CODE), outcome.output);
+      } finally {
+        await plain.cleanup();
+      }
+    });
+
     await test.step("guard-deadline-bounded", async () => {
       const repo = await makeRepo("deno-lint-guard-deadline-", { "a.ts": CLEAN_SEED, "b.ts": CLEAN_SEED });
       try {
@@ -297,10 +320,10 @@ Deno.test("deno-lint-check", async (test) => {
         let clock = 0;
         const outcome = errored(
           await runnerFor(systemRoot, settingsOf(), {
-            readSource: () => {
+            hasFileIgnore: () => {
               reads++;
               clock = 20_000;
-              return Promise.resolve(CLEAN_SEED);
+              return Promise.resolve(false);
             },
             now: () => clock,
           }).run(contextFor(repo, 10_000)),

@@ -19,11 +19,10 @@ import { buildVerificationCheckEnv, prepareVerificationOutput } from "./verifica
 
 const POLICY_CONFIG_FILENAME = "deno.json";
 const REPO_SEPARATOR = "/";
-const LINE_BREAK = /\r?\n/;
 /** The line-comment directive Deno applies to a whole file before any plugin rule runs. */
 const FILE_IGNORE_DIRECTIVE = /^\s*\/\/\s*deno-lint-ignore-file\b/;
-/** The bounded source read the guard performs per selected file. */
-const MAX_SOURCE_BYTES = 2_097_152;
+/** The longest line prefix the guard inspects for a file-level directive. */
+const LINE_PREFIX_MAX_BYTES = 4_096;
 /** Plugin ids and built-in Deno rule ids. */
 const RULE_PATTERN = /^([a-z][a-z0-9-]*\/)?[a-z][a-z0-9-]*$/;
 
@@ -95,8 +94,8 @@ export interface IDenoLintCheckRunnerOptions {
   readonly knownSecrets?: readonly string[];
   /** Host batch override for tests that do not spawn. */
   readonly runBatch?: IDenoLintBatchRunner;
-  /** Source-reader override for tests that simulate a slow guard. */
-  readonly readSource?: (path: string) => Promise<string | null>;
+  /** File-ignore scanner override for tests that simulate a slow guard. */
+  readonly hasFileIgnore?: (path: string, beforeChunk: () => void) => Promise<boolean | null>;
   /** Clock override for tests that advance the deadline. */
   readonly now?: () => number;
 }
@@ -152,19 +151,50 @@ function chunk<T>(items: readonly T[], size: number): T[][] {
   return batches;
 }
 
-/** Reads one bounded regular UTF-8 source file, or null when it is absent or oversized. */
-async function readBoundedSource(path: string, maxBytes: number): Promise<string | null> {
+/** Streams one regular file and reports whether a line starts with a file-level directive. */
+async function sourceHasFileIgnore(path: string, beforeChunk: () => void): Promise<boolean | null> {
   let info: Deno.FileInfo;
   try {
     info = await Deno.lstat(path);
   } catch {
     return null;
   }
-  if (!info.isFile || info.isSymlink || info.size > maxBytes) return null;
+  if (!info.isFile || info.isSymlink) return null;
+  let file: Deno.FsFile;
   try {
-    return await Deno.readTextFile(path);
+    file = await Deno.open(path, { read: true });
   } catch {
     return null;
+  }
+  try {
+    let prefix = "";
+    let prefixBytes = 0;
+    for await (const chunk of file.readable) {
+      beforeChunk();
+      for (const byte of chunk) {
+        if (byte === 0x0a) {
+          if (FILE_IGNORE_DIRECTIVE.test(prefix)) return true;
+          prefix = "";
+          prefixBytes = 0;
+          continue;
+        }
+        if (prefixBytes < LINE_PREFIX_MAX_BYTES) {
+          prefix += String.fromCharCode(byte);
+          prefixBytes++;
+        }
+      }
+    }
+    return FILE_IGNORE_DIRECTIVE.test(prefix);
+  } catch (error) {
+    if (error instanceof DenoLintCheckError) throw error;
+    return null;
+  } finally {
+    // The stream closes the file at EOF. Close only the early-exit path.
+    try {
+      file.close();
+    } catch {
+      // The resource already closed.
+    }
   }
 }
 
@@ -301,15 +331,12 @@ export class DenoLintCheckRunner {
     deadline: number,
     now: () => number,
   ): Promise<void> {
-    const readSource = this.options.readSource ??
-      ((path: string) => readBoundedSource(path, MAX_SOURCE_BYTES));
+    const hasFileIgnore = this.options.hasFileIgnore ?? sourceHasFileIgnore;
     for (const file of files) {
       remainingMs(deadline, now);
-      const text = await readSource(join(context.executionRoot, file));
-      if (text === null) throw new DenoLintCheckError(LintErrorClass.SOURCE_INVALID);
-      if (text.split(LINE_BREAK).some((line) => FILE_IGNORE_DIRECTIVE.test(line))) {
-        throw new DenoLintCheckError(LintErrorClass.SUPPRESSION_FORBIDDEN);
-      }
+      const found = await hasFileIgnore(join(context.executionRoot, file), () => remainingMs(deadline, now));
+      if (found === null) throw new DenoLintCheckError(LintErrorClass.SOURCE_INVALID);
+      if (found) throw new DenoLintCheckError(LintErrorClass.SUPPRESSION_FORBIDDEN);
     }
   }
 
