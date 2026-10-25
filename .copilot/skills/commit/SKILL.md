@@ -183,6 +183,7 @@ Do / Don't
 - ✅ Reuse verified full-suite results from the preceding #next-steps application
   and skip duplicate test_all runs when those results still cover the commit.
 - ✅ Ground `impact:` in ARCHITECTURE.md components.
+- ❌ Pre-commit the plan submodule before `commit_plan_step`; stage the plan edit and let the tool commit the submodule and parent together.
 - ❌ Name a component in `impact:` that the `what:` bullets do not mention; run `deno task fmt:check` after editing Markdown, before staging.
 - ✅ List actual tool usage in tool_audit; include your real identity.
 - ✅ Ensure the component word in `impact:` appears verbatim in `what:`.

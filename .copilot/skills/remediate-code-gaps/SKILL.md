@@ -68,6 +68,8 @@ Do / Don't
   string constants such as `FLOW_EVENT_*` rather than registered `DomainEventType` members — a
   class-level tag trips `check:event-coverage --fail-on-tagged`.
 - ❌ Add refactoring or polish beyond the named gaps.
+- ❌ Commit without checking `git branch --show-current` before and after `commit_plan_step`; concurrent sessions share one worktree, so a branch switch misplaces the commit. Move the branch pointer and preserve the other branch's work.
+- ❌ String-replace a test block after `deno fmt` reflowed it; re-read the exact range first, or the replacement silently misses.
 - ❌ Rewrite the remediation step's Actions/prose — flip only its criteria/tests.
 - ❌ Skip tests for any remediation.
 - ❌ Run a bare `git commit` for a remediation that flips plan-doc criteria — the gate

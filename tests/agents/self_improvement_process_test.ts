@@ -96,3 +96,19 @@ Deno.test("phase-registry-current: completed Phase 233 has no open row and Phase
   assert(!/^\|\s*1\s*\|\s*229\s*\|/.test(row229), "Phase 229 must not be the first pickup");
   assert(row229.includes("Do not pick"), "Phase 229 must not be schedulable");
 });
+
+Deno.test("process-guards: the review-remediation-retro guardrails stay pinned", async () => {
+  const [review, remediate, retro, nextSteps, commit] = await Promise.all([
+    Deno.readTextFile(".copilot/skills/review-phase-code/SKILL.md"),
+    Deno.readTextFile(".copilot/skills/remediate-code-gaps/SKILL.md"),
+    Deno.readTextFile(".copilot/skills/self-improvement/SKILL.md"),
+    Deno.readTextFile(".copilot/skills/next-steps/SKILL.md"),
+    Deno.readTextFile(".copilot/skills/commit/SKILL.md"),
+  ]);
+  assert(review.includes("ci.ts check` does not execute tests"), "the review must run planned tests");
+  assert(remediate.includes("git branch --show-current"), "remediation must check the branch");
+  assert(remediate.includes("deno fmt` reflowed"), "remediation must re-read formatted blocks");
+  assert(retro.includes("retro written before the review"), "the retro must follow the review");
+  assert(nextSteps.includes("git branch --show-current"), "plan-step commits must check the branch");
+  assert(commit.includes("Pre-commit the plan submodule"), "the commit skill must keep the submodule staged");
+});

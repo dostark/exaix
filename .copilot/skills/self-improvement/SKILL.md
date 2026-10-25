@@ -58,7 +58,7 @@ Use this at the start of a session or before a multi-step change.
 Run this ONCE per phase, after `#remediate-code-gaps` closes and before the phase is
 declared done.
 
-Run it when the code loop closes, even if external closure rows remain. A later
+Run it when the code loop closes, even if external closure rows remain. Verify first that `#review-phase-code` and `#remediate-code-gaps` are closed: a retro written before the review is invalidated when the review reopens the phase. A later
 `#review-phase-code` pass can reopen a phase after an earlier completion: read the current
 frontmatter, prose header, and ledger before writing the Retrospective. If the ledger still has
 external rows (push, publish, branch protection), keep the header caveat and do not flatten the

@@ -70,6 +70,7 @@ Do / Don't
 - ✅ Before reporting a control or validation as inert, trace every layer that can enforce it
   (resolver, validator, caller) and write a characterization test. Report a gap only when it fails.
 - ✅ Read actual source — never trust the plan's description.
+- ✅ Run every planned test the steps cite. `scripts/ci.ts check` does not execute tests, so a green check can hide a red whole-tree or scenario case; run the test files before ranking a phase complete.
 - ✅ Verify every criterion against real code and test files.
 - ✅ Cross-check each step against README §F (Actions/Notes/Tests/Criteria).
 - ✅ Classify gaps 🔴 Critical / 🔒 Security / 🟡 Feasibility / 🟠 Testing / 🔵 Conceptual.
