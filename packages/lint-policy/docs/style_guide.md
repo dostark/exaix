@@ -109,6 +109,22 @@ The catalog excludes one file, `packages/core/src/parsing/markdown.ts`, from `ex
 Do not rename an interface on import anywhere else. The file has no interface rename now, so the exclusion has
 no effect today.
 
+## Unslop Isolation {#unslop-isolation}
+
+unslop-ts stays independent of Exaix, and the Exaix runtime holds no unslop code. The
+`exaix/unslop-isolation` rule reports a production module outside `packages/lint-policy/` whose file
+name contains `unslop`, and an import of `@dostark/unslop-ts` or a `unslop-ts/` path there. Scripts
+and tests are exempt. A portal uses unslop-ts through an installed policy directory and its lint
+configuration, not through Exaix modules.
+
+```ts
+// packages/execution/src/unslop_adapter.ts   ❌ An unslop module outside lint-policy
+import { parseCatalog } from "@dostark/unslop-ts"; // ❌ An engine import outside lint-policy
+```
+
+The catalog temporarily excludes the 11 Phase 229 adapter modules in `packages/execution/src/`.
+Phase 233 deletes them and the exclusion.
+
 ## Comment Discipline Additions {#comment-discipline-additions}
 
 Extends [Comment Discipline](../../../unslop-ts/docs/style_guide.md#comment-discipline).
@@ -144,7 +160,8 @@ The version 2 policy gives every rule a status. Check `unslop.config.json` or th
   `exaix/import-boundaries`, `exaix/import-inside-statement`, `exaix/inline-type-import`,
   `exaix/max-cyclomatic-complexity`, `exaix/no-chained-type-assertions`, `exaix/no-forbidden-lint-ignore`,
   `exaix/no-pass-through-type-alias`, `exaix/promise-response-alias`, `exaix/require-deno-shebang`,
-  `exaix/require-module-header`, `exaix/require-script-usage`, and `exaix/ts-suppression-pragmas`.
+  `exaix/require-module-header`, `exaix/require-script-usage`, `exaix/ts-suppression-pragmas`, and
+  `exaix/unslop-isolation`.
 - **Parked plugin rules (`severity: off`, opt-in):** `exaix/ephemeral-comment`,
   `exaix/exported-interface-placement`, `exaix/import-placement`, `exaix/long-comment`,
   `exaix/magic-union-type`, `exaix/max-class-size`, `exaix/max-params`, `exaix/no-boolean-assert`,

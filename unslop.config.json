@@ -502,6 +502,36 @@
       "optIn": true,
       "reason": "Entrypoints and the compatibility shim legitimately re-export; the code keeps the isTestingCompatibilityShim call. Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on."
     },
+    "exaix/unslop-isolation": {
+      "level": "error",
+      "scope": "prod",
+      "exclude": [
+        "scripts/**",
+        "packages/execution/src/unslop_assets.ts",
+        "packages/execution/src/unslop_budget.ts",
+        "packages/execution/src/unslop_check_error.ts",
+        "packages/execution/src/unslop_check_runner.ts",
+        "packages/execution/src/unslop_check_types.ts",
+        "packages/execution/src/unslop_findings.ts",
+        "packages/execution/src/unslop_lint_process.ts",
+        "packages/execution/src/unslop_settings.ts",
+        "packages/execution/src/unslop_snapshot.ts",
+        "packages/execution/src/unslop_source_snapshot.ts",
+        "packages/execution/src/unslop_trust.ts"
+      ],
+      "options": {
+        "ownerPrefixes": [
+          "packages/lint-policy/"
+        ],
+        "modulePattern": "unslop",
+        "enginePattern": "^@dostark/unslop-ts(?:/|$)|(?:^|/)unslop-ts/"
+      },
+      "docs": "packages/lint-policy/docs/style_guide.md#unslop-isolation",
+      "tags": [
+        "boundary",
+        "module-structure"
+      ]
+    },
     "exaix/import-boundaries": {
       "level": "error",
       "options": {

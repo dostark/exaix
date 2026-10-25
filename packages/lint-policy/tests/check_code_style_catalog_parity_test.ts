@@ -15,6 +15,7 @@ import { DENO_RULE_PACK, parseCatalog, TYPESCRIPT_RULE_PACK } from "@dostark/uns
 import { createDenoPlugin, runPlugin } from "@dostark/unslop-ts/deno";
 import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 import { EXAIX_PLUGIN_NAME } from "../src/rule_pack/mod.ts";
+import { POLICY_CATALOG } from "../src/policy_config.ts";
 import { EXAIX_REGISTRY, EXAIX_RULE_PACKS } from "../src/rule_packs.ts";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
@@ -53,9 +54,10 @@ function parseDocRules(markdown: string): Map<string, string[]> {
 const docRules = parseDocRules(doc);
 
 Deno.test("catalog rule ids and tags equal the generated rule reference", () => {
-  const catalogIds = new Set(Object.keys(catalog.rules));
+  // The generator reads the compiled version 2 policy, not the historical version 1 snapshot.
+  const catalogIds = new Set(Object.keys(POLICY_CATALOG.rules));
   assertEquals(new Set(docRules.keys()), catalogIds);
-  for (const [id, entry] of Object.entries(catalog.rules)) {
+  for (const [id, entry] of Object.entries(POLICY_CATALOG.rules)) {
     assertEquals([...docRules.get(id)!].sort(), [...entry.tags].sort(), `tags differ for ${id}`);
   }
 });

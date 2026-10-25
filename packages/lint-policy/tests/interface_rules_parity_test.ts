@@ -81,8 +81,8 @@ Deno.test("the interface naming and rename rules take the same prefix in the Exa
   assertEquals(rename, naming);
 });
 
-Deno.test("the Exaix rule pack registers no rule and the catalog still parses", () => {
-  assertEquals(Object.keys(EXAIX_RULE_PACK.rules), []);
-  assertEquals(Object.keys(EXAIX_RULE_PACK.optionSchemas), []);
+Deno.test("the Exaix rule pack registers only unslop-isolation and the catalog still parses", () => {
+  assertEquals(Object.keys(EXAIX_RULE_PACK.rules), ["unslop-isolation"]);
+  assertEquals(Object.keys(EXAIX_RULE_PACK.optionSchemas), ["unslop-isolation"]);
   assertEquals(catalog.rules["exaix/exported-interface-naming"].engine, "plugin");
 });

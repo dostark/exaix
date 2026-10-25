@@ -11,8 +11,8 @@ style checkers that still run as standalone scripts.
 - `plugin.ts` — the `deno lint` plugin entry and compiled project view, loaded through `deno.json` `lint.plugins`.
 - `rule_ceilings.json` — the per-package counts that hold each parked rule at a measured ceiling.
 - `src/checkers/` — `check_code_style.ts` and `check_magic_values.ts`, run by `deno task check:style` and `deno task check:magic`.
-- `src/rule_pack/` — `EXAIX_RULE_PACK`: the extension point for plugin rules that encode Exaix conventions. It is
-  currently empty. Generic interface conventions live in the TypeScript pack.
+- `src/rule_pack/` — `EXAIX_RULE_PACK`: the plugin rules that encode Exaix conventions. It holds
+  `unslop-isolation`. Generic interface conventions live in the TypeScript pack.
 - `src/rule_packs.ts` — the rule packs and the registry that `plugin.ts` and the style checker share.
 - `src/repo_layout.ts` — the checkers' reader for `layout.json`.
 - `docs/style_rules.md` — the rule reference, generated from the compiled policy by `deno task docs:style-rules`.
@@ -33,7 +33,7 @@ fallback for a rule that needs the whole repository.
 
 The engine supplies 35 TypeScript plugin rules and four Deno plugin rules. The catalog configures all
 39 with Exaix scopes, severities, exclusions, boundary zones, and opt-in conventions. `EXAIX_RULE_PACK`
-currently has no rule. The 16 catalog entries hosted by scripts comprise 14 Exaix checks and two
+holds one rule, `exaix/unslop-isolation`. The 16 catalog entries hosted by scripts comprise 14 Exaix checks and two
 generic whole-tree library checks. `check:style` calls the engine's duplicate-type checker;
 `check:magic` calls its duplicate-constant and repeated-literal checkers. The latter reads
 `wholeTree.magicLiterals`, rather than a rule entry.
@@ -59,7 +59,7 @@ A catalog `codeStyle` anchor replaces an engine rule's default guide link.
 
 ## Tasks and reports
 
-- `deno task unslop rules list --format=json` lists the 59 resolved rules and checks.
+- `deno task unslop rules list --format=json` lists the 60 resolved rules and checks.
 - `deno task unslop:write rules set <id> <option>=<json> --dry-run` previews an authored edit; drop
   `--dry-run` to write it.
 - `deno task lint:report --format=json <paths>` runs the real lint host and reports observed coverage.
