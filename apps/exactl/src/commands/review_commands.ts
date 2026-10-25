@@ -20,8 +20,8 @@ import { isReviewStatus, ReviewStatus } from "@exaix/core/status";
 import type { IReviewStatus } from "@exaix/core/status";
 import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "@exaix/schemas/artifact.ts";
 import {
+  type LintCheckRunOutcome,
   type LintErrorClass,
-  type UnslopCheckRunOutcome,
   type UnslopErrorClass,
   VerificationStatus,
 } from "@exaix/schemas";
@@ -86,34 +86,34 @@ export interface IReviewDetails extends IReviewMetadata {
   anomalies?: IAnomalyFinding[];
   /** Post-execution verification outcome from the trace's execution.completed row. */
   verification_status?: VerificationStatus;
-  /** Validated terminal unslop findings summary of the review run. */
-  unslop?: IReviewUnslopSummary;
+  /** Validated terminal lint findings summary of the review run. */
+  lint?: IReviewLintSummary;
 }
 
-/** One configured unslop check outcome in the review. */
-export interface IReviewUnslopCheck {
+/** One configured lint check outcome in the review. */
+export interface IReviewLintCheck {
   check_index: number;
-  outcome: `${UnslopCheckRunOutcome}`;
+  outcome: `${LintCheckRunOutcome}`;
   total: number | null;
   error_class: UnslopErrorClass | LintErrorClass | null;
 }
 
-/** The validated terminal unslop summary of one review run. */
-export interface IReviewUnslopSummary {
+/** The validated terminal lint summary of one review run. */
+export interface IReviewLintSummary {
   total: number | null;
   findings: Array<{ file: string; line: number; rule: string }>;
   truncated: boolean;
-  checks: IReviewUnslopCheck[];
+  checks: IReviewLintCheck[];
   /** True when the completed run has no loadable final snapshot. */
   unavailable?: boolean;
 }
 
-/** Formats the review unslop summary as display-safe lines. */
-export function formatUnslopSummary(summary: IReviewUnslopSummary): string[] {
-  if (summary.unavailable === true) return ["unslop: lint details unavailable"];
-  if (summary.total === 0) return ["unslop: no findings remain"];
+/** Formats the review lint summary as display-safe lines. */
+export function formatLintSummary(summary: IReviewLintSummary): string[] {
+  if (summary.unavailable === true) return ["lint: lint details unavailable"];
+  if (summary.total === 0) return ["lint: no findings remain"];
   const lines = [
-    summary.total === null ? "unslop: findings count incomplete" : `unslop: ${summary.total} remaining finding(s)`,
+    summary.total === null ? "lint: findings count incomplete" : `lint: ${summary.total} remaining finding(s)`,
   ];
   for (const finding of summary.findings) lines.push(`  ${finding.file}:${finding.line} ${finding.rule}`);
   if (summary.truncated && summary.total !== null) {
@@ -124,7 +124,7 @@ export function formatUnslopSummary(summary: IReviewUnslopSummary): string[] {
   );
   for (const check of incomplete) {
     if (check.error_class !== null) {
-      lines.push(`  ${check.error_class}: verification could not complete; check source and policy.`);
+      lines.push(`  ${check.error_class}: verification could not complete; check the policy and source.`);
     }
   }
   if (incomplete.length > 0) lines.push("  (coverage incomplete)");
@@ -144,8 +144,8 @@ export function verificationWarning(
   return `post-execution verification ${status}: the committed change did not pass its configured checks`;
 }
 
-/** The generic note for a completed unslop run without a loadable snapshot. */
-function unavailableUnslop(): IReviewUnslopSummary {
+/** The generic note for a completed lint run without a loadable snapshot. */
+function unavailableLint(): IReviewLintSummary {
   return { total: null, findings: [], truncated: false, checks: [], unavailable: true };
 }
 
@@ -1214,20 +1214,20 @@ export class ReviewCommands extends BaseCommand {
       commits,
       ...anomalyPayload,
       ...(verification.status ? { verification_status: verification.status } : {}),
-      ...(verification.unslop ? { unslop: verification.unslop } : {}),
+      ...(verification.lint ? { lint: verification.lint } : {}),
     };
   }
 
-  /** Reads the verification status and the terminal unslop snapshot of the review commit. */
+  /** Reads the verification status and the terminal lint snapshot of the review commit. */
   private async loadVerificationProjection(
     traceId: string,
     commitSha: Opt<string, Reason.OptionalInput>,
     requestId: string,
-  ): Promise<{ status?: VerificationStatus; unslop?: IReviewUnslopSummary }> {
+  ): Promise<{ status?: VerificationStatus; lint?: IReviewLintSummary }> {
     try {
       return projectReviewVerification(await this.db.getActivitiesByTraceSafe(traceId), commitSha, requestId);
     } catch {
-      return { unslop: unavailableUnslop() };
+      return { lint: unavailableLint() };
     }
   }
 

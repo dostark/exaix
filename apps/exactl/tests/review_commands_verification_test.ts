@@ -181,11 +181,11 @@ describe("ReviewUnslopSnapshot", () => {
 
     const details = await reviewCommands.show(branch);
 
-    assertEquals(details.unslop?.total, 2);
-    assertEquals(details.unslop?.findings.length, 1);
-    assertEquals(details.unslop?.findings[0].file, "src/seed.ts");
-    assertEquals(details.unslop?.truncated, true);
-    assertEquals(details.unslop?.unavailable, undefined);
+    assertEquals(details.lint?.total, 2);
+    assertEquals(details.lint?.findings.length, 1);
+    assertEquals(details.lint?.findings[0].file, "src/seed.ts");
+    assertEquals(details.lint?.truncated, true);
+    assertEquals(details.lint?.unavailable, undefined);
   });
 
   it("[review-show] a repaired run shows zero remaining findings", async () => {
@@ -211,8 +211,8 @@ describe("ReviewUnslopSnapshot", () => {
 
     const details = await reviewCommands.show(branch);
 
-    assertEquals(details.unslop?.total, 0);
-    assertEquals(details.unslop?.findings, []);
+    assertEquals(details.lint?.total, 0);
+    assertEquals(details.lint?.findings, []);
   });
 
   it("[review-show] a mismatched commit or malformed snapshot is unavailable", async () => {
@@ -229,7 +229,7 @@ describe("ReviewUnslopSnapshot", () => {
     );
     logLintSnapshot(db, "snp-bad", "request-231", runId, `${commit}-other`, {});
     await db.waitForFlush();
-    assertEquals((await reviewCommands.show(branch)).unslop?.unavailable, true);
+    assertEquals((await reviewCommands.show(branch)).lint?.unavailable, true);
 
     db.logActivity(
       "daemon",
@@ -240,7 +240,7 @@ describe("ReviewUnslopSnapshot", () => {
       null,
     );
     await db.waitForFlush();
-    assertEquals((await reviewCommands.show(branch)).unslop?.unavailable, true);
+    assertEquals((await reviewCommands.show(branch)).lint?.unavailable, true);
   });
 
   it("historical-completion-compatibility: a single legacy completion does not require a branch-name request encoding", async () => {
@@ -266,7 +266,7 @@ describe("ReviewUnslopSnapshot", () => {
     await db.waitForFlush();
     const details = await reviewCommands.show(branch);
     assertEquals(details.verification_status, "failed");
-    assertEquals(details.unslop, undefined);
+    assertEquals(details.lint, undefined);
   });
 
   it("[review-show] a historical completed row without a run id stays status-only", async () => {
@@ -284,7 +284,7 @@ describe("ReviewUnslopSnapshot", () => {
     const details = await reviewCommands.show(branch);
 
     assertEquals(details.verification_status, "failed");
-    assertEquals(details.unslop, undefined);
+    assertEquals(details.lint, undefined);
   });
   for (const sameRequest of [false, true]) {
     it(sameRequest ? "same-request-rerun-review-identity" : "same-trace-two-review-commits", async () => {
@@ -339,9 +339,9 @@ describe("ReviewUnslopSnapshot", () => {
       const older = await reviewCommands.show(first);
       assertEquals(older.verification_status, "failed");
       assert(verificationWarning(older.verification_status)?.includes("failed"));
-      assertEquals(older.unslop?.total, 2);
+      assertEquals(older.lint?.total, 2);
       assertEquals((await reviewCommands.show(second)).verification_status, "passed");
-      assertEquals((await reviewCommands.show(second)).unslop?.total, 0);
+      assertEquals((await reviewCommands.show(second)).lint?.total, 0);
     });
   }
 });

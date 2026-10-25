@@ -3,7 +3,7 @@
  * @path apps/exactl/tests/helpers/review_journal_fixture.ts
  * @description Real journal, branch and CLI fixture for verification input-boundary tests.
  * @architectural-layer Tests
- * @related-files [apps/exactl/tests/review_unslop_security_test.ts, apps/exactl/tests/review_unslop_cli_test.ts]
+ * @related-files [apps/exactl/tests/review_lint_security_test.ts, apps/exactl/tests/review_lint_cli_test.ts]
  */
 
 import { fromFileUrl, join } from "@std/path";

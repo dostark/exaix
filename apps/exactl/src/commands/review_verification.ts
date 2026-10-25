@@ -14,7 +14,7 @@ import {
 } from "@exaix/schemas";
 import type { Opt, Reason } from "@exaix/core/types";
 import { DomainEventType } from "@exaix/core/events";
-import type { IReviewUnslopSummary } from "./review_commands.ts";
+import type { IReviewLintSummary } from "./review_commands.ts";
 
 /** Parses each journal row independently so an unrelated corrupt row cannot hide a warning. */
 function parsePayload(payload: string): Record<string, unknown> | null {
@@ -31,7 +31,7 @@ export function projectReviewVerification(
   activities: readonly { action_type: string; payload: string }[],
   commitSha: Opt<string, Reason.OptionalInput>,
   requestId: string,
-): { status?: VerificationStatus; unslop?: IReviewUnslopSummary } {
+): { status?: VerificationStatus; lint?: IReviewLintSummary } {
   const completions = activities.filter((row) => row.action_type === DomainEventType.ExecutionCompleted)
     .flatMap((row) => {
       const parsed = ExecutionCompletedVerificationSchema.safeParse(parsePayload(row.payload));
@@ -56,7 +56,7 @@ export function projectReviewVerification(
   if (completion === undefined) return {};
   const status = completion.verification_status;
   if (completion.verification_run_id === undefined) return { status };
-  const unavailable: IReviewUnslopSummary = {
+  const unavailable: IReviewLintSummary = {
     total: null,
     findings: [],
     truncated: false,
@@ -65,7 +65,7 @@ export function projectReviewVerification(
   };
   const snapshot = snapshots.findLast((row) => matchesRun(row, completion) && row.commit_sha === commitSha);
   const parsed = ExecutionVerificationLintFindingsEventPayloadSchema.safeParse(snapshot);
-  if (!parsed.success || parsed.data.verification_status !== status) return { status, unslop: unavailable };
+  if (!parsed.success || parsed.data.verification_status !== status) return { status, lint: unavailable };
   const { total, findings, truncated, checks } = parsed.data;
-  return { status, unslop: { total, findings, truncated, checks } };
+  return { status, lint: { total, findings, truncated, checks } };
 }

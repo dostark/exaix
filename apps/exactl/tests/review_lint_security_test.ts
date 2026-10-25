@@ -1,7 +1,7 @@
 /**
- * @module ReviewUnslopSecurityTest
- * @path apps/exactl/tests/review_unslop_security_test.ts
- * @description The review unslop projection and summary never re-enable terminal control
+ * @module ReviewLintSecurityTest
+ * @path apps/exactl/tests/review_lint_security_test.ts
+ * @description The review lint projection and summary never re-enable terminal control
  *   sequences, and Unicode display stays intact.
  * @architectural-layer Test
  * @dependencies [@std/assert, apps/exactl/src/commands/review_commands.ts]
@@ -10,7 +10,7 @@
 
 import { createReviewJournalFixture } from "./helpers/review_journal_fixture.ts";
 import { assert, assertEquals } from "@std/assert";
-import { formatUnslopSummary, isDisplaySafeText } from "../src/commands/review_commands.ts";
+import { formatLintSummary, isDisplaySafeText } from "../src/commands/review_commands.ts";
 
 Deno.test("[security] the review projection rejects raw terminal controls", () => {
   assertEquals(isDisplaySafeText("src/seed.ts"), true);
@@ -21,7 +21,7 @@ Deno.test("[security] the review projection rejects raw terminal controls", () =
 });
 
 Deno.test("[security] the summary preserves escaped paths without control characters", () => {
-  const lines = formatUnslopSummary({
+  const lines = formatLintSummary({
     total: 1,
     findings: [{ file: "secret-token-abc.ts", line: 1, rule: "unslop/no-explicit-unknown" }],
     truncated: false,
@@ -61,7 +61,7 @@ Deno.test("forged-journal-snapshot-rejected", async (test) => {
           }],
         });
         const details = await fixture.show();
-        assertEquals(details.unslop?.unavailable, true);
+        assertEquals(details.lint?.unavailable, true);
         assertEquals(details.verification_status, "failed");
       });
     }
@@ -71,7 +71,7 @@ Deno.test("forged-journal-snapshot-rejected", async (test) => {
       }]
     ) {
       await fixture.log(overrides);
-      assertEquals((await fixture.show()).unslop?.unavailable, true);
+      assertEquals((await fixture.show()).lint?.unavailable, true);
     }
   } finally {
     await fixture.cleanup();
@@ -98,7 +98,7 @@ Deno.test("malformed-row-keeps-failed-warning", async () => {
     ]);
     const details = await fixture.show();
     assertEquals(details.verification_status, "failed");
-    assertEquals(details.unslop?.total, 2);
+    assertEquals(details.lint?.total, 2);
   } finally {
     await fixture.cleanup();
   }

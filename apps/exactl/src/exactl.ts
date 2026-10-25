@@ -11,7 +11,7 @@ import { registerSkillCommands } from "./command_builders/skill_commands.ts";
 import { PlanCommands } from "./commands/plan_commands.ts";
 import { RequestCommands } from "./commands/request_commands.ts";
 import {
-  formatUnslopSummary,
+  formatLintSummary,
   type IReviewDetails,
   type IReviewMetadata,
   ReviewCommands,
@@ -328,7 +328,7 @@ async function handleReviewShowAction(options: { diff?: boolean }, id: string) {
 function renderReviewShow(cs: IReviewDetails, id: string) {
   renderReviewShowSummary(cs);
   renderReviewShowVerificationWarning(cs, id);
-  renderReviewShowUnslop(cs, id);
+  renderReviewShowLint(cs, id);
   renderReviewShowDecision(cs);
   renderReviewShowAnomalies(cs);
   renderReviewShowCommits(cs);
@@ -341,10 +341,10 @@ function renderReviewShowVerificationWarning(cs: IReviewDetails, id: string) {
   display.warn("review.verification", id, { verification_status: cs.verification_status ?? null, message: warning });
 }
 
-function renderReviewShowUnslop(cs: IReviewDetails, id: string) {
-  if (cs.unslop === undefined) return;
-  for (const line of formatUnslopSummary(cs.unslop)) {
-    display.info("review.unslop", id, { line });
+function renderReviewShowLint(cs: IReviewDetails, id: string) {
+  if (cs.lint === undefined) return;
+  for (const line of formatLintSummary(cs.lint)) {
+    display.info("review.lint", id, { line });
   }
 }
 
