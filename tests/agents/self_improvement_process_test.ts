@@ -82,11 +82,15 @@ Deno.test("Self-improvement loop: routes domain-specific findings to domain docs
   );
 });
 
-Deno.test("phase-registry-current: Phase 233 is open and Phase 229 is not schedulable", async () => {
+Deno.test("phase-registry-current: completed Phase 233 has no open row and Phase 229 is not schedulable", async () => {
+  const plan = await Deno.readTextFile("exaix-dev-docs/planning/phase-233-lean-portal-lint-verification.md");
+  assert(/^status: COMPLETED$/m.test(plan), "Phase 233 must be COMPLETED");
   const registry = await Deno.readTextFile("exaix-dev-docs/planning/PHASE_REGISTRY.md");
   const lines = registry.split("\n");
-  const row233 = lines.find((line) => /^\|\s*\d+\s*\|\s*233\s*\|/.test(line));
-  assert(row233 !== undefined, "Phase 233 must be listed as open work");
+  assert(
+    !lines.some((line) => /^\|\s*\d+\s*\|\s*233\s*\|/.test(line)),
+    "a completed phase must leave the open-work registry",
+  );
   const row229 = lines.find((line) => /^\|.*\|\s*229\s*\|/.test(line));
   assert(row229 !== undefined, "Phase 229 must stay visible as superseded");
   assert(!/^\|\s*1\s*\|\s*229\s*\|/.test(row229), "Phase 229 must not be the first pickup");
