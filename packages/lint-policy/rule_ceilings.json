@@ -256,7 +256,7 @@
   "exaix/ephemeral-comment": {
     "packages/lint-policy": 1,
     "packages/schemas": 1,
-    "tests": 3
+    "tests": 1
   },
   "exaix/no-interface-rename-on-import": {
     "apps/tui": 3,
