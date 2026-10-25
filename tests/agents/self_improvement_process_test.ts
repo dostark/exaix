@@ -81,3 +81,14 @@ Deno.test("Self-improvement loop: routes domain-specific findings to domain docs
     "routing step must name the owning domain doc as the correct home",
   );
 });
+
+Deno.test("phase-registry-current: Phase 233 is open and Phase 229 is not schedulable", async () => {
+  const registry = await Deno.readTextFile("exaix-dev-docs/planning/PHASE_REGISTRY.md");
+  const lines = registry.split("\n");
+  const row233 = lines.find((line) => /^\|\s*\d+\s*\|\s*233\s*\|/.test(line));
+  assert(row233 !== undefined, "Phase 233 must be listed as open work");
+  const row229 = lines.find((line) => /^\|.*\|\s*229\s*\|/.test(line));
+  assert(row229 !== undefined, "Phase 229 must stay visible as superseded");
+  assert(!/^\|\s*1\s*\|\s*229\s*\|/.test(row229), "Phase 229 must not be the first pickup");
+  assert(row229.includes("Do not pick"), "Phase 229 must not be schedulable");
+});

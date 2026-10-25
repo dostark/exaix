@@ -63,6 +63,61 @@ function packageOf(filename: string, root: string): string | null {
   return null;
 }
 
+/** The catalog's test globs, applied to a repo-relative path. */
+const TEST_SCOPE_PATTERNS: readonly RegExp[] = [
+  /^tests\//,
+  /\/tests\//,
+  /_test\.tsx?$/,
+  /\.test\.tsx?$/,
+];
+
+/** True when a repo-relative path is test scope (the catalog's test globs). */
+function isTestScope(relativePath: string): boolean {
+  return TEST_SCOPE_PATTERNS.some((pattern) => pattern.test(relativePath));
+}
+
+/** Repo-relative POSIX path of one diagnostic filename. */
+function relativePathOf(filename: string, root: string): string | null {
+  const path = filename.startsWith("file://") ? fromFileUrl(filename) : filename;
+  if (!path.startsWith(`${root}/`)) return null;
+  return path.slice(root.length + 1);
+}
+
+/** Counts production diagnostics by rule and package. Test scope never raises a ceiling. */
+function countsOf(
+  report: ILintReport,
+  root: string,
+  knownPackages: readonly string[],
+): Record<string, Record<string, number>> {
+  const counts: Record<string, Record<string, number>> = {};
+  for (const diagnostic of report.diagnostics ?? []) {
+    const code = diagnostic.code;
+    const filename = diagnostic.filename;
+    if (!code || !filename) continue;
+    if (filename.includes("__temp_")) continue;
+    const relative = relativePathOf(filename, root);
+    if (relative === null || isTestScope(relative)) continue;
+    const pkg = packageOf(filename, root);
+    if (!pkg || !knownPackages.includes(pkg)) continue;
+    counts[code] ??= {};
+    counts[code][pkg] = (counts[code][pkg] ?? 0) + 1;
+  }
+  return counts;
+}
+
+Deno.test("whole-tree-ceilings-production-only: test-scope diagnostics never raise a ceiling", () => {
+  const report: ILintReport = {
+    diagnostics: [
+      { code: "exaix/no-explicit-unknown", filename: `${REPO_ROOT}/tests/a_test.ts` },
+      { code: "exaix/no-explicit-unknown", filename: `${REPO_ROOT}/packages/execution/tests/b.ts` },
+      { code: "exaix/no-explicit-unknown", filename: `${REPO_ROOT}/packages/execution/src/c.ts` },
+    ],
+  };
+  const counts = countsOf(report, REPO_ROOT, ["packages/execution", "tests"]);
+  assertEquals(counts["exaix/no-explicit-unknown"]["packages/execution"], 1);
+  assertEquals(counts["exaix/no-explicit-unknown"]["tests"], undefined);
+});
+
 Deno.test("the committed ceilings file names only known rules and packages", async () => {
   const ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "packages/lint-policy/rule_ceilings.json")));
   const result = evaluateCeilings(ceilings, ceilings, RATCHETED_RULES, await workspacePackages());
@@ -94,19 +149,7 @@ Deno.test({
     const report = JSON.parse(new TextDecoder().decode(stdout)) as ILintReport;
 
     const knownPackages = await workspacePackages();
-    const counts: Record<string, Record<string, number>> = {};
-    for (const diagnostic of report.diagnostics ?? []) {
-      const code = diagnostic.code;
-      const filename = diagnostic.filename;
-      if (!code || !filename) continue;
-      // Other tests seed untracked `__temp_` files into the tree. A walk that overlaps one of
-      // them must not read the seed as a committed count.
-      if (filename.includes("__temp_")) continue;
-      const pkg = packageOf(filename, REPO_ROOT);
-      if (!pkg || !knownPackages.includes(pkg)) continue;
-      counts[code] ??= {};
-      counts[code][pkg] = (counts[code][pkg] ?? 0) + 1;
-    }
+    const counts = countsOf(report, REPO_ROOT, knownPackages);
 
     const ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "packages/lint-policy/rule_ceilings.json")));
     const result = evaluateCeilings(ceilings, counts, RATCHETED_RULES, knownPackages);
