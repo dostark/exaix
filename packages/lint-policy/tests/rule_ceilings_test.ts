@@ -70,10 +70,8 @@ Deno.test("the committed ceilings file names only known rules and packages", asy
   assertEquals(result.unknownPackages, []);
 });
 
-// Step 11 restores this case after the adapter deletion lowers the counts.
 Deno.test({
   name: "the whole-tree counts match the committed ceilings",
-  ignore: true,
   fn: async () => {
     // Parallel tests can remove files under the repo during one walk.
     // A bounded retry absorbs the resulting missing-file error.

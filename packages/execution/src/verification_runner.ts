@@ -15,14 +15,12 @@ import { VERIFICATION_FMT_CHECK_FLAG, VERIFICATION_OUTPUT_REDACTION_MARGIN_CHARS
 import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
 import { completeCheckStates } from "./lint_snapshot.ts";
 import { buildVerificationCheckEnv, prepareVerificationOutput } from "./verification_output.ts";
-import { UNSLOP_CHECK_KIND } from "@exaix/core";
 import {
   checkName,
   DENO_LINT_CHECK_KIND,
   denoTaskOf,
   type IDenoLintCheck,
   LintErrorClass,
-  type UnslopErrorClass,
   type VerificationCheckName,
   VerificationStatus,
 } from "@exaix/schemas";
@@ -36,18 +34,9 @@ import type {
   IVerificationLintFinding,
   IVerificationResult,
 } from "@exaix/schemas";
-import type { IUnslopCheckContext, IUnslopCheckOutcome } from "./unslop_check_types.ts";
 import type { IDenoLintCheckContext, IDenoLintCheckOutcome } from "./deno_lint_check.ts";
 import type { ILintFinding } from "./lint_snapshot.ts";
 import { runDenoTask } from "@exaix/tool-runtime";
-
-/** The scoped Git and run identity of one unslop attempt. */
-export interface IVerificationUnslopContext {
-  runId: string;
-  baseSha: string;
-  targetSha: string;
-  git: IGitService;
-}
 
 /** The scoped Git and run identity of one generic lint attempt. */
 export interface IVerificationLintContext {
@@ -62,15 +51,8 @@ export interface IVerificationRunContext {
   traceId: string;
   attempt: number;
   executionRoot: string;
-  /** Required when the block contains an unslop check. */
-  unslop?: IVerificationUnslopContext;
   /** Required when the block contains a deno_lint check. */
   lint?: IVerificationLintContext;
-}
-
-/** The adapter contract the runner dispatches an unslop check to. */
-export interface IUnslopCheckExecutor {
-  run(context: IUnslopCheckContext): Promise<IUnslopCheckOutcome>;
 }
 
 /** The adapter contract the runner dispatches a deno_lint check to. */
@@ -95,23 +77,9 @@ type TLintStepOutcome =
   }
   | {
     readonly kind: typeof VerificationStatus.ERROR;
-    readonly errorClass: LintErrorClass | UnslopErrorClass;
+    readonly errorClass: LintErrorClass;
     readonly output: string;
   };
-
-/** Normalizes one unslop outcome. */
-function fromUnslopOutcome(outcome: IUnslopCheckOutcome): TLintStepOutcome {
-  if (outcome.kind === VerificationStatus.PASSED) return { kind: VerificationStatus.PASSED };
-  if (outcome.kind === VerificationStatus.FAILED) {
-    return {
-      kind: VerificationStatus.FAILED,
-      total: outcome.total,
-      findings: outcome.findings,
-      output: outcome.output,
-    };
-  }
-  return { kind: VerificationStatus.ERROR, errorClass: outcome.error_class, output: outcome.output };
-}
 
 /** Normalizes one deno_lint outcome. */
 function fromDenoLintOutcome(outcome: IDenoLintCheckOutcome): TLintStepOutcome {
@@ -129,8 +97,6 @@ function fromDenoLintOutcome(outcome: IDenoLintCheckOutcome): TLintStepOutcome {
 
 /** Optional runners of non-Deno check kinds. */
 export interface IVerificationRunnerOptions {
-  /** Required when a block contains an unslop check. */
-  unslop?: IUnslopCheckExecutor;
   /** Required when a block contains a deno_lint check. */
   deno_lint?: IDenoLintCheckExecutor;
 }
@@ -163,9 +129,7 @@ export class VerificationRunner implements IVerificationRunner {
     const failures: IVerificationCheckFailure[] = [];
     const lintChecks: IVerificationCheckRunState[] = [];
     const lintFindings: IVerificationLintFinding[] = [];
-    const lintIndexes = config.checks.flatMap((check, index) =>
-      check.kind === UNSLOP_CHECK_KIND || check.kind === DENO_LINT_CHECK_KIND ? [index] : []
-    );
+    const lintIndexes = config.checks.flatMap((check, index) => check.kind === DENO_LINT_CHECK_KIND ? [index] : []);
     let hadError = false;
 
     await this.emit(DomainEventType.ExecutionVerificationStarted, context, {
@@ -177,20 +141,6 @@ export class VerificationRunner implements IVerificationRunner {
     const { env, clearEnv } = this.buildCheckEnv();
 
     for (const [checkIndex, check] of config.checks.entries()) {
-      if (check.kind === UNSLOP_CHECK_KIND) {
-        const mapped = this.mapLintStep(
-          checkIndex,
-          fromUnslopOutcome(await this.runUnslopCheck(checkIndex, check, config, context)),
-        );
-        lintChecks.push(mapped.state);
-        lintFindings.push(...mapped.findings);
-        if (this.applyLintStep(mapped.step, failures, UNSLOP_CHECK_KIND)) {
-          hadError = true;
-          break;
-        }
-        continue;
-      }
-
       if (check.kind === DENO_LINT_CHECK_KIND) {
         const mapped = this.mapLintStep(
           checkIndex,
@@ -244,7 +194,7 @@ export class VerificationRunner implements IVerificationRunner {
     }
 
     const lintState = {
-      ...(context.unslop === undefined ? {} : { run_id: context.unslop.runId }),
+      ...(context.lint === undefined ? {} : { run_id: context.lint.runId }),
       lint_checks: completeCheckStates(lintChecks, lintIndexes),
       lint_findings: lintFindings,
     };
@@ -267,40 +217,6 @@ export class VerificationRunner implements IVerificationRunner {
     });
 
     return { passed: false, error: hadError, failures, ...lintState };
-  }
-
-  /** Dispatches one unslop check to the adapter. A missing adapter or scope is a categorical error. */
-  private async runUnslopCheck(
-    checkIndex: number,
-    check: Extract<IPortalVerification["checks"][number], { kind: "unslop" }>,
-    config: IPortalVerification,
-    context: IVerificationRunContext,
-  ): Promise<IUnslopCheckOutcome> {
-    const adapter = this.options.unslop;
-    const bound = context.unslop;
-    if (adapter === undefined || bound === undefined) {
-      return {
-        kind: VerificationStatus.ERROR,
-        error_class: "UnslopHostProtocolInvalid",
-        total: null,
-        findings: [],
-        output: "",
-      };
-    }
-    return await adapter.run({
-      requestId: context.requestId,
-      traceId: context.traceId,
-      attempt: context.attempt,
-      executionRoot: context.executionRoot,
-      runId: bound.runId,
-      baseSha: bound.baseSha,
-      targetSha: bound.targetSha,
-      git: bound.git,
-      checkIndex,
-      check: { kind: "unslop", packs: check.packs, catalog: check.catalog, include: check.include },
-      timeoutMs: config.check_timeout_ms,
-      outputMaxChars: config.output_max_chars,
-    });
   }
 
   /** Build the allowlist child env plus only the deno cache keys from the daemon env. */

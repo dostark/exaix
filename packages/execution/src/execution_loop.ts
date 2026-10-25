@@ -40,7 +40,7 @@ import type { MemoryBankService, SessionMemoryService } from "@exaix/memory";
 import { MissionReporter } from "@exaix/core/artifact";
 import { type IPlanExecutorOptions, PlanExecutor } from "@exaix/core/planning";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
-import { ExecutionStatus, UNSLOP_CHECK_KIND } from "@exaix/core";
+import { ExecutionStatus } from "@exaix/core";
 import type { PortalExecutionStrategy } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import type { IHitlPolicyEvaluator, IModelRegistry, IToolConfirmationInterceptor } from "@exaix/core/types";
@@ -54,7 +54,6 @@ import {
   DENO_LINT_CHECK_KIND,
   type ILintSettings,
   type IPortalVerification,
-  type IUnslopSettings,
   type IVerificationCheckFailure,
   type IVerificationResult,
   VerificationStatus,
@@ -69,15 +68,8 @@ import {
 import type { IEffortDeclarationPair, IEffortResolver } from "@exaix/ai";
 import { ConfidenceScorer } from "./confidence_scorer.ts";
 import { GitExecutionSetupService } from "./git_execution_setup_service.ts";
-import {
-  type IVerificationLintContext,
-  type IVerificationRunner,
-  type IVerificationUnslopContext,
-  VerificationRunner,
-} from "./verification_runner.ts";
-import { UnslopCheckRunner } from "./unslop_check_runner.ts";
+import { type IVerificationLintContext, type IVerificationRunner, VerificationRunner } from "./verification_runner.ts";
 import { DenoLintCheckRunner } from "./deno_lint_check.ts";
-import { resolveUnslopSettings } from "./unslop_settings.ts";
 import { resolveLintSettings } from "@exaix/schemas/lint_settings.ts";
 import { buildLintSnapshot, completeCheckStates } from "./lint_snapshot.ts";
 import {
@@ -206,7 +198,7 @@ interface IRegisterReviewOptions {
 interface IVerificationOutcome {
   status: VerificationStatus;
   commitSha: string | null;
-  /** The terminal run identity of a configured unslop verification. */
+  /** The terminal run identity of a configured verification. */
   runId?: string;
 }
 
@@ -245,7 +237,6 @@ export class ExecutionLoop {
   private memoryBank?: IMemoryBankService;
   private knownSecrets: readonly string[];
   private verificationRunnerFactory: (logger: IEventLogger, knownSecrets: readonly string[]) => IVerificationRunner;
-  private readonly unslopSettings: IUnslopSettings;
   private readonly lintSettings: ILintSettings;
   private gitExecutionSetupService: GitExecutionSetupService;
 
@@ -278,7 +269,6 @@ export class ExecutionLoop {
     this.knownSecrets = config.knownSecrets ?? [];
     this.verificationRunnerFactory = config.verificationRunnerFactory ??
       ((logger, secrets) => this.buildDefaultVerificationRunner(logger, secrets));
-    this.unslopSettings = resolveUnslopSettings(this.config, this.context?.configAdapter);
     this.lintSettings = resolveLintSettings(this.config, this.context?.configAdapter);
     this.gitExecutionSetupService = new GitExecutionSetupService(this.config, this.gitServiceFactory);
     this.plansDir = join(this.config.system.root, this.config.paths.workspace, this.config.paths.active);
@@ -507,9 +497,7 @@ export class ExecutionLoop {
   ): Promise<IVerificationOutcome> {
     const verification = this.resolvePortalVerification(frontmatter);
     if (!verification) return { status: VerificationStatus.NOT_CONFIGURED, commitSha: context.commitSha };
-    const usesLint = verification.checks.some((check) =>
-      check.kind === UNSLOP_CHECK_KIND || check.kind === DENO_LINT_CHECK_KIND
-    );
+    const usesLint = verification.checks.some((check) => check.kind === DENO_LINT_CHECK_KIND);
     const runId = crypto.randomUUID();
     if (context.isReadOnly || context.commitSha === null) {
       const skipped = { status: VerificationStatus.SKIPPED, commitSha: context.commitSha };
@@ -554,7 +542,7 @@ export class ExecutionLoop {
     attempt: number,
   ): Promise<void> {
     const lintIndexes = verification.checks.flatMap((check, index) =>
-      check.kind === UNSLOP_CHECK_KIND || check.kind === DENO_LINT_CHECK_KIND ? [index] : []
+      check.kind === DENO_LINT_CHECK_KIND ? [index] : []
     );
     const checks = completeCheckStates(lastResult?.lint_checks ?? [], lintIndexes);
     const remaining = outcome.status === VerificationStatus.PASSED || outcome.status === VerificationStatus.REPAIRED
@@ -568,9 +556,7 @@ export class ExecutionLoop {
       status: outcome.status,
       checks,
       findings: remaining,
-      limit: verification.checks.some((check) => check.kind === DENO_LINT_CHECK_KIND)
-        ? this.lintSettings.findings_limit
-        : this.unslopSettings.findings_limit,
+      limit: this.lintSettings.findings_limit,
       knownSecrets: this.knownSecrets,
     });
     await this.logActivity(DomainEventType.ExecutionVerificationLintFindings, context.traceId, snapshot);
@@ -632,13 +618,7 @@ export class ExecutionLoop {
     attempt: number,
     runId: string,
   ): Promise<IVerificationResult | undefined> {
-    const usesUnslop = verification.checks.some((check) => check.kind === UNSLOP_CHECK_KIND);
     const usesDenoLint = verification.checks.some((check) => check.kind === DENO_LINT_CHECK_KIND);
-    if (usesUnslop && context.baseSha === null) return undefined;
-    const unslop = usesUnslop
-      ? await this.buildUnslopContext(runId, context.baseSha, context.executionGitService, context.expectedCommit)
-      : undefined;
-    if (usesUnslop && unslop === undefined) return undefined;
     const lint = usesDenoLint
       ? await this.buildLintContext(runId, context.executionGitService, context.expectedCommit)
       : undefined;
@@ -649,11 +629,10 @@ export class ExecutionLoop {
         traceId: context.traceId,
         attempt,
         executionRoot: context.executionRoot,
-        ...(unslop === undefined ? {} : { unslop }),
         ...(lint === undefined ? {} : { lint }),
       });
       if (
-        (usesUnslop || usesDenoLint) &&
+        usesDenoLint &&
         await this.captureImmutableCommit(context.executionGitService) !== context.expectedCommit
       ) {
         return undefined;
@@ -675,19 +654,6 @@ export class ExecutionLoop {
     return { runId, targetSha, git: gitService };
   }
 
-  /** Resolves the immutable target commit of the current attempt. */
-  private async buildUnslopContext(
-    runId: string,
-    baseSha: string | null,
-    gitService: IGitService,
-    expectedCommit: string,
-  ): Promise<IVerificationUnslopContext | undefined> {
-    if (baseSha === null) return undefined;
-    const targetSha = await this.captureImmutableCommit(gitService);
-    if (targetSha === null || targetSha !== expectedCommit) return undefined;
-    return { runId, baseSha, targetSha, git: gitService };
-  }
-
   /** Reads and validates an immutable commit id, or returns null. */
   private async captureImmutableCommit(gitService: IGitService): Promise<string | null> {
     const head = await readHeadSha(gitService);
@@ -696,21 +662,12 @@ export class ExecutionLoop {
     return resolved.ok ? resolved.value : null;
   }
 
-  /** Builds the default runner with the unslop adapter bound to resolved settings. */
+  /** Builds the default runner with the generic lint check bound to resolved settings. */
   private buildDefaultVerificationRunner(
     logger: IEventLogger,
     secrets: readonly string[],
   ): IVerificationRunner {
     const pathResolver = new PathResolver(this.config, { logger });
-    const settings = resolveUnslopSettings(this.config, this.context?.configAdapter);
-    const unslop = new UnslopCheckRunner(logger, {
-      settings,
-      systemRoot: this.config.system.root,
-      logger,
-      pathResolver,
-      portalRoots: this.config.portals.map((portal) => portal.target_path),
-      knownSecrets: secrets,
-    });
     const denoLint = new DenoLintCheckRunner(logger, {
       settings: resolveLintSettings(this.config, this.context?.configAdapter),
       systemRoot: this.config.system.root,
@@ -718,7 +675,7 @@ export class ExecutionLoop {
       portalRoots: this.config.portals.map((portal) => portal.target_path),
       knownSecrets: secrets,
     });
-    return new VerificationRunner(logger, secrets, { unslop, deno_lint: denoLint });
+    return new VerificationRunner(logger, secrets, { deno_lint: denoLint });
   }
 
   /** Runs one repair attempt as a one-step plan. A throw returns failed with a categorical error_class.
@@ -802,11 +759,11 @@ export class ExecutionLoop {
         number: 1,
         title: `Fix failing verification (attempt ${attempt})`,
         content: this.buildRepairContent(context.originalStepTitles, result.failures),
-        successCriteria: verification.checks.map((check) => {
-          if (check.kind === UNSLOP_CHECK_KIND) return "unslop reports no findings on changed lines";
-          if (check.kind === DENO_LINT_CHECK_KIND) return "deno lint reports no findings";
-          return `deno ${check.task} ${check.path} exits 0`;
-        }),
+        successCriteria: verification.checks.map((check) =>
+          check.kind === DENO_LINT_CHECK_KIND
+            ? "deno lint reports no findings"
+            : `deno ${check.task} ${check.path} exits 0`
+        ),
       }],
     };
   }

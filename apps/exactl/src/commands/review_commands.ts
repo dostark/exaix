@@ -19,12 +19,7 @@ import { enrichWithRequest } from "../helpers/request_enricher.ts";
 import { isReviewStatus, ReviewStatus } from "@exaix/core/status";
 import type { IReviewStatus } from "@exaix/core/status";
 import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "@exaix/schemas/artifact.ts";
-import {
-  type LintCheckRunOutcome,
-  type LintErrorClass,
-  type UnslopErrorClass,
-  VerificationStatus,
-} from "@exaix/schemas";
+import { type LintCheckRunOutcome, type LintErrorClass, VerificationStatus } from "@exaix/schemas";
 import { projectReviewVerification } from "./review_verification.ts";
 import type { IGitService, Opt, Reason } from "@exaix/core/types";
 import { type ArtifactSubtype, ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "@exaix/core";
@@ -95,7 +90,7 @@ export interface IReviewLintCheck {
   check_index: number;
   outcome: `${LintCheckRunOutcome}`;
   total: number | null;
-  error_class: UnslopErrorClass | LintErrorClass | null;
+  error_class: LintErrorClass | null;
 }
 
 /** The validated terminal lint summary of one review run. */

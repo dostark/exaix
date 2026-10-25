@@ -504,21 +504,7 @@
     },
     "exaix/unslop-isolation": {
       "level": "error",
-      "scope": "prod",
-      "exclude": [
-        "scripts/**",
-        "packages/execution/src/unslop_assets.ts",
-        "packages/execution/src/unslop_budget.ts",
-        "packages/execution/src/unslop_check_error.ts",
-        "packages/execution/src/unslop_check_runner.ts",
-        "packages/execution/src/unslop_check_types.ts",
-        "packages/execution/src/unslop_findings.ts",
-        "packages/execution/src/unslop_lint_process.ts",
-        "packages/execution/src/unslop_settings.ts",
-        "packages/execution/src/unslop_snapshot.ts",
-        "packages/execution/src/unslop_source_snapshot.ts",
-        "packages/execution/src/unslop_trust.ts"
-      ],
+      "scope": "all",
       "options": {
         "ownerPrefixes": [
           "packages/lint-policy/"

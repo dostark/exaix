@@ -860,11 +860,6 @@ export function verificationToml(verification: IPortalVerification): string {
   ];
   for (const check of verification.checks) {
     lines.push("", "[[portals.verification.checks]]", `kind = ${JSON.stringify(check.kind)}`);
-    if (check.kind === "unslop") {
-      lines.push(`packs = ${JSON.stringify(check.packs)}`, `include = ${JSON.stringify(check.include)}`);
-      if (check.catalog !== undefined) lines.push(`catalog = ${JSON.stringify(check.catalog)}`);
-      continue;
-    }
     if (check.kind === "deno_lint") {
       lines.push(
         `policy = ${JSON.stringify(check.policy)}`,

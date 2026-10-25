@@ -4,7 +4,7 @@
  * @description Shared child-environment and check-output handling for both verification kinds.
  * @architectural-layer Services
  * @dependencies [@exaix/core]
- * @related-files [packages/execution/src/verification_runner.ts, packages/execution/src/unslop_check_runner.ts]
+ * @related-files [packages/execution/src/verification_runner.ts, packages/execution/src/deno_lint_check.ts]
  */
 
 import { buildChildEnv, VERIFICATION_DENO_ENV_KEYS } from "@exaix/core";

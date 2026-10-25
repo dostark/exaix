@@ -20,8 +20,6 @@ import type {
   LintErrorClass,
   ModelResolutionReason,
   TaskTypeSource,
-  UnslopCheckRunOutcome,
-  UnslopErrorClass,
   VerificationCheckName,
 } from "@exaix/schemas";
 import type { EffortDeclarationSource, IEffortDeclarationPair, TaskComplexitySource } from "@exaix/ai";
@@ -785,9 +783,9 @@ export interface IExecutionVerificationLintCheckCompletedEventPayload {
   attempt: number;
   check_index: number;
   target_sha: string;
-  outcome: UnslopCheckRunOutcome | LintCheckRunOutcome;
+  outcome: LintCheckRunOutcome;
   total: number | null;
-  error_class: UnslopErrorClass | LintErrorClass | null;
+  error_class: LintErrorClass | null;
 }
 
 /** Payload of `execution.verification.lint_findings`. It is the terminal snapshot. */

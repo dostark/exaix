@@ -29,7 +29,6 @@ import {
   LintCheckSnapshotSchema,
   LintFindingSnapshotSchema,
   PortalVerificationSchema,
-  UnslopErrorClass,
   VerificationCheckSchema,
 } from "@exaix/schemas/portal_verification.ts";
 
@@ -208,25 +207,6 @@ Deno.test("[verification-schema] failures carry a check name and checkName maps 
   assertEquals(checkName({ kind: "deno_task", task: "fmt", path: ".", args: [] }), "fmt");
 });
 
-Deno.test("[verification-schema] the public check schema activates the TypeScript unslop member", () => {
-  const parsed = VerificationCheckSchema.parse({ kind: "unslop" });
-  assertEquals(checkName(parsed), "unslop");
-  assertEquals(isDenoTaskCheck(parsed), false);
-  assertEquals(parsed.kind === "unslop" ? parsed.packs : [], ["typescript"]);
-  assertEquals(parsed.kind === "unslop" ? parsed.include.length : 0, 4);
-  assertEquals(VerificationCheckSchema.safeParse({ kind: "unslop", packs: ["deno"] }).success, false);
-  const withCatalog = VerificationCheckSchema.safeParse({
-    kind: "unslop",
-    packs: ["typescript"],
-    catalog: "catalog/portal.json",
-  });
-  assertEquals(withCatalog.success, true);
-  assertEquals(
-    VerificationCheckSchema.safeParse({ kind: "unslop", packs: ["typescript", "typescript"] }).success,
-    false,
-  );
-});
-
 Deno.test("[verification-schema] the final snapshot schema accepts the authoritative payload", () => {
   const parsed = ExecutionVerificationLintFindingsEventPayloadSchema.parse(validSnapshot());
   assertEquals(parsed.total, 2);
@@ -258,57 +238,10 @@ Deno.test("[verification-schema] the final snapshot schema rejects incomplete or
       findings: [{ check_index: 0, file: "src/a.ts", line: 0, rule: "unslop/no-chained-type-assertions" }],
     },
     { ...validSnapshot(), checks: [{ check_index: 0, outcome: "skipped", total: 0, error_class: null }] },
-    { ...validSnapshot(), checks: [{ check_index: 0, outcome: "error", total: null, error_class: "UnslopUnknown" }] },
+    { ...validSnapshot(), checks: [{ check_index: 0, outcome: "error", total: null, error_class: "LintUnknown" }] },
   ];
   for (const payload of malformed) {
     assertEquals(schema.safeParse(payload).success, false);
-  }
-});
-
-Deno.test("[verification-schema] every closed unslop error class is a valid snapshot value", () => {
-  for (const errorClass of Object.values(UnslopErrorClass)) {
-    const payload = {
-      ...validSnapshot(),
-      verification_status: "error",
-      total: null,
-      findings: [],
-      truncated: false,
-      checks: [{ check_index: 0, outcome: "error", total: null, error_class: errorClass }],
-    };
-    assert(
-      ExecutionVerificationLintFindingsEventPayloadSchema.safeParse(payload).success,
-      `expected ${errorClass} to be accepted`,
-    );
-  }
-});
-
-Deno.test("[verification-schema] pack policy accepts exactly one TypeScript pack and at most one Deno pack", () => {
-  const omitted = VerificationCheckSchema.parse({ kind: "unslop" });
-  assertEquals(omitted.kind === "unslop" ? omitted.packs : [], ["typescript"]);
-
-  for (const packs of [["typescript", "deno"], ["deno", "typescript"]]) {
-    const parsed = VerificationCheckSchema.parse({ kind: "unslop", packs });
-    assertEquals(parsed.kind === "unslop" ? parsed.packs : [], ["typescript", "deno"]);
-  }
-  for (const packs of [["deno"], ["typescript", "typescript"], ["typescript", "deno", "deno"], ["rust"]]) {
-    assertEquals(VerificationCheckSchema.safeParse({ kind: "unslop", packs }).success, false, JSON.stringify(packs));
-  }
-});
-
-Deno.test("[verification-schema] the catalog option accepts only a literal repo file path", () => {
-  for (const catalog of ["a.json", "dir/a.json"]) {
-    assertEquals(
-      VerificationCheckSchema.safeParse({ kind: "unslop", catalog }).success,
-      true,
-      catalog,
-    );
-  }
-  for (const catalog of ["", ".", "/abs.json", "../a.json", "dir/../a.json", "C:\\a.json", "dir/a\u0000.json"]) {
-    assertEquals(
-      VerificationCheckSchema.safeParse({ kind: "unslop", catalog }).success,
-      false,
-      JSON.stringify(catalog),
-    );
   }
 });
 
@@ -353,8 +286,8 @@ Deno.test("[verification-schema] a deno_lint check rejects unsafe input and unkn
   }
 });
 
-Deno.test("[verification-schema] the snapshot error class accepts both lint families", () => {
-  for (const errorClass of [UnslopErrorClass.TIMEOUT, ...LINT_ERROR_CLASSES]) {
+Deno.test("[verification-schema] the snapshot error class accepts every closed lint class", () => {
+  for (const errorClass of LINT_ERROR_CLASSES) {
     const parsed = LintCheckSnapshotSchema.safeParse({
       check_index: 0,
       outcome: "error",

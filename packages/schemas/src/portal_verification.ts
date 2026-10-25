@@ -16,10 +16,6 @@ import {
   DEFAULT_VERIFICATION_MAX_REPAIR_ATTEMPTS,
   DEFAULT_VERIFICATION_OUTPUT_MAX_CHARS,
   GeneralStatus,
-  UNSLOP_CHECK_KIND,
-  UNSLOP_DENO_PACK,
-  UNSLOP_PORTAL_INCLUDE_GLOBS,
-  UNSLOP_TS_PACK,
   VERIFICATION_ALLOW_FLAG_PREFIX,
   VERIFICATION_FORBIDDEN_ARGS,
   VERIFICATION_MAX_REPAIR_ATTEMPTS_LIMIT,
@@ -28,7 +24,7 @@ import {
 } from "@exaix/core";
 
 /** Every check name a verification run can report. The public union activates in Step 5. */
-export type VerificationCheckName = IDenoTaskCheck["task"] | "unslop" | typeof DENO_LINT_CHECK_KIND;
+export type VerificationCheckName = IDenoTaskCheck["task"] | typeof DENO_LINT_CHECK_KIND;
 
 /** The reported name of one configured check. */
 export function checkName(check: IVerificationCheck): VerificationCheckName {
@@ -42,7 +38,7 @@ export function isDenoTaskCheck(check: IVerificationCheck): check is IDenoTaskCh
 
 /** The Deno task behind a check name, or null for a name without a Deno task. */
 export function denoTaskOf(name: VerificationCheckName): IDenoTaskCheck["task"] | null {
-  return name === UNSLOP_CHECK_KIND || name === DENO_LINT_CHECK_KIND ? null : name;
+  return name === DENO_LINT_CHECK_KIND ? null : name;
 }
 
 /** One failed check as it appears in `IVerificationResult` and the repair prompt. */
@@ -57,9 +53,9 @@ export interface IVerificationCheckFailure {
 /** One configured lint check state after an attempt. */
 export interface IVerificationCheckRunState {
   check_index: number;
-  outcome: UnslopCheckRunOutcome | LintCheckRunOutcome;
+  outcome: LintCheckRunOutcome;
   total: number | null;
-  error_class: UnslopErrorClass | LintErrorClass | null;
+  error_class: LintErrorClass | null;
 }
 
 /** One retained unslop finding before safe projection. */
@@ -148,35 +144,6 @@ export function isLiteralRepoFilePath(value: string): boolean {
   return !segments.includes("..") && !segments.includes(".");
 }
 
-/** True when the packs carry exactly one TypeScript pack and at most one Deno pack. */
-function hasExactlyOneTypeScriptAndAtMostOneDeno(packs: readonly string[]): boolean {
-  const typescript = packs.filter((pack) => pack === UNSLOP_TS_PACK).length;
-  const deno = packs.filter((pack) => pack === UNSLOP_DENO_PACK).length;
-  return typescript === 1 && deno <= 1;
-}
-
-/** Orders packs canonically: TypeScript first, then Deno. */
-function canonicalPackOrder(packs: readonly string[]): readonly string[] {
-  return [...packs].sort((left, right) => left === right ? 0 : left === UNSLOP_TS_PACK ? -1 : 1);
-}
-
-/** One operator-configured unslop lint check with the validated pack and catalog contract. */
-export const UnslopCheckSchema = z.object({
-  kind: z.literal(UNSLOP_CHECK_KIND),
-  packs: z.array(z.enum([UNSLOP_TS_PACK, UNSLOP_DENO_PACK]))
-    .min(1)
-    .max(2)
-    .default([UNSLOP_TS_PACK])
-    .refine(hasExactlyOneTypeScriptAndAtMostOneDeno, "typescript is required; duplicates are forbidden")
-    .transform(canonicalPackOrder),
-  catalog: z.string().min(1).refine(isLiteralRepoFilePath, "catalog must be a literal repo file path").optional(),
-  include: z.array(z.string().min(1).refine(isSafeIncludeGlob, "include glob must be repo-relative"))
-    .min(1)
-    .default([...UNSLOP_PORTAL_INCLUDE_GLOBS]),
-}).strict();
-
-export type IUnslopCheck = z.infer<typeof UnslopCheckSchema>;
-
 /** The verification check kind of the generic Deno lint check. */
 export const DENO_LINT_CHECK_KIND = "deno_lint";
 
@@ -208,7 +175,6 @@ export type IDenoLintCheck = z.infer<typeof DenoLintCheckSchema>;
 /** One operator-configured post-execution check of any supported kind. */
 export const VerificationCheckSchema = z.discriminatedUnion(CHECK_KIND_FIELD, [
   DenoTaskCheckSchema,
-  UnslopCheckSchema,
   DenoLintCheckSchema,
 ]);
 
@@ -236,50 +202,6 @@ export const VerificationStatus = {
 } as const;
 
 export type VerificationStatus = `${typeof VerificationStatus[keyof typeof VerificationStatus]}`;
-
-/** The closed set of categorical unslop errors. Messages never carry portal text. */
-export const UNSLOP_ERROR_CLASSES = [
-  "UnslopEngineMissing",
-  "UnslopAssetInvalid",
-  "UnslopCatalogInvalid",
-  "UnslopSnapshotInvalid",
-  "UnslopGitFailed",
-  "UnslopSourceInvalid",
-  "UnslopHostProtocolInvalid",
-  "UnslopTimeout",
-  "UnslopSpawnFailed",
-  "UnslopLimitExceeded",
-  "UnslopSuppressionForbidden",
-] as const;
-
-export type UnslopErrorClass = (typeof UNSLOP_ERROR_CLASSES)[number];
-
-/** Named access to the closed unslop error classes. */
-export const UnslopErrorClass = {
-  ENGINE_MISSING: "UnslopEngineMissing",
-  ASSET_INVALID: "UnslopAssetInvalid",
-  CATALOG_INVALID: "UnslopCatalogInvalid",
-  SNAPSHOT_INVALID: "UnslopSnapshotInvalid",
-  GIT_FAILED: "UnslopGitFailed",
-  SOURCE_INVALID: "UnslopSourceInvalid",
-  HOST_PROTOCOL_INVALID: "UnslopHostProtocolInvalid",
-  TIMEOUT: "UnslopTimeout",
-  SPAWN_FAILED: "UnslopSpawnFailed",
-  LIMIT_EXCEEDED: "UnslopLimitExceeded",
-  SUPPRESSION_FORBIDDEN: "UnslopSuppressionForbidden",
-} as const satisfies Record<string, UnslopErrorClass>;
-
-/** The outcome of one configured unslop check in the terminal snapshot. */
-export const UNSLOP_CHECK_NOT_RUN = "not_run";
-
-export const UNSLOP_CHECK_RUN_OUTCOMES = [
-  GeneralStatus.PASSED,
-  GeneralStatus.FAILED,
-  GeneralStatus.ERROR,
-  UNSLOP_CHECK_NOT_RUN,
-] as const;
-
-export type UnslopCheckRunOutcome = (typeof UNSLOP_CHECK_RUN_OUTCOMES)[number];
 
 /** The closed set of categorical generic lint errors. Messages never carry portal text. */
 export const LINT_ERROR_CLASSES = [
@@ -348,15 +270,12 @@ export type IExecutionCompletedVerification =
 const UnslopCheckIndexSchema = z.number().int().nonnegative();
 const UnslopTotalSchema = z.number().int().nonnegative().nullable();
 
-/** Every error class the shared snapshot accepts until Step 11 removes the unslop set. */
-const SNAPSHOT_ERROR_CLASSES = [...UNSLOP_ERROR_CLASSES, ...LINT_ERROR_CLASSES] as const;
-
 /** One configured lint check in the terminal snapshot. */
 export const LintCheckSnapshotSchema = z.object({
   check_index: UnslopCheckIndexSchema,
-  outcome: z.enum(UNSLOP_CHECK_RUN_OUTCOMES),
+  outcome: z.enum(LINT_CHECK_RUN_OUTCOMES),
   total: UnslopTotalSchema,
-  error_class: z.enum(SNAPSHOT_ERROR_CLASSES).nullable(),
+  error_class: z.enum(LINT_ERROR_CLASSES).nullable(),
 }).strict();
 
 /** True when a projected path is relative and contains no raw terminal or markup controls. */
@@ -400,7 +319,7 @@ export type IExecutionVerificationLintFindingsEventPayload = z.infer<
 function validCheckState(check: z.infer<typeof LintCheckSnapshotSchema>): boolean {
   if (check.outcome === VerificationStatus.ERROR) return check.total === null && check.error_class !== null;
   if (check.error_class !== null) return false;
-  if (check.outcome === UNSLOP_CHECK_NOT_RUN) return check.total === null;
+  if (check.outcome === LINT_CHECK_NOT_RUN) return check.total === null;
   if (check.outcome === VerificationStatus.PASSED) return check.total === 0;
   return check.total !== null && check.total > 0;
 }
@@ -442,7 +361,7 @@ function validSnapshotStatus(
 ): boolean {
   if (status === VerificationStatus.NOT_CONFIGURED) return false;
   if (status === VerificationStatus.SKIPPED) {
-    return checks.every((check) => check.outcome === UNSLOP_CHECK_NOT_RUN) && findingCount === 0;
+    return checks.every((check) => check.outcome === LINT_CHECK_NOT_RUN) && findingCount === 0;
   }
   if (status === VerificationStatus.PASSED || status === VerificationStatus.REPAIRED) {
     return checks.every((check) => check.outcome === VerificationStatus.PASSED);
