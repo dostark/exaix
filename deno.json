@@ -76,7 +76,7 @@
     "test_all:team": "EXAIX_EDITION=team deno run --allow-run --allow-read --allow-env --allow-write --allow-ffi --allow-sys scripts/test_parallel.ts",
     "test_all:enterprise": "EXAIX_EDITION=enterprise deno run --allow-run --allow-read --allow-env --allow-write --allow-ffi --allow-sys scripts/test_parallel.ts",
     "verify:container-cutover": "deno run --allow-run --allow-read --allow-env --allow-write --allow-ffi --allow-sys scripts/verify_batch2_container_cutover.ts",
-    "test:security": "deno test --allow-all \"tests/**/*_security_test.ts\"",
+    "test:security": "deno test --allow-all \"tests/**/*_security_test.ts\" \"packages/**/*_security_test.ts\" \"apps/**/*_security_test.ts\" \"exaix-team/**/*_security_test.ts\" \"exaix-enterprise/**/*_security_test.ts\"",
     "test:parity": "deno test --allow-all tests/eval/catalog_parity_harness_test.ts tests/eval/flow_eval_parity_test.ts tests/eval/agent_role_eval_parity_test.ts tests/eval/skill_eval_parity_test.ts tests/eval/tool_eval_parity_test.ts",
     "eval:subsystems": "deno run -A tests/scenario_framework/runner/main.ts --profile ci-extended --tag subsystem:tools --tag subsystem:mcp-server --tag subsystem:mcp-client --tag subsystem:agent_roles --tag subsystem:skills --tag subsystem:flows --tag subsystem:memory --mode auto --eval-mode --score-threshold 0.7",
     "eval:subsystems:core": "deno run -A tests/scenario_framework/runner/main.ts --profile ci-core --mode auto --eval-mode --score-threshold 0.7",

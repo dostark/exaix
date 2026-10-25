@@ -8,18 +8,19 @@
  */
 
 import { ToolRegistry } from "@exaix/tool-runtime";
-import { ConfigSchema } from "@exaix/schemas/config.ts";
+import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import type { IGitServiceFactory, JSONObject } from "@exaix/core/types";
+import { GitService } from "@exaix/git";
 
 interface ICreateRegistryOptions {
   tools?: JSONObject;
   gitServiceFactory?: IGitServiceFactory;
 }
 
-export function createToolRegistryForTests(tempDir: string, options: ICreateRegistryOptions = {}): ToolRegistry {
-  const config = ConfigSchema.parse({
-    system: { root: tempDir },
-    tools: options.tools ?? {},
+function parseTestConfig(root: string, tools: JSONObject = {}): Config {
+  return ConfigSchema.parse({
+    system: { root },
+    tools,
     paths: {},
     database: {},
     watcher: {},
@@ -28,7 +29,10 @@ export function createToolRegistryForTests(tempDir: string, options: ICreateRegi
     portals: [],
     mcp: {},
   });
+}
 
+export function createToolRegistryForTests(tempDir: string, options: ICreateRegistryOptions = {}): ToolRegistry {
+  const config = parseTestConfig(tempDir, options.tools);
   return new ToolRegistry({ config, baseDir: tempDir, gitServiceFactory: options.gitServiceFactory });
 }
 
@@ -36,49 +40,11 @@ export async function cleanupTempDir(tempDir: string): Promise<void> {
   await Deno.remove(tempDir, { recursive: true });
 }
 
-const DANGEROUS_GIT_OPTIONS = [
-  "--exec-path",
-  "--git-dir",
-  "--work-tree",
-  "--namespace",
-  "--config",
-  "--config-env",
-  "--exec",
-  "--html-path",
-];
-
-/**
- * Validate git args for test purposes — mirrors the security checks from GitService.validateArgs.
- */
-export function validateTestGitArgs(args: string[]): { valid: boolean; reason?: string } {
-  const dangerousExactOptions = ["-c", "-C"];
-  for (const arg of args) {
-    if (dangerousExactOptions.includes(arg) || DANGEROUS_GIT_OPTIONS.some((opt) => arg.startsWith(opt))) {
-      return { valid: false, reason: `Dangerous git option not allowed: ${arg}` };
-    }
-  }
-  return { valid: true };
-}
-
-/** Create a stub IGitServiceFactory for tests that provides git argument validation. */
+/** Create an IGitServiceFactory backed by the production GitService.
+ *  Git argument validation in tests then uses the real validator, not a copy. */
 export function createTestGitServiceFactory(): IGitServiceFactory {
+  const config = parseTestConfig(Deno.cwd());
   return {
-    createGitService: () => ({
-      setRepository: () => {},
-      getRepository: () => "",
-      ensureRepository: () => Promise.resolve(),
-      ensureIdentity: () => Promise.resolve(),
-      createBranch: () => Promise.resolve(""),
-      commit: () => Promise.resolve(""),
-      checkoutBranch: () => Promise.resolve(),
-      getCurrentBranch: () => Promise.resolve(""),
-      getDefaultBranch: () => Promise.resolve(""),
-      addWorktree: () => Promise.resolve(),
-      removeWorktree: () => Promise.resolve(),
-      pruneWorktrees: () => Promise.resolve(""),
-      listWorktrees: () => Promise.resolve([]),
-      runGitCommand: () => Promise.resolve({ output: "", exitCode: 0 }),
-      validateArgs: validateTestGitArgs,
-    }),
+    createGitService: (repoPath: string, traceId: string) => new GitService({ config, repoPath, traceId }),
   };
 }
