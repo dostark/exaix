@@ -14,6 +14,7 @@ import type { IGitService } from "@exaix/core/types";
 import { isSafeRepoRelativePath, listTrackedFiles } from "@exaix/git";
 import { type IDenoLintCheck, type ILintSettings, LintErrorClass, VerificationStatus } from "@exaix/schemas";
 import { DENO_LINT_DEADLINE_EXCEEDED, type IDenoLintBatchOutcome, runDenoLintBatch } from "./deno_lint_process.ts";
+import { type ILintFinding, uniqueLintBatch } from "./lint_snapshot.ts";
 import { buildVerificationCheckEnv, prepareVerificationOutput } from "./verification_output.ts";
 
 const POLICY_CONFIG_FILENAME = "deno.json";
@@ -23,16 +24,11 @@ const LINE_BREAK = /\r?\n/;
 const FILE_IGNORE_DIRECTIVE = /^\s*\/\/\s*deno-lint-ignore-file\b/;
 /** The bounded source read the guard performs per selected file. */
 const MAX_SOURCE_BYTES = 2_097_152;
+/** Plugin ids and built-in Deno rule ids. */
+const RULE_PATTERN = /^([a-z][a-z0-9-]*\/)?[a-z][a-z0-9-]*$/;
 
 /** One retained diagnostic of one lint run. Paths are repo-relative until safe projection. */
-export interface IDenoLintFinding {
-  readonly file: string;
-  readonly start_line: number;
-  readonly start_column: number;
-  readonly end_line: number;
-  readonly end_column: number;
-  readonly rule: string;
-}
+export type IDenoLintFinding = ILintFinding;
 
 /** A check that retained no finding. */
 export interface IDenoLintCheckOutcomePassed {
@@ -185,24 +181,6 @@ async function hostRepoPath(executionRoot: string, filename: string): Promise<st
 }
 
 /** Orders findings by position and rule and drops exact duplicates. */
-function uniqueFindings(findings: readonly IDenoLintFinding[]): IDenoLintFinding[] {
-  const seen = new Set<string>();
-  const unique: IDenoLintFinding[] = [];
-  for (const finding of findings) {
-    const key =
-      `${finding.file}\u0000${finding.start_line}\u0000${finding.start_column}\u0000${finding.end_line}\u0000${finding.end_column}\u0000${finding.rule}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    unique.push(finding);
-  }
-  return unique.sort((left, right) =>
-    left.file.localeCompare(right.file) ||
-    left.start_line - right.start_line ||
-    left.start_column - right.start_column ||
-    left.rule.localeCompare(right.rule)
-  );
-}
-
 /** @visible */
 export class DenoLintCheckRunner {
   constructor(
@@ -258,6 +236,7 @@ export class DenoLintCheckRunner {
       if (result.kind !== "diagnostics") throw new DenoLintCheckError(batchErrorClass(result.kind));
       hostExitCodes.push(...result.hostExitCodes);
       for (const diagnostic of result.diagnostics) {
+        if (!RULE_PATTERN.test(diagnostic.code)) throw new DenoLintCheckError(LintErrorClass.HOST_FAILED);
         const file = await hostRepoPath(context.executionRoot, diagnostic.filename);
         if (file === null) throw new DenoLintCheckError(LintErrorClass.HOST_FAILED);
         findings.push({
@@ -330,7 +309,7 @@ export class DenoLintCheckRunner {
     findings: readonly IDenoLintFinding[],
     hostExitCodes: readonly number[],
   ): IDenoLintCheckOutcome {
-    const unique = uniqueFindings(findings);
+    const unique = uniqueLintBatch(findings);
     if (unique.length === 0) return passedOutcome();
     const kept = unique.slice(0, this.options.settings.findings_limit);
     const text = kept.map((finding) => `${finding.file}:${finding.start_line} ${finding.rule}`).join("\n");

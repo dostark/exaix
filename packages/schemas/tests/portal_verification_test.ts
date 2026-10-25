@@ -26,8 +26,9 @@ import {
   type IVerificationCheck,
   type IVerificationCheckFailure,
   LINT_ERROR_CLASSES,
+  LintCheckSnapshotSchema,
+  LintFindingSnapshotSchema,
   PortalVerificationSchema,
-  UnslopCheckSnapshotSchema,
   UnslopErrorClass,
   VerificationCheckSchema,
 } from "@exaix/schemas/portal_verification.ts";
@@ -354,7 +355,7 @@ Deno.test("[verification-schema] a deno_lint check rejects unsafe input and unkn
 
 Deno.test("[verification-schema] the snapshot error class accepts both lint families", () => {
   for (const errorClass of [UnslopErrorClass.TIMEOUT, ...LINT_ERROR_CLASSES]) {
-    const parsed = UnslopCheckSnapshotSchema.safeParse({
+    const parsed = LintCheckSnapshotSchema.safeParse({
       check_index: 0,
       outcome: "error",
       total: null,
@@ -363,7 +364,7 @@ Deno.test("[verification-schema] the snapshot error class accepts both lint fami
     assertEquals(parsed.success, true, errorClass);
   }
   assertEquals(
-    UnslopCheckSnapshotSchema.safeParse({
+    LintCheckSnapshotSchema.safeParse({
       check_index: 0,
       outcome: "error",
       total: null,
@@ -371,4 +372,21 @@ Deno.test("[verification-schema] the snapshot error class accepts both lint fami
     }).success,
     false,
   );
+});
+
+Deno.test("[verification-schema] the finding rule pattern accepts plugin and built-in ids", () => {
+  for (const rule of ["unslop/no-chained-type-assertions", "ban-unused-ignore", "no-explicit-any"]) {
+    assertEquals(
+      LintFindingSnapshotSchema.safeParse({ check_index: 0, file: "a.ts", line: 1, rule }).success,
+      true,
+      rule,
+    );
+  }
+  for (const rule of ["Unslop/Bad", "a/b/c", "has space", "-bad"]) {
+    assertEquals(
+      LintFindingSnapshotSchema.safeParse({ check_index: 0, file: "a.ts", line: 1, rule }).success,
+      false,
+      rule,
+    );
+  }
 });

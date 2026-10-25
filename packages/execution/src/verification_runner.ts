@@ -13,7 +13,7 @@
 import { join, SEPARATOR } from "@std/path";
 import { VERIFICATION_FMT_CHECK_FLAG, VERIFICATION_OUTPUT_REDACTION_MARGIN_CHARS } from "@exaix/core";
 import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
-import { completeCheckStates } from "./unslop_snapshot.ts";
+import { completeCheckStates } from "./lint_snapshot.ts";
 import { buildVerificationCheckEnv, prepareVerificationOutput } from "./verification_output.ts";
 import { UNSLOP_CHECK_KIND } from "@exaix/core";
 import {
@@ -21,6 +21,8 @@ import {
   DENO_LINT_CHECK_KIND,
   denoTaskOf,
   type IDenoLintCheck,
+  LintErrorClass,
+  type UnslopErrorClass,
   type VerificationCheckName,
   VerificationStatus,
 } from "@exaix/schemas";
@@ -36,6 +38,7 @@ import type {
 } from "@exaix/schemas";
 import type { IUnslopCheckContext, IUnslopCheckOutcome } from "./unslop_check_types.ts";
 import type { IDenoLintCheckContext, IDenoLintCheckOutcome } from "./deno_lint_check.ts";
+import type { ILintFinding } from "./lint_snapshot.ts";
 import { runDenoTask } from "@exaix/tool-runtime";
 
 /** The scoped Git and run identity of one unslop attempt. */
@@ -81,6 +84,49 @@ type TCheckStep =
   | { readonly kind: typeof VerificationStatus.FAILED; readonly output: string }
   | { readonly kind: typeof VerificationStatus.ERROR; readonly output: string };
 
+/** A normalized lint outcome shared by both lint kinds. */
+type TLintStepOutcome =
+  | { readonly kind: typeof VerificationStatus.PASSED }
+  | {
+    readonly kind: typeof VerificationStatus.FAILED;
+    readonly total: number;
+    readonly findings: readonly ILintFinding[];
+    readonly output: string;
+  }
+  | {
+    readonly kind: typeof VerificationStatus.ERROR;
+    readonly errorClass: LintErrorClass | UnslopErrorClass;
+    readonly output: string;
+  };
+
+/** Normalizes one unslop outcome. */
+function fromUnslopOutcome(outcome: IUnslopCheckOutcome): TLintStepOutcome {
+  if (outcome.kind === VerificationStatus.PASSED) return { kind: VerificationStatus.PASSED };
+  if (outcome.kind === VerificationStatus.FAILED) {
+    return {
+      kind: VerificationStatus.FAILED,
+      total: outcome.total,
+      findings: outcome.findings,
+      output: outcome.output,
+    };
+  }
+  return { kind: VerificationStatus.ERROR, errorClass: outcome.error_class, output: outcome.output };
+}
+
+/** Normalizes one deno_lint outcome. */
+function fromDenoLintOutcome(outcome: IDenoLintCheckOutcome): TLintStepOutcome {
+  if (outcome.kind === VerificationStatus.PASSED) return { kind: VerificationStatus.PASSED };
+  if (outcome.kind === VerificationStatus.FAILED) {
+    return {
+      kind: VerificationStatus.FAILED,
+      total: outcome.total,
+      findings: outcome.findings,
+      output: outcome.output,
+    };
+  }
+  return { kind: VerificationStatus.ERROR, errorClass: outcome.error_class, output: outcome.output };
+}
+
 /** Optional runners of non-Deno check kinds. */
 export interface IVerificationRunnerOptions {
   /** Required when a block contains an unslop check. */
@@ -117,7 +163,9 @@ export class VerificationRunner implements IVerificationRunner {
     const failures: IVerificationCheckFailure[] = [];
     const lintChecks: IVerificationCheckRunState[] = [];
     const lintFindings: IVerificationLintFinding[] = [];
-    const unslopIndexes = config.checks.flatMap((check, index) => check.kind === UNSLOP_CHECK_KIND ? [index] : []);
+    const lintIndexes = config.checks.flatMap((check, index) =>
+      check.kind === UNSLOP_CHECK_KIND || check.kind === DENO_LINT_CHECK_KIND ? [index] : []
+    );
     let hadError = false;
 
     await this.emit(DomainEventType.ExecutionVerificationStarted, context, {
@@ -130,9 +178,9 @@ export class VerificationRunner implements IVerificationRunner {
 
     for (const [checkIndex, check] of config.checks.entries()) {
       if (check.kind === UNSLOP_CHECK_KIND) {
-        const mapped = this.mapUnslopStep(
+        const mapped = this.mapLintStep(
           checkIndex,
-          await this.runUnslopCheck(checkIndex, check, config, context),
+          fromUnslopOutcome(await this.runUnslopCheck(checkIndex, check, config, context)),
         );
         lintChecks.push(mapped.state);
         lintFindings.push(...mapped.findings);
@@ -144,8 +192,13 @@ export class VerificationRunner implements IVerificationRunner {
       }
 
       if (check.kind === DENO_LINT_CHECK_KIND) {
-        const step = await this.runDenoLintCheck(check, checkIndex, config, context);
-        if (this.applyLintStep(step, failures, DENO_LINT_CHECK_KIND)) {
+        const mapped = this.mapLintStep(
+          checkIndex,
+          fromDenoLintOutcome(await this.runDenoLintCheck(check, checkIndex, config, context)),
+        );
+        lintChecks.push(mapped.state);
+        lintFindings.push(...mapped.findings);
+        if (this.applyLintStep(mapped.step, failures, DENO_LINT_CHECK_KIND)) {
           hadError = true;
           break;
         }
@@ -192,7 +245,7 @@ export class VerificationRunner implements IVerificationRunner {
 
     const lintState = {
       ...(context.unslop === undefined ? {} : { run_id: context.unslop.runId }),
-      lint_checks: completeCheckStates(lintChecks, unslopIndexes),
+      lint_checks: completeCheckStates(lintChecks, lintIndexes),
       lint_findings: lintFindings,
     };
     if (failures.length === 0) {
@@ -255,11 +308,10 @@ export class VerificationRunner implements IVerificationRunner {
     return buildVerificationCheckEnv();
   }
 
-  /** Sanitize, redact known secrets, then keep only the last `maxChars` characters. */
-  /** Maps one unslop outcome to its snapshot state and step result. */
-  private mapUnslopStep(
+  /** Normalizes one lint outcome into its snapshot state and step result. */
+  private mapLintStep(
     checkIndex: number,
-    outcome: IUnslopCheckOutcome,
+    outcome: TLintStepOutcome,
   ): { step: TCheckStep; state: IVerificationCheckRunState; findings: readonly IVerificationLintFinding[] } {
     if (outcome.kind === VerificationStatus.PASSED) {
       return {
@@ -291,7 +343,7 @@ export class VerificationRunner implements IVerificationRunner {
         check_index: checkIndex,
         outcome: VerificationStatus.ERROR,
         total: null,
-        error_class: outcome.error_class,
+        error_class: outcome.errorClass,
       },
       findings: [],
     };
@@ -318,11 +370,19 @@ export class VerificationRunner implements IVerificationRunner {
     checkIndex: number,
     config: IPortalVerification,
     context: IVerificationRunContext,
-  ): Promise<TCheckStep> {
+  ): Promise<IDenoLintCheckOutcome> {
     const executor = this.options.deno_lint;
     const lint = context.lint;
-    if (executor === undefined || lint === undefined) return { kind: VerificationStatus.ERROR, output: "" };
-    const outcome = await executor.run({
+    if (executor === undefined || lint === undefined) {
+      return {
+        kind: VerificationStatus.ERROR,
+        error_class: LintErrorClass.HOST_FAILED,
+        total: null,
+        findings: [],
+        output: "",
+      };
+    }
+    return await executor.run({
       requestId: context.requestId,
       traceId: context.traceId,
       attempt: context.attempt,
@@ -335,13 +395,9 @@ export class VerificationRunner implements IVerificationRunner {
       timeoutMs: config.check_timeout_ms,
       outputMaxChars: config.output_max_chars,
     });
-    if (outcome.kind === VerificationStatus.PASSED) return { kind: VerificationStatus.PASSED };
-    if (outcome.kind === VerificationStatus.FAILED) {
-      return { kind: VerificationStatus.FAILED, output: outcome.output };
-    }
-    return { kind: VerificationStatus.ERROR, output: outcome.output };
   }
 
+  /** Sanitize, redact known secrets, then keep only the last `maxChars` characters. */
   private prepareOutput(output: string, maxChars: number): string {
     return prepareVerificationOutput(output, maxChars, this.knownSecrets);
   }

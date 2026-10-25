@@ -52,6 +52,7 @@ import { PlanAmendmentPendingError } from "@exaix/core/planning";
 import type { IFixedModelClient, IModelIntent } from "@exaix/schemas";
 import {
   DENO_LINT_CHECK_KIND,
+  type ILintSettings,
   type IPortalVerification,
   type IUnslopSettings,
   type IVerificationCheckFailure,
@@ -78,7 +79,7 @@ import { UnslopCheckRunner } from "./unslop_check_runner.ts";
 import { DenoLintCheckRunner } from "./deno_lint_check.ts";
 import { resolveUnslopSettings } from "./unslop_settings.ts";
 import { resolveLintSettings } from "@exaix/schemas/lint_settings.ts";
-import { buildUnslopSnapshot, completeCheckStates } from "./unslop_snapshot.ts";
+import { buildLintSnapshot, completeCheckStates } from "./lint_snapshot.ts";
 import {
   DEFAULT_AGENT_ROLE,
   DEFAULT_AMENDMENT_EXPIRY_MS,
@@ -245,6 +246,7 @@ export class ExecutionLoop {
   private knownSecrets: readonly string[];
   private verificationRunnerFactory: (logger: IEventLogger, knownSecrets: readonly string[]) => IVerificationRunner;
   private readonly unslopSettings: IUnslopSettings;
+  private readonly lintSettings: ILintSettings;
   private gitExecutionSetupService: GitExecutionSetupService;
 
   constructor(
@@ -277,6 +279,7 @@ export class ExecutionLoop {
     this.verificationRunnerFactory = config.verificationRunnerFactory ??
       ((logger, secrets) => this.buildDefaultVerificationRunner(logger, secrets));
     this.unslopSettings = resolveUnslopSettings(this.config, this.context?.configAdapter);
+    this.lintSettings = resolveLintSettings(this.config, this.context?.configAdapter);
     this.gitExecutionSetupService = new GitExecutionSetupService(this.config, this.gitServiceFactory);
     this.plansDir = join(this.config.system.root, this.config.paths.workspace, this.config.paths.active);
     this.blueprintLoader = new IBlueprintLoader({
@@ -504,11 +507,13 @@ export class ExecutionLoop {
   ): Promise<IVerificationOutcome> {
     const verification = this.resolvePortalVerification(frontmatter);
     if (!verification) return { status: VerificationStatus.NOT_CONFIGURED, commitSha: context.commitSha };
-    const usesUnslop = verification.checks.some((check) => check.kind === UNSLOP_CHECK_KIND);
+    const usesLint = verification.checks.some((check) =>
+      check.kind === UNSLOP_CHECK_KIND || check.kind === DENO_LINT_CHECK_KIND
+    );
     const runId = crypto.randomUUID();
     if (context.isReadOnly || context.commitSha === null) {
       const skipped = { status: VerificationStatus.SKIPPED, commitSha: context.commitSha };
-      if (usesUnslop) {
+      if (usesLint) {
         await this.emitLintSnapshot(verification, context, skipped, undefined, runId, 0);
         return { ...skipped, runId };
       }
@@ -532,14 +537,14 @@ export class ExecutionLoop {
       return result;
     };
     const outcome = await this.runRepairLoop(frontmatter, verification, context, runOnce, context.commitSha);
-    if (usesUnslop) {
+    if (usesLint) {
       await this.emitLintSnapshot(verification, context, outcome, lastResult, runId, lastAttempt);
       return { ...outcome, runId };
     }
     return outcome;
   }
 
-  /** Emits the one authoritative terminal findings snapshot of a configured unslop run. */
+  /** Emits the one authoritative terminal findings snapshot of a configured lint run. */
   private async emitLintSnapshot(
     verification: IPortalVerification,
     context: { requestId: string; traceId: string },
@@ -548,14 +553,14 @@ export class ExecutionLoop {
     runId: string,
     attempt: number,
   ): Promise<void> {
-    const unslopIndexes = verification.checks.flatMap((check, index) =>
-      check.kind === UNSLOP_CHECK_KIND ? [index] : []
+    const lintIndexes = verification.checks.flatMap((check, index) =>
+      check.kind === UNSLOP_CHECK_KIND || check.kind === DENO_LINT_CHECK_KIND ? [index] : []
     );
-    const checks = completeCheckStates(lastResult?.lint_checks ?? [], unslopIndexes);
+    const checks = completeCheckStates(lastResult?.lint_checks ?? [], lintIndexes);
     const remaining = outcome.status === VerificationStatus.PASSED || outcome.status === VerificationStatus.REPAIRED
       ? []
       : lastResult?.lint_findings ?? [];
-    const snapshot = buildUnslopSnapshot({
+    const snapshot = buildLintSnapshot({
       requestId: context.requestId,
       runId,
       attempt,
@@ -563,7 +568,9 @@ export class ExecutionLoop {
       status: outcome.status,
       checks,
       findings: remaining,
-      limit: this.unslopSettings.findings_limit,
+      limit: verification.checks.some((check) => check.kind === DENO_LINT_CHECK_KIND)
+        ? this.lintSettings.findings_limit
+        : this.unslopSettings.findings_limit,
       knownSecrets: this.knownSecrets,
     });
     await this.logActivity(DomainEventType.ExecutionVerificationLintFindings, context.traceId, snapshot);

@@ -20,7 +20,8 @@ import {
   type IDenoLintCheckOutcome,
   type IDenoLintCheckRunnerOptions,
 } from "../src/deno_lint_check.ts";
-import type { IDenoLintBatchOptions, IDenoLintBatchOutcome } from "../src/deno_lint_process.ts";
+import { type IDenoLintBatchOptions, type IDenoLintBatchOutcome, runDenoLintBatch } from "../src/deno_lint_process.ts";
+import { buildVerificationCheckEnv } from "../src/verification_output.ts";
 
 const CAST_SEED = "export const s = 1 as unknown as string;\n";
 const CLEAN_SEED = "export const s: number = 1;\n";
@@ -108,6 +109,10 @@ function passed(outcome: IDenoLintCheckOutcome): Extract<IDenoLintCheckOutcome, 
 function errored(outcome: IDenoLintCheckOutcome): Extract<IDenoLintCheckOutcome, { kind: "error" }> {
   if (outcome.kind !== "error") throw new Error(`expected error, got ${outcome.kind}`);
   return outcome;
+}
+
+function errorClass(outcome: IDenoLintCheckOutcome): string {
+  return errored(outcome).error_class;
 }
 
 Deno.test("deno-lint-check", async (test) => {
@@ -205,6 +210,83 @@ Deno.test("deno-lint-check", async (test) => {
         assertEquals(calls, 2);
       } finally {
         await deadline.cleanup();
+      }
+    });
+
+    await test.step("host-json-guard", async () => {
+      const syntax = await makeRepo("deno-lint-guard-syntax-", { "seed.ts": "export const PRIVATE_SOURCE = ;\n" });
+      try {
+        const outcome = errored(await runnerFor(systemRoot, settingsOf()).run(contextFor(syntax)));
+        assertEquals(outcome.error_class, "LintSourceInvalid");
+        assertEquals(JSON.stringify(outcome).includes("PRIVATE_SOURCE"), false);
+      } finally {
+        await syntax.cleanup();
+      }
+
+      const timeout = await makeRepo("deno-lint-guard-timeout-", { "seed.ts": CAST_SEED });
+      try {
+        const outcome = errored(await runnerFor(systemRoot, settingsOf()).run(contextFor(timeout, 0)));
+        assertEquals(outcome.error_class, "LintTimeout");
+      } finally {
+        await timeout.cleanup();
+      }
+
+      const capped = await makeRepo("deno-lint-guard-cap-", { "seed.ts": CAST_SEED });
+      try {
+        const { env, clearEnv } = buildVerificationCheckEnv();
+        const batch = await runDenoLintBatch({
+          configPath: join(policyDir, "deno.json"),
+          files: ["./seed.ts"],
+          cwd: capped.root,
+          env,
+          clearEnv,
+          timeoutMs: 30_000,
+          jsonMaxBytes: 16,
+          stderrMaxBytes: 65_536,
+        });
+        assertEquals(batch.kind, "limit");
+        const limited = await runnerFor(systemRoot, settingsOf(), {
+          runBatch: () => Promise.resolve({ kind: "limit" }),
+        }).run(contextFor(capped));
+        assertEquals(errorClass(limited), "LintOutputLimit");
+      } finally {
+        await capped.cleanup();
+      }
+
+      const unused = await makeRepo("deno-lint-guard-unused-", {
+        "seed.ts": "// deno-lint-ignore unslop/no-chained-type-assertions -- unused\nexport const value = 1;\n",
+      });
+      try {
+        const outcome = failed(await runnerFor(systemRoot, settingsOf()).run(contextFor(unused)));
+        assert(outcome.findings.some((finding) => finding.rule === "ban-unused-ignore"), outcome.output);
+      } finally {
+        await unused.cleanup();
+      }
+
+      const forged = await makeRepo("deno-lint-guard-forged-", { "seed.ts": CAST_SEED });
+      try {
+        const seedUrl = toFileUrl(join(forged.root, "seed.ts")).href;
+        for (const code of ["Unslop/Bad", "a/b/c"]) {
+          const runBatch = (): Promise<IDenoLintBatchOutcome> =>
+            Promise.resolve({
+              kind: "diagnostics",
+              hostExitCodes: [1],
+              diagnostics: [{
+                filename: seedUrl,
+                code,
+                message: "forged",
+                hint: "",
+                start: { line: 1, column: 1 },
+                end: { line: 1, column: 2 },
+              }],
+            });
+          const outcome = errored(
+            await runnerFor(systemRoot, settingsOf(), { runBatch }).run(contextFor(forged)),
+          );
+          assertEquals(outcome.error_class, "LintHostFailed", code);
+        }
+      } finally {
+        await forged.cleanup();
       }
     });
 

@@ -18,7 +18,7 @@ import { EventLogger } from "@exaix/core/logger";
 import { PathResolver } from "@exaix/portal";
 import { createGitTestContext, type IGitTestContext, setupGitRepo } from "@exaix/git/testing";
 import { readHeadSha } from "@exaix/git";
-import { type IUnslopCheckContext, projectUnslopFilePath, UnslopCheckRunner } from "@exaix/execution";
+import { type IUnslopCheckContext, projectLintFilePath, UnslopCheckRunner } from "@exaix/execution";
 import { buildUnslopPortalAssets } from "../../../scripts/build_unslop_portal_bundle.ts";
 
 const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
@@ -249,13 +249,13 @@ Deno.test("[security] a replacement catalog cannot disable the suppression contr
 });
 
 Deno.test("[security] the journal projection hides secrets, controls and markup", () => {
-  const projected = projectUnslopFilePath("secret-token-abc.ts\u0000\n<&>.ts", ["secret-token-abc"]);
+  const projected = projectLintFilePath("secret-token-abc.ts\u0000\n<&>.ts", ["secret-token-abc"]);
   assert(!projected.includes("secret-token-abc"));
   assert(!projected.includes("\u0000"));
   assert(!projected.includes("\n"));
   assert(projected.includes("&lt;"));
   assert(projected.includes("&amp;"));
-  assertEquals(projectUnslopFilePath("uni-é.ts", []), "uni-é.ts");
+  assertEquals(projectLintFilePath("uni-é.ts", []), "uni-é.ts");
 });
 
 Deno.test("[security] trusted-root-overlap-denied", async () => {

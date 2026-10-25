@@ -15,7 +15,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { type ISubprocessOptions, SafeSubprocess, VERIFICATION_OUTPUT_REDACTION_MARGIN_CHARS } from "@exaix/core";
 import type { LogMetadata } from "@exaix/core/types";
 import { type IPortalVerification, PortalVerificationSchema, UserRequestSchema } from "@exaix/schemas";
-import { buildUnslopSnapshot, prepareVerificationOutput, VerificationRunner } from "@exaix/execution";
+import { buildLintSnapshot, prepareVerificationOutput, VerificationRunner } from "@exaix/execution";
 import { VerificationStatus } from "@exaix/schemas";
 import { withEnv } from "@exaix/testing";
 
@@ -360,7 +360,7 @@ Deno.test("snapshot-cap-and-settings", () => {
     { check_index: 0, file: "src/b.ts", line: 3, rule: "unslop/no-explicit-unknown" },
     { check_index: 0, file: "src/a.ts", line: 1, rule: "unslop/no-chained-type-assertions" },
   ];
-  const capped = buildUnslopSnapshot({
+  const capped = buildLintSnapshot({
     requestId: "request-1",
     runId: "8f2a3d1c-2b4e-4f6a-9c1d-0e2f3a4b5c6d",
     attempt: 1,
@@ -376,7 +376,7 @@ Deno.test("snapshot-cap-and-settings", () => {
   assertEquals(capped.findings[0].file, "src/a.ts");
   assertEquals(capped.truncated, true);
 
-  const incomplete = buildUnslopSnapshot({
+  const incomplete = buildLintSnapshot({
     requestId: "request-1",
     runId: "8f2a3d1c-2b4e-4f6a-9c1d-0e2f3a4b5c6d",
     attempt: 1,

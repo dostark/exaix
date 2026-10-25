@@ -101,7 +101,7 @@ function diagnosticMeta(record: Record<string, unknown>): { code: string; messag
   const { code, message, hint } = record;
   if (typeof code !== "string" || code.length === 0) return null;
   if (typeof message !== "string") return null;
-  if (hint !== undefined && typeof hint !== "string") return null;
+  if (hint !== undefined && hint !== null && typeof hint !== "string") return null;
   return { code, message, hint: typeof hint === "string" ? hint : "" };
 }
 

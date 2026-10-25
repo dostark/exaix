@@ -54,12 +54,12 @@ export interface IVerificationCheckFailure {
   output: string;
 }
 
-/** One configured unslop check state after an attempt. */
+/** One configured lint check state after an attempt. */
 export interface IVerificationCheckRunState {
   check_index: number;
-  outcome: UnslopCheckRunOutcome;
+  outcome: UnslopCheckRunOutcome | LintCheckRunOutcome;
   total: number | null;
-  error_class: UnslopErrorClass | null;
+  error_class: UnslopErrorClass | LintErrorClass | null;
 }
 
 /** One retained unslop finding before safe projection. */
@@ -351,8 +351,8 @@ const UnslopTotalSchema = z.number().int().nonnegative().nullable();
 /** Every error class the shared snapshot accepts until Step 11 removes the unslop set. */
 const SNAPSHOT_ERROR_CLASSES = [...UNSLOP_ERROR_CLASSES, ...LINT_ERROR_CLASSES] as const;
 
-/** One configured unslop check in the terminal snapshot. */
-export const UnslopCheckSnapshotSchema = z.object({
+/** One configured lint check in the terminal snapshot. */
+export const LintCheckSnapshotSchema = z.object({
   check_index: UnslopCheckIndexSchema,
   outcome: z.enum(UNSLOP_CHECK_RUN_OUTCOMES),
   total: UnslopTotalSchema,
@@ -368,11 +368,11 @@ function isSafeFindingPath(value: string): boolean {
 }
 
 /** One persisted finding. The file is a display-safe repo-relative path. */
-export const UnslopFindingSnapshotSchema = z.object({
+export const LintFindingSnapshotSchema = z.object({
   check_index: UnslopCheckIndexSchema,
   file: z.string().min(1).refine(isSafeFindingPath, "unsafe display path"),
   line: z.number().int().positive(),
-  rule: z.string().regex(/^unslop\/[a-z][a-z0-9-]*$/),
+  rule: z.string().regex(/^([a-z][a-z0-9-]*\/)?[a-z][a-z0-9-]*$/),
 }).strict();
 
 /** The authoritative terminal findings snapshot of one configured unslop run. */
@@ -383,8 +383,8 @@ export const ExecutionVerificationLintFindingsEventPayloadSchema = z.object({
   commit_sha: z.string().min(1).nullable(),
   verification_status: VerificationStatusSchema,
   total: UnslopTotalSchema,
-  checks: z.array(UnslopCheckSnapshotSchema).min(1),
-  findings: z.array(UnslopFindingSnapshotSchema),
+  checks: z.array(LintCheckSnapshotSchema).min(1),
+  findings: z.array(LintFindingSnapshotSchema),
   truncated: z.boolean(),
 }).strict().superRefine((snapshot, context) => {
   if (!validSnapshotSemantics(snapshot)) {
@@ -397,7 +397,7 @@ export type IExecutionVerificationLintFindingsEventPayload = z.infer<
 >;
 
 /** Validates the per-check outcome without accepting contradictory numeric totals. */
-function validCheckState(check: z.infer<typeof UnslopCheckSnapshotSchema>): boolean {
+function validCheckState(check: z.infer<typeof LintCheckSnapshotSchema>): boolean {
   if (check.outcome === VerificationStatus.ERROR) return check.total === null && check.error_class !== null;
   if (check.error_class !== null) return false;
   if (check.outcome === UNSLOP_CHECK_NOT_RUN) return check.total === null;
@@ -409,8 +409,8 @@ function validCheckState(check: z.infer<typeof UnslopCheckSnapshotSchema>): bool
 function validSnapshotSemantics(snapshot: {
   verification_status: VerificationStatus;
   total: number | null;
-  checks: z.infer<typeof UnslopCheckSnapshotSchema>[];
-  findings: z.infer<typeof UnslopFindingSnapshotSchema>[];
+  checks: z.infer<typeof LintCheckSnapshotSchema>[];
+  findings: z.infer<typeof LintFindingSnapshotSchema>[];
   truncated: boolean;
 }): boolean {
   const { checks, findings, total, verification_status: status } = snapshot;
@@ -437,7 +437,7 @@ function validSnapshotSemantics(snapshot: {
 /** Status also covers Deno task checks whose state is not included in the lint-only snapshot. */
 function validSnapshotStatus(
   status: VerificationStatus,
-  checks: z.infer<typeof UnslopCheckSnapshotSchema>[],
+  checks: z.infer<typeof LintCheckSnapshotSchema>[],
   findingCount: number,
 ): boolean {
   if (status === VerificationStatus.NOT_CONFIGURED) return false;

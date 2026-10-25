@@ -38,6 +38,7 @@ import { EventLogger } from "@exaix/core/logger";
 import type { IEventLogger } from "@exaix/core/logger";
 import { GeneralStatus, PortalOperation, SwapClass } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
+import type { ILintSettings } from "@exaix/schemas/config.ts";
 import {
   type IPortalVerification,
   type IUnslopSettings,
@@ -121,6 +122,7 @@ async function makeVerificationLoop(options: {
   unslop?: boolean;
   lintPolicy?: boolean;
   unslopSettings?: Partial<IUnslopSettings>;
+  lintSettings?: Partial<ILintSettings>;
   effectiveConfigDb?: boolean;
   baseCatalog?: boolean;
   llmProvider?: unknown;
@@ -173,6 +175,9 @@ async function makeVerificationLoop(options: {
 
   if (options.lintPolicy) {
     await installLintPolicyForTest(join(rootDir, "lint"));
+  }
+  if (options.lintSettings) {
+    config.verification.lint = { ...config.verification.lint, ...options.lintSettings };
   }
 
   const effective = options.effectiveConfigDb ? await realConfigDbContext(rootDir, config, db) : undefined;
@@ -484,6 +489,180 @@ Deno.test("[execution-verification] a real deno_lint failure is repaired by the 
     }
     const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
     assertEquals(reviews.length, 1);
+  } finally {
+    await handle.cleanupDb();
+    await Deno.remove(handle.rootDir, { recursive: true });
+  }
+});
+
+Deno.test("deno-lint-terminal-snapshot", async (test) => {
+  await test.step("failed", async () => {
+    const handle = await makeVerificationLoop({
+      prefix: "exec-verif-deno-lint-failed-",
+      verification: PortalVerificationSchema.parse({
+        checks: [{ kind: "deno_lint" }],
+        max_repair_attempts: 0,
+      }),
+      planAction: writeAction("seed.ts", "export const seed = 1 as unknown as string;\n"),
+      requestId: "verify-deno-lint-failed",
+      lintPolicy: true,
+    });
+    try {
+      await handle.db.waitForFlush();
+      assertEquals(completedStatus(handle.db, handle.traceId), "failed");
+      const snapshots = lintSnapshots(handle.db, handle.traceId);
+      assertEquals(snapshots.length, 1);
+      const completed = JSON.parse(
+        handle.db.getActivitiesByTrace(handle.traceId).find((row) => row.action_type === "execution.completed")!
+          .payload,
+      ) as Record<string, unknown>;
+      assertEquals(snapshots[0].verification_status, "failed");
+      assertEquals(snapshots[0].run_id, completed.verification_run_id);
+      assertEquals(snapshots[0].commit_sha, completed.commit_sha);
+      assert((snapshots[0].total as number) > 0);
+      assert((snapshots[0].findings as unknown[]).length > 0);
+    } finally {
+      await handle.cleanupDb();
+      await Deno.remove(handle.rootDir, { recursive: true });
+    }
+  });
+
+  await test.step("repaired", async () => {
+    const handle = await makeVerificationLoop({
+      prefix: "exec-verif-deno-lint-repaired-",
+      verification: PortalVerificationSchema.parse({
+        checks: [{ kind: "deno_lint" }],
+        max_repair_attempts: 1,
+      }),
+      planAction: writeAction("seed.ts", "export const seed = 1 as unknown as string;\n"),
+      requestId: "verify-deno-lint-repaired",
+      lintPolicy: true,
+      llmProvider: STUB_PROVIDER,
+      onCodeChangesDelegate: async (
+        _trace: string,
+        _step: unknown,
+        worktreePath: string,
+      ) => {
+        await Deno.writeTextFile(join(worktreePath, "seed.ts"), "export const seed = 1;\n");
+        return "changes_made" as const;
+      },
+    });
+    try {
+      await handle.db.waitForFlush();
+      assertEquals(completedStatus(handle.db, handle.traceId), "repaired");
+      const snapshots = lintSnapshots(handle.db, handle.traceId);
+      assertEquals(snapshots.length, 1);
+      assertEquals(snapshots[0].verification_status, "repaired");
+      assertEquals(snapshots[0].total, 0);
+      assertEquals(snapshots[0].findings, []);
+    } finally {
+      await handle.cleanupDb();
+      await Deno.remove(handle.rootDir, { recursive: true });
+    }
+  });
+
+  await test.step("error", async () => {
+    const handle = await makeVerificationLoop({
+      prefix: "exec-verif-deno-lint-error-",
+      verification: PortalVerificationSchema.parse({
+        checks: [{ kind: "deno_lint" }],
+        max_repair_attempts: 0,
+      }),
+      planAction: writeAction("seed.ts", "export const seed = 1 as unknown as string;\n"),
+      requestId: "verify-deno-lint-error",
+    });
+    try {
+      await handle.db.waitForFlush();
+      assertEquals(completedStatus(handle.db, handle.traceId), "error");
+      const snapshots = lintSnapshots(handle.db, handle.traceId);
+      assertEquals(snapshots.length, 1);
+      assertEquals(snapshots[0].verification_status, "error");
+      const checks = snapshots[0].checks as Array<Record<string, unknown>>;
+      assertEquals(checks[0].outcome, "error");
+      assertEquals(checks[0].error_class, "LintPolicyMissing");
+      assertEquals(checks[0].total, null);
+      assertEquals(snapshots[0].findings, []);
+    } finally {
+      await handle.cleanupDb();
+      await Deno.remove(handle.rootDir, { recursive: true });
+    }
+  });
+
+  await test.step("skipped", async () => {
+    const handle = await makeVerificationLoop({
+      prefix: "exec-verif-deno-lint-skipped-",
+      verification: PortalVerificationSchema.parse({ checks: [{ kind: "deno_lint" }] }),
+      planAction: writeAction("seed.ts", "export const seed = 1;\n"),
+      requestId: "verify-deno-lint-skipped",
+      readOnlyAgent: true,
+    });
+    try {
+      await handle.db.waitForFlush();
+      assertEquals(completedStatus(handle.db, handle.traceId), "skipped");
+      const snapshots = lintSnapshots(handle.db, handle.traceId);
+      assertEquals(snapshots.length, 1);
+      assertEquals(snapshots[0].verification_status, "skipped");
+      const checks = snapshots[0].checks as Array<Record<string, unknown>>;
+      assertEquals(checks[0].outcome, "not_run");
+      assertEquals(snapshots[0].total, null);
+    } finally {
+      await handle.cleanupDb();
+      await Deno.remove(handle.rootDir, { recursive: true });
+    }
+  });
+
+  await test.step("truncated", async () => {
+    const handle = await makeVerificationLoop({
+      prefix: "exec-verif-deno-lint-truncated-",
+      verification: PortalVerificationSchema.parse({
+        checks: [{ kind: "deno_lint" }],
+        max_repair_attempts: 0,
+      }),
+      planAction: writeAction("seed.ts", "export const s = 1 as unknown as string;\n"),
+      requestId: "verify-deno-lint-truncated",
+      lintPolicy: true,
+      lintSettings: { findings_limit: 1 },
+    });
+    try {
+      await handle.db.waitForFlush();
+      assertEquals(completedStatus(handle.db, handle.traceId), "failed");
+      const snapshots = lintSnapshots(handle.db, handle.traceId);
+      assertEquals(snapshots.length, 1);
+      assert((snapshots[0].total as number) > 1);
+      assertEquals((snapshots[0].findings as unknown[]).length, 1);
+      assertEquals(snapshots[0].truncated, true);
+    } finally {
+      await handle.cleanupDb();
+      await Deno.remove(handle.rootDir, { recursive: true });
+    }
+  });
+});
+
+Deno.test("secret-file-name-not-journaled", async () => {
+  const handle = await makeVerificationLoop({
+    prefix: "exec-verif-deno-lint-secret-",
+    verification: PortalVerificationSchema.parse({
+      checks: [{ kind: "deno_lint" }],
+      max_repair_attempts: 0,
+    }),
+    planAction: writeAction("secret-token-abc.ts", "export const seed = 1 as unknown as string;\n"),
+    requestId: "verify-deno-lint-secret",
+    lintPolicy: true,
+    knownSecrets: ["secret-token-abc"],
+  });
+  try {
+    await handle.db.waitForFlush();
+    assertEquals(completedStatus(handle.db, handle.traceId), "failed");
+    const rows = handle.db.getActivitiesByTrace(handle.traceId)
+      .filter((row) => row.action_type.startsWith("execution.verification."));
+    assert(rows.length > 0);
+    for (const row of rows) {
+      assertEquals(row.payload.includes("secret-token-abc"), false, row.action_type);
+    }
+    const snapshots = lintSnapshots(handle.db, handle.traceId);
+    assertEquals(snapshots.length, 1);
+    assertEquals(JSON.stringify(snapshots[0]).includes("secret-token-abc"), false);
+    assert((snapshots[0].findings as unknown[]).length > 0);
   } finally {
     await handle.cleanupDb();
     await Deno.remove(handle.rootDir, { recursive: true });

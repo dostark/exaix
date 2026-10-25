@@ -38,7 +38,7 @@ import type {
 import { type IUnslopAssets, loadUnslopAssets } from "./unslop_assets.ts";
 import { denoLintArgs, runDenoLintBatch } from "./deno_lint_process.ts";
 import { bindUnslopBudget } from "./unslop_budget.ts";
-import { compareUnslopFindings, type IUnslopCollectedFindings, uniqueUnslopBatch } from "./unslop_findings.ts";
+import { compareLintFindings, type ILintCollectedFindings, uniqueLintBatch } from "./lint_snapshot.ts";
 import {
   isUnslopPositionWithinSource,
   readUnslopLineLengths,
@@ -273,7 +273,7 @@ export class UnslopCheckRunner {
     files: readonly string[],
     assets: IUnslopAssets,
     ranges: ReadonlyMap<string, readonly IGitLineRange[]>,
-  ): Promise<IUnslopCollectedFindings | IUnslopCheckOutcome> {
+  ): Promise<ILintCollectedFindings | IUnslopCheckOutcome> {
     const batches = this.batchFiles(files, join(runDir, DENO_CONFIG_FILENAME));
     const { env, clearEnv } = buildVerificationCheckEnv();
     const deadline = Date.now() + context.timeoutMs;
@@ -296,11 +296,11 @@ export class UnslopCheckRunner {
       if (result.kind !== "diagnostics") return errorOutcome(batchErrorClass(result.kind));
       const normalized = await this.normalizeDiagnostics(context, result.diagnostics, batch, assets, ranges);
       if (!Array.isArray(normalized)) return normalized;
-      const unique = uniqueUnslopBatch(normalized);
+      const unique = uniqueLintBatch(normalized);
       total += unique.length;
       hostExitCodes.push(...result.hostExitCodes);
       findings = [...findings, ...unique.slice(0, this.options.settings.findings_limit)]
-        .sort(compareUnslopFindings).slice(0, this.options.settings.findings_limit);
+        .sort(compareLintFindings).slice(0, this.options.settings.findings_limit);
     }
     return { findings, total, hostExitCodes };
   }
@@ -382,7 +382,7 @@ export class UnslopCheckRunner {
   /** Sorts, deduplicates, caps and formats the retained findings. */
   private buildOutcome(
     context: IUnslopCheckContext,
-    collected: IUnslopCollectedFindings,
+    collected: ILintCollectedFindings,
   ): IUnslopCheckOutcome {
     if (collected.total === 0) return passedOutcome();
     const text = collected.findings.map((finding) => `${finding.file}:${finding.start_line} ${finding.rule}`).join(

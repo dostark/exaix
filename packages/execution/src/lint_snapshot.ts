@@ -1,8 +1,7 @@
 /**
- * @module UnslopSnapshot
- * @path packages/execution/src/unslop_snapshot.ts
- * @description Builds the authoritative terminal findings snapshot: safe path projection,
- *   deterministic ordering and the global cap.
+ * @module LintSnapshot
+ * @path packages/execution/src/lint_snapshot.ts
+ * @description Builds the authoritative terminal findings snapshot, finding identity and the global cap.
  * @architectural-layer Services
  * @dependencies [@exaix/core, @exaix/schemas]
  * @related-files [packages/execution/src/execution_loop.ts, packages/schemas/src/portal_verification.ts]
@@ -18,7 +17,7 @@ import {
 } from "@exaix/schemas";
 
 /** Inputs of the terminal snapshot. */
-export interface IUnslopSnapshotInput {
+export interface ILintSnapshotInput {
   readonly requestId: string;
   readonly runId: string;
   readonly attempt: number;
@@ -37,7 +36,7 @@ const CONTROL_REPLACEMENTS = new Map<string, string>([
 ]);
 
 /** Projects one raw repo path into its display-safe persisted form. */
-export function projectUnslopFilePath(path: string, knownSecrets: readonly string[]): string {
+export function projectLintFilePath(path: string, knownSecrets: readonly string[]): string {
   const redacted = redactKnownSecrets(path, knownSecrets).text;
   return [...redacted].map((char) => {
     const replacement = CONTROL_REPLACEMENTS.get(char);
@@ -64,14 +63,14 @@ export function completeCheckStates(
   );
 }
 
-/** Builds and runtime-validates the one terminal snapshot of a configured unslop run. */
-export function buildUnslopSnapshot(
-  input: IUnslopSnapshotInput,
+/** Builds and runtime-validates the one terminal snapshot of a configured lint run. */
+export function buildLintSnapshot(
+  input: ILintSnapshotInput,
 ): IExecutionVerificationLintFindingsEventPayload {
   const completed = input.checks.every((state) => state.outcome !== "not_run" && state.total !== null);
   const aggregateTotal = completed ? input.checks.reduce((sum, state) => sum + (state.total ?? 0), 0) : null;
   const ordered = [...input.findings]
-    .map((finding) => ({ ...finding, file: projectUnslopFilePath(finding.file, input.knownSecrets) }))
+    .map((finding) => ({ ...finding, file: projectLintFilePath(finding.file, input.knownSecrets) }))
     .sort((left, right) =>
       left.check_index - right.check_index ||
       left.file.localeCompare(right.file) ||
@@ -90,4 +89,45 @@ export function buildUnslopSnapshot(
     findings: capped,
     truncated: aggregateTotal !== null && aggregateTotal > capped.length,
   });
+}
+
+/** One diagnostic with its full source position. */
+export interface ILintFinding {
+  readonly file: string;
+  readonly start_line: number;
+  readonly start_column: number;
+  readonly end_line: number;
+  readonly end_column: number;
+  readonly rule: string;
+}
+
+/** One bounded aggregate. Batches have disjoint validated file sets. */
+export interface ILintCollectedFindings {
+  readonly findings: ILintFinding[];
+  readonly total: number;
+  readonly hostExitCodes: number[];
+}
+
+/** Orders findings before any safe display projection. */
+export function compareLintFindings(left: ILintFinding, right: ILintFinding): number {
+  return left.file.localeCompare(right.file) || left.start_line - right.start_line ||
+    left.start_column - right.start_column || left.rule.localeCompare(right.rule) ||
+    left.end_line - right.end_line || left.end_column - right.end_column;
+}
+
+/** Deduplicates a single byte-bounded host batch by complete source position identity. */
+export function uniqueLintBatch(findings: readonly ILintFinding[]): ILintFinding[] {
+  const unique = new Map<string, ILintFinding>();
+  for (const finding of findings) {
+    const key = JSON.stringify([
+      finding.file,
+      finding.start_line,
+      finding.start_column,
+      finding.end_line,
+      finding.end_column,
+      finding.rule,
+    ]);
+    unique.set(key, finding);
+  }
+  return [...unique.values()].sort(compareLintFindings);
 }
