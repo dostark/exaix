@@ -95,6 +95,8 @@ Do / Don't
 - ✅ Name the exact event in Architecture Notes for state-changing/cross-component steps;
   propose `@visible` for load-bearing classes.
 - ✅ Ground third-party integrations in current official docs (§2F); cite URLs + date.
+- ✅ Price every requirement that forces runtime code (§2J): record its configuration-only
+  alternative and what that alternative gives up, and let the user choose.
 - ✅ Ground every code-facing claim in real source (§2G).
 - ✅ Map every prose behavioral claim to a named test.
 - ✅ Anchor every runtime-claiming step to a call-site AND an integration/scenario test.
@@ -345,6 +347,27 @@ reasonably even; compare actual complexity and testing effort, not just the numb
 1. **Recheck the result** — reassess workloads after splitting. Synchronize numbering,
    dependencies, manifests, and ledger wiring references. Confirm that all deliverables,
    criteria, and planned tests remain covered before recommending `#review-phase-plan`.
+
+#### J. Requirement cost and the configuration-only alternative (§2J)
+
+Before a requirement or user decision becomes steps, ask what runtime code it forces. A
+requirement that adds a runtime module, a daemon-side adapter, a generated artifact or a
+tool-specific setting needs a recorded alternative.
+
+1. **Find the simplest shape** that meets the goal with installation or configuration only:
+   an installed plugin or config, an existing check kind, an existing CLI flag or task.
+1. **Write a Requirement Cost table** in Technical Architecture: requirement, runtime code it
+   forces, configuration-only alternative, what the alternative gives up.
+1. **Ask the user** to keep or drop each costly requirement. Record the answer in the
+   doc's User decisions. Never drop a requirement silently, and never accept one silently.
+1. **Third-party tools stay independent in both directions by default.** The tool holds no
+   Exaix code, and the Exaix runtime holds no tool-specific module: hosting the tool needs
+   only installation and configuration. A deviation is a user decision.
+
+Example: one integration required changed-line filtering, per-check rule-pack selection and
+per-portal catalog overrides. Each forced runtime code, and the adapter grew past 1,500 lines
+under review hardening. Running the linter with an installed, daemon-owned config met the core
+goal with a fraction of the code; nobody had priced the alternative.
 
 ### 3. Documentation update protocol (§3D)
 

@@ -252,6 +252,12 @@ delegated report in the Post-Gap Analysis, or leave both status fields open.
 
 Build a gap summary table before detailed entries.
 
+**Defense-layer accumulation.** When a gap's fix adds another runtime module or defense layer
+to a capability that already needed others, write two options into its Resolution: the code
+fix, and narrowing or dropping the requirement that creates the surface. Flag the choice for
+the user in the verdict. A review that only adds defenses grows the capability without anyone
+deciding that its requirements are worth the cost.
+
 ### Phase 9 — Write Gaps and Remediation Steps Into the Document
 
 Append using exactly:

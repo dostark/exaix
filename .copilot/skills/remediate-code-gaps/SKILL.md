@@ -46,6 +46,10 @@ Examples
 Do / Don't
 - ✅ Read each gap's remediation step (Actions) before editing.
 - ✅ Scope edits to exactly the gap resolution.
+- ✅ Escalate scope instead of growing it: when closing a gap needs a new runtime module or
+  defense layer, or one capability keeps growing across steps, stop and ask the user whether
+  to narrow the requirement. Present both options with their cost. Never add the code
+  silently and never drop the requirement silently.
 - ✅ Write tests first when adding behavior.
 - ✅ Run `deno run -A scripts/ci.ts check` before committing — ONE command covering every
   real pre-commit gate (lint, style, magic, complexity, arch, event-coverage). A bare

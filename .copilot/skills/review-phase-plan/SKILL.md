@@ -87,6 +87,8 @@ Do / Don't
   handlers, the canonical catalog/schema/registry (e.g. `DomainEventType`), same-domain
   components by capability grep.
 - ✅ Read every cited source file — never trust the plan's description.
+- ✅ Price each costly requirement against its configuration-only alternative (Phase 2
+  requirement-cost check) before adding defenses for it.
 - ✅ Check `git submodule status` FIRST. An uninitialized submodule the plan depends on is a
   blocking prerequisite, not a note: initialize it (or report the review as unable to
   adjudicate that subsystem) before writing any finding about it.
@@ -235,6 +237,12 @@ BEFORE verifying source. Failure → 🟡 Feasibility (or recommend cancellation
    ratio → 🟡 + simpler alternative or postponement.
    A "should not proceed" conclusion → 🟡 Feasibility with
    `Resolution: "Recommend cancellation — see Phase 2 findings"`, written into the doc.
+1. **Requirement-cost check** (plan §2J): for each requirement or user decision that forces a
+   runtime module, adapter, generated artifact or tool-specific setting, confirm the plan
+   records the configuration-only alternative and what it gives up. Missing → 🟡
+   Feasibility, Resolution "ask the user to keep or drop the requirement". A security gap
+   whose only fix adds another defense layer gets two options in its Resolution: the
+   defense, and narrowing or dropping the requirement that creates the attack surface.
 1. **Delivery-vehicle check** (mandatory when the plan gates on an edition, feature flag,
    or optional module): name the exact artifact and command that will exercise the new
    behavior, and prove that artifact exists and can reach the code. "Edition X enables it"

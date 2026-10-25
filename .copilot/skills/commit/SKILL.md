@@ -42,6 +42,8 @@ Default scope and batching
 - Merge feature branches into `main` **fast-forward only, never `--no-ff`**: branch
   protection rejects merge commits. Use `git checkout main && git merge --ff-only
   <branch>`; if diverged, rebase `<branch>` onto `main` first.
+- Integrate a branch into another feature branch the same way: rebase it onto the target and
+  `git merge --ff-only`. A merge commit there would later block the fast-forward into `main`.
 
 Plan-step commits (phase-plan implementation)
 

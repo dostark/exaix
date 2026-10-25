@@ -198,6 +198,14 @@ For normal local work, prefer focused commands such as `deno test --allow-all <c
 repository gates. This matches [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)
 and avoids sequential full-suite + coverage runs during a narrow step.
 
+Put agent scratch output (probe scripts, test logs, RED evidence, review artifacts) under
+`<parent-of-repo>/exaix-sandboxes/<phase-or-topic>/`, the sibling tree the scenario runner uses,
+or under the agent session's own scratch directory. Never create a scratch directory inside the
+repository, such as `.sandbox/` or `scratch/`: untracked files there break repository-wide gates
+(`check:md-path`, the pre-rebase dirty-tree hook). `deno task sandboxes:prune` reclaims the
+sibling tree, so a plan doc records its evidence as text (command, result, counts). A cited log
+path is only a pointer.
+
 When a repository-wide run is justified by one of the exceptions above, redirect
 `deno task test_all` output to a temp file to avoid truncation, then search for
 failures. Requires `ripgrep` (`rg`); fall back to `grep -E` if unavailable:

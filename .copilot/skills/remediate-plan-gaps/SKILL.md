@@ -43,6 +43,10 @@ Examples
 Do / Don't
 - ✅ Read each gap entry and its Resolution before editing.
 - ✅ Scope edits to exactly what the gap resolution requires.
+- ✅ Escalate scope instead of growing it: when closing a gap needs a new runtime module or
+  defense layer, or one capability keeps growing across steps, stop and ask the user whether
+  to narrow the requirement. Present both options with their cost. Never add the code
+  silently and never drop the requirement silently.
 - ✅ Re-run all planned tests after each edit.
 - ✅ Bump the version. Set Status to "✅ Ready for implementation" when every gap is closed,
   or to "🚧 Gap Remediation In Progress" while any gap is open.
