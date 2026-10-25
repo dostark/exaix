@@ -18,6 +18,11 @@ import { buildVerificationCheckEnv, prepareVerificationOutput } from "./verifica
 
 const POLICY_CONFIG_FILENAME = "deno.json";
 const REPO_SEPARATOR = "/";
+const LINE_BREAK = /\r?\n/;
+/** The line-comment directive Deno applies to a whole file before any plugin rule runs. */
+const FILE_IGNORE_DIRECTIVE = /^\s*\/\/\s*deno-lint-ignore-file\b/;
+/** The bounded source read the guard performs per selected file. */
+const MAX_SOURCE_BYTES = 2_097_152;
 
 /** One retained diagnostic of one lint run. Paths are repo-relative until safe projection. */
 export interface IDenoLintFinding {
@@ -81,10 +86,18 @@ export type IDenoLintBatchRunner = (
   options: Parameters<typeof runDenoLintBatch>[0],
 ) => Promise<IDenoLintBatchOutcome>;
 
+/** The confinement check the runner needs from the path resolver. */
+export interface IDenoLintPathValidator {
+  validatePath(path: string, allowedRoots: string[]): Promise<string>;
+}
+
 /** Inputs of the generic Deno lint check. They never infer a root from the process directory. */
 export interface IDenoLintCheckRunnerOptions {
   readonly settings: ILintSettings;
   readonly systemRoot: string;
+  readonly pathResolver: IDenoLintPathValidator;
+  /** Configured portal roots that cannot own trusted lint inputs. */
+  readonly portalRoots?: readonly string[];
   readonly knownSecrets?: readonly string[];
   /** Host batch override for tests that do not spawn. */
   readonly runBatch?: IDenoLintBatchRunner;
@@ -139,6 +152,22 @@ function chunk<T>(items: readonly T[], size: number): T[][] {
   const batches: T[][] = [];
   for (let index = 0; index < items.length; index += size) batches.push(items.slice(index, index + size));
   return batches;
+}
+
+/** Reads one bounded regular UTF-8 source file, or null when it is absent or oversized. */
+async function readBoundedSource(path: string, maxBytes: number): Promise<string | null> {
+  let info: Deno.FileInfo;
+  try {
+    info = await Deno.lstat(path);
+  } catch {
+    return null;
+  }
+  if (!info.isFile || info.isSymlink || info.size > maxBytes) return null;
+  try {
+    return await Deno.readTextFile(path);
+  } catch {
+    return null;
+  }
 }
 
 /** Resolves a host `file:` URL to a confined repo-relative POSIX path. */
@@ -199,7 +228,7 @@ export class DenoLintCheckRunner {
 
   /** The check body. Exceptions map to a categorical error in `run`. */
   private async execute(context: IDenoLintCheckContext, deadline: number): Promise<IDenoLintCheckOutcome> {
-    const configPath = await this.policyConfigPath(context);
+    const configPath = await this.resolvePolicyConfig(context);
     const listed = await listTrackedFiles(context.git, context.targetSha, {
       maxOutputBytes: this.options.settings.git_max_bytes,
       timeoutMs: remainingMs(deadline),
@@ -209,6 +238,7 @@ export class DenoLintCheckRunner {
       matchesAnyGlob(path, context.check.include) && !matchesAnyGlob(path, context.check.exclude)
     );
     if (selected.length === 0) return passedOutcome();
+    await this.assertNoFileIgnore(context, selected);
 
     const { env, clearEnv } = buildVerificationCheckEnv();
     const runBatch = this.options.runBatch ?? runDenoLintBatch;
@@ -243,22 +273,55 @@ export class DenoLintCheckRunner {
     return this.buildOutcome(context, findings, hostExitCodes);
   }
 
-  /** Resolves the installed policy config, or raises the missing-policy outcome. */
-  private async policyConfigPath(context: IDenoLintCheckContext): Promise<string> {
-    const configPath = join(
-      this.options.systemRoot,
-      this.options.settings.policy_root,
-      context.check.policy,
-      POLICY_CONFIG_FILENAME,
-    );
+  /** Resolves the installed policy config and rejects an untrusted directory. */
+  private async resolvePolicyConfig(context: IDenoLintCheckContext): Promise<string> {
+    const policyRoot = join(this.options.systemRoot, this.options.settings.policy_root);
+    const policyDir = join(policyRoot, context.check.policy);
+    const configPath = join(policyDir, POLICY_CONFIG_FILENAME);
+    let configInfo: Deno.FileInfo;
     try {
-      const info = await Deno.lstat(configPath);
-      if (!info.isFile || info.isSymlink) throw new DenoLintCheckError(LintErrorClass.POLICY_MISSING);
-    } catch (error) {
-      if (error instanceof DenoLintCheckError) throw error;
+      configInfo = await Deno.lstat(configPath);
+    } catch {
       throw new DenoLintCheckError(LintErrorClass.POLICY_MISSING);
     }
+    if (!configInfo.isFile || configInfo.isSymlink) throw new DenoLintCheckError(LintErrorClass.POLICY_MISSING);
+    try {
+      const dirInfo = await Deno.lstat(policyDir);
+      if (dirInfo.isSymlink || !dirInfo.isDirectory) {
+        throw new DenoLintCheckError(LintErrorClass.POLICY_UNTRUSTED);
+      }
+      const realRoot = await Deno.realPath(policyRoot);
+      const realDir = await Deno.realPath(policyDir);
+      if (realDir !== realRoot && !realDir.startsWith(realRoot + SEPARATOR)) {
+        throw new DenoLintCheckError(LintErrorClass.POLICY_UNTRUSTED);
+      }
+      await this.options.pathResolver.validatePath(configPath, [policyRoot]);
+      for (const root of [context.executionRoot, ...(this.options.portalRoots ?? [])]) {
+        const realRoot = await Deno.realPath(root).catch(() => null);
+        if (realRoot === null) continue;
+        if (realDir === realRoot || realDir.startsWith(realRoot + SEPARATOR)) {
+          throw new DenoLintCheckError(LintErrorClass.POLICY_UNTRUSTED);
+        }
+      }
+    } catch (error) {
+      if (error instanceof DenoLintCheckError) throw error;
+      throw new DenoLintCheckError(LintErrorClass.POLICY_UNTRUSTED);
+    }
     return configPath;
+  }
+
+  /** Rejects any selected file that carries a file-level ignore directive. */
+  private async assertNoFileIgnore(
+    context: IDenoLintCheckContext,
+    files: readonly string[],
+  ): Promise<void> {
+    for (const file of files) {
+      const text = await readBoundedSource(join(context.executionRoot, file), MAX_SOURCE_BYTES);
+      if (text === null) throw new DenoLintCheckError(LintErrorClass.SOURCE_INVALID);
+      if (text.split(LINE_BREAK).some((line) => FILE_IGNORE_DIRECTIVE.test(line))) {
+        throw new DenoLintCheckError(LintErrorClass.SUPPRESSION_FORBIDDEN);
+      }
+    }
   }
 
   /** Sorts, deduplicates, caps and formats the retained findings. */

@@ -56,6 +56,13 @@ function settingsOf(overrides: Record<string, number> = {}): ILintSettings {
   return LintSettingsSchema.parse(overrides);
 }
 
+/** Returns the path unchanged, so the runner's own physical checks decide trust. */
+const identityPathValidator = {
+  validatePath(path: string, _allowedRoots: string[]): Promise<string> {
+    return Promise.resolve(path);
+  },
+};
+
 function runnerFor(
   systemRoot: string,
   settings: ILintSettings,
@@ -64,6 +71,7 @@ function runnerFor(
   return new DenoLintCheckRunner(createNoopEventLogger(), {
     settings,
     systemRoot,
+    pathResolver: identityPathValidator,
     ...overrides,
   });
 }

@@ -707,6 +707,8 @@ export class ExecutionLoop {
     const denoLint = new DenoLintCheckRunner(logger, {
       settings: resolveLintSettings(this.config, this.context?.configAdapter),
       systemRoot: this.config.system.root,
+      pathResolver,
+      portalRoots: this.config.portals.map((portal) => portal.target_path),
       knownSecrets: secrets,
     });
     return new VerificationRunner(logger, secrets, { unslop, deno_lint: denoLint });
