@@ -76,59 +76,59 @@ export function stripDevOnlyConfig<T extends IDenoConfigShape>(denoConfig: T): T
   return stripped;
 }
 
-/** The trusted portal lint asset directory a deploy installs. */
-export const UNSLOP_DEPLOY_ASSET_DIR = "lint";
+/** The trusted portal lint policy root a deploy installs. */
+export const LINT_POLICY_DIR = "lint";
 
-/** The packaged files every deployment must carry. */
-export const UNSLOP_DEPLOY_ASSET_FILES: readonly string[] = [
-  "unslop_engine.js",
-  "unslop_portal_catalog.json",
-  "unslop_portal_deno_catalog.json",
-];
+/** The root task that builds a policy directory from the portal configuration. */
+const LINT_POLICY_TASK = "unslop-ts:policy";
+const POLICY_MANIFEST = "manifest.json";
+const POLICY_CONFIG = "deno.json";
 
-/** Verifies the manifest hashes and sizes of one packaged asset set. */
-export async function verifyUnslopAssetSet(dir: string): Promise<void> {
-  const manifestPath = join(dir, "manifest.json");
-  if (!(await exists(manifestPath))) throw new Error(`unslop assets missing: ${manifestPath}`);
+/** Verifies one installed policy directory, returning its manifest-declared file names. */
+export async function verifyLintPolicyDir(dir: string): Promise<readonly string[]> {
+  const manifestPath = join(dir, POLICY_MANIFEST);
+  if (!(await exists(manifestPath))) throw new Error(`lint policy manifest missing: ${manifestPath}`);
   const manifestMode = await Deno.lstat(manifestPath);
-  if (!manifestMode.isFile || manifestMode.isSymlink) throw new Error("unslop manifest must be a regular file");
+  if (!manifestMode.isFile || manifestMode.isSymlink) throw new Error("lint policy manifest must be a regular file");
   const manifest = JSON.parse(await Deno.readTextFile(manifestPath)) as {
     format_version?: number;
-    policy_version?: number;
     files?: Record<string, { sha256?: string; bytes?: number }>;
   };
-  if (manifest.format_version !== 1 || manifest.policy_version !== 1 || manifest.files === undefined) {
-    throw new Error(`unslop asset manifest is invalid: ${manifestPath}`);
+  if (manifest.format_version !== 1 || manifest.files === undefined) {
+    throw new Error(`lint policy manifest is invalid: ${manifestPath}`);
   }
-  for (const name of UNSLOP_DEPLOY_ASSET_FILES) {
+  const names = Object.keys(manifest.files).sort();
+  if (!names.includes(POLICY_CONFIG)) throw new Error(`lint policy manifest omits ${POLICY_CONFIG}`);
+  for (const name of names) {
     const entry = manifest.files[name];
     if (entry?.sha256 === undefined || entry.bytes === undefined) {
-      throw new Error(`unslop asset manifest omits ${name}`);
+      throw new Error(`lint policy manifest omits the hash of ${name}`);
     }
     const path = join(dir, name);
     const mode = await Deno.lstat(path).catch(() => null);
     if (mode === null || !mode.isFile || mode.isSymlink) {
-      throw new Error(`unslop asset must be a regular file: ${name}`);
+      throw new Error(`lint policy file must be a regular file: ${name}`);
     }
     const bytes = await Deno.readFile(path).catch(() => null);
-    if (bytes === null) throw new Error(`unslop asset missing: ${name}`);
-    if (bytes.byteLength !== entry.bytes) throw new Error(`unslop asset size mismatch: ${name}`);
+    if (bytes === null) throw new Error(`lint policy file missing: ${name}`);
+    if (bytes.byteLength !== entry.bytes) throw new Error(`lint policy size mismatch: ${name}`);
     const digest = await crypto.subtle.digest("SHA-256", bytes);
     const actual = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-    if (actual !== entry.sha256) throw new Error(`unslop asset checksum mismatch: ${name}`);
+    if (actual !== entry.sha256) throw new Error(`lint policy checksum mismatch: ${name}`);
   }
+  return names;
 }
 
-/** Installs a verified asset set, replacing the destination only after staging validates. */
-export async function installUnslopAssets(sourceDir: string, destDir: string): Promise<void> {
-  await verifyUnslopAssetSet(sourceDir);
+/** Installs one verified policy directory, replacing the destination only after staging validates. */
+export async function installLintPolicyDir(sourceDir: string, destDir: string): Promise<void> {
+  const names = await verifyLintPolicyDir(sourceDir);
   const staging = `${destDir}.staging-${crypto.randomUUID()}`;
   await ensureDir(staging);
   try {
-    for (const name of [...UNSLOP_DEPLOY_ASSET_FILES, "manifest.json"]) {
+    for (const name of [...names, POLICY_MANIFEST]) {
       await copy(join(sourceDir, name), join(staging, name), { overwrite: true });
     }
-    await verifyUnslopAssetSet(staging);
+    await verifyLintPolicyDir(staging);
     const backup = `${destDir}.previous-${crypto.randomUUID()}`;
     const hadDestination = await exists(destDir);
     if (hadDestination) await Deno.rename(destDir, backup);
@@ -144,21 +144,44 @@ export async function installUnslopAssets(sourceDir: string, destDir: string): P
   }
 }
 
-/** Builds assets in a source checkout, or copies an existing verified set in a deployed workspace. */
-export async function deployUnslopAssets(repoRoot: string, dest: string): Promise<void> {
+/** Names the verified policy directories under one policy root. */
+async function listLintPolicies(root: string): Promise<string[]> {
+  const names: string[] = [];
+  try {
+    for await (const entry of Deno.readDir(root)) {
+      if (!entry.isDirectory || entry.name.startsWith(".")) continue;
+      if (await exists(join(root, entry.name, POLICY_MANIFEST))) names.push(entry.name);
+    }
+  } catch {
+    return [];
+  }
+  return names.sort();
+}
+
+/** Installs every verified policy directory from one root into the destination. */
+async function installLintPoliciesFrom(sourceRoot: string, dest: string): Promise<void> {
+  const names = await listLintPolicies(sourceRoot);
+  if (names.length === 0) throw new Error(`no lint policy directory in ${sourceRoot}`);
+  for (const name of names) {
+    await installLintPolicyDir(join(sourceRoot, name), join(dest, LINT_POLICY_DIR, name));
+  }
+}
+
+/** Builds policies in a source checkout, or copies existing verified directories in a deployed workspace. */
+export async function deployLintPolicies(repoRoot: string, dest: string): Promise<void> {
   await assertDistinctDeploymentRoots(repoRoot, dest);
   const engineSource = join(repoRoot, "unslop-ts", "scripts", "bundle.ts");
   if (await exists(engineSource)) {
-    await buildAndInstallUnslopAssets(repoRoot, dest);
+    await buildAndInstallLintPolicies(repoRoot, dest);
     return;
   }
-  const sourceAssets = join(repoRoot, UNSLOP_DEPLOY_ASSET_DIR);
-  if (!(await exists(join(sourceAssets, "manifest.json")))) {
+  const sourceRoot = join(repoRoot, LINT_POLICY_DIR);
+  if ((await listLintPolicies(sourceRoot)).length === 0) {
     throw new Error(
-      "unslop assets unavailable: initialize the engine source with `deno task unslop-ts:deploy --init` in a source checkout, or redeploy from a workspace that already carries lint/ assets",
+      "lint policy unavailable: initialize the engine source with `deno task unslop-ts:deploy --init` in a source checkout, or redeploy from a workspace that already carries lint/<policy>/ directories",
     );
   }
-  await installUnslopAssets(sourceAssets, join(dest, UNSLOP_DEPLOY_ASSET_DIR));
+  await installLintPoliciesFrom(sourceRoot, dest);
 }
 
 /** Rejects physical aliases of the source before any deployment side effect. */
@@ -171,25 +194,18 @@ async function assertDistinctDeploymentRoots(repoRoot: string, dest: string): Pr
     physicalDest = resolve(dest);
   }
   if (await Deno.realPath(repoRoot) === physicalDest) {
-    throw new Error("unslop deploy refused: source and destination are identical");
+    throw new Error("lint policy deploy refused: source and destination are identical");
   }
 }
 
-/** Runs source-only packaging in a child and installs only its verified staged assets. */
-async function buildAndInstallUnslopAssets(repoRoot: string, dest: string): Promise<void> {
+/** Runs the installer task in a child and installs only its verified staged directories. */
+async function buildAndInstallLintPolicies(repoRoot: string, dest: string): Promise<void> {
   await ensureDir(dest);
   const staging = await Deno.makeTempDir({ dir: dest, prefix: "lint-build-" });
   try {
-    const built = await run([
-      Deno.execPath(),
-      "run",
-      "-A",
-      join(repoRoot, "scripts", "build_unslop_portal_bundle.ts"),
-      "--out",
-      staging,
-    ], { cwd: repoRoot });
-    if (!built) throw new Error("unslop source packaging failed");
-    await installUnslopAssets(staging, join(dest, UNSLOP_DEPLOY_ASSET_DIR));
+    const built = await run([Deno.execPath(), "task", LINT_POLICY_TASK, "--out", staging], { cwd: repoRoot });
+    if (!built) throw new Error("lint policy source packaging failed");
+    await installLintPoliciesFrom(staging, dest);
   } finally {
     await Deno.remove(staging, { recursive: true });
   }
@@ -338,8 +354,8 @@ async function main() {
     }
   }
 
-  console.log("Installing portal lint assets...");
-  await deployUnslopAssets(repoRoot, dest);
+  console.log("Installing portal lint policy...");
+  await deployLintPolicies(repoRoot, dest);
 
   console.log(`\nDeployment complete. User workspace at: ${dest}`);
   console.log("\nNext steps:");

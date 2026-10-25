@@ -205,7 +205,7 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
   // Builds the deployed asset set and runs the lint child with an empty DENO_DIR. It needs no
   // egress, so it pins the network-none lane for the deployed adapter.
   {
-    file: "apps/daemon/tests/deploy_unslop_offline_test.ts",
+    file: "apps/daemon/tests/deploy_lint_policy_offline_test.ts",
     reasons: [IsolationReason.pressure],
   },
   {
@@ -388,11 +388,11 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
 export const SEQUENTIAL_FILES: string[] = SEQUENTIAL_TESTS.map((test) => test.file);
 
 /** The Batch-2 file that needs the packaged portal lint asset set on the mounted repo. */
-export const OFFLINE_UNSLOP_TEST_FILE = "apps/daemon/tests/deploy_unslop_offline_test.ts";
+export const OFFLINE_LINT_POLICY_TEST_FILE = "apps/daemon/tests/deploy_lint_policy_offline_test.ts";
 
-/** True when the batch needs a host-side asset build because the mounted set is absent. */
+/** True when the batch needs a host-side policy build because the mounted directory is absent. */
 export function needsPortalLintAssets(files: readonly string[], manifestExists: boolean): boolean {
-  return !manifestExists && files.includes(OFFLINE_UNSLOP_TEST_FILE);
+  return !manifestExists && files.includes(OFFLINE_LINT_POLICY_TEST_FILE);
 }
 
 /** An explicit `--ignore` on the CLI overrides deno.json's config `exclude` for the walk, so fixtures excluded there (e.g. broken-on-purpose portal sources) must be re-listed here or they leak back into type-checking. */
@@ -846,11 +846,11 @@ const HEADER_NUMS = `${"PASS".padStart(NUM_W)}  ${"FAIL".padStart(NUM_W)}  ${"SK
 
 /** Builds the packaged lint assets on the host so the network-none worker stages a verified set. */
 async function preparePortalLintAssetsForOfflineTest(): Promise<void> {
-  const manifestExists = await exists(join(REPO_ROOT, "lint", "manifest.json"));
+  const manifestExists = await exists(join(REPO_ROOT, "lint", "unslop", "manifest.json"));
   if (!needsPortalLintAssets(SEQUENTIAL_FILES, manifestExists)) return;
-  console.log("› Building packaged portal lint assets for the offline adapter test...");
+  console.log("› Building the portal lint policy for the offline check test...");
   const status = await new Deno.Command("deno", {
-    args: ["task", "unslop-ts:bundle"],
+    args: ["task", "unslop-ts:policy"],
     cwd: REPO_ROOT,
     stdout: "inherit",
     stderr: "inherit",

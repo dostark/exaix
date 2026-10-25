@@ -1,11 +1,11 @@
 /**
- * @module DeployUnslopOfflineTest
- * @path apps/daemon/tests/deploy_unslop_offline_test.ts
- * @description Acceptance test for the deployed portal lint adapter: a sandbox with no engine
- *   source and an empty child Deno cache must lint a changed line from verified local assets.
+ * @module DeployLintPolicyOfflineTest
+ * @path apps/daemon/tests/deploy_lint_policy_offline_test.ts
+ * @description Acceptance test for the deployed lint policy: a sandbox with no engine source and
+ *   an empty child Deno cache must lint a commit from the verified installed directory.
  * @architectural-layer Test
  * @dependencies [@std/assert, @exaix/execution, @exaix/git, @exaix/git/testing, @exaix/portal, @exaix/schemas, @exaix/shared]
- * @related-files [scripts/deploy_workspace.ts, packages/execution/src/unslop_check_runner.ts]
+ * @related-files [scripts/deploy_workspace.ts, packages/execution/src/deno_lint_check.ts]
  */
 
 import { assert, assertEquals, assertFalse } from "@std/assert";
@@ -14,11 +14,11 @@ import { join } from "@std/path";
 import { EventLogger } from "@exaix/core/logger";
 import { readHeadSha } from "@exaix/git";
 import { createGitTestContext, type IGitTestContext, setupGitRepo } from "@exaix/git/testing";
-import { ConfigSchema } from "@exaix/schemas/config.ts";
+import { LintSettingsSchema } from "@exaix/schemas/config.ts";
 import { PathResolver } from "@exaix/portal";
-import { UnslopCheckRunner } from "@exaix/execution";
-import { ExaPathDefaults } from "@exaix/shared";
-import { deployUnslopAssets, installUnslopAssets, verifyUnslopAssetSet } from "../../../scripts/deploy_workspace.ts";
+import { DenoLintCheckRunner } from "@exaix/execution";
+import { DENO_LINT_CHECK_KIND, DenoLintCheckSchema } from "@exaix/schemas/portal_verification.ts";
+import { deployLintPolicies, installLintPolicyDir, verifyLintPolicyDir } from "../../../scripts/deploy_workspace.ts";
 
 const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
 const SEED_CAST = "export const seed = 1 as unknown as string;\n";
@@ -35,18 +35,18 @@ async function commitAll(ctx: IGitTestContext, message: string): Promise<string>
 async function stageDeployedAssets(): Promise<{ deployedRoot: string; cleanup: string[] }> {
   const sourceDeploy = await Deno.makeTempDir({ prefix: "exaix-deploy-source-" });
   const deployedRoot = await Deno.makeTempDir({ prefix: "exaix-deploy-target-" });
-  const repositoryAssets = join(REPO_ROOT, "lint");
-  if (await exists(join(repositoryAssets, "manifest.json"))) {
-    // The suite preflight builds this set on the host, so the network-none worker needs no egress.
-    await installUnslopAssets(repositoryAssets, join(sourceDeploy, "lint"));
+  const repositoryPolicy = join(REPO_ROOT, "lint", "unslop");
+  if (await exists(join(repositoryPolicy, "manifest.json"))) {
+    // The suite preflight builds this directory on the host, so the network-none worker needs no egress.
+    await installLintPolicyDir(repositoryPolicy, join(sourceDeploy, "lint", "unslop"));
   } else {
-    await deployUnslopAssets(REPO_ROOT, sourceDeploy);
+    await deployLintPolicies(REPO_ROOT, sourceDeploy);
   }
-  await deployUnslopAssets(sourceDeploy, deployedRoot);
+  await deployLintPolicies(sourceDeploy, deployedRoot);
   return { deployedRoot, cleanup: [sourceDeploy, deployedRoot] };
 }
 
-Deno.test("[deploy-unslop-offline] redeployed-offline-adapter lints with no source and an empty child cache", async () => {
+Deno.test("[deploy-lint-policy-offline] deployed-policy-offline lints with no source and an empty child cache", async () => {
   const { deployedRoot, cleanup } = await stageDeployedAssets();
   const emptyChildCache = await Deno.makeTempDir({ prefix: "exaix-deploy-empty-cache-" });
   const previousDenoDir = Deno.env.get("DENO_DIR");
@@ -55,40 +55,36 @@ Deno.test("[deploy-unslop-offline] redeployed-offline-adapter lints with no sour
     // A deployed workspace carries no engine source, so only the verified asset set can serve the child.
     assertFalse(await exists(join(deployedRoot, "unslop-ts")));
     assertFalse(await exists(join(deployedRoot, "packages")));
-    await verifyUnslopAssetSet(join(deployedRoot, "lint"));
+    await verifyLintPolicyDir(join(deployedRoot, "lint", "unslop"));
 
     Deno.env.set("DENO_DIR", emptyChildCache);
     await Deno.mkdir(join(ctx.tempDir, ctx.config.paths.runtime), { recursive: true });
-    const settings = ConfigSchema.parse({
-      system: { log_level: "info", root: deployedRoot },
-      paths: { ...ExaPathDefaults },
-    }).verification.unslop;
+    const settings = LintSettingsSchema.parse({});
     const logger = new EventLogger({ db: ctx.db });
-    const runner = new UnslopCheckRunner(logger, {
+    const runner = new DenoLintCheckRunner(logger, {
       settings,
       systemRoot: deployedRoot,
-      logger,
       pathResolver: new PathResolver(ctx.config),
+      portalRoots: [],
       knownSecrets: [],
     });
 
     await setupGitRepo(ctx.repoDir, { initialCommit: true });
     await Deno.writeTextFile(join(ctx.repoDir, "seed.ts"), CLEAN_LINE);
-    const base = await commitAll(ctx, "seed");
+    await commitAll(ctx, "seed");
     await Deno.writeTextFile(join(ctx.repoDir, "seed.ts"), `${CLEAN_LINE}${SEED_CAST}`);
     const target = await commitAll(ctx, "change");
 
     const outcome = await runner.run({
-      requestId: "request-229-offline",
-      traceId: "trace-229-offline",
+      requestId: "request-lint-offline",
+      traceId: "trace-lint-offline",
       attempt: 1,
-      executionRoot: ctx.repoDir,
       runId: crypto.randomUUID(),
-      baseSha: base,
+      executionRoot: ctx.repoDir,
       targetSha: target,
       git: ctx.git,
       checkIndex: 0,
-      check: { kind: "unslop" },
+      check: DenoLintCheckSchema.parse({ kind: DENO_LINT_CHECK_KIND }),
       timeoutMs: 120_000,
       outputMaxChars: 4_000,
     });
@@ -101,7 +97,7 @@ Deno.test("[deploy-unslop-offline] redeployed-offline-adapter lints with no sour
     assertEquals(chainedCast.start_line, 2);
 
     // The adapter only read the deployed set: the assets still verify and the worktree is untouched.
-    await verifyUnslopAssetSet(join(deployedRoot, "lint"));
+    await verifyLintPolicyDir(join(deployedRoot, "lint", "unslop"));
     const status = await ctx.git.runGitCommand(["status", "--porcelain"]);
     assertEquals(status.output.trim(), "");
   } finally {

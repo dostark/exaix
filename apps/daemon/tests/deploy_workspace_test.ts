@@ -16,11 +16,10 @@ import { ALLOWED_UNDEPLOYED_DIRS, undeployedDirsNamedBy } from "../../../tests/h
 import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
 import {
   DEPLOYED_SCRIPT_FILES,
-  deployUnslopAssets,
-  installUnslopAssets,
+  deployLintPolicies,
+  installLintPolicyDir,
   stripDevOnlyConfig,
-  UNSLOP_DEPLOY_ASSET_FILES,
-  verifyUnslopAssetSet,
+  verifyLintPolicyDir,
 } from "../../../scripts/deploy_workspace.ts";
 
 const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
@@ -439,18 +438,19 @@ parallelSafeTest({
   sanitizeOps: false,
 });
 
-parallelSafeTest("source-and-two-hop-deploy", async () => {
+const POLICY_FILES = ["catalog.json", "deno.json", "manifest.json", "plugin.ts", "unslop_engine.js"];
+
+parallelSafeTest("deploy-installs-policy-dir", async () => {
   const dest1 = await Deno.makeTempDir({ prefix: "exaix-deploy-assets-a-" });
   const dest2 = await Deno.makeTempDir({ prefix: "exaix-deploy-assets-b-" });
   try {
-    await deployUnslopAssets(REPO_ROOT, dest1);
-    await verifyUnslopAssetSet(join(dest1, "lint"));
-    await installUnslopAssets(join(dest1, "lint"), join(dest2, "lint"));
-    await verifyUnslopAssetSet(join(dest2, "lint"));
-    for (const name of UNSLOP_DEPLOY_ASSET_FILES) {
-      assert(await exists(join(dest2, "lint", name)), name);
+    await deployLintPolicies(REPO_ROOT, dest1);
+    await verifyLintPolicyDir(join(dest1, "lint", "unslop"));
+    await installLintPolicyDir(join(dest1, "lint", "unslop"), join(dest2, "lint", "unslop"));
+    await verifyLintPolicyDir(join(dest2, "lint", "unslop"));
+    for (const name of POLICY_FILES) {
+      assert(await exists(join(dest2, "lint", "unslop", name)), name);
     }
-    assertEquals(await exists(join(dest2, "lint", "manifest.json")), true);
   } finally {
     await Deno.remove(dest1, { recursive: true }).catch(() => {});
     await Deno.remove(dest2, { recursive: true }).catch(() => {});
@@ -463,27 +463,29 @@ parallelSafeTest("deploy-artifact-errors", async () => {
   const source = await Deno.makeTempDir({ prefix: "exaix-deploy-source-" });
   try {
     const missing = await assertRejects(
-      () => deployUnslopAssets(emptyRoot, dest),
+      () => deployLintPolicies(emptyRoot, dest),
       Error,
-      "unslop assets unavailable",
+      "lint policy unavailable",
     );
     assertStringIncludes(missing.message, "unslop-ts:deploy --init");
 
     const same = await assertRejects(
-      () => deployUnslopAssets(REPO_ROOT, REPO_ROOT),
+      () => deployLintPolicies(REPO_ROOT, REPO_ROOT),
       Error,
       "identical",
     );
     assertStringIncludes(same.message, "identical");
 
-    await deployUnslopAssets(REPO_ROOT, source);
-    await installUnslopAssets(join(source, "lint"), join(dest, "lint"));
-    const enginePath = join(dest, "lint", "unslop_engine.js");
+    await deployLintPolicies(REPO_ROOT, source);
+    await installLintPolicyDir(join(source, "lint", "unslop"), join(dest, "lint", "unslop"));
+    const enginePath = join(dest, "lint", "unslop", "unslop_engine.js");
     const bytes = await Deno.readFile(enginePath);
     bytes[0] = bytes[0] ^ 0xff;
     await Deno.writeFile(enginePath, bytes);
-    const corrupt = await assertRejects(() => verifyUnslopAssetSet(join(dest, "lint")), Error, "checksum");
+    const corrupt = await assertRejects(() => verifyLintPolicyDir(join(dest, "lint", "unslop")), Error, "checksum");
     assertStringIncludes(corrupt.message, "checksum");
+    await Deno.remove(join(dest, "lint", "unslop", "manifest.json"));
+    await assertRejects(() => verifyLintPolicyDir(join(dest, "lint", "unslop")), Error, "manifest");
   } finally {
     for (const dir of [emptyRoot, dest, source]) {
       await Deno.remove(dir, { recursive: true }).catch(() => {});
@@ -494,7 +496,7 @@ parallelSafeTest("deploy-artifact-errors", async () => {
 parallelSafeTest("deployed-config-closure", async () => {
   const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json")));
   const stripped = stripDevOnlyConfig(config);
-  assertEquals("unslop-ts:bundle" in (stripped.tasks ?? {}), false);
+  assertEquals("unslop-ts:policy" in (stripped.tasks ?? {}), false);
   assertEquals(DEPLOYED_SCRIPT_FILES.includes("build_unslop_portal_bundle.ts"), false);
   assertEquals(stripped.workspace?.includes("./unslop-ts"), false);
 });
@@ -519,10 +521,10 @@ parallelSafeTest("deployed-redeploy-real-entrypoint", async () => {
       stderr: "piped",
     }).output();
     assertEquals(redeploy.code, 0, new TextDecoder().decode(redeploy.stderr));
-    await verifyUnslopAssetSet(join(second, "lint"));
+    await verifyLintPolicyDir(join(second, "lint", "unslop"));
     assertEquals(
-      await Deno.readTextFile(join(first, "lint", "manifest.json")),
-      await Deno.readTextFile(join(second, "lint", "manifest.json")),
+      await Deno.readTextFile(join(first, "lint", "unslop", "manifest.json")),
+      await Deno.readTextFile(join(second, "lint", "unslop", "manifest.json")),
     );
     const config = await Deno.readTextFile(join(first, "deno.json"));
     const sameRoot = await new Deno.Command(Deno.execPath(), {
@@ -544,9 +546,9 @@ parallelSafeTest("redeploy-failure-preserves-assets", async () => {
   const source = await Deno.makeTempDir({ prefix: "exaix-redeploy-policy-" });
   const dest = await Deno.makeTempDir({ prefix: "exaix-redeploy-existing-" });
   try {
-    await deployUnslopAssets(REPO_ROOT, source);
-    await installUnslopAssets(join(source, "lint"), join(dest, "lint"));
-    const manifest = await Deno.readTextFile(join(dest, "lint", "manifest.json"));
+    await deployLintPolicies(REPO_ROOT, source);
+    await installLintPolicyDir(join(source, "lint", "unslop"), join(dest, "lint", "unslop"));
+    const manifest = await Deno.readTextFile(join(dest, "lint", "unslop", "manifest.json"));
     const original = Deno.rename.bind(Deno);
     const rename = stub(Deno, "rename", (from, to) => {
       if (String(from).includes(".staging-")) return Promise.reject(new Error("staged replacement denied"));
@@ -554,26 +556,29 @@ parallelSafeTest("redeploy-failure-preserves-assets", async () => {
     });
     try {
       await assertRejects(
-        () => installUnslopAssets(join(source, "lint"), join(dest, "lint")),
+        () => installLintPolicyDir(join(source, "lint", "unslop"), join(dest, "lint", "unslop")),
         Error,
         "replacement denied",
       );
     } finally {
       rename.restore();
     }
-    await verifyUnslopAssetSet(join(dest, "lint"));
-    assertEquals(await Deno.readTextFile(join(dest, "lint", "manifest.json")), manifest);
-    const engine = join(source, "lint", "unslop_engine.js");
+    await verifyLintPolicyDir(join(dest, "lint", "unslop"));
+    assertEquals(await Deno.readTextFile(join(dest, "lint", "unslop", "manifest.json")), manifest);
+    const engine = join(source, "lint", "unslop", "unslop_engine.js");
     const linked = join(source, "engine.js");
     await Deno.rename(engine, linked);
     await Deno.symlink(linked, engine);
-    await assertRejects(() => installUnslopAssets(join(source, "lint"), join(dest, "lint")), Error);
-    await verifyUnslopAssetSet(join(dest, "lint"));
+    await assertRejects(
+      () => installLintPolicyDir(join(source, "lint", "unslop"), join(dest, "lint", "unslop")),
+      Error,
+    );
+    await verifyLintPolicyDir(join(dest, "lint", "unslop"));
     await Deno.mkdir(join(source, "unslop-ts", "scripts"), { recursive: true });
     await Deno.writeTextFile(join(source, "unslop-ts", "scripts", "bundle.ts"), "// Source presence fixture.\n");
-    await assertRejects(() => deployUnslopAssets(source, dest), Error, "source packaging failed");
-    assertEquals(await Deno.readTextFile(join(dest, "lint", "manifest.json")), manifest);
-    await verifyUnslopAssetSet(join(dest, "lint"));
+    await assertRejects(() => deployLintPolicies(source, dest), Error, "source packaging failed");
+    assertEquals(await Deno.readTextFile(join(dest, "lint", "unslop", "manifest.json")), manifest);
+    await verifyLintPolicyDir(join(dest, "lint", "unslop"));
   } finally {
     await Deno.remove(source, { recursive: true });
     await Deno.remove(dest, { recursive: true });

@@ -9,7 +9,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
-import { installUnslopAssets } from "../../../scripts/deploy_workspace.ts";
+import { installLintPolicyDir } from "../../../scripts/deploy_workspace.ts";
 import { DEFAULT_FLOWS_PATH } from "@exaix/shared";
 import { dirname, join, resolve } from "@std/path";
 import { copy, ensureDir } from "@std/fs";
@@ -1513,5 +1513,5 @@ function expandInString(str: string, env: Record<string, string>): string {
 
 /** Stages the verified portal lint asset set into one scenario sandbox. */
 export async function stageUnslopAssets(repoRoot: string, workspaceRoot: string): Promise<void> {
-  await installUnslopAssets(join(repoRoot, "lint"), join(workspaceRoot, "lint"));
+  await installLintPolicyDir(join(repoRoot, "lint", "unslop"), join(workspaceRoot, "lint", "unslop"));
 }
