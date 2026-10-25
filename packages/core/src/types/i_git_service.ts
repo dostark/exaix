@@ -59,6 +59,6 @@ export interface IGitService {
   runGitCommand(
     args: string[],
     options?: IGitCommandOptions,
-  ): Promise<{ output: string; exitCode: number; stdoutBytes?: Uint8Array }>;
+  ): Promise<{ output: string; exitCode: number; stdoutBytes?: Uint8Array; capturedBytes?: number }>;
   validateArgs(args: string[]): { valid: boolean; reason?: string };
 }

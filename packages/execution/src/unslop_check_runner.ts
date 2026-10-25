@@ -12,15 +12,10 @@ import { fromFileUrl, globToRegExp, join, relative, SEPARATOR, toFileUrl } from 
 import {
   UNSLOP_DENO_PACK,
   UNSLOP_PLUGIN_NAME,
-  UNSLOP_PORTAL_ASSET_DIR,
   UNSLOP_PORTAL_CATALOG_FILENAME,
-  UNSLOP_PORTAL_DENO_CATALOG_FILENAME,
   UNSLOP_PORTAL_ENGINE_FILENAME,
   UNSLOP_PORTAL_INCLUDE_GLOBS,
-  UNSLOP_PORTAL_MANIFEST_FILENAME,
   UNSLOP_PORTAL_SOURCE_EXTENSIONS,
-  UNSLOP_RUNTIME_DIR,
-  UNSLOP_TS_PACK,
 } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
@@ -40,43 +35,26 @@ import type {
   IUnslopCheckRunnerOptions,
   IUnslopFinding,
 } from "./unslop_check_types.ts";
-import { runUnslopLintBatch } from "./unslop_lint_process.ts";
+import { type IUnslopAssets, loadUnslopAssets } from "./unslop_assets.ts";
+import { runUnslopLintBatch, unslopLintArgs } from "./unslop_lint_process.ts";
+import { bindUnslopBudget } from "./unslop_budget.ts";
+import { compareUnslopFindings, type IUnslopCollectedFindings, uniqueUnslopBatch } from "./unslop_findings.ts";
+import {
+  isUnslopPositionWithinSource,
+  readUnslopLineLengths,
+  validateUnslopSnapshot,
+} from "./unslop_source_snapshot.ts";
+import { UnslopCheckError } from "./unslop_check_error.ts";
+import { createUnslopPrivateDirectory, removeUnslopPrivateDirectory, writeUnslopPrivateInput } from "./unslop_trust.ts";
 import { buildVerificationCheckEnv, prepareVerificationOutput } from "./verification_output.ts";
 
 /** The suppression marker the host-independent control rejects. */
 const SUPPRESSION_MARKER = "deno-lint-ignore";
 /** The discriminator field of a typed outcome. */
 const KIND_FIELD = "kind";
-/** Manifest format and policy versions the adapter accepts. */
-const SUPPORTED_MANIFEST_FORMAT = 1;
-const SUPPORTED_POLICY_VERSION = 1;
-/** Private runtime directory mode. */
-const PRIVATE_DIR_MODE = 0o700;
 const POSIX_SEPARATOR = "/";
-const PRIVATE_DIR_PREFIX = "run-";
 const DENO_CONFIG_FILENAME = "deno.json";
 const PLUGIN_FILENAME = "plugin.ts";
-
-/** One packaged manifest entry. */
-interface IManifestEntry {
-  readonly sha256: string;
-  readonly bytes: number;
-}
-
-/** The packaged provenance manifest. */
-interface IAssetManifest {
-  readonly format_version: number;
-  readonly policy_version: number;
-  readonly files: Readonly<Record<string, IManifestEntry>>;
-}
-
-/** Trusted assets of one invocation. */
-interface IUnslopAssets {
-  readonly engineBytes: Uint8Array;
-  readonly catalogBytes: Uint8Array;
-  readonly ruleIds: ReadonlySet<string>;
-  readonly packs: readonly string[];
-}
 
 /** The file selection of one invocation. */
 interface ISelection {
@@ -89,14 +67,6 @@ function errorOutcome(errorClass: UnslopErrorClass): IUnslopCheckOutcome {
 
 function passedOutcome(): IUnslopCheckOutcome {
   return { kind: VerificationStatus.PASSED, hostExitCodes: [], total: 0, findings: [], output: "" };
-}
-
-function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const copy = new Uint8Array(bytes.byteLength);
-  copy.set(bytes);
-  return crypto.subtle.digest("SHA-256", copy).then((digest) =>
-    [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("")
-  );
 }
 
 function gitErrorClass(code: string): UnslopErrorClass {
@@ -155,12 +125,16 @@ export class UnslopCheckRunner {
 
   /** Runs one configured unslop check and returns its typed outcome. */
   async run(context: IUnslopCheckContext): Promise<IUnslopCheckOutcome> {
+    const bound = bindUnslopBudget(context, this.options.settings.git_max_bytes);
     await this.emitStarted(context);
     let outcome = errorOutcome(UnslopErrorClass.HOST_PROTOCOL_INVALID);
     try {
-      outcome = await this.execute(context);
-    } catch {
-      outcome = errorOutcome(UnslopErrorClass.HOST_PROTOCOL_INVALID);
+      outcome = await this.execute(bound);
+      if (bound.timeoutMs <= 0) throw new UnslopCheckError(UnslopErrorClass.TIMEOUT);
+    } catch (error) {
+      outcome = errorOutcome(
+        error instanceof UnslopCheckError ? error.errorClass : UnslopErrorClass.HOST_PROTOCOL_INVALID,
+      );
     }
     await this.emitCompleted(context, outcome);
     return outcome;
@@ -170,25 +144,30 @@ export class UnslopCheckRunner {
   private async execute(context: IUnslopCheckContext): Promise<IUnslopCheckOutcome> {
     const selection = await this.selectChangedSources(context);
     if (KIND_FIELD in selection) return selection;
-    if (selection.files.length === 0) return passedOutcome();
 
     const suppression = await this.scanSuppressionMarkers(context, selection.files);
     if (suppression !== null) return errorOutcome(suppression);
+    const initial = await validateUnslopSnapshot(context, this.options, selection.files);
+    if (initial !== null) return errorOutcome(initial);
+    if (selection.files.length === 0) return passedOutcome();
 
-    const assets = await this.loadAssets(context);
+    const assets = await loadUnslopAssets(context, this.options);
     if ("error_class" in assets) return errorOutcome(assets.error_class);
 
     const ranges = await this.loadRanges(context, selection.files);
     if (KIND_FIELD in ranges) return ranges;
 
-    const runDir = await this.createPrivateRunDir();
+    const directory = await createUnslopPrivateDirectory(context, this.options);
+    const runDir = directory.path;
     try {
       await this.writePrivateInputs(runDir, assets);
       const collected = await this.lintBatches(context, runDir, selection.files, assets, ranges);
+      const final = await validateUnslopSnapshot(context, this.options, selection.files);
+      if (final !== null) return errorOutcome(final);
       if (KIND_FIELD in collected) return collected;
-      return this.buildOutcome(context, collected.findings);
+      return this.buildOutcome(context, collected);
     } finally {
-      await Deno.remove(runDir, { recursive: true }).catch(() => {});
+      await removeUnslopPrivateDirectory(directory, this.options);
     }
   }
 
@@ -224,86 +203,6 @@ export class UnslopCheckRunner {
     return null;
   }
 
-  /** Loads and verifies the packaged engine, catalog and manifest. */
-  private async loadAssets(context: IUnslopCheckContext): Promise<IUnslopAssets | { error_class: UnslopErrorClass }> {
-    const packs = context.check.packs ?? [UNSLOP_TS_PACK];
-    const catalogName = packs.includes(UNSLOP_DENO_PACK)
-      ? UNSLOP_PORTAL_DENO_CATALOG_FILENAME
-      : UNSLOP_PORTAL_CATALOG_FILENAME;
-    const trustedRoot = join(this.options.systemRoot, UNSLOP_PORTAL_ASSET_DIR);
-    let assetDir: string;
-    try {
-      assetDir = await this.options.pathResolver.validatePath(
-        join(this.options.systemRoot, this.options.settings.asset_dir),
-        [trustedRoot],
-      );
-    } catch {
-      return { error_class: UnslopErrorClass.ASSET_INVALID };
-    }
-    let manifest: IAssetManifest;
-    try {
-      manifest = JSON.parse(await Deno.readTextFile(join(assetDir, UNSLOP_PORTAL_MANIFEST_FILENAME)));
-    } catch {
-      return { error_class: UnslopErrorClass.ASSET_INVALID };
-    }
-    if (manifest.format_version !== SUPPORTED_MANIFEST_FORMAT || manifest.policy_version !== SUPPORTED_POLICY_VERSION) {
-      return { error_class: UnslopErrorClass.ASSET_INVALID };
-    }
-    const engineEntry = manifest.files[UNSLOP_PORTAL_ENGINE_FILENAME];
-    const catalogEntry = manifest.files[catalogName];
-    if (engineEntry === undefined) return { error_class: UnslopErrorClass.ENGINE_MISSING };
-    if (catalogEntry === undefined) return { error_class: UnslopErrorClass.ASSET_INVALID };
-
-    try {
-      await Deno.stat(join(assetDir, UNSLOP_PORTAL_ENGINE_FILENAME));
-    } catch {
-      return { error_class: UnslopErrorClass.ENGINE_MISSING };
-    }
-    const engineBytes = await this.readVerifiedAsset(assetDir, UNSLOP_PORTAL_ENGINE_FILENAME, engineEntry);
-    if (engineBytes === null) return { error_class: UnslopErrorClass.ASSET_INVALID };
-    const packagedCatalog = await this.readVerifiedAsset(assetDir, catalogName, catalogEntry);
-    if (packagedCatalog === null) return { error_class: UnslopErrorClass.ASSET_INVALID };
-    const packagedRuleIds = parseCatalogRuleIds(packagedCatalog);
-    if (packagedRuleIds === null) return { error_class: UnslopErrorClass.CATALOG_INVALID };
-    const replacement = await this.readReplacementCatalog(context, packagedRuleIds);
-    if (replacement === false) return { error_class: UnslopErrorClass.CATALOG_INVALID };
-    if (replacement === undefined) {
-      return { engineBytes, catalogBytes: packagedCatalog, ruleIds: packagedRuleIds, packs };
-    }
-    return { engineBytes, catalogBytes: replacement.bytes, ruleIds: replacement.ruleIds, packs };
-  }
-
-  /** Reads and validates an optional replacement catalog from the immutable base commit. */
-  private async readReplacementCatalog(
-    context: IUnslopCheckContext,
-    packagedRuleIds: ReadonlySet<string>,
-  ): Promise<{ bytes: Uint8Array; ruleIds: ReadonlySet<string> } | false | undefined> {
-    const path = context.check.catalog;
-    if (path === undefined) return undefined;
-    const blob = await readBlobAtCommit(context.git, context.baseSha, path, {
-      maxBytes: this.options.settings.catalog_max_bytes,
-      timeoutMs: context.timeoutMs,
-    });
-    if (!blob.ok) return false;
-    const text = decodeUtf8(blob.value.bytes);
-    if (text === null) return false;
-    const ruleIds = parseReplacementCatalog(text, packagedRuleIds);
-    if (ruleIds === null) return false;
-    return { bytes: blob.value.bytes, ruleIds };
-  }
-
-  /** Reads one asset and compares its bytes and hash with the manifest. */
-  private async readVerifiedAsset(dir: string, name: string, entry: IManifestEntry): Promise<Uint8Array | null> {
-    let bytes: Uint8Array;
-    try {
-      bytes = await Deno.readFile(join(dir, name));
-    } catch {
-      return null;
-    }
-    if (bytes.byteLength !== entry.bytes) return null;
-    return (await sha256Hex(bytes)) === entry.sha256 ? bytes : null;
-  }
-
   /** Reads the closed changed ranges of every selected file. */
   private async loadRanges(
     context: IUnslopCheckContext,
@@ -321,38 +220,37 @@ export class UnslopCheckRunner {
     return ranges;
   }
 
-  /** Creates the exclusive private runtime directory for this invocation. */
-  private async createPrivateRunDir(): Promise<string> {
-    const runtimeRoot = await this.options.pathResolver.resolve("@Runtime");
-    const parent = join(runtimeRoot, UNSLOP_RUNTIME_DIR);
-    await Deno.mkdir(parent, { recursive: true, mode: PRIVATE_DIR_MODE });
-    await this.options.pathResolver.validatePath(parent, [runtimeRoot]);
-    return await Deno.makeTempDir({ dir: parent, prefix: PRIVATE_DIR_PREFIX });
-  }
-
   /** Writes the generated plugin and config into the private directory. */
   private async writePrivateInputs(runDir: string, assets: IUnslopAssets): Promise<void> {
+    await this.options.pathResolver.validatePath(runDir, [runDir]);
     const enginePath = join(runDir, UNSLOP_PORTAL_ENGINE_FILENAME);
     const catalogPath = join(runDir, UNSLOP_PORTAL_CATALOG_FILENAME);
-    await Deno.writeFile(enginePath, assets.engineBytes);
-    await Deno.writeFile(catalogPath, assets.catalogBytes);
+    await writeUnslopPrivateInput(runDir, UNSLOP_PORTAL_ENGINE_FILENAME, assets.engineBytes, this.options);
+    await writeUnslopPrivateInput(runDir, UNSLOP_PORTAL_CATALOG_FILENAME, assets.catalogBytes, this.options);
     const engineUrl = JSON.stringify(toFileUrl(enginePath).href);
     const catalogUrl = JSON.stringify(toFileUrl(catalogPath).href);
+    const selectedPacks = assets.packs.includes(UNSLOP_DENO_PACK)
+      ? "TYPESCRIPT_RULE_PACK, DENO_RULE_PACK"
+      : "TYPESCRIPT_RULE_PACK";
     const plugin = [
-      `import { createDenoPlugin, createRuleRegistry, parseCatalog, TYPESCRIPT_RULE_PACK } from ${engineUrl};`,
+      `import { createDenoPlugin, createRuleRegistry, parseCatalog, ${selectedPacks} } from ${engineUrl};`,
       `import catalogJson from ${catalogUrl} with { type: "json" };`,
       `const catalog = parseCatalog(catalogJson, { scriptRuleSchemas: null, registry: createRuleRegistry(${
         JSON.stringify(UNSLOP_PLUGIN_NAME)
-      }, [TYPESCRIPT_RULE_PACK]) });`,
+      }, [${selectedPacks}]) });`,
       `export default createDenoPlugin(${
         JSON.stringify(UNSLOP_PLUGIN_NAME)
-      }, catalog, { rulePacks: [TYPESCRIPT_RULE_PACK], selection: "" });`,
+      }, catalog, { rulePacks: [${selectedPacks}], selection: "" });`,
       "",
     ].join("\n");
-    await Deno.writeTextFile(join(runDir, PLUGIN_FILENAME), plugin);
-    await Deno.writeTextFile(
-      join(runDir, DENO_CONFIG_FILENAME),
-      JSON.stringify({ lock: false, lint: { plugins: [`./${PLUGIN_FILENAME}`], include: [], exclude: [] } }),
+    await writeUnslopPrivateInput(runDir, PLUGIN_FILENAME, new TextEncoder().encode(plugin), this.options);
+    await writeUnslopPrivateInput(
+      runDir,
+      DENO_CONFIG_FILENAME,
+      new TextEncoder().encode(
+        JSON.stringify({ lock: false, lint: { plugins: [`./${PLUGIN_FILENAME}`], include: [], exclude: [] } }),
+      ),
+      this.options,
     );
   }
 
@@ -363,11 +261,13 @@ export class UnslopCheckRunner {
     files: readonly string[],
     assets: IUnslopAssets,
     ranges: ReadonlyMap<string, readonly IGitLineRange[]>,
-  ): Promise<{ findings: IUnslopFinding[] } | IUnslopCheckOutcome> {
-    const batches = this.batchFiles(files);
+  ): Promise<IUnslopCollectedFindings | IUnslopCheckOutcome> {
+    const batches = this.batchFiles(files, join(runDir, DENO_CONFIG_FILENAME));
     const { env, clearEnv } = buildVerificationCheckEnv();
     const deadline = Date.now() + context.timeoutMs;
-    const findings: IUnslopFinding[] = [];
+    let findings: IUnslopFinding[] = [];
+    let total = 0;
+    const hostExitCodes: number[] = [];
     for (const batch of batches) {
       const remaining = deadline - Date.now();
       if (remaining <= 0) return errorOutcome(UnslopErrorClass.TIMEOUT);
@@ -382,27 +282,36 @@ export class UnslopCheckRunner {
         stderrMaxBytes: this.options.settings.stderr_max_bytes,
       });
       if (result.kind !== "diagnostics") return errorOutcome(batchErrorClass(result.kind));
-      const normalized = await this.normalizeDiagnostics(context, result.diagnostics, files, assets, ranges);
+      const normalized = await this.normalizeDiagnostics(context, result.diagnostics, batch, assets, ranges);
       if (!Array.isArray(normalized)) return normalized;
-      findings.push(...normalized);
+      const unique = uniqueUnslopBatch(normalized);
+      total += unique.length;
+      hostExitCodes.push(...result.hostExitCodes);
+      findings = [...findings, ...unique.slice(0, this.options.settings.findings_limit)]
+        .sort(compareUnslopFindings).slice(0, this.options.settings.findings_limit);
     }
-    return { findings };
+    return { findings, total, hostExitCodes };
   }
 
   /** Splits files into batches that respect the file count and encoded argv budgets. */
-  private batchFiles(files: readonly string[]): readonly (readonly string[])[] {
+  private batchFiles(files: readonly string[], configPath: string): readonly (readonly string[])[] {
     const batches: string[][] = [];
     let current: string[] = [];
-    let bytes = 0;
+    const fixedBytes = [Deno.execPath(), ...unslopLintArgs(configPath, [])]
+      .reduce((total, arg) => total + new TextEncoder().encode(arg).byteLength + 1, 0);
+    let bytes = fixedBytes;
     for (const file of files) {
       const operand = `./${file}`;
       const encoded = new TextEncoder().encode(operand).byteLength + 1;
+      if (fixedBytes + encoded > this.options.settings.argv_max_bytes) {
+        throw new UnslopCheckError(UnslopErrorClass.LIMIT_EXCEEDED);
+      }
       const exceedsCount = current.length >= this.options.settings.batch_max_files;
       const exceedsBytes = bytes + encoded > this.options.settings.argv_max_bytes;
       if (current.length > 0 && (exceedsCount || exceedsBytes)) {
         batches.push(current);
         current = [];
-        bytes = 0;
+        bytes = fixedBytes;
       }
       current.push(file);
       bytes += encoded;
@@ -427,11 +336,21 @@ export class UnslopCheckRunner {
     ranges: ReadonlyMap<string, readonly IGitLineRange[]>,
   ): Promise<IUnslopFinding[] | IUnslopCheckOutcome> {
     const selectedSet = new Set(selected);
+    const sourceLengths = new Map<string, readonly number[]>();
     const findings: IUnslopFinding[] = [];
     for (const diagnostic of diagnostics) {
       const file = await hostRepoPath(context.executionRoot, diagnostic.filename);
       if (file === null || !selectedSet.has(file)) return errorOutcome(UnslopErrorClass.HOST_PROTOCOL_INVALID);
       if (!assets.ruleIds.has(diagnostic.code)) return errorOutcome(UnslopErrorClass.HOST_PROTOCOL_INVALID);
+      const lengths = sourceLengths.get(file) ?? await readUnslopLineLengths(context, this.options, file);
+      if (lengths === null) return errorOutcome(UnslopErrorClass.SNAPSHOT_INVALID);
+      sourceLengths.set(file, lengths);
+      if (
+        !isUnslopPositionWithinSource(diagnostic.start, lengths) ||
+        !isUnslopPositionWithinSource(diagnostic.end, lengths)
+      ) {
+        return errorOutcome(UnslopErrorClass.HOST_PROTOCOL_INVALID);
+      }
       const interval = normalizeHostRange(diagnostic.start, diagnostic.end);
       if (interval === null) return errorOutcome(UnslopErrorClass.HOST_PROTOCOL_INVALID);
       const changed = ranges.get(file) ?? [];
@@ -451,32 +370,18 @@ export class UnslopCheckRunner {
   /** Sorts, deduplicates, caps and formats the retained findings. */
   private buildOutcome(
     context: IUnslopCheckContext,
-    raw: readonly IUnslopFinding[],
+    collected: IUnslopCollectedFindings,
   ): IUnslopCheckOutcome {
-    const unique = new Map<string, IUnslopFinding>();
-    for (const finding of raw) {
-      const key = `${finding.file}\u0000${finding.start_line}\u0000${finding.start_column}\u0000${finding.rule}`;
-      if (!unique.has(key)) unique.set(key, finding);
-    }
-    const sorted = [...unique.values()].sort((left, right) =>
-      left.file.localeCompare(right.file) ||
-      left.start_line - right.start_line ||
-      left.start_column - right.start_column ||
-      left.rule.localeCompare(right.rule)
+    if (collected.total === 0) return passedOutcome();
+    const text = collected.findings.map((finding) => `${finding.file}:${finding.start_line} ${finding.rule}`).join(
+      "\n",
     );
-    if (sorted.length === 0) return passedOutcome();
-    const capped = sorted.slice(0, this.options.settings.findings_limit);
-    const text = capped.map((finding) => `${finding.file}:${finding.start_line} ${finding.rule}`).join("\n");
-    const output = prepareVerificationOutput(
-      text,
-      context.outputMaxChars,
-      this.options.knownSecrets ?? [],
-    );
+    const output = prepareVerificationOutput(text, context.outputMaxChars, this.options.knownSecrets ?? []);
     return {
       kind: VerificationStatus.FAILED,
-      hostExitCodes: [1],
-      total: sorted.length,
-      findings: capped,
+      hostExitCodes: collected.hostExitCodes,
+      total: collected.total,
+      findings: collected.findings,
       output,
     };
   }
@@ -503,46 +408,4 @@ export class UnslopCheckRunner {
       error_class: outcome.kind === VerificationStatus.ERROR ? outcome.error_class : null,
     }, context.traceId);
   }
-}
-
-/** Extracts the selected catalog rule ids. Null means invalid catalog JSON. */
-function parseCatalogRuleIds(bytes: Uint8Array): ReadonlySet<string> | null {
-  const text = decodeUtf8(bytes);
-  if (text === null) return null;
-  let document: unknown;
-  try {
-    document = JSON.parse(text);
-  } catch {
-    return null;
-  }
-  if (typeof document !== "object" || document === null) return null;
-  const rules = (document as Record<string, unknown>).rules;
-  if (typeof rules !== "object" || rules === null) return null;
-  return new Set(Object.keys(rules));
-}
-
-/** Validates a legacy replacement catalog structurally. Null means the document is rejected. */
-function parseReplacementCatalog(
-  text: string,
-  packagedRuleIds: ReadonlySet<string>,
-): ReadonlySet<string> | null {
-  let document: unknown;
-  try {
-    document = JSON.parse(text);
-  } catch {
-    return null;
-  }
-  if (typeof document !== "object" || document === null) return null;
-  const record = document as Record<string, unknown>;
-  if ("layout" in record || "wholeTree" in record) return null;
-  if (typeof record.rules !== "object" || record.rules === null) return null;
-  const rules = record.rules as Record<string, unknown>;
-  const ruleIds = new Set<string>();
-  for (const [id, entry] of Object.entries(rules)) {
-    if (!packagedRuleIds.has(id)) return null;
-    if (typeof entry !== "object" || entry === null) return null;
-    if ((entry as Record<string, unknown>).engine !== "plugin") return null;
-    ruleIds.add(id);
-  }
-  return ruleIds.size > 0 ? ruleIds : null;
 }

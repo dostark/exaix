@@ -81,7 +81,7 @@ export function parseUnslopHostOutput(stdout: string): IUnslopHostOutput | null 
   return { diagnostics, errors };
 }
 
-function isPosition(value: unknown, allowZeroColumn: boolean): value is { line: number; column: number } {
+function isPosition(value: unknown, allowZeroColumn: boolean): value is { line: number; col: number } {
   if (typeof value !== "object" || value === null) return false;
   const record = value as Record<string, unknown>;
   const { line, col } = record;
@@ -107,10 +107,10 @@ function diagnosticRange(record: Record<string, unknown>): {
   const bounds = record.range as Record<string, unknown>;
   if (!isPosition(bounds.start, true) || !isPosition(bounds.end, true)) return null;
   if (bounds.end.line < bounds.start.line) return null;
-  if (bounds.end.line === bounds.start.line && bounds.end.column < bounds.start.column) return null;
+  if (bounds.end.line === bounds.start.line && bounds.end.col < bounds.start.col) return null;
   return {
-    start: { line: bounds.start.line, column: bounds.start.column },
-    end: { line: bounds.end.line, column: bounds.end.column },
+    start: { line: bounds.start.line, column: bounds.start.col },
+    end: { line: bounds.end.line, column: bounds.end.col },
   };
 }
 

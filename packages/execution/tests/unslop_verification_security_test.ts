@@ -9,7 +9,9 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { join } from "@std/path";
+import { join, relative } from "@std/path";
+import { copy } from "@std/fs";
+import { stub } from "@std/testing/mock";
 import { ExaPathDefaults } from "@exaix/shared";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { EventLogger } from "@exaix/core/logger";
@@ -247,4 +249,154 @@ Deno.test("[security] the journal projection hides secrets, controls and markup"
   assert(projected.includes("&lt;"));
   assert(projected.includes("&amp;"));
   assertEquals(projectUnslopFilePath("uni-é.ts", []), "uni-é.ts");
+});
+
+Deno.test("[security] trusted-root-overlap-denied", async () => {
+  const scope = await makeScope();
+  try {
+    const base = await baseWith(scope);
+    await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), CAST);
+    const target = await commitAll(scope, "cast");
+    const logger = new EventLogger({ db: scope.ctx.db });
+    await copy(join(scope.ctx.tempDir, "lint"), join(scope.ctx.repoDir, "lint"));
+    const config = ConfigSchema.parse({ ...scope.ctx.config, system: { root: scope.ctx.repoDir } });
+    const runner = new UnslopCheckRunner(logger, {
+      settings: config.verification.unslop,
+      systemRoot: scope.ctx.repoDir,
+      logger,
+      pathResolver: new PathResolver(scope.ctx.config),
+    });
+    const result = await runner.run(contextFor(scope, base, target));
+    assertEquals(result.kind, "error");
+    assertEquals(result.kind === "error" ? result.error_class : null, "UnslopAssetInvalid");
+
+    const configuredPortal = new UnslopCheckRunner(logger, {
+      settings: scope.ctx.config.verification.unslop,
+      systemRoot: scope.ctx.tempDir,
+      logger,
+      pathResolver: new PathResolver(scope.ctx.config),
+      portalRoots: [join(scope.ctx.tempDir, "lint")],
+    });
+    assertEquals((await configuredPortal.run(contextFor(scope, base, target))).kind, "error");
+
+    const runtime = join(scope.ctx.repoDir, "private-runtime");
+    await Deno.mkdir(runtime);
+    const unsafeConfig = ConfigSchema.parse({
+      ...scope.ctx.config,
+      paths: { ...scope.ctx.config.paths, runtime: relative(scope.ctx.tempDir, runtime) },
+    });
+    const unsafeRuntime = new UnslopCheckRunner(logger, {
+      settings: unsafeConfig.verification.unslop,
+      systemRoot: scope.ctx.tempDir,
+      logger,
+      pathResolver: new PathResolver(unsafeConfig),
+    });
+    const runtimeResult = await unsafeRuntime.run(contextFor(scope, base, target));
+    assertEquals(runtimeResult.kind, "error");
+    assertEquals((await Array.fromAsync(Deno.readDir(runtime))).length, 0);
+  } finally {
+    await scope.ctx.cleanup();
+  }
+});
+
+Deno.test("[security] asset-symlink-and-policy-tamper-denied", async () => {
+  const scope = await makeScope();
+  try {
+    const base = await baseWith(scope);
+    await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), CAST);
+    const target = await commitAll(scope, "cast");
+    const engine = join(scope.ctx.tempDir, "lint", "unslop_engine.js");
+    const editable = join(scope.ctx.repoDir, "engine.js");
+    await Deno.rename(engine, editable);
+    await Deno.symlink(editable, engine);
+    const result = await scope.runner.run(contextFor(scope, base, target));
+    assertEquals(result.kind, "error");
+    assertEquals(result.kind === "error" ? result.error_class : null, "UnslopAssetInvalid");
+    await Deno.remove(engine);
+    await Deno.rename(editable, engine);
+    const lint = join(scope.ctx.repoDir, "lint");
+    await copy(join(scope.ctx.tempDir, "lint"), lint);
+    const catalogPath = join(lint, "unslop_portal_catalog.json");
+    const catalog = JSON.parse(await Deno.readTextFile(catalogPath)) as {
+      rules: Record<string, { severity: string; reason?: string }>;
+    };
+    for (const rule of Object.values(catalog.rules)) {
+      rule.severity = "off";
+      rule.reason = "Policy tamper fixture";
+    }
+    const bytes = new TextEncoder().encode(JSON.stringify(catalog));
+    await Deno.writeFile(catalogPath, bytes);
+    const manifestPath = join(lint, "manifest.json");
+    const manifest = JSON.parse(await Deno.readTextFile(manifestPath)) as {
+      files: Record<string, { sha256: string; bytes: number }>;
+    };
+    manifest.files["unslop_portal_catalog.json"] = {
+      bytes: bytes.length,
+      sha256: [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]
+        .map((byte) => byte.toString(16).padStart(2, "0")).join(""),
+    };
+    await Deno.writeTextFile(manifestPath, JSON.stringify(manifest));
+    const logger = new EventLogger({ db: scope.ctx.db });
+    const unsafe = new UnslopCheckRunner(logger, {
+      settings: scope.ctx.config.verification.unslop,
+      systemRoot: scope.ctx.repoDir,
+      logger,
+      pathResolver: new PathResolver(scope.ctx.config),
+    });
+    const tampered = await unsafe.run(contextFor(scope, base, target));
+    assertEquals(tampered.kind, "error");
+    assertEquals(tampered.kind === "error" ? tampered.error_class : null, "UnslopAssetInvalid");
+  } finally {
+    await scope.ctx.cleanup();
+  }
+});
+
+Deno.test("[security] private-input-and-cleanup-boundaries", async () => {
+  const scope = await makeScope();
+  try {
+    const base = await baseWith(scope);
+    await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), CAST);
+    const target = await commitAll(scope, "cast");
+    const removeOriginal = Deno.remove.bind(Deno);
+    const remove = stub(Deno, "remove", (path, options) => {
+      if (String(path).includes("/unslop/run-")) return Promise.reject(new Error("cleanup refused"));
+      return removeOriginal(path, options);
+    });
+    try {
+      const result = await scope.runner.run(contextFor(scope, base, target));
+      assertEquals(result.kind, "error");
+      assertEquals(result.kind === "error" ? result.error_class : null, "UnslopAssetInvalid");
+    } finally {
+      remove.restore();
+    }
+  } finally {
+    await scope.ctx.cleanup();
+  }
+});
+
+Deno.test("[security] private inputs refuse precreated symlinks", async () => {
+  const scope = await makeScope();
+  try {
+    const base = await baseWith(scope);
+    await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), CAST);
+    const target = await commitAll(scope, "cast");
+    const victim = join(scope.ctx.tempDir, "private-input-victim");
+    const sentinel = "original content";
+    await Deno.writeTextFile(victim, sentinel);
+    const original = Deno.makeTempDir.bind(Deno);
+    const makeDir = stub(Deno, "makeTempDir", async (options) => {
+      const path = await original(options);
+      await Deno.symlink(victim, join(path, "plugin.ts"));
+      return path;
+    });
+    try {
+      const result = await scope.runner.run(contextFor(scope, base, target));
+      assertEquals(result.kind, "error");
+      assertEquals(await Deno.readTextFile(victim), sentinel);
+    } finally {
+      makeDir.restore();
+    }
+  } finally {
+    await scope.ctx.cleanup();
+  }
 });

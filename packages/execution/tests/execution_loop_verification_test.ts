@@ -11,10 +11,11 @@
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertFalse } from "@std/assert";
+import { stub } from "@std/testing/mock";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { exists } from "@std/fs/exists";
-import { ExecutionLoop, type IVerificationRunner } from "@exaix/execution";
+import { ExecutionLoop, type IVerificationRunner, UnslopCheckRunner } from "@exaix/execution";
 import { GitService } from "@exaix/git";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { MemoryBankService } from "@exaix/memory";
@@ -548,6 +549,72 @@ Deno.test("same-trace-run-identity", async () => {
       new Set(completed.map((row) => row.verification_run_id)).size,
       new Set(snapshots.map((row) => row.run_id)).size,
     );
+  } finally {
+    await handle.cleanupDb();
+    await Deno.remove(handle.rootDir, { recursive: true });
+  }
+});
+
+Deno.test("snapshot-error-keeps-review", async () => {
+  const original = UnslopCheckRunner.prototype.run;
+  let targetSha: string | null = null;
+  const run = stub(UnslopCheckRunner.prototype, "run", async function (context) {
+    targetSha = context.targetSha;
+    await Deno.writeTextFile(join(context.executionRoot, "seed.ts"), "export const seed = 1;\n");
+    return await original.call(this, context);
+  });
+  try {
+    const handle = await makeVerificationLoop({
+      prefix: "exec-verif-snapshot-",
+      verification: PortalVerificationSchema.parse({ checks: [{ kind: "unslop" }], max_repair_attempts: 0 }),
+      planAction: writeAction("seed.ts", "export const seed = 1 as unknown as string;\n"),
+      requestId: "verify-snapshot-error",
+      unslop: true,
+    });
+    try {
+      await handle.db.waitForFlush();
+      assertEquals(completedStatus(handle.db, handle.traceId), "error");
+      const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
+      assertEquals(reviews.length, 1);
+      const snapshots = lintSnapshots(handle.db, handle.traceId);
+      assertEquals(snapshots.length, 1);
+      assertEquals(snapshots[0].commit_sha, targetSha);
+      assertEquals(snapshots[0].verification_status, "error");
+    } finally {
+      await handle.cleanupDb();
+      await Deno.remove(handle.rootDir, { recursive: true });
+    }
+  } finally {
+    run.restore();
+  }
+});
+
+Deno.test("snapshot-head-drift-keeps-review", async () => {
+  let targetSha: string | null = null;
+  const handle = await makeVerificationLoop({
+    prefix: "exec-verif-head-drift-",
+    verification: PortalVerificationSchema.parse({ checks: [{ kind: "unslop" }], max_repair_attempts: 0 }),
+    planAction: writeAction("seed.ts", "export const seed = 1 as unknown as string;\n"),
+    requestId: "verify-head-drift",
+    factory: () => ({
+      run: async (_config, context) => {
+        const bound = context.unslop;
+        assert(bound !== undefined);
+        targetSha = bound.targetSha;
+        await Deno.writeTextFile(join(context.executionRoot, "other.txt"), "concurrent commit\n");
+        await bound.git.runGitCommand(["add", "-A"]);
+        await bound.git.runGitCommand(["commit", "-m", "concurrent change"]);
+        return { passed: true, error: false, failures: [] };
+      },
+    }),
+  });
+  try {
+    await handle.db.waitForFlush();
+    assertEquals(completedStatus(handle.db, handle.traceId), "error");
+    assertEquals((await handle.reviewRegistry.list({ portal: "my-portal" })).length, 1);
+    const snapshots = lintSnapshots(handle.db, handle.traceId);
+    assertEquals(snapshots.length, 1);
+    assertEquals(snapshots[0].commit_sha, targetSha);
   } finally {
     await handle.cleanupDb();
     await Deno.remove(handle.rootDir, { recursive: true });

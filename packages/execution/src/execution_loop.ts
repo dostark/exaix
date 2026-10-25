@@ -502,10 +502,17 @@ export class ExecutionLoop {
     const runId = crypto.randomUUID();
     let lastResult: IVerificationResult | undefined;
     let lastAttempt = 0;
-    const runOnce = async (attempt: number) => {
+    const runOnce = async (attempt: number, expectedCommit: string) => {
       lastAttempt = attempt;
       lastResult = undefined;
-      const result = await this.runVerificationGuarded(runner, verification, context, attempt, runId, usesUnslop);
+      const result = await this.runVerificationGuarded(
+        runner,
+        verification,
+        { ...context, expectedCommit },
+        attempt,
+        runId,
+        usesUnslop,
+      );
       if (result !== undefined) lastResult = result;
       return result;
     };
@@ -559,12 +566,12 @@ export class ExecutionLoop {
       executionGitService: IGitService;
       originalStepTitles: string[];
     },
-    runOnce: (attempt: number) => Promise<IVerificationResult | undefined>,
+    runOnce: (attempt: number, expectedCommit: string) => Promise<IVerificationResult | undefined>,
     initialCommit: string,
   ): Promise<IVerificationOutcome> {
     let lastCommitSha = initialCommit;
     let attempt = 0;
-    let result = await runOnce(attempt);
+    let result = await runOnce(attempt, lastCommitSha);
     if (!result) return { status: VerificationStatus.ERROR, commitSha: lastCommitSha };
 
     while (!result.passed && !result.error && attempt < verification.max_repair_attempts) {
@@ -573,7 +580,7 @@ export class ExecutionLoop {
       if (repair.failed) return { status: VerificationStatus.FAILED, commitSha: lastCommitSha };
       if (repair.commitSha) lastCommitSha = repair.commitSha;
 
-      result = await runOnce(attempt);
+      result = await runOnce(attempt, lastCommitSha);
       if (!result) return { status: VerificationStatus.ERROR, commitSha: lastCommitSha };
       if (result.passed) return { status: VerificationStatus.REPAIRED, commitSha: lastCommitSha };
     }
@@ -598,6 +605,7 @@ export class ExecutionLoop {
       executionRoot: string;
       executionGitService: IGitService;
       baseSha: string | null;
+      expectedCommit: string;
     },
     attempt: number,
     runId: string,
@@ -605,17 +613,21 @@ export class ExecutionLoop {
   ): Promise<IVerificationResult | undefined> {
     if (usesUnslop && context.baseSha === null) return undefined;
     const unslop = usesUnslop
-      ? await this.buildUnslopContext(runId, context.baseSha, context.executionGitService)
+      ? await this.buildUnslopContext(runId, context.baseSha, context.executionGitService, context.expectedCommit)
       : undefined;
     if (usesUnslop && unslop === undefined) return undefined;
     try {
-      return await runner.run(verification, {
+      const result = await runner.run(verification, {
         requestId: context.requestId,
         traceId: context.traceId,
         attempt,
         executionRoot: context.executionRoot,
         ...(unslop === undefined ? {} : { unslop }),
       });
+      if (usesUnslop && await this.captureImmutableCommit(context.executionGitService) !== context.expectedCommit) {
+        return undefined;
+      }
+      return result;
     } catch {
       return undefined;
     }
@@ -626,10 +638,11 @@ export class ExecutionLoop {
     runId: string,
     baseSha: string | null,
     gitService: IGitService,
+    expectedCommit: string,
   ): Promise<IVerificationUnslopContext | undefined> {
     if (baseSha === null) return undefined;
     const targetSha = await this.captureImmutableCommit(gitService);
-    if (targetSha === null) return undefined;
+    if (targetSha === null || targetSha !== expectedCommit) return undefined;
     return { runId, baseSha, targetSha, git: gitService };
   }
 
@@ -653,6 +666,7 @@ export class ExecutionLoop {
       systemRoot: this.config.system.root,
       logger,
       pathResolver,
+      portalRoots: this.config.portals.map((portal) => portal.target_path),
       knownSecrets: secrets,
     });
     return new VerificationRunner(logger, secrets, { unslop });

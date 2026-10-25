@@ -10,7 +10,6 @@
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IGitService } from "@exaix/core/types";
 import type { IUnslopSettings, UnslopErrorClass, VerificationStatus } from "@exaix/schemas";
-import type { PathResolver } from "@exaix/portal";
 
 /** One retained diagnostic. Every path is an internal raw repo path until safe projection. */
 export interface IUnslopFinding {
@@ -86,7 +85,9 @@ export interface IUnslopCheckRunnerOptions {
   readonly settings: IUnslopSettings;
   readonly systemRoot: string;
   readonly logger: IEventLogger;
-  readonly pathResolver: PathResolver | IPathConfinement;
+  readonly pathResolver: IPathConfinement;
+  /** Configured portal roots that cannot own trusted lint inputs. */
+  readonly portalRoots?: readonly string[];
   /** Known secrets redacted from the repair text. */
   readonly knownSecrets?: readonly string[];
 }

@@ -153,11 +153,14 @@ interface TGitCommandSettings {
 }
 
 type TGitAttemptOutcome =
-  | { readonly retry: false; readonly result: { output: string; exitCode: number; stdoutBytes: Uint8Array } }
+  | {
+    readonly retry: false;
+    readonly result: { output: string; exitCode: number; stdoutBytes: Uint8Array; capturedBytes: number };
+  }
   | { readonly retry: true };
 
-function emptyGitResult(): { output: string; exitCode: number; stdoutBytes: Uint8Array } {
-  return { output: "", exitCode: -1, stdoutBytes: new Uint8Array() };
+function emptyGitResult(): { output: string; exitCode: number; stdoutBytes: Uint8Array; capturedBytes: number } {
+  return { output: "", exitCode: -1, stdoutBytes: new Uint8Array(), capturedBytes: 0 };
 }
 
 function gitCommandSettings(args: readonly string[], options: IGitCommandOptions): TGitCommandSettings {
@@ -841,7 +844,7 @@ export class GitService implements IGitService {
   public async runGitCommand(
     args: string[],
     options: IGitCommandOptions = {},
-  ): Promise<{ output: string; exitCode: number; stdoutBytes: Uint8Array }> {
+  ): Promise<{ output: string; exitCode: number; stdoutBytes: Uint8Array; capturedBytes?: number }> {
     this.validateGitCommandSecurity(args);
     const settings = gitCommandSettings(args, options);
     let attempt = 0;
@@ -906,7 +909,7 @@ export class GitService implements IGitService {
     settings: TGitCommandSettings,
     captured: TGitCaptured,
     attempt: number,
-  ): { output: string; exitCode: number; stdoutBytes: Uint8Array } {
+  ): { output: string; exitCode: number; stdoutBytes: Uint8Array; capturedBytes: number } {
     const output = new TextDecoder().decode(captured.stdout);
     const errorOutput = new TextDecoder().decode(captured.stderr);
     if (captured.code !== 0) {
@@ -929,7 +932,12 @@ export class GitService implements IGitService {
           attempt: attempt + 1,
         },
     );
-    return { output: output || errorOutput, exitCode: captured.code, stdoutBytes: captured.stdout };
+    return {
+      output: output || errorOutput,
+      exitCode: captured.code,
+      stdoutBytes: captured.stdout,
+      capturedBytes: captured.stdout.byteLength + captured.stderr.byteLength,
+    };
   }
 
   /** Runs one Git command with the historical unbounded capture. */

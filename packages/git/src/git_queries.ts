@@ -169,6 +169,29 @@ export function intersectsChangedLines(
   return ranges.some((range) => startLine <= range.end && endLine >= range.start);
 }
 
+/** Reads the verified current commit with bounded categorical capture. */
+export async function readVerificationHead(
+  gitService: IGitService,
+  options: IGitCommitQueryOptions,
+): Promise<GitQueryResult<string>> {
+  try {
+    const result = await gitService.runGitCommand(
+      [GIT_CMD_REV_PARSE, GIT_FLAG_VERIFY, `HEAD${GIT_COMMIT_PEEL_SUFFIX}`],
+      {
+        maxOutputBytes: options.maxOutputBytes ?? DEFAULT_GIT_QUERY_MAX_OUTPUT_BYTES,
+        timeoutMs: options.timeoutMs,
+        auditMode: QUERY_AUDIT_MODE,
+      },
+    );
+    const value = result.output.trim();
+    return result.exitCode === 0 && isFullObjectId(value)
+      ? { ok: true, value }
+      : queryFailure(QUERY_FAILURE_CODE.invalidOutput);
+  } catch (error) {
+    return failureFromError(error);
+  }
+}
+
 /** Resolves an exact object id to its immutable commit id. Ref expressions are rejected. */
 export async function resolveImmutableCommit(
   gitService: IGitService,
