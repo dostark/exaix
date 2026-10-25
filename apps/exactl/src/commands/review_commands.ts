@@ -19,10 +19,11 @@ import { enrichWithRequest } from "../helpers/request_enricher.ts";
 import { isReviewStatus, ReviewStatus } from "@exaix/core/status";
 import type { IReviewStatus } from "@exaix/core/status";
 import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "@exaix/schemas/artifact.ts";
-import { ExecutionVerificationLintFindingsEventPayloadSchema, VerificationStatus } from "@exaix/schemas";
+import { type UnslopCheckRunOutcome, type UnslopErrorClass, VerificationStatus } from "@exaix/schemas";
+import { projectReviewVerification } from "./review_verification.ts";
 import type { IGitService, Opt, Reason } from "@exaix/core/types";
 import { type ArtifactSubtype, ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "@exaix/core";
-import { classifyTraceAnomalies, DomainEventType, summarizeAnomalies } from "@exaix/core/events";
+import { classifyTraceAnomalies, summarizeAnomalies } from "@exaix/core/events";
 import type { IAnomalyFinding, IAnomalySummary } from "@exaix/core/events";
 import { GitBranchName } from "@exaix/git";
 import { createGitService } from "../../../../apps/common/adapters/git_adapter.ts";
@@ -87,9 +88,9 @@ export interface IReviewDetails extends IReviewMetadata {
 /** One configured unslop check outcome in the review. */
 export interface IReviewUnslopCheck {
   check_index: number;
-  outcome: string;
+  outcome: `${UnslopCheckRunOutcome}`;
   total: number | null;
-  error_class: string | null;
+  error_class: UnslopErrorClass | null;
 }
 
 /** The validated terminal unslop summary of one review run. */
@@ -116,6 +117,11 @@ export function formatUnslopSummary(summary: IReviewUnslopSummary): string[] {
   const incomplete = summary.checks.filter((check) =>
     check.outcome === "not_run" || check.outcome === VerificationStatus.ERROR
   );
+  for (const check of incomplete) {
+    if (check.error_class !== null) {
+      lines.push(`  ${check.error_class}: verification could not complete; check source and policy.`);
+    }
+  }
   if (incomplete.length > 0) lines.push("  (coverage incomplete)");
   return lines;
 }
@@ -1195,7 +1201,7 @@ export class ReviewCommands extends BaseCommand {
     const enrichedMetadata = await this.extractReviewMetadataWithContext(basicMetadata);
 
     const anomalyPayload = await this.loadAnomalyPayload(storedTraceId ?? trace_id);
-    const verification = await this.loadVerificationProjection(storedTraceId ?? trace_id, commits[0]?.sha);
+    const verification = await this.loadVerificationProjection(storedTraceId ?? trace_id, commits[0]?.sha, request_id);
 
     return {
       ...enrichedMetadata,
@@ -1211,55 +1217,12 @@ export class ReviewCommands extends BaseCommand {
   private async loadVerificationProjection(
     traceId: string,
     commitSha: Opt<string, Reason.OptionalInput>,
+    requestId: string,
   ): Promise<{ status?: VerificationStatus; unslop?: IReviewUnslopSummary }> {
     try {
-      const activities = await this.db.getActivitiesByTraceSafe(traceId);
-      const completed = activities.findLast((row) => row.action_type === DomainEventType.ExecutionCompleted);
-      if (!completed) return {};
-      const payload = JSON.parse(completed.payload) as {
-        request_id?: string;
-        verification_status?: VerificationStatus;
-        verification_run_id?: string;
-      };
-      const status = payload.verification_status;
-      if (payload.verification_run_id === undefined) return { status };
-      const snapshot = activities.findLast((row) => {
-        if (row.action_type !== DomainEventType.ExecutionVerificationLintFindings) return false;
-        const candidate = JSON.parse(row.payload) as {
-          request_id?: string;
-          run_id?: string;
-          commit_sha?: string | null;
-        };
-        return candidate.run_id === payload.verification_run_id &&
-          candidate.request_id === payload.request_id &&
-          (commitSha === undefined || candidate.commit_sha === commitSha);
-      });
-      if (!snapshot) return { status, unslop: unavailableUnslop() };
-      const parsed = ExecutionVerificationLintFindingsEventPayloadSchema.safeParse(JSON.parse(snapshot.payload));
-      if (!parsed.success) return { status, unslop: unavailableUnslop() };
-      if (parsed.data.findings.some((finding) => !isDisplaySafeText(finding.file))) {
-        return { status, unslop: unavailableUnslop() };
-      }
-      return {
-        status,
-        unslop: {
-          total: parsed.data.total,
-          findings: parsed.data.findings.map((finding) => ({
-            file: finding.file,
-            line: finding.line,
-            rule: finding.rule,
-          })),
-          truncated: parsed.data.truncated,
-          checks: parsed.data.checks.map((check) => ({
-            check_index: check.check_index,
-            outcome: check.outcome,
-            total: check.total,
-            error_class: check.error_class,
-          })),
-        },
-      };
+      return projectReviewVerification(await this.db.getActivitiesByTraceSafe(traceId), commitSha, requestId);
     } catch {
-      return { status: undefined, unslop: unavailableUnslop() };
+      return { unslop: unavailableUnslop() };
     }
   }
 

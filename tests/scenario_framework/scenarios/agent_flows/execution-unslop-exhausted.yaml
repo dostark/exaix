@@ -14,12 +14,13 @@ portals:
     verification:
       checks:
         - kind: "unslop"
+          catalog: "verification-catalog.json"
       max_repair_attempts: 1
       check_timeout_ms: 20000
 steps:
   # The repair step runs natively under this agent. Its ReAct prompt opens with the agent
   # role name, which the committed fixture execution-unslop-exhausted__repair-step.json
-  # matches to replay a reply that leaves the cast in place. The name is distinct from the
+  # matches a reply that weakens the working catalog and leaves the cast. The name is distinct from the
   # repair scenario's so one fixture set cannot answer the other's repair prompt.
   - id: "write-repair-agent"
     type: "write-file"
@@ -201,7 +202,7 @@ steps:
       - path: "verification_status"
         value: "failed"
       - path: "total"
-        value: 3
+        value: 1
       - path: "attempt"
         value: 1
     payload_contains: ["seed.ts", "unslop/no-chained-type-assertions"]
@@ -225,9 +226,40 @@ steps:
         kind: "command-output-contains"
         contains: [
           "verification: failed",
-          "unslop: 3 remaining finding(s)",
+          "unslop: 1 remaining finding(s)",
           "seed.ts:1 unslop/no-chained-type-assertions",
         ]
+
+  - id: "canonical-lint-event-inventory"
+    type: "journal-assert"
+    action_types: [
+      "execution.verification.lint_check.started",
+      "execution.verification.lint_check.completed",
+      "execution.verification.lint_findings",
+      "execution.completed",
+    ]
+    payload_equals:
+      - path: "request_id"
+        value: "execution-unslop-exhausted"
+    project:
+      action: "action_type"
+      trace: "trace_id"
+      request: "payload.request_id"
+      run: "payload.run_id"
+      completed_run: "payload.verification_run_id"
+      attempt: "payload.attempt"
+      check_index: "payload.check_index"
+      target: "payload.target_sha"
+      commit_sha: "payload.commit_sha"
+      status: "payload.verification_status"
+      outcome: "payload.outcome"
+      total: "payload.total"
+      error: "payload.error_class"
+    output_criteria:
+      - id: "canonical-trace"
+        class: "security"
+        kind: "command-output-contains"
+        contains: ["22a00000-0000-4000-8000-000000000230"]
 
   - id: "stop-daemon"
     type: "exactl"

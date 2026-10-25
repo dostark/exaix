@@ -8,7 +8,9 @@
  * @related-files [apps/exactl/src/commands/review_commands.ts, apps/exactl/src/exactl.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { createReviewJournalFixture } from "./helpers/review_journal_fixture.ts";
+import { UnslopErrorClass } from "@exaix/schemas";
+import { assert, assertEquals } from "@std/assert";
 import { formatUnslopSummary, type IReviewUnslopSummary } from "../src/commands/review_commands.ts";
 
 const capOne: IReviewUnslopSummary = {
@@ -52,4 +54,28 @@ Deno.test("review-unslop-cli-output", () => {
     formatUnslopSummary({ total: null, findings: [], truncated: false, checks: [], unavailable: true }),
     ["unslop: lint details unavailable"],
   );
+});
+
+Deno.test("real-cli-cap-error-security / actual-cli-error-notes", async () => {
+  const fixture = await createReviewJournalFixture();
+  try {
+    await fixture.log();
+    const capped = await fixture.cli();
+    assert(capped.includes("unslop: 2 remaining finding(s)"), capped);
+    assert(capped.includes("(1 more not listed)"), capped);
+    for (const errorClass of Object.values(UnslopErrorClass)) {
+      await fixture.log({
+        total: null,
+        findings: [],
+        truncated: false,
+        checks: [{ check_index: 0, outcome: "error", total: null, error_class: errorClass }],
+      }, "error");
+      const output = await fixture.cli();
+      assert(output.includes(errorClass), output);
+      assert(output.includes("coverage incomplete"), output);
+      assert(output.includes("verification error"), output);
+    }
+  } finally {
+    await fixture.cleanup();
+  }
 });

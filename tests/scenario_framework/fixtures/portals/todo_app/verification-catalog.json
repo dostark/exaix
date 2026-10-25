@@ -1,0 +1,22 @@
+{
+  "version": "1",
+  "scopes": {
+    "test": [],
+    "fixture": []
+  },
+  "tagVocabulary": {
+    "safety": {
+      "description": "Type safety"
+    }
+  },
+  "rules": {
+    "unslop/no-chained-type-assertions": {
+      "engine": "plugin",
+      "severity": "error",
+      "scope": "all",
+      "tags": [
+        "safety"
+      ]
+    }
+  }
+}

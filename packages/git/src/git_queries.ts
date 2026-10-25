@@ -124,10 +124,20 @@ const QUERY_STATUS = new Map<string, IGitChangedSource["status"]>([
   ["M", "modified"],
   ["T", "type_changed"],
 ]);
-const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
+const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(?: .*)?$/;
 const DIFF_HEADER = "diff --git ";
 const BINARY_MARKER = "Binary files ";
 const BINARY_PATCH_MARKER = "GIT binary patch";
+const PATCH_METADATA_PREFIXES = [
+  DIFF_HEADER,
+  "index ",
+  "--- ",
+  "+++ ",
+  "new file mode ",
+  "deleted file mode ",
+  "old mode ",
+  "new mode ",
+];
 
 function queryFailure(code: GitQueryFailureCode): IGitQueryFailure {
   return { ok: false, code };
@@ -273,7 +283,8 @@ function parseHunkHeader(line: string): IHunkHeader | null {
   const oldCount = match[2] === undefined ? 1 : Number(match[2]);
   const newStart = Number(match[3]);
   const newCount = match[4] === undefined ? 1 : Number(match[4]);
-  if (!Number.isInteger(oldCount) || !Number.isInteger(newCount) || !Number.isInteger(newStart)) return null;
+  if (![Number(match[1]), oldCount, newStart, newCount, newStart + newCount].every(Number.isSafeInteger)) return null;
+  if ((oldCount > 0 && Number(match[1]) < 1) || (newCount > 0 && newStart < 1)) return null;
   return { oldCount, newStart, newCount };
 }
 
@@ -289,7 +300,7 @@ function countHunkBody(
     const line = lines[index];
     if (line.startsWith("+")) added++;
     else if (line.startsWith("-")) removed++;
-    else if (line.length > 0 && !line.startsWith("\\") && !line.startsWith(DIFF_HEADER)) return null;
+    else if (line !== "\\ No newline at end of file" && !(line === "" && index === lines.length - 1)) return null;
     index++;
   }
   return { added, removed, next: index };
@@ -297,13 +308,15 @@ function countHunkBody(
 
 /** Parses `-U0` hunk headers into closed destination ranges. Null means a malformed patch. */
 export function parseHunkRanges(patch: string): readonly IGitLineRange[] | null {
-  if (patch.includes(BINARY_MARKER) || patch.includes(BINARY_PATCH_MARKER)) return null;
   const lines = patch.split("\n");
   const ranges: IGitLineRange[] = [];
   let index = 0;
   while (index < lines.length) {
     const header = parseHunkHeader(lines[index]);
     if (header === null) {
+      const line = lines[index]!;
+      if (line.startsWith("@@") || line.startsWith(BINARY_MARKER) || line.startsWith(BINARY_PATCH_MARKER)) return null;
+      if (line !== "" && !PATCH_METADATA_PREFIXES.some((prefix) => line.startsWith(prefix))) return null;
       index++;
       continue;
     }
@@ -350,8 +363,11 @@ export async function readChangedLineRanges(
       ],
       { maxOutputBytes: options.maxOutputBytes, timeoutMs: options.timeoutMs, auditMode: QUERY_AUDIT_MODE },
     );
-    const sections = result.output.split(DIFF_HEADER).length - 1;
-    if (sections > 1) return queryFailure(QUERY_FAILURE_CODE.invalidOutput);
+    const lines = result.output.split("\n");
+    const sections = lines.filter((line) => line.startsWith(DIFF_HEADER)).length;
+    if (result.output.length > 0 && (sections !== 1 || !lines[0]?.startsWith(DIFF_HEADER))) {
+      return queryFailure(QUERY_FAILURE_CODE.invalidOutput);
+    }
     const ranges = parseHunkRanges(result.output);
     return ranges === null ? queryFailure(QUERY_FAILURE_CODE.invalidOutput) : { ok: true, value: ranges };
   } catch (error) {

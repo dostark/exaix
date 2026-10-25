@@ -83,7 +83,14 @@ Deno.test("[security] a new or existing suppression marker is rejected before th
   const scope = await makeScope();
   try {
     const base = await baseWith(scope);
-    for (const content of [`${MARKER}${CAST}`, `${MARKER}export const a = 1;\n${CAST}`]) {
+    for (
+      const content of [
+        `${MARKER}${CAST}`,
+        `${MARKER}export const a = 1;\n${CAST}`,
+        `// deno-lint-ignore no-explicit-any\n${CAST}`,
+        "export const marker = `// deno-lint-ignore-file`;\n" + CAST,
+      ]
+    ) {
       await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), content);
       const target = await commitAll(scope, "marked");
       const result = await scope.runner.run(contextFor(scope, base, target));

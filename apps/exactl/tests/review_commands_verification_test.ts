@@ -10,6 +10,8 @@
 import { assert, assertEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
+import { ReviewRegistry } from "@exaix/core/artifact";
+import { EventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import { ReviewCommands, verificationWarning } from "../src/commands/review_commands.ts";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
@@ -19,7 +21,7 @@ import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 async function createFeatureBranch(repoDir: string, requestId: string, traceId: string): Promise<string> {
   const branchName = `feat/${requestId}-${traceId}`;
   await runGitCommand(repoDir, ["checkout", "-b", branchName]);
-  await Deno.writeTextFile(join(repoDir, "feature.txt"), "content\n");
+  await Deno.writeTextFile(join(repoDir, "feature.txt"), `content ${branchName}\n`);
   await runGitCommand(repoDir, ["add", "feature.txt"]);
   await runGitCommand(repoDir, ["commit", "-m", `Add feature for ${requestId}`]);
   await runGitCommand(repoDir, ["checkout", TEST_DEFAULT_BRANCH]);
@@ -135,7 +137,7 @@ function logLintSnapshot(
       total: 2,
       checks: [{ check_index: 0, outcome: "failed", total: 2, error_class: null }],
       findings: [{ check_index: 0, file: "src/seed.ts", line: 3, rule: "unslop/no-chained-type-assertions" }],
-      truncated: false,
+      truncated: true,
       ...payload,
     },
     traceId,
@@ -182,7 +184,7 @@ describe("ReviewUnslopSnapshot", () => {
     assertEquals(details.unslop?.total, 2);
     assertEquals(details.unslop?.findings.length, 1);
     assertEquals(details.unslop?.findings[0].file, "src/seed.ts");
-    assertEquals(details.unslop?.truncated, false);
+    assertEquals(details.unslop?.truncated, true);
     assertEquals(details.unslop?.unavailable, undefined);
   });
 
@@ -203,6 +205,7 @@ describe("ReviewUnslopSnapshot", () => {
       total: 0,
       checks: [{ check_index: 0, outcome: "passed", total: 0, error_class: null }],
       findings: [],
+      truncated: false,
     });
     await db.waitForFlush();
 
@@ -240,6 +243,32 @@ describe("ReviewUnslopSnapshot", () => {
     assertEquals((await reviewCommands.show(branch)).unslop?.unavailable, true);
   });
 
+  it("historical-completion-compatibility: a single legacy completion does not require a branch-name request encoding", async () => {
+    const trace = crypto.randomUUID();
+    const branch = await createFeatureBranch(tempDir, "execution-legacy", trace);
+    await new ReviewRegistry(db, new EventLogger({ db })).register({
+      trace_id: trace,
+      branch,
+      repository: tempDir,
+      description: "legacy review",
+      created_by: "agent",
+      files_changed: 1,
+      commit_sha: await runGitCommand(tempDir, ["rev-parse", branch]),
+    });
+    db.logActivity(
+      "daemon",
+      DomainEventType.ExecutionCompleted,
+      null,
+      { request_id: "execution-legacy", verification_status: "failed" },
+      trace,
+      null,
+    );
+    await db.waitForFlush();
+    const details = await reviewCommands.show(branch);
+    assertEquals(details.verification_status, "failed");
+    assertEquals(details.unslop, undefined);
+  });
+
   it("[review-show] a historical completed row without a run id stays status-only", async () => {
     const branch = await createFeatureBranch(tempDir, "request-232", "snp-historic");
     db.logActivity(
@@ -257,4 +286,62 @@ describe("ReviewUnslopSnapshot", () => {
     assertEquals(details.verification_status, "failed");
     assertEquals(details.unslop, undefined);
   });
+  for (const sameRequest of [false, true]) {
+    it(sameRequest ? "same-request-rerun-review-identity" : "same-trace-two-review-commits", async () => {
+      const trace = crypto.randomUUID();
+      const firstRequest = "request-first";
+      const secondRequest = sameRequest ? firstRequest : "request-second";
+      const registry = new ReviewRegistry(db, new EventLogger({ db }));
+      const first = await createFeatureBranch(tempDir, firstRequest, trace);
+      const second = await createFeatureBranch(tempDir, secondRequest, `${trace}-rerun`);
+      for (const [index, branch] of [first, second].entries()) {
+        const commit = await runGitCommand(tempDir, ["rev-parse", branch]);
+        const request = index === 0 ? firstRequest : secondRequest;
+        const run = crypto.randomUUID();
+        await registry.register({
+          trace_id: trace,
+          branch,
+          repository: tempDir,
+          description: "review fixture",
+          created_by: "agent",
+          files_changed: 1,
+          commit_sha: commit,
+        });
+        db.logActivity(
+          "daemon",
+          DomainEventType.ExecutionCompleted,
+          null,
+          {
+            request_id: request,
+            commit_sha: commit,
+            verification_status: index === 0 ? "failed" : "passed",
+            verification_run_id: run,
+          },
+          trace,
+          null,
+        );
+        logLintSnapshot(
+          db,
+          trace,
+          request,
+          run,
+          commit,
+          index === 0 ? {} : {
+            verification_status: "passed",
+            total: 0,
+            checks: [{ check_index: 0, outcome: "passed", total: 0, error_class: null }],
+            findings: [],
+            truncated: false,
+          },
+        );
+      }
+      await db.waitForFlush();
+      const older = await reviewCommands.show(first);
+      assertEquals(older.verification_status, "failed");
+      assert(verificationWarning(older.verification_status)?.includes("failed"));
+      assertEquals(older.unslop?.total, 2);
+      assertEquals((await reviewCommands.show(second)).verification_status, "passed");
+      assertEquals((await reviewCommands.show(second)).unslop?.total, 0);
+    });
+  }
 });

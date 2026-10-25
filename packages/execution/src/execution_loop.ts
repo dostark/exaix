@@ -23,7 +23,12 @@ import type { IApplicationContext, IPlanAmendmentGate, IPlanAmendmentService } f
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IPlanAction } from "@exaix/schemas/plan_schema.ts";
 import { createNoopEventLogger, type IEventLogger } from "@exaix/core/logger";
-import { DomainEventType, type IEventJournalReader, type TDomainEventType } from "@exaix/core/events";
+import {
+  DomainEventType,
+  type IEventJournalReader,
+  type IExecutionCompletedVerificationEventPayload,
+  type TDomainEventType,
+} from "@exaix/core/events";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IGitService, IGitServiceFactory, IMemoryBankService, IToolRegistryFactory } from "@exaix/core/types";
@@ -167,6 +172,7 @@ export interface ISuccessArtifactContext {
   targetBranch?: string;
   verificationStatus: VerificationStatus;
   verificationRunId?: string;
+  verificationCommitSha?: string | null;
 }
 
 /** Options for internal execution */
@@ -447,6 +453,7 @@ export class ExecutionLoop {
           portal: frontmatter.portal,
           targetBranch: frontmatter.target_branch,
           verificationStatus: verification.status,
+          verificationCommitSha: verification.commitSha,
           ...(verification.runId === undefined ? {} : { verificationRunId: verification.runId }),
         },
         workResult.completionSummary,
@@ -493,13 +500,18 @@ export class ExecutionLoop {
   ): Promise<IVerificationOutcome> {
     const verification = this.resolvePortalVerification(frontmatter);
     if (!verification) return { status: VerificationStatus.NOT_CONFIGURED, commitSha: context.commitSha };
+    const usesUnslop = verification.checks.some((check) => check.kind === UNSLOP_CHECK_KIND);
+    const runId = crypto.randomUUID();
     if (context.isReadOnly || context.commitSha === null) {
-      return { status: VerificationStatus.SKIPPED, commitSha: context.commitSha };
+      const skipped = { status: VerificationStatus.SKIPPED, commitSha: context.commitSha };
+      if (usesUnslop) {
+        await this.emitLintSnapshot(verification, context, skipped, undefined, runId, 0);
+        return { ...skipped, runId };
+      }
+      return skipped;
     }
 
     const runner = this.verificationRunnerFactory(this.logger ?? createNoopEventLogger(), this.knownSecrets);
-    const usesUnslop = verification.checks.some((check) => check.kind === UNSLOP_CHECK_KIND);
-    const runId = crypto.randomUUID();
     let lastResult: IVerificationResult | undefined;
     let lastAttempt = 0;
     const runOnce = async (attempt: number, expectedCommit: string) => {
@@ -1426,14 +1438,19 @@ export class ExecutionLoop {
     await this.archiveRequest(requestId, ExecutionStatus.COMPLETED, archiveDir);
 
     // Log completion
-    this.logActivity(DomainEventType.ExecutionCompleted, traceId, {
-      request_id: requestId,
-      archived_to: archivePath,
-      verification_status: artifactContext?.verificationStatus ?? VerificationStatus.NOT_CONFIGURED,
-      ...(artifactContext?.verificationRunId === undefined
-        ? {}
-        : { verification_run_id: artifactContext.verificationRunId }),
-    });
+    this.logActivity(
+      DomainEventType.ExecutionCompleted,
+      traceId,
+      {
+        request_id: requestId,
+        archived_to: archivePath,
+        verification_status: artifactContext?.verificationStatus ?? VerificationStatus.NOT_CONFIGURED,
+        commit_sha: artifactContext?.verificationCommitSha ?? null,
+        ...(artifactContext?.verificationRunId === undefined
+          ? {}
+          : { verification_run_id: artifactContext.verificationRunId }),
+      } satisfies IExecutionCompletedVerificationEventPayload & { archived_to: string },
+    );
   }
 
   /**

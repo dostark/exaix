@@ -190,6 +190,37 @@ steps:
         kind: "command-output-contains"
         contains: ["verification: repaired", "unslop: no findings remain"]
 
+  - id: "canonical-lint-event-inventory"
+    type: "journal-assert"
+    action_types: [
+      "execution.verification.lint_check.started",
+      "execution.verification.lint_check.completed",
+      "execution.verification.lint_findings",
+      "execution.completed",
+    ]
+    payload_equals:
+      - path: "request_id"
+        value: "execution-unslop-repair"
+    project:
+      action: "action_type"
+      trace: "trace_id"
+      request: "payload.request_id"
+      run: "payload.run_id"
+      completed_run: "payload.verification_run_id"
+      attempt: "payload.attempt"
+      check_index: "payload.check_index"
+      target: "payload.target_sha"
+      commit_sha: "payload.commit_sha"
+      status: "payload.verification_status"
+      outcome: "payload.outcome"
+      total: "payload.total"
+      error: "payload.error_class"
+    output_criteria:
+      - id: "canonical-trace"
+        class: "security"
+        kind: "command-output-contains"
+        contains: ["22900000-0000-4000-8000-000000000229"]
+
   - id: "stop-daemon"
     type: "exactl"
     command: "daemon"

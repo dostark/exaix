@@ -135,6 +135,31 @@ export type SequentialTest = z.input<typeof SequentialTestSchema>;
 /** Containered Batch files with their isolation reasons. Order is authoritative and feeds the Parallel Batch's ignore list. */
 export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
   {
+    file: "packages/execution/tests/unslop_check_runner_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.processEnv],
+  },
+  {
+    file: "packages/execution/tests/unslop_verification_security_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.processEnv],
+  },
+  {
+    file: "packages/execution/tests/execution_loop_verification_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.processEnv],
+  },
+  {
+    file: "apps/exactl/tests/review_commands_verification_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.processEnv],
+  },
+  {
+    file: "apps/exactl/tests/review_unslop_cli_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.processEnv],
+  },
+  {
+    file: "apps/exactl/tests/review_unslop_security_test.ts",
+    reasons: [IsolationReason.moduleCache, IsolationReason.processEnv],
+  },
+
+  {
     file: "tests/scenario_framework/tests/unit/compiled_flow_fixture_test.ts",
     reasons: [IsolationReason.processEnv, IsolationReason.moduleCache],
   },

@@ -78,9 +78,7 @@ export async function loadUnslopAssets(
     if (error instanceof UnslopCheckError) throw error;
     return { error_class: UnslopErrorClass.ASSET_INVALID };
   }
-  if (manifest.format_version !== SUPPORTED_MANIFEST_FORMAT || manifest.policy_version !== SUPPORTED_POLICY_VERSION) {
-    return { error_class: UnslopErrorClass.ASSET_INVALID };
-  }
+  if (!isAssetManifest(manifest)) return { error_class: UnslopErrorClass.ASSET_INVALID };
   const engineEntry = manifest.files[UNSLOP_PORTAL_ENGINE_FILENAME];
   const catalogEntry = manifest.files[catalogName];
   if (engineEntry === undefined) return { error_class: UnslopErrorClass.ENGINE_MISSING };
@@ -117,7 +115,13 @@ async function readReplacementCatalog(
     maxBytes: options.settings.catalog_max_bytes,
     timeoutMs: context.timeoutMs,
   });
-  if (!blob.ok) return false;
+  if (!blob.ok) {
+    if (blob.code === "output_limit" || blob.code === "limit_exceeded") {
+      throw new UnslopCheckError(UnslopErrorClass.LIMIT_EXCEEDED);
+    }
+    if (blob.code === "deadline_exceeded") throw new UnslopCheckError(UnslopErrorClass.TIMEOUT);
+    return false;
+  }
   const text = decodeUtf8(blob.value.bytes);
   if (text === null) return false;
   const ruleIds = parseReplacementCatalog(text, packagedRuleIds);
@@ -189,7 +193,7 @@ function parseReplacementCatalog(
     if ((entry as Record<string, unknown>).engine !== "plugin") return null;
     ruleIds.add(id);
   }
-  return ruleIds.size > 0 ? ruleIds : null;
+  return ruleIds;
 }
 
 /** Resolves the trusted asset directory before reading any policy bytes. */
@@ -210,4 +214,20 @@ async function trustedAssetDirectory(
     if (error instanceof UnslopCheckError) throw error;
     throw new UnslopCheckError(UnslopErrorClass.ASSET_INVALID);
   }
+}
+
+/** Rejects malformed manifest fields before they can affect a bounded file read. */
+function isAssetManifest(value: unknown): value is IAssetManifest {
+  if (typeof value !== "object" || value === null) return false;
+  const record = value as Record<string, unknown>;
+  if (record.format_version !== SUPPORTED_MANIFEST_FORMAT || record.policy_version !== SUPPORTED_POLICY_VERSION) {
+    return false;
+  }
+  if (typeof record.files !== "object" || record.files === null || Array.isArray(record.files)) return false;
+  return Object.values(record.files).every((entry: unknown) => {
+    if (typeof entry !== "object" || entry === null) return false;
+    const item = entry as Record<string, unknown>;
+    return typeof item.sha256 === "string" && /^[a-f0-9]{64}$/.test(item.sha256) &&
+      typeof item.bytes === "number" && Number.isSafeInteger(item.bytes) && item.bytes >= 0;
+  });
 }

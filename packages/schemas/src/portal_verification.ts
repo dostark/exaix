@@ -238,11 +238,13 @@ export const UnslopErrorClass = {
 } as const satisfies Record<string, UnslopErrorClass>;
 
 /** The outcome of one configured unslop check in the terminal snapshot. */
+export const UNSLOP_CHECK_NOT_RUN = "not_run";
+
 export const UNSLOP_CHECK_RUN_OUTCOMES = [
   GeneralStatus.PASSED,
   GeneralStatus.FAILED,
   GeneralStatus.ERROR,
-  "not_run",
+  UNSLOP_CHECK_NOT_RUN,
 ] as const;
 
 export type UnslopCheckRunOutcome = (typeof UNSLOP_CHECK_RUN_OUTCOMES)[number];
@@ -259,6 +261,20 @@ export const VERIFICATION_STATUS_VALUES = [
 
 export const VerificationStatusSchema = z.enum(VERIFICATION_STATUS_VALUES);
 
+/** Verification identity on execution.completed. Older rows may omit the added fields. */
+export const ExecutionCompletedVerificationSchema = z.object({
+  request_id: z.string().min(1),
+  verification_status: VerificationStatusSchema,
+  verification_run_id: z.string().uuid().optional(),
+  commit_sha: z.string().min(1).nullable().optional(),
+});
+
+export type IExecutionCompletedVerification =
+  & Omit<z.infer<typeof ExecutionCompletedVerificationSchema>, "verification_status">
+  & {
+    verification_status: VerificationStatus;
+  };
+
 const UnslopCheckIndexSchema = z.number().int().nonnegative();
 const UnslopTotalSchema = z.number().int().nonnegative().nullable();
 
@@ -270,12 +286,20 @@ export const UnslopCheckSnapshotSchema = z.object({
   error_class: z.enum(UNSLOP_ERROR_CLASSES).nullable(),
 }).strict();
 
+/** True when a projected path is relative and contains no raw terminal or markup controls. */
+function isSafeFindingPath(value: string): boolean {
+  return isLiteralRepoFilePath(value) && ![...value].some((char) => {
+    const code = char.codePointAt(0) ?? 0;
+    return code < 0x20 || code === 0x7f || char === "<" || char === ">";
+  });
+}
+
 /** One persisted finding. The file is a display-safe repo-relative path. */
 export const UnslopFindingSnapshotSchema = z.object({
   check_index: UnslopCheckIndexSchema,
-  file: z.string().min(1),
+  file: z.string().min(1).refine(isSafeFindingPath, "unsafe display path"),
   line: z.number().int().positive(),
-  rule: z.string().min(1),
+  rule: z.string().regex(/^unslop\/[a-z][a-z0-9-]*$/),
 }).strict();
 
 /** The authoritative terminal findings snapshot of one configured unslop run. */
@@ -286,11 +310,70 @@ export const ExecutionVerificationLintFindingsEventPayloadSchema = z.object({
   commit_sha: z.string().min(1).nullable(),
   verification_status: VerificationStatusSchema,
   total: UnslopTotalSchema,
-  checks: z.array(UnslopCheckSnapshotSchema),
+  checks: z.array(UnslopCheckSnapshotSchema).min(1),
   findings: z.array(UnslopFindingSnapshotSchema),
   truncated: z.boolean(),
-}).strict();
+}).strict().superRefine((snapshot, context) => {
+  if (!validSnapshotSemantics(snapshot)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "inconsistent lint snapshot" });
+  }
+});
 
 export type IExecutionVerificationLintFindingsEventPayload = z.infer<
   typeof ExecutionVerificationLintFindingsEventPayloadSchema
 >;
+
+/** Validates the per-check outcome without accepting contradictory numeric totals. */
+function validCheckState(check: z.infer<typeof UnslopCheckSnapshotSchema>): boolean {
+  if (check.outcome === VerificationStatus.ERROR) return check.total === null && check.error_class !== null;
+  if (check.error_class !== null) return false;
+  if (check.outcome === UNSLOP_CHECK_NOT_RUN) return check.total === null;
+  if (check.outcome === VerificationStatus.PASSED) return check.total === 0;
+  return check.total !== null && check.total > 0;
+}
+
+/** Enforces the relationships a renderer must trust across snapshot fields. */
+function validSnapshotSemantics(snapshot: {
+  verification_status: VerificationStatus;
+  total: number | null;
+  checks: z.infer<typeof UnslopCheckSnapshotSchema>[];
+  findings: z.infer<typeof UnslopFindingSnapshotSchema>[];
+  truncated: boolean;
+}): boolean {
+  const { checks, findings, total, verification_status: status } = snapshot;
+  if (
+    !checks.every((check, index) =>
+      validCheckState(check) &&
+      (index === 0 || check.check_index > checks[index - 1]!.check_index)
+    )
+  ) return false;
+  for (const finding of findings) {
+    const check = checks.find((entry) => entry.check_index === finding.check_index);
+    if (check?.outcome !== VerificationStatus.FAILED) return false;
+  }
+  for (const check of checks) {
+    const count = findings.filter((finding) => finding.check_index === check.check_index).length;
+    if (check.total !== null && count > check.total) return false;
+  }
+  const complete = checks.every((check) => check.total !== null);
+  const aggregate = complete ? checks.reduce((sum, check) => sum + (check.total ?? 0), 0) : null;
+  if (total !== aggregate || snapshot.truncated !== (total !== null && total > findings.length)) return false;
+  return validSnapshotStatus(status, checks, findings.length);
+}
+
+/** Status also covers Deno task checks whose state is not included in the lint-only snapshot. */
+function validSnapshotStatus(
+  status: VerificationStatus,
+  checks: z.infer<typeof UnslopCheckSnapshotSchema>[],
+  findingCount: number,
+): boolean {
+  if (status === VerificationStatus.NOT_CONFIGURED) return false;
+  if (status === VerificationStatus.SKIPPED) {
+    return checks.every((check) => check.outcome === UNSLOP_CHECK_NOT_RUN) && findingCount === 0;
+  }
+  if (status === VerificationStatus.PASSED || status === VerificationStatus.REPAIRED) {
+    return checks.every((check) => check.outcome === VerificationStatus.PASSED);
+  }
+  if (status === VerificationStatus.FAILED) return checks.every((check) => check.outcome !== VerificationStatus.ERROR);
+  return true;
+}

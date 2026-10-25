@@ -192,7 +192,7 @@ function validSnapshot(): Record<string, unknown> {
     total: 2,
     checks: [{ check_index: 0, outcome: "failed", total: 2, error_class: null }],
     findings: [{ check_index: 0, file: "src/seed.ts", line: 3, rule: "unslop/no-chained-type-assertions" }],
-    truncated: false,
+    truncated: true,
   };
 }
 
@@ -228,7 +228,7 @@ Deno.test("[verification-schema] the final snapshot schema accepts the authorita
   assertEquals(parsed.checks.length, 1);
   assertEquals(parsed.findings[0].line, 3);
   assertEquals(parsed.findings[0].rule, "unslop/no-chained-type-assertions");
-  assertEquals(parsed.truncated, false);
+  assertEquals(parsed.truncated, true);
   assertEquals(parsed.verification_status, "failed");
 });
 
@@ -264,6 +264,10 @@ Deno.test("[verification-schema] every closed unslop error class is a valid snap
   for (const errorClass of Object.values(UnslopErrorClass)) {
     const payload = {
       ...validSnapshot(),
+      verification_status: "error",
+      total: null,
+      findings: [],
+      truncated: false,
       checks: [{ check_index: 0, outcome: "error", total: null, error_class: errorClass }],
     };
     assert(

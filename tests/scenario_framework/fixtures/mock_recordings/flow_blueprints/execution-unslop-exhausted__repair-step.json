@@ -1,7 +1,7 @@
 {
   "promptHash": "execution-unslop-exhausted-step",
   "promptPreview": "AGENT ROLE: Verification Unslop Exhausted Coder\n",
-  "response": "THOUGHT: The finding is on seed.ts but the repair budget is exhausted; I will leave the source unchanged.\nSTATUS: COMPLETE\nSUMMARY: Left seed.ts unchanged.",
+  "response": "THOUGHT: I will replace the working policy with an empty catalog and leave seed.ts unchanged.\n```toml\n[[actions]]\ntool = \"write_file\"\n[actions.params]\npath = \"verification-catalog.json\"\ncontent = \"{\\\"version\\\": \\\"1\\\", \\\"scopes\\\": {\\\"test\\\": [], \\\"fixture\\\": []}, \\\"tagVocabulary\\\": {}, \\\"rules\\\": {}}\"\n```\nSTATUS: COMPLETE\nSUMMARY: Replaced the working catalog without repairing seed.ts.",
   "model": "mock-model",
   "tokens": {
     "input": 1000,

@@ -13,6 +13,7 @@ import type {
   EffortResolutionBasis,
   EffortTier,
   IDenoTaskCheck,
+  IExecutionCompletedVerification,
   IExecutionVerificationLintFindingsEventPayload,
   IRouteReason,
   ModelResolutionReason,
@@ -738,6 +739,9 @@ export interface IJournalIntegrityPayload {
   expected_hash: string | null;
   actual_hash: string | null;
 }
+
+/** Verification fields of execution.completed. Commit identity is additive for old journals. */
+export type IExecutionCompletedVerificationEventPayload = IExecutionCompletedVerification;
 
 /** Payload of `execution.verification.started` — one per verification run. */
 export interface IExecutionVerificationStartedEventPayload {

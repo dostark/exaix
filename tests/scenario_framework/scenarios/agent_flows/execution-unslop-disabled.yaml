@@ -169,6 +169,37 @@ steps:
         kind: "command-output-not-contains"
         not_contains: ["unslop:"]
 
+  - id: "canonical-lint-event-inventory"
+    type: "journal-assert"
+    action_types: [
+      "execution.verification.lint_check.started",
+      "execution.verification.lint_check.completed",
+      "execution.verification.lint_findings",
+      "execution.completed",
+    ]
+    payload_equals:
+      - path: "request_id"
+        value: "execution-unslop-disabled"
+    project:
+      action: "action_type"
+      trace: "trace_id"
+      request: "payload.request_id"
+      run: "payload.run_id"
+      completed_run: "payload.verification_run_id"
+      attempt: "payload.attempt"
+      check_index: "payload.check_index"
+      target: "payload.target_sha"
+      commit_sha: "payload.commit_sha"
+      status: "payload.verification_status"
+      outcome: "payload.outcome"
+      total: "payload.total"
+      error: "payload.error_class"
+    output_criteria:
+      - id: "canonical-trace"
+        class: "security"
+        kind: "command-output-contains"
+        contains: ["22b00000-0000-4000-8000-000000000231"]
+
   - id: "stop-daemon"
     type: "exactl"
     command: "daemon"

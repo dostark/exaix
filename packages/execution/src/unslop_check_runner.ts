@@ -36,7 +36,12 @@ import type {
   IUnslopFinding,
 } from "./unslop_check_types.ts";
 import { type IUnslopAssets, loadUnslopAssets } from "./unslop_assets.ts";
-import { runUnslopLintBatch, unslopLintArgs } from "./unslop_lint_process.ts";
+import {
+  runUnslopCatalogValidation,
+  runUnslopLintBatch,
+  UNSLOP_CATALOG_VALIDATOR_FILENAME,
+  unslopLintArgs,
+} from "./unslop_lint_process.ts";
 import { bindUnslopBudget } from "./unslop_budget.ts";
 import { compareUnslopFindings, type IUnslopCollectedFindings, uniqueUnslopBatch } from "./unslop_findings.ts";
 import {
@@ -62,7 +67,13 @@ interface ISelection {
 }
 
 function errorOutcome(errorClass: UnslopErrorClass): IUnslopCheckOutcome {
-  return { kind: VerificationStatus.ERROR, error_class: errorClass, total: null, findings: [], output: "" };
+  return {
+    kind: VerificationStatus.ERROR,
+    error_class: errorClass,
+    total: null,
+    findings: [],
+    output: `${errorClass}: verification could not complete; check the configured source and policy.`,
+  };
 }
 
 function passedOutcome(): IUnslopCheckOutcome {
@@ -161,7 +172,24 @@ export class UnslopCheckRunner {
     const runDir = directory.path;
     try {
       await this.writePrivateInputs(runDir, assets);
-      const collected = await this.lintBatches(context, runDir, selection.files, assets, ranges);
+      if (context.check.catalog !== undefined) {
+        const validated = await runUnslopCatalogValidation({
+          configPath: join(runDir, DENO_CONFIG_FILENAME),
+          cwd: context.executionRoot,
+          ...buildVerificationCheckEnv(),
+          timeoutMs: context.timeoutMs,
+          jsonMaxBytes: this.options.settings.json_max_bytes,
+          stderrMaxBytes: this.options.settings.stderr_max_bytes,
+        });
+        if (validated.kind !== "diagnostics") {
+          return errorOutcome(
+            validated.kind === "source_invalid" ? UnslopErrorClass.CATALOG_INVALID : batchErrorClass(validated.kind),
+          );
+        }
+      }
+      const collected = assets.ruleIds.size === 0
+        ? { findings: [], total: 0, hostExitCodes: [] }
+        : await this.lintBatches(context, runDir, selection.files, assets, ranges);
       const final = await validateUnslopSnapshot(context, this.options, selection.files);
       if (final !== null) return errorOutcome(final);
       if (KIND_FIELD in collected) return collected;
@@ -232,12 +260,29 @@ export class UnslopCheckRunner {
     const selectedPacks = assets.packs.includes(UNSLOP_DENO_PACK)
       ? "TYPESCRIPT_RULE_PACK, DENO_RULE_PACK"
       : "TYPESCRIPT_RULE_PACK";
-    const plugin = [
+    const imports = [
       `import { createDenoPlugin, createRuleRegistry, parseCatalog, ${selectedPacks} } from ${engineUrl};`,
       `import catalogJson from ${catalogUrl} with { type: "json" };`,
-      `const catalog = parseCatalog(catalogJson, { scriptRuleSchemas: null, registry: createRuleRegistry(${
-        JSON.stringify(UNSLOP_PLUGIN_NAME)
-      }, [${selectedPacks}]) });`,
+    ];
+    const parse = `parseCatalog(catalogJson, { scriptRuleSchemas: null, registry: createRuleRegistry(${
+      JSON.stringify(UNSLOP_PLUGIN_NAME)
+    }, [${selectedPacks}]) })`;
+    const validator = [
+      ...imports,
+      "let valid = false;",
+      `try { ${parse}; valid = true; } catch {}`,
+      'console.log(JSON.stringify({ diagnostics: [], errors: valid ? [] : ["invalid_catalog"] }));',
+      "",
+    ].join("\n");
+    await writeUnslopPrivateInput(
+      runDir,
+      UNSLOP_CATALOG_VALIDATOR_FILENAME,
+      new TextEncoder().encode(validator),
+      this.options,
+    );
+    const plugin = [
+      ...imports,
+      `const catalog = ${parse};`,
       `export default createDenoPlugin(${
         JSON.stringify(UNSLOP_PLUGIN_NAME)
       }, catalog, { rulePacks: [${selectedPacks}], selection: "" });`,

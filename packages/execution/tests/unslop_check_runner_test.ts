@@ -725,3 +725,142 @@ Deno.test("lint-batch-stream-resource-boundaries", async (test) => {
     await Deno.remove(root, { recursive: true });
   }
 });
+
+Deno.test("real-host-source-error-category", async () => {
+  const scope = await makeScope();
+  try {
+    const base = await seedBase(scope, { "seed.ts": CLEAN_LINE });
+    const target = await applyTarget(scope, { "seed.ts": "export const PRIVATE_SOURCE_SECRET = ;\n" });
+    const result = await scope.runner.run(contextFor(scope, base, target));
+    assertEquals(result.kind, "error");
+    assertEquals(result.kind === "error" ? result.error_class : null, "UnslopSourceInvalid");
+    assert(result.output.length > 0, "categorical errors include a safe explanation");
+    assertFalse(JSON.stringify(result).includes("PRIVATE_SOURCE_SECRET"));
+    assertFalse(JSON.stringify(result).includes(scope.ctx.repoDir));
+  } finally {
+    await scope.ctx.cleanup();
+  }
+});
+
+Deno.test("complete-legacy-catalog-validation", async (test) => {
+  for (
+    const name of ["severity", "options", "schema", "empty", "missing", "oversized", "nonblob", "timeout"] as const
+  ) {
+    await test.step(name, async () => {
+      const scope = await makeScope();
+      try {
+        await setupGitRepo(scope.ctx.repoDir, { initialCommit: true });
+        const policy: Record<string, unknown> = JSON.parse(
+          await Deno.readTextFile(join(scope.ctx.tempDir, "lint", "unslop_portal_catalog.json")),
+        );
+        const rules = policy.rules as Record<string, Record<string, unknown>>;
+        const entry = rules["unslop/no-chained-type-assertions"]!;
+        if (name === "severity") entry.severity = "bogus";
+        if (name === "options") entry.options = { invalid_option: true };
+        if (name === "schema") delete policy.scopes;
+        if (name === "empty") {
+          policy.rules = {};
+          policy.tagVocabulary = {};
+        }
+        const path = join(scope.ctx.repoDir, "catalog.json");
+        if (name === "nonblob") await Deno.symlink("seed.ts", path);
+        else if (name !== "missing") {
+          await Deno.writeTextFile(
+            path,
+            name === "oversized" ? " ".repeat(scope.settings.catalog_max_bytes + 1) : JSON.stringify(policy),
+          );
+        }
+        await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), CLEAN_LINE);
+        const base = await commitAll(scope, "policy base");
+        const target = await applyTarget(scope, { "seed.ts": SEED_CAST });
+        const result = await scope.runner.run(contextFor(scope, base, target, {
+          check: { kind: "unslop", catalog: "catalog.json" },
+          ...(name === "timeout" ? { timeoutMs: 0 } : {}),
+        }));
+        if (name === "empty") {
+          assertEquals(result.kind, "passed");
+          assertEquals(result.total, 0);
+        } else {
+          assertEquals(result.kind, "error");
+          assertEquals(
+            result.kind === "error" ? result.error_class : null,
+            name === "oversized"
+              ? "UnslopLimitExceeded"
+              : name === "timeout"
+              ? "UnslopTimeout"
+              : "UnslopCatalogInvalid",
+          );
+          assert(result.output.length > 0);
+          assertFalse(result.output.includes(scope.ctx.repoDir));
+        }
+      } finally {
+        await scope.ctx.cleanup();
+      }
+    });
+  }
+});
+
+Deno.test("complete-adapter-and-repair-matrix: untrusted host diagnostics", async (test) => {
+  const scope = await makeScope();
+  const original = SafeSubprocess.spawn.bind(SafeSubprocess);
+  try {
+    const base = await seedBase(scope, { "seed.ts": CLEAN_LINE, "other.ts": CLEAN_LINE });
+    const target = await applyTarget(scope, { "seed.ts": SEED_CAST });
+    const normal = {
+      filename: new URL(`file://${join(scope.ctx.repoDir, "seed.ts")}`).href,
+      code: "unslop/no-chained-type-assertions",
+      message: "PRIVATE_SOURCE_SECRET",
+      hint: "PRIVATE_SOURCE_SECRET",
+      range: { start: { line: 1, col: 0 }, end: { line: 1, col: 1 } },
+    };
+    for (
+      const changes of [
+        { filename: "file:///tmp/outside.ts" },
+        { filename: new URL(`file://${join(scope.ctx.repoDir, "other.ts")}`).href },
+        { code: "foreign/no-chained-type-assertions" },
+        { code: "unslop/unregistered-rule" },
+        { range: { start: { line: 99, col: 0 }, end: { line: 99, col: 1 } } },
+      ]
+    ) {
+      await test.step(JSON.stringify(changes), async () => {
+        const host = JSON.stringify({ diagnostics: [{ ...normal, ...changes }], errors: [] });
+        const spawn = stub(
+          SafeSubprocess,
+          "spawn",
+          (_command, _args, options) =>
+            original(Deno.execPath(), ["eval", `console.log(${JSON.stringify(host)});Deno.exit(1);`], options),
+        );
+        try {
+          const result = await scope.runner.run(contextFor(scope, base, target));
+          assertEquals(result.kind, "error");
+          assertEquals(result.kind === "error" ? result.error_class : null, "UnslopHostProtocolInvalid");
+          assertFalse(JSON.stringify(result).includes("PRIVATE_SOURCE_SECRET"));
+        } finally {
+          spawn.restore();
+        }
+      });
+    }
+  } finally {
+    await scope.ctx.cleanup();
+  }
+});
+
+Deno.test("complete-adapter-and-repair-matrix: real spanning function intersects an edited body line", async () => {
+  const scope = await makeScope();
+  try {
+    const source = "export function choose(value: number): number {\n" +
+      Array.from({ length: 16 }, (_, index) => `  if (value === ${index}) return ${index};`).join("\n") +
+      "\n  return 0;\n}\n";
+    const base = await seedBase(scope, { "seed.ts": source });
+    const target = await applyTarget(scope, { "seed.ts": source.replace("  return 0;\n}", "  return 99;\n}") });
+    const result = await scope.runner.run(contextFor(scope, base, target));
+    assertEquals(result.kind, "failed");
+    assert(
+      result.findings.some((finding) =>
+        finding.rule === "unslop/max-cyclomatic-complexity" && finding.start_line === 1 && finding.end_line >= 18
+      ),
+    );
+  } finally {
+    await scope.ctx.cleanup();
+  }
+});

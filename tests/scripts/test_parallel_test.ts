@@ -197,6 +197,13 @@ Deno.test("test_output_parse is the single source and test_parallel re-exports t
 
 /** The expected Batch-2 file list. Order is authoritative. */
 const EXPECTED_SEQUENTIAL_FILES = [
+  "packages/execution/tests/unslop_check_runner_test.ts",
+  "packages/execution/tests/unslop_verification_security_test.ts",
+  "packages/execution/tests/execution_loop_verification_test.ts",
+  "apps/exactl/tests/review_commands_verification_test.ts",
+  "apps/exactl/tests/review_unslop_cli_test.ts",
+  "apps/exactl/tests/review_unslop_security_test.ts",
+
   "tests/scenario_framework/tests/unit/compiled_flow_fixture_test.ts",
   "apps/exactl/tests/exactl_all_test.ts",
   "tests/integration/openrouter_adapter_wiring_test.ts",

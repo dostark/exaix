@@ -7,6 +7,7 @@
  */
 
 import { assert, assertEquals, assertFalse, assertMatch, assertStringIncludes } from "@std/assert";
+import { stub } from "@std/testing/mock";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
 import { createGitTestContext, setupGitRepo } from "@exaix/git/testing";
@@ -255,6 +256,81 @@ Deno.test("[git-queries] bounded capture reaps the child and categorical audit h
       assertStringIncludes(payload, '"operation"');
     }
     assert(payloads.length > 0);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("source-containing-git-markers", async () => {
+  const { repoDir, git, cleanup } = await createGitTestContext("git-markers-");
+  try {
+    await setupGitRepo(repoDir, { initialCommit: true });
+    const base = await readHeadSha(git);
+    await Deno.writeTextFile(
+      join(repoDir, "markers.ts"),
+      [
+        'export const binary = "Binary files example";',
+        'export const patch = "GIT binary patch";',
+        'export const diff = "diff --git example";',
+      ].join("\n") + "\n",
+    );
+    const target = await commitAll(git, "source markers");
+    const result = await readChangedLineRanges(git, base, target, "markers.ts", { maxOutputBytes: QUERY_BUDGET });
+    assert(result.ok, JSON.stringify(result));
+    assertEquals(result.value, [{ start: 1, end: 3 }]);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("genuine-malformed-patch-rejected", async () => {
+  for (
+    const patch of [
+      "@@ invalid @@\n",
+      "@@ -1 +1,2 @@\n-old\n+new\n",
+      "Binary files a/x.ts and b/x.ts differ\n",
+      "GIT binary patch\n",
+    ]
+  ) {
+    assertEquals(parseHunkRanges(patch), null, patch);
+  }
+  const { git, cleanup } = await createGitTestContext("git-bad-patch-");
+  try {
+    for (
+      const output of [
+        "not a git patch\n",
+        "@@ -0,0 +1 @@\n+text\n",
+        [
+          "diff --git a/x.ts b/x.ts",
+          "--- a/x.ts",
+          "+++ b/x.ts",
+          "@@ -1 +1 @@",
+          "-old",
+          "+new",
+          "diff --git a/y.ts b/y.ts",
+          "--- a/y.ts",
+          "+++ b/y.ts",
+          "@@ -1 +1 @@",
+          "-old",
+          "+new",
+          "",
+        ].join("\n"),
+      ]
+    ) {
+      const command = stub(
+        git,
+        "runGitCommand",
+        () => Promise.resolve({ output, exitCode: 0, stdoutBytes: new TextEncoder().encode(output) }),
+      );
+      try {
+        const result = await readChangedLineRanges(git, "a".repeat(40), "b".repeat(40), "x.ts", {
+          maxOutputBytes: QUERY_BUDGET,
+        });
+        assertEquals(result.ok, false, output);
+      } finally {
+        command.restore();
+      }
+    }
   } finally {
     await cleanup();
   }

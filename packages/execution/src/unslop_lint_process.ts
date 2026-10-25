@@ -8,7 +8,11 @@
  * @related-files [packages/execution/src/unslop_check_runner.ts]
  */
 
+import { dirname, join } from "@std/path";
 import { SafeSubprocess } from "@exaix/core";
+
+/** The fixed private catalog validation entry point. */
+export const UNSLOP_CATALOG_VALIDATOR_FILENAME = "validate_catalog.ts";
 
 /** One host diagnostic with its raw file URL and half-open range. */
 export interface IUnslopHostDiagnostic {
@@ -75,8 +79,12 @@ export function parseUnslopHostOutput(stdout: string): IUnslopHostOutput | null 
   }
   const errors: string[] = [];
   for (const entry of record.errors) {
-    if (typeof entry !== "string") return null;
-    errors.push(entry);
+    if (typeof entry !== "string") {
+      if (typeof entry !== "object" || entry === null) return null;
+      const error = entry as Record<string, unknown>;
+      if (typeof error.file_path !== "string" || typeof error.message !== "string") return null;
+    }
+    errors.push("source_invalid");
   }
   return { diagnostics, errors };
 }
@@ -166,10 +174,32 @@ function concat(chunks: readonly Uint8Array[]): Uint8Array {
 }
 
 /** Runs one bounded batch and classifies its host result. */
-export async function runUnslopLintBatch(options: IUnslopLintBatchOptions): Promise<IUnslopLintBatchOutcome> {
+export function runUnslopLintBatch(options: IUnslopLintBatchOptions): Promise<IUnslopLintBatchOutcome> {
+  return runUnslopHost(options, unslopLintArgs(options.configPath, options.files));
+}
+
+/** Validates replacement policy with the verified bundled parser in a bounded isolated child. */
+export function runUnslopCatalogValidation(
+  options: Omit<IUnslopLintBatchOptions, "files">,
+): Promise<IUnslopLintBatchOutcome> {
+  return runUnslopHost(options, [
+    "run",
+    "--deny-import",
+    "--no-config",
+    "--no-lock",
+    "--no-prompt",
+    join(dirname(options.configPath), UNSLOP_CATALOG_VALIDATOR_FILENAME),
+  ]);
+}
+
+/** Captures and reaps either fixed host command under the same transport limits. */
+async function runUnslopHost(
+  options: Omit<IUnslopLintBatchOptions, "files">,
+  args: readonly string[],
+): Promise<IUnslopLintBatchOutcome> {
   let child: Deno.ChildProcess;
   try {
-    child = SafeSubprocess.spawn(Deno.execPath(), unslopLintArgs(options.configPath, options.files), {
+    child = SafeSubprocess.spawn(Deno.execPath(), [...args], {
       cwd: options.cwd,
       env: options.env,
       clearEnv: options.clearEnv,
