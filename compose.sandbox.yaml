@@ -14,6 +14,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # The last Dockerfile stage is dev-test. Select the hardened daemon stage explicitly.
+      target: runtime
     image: exaix-sandbox:dev
     # --- Identity: never run agents as root ---
     user: "10001:10001"

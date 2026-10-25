@@ -102,10 +102,17 @@ RUN groupadd --gid 10001 exaix \
 
 WORKDIR /app
 COPY --from=builder --chown=10001:10001 /deno-dir /deno-dir
-COPY --chown=10001:10001 deno.json deno.lock ./
+# deno.json sets nodeModulesDir "auto". The rootfs is read-only, so ship the prepared node_modules.
+COPY --from=builder --chown=10001:10001 /app/node_modules /app/node_modules
+COPY --chown=10001:10001 deno.json ./
+# The builder's lockfile matches this module graph. The read-only rootfs cannot rewrite a drifted one.
+COPY --from=builder --chown=10001:10001 /app/deno.lock ./
 COPY --chown=10001:10001 unslop.config.json layout.json ./
 COPY --chown=10001:10001 packages/ packages/
 COPY --chown=10001:10001 apps/ apps/
+# deno.json lists these workspace members. The config does not load without them.
+COPY --chown=10001:10001 exaix-team/ exaix-team/
+COPY --chown=10001:10001 unslop-ts/ unslop-ts/
 
 USER 10001:10001
 WORKDIR /exa
