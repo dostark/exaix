@@ -22,6 +22,7 @@
     "@exaix/core/repositories": "../core/src/repositories/mod.ts",
     "@exaix/core/logger": "../core/src/logger/mod.ts",
     "@exaix/core/config": "../core/src/config/mod.ts",
+    "@exaix/core/func": "../core/src/func/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/schemas": "../schemas/mod.ts",
     "@exaix/schemas/": "../schemas/src/",

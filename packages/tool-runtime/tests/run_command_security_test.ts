@@ -171,3 +171,154 @@ Deno.test("security: deno_task still runs test/lint/fmt/check", async () => {
     await cleanupTempDir(tempDir);
   }
 });
+
+const OUTSIDE_CONTENT = "OUTSIDE-SECRET-CONTENT";
+const INSIDE_CONTENT = "INSIDE-SECRET-CONTENT";
+const SEARCH_PATTERN = "SECRET";
+
+interface IOperandFixture {
+  parentDir: string;
+  rootDir: string;
+  outsideDir: string;
+  outsideFile: string;
+}
+
+/** Builds a registry root with an outside sibling directory and in-root symlinks that point outside. */
+async function createOperandFixture(): Promise<IOperandFixture> {
+  const parentDir = await Deno.realPath(await Deno.makeTempDir({ prefix: "run-cmd-operands-" }));
+  const rootDir = join(parentDir, "root");
+  const outsideDir = join(parentDir, "outside");
+  const outsideFile = join(outsideDir, "secret.txt");
+  await Deno.mkdir(rootDir);
+  await Deno.mkdir(outsideDir);
+  await Deno.writeTextFile(outsideFile, `${OUTSIDE_CONTENT}\n`);
+  await Deno.writeTextFile(join(rootDir, "inside.txt"), `${INSIDE_CONTENT}\n`);
+  await Deno.symlink(outsideFile, join(rootDir, "link.txt"));
+  await Deno.symlink(outsideDir, join(rootDir, "linkdir"));
+  return { parentDir, rootDir, outsideDir, outsideFile };
+}
+
+/** A denial may echo the caller's own argument. It must never reveal a path the caller did not supply. */
+function assertValidationDenial(error: string | undefined, args: string[], fixture: IOperandFixture): void {
+  const label = args.join(" ");
+  assert(
+    error !== undefined && error.includes("not allowed"),
+    `${label} must be rejected by validation. Got: ${error}`,
+  );
+  assert(!error.includes(OUTSIDE_CONTENT), `${label} denial leaked outside file content: ${error}`);
+  if (!args.some((arg) => arg.includes(fixture.outsideDir))) {
+    assert(!error.includes(fixture.outsideDir), `${label} denial leaked a resolved host path: ${error}`);
+  }
+}
+
+Deno.test("[security] run_command rejects grep file operands outside the root before spawn", async () => {
+  const fixture = await createOperandFixture();
+  const registry = createToolRegistryForTests(fixture.rootDir);
+  const attacks: string[][] = [
+    [SEARCH_PATTERN, fixture.outsideFile],
+    [SEARCH_PATTERN, "../outside/secret.txt"],
+    [SEARCH_PATTERN, "link.txt"],
+    ["-r", SEARCH_PATTERN, "linkdir"],
+    ["-e", SEARCH_PATTERN, fixture.outsideFile],
+    ["-n", SEARCH_PATTERN, "inside.txt", fixture.outsideFile],
+    [`-if${fixture.outsideFile}`, "inside.txt"],
+    [`--file=${fixture.outsideFile}`, "inside.txt"],
+    ["-C", fixture.outsideFile, SEARCH_PATTERN, "inside.txt"],
+  ];
+  try {
+    for (const args of attacks) {
+      const result = await registry.execute(ToolName.RUN_COMMAND, { command: "grep", args });
+      assert(!result.success, `'grep ${args.join(" ")}' must be rejected`);
+      assertValidationDenial(result.error, args, fixture);
+    }
+  } finally {
+    await cleanupTempDir(fixture.parentDir);
+  }
+});
+
+Deno.test("[security] run_command recursive grep does not follow an in-root symlink outside the root", async () => {
+  const fixture = await createOperandFixture();
+  const registry = createToolRegistryForTests(fixture.rootDir);
+  try {
+    const result = await registry.execute(ToolName.RUN_COMMAND, {
+      command: "grep",
+      args: ["-rn", SEARCH_PATTERN, "."],
+    });
+    assert(result.success, result.error);
+    const output = (result.data as { output: string }).output;
+    assert(output.includes(INSIDE_CONTENT), output);
+    assert(!output.includes(OUTSIDE_CONTENT), `recursive grep crossed the root: ${output}`);
+  } finally {
+    await cleanupTempDir(fixture.parentDir);
+  }
+});
+
+Deno.test("[security] run_command rejects ls operands outside the root before spawn", async () => {
+  const fixture = await createOperandFixture();
+  const registry = createToolRegistryForTests(fixture.rootDir);
+  const attacks: string[][] = [
+    [fixture.outsideDir],
+    ["../outside"],
+    ["linkdir"],
+    ["-l", fixture.outsideFile],
+  ];
+  try {
+    for (const args of attacks) {
+      const result = await registry.execute(ToolName.RUN_COMMAND, { command: "ls", args });
+      assert(!result.success, `'ls ${args.join(" ")}' must be rejected`);
+      assertValidationDenial(result.error, args, fixture);
+    }
+  } finally {
+    await cleanupTempDir(fixture.parentDir);
+  }
+});
+
+Deno.test("[security] run_command still runs in-root grep and ls", async () => {
+  const fixture = await createOperandFixture();
+  const registry = createToolRegistryForTests(fixture.rootDir);
+  try {
+    const grep = await registry.execute(ToolName.RUN_COMMAND, {
+      command: "grep",
+      args: ["-n", "-C", "1", SEARCH_PATTERN, "inside.txt"],
+    });
+    assert(grep.success, grep.error);
+    assert((grep.data as { output: string }).output.includes(INSIDE_CONTENT));
+
+    const ls = await registry.execute(ToolName.RUN_COMMAND, { command: "ls", args: ["-l", "inside.txt"] });
+    assert(ls.success, ls.error);
+  } finally {
+    await cleanupTempDir(fixture.parentDir);
+  }
+});
+
+Deno.test("[security] missing Git validator fails closed", async () => {
+  const fixture = await createOperandFixture();
+  const registry = createToolRegistryForTests(fixture.rootDir);
+  try {
+    for (const args of [["-C", fixture.outsideDir, "rev-parse", "--show-toplevel"], ["status"]]) {
+      const result = await registry.execute(ToolName.RUN_COMMAND, { command: "git", args });
+      assert(!result.success, `'git ${args.join(" ")}' must not run without a validator`);
+      assert(result.error?.includes("not allowed"), `must be rejected by validation. Got: ${result.error}`);
+    }
+  } finally {
+    await cleanupTempDir(fixture.parentDir);
+  }
+});
+
+Deno.test("[security] the production Git validator rejects -C and allows a scoped Git command", async () => {
+  const fixture = await createOperandFixture();
+  const registry = createToolRegistryForTests(fixture.rootDir, { gitServiceFactory: createTestGitServiceFactory() });
+  try {
+    const escape = await registry.execute(ToolName.RUN_COMMAND, {
+      command: "git",
+      args: ["-C", fixture.outsideDir, "rev-parse", "--show-toplevel"],
+    });
+    assert(!escape.success);
+    assert(escape.error?.includes("Dangerous git option"), `must be rejected by GitService. Got: ${escape.error}`);
+
+    const version = await registry.execute(ToolName.RUN_COMMAND, { command: "git", args: ["--version"] });
+    assert(version.success, version.error);
+  } finally {
+    await cleanupTempDir(fixture.parentDir);
+  }
+});

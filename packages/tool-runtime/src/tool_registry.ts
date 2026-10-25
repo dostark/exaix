@@ -11,9 +11,12 @@ import { isAbsolute, join, resolve, SEPARATOR } from "@std/path";
 import { expandGlob } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import {
+  buildChildEnv,
   BYTES_PER_KB,
   DEFAULT_AI_MODEL,
   DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS,
+  JsonSchemaType,
+  LOG_REDACTION_MIN_CHARS,
   LogLevel,
   MAX_GRAPH_TOOL_DEPTH,
   MAX_GRAPH_TOOL_DOC_TOKENS,
@@ -23,12 +26,19 @@ import {
   SystemCommand,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
   TOOL_AUTH_ONLY_PARAMS,
+  TOOL_PATH_PARAMS,
   ToolCallEntryPoint,
   ToolName,
 } from "@exaix/core";
 import { DEFAULT_MCP_AGENT_ROLE_ID, type IGitServiceFactory } from "@exaix/core/types";
-import { AiTokenEstimatorTokenizer, type ITokenizer, normalizePortalPath } from "@exaix/core/func";
-import { type IMiddlewarePipeline, type IPathSecurityOps, PathAccessError, PathTraversalError } from "./types.ts";
+import { AiTokenEstimatorTokenizer, type ITokenizer, normalizePortalPath, redactKnownSecrets } from "@exaix/core/func";
+import {
+  type IMiddlewarePipeline,
+  type IPathSecurityOps,
+  PATH_ACCESS_DENIED_MESSAGE,
+  PathAccessError,
+  PathTraversalError,
+} from "./types.ts";
 import { createPathSecurity } from "./path_security.ts";
 import type { JSONValue } from "@exaix/core";
 import type {
@@ -131,7 +141,7 @@ const ALLOWED_COMMANDS = new Set([
 /**
  * Validate command arguments for security and safety
  */
-function validateCommandArguments(command: string, args: string[]): { valid: boolean; reason?: string } {
+function validateCommandArguments(command: string, args: string[]): IArgumentValidation {
   // Reject dangerous argument patterns
   const dangerousPatterns = [
     /[\$`]/, // Shell metacharacters
@@ -158,7 +168,7 @@ function validateCommandArguments(command: string, args: string[]): { valid: boo
   // Command-specific validations
   switch (command) {
     case SystemCommand.GIT:
-      // Git-specific validation is handled via the injected git service
+      // ToolRegistry.runCommand applies the injected GitService validator. It fails closed without one.
       return { valid: true };
     case SystemCommand.EXACTL:
       return validateRuntimeArguments(command, args);
@@ -200,49 +210,115 @@ function validateRuntimeArguments(runtime: string, args: string[]): { valid: boo
   return { valid: true };
 }
 
-/**
- * Validate ls command arguments
- */
-function validateLsArguments(args: string[]): { valid: boolean; reason?: string } {
-  // Allow safe ls options only
-  const allowedLsOptions = ["-l", "-a", "-h", "-1", "--color=never"];
+/** Result of argv validation. `operands` lists the file operands that must resolve within the allowed roots. */
+interface IArgumentValidation {
+  valid: boolean;
+  reason?: string;
+  operands?: string[];
+}
 
+/** ls options that take no value. Recursive listing is not offered. */
+const ALLOWED_LS_OPTIONS: readonly string[] = ["-l", "-a", "-h", "-1", "--color=never"];
+
+/** Validates ls arguments. Every non-option argument is a file operand. */
+function validateLsArguments(args: string[]): IArgumentValidation {
+  const operands: string[] = [];
   for (const arg of args) {
-    if (arg.startsWith("-") && !allowedLsOptions.includes(arg)) {
-      return {
-        valid: false,
-        reason: `Unsafe ls option not allowed: ${arg}`,
-      };
+    if (!arg.startsWith("-")) {
+      operands.push(arg);
+      continue;
+    }
+    if (!ALLOWED_LS_OPTIONS.includes(arg)) {
+      return { valid: false, reason: `Unsafe ls option not allowed: ${arg}` };
     }
   }
+  return { valid: true, operands };
+}
 
+/** grep short flags that take no value. They may be combined, e.g. `-rn`. */
+const GREP_FLAG_CHARS: ReadonlySet<string> = new Set(["i", "v", "n", "c", "l", "r", "E", "F"]);
+/** grep context options. Their value is a line count. */
+const GREP_CONTEXT_OPTIONS: readonly string[] = ["-A", "-B", "-C"];
+const GREP_PATTERN_OPTION = "-e";
+const GREP_ATTACHED_CONTEXT_PATTERN = /^-[ABC]\d+$/;
+const DIGITS_PATTERN = /^\d+$/;
+
+/** Validates grep arguments against a closed grammar and returns its file operands.
+ *  The first positional is the pattern unless `-e` supplies it. Long options are rejected. */
+function validateGrepArguments(args: string[]): IArgumentValidation {
+  const positionals: string[] = [];
+  let hasPatternOption = false;
+  for (let index = 0; index < args.length; index++) {
+    const arg = args[index];
+    if (!arg.startsWith("-") || arg === "-") {
+      positionals.push(arg);
+      continue;
+    }
+    if (arg === GREP_PATTERN_OPTION || GREP_CONTEXT_OPTIONS.includes(arg)) {
+      const value = args[++index];
+      if (value === undefined) return { valid: false, reason: `grep option needs a value, not allowed: ${arg}` };
+      if (arg === GREP_PATTERN_OPTION) hasPatternOption = true;
+      else if (!DIGITS_PATTERN.test(value)) return { valid: false, reason: `grep ${arg} value not allowed` };
+      continue;
+    }
+    if (GREP_ATTACHED_CONTEXT_PATTERN.test(arg)) continue;
+    if ([...arg.slice(1)].every((char) => GREP_FLAG_CHARS.has(char))) continue;
+    return { valid: false, reason: `Unsafe grep option not allowed: ${arg}` };
+  }
+  return { valid: true, operands: hasPatternOption ? positionals : positionals.slice(1) };
+}
+
+/** The deno subcommands run_deno_task may run. */
+const DENO_TASK_ALLOWED_TASKS: readonly string[] = ["test", "lint", "fmt", "check"];
+
+/** Inert flags per task. Permission, config, preload and import-map flags are never listed. */
+const DENO_TASK_ALLOWED_FLAGS: Readonly<Record<string, readonly string[]>> = {
+  test: ["--fail-fast", "--quiet", "--parallel"],
+  lint: ["--json", "--compact", "--quiet"],
+  fmt: ["--check", "--quiet"],
+  check: ["--quiet"],
+};
+
+/** Flags that carry a value. They must use the single-argument `--flag=value` form. */
+const DENO_TASK_ALLOWED_VALUE_FLAGS: Readonly<Record<string, readonly string[]>> = {
+  test: ["--filter"],
+};
+
+/** Validates run_deno_task arguments against the per-task allowlist.
+ *  Every argument must be an allowlisted flag. Extra operands are rejected. */
+function validateDenoTaskArguments(task: string, args: string[]): { valid: boolean; reason?: string } {
+  const flags = DENO_TASK_ALLOWED_FLAGS[task] ?? [];
+  const valueFlags = DENO_TASK_ALLOWED_VALUE_FLAGS[task] ?? [];
+  for (const arg of args) {
+    const name = arg.split("=")[0];
+    const isFlag = flags.includes(arg);
+    const isValueFlag = valueFlags.includes(name) && arg.length > name.length + 1;
+    if (!isFlag && !isValueFlag) {
+      return { valid: false, reason: `Task argument not allowed: ${arg}` };
+    }
+  }
   return { valid: true };
 }
 
-/**
- * Validate grep command arguments
- */
-function validateGrepArguments(args: string[]): { valid: boolean; reason?: string } {
-  // Allow safe grep options only
-  const allowedGrepOptions = ["-i", "-v", "-n", "-c", "-l", "-r", "-E", "-F", "-e", "-A", "-B", "-C"];
-
-  for (const arg of args) {
-    if (arg.startsWith("-")) {
-      // Check if it's a known short option or a known long option (none currently allowed)
-      const isAllowed = allowedGrepOptions.includes(arg) ||
-        (arg.length >= 2 && arg.startsWith("-") && !arg.startsWith("--") &&
-          allowedGrepOptions.includes(arg.substring(0, 2)));
-
-      if (!isAllowed) {
-        return {
-          valid: false,
-          reason: `Unsafe grep option not allowed: ${arg}`,
-        };
-      }
-    }
+/** The journaled view of tool params. Path params keep their value. Every other param keeps only its kind and size. */
+function summarizeToolParams(params: Record<string, JSONValue>): Record<string, JSONValue> {
+  const summary: Record<string, JSONValue> = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (TOOL_PATH_PARAMS.includes(key) && typeof value === "string") summary[key] = value;
+    else if (typeof value === "string") summary[key] = { type: JsonSchemaType.STRING, chars: value.length };
+    else if (Array.isArray(value)) summary[key] = { type: JsonSchemaType.ARRAY, items: value.length };
+    else summary[key] = { type: value === null ? JsonSchemaType.NULL : typeof value };
   }
+  return summary;
+}
 
-  return { valid: true };
+/** Removes every non-path string param value, including array items, from an error before it is logged. */
+function redactParamValues(error: string, params: Record<string, JSONValue>): string {
+  const values = Object.entries(params)
+    .filter(([key]) => !TOOL_PATH_PARAMS.includes(key))
+    .flatMap(([, value]) => Array.isArray(value) ? value : [value])
+    .filter((value): value is string => typeof value === "string" && value.length >= LOG_REDACTION_MIN_CHARS);
+  return redactKnownSecrets(error, values).text;
 }
 
 // ToolRegistry Implementation
@@ -317,7 +393,7 @@ export class ToolRegistry implements IToolRegistry {
     this.baseDir = resolvedOptions?.baseDir ? resolve(resolvedOptions.baseDir) : resolve(this.config.system.root);
 
     this.pathResolver = resolvedOptions?.pathResolver;
-    this.gitServiceFactory = resolvedOptions?.gitServiceFactory;
+    this.gitServiceFactory = resolvedOptions?.gitServiceFactory ?? ctx?.gitServiceFactory;
     this.applicationContext = ctx;
     this.tools = new Map();
     this.pipeline = resolvedPipeline ?? createNoopPipeline<IToolContext>();
@@ -382,24 +458,25 @@ export class ToolRegistry implements IToolRegistry {
       await next();
     });
 
-    // Logging Middleware
+    // Logging Middleware. It logs a param summary, never raw values, because params can carry secrets.
     this.pipeline.use(async (ctx, next) => {
       const startTime = Date.now();
       try {
         await next();
-        this.logActivity(`tool.${ctx.toolName}`, {
+        const error = ctx.result?.error;
+        this.logActivity(`tool.${ctx.toolName}`, ctx.params, {
           success: ctx.result?.success ?? false,
           duration_ms: Date.now() - startTime,
-          params: ctx.params,
-          error: ctx.result?.error ?? null,
+          params: summarizeToolParams(ctx.params),
+          error: error ? redactParamValues(error, ctx.params) : null,
         });
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        this.logActivity(`tool.${ctx.toolName}`, {
+        this.logActivity(`tool.${ctx.toolName}`, ctx.params, {
           success: false,
           duration_ms: Date.now() - startTime,
-          params: ctx.params,
-          error: errorMsg,
+          params: summarizeToolParams(ctx.params),
+          error: redactParamValues(errorMsg, ctx.params),
         });
         throw error;
       }
@@ -1193,7 +1270,7 @@ export class ToolRegistry implements IToolRegistry {
         // journal only; the caller-facing message stays generic (Finding 10).
         const payload = {
           attempted_path: path,
-          resolved_path: error.message.includes("->") ? error.message.split("->")[1]?.trim() : null,
+          resolved_path: error.resolvedPath ?? null,
           allowed_roots: allowedRoots.join(", "),
           error: error.message,
           trace_id: this.traceId ?? null,
@@ -1239,12 +1316,8 @@ export class ToolRegistry implements IToolRegistry {
 
       // Validate command arguments for security
       let validation = validateCommandArguments(command, args);
-      if (validation.valid && command === SystemCommand.GIT && this.gitServiceFactory) {
-        const service = this.gitServiceFactory.createGitService(
-          this.baseDir,
-          this.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID,
-        );
-        validation = service.validateArgs(args);
+      if (validation.valid && command === SystemCommand.GIT) {
+        validation = this.validateGitArgs(args);
       }
       if (!validation.valid) {
         return {
@@ -1253,16 +1326,24 @@ export class ToolRegistry implements IToolRegistry {
         };
       }
 
+      const allowedRoots = await this.getAllowedRoots();
       let workingDir = this.baseDir;
       if (cwd !== undefined) {
         try {
-          workingDir = await this.pathSecurity.resolveWithinRoots(cwd, await this.getAllowedRoots(), this.baseDir);
+          workingDir = await this.pathSecurity.resolveWithinRoots(cwd, allowedRoots, this.baseDir);
         } catch {
           return {
             success: false,
             error: `Command working directory is not allowed: it must be within an authorized root`,
           };
         }
+      }
+
+      if (!(await this.operandsWithinRoots(validation.operands ?? [], allowedRoots, workingDir))) {
+        return {
+          success: false,
+          error: "Command arguments not allowed: a file operand is outside the authorized roots",
+        };
       }
 
       const cmd = new Deno.Command(command, {
@@ -1299,13 +1380,35 @@ export class ToolRegistry implements IToolRegistry {
     }
   }
 
-  /**
-   * Log activity to database
-   */
-  private logActivity(actionType: string, payload: Record<string, JSONValue>): void {
+  /** Validates git argv with the injected GitService. Without a validator every git command is rejected. */
+  private validateGitArgs(args: string[]): IArgumentValidation {
+    if (!this.gitServiceFactory) {
+      return { valid: false, reason: "git argument validation is unavailable" };
+    }
+    const service = this.gitServiceFactory.createGitService(
+      this.baseDir,
+      this.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID,
+    );
+    return service.validateArgs(args);
+  }
+
+  /** True when every file operand resolves, through symlinks, within the allowed roots. */
+  private async operandsWithinRoots(operands: string[], allowedRoots: string[], workingDir: string): Promise<boolean> {
+    for (const operand of operands) {
+      try {
+        await this.pathSecurity.resolveWithinRoots(operand, allowedRoots, workingDir);
+      } catch {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /** Logs one tool call. The target is the path param, or the command when it is on the allowlist. */
+  private logActivity(actionType: string, params: Record<string, JSONValue>, payload: Record<string, JSONValue>): void {
     if (!this.logger) return;
-    const target = (payload.params as Record<string, JSONValue>)?.path as string ||
-      (payload.params as Record<string, JSONValue>)?.command as string || null;
+    const command = typeof params.command === "string" && ALLOWED_COMMANDS.has(params.command) ? params.command : null;
+    const target = (typeof params.path === "string" && params.path) || command;
     void this.logger.info(actionType, target, payload, this.traceId);
   }
 
@@ -1321,11 +1424,14 @@ export class ToolRegistry implements IToolRegistry {
   private formatError<T>(error: T, context?: Opt<string, Reason.OptionalContext>): IToolResult {
     const normalizedError = error instanceof Error ? error : String(error);
 
-    // Handle path security errors
-    if (normalizedError instanceof Error && normalizedError.message.includes("outside allowed roots")) {
+    // Path security errors get the generic denial. It never names the resolved host path.
+    if (
+      normalizedError instanceof PathAccessError ||
+      (normalizedError instanceof Error && normalizedError.message.includes("outside allowed roots"))
+    ) {
       return {
         success: false,
-        error: `Access denied: ${normalizedError.message}`,
+        error: PATH_ACCESS_DENIED_MESSAGE,
       };
     }
 
@@ -1752,12 +1858,20 @@ export class ToolRegistry implements IToolRegistry {
     args: string[] = [],
   ): Promise<IToolResult> {
     try {
-      const allowedTasks = ["test", "lint", "fmt", "check"];
-      if (!allowedTasks.includes(task)) {
-        return { success: false, error: `Invalid task: ${task}. Allowed tasks: ${allowedTasks.join(", ")}` };
+      if (!DENO_TASK_ALLOWED_TASKS.includes(task)) {
+        return {
+          success: false,
+          error: `Invalid task: ${task}. Allowed tasks: ${DENO_TASK_ALLOWED_TASKS.join(", ")}`,
+        };
+      }
+
+      const validation = validateDenoTaskArguments(task, args);
+      if (!validation.valid) {
+        return { success: false, error: validation.reason };
       }
 
       const resolvedPath = path ? await this.resolvePath(path) : this.baseDir;
+      const { env, clearEnv } = buildChildEnv({ mode: "allowlist" });
 
       const outcome = await runDenoTask({
         task,
@@ -1765,6 +1879,8 @@ export class ToolRegistry implements IToolRegistry {
         absPath: resolvedPath,
         cwd: this.baseDir,
         timeoutMs: DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS,
+        env,
+        clearEnv,
       });
 
       switch (outcome.kind) {

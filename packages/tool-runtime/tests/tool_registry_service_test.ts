@@ -78,13 +78,11 @@ Deno.test("ToolRegistry: should allow validated commands with safe arguments", a
   const registry = createRegistry();
   const result = await registry.execute(McpToolName.RUN_COMMAND, {
     command: "ls",
-    args: ["/tmp"],
+    args: ["-a", "."],
   });
   assert(result.success, `Expected success but got error: ${result.error}`);
   const cmdResult = result.data as { output: string; exitCode: number };
   assertEquals(cmdResult.exitCode, 0, `Expected exit code 0 but got ${cmdResult.exitCode}`);
-  // /tmp should exist on Unix systems, but may not on Windows
-  // Just verify we got some output or exit code 0
   assert(cmdResult.output?.length >= 0, `Expected output but got: ${cmdResult.output}`);
 });
 

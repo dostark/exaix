@@ -365,6 +365,8 @@ export const DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS: number = configurable({
   max: 86_400_000,
   swap: SwapClass.RESTART,
 });
+/** Tool inputs shorter than this are not redacted from a logged error. They match too much ordinary text. */
+export const LOG_REDACTION_MIN_CHARS = 8;
 /** Daemon env keys overlaid onto the allowlist child env for a verification check. */
 export const VERIFICATION_DENO_ENV_KEYS: readonly string[] = [
   "DENO_DIR",
@@ -4265,6 +4267,9 @@ export const TOOL_AUTH_ONLY_PARAMS: readonly string[] = [
   "portal",
   "agent_role",
 ];
+
+/** Tool params that hold a path. Tool-call logs keep these values as operation metadata. */
+export const TOOL_PATH_PARAMS: readonly string[] = ["path", "from", "to", "source", "destination", "repo_path"];
 
 /** Hexadecimal rendering width and radix, shared by digest helpers. */
 export const HEX_RADIX = 16;

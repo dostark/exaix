@@ -1072,6 +1072,7 @@ if (import.meta.main) {
         contextPort: dogfoodContextPort,
         trustedAgentRoles: dogfoodTrustedAgentRoles,
         worktreeCoordinator: flowWorktreeCoordinator,
+        gitServiceFactory,
       },
       bindingService,
     );

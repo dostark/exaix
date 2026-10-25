@@ -491,7 +491,8 @@ export function createCoreToolSchemas(
           args: {
             type: JsonSchemaType.ARRAY,
             items: { type: "string" },
-            description: "Additional arguments or flags",
+            description:
+              "Optional inert flags only: test --fail-fast, --quiet, --parallel, --filter=<text>; lint --json, --compact, --quiet; fmt --check, --quiet; check --quiet. Permission flags, config flags and extra paths are rejected.",
           },
         },
         required: ["task"],

@@ -6,15 +6,16 @@
  * @related-files ["packages/portal/src/portal_permissions.ts", exaix-team/packages/mcp-server/handlers/read_file_tool.ts, exaix-team/packages/mcp-server/handlers/write_file_tool.ts]
  */
 import { join, normalize } from "@std/path";
-import { PathSecurity } from "@exaix/tool-runtime";
+import { PathAccessError, PathSecurity, PathTraversalError } from "@exaix/tool-runtime";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
+import { redactKnownSecrets } from "@exaix/core/func";
 import type { IEventJournalReader } from "@exaix/core/events";
 import type { ICliApplicationContext } from "@exaix/core/types";
 import type { MCPContent, MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
-import type { PortalOperation, ToolErrorCode } from "@exaix/core";
+import { LOG_REDACTION_MIN_CHARS, type PortalOperation, type ToolErrorCode } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { LogMetadata } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
@@ -85,13 +86,26 @@ export abstract class ToolHandler {
   }
 
   /** Realpath-based resolution ({@link PathSecurity.resolveWithinRoots}) so an in-portal
-   *  symlink escaping the portal is rejected. */
+   *  symlink escaping the portal is rejected. A denial keeps the generic PathSecurity message.
+   *  The resolved host path goes to the operator journal only. */
   protected async resolvePortalPath(portalPath: string, relativePath: string): Promise<string> {
     this.validatePathSafety(relativePath);
     // Resolve the portal root through any symlinks so legitimate in-portal paths
     // compare correctly against the physical root.
     const realRoot = await Deno.realPath(portalPath);
-    return await PathSecurity.resolveWithinRoots(relativePath, [realRoot], realRoot);
+    try {
+      return await PathSecurity.resolveWithinRoots(relativePath, [realRoot], realRoot);
+    } catch (error) {
+      if (!(error instanceof PathAccessError || error instanceof PathTraversalError)) throw error;
+      if (this.logger) {
+        void this.logger.warn(DomainEventType.SecurityPathAccessDenied, relativePath, {
+          attempted_path: relativePath,
+          resolved_path: error instanceof PathAccessError ? error.resolvedPath ?? null : null,
+          portal_root: realRoot,
+        });
+      }
+      throw error;
+    }
   }
 
   /**
@@ -119,8 +133,8 @@ export abstract class ToolHandler {
     return { content };
   }
 
-  /** Returns isError:true (does not throw); reserve throws for unrecoverable
-   *  protocol-level server errors. */
+  /** Returns isError:true and does not throw. Keep throws for unrecoverable protocol-level server errors.
+   *  `redactValues` are caller inputs that are removed from the journaled message only. */
   protected formatToolError(
     toolName: string,
     portal: string,
@@ -128,6 +142,7 @@ export abstract class ToolHandler {
     code: ToolErrorCode,
     message: string,
     metadata: LogMetadata,
+    redactValues: readonly string[] = [],
   ): MCPToolResponse {
     // The code is journalled, not returned: the agent-facing text stays the raw message so
     // handler tests and scenario assertions keep matching on it, while the journal gains the
@@ -135,7 +150,7 @@ export abstract class ToolHandler {
     this.logToolExecution(toolName, portal, agentRole, {
       ...metadata,
       success: false,
-      error: message,
+      error: redactKnownSecrets(message, redactValues.filter((value) => value.length >= LOG_REDACTION_MIN_CHARS)).text,
       errorCode: code,
     });
     return {

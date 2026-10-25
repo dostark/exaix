@@ -27,6 +27,7 @@ import type {
   IApplicationContext,
   IDogfoodContextPort,
   IFlowWorktreeCoordinator,
+  IGitServiceFactory,
   IRecordingLane,
   IRecordingLaneSource,
   Opt,
@@ -133,6 +134,8 @@ export interface IAgentComposerConstructionDeps {
   trustedAgentRoles?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
   /** Optional per-trace worktree resolver. Its absence preserves each portal's configured target path. */
   worktreeCoordinator?: Opt<IFlowWorktreeCoordinator, Reason.OptionalDependency>;
+  /** Supplies the GitService that validates git argv in run_command. Without it, git commands fail closed. */
+  gitServiceFactory?: Opt<IGitServiceFactory, Reason.OptionalDependency>;
   /** The EffortResolver forwarded into AgentComposer's execution resolution, so the flow path shares the planning path's instance. */
   effortResolver?: IEffortResolver;
   /** Binds a strategy cli_delegate step to a specific session tool and model. The tool must be a cli-delegate catalog service.
@@ -320,6 +323,7 @@ export class AgentComposerAdapter {
       contextPort,
       trustedAgentRoles,
       effortResolver,
+      gitServiceFactory,
     } = this.orchestratorDeps;
     const portalConfig = config.portals?.find((p) => p.alias === request.portal);
     if (!portalConfig) {
@@ -341,6 +345,7 @@ export class AgentComposerAdapter {
       baseDir,
       pathResolver,
       context: applicationContext,
+      gitServiceFactory,
     });
     const planWrittenFiles = await this.writeAuthorization.get(traceId, baseDir);
     const orchestrator = new AgentComposer({

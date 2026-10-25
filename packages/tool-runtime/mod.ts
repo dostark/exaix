@@ -21,7 +21,7 @@ export * from "./src/confirmation_interceptor_factory.ts";
 export * from "./src/tool_validation_reporter.ts";
 export { createOutputValidator, createPlanValidator, OutputSchemas, OutputValidator } from "./src/output_validator.ts";
 export { createPathSecurity, PathSecurity } from "./src/path_security.ts";
-export { PathAccessError, PathTraversalError } from "./src/types.ts";
+export { PATH_ACCESS_DENIED_MESSAGE, PathAccessError, PathTraversalError } from "./src/types.ts";
 export type { IActivityJournal, IMiddlewarePipeline, IPathSecurityOps, IToolAgentExecutor } from "./src/types.ts";
 export type {
   IActionSequence,

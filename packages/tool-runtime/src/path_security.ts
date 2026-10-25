@@ -8,7 +8,7 @@
 
 import { join } from "@std/path";
 import type { IPathSecurityOps } from "./types.ts";
-import { PathAccessError, PathTraversalError } from "./types.ts";
+import { PATH_ACCESS_DENIED_MESSAGE, PathAccessError, PathTraversalError } from "./types.ts";
 
 export class PathSecurity {
   /**
@@ -65,20 +65,18 @@ export class PathSecurity {
 
         if (existingAncestor) {
           if (!this.isWithinRoots(existingAncestor, allowedRoots)) {
-            throw new PathAccessError(
-              `Path ancestor outside allowed roots: ${inputPath} -> ${existingAncestor}`,
-            );
+            throw new PathAccessError(PATH_ACCESS_DENIED_MESSAGE, existingAncestor);
           }
           return absolutePath;
         }
 
-        throw new PathAccessError(`Cannot resolve valid ancestor for path: ${inputPath}`);
+        throw new PathAccessError(PATH_ACCESS_DENIED_MESSAGE);
       }
       throw error;
     }
 
     if (!this.isWithinRoots(realPath, allowedRoots)) {
-      throw new PathAccessError(`Path resolves outside allowed roots: ${inputPath} -> ${realPath}`);
+      throw new PathAccessError(PATH_ACCESS_DENIED_MESSAGE, realPath);
     }
 
     return realPath;
