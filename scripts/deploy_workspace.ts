@@ -16,7 +16,6 @@ import { parse } from "@std/flags";
 import { ensureDir, exists } from "@std/fs";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { copy, type CopyOptions } from "@std/fs/copy";
-import { buildUnslopPortalAssets } from "./build_unslop_portal_bundle.ts";
 
 // Source directories a **Solo** deploy copies into a standalone workspace. `exaix-team/`
 // is deliberately EXCLUDED: it is BSL-licensed Team code that must not ship in a Solo
@@ -91,6 +90,8 @@ export const UNSLOP_DEPLOY_ASSET_FILES: readonly string[] = [
 export async function verifyUnslopAssetSet(dir: string): Promise<void> {
   const manifestPath = join(dir, "manifest.json");
   if (!(await exists(manifestPath))) throw new Error(`unslop assets missing: ${manifestPath}`);
+  const manifestMode = await Deno.lstat(manifestPath);
+  if (!manifestMode.isFile || manifestMode.isSymlink) throw new Error("unslop manifest must be a regular file");
   const manifest = JSON.parse(await Deno.readTextFile(manifestPath)) as {
     format_version?: number;
     policy_version?: number;
@@ -104,7 +105,12 @@ export async function verifyUnslopAssetSet(dir: string): Promise<void> {
     if (entry?.sha256 === undefined || entry.bytes === undefined) {
       throw new Error(`unslop asset manifest omits ${name}`);
     }
-    const bytes = await Deno.readFile(join(dir, name)).catch(() => null);
+    const path = join(dir, name);
+    const mode = await Deno.lstat(path).catch(() => null);
+    if (mode === null || !mode.isFile || mode.isSymlink) {
+      throw new Error(`unslop asset must be a regular file: ${name}`);
+    }
+    const bytes = await Deno.readFile(path).catch(() => null);
     if (bytes === null) throw new Error(`unslop asset missing: ${name}`);
     if (bytes.byteLength !== entry.bytes) throw new Error(`unslop asset size mismatch: ${name}`);
     const digest = await crypto.subtle.digest("SHA-256", bytes);
@@ -140,12 +146,10 @@ export async function installUnslopAssets(sourceDir: string, destDir: string): P
 
 /** Builds assets in a source checkout, or copies an existing verified set in a deployed workspace. */
 export async function deployUnslopAssets(repoRoot: string, dest: string): Promise<void> {
-  if (resolve(repoRoot) === resolve(dest)) {
-    throw new Error("unslop deploy refused: source and destination are identical");
-  }
+  await assertDistinctDeploymentRoots(repoRoot, dest);
   const engineSource = join(repoRoot, "unslop-ts", "scripts", "bundle.ts");
   if (await exists(engineSource)) {
-    await buildUnslopPortalAssets({ root: repoRoot, out: join(dest, UNSLOP_DEPLOY_ASSET_DIR) });
+    await buildAndInstallUnslopAssets(repoRoot, dest);
     return;
   }
   const sourceAssets = join(repoRoot, UNSLOP_DEPLOY_ASSET_DIR);
@@ -155,6 +159,40 @@ export async function deployUnslopAssets(repoRoot: string, dest: string): Promis
     );
   }
   await installUnslopAssets(sourceAssets, join(dest, UNSLOP_DEPLOY_ASSET_DIR));
+}
+
+/** Rejects physical aliases of the source before any deployment side effect. */
+async function assertDistinctDeploymentRoots(repoRoot: string, dest: string): Promise<void> {
+  let physicalDest: string;
+  try {
+    physicalDest = await Deno.realPath(dest);
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+    physicalDest = resolve(dest);
+  }
+  if (await Deno.realPath(repoRoot) === physicalDest) {
+    throw new Error("unslop deploy refused: source and destination are identical");
+  }
+}
+
+/** Runs source-only packaging in a child and installs only its verified staged assets. */
+async function buildAndInstallUnslopAssets(repoRoot: string, dest: string): Promise<void> {
+  await ensureDir(dest);
+  const staging = await Deno.makeTempDir({ dir: dest, prefix: "lint-build-" });
+  try {
+    const built = await run([
+      Deno.execPath(),
+      "run",
+      "-A",
+      join(repoRoot, "scripts", "build_unslop_portal_bundle.ts"),
+      "--out",
+      staging,
+    ], { cwd: repoRoot });
+    if (!built) throw new Error("unslop source packaging failed");
+    await installUnslopAssets(staging, join(dest, UNSLOP_DEPLOY_ASSET_DIR));
+  } finally {
+    await Deno.remove(staging, { recursive: true });
+  }
 }
 
 /** Copy each existing WORKSPACE_COPY_DIRS entry from repoRoot into dest. */
@@ -192,6 +230,7 @@ async function main() {
 
   const repoRoot = resolve(join(dirname(fromFileUrl(import.meta.url)), ".."));
   const dest = resolve(flags._[0] as string || join(Deno.env.get("HOME") || ".", "Exaix"));
+  await assertDistinctDeploymentRoots(repoRoot, dest);
 
   console.log(`Deploying Exaix workspace to: ${dest}`);
 

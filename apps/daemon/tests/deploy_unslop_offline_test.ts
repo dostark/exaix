@@ -38,15 +38,15 @@ async function stageDeployedAssets(): Promise<{ deployedRoot: string; cleanup: s
   const repositoryAssets = join(REPO_ROOT, "lint");
   if (await exists(join(repositoryAssets, "manifest.json"))) {
     // The suite preflight builds this set on the host, so the network-none worker needs no egress.
-    await installUnslopAssets(repositoryAssets, join(deployedRoot, "lint"));
+    await installUnslopAssets(repositoryAssets, join(sourceDeploy, "lint"));
   } else {
     await deployUnslopAssets(REPO_ROOT, sourceDeploy);
-    await installUnslopAssets(join(sourceDeploy, "lint"), join(deployedRoot, "lint"));
   }
+  await deployUnslopAssets(sourceDeploy, deployedRoot);
   return { deployedRoot, cleanup: [sourceDeploy, deployedRoot] };
 }
 
-Deno.test("[deploy-unslop-offline] a deployed adapter lints a changed line with no source and an empty child cache", async () => {
+Deno.test("[deploy-unslop-offline] redeployed-offline-adapter lints with no source and an empty child cache", async () => {
   const { deployedRoot, cleanup } = await stageDeployedAssets();
   const emptyChildCache = await Deno.makeTempDir({ prefix: "exaix-deploy-empty-cache-" });
   const previousDenoDir = Deno.env.get("DENO_DIR");

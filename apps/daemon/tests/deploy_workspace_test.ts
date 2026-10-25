@@ -7,6 +7,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { stub } from "@std/testing/mock";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { getDefaultPaths } from "@exaix/core/config";
@@ -496,4 +497,85 @@ parallelSafeTest("deployed-config-closure", async () => {
   assertEquals("unslop-ts:bundle" in (stripped.tasks ?? {}), false);
   assertEquals(DEPLOYED_SCRIPT_FILES.includes("build_unslop_portal_bundle.ts"), false);
   assertEquals(stripped.workspace?.includes("./unslop-ts"), false);
+});
+
+parallelSafeTest("deployed-redeploy-real-entrypoint", async () => {
+  const first = await Deno.makeTempDir({ prefix: "exaix-redeploy-source-" });
+  const second = await Deno.makeTempDir({ prefix: "exaix-redeploy-target-" });
+  try {
+    const source = await new Deno.Command(Deno.execPath(), {
+      args: ["run", "-A", join(REPO_ROOT, "scripts", "deploy_workspace.ts"), "--no-run", first],
+      cwd: REPO_ROOT,
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    assertEquals(source.code, 0, new TextDecoder().decode(source.stderr));
+    assertEquals(await exists(join(first, "unslop-ts")), false);
+    assertEquals(await exists(join(first, "scripts", "build_unslop_portal_bundle.ts")), false);
+    const redeploy = await new Deno.Command(Deno.execPath(), {
+      args: ["run", "-A", join(first, "scripts", "deploy_workspace.ts"), "--no-run", second],
+      cwd: first,
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    assertEquals(redeploy.code, 0, new TextDecoder().decode(redeploy.stderr));
+    await verifyUnslopAssetSet(join(second, "lint"));
+    assertEquals(
+      await Deno.readTextFile(join(first, "lint", "manifest.json")),
+      await Deno.readTextFile(join(second, "lint", "manifest.json")),
+    );
+    const config = await Deno.readTextFile(join(first, "deno.json"));
+    const sameRoot = await new Deno.Command(Deno.execPath(), {
+      args: ["run", "-A", join(first, "scripts", "deploy_workspace.ts"), "--no-run", first],
+      cwd: first,
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    assertEquals(sameRoot.code, 1);
+    assertStringIncludes(new TextDecoder().decode(sameRoot.stderr), "identical");
+    assertEquals(await Deno.readTextFile(join(first, "deno.json")), config);
+  } finally {
+    await Deno.remove(first, { recursive: true });
+    await Deno.remove(second, { recursive: true });
+  }
+});
+
+parallelSafeTest("redeploy-failure-preserves-assets", async () => {
+  const source = await Deno.makeTempDir({ prefix: "exaix-redeploy-policy-" });
+  const dest = await Deno.makeTempDir({ prefix: "exaix-redeploy-existing-" });
+  try {
+    await deployUnslopAssets(REPO_ROOT, source);
+    await installUnslopAssets(join(source, "lint"), join(dest, "lint"));
+    const manifest = await Deno.readTextFile(join(dest, "lint", "manifest.json"));
+    const original = Deno.rename.bind(Deno);
+    const rename = stub(Deno, "rename", (from, to) => {
+      if (String(from).includes(".staging-")) return Promise.reject(new Error("staged replacement denied"));
+      return original(from, to);
+    });
+    try {
+      await assertRejects(
+        () => installUnslopAssets(join(source, "lint"), join(dest, "lint")),
+        Error,
+        "replacement denied",
+      );
+    } finally {
+      rename.restore();
+    }
+    await verifyUnslopAssetSet(join(dest, "lint"));
+    assertEquals(await Deno.readTextFile(join(dest, "lint", "manifest.json")), manifest);
+    const engine = join(source, "lint", "unslop_engine.js");
+    const linked = join(source, "engine.js");
+    await Deno.rename(engine, linked);
+    await Deno.symlink(linked, engine);
+    await assertRejects(() => installUnslopAssets(join(source, "lint"), join(dest, "lint")), Error);
+    await verifyUnslopAssetSet(join(dest, "lint"));
+    await Deno.mkdir(join(source, "unslop-ts", "scripts"), { recursive: true });
+    await Deno.writeTextFile(join(source, "unslop-ts", "scripts", "bundle.ts"), "// Source presence fixture.\n");
+    await assertRejects(() => deployUnslopAssets(source, dest), Error, "source packaging failed");
+    assertEquals(await Deno.readTextFile(join(dest, "lint", "manifest.json")), manifest);
+    await verifyUnslopAssetSet(join(dest, "lint"));
+  } finally {
+    await Deno.remove(source, { recursive: true });
+    await Deno.remove(dest, { recursive: true });
+  }
 });
