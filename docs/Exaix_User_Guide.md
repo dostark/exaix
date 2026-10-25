@@ -1947,10 +1947,13 @@ lists the tracked files of the immutable target commit through a strict `git ls-
 --rules-tags= --json` in bounded batches under one deadline. The worktree, portal files and the
 network do not resolve the plugin.
 
-The installed policy owns the rule set and the plugin. A file-level `// deno-lint-ignore-file`
-directive is rejected before the host runs: the check fails with `LintSuppressionForbidden` and no
-repair runs. A named line ignore reaches `deno lint` and is reported by the policy's
-`unslop/no-forbidden-lint-ignore` rule, so a suppression attempt is a finding, not a pass.
+The installed policy owns the rule set and the plugin. The guard streams each selected file line by
+line with a bounded line prefix and checks the shared deadline before every file and chunk, so a
+large file or a hostile selection cannot outlast `check_timeout_ms`. A file-level
+`// deno-lint-ignore-file` directive is rejected before the host runs: the check fails with
+`LintSuppressionForbidden` and no repair runs. A named line ignore reaches `deno lint` and is
+reported by the policy's `unslop/no-forbidden-lint-ignore` rule, so a suppression attempt is a
+finding, not a pass.
 
 The check returns one of these categorical errors, never portal-controlled text:
 
@@ -1977,10 +1980,11 @@ Resource knobs live in the workspace config. Every key is restart-required:
 | `verification.lint.git_max_bytes`    | `16777216` | maximum bytes of one strict Git query       |
 
 Install a policy with `deno task unslop-ts:policy --out <workspace>/lint`, then deploy it through
-the workspace deploy path. A deployed policy directory holds `unslop_engine.js`, `catalog.json`,
-`plugin.ts`, `deno.json` and `manifest.json`. A missing or tampered directory makes the check fail
-with `LintPolicyMissing` or `LintPolicyUntrusted`; see `packages/lint-policy/README.md` for
-recovery.
+the workspace deploy path. The installer and deploy verify every recorded file hash. A deployed
+policy directory holds `unslop_engine.js`, `catalog.json`, `plugin.ts`, `deno.json` and
+`manifest.json`. At run time the check applies the containment checks: a missing, symlinked or
+out-of-root directory fails with `LintPolicyMissing` or `LintPolicyUntrusted`. The runner does not
+re-hash the installed files. See `packages/lint-policy/README.md` for recovery.
 
 `verification_status` is written on `execution.completed`:
 

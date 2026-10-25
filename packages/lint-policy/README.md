@@ -98,10 +98,13 @@ leaves no complete policy behind. A source checkout passes `--out <workspace>/li
 reads `<system root>/<policy_root>/<policy>`, and `policy_root` defaults to `lint`.
 
 Provenance: the manifest records the engine Git SHA, the engine package version and the Deno version.
-A consumer verifies the directory is a regular directory below the trusted root, then verifies every
-file against its recorded size and SHA-256. A size or checksum mismatch raises `LintPolicyUntrusted` without a fallback. A missing directory raises `LintPolicyMissing`. A
+The installer and every deploy verify each recorded file against its size and checksum (SHA-256), and a mismatch
+aborts the install or deploy without a fallback. At run time the daemon runner applies the
+containment checks: the policy directory must be a regular directory below the trusted root. A
 symlink, a non-directory, a path outside the trusted root, or a directory under the execution
-worktree or a portal root raises `LintPolicyUntrusted`.
+worktree or a portal root raises `LintPolicyUntrusted`; a missing directory raises
+`LintPolicyMissing`. The runner does not re-hash the files, so the installed directory is trusted
+after the installer and deploy checks.
 
 Deployment: `scripts/deploy_workspace.ts` installs every configured policy. A source checkout builds
 it with the `unslop-ts:policy` task, or copies an existing `lint/<policy>/` directory when the source

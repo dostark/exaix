@@ -6,7 +6,7 @@
  * @description Doc-content assertions for the post-execution verification feature.
  */
 
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseToml } from "@std/toml";
 import { ConfigSchema } from "@exaix/schemas";
@@ -156,4 +156,16 @@ Deno.test("Reference_Data documents the repair phase on trace-scoped plan.execut
   const reference = await Deno.readTextFile(join(ROOT, "docs", "Reference_Data.md"));
   assertStringIncludes(reference, 'phase: "repair"');
   assertStringIncludes(reference, "on the request trace");
+});
+
+Deno.test("docs-integrity-claims: the integrity control is described at the layer that enforces it", async () => {
+  const readme = await Deno.readTextFile(join(ROOT, "packages", "lint-policy", "README.md"));
+  const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
+  for (const text of [readme, guide]) {
+    assertStringIncludes(text, "containment");
+    assertStringIncludes(text, "installer");
+    assertStringIncludes(text, "deploy");
+  }
+  assertFalse(readme.includes("A consumer verifies every"));
+  assertFalse(guide.includes("tampered directory"));
 });
