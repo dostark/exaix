@@ -1,11 +1,11 @@
 schema_version: "1.0.0"
-id: "execution-unslop-exhausted"
-title: "Post-execution unslop repair exhausts"
+id: "execution-deno-lint-exhausted"
+title: "Post-execution deno lint repair exhausts"
 pack: "agent_flows"
 tags: ["safety-gate"]
-request_fixture: "fixtures/requests/agent_flows/execution_unslop_exhausted.md"
+request_fixture: "fixtures/requests/agent_flows/execution_deno_lint_exhausted.md"
 mode_support: ["auto"]
-unslop_assets: true
+lint_policy: true
 portals:
   - alias: "verify-app"
     source_path: "$FRAMEWORK_HOME/fixtures/portals/todo_app"
@@ -13,14 +13,14 @@ portals:
     git_init: true
     verification:
       checks:
-        - kind: "unslop"
-          catalog: "verification-catalog.json"
+        - kind: "deno_lint"
+          include: ["seed.ts"]
       max_repair_attempts: 1
       check_timeout_ms: 20000
 steps:
   # The repair step runs natively under this agent. Its ReAct prompt opens with the agent
-  # role name, which the committed fixture execution-unslop-exhausted__repair-step.json
-  # matches a reply that weakens the working catalog and leaves the cast. The name is distinct from the
+  # role name, which the committed fixture execution-deno-lint-exhausted__repair-step.json
+  # matches a reply that weakens the portal config and adds a named line ignore. The name is distinct from the
   # repair scenario's so one fixture set cannot answer the other's repair prompt.
   - id: "write-repair-agent"
     type: "write-file"
@@ -59,17 +59,17 @@ steps:
   - id: "inject-approved-plan"
     type: "write-file"
     name: "Write an approved plan that adds a chained type assertion"
-    path: "Workspace/Active/execution-unslop-exhausted_plan.md"
+    path: "Workspace/Active/execution-deno-lint-exhausted_plan.md"
     content: |
       ---
       trace_id: "22a00000-0000-4000-8000-000000000230"
-      request_id: "execution-unslop-exhausted"
+      request_id: "execution-deno-lint-exhausted"
       status: approved
       portal: verify-app
       agent_role: verification-unslop-coder
       ---
 
-      # Unslop plan
+      # Deno lint plan
 
       ```toml
       tool = "write_file"
@@ -105,7 +105,7 @@ steps:
     action_type: "execution.verification.failed"
     payload_equals:
       - path: "request_id"
-        value: "execution-unslop-exhausted"
+        value: "execution-deno-lint-exhausted"
       - path: "attempt"
         value: 0
     expect_count: 1
@@ -121,7 +121,7 @@ steps:
     action_type: "execution.repair.completed"
     payload_equals:
       - path: "request_id"
-        value: "execution-unslop-exhausted"
+        value: "execution-deno-lint-exhausted"
     expect_count: 1
     output_criteria:
       - id: "one-repair-attempted"
@@ -135,7 +135,7 @@ steps:
     action_type: "execution.verification.failed"
     payload_equals:
       - path: "request_id"
-        value: "execution-unslop-exhausted"
+        value: "execution-deno-lint-exhausted"
       - path: "attempt"
         value: 1
     expect_count: 1
@@ -151,7 +151,7 @@ steps:
     action_type: "execution.verification.exhausted"
     payload_equals:
       - path: "request_id"
-        value: "execution-unslop-exhausted"
+        value: "execution-deno-lint-exhausted"
       - path: "attempts"
         value: 1
     expect_count: 1
@@ -167,7 +167,7 @@ steps:
     action_type: "execution.verification.passed"
     payload_equals:
       - path: "request_id"
-        value: "execution-unslop-exhausted"
+        value: "execution-deno-lint-exhausted"
     expect_count: 0
     output_criteria:
       - id: "verification-never-passed"
@@ -181,7 +181,7 @@ steps:
     action_type: "execution.completed"
     payload_equals:
       - path: "request_id"
-        value: "execution-unslop-exhausted"
+        value: "execution-deno-lint-exhausted"
       - path: "verification_status"
         value: "failed"
     expect_count: 1
@@ -198,14 +198,12 @@ steps:
     action_type: "execution.verification.lint_findings"
     payload_equals:
       - path: "request_id"
-        value: "execution-unslop-exhausted"
+        value: "execution-deno-lint-exhausted"
       - path: "verification_status"
         value: "failed"
-      - path: "total"
-        value: 1
       - path: "attempt"
         value: 1
-    payload_contains: ["seed.ts", "unslop/no-chained-type-assertions"]
+    payload_contains: ["seed.ts", "unslop/no-forbidden-lint-ignore"]
     expect_count: 1
     output_criteria:
       - id: "one-terminal-snapshot"
@@ -218,7 +216,7 @@ steps:
   - id: "review-show"
     type: "exactl"
     command: "review"
-    args: ["show", "feat/execution-unslop-exhausted-22a00000"]
+    args: ["show", "feat/execution-deno-lint-exhausted-22a00000"]
     output_criteria:
       - id: "review-shows-findings"
         class: "security"
@@ -226,8 +224,8 @@ steps:
         kind: "command-output-contains"
         contains: [
           "verification: failed",
-          "unslop: 1 remaining finding(s)",
-          "seed.ts:1 unslop/no-chained-type-assertions",
+          "lint: 4 remaining finding(s)",
+          "seed.ts:1 unslop/no-forbidden-lint-ignore",
         ]
 
   - id: "canonical-lint-event-inventory"
@@ -240,7 +238,7 @@ steps:
     ]
     payload_equals:
       - path: "request_id"
-        value: "execution-unslop-exhausted"
+        value: "execution-deno-lint-exhausted"
     project:
       action: "action_type"
       trace: "trace_id"

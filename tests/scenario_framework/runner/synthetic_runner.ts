@@ -519,8 +519,8 @@ export async function runSyntheticScenario(
   // daemon actually boots with — mounting before it risks the entry being silently
   // overwritten by the materialized cell config, failing with "Portal not found".
   await prepareDeclaredPortals(loadedScenario.scenario.portals, options, envForExpansion);
-  if (loadedScenario.scenario.unslop_assets) {
-    await stageUnslopAssets(REPO_ROOT, options.workspaceRoot);
+  if (loadedScenario.scenario.lint_policy) {
+    await stageLintPolicy(REPO_ROOT, options.workspaceRoot);
   }
   if (loadedScenario.scenario.pack === "persona_response_eval") {
     const config = new ConfigService(join(options.workspaceRoot, WORKSPACE_CONFIG_FILE)).get();
@@ -1511,7 +1511,7 @@ function expandInString(str: string, env: Record<string, string>): string {
   });
 }
 
-/** Stages the verified portal lint asset set into one scenario sandbox. */
-export async function stageUnslopAssets(repoRoot: string, workspaceRoot: string): Promise<void> {
+/** Stages the verified portal lint policy into one scenario sandbox. */
+export async function stageLintPolicy(repoRoot: string, workspaceRoot: string): Promise<void> {
   await installLintPolicyDir(join(repoRoot, "lint", "unslop"), join(workspaceRoot, "lint", "unslop"));
 }

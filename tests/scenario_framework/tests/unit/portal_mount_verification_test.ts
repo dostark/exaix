@@ -15,8 +15,8 @@ import { join } from "@std/path";
 import { ConfigSchema, isDenoTaskCheck } from "@exaix/schemas";
 import { PortalMountSchema } from "../../schema/step_schema.ts";
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";
-import { stageUnslopAssets, verificationToml, withoutPortalRegions } from "../../runner/synthetic_runner.ts";
-import { buildUnslopPortalAssets } from "../../../../scripts/build_unslop_portal_bundle.ts";
+import { stageLintPolicy, verificationToml, withoutPortalRegions } from "../../runner/synthetic_runner.ts";
+import { installLintPolicyForTest } from "@exaix/testing";
 
 Deno.test("[scenario-schema] re-mounting an alias drops its older portal entries and verification blocks", () => {
   const first =
@@ -24,7 +24,12 @@ Deno.test("[scenario-schema] re-mounting an alias drops its older portal entries
   const second =
     '\n[[portals]]\nalias = "verify-app"\ntarget_path = "/ws/verify-app"\ncreated = "2026-10-24T00:01:00.000Z"\n' +
     verificationToml({
-      checks: [{ kind: "unslop", packs: ["typescript"], include: ["**/*.ts"] }],
+      checks: [{
+        kind: "deno_lint",
+        policy: "unslop",
+        include: ["**/*.ts"],
+        exclude: ["node_modules/**", "vendor/**"],
+      }],
       max_repair_attempts: 1,
       check_timeout_ms: 20_000,
       output_max_chars: 4_000,
@@ -82,7 +87,7 @@ Deno.test("[scenario-schema] a mixed-kind verification block round-trips through
     verification: {
       checks: [
         { kind: "deno_task", task: "test" },
-        { kind: "unslop", include: ["src/**/*.ts"] },
+        { kind: "deno_lint", include: ["src/**/*.ts"] },
       ],
     },
   });
@@ -95,12 +100,13 @@ Deno.test("[scenario-schema] a mixed-kind verification block round-trips through
   const denoCheck = checks[0];
   assert(isDenoTaskCheck(denoCheck));
   assertEquals(denoCheck.task, "test");
-  const unslopCheck = checks[1];
-  assertEquals(unslopCheck.kind, "unslop");
-  assertEquals(unslopCheck.kind === "unslop" ? unslopCheck.include : [], ["src/**/*.ts"]);
-  assertEquals(unslopCheck.kind === "unslop" ? unslopCheck.packs : [], ["typescript"]);
-  assert(!("task" in unslopCheck), "an unslop check serializes no task");
-  assert(!("path" in unslopCheck), "an unslop check serializes no path");
+  const lintCheck = checks[1];
+  assertEquals(lintCheck.kind, "deno_lint");
+  assertEquals(lintCheck.kind === "deno_lint" ? lintCheck.include : [], ["src/**/*.ts"]);
+  assertEquals(lintCheck.kind === "deno_lint" ? lintCheck.policy : "", "unslop");
+  assertEquals(lintCheck.kind === "deno_lint" ? lintCheck.exclude : [], ["node_modules/**", "vendor/**"]);
+  assert(!("task" in lintCheck), "a deno_lint check serializes no task");
+  assert(!("path" in lintCheck), "a deno_lint check serializes no path");
 });
 
 Deno.test("[scenario-schema] the final pack, catalog and include contract round-trips", () => {
@@ -109,10 +115,10 @@ Deno.test("[scenario-schema] the final pack, catalog and include contract round-
     source_path: "fixtures/demo",
     verification: {
       checks: [{
-        kind: "unslop",
-        packs: ["deno", "typescript"],
-        catalog: "catalogs/portal.json",
+        kind: "deno_lint",
+        policy: "other-policy",
         include: ["packages/**/*.ts"],
+        exclude: ["dist/**"],
       }],
     },
   });
@@ -121,39 +127,36 @@ Deno.test("[scenario-schema] the final pack, catalog and include contract round-
   const config = ConfigSchema.parse(parseToml(updated));
   const check = config.portals.find((portal) => portal.alias === "demo")?.verification?.checks[0];
 
-  assert(check !== undefined && check.kind === "unslop");
-  assertEquals(check.packs, ["typescript", "deno"]);
-  assertEquals(check.catalog, "catalogs/portal.json");
+  assert(check !== undefined && check.kind === "deno_lint");
+  assertEquals(check.policy, "other-policy");
   assertEquals(check.include, ["packages/**/*.ts"]);
+  assertEquals(check.exclude, ["dist/**"]);
 });
 
-Deno.test("[scenario-schema] unslop_assets defaults off and accepts an explicit flag", async () => {
+Deno.test("[scenario-schema] lint_policy defaults off and accepts an explicit flag", async () => {
   const yaml = await Deno.readTextFile(
     new URL("../../scenarios/agent_flows/execution-verification-repair.yaml", import.meta.url),
   );
   const parsed = ScenarioSchema.parse(parseYaml(yaml) as Record<string, unknown>);
-  assertEquals(parsed.unslop_assets, false);
-  const enabled = ScenarioSchema.parse({ ...parseYaml(yaml) as Record<string, unknown>, unslop_assets: true });
-  assertEquals(enabled.unslop_assets, true);
+  assertEquals(parsed.lint_policy, false);
+  const enabled = ScenarioSchema.parse({ ...parseYaml(yaml) as Record<string, unknown>, lint_policy: true });
+  assertEquals(enabled.lint_policy, true);
 });
-Deno.test("[scenario-schema] stageUnslopAssets copies a verified set and rejects a missing one", async () => {
-  const repoRoot = await Deno.makeTempDir({ prefix: "unslop-stage-source-" });
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "unslop-stage-workspace-" });
+Deno.test("[scenario-schema] stageLintPolicy copies a verified directory and rejects a missing one", async () => {
+  const repoRoot = await Deno.makeTempDir({ prefix: "lint-stage-source-" });
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "lint-stage-workspace-" });
   try {
-    await buildUnslopPortalAssets({
-      root: new URL("../../../../", import.meta.url).pathname,
-      out: join(repoRoot, "lint"),
-    });
-    await stageUnslopAssets(repoRoot, workspaceRoot);
-    assert(await exists(join(workspaceRoot, "lint", "manifest.json")));
-    assert(await exists(join(workspaceRoot, "lint", "unslop_engine.js")));
+    await installLintPolicyForTest(join(repoRoot, "lint"));
+    await stageLintPolicy(repoRoot, workspaceRoot);
+    assert(await exists(join(workspaceRoot, "lint", "unslop", "manifest.json")));
+    assert(await exists(join(workspaceRoot, "lint", "unslop", "unslop_engine.js")));
 
-    const emptyRoot = await Deno.makeTempDir({ prefix: "unslop-stage-empty-" });
+    const emptyRoot = await Deno.makeTempDir({ prefix: "lint-stage-empty-" });
     try {
       await assertRejects(
-        () => stageUnslopAssets(emptyRoot, workspaceRoot),
+        () => stageLintPolicy(emptyRoot, workspaceRoot),
         Error,
-        "unslop assets missing",
+        "lint policy manifest missing",
       );
     } finally {
       await Deno.remove(emptyRoot, { recursive: true });
@@ -164,26 +167,23 @@ Deno.test("[scenario-schema] stageUnslopAssets copies a verified set and rejects
   }
 });
 
-Deno.test("[scenario-schema] stageUnslopAssets rejects a corrupt prebuilt asset set", async () => {
-  const repoRoot = await Deno.makeTempDir({ prefix: "unslop-corrupt-source-" });
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "unslop-corrupt-workspace-" });
+Deno.test("[scenario-schema] stageLintPolicy rejects a corrupt prebuilt policy", async () => {
+  const repoRoot = await Deno.makeTempDir({ prefix: "lint-corrupt-source-" });
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "lint-corrupt-workspace-" });
   try {
-    await buildUnslopPortalAssets({
-      root: new URL("../../../../", import.meta.url).pathname,
-      out: join(repoRoot, "lint"),
-    });
+    await installLintPolicyForTest(join(repoRoot, "lint"));
     // Same length, different bytes: only the checksum can catch this.
-    const enginePath = join(repoRoot, "lint", "unslop_engine.js");
+    const enginePath = join(repoRoot, "lint", "unslop", "unslop_engine.js");
     const engineBytes = await Deno.readFile(enginePath);
     engineBytes[0] = (engineBytes[0] ?? 0) ^ 0xff;
     await Deno.writeFile(enginePath, engineBytes);
     await assertRejects(
-      () => stageUnslopAssets(repoRoot, workspaceRoot),
+      () => stageLintPolicy(repoRoot, workspaceRoot),
       Error,
       "checksum mismatch",
     );
     // Nothing was staged: a rejected source never leaves a partial destination behind.
-    assertEquals(await exists(join(workspaceRoot, "lint")), false);
+    assertEquals(await exists(join(workspaceRoot, "lint", "unslop")), false);
   } finally {
     await Deno.remove(repoRoot, { recursive: true }).catch(() => {});
     await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});

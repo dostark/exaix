@@ -6,7 +6,7 @@ priority: normal
 agent_role: senior-coder
 source: cli
 created_by: "test@example.com"
-subject: "Exhaust the bounded repair loop on an unslop finding"
+subject: "Exhaust the bounded repair loop on a deno lint finding"
 ---
 
 # Request
