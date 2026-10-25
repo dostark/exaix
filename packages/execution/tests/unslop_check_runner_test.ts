@@ -23,8 +23,8 @@ import { readHeadSha } from "@exaix/git";
 import {
   type IUnslopCheckContext,
   normalizeHostRange,
-  parseUnslopHostOutput,
-  runUnslopLintBatch,
+  parseDenoLintHostOutput,
+  runDenoLintBatch,
   UnslopCheckRunner,
 } from "@exaix/execution";
 import { buildUnslopPortalAssets } from "../../../scripts/build_unslop_portal_bundle.ts";
@@ -188,10 +188,10 @@ Deno.test("adapter-host-matrix", async () => {
 });
 
 Deno.test("adapter-host-json-guards", () => {
-  assertEquals(parseUnslopHostOutput("not json"), null);
-  assertEquals(parseUnslopHostOutput("{}"), null);
+  assertEquals(parseDenoLintHostOutput("not json"), null);
+  assertEquals(parseDenoLintHostOutput("{}"), null);
   assertEquals(
-    parseUnslopHostOutput(JSON.stringify({
+    parseDenoLintHostOutput(JSON.stringify({
       diagnostics: [{
         filename: "file:///a.ts",
         code: "unslop/x",
@@ -202,7 +202,7 @@ Deno.test("adapter-host-json-guards", () => {
     })),
     null,
   );
-  const valid = parseUnslopHostOutput(JSON.stringify({
+  const valid = parseDenoLintHostOutput(JSON.stringify({
     diagnostics: [{
       filename: "file:///a.ts",
       code: "unslop/x",
@@ -311,60 +311,6 @@ Deno.test("deno-policy-enabled", async () => {
   }
 });
 
-Deno.test("base-catalog-replacement", async () => {
-  const scope = await makeScope();
-  try {
-    await setupGitRepo(scope.ctx.repoDir, { initialCommit: true });
-    const packagedPath = join(scope.ctx.tempDir, "lint", "unslop_portal_catalog.json");
-    const packaged = JSON.parse(await Deno.readTextFile(packagedPath)) as {
-      rules: Record<string, { severity: string; reason?: string }>;
-    };
-    for (const entry of Object.values(packaged.rules)) {
-      entry.severity = "off";
-      entry.reason = "Disabled by the test catalog.";
-    }
-    await Deno.writeTextFile(join(scope.ctx.repoDir, "catalog.json"), JSON.stringify(packaged));
-    await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), CLEAN_LINE);
-    const base = await commitAll(scope, "seed");
-
-    for (const entry of Object.values(packaged.rules)) entry.severity = "error";
-    await Deno.writeTextFile(join(scope.ctx.repoDir, "catalog.json"), JSON.stringify(packaged));
-    await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), SEED_CAST);
-    const target = await commitAll(scope, "change");
-
-    const withCatalog = await scope.runner.run(contextFor(scope, base, target, {
-      check: { kind: "unslop", catalog: "catalog.json" },
-    }));
-    assertEquals(withCatalog.kind, "passed", "the base catalog, not the edited target catalog, applies");
-
-    const withoutCatalog = await scope.runner.run(contextFor(scope, base, target));
-    assertEquals(withoutCatalog.kind, "failed");
-
-    const invalid = [
-      { ...packaged, rules: { "unslop/not-a-rule": { engine: "plugin", severity: "off", scope: "all", tags: [] } } },
-      {
-        ...packaged,
-        rules: { "unslop/no-chained-type-assertions": { engine: "script", severity: "off", scope: "all", tags: [] } },
-      },
-      { ...packaged, layout: { src: ["packages"] } },
-    ];
-    for (const document of invalid) {
-      await Deno.writeTextFile(join(scope.ctx.repoDir, "catalog.json"), JSON.stringify(document));
-      await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), CLEAN_LINE);
-      const badBase = await commitAll(scope, "invalid catalog");
-      await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), SEED_CAST);
-      const badTarget = await commitAll(scope, "cast");
-      const result = await scope.runner.run(contextFor(scope, badBase, badTarget, {
-        check: { kind: "unslop", catalog: "catalog.json" },
-      }));
-      assertEquals(result.kind, "error");
-      assertEquals(result.kind === "error" ? result.error_class : "", "UnslopCatalogInvalid");
-    }
-  } finally {
-    await scope.ctx.cleanup();
-  }
-});
-
 Deno.test("snapshot-drift-before-host", async () => {
   const scope = await makeScope();
   try {
@@ -462,26 +408,6 @@ Deno.test("adapter-selected-pack-policy", async () => {
   }
 });
 
-Deno.test("adapter-pack-catalog-consistency", async () => {
-  const scope = await makeScope();
-  try {
-    const catalog = await Deno.readTextFile(join(scope.ctx.tempDir, "lint", "unslop_portal_deno_catalog.json"));
-    const base = await seedBase(scope, { "seed.ts": CLEAN_LINE, "catalog.json": catalog });
-    const target = await applyTarget(scope, { "seed.ts": SEED_CAST });
-    const unselected = await scope.runner.run(contextFor(scope, base, target, {
-      check: { kind: "unslop", catalog: "catalog.json" },
-    }));
-    assertEquals(unselected.kind, "error");
-    assertEquals(unselected.kind === "error" ? unselected.error_class : null, "UnslopCatalogInvalid");
-    const selected = await scope.runner.run(contextFor(scope, base, target, {
-      check: { kind: "unslop", packs: ["typescript", "deno"], catalog: "catalog.json" },
-    }));
-    assertEquals(selected.kind, "failed");
-  } finally {
-    await scope.ctx.cleanup();
-  }
-});
-
 Deno.test("host-position-exact-projection", () => {
   const host = (start: number, end: number) =>
     JSON.stringify({
@@ -493,10 +419,10 @@ Deno.test("host-position-exact-projection", () => {
       }],
       errors: [],
     });
-  const valid = parseUnslopHostOutput(host(2, 5));
+  const valid = parseDenoLintHostOutput(host(2, 5));
   assertEquals(valid?.diagnostics[0].start, { line: 1, column: 2 });
   assertEquals(valid?.diagnostics[0].end, { line: 1, column: 5 });
-  assertEquals(parseUnslopHostOutput(host(9, 2)), null);
+  assertEquals(parseDenoLintHostOutput(host(9, 2)), null);
 });
 
 Deno.test("exclusive-end-changed-line-filter", async () => {
@@ -685,7 +611,7 @@ Deno.test("lint-batch-stream-resource-boundaries", async (test) => {
           (_command, _args, options) => original(Deno.execPath(), ["eval", fixture.source], options),
         );
         try {
-          const result = await runUnslopLintBatch({
+          const result = await runDenoLintBatch({
             configPath: join(root, "deno.json"),
             files: ["./seed.ts"],
             cwd: root,
@@ -706,7 +632,7 @@ Deno.test("lint-batch-stream-resource-boundaries", async (test) => {
         throw new Error("spawn denied");
       });
       try {
-        const result = await runUnslopLintBatch({
+        const result = await runDenoLintBatch({
           configPath: join(root, "deno.json"),
           files: ["./seed.ts"],
           cwd: root,
@@ -739,64 +665,6 @@ Deno.test("real-host-source-error-category", async () => {
     assertFalse(JSON.stringify(result).includes(scope.ctx.repoDir));
   } finally {
     await scope.ctx.cleanup();
-  }
-});
-
-Deno.test("complete-legacy-catalog-validation", async (test) => {
-  for (
-    const name of ["severity", "options", "schema", "empty", "missing", "oversized", "nonblob", "timeout"] as const
-  ) {
-    await test.step(name, async () => {
-      const scope = await makeScope();
-      try {
-        await setupGitRepo(scope.ctx.repoDir, { initialCommit: true });
-        const policy: Record<string, unknown> = JSON.parse(
-          await Deno.readTextFile(join(scope.ctx.tempDir, "lint", "unslop_portal_catalog.json")),
-        );
-        const rules = policy.rules as Record<string, Record<string, unknown>>;
-        const entry = rules["unslop/no-chained-type-assertions"]!;
-        if (name === "severity") entry.severity = "bogus";
-        if (name === "options") entry.options = { invalid_option: true };
-        if (name === "schema") delete policy.scopes;
-        if (name === "empty") {
-          policy.rules = {};
-          policy.tagVocabulary = {};
-        }
-        const path = join(scope.ctx.repoDir, "catalog.json");
-        if (name === "nonblob") await Deno.symlink("seed.ts", path);
-        else if (name !== "missing") {
-          await Deno.writeTextFile(
-            path,
-            name === "oversized" ? " ".repeat(scope.settings.catalog_max_bytes + 1) : JSON.stringify(policy),
-          );
-        }
-        await Deno.writeTextFile(join(scope.ctx.repoDir, "seed.ts"), CLEAN_LINE);
-        const base = await commitAll(scope, "policy base");
-        const target = await applyTarget(scope, { "seed.ts": SEED_CAST });
-        const result = await scope.runner.run(contextFor(scope, base, target, {
-          check: { kind: "unslop", catalog: "catalog.json" },
-          ...(name === "timeout" ? { timeoutMs: 0 } : {}),
-        }));
-        if (name === "empty") {
-          assertEquals(result.kind, "passed");
-          assertEquals(result.total, 0);
-        } else {
-          assertEquals(result.kind, "error");
-          assertEquals(
-            result.kind === "error" ? result.error_class : null,
-            name === "oversized"
-              ? "UnslopLimitExceeded"
-              : name === "timeout"
-              ? "UnslopTimeout"
-              : "UnslopCatalogInvalid",
-          );
-          assert(result.output.length > 0);
-          assertFalse(result.output.includes(scope.ctx.repoDir));
-        }
-      } finally {
-        await scope.ctx.cleanup();
-      }
-    });
   }
 });
 

@@ -69,12 +69,15 @@ import type { IEffortDeclarationPair, IEffortResolver } from "@exaix/ai";
 import { ConfidenceScorer } from "./confidence_scorer.ts";
 import { GitExecutionSetupService } from "./git_execution_setup_service.ts";
 import {
+  type IVerificationLintContext,
   type IVerificationRunner,
   type IVerificationUnslopContext,
   VerificationRunner,
 } from "./verification_runner.ts";
 import { UnslopCheckRunner } from "./unslop_check_runner.ts";
+import { DenoLintCheckRunner } from "./deno_lint_check.ts";
 import { resolveUnslopSettings } from "./unslop_settings.ts";
+import { resolveLintSettings } from "@exaix/schemas/lint_settings.ts";
 import { buildUnslopSnapshot, completeCheckStates } from "./unslop_snapshot.ts";
 import {
   DEFAULT_AGENT_ROLE,
@@ -524,7 +527,6 @@ export class ExecutionLoop {
         { ...context, expectedCommit },
         attempt,
         runId,
-        usesUnslop,
       );
       if (result !== undefined) lastResult = result;
       return result;
@@ -622,13 +624,18 @@ export class ExecutionLoop {
     },
     attempt: number,
     runId: string,
-    usesUnslop: boolean,
   ): Promise<IVerificationResult | undefined> {
+    const usesUnslop = verification.checks.some((check) => check.kind === UNSLOP_CHECK_KIND);
+    const usesDenoLint = verification.checks.some((check) => check.kind === DENO_LINT_CHECK_KIND);
     if (usesUnslop && context.baseSha === null) return undefined;
     const unslop = usesUnslop
       ? await this.buildUnslopContext(runId, context.baseSha, context.executionGitService, context.expectedCommit)
       : undefined;
     if (usesUnslop && unslop === undefined) return undefined;
+    const lint = usesDenoLint
+      ? await this.buildLintContext(runId, context.executionGitService, context.expectedCommit)
+      : undefined;
+    if (usesDenoLint && lint === undefined) return undefined;
     try {
       const result = await runner.run(verification, {
         requestId: context.requestId,
@@ -636,14 +643,29 @@ export class ExecutionLoop {
         attempt,
         executionRoot: context.executionRoot,
         ...(unslop === undefined ? {} : { unslop }),
+        ...(lint === undefined ? {} : { lint }),
       });
-      if (usesUnslop && await this.captureImmutableCommit(context.executionGitService) !== context.expectedCommit) {
+      if (
+        (usesUnslop || usesDenoLint) &&
+        await this.captureImmutableCommit(context.executionGitService) !== context.expectedCommit
+      ) {
         return undefined;
       }
       return result;
     } catch {
       return undefined;
     }
+  }
+
+  /** Resolves the immutable target commit and Git service of one lint attempt. */
+  private async buildLintContext(
+    runId: string,
+    gitService: IGitService,
+    expectedCommit: string,
+  ): Promise<IVerificationLintContext | undefined> {
+    const targetSha = await this.captureImmutableCommit(gitService);
+    if (targetSha === null || targetSha !== expectedCommit) return undefined;
+    return { runId, targetSha, git: gitService };
   }
 
   /** Resolves the immutable target commit of the current attempt. */
@@ -682,7 +704,12 @@ export class ExecutionLoop {
       portalRoots: this.config.portals.map((portal) => portal.target_path),
       knownSecrets: secrets,
     });
-    return new VerificationRunner(logger, secrets, { unslop });
+    const denoLint = new DenoLintCheckRunner(logger, {
+      settings: resolveLintSettings(this.config, this.context?.configAdapter),
+      systemRoot: this.config.system.root,
+      knownSecrets: secrets,
+    });
+    return new VerificationRunner(logger, secrets, { unslop, deno_lint: denoLint });
   }
 
   /** Runs one repair attempt as a one-step plan. A throw returns failed with a categorical error_class.

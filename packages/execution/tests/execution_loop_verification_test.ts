@@ -32,7 +32,7 @@ import { ExecutionLoop, type IVerificationRunner, UnslopCheckRunner } from "@exa
 import { GitService } from "@exaix/git";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { MemoryBankService } from "@exaix/memory";
-import { createMockConfig, createStubContext, initTestDbService } from "@exaix/testing";
+import { createMockConfig, createStubContext, initTestDbService, installLintPolicyForTest } from "@exaix/testing";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger } from "@exaix/core/logger";
 import type { IEventLogger } from "@exaix/core/logger";
@@ -119,6 +119,7 @@ async function makeVerificationLoop(options: {
   readOnlyAgent?: boolean;
   factory?: (logger: IEventLogger, knownSecrets: readonly string[]) => IVerificationRunner;
   unslop?: boolean;
+  lintPolicy?: boolean;
   unslopSettings?: Partial<IUnslopSettings>;
   effectiveConfigDb?: boolean;
   baseCatalog?: boolean;
@@ -168,6 +169,10 @@ async function makeVerificationLoop(options: {
     if (options.unslopSettings !== undefined) {
       config.verification.unslop = { ...config.verification.unslop, ...options.unslopSettings };
     }
+  }
+
+  if (options.lintPolicy) {
+    await installLintPolicyForTest(join(rootDir, "lint"));
   }
 
   const effective = options.effectiveConfigDb ? await realConfigDbContext(rootDir, config, db) : undefined;
@@ -432,6 +437,51 @@ Deno.test("[execution-verification] a real unslop failure is repaired by the bou
     assertEquals(snapshots[0].verification_status, "repaired");
     assertEquals(snapshots[0].total, 0);
     assertEquals(snapshots[0].findings, []);
+    const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
+    assertEquals(reviews.length, 1);
+  } finally {
+    await handle.cleanupDb();
+    await Deno.remove(handle.rootDir, { recursive: true });
+  }
+});
+
+Deno.test("[execution-verification] a real deno_lint failure is repaired by the bounded repair loop", async () => {
+  const handle = await makeVerificationLoop({
+    prefix: "exec-verif-deno-lint-repair-",
+    verification: PortalVerificationSchema.parse({
+      checks: [{ kind: "deno_lint" }],
+      max_repair_attempts: 1,
+    }),
+    planAction: writeAction("seed.ts", "export const seed = 1 as unknown as string;\n"),
+    requestId: "verify-deno-lint-repair",
+    lintPolicy: true,
+    llmProvider: STUB_PROVIDER,
+    onCodeChangesDelegate: async (
+      _trace: string,
+      _step: unknown,
+      worktreePath: string,
+    ) => {
+      await Deno.writeTextFile(join(worktreePath, "seed.ts"), "export const seed = 1;\n");
+      return "changes_made" as const;
+    },
+  });
+  try {
+    await handle.db.waitForFlush();
+    assertEquals(completedStatus(handle.db, handle.traceId), "repaired");
+    const rows = handle.db.getActivitiesByTrace(handle.traceId);
+    const started = rows.filter((row) => row.action_type === "execution.verification.lint_check.started");
+    const completed = rows.filter((row) => row.action_type === "execution.verification.lint_check.completed");
+    assertEquals(started.length, 2, "the runner ran before and after the repair");
+    assertEquals(completed.length, 2);
+    const first = JSON.parse(completed[0].payload) as Record<string, unknown>;
+    const last = JSON.parse(completed.at(-1)!.payload) as Record<string, unknown>;
+    assertEquals(first.outcome, "failed");
+    assertEquals(last.outcome, "passed");
+    assertEquals(first.check_index, 0);
+    assert(typeof first.target_sha === "string" && first.target_sha.length === 40);
+    for (const row of [...started, ...completed]) {
+      assertEquals(row.trace_id, handle.traceId);
+    }
     const reviews = await handle.reviewRegistry.list({ portal: "my-portal" });
     assertEquals(reviews.length, 1);
   } finally {

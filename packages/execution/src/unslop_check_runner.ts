@@ -5,7 +5,7 @@
  *   assets, a private generated lint config and a bounded `deno lint` child.
  * @architectural-layer Services
  * @dependencies [@std/path, @exaix/core, @exaix/git, @exaix/schemas]
- * @related-files [packages/execution/src/unslop_lint_process.ts, packages/execution/src/verification_output.ts]
+ * @related-files [packages/execution/src/deno_lint_process.ts, packages/execution/src/verification_output.ts]
  */
 
 import { fromFileUrl, globToRegExp, join, relative, SEPARATOR, toFileUrl } from "@std/path";
@@ -36,12 +36,7 @@ import type {
   IUnslopFinding,
 } from "./unslop_check_types.ts";
 import { type IUnslopAssets, loadUnslopAssets } from "./unslop_assets.ts";
-import {
-  runUnslopCatalogValidation,
-  runUnslopLintBatch,
-  UNSLOP_CATALOG_VALIDATOR_FILENAME,
-  unslopLintArgs,
-} from "./unslop_lint_process.ts";
+import { denoLintArgs, runDenoLintBatch } from "./deno_lint_process.ts";
 import { bindUnslopBudget } from "./unslop_budget.ts";
 import { compareUnslopFindings, type IUnslopCollectedFindings, uniqueUnslopBatch } from "./unslop_findings.ts";
 import {
@@ -172,21 +167,6 @@ export class UnslopCheckRunner {
     const runDir = directory.path;
     try {
       await this.writePrivateInputs(runDir, assets);
-      if (context.check.catalog !== undefined) {
-        const validated = await runUnslopCatalogValidation({
-          configPath: join(runDir, DENO_CONFIG_FILENAME),
-          cwd: context.executionRoot,
-          ...buildVerificationCheckEnv(),
-          timeoutMs: context.timeoutMs,
-          jsonMaxBytes: this.options.settings.json_max_bytes,
-          stderrMaxBytes: this.options.settings.stderr_max_bytes,
-        });
-        if (validated.kind !== "diagnostics") {
-          return errorOutcome(
-            validated.kind === "source_invalid" ? UnslopErrorClass.CATALOG_INVALID : batchErrorClass(validated.kind),
-          );
-        }
-      }
       const collected = assets.ruleIds.size === 0
         ? { findings: [], total: 0, hostExitCodes: [] }
         : await this.lintBatches(context, runDir, selection.files, assets, ranges);
@@ -267,19 +247,6 @@ export class UnslopCheckRunner {
     const parse = `parseCatalog(catalogJson, { scriptRuleSchemas: null, registry: createRuleRegistry(${
       JSON.stringify(UNSLOP_PLUGIN_NAME)
     }, [${selectedPacks}]) })`;
-    const validator = [
-      ...imports,
-      "let valid = false;",
-      `try { ${parse}; valid = true; } catch {}`,
-      'console.log(JSON.stringify({ diagnostics: [], errors: valid ? [] : ["invalid_catalog"] }));',
-      "",
-    ].join("\n");
-    await writeUnslopPrivateInput(
-      runDir,
-      UNSLOP_CATALOG_VALIDATOR_FILENAME,
-      new TextEncoder().encode(validator),
-      this.options,
-    );
     const plugin = [
       ...imports,
       `const catalog = ${parse};`,
@@ -316,7 +283,7 @@ export class UnslopCheckRunner {
     for (const batch of batches) {
       const remaining = deadline - Date.now();
       if (remaining <= 0) return errorOutcome(UnslopErrorClass.TIMEOUT);
-      const result = await runUnslopLintBatch({
+      const result = await runDenoLintBatch({
         configPath: join(runDir, DENO_CONFIG_FILENAME),
         files: batch.map((file) => `./${file}`),
         cwd: context.executionRoot,
@@ -342,7 +309,7 @@ export class UnslopCheckRunner {
   private batchFiles(files: readonly string[], configPath: string): readonly (readonly string[])[] {
     const batches: string[][] = [];
     let current: string[] = [];
-    const fixedBytes = [Deno.execPath(), ...unslopLintArgs(configPath, [])]
+    const fixedBytes = [Deno.execPath(), ...denoLintArgs(configPath, [])]
       .reduce((total, arg) => total + new TextEncoder().encode(arg).byteLength + 1, 0);
     let bytes = fixedBytes;
     for (const file of files) {

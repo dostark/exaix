@@ -16,6 +16,8 @@ import type {
   IExecutionCompletedVerification,
   IExecutionVerificationLintFindingsEventPayload,
   IRouteReason,
+  LintCheckRunOutcome,
+  LintErrorClass,
   ModelResolutionReason,
   TaskTypeSource,
   UnslopCheckRunOutcome,
@@ -783,9 +785,9 @@ export interface IExecutionVerificationLintCheckCompletedEventPayload {
   attempt: number;
   check_index: number;
   target_sha: string;
-  outcome: UnslopCheckRunOutcome;
+  outcome: UnslopCheckRunOutcome | LintCheckRunOutcome;
   total: number | null;
-  error_class: UnslopErrorClass | null;
+  error_class: UnslopErrorClass | LintErrorClass | null;
 }
 
 /** Payload of `execution.verification.lint_findings`. It is the terminal snapshot. */

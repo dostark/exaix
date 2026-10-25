@@ -1,21 +1,17 @@
 /**
- * @module UnslopLintProcess
- * @path packages/execution/src/unslop_lint_process.ts
- * @description Bounded `deno lint` child process for the portal unslop check: complete JSON capture,
- *   host-result guards and guaranteed reaping.
+ * @module DenoLintProcess
+ * @path packages/execution/src/deno_lint_process.ts
+ * @description Bounded `deno lint` child process: complete JSON capture, host-result guards and
+ *   guaranteed reaping.
  * @architectural-layer Services
  * @dependencies [@exaix/core]
- * @related-files [packages/execution/src/unslop_check_runner.ts]
+ * @related-files [packages/execution/src/deno_lint_check.ts]
  */
 
-import { dirname, join } from "@std/path";
 import { SafeSubprocess } from "@exaix/core";
 
-/** The fixed private catalog validation entry point. */
-export const UNSLOP_CATALOG_VALIDATOR_FILENAME = "validate_catalog.ts";
-
 /** One host diagnostic with its raw file URL and half-open range. */
-export interface IUnslopHostDiagnostic {
+export interface IDenoLintHostDiagnostic {
   readonly filename: string;
   readonly code: string;
   readonly message: string;
@@ -24,18 +20,21 @@ export interface IUnslopHostDiagnostic {
   readonly end: { readonly line: number; readonly column: number };
 }
 
+/** The batch outcome of an exceeded whole-check deadline. */
+export const DENO_LINT_DEADLINE_EXCEEDED = "deadline_exceeded";
+
 /** The parsed host JSON document. */
-export interface IUnslopHostOutput {
-  readonly diagnostics: readonly IUnslopHostDiagnostic[];
+export interface IDenoLintHostOutput {
+  readonly diagnostics: readonly IDenoLintHostDiagnostic[];
   readonly errors: readonly string[];
 }
 
 /** The result of one lint batch. */
-export type IUnslopLintBatchOutcome =
+export type IDenoLintBatchOutcome =
   | {
     readonly kind: "diagnostics";
     readonly hostExitCodes: readonly number[];
-    readonly diagnostics: readonly IUnslopHostDiagnostic[];
+    readonly diagnostics: readonly IDenoLintHostDiagnostic[];
   }
   | { readonly kind: "source_invalid" }
   | { readonly kind: "deadline_exceeded" }
@@ -44,7 +43,7 @@ export type IUnslopLintBatchOutcome =
   | { readonly kind: "protocol_invalid" };
 
 /** Inputs of one lint batch. */
-export interface IUnslopLintBatchOptions {
+export interface IDenoLintBatchOptions {
   readonly configPath: string;
   readonly files: readonly string[];
   readonly cwd: string;
@@ -56,12 +55,12 @@ export interface IUnslopLintBatchOptions {
 }
 
 /** The complete `deno lint` argv for one batch. */
-export function unslopLintArgs(configPath: string, files: readonly string[]): string[] {
+export function denoLintArgs(configPath: string, files: readonly string[]): string[] {
   return ["lint", "--deny-import", "--config", configPath, "--rules-tags=", "--json", ...files];
 }
 
 /** Strict host JSON guard. Null means malformed JSON or a malformed shape. */
-export function parseUnslopHostOutput(stdout: string): IUnslopHostOutput | null {
+export function parseDenoLintHostOutput(stdout: string): IDenoLintHostOutput | null {
   let document: unknown;
   try {
     document = JSON.parse(stdout);
@@ -71,7 +70,7 @@ export function parseUnslopHostOutput(stdout: string): IUnslopHostOutput | null 
   if (typeof document !== "object" || document === null) return null;
   const record = document as Record<string, unknown>;
   if (!Array.isArray(record.diagnostics) || !Array.isArray(record.errors)) return null;
-  const diagnostics: IUnslopHostDiagnostic[] = [];
+  const diagnostics: IDenoLintHostDiagnostic[] = [];
   for (const entry of record.diagnostics) {
     const diagnostic = parseDiagnostic(entry);
     if (diagnostic === null) return null;
@@ -122,7 +121,7 @@ function diagnosticRange(record: Record<string, unknown>): {
   };
 }
 
-function parseDiagnostic(entry: unknown): IUnslopHostDiagnostic | null {
+function parseDiagnostic(entry: unknown): IDenoLintHostDiagnostic | null {
   if (typeof entry !== "object" || entry === null) return null;
   const record = entry as Record<string, unknown>;
   if (typeof record.filename !== "string" || record.filename.length === 0) return null;
@@ -174,29 +173,15 @@ function concat(chunks: readonly Uint8Array[]): Uint8Array {
 }
 
 /** Runs one bounded batch and classifies its host result. */
-export function runUnslopLintBatch(options: IUnslopLintBatchOptions): Promise<IUnslopLintBatchOutcome> {
-  return runUnslopHost(options, unslopLintArgs(options.configPath, options.files));
+export function runDenoLintBatch(options: IDenoLintBatchOptions): Promise<IDenoLintBatchOutcome> {
+  return runDenoLintHost(options, denoLintArgs(options.configPath, options.files));
 }
 
-/** Validates replacement policy with the verified bundled parser in a bounded isolated child. */
-export function runUnslopCatalogValidation(
-  options: Omit<IUnslopLintBatchOptions, "files">,
-): Promise<IUnslopLintBatchOutcome> {
-  return runUnslopHost(options, [
-    "run",
-    "--deny-import",
-    "--no-config",
-    "--no-lock",
-    "--no-prompt",
-    join(dirname(options.configPath), UNSLOP_CATALOG_VALIDATOR_FILENAME),
-  ]);
-}
-
-/** Captures and reaps either fixed host command under the same transport limits. */
-async function runUnslopHost(
-  options: Omit<IUnslopLintBatchOptions, "files">,
+/** Captures and reaps the lint host under the transport limits. */
+async function runDenoLintHost(
+  options: Omit<IDenoLintBatchOptions, "files">,
   args: readonly string[],
-): Promise<IUnslopLintBatchOutcome> {
+): Promise<IDenoLintBatchOutcome> {
   let child: Deno.ChildProcess;
   try {
     child = SafeSubprocess.spawn(Deno.execPath(), [...args], {
@@ -232,10 +217,10 @@ async function runUnslopHost(
   });
   const [status, , stdoutBytes] = await Promise.all([child.status, stderrChunks, stdoutChunks]);
   clearTimeout(timer);
-  if (timedOut) return { kind: "deadline_exceeded" };
+  if (timedOut) return { kind: DENO_LINT_DEADLINE_EXCEEDED };
   if (overflowed) return { kind: "limit" };
   if (status.code !== 0 && status.code !== 1) return { kind: "protocol_invalid" };
-  const parsed = parseUnslopHostOutput(new TextDecoder().decode(stdoutBytes));
+  const parsed = parseDenoLintHostOutput(new TextDecoder().decode(stdoutBytes));
   if (parsed === null) return { kind: "protocol_invalid" };
   if (parsed.errors.length > 0) return { kind: "source_invalid" };
   if (status.code === 0 && parsed.diagnostics.length > 0) return { kind: "protocol_invalid" };
