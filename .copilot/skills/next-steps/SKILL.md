@@ -298,6 +298,7 @@ Do / Don't
 - ✅ Bump BOTH frontmatter status and prose header in the closing commit (G7).
 - ❌ Implement source before the failing test.
 - ❌ Batch multiple steps into one commit.
+- ❌ Commit the plan submodule before `commit_plan_step`; stage its plan edit and let the tool commit both. If a docs commit already exists, `git -C exaix-dev-docs reset --soft HEAD~1`, stage it, and rerun.
 - ❌ Proceed past a failing CI gate; a gate failure unresolvable in this step's file scope:
   document it in a comment, pause, surface the command + file.
 - ❌ Use Record<string, unknown> — define an interface.
