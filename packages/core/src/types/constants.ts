@@ -355,6 +355,61 @@ export const DEFAULT_UNSLOP_ARGV_MAX_BYTES: number = configurable({
   max: 131_072,
   swap: SwapClass.RESTART,
 });
+
+/** Global cap on the persisted findings snapshot of one portal lint run. */
+export const DEFAULT_LINT_FINDINGS_LIMIT: number = configurable({
+  key: "verification.lint.findings_limit",
+  default: 50,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum findings kept in one portal lint verification snapshot",
+  min: 1,
+  max: 1_000,
+  swap: SwapClass.RESTART,
+});
+
+/** Complete stdout budget of one portal lint batch. */
+export const DEFAULT_LINT_JSON_MAX_BYTES: number = configurable({
+  key: "verification.lint.json_max_bytes",
+  default: 8_388_608,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum complete stdout bytes of one portal lint batch",
+  min: 65_536,
+  max: 67_108_864,
+  swap: SwapClass.RESTART,
+});
+
+/** Complete stderr budget of one portal lint batch. */
+export const DEFAULT_LINT_STDERR_MAX_BYTES: number = configurable({
+  key: "verification.lint.stderr_max_bytes",
+  default: 65_536,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum complete stderr bytes of one portal lint batch",
+  min: 1_024,
+  max: 1_048_576,
+  swap: SwapClass.RESTART,
+});
+
+/** Maximum tracked files in one portal lint batch. */
+export const DEFAULT_LINT_BATCH_MAX_FILES: number = configurable({
+  key: "verification.lint.batch_max_files",
+  default: 32,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum tracked files in one portal lint batch",
+  min: 1,
+  max: 128,
+  swap: SwapClass.RESTART,
+});
+
+/** Maximum Git listing output of one portal lint check. */
+export const DEFAULT_LINT_GIT_MAX_BYTES: number = configurable({
+  key: "verification.lint.git_max_bytes",
+  default: 16_777_216,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum Git listing output bytes of one portal lint check",
+  min: 65_536,
+  max: 67_108_864,
+  swap: SwapClass.RESTART,
+});
 /** Timeout for one `run_deno_task` agent tool invocation. It was previously unbounded. */
 export const DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS: number = configurable({
   key: "tool_runtime.deno_task_timeout_ms",

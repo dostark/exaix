@@ -28,11 +28,11 @@ import {
 } from "@exaix/core";
 
 /** Every check name a verification run can report. The public union activates in Step 5. */
-export type VerificationCheckName = IDenoTaskCheck["task"] | "unslop";
+export type VerificationCheckName = IDenoTaskCheck["task"] | "unslop" | typeof DENO_LINT_CHECK_KIND;
 
 /** The reported name of one configured check. */
 export function checkName(check: IVerificationCheck): VerificationCheckName {
-  return check.kind === UNSLOP_CHECK_KIND ? UNSLOP_CHECK_KIND : check.task;
+  return check.kind === "deno_task" ? check.task : check.kind;
 }
 
 /** True when the check is a Deno task check, so its task, path and args are readable. */
@@ -42,7 +42,7 @@ export function isDenoTaskCheck(check: IVerificationCheck): check is IDenoTaskCh
 
 /** The Deno task behind a check name, or null for a name without a Deno task. */
 export function denoTaskOf(name: VerificationCheckName): IDenoTaskCheck["task"] | null {
-  return name === UNSLOP_CHECK_KIND ? null : name;
+  return name === UNSLOP_CHECK_KIND || name === DENO_LINT_CHECK_KIND ? null : name;
 }
 
 /** One failed check as it appears in `IVerificationResult` and the repair prompt. */
@@ -177,8 +177,40 @@ export const UnslopCheckSchema = z.object({
 
 export type IUnslopCheck = z.infer<typeof UnslopCheckSchema>;
 
+/** The verification check kind of the generic Deno lint check. */
+export const DENO_LINT_CHECK_KIND = "deno_lint";
+
+/** Default repo-relative globs of the tracked files a Deno lint check selects. */
+const DEFAULT_LINT_INCLUDE_GLOBS: readonly string[] = ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"];
+
+/** Default repo-relative globs removed after the include globs. */
+const DEFAULT_LINT_EXCLUDE_GLOBS: readonly string[] = ["node_modules/**", "vendor/**"];
+
+/** The installed policy directory name a check selects when none is configured. */
+const DEFAULT_LINT_POLICY = "unslop";
+
+/** One operator-configured Deno lint check over the installed policy directory. */
+export const DenoLintCheckSchema = z.object({
+  kind: z.literal(DENO_LINT_CHECK_KIND),
+  /** Installed policy directory name under verification.lint.policy_root. */
+  policy: z.string().regex(/^[a-z][a-z0-9-]*$/).default(DEFAULT_LINT_POLICY),
+  /** Repo-relative globs of tracked files to lint. Operator config, never model input. */
+  include: z.array(z.string().min(1).refine(isSafeIncludeGlob, "include glob must be repo-relative"))
+    .min(1)
+    .default([...DEFAULT_LINT_INCLUDE_GLOBS]),
+  /** Repo-relative globs removed after the include globs. */
+  exclude: z.array(z.string().min(1).refine(isSafeIncludeGlob, "exclude glob must be repo-relative"))
+    .default([...DEFAULT_LINT_EXCLUDE_GLOBS]),
+}).strict();
+
+export type IDenoLintCheck = z.infer<typeof DenoLintCheckSchema>;
+
 /** One operator-configured post-execution check of any supported kind. */
-export const VerificationCheckSchema = z.discriminatedUnion(CHECK_KIND_FIELD, [DenoTaskCheckSchema, UnslopCheckSchema]);
+export const VerificationCheckSchema = z.discriminatedUnion(CHECK_KIND_FIELD, [
+  DenoTaskCheckSchema,
+  UnslopCheckSchema,
+  DenoLintCheckSchema,
+]);
 
 export type IVerificationCheck = z.infer<typeof VerificationCheckSchema>;
 
@@ -249,6 +281,44 @@ export const UNSLOP_CHECK_RUN_OUTCOMES = [
 
 export type UnslopCheckRunOutcome = (typeof UNSLOP_CHECK_RUN_OUTCOMES)[number];
 
+/** The closed set of categorical generic lint errors. Messages never carry portal text. */
+export const LINT_ERROR_CLASSES = [
+  "LintPolicyMissing",
+  "LintPolicyUntrusted",
+  "LintSuppressionForbidden",
+  "LintSourceInvalid",
+  "LintHostFailed",
+  "LintTimeout",
+  "LintOutputLimit",
+  "LintGitFailed",
+] as const;
+
+export type LintErrorClass = (typeof LINT_ERROR_CLASSES)[number];
+
+/** Named access to the closed generic lint error classes. */
+export const LintErrorClass = {
+  POLICY_MISSING: "LintPolicyMissing",
+  POLICY_UNTRUSTED: "LintPolicyUntrusted",
+  SUPPRESSION_FORBIDDEN: "LintSuppressionForbidden",
+  SOURCE_INVALID: "LintSourceInvalid",
+  HOST_FAILED: "LintHostFailed",
+  TIMEOUT: "LintTimeout",
+  OUTPUT_LIMIT: "LintOutputLimit",
+  GIT_FAILED: "LintGitFailed",
+} as const satisfies Record<string, LintErrorClass>;
+
+/** The outcome of one configured generic lint check in the terminal snapshot. */
+export const LINT_CHECK_NOT_RUN = "not_run";
+
+export const LINT_CHECK_RUN_OUTCOMES = [
+  GeneralStatus.PASSED,
+  GeneralStatus.FAILED,
+  GeneralStatus.ERROR,
+  LINT_CHECK_NOT_RUN,
+] as const;
+
+export type LintCheckRunOutcome = (typeof LINT_CHECK_RUN_OUTCOMES)[number];
+
 /** The verification status wire values, for runtime validation. */
 export const VERIFICATION_STATUS_VALUES = [
   VerificationStatus.NOT_CONFIGURED,
@@ -278,12 +348,15 @@ export type IExecutionCompletedVerification =
 const UnslopCheckIndexSchema = z.number().int().nonnegative();
 const UnslopTotalSchema = z.number().int().nonnegative().nullable();
 
+/** Every error class the shared snapshot accepts until Step 11 removes the unslop set. */
+const SNAPSHOT_ERROR_CLASSES = [...UNSLOP_ERROR_CLASSES, ...LINT_ERROR_CLASSES] as const;
+
 /** One configured unslop check in the terminal snapshot. */
 export const UnslopCheckSnapshotSchema = z.object({
   check_index: UnslopCheckIndexSchema,
   outcome: z.enum(UNSLOP_CHECK_RUN_OUTCOMES),
   total: UnslopTotalSchema,
-  error_class: z.enum(UNSLOP_ERROR_CLASSES).nullable(),
+  error_class: z.enum(SNAPSHOT_ERROR_CLASSES).nullable(),
 }).strict();
 
 /** True when a projected path is relative and contains no raw terminal or markup controls. */

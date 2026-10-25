@@ -865,6 +865,14 @@ export function verificationToml(verification: IPortalVerification): string {
       if (check.catalog !== undefined) lines.push(`catalog = ${JSON.stringify(check.catalog)}`);
       continue;
     }
+    if (check.kind === "deno_lint") {
+      lines.push(
+        `policy = ${JSON.stringify(check.policy)}`,
+        `include = ${JSON.stringify(check.include)}`,
+        `exclude = ${JSON.stringify(check.exclude)}`,
+      );
+      continue;
+    }
     lines.push(
       `task = ${JSON.stringify(check.task)}`,
       `path = ${JSON.stringify(check.path)}`,

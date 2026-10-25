@@ -24,6 +24,7 @@ import {
   GIT_FLAG_NO_RENAMES,
   GIT_FLAG_NO_TEXT_CONV,
   GIT_FLAG_NUL,
+  GIT_FLAG_RECURSIVE,
   GIT_FLAG_TEXT,
   GIT_FLAG_UNIFIED_ZERO,
   GIT_FLAG_VERIFY,
@@ -264,6 +265,56 @@ export async function listChangedSources(
     }
     if (sources.length > options.maxFiles) return queryFailure(QUERY_FAILURE_CODE.limitExceeded);
     return { ok: true, value: sources };
+  } catch (error) {
+    return failureFromError(error);
+  }
+}
+
+/** Options of one tracked-file listing at an immutable commit. */
+export interface IGitTrackedFilesOptions {
+  readonly maxOutputBytes: number;
+  readonly timeoutMs?: number;
+}
+
+/** One parsed `ls-tree` record. */
+interface ITrackedTreeEntry {
+  readonly mode: string;
+  readonly type: string;
+  readonly path: string;
+}
+
+/** Parses one NUL-delimited `ls-tree` record, or null when it is malformed. */
+function parseTrackedTreeEntry(record: string): ITrackedTreeEntry | null {
+  const tab = record.indexOf("\t");
+  if (tab <= 0) return null;
+  const [mode, type, objectId] = record.slice(0, tab).split(" ");
+  if (mode === undefined || type === undefined || objectId === undefined) return null;
+  if (!isFullObjectId(objectId)) return null;
+  return { mode, type, path: record.slice(tab + 1) };
+}
+
+/** Lists every regular tracked file of a commit. Symlinks, gitlinks and trees are skipped. */
+export async function listTrackedFiles(
+  gitService: IGitService,
+  commit: string,
+  options: IGitTrackedFilesOptions,
+): Promise<GitQueryResult<readonly string[]>> {
+  if (!isFullObjectId(commit)) return queryFailure(QUERY_FAILURE_CODE.invalidObject);
+  try {
+    const result = await gitService.runGitCommand(
+      [GIT_CMD_LS_TREE, GIT_FLAG_RECURSIVE, GIT_FLAG_NUL, commit],
+      { maxOutputBytes: options.maxOutputBytes, timeoutMs: options.timeoutMs, auditMode: QUERY_AUDIT_MODE },
+    );
+    const files: string[] = [];
+    for (const record of result.output.split(NUL)) {
+      if (record.length === 0) continue;
+      const entry = parseTrackedTreeEntry(record);
+      if (entry === null) return queryFailure(QUERY_FAILURE_CODE.invalidOutput);
+      if (entry.type !== "blob" || !REGULAR_BLOB_MODES.has(entry.mode)) continue;
+      if (!isSafeRepoRelativePath(entry.path)) return queryFailure(QUERY_FAILURE_CODE.invalidOutput);
+      files.push(entry.path);
+    }
+    return { ok: true, value: files };
   } catch (error) {
     return failureFromError(error);
   }

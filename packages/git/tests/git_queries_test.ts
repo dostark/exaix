@@ -15,6 +15,7 @@ import {
   decodeUtf8,
   listChangedFilesBetween,
   listChangedSources,
+  listTrackedFiles,
   parseHunkRanges,
   readChangedLineRanges,
   readHeadSha,
@@ -331,6 +332,62 @@ Deno.test("genuine-malformed-patch-rejected", async () => {
         command.restore();
       }
     }
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[git-queries] listTrackedFiles returns regular tracked files only", async () => {
+  const { repoDir, git, cleanup } = await createGitTestContext("git-queries-tracked-");
+  try {
+    await setupGitRepo(repoDir, { initialCommit: true });
+    const initial = await readHeadSha(git);
+    await Deno.mkdir(join(repoDir, "nested"), { recursive: true });
+    await writeLines(join(repoDir, "alpha.ts"), ["a"]);
+    await writeLines(join(repoDir, "nested", "beta.ts"), ["b"]);
+    await writeLines(join(repoDir, "spaced name.ts"), ["c"]);
+    await writeLines(join(repoDir, ".gitignore"), ["ignored.ts"]);
+    await writeLines(join(repoDir, "ignored.ts"), ["d"]);
+    await Deno.symlink("alpha.ts", join(repoDir, "link.ts"));
+    await git.runGitCommand(["add", "-A"]);
+    await git.runGitCommand(["add", "-f", "ignored.ts"]);
+    await git.runGitCommand(["update-index", "--add", "--cacheinfo", `160000,${initial},submodule`]);
+    await git.runGitCommand(["commit", "-m", "seed tracked files"]);
+    const head = await readHeadSha(git);
+
+    const listed = await listTrackedFiles(git, head, { maxOutputBytes: 1_048_576 });
+    assertEquals(listed.ok, true);
+    if (!listed.ok) return;
+    assertEquals([...listed.value].sort(), [
+      ".gitignore",
+      "alpha.ts",
+      "ignored.ts",
+      "nested/beta.ts",
+      "spaced name.ts",
+    ]);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[git-queries] listTrackedFiles rejects a non-full commit and a cap below the listing", async () => {
+  const { repoDir, git, cleanup } = await createGitTestContext("git-queries-tracked-cap-");
+  try {
+    await setupGitRepo(repoDir, { initialCommit: true });
+    await writeLines(join(repoDir, "alpha.ts"), ["a"]);
+    await git.runGitCommand(["add", "alpha.ts"]);
+    await git.runGitCommand(["commit", "-m", "add alpha"]);
+    const head = await readHeadSha(git);
+
+    assertEquals(
+      await listTrackedFiles(git, "HEAD", { maxOutputBytes: 1_048_576 }),
+      { ok: false, code: "invalid_object" },
+    );
+    assertEquals(
+      await listTrackedFiles(git, head, { maxOutputBytes: 16 }),
+      { ok: false, code: "output_limit" },
+    );
+    assertEquals((await listTrackedFiles(git, head, { maxOutputBytes: 4_096 })).ok, true);
   } finally {
     await cleanup();
   }

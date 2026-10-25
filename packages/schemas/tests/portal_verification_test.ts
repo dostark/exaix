@@ -18,12 +18,16 @@ import {
 import { PortalPermissionsSchema } from "@exaix/schemas/portal_permissions.ts";
 import {
   checkName,
+  DENO_LINT_CHECK_KIND,
+  denoTaskOf,
   ExecutionVerificationLintFindingsEventPayloadSchema,
   type IDenoTaskCheck,
   isDenoTaskCheck,
   type IVerificationCheck,
   type IVerificationCheckFailure,
+  LINT_ERROR_CLASSES,
   PortalVerificationSchema,
+  UnslopCheckSnapshotSchema,
   UnslopErrorClass,
   VerificationCheckSchema,
 } from "@exaix/schemas/portal_verification.ts";
@@ -305,4 +309,66 @@ Deno.test("[verification-schema] the catalog option accepts only a literal repo 
       JSON.stringify(catalog),
     );
   }
+});
+
+Deno.test("[verification-schema] a deno_lint check parses with the documented defaults", () => {
+  const parsed = VerificationCheckSchema.parse({ kind: DENO_LINT_CHECK_KIND });
+  assertEquals(checkName(parsed), DENO_LINT_CHECK_KIND);
+  assertEquals(denoTaskOf(checkName(parsed)), null);
+  if (parsed.kind !== DENO_LINT_CHECK_KIND) throw new Error("expected a deno_lint check");
+  assertEquals(parsed.policy, "unslop");
+  assertEquals(parsed.include, ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"]);
+  assertEquals(parsed.exclude, ["node_modules/**", "vendor/**"]);
+});
+
+Deno.test("[verification-schema] a deno_lint check rejects unsafe input and unknown fields", () => {
+  assertEquals(
+    VerificationCheckSchema.safeParse({
+      kind: DENO_LINT_CHECK_KIND,
+      policy: "lint-2",
+      include: ["src/**/*.ts"],
+      exclude: ["dist/**"],
+    }).success,
+    true,
+  );
+  const invalid = [
+    { policy: "Unslop" },
+    { policy: "../escape" },
+    { policy: "" },
+    { include: [] },
+    { include: ["../escape/*.ts"] },
+    { include: ["/absolute/*.ts"] },
+    { include: ["bad\u0000.ts"] },
+    { exclude: ["../escape/*"] },
+    { exclude: ["/absolute/*"] },
+    { unknown: true },
+  ];
+  for (const partial of invalid) {
+    assertEquals(
+      VerificationCheckSchema.safeParse({ kind: DENO_LINT_CHECK_KIND, ...partial }).success,
+      false,
+      JSON.stringify(partial),
+    );
+  }
+});
+
+Deno.test("[verification-schema] the snapshot error class accepts both lint families", () => {
+  for (const errorClass of [UnslopErrorClass.TIMEOUT, ...LINT_ERROR_CLASSES]) {
+    const parsed = UnslopCheckSnapshotSchema.safeParse({
+      check_index: 0,
+      outcome: "error",
+      total: null,
+      error_class: errorClass,
+    });
+    assertEquals(parsed.success, true, errorClass);
+  }
+  assertEquals(
+    UnslopCheckSnapshotSchema.safeParse({
+      check_index: 0,
+      outcome: "error",
+      total: null,
+      error_class: "LintUnknownClass",
+    }).success,
+    false,
+  );
 });

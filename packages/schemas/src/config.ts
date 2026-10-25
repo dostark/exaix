@@ -356,11 +356,34 @@ export const UnslopSettingsSchema = z.object({
 
 export type IUnslopSettings = z.infer<typeof UnslopSettingsSchema>;
 
+/** The trusted base directory every installed lint policy lives below. */
+const LINT_POLICY_ROOT = "lint";
+
+/** True when `value` is a relative directory at or below the trusted lint policy root. */
+export function isLintPolicyRoot(value: string): boolean {
+  if (value.length === 0 || isAbsolute(value)) return false;
+  return normalize(value).split(SEPARATOR)[0] === LINT_POLICY_ROOT;
+}
+
+/** Bounded operator settings of the generic Deno lint verification check. */
+export const LintSettingsSchema = z.object({
+  policy_root: z.string().default(LINT_POLICY_ROOT)
+    .refine(isLintPolicyRoot, "policy_root must be a relative path at or below the lint directory"),
+  findings_limit: cInt("verification.lint.findings_limit"),
+  json_max_bytes: cInt("verification.lint.json_max_bytes"),
+  stderr_max_bytes: cInt("verification.lint.stderr_max_bytes"),
+  batch_max_files: cInt("verification.lint.batch_max_files"),
+  git_max_bytes: cInt("verification.lint.git_max_bytes"),
+}).strict();
+
+export type ILintSettings = z.infer<typeof LintSettingsSchema>;
+
 const ConfigObjectSchema = z.object({
   tools: ToolsConfigSchema.optional().prefault({}),
   otel_export: OtelExportConfigSchema.optional().prefault({}),
   verification: z.object({
     unslop: UnslopSettingsSchema.optional().prefault({}),
+    lint: LintSettingsSchema.optional().prefault({}),
   }).optional().prefault({}),
   system: z.object({
     root: z.string().default(getCwdSafe()),

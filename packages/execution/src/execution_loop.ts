@@ -51,6 +51,7 @@ import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifa
 import { PlanAmendmentPendingError } from "@exaix/core/planning";
 import type { IFixedModelClient, IModelIntent } from "@exaix/schemas";
 import {
+  DENO_LINT_CHECK_KIND,
   type IPortalVerification,
   type IUnslopSettings,
   type IVerificationCheckFailure,
@@ -765,11 +766,11 @@ export class ExecutionLoop {
         number: 1,
         title: `Fix failing verification (attempt ${attempt})`,
         content: this.buildRepairContent(context.originalStepTitles, result.failures),
-        successCriteria: verification.checks.map((check) =>
-          check.kind === UNSLOP_CHECK_KIND
-            ? "unslop reports no findings on changed lines"
-            : `deno ${check.task} ${check.path} exits 0`
-        ),
+        successCriteria: verification.checks.map((check) => {
+          if (check.kind === UNSLOP_CHECK_KIND) return "unslop reports no findings on changed lines";
+          if (check.kind === DENO_LINT_CHECK_KIND) return "deno lint reports no findings";
+          return `deno ${check.task} ${check.path} exits 0`;
+        }),
       }],
     };
   }

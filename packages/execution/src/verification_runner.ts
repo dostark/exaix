@@ -16,7 +16,7 @@ import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
 import { completeCheckStates } from "./unslop_snapshot.ts";
 import { buildVerificationCheckEnv, prepareVerificationOutput } from "./verification_output.ts";
 import { UNSLOP_CHECK_KIND } from "@exaix/core";
-import { checkName, denoTaskOf, VerificationStatus } from "@exaix/schemas";
+import { checkName, denoTaskOf, isDenoTaskCheck, VerificationStatus } from "@exaix/schemas";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { JSONValue, LogMetadata } from "@exaix/core/types";
 import type { IGitService } from "@exaix/core/types";
@@ -130,6 +130,13 @@ export class VerificationRunner implements IVerificationRunner {
           error_class: outcome.error_class,
         });
         failures.push({ check: UNSLOP_CHECK_KIND, exit_code: null, output: outcome.output });
+        hadError = true;
+        break;
+      }
+
+      if (!isDenoTaskCheck(check)) {
+        // Fail closed until the generic lint executor dispatches this kind.
+        failures.push({ check: checkName(check), exit_code: null, output: "" });
         hadError = true;
         break;
       }

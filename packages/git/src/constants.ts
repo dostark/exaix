@@ -62,6 +62,8 @@ export const GIT_CMD_CAT_FILE = "cat-file";
 /** A git global option that stops pathspec glob interpretation. */
 export const GIT_FLAG_LITERAL_PATHSPECS = "--literal-pathspecs";
 export const GIT_FLAG_NAME_STATUS = "--name-status";
+/** Recurse into subtrees of one tree object. */
+export const GIT_FLAG_RECURSIVE = "-r";
 /** NUL-delimited name output. */
 export const GIT_FLAG_NUL = "-z";
 export const GIT_FLAG_NO_RENAMES = "--no-renames";
