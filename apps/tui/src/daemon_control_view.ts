@@ -177,11 +177,14 @@ export const DAEMON_KEY_BINDINGS = new DaemonKeyBindings().KEY_BINDINGS;
 
 // CLI Daemon Service Implementation
 
+/** Absolute path of the `exactl` entry point that the service spawns. */
+export const EXACTL_CLI_SCRIPT_PATH: string = new URL("../../exactl/src/exactl.ts", import.meta.url).pathname;
+
 /**
  * CLI-backed implementation of DaemonService.
  */
 export class CLIDaemonService implements IDaemonService {
-  #cliScript = new URL("../../apps/exactl/src/exactl.ts", import.meta.url).pathname;
+  #cliScript = EXACTL_CLI_SCRIPT_PATH;
 
   async start(): Promise<void> {
     await this.#runDaemonCmd([CLI_CMD_START]);

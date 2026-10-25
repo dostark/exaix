@@ -18,6 +18,7 @@ import {
   DAEMON_STATUS_COLORS,
   DAEMON_STATUS_ICONS,
   DaemonControlView,
+  EXACTL_CLI_SCRIPT_PATH,
   type IDaemonViewState,
   MinimalDaemonServiceMock,
 } from "../src/daemon_control_view.ts";
@@ -393,4 +394,11 @@ Deno.test("MinimalDaemonServiceMock: works correctly", async () => {
   mock.setErrors(["Test error"]);
   const errors = await mock.getErrors();
   assertEquals(errors.length, 1);
+});
+
+Deno.test("CLIDaemonService spawns an exactl entry point that exists", async () => {
+  const info = await Deno.stat(EXACTL_CLI_SCRIPT_PATH);
+  assert(info.isFile, EXACTL_CLI_SCRIPT_PATH);
+  assert(EXACTL_CLI_SCRIPT_PATH.endsWith("/apps/exactl/src/exactl.ts"), EXACTL_CLI_SCRIPT_PATH);
+  assertEquals(new CLIDaemonService() instanceof CLIDaemonService, true);
 });
