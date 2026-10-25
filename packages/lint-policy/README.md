@@ -15,6 +15,9 @@ style checkers that still run as standalone scripts.
   `unslop-isolation`. Generic interface conventions live in the TypeScript pack.
 - `src/rule_packs.ts` — the rule packs and the registry that `plugin.ts` and the style checker share.
 - `src/repo_layout.ts` — the checkers' reader for `layout.json`.
+- `src/tools/install_portal_policy.ts` — builds and verifies a portal lint policy directory.
+- `src/tools/deploy_engine.ts` — moves the engine working tree to a published ref after a compatibility check.
+- `portal/unslop.config.json` — the strict portal policy the installer compiles. It enables no script rule and no whole-tree host.
 - `docs/style_rules.md` — the rule reference, generated from the compiled policy by `deno task docs:style-rules`.
 - `docs/style_guide.md` — the Exaix additions to the generic style guide in `unslop-ts/docs/`.
 - `tests/` — the tests for the checkers and the catalog.
@@ -49,6 +52,7 @@ A catalog `codeStyle` anchor replaces an engine rule's default guide link.
   `check:magic` keeps the configured `wholeTree.magicLiterals.checkNumbers` value unless `--no-numbers`
   or `--strings-only` is present. Either flag turns number checks off, and no flag turns them on.
 - `deno task docs:style-rules` — regenerates the rule reference.
+- `deno task unslop-ts:policy --out <dir>` — builds and verifies one portal lint policy directory.
 - `deno task unslop-ts:deploy` — moves the engine pointer after a compatibility check.
 
 ## Related
@@ -76,42 +80,48 @@ exists for ESLint and Oxlint consumers; no Exaix runtime path imports it.
 
 ## Portal verification packaging
 
-The daemon's `unslop` post-execution check never imports this package or the engine source. It reads
-a packaged asset set from `<system root>/lint`:
+The daemon's `deno_lint` post-execution check never imports this package or the engine source. It
+reads an installed policy directory below `<system root>/lint`:
 
-| File                              | Content                                                                                   |
-| --------------------------------- | ----------------------------------------------------------------------------------------- |
-| `unslop_engine.js`                | the engine bundle built by the engine's own `bundle` task                                 |
-| `unslop_portal_catalog.json`      | the compiled TypeScript-only portal catalog                                               |
-| `unslop_portal_deno_catalog.json` | the compiled TypeScript and Deno portal catalog                                           |
-| `manifest.json`                   | format and policy versions, Deno version, engine Git SHA and package version, file hashes |
+| File               | Content                                                                       |
+| ------------------ | ----------------------------------------------------------------------------- |
+| `unslop_engine.js` | the engine bundle built by the engine's own `bundle` task                     |
+| `catalog.json`     | the compiled strict portal catalog                                            |
+| `plugin.ts`        | the plugin entry the installed `deno.json` loads                              |
+| `deno.json`        | the generated `deno lint` configuration for the policy                        |
+| `manifest.json`    | format version, Deno version, engine Git SHA, package version and file hashes |
 
-`deno task unslop-ts:bundle` is the single builder. It runs the engine bundle task once, verifies the
-engine's published checksum, compiles both catalogs from the strict portal policy (`unslop:strict`,
-no script rules, no whole-tree hosts), validates each catalog with the packaged registry, and writes
-the manifest last. A failed build therefore leaves no complete asset set behind.
+`deno task unslop-ts:policy --out <dir>` is the single installer. It runs the engine's
+`deno-policy` command once from the submodule, writes the four generated files into a staging
+directory, hashes them into `manifest.json`, and renames the directory into place. A failed run
+leaves no complete policy behind. A source checkout passes `--out <workspace>/lint`; the daemon
+reads `<system root>/<policy_root>/<policy>`, and `policy_root` defaults to `lint`.
 
 Provenance: the manifest records the engine Git SHA, the engine package version and the Deno version.
-A consumer verifies every file against its recorded size and SHA-256 before use. A size or checksum
-mismatch raises `UnslopAssetInvalid` and never falls back to engine source or the network.
+A consumer verifies the directory is a regular directory below the trusted root, then verifies every
+file against its recorded size and SHA-256. A size or checksum mismatch raises `LintPolicyUntrusted` without a fallback. A missing directory raises `LintPolicyMissing`. A
+symlink, a non-directory, a path outside the trusted root, or a directory under the execution
+worktree or a portal root raises `LintPolicyUntrusted`.
 
-Deployment: a source checkout builds the set and copies it into `<deploy>/lint`. A redeploy from a
-deployed workspace has no engine source and no builder, so it verifies the existing four files and
-copies them to the new destination. It never downloads, re-initializes, or recompiles the engine. The
+Deployment: `scripts/deploy_workspace.ts` installs every configured policy. A source checkout builds
+it with the `unslop-ts:policy` task, or copies an existing `lint/<policy>/` directory when the source
+tree has no engine. A redeploy from a deployed workspace verifies the existing directory and copies
+it to the new destination. It never downloads, re-initializes, or recompiles the engine. The
 deployed `deno.json` drops the `unslop-ts` workspace member and every task that runs this package or
-the builder.
+the installer.
 
-Offline scope: the lint child runs `deno lint --deny-import` with a generated local `deno.json` and a
-cleared environment that forwards only `DENO_DIR`, `DENO_NO_UPDATE_CHECK` and `XDG_CACHE_HOME`.
-Remote imports are denied, so the check needs only the local asset set plus the daemon's warm Deno
-cache. A cold-cache offline boot of the whole daemon is out of scope.
+Offline scope: the lint child runs `deno lint --deny-import --config <policy>/deno.json
+--rules-tags= --json` with a cleared environment that forwards only `DENO_DIR`,
+`DENO_NO_UPDATE_CHECK` and `XDG_CACHE_HOME`. Remote imports are denied, so the check needs only the
+installed policy directory plus the daemon's warm Deno cache. A cold-cache offline boot of the whole
+daemon is out of scope.
 
-Recovery: a source checkout runs `deno task unslop-ts:bundle`, then redeploys. A deployed workspace
-with missing or corrupt assets must redeploy from an initialized source checkout, because it cannot
-repair itself.
+Recovery: a source checkout runs `deno task unslop-ts:policy --out <workspace>/lint`, then redeploys.
+A deployed workspace with a missing or corrupt policy must redeploy from a source checkout, because
+it cannot repair itself.
 
 Capped review output: the terminal `execution.verification.lint_findings` snapshot keeps at most
-`verification.unslop.findings_limit` findings (default `50`). The review prints the exact total plus
+`verification.lint.findings_limit` findings (default `50`). The review prints the exact total plus
 the listed `file:line rule` entries, `(<n> more not listed)` when the total is larger, and
 `(coverage incomplete)` when a check did not complete. A null total means unknown, never zero. A
 `repaired` or `passed` run lists no findings.

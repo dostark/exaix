@@ -1895,10 +1895,10 @@ then re-verifies. This is opt-in: a portal without `verification` behaves exactl
 
 Two check kinds are supported:
 
-| Kind        | What it checks                                            | Where it reads                                             |
-| ----------- | --------------------------------------------------------- | ---------------------------------------------------------- |
-| `deno_task` | one Deno task in the execution worktree                   | the worktree, which holds the model-written files          |
-| `unslop`    | portal TypeScript lint rules, restricted to changed lines | immutable base and target commits through strict Git reads |
+| Kind        | What it checks                                                 | Where it reads                                    |
+| ----------- | -------------------------------------------------------------- | ------------------------------------------------- |
+| `deno_task` | one Deno task in the execution worktree                        | the worktree, which holds the model-written files |
+| `deno_lint` | the installed lint policy over the portal's tracked TypeScript | tracked files of the immutable target commit      |
 
 > `portals[].verification` (post-execution checks) is unrelated to `exactl portal verify`, which is
 > a read-only health check of a portal's symlink, target and permissions. It is also distinct from
@@ -1915,10 +1915,10 @@ check_timeout_ms = 300000    # default 300000 (5 min)
 output_max_chars = 4000      # default 4000
 
 [[portals.verification.checks]]
-kind = "unslop"                                # portal lint check
-packs = ["typescript", "deno"]                 # default ["typescript"]; the TypeScript pack is required
-catalog = "catalogs/portal.json"               # optional replacement catalog from the base commit
+kind = "deno_lint"                             # installed lint policy
+policy = "unslop"                              # default "unslop"; a directory below the policy root
 include = ["src/**/*.ts", "packages/**/*.tsx"] # default: every TS/TSX/MTS/CTS file
+exclude = ["node_modules/**", "vendor/**"]     # default
 
 [[portals.verification.checks]]
 kind = "deno_task"
@@ -1938,62 +1938,49 @@ with a non-empty value list, for every permission (`read`, `write`, `env`, `net`
 
 Non-permission flags such as `--no-check`, `--parallel` or `--filter=<name>` are accepted.
 
-**Unslop checks.** An `unslop` check lints the portal's TypeScript changes with the packaged engine
-and portal catalog. It reads the changed file list and the exact changed line ranges from the
-immutable base commit and the current target commit, so a diagnostic outside a changed line is
-discarded even when the file already carried it. The check never writes to the worktree: it copies
-the packaged engine and catalog into a private runtime directory, generates a local plugin and
-`deno.json` there, and runs `deno lint --deny-import` with bounded batches. Portal files, the
-worktree and the network are not used to resolve the plugin.
+**Deno lint checks.** A `deno_lint` check runs `deno lint` with the installed policy named by
+`policy`. It resolves `<system.root>/<policy_root>/<policy>`, requires a regular directory with a
+valid `manifest.json`, and rejects a symlink, a non-directory, a path outside the system root, and
+a directory under the execution worktree or a portal root with `LintPolicyUntrusted`. The check
+lists the tracked files of the immutable target commit through a strict `git ls-tree` query, applies
+`include` minus `exclude`, and runs `deno lint --deny-import --config <policy>/deno.json
+--rules-tags= --json` in bounded batches under one deadline. The worktree, portal files and the
+network do not resolve the plugin.
 
-`packs` selects the catalog. The TypeScript pack is required exactly once; `"deno"` adds the four
-Deno-engine rules. Order is normalized to TypeScript first. `include` defaults to every
-`**/*.ts`, `**/*.tsx`, `**/*.mts` and `**/*.cts` file; a glob must stay repo-relative.
-
-`catalog` is optional. When set, it names a literal repository file read from the original base
-commit. It replaces the packaged catalog as a whole, must contain only rule ids that the packaged
-catalog defines, and must not carry `layout` or `wholeTree` keys. A model cannot weaken the rules,
-because the file is read from the commit made before execution started.
-
-Suppressions are rejected outright. If any selected changed file contains the literal text
-`deno-lint-ignore` — including inside a string literal or an older marker form — the check fails with
-`UnslopSuppressionForbidden` and no repair runs. Narrow `include` or remove the marker instead.
+The installed policy owns the rule set and the plugin. A file-level `// deno-lint-ignore-file`
+directive is rejected before the host runs: the check fails with `LintSuppressionForbidden` and no
+repair runs. A named line ignore reaches `deno lint` and is reported by the policy's
+`unslop/no-forbidden-lint-ignore` rule, so a suppression attempt is a finding, not a pass.
 
 The check returns one of these categorical errors, never portal-controlled text:
 
-| Error class                  | Cause                                                            |
-| ---------------------------- | ---------------------------------------------------------------- |
-| `UnslopEngineMissing`        | `unslop_engine.js` is absent from the deployed `lint/` assets    |
-| `UnslopAssetInvalid`         | the manifest, a size or a checksum does not match                |
-| `UnslopCatalogInvalid`       | the packaged or operator catalog is structurally invalid         |
-| `UnslopSnapshotInvalid`      | the base-commit snapshot cannot be built from the strict queries |
-| `UnslopGitFailed`            | a strict Git query failed                                        |
-| `UnslopSourceInvalid`        | a selected file is undecodable or has an invalid Git mode        |
-| `UnslopHostProtocolInvalid`  | the lint host returned malformed or unexpected JSON              |
-| `UnslopTimeout`              | the whole-check deadline expired                                 |
-| `UnslopSpawnFailed`          | the lint child could not start                                   |
-| `UnslopLimitExceeded`        | a file, catalog, Git, JSON or argv budget was exceeded           |
-| `UnslopSuppressionForbidden` | a selected file carries a lint suppression marker                |
+| Error class                | Cause                                                                 |
+| -------------------------- | --------------------------------------------------------------------- |
+| `LintPolicyMissing`        | the policy directory or its manifest is absent                        |
+| `LintPolicyUntrusted`      | the policy is a symlink, a non-directory, or outside the trusted root |
+| `LintSuppressionForbidden` | a selected file carries `// deno-lint-ignore-file`                    |
+| `LintSourceInvalid`        | a selected file is undecodable or has an invalid Git mode             |
+| `LintHostFailed`           | `deno lint` failed or returned malformed JSON                         |
+| `LintTimeout`              | the whole-check deadline expired                                      |
+| `LintOutputLimit`          | a stdout, stderr, JSON or argv budget was exceeded                    |
+| `LintGitFailed`            | a strict Git query failed                                             |
 
 Resource knobs live in the workspace config. Every key is restart-required:
 
-| Key                                       | Default    | Meaning                                       |
-| ----------------------------------------- | ---------- | --------------------------------------------- |
-| `verification.unslop.asset_dir`           | `lint`     | trusted asset directory below the system root |
-| `verification.unslop.findings_limit`      | `50`       | global cap on findings kept in the snapshot   |
-| `verification.unslop.json_max_bytes`      | `8388608`  | complete stdout budget of one lint batch      |
-| `verification.unslop.stderr_max_bytes`    | `65536`    | complete stderr budget of one lint batch      |
-| `verification.unslop.candidate_max_count` | `512`      | maximum changed eligible files in one check   |
-| `verification.unslop.file_max_bytes`      | `2097152`  | maximum bytes of one selected portal file     |
-| `verification.unslop.catalog_max_bytes`   | `1048576`  | maximum bytes of one catalog                  |
-| `verification.unslop.git_max_bytes`       | `16777216` | maximum bytes of one strict Git query         |
-| `verification.unslop.batch_max_files`     | `32`       | maximum files passed to one lint child        |
-| `verification.unslop.argv_max_bytes`      | `32768`    | maximum encoded argv budget of one lint child |
+| Key                                  | Default    | Meaning                                     |
+| ------------------------------------ | ---------- | ------------------------------------------- |
+| `verification.lint.policy_root`      | `lint`     | trusted policy root below the system root   |
+| `verification.lint.findings_limit`   | `50`       | global cap on findings kept in the snapshot |
+| `verification.lint.json_max_bytes`   | `8388608`  | complete stdout budget of one lint batch    |
+| `verification.lint.stderr_max_bytes` | `65536`    | complete stderr budget of one lint batch    |
+| `verification.lint.batch_max_files`  | `32`       | maximum files passed to one lint child      |
+| `verification.lint.git_max_bytes`    | `16777216` | maximum bytes of one strict Git query       |
 
-The packaged assets live in `lint/` below the system root. A source deploy builds and verifies them;
-a redeploy from a deployed workspace verifies and copies the existing four files. A missing or
-tampered set makes the check fail with `UnslopEngineMissing` or `UnslopAssetInvalid`; see
-`packages/lint-policy/README.md` for the recovery commands.
+Install a policy with `deno task unslop-ts:policy --out <workspace>/lint`, then deploy it through
+the workspace deploy path. A deployed policy directory holds `unslop_engine.js`, `catalog.json`,
+`plugin.ts`, `deno.json` and `manifest.json`. A missing or tampered directory makes the check fail
+with `LintPolicyMissing` or `LintPolicyUntrusted`; see `packages/lint-policy/README.md` for
+recovery.
 
 `verification_status` is written on `execution.completed`:
 
@@ -2006,11 +1993,11 @@ tampered set makes the check fail with `UnslopEngineMissing` or `UnslopAssetInva
 | `failed`         | Checks still fail after `max_repair_attempts`, or a repair step threw.                     |
 | `error`          | A check could not run (timeout, spawn failure, path outside the worktree). No repair runs. |
 
-For a configured unslop run, Exaix journals exactly one terminal
+For a configured deno_lint run, Exaix journals exactly one terminal
 `execution.verification.lint_findings` snapshot. It carries the request and run ids, the attempt, the
-verified commit, each unslop check's outcome, and every retained finding as `file`, `line` and
+verified commit, each lint check's outcome, and every retained finding as `file`, `line` and
 `rule`. `total` is exact when every check completed; otherwise it is `null` and the review reports
-`unslop: findings count incomplete`. The snapshot keeps at most `findings_limit` findings and marks
+`lint: findings count incomplete`. The snapshot keeps at most `findings_limit` findings and marks
 `truncated` when the exact total is larger. The matching `execution.completed` row carries the same
 `verification_run_id`.
 
@@ -2022,16 +2009,16 @@ redacted against the daemon's known secret values and framed as untrusted data. 
 bounded in memory while it is read: the daemon keeps only the tail (`output_max_chars` plus a small
 redaction margin), so a check that prints without limit cannot exhaust the daemon. ANSI escapes and
 control characters are stripped before the output enters the repair prompt. The worst-case wall
-clock is `(1 + max_repair_attempts) × N_checks × check_timeout_ms`. An unslop check also keeps its
+clock is `(1 + max_repair_attempts) × N_checks × check_timeout_ms`. A deno_lint check also keeps its
 stdout, stderr, file and argv bounds, so a hostile portal cannot make the daemon buffer unbounded
 data.
 
 `exactl review show` prints `verification_status` for the review's trace, and adds a warning line
 when it is `failed` or `error`, so a reviewer sees a failed verification before approving. For an
-unslop run it joins the one exact `file:line rule` list of that run and commit, capped by
-`findings_limit`. A clean run prints `unslop: no findings remain`; a failed run prints the exact
+deno_lint run it joins the one exact `file:line rule` list of that run and commit, capped by
+`findings_limit`. A clean run prints `lint: no findings remain`; a failed run prints the exact
 count and the capped entries plus any `more not listed` note; a missing or mismatched snapshot
-prints `unslop: lint details unavailable`.
+prints `lint: lint details unavailable`.
 
 The agent `run_deno_task` tool also stops after `DEFAULT_DENO_TASK_TOOL_TIMEOUT_MS` (300 s) where it
 previously had no timeout.

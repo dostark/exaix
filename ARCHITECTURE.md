@@ -292,7 +292,7 @@ An `apps/` or runtime-wiring module orchestrates the running Exaix process. It c
 - It coordinates two or more packages — it is glue, not logic.
 - Removing it would break daemon startup or the request-processing pipeline directly.
 
-**Dev-tooling exception (2026-10-18):** `packages/lint-policy` and the `unslop-ts` submodule are non-deployed by user decision. They hold no runtime code and no app imports them, so `deno compile` never bundles them. `packages/lint-policy` holds all Exaix lint policy: the version 2 configuration, the separate layout, the compiled policy, the descriptor, the plugin entry, the rule ceilings, the style checkers, and the Exaix style guide. `unslop-ts` is the generic lint engine, embedded as a git submodule and consumed as `@dostark/unslop-ts`. It has no Exaix names or paths and reads every setting from the catalog.
+**Dev-tooling exception (2026-10-18):** `packages/lint-policy` and the `unslop-ts` submodule are non-deployed by user decision. They hold no runtime code and no app imports them, so `deno compile` never bundles them. `packages/lint-policy` holds all Exaix lint policy: the version 2 configuration, the separate layout, the compiled policy, the descriptor, the plugin entry, the rule ceilings, the style checkers, the Exaix style guide, and the portal policy installer. `unslop-ts` is the generic lint engine, embedded as a git submodule and consumed as `@dostark/unslop-ts`. It has no Exaix names or paths and reads every setting from the catalog.
 
 ---
 
@@ -542,23 +542,22 @@ runs the portal's optional post-execution verification (`portals[].verification`
 the registry journal), confines each path to the worktree, and redacts the daemon's known
 secrets.
 
-The `unslop` kind runs through `UnslopCheckRunner`. The loop captures the immutable commit that
-preceded execution as the original base and the current commit as the per-attempt target, so the
-check reads both through strict Git queries (`--no-ext-diff`, `--no-textconv`,
-`--literal-pathspecs`, NUL-safe). The adapter rejects a selected file that carries the literal
-`deno-lint-ignore` marker, verifies the packaged `lint/` assets against their manifest checksums,
-generates a private plugin and `deno.json` in an exclusive runtime directory, and runs
-`deno lint --deny-import` in bounded batches with a cleared child environment. It keeps only
-diagnostics whose ranges intersect a changed destination line and returns pass, retained findings
-or one categorical error. It never writes to the worktree.
+The `deno_lint` kind runs through `DenoLintCheckRunner`. The loop captures the current commit as the
+per-attempt target, so the check reads tracked files through a strict `git ls-tree -r -z` query
+(`--literal-pathspecs`, NUL-safe). The runner resolves the installed policy below the system root
+and verifies its manifest against the recorded size and SHA-256 of every file. It rejects a
+selected file that carries a `deno-lint-ignore-file` directive and runs
+`deno lint --deny-import --config <policy>/deno.json --rules-tags= --json` in bounded batches
+with a cleared child environment. It returns pass, retained findings or one categorical error. It
+never writes to the worktree.
 
-One verification run mints one run id. The adapter journals `execution.verification.lint_check.started`
+One verification run mints one run id. The runner journals `execution.verification.lint_check.started`
 and `execution.verification.lint_check.completed` per check with that run id, the attempt, the
 check index, the target SHA, the exact or null total and a categorical error class. On a terminal
-configured unslop run, the loop journals exactly one `execution.verification.lint_findings`
+configured deno_lint run, the loop journals exactly one `execution.verification.lint_findings`
 snapshot: request and run ids, attempt, commit, status, per-check outcomes, sorted and capped safe
-findings, and an exact or null total with a `truncated` flag. `execution.completed` carries the
-same `verification_run_id`.
+findings, and an exact or null total with a `truncated` flag. `exactl review show` renders the
+snapshot through `formatLintSummary`. `execution.completed` carries the same `verification_run_id`.
 
 When a check fails and `max_repair_attempts` remain, the loop builds a one-step structured repair
 plan from the truncated failures, runs it through the same `PlanExecutor` path, and re-verifies;

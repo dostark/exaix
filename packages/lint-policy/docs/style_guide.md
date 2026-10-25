@@ -112,18 +112,19 @@ no effect today.
 ## Unslop Isolation {#unslop-isolation}
 
 unslop-ts stays independent of Exaix, and the Exaix runtime holds no unslop code. The
-`exaix/unslop-isolation` rule reports a production module outside `packages/lint-policy/` whose file
-name contains `unslop`, and an import of `@dostark/unslop-ts` or a `unslop-ts/` path there. Scripts
-and tests are exempt. A portal uses unslop-ts through an installed policy directory and its lint
-configuration, not through Exaix modules.
+`exaix/unslop-isolation` rule reports any module outside `packages/lint-policy/` whose file name
+contains `unslop`, and any import of `@dostark/unslop-ts` or a `unslop-ts/` path there. The rule
+runs at `scope: all` with no path exclusion, so scripts and tests follow the same rule as production
+modules. A portal uses unslop-ts through an installed policy directory and its lint configuration,
+not through Exaix modules.
 
 ```ts
 // packages/execution/src/unslop_adapter.ts   ❌ An unslop module outside lint-policy
 import { parseCatalog } from "@dostark/unslop-ts"; // ❌ An engine import outside lint-policy
 ```
 
-The catalog temporarily excludes the 11 Phase 229 adapter modules in `packages/execution/src/`.
-Phase 233 deletes them and the exclusion.
+`packages/lint-policy/` is the only owner of engine tooling: the policy compiler and plugin, the
+rule pack, the style checkers, and the portal tools under `src/tools/`.
 
 ## Comment Discipline Additions {#comment-discipline-additions}
 

@@ -18,10 +18,8 @@ function fencedTomlBlocks(markdown: string): string[] {
   return [...markdown.matchAll(/```toml\n([\s\S]*?)```/g)].map((match) => match[1]);
 }
 
-// Step 12 rewrites the guide and restores this check.
 Deno.test({
   name: "User Guide both-kind verification example parses through ConfigSchema",
-  ignore: true,
   fn: async () => {
     const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
     const block = fencedTomlBlocks(guide).find((candidate) =>
@@ -52,10 +50,8 @@ Deno.test({
   },
 });
 
-// Step 12 rewrites the guide and restores this check.
 Deno.test({
   name: "User Guide documents the lint policy, defaults and failure classes",
-  ignore: true,
   fn: async () => {
     const guide = await Deno.readTextFile(join(ROOT, "docs", "Exaix_User_Guide.md"));
     for (
@@ -77,7 +73,7 @@ Deno.test({
 Deno.test("both lint READMEs agree on packaging, provenance and redeploy", async () => {
   const policyReadme = await Deno.readTextFile(join(ROOT, "packages", "lint-policy", "README.md"));
   const engineReadme = await Deno.readTextFile(join(ROOT, "unslop-ts", "README.md"));
-  assertStringIncludes(policyReadme, "unslop-ts:bundle");
+  assertStringIncludes(policyReadme, "unslop-ts:policy");
   for (const readme of [policyReadme, engineReadme]) {
     for (const token of ["unslop_engine.js", "manifest.json", "checksum", "redeploy", "offline"]) {
       assertStringIncludes(readme, token);
@@ -85,14 +81,14 @@ Deno.test("both lint READMEs agree on packaging, provenance and redeploy", async
   }
 });
 
-Deno.test("ARCHITECTURE describes the terminal unslop snapshot and review join", async () => {
+Deno.test("ARCHITECTURE describes the terminal lint snapshot and review join", async () => {
   const architecture = await Deno.readTextFile(join(ROOT, "ARCHITECTURE.md"));
   for (
     const token of [
       "execution.verification.lint_findings",
       "verification_run_id",
-      "UnslopCheckRunner",
-      "formatUnslopSummary",
+      "DenoLintCheckRunner",
+      "formatLintSummary",
     ]
   ) {
     assertStringIncludes(architecture, token);
