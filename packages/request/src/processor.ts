@@ -602,10 +602,32 @@ export class RequestProcessor {
     return { executionRoot, planContextRef: frontmatter.plan_context_ref };
   }
 
+  /** Writes the plan that a flow request produced and returns its path. */
+  private async writeFlowPlan(opts: IProcessRequestOptions, result: IAgentExecutionResult): Promise<string> {
+    const { frontmatter, filePath, traceId, requestId, traceLogger, analysis } = opts;
+    const metadata: IRequestMetadata = {
+      requestId,
+      traceId,
+      createdAt: new Date(frontmatter.created),
+      contextFiles: [],
+      contextWarnings: [],
+      model: frontmatter.model,
+      portal: frontmatter.portal,
+      targetBranch: frontmatter.target_branch,
+      requestAnalysis: analysis,
+      requestIntent: RequestProcessor.requestIntentFromFrontmatter(frontmatter),
+      requestEffortDeclaration: RequestProcessor.requestEffortDeclaration(frontmatter),
+    };
+
+    return await this.writePlanAndReturnPath(result, metadata, filePath, traceLogger, {
+      flow: frontmatter.flow ?? null,
+    });
+  }
+
   private async processFlowRequest(
     opts: IProcessRequestOptions,
   ): Promise<string | null> {
-    const { frontmatter, filePath, traceId, requestId, traceLogger, analysis } = opts;
+    const { frontmatter, filePath, traceId, requestId, traceLogger } = opts;
     if (this.flowValidator) {
       const validation = await this.flowValidator.validateFlow(frontmatter.flow!);
       if (!validation.valid) {
@@ -668,23 +690,7 @@ export class RequestProcessor {
         raw: flowResult.output,
       };
 
-      const metadata: IRequestMetadata = {
-        requestId,
-        traceId,
-        createdAt: new Date(frontmatter.created),
-        contextFiles: [],
-        contextWarnings: [],
-        model: frontmatter.model,
-        portal: frontmatter.portal,
-        targetBranch: frontmatter.target_branch,
-        requestAnalysis: analysis,
-        requestIntent: RequestProcessor.requestIntentFromFrontmatter(frontmatter),
-        requestEffortDeclaration: RequestProcessor.requestEffortDeclaration(frontmatter),
-      };
-
-      return await this.writePlanAndReturnPath(result, metadata, filePath, traceLogger, {
-        flow: frontmatter.flow ?? null,
-      });
+      return await this.writeFlowPlan(opts, result);
     }
 
     // Fallback: generate a stub plan (legacy path, used when no FlowRunner is configured)
@@ -705,23 +711,7 @@ export class RequestProcessor {
       raw: planContent,
     };
 
-    const metadata: IRequestMetadata = {
-      requestId,
-      traceId,
-      createdAt: new Date(frontmatter.created),
-      contextFiles: [],
-      contextWarnings: [],
-      model: frontmatter.model,
-      portal: frontmatter.portal,
-      targetBranch: frontmatter.target_branch,
-      requestAnalysis: analysis,
-      requestIntent: RequestProcessor.requestIntentFromFrontmatter(frontmatter),
-      requestEffortDeclaration: RequestProcessor.requestEffortDeclaration(frontmatter),
-    };
-
-    return await this.writePlanAndReturnPath(result, metadata, filePath, traceLogger, {
-      flow: frontmatter.flow ?? null,
-    });
+    return await this.writeFlowPlan(opts, result);
   }
 
   private getProviderSelectionConfig(): Config {
