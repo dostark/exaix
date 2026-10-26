@@ -102,9 +102,42 @@ class RecordingWorktreeCoordinator implements IFlowWorktreeCoordinator {
   }
 }
 
-Deno.test("AgentComposerAdapter.runWithStrategy: fails fast when construction dependencies are absent", async () => {
-  const dbService = await initTestDbService();
-  try {
+/** Runs `body` with a fresh test database and cleans it up afterwards. */
+function dbTest(name: string, body: (dbService: Awaited<ReturnType<typeof initTestDbService>>) => Promise<void>): void {
+  Deno.test(name, async () => {
+    const dbService = await initTestDbService();
+    try {
+      await body(dbService);
+    } finally {
+      await dbService.cleanup();
+    }
+  });
+}
+
+/** The mock config, event logger, and permissions that every adapter test needs, plus the `test-agent` blueprint. */
+async function adapterFixture(dbService: Awaited<ReturnType<typeof initTestDbService>>) {
+  const config: Config = createMockConfig(dbService.tempDir);
+  const logger = new EventLogger({ db: dbService.db });
+  const permissions = new PortalPermissionsService(config.portals!);
+  await writeBlueprint(dbService.tempDir, "test-agent");
+  return { config, logger, permissions };
+}
+
+/** An adapter whose fallback runner fails, so a test only passes by going through the forced strategy. */
+function createAdapter(
+  root: string,
+  deps: ConstructorParameters<typeof AgentComposerAdapter>[2],
+): AgentComposerAdapter {
+  return new AgentComposerAdapter(
+    { run: () => Promise.reject(new Error("should not be called")) },
+    pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH),
+    deps,
+  );
+}
+
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: fails fast when construction dependencies are absent",
+  async (dbService) => {
     const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
       pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
@@ -116,52 +149,40 @@ Deno.test("AgentComposerAdapter.runWithStrategy: fails fast when construction de
       Error,
       "construction dependencies",
     );
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.runWithStrategy: fails fast with a distinct error when the request has no portal", async () => {
-  const dbService = await initTestDbService();
-  try {
-    const config: Config = createMockConfig(dbService.tempDir);
-    const logger = new EventLogger({ db: dbService.db });
-    const permissions = new PortalPermissionsService(config.portals!);
-    await writeBlueprint(dbService.tempDir, "test-agent");
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: fails fast with a distinct error when the request has no portal",
+  async (dbService) => {
+    const { config, logger, permissions } = await adapterFixture(dbService);
 
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions },
-    );
+    const adapter = createAdapter(dbService.tempDir, { config, db: dbService.db, logger, permissions });
 
     const err = await assertRejects(
       () => adapter.runWithStrategy!("test-agent", makeStepRequest({ portal: undefined }), ExecutionStrategyName.REACT),
     );
     assertStringIncludes(String(err), "portal");
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.runWithStrategy: dispatches through the forced strategy and bridges output", async () => {
-  const dbService = await initTestDbService();
-  try {
-    const config: Config = createMockConfig(dbService.tempDir);
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: dispatches through the forced strategy and bridges output",
+  async (dbService) => {
+    const { config, logger, permissions } = await adapterFixture(dbService);
     const portalAlias = config.portals![0].alias;
-    const logger = new EventLogger({ db: dbService.db });
-    const permissions = new PortalPermissionsService(config.portals!);
-    await writeBlueprint(dbService.tempDir, "test-agent");
 
     const calls: Array<{ context: IExecutionContext; options: IAgentExecutionOptions }> = [];
     const strategyRegistry = new StrategyRegistry();
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, calls);
 
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry },
-    );
+    const adapter = createAdapter(dbService.tempDir, {
+      config,
+      db: dbService.db,
+      logger,
+      permissions,
+      strategyRegistry,
+    });
 
     const traceId = crypto.randomUUID();
     const result = await adapter.runWithStrategy!(
@@ -182,84 +203,77 @@ Deno.test("AgentComposerAdapter.runWithStrategy: dispatches through the forced s
 
     // Output bridge: IChangesetResult.description -> IAgentExecutionResult.content
     assertEquals(result.content, "spy strategy ran for " + portalAlias);
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.runWithStrategy: absent worktreeCoordinator preserves portal execution", async () => {
-  const dbService = await initTestDbService();
-  try {
-    const config: Config = createMockConfig(dbService.tempDir);
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: absent worktreeCoordinator preserves portal execution",
+  async (dbService) => {
+    const { config, logger, permissions } = await adapterFixture(dbService);
     const portalAlias = config.portals![0].alias;
-    const logger = new EventLogger({ db: dbService.db });
-    const permissions = new PortalPermissionsService(config.portals!);
-    await writeBlueprint(dbService.tempDir, "test-agent");
     const strategyRegistry = new StrategyRegistry();
     const calls: Array<{ context: IExecutionContext; options: IAgentExecutionOptions }> = [];
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, calls);
 
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry },
-    );
+    const adapter = createAdapter(dbService.tempDir, {
+      config,
+      db: dbService.db,
+      logger,
+      permissions,
+      strategyRegistry,
+    });
 
     await adapter.runWithStrategy!("test-agent", makeStepRequest({ portal: portalAlias }), ExecutionStrategyName.REACT);
 
     assertEquals(calls.length, 1);
-  } finally {
-    await dbService.cleanup();
-  }
+  },
+);
+
+dbTest("AgentComposerAdapter.runWithStrategy: WORKTREE portal resolves through the coordinator", async (dbService) => {
+  const traceId = crypto.randomUUID();
+  const worktreePath = pathBuilders.runtimePath(dbService.tempDir, "worktrees", "workspace", traceId);
+  await initGitPortal(worktreePath);
+  const config: Config = createMockConfig(dbService.tempDir, {
+    portals: [{
+      alias: "workspace",
+      target_path: join(dbService.tempDir, "portal"),
+      default_branch: "main",
+      execution_strategy: PortalExecutionStrategy.WORKTREE,
+      agents_allowed: ["*"],
+      operations: [],
+    }],
+  });
+  const coordinator = new RecordingWorktreeCoordinator(worktreePath);
+  const logger = new EventLogger({ db: dbService.db });
+  const permissions = new PortalPermissionsService(config.portals!);
+  await writeBlueprint(dbService.tempDir, "test-agent");
+  const strategyRegistry = new StrategyRegistry();
+  registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
+  const adapter = createAdapter(dbService.tempDir, {
+    config,
+    db: dbService.db,
+    logger,
+    permissions,
+    strategyRegistry,
+    worktreeCoordinator: coordinator,
+  });
+
+  await adapter.runWithStrategy!(
+    "test-agent",
+    makeStepRequest({ portal: "workspace", traceId }),
+    ExecutionStrategyName.REACT,
+  );
+
+  assertEquals(coordinator.resolveCalls, [{
+    portalAlias: "workspace",
+    traceId,
+    baseBranch: "main",
+  }]);
 });
 
-Deno.test("AgentComposerAdapter.runWithStrategy: WORKTREE portal resolves through the coordinator", async () => {
-  const dbService = await initTestDbService();
-  try {
-    const traceId = crypto.randomUUID();
-    const worktreePath = pathBuilders.runtimePath(dbService.tempDir, "worktrees", "workspace", traceId);
-    await initGitPortal(worktreePath);
-    const config: Config = createMockConfig(dbService.tempDir, {
-      portals: [{
-        alias: "workspace",
-        target_path: join(dbService.tempDir, "portal"),
-        default_branch: "main",
-        execution_strategy: PortalExecutionStrategy.WORKTREE,
-        agents_allowed: ["*"],
-        operations: [],
-      }],
-    });
-    const coordinator = new RecordingWorktreeCoordinator(worktreePath);
-    const logger = new EventLogger({ db: dbService.db });
-    const permissions = new PortalPermissionsService(config.portals!);
-    await writeBlueprint(dbService.tempDir, "test-agent");
-    const strategyRegistry = new StrategyRegistry();
-    registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry, worktreeCoordinator: coordinator },
-    );
-
-    await adapter.runWithStrategy!(
-      "test-agent",
-      makeStepRequest({ portal: "workspace", traceId }),
-      ExecutionStrategyName.REACT,
-    );
-
-    assertEquals(coordinator.resolveCalls, [{
-      portalAlias: "workspace",
-      traceId,
-      baseBranch: "main",
-    }]);
-  } finally {
-    await dbService.cleanup();
-  }
-});
-
-Deno.test("AgentComposerAdapter.runWithStrategy: BRANCH and undefined strategies preserve portal execution", async () => {
-  const dbService = await initTestDbService();
-  try {
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: BRANCH and undefined strategies preserve portal execution",
+  async (dbService) => {
     const branchPortalPath = join(dbService.tempDir, "branch-portal");
     const defaultPortalPath = join(dbService.tempDir, "default-portal");
     await initGitPortal(branchPortalPath);
@@ -289,11 +303,14 @@ Deno.test("AgentComposerAdapter.runWithStrategy: BRANCH and undefined strategies
     await writeBlueprint(dbService.tempDir, "test-agent");
     const strategyRegistry = new StrategyRegistry();
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry, worktreeCoordinator: coordinator },
-    );
+    const adapter = createAdapter(dbService.tempDir, {
+      config,
+      db: dbService.db,
+      logger,
+      permissions,
+      strategyRegistry,
+      worktreeCoordinator: coordinator,
+    });
 
     await adapter.runWithStrategy!(
       "test-agent",
@@ -307,14 +324,12 @@ Deno.test("AgentComposerAdapter.runWithStrategy: BRANCH and undefined strategies
     );
 
     assertEquals(coordinator.resolveCalls, []);
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.runWithStrategy: repeated trace resolution reuses the coordinator's worktree path", async () => {
-  const dbService = await initTestDbService();
-  try {
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: repeated trace resolution reuses the coordinator's worktree path",
+  async (dbService) => {
     const traceId = crypto.randomUUID();
     const worktreePath = pathBuilders.runtimePath(dbService.tempDir, "worktrees", "workspace", traceId);
     await initGitPortal(worktreePath);
@@ -334,11 +349,14 @@ Deno.test("AgentComposerAdapter.runWithStrategy: repeated trace resolution reuse
     await writeBlueprint(dbService.tempDir, "test-agent");
     const strategyRegistry = new StrategyRegistry();
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry, worktreeCoordinator: coordinator },
-    );
+    const adapter = createAdapter(dbService.tempDir, {
+      config,
+      db: dbService.db,
+      logger,
+      permissions,
+      strategyRegistry,
+      worktreeCoordinator: coordinator,
+    });
 
     await adapter.runWithStrategy!(
       "test-agent",
@@ -355,14 +373,12 @@ Deno.test("AgentComposerAdapter.runWithStrategy: repeated trace resolution reuse
       { portalAlias: "workspace", traceId, baseBranch: "main" },
       { portalAlias: "workspace", traceId, baseBranch: "main" },
     ]);
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.runWithStrategy: worktree setup failures propagate without fallback", async () => {
-  const dbService = await initTestDbService();
-  try {
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: worktree setup failures propagate without fallback",
+  async (dbService) => {
     const config: Config = createMockConfig(dbService.tempDir, {
       portals: [{
         alias: "workspace",
@@ -382,11 +398,14 @@ Deno.test("AgentComposerAdapter.runWithStrategy: worktree setup failures propaga
     await writeBlueprint(dbService.tempDir, "test-agent");
     const strategyRegistry = new StrategyRegistry();
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry, worktreeCoordinator: coordinator },
-    );
+    const adapter = createAdapter(dbService.tempDir, {
+      config,
+      db: dbService.db,
+      logger,
+      permissions,
+      strategyRegistry,
+      worktreeCoordinator: coordinator,
+    });
 
     await assertRejects(
       () =>
@@ -394,19 +413,14 @@ Deno.test("AgentComposerAdapter.runWithStrategy: worktree setup failures propaga
       Error,
       "worktree setup failed",
     );
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.runWithStrategy: extracts the <content> block from a raw thought/content response (CliDelegateStrategy shape) instead of bridging the whole raw text", async () => {
-  const dbService = await initTestDbService();
-  try {
-    const config: Config = createMockConfig(dbService.tempDir);
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: extracts the <content> block from a raw thought/content response (CliDelegateStrategy shape) instead of bridging the whole raw text",
+  async (dbService) => {
+    const { config, logger, permissions } = await adapterFixture(dbService);
     const portalAlias = config.portals![0].alias;
-    const logger = new EventLogger({ db: dbService.db });
-    const permissions = new PortalPermissionsService(config.portals!);
-    await writeBlueprint(dbService.tempDir, "test-agent");
 
     // Regression: CliDelegateStrategy sets description to the model's RAW response, but a
     // flow's final step output expects the <content> block extracted and parsed as JSON.
@@ -426,11 +440,13 @@ Deno.test("AgentComposerAdapter.runWithStrategy: extracts the <content> block fr
         }),
     });
 
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry },
-    );
+    const adapter = createAdapter(dbService.tempDir, {
+      config,
+      db: dbService.db,
+      logger,
+      permissions,
+      strategyRegistry,
+    });
 
     const result = await adapter.runWithStrategy!(
       "test-agent",
@@ -439,29 +455,26 @@ Deno.test("AgentComposerAdapter.runWithStrategy: extracts the <content> block fr
     );
 
     assertEquals(result.content, '{"subject": "Flow Step Output", "steps": []}');
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.runWithStrategy: bridges the whole description unchanged when it carries no <content> wrapper", async () => {
-  const dbService = await initTestDbService();
-  try {
-    const config: Config = createMockConfig(dbService.tempDir);
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: bridges the whole description unchanged when it carries no <content> wrapper",
+  async (dbService) => {
+    const { config, logger, permissions } = await adapterFixture(dbService);
     const portalAlias = config.portals![0].alias;
-    const logger = new EventLogger({ db: dbService.db });
-    const permissions = new PortalPermissionsService(config.portals!);
-    await writeBlueprint(dbService.tempDir, "test-agent");
 
     const calls: Array<{ context: IExecutionContext; options: IAgentExecutionOptions }> = [];
     const strategyRegistry = new StrategyRegistry();
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, calls);
 
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry },
-    );
+    const adapter = createAdapter(dbService.tempDir, {
+      config,
+      db: dbService.db,
+      logger,
+      permissions,
+      strategyRegistry,
+    });
 
     const result = await adapter.runWithStrategy!(
       "test-agent",
@@ -472,14 +485,12 @@ Deno.test("AgentComposerAdapter.runWithStrategy: bridges the whole description u
     // No <thought>/<content> wrapper in "spy strategy ran for ..." — extraction must fall
     // back to the original text unchanged (parseXMLTags' own no-tags-found behavior).
     assertEquals(result.content, "spy strategy ran for " + portalAlias);
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.runWithStrategy: two calls for different portals each build options/context scoped to their own portal", async () => {
-  const dbService = await initTestDbService();
-  try {
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: two calls for different portals each build options/context scoped to their own portal",
+  async (dbService) => {
     const portalA = join(dbService.tempDir, "portal-a");
     const portalB = join(dbService.tempDir, "portal-b");
     await Deno.mkdir(portalA, { recursive: true });
@@ -499,11 +510,13 @@ Deno.test("AgentComposerAdapter.runWithStrategy: two calls for different portals
     const strategyRegistry = new StrategyRegistry();
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, calls);
 
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry },
-    );
+    const adapter = createAdapter(dbService.tempDir, {
+      config,
+      db: dbService.db,
+      logger,
+      permissions,
+      strategyRegistry,
+    });
 
     await adapter.runWithStrategy!(
       "test-agent",
@@ -521,10 +534,8 @@ Deno.test("AgentComposerAdapter.runWithStrategy: two calls for different portals
     assertEquals(calls[0].context.portal, "portal-a");
     assertEquals(calls[1].options.portal, "portal-b");
     assertEquals(calls[1].context.portal, "portal-b");
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
 /** Registers a strategy that writes a real file to the portal and reports it in files_changed. */
 function registerFileWritingStrategy(
@@ -561,9 +572,9 @@ async function initGitPortal(portalPath: string): Promise<void> {
   await new Deno.Command("git", { args: ["commit", "-m", "init"], cwd: portalPath }).output();
 }
 
-Deno.test("fix(flow): reviewed cycle writes survive a later strategy audit only in the same trace and root", async () => {
-  const dbService = await initTestDbService();
-  try {
+dbTest(
+  "fix(flow): reviewed cycle writes survive a later strategy audit only in the same trace and root",
+  async (dbService) => {
     const portalPath = join(dbService.tempDir, "reviewed-cycle");
     const worktreePath = join(dbService.tempDir, "reviewed-worktree");
     const otherRoot = join(dbService.tempDir, "other-root");
@@ -646,14 +657,12 @@ Deno.test("fix(flow): reviewed cycle writes survive a later strategy audit only 
     await assertRejects(() => adapter.recordReviewedWrites(traceId, otherRoot, ["src/reviewed.ts"], "portal"));
     await Deno.symlink(otherRoot, join(worktreePath, "escape"));
     await assertRejects(() => adapter.recordReviewedWrites(traceId, portalPath, ["escape/outside.ts"], "portal"));
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.runWithStrategy: two calls sharing a traceId accumulate planWrittenFiles (a later step doesn't revert an earlier step's uncommitted write)", async () => {
-  const dbService = await initTestDbService();
-  try {
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: two calls sharing a traceId accumulate planWrittenFiles (a later step doesn't revert an earlier step's uncommitted write)",
+  async (dbService) => {
     const portalPath = join(dbService.tempDir, "portal-shared-trace");
     await initGitPortal(portalPath);
     const config: Config = createMockConfig(dbService.tempDir, {
@@ -673,11 +682,13 @@ Deno.test("AgentComposerAdapter.runWithStrategy: two calls sharing a traceId acc
     registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.REACT, portalPath, "src/step1.ts");
     registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.CLI_DELEGATE, portalPath, "src/step2.ts");
 
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry },
-    );
+    const adapter = createAdapter(dbService.tempDir, {
+      config,
+      db: dbService.db,
+      logger,
+      permissions,
+      strategyRegistry,
+    });
 
     const traceId = crypto.randomUUID();
     // First call writes and leaves its file uncommitted, mirroring a real CliDelegateStrategy run.
@@ -699,14 +710,12 @@ Deno.test("AgentComposerAdapter.runWithStrategy: two calls sharing a traceId acc
     const step2Exists = await Deno.stat(join(portalPath, "src/step2.ts")).then(() => true).catch(() => false);
     assertEquals(step1Exists, true);
     assertEquals(step2Exists, true);
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.runWithStrategy: a different traceId does NOT inherit another flow run's planWrittenFiles", async () => {
-  const dbService = await initTestDbService();
-  try {
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: a different traceId does NOT inherit another flow run's planWrittenFiles",
+  async (dbService) => {
     const portalPath = join(dbService.tempDir, "portal-isolated-trace");
     await initGitPortal(portalPath);
     const config: Config = createMockConfig(dbService.tempDir, {
@@ -726,11 +735,13 @@ Deno.test("AgentComposerAdapter.runWithStrategy: a different traceId does NOT in
     registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.REACT, portalPath, "src/run-a.ts");
     registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.CLI_DELEGATE, portalPath, "src/run-b.ts");
 
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry },
-    );
+    const adapter = createAdapter(dbService.tempDir, {
+      config,
+      db: dbService.db,
+      logger,
+      permissions,
+      strategyRegistry,
+    });
 
     // Run A leaves its file uncommitted in the portal.
     await adapter.runWithStrategy!("test-agent", makeStepRequest({ portal: "portal" }), ExecutionStrategyName.REACT);
@@ -746,14 +757,12 @@ Deno.test("AgentComposerAdapter.runWithStrategy: a different traceId does NOT in
       Error,
       "Security violation",
     );
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.runWithStrategy: evicts the least-recently-touched trace's planWrittenFiles entry once PLAN_WRITTEN_FILES_TRACE_MAX distinct trace_ids have been seen (post-gap Step 10, GAP-1)", async () => {
-  const dbService = await initTestDbService();
-  try {
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: evicts the least-recently-touched trace's planWrittenFiles entry once PLAN_WRITTEN_FILES_TRACE_MAX distinct trace_ids have been seen (post-gap Step 10, GAP-1)",
+  async (dbService) => {
     const portalPath = join(dbService.tempDir, "portal-eviction");
     const fillerPortalPath = join(dbService.tempDir, "portal-eviction-filler");
     await initGitPortal(portalPath);
@@ -782,11 +791,13 @@ Deno.test("AgentComposerAdapter.runWithStrategy: evicts the least-recently-touch
     const fillerCalls: Array<{ context: IExecutionContext; options: IAgentExecutionOptions }> = [];
     registerSpy(strategyRegistry, ExecutionStrategyName.CLI_DELEGATE, fillerCalls);
 
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry },
-    );
+    const adapter = createAdapter(dbService.tempDir, {
+      config,
+      db: dbService.db,
+      logger,
+      permissions,
+      strategyRegistry,
+    });
 
     const evictedTraceId = crypto.randomUUID();
     // Leaves src/evictable.ts uncommitted in the portal, authorized under evictedTraceId.
@@ -820,14 +831,12 @@ Deno.test("AgentComposerAdapter.runWithStrategy: evicts the least-recently-touch
       Error,
       "Security violation",
     );
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.runWithStrategy: an actively-touched trace's planWrittenFiles entry is never evicted while it remains the most-recently-touched entry (post-gap Step 10, GAP-1 regression guard)", async () => {
-  const dbService = await initTestDbService();
-  try {
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: an actively-touched trace's planWrittenFiles entry is never evicted while it remains the most-recently-touched entry (post-gap Step 10, GAP-1 regression guard)",
+  async (dbService) => {
     const portalPath = join(dbService.tempDir, "portal-eviction-regression");
     const fillerPortalPath = join(dbService.tempDir, "portal-eviction-regression-filler");
     await initGitPortal(portalPath);
@@ -855,11 +864,13 @@ Deno.test("AgentComposerAdapter.runWithStrategy: an actively-touched trace's pla
     const fillerCalls: Array<{ context: IExecutionContext; options: IAgentExecutionOptions }> = [];
     registerSpy(strategyRegistry, ExecutionStrategyName.CLI_DELEGATE, fillerCalls);
 
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry },
-    );
+    const adapter = createAdapter(dbService.tempDir, {
+      config,
+      db: dbService.db,
+      logger,
+      permissions,
+      strategyRegistry,
+    });
 
     const activeTraceId = crypto.randomUUID();
     // Leaves src/active.ts uncommitted in the portal, authorized under activeTraceId.
@@ -892,19 +903,14 @@ Deno.test("AgentComposerAdapter.runWithStrategy: an actively-touched trace's pla
       ExecutionStrategyName.CLI_DELEGATE,
     );
     assertEquals(result.content, "spy strategy ran for portal");
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.runWithStrategy: wraps a non-JSON description in a minimal Plan envelope when the request declares expectPlanJsonOutput (stock-claude review bug)", async () => {
-  const dbService = await initTestDbService();
-  try {
-    const config: Config = createMockConfig(dbService.tempDir);
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: wraps a non-JSON description in a minimal Plan envelope when the request declares expectPlanJsonOutput (stock-claude review bug)",
+  async (dbService) => {
+    const { config, logger, permissions } = await adapterFixture(dbService);
     const portalAlias = config.portals![0].alias;
-    const logger = new EventLogger({ db: dbService.db });
-    const permissions = new PortalPermissionsService(config.portals!);
-    await writeBlueprint(dbService.tempDir, "test-agent");
 
     // Regression: a real Claude Code CLI review answers naturally with Markdown (no
     // <thought>/<content> tags), which otherwise reaches PlanAdapter.parse as raw prose.
@@ -924,11 +930,13 @@ Deno.test("AgentComposerAdapter.runWithStrategy: wraps a non-JSON description in
         }),
     });
 
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry },
-    );
+    const adapter = createAdapter(dbService.tempDir, {
+      config,
+      db: dbService.db,
+      logger,
+      permissions,
+      strategyRegistry,
+    });
 
     const result = await adapter.runWithStrategy!(
       "test-agent",
@@ -942,19 +950,14 @@ Deno.test("AgentComposerAdapter.runWithStrategy: wraps a non-JSON description in
     const validated = PlanSchema.parse(JSON.parse(result.content));
     assertEquals(typeof validated.description, "string");
     assertStringIncludes(validated.description, "The implementation looks correct.");
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.runWithStrategy: does not wrap non-JSON description when expectPlanJsonOutput is unset (mid-flow step feeding the next step's prompt)", async () => {
-  const dbService = await initTestDbService();
-  try {
-    const config: Config = createMockConfig(dbService.tempDir);
+dbTest(
+  "AgentComposerAdapter.runWithStrategy: does not wrap non-JSON description when expectPlanJsonOutput is unset (mid-flow step feeding the next step's prompt)",
+  async (dbService) => {
+    const { config, logger, permissions } = await adapterFixture(dbService);
     const portalAlias = config.portals![0].alias;
-    const logger = new EventLogger({ db: dbService.db });
-    const permissions = new PortalPermissionsService(config.portals!);
-    await writeBlueprint(dbService.tempDir, "test-agent");
 
     const nativeMarkdown = "Implemented the health endpoint in apps/daemon/main.ts.";
     const strategyRegistry = new StrategyRegistry();
@@ -971,11 +974,13 @@ Deno.test("AgentComposerAdapter.runWithStrategy: does not wrap non-JSON descript
         }),
     });
 
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("should not be called")) },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-      { config, db: dbService.db, logger, permissions, strategyRegistry },
-    );
+    const adapter = createAdapter(dbService.tempDir, {
+      config,
+      db: dbService.db,
+      logger,
+      permissions,
+      strategyRegistry,
+    });
 
     // No expectPlanJsonOutput — this is an intermediate step (e.g. dogfood-loop's
     // "implement") whose content feeds the next step's prompt verbatim, and must never be
@@ -987,33 +992,26 @@ Deno.test("AgentComposerAdapter.runWithStrategy: does not wrap non-JSON descript
     );
 
     assertEquals(result.content, nativeMarkdown);
-  } finally {
-    await dbService.cleanup();
-  }
-});
+  },
+);
 
-Deno.test("AgentComposerAdapter.run: no-strategy path still calls the wrapped runner unchanged", async () => {
-  const dbService = await initTestDbService();
-  try {
-    await writeBlueprint(dbService.tempDir, "test-agent");
-    let runnerCalled = false;
-    const adapter = new AgentComposerAdapter(
-      {
-        run: () => {
-          runnerCalled = true;
-          return Promise.resolve({ thought: "t", content: "c", raw: "r" });
-        },
+dbTest("AgentComposerAdapter.run: no-strategy path still calls the wrapped runner unchanged", async (dbService) => {
+  await writeBlueprint(dbService.tempDir, "test-agent");
+  let runnerCalled = false;
+  const adapter = new AgentComposerAdapter(
+    {
+      run: () => {
+        runnerCalled = true;
+        return Promise.resolve({ thought: "t", content: "c", raw: "r" });
       },
-      pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
-    );
+    },
+    pathBuilders.blueprintsPath(dbService.tempDir, DEFAULT_AGENTS_PATH),
+  );
 
-    const result = await adapter.run("test-agent", makeStepRequest({ portal: "workspace" }));
+  const result = await adapter.run("test-agent", makeStepRequest({ portal: "workspace" }));
 
-    assertEquals(runnerCalled, true);
-    assertEquals(result.content, "c");
-  } finally {
-    await dbService.cleanup();
-  }
+  assertEquals(runnerCalled, true);
+  assertEquals(result.content, "c");
 });
 
 const BOOT_CLIENT: IFixedModelClient = { provider: "anthropic", model: "claude-sonnet-4-6" };
@@ -1036,10 +1034,7 @@ async function runReactStep(
 ): Promise<IModelIntent[]> {
   const dbService = await initTestDbService();
   try {
-    const config: Config = createMockConfig(dbService.tempDir);
-    const logger = new EventLogger({ db: dbService.db });
-    const permissions = new PortalPermissionsService(config.portals!);
-    await writeBlueprint(dbService.tempDir, "test-agent");
+    const { config, logger, permissions } = await adapterFixture(dbService);
     const strategyRegistry = new StrategyRegistry();
     registerSpy(strategyRegistry, strategy, []);
     const captured: IModelIntent[] = [];
