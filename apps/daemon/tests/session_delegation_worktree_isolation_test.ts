@@ -16,11 +16,10 @@ import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertThrows } from "@std/assert";
 import { join } from "@std/path";
 import { FlowWorktreeCoordinator } from "@exaix/flow";
-import { GitService } from "@exaix/git";
-import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+import { createGitServiceFactory, setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { createMockConfig, createMockEventLogger } from "@exaix/testing";
 import { PortalExecutionStrategy } from "@exaix/core";
-import type { IFlowWorktreeCoordinator, IGitServiceFactory } from "@exaix/core/types";
+import type { IFlowWorktreeCoordinator } from "@exaix/core/types";
 import type { SessionBrief, SessionDelegateConfig, SessionWaitState } from "@exaix/schemas/session_delegate.ts";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
@@ -255,9 +254,7 @@ Deno.test(
         portals: [portalConfig({ target_path: portalDir, execution_strategy: PortalExecutionStrategy.WORKTREE })],
       });
       const logger = createMockEventLogger();
-      const gitServiceFactory: IGitServiceFactory = {
-        createGitService: (repoPath: string, traceId: string) => new GitService({ config, traceId, repoPath }),
-      };
+      const gitServiceFactory = createGitServiceFactory(config);
       const worktreeCoordinator = new FlowWorktreeCoordinator({ config, gitServiceFactory, logger });
 
       // The REAL production delegate service + the REAL shipped adapter registry — the
@@ -329,9 +326,7 @@ Deno.test(
         portals: [portalConfig({ target_path: portalDir, execution_strategy: PortalExecutionStrategy.WORKTREE })],
       });
       const logger = createMockEventLogger();
-      const gitServiceFactory: IGitServiceFactory = {
-        createGitService: (repoPath: string, traceId: string) => new GitService({ config, traceId, repoPath }),
-      };
+      const gitServiceFactory = createGitServiceFactory(config);
       const worktreeCoordinator = new FlowWorktreeCoordinator({ config, gitServiceFactory, logger });
       const delegateService = new SessionDelegateService({
         registry: createDefaultSessionAdapterRegistry(),

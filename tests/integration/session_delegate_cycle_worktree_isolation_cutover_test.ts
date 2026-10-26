@@ -32,8 +32,7 @@ import { FlowGateAction } from "@exaix/core";
 import { RequestProcessor } from "@exaix/request";
 import { AgentRunner } from "@exaix/execution";
 import { FlowRunner, FlowWorktreeCoordinator, PlanContextResolver } from "@exaix/flow";
-import { GitService } from "@exaix/git";
-import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+import { createGitServiceFactory, setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { ProviderRegistry } from "@exaix/ai";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import { CostTracker } from "@exaix/core/cost";
@@ -43,7 +42,6 @@ import type {
   IGateConfig,
   IGateEvaluator,
   IGateResult,
-  IGitServiceFactory,
 } from "@exaix/core/types";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { SessionBrief, SessionDelegateConfig, SessionWaitState } from "@exaix/schemas/session_delegate.ts";
@@ -233,9 +231,7 @@ Deno.test({
       });
 
       const logger = createMockEventLogger();
-      const gitServiceFactory: IGitServiceFactory = {
-        createGitService: (repoPath: string, traceId: string) => new GitService({ config, traceId, repoPath }),
-      };
+      const gitServiceFactory = createGitServiceFactory(config);
       const worktreeCoordinator: IFlowWorktreeCoordinator = new FlowWorktreeCoordinator({
         config,
         gitServiceFactory,

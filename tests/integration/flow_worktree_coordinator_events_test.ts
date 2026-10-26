@@ -12,12 +12,10 @@
 
 import { assertEquals } from "@std/assert";
 import { FlowWorktreeCoordinator } from "@exaix/flow";
-import { GitService } from "@exaix/git";
-import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+import { createGitServiceFactory, setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
 import { createMockConfig, initTestDbService } from "@exaix/testing";
-import type { IGitServiceFactory } from "@exaix/core/types";
 
 const PORTAL_ALIAS = "worktree-events-portal";
 
@@ -42,9 +40,7 @@ Deno.test({
       });
 
       const logger = new EventLogger({ db });
-      const gitServiceFactory: IGitServiceFactory = {
-        createGitService: (repoPath: string, traceId: string) => new GitService({ config, traceId, repoPath }),
-      };
+      const gitServiceFactory = createGitServiceFactory(config);
       const coordinator = new FlowWorktreeCoordinator({ config, gitServiceFactory, logger });
 
       const traceId = crypto.randomUUID();
@@ -84,9 +80,7 @@ Deno.test({
       });
 
       const logger = new EventLogger({ db });
-      const gitServiceFactory: IGitServiceFactory = {
-        createGitService: (repoPath: string, traceId: string) => new GitService({ config, traceId, repoPath }),
-      };
+      const gitServiceFactory = createGitServiceFactory(config);
       const coordinator = new FlowWorktreeCoordinator({ config, gitServiceFactory, logger });
 
       const traceId = crypto.randomUUID();

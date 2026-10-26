@@ -10,6 +10,7 @@
 export { TEST_DEFAULT_BRANCH } from "./helpers/constants.ts";
 export { createMockConfig } from "./helpers/config.ts";
 export { initTestDbService } from "./helpers/db.ts";
+export { createGitServiceFactory } from "./helpers/git_service_factory.ts";
 export type { IGitTestContext } from "./helpers/git_test_helper.ts";
 export { createGitTestContext, GitTestHelper, setupGitRepo } from "./helpers/git_test_helper.ts";
 export { setupPortalGitRepos } from "./helpers/portal_test_utils.ts";

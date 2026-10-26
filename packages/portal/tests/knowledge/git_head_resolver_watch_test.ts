@@ -9,44 +9,8 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { GitHeadResolver } from "@exaix/portal/knowledge";
 import { delay } from "@exaix/core/func";
-import { GitService } from "@exaix/git";
 import { createMockConfig } from "@exaix/testing";
-import type { IGitServiceFactory } from "@exaix/core/types";
-
-function createTestGitServiceFactory(repoDir: string): IGitServiceFactory {
-  const config = createMockConfig(repoDir);
-  return {
-    createGitService: (repoPath: string, traceId: string) => new GitService({ config, repoPath, traceId }),
-  };
-}
-
-async function setupGitRepo(repoDir: string): Promise<void> {
-  await Deno.mkdir(repoDir, { recursive: true });
-  await new Deno.Command("git", {
-    args: ["init", "-b", "main"],
-    cwd: repoDir,
-    stdout: "null",
-    stderr: "null",
-  }).output();
-  await new Deno.Command("git", {
-    args: ["config", "user.name", "Test User"],
-    cwd: repoDir,
-    stdout: "null",
-    stderr: "null",
-  }).output();
-  await new Deno.Command("git", {
-    args: ["config", "user.email", "test@example.com"],
-    cwd: repoDir,
-    stdout: "null",
-    stderr: "null",
-  }).output();
-  await new Deno.Command("git", {
-    args: ["commit", "--allow-empty", "-m", "Initial commit"],
-    cwd: repoDir,
-    stdout: "null",
-    stderr: "null",
-  }).output();
-}
+import { createGitServiceFactory, setupGitRepo } from "@exaix/git/testing";
 
 Deno.test({
   name: "[GitHeadResolver] startWatching detects HEAD change after new commit on detached HEAD",
@@ -55,7 +19,7 @@ Deno.test({
   async fn() {
     const repoDir = await Deno.makeTempDir({ prefix: "git-head-watch-" });
     try {
-      await setupGitRepo(repoDir);
+      await setupGitRepo(repoDir, { initialCommit: true });
 
       // Detach HEAD so that HEAD-file content changes on each commit
       await new Deno.Command("git", {
@@ -65,7 +29,7 @@ Deno.test({
         stderr: "null",
       }).output();
 
-      const resolver = new GitHeadResolver(createTestGitServiceFactory(repoDir));
+      const resolver = new GitHeadResolver(createGitServiceFactory(createMockConfig(repoDir)));
       const initialSha = await resolver.resolve(repoDir);
       assertExists(initialSha);
 
@@ -113,7 +77,7 @@ Deno.test({
   async fn() {
     const repoDir = await Deno.makeTempDir({ prefix: "git-head-watch-" });
     try {
-      await setupGitRepo(repoDir);
+      await setupGitRepo(repoDir, { initialCommit: true });
 
       await new Deno.Command("git", {
         args: ["checkout", "--detach"],
@@ -148,7 +112,7 @@ Deno.test({
   async fn() {
     const repoDir = await Deno.makeTempDir({ prefix: "git-head-watch-" });
     try {
-      await setupGitRepo(repoDir);
+      await setupGitRepo(repoDir, { initialCommit: true });
 
       await new Deno.Command("git", {
         args: ["checkout", "--detach"],

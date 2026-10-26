@@ -19,12 +19,10 @@ import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { AgentComposerAdapter, FlowWorktreeCoordinator } from "@exaix/flow";
-import { GitService } from "@exaix/git";
-import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+import { createGitServiceFactory, setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { PortalPermissionsService } from "@exaix/portal";
 import { createMockConfig, createMockEventLogger, initTestDbService } from "@exaix/testing";
 import { ExecutionStrategyName, PortalExecutionStrategy } from "@exaix/core";
-import type { IGitServiceFactory } from "@exaix/core/types";
 
 const PORTAL_ALIAS = "worktree-cutover-portal";
 const AGENT_ROLE = "worktree-cutover-agent";
@@ -69,9 +67,7 @@ Deno.test({
       });
 
       const logger = createMockEventLogger();
-      const gitServiceFactory: IGitServiceFactory = {
-        createGitService: (repoPath: string, traceId: string) => new GitService({ config, traceId, repoPath }),
-      };
+      const gitServiceFactory = createGitServiceFactory(config);
       const worktreeCoordinator = new FlowWorktreeCoordinator({ config, gitServiceFactory, logger });
 
       const adapter = new AgentComposerAdapter(noopRunner, blueprintsDir, {

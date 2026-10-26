@@ -10,7 +10,7 @@
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import type { IGitServiceFactory, JSONObject } from "@exaix/core/types";
-import { GitService } from "@exaix/git";
+import { createGitServiceFactory } from "@exaix/git/testing";
 
 interface ICreateRegistryOptions {
   tools?: JSONObject;
@@ -43,8 +43,5 @@ export async function cleanupTempDir(tempDir: string): Promise<void> {
 /** Create an IGitServiceFactory backed by the production GitService.
  *  Git argument validation in tests then uses the real validator, not a copy. */
 export function createTestGitServiceFactory(): IGitServiceFactory {
-  const config = parseTestConfig(Deno.cwd());
-  return {
-    createGitService: (repoPath: string, traceId: string) => new GitService({ config, repoPath, traceId }),
-  };
+  return createGitServiceFactory(parseTestConfig(Deno.cwd()));
 }
