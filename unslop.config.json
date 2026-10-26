@@ -1144,6 +1144,501 @@
         ]
       }
     },
+    "unused-files": {
+      "level": "warn",
+      "options": {
+        "productionRoots": [
+          "packages/",
+          "apps/",
+          "exaix-team/",
+          "exaix-enterprise/"
+        ],
+        "testSegments": [
+          "/tests/",
+          "/testing/"
+        ],
+        "testSuffixes": [
+          "_test.ts",
+          ".test.ts"
+        ],
+        "entrypointSuffixes": [
+          "/mod.ts",
+          "/index.ts"
+        ],
+        "mainEntrypointSuffixes": [
+          "/main.ts"
+        ],
+        "scriptRoot": "scripts",
+        "walkSkipPatterns": [
+          "\\.git",
+          "node_modules",
+          "\\.copilot",
+          "\\.exa",
+          "Blueprints",
+          "Memory",
+          "Workspace",
+          "Portals",
+          "coverage",
+          "exaix-dev-docs",
+          "exaix-enterprise",
+          "tests/scenario_framework",
+          "unslop-ts",
+          "exaix-dev-docs"
+        ],
+        "aliases": [
+          {
+            "prefix": "@exaix/ai",
+            "target": "./packages/ai/mod.ts"
+          },
+          {
+            "prefix": "@exaix/ai-anthropic",
+            "target": "./packages/ai-anthropic/mod.ts"
+          },
+          {
+            "prefix": "@exaix/ai-anthropic/",
+            "target": "./packages/ai-anthropic/"
+          },
+          {
+            "prefix": "@exaix/ai-openai",
+            "target": "./packages/ai-openai/mod.ts"
+          },
+          {
+            "prefix": "@exaix/ai-openai/",
+            "target": "./packages/ai-openai/"
+          },
+          {
+            "prefix": "@exaix/ai-google",
+            "target": "./packages/ai-google/mod.ts"
+          },
+          {
+            "prefix": "@exaix/ai-google/",
+            "target": "./packages/ai-google/"
+          },
+          {
+            "prefix": "@exaix-team/ai-vertex",
+            "target": "./exaix-team/packages/ai-vertex/mod.ts"
+          },
+          {
+            "prefix": "@exaix-team/ai-vertex/",
+            "target": "./exaix-team/packages/ai-vertex/"
+          },
+          {
+            "prefix": "@exaix-team/mcp-server",
+            "target": "./exaix-team/packages/mcp-server/mod.ts"
+          },
+          {
+            "prefix": "@exaix-team/guardrail",
+            "target": "./exaix-team/packages/guardrail/mod.ts"
+          },
+          {
+            "prefix": "@exaix-team/guardrail/",
+            "target": "./exaix-team/packages/guardrail/"
+          },
+          {
+            "prefix": "@exaix-team/mcp-server/",
+            "target": "./exaix-team/packages/mcp-server/"
+          },
+          {
+            "prefix": "@exaix/ai-openrouter",
+            "target": "./packages/ai-openrouter/mod.ts"
+          },
+          {
+            "prefix": "@exaix/ai-openrouter/",
+            "target": "./packages/ai-openrouter/"
+          },
+          {
+            "prefix": "@exaix/ai-ollama",
+            "target": "./packages/ai-ollama/mod.ts"
+          },
+          {
+            "prefix": "@exaix/ai-ollama/",
+            "target": "./packages/ai-ollama/"
+          },
+          {
+            "prefix": "@exaix/ai-clidelegate",
+            "target": "./packages/ai-clidelegate/mod.ts"
+          },
+          {
+            "prefix": "@exaix/ai-clidelegate/",
+            "target": "./packages/ai-clidelegate/"
+          },
+          {
+            "prefix": "@exaix/ai/providers",
+            "target": "./packages/ai/src/providers/mod.ts"
+          },
+          {
+            "prefix": "@exaix/ai/",
+            "target": "./packages/ai/src/"
+          },
+          {
+            "prefix": "@exaix/model-registry",
+            "target": "./packages/model-registry/mod.ts"
+          },
+          {
+            "prefix": "@exaix/model-registry/",
+            "target": "./packages/model-registry/src/"
+          },
+          {
+            "prefix": "@exaix/mcp",
+            "target": "./packages/mcp/mod.ts"
+          },
+          {
+            "prefix": "@exaix/mcp/server",
+            "target": "./packages/mcp/server/mod.ts"
+          },
+          {
+            "prefix": "@exaix/mcp/server/",
+            "target": "./packages/mcp/server/"
+          },
+          {
+            "prefix": "@exaix/mcp/",
+            "target": "./packages/mcp/src/"
+          },
+          {
+            "prefix": "@exaix/mcp/testing",
+            "target": "./packages/mcp/testing/mod.ts"
+          },
+          {
+            "prefix": "@exaix/mcp/testing/",
+            "target": "./packages/mcp/testing/"
+          },
+          {
+            "prefix": "@exaix/cli",
+            "target": "./packages/cli/mod.ts"
+          },
+          {
+            "prefix": "@exaix/cli/testing",
+            "target": "./packages/cli/testing/mod.ts"
+          },
+          {
+            "prefix": "@exaix/cli/testing/",
+            "target": "./packages/cli/testing/"
+          },
+          {
+            "prefix": "@exaix/cli/",
+            "target": "./packages/cli/src/"
+          },
+          {
+            "prefix": "@exaix/session",
+            "target": "./packages/session/mod.ts"
+          },
+          {
+            "prefix": "@exaix/session/",
+            "target": "./packages/session/src/"
+          },
+          {
+            "prefix": "@exaix/git",
+            "target": "./packages/git/mod.ts"
+          },
+          {
+            "prefix": "@exaix/git/",
+            "target": "./packages/git/src/"
+          },
+          {
+            "prefix": "@exaix/git/testing",
+            "target": "./packages/git/testing/mod.ts"
+          },
+          {
+            "prefix": "@exaix/git/testing/",
+            "target": "./packages/git/testing/"
+          },
+          {
+            "prefix": "@exaix/tui",
+            "target": "./packages/tui/mod.ts"
+          },
+          {
+            "prefix": "@exaix/tui/",
+            "target": "./packages/tui/src/"
+          },
+          {
+            "prefix": "@exaix/schemas",
+            "target": "./packages/schemas/mod.ts"
+          },
+          {
+            "prefix": "@exaix/schemas/",
+            "target": "./packages/schemas/src/"
+          },
+          {
+            "prefix": "@exaix/core",
+            "target": "./packages/core/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/",
+            "target": "./packages/core/src/"
+          },
+          {
+            "prefix": "@exaix/core/types",
+            "target": "./packages/core/src/types/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/status",
+            "target": "./packages/core/src/status/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/request",
+            "target": "./packages/core/src/request/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/observability",
+            "target": "./packages/core/src/observability/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/errors",
+            "target": "./packages/core/src/errors/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/repositories",
+            "target": "./packages/core/src/repositories/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/logger",
+            "target": "./packages/core/src/logger/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/config",
+            "target": "./packages/core/src/config/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/execution-memory",
+            "target": "./packages/core/src/execution-memory/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/cost",
+            "target": "./packages/core/src/cost/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/events",
+            "target": "./packages/core/src/events/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/triggers",
+            "target": "./packages/core/src/triggers/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/security",
+            "target": "./packages/core/src/security/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/fs",
+            "target": "./packages/core/src/fs/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/health",
+            "target": "./packages/core/src/health/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/func",
+            "target": "./packages/core/src/func/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/parsing",
+            "target": "./packages/core/src/parsing/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/context",
+            "target": "./packages/core/src/context/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/notification",
+            "target": "./packages/core/src/notification/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/blueprint",
+            "target": "./packages/core/src/blueprint/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/evaluation",
+            "target": "./packages/core/src/evaluation/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/composer",
+            "target": "./packages/core/src/composer/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/skills",
+            "target": "./packages/core/src/skills/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/artifact",
+            "target": "./packages/core/src/artifact/mod.ts"
+          },
+          {
+            "prefix": "@exaix/core/planning",
+            "target": "./packages/core/src/planning/mod.ts"
+          },
+          {
+            "prefix": "@exaix/triggers",
+            "target": "./packages/triggers/mod.ts"
+          },
+          {
+            "prefix": "@exaix/triggers/",
+            "target": "./packages/triggers/src/"
+          },
+          {
+            "prefix": "@exaix/testing",
+            "target": "./packages/testing/mod.ts"
+          },
+          {
+            "prefix": "@exaix/testing/",
+            "target": "./packages/testing/src/"
+          },
+          {
+            "prefix": "@exaix/storage-sqlite",
+            "target": "./packages/storage-sqlite/mod.ts"
+          },
+          {
+            "prefix": "@exaix/storage-sqlite/",
+            "target": "./packages/storage-sqlite/src/"
+          },
+          {
+            "prefix": "@exaix/portal",
+            "target": "./packages/portal/mod.ts"
+          },
+          {
+            "prefix": "@exaix/portal/knowledge",
+            "target": "./packages/portal/knowledge/mod.ts"
+          },
+          {
+            "prefix": "@exaix/portal/knowledge/",
+            "target": "./packages/portal/knowledge/"
+          },
+          {
+            "prefix": "@exaix/portal/",
+            "target": "./packages/portal/src/"
+          },
+          {
+            "prefix": "@exaix/memory",
+            "target": "./packages/memory/mod.ts"
+          },
+          {
+            "prefix": "@exaix/memory/",
+            "target": "./packages/memory/src/"
+          },
+          {
+            "prefix": "@exaix/quality-gate",
+            "target": "./packages/quality-gate/mod.ts"
+          },
+          {
+            "prefix": "@exaix/quality-gate/",
+            "target": "./packages/quality-gate/src/"
+          },
+          {
+            "prefix": "@exaix/eval-history",
+            "target": "./packages/eval-history/mod.ts"
+          },
+          {
+            "prefix": "@exaix/eval-history/",
+            "target": "./packages/eval-history/src/"
+          },
+          {
+            "prefix": "@exaix/routing",
+            "target": "./packages/routing/mod.ts"
+          },
+          {
+            "prefix": "@exaix/routing/",
+            "target": "./packages/routing/src/"
+          },
+          {
+            "prefix": "@exaix/tool-runtime",
+            "target": "./packages/tool-runtime/mod.ts"
+          },
+          {
+            "prefix": "@exaix/execution",
+            "target": "./packages/execution/mod.ts"
+          },
+          {
+            "prefix": "@exaix/request",
+            "target": "./packages/request/mod.ts"
+          },
+          {
+            "prefix": "@exaix/request/",
+            "target": "./packages/request/src/"
+          },
+          {
+            "prefix": "@exaix/flow",
+            "target": "./packages/flow/mod.ts"
+          },
+          {
+            "prefix": "@exaix/flow/",
+            "target": "./packages/flow/src/"
+          },
+          {
+            "prefix": "@exaix/lint-policy",
+            "target": "./packages/lint-policy/mod.ts"
+          },
+          {
+            "prefix": "@exaix/lint-policy/",
+            "target": "./packages/lint-policy/src/"
+          },
+          {
+            "prefix": "@exaix/lint-policy/catalog.json",
+            "target": "./packages/lint-policy/tests/fixtures/catalog_v1.json"
+          },
+          {
+            "prefix": "@exaix/app-exactl/exactl",
+            "target": "./apps/exactl/src/exactl.ts"
+          },
+          {
+            "prefix": "@exaix-team/voting",
+            "target": "./exaix-team/packages/voting/mod.ts"
+          },
+          {
+            "prefix": "@exaix-team/voting/",
+            "target": "./exaix-team/packages/voting/src/"
+          },
+          {
+            "prefix": "@exaix-team/hitl",
+            "target": "./exaix-team/packages/hitl/mod.ts"
+          },
+          {
+            "prefix": "@exaix-team/hitl/",
+            "target": "./exaix-team/packages/hitl/src/"
+          },
+          {
+            "prefix": "@exaix-team/portal-extractors",
+            "target": "./exaix-team/packages/portal-extractors/mod.ts"
+          },
+          {
+            "prefix": "@exaix-team/portal-extractors/",
+            "target": "./exaix-team/packages/portal-extractors/src/"
+          },
+          {
+            "prefix": "@exaix-team/team-composer",
+            "target": "./exaix-team/packages/team-composer/mod.ts"
+          },
+          {
+            "prefix": "@exaix-team/team-composer/",
+            "target": "./exaix-team/packages/team-composer/"
+          },
+          {
+            "prefix": "@exaix-team/model-registry-live",
+            "target": "./exaix-team/packages/model-registry-live/mod.ts"
+          },
+          {
+            "prefix": "@exaix-team/model-registry-live/",
+            "target": "./exaix-team/packages/model-registry-live/src/"
+          },
+          {
+            "prefix": "@exaix-team/otel-export",
+            "target": "./exaix-team/packages/otel-export/mod.ts"
+          },
+          {
+            "prefix": "@exaix-team/otel-export/",
+            "target": "./exaix-team/packages/otel-export/src/"
+          },
+          {
+            "prefix": "@exaix/shared",
+            "target": "./packages/shared/mod.ts"
+          },
+          {
+            "prefix": "@exaix/shared/",
+            "target": "./packages/shared/src/"
+          }
+        ],
+        "skipPrefixes": [],
+        "skipSegments": []
+      }
+    },
     "optional-params": {
       "level": "warn",
       "options": {

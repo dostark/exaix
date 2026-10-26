@@ -264,6 +264,10 @@ export const WHOLE_TREE_HOSTS: Readonly<Record<string, IWholeTreeHostSpec>> = {
     controls: WHOLE_TREE_CHECKS["unused-exports"].controls,
     command: hostCommand("check:unused-exports"),
   },
+  "unused-files": {
+    controls: WHOLE_TREE_CHECKS["unused-files"].controls,
+    command: hostCommand("check:unused-files"),
+  },
   "optional-params": {
     controls: WHOLE_TREE_CHECKS["optional-params"].controls,
     command: hostCommand("check:optional-params"),
