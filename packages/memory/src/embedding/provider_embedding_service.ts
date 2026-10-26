@@ -18,15 +18,10 @@ import type { IEmbeddableMemoryEntry, IEmbeddingSearchResult, IMemoryCostRouter 
 import type { IEmbeddingProvider } from "@exaix/ai";
 import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import { HnswVectorIndex } from "./vector_index.ts";
+import { type IEmbeddingFile, type IEmbeddingManifest, readEmbeddingSearchResults } from "./embedding_storage.ts";
 import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
 import { computeTextHash, DiskBackedEmbeddingCache } from "./disk_cache.ts";
-import {
-  chunkEmbeddingId,
-  embeddableId,
-  embeddableTextChunks,
-  embeddableTitle,
-  LEGACY_EMBEDDING_KIND,
-} from "./embeddable_entry.ts";
+import { chunkEmbeddingId, embeddableId, embeddableTextChunks, embeddableTitle } from "./embeddable_entry.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { MemoryCostOperation, MemoryType } from "@exaix/core";
 
@@ -34,26 +29,6 @@ const EMBEDDING_CACHE_MAX_ENTRIES = 512;
 
 /** Estimated cost per embedding API call in USD (~100 tokens at ~$0.002/1K tokens). */
 const ESTIMATED_EMBED_COST_USD = 0.0002;
-
-interface IEmbeddingFile {
-  id: string;
-  title: string;
-  text: string;
-  vector: number[];
-  created_at: string;
-  kind?: MemoryType;
-}
-
-interface IManifestEntry {
-  id: string;
-  title: string;
-  embeddingFile: string;
-}
-
-interface IEmbeddingManifest {
-  generated_at: string;
-  index: IManifestEntry[];
-}
 
 /** File-backed embedding service delegating vector generation to an IEmbeddingProvider. */
 export class ProviderEmbeddingService implements IMemoryEmbeddingService {
@@ -174,27 +149,7 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
     const indexResults = this.hnsw.search(queryVector, limit, allowedChunkIds);
 
     // Load metadata for top-K results only (O(K) disk reads)
-    const results: IEmbeddingSearchResult[] = [];
-    for (const ir of indexResults) {
-      if (ir.similarity < threshold) continue;
-      const embeddingPath = join(this.embeddingsDir, `${ir.id}.json`);
-      try {
-        const content = await Deno.readTextFile(embeddingPath);
-        const embedding: IEmbeddingFile = JSON.parse(content) as IEmbeddingFile;
-        results.push({
-          id: embedding.id,
-          title: embedding.title,
-          summary: embedding.text.substring(0, 200),
-          similarity: ir.similarity,
-          kind: embedding.kind ?? LEGACY_EMBEDDING_KIND,
-        });
-      } catch {
-        continue;
-      }
-    }
-
-    results.sort((a, b) => b.similarity - a.similarity);
-    return results.slice(0, limit);
+    return await readEmbeddingSearchResults(this.embeddingsDir, indexResults, threshold, limit);
   }
 
   async getEmbedding(id: string): Promise<number[] | null> {

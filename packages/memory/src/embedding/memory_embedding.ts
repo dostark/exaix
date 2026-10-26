@@ -15,12 +15,12 @@ import type { IEmbeddableMemoryEntry, IEmbeddingSearchResult, Opt, Reason } from
 import { MemoryType } from "@exaix/core";
 import { HnswVectorIndex } from "./vector_index.ts";
 import {
-  chunkEmbeddingId,
-  embeddableId,
-  embeddableTextChunks,
-  embeddableTitle,
-  LEGACY_EMBEDDING_KIND,
-} from "./embeddable_entry.ts";
+  type IEmbeddingFile,
+  type IEmbeddingManifest,
+  type IManifestEntry,
+  readEmbeddingSearchResults,
+} from "./embedding_storage.ts";
+import { chunkEmbeddingId, embeddableId, embeddableTextChunks, embeddableTitle } from "./embeddable_entry.ts";
 
 /** 64-dimensional mock embedding vector interface. */
 export interface IMemoryEmbeddingService {
@@ -37,29 +37,6 @@ export interface IMemoryEmbeddingService {
 }
 
 const EMBEDDING_DIM = 64;
-
-/** Embedding file structure (stored as JSON). */
-interface EmbeddingFile {
-  id: string;
-  title: string;
-  text: string;
-  vector: number[];
-  created_at: string;
-  kind?: MemoryType;
-}
-
-/** Manifest entry for an embedding. */
-interface ManifestEntry {
-  id: string;
-  title: string;
-  embeddingFile: string;
-}
-
-/** Manifest file structure. */
-interface EmbeddingManifest {
-  generated_at: string;
-  index: ManifestEntry[];
-}
 
 /** Calculate cosine similarity between two vectors (-1 to 1). */
 export function cosineSimilarity(a: number[], b: number[]): number {
@@ -150,7 +127,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
 
     // Create empty manifest if it doesn't exist
     if (!await exists(this.manifestPath)) {
-      const manifest: EmbeddingManifest = {
+      const manifest: IEmbeddingManifest = {
         generated_at: new Date().toISOString(),
         index: [],
       };
@@ -177,7 +154,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
       const id = chunkEmbeddingId(baseId, index);
       const vector = generateMockEmbedding(chunks[index]);
 
-      const embeddingFile: EmbeddingFile = {
+      const embeddingFile: IEmbeddingFile = {
         id,
         title,
         text: chunks[index],
@@ -199,7 +176,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
 
   /** Update the manifest with a new or updated embedding. */
   private async updateManifest(id: string, title: string, embeddingPath: string): Promise<void> {
-    let manifest: EmbeddingManifest;
+    let manifest: IEmbeddingManifest;
 
     if (await exists(this.manifestPath)) {
       const content = await Deno.readTextFile(this.manifestPath);
@@ -213,7 +190,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
 
     // Check if entry already exists
     const existingIndex = manifest.index.findIndex((e) => e.id === id);
-    const entry: ManifestEntry = {
+    const entry: IManifestEntry = {
       id,
       title,
       embeddingFile: embeddingPath,
@@ -246,7 +223,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
     }
 
     const manifestContent = await Deno.readTextFile(this.manifestPath);
-    const manifest: EmbeddingManifest = JSON.parse(manifestContent);
+    const manifest: IEmbeddingManifest = JSON.parse(manifestContent);
 
     if (manifest.index.length === 0) {
       return [];
@@ -262,28 +239,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
     const indexResults = this.hnsw.search(queryVector, limit);
 
     // Load metadata for top-K results only (O(K) disk reads)
-    const results: IEmbeddingSearchResult[] = [];
-    for (const ir of indexResults) {
-      if (ir.similarity < threshold) continue;
-      const embeddingPath = join(this.embeddingsDir, `${ir.id}.json`);
-      try {
-        const content = await Deno.readTextFile(embeddingPath);
-        const embedding: EmbeddingFile = JSON.parse(content);
-        results.push({
-          id: embedding.id,
-          title: embedding.title,
-          summary: embedding.text.substring(0, 200),
-          similarity: ir.similarity,
-          kind: embedding.kind ?? LEGACY_EMBEDDING_KIND,
-        });
-      } catch {
-        continue;
-      }
-    }
-
-    results.sort((a, b) => b.similarity - a.similarity);
-
-    return results.slice(0, limit);
+    return await readEmbeddingSearchResults(this.embeddingsDir, indexResults, threshold, limit);
   }
 
   /** Get embedding for a specific learning or null if not found. */
@@ -296,7 +252,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
 
     try {
       const content = await Deno.readTextFile(embeddingPath);
-      const embedding: EmbeddingFile = JSON.parse(content);
+      const embedding: IEmbeddingFile = JSON.parse(content);
       return embedding.vector;
     } catch {
       return null;
@@ -314,7 +270,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
     // Update manifest to remove entry
     if (await exists(this.manifestPath)) {
       const content = await Deno.readTextFile(this.manifestPath);
-      const manifest: EmbeddingManifest = JSON.parse(content);
+      const manifest: IEmbeddingManifest = JSON.parse(content);
       manifest.index = manifest.index.filter((e) => e.id !== id);
       manifest.generated_at = new Date().toISOString();
       await Deno.writeTextFile(this.manifestPath, JSON.stringify(manifest, null, 2));
@@ -329,7 +285,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
     await this.initializeManifest();
     if (!await exists(this.manifestPath)) return;
     const content = await Deno.readTextFile(this.manifestPath);
-    const manifest: EmbeddingManifest = JSON.parse(content);
+    const manifest: IEmbeddingManifest = JSON.parse(content);
     const staleIds = manifest.index
       .map((entry) => entry.id)
       .filter((id) => {
@@ -350,14 +306,14 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
     }
 
     const content = await Deno.readTextFile(this.manifestPath);
-    const manifest: EmbeddingManifest = JSON.parse(content);
+    const manifest: IEmbeddingManifest = JSON.parse(content);
     return {
       total: manifest.index.length,
       generated_at: manifest.generated_at,
     };
   }
 
-  private async ensureIndex(manifest: EmbeddingManifest): Promise<void> {
+  private async ensureIndex(manifest: IEmbeddingManifest): Promise<void> {
     if (this.indexBuilt) return;
 
     const vectors = new Map<string, number[]>();
@@ -365,7 +321,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
       const embeddingPath = join(this.embeddingsDir, `${entry.id}.json`);
       try {
         const content = await Deno.readTextFile(embeddingPath);
-        const embedding: EmbeddingFile = JSON.parse(content);
+        const embedding: IEmbeddingFile = JSON.parse(content);
         vectors.set(entry.id, embedding.vector);
       } catch {
         continue;
