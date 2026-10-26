@@ -61,7 +61,6 @@ import {
   SkillStatus,
 } from "@exaix/core";
 import { MemoryViewTuiSession } from "../src/memory_view.ts";
-import type { ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
 import type { PortalAnalysisMode } from "@exaix/core";
 
 interface IPortalInfoOverrides {
@@ -639,57 +638,6 @@ export function createPlanReviewerSession(plans: IPlan[] = []): {
   return { mock, session };
 }
 
-// Tree view helpers
-export function createTestTree(): ITreeNode[] {
-  return [
-    {
-      id: "root1",
-      label: "Root 1",
-      type: "root",
-      expanded: true,
-      children: [
-        {
-          id: "child1-1",
-          label: "Child 1.1",
-          type: "item",
-          expanded: false,
-          children: [],
-        },
-        {
-          id: "child1-2",
-          label: "Child 1.2",
-          type: "item",
-          expanded: true,
-          children: [
-            {
-              id: "grandchild1-2-1",
-              label: "Grandchild 1.2.1",
-              type: "leaf",
-              expanded: false,
-              children: [],
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: "root2",
-      label: "Root 2",
-      type: "root",
-      expanded: false,
-      children: [
-        {
-          id: "child2-1",
-          label: "Child 2.1",
-          type: "item",
-          expanded: false,
-          children: [],
-        },
-      ],
-    },
-  ];
-}
-
 // Key simulation helpers
 // Render assertion helpers
 // Legacy request manager helpers
@@ -792,19 +740,6 @@ export function createLegacyTuiSessionWithErrors(): InstanceType<typeof _LegacyR
 
   const requests = sampleTestRequests();
   return new _LegacyRequestManagerTuiSession(requests, mockService as IRequestService);
-}
-
-// Dialog test helpers
-export function createMockDialogRenderOptions(width: number = 60, height: number = 20): {
-  useColors: boolean;
-  width: number;
-  height: number;
-} {
-  return {
-    useColors: false,
-    width,
-    height,
-  };
 }
 
 // Skills Manager helpers
