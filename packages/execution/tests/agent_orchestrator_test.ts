@@ -53,7 +53,7 @@ import { initTestDbService } from "@exaix/testing";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { EventLogger } from "@exaix/core/logger";
-import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { StrategyRegistry } from "@exaix/execution";
 import type { IPinnedSkillPrompt } from "@exaix/execution";
@@ -88,6 +88,33 @@ let testConfig: Config;
 let dbService: Awaited<ReturnType<typeof initTestDbService>>;
 const ORIGINAL_CWD = Deno.cwd();
 const REACT_DONE_RESPONSE = `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`;
+
+/** A changeset result with the zero commit hash and the fixed counters that the strategy stubs report. */
+function changesetResult(branch: string, filesChanged: string[], description: string): IChangesetResult {
+  return {
+    branch,
+    commit_sha: "0000000000000000000000000000000000000000",
+    files_changed: filesChanged,
+    description,
+    tool_calls: 1,
+    execution_time_ms: 10,
+  };
+}
+
+/** A strategy registry whose ReAct strategy runs `execute`. */
+function reactRegistry(execute: Parameters<StrategyRegistry["register"]>[0]["execute"]): StrategyRegistry {
+  const registry = new StrategyRegistry();
+  registry.register({ name: ExecutionStrategyName.REACT, execute });
+  return registry;
+}
+
+type AgentComposerOptions = ConstructorParameters<typeof AgentComposer>[0];
+
+/** Builds an AgentComposer on the test config and services, with extra constructor options on top. */
+function createComposer(extra: Partial<AgentComposerOptions> = {}): AgentComposer {
+  const { db, logger, pathResolver, permissions } = getServices();
+  return new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions, ...extra });
+}
 
 /** Registers a test that runs `body` between `setup()` and `cleanup()`, without resource sanitizers. */
 function orchestratorTest(name: string, body: () => void | Promise<void>): void {
@@ -126,6 +153,41 @@ function testExecutionOptions(): IAgentExecutionOptions {
     timeout_ms: 300000,
     max_tool_calls: 100,
     audit_enabled: true,
+  };
+}
+
+/** The agent blueprint that the prompt-building tests use. */
+function promptBlueprint(capabilities: string[]): IAgentFileBlueprint {
+  return {
+    name: "test-agent",
+    model: "gpt-4o-mini",
+    provider: PROVIDER_OPENAI,
+    capabilities,
+    systemPrompt: "You are a helpful assistant.",
+  };
+}
+
+/** The execution context that the prompt-building tests use, for one request text. */
+function promptContext(request: string): IExecutionContext {
+  return {
+    trace_id: "test-trace-123",
+    request_id: "test-request-456",
+    request,
+    plan: "Test plan",
+    portal: "/test/portal",
+  };
+}
+
+/** The execution options for `test-agent` on the prompt-building tests' portal, with optional extras. */
+function promptOptions(extra: Partial<IAgentExecutionOptions> = {}): IAgentExecutionOptions {
+  return {
+    agent_role: "test-agent",
+    portal: "/test/portal",
+    security_mode: SecurityMode.HYBRID,
+    timeout_ms: 300000,
+    max_tool_calls: 100,
+    audit_enabled: true,
+    ...extra,
   };
 }
 
@@ -251,36 +313,17 @@ function getServices() {
 }
 
 orchestratorTest("AgentComposer: creates instance with required services", () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   executor.dispose();
 });
 
 orchestratorTest("AgentComposer: compactLoopHistory with < 3 steps does nothing", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const strategyRegistry = new StrategyRegistry();
-  strategyRegistry.register({
-    name: ExecutionStrategyName.REACT,
-    execute: () =>
-      Promise.resolve({
-        branch: "feat/short",
-        commit_sha: "0000000000000000000000000000000000000000",
-        files_changed: ["src/short.ts"],
-        description: "Short step",
-        tool_calls: 1,
-        execution_time_ms: 10,
-      }),
-  });
+  const strategyRegistry = reactRegistry(() =>
+    Promise.resolve(changesetResult("feat/short", ["src/short.ts"], "Short step"))
+  );
 
-  const executor = new AgentComposer({
-    config: testConfig,
-    db,
-    logger,
-    pathResolver,
-    permissions,
-    strategyRegistry,
-  });
+  const executor = createComposer({ strategyRegistry });
 
   await writeTestAgentBlueprint();
 
@@ -317,19 +360,9 @@ orchestratorTest("AgentComposer: compactLoopHistory emits context.budget.compact
     return Promise.resolve();
   }) as typeof logger.info;
 
-  const strategyRegistry = new StrategyRegistry();
-  strategyRegistry.register({
-    name: ExecutionStrategyName.REACT,
-    execute: () =>
-      Promise.resolve({
-        branch: "feat/event-test",
-        commit_sha: "0000000000000000000000000000000000000000",
-        files_changed: ["src/event.ts"],
-        description: "Event test step",
-        tool_calls: 1,
-        execution_time_ms: 10,
-      }),
-  });
+  const strategyRegistry = reactRegistry(() =>
+    Promise.resolve(changesetResult("feat/event-test", ["src/event.ts"], "Event test step"))
+  );
 
   const executor = new AgentComposer({
     config: testConfig,
@@ -371,8 +404,6 @@ orchestratorTest("AgentComposer: compactLoopHistory emits context.budget.compact
 });
 
 orchestratorTest("AgentComposer: loads blueprint from file", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-
   // Create test blueprint
   const blueprintContent = readFixtureTextSync(
     import.meta.url,
@@ -386,7 +417,7 @@ orchestratorTest("AgentComposer: loads blueprint from file", async () => {
     blueprintContent,
   );
 
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   const blueprint = await executor.loadBlueprint("test-agent");
 
@@ -398,8 +429,7 @@ orchestratorTest("AgentComposer: loads blueprint from file", async () => {
 });
 
 orchestratorTest("AgentComposer: throws error for missing blueprint", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   await assertRejects(
     async () => {
@@ -411,8 +441,7 @@ orchestratorTest("AgentComposer: throws error for missing blueprint", async () =
 });
 
 orchestratorTest("AgentComposer: validates portal exists before execution", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   const context: IExecutionContext = {
     trace_id: crypto.randomUUID(),
@@ -471,8 +500,7 @@ orchestratorTest("AgentComposer: validates agent has portal permissions", async 
 });
 
 orchestratorTest("AgentComposer: sandboxed mode builds subprocess with no file access", () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   const permissions_flags = executor.buildSubprocessPermissions(SecurityMode.SANDBOXED, portalDir);
 
@@ -481,8 +509,7 @@ orchestratorTest("AgentComposer: sandboxed mode builds subprocess with no file a
 });
 
 orchestratorTest("AgentComposer: hybrid mode builds subprocess with read-only portal access", () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   const permissions_flags = executor.buildSubprocessPermissions(SecurityMode.HYBRID, portalDir);
 
@@ -494,13 +521,11 @@ orchestratorTest("AgentComposer: hybrid mode builds subprocess with read-only po
 });
 
 orchestratorTest("AgentComposer: detects unauthorized changes in hybrid mode", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-
   // Create a file outside of MCP tools
   const unauthorizedFile = join(portalDir, "unauthorized.txt");
   await Deno.writeTextFile(unauthorizedFile, "Unauthorized change");
 
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   const unauthorizedChanges = await executor.auditGitChanges(
     portalDir,
@@ -516,37 +541,17 @@ orchestratorTest("AgentComposer: detects unauthorized changes in hybrid mode", a
 orchestratorTest(
   "AgentComposer: a step keeps files it reported in files_changed even when allowed_paths is empty",
   async () => {
-    const { db, logger, pathResolver, permissions } = getServices();
-
     // A strategy writes a real portal file and reports it in files_changed.
     // This mirrors the ReAct loop authorizing its own writes.
     // The agent role declares no allowed_paths, so only files_changed can authorize this change.
     const writtenPath = "src/step-output.ts";
-    const strategyRegistry = new StrategyRegistry();
-    strategyRegistry.register({
-      name: ExecutionStrategyName.REACT,
-      execute: async () => {
-        await Deno.mkdir(join(portalDir, "src"), { recursive: true });
-        await Deno.writeTextFile(join(portalDir, writtenPath), "export const x = 1;\n");
-        return {
-          branch: "feat/step",
-          commit_sha: "0000000000000000000000000000000000000000",
-          files_changed: [writtenPath],
-          description: "wrote step-output",
-          tool_calls: 1,
-          execution_time_ms: 10,
-        };
-      },
+    const strategyRegistry = reactRegistry(async () => {
+      await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+      await Deno.writeTextFile(join(portalDir, writtenPath), "export const x = 1;\n");
+      return changesetResult("feat/step", [writtenPath], "wrote step-output");
     });
 
-    const executor = new AgentComposer({
-      config: testConfig,
-      db,
-      logger,
-      pathResolver,
-      permissions,
-      strategyRegistry,
-    });
+    const executor = createComposer({ strategyRegistry });
 
     await writeTestAgentBlueprint();
 
@@ -567,606 +572,257 @@ orchestratorTest(
   },
 );
 
-Deno.test({
-  name:
-    "AgentComposer: an injected planWrittenFiles Set pre-authorizes a file an earlier, separate orchestrator instance legitimately wrote",
-  fn: async () => {
-    await setup();
-    try {
-      const { db, logger, pathResolver, permissions } = getServices();
+orchestratorTest(
+  "AgentComposer: an injected planWrittenFiles Set pre-authorizes a file an earlier, separate orchestrator instance legitimately wrote",
+  async () => {
+    // Regression: a fresh AgentComposer per flow step flagged a prior step's own
+    // uncommitted writes as "unauthorized". Fix: an externally-owned planWrittenFiles Set
+    // can be shared across orchestrator instances for the same flow run (by traceId).
+    const sharedWrittenFiles = new Set<string>();
 
-      // Regression: a fresh AgentComposer per flow step flagged a prior step's own
-      // uncommitted writes as "unauthorized". Fix: an externally-owned planWrittenFiles Set
-      // can be shared across orchestrator instances for the same flow run (by traceId).
-      const sharedWrittenFiles = new Set<string>();
+    const step1WrittenPath = "src/step1-output.ts";
+    const step1Registry = reactRegistry(async () => {
+      await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+      // The write stays uncommitted on purpose. CliDelegateStrategy does not commit after every flow step.
+      // That is why the next step's `git status --porcelain` still shows this file as dirty.
+      await Deno.writeTextFile(join(portalDir, step1WrittenPath), "export const one = 1;\n");
+      return changesetResult("feat/step1", [step1WrittenPath], "wrote step1-output");
+    });
 
-      const step1WrittenPath = "src/step1-output.ts";
-      const step1Registry = new StrategyRegistry();
-      step1Registry.register({
-        name: ExecutionStrategyName.REACT,
-        execute: async () => {
-          await Deno.mkdir(join(portalDir, "src"), { recursive: true });
-          // The write stays uncommitted on purpose. CliDelegateStrategy does not commit after every flow step.
-          // That is why the next step's `git status --porcelain` still shows this file as dirty.
-          await Deno.writeTextFile(join(portalDir, step1WrittenPath), "export const one = 1;\n");
-          return {
-            branch: "feat/step1",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: [step1WrittenPath],
-            description: "wrote step1-output",
-            tool_calls: 1,
-            execution_time_ms: 10,
-          };
-        },
-      });
+    await writeTestAgentBlueprint();
 
-      await writeTestAgentBlueprint();
+    const traceId = crypto.randomUUID();
+    const contextFor = (requestId: string): IExecutionContext => ({
+      trace_id: traceId,
+      request_id: requestId,
+      request: "write step output",
+      plan: "write",
+      portal: "TestPortal",
+    });
+    const options = testExecutionOptions();
 
-      const traceId = crypto.randomUUID();
-      const contextFor = (requestId: string): IExecutionContext => ({
-        trace_id: traceId,
-        request_id: requestId,
-        request: "write step output",
-        plan: "write",
-        portal: "TestPortal",
-      });
-      const options = testExecutionOptions();
+    const step1Executor = createComposer({ strategyRegistry: step1Registry, planWrittenFiles: sharedWrittenFiles });
+    const step1Result = await step1Executor.executeStep(contextFor("step-1-req"), options);
+    assertEquals(step1Result.files_changed, [step1WrittenPath]);
+    step1Executor.dispose();
 
-      const step1Executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        strategyRegistry: step1Registry,
-        planWrittenFiles: sharedWrittenFiles,
-      });
-      const step1Result = await step1Executor.executeStep(contextFor("step-1-req"), options);
-      assertEquals(step1Result.files_changed, [step1WrittenPath]);
-      step1Executor.dispose();
+    // step1-output.ts is still dirty on disk.
+    // A second orchestrator that shares the SAME Set must not flag it.
+    // The second executor's own files_changed only reports its own new file.
+    const step2WrittenPath = "src/step2-output.ts";
+    const step2Registry = reactRegistry(async () => {
+      await Deno.writeTextFile(join(portalDir, step2WrittenPath), "export const two = 2;\n");
+      return changesetResult("feat/step2", [step2WrittenPath], "wrote step2-output");
+    });
+    const step2Executor = createComposer({ strategyRegistry: step2Registry, planWrittenFiles: sharedWrittenFiles });
 
-      // step1-output.ts is still dirty on disk.
-      // A second orchestrator that shares the SAME Set must not flag it.
-      // The second executor's own files_changed only reports its own new file.
-      const step2WrittenPath = "src/step2-output.ts";
-      const step2Registry = new StrategyRegistry();
-      step2Registry.register({
-        name: ExecutionStrategyName.REACT,
-        execute: async () => {
-          await Deno.writeTextFile(join(portalDir, step2WrittenPath), "export const two = 2;\n");
-          return {
-            branch: "feat/step2",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: [step2WrittenPath],
-            description: "wrote step2-output",
-            tool_calls: 1,
-            execution_time_ms: 10,
-          };
-        },
-      });
-      const step2Executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        strategyRegistry: step2Registry,
-        planWrittenFiles: sharedWrittenFiles,
-      });
-
-      const step2Result = await step2Executor.executeStep(contextFor("step-2-req"), options);
-      assertEquals(step2Result.files_changed, [step2WrittenPath]);
-      step2Executor.dispose();
-    } finally {
-      await cleanup();
-    }
+    const step2Result = await step2Executor.executeStep(contextFor("step-2-req"), options);
+    assertEquals(step2Result.files_changed, [step2WrittenPath]);
+    step2Executor.dispose();
   },
-  sanitizeResources: false,
-  sanitizeOps: false,
-});
+);
 
-Deno.test({
-  name:
-    "AgentComposer: without a shared planWrittenFiles Set, a second fresh instance reverts an earlier instance's legitimate uncommitted write (regression guard)",
-  fn: async () => {
-    await setup();
-    try {
-      const { db, logger, pathResolver, permissions } = getServices();
+orchestratorTest(
+  "AgentComposer: without a shared planWrittenFiles Set, a second fresh instance reverts an earlier instance's legitimate uncommitted write (regression guard)",
+  async () => {
+    const step1WrittenPath = "src/unshared-step1-output.ts";
+    const step1Registry = reactRegistry(async () => {
+      await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+      await Deno.writeTextFile(join(portalDir, step1WrittenPath), "export const one = 1;\n");
+      return changesetResult("feat/step1", [step1WrittenPath], "wrote unshared-step1-output");
+    });
 
-      const step1WrittenPath = "src/unshared-step1-output.ts";
-      const step1Registry = new StrategyRegistry();
-      step1Registry.register({
-        name: ExecutionStrategyName.REACT,
-        execute: async () => {
-          await Deno.mkdir(join(portalDir, "src"), { recursive: true });
-          await Deno.writeTextFile(join(portalDir, step1WrittenPath), "export const one = 1;\n");
-          return {
-            branch: "feat/step1",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: [step1WrittenPath],
-            description: "wrote unshared-step1-output",
-            tool_calls: 1,
-            execution_time_ms: 10,
-          };
-        },
-      });
+    await writeTestAgentBlueprint();
 
-      await writeTestAgentBlueprint();
+    const traceId = crypto.randomUUID();
+    const contextFor = (requestId: string): IExecutionContext => ({
+      trace_id: traceId,
+      request_id: requestId,
+      request: "write step output",
+      plan: "write",
+      portal: "TestPortal",
+    });
+    const options = testExecutionOptions();
 
-      const traceId = crypto.randomUUID();
-      const contextFor = (requestId: string): IExecutionContext => ({
-        trace_id: traceId,
-        request_id: requestId,
-        request: "write step output",
-        plan: "write",
-        portal: "TestPortal",
-      });
-      const options = testExecutionOptions();
+    const step1Executor = createComposer({ strategyRegistry: step1Registry });
+    await step1Executor.executeStep(contextFor("step-1-req"), options);
+    step1Executor.dispose();
 
-      const step1Executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        strategyRegistry: step1Registry,
-      });
-      await step1Executor.executeStep(contextFor("step-1-req"), options);
-      step1Executor.dispose();
+    const step2WrittenPath = "src/unshared-step2-output.ts";
+    const step2Registry = reactRegistry(async () => {
+      await Deno.writeTextFile(join(portalDir, step2WrittenPath), "export const two = 2;\n");
+      return changesetResult("feat/step2", [step2WrittenPath], "wrote unshared-step2-output");
+    });
+    // No planWrittenFiles injected — a fresh, empty Set (today's default). Reproduces the
+    // live bug: the earlier executor's still-uncommitted file is invisible to this audit.
+    const step2Executor = createComposer({ strategyRegistry: step2Registry });
 
-      const step2WrittenPath = "src/unshared-step2-output.ts";
-      const step2Registry = new StrategyRegistry();
-      step2Registry.register({
-        name: ExecutionStrategyName.REACT,
-        execute: async () => {
-          await Deno.writeTextFile(join(portalDir, step2WrittenPath), "export const two = 2;\n");
-          return {
-            branch: "feat/step2",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: [step2WrittenPath],
-            description: "wrote unshared-step2-output",
-            tool_calls: 1,
-            execution_time_ms: 10,
-          };
-        },
-      });
-      // No planWrittenFiles injected — a fresh, empty Set (today's default). Reproduces the
-      // live bug: the earlier executor's still-uncommitted file is invisible to this audit.
-      const step2Executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        strategyRegistry: step2Registry,
-      });
-
-      await assertRejects(
-        () => step2Executor.executeStep(contextFor("step-2-req"), options),
-        AgentExecutionError,
-        "Security violation",
-      );
-      step2Executor.dispose();
-    } finally {
-      await cleanup();
-    }
+    await assertRejects(
+      () => step2Executor.executeStep(contextFor("step-2-req"), options),
+      AgentExecutionError,
+      "Security violation",
+    );
+    step2Executor.dispose();
   },
-  sanitizeResources: false,
-  sanitizeOps: false,
-});
+);
 
-Deno.test({
-  name:
-    "AgentComposer: an injected planWrittenFiles Set pre-authorizes a prior step's uncommitted changes across separate instances",
-  fn: async () => {
-    await setup();
-    try {
-      const { db, logger, pathResolver, permissions } = getServices();
+orchestratorTest(
+  "AgentComposer: an injected planWrittenFiles Set pre-authorizes a prior step's uncommitted changes across separate instances",
+  async () => {
+    // Regression: a fresh AgentComposer per flow step has no memory of earlier uncommitted writes.
+    // Its empty planWrittenFiles flags them as unauthorized and reverts them.
+    // The fix shares the same `planWrittenFiles` Set across instances.
+    const sharedWrittenFiles = new Set<string>();
 
-      // Regression: a fresh AgentComposer per flow step has no memory of earlier uncommitted writes.
-      // Its empty planWrittenFiles flags them as unauthorized and reverts them.
-      // The fix shares the same `planWrittenFiles` Set across instances.
-      const sharedWrittenFiles = new Set<string>();
+    await writeTestAgentBlueprint();
 
-      await writeTestAgentBlueprint();
+    const step1Path = "src/step1-output.ts";
+    const step1Registry = reactRegistry(async () => {
+      await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+      await Deno.writeTextFile(join(portalDir, step1Path), "export const step1 = 1;\n");
+      return changesetResult("feat/step", [step1Path], "wrote step1-output");
+    });
+    const step1Executor = createComposer({ strategyRegistry: step1Registry, planWrittenFiles: sharedWrittenFiles });
+    const step1Context: IExecutionContext = {
+      trace_id: crypto.randomUUID(),
+      request_id: "step1-req",
+      request: "write step1 output",
+      plan: "write",
+      portal: "TestPortal",
+    };
+    const stepOptions: IAgentExecutionOptions = {
+      portal: "TestPortal",
+      agent_role: "test-agent",
+      security_mode: SecurityMode.HYBRID,
+      timeout_ms: 300000,
+      max_tool_calls: 100,
+      audit_enabled: true,
+    };
+    await step1Executor.executeStep(step1Context, stepOptions);
+    step1Executor.dispose();
 
-      const step1Path = "src/step1-output.ts";
-      const step1Registry = new StrategyRegistry();
-      step1Registry.register({
-        name: ExecutionStrategyName.REACT,
-        execute: async () => {
-          await Deno.mkdir(join(portalDir, "src"), { recursive: true });
-          await Deno.writeTextFile(join(portalDir, step1Path), "export const step1 = 1;\n");
-          return {
-            branch: "feat/step",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: [step1Path],
-            description: "wrote step1-output",
-            tool_calls: 1,
-            execution_time_ms: 10,
-          };
-        },
-      });
-      const step1Executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        strategyRegistry: step1Registry,
-        planWrittenFiles: sharedWrittenFiles,
-      });
-      const step1Context: IExecutionContext = {
+    // step1Path now sits in the portal as an UNCOMMITTED, dirty file.
+    // A CliDelegateStrategy step that does not commit after itself leaves the same state.
+    const step2Path = "src/step2-output.ts";
+    const step2Registry = reactRegistry(async () => {
+      await Deno.writeTextFile(join(portalDir, step2Path), "export const step2 = 2;\n");
+      return changesetResult("feat/step", [step2Path], "wrote step2-output");
+    });
+    const step2Executor = createComposer({ strategyRegistry: step2Registry, planWrittenFiles: sharedWrittenFiles });
+    const step2Context: IExecutionContext = {
+      trace_id: crypto.randomUUID(),
+      request_id: "step2-req",
+      request: "write step2 output",
+      plan: "write",
+      portal: "TestPortal",
+    };
+
+    // Must NOT throw: step1Path is authorized via the shared planWrittenFiles Set,
+    // step2Path via its own files_changed report.
+    const result = await step2Executor.executeStep(step2Context, stepOptions);
+    assertEquals(result.files_changed, [step2Path]);
+
+    step2Executor.dispose();
+  },
+);
+
+orchestratorTest(
+  "AgentComposer: WITHOUT a shared planWrittenFiles Set, a second fresh instance flags a prior step's uncommitted change as a security violation",
+  async () => {
+    // Documents the bug this fix addresses: two independently-constructed instances
+    // (no shared planWrittenFiles) reproduce the live regression.
+    await writeTestAgentBlueprint();
+
+    const step1Path = "src/unshared-step1-output.ts";
+    const step1Registry = reactRegistry(async () => {
+      await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+      await Deno.writeTextFile(join(portalDir, step1Path), "export const step1 = 1;\n");
+      return changesetResult("feat/step", [step1Path], "wrote step1-output");
+    });
+    const step1Executor = createComposer({ strategyRegistry: step1Registry });
+    const stepOptions: IAgentExecutionOptions = {
+      portal: "TestPortal",
+      agent_role: "test-agent",
+      security_mode: SecurityMode.HYBRID,
+      timeout_ms: 300000,
+      max_tool_calls: 100,
+      audit_enabled: true,
+    };
+    await step1Executor.executeStep(
+      {
         trace_id: crypto.randomUUID(),
-        request_id: "step1-req",
+        request_id: "unshared-step1-req",
         request: "write step1 output",
         plan: "write",
         portal: "TestPortal",
-      };
-      const stepOptions: IAgentExecutionOptions = {
-        portal: "TestPortal",
-        agent_role: "test-agent",
-        security_mode: SecurityMode.HYBRID,
-        timeout_ms: 300000,
-        max_tool_calls: 100,
-        audit_enabled: true,
-      };
-      await step1Executor.executeStep(step1Context, stepOptions);
-      step1Executor.dispose();
+      },
+      stepOptions,
+    );
+    step1Executor.dispose();
 
-      // step1Path now sits in the portal as an UNCOMMITTED, dirty file.
-      // A CliDelegateStrategy step that does not commit after itself leaves the same state.
-      const step2Path = "src/step2-output.ts";
-      const step2Registry = new StrategyRegistry();
-      step2Registry.register({
-        name: ExecutionStrategyName.REACT,
-        execute: async () => {
-          await Deno.writeTextFile(join(portalDir, step2Path), "export const step2 = 2;\n");
-          return {
-            branch: "feat/step",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: [step2Path],
-            description: "wrote step2-output",
-            tool_calls: 1,
-            execution_time_ms: 10,
-          };
-        },
-      });
-      const step2Executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        strategyRegistry: step2Registry,
-        planWrittenFiles: sharedWrittenFiles,
-      });
-      const step2Context: IExecutionContext = {
-        trace_id: crypto.randomUUID(),
-        request_id: "step2-req",
-        request: "write step2 output",
-        plan: "write",
-        portal: "TestPortal",
-      };
+    const step2Path = "src/unshared-step2-output.ts";
+    const step2Registry = reactRegistry(async () => {
+      await Deno.writeTextFile(join(portalDir, step2Path), "export const step2 = 2;\n");
+      return changesetResult("feat/step", [step2Path], "wrote step2-output");
+    });
+    const step2Executor = createComposer({ strategyRegistry: step2Registry });
 
-      // Must NOT throw: step1Path is authorized via the shared planWrittenFiles Set,
-      // step2Path via its own files_changed report.
-      const result = await step2Executor.executeStep(step2Context, stepOptions);
-      assertEquals(result.files_changed, [step2Path]);
+    await assertRejects(
+      () =>
+        step2Executor.executeStep(
+          {
+            trace_id: crypto.randomUUID(),
+            request_id: "unshared-step2-req",
+            request: "write step2 output",
+            plan: "write",
+            portal: "TestPortal",
+          },
+          stepOptions,
+        ),
+      AgentExecutionError,
+      "Security violation",
+    );
 
-      step2Executor.dispose();
-    } finally {
-      await cleanup();
-    }
+    step2Executor.dispose();
   },
-  sanitizeResources: false,
-  sanitizeOps: false,
-});
-
-Deno.test({
-  name:
-    "AgentComposer: WITHOUT a shared planWrittenFiles Set, a second fresh instance flags a prior step's uncommitted change as a security violation",
-  fn: async () => {
-    await setup();
-    try {
-      const { db, logger, pathResolver, permissions } = getServices();
-
-      // Documents the bug this fix addresses: two independently-constructed instances
-      // (no shared planWrittenFiles) reproduce the live regression.
-      await writeTestAgentBlueprint();
-
-      const step1Path = "src/unshared-step1-output.ts";
-      const step1Registry = new StrategyRegistry();
-      step1Registry.register({
-        name: ExecutionStrategyName.REACT,
-        execute: async () => {
-          await Deno.mkdir(join(portalDir, "src"), { recursive: true });
-          await Deno.writeTextFile(join(portalDir, step1Path), "export const step1 = 1;\n");
-          return {
-            branch: "feat/step",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: [step1Path],
-            description: "wrote step1-output",
-            tool_calls: 1,
-            execution_time_ms: 10,
-          };
-        },
-      });
-      const step1Executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        strategyRegistry: step1Registry,
-      });
-      const stepOptions: IAgentExecutionOptions = {
-        portal: "TestPortal",
-        agent_role: "test-agent",
-        security_mode: SecurityMode.HYBRID,
-        timeout_ms: 300000,
-        max_tool_calls: 100,
-        audit_enabled: true,
-      };
-      await step1Executor.executeStep(
-        {
-          trace_id: crypto.randomUUID(),
-          request_id: "unshared-step1-req",
-          request: "write step1 output",
-          plan: "write",
-          portal: "TestPortal",
-        },
-        stepOptions,
-      );
-      step1Executor.dispose();
-
-      const step2Path = "src/unshared-step2-output.ts";
-      const step2Registry = new StrategyRegistry();
-      step2Registry.register({
-        name: ExecutionStrategyName.REACT,
-        execute: async () => {
-          await Deno.writeTextFile(join(portalDir, step2Path), "export const step2 = 2;\n");
-          return {
-            branch: "feat/step",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: [step2Path],
-            description: "wrote step2-output",
-            tool_calls: 1,
-            execution_time_ms: 10,
-          };
-        },
-      });
-      const step2Executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        strategyRegistry: step2Registry,
-      });
-
-      await assertRejects(
-        () =>
-          step2Executor.executeStep(
-            {
-              trace_id: crypto.randomUUID(),
-              request_id: "unshared-step2-req",
-              request: "write step2 output",
-              plan: "write",
-              portal: "TestPortal",
-            },
-            stepOptions,
-          ),
-        AgentExecutionError,
-        "Security violation",
-      );
-
-      step2Executor.dispose();
-    } finally {
-      await cleanup();
-    }
-  },
-  sanitizeResources: false,
-  sanitizeOps: false,
-});
-
-Deno.test({
-  name:
-    "AgentComposer: a step executing in a git worktree (ToolRegistry.getBaseDir()) audits against the worktree, not the mounted portal",
-  fn: async () => {
-    await setup();
-    try {
-      const { db, logger, pathResolver, permissions } = getServices();
-
-      // CliDelegateStrategy.resolvePortalPath prefers the worktree over portal.target_path.
-      // The security audit must resolve the SAME path.
-      // Otherwise it audits an unrelated directory with zero diff.
-      // That would silently pass, or flag a real write as unauthorized.
-      const worktreePath = join(testDir, "worktree-checkout");
-      const addWorktree = new Deno.Command(PortalOperation.GIT, {
-        args: ["worktree", "add", "-b", "feat/worktree-step", worktreePath, "HEAD"],
-        cwd: portalDir,
-      });
-      const worktreeResult = await addWorktree.output();
-      assertEquals(worktreeResult.success, true, new TextDecoder().decode(worktreeResult.stderr));
-
-      const fakeToolRegistry: IToolRegistry = {
-        getTools: () => [],
-        execute: () => Promise.resolve({ success: true }),
-        getBaseDir: () => worktreePath,
-      };
-
-      const seenAuditPortalPaths: string[] = [];
-      class RecordingGitAuditService extends GitAuditService {
-        override auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
-          seenAuditPortalPaths.push(portalPath);
-          return super.auditGitChanges(portalPath, authorizedFiles);
-        }
-      }
-
-      const writtenPath = "src/worktree-output.ts";
-      const strategyRegistry = new StrategyRegistry();
-      strategyRegistry.register({
-        name: ExecutionStrategyName.REACT,
-        execute: async () => {
-          await Deno.mkdir(join(worktreePath, "src"), { recursive: true });
-          await Deno.writeTextFile(join(worktreePath, writtenPath), "export const x = 1;\n");
-          return {
-            branch: "feat/worktree-step",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: [writtenPath],
-            description: "wrote worktree-output",
-            tool_calls: 1,
-            execution_time_ms: 10,
-          };
-        },
-      });
-
-      const executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        strategyRegistry,
-        toolRegistry: fakeToolRegistry,
-        gitAuditService: new RecordingGitAuditService(logger),
-      });
-
-      await writeTestAgentBlueprint();
-
-      const context: IExecutionContext = {
-        trace_id: crypto.randomUUID(),
-        request_id: "worktree-write-req",
-        request: "write worktree output",
-        plan: "write",
-        portal: "TestPortal",
-      };
-      const options = testExecutionOptions();
-
-      // This must NOT throw a security violation. The write is real and reported.
-      // The audit must find it authorized by checking the worktree where it happened.
-      // The mounted portal has zero diff, so it must not decide.
-      const result = await executor.executeStep(context, options);
-      assertEquals(result.files_changed, [writtenPath]);
-      assertEquals(seenAuditPortalPaths, [worktreePath]);
-
-      executor.dispose();
-    } finally {
-      await cleanup();
-    }
-  },
-  sanitizeResources: false,
-  sanitizeOps: false,
-});
-
-Deno.test({
-  name:
-    "AgentComposer: a ToolRegistry with no explicit baseDir (defaults to config.system.root) does NOT override the audit's portal path",
-  fn: async () => {
-    await setup();
-    try {
-      const { db, logger, pathResolver, permissions } = getServices();
-
-      // With no `baseDir`, ToolRegistry.getBaseDir() falls back to config.system.root (the
-      // daemon root), which is NEVER a valid audit directory. Only a ToolRegistry explicitly
-      // scoped to a worktree should override portal.target_path — an unset baseDir must not.
-      const fakeToolRegistry: IToolRegistry = {
-        getTools: () => [],
-        execute: () => Promise.resolve({ success: true }),
-        getBaseDir: () => testConfig.system.root,
-      };
-
-      const seenAuditPortalPaths: string[] = [];
-      class RecordingGitAuditService extends GitAuditService {
-        override auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
-          seenAuditPortalPaths.push(portalPath);
-          return super.auditGitChanges(portalPath, authorizedFiles);
-        }
-      }
-
-      const writtenPath = "src/mcp-output.ts";
-      const strategyRegistry = new StrategyRegistry();
-      strategyRegistry.register({
-        name: ExecutionStrategyName.REACT,
-        execute: async () => {
-          await Deno.mkdir(join(portalDir, "src"), { recursive: true });
-          await Deno.writeTextFile(join(portalDir, writtenPath), "export const x = 1;\n");
-          return {
-            branch: "feat/mcp-step",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: [writtenPath],
-            description: "wrote mcp-output",
-            tool_calls: 1,
-            execution_time_ms: 10,
-          };
-        },
-      });
-
-      const executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        strategyRegistry,
-        toolRegistry: fakeToolRegistry,
-        gitAuditService: new RecordingGitAuditService(logger),
-      });
-
-      await writeTestAgentBlueprint();
-
-      const context: IExecutionContext = {
-        trace_id: crypto.randomUUID(),
-        request_id: "mcp-write-req",
-        request: "write mcp output",
-        plan: "write",
-        portal: "TestPortal",
-      };
-      const options = testExecutionOptions();
-
-      const result = await executor.executeStep(context, options);
-      assertEquals(result.files_changed, [writtenPath]);
-      assertEquals(seenAuditPortalPaths, [portalDir]);
-
-      executor.dispose();
-    } finally {
-      await cleanup();
-    }
-  },
-  sanitizeResources: false,
-  sanitizeOps: false,
-});
+);
 
 orchestratorTest(
-  "AgentComposer: a later read-only step does not flag a file an earlier step wrote (cross-step accumulation)",
+  "AgentComposer: a step executing in a git worktree (ToolRegistry.getBaseDir()) audits against the worktree, not the mounted portal",
   async () => {
     const { db, logger, pathResolver, permissions } = getServices();
 
-    // The first executeStep writes src/earlier.ts.
-    // The second step on the same orchestrator instance writes nothing, as a read-only verification.
-    // The first change is still uncommitted when the second audit runs.
-    // So authorization must accumulate across calls.
-    const earlierPath = "src/earlier.ts";
-    let stepIndex = 0;
-    const strategyRegistry = new StrategyRegistry();
-    strategyRegistry.register({
-      name: ExecutionStrategyName.REACT,
-      execute: async () => {
-        const isFirst = stepIndex++ === 0;
-        if (isFirst) {
-          await Deno.mkdir(join(portalDir, "src"), { recursive: true });
-          await Deno.writeTextFile(join(portalDir, earlierPath), "export const x = 1;\n");
-        }
-        return {
-          branch: "feat/step",
-          commit_sha: "0000000000000000000000000000000000000000",
-          files_changed: isFirst ? [earlierPath] : [],
-          description: isFirst ? "wrote earlier" : "read-only verification",
-          tool_calls: 1,
-          execution_time_ms: 10,
-        };
-      },
+    // CliDelegateStrategy.resolvePortalPath prefers the worktree over portal.target_path.
+    // The security audit must resolve the SAME path.
+    // Otherwise it audits an unrelated directory with zero diff.
+    // That would silently pass, or flag a real write as unauthorized.
+    const worktreePath = join(testDir, "worktree-checkout");
+    const addWorktree = new Deno.Command(PortalOperation.GIT, {
+      args: ["worktree", "add", "-b", "feat/worktree-step", worktreePath, "HEAD"],
+      cwd: portalDir,
+    });
+    const worktreeResult = await addWorktree.output();
+    assertEquals(worktreeResult.success, true, new TextDecoder().decode(worktreeResult.stderr));
+
+    const fakeToolRegistry: IToolRegistry = {
+      getTools: () => [],
+      execute: () => Promise.resolve({ success: true }),
+      getBaseDir: () => worktreePath,
+    };
+
+    const seenAuditPortalPaths: string[] = [];
+    class RecordingGitAuditService extends GitAuditService {
+      override auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
+        seenAuditPortalPaths.push(portalPath);
+        return super.auditGitChanges(portalPath, authorizedFiles);
+      }
+    }
+
+    const writtenPath = "src/worktree-output.ts";
+    const strategyRegistry = reactRegistry(async () => {
+      await Deno.mkdir(join(worktreePath, "src"), { recursive: true });
+      await Deno.writeTextFile(join(worktreePath, writtenPath), "export const x = 1;\n");
+      return changesetResult("feat/worktree-step", [writtenPath], "wrote worktree-output");
     });
 
     const executor = new AgentComposer({
@@ -1176,7 +832,117 @@ orchestratorTest(
       pathResolver,
       permissions,
       strategyRegistry,
+      toolRegistry: fakeToolRegistry,
+      gitAuditService: new RecordingGitAuditService(logger),
     });
+
+    await writeTestAgentBlueprint();
+
+    const context: IExecutionContext = {
+      trace_id: crypto.randomUUID(),
+      request_id: "worktree-write-req",
+      request: "write worktree output",
+      plan: "write",
+      portal: "TestPortal",
+    };
+    const options = testExecutionOptions();
+
+    // This must NOT throw a security violation. The write is real and reported.
+    // The audit must find it authorized by checking the worktree where it happened.
+    // The mounted portal has zero diff, so it must not decide.
+    const result = await executor.executeStep(context, options);
+    assertEquals(result.files_changed, [writtenPath]);
+    assertEquals(seenAuditPortalPaths, [worktreePath]);
+
+    executor.dispose();
+  },
+);
+
+orchestratorTest(
+  "AgentComposer: a ToolRegistry with no explicit baseDir (defaults to config.system.root) does NOT override the audit's portal path",
+  async () => {
+    const { db, logger, pathResolver, permissions } = getServices();
+
+    // With no `baseDir`, ToolRegistry.getBaseDir() falls back to config.system.root (the
+    // daemon root), which is NEVER a valid audit directory. Only a ToolRegistry explicitly
+    // scoped to a worktree should override portal.target_path — an unset baseDir must not.
+    const fakeToolRegistry: IToolRegistry = {
+      getTools: () => [],
+      execute: () => Promise.resolve({ success: true }),
+      getBaseDir: () => testConfig.system.root,
+    };
+
+    const seenAuditPortalPaths: string[] = [];
+    class RecordingGitAuditService extends GitAuditService {
+      override auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
+        seenAuditPortalPaths.push(portalPath);
+        return super.auditGitChanges(portalPath, authorizedFiles);
+      }
+    }
+
+    const writtenPath = "src/mcp-output.ts";
+    const strategyRegistry = reactRegistry(async () => {
+      await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+      await Deno.writeTextFile(join(portalDir, writtenPath), "export const x = 1;\n");
+      return changesetResult("feat/mcp-step", [writtenPath], "wrote mcp-output");
+    });
+
+    const executor = new AgentComposer({
+      config: testConfig,
+      db,
+      logger,
+      pathResolver,
+      permissions,
+      strategyRegistry,
+      toolRegistry: fakeToolRegistry,
+      gitAuditService: new RecordingGitAuditService(logger),
+    });
+
+    await writeTestAgentBlueprint();
+
+    const context: IExecutionContext = {
+      trace_id: crypto.randomUUID(),
+      request_id: "mcp-write-req",
+      request: "write mcp output",
+      plan: "write",
+      portal: "TestPortal",
+    };
+    const options = testExecutionOptions();
+
+    const result = await executor.executeStep(context, options);
+    assertEquals(result.files_changed, [writtenPath]);
+    assertEquals(seenAuditPortalPaths, [portalDir]);
+
+    executor.dispose();
+  },
+);
+
+orchestratorTest(
+  "AgentComposer: a later read-only step does not flag a file an earlier step wrote (cross-step accumulation)",
+  async () => {
+    // The first executeStep writes src/earlier.ts.
+    // The second step on the same orchestrator instance writes nothing, as a read-only verification.
+    // The first change is still uncommitted when the second audit runs.
+    // So authorization must accumulate across calls.
+    const earlierPath = "src/earlier.ts";
+    let stepIndex = 0;
+    const strategyRegistry = reactRegistry(async () => {
+      const isFirst = stepIndex++ === 0;
+      if (isFirst) {
+        await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+        await Deno.writeTextFile(join(portalDir, earlierPath), "export const x = 1;\n");
+      }
+      return {
+        branch: "feat/step",
+        commit_sha: "0000000000000000000000000000000000000000",
+        files_changed: isFirst ? [earlierPath] : [],
+        description: isFirst ? "wrote earlier" : "read-only verification",
+        tool_calls: 1,
+        execution_time_ms: 10,
+      };
+    });
+
+    const executor = createComposer({ strategyRegistry });
 
     await writeTestAgentBlueprint();
 
@@ -1208,8 +974,6 @@ orchestratorTest(
 );
 
 orchestratorTest("AgentComposer: reverts unauthorized changes in hybrid mode", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-
   // Create a tracked file and commit it
   const trackedFile = join(portalDir, "tracked.txt");
   await Deno.writeTextFile(trackedFile, "Original content");
@@ -1229,7 +993,7 @@ orchestratorTest("AgentComposer: reverts unauthorized changes in hybrid mode", a
   const untrackedFile = join(portalDir, "untracked.txt");
   await Deno.writeTextFile(untrackedFile, "Unauthorized new file");
 
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   // Detect unauthorized changes
   const unauthorizedChanges = await executor.auditGitChanges(
@@ -1261,9 +1025,7 @@ orchestratorTest("AgentComposer: reverts unauthorized changes in hybrid mode", a
 });
 
 orchestratorTest("AgentComposer: revertUnauthorizedChanges handles empty list gracefully", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   // Should not throw when given empty array
   await executor.revertUnauthorizedChanges(portalDir, []);
@@ -1272,8 +1034,6 @@ orchestratorTest("AgentComposer: revertUnauthorizedChanges handles empty list gr
 });
 
 orchestratorTest("AgentComposer: allows authorized changes via MCP tools", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-
   // Create a file and stage it (simulating MCP tool write)
   const authorizedFile = join(portalDir, "authorized.txt");
   await Deno.writeTextFile(authorizedFile, "Authorized change");
@@ -1290,7 +1050,7 @@ orchestratorTest("AgentComposer: allows authorized changes via MCP tools", async
   });
   await commitFile.output();
 
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   // Audit should find no unauthorized changes (all committed)
   const unauthorizedChanges = await executor.auditGitChanges(
@@ -1374,8 +1134,7 @@ orchestratorTest("AgentComposer: logs execution errors to IActivity Journal", as
 });
 
 orchestratorTest("AgentComposer: enforces max tool call limit", () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   const options: IAgentExecutionOptions = {
     agent_role: "test-agent",
@@ -1398,8 +1157,7 @@ orchestratorTest("AgentComposer: enforces max tool call limit", () => {
 });
 
 orchestratorTest("AgentComposer: validates review result has required fields", () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   const validResult = {
     branch: "feat/test-abc123",
@@ -1416,8 +1174,7 @@ orchestratorTest("AgentComposer: validates review result has required fields", (
 });
 
 orchestratorTest("AgentComposer: rejects invalid review result", () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   const invalidResult = {
     branch: "feat/test",
@@ -1438,8 +1195,7 @@ orchestratorTest("AgentComposer: rejects invalid review result", () => {
 // YAML Deserialization Security Tests
 
 orchestratorTest("AgentComposer: loadBlueprint rejects YAML with code execution", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   // malicious YAML attempting code execution via constructor hijacking
   const maliciousYaml = readFixtureTextSync(
@@ -1462,8 +1218,7 @@ orchestratorTest("AgentComposer: loadBlueprint rejects YAML with code execution"
 });
 
 orchestratorTest("AgentComposer: loadBlueprint validates blueprint schema", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   const invalidYaml = `---
 name: ${"a".repeat(101)}
@@ -1486,8 +1241,7 @@ Test prompt`;
 });
 
 orchestratorTest("AgentComposer: loadBlueprint sanitizes system prompts", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   const scriptYaml = readFixtureTextSync(
     import.meta.url,
@@ -1508,8 +1262,7 @@ orchestratorTest("AgentComposer: loadBlueprint sanitizes system prompts", async 
 });
 
 orchestratorTest("AgentComposer: loadBlueprint enforces size limits", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   // Create a huge prompt
   const hugePrompt =
@@ -1527,8 +1280,7 @@ orchestratorTest("AgentComposer: loadBlueprint enforces size limits", async () =
 });
 
 orchestratorTest("AgentComposer: loadBlueprint validates agent name format", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   const validYaml = `---
 name: test-agent
@@ -1550,8 +1302,7 @@ Test prompt`;
 });
 
 orchestratorTest("AgentComposer: loadBlueprint handles missing frontmatter", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   // Create blueprint without frontmatter
   const noFrontmatter = `This is just content without YAML frontmatter.`;
@@ -1574,33 +1325,13 @@ orchestratorTest("AgentComposer: loadBlueprint handles missing frontmatter", asy
 // Prompt Injection Mitigation Tests
 
 orchestratorTest("AgentComposer: sanitizes inputs in execution prompt", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
-  const blueprint: IAgentFileBlueprint = {
-    name: "test-agent",
-    model: "gpt-4o-mini",
-    provider: PROVIDER_OPENAI,
-    capabilities: [PortalOperation.READ, PortalOperation.WRITE],
-    systemPrompt: "You are a helpful assistant.",
-  };
+  const blueprint = promptBlueprint([PortalOperation.READ, PortalOperation.WRITE]);
 
-  const context: IExecutionContext = {
-    trace_id: "test-trace-123",
-    request_id: "test-request-456",
-    request: "Create a new file",
-    plan: "Test plan",
-    portal: "/test/portal",
-  };
+  const context = promptContext("Create a new file");
 
-  const options: IAgentExecutionOptions = {
-    agent_role: "test-agent",
-    portal: "/test/portal",
-    security_mode: SecurityMode.HYBRID,
-    timeout_ms: 300000,
-    max_tool_calls: 100,
-    audit_enabled: true,
-  };
+  const options = promptOptions();
 
   const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
 
@@ -1613,7 +1344,6 @@ orchestratorTest("AgentComposer: sanitizes inputs in execution prompt", async ()
 orchestratorTest(
   "fix(agent-orchestrator): execution prompt lists available tools and the TOML action-block convention",
   async () => {
-    const { db, logger, pathResolver, permissions } = getServices();
     const fakeTools: ITool[] = [
       {
         name: "read_file",
@@ -1642,39 +1372,13 @@ orchestratorTest(
       execute: () => Promise.resolve({ success: true }),
       getBaseDir: () => "/tmp",
     };
-    const executor = new AgentComposer({
-      config: testConfig,
-      db,
-      logger,
-      pathResolver,
-      permissions,
-      toolRegistry: fakeToolRegistry,
-    });
+    const executor = createComposer({ toolRegistry: fakeToolRegistry });
 
-    const blueprint: IAgentFileBlueprint = {
-      name: "test-agent",
-      model: "gpt-4o-mini",
-      provider: PROVIDER_OPENAI,
-      capabilities: [PortalOperation.READ, PortalOperation.WRITE],
-      systemPrompt: "You are a helpful assistant.",
-    };
+    const blueprint = promptBlueprint([PortalOperation.READ, PortalOperation.WRITE]);
 
-    const context: IExecutionContext = {
-      trace_id: "test-trace-123",
-      request_id: "test-request-456",
-      request: "Fix the null-safety bug",
-      plan: "Test plan",
-      portal: "/test/portal",
-    };
+    const context = promptContext("Fix the null-safety bug");
 
-    const options: IAgentExecutionOptions = {
-      agent_role: "test-agent",
-      portal: "/test/portal",
-      security_mode: SecurityMode.HYBRID,
-      timeout_ms: 300000,
-      max_tool_calls: 100,
-      audit_enabled: true,
-    };
+    const options = promptOptions();
 
     const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
 
@@ -1693,39 +1397,13 @@ orchestratorTest(
 orchestratorTest(
   "AgentComposer: execution prompt carries no Available Tools section without a tool registry",
   async () => {
-    const { db, logger, pathResolver, permissions } = getServices();
-    const executor = new AgentComposer({
-      config: testConfig,
-      db,
-      logger,
-      pathResolver,
-      permissions,
-    });
+    const executor = createComposer();
 
-    const blueprint: IAgentFileBlueprint = {
-      name: "test-agent",
-      model: "gpt-4o-mini",
-      provider: PROVIDER_OPENAI,
-      capabilities: [PortalOperation.READ],
-      systemPrompt: "You are a helpful assistant.",
-    };
+    const blueprint = promptBlueprint([PortalOperation.READ]);
 
-    const context: IExecutionContext = {
-      trace_id: "test-trace-123",
-      request_id: "test-request-456",
-      request: "Fix the null-safety bug",
-      plan: "Test plan",
-      portal: "/test/portal",
-    };
+    const context = promptContext("Fix the null-safety bug");
 
-    const options: IAgentExecutionOptions = {
-      agent_role: "test-agent",
-      portal: "/test/portal",
-      security_mode: SecurityMode.HYBRID,
-      timeout_ms: 300000,
-      max_tool_calls: 100,
-      audit_enabled: true,
-    };
+    const options = promptOptions();
 
     const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
 
@@ -1741,7 +1419,6 @@ orchestratorTest(
 orchestratorTest(
   "fix(agent-orchestrator): execution prompt's tool list is filtered by options.permitted_tools when set",
   async () => {
-    const { db, logger, pathResolver, permissions } = getServices();
     const fakeTools: ITool[] = [
       {
         name: "read_file",
@@ -1759,42 +1436,15 @@ orchestratorTest(
       execute: () => Promise.resolve({ success: true }),
       getBaseDir: () => "/tmp",
     };
-    const executor = new AgentComposer({
-      config: testConfig,
-      db,
-      logger,
-      pathResolver,
-      permissions,
-      toolRegistry: fakeToolRegistry,
-    });
+    const executor = createComposer({ toolRegistry: fakeToolRegistry });
 
-    const blueprint: IAgentFileBlueprint = {
-      name: "test-agent",
-      model: "gpt-4o-mini",
-      provider: PROVIDER_OPENAI,
-      capabilities: [PortalOperation.READ, PortalOperation.WRITE],
-      systemPrompt: "You are a helpful assistant.",
-    };
+    const blueprint = promptBlueprint([PortalOperation.READ, PortalOperation.WRITE]);
 
-    const context: IExecutionContext = {
-      trace_id: "test-trace-123",
-      request_id: "test-request-456",
-      request: "Fix the null-safety bug",
-      plan: "Test plan",
-      portal: "/test/portal",
-    };
+    const context = promptContext("Fix the null-safety bug");
 
     // Only read_file is permitted.
     // For example, the union of tools of the matched skills, intersected with the agent role's permitted_tools, is read_file alone.
-    const options: IAgentExecutionOptions = {
-      agent_role: "test-agent",
-      portal: "/test/portal",
-      security_mode: SecurityMode.HYBRID,
-      timeout_ms: 300000,
-      max_tool_calls: 100,
-      audit_enabled: true,
-      permitted_tools: ["read_file"],
-    };
+    const options = promptOptions({ permitted_tools: ["read_file"] });
 
     const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
 
@@ -1804,16 +1454,9 @@ orchestratorTest(
 );
 
 orchestratorTest("AgentComposer: handles prompt injection attempts in request", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
-  const blueprint: IAgentFileBlueprint = {
-    name: "test-agent",
-    model: "gpt-4o-mini",
-    provider: PROVIDER_OPENAI,
-    capabilities: [PortalOperation.READ, PortalOperation.WRITE],
-    systemPrompt: "You are a helpful assistant.",
-  };
+  const blueprint = promptBlueprint([PortalOperation.READ, PortalOperation.WRITE]);
 
   const maliciousContext: IExecutionContext = {
     trace_id: "test-trace-123",
@@ -1823,14 +1466,7 @@ orchestratorTest("AgentComposer: handles prompt injection attempts in request", 
     portal: "/test/portal",
   };
 
-  const options: IAgentExecutionOptions = {
-    agent_role: "test-agent",
-    portal: "/test/portal",
-    security_mode: SecurityMode.HYBRID,
-    timeout_ms: 300000,
-    max_tool_calls: 100,
-    audit_enabled: true,
-  };
+  const options = promptOptions();
 
   const prompt = await executor.buildExecutionPrompt(blueprint, maliciousContext, options);
 
@@ -1862,19 +1498,16 @@ orchestratorTest("AgentComposer: requests prompt budget before strategy executio
     },
   };
 
-  const strategyRegistry = new StrategyRegistry();
-  strategyRegistry.register({
-    name: ExecutionStrategyName.REACT,
-    execute: () =>
-      Promise.resolve({
-        branch: "feat/budget-test",
-        commit_sha: "0000000000000000000000000000000000000000",
-        files_changed: [],
-        description: "Budget test",
-        tool_calls: 0,
-        execution_time_ms: 1,
-      }),
-  });
+  const strategyRegistry = reactRegistry(() =>
+    Promise.resolve({
+      branch: "feat/budget-test",
+      commit_sha: "0000000000000000000000000000000000000000",
+      files_changed: [],
+      description: "Budget test",
+      tool_calls: 0,
+      execution_time_ms: 1,
+    })
+  );
 
   const executor = new AgentComposer({
     config: testConfig,
@@ -1954,19 +1587,16 @@ Deno.test({
 
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const strategyRegistry = new StrategyRegistry();
-      strategyRegistry.register({
-        name: ExecutionStrategyName.REACT,
-        execute: () =>
-          Promise.resolve({
-            branch: "feat/budget-policy-test",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: [],
-            description: "Budget policy test",
-            tool_calls: 0,
-            execution_time_ms: 1,
-          }),
-      });
+      const strategyRegistry = reactRegistry(() =>
+        Promise.resolve({
+          branch: "feat/budget-policy-test",
+          commit_sha: "0000000000000000000000000000000000000000",
+          files_changed: [],
+          description: "Budget policy test",
+          tool_calls: 0,
+          execution_time_ms: 1,
+        })
+      );
 
       const executor = new AgentComposer({
         config: configWithBudgetEnforcement,
@@ -2009,16 +1639,9 @@ Deno.test({
 });
 
 orchestratorTest("AgentComposer: sanitizes data-like structures in prompt", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
-  const blueprint: IAgentFileBlueprint = {
-    name: "test-agent",
-    model: "gpt-4o-mini",
-    provider: PROVIDER_OPENAI,
-    capabilities: [PortalOperation.READ, PortalOperation.WRITE],
-    systemPrompt: "You are a helpful assistant.",
-  };
+  const blueprint = promptBlueprint([PortalOperation.READ, PortalOperation.WRITE]);
 
   const dataLikeInput = `
 <META>
@@ -2035,14 +1658,7 @@ DROP TABLE sensitive_data;
     portal: "/test/portal",
   };
 
-  const options: IAgentExecutionOptions = {
-    agent_role: "test-agent",
-    portal: "/test/portal",
-    security_mode: SecurityMode.HYBRID,
-    timeout_ms: 300000,
-    max_tool_calls: 100,
-    audit_enabled: true,
-  };
+  const options = promptOptions();
 
   const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
 
@@ -2052,8 +1668,7 @@ DROP TABLE sensitive_data;
 });
 
 orchestratorTest("AgentComposer: withExecutionContext manages directory lifecycle", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   const originalDir = Deno.cwd();
   const targetDir = testDir;
@@ -2112,8 +1727,7 @@ orchestratorTest("GitAuditService: getChangedFiles returns list of modifications
 });
 
 orchestratorTest("AgentComposer: checkToolCallLimit validates threshold", () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
 
   assertEquals(executor.checkToolCallLimit(10, 5), true);
   assertEquals(executor.checkToolCallLimit(3, 5), false);
@@ -2154,8 +1768,7 @@ Deno.test({
   fn: async () => {
     await setup();
     try {
-      const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = createComposer();
 
       // We need a real path and existing files for realPathSync
       const realPortalPath = await Deno.realPath(portalDir);
@@ -2192,8 +1805,7 @@ Deno.test({
 Deno.test({
   name: "AgentComposer: requiresGitTracking correctly identifies write capabilities",
   fn: () => {
-    const { db, logger, pathResolver, permissions } = getServices();
-    const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+    const executor = createComposer();
 
     const writeBlueprint: IAgentFileBlueprint = {
       name: "write-agent",
@@ -2222,8 +1834,7 @@ Deno.test({
   fn: async () => {
     await setup();
     try {
-      const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = createComposer();
 
       // 1. Invalid YAML
       const badYamlPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "bad-yaml.md");
@@ -2280,24 +1891,13 @@ orchestratorTest("AgentComposer: applyTokenBudget uses tokenizer countTokens whe
     },
   };
 
-  const strategyRegistry = new StrategyRegistry();
-  strategyRegistry.register({
-    name: ExecutionStrategyName.REACT,
-    execute: async (
-      blueprint: IAgentFileBlueprint,
-      ctx: IExecutionContext,
-      opts: IAgentExecutionOptions,
-    ) => {
-      await executor.buildExecutionPrompt(blueprint, ctx, opts);
-      return {
-        branch: "feat/tokenizer-test",
-        commit_sha: "0000000000000000000000000000000000000000",
-        files_changed: [],
-        description: "Tokenizer test",
-        tool_calls: 1,
-        execution_time_ms: 10,
-      };
-    },
+  const strategyRegistry = reactRegistry(async (
+    blueprint: IAgentFileBlueprint,
+    ctx: IExecutionContext,
+    opts: IAgentExecutionOptions,
+  ) => {
+    await executor.buildExecutionPrompt(blueprint, ctx, opts);
+    return changesetResult("feat/tokenizer-test", [], "Tokenizer test");
   });
 
   const executor = new AgentComposer({
@@ -2373,19 +1973,9 @@ Deno.test({
         },
       };
 
-      const strategyRegistry = new StrategyRegistry();
-      strategyRegistry.register({
-        name: ExecutionStrategyName.REACT,
-        execute: () =>
-          Promise.resolve({
-            branch: "feat/summarization",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: ["src/test.ts"],
-            description: "Step",
-            tool_calls: 1,
-            execution_time_ms: 10,
-          }),
-      });
+      const strategyRegistry = reactRegistry(() =>
+        Promise.resolve(changesetResult("feat/summarization", ["src/test.ts"], "Step"))
+      );
 
       const executor = new AgentComposer({
         config: testConfig,
@@ -2444,8 +2034,7 @@ Deno.test({
   fn: async () => {
     await setup();
     try {
-      const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = createComposer();
 
       // Set budget on the ExecutionContextService (private ctx field)
       const ctxService = executor["ctx"];
@@ -2504,198 +2093,169 @@ Deno.test({
   sanitizeOps: false,
 });
 
-Deno.test({
-  name:
-    "fix(agent-orchestrator): executeStep unions matchedSkillTools and intersects with the agent role's permitted_tools",
-  fn: async () => {
-    await setup();
-    try {
-      const { db, logger, pathResolver, permissions } = getServices();
-      const fakeTools: ITool[] = [
-        {
-          name: "read_file",
-          description: "Return the full text content of a file inside a portal.",
-          parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
-        },
-        {
-          name: "write_file",
-          description: "Write or overwrite the full content of a file inside a portal.",
-          parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
-        },
-        {
-          name: "delete_file",
-          description: "Permanently delete a file inside a portal.",
-          parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
-        },
-        {
-          name: "list_directory",
-          description: "List the files and subdirectories at a path inside a portal.",
-          parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
-        },
-      ];
-      const fakeToolRegistry: IToolRegistry = {
-        getTools: () => fakeTools,
-        execute: () => Promise.resolve({ success: true }),
-        getBaseDir: () => "/tmp",
-      };
+orchestratorTest(
+  "fix(agent-orchestrator): executeStep unions matchedSkillTools and intersects with the agent role's permitted_tools",
+  async () => {
+    const fakeTools: ITool[] = [
+      {
+        name: "read_file",
+        description: "Return the full text content of a file inside a portal.",
+        parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+      },
+      {
+        name: "write_file",
+        description: "Write or overwrite the full content of a file inside a portal.",
+        parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+      },
+      {
+        name: "delete_file",
+        description: "Permanently delete a file inside a portal.",
+        parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+      },
+      {
+        name: "list_directory",
+        description: "List the files and subdirectories at a path inside a portal.",
+        parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+      },
+    ];
+    const fakeToolRegistry: IToolRegistry = {
+      getTools: () => fakeTools,
+      execute: () => Promise.resolve({ success: true }),
+      getBaseDir: () => "/tmp",
+    };
 
-      let capturedPrompt = "";
-      const mockProvider: IModelProvider = {
-        id: "mock",
-        generate: async (prompt: string): Promise<IGenerateResult> => {
-          capturedPrompt = prompt;
-          await Promise.resolve();
-          return {
-            content: REACT_DONE_RESPONSE,
-            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-            model: "mock-model",
-            provider: "mock",
-            cost_usd: 0,
-          };
-        },
-      };
+    let capturedPrompt = "";
+    const mockProvider: IModelProvider = {
+      id: "mock",
+      generate: async (prompt: string): Promise<IGenerateResult> => {
+        capturedPrompt = prompt;
+        await Promise.resolve();
+        return {
+          content: REACT_DONE_RESPONSE,
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          model: "mock-model",
+          provider: "mock",
+          cost_usd: 0,
+        };
+      },
+    };
 
-      const executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        provider: mockProvider,
-        toolRegistry: fakeToolRegistry,
-        options: {
-          // Two matched skills: one adds read_file and write_file, the other write_file and delete_file.
-          // Their union is a strict subset of the broader permitted_tools below.
-          // The test passes only if matchedSkillTools is consulted.
-          matchedSkillTools: [["read_file", "write_file"], ["write_file", "delete_file"]],
-        },
-      });
+    const executor = createComposer({
+      provider: mockProvider,
+      toolRegistry: fakeToolRegistry,
+      options: {
+        // Two matched skills: one adds read_file and write_file, the other write_file and delete_file.
+        // Their union is a strict subset of the broader permitted_tools below.
+        // The test passes only if matchedSkillTools is consulted.
+        matchedSkillTools: [["read_file", "write_file"], ["write_file", "delete_file"]],
+      },
+    });
 
-      // The agent role permits a broader set, including list_directory, which no matched skill declares.
-      // The filter must remove list_directory. It must keep delete_file, because both the skills and the role declare it.
-      // The test uses "test-agent" because getServices() allows only ["test-agent", "ollama-agent"] on TestPortal.
-      const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
-      await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
-      await Deno.writeTextFile(
-        blueprintPath,
-        "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n" +
-          'permitted_tools: ["read_file", "write_file", "delete_file", "list_directory"]\n---\nPrompt',
-      );
+    // The agent role permits a broader set, including list_directory, which no matched skill declares.
+    // The filter must remove list_directory. It must keep delete_file, because both the skills and the role declare it.
+    // The test uses "test-agent" because getServices() allows only ["test-agent", "ollama-agent"] on TestPortal.
+    const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
+    await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
+    await Deno.writeTextFile(
+      blueprintPath,
+      "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n" +
+        'permitted_tools: ["read_file", "write_file", "delete_file", "list_directory"]\n---\nPrompt',
+    );
 
-      const context: IExecutionContext = {
-        trace_id: "8e5c81f3-4236-461d-adcb-bf5741a2c0c8",
-        request_id: "r-skill-tools",
-        request: "Work",
-        plan: "Plan",
-        portal: "TestPortal",
-      };
-      const options = testExecutionOptions();
+    const context: IExecutionContext = {
+      trace_id: "8e5c81f3-4236-461d-adcb-bf5741a2c0c8",
+      request_id: "r-skill-tools",
+      request: "Work",
+      plan: "Plan",
+      portal: "TestPortal",
+    };
+    const options = testExecutionOptions();
 
-      await executor.executeStep(context, options);
+    await executor.executeStep(context, options);
 
-      const visibleTools = getVisibleToolList(capturedPrompt);
-      assertStringIncludes(visibleTools, "read_file");
-      assertStringIncludes(visibleTools, "write_file");
-      assertStringIncludes(
-        visibleTools,
-        "delete_file",
-        "delete_file is in both the skill-tools union and the agent role's permitted_tools — must survive the intersection",
-      );
-      assert(
-        !visibleTools.includes("list_directory"),
-        "list_directory must be excluded: the agent role permits it, but no matched skill's tools union includes it",
-      );
-    } finally {
-      await cleanup();
-    }
+    const visibleTools = getVisibleToolList(capturedPrompt);
+    assertStringIncludes(visibleTools, "read_file");
+    assertStringIncludes(visibleTools, "write_file");
+    assertStringIncludes(
+      visibleTools,
+      "delete_file",
+      "delete_file is in both the skill-tools union and the agent role's permitted_tools — must survive the intersection",
+    );
+    assert(
+      !visibleTools.includes("list_directory"),
+      "list_directory must be excluded: the agent role permits it, but no matched skill's tools union includes it",
+    );
   },
-  sanitizeResources: false,
-  sanitizeOps: false,
-});
+);
 
-Deno.test({
-  name:
-    "fix(agent-orchestrator): applyBlueprintToolScope canonicalizes both a matched skill's alias and the role's canonical name before intersecting (Phase 201 Step 3 GAP-1)",
-  fn: async () => {
-    await setup();
-    try {
-      const { db, logger, pathResolver, permissions } = getServices();
-      const fakeTools: ITool[] = [
-        {
-          name: "search_text",
-          description: "Search file contents by pattern inside a portal.",
-          parameters: { type: "object", properties: { pattern: { type: "string" } }, required: ["pattern"] },
-        },
-      ];
-      const fakeToolRegistry: IToolRegistry = {
-        getTools: () => fakeTools,
-        execute: () => Promise.resolve({ success: true }),
-        getBaseDir: () => "/tmp",
-      };
+orchestratorTest(
+  "fix(agent-orchestrator): applyBlueprintToolScope canonicalizes both a matched skill's alias and the role's canonical name before intersecting (Phase 201 Step 3 GAP-1)",
+  async () => {
+    const fakeTools: ITool[] = [
+      {
+        name: "search_text",
+        description: "Search file contents by pattern inside a portal.",
+        parameters: { type: "object", properties: { pattern: { type: "string" } }, required: ["pattern"] },
+      },
+    ];
+    const fakeToolRegistry: IToolRegistry = {
+      getTools: () => fakeTools,
+      execute: () => Promise.resolve({ success: true }),
+      getBaseDir: () => "/tmp",
+    };
 
-      let capturedPrompt = "";
-      const mockProvider: IModelProvider = {
-        id: "mock",
-        generate: async (prompt: string): Promise<IGenerateResult> => {
-          capturedPrompt = prompt;
-          await Promise.resolve();
-          return {
-            content: REACT_DONE_RESPONSE,
-            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-            model: "mock-model",
-            provider: "mock",
-            cost_usd: 0,
-          };
-        },
-      };
+    let capturedPrompt = "";
+    const mockProvider: IModelProvider = {
+      id: "mock",
+      generate: async (prompt: string): Promise<IGenerateResult> => {
+        capturedPrompt = prompt;
+        await Promise.resolve();
+        return {
+          content: REACT_DONE_RESPONSE,
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          model: "mock-model",
+          provider: "mock",
+          cost_usd: 0,
+        };
+      },
+    };
 
-      // The matched skill declares the alias "grep". The agent role declares the alias
-      // "grep_search". Both canonicalize to "search_text" before the intersection.
-      const executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        provider: mockProvider,
-        toolRegistry: fakeToolRegistry,
-        options: { matchedSkillTools: [["grep"]] },
-      });
+    // The matched skill declares the alias "grep". The agent role declares the alias
+    // "grep_search". Both canonicalize to "search_text" before the intersection.
+    const executor = createComposer({
+      provider: mockProvider,
+      toolRegistry: fakeToolRegistry,
+      options: { matchedSkillTools: [["grep"]] },
+    });
 
-      const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
-      await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
-      await Deno.writeTextFile(
-        blueprintPath,
-        "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n" +
-          'permitted_tools: ["grep_search"]\n---\nPrompt',
-      );
+    const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
+    await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
+    await Deno.writeTextFile(
+      blueprintPath,
+      "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n" +
+        'permitted_tools: ["grep_search"]\n---\nPrompt',
+    );
 
-      const context: IExecutionContext = {
-        trace_id: "8e5c81f3-4236-461d-adcb-bf5741a2c0c9",
-        request_id: "r-skill-alias-tools",
-        request: "Work",
-        plan: "Plan",
-        portal: "TestPortal",
-      };
-      const options = testExecutionOptions();
+    const context: IExecutionContext = {
+      trace_id: "8e5c81f3-4236-461d-adcb-bf5741a2c0c9",
+      request_id: "r-skill-alias-tools",
+      request: "Work",
+      plan: "Plan",
+      portal: "TestPortal",
+    };
+    const options = testExecutionOptions();
 
-      await executor.executeStep(context, options);
+    await executor.executeStep(context, options);
 
-      assertStringIncludes(
-        getVisibleToolList(capturedPrompt),
-        "search_text",
-        "search_text must survive the intersection: both the role's and the skill's alias must canonicalize to match",
-      );
-    } finally {
-      await cleanup();
-    }
+    assertStringIncludes(
+      getVisibleToolList(capturedPrompt),
+      "search_text",
+      "search_text must survive the intersection: both the role's and the skill's alias must canonicalize to match",
+    );
   },
-  sanitizeResources: false,
-  sanitizeOps: false,
-});
+);
 
 orchestratorTest("[scope-alias] execution-option and skill aliases resolve without a blueprint scope", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
   const fakeToolRegistry: IToolRegistry = {
     getTools: () => [{
       name: "search_text",
@@ -2719,12 +2279,7 @@ orchestratorTest("[scope-alias] execution-option and skill aliases resolve witho
       });
     },
   };
-  const executor = new AgentComposer({
-    config: testConfig,
-    db,
-    logger,
-    pathResolver,
-    permissions,
+  const executor = createComposer({
     provider: mockProvider,
     toolRegistry: fakeToolRegistry,
     options: { matchedSkillTools: [["grep"]] },
@@ -2762,8 +2317,6 @@ orchestratorTest("[scope-alias] execution-option and skill aliases resolve witho
 });
 
 orchestratorTest("AgentComposer: executeStep with provider accepts ReAct completion", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-
   const mockProvider: IModelProvider = {
     id: "mock",
     generate: async (): Promise<IGenerateResult> => {
@@ -2778,14 +2331,7 @@ orchestratorTest("AgentComposer: executeStep with provider accepts ReAct complet
     },
   };
 
-  const executor = new AgentComposer({
-    config: testConfig,
-    db,
-    logger,
-    pathResolver,
-    permissions,
-    provider: mockProvider,
-  });
+  const executor = createComposer({ provider: mockProvider });
 
   // Create blueprint file
   const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
@@ -2838,9 +2384,8 @@ Deno.test({
   name: "AgentComposer: execution context methods and state management",
   fn: async () => {
     await setup();
-    const { db, logger, pathResolver, permissions } = getServices();
     try {
-      const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = createComposer();
 
       const fakeContext: IWorkspaceExecutionContext = {
         workingDirectory: Deno.cwd(),
@@ -2879,9 +2424,8 @@ Deno.test({
   name: "AgentComposer: executeStep without a provider rejects ReAct execution",
   fn: async () => {
     await setup();
-    const { db, logger, pathResolver, permissions } = getServices();
     try {
-      const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions }); // No provider passed
+      const executor = createComposer(); // No provider passed
 
       const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
       await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
@@ -2914,13 +2458,12 @@ Deno.test({
   name: "AgentComposer: loadBlueprint throws BLUEPRINT_ACCESS_DENIED when permission denied",
   fn: async () => {
     await setup();
-    const { db, logger, pathResolver, permissions } = getServices();
     const readTextFileStub = stub(Deno, "readTextFile", () => {
       throw new Deno.errors.PermissionDenied("Access denier mock");
     });
 
     try {
-      const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = createComposer();
 
       const error = await assertRejects(
         () => executor.loadBlueprint("test-agent"),
@@ -2940,21 +2483,13 @@ Deno.test({
   name: "AgentComposer: executeStep logs and reports error when provider.generate throws",
   fn: async () => {
     await setup();
-    const { db, logger, pathResolver, permissions } = getServices();
     const mockProvider: IModelProvider = {
       id: "mock-error",
       generate: (): Promise<IGenerateResult> => Promise.reject(new Error("Provider synthetic failure")),
     };
 
     try {
-      const executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        provider: mockProvider,
-      });
+      const executor = createComposer({ provider: mockProvider });
 
       const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
       await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
@@ -2986,7 +2521,6 @@ Deno.test({
   name: "AgentComposer: executeStep rejects a response without ReAct actions or completion",
   fn: async () => {
     await setup();
-    const { db, logger, pathResolver, permissions } = getServices();
     // Provide a response with just plain text, no {} at all
     const mockProvider: IModelProvider = {
       id: "mock-plaintext",
@@ -3003,14 +2537,7 @@ Deno.test({
     };
 
     try {
-      const executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        provider: mockProvider,
-      });
+      const executor = createComposer({ provider: mockProvider });
 
       const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
       await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
@@ -3042,7 +2569,6 @@ Deno.test({
   name: "AgentComposer: executeStep rejects malformed non-ReAct output",
   fn: async () => {
     await setup();
-    const { db, logger, pathResolver, permissions } = getServices();
     // Provide a JSON-like response but invalid formatting
     const mockProvider: IModelProvider = {
       id: "mock-badjson",
@@ -3059,14 +2585,7 @@ Deno.test({
     };
 
     try {
-      const executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        provider: mockProvider,
-      });
+      const executor = createComposer({ provider: mockProvider });
 
       const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
       await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
@@ -3095,29 +2614,18 @@ Deno.test({
 });
 
 orchestratorTest("AgentComposer: tracks loop history after successful executeStep", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const strategyRegistry = new StrategyRegistry();
-  strategyRegistry.register({
-    name: ExecutionStrategyName.REACT,
-    execute: () =>
-      Promise.resolve({
-        branch: "feat/loop-test",
-        commit_sha: "0000000000000000000000000000000000000000",
-        files_changed: ["src/test.ts"],
-        description: "Loop history test step",
-        tool_calls: 2,
-        execution_time_ms: 50,
-      }),
-  });
+  const strategyRegistry = reactRegistry(() =>
+    Promise.resolve({
+      branch: "feat/loop-test",
+      commit_sha: "0000000000000000000000000000000000000000",
+      files_changed: ["src/test.ts"],
+      description: "Loop history test step",
+      tool_calls: 2,
+      execution_time_ms: 50,
+    })
+  );
 
-  const executor = new AgentComposer({
-    config: testConfig,
-    db,
-    logger,
-    pathResolver,
-    permissions,
-    strategyRegistry,
-  });
+  const executor = createComposer({ strategyRegistry });
 
   await writeTestAgentBlueprint();
 
@@ -3147,22 +2655,17 @@ orchestratorTest("AgentComposer: tracks loop history after successful executeSte
 });
 
 orchestratorTest("AgentComposer: compactLoopHistory preserves last 2 steps and compacts older ones", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
   let stepCount = 0;
-  const strategyRegistry = new StrategyRegistry();
-  strategyRegistry.register({
-    name: ExecutionStrategyName.REACT,
-    execute: () => {
-      stepCount++;
-      return Promise.resolve({
-        branch: `feat/loop-${stepCount}`,
-        commit_sha: "0000000000000000000000000000000000000000",
-        files_changed: [`src/step${stepCount}.ts`],
-        description: `Step ${stepCount} execution`,
-        tool_calls: 1,
-        execution_time_ms: stepCount * 10,
-      });
-    },
+  const strategyRegistry = reactRegistry(() => {
+    stepCount++;
+    return Promise.resolve({
+      branch: `feat/loop-${stepCount}`,
+      commit_sha: "0000000000000000000000000000000000000000",
+      files_changed: [`src/step${stepCount}.ts`],
+      description: `Step ${stepCount} execution`,
+      tool_calls: 1,
+      execution_time_ms: stepCount * 10,
+    });
   });
 
   const mockProvider: IModelProvider = {
@@ -3179,15 +2682,7 @@ orchestratorTest("AgentComposer: compactLoopHistory preserves last 2 steps and c
     },
   };
 
-  const executor = new AgentComposer({
-    config: testConfig,
-    db,
-    logger,
-    pathResolver,
-    permissions,
-    provider: mockProvider,
-    strategyRegistry,
-  });
+  const executor = createComposer({ provider: mockProvider, strategyRegistry });
 
   await writeTestAgentBlueprint();
 
@@ -3233,22 +2728,17 @@ orchestratorTest("AgentComposer: compactLoopHistory preserves last 2 steps and c
 });
 
 orchestratorTest("AgentComposer: compacted originalStepIds match compressed step IDs (GAP-36)", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
   let stepCount = 0;
-  const strategyRegistry = new StrategyRegistry();
-  strategyRegistry.register({
-    name: ExecutionStrategyName.REACT,
-    execute: () => {
-      stepCount++;
-      return Promise.resolve({
-        branch: `feat/gap36-${stepCount}`,
-        commit_sha: "0000000000000000000000000000000000000000",
-        files_changed: [`src/step${stepCount}.ts`],
-        description: `Step ${stepCount} execution`,
-        tool_calls: 1,
-        execution_time_ms: stepCount * 10,
-      });
-    },
+  const strategyRegistry = reactRegistry(() => {
+    stepCount++;
+    return Promise.resolve({
+      branch: `feat/gap36-${stepCount}`,
+      commit_sha: "0000000000000000000000000000000000000000",
+      files_changed: [`src/step${stepCount}.ts`],
+      description: `Step ${stepCount} execution`,
+      tool_calls: 1,
+      execution_time_ms: stepCount * 10,
+    });
   });
 
   const mockProvider: IModelProvider = {
@@ -3265,15 +2755,7 @@ orchestratorTest("AgentComposer: compacted originalStepIds match compressed step
     },
   };
 
-  const executor = new AgentComposer({
-    config: testConfig,
-    db,
-    logger,
-    pathResolver,
-    permissions,
-    provider: mockProvider,
-    strategyRegistry,
-  });
+  const executor = createComposer({ provider: mockProvider, strategyRegistry });
 
   await writeTestAgentBlueprint();
 
@@ -3337,20 +2819,16 @@ function sumTokens(history: Array<ILoopHistoryEntry | ICompactedEntry>): number 
 orchestratorTest("AgentComposer: executeStep triggers compaction when loopHistory budget exceeds 80%", async () => {
   const { db, logger, pathResolver, permissions } = getServices();
   let stepCount = 0;
-  const strategyRegistry = new StrategyRegistry();
-  strategyRegistry.register({
-    name: ExecutionStrategyName.REACT,
-    execute: () => {
-      stepCount++;
-      return Promise.resolve({
-        branch: `feat/loop-${stepCount}`,
-        commit_sha: "0000000000000000000000000000000000000000",
-        files_changed: [`src/step${stepCount}.ts`],
-        description: `Step ${stepCount} execution`,
-        tool_calls: 1,
-        execution_time_ms: stepCount * 10,
-      });
-    },
+  const strategyRegistry = reactRegistry(() => {
+    stepCount++;
+    return Promise.resolve({
+      branch: `feat/loop-${stepCount}`,
+      commit_sha: "0000000000000000000000000000000000000000",
+      files_changed: [`src/step${stepCount}.ts`],
+      description: `Step ${stepCount} execution`,
+      tool_calls: 1,
+      execution_time_ms: stepCount * 10,
+    });
   });
 
   // Budget with a tiny loopHistory section to trigger compaction
@@ -3433,23 +2911,14 @@ orchestratorTest("AgentComposer: applyTokenBudget emits CONTEXT_BUDGET_CONSUMED 
     return Promise.resolve();
   }) as typeof logger.info;
 
-  const strategyRegistry = new StrategyRegistry();
-  strategyRegistry.register({
-    name: ExecutionStrategyName.REACT,
-    execute: async (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
+  const strategyRegistry = reactRegistry(
+    async (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
       // buildExecutionPrompt is called within executeStep's strategy execution,
       // so currentPromptBudget is set. We just need to trigger prompt building.
       await executor.buildExecutionPrompt(_blueprint, ctx, opts);
-      return {
-        branch: "feat/budget-event-test",
-        commit_sha: "0000000000000000000000000000000000000000",
-        files_changed: [],
-        description: "Budget event test",
-        tool_calls: 1,
-        execution_time_ms: 10,
-      };
+      return changesetResult("feat/budget-event-test", [], "Budget event test");
     },
-  });
+  );
 
   const executor = new AgentComposer({
     config: testConfig,
@@ -3495,21 +2964,12 @@ orchestratorTest("AgentComposer: applyTokenBudget emits CONTEXT_SECTION_TRUNCATE
     return Promise.resolve();
   }) as typeof logger.info;
 
-  const strategyRegistry = new StrategyRegistry();
-  strategyRegistry.register({
-    name: ExecutionStrategyName.REACT,
-    execute: async (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
+  const strategyRegistry = reactRegistry(
+    async (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
       await executor.buildExecutionPrompt(_blueprint, ctx, opts);
-      return {
-        branch: "feat/trunc-event-test",
-        commit_sha: "0000000000000000000000000000000000000000",
-        files_changed: [],
-        description: "Truncation event test",
-        tool_calls: 1,
-        execution_time_ms: 10,
-      };
+      return changesetResult("feat/trunc-event-test", [], "Truncation event test");
     },
-  });
+  );
 
   const tinyMemoryAllocator = {
     allocate: (_modelId: string) =>
@@ -3573,21 +3033,12 @@ orchestratorTest("AgentComposer: applyTokenBudget emits CONTEXT_SECTION_TRUNCATE
 orchestratorTest("AgentComposer: marks stable sections in ContextCache during executeStep", async () => {
   const { db, logger, pathResolver, permissions } = getServices();
   const contextCache = new ContextCache();
-  const strategyRegistry = new StrategyRegistry();
-  strategyRegistry.register({
-    name: ExecutionStrategyName.REACT,
-    execute: async (_blueprint: IAgentFileBlueprint, _ctx: IExecutionContext, _opts: IAgentExecutionOptions) => {
+  const strategyRegistry = reactRegistry(
+    async (_blueprint: IAgentFileBlueprint, _ctx: IExecutionContext, _opts: IAgentExecutionOptions) => {
       await executor.buildExecutionPrompt(_blueprint, _ctx, _opts);
-      return {
-        branch: "feat/cache-test",
-        commit_sha: "0000000000000000000000000000000000000000",
-        files_changed: [],
-        description: "Context cache test",
-        tool_calls: 1,
-        execution_time_ms: 10,
-      };
+      return changesetResult("feat/cache-test", [], "Context cache test");
     },
-  });
+  );
 
   const executor = new AgentComposer({
     config: testConfig,
@@ -3628,30 +3079,26 @@ orchestratorTest("AgentComposer: marks stable sections in ContextCache during ex
 });
 
 orchestratorTest("AgentComposer: constructor defaults services when not provided", () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
   assertExists(executor);
   executor.dispose();
 });
 
 orchestratorTest("AgentComposer: dispose is safe to call multiple times", () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
   executor.dispose();
   executor.dispose();
 });
 
 orchestratorTest("AgentComposer: getRecentActivitiesByTraceId returns empty for unknown trace", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
   const activities = await executor.getRecentActivitiesByTraceId("nonexistent-trace");
   assertEquals(activities, []);
   executor.dispose();
 });
 
 orchestratorTest("AgentComposer: buildSubprocessPermissions sandboxed mode blocks file access", () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
   const flags = executor.buildSubprocessPermissions(SecurityMode.SANDBOXED, "/tmp/portal");
   assert(flags.some((f) => f.includes("--allow-read=NONE")));
   assert(flags.some((f) => f.includes("--allow-write=NONE")));
@@ -3659,32 +3106,20 @@ orchestratorTest("AgentComposer: buildSubprocessPermissions sandboxed mode block
 });
 
 orchestratorTest("AgentComposer defaults capability-free blueprints to ReActLoopStrategy", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
   let reactCalled = false;
-  const strategyRegistry = new StrategyRegistry();
-  strategyRegistry.register({
-    name: ExecutionStrategyName.REACT,
-    execute: () => {
-      reactCalled = true;
-      return Promise.resolve({
-        branch: "feat/react",
-        commit_sha: "1111111111111111111111111111111111111111",
-        files_changed: [],
-        description: "ReAct dispatch",
-        tool_calls: 0,
-        execution_time_ms: 1,
-      });
-    },
+  const strategyRegistry = reactRegistry(() => {
+    reactCalled = true;
+    return Promise.resolve({
+      branch: "feat/react",
+      commit_sha: "1111111111111111111111111111111111111111",
+      files_changed: [],
+      description: "ReAct dispatch",
+      tool_calls: 0,
+      execution_time_ms: 1,
+    });
   });
 
-  const executor = new AgentComposer({
-    config: testConfig,
-    db,
-    logger,
-    pathResolver,
-    permissions,
-    strategyRegistry,
-  });
+  const executor = createComposer({ strategyRegistry });
 
   await writeTestAgentBlueprint();
 
@@ -3704,152 +3139,129 @@ orchestratorTest("AgentComposer defaults capability-free blueprints to ReActLoop
 });
 
 orchestratorTest("AgentComposer: loadBlueprint delegates to BlueprintService", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = createComposer();
   await writeTestAgentBlueprint();
   const blueprint = await executor.loadBlueprint("test-agent");
   assertEquals(blueprint.name, "test-agent");
   executor.dispose();
 });
 
-Deno.test({
-  name:
-    "AgentComposer: executeStep's usage re-shape forwards cache_read_tokens/cache_creation_tokens/cost_source into agent.execution_completed (Phase 140a GAP-2)",
-  fn: async () => {
-    await setup();
-    try {
-      const { db, logger, pathResolver, permissions } = getServices();
-      const strategyRegistry = new StrategyRegistry();
-      strategyRegistry.register({
-        name: ExecutionStrategyName.REACT,
-        execute: () =>
-          Promise.resolve({
-            branch: "feat/cache-passthrough",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: [],
-            description: "Cache passthrough step",
-            tool_calls: 0,
-            execution_time_ms: 10,
-            usage: {
-              prompt_tokens: 100,
-              completion_tokens: 50,
-              cost_usd: 0.005,
-              cache_read_tokens: 20,
-              cache_creation_tokens: 80,
-              cost_source: "tracked" as const,
-            },
-          }),
-      });
+orchestratorTest(
+  "AgentComposer: executeStep's usage re-shape forwards cache_read_tokens/cache_creation_tokens/cost_source into agent.execution_completed (Phase 140a GAP-2)",
+  async () => {
+    const { db, logger, pathResolver, permissions } = getServices();
+    const strategyRegistry = reactRegistry(() =>
+      Promise.resolve({
+        branch: "feat/cache-passthrough",
+        commit_sha: "0000000000000000000000000000000000000000",
+        files_changed: [],
+        description: "Cache passthrough step",
+        tool_calls: 0,
+        execution_time_ms: 10,
+        usage: {
+          prompt_tokens: 100,
+          completion_tokens: 50,
+          cost_usd: 0.005,
+          cache_read_tokens: 20,
+          cache_creation_tokens: 80,
+          cost_source: "tracked" as const,
+        },
+      })
+    );
 
-      const executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        strategyRegistry,
-      });
+    const executor = new AgentComposer({
+      config: testConfig,
+      db,
+      logger,
+      pathResolver,
+      permissions,
+      strategyRegistry,
+    });
 
-      await writeTestAgentBlueprint();
+    await writeTestAgentBlueprint();
 
-      const trace_id = crypto.randomUUID();
-      const context: IExecutionContext = {
-        trace_id,
-        request_id: "cache-req-1",
-        request: "Cache passthrough test",
-        plan: "Step 1",
-        portal: "TestPortal",
-      };
-      const options = testExecutionOptions();
-      await executor.executeStep(context, options);
-      await db.waitForFlush();
+    const trace_id = crypto.randomUUID();
+    const context: IExecutionContext = {
+      trace_id,
+      request_id: "cache-req-1",
+      request: "Cache passthrough test",
+      plan: "Step 1",
+      portal: "TestPortal",
+    };
+    const options = testExecutionOptions();
+    await executor.executeStep(context, options);
+    await db.waitForFlush();
 
-      const activities = db.getActivitiesByTrace(trace_id);
-      const completeActivity = activities.find((a) => a.action_type === "agent.execution_completed");
-      assertExists(completeActivity);
-      const payload = JSON.parse(completeActivity.payload ?? "{}") as {
-        usage?: { cache_read_tokens?: number; cache_creation_tokens?: number; cost_source?: string };
-      };
+    const activities = db.getActivitiesByTrace(trace_id);
+    const completeActivity = activities.find((a) => a.action_type === "agent.execution_completed");
+    assertExists(completeActivity);
+    const payload = JSON.parse(completeActivity.payload ?? "{}") as {
+      usage?: { cache_read_tokens?: number; cache_creation_tokens?: number; cost_source?: string };
+    };
 
-      assertEquals(payload.usage?.cache_read_tokens, 20);
-      assertEquals(payload.usage?.cache_creation_tokens, 80);
-      assertEquals(payload.usage?.cost_source, "tracked");
+    assertEquals(payload.usage?.cache_read_tokens, 20);
+    assertEquals(payload.usage?.cache_creation_tokens, 80);
+    assertEquals(payload.usage?.cost_source, "tracked");
 
-      executor.dispose();
-    } finally {
-      await cleanup();
-    }
+    executor.dispose();
   },
-  sanitizeResources: false,
-  sanitizeOps: false,
-});
+);
 
-Deno.test({
-  name:
-    "AgentComposer: executeStep's usage re-shape forwards reasoning_tokens into agent.execution_completed (Phase 167 Step 12)",
-  fn: async () => {
-    await setup();
-    try {
-      const { db, logger, pathResolver, permissions } = getServices();
-      const strategyRegistry = new StrategyRegistry();
-      strategyRegistry.register({
-        name: ExecutionStrategyName.REACT,
-        execute: () =>
-          Promise.resolve({
-            branch: "feat/reasoning-passthrough",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: [],
-            description: "Reasoning passthrough step",
-            tool_calls: 0,
-            execution_time_ms: 10,
-            usage: {
-              prompt_tokens: 150,
-              completion_tokens: 2340,
-              cost_usd: 0.005,
-              reasoning_tokens: 2048,
-              cost_source: "tracked" as const,
-            },
-          }),
-      });
+orchestratorTest(
+  "AgentComposer: executeStep's usage re-shape forwards reasoning_tokens into agent.execution_completed (Phase 167 Step 12)",
+  async () => {
+    const { db, logger, pathResolver, permissions } = getServices();
+    const strategyRegistry = reactRegistry(() =>
+      Promise.resolve({
+        branch: "feat/reasoning-passthrough",
+        commit_sha: "0000000000000000000000000000000000000000",
+        files_changed: [],
+        description: "Reasoning passthrough step",
+        tool_calls: 0,
+        execution_time_ms: 10,
+        usage: {
+          prompt_tokens: 150,
+          completion_tokens: 2340,
+          cost_usd: 0.005,
+          reasoning_tokens: 2048,
+          cost_source: "tracked" as const,
+        },
+      })
+    );
 
-      const executor = new AgentComposer({
-        config: testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-        strategyRegistry,
-      });
+    const executor = new AgentComposer({
+      config: testConfig,
+      db,
+      logger,
+      pathResolver,
+      permissions,
+      strategyRegistry,
+    });
 
-      await writeTestAgentBlueprint();
+    await writeTestAgentBlueprint();
 
-      const trace_id = crypto.randomUUID();
-      const context: IExecutionContext = {
-        trace_id,
-        request_id: "reasoning-req-1",
-        request: "Reasoning passthrough test",
-        plan: "Step 1",
-        portal: "TestPortal",
-      };
-      const options = testExecutionOptions();
-      await executor.executeStep(context, options);
-      await db.waitForFlush();
+    const trace_id = crypto.randomUUID();
+    const context: IExecutionContext = {
+      trace_id,
+      request_id: "reasoning-req-1",
+      request: "Reasoning passthrough test",
+      plan: "Step 1",
+      portal: "TestPortal",
+    };
+    const options = testExecutionOptions();
+    await executor.executeStep(context, options);
+    await db.waitForFlush();
 
-      const activities = db.getActivitiesByTrace(trace_id);
-      const completeActivity = activities.find((a) => a.action_type === "agent.execution_completed");
-      assertExists(completeActivity);
-      const payload = JSON.parse(completeActivity.payload ?? "{}") as {
-        usage?: { reasoning_tokens?: number; cost_source?: string };
-      };
+    const activities = db.getActivitiesByTrace(trace_id);
+    const completeActivity = activities.find((a) => a.action_type === "agent.execution_completed");
+    assertExists(completeActivity);
+    const payload = JSON.parse(completeActivity.payload ?? "{}") as {
+      usage?: { reasoning_tokens?: number; cost_source?: string };
+    };
 
-      assertEquals(payload.usage?.reasoning_tokens, 2048);
-      assertEquals(payload.usage?.cost_source, "tracked");
+    assertEquals(payload.usage?.reasoning_tokens, 2048);
+    assertEquals(payload.usage?.cost_source, "tracked");
 
-      executor.dispose();
-    } finally {
-      await cleanup();
-    }
+    executor.dispose();
   },
-  sanitizeResources: false,
-  sanitizeOps: false,
-});
+);
