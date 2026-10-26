@@ -43,6 +43,40 @@ interface TokenSummary {
   providers: Record<string, { calls: number; inputTokens: number; outputTokens: number; costUsd: number }>;
 }
 
+/** Builds a flow step with the usual single-attempt retry policy unless `extra` overrides it. */
+function makeStep(
+  id: string,
+  name: string,
+  agentRole: string,
+  dependsOn: string[],
+  input: IFlowStepInput["input"],
+  extra: Partial<IFlowStepInput> = {},
+): IFlowStepInput {
+  return {
+    id,
+    name,
+    agent_role: agentRole,
+    dependsOn,
+    input,
+    retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+    ...extra,
+  };
+}
+
+/** Builds a flow definition around the given steps, defaulting to the usual `test-flow` header, output, and settings. */
+function makeFlow(steps: IFlowStepInput[], overrides: Partial<IFlowInput> = {}): IFlowInput {
+  return {
+    id: "test-flow",
+    name: "Test Flow",
+    description: "Test flow",
+    version: DEFAULT_FLOW_VERSION,
+    steps,
+    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 3, failFast: true },
+    ...overrides,
+  };
+}
+
 // Mock IAgentRunner for testing
 class MockAgentRunner implements IAgentExecutor {
   private results: Map<string, IAgentExecutionResult> = new Map();
@@ -117,25 +151,13 @@ class SequencedMockAgentRunner implements IAgentExecutor {
 
 Deno.test("FlowRunner: appends an output-shape instruction to agent step prompts (Phase 157)", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "analyze",
-      name: "Analyze",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("analyze", "Analyze", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
   ];
 
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
+  const flow = makeFlow(steps, {
     description: "A test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: "analyze", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const received: IFlowStepRequest[] = [];
   const capturingExecutor: IAgentExecutor = {
@@ -163,33 +185,18 @@ Deno.test("FlowRunner: appends an output-shape instruction to agent step prompts
 
 Deno.test("FlowRunner: an intermediate agent step gets the envelope instruction without the final-step plan wording", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "analyze",
-      name: "Analyze",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "implement",
-      name: "Implement",
-      agent_role: "agent2",
-      dependsOn: ["analyze"],
-      input: { source: FlowInputSource.STEP, stepId: "analyze", transform: "mergeAsContext" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("analyze", "Analyze", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("implement", "Implement", "agent2", ["analyze"], {
+      source: FlowInputSource.STEP,
+      stepId: "analyze",
+      transform: "mergeAsContext",
+    }),
   ];
 
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
+  const flow = makeFlow(steps, {
     description: "A test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: "implement", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const received: IFlowStepRequest[] = [];
   const capturingExecutor: IAgentExecutor = {
@@ -221,25 +228,10 @@ Deno.test("FlowRunner: an intermediate agent step gets the envelope instruction 
 // Test FlowRunner class
 Deno.test("FlowRunner: threads scenarioId/stepId from the execute request into agent steps (Phase 157)", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
   ];
 
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test IFlow as IFlow",
-    description: "A test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow(steps, { name: "Test IFlow as IFlow", description: "A test flow" });
 
   const received: IFlowStepRequest[] = [];
   const capturingExecutor: IAgentExecutor = {
@@ -265,33 +257,20 @@ Deno.test("FlowRunner: threads scenarioId/stepId from the execute request into a
 
 Deno.test("FlowRunner: each flow-internal step gets its own flow step id as flowStepId (Phase 157 Step 3)", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "step2",
-      name: "Step 2",
-      agent_role: "agent2",
-      dependsOn: ["step1"],
-      input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("step2", "Step 2", "agent2", ["step1"], {
+      source: FlowInputSource.STEP,
+      stepId: "step1",
+      transform: "passthrough",
+    }),
   ];
 
-  const flow: IFlowInput = {
-    id: "test-flow",
+  const flow = makeFlow(steps, {
     name: "Test IFlow as IFlow",
     description: "A test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: "step2", format: FlowOutputFormat.MARKDOWN },
     settings: { maxParallelism: 1, failFast: true },
-  };
+  });
 
   const received: IFlowStepRequest[] = [];
   const capturingExecutor: IAgentExecutor = {
@@ -314,33 +293,19 @@ Deno.test("FlowRunner: each flow-internal step gets its own flow step id as flow
 
 Deno.test("FlowRunner: executes simple sequential flow", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "step2",
-      name: "Step 2",
-      agent_role: "agent2",
-      dependsOn: ["step1"],
-      input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("step2", "Step 2", "agent2", ["step1"], {
+      source: FlowInputSource.STEP,
+      stepId: "step1",
+      transform: "passthrough",
+    }),
   ];
 
-  const flow: IFlowInput = {
-    id: "test-flow",
+  const flow = makeFlow(steps, {
     name: "Test IFlow as IFlow",
     description: "A test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: "step2", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockResults = {
     agent1: { thought: "Thinking 1", content: "Result 1", raw: "raw result 1" },
@@ -393,41 +358,25 @@ Deno.test("FlowRunner: executes simple sequential flow", async () => {
 
 Deno.test("FlowRunner: executes parallel steps in same wave", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "start",
-      name: "Start",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "parallel1",
-      name: "Parallel 1",
-      agent_role: "agent2",
-      dependsOn: ["start"],
-      input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "parallel2",
-      name: "Parallel 2",
-      agent_role: "agent3",
-      dependsOn: ["start"],
-      input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("start", "Start", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("parallel1", "Parallel 1", "agent2", ["start"], {
+      source: FlowInputSource.STEP,
+      stepId: "start",
+      transform: "passthrough",
+    }),
+    makeStep("parallel2", "Parallel 2", "agent3", ["start"], {
+      source: FlowInputSource.STEP,
+      stepId: "start",
+      transform: "passthrough",
+    }),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "parallel-flow",
     name: "Parallel Flow",
     description: "A flow with parallel steps",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: ["parallel1", "parallel2"], format: FlowOutputFormat.CONCAT },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockResults = {
     agent1: { thought: "Start thinking", content: "Start result", raw: "raw start" },
@@ -448,41 +397,25 @@ Deno.test("FlowRunner: executes parallel steps in same wave", async () => {
 
 Deno.test("FlowRunner: handles failFast behavior", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "step2",
-      name: "Step 2",
-      agent_role: "failing-agent",
-      dependsOn: ["step1"],
-      input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "step3",
-      name: "Step 3",
-      agent_role: "agent3",
-      dependsOn: ["step2"],
-      input: { source: FlowInputSource.STEP, stepId: "step2", transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("step2", "Step 2", "failing-agent", ["step1"], {
+      source: FlowInputSource.STEP,
+      stepId: "step1",
+      transform: "passthrough",
+    }),
+    makeStep("step3", "Step 3", "agent3", ["step2"], {
+      source: FlowInputSource.STEP,
+      stepId: "step2",
+      transform: "passthrough",
+    }),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "failfast-flow",
     name: "FailFast Flow",
     description: "A flow that fails fast",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: "step3", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockResults = {
     agent1: { thought: "Step 1 thinking", content: "Step 1 result", raw: "raw step 1" },
@@ -505,26 +438,17 @@ Deno.test("FlowRunner: handles failFast behavior", async () => {
 
 Deno.test("FlowRunner: retries a failed step until it succeeds", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Retrying Step",
-      agent_role: "flaky-agent",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      onError: { action: FlowStepOnErrorAction.RETRY, maxRetries: 2 },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep(
+      "step1",
+      "Retrying Step",
+      "flaky-agent",
+      [],
+      { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      { onError: { action: FlowStepOnErrorAction.RETRY, maxRetries: 2 } },
+    ),
   ];
 
-  const flow: IFlowInput = {
-    id: "retry-flow",
-    name: "Retry Flow",
-    description: "Retries a flaky step",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow(steps, { id: "retry-flow", name: "Retry Flow", description: "Retries a flaky step" });
 
   const mockAgentRunner = new SequencedMockAgentRunner({
     "flaky-agent": [
@@ -559,26 +483,21 @@ Deno.test("FlowRunner: retries a failed step until it succeeds", async () => {
 
 Deno.test("FlowRunner: retry backoff is skipped in test mode", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Retrying Step",
-      agent_role: "flaky-agent",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      onError: { action: FlowStepOnErrorAction.RETRY, maxRetries: 2, backoffMs: 250 },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep(
+      "step1",
+      "Retrying Step",
+      "flaky-agent",
+      [],
+      { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      { onError: { action: FlowStepOnErrorAction.RETRY, maxRetries: 2, backoffMs: 250 } },
+    ),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "retry-flow-test-mode",
     name: "Retry Flow Test Mode",
     description: "Retries a flaky step without waiting in tests",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockAgentRunner = new SequencedMockAgentRunner({
     "flaky-agent": [
@@ -621,35 +540,22 @@ Deno.test("FlowRunner: retry backoff is skipped in test mode", async () => {
 
 Deno.test("FlowRunner: falls back to a recovery step when primary step fails", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "primary",
-      name: "Primary Step",
-      agent_role: "failing-agent",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "fallback" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "fallback",
-      name: "Fallback Step",
-      agent_role: "fallback-agent",
-      dependsOn: ["primary"],
-      condition: "results['primary']?.success !== true",
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("primary", "Primary Step", "failing-agent", [], {
+      source: FlowInputSource.REQUEST,
+      transform: "passthrough",
+    }, { onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "fallback" } }),
+    makeStep("fallback", "Fallback Step", "fallback-agent", ["primary"], {
+      source: FlowInputSource.REQUEST,
+      transform: "passthrough",
+    }, { condition: "results['primary']?.success !== true" }),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "fallback-flow",
     name: "Fallback Flow",
     description: "Falls back to a secondary step",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: "primary", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockAgentRunner = new SequencedMockAgentRunner({
     "failing-agent": [new Error("primary failed")],
@@ -678,36 +584,25 @@ Deno.test("FlowRunner: falls back to a recovery step when primary step fails", a
 
 Deno.test("FlowRunner: fallback step retries according to its own onError policy", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "primary",
-      name: "Primary Step",
-      agent_role: "primary-agent",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "fallback" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "fallback",
-      name: "Fallback Step",
-      agent_role: "fallback-agent",
-      dependsOn: ["primary"],
+    makeStep("primary", "Primary Step", "primary-agent", [], {
+      source: FlowInputSource.REQUEST,
+      transform: "passthrough",
+    }, { onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "fallback" } }),
+    makeStep("fallback", "Fallback Step", "fallback-agent", ["primary"], {
+      source: FlowInputSource.REQUEST,
+      transform: "passthrough",
+    }, {
       condition: "results['primary']?.success !== true",
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
       onError: { action: FlowStepOnErrorAction.RETRY, maxRetries: 2 },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    }),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "fallback-retry-flow",
     name: "Fallback Retry Flow",
     description: "Fallback step retries when it fails",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: "primary", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockAgentRunner = new SequencedMockAgentRunner({
     "primary-agent": [new Error("primary failed")],
@@ -736,26 +631,16 @@ Deno.test("FlowRunner: fallback step retries according to its own onError policy
 
 Deno.test("FlowRunner: abort action throws FlowAbortError with originating step id", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Abort Step",
-      agent_role: "always-fails",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+    makeStep("step1", "Abort Step", "always-fails", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }, {
       onError: { action: FlowStepOnErrorAction.ABORT },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    }),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "abort-flow",
     name: "Abort Flow",
     description: "Aborts immediately on step failure",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockAgentRunner = new SequencedMockAgentRunner({
     "always-fails": [new Error("fatal failure")],
@@ -772,33 +657,20 @@ Deno.test("FlowRunner: abort action throws FlowAbortError with originating step 
 
 Deno.test("FlowRunner: continues execution when failFast is false", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "step2",
-      name: "Step 2",
-      agent_role: "failing-agent",
-      dependsOn: ["step1"],
-      input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("step2", "Step 2", "failing-agent", ["step1"], {
+      source: FlowInputSource.STEP,
+      stepId: "step1",
+      transform: "passthrough",
+    }),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "continue-flow",
     name: "Continue Flow",
     description: "A flow that continues on failure",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
     settings: { maxParallelism: 3, failFast: false },
-  };
+  });
 
   const mockResults = {
     agent1: { thought: "Step 1 thinking", content: "Step 1 result", raw: "raw step 1" },
@@ -819,57 +691,36 @@ Deno.test("FlowRunner: continues execution when failFast is false", async () => 
 
 Deno.test("FlowRunner: respects maxParallelism setting", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "start",
-      name: "Start",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "p1",
-      name: "Parallel 1",
-      agent_role: "agent2",
-      dependsOn: ["start"],
-      input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "p2",
-      name: "Parallel 2",
-      agent_role: "agent3",
-      dependsOn: ["start"],
-      input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "p3",
-      name: "Parallel 3",
-      agent_role: "agent4",
-      dependsOn: ["start"],
-      input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "p4",
-      name: "Parallel 4",
-      agent_role: "agent5",
-      dependsOn: ["start"],
-      input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("start", "Start", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("p1", "Parallel 1", "agent2", ["start"], {
+      source: FlowInputSource.STEP,
+      stepId: "start",
+      transform: "passthrough",
+    }),
+    makeStep("p2", "Parallel 2", "agent3", ["start"], {
+      source: FlowInputSource.STEP,
+      stepId: "start",
+      transform: "passthrough",
+    }),
+    makeStep("p3", "Parallel 3", "agent4", ["start"], {
+      source: FlowInputSource.STEP,
+      stepId: "start",
+      transform: "passthrough",
+    }),
+    makeStep("p4", "Parallel 4", "agent5", ["start"], {
+      source: FlowInputSource.STEP,
+      stepId: "start",
+      transform: "passthrough",
+    }),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "parallel-limit-flow",
     name: "Parallel Limit Flow",
     description: "A flow that limits parallelism",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: "p1", format: FlowOutputFormat.MARKDOWN },
     settings: { maxParallelism: 2, failFast: true },
-  };
+  });
 
   const mockResults = {
     agent1: { thought: "Start", content: "Start result", raw: "raw start" },
@@ -891,25 +742,14 @@ Deno.test("FlowRunner: respects maxParallelism setting", async () => {
 
 Deno.test("FlowRunner: generates unique flowRunId", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "unique-id-flow",
     name: "Unique ID Flow",
     description: "A flow for testing unique IDs",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockResults = {
     agent1: { thought: "Thinking", content: "Result", raw: "raw result" },
@@ -930,33 +770,16 @@ Deno.test("FlowRunner: generates unique flowRunId", async () => {
 
 Deno.test("FlowRunner: aggregates output from multiple steps", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "step2",
-      name: "Step 2",
-      agent_role: "agent2",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("step2", "Step 2", "agent2", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "aggregate-flow",
     name: "Aggregate Flow",
     description: "A flow that aggregates outputs",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: ["step1", "step2"], format: FlowOutputFormat.JSON },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockResults = {
     agent1: { thought: "Step 1 thinking", content: "Result 1", raw: "raw result 1" },
@@ -973,15 +796,12 @@ Deno.test("FlowRunner: aggregates output from multiple steps", async () => {
 });
 
 Deno.test("FlowRunner: handles empty flow", async () => {
-  const flow: IFlowInput = {
+  const flow = makeFlow([], {
     id: "empty-flow",
     name: "Empty Flow",
     description: "A flow with no steps",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [],
     output: { from: [], format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockAgentRunner = new MockAgentRunner();
   const mockLogger = new MockEventLogger();
@@ -999,35 +819,20 @@ Deno.test("FlowRunner: handles empty flow", async () => {
 
 Deno.test("FlowRunner: rejects flow with cyclic fallback chain at validation", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step-a",
-      name: "Step A",
-      agent_role: "agent-a",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+    makeStep("step-a", "Step A", "agent-a", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }, {
       onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "step-b" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "step-b",
-      name: "Step B",
-      agent_role: "agent-b",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+    }),
+    makeStep("step-b", "Step B", "agent-b", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }, {
       onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "step-a" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    }),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "cyclic-fallback-flow",
     name: "Cyclic Fallback Flow",
     description: "A flow with a cyclic fallback chain",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: "step-a", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockAgentRunner = new MockAgentRunner({
     "agent-a": "unused",
@@ -1050,45 +855,24 @@ Deno.test("FlowRunner: rejects flow with cyclic fallback chain at validation", a
 
 Deno.test("FlowRunner: accepts linear fallback chain A->B->C", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step-a",
-      name: "Step A",
-      agent_role: "agent-a",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+    makeStep("step-a", "Step A", "agent-a", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }, {
       onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "step-b" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "step-b",
-      name: "Step B",
-      agent_role: "agent-b",
-      dependsOn: ["step-a"],
+    }),
+    makeStep("step-b", "Step B", "agent-b", ["step-a"], { source: FlowInputSource.REQUEST, transform: "passthrough" }, {
       condition: "results['step-a']?.success !== true",
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
       onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "step-c" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "step-c",
-      name: "Step C",
-      agent_role: "agent-c",
-      dependsOn: ["step-b"],
+    }),
+    makeStep("step-c", "Step C", "agent-c", ["step-b"], { source: FlowInputSource.REQUEST, transform: "passthrough" }, {
       condition: "results['step-b']?.success !== true",
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    }),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "linear-fallback-flow",
     name: "Linear Fallback Flow",
     description: "A flow with a linear fallback chain",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: "step-a", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockAgentRunner = new SequencedMockAgentRunner({
     "agent-a": ["Primary result"],
@@ -1144,22 +928,12 @@ Deno.test("FlowRunner: handles step with invalid input source", async () => {
 
 Deno.test("FlowRunner: handles step depending on failed step", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "failing-agent",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "step2",
-      name: "Step 2",
-      agent_role: "agent2",
-      dependsOn: ["step1"],
-      input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "failing-agent", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("step2", "Step 2", "agent2", ["step1"], {
+      source: FlowInputSource.STEP,
+      stepId: "step1",
+      transform: "passthrough",
+    }),
   ];
 
   const flow: IFlowInput = {
@@ -1208,15 +982,11 @@ Deno.test("FlowRunner: handles circular dependencies", async () => {
     },
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "circular-flow",
     name: "Circular Flow",
     description: "A flow with circular dependencies",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockAgentRunner = new MockAgentRunner();
   const mockLogger = new MockEventLogger();
@@ -1239,25 +1009,15 @@ Deno.test("FlowRunner: handles circular dependencies", async () => {
 
 Deno.test("FlowRunner: handles agent execution throwing non-Error", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "throwing-agent",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "throwing-agent", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "throwing-flow",
     name: "Throwing Flow",
     description: "A flow with agent that throws non-Error",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
     settings: { maxParallelism: 3, failFast: false },
-  };
+  });
 
   // Mock agent runner that throws a string
   class ThrowingAgentRunner extends MockAgentRunner {
@@ -1282,33 +1042,17 @@ Deno.test("FlowRunner: handles agent execution throwing non-Error", async () => 
 
 Deno.test("FlowRunner: handles output aggregation with failed steps", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "step2",
-      name: "Step 2",
-      agent_role: "failing-agent",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("step2", "Step 2", "failing-agent", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "mixed-output-flow",
     name: "Mixed Output Flow",
     description: "A flow with mixed success/failure for output aggregation",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: ["step1", "step2"], format: FlowOutputFormat.CONCAT },
     settings: { maxParallelism: 3, failFast: false },
-  };
+  });
 
   const mockResults = {
     agent1: { thought: "Thinking 1", content: "Result 1", raw: "raw result 1" },
@@ -1326,33 +1070,17 @@ Deno.test("FlowRunner: handles output aggregation with failed steps", async () =
 
 Deno.test("FlowRunner: handles output aggregation with all failed steps", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "failing-agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "step2",
-      name: "Step 2",
-      agent_role: "failing-agent2",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "failing-agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("step2", "Step 2", "failing-agent2", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
   ];
 
-  const flow: IFlowInput = {
+  const flow = makeFlow(steps, {
     id: "all-failed-flow",
     name: "All Failed Flow",
     description: "A flow where all steps fail",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: ["step1", "step2"], format: FlowOutputFormat.JSON },
     settings: { maxParallelism: 3, failFast: false },
-  };
+  });
 
   const mockAgentRunner = new MockAgentRunner({}, ["failing-agent1", "failing-agent2"]);
   const mockLogger = new MockEventLogger();
@@ -1366,25 +1094,14 @@ Deno.test("FlowRunner: handles output aggregation with all failed steps", async 
 
 Deno.test("FlowRunner: applies mergeAsContext transform", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "test-agent",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "mergeAsContext", transformArgs: ["Input 1", "Input 2"] },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "test-agent", [], {
+      source: FlowInputSource.REQUEST,
+      transform: "mergeAsContext",
+      transformArgs: ["Input 1", "Input 2"],
+    }),
   ];
 
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow(steps);
 
   const mockResults = {
     "test-agent": { thought: "Thinking", content: "Step output", raw: "raw output" },
@@ -1401,24 +1118,13 @@ Deno.test("FlowRunner: applies mergeAsContext transform", async () => {
 });
 
 Deno.test("FlowRunner: applies extractSection transform", async () => {
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "step1",
-        name: "Step 1",
-        agent_role: "test-agent",
-        dependsOn: [],
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        input: { source: FlowInputSource.REQUEST, transform: "extractSection", transformArgs: "Requirements" },
-      },
-    ],
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow([
+    makeStep("step1", "Step 1", "test-agent", [], {
+      source: FlowInputSource.REQUEST,
+      transform: "extractSection",
+      transformArgs: "Requirements",
+    }),
+  ]);
 
   const mockAgentRunner = new MockAgentRunner({
     "test-agent": "Extracted content",
@@ -1435,24 +1141,9 @@ Deno.test("FlowRunner: applies extractSection transform", async () => {
 });
 
 Deno.test("FlowRunner: applies appendToRequest transform", async () => {
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "step1",
-        name: "Step 1",
-        agent_role: "test-agent",
-        dependsOn: [],
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        input: { source: FlowInputSource.REQUEST, transform: "appendToRequest" },
-      },
-    ],
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow([
+    makeStep("step1", "Step 1", "test-agent", [], { source: FlowInputSource.REQUEST, transform: "appendToRequest" }),
+  ]);
 
   const mockAgentRunner = new MockAgentRunner({
     "test-agent": "Transformed output",
@@ -1467,24 +1158,13 @@ Deno.test("FlowRunner: applies appendToRequest transform", async () => {
 });
 
 Deno.test("FlowRunner: applies jsonExtract transform", async () => {
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "step1",
-        name: "Step 1",
-        agent_role: "test-agent",
-        dependsOn: [],
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        input: { source: FlowInputSource.REQUEST, transform: "jsonExtract", transformArgs: "user.name" },
-      },
-    ],
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow([
+    makeStep("step1", "Step 1", "test-agent", [], {
+      source: FlowInputSource.REQUEST,
+      transform: "jsonExtract",
+      transformArgs: "user.name",
+    }),
+  ]);
 
   const mockAgentRunner = new MockAgentRunner({
     "test-agent": "Extracted value",
@@ -1501,28 +1181,13 @@ Deno.test("FlowRunner: applies jsonExtract transform", async () => {
 });
 
 Deno.test("FlowRunner: applies templateFill transform", async () => {
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "step1",
-        name: "Step 1",
-        agent_role: "test-agent",
-        dependsOn: [],
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        input: {
-          source: FlowInputSource.REQUEST,
-          transform: "templateFill",
-          transformArgs: { name: "Alice", task: "coding" },
-        },
-      },
-    ],
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow([
+    makeStep("step1", "Step 1", "test-agent", [], {
+      source: FlowInputSource.REQUEST,
+      transform: "templateFill",
+      transformArgs: { name: "Alice", task: "coding" },
+    }),
+  ]);
 
   const mockAgentRunner = new MockAgentRunner({
     "test-agent": "Filled template",
@@ -1541,24 +1206,9 @@ Deno.test("FlowRunner: applies templateFill transform", async () => {
 Deno.test("FlowRunner: applies custom transform function", async () => {
   const customTransform = (input: string) => `CUSTOM: ${input.toUpperCase()}`;
 
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "step1",
-        name: "Step 1",
-        agent_role: "test-agent",
-        dependsOn: [],
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        input: { source: FlowInputSource.REQUEST, transform: customTransform },
-      },
-    ],
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow([
+    makeStep("step1", "Step 1", "test-agent", [], { source: FlowInputSource.REQUEST, transform: customTransform }),
+  ]);
 
   const mockAgentRunner = new MockAgentRunner({
     "test-agent": "Custom transformed",
@@ -1573,24 +1223,9 @@ Deno.test("FlowRunner: applies custom transform function", async () => {
 });
 
 Deno.test("FlowRunner: handles unknown transform", async () => {
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "step1",
-        name: "Step 1",
-        agent_role: "test-agent",
-        dependsOn: [],
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        input: { source: FlowInputSource.REQUEST, transform: "unknownTransform" },
-      },
-    ],
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow([
+    makeStep("step1", "Step 1", "test-agent", [], { source: FlowInputSource.REQUEST, transform: "unknownTransform" }),
+  ]);
 
   const mockAgentRunner = new MockAgentRunner({
     "test-agent": "Should not reach here",
@@ -1613,24 +1248,9 @@ Deno.test("FlowRunner: handles transform function throwing error", async () => {
     throw new Error("Transform failed");
   };
 
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "step1",
-        name: "Step 1",
-        agent_role: "test-agent",
-        dependsOn: [],
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        input: { source: FlowInputSource.REQUEST, transform: failingTransform },
-      },
-    ],
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow([
+    makeStep("step1", "Step 1", "test-agent", [], { source: FlowInputSource.REQUEST, transform: failingTransform }),
+  ]);
 
   const mockAgentRunner = new MockAgentRunner({
     "test-agent": "Should not reach here",
@@ -1649,24 +1269,16 @@ Deno.test("FlowRunner: handles transform function throwing error", async () => {
 });
 
 Deno.test("FlowRunner: handles invalid transform args for extractSection", async () => {
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "step1",
-        name: "Step 1",
-        agent_role: "test-agent",
-        dependsOn: [],
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        input: { source: FlowInputSource.REQUEST, transform: "extractSection" }, // Missing transformArgs
-      },
-    ],
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow([
+    {
+      id: "step1",
+      name: "Step 1",
+      agent_role: "test-agent",
+      dependsOn: [],
+      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+      input: { source: FlowInputSource.REQUEST, transform: "extractSection" }, // Missing transformArgs
+    },
+  ]);
 
   const mockAgentRunner = new MockAgentRunner({
     "test-agent": "Should not reach here",
@@ -1685,24 +1297,16 @@ Deno.test("FlowRunner: handles invalid transform args for extractSection", async
 });
 
 Deno.test("FlowRunner: handles invalid transform args for jsonExtract", async () => {
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "step1",
-        name: "Step 1",
-        agent_role: "test-agent",
-        dependsOn: [],
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        input: { source: FlowInputSource.REQUEST, transform: "jsonExtract" }, // Missing transformArgs
-      },
-    ],
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow([
+    {
+      id: "step1",
+      name: "Step 1",
+      agent_role: "test-agent",
+      dependsOn: [],
+      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+      input: { source: FlowInputSource.REQUEST, transform: "jsonExtract" }, // Missing transformArgs
+    },
+  ]);
 
   const mockAgentRunner = new MockAgentRunner({
     "test-agent": "Should not reach here",
@@ -1721,24 +1325,13 @@ Deno.test("FlowRunner: handles invalid transform args for jsonExtract", async ()
 });
 
 Deno.test("FlowRunner: handles invalid transform args for templateFill", async () => {
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "step1",
-        name: "Step 1",
-        agent_role: "test-agent",
-        dependsOn: [],
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        input: { source: FlowInputSource.REQUEST, transform: "templateFill", transformArgs: "not-an-object" },
-      },
-    ],
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow([
+    makeStep("step1", "Step 1", "test-agent", [], {
+      source: FlowInputSource.REQUEST,
+      transform: "templateFill",
+      transformArgs: "not-an-object",
+    }),
+  ]);
 
   const mockAgentRunner = new MockAgentRunner({
     "test-agent": "Should not reach here",
@@ -1755,24 +1348,9 @@ Deno.test("FlowRunner: handles invalid transform args for templateFill", async (
 });
 
 Deno.test("FlowRunner: handles agent execution throwing error in Promise.allSettled", async () => {
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "step1",
-        name: "Step 1",
-        agent_role: "throwing-agent",
-        dependsOn: [],
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      },
-    ],
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: false },
-  };
+  const flow = makeFlow([
+    makeStep("step1", "Step 1", "throwing-agent", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+  ], { settings: { maxParallelism: 3, failFast: false } });
 
   const mockAgentRunner = new MockAgentRunner({}, ["throwing-agent"]);
   const mockLogger = new MockEventLogger();
@@ -1785,32 +1363,10 @@ Deno.test("FlowRunner: handles agent execution throwing error in Promise.allSett
 });
 
 Deno.test("FlowRunner: handles aggregate output with concat format", async () => {
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Test flow",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "step1",
-        name: "Step 1",
-        agent_role: "test-agent1",
-        dependsOn: [],
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      },
-      {
-        id: "step2",
-        name: "Step 2",
-        agent_role: "test-agent2",
-        dependsOn: [],
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      },
-    ],
-    output: { from: ["step1", "step2"], format: FlowOutputFormat.CONCAT },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow([
+    makeStep("step1", "Step 1", "test-agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("step2", "Step 2", "test-agent2", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+  ], { output: { from: ["step1", "step2"], format: FlowOutputFormat.CONCAT } });
 
   const mockAgentRunner = new MockAgentRunner({
     "test-agent1": "Output 1",
@@ -1828,34 +1384,18 @@ Deno.test("FlowRunner: handles aggregate output with concat format", async () =>
 // Condition evaluation tests
 Deno.test("FlowRunner: executes step when condition evaluates to true", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "step2",
-      name: "Step 2",
-      agent_role: "agent2",
-      dependsOn: ["step1"],
-      condition: "results['step1'].success === true",
-      input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("step2", "Step 2", "agent2", ["step1"], {
+      source: FlowInputSource.STEP,
+      stepId: "step1",
+      transform: "passthrough",
+    }, { condition: "results['step1'].success === true" }),
   ];
 
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
+  const flow = makeFlow(steps, {
     description: "Flow with conditions",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: "step2", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockAgentRunner = new MockAgentRunner({
     agent1: "Step 1 result",
@@ -1881,14 +1421,7 @@ Deno.test("FlowRunner: executes step when condition evaluates to true", async ()
 
 Deno.test("FlowRunner: skips step when condition evaluates to false", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
     {
       id: "step2",
       name: "Step 2 (will be skipped)",
@@ -1898,25 +1431,17 @@ Deno.test("FlowRunner: skips step when condition evaluates to false", async () =
       input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
       retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
     },
-    {
-      id: "step3",
-      name: "Step 3",
-      agent_role: "agent3",
-      dependsOn: ["step1"],
-      input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step3", "Step 3", "agent3", ["step1"], {
+      source: FlowInputSource.STEP,
+      stepId: "step1",
+      transform: "passthrough",
+    }),
   ];
 
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
+  const flow = makeFlow(steps, {
     description: "Flow with skipped step",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: "step3", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockAgentRunner = new MockAgentRunner({
     agent1: "Step 1 result",
@@ -1944,42 +1469,20 @@ Deno.test("FlowRunner: skips step when condition evaluates to false", async () =
 
 Deno.test("FlowRunner: handles complex conditions with multiple results", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "analyze",
-      name: "Analyze",
-      agent_role: "analyzer",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "review",
-      name: "Review",
-      agent_role: "reviewer",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
-    {
-      id: "final",
-      name: "Final",
-      agent_role: "finalizer",
-      dependsOn: ["analyze", "review"],
-      condition: "results['analyze'].success && results['review'].success",
-      input: { source: FlowInputSource.AGGREGATE, from: ["analyze", "review"], transform: "mergeAsContext" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("analyze", "Analyze", "analyzer", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("review", "Review", "reviewer", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("final", "Final", "finalizer", ["analyze", "review"], {
+      source: FlowInputSource.AGGREGATE,
+      from: ["analyze", "review"],
+      transform: "mergeAsContext",
+    }, { condition: "results['analyze'].success && results['review'].success" }),
   ];
 
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
+  const flow = makeFlow(steps, {
     description: "Flow with complex conditions",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: "final", format: FlowOutputFormat.MARKDOWN },
     settings: { maxParallelism: 3, failFast: false },
-  };
+  });
 
   const mockAgentRunner = new MockAgentRunner({
     analyzer: "Analysis complete",
@@ -1999,14 +1502,7 @@ Deno.test("FlowRunner: handles complex conditions with multiple results", async 
 
 Deno.test("FlowRunner: handles condition syntax errors gracefully", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-    },
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
     {
       id: "step2",
       name: "Step 2",
@@ -2018,15 +1514,10 @@ Deno.test("FlowRunner: handles condition syntax errors gracefully", async () => 
     },
   ];
 
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
+  const flow = makeFlow(steps, {
     description: "Flow with invalid condition",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
     output: { from: "step2", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   const mockAgentRunner = new MockAgentRunner({
     agent1: "Step 1 result",
@@ -2067,25 +1558,12 @@ class CapturingMockAgentRunner implements IAgentExecutor {
 
 Deno.test("FlowRunner: passes step-level skills to agent executor", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }, {
       skills: ["code-review", "testing"],
-    },
+    }),
   ];
 
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Flow with step skills",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow(steps, { description: "Flow with step skills" });
 
   const mockAgentRunner = new CapturingMockAgentRunner();
   const mockLogger = new MockEventLogger();
@@ -2226,13 +1704,7 @@ Deno.test("FlowRunner: multi-step flow with mixed skills", async () => {
 
 Deno.test("FlowRunner: flow without any skills passes undefined", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-    },
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
   ];
 
   const flow: IFlowInput = {
@@ -2259,25 +1731,12 @@ Deno.test("FlowRunner: flow without any skills passes undefined", async () => {
 
 Deno.test("FlowRunner: logs hasSkills in input.prepared event", async () => {
   const steps: IFlowStepInput[] = [
-    {
-      id: "step1",
-      name: "Step 1",
-      agent_role: "agent1",
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }, {
       skills: ["test-skill"],
-    },
+    }),
   ];
 
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "Flow for logging test",
-    version: DEFAULT_FLOW_VERSION,
-    steps,
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow(steps, { description: "Flow for logging test" });
 
   const mockAgentRunner = new CapturingMockAgentRunner();
   const mockLogger = new MockEventLogger();
@@ -2449,32 +1908,17 @@ Deno.test("[regression] FlowRunner: aggregates token usage across flow execution
     db: mockDb,
   });
 
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
+  const flow = makeFlow([
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+    makeStep("step2", "Step 2", "agent2", ["step1"], {
+      source: FlowInputSource.STEP,
+      stepId: "step1",
+      transform: "passthrough",
+    }),
+  ], {
     description: "A test flow for token aggregation",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "step1",
-        name: "Step 1",
-        agent_role: "agent1",
-        dependsOn: [],
-        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-      },
-      {
-        id: "step2",
-        name: "Step 2",
-        agent_role: "agent2",
-        dependsOn: ["step1"],
-        input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-      },
-    ],
     output: { from: "step2", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  });
 
   await runner.execute(flow as IFlow, { userPrompt: "test request", traceId: "test-trace-123" });
 
@@ -2514,24 +1958,9 @@ Deno.test("[regression] FlowRunner: handles zero token usage gracefully", async 
     db: mockDb,
   });
 
-  const flow: IFlowInput = {
-    id: "test-flow",
-    name: "Test Flow",
-    description: "A test flow for zero token usage",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "step1",
-        name: "Step 1",
-        agent_role: "agent1",
-        dependsOn: [],
-        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-      },
-    ],
-    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 3, failFast: true },
-  };
+  const flow = makeFlow([
+    makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
+  ], { description: "A test flow for zero token usage" });
 
   await runner.execute(flow as IFlow, { userPrompt: "test request", traceId: "test-trace-456" });
 
@@ -2554,26 +1983,17 @@ Deno.test("FlowRunner: retry aborts when cost budget is exceeded", async () => {
 
   try {
     const steps: IFlowStepInput[] = [
-      {
-        id: "step1",
-        name: "Retrying Step",
-        agent_role: "flaky-agent",
-        dependsOn: [],
-        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-        onError: { action: FlowStepOnErrorAction.RETRY, maxRetries: 2, backoffMs: 250 },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-      },
+      makeStep("step1", "Retrying Step", "flaky-agent", [], {
+        source: FlowInputSource.REQUEST,
+        transform: "passthrough",
+      }, { onError: { action: FlowStepOnErrorAction.RETRY, maxRetries: 2, backoffMs: 250 } }),
     ];
 
-    const flow: IFlowInput = {
+    const flow = makeFlow(steps, {
       id: "retry-budget-flow",
       name: "Retry Budget Flow",
       description: "Aborts retries once cumulative cost exceeds the configured budget",
-      version: DEFAULT_FLOW_VERSION,
-      steps,
-      output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
-      settings: { maxParallelism: 3, failFast: true },
-    };
+    });
 
     const mockAgentRunner = new SequencedMockAgentRunner({
       "flaky-agent": [
