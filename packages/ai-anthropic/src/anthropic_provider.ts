@@ -55,7 +55,7 @@ import type { JSONValue } from "@exaix/core";
 export type AnthropicProviderOptions = IBaseProviderOptions;
 
 /** Error thrown when tool_choice conflicts with extended thinking. */
-export class AnthropicToolChoiceThinkingConflictError extends ModelProviderError {
+class AnthropicToolChoiceThinkingConflictError extends ModelProviderError {
   constructor(toolChoiceType: string) {
     super(
       `tool_choice type "${toolChoiceType}" is not supported alongside extended thinking`,

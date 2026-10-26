@@ -53,15 +53,15 @@ export const DEFAULT_GOOGLE_RETRY_BACKOFF_MS: number = configurable({
 });
 
 export const PROVIDER_GOOGLE = ProviderType.GOOGLE;
-export const PROVIDER_GOOGLE_DESCRIPTION = "Google's Gemini models for multimodal AI";
-export const PROVIDER_GOOGLE_CAPABILITIES = ["chat", "streaming", "vision"] as const;
-export const PROVIDER_GOOGLE_STRENGTHS = ["simple", "multimodal", "fast"] as const;
-export const PROVIDER_GOOGLE_COST_TIER = ProviderCostTier.FREEMIUM;
+const PROVIDER_GOOGLE_DESCRIPTION = "Google's Gemini models for multimodal AI";
+const PROVIDER_GOOGLE_CAPABILITIES = ["chat", "streaming", "vision"] as const;
+const PROVIDER_GOOGLE_STRENGTHS = ["simple", "multimodal", "fast"] as const;
+const PROVIDER_GOOGLE_COST_TIER = ProviderCostTier.FREEMIUM;
 
 /** Model context window in tokens. */
-export const GOOGLE_CONTEXT_WINDOW = 1_000_000;
+const GOOGLE_CONTEXT_WINDOW = 1_000_000;
 /** Reference price in USD per million tokens for routing. */
-export const GOOGLE_COST_PER_MTok = 1.25;
+const GOOGLE_COST_PER_MTok = 1.25;
 
 export const GOOGLE_PROVIDER_METADATA = {
   name: PROVIDER_GOOGLE,

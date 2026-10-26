@@ -55,20 +55,20 @@ export const PROVIDER_CLAUDE_CLI = ProviderType.CLAUDE_CLI;
 export const PROVIDER_OPENCODE_CLI = ProviderType.OPENCODE_CLI;
 export const PROVIDER_CODEX_CLI = ProviderType.CODEX_CLI;
 
-export const PROVIDER_CLAUDE_CLI_DESCRIPTION =
+const PROVIDER_CLAUDE_CLI_DESCRIPTION =
   "Headless Claude Code CLI, billed against a Claude Pro/Max subscription (no metered API key)";
-export const PROVIDER_OPENCODE_CLI_DESCRIPTION =
+const PROVIDER_OPENCODE_CLI_DESCRIPTION =
   "Headless opencode CLI, billed at the configured model's flat/subscription rate (no metered API key)";
-export const PROVIDER_CODEX_CLI_DESCRIPTION =
+const PROVIDER_CODEX_CLI_DESCRIPTION =
   "Headless Codex CLI, billed against a ChatGPT Codex subscription (no metered API key)";
-export const PROVIDER_CLI_DELEGATE_CAPABILITIES = ["chat"] as const;
-export const PROVIDER_CLI_DELEGATE_STRENGTHS = ["subscription-billed", "no-api-key"] as const;
-export const PROVIDER_CLI_DELEGATE_COST_TIER = ProviderCostTier.FREE;
+const PROVIDER_CLI_DELEGATE_CAPABILITIES = ["chat"] as const;
+const PROVIDER_CLI_DELEGATE_STRENGTHS = ["subscription-billed", "no-api-key"] as const;
+const PROVIDER_CLI_DELEGATE_COST_TIER = ProviderCostTier.FREE;
 
 /** Headless CLI agents carry large native context windows. */
-export const CLI_DELEGATE_CONTEXT_WINDOW = 200_000;
+const CLI_DELEGATE_CONTEXT_WINDOW = 200_000;
 /** Subscription-billed subprocess — no metered per-token cost. */
-export const CLI_DELEGATE_COST_PER_MTok = 0;
+const CLI_DELEGATE_COST_PER_MTok = 0;
 
 export const CLAUDE_CLI_PROVIDER_METADATA = {
   name: PROVIDER_CLAUDE_CLI,

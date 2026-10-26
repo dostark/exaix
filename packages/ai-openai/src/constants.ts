@@ -19,7 +19,6 @@ export const DEFAULT_OPENAI_MODEL: string = configurable({
   description: "Default model identifier for openai provider",
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com";
 export const DEFAULT_OPENAI_ENDPOINT: string = configurable({
   key: "openai.endpoint",
   default: "https://api.openai.com/v1/chat/completions",
@@ -30,8 +29,6 @@ export const DEFAULT_OPENAI_ENDPOINT: string = configurable({
 /** The Responses endpoint sits beside the Chat Completions endpoint on the same host. */
 export const OPENAI_CHAT_COMPLETIONS_PATH = "/chat/completions";
 export const OPENAI_RESPONSES_PATH = "/responses";
-export const DEFAULT_OPENAI_EMBED_BASE_URL = "https://api.openai.com/v1";
-export const DEFAULT_OPENAI_EMBED_CHUNK_SIZE = 8000;
 export const DEFAULT_OPENAI_TIMEOUT_MS: number = configurable({
   key: "openai.timeout_ms",
   default: 30000,
@@ -61,15 +58,15 @@ export const DEFAULT_OPENAI_RETRY_BACKOFF_MS: number = configurable({
 });
 
 export const PROVIDER_OPENAI = ProviderType.OPENAI;
-export const PROVIDER_OPENAI_DESCRIPTION = "OpenAI's GPT models for versatile AI tasks";
-export const PROVIDER_OPENAI_CAPABILITIES = ["chat", "streaming", "vision", "tools"] as const;
-export const PROVIDER_OPENAI_STRENGTHS = ["general", "creative", "complex"] as const;
-export const PROVIDER_OPENAI_COST_TIER = ProviderCostTier.PAID;
+const PROVIDER_OPENAI_DESCRIPTION = "OpenAI's GPT models for versatile AI tasks";
+const PROVIDER_OPENAI_CAPABILITIES = ["chat", "streaming", "vision", "tools"] as const;
+const PROVIDER_OPENAI_STRENGTHS = ["general", "creative", "complex"] as const;
+const PROVIDER_OPENAI_COST_TIER = ProviderCostTier.PAID;
 
 /** Capability metadata — context window (tokens). */
 export const OPENAI_CONTEXT_WINDOW = 1_050_000;
 /** Capability metadata — reference price in USD per 1M tokens (routing constraint). */
-export const OPENAI_COST_PER_MTok = 2.5;
+const OPENAI_COST_PER_MTok = 2.5;
 
 export const OPENAI_PROVIDER_METADATA = {
   name: PROVIDER_OPENAI,

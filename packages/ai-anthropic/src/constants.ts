@@ -55,15 +55,15 @@ export const DEFAULT_ANTHROPIC_API_VERSION = "2023-06-01";
 export const DEFAULT_ANTHROPIC_MAX_TOKENS = 4096;
 
 export const PROVIDER_ANTHROPIC = ProviderType.ANTHROPIC;
-export const PROVIDER_ANTHROPIC_DESCRIPTION = "Anthropic's Claude models for high-quality AI responses";
-export const PROVIDER_ANTHROPIC_CAPABILITIES = ["chat", "streaming", "vision"] as const;
-export const PROVIDER_ANTHROPIC_STRENGTHS = ["complex", "reasoning", "analysis"] as const;
-export const PROVIDER_ANTHROPIC_COST_TIER = ProviderCostTier.PAID;
+const PROVIDER_ANTHROPIC_DESCRIPTION = "Anthropic's Claude models for high-quality AI responses";
+const PROVIDER_ANTHROPIC_CAPABILITIES = ["chat", "streaming", "vision"] as const;
+const PROVIDER_ANTHROPIC_STRENGTHS = ["complex", "reasoning", "analysis"] as const;
+const PROVIDER_ANTHROPIC_COST_TIER = ProviderCostTier.PAID;
 
 /** Capability metadata — context window for Claude turns (tokens). */
 export const ANTHROPIC_CONTEXT_WINDOW = 1_000_000;
 /** Capability metadata — reference price in USD per 1M tokens (routing constraint). */
-export const ANTHROPIC_COST_PER_MTok = 3;
+const ANTHROPIC_COST_PER_MTok = 3;
 
 export const ANTHROPIC_PROVIDER_METADATA = {
   name: PROVIDER_ANTHROPIC,

@@ -53,19 +53,17 @@ export const DEFAULT_OLLAMA_RETRY_BACKOFF_MS: number = configurable({
   swap: SwapClass.HOT,
 });
 export const DEFAULT_OLLAMA_EMBED_CHUNK_SIZE = 1000;
-export const OLLAMA_EMBED_CACHE_MAX_ENTRIES = 512;
-
 export const LLAMA_MODEL_PATTERN = /^(codellama:|llama[0-9.]*:)/;
 
 export const PROVIDER_OLLAMA = ProviderType.OLLAMA;
-export const PROVIDER_OLLAMA_DESCRIPTION = "Local Ollama instance for running open-source models";
-export const PROVIDER_OLLAMA_CAPABILITIES = ["chat", "streaming"] as const;
-export const PROVIDER_OLLAMA_STRENGTHS = ["simple", "local", "privacy"] as const;
-export const PROVIDER_OLLAMA_COST_TIER = ProviderCostTier.FREE;
+const PROVIDER_OLLAMA_DESCRIPTION = "Local Ollama instance for running open-source models";
+const PROVIDER_OLLAMA_CAPABILITIES = ["chat", "streaming"] as const;
+const PROVIDER_OLLAMA_STRENGTHS = ["simple", "local", "privacy"] as const;
+const PROVIDER_OLLAMA_COST_TIER = ProviderCostTier.FREE;
 
-export const OLLAMA_CONTEXT_WINDOW = 8192;
+const OLLAMA_CONTEXT_WINDOW = 8192;
 /** Local inference has no metered token cost. */
-export const OLLAMA_COST_PER_MTok = 0;
+const OLLAMA_COST_PER_MTok = 0;
 
 export const OLLAMA_PROVIDER_METADATA = {
   name: PROVIDER_OLLAMA,

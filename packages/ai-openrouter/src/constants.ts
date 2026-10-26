@@ -18,7 +18,6 @@ export const DEFAULT_OPENROUTER_MODEL: string = configurable({
   description: "Default model identifier for openrouter provider",
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 export const DEFAULT_OPENROUTER_ENDPOINT: string = configurable({
   key: "openrouter.endpoint",
   default: "https://openrouter.ai/api/v1/chat/completions",
@@ -138,10 +137,10 @@ export const OPENROUTER_MS_PER_SECOND = 1000;
 export const DEFAULT_OPENROUTER_API_KEY_ENV = "OPENROUTER_API_KEY";
 
 export const PROVIDER_OPENROUTER = ProviderType.OPENROUTER;
-export const PROVIDER_OPENROUTER_DESCRIPTION = "OpenRouter unified gateway to many models";
-export const PROVIDER_OPENROUTER_CAPABILITIES = ["chat", "multi-model"] as const;
-export const PROVIDER_OPENROUTER_STRENGTHS = ["model-variety", "auto-fallback", "unified-billing"] as const;
-export const PROVIDER_OPENROUTER_COST_TIER = ProviderCostTier.PAID;
+const PROVIDER_OPENROUTER_DESCRIPTION = "OpenRouter unified gateway to many models";
+const PROVIDER_OPENROUTER_CAPABILITIES = ["chat", "multi-model"] as const;
+const PROVIDER_OPENROUTER_STRENGTHS = ["model-variety", "auto-fallback", "unified-billing"] as const;
+const PROVIDER_OPENROUTER_COST_TIER = ProviderCostTier.PAID;
 
 /** Estimator model for each OpenRouter tokenizer family that has a matching estimator tokenizer.
  *  Every other family keeps the configured model id, and the estimator falls back to characters per token. */

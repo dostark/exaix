@@ -88,7 +88,7 @@ export class OpenRouterRoutingError extends ModelProviderError {
 }
 
 /** A 429 that keeps the wait OpenRouter asked for. It stays retryable like the shared rate limit error. */
-export class OpenRouterRateLimitError extends RateLimitError {
+class OpenRouterRateLimitError extends RateLimitError {
   readonly retryAfterMs?: number;
 
   constructor(provider: string, message: string, retryAfterMs?: Opt<number, Reason.OptionalContext>) {
