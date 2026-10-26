@@ -553,6 +553,8 @@ Deno.test("shared-path entries are exclusive so a shared-path writer never overl
   );
   assertEquals(sharedPathPool.map((test) => test.file), [
     "tests/integration/agent/mcp_handshake_test.ts",
+    "packages/lint-policy/tests/unslop_cli_integration_test.ts",
+    "packages/lint-policy/tests/lint_policy_move_equivalence_test.ts",
   ]);
   for (const test of sharedPathPool) {
     assertEquals(test.exclusive, true, `${test.file} must be exclusive`);

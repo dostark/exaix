@@ -53,6 +53,8 @@ export function classifyRepoPath(repoPath: string): PathClass {
 const IGNORE_GLOBS = (CATALOG.ignore ?? []).map((entry) =>
   globToRegExp(entry.glob, { extended: true, globstar: true })
 );
+/** Generated portal policy directories from the installer or the scenario preflight. */
+const GENERATED_OUTPUT_GLOBS = [globToRegExp("**/lint/**", { extended: true, globstar: true })];
 
 const GLOB_CACHE = new Map<string, RegExp>();
 
@@ -1450,7 +1452,7 @@ async function runAllChecks(manualPaths: string[]): Promise<void> {
               includeDirs: false,
               exts: WALK_EXTENSIONS,
               followSymlinks: false,
-              skip: IGNORE_GLOBS,
+              skip: [...IGNORE_GLOBS, ...GENERATED_OUTPUT_GLOBS],
             })
           ) {
             await checkFile(entry.path);
@@ -1468,7 +1470,7 @@ async function runAllChecks(manualPaths: string[]): Promise<void> {
       includeDirs: false,
       exts: WALK_EXTENSIONS,
       followSymlinks: false,
-      skip: IGNORE_GLOBS,
+      skip: [...IGNORE_GLOBS, ...GENERATED_OUTPUT_GLOBS],
     })
   ) {
     if (!entry.isFile) {

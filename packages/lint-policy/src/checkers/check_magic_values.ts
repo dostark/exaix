@@ -175,6 +175,8 @@ async function main(): Promise<void> {
         /[/\\]node_modules[/\\]/,
         /[/\\]dist[/\\]/,
         /[/\\]coverage[/\\]/,
+        // Generated portal policy directories from the installer or the scenario preflight.
+        /[/\\]lint[/\\]/,
         // Self-tooling skip: the checkers' own literals are rule regexes and messages,
         // not extractable magic values (mirrors check_code_style's catalog self-exemption).
         /check_magic_values\.ts$/,

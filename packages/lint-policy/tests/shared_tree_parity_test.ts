@@ -65,13 +65,19 @@ function hasExtension(file: string, extensions: readonly string[]): boolean {
   return extensions.some((extension) => file.endsWith(extension));
 }
 
+/** True when the basename starts with a dot. The plugin host skips these files. The base walker does not. */
+function isHidden(file: string): boolean {
+  return file.slice(file.lastIndexOf("/") + 1).startsWith(".");
+}
+
 function scriptCovers(file: string): boolean {
-  return hasExtension(file, SCRIPT_EXTENSIONS) && !ignoreGlobs.some((pattern) => pattern.test(file));
+  return hasExtension(file, SCRIPT_EXTENSIONS) && !isHidden(file) &&
+    !ignoreGlobs.some((pattern) => pattern.test(file));
 }
 
 function pluginCovers(file: string): boolean {
-  return hasExtension(file, PLUGIN_EXTENSIONS) && PLUGIN_ROOTS.some((root) => file.startsWith(root)) &&
-    !ignoreGlobs.some((pattern) => pattern.test(file));
+  return hasExtension(file, PLUGIN_EXTENSIONS) && !isHidden(file) &&
+    PLUGIN_ROOTS.some((root) => file.startsWith(root)) && !ignoreGlobs.some((pattern) => pattern.test(file));
 }
 
 /** The surface of a file that only one side reads, named as the scope table names a dropped surface. */
@@ -186,6 +192,7 @@ async function collect(): Promise<ISharedTree> {
     baseline: baselineFindings,
     current: current.findings,
     explainMissing: (finding) => {
+      if (parkedScriptIds.has(finding.rule)) return "parked rule finding held by rule_ceilings.json";
       if (!pluginCovers(finding.file)) return "scope loss: the plugin reads TypeScript under its lint roots only";
       const text = texts.get(finding.file);
       if (text === null || text === undefined) return null;

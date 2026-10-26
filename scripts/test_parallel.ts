@@ -374,6 +374,18 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
   { file: "packages/ai/tests/providers/mock_strict_env_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "tests/scenario_framework/tests/unit/strict_scoped_per_step_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "packages/lint-policy/tests/shared_tree_parity_test.ts", reasons: [IsolationReason.pressure] },
+  // These rewrite unslop.config.json and run whole-tree tasks.
+  // A neighbour can see a half-written config and fail.
+  {
+    file: "packages/lint-policy/tests/unslop_cli_integration_test.ts",
+    reasons: [IsolationReason.sharedPath, IsolationReason.pressure],
+    exclusive: true,
+  },
+  {
+    file: "packages/lint-policy/tests/lint_policy_move_equivalence_test.ts",
+    reasons: [IsolationReason.sharedPath, IsolationReason.pressure],
+    exclusive: true,
+  },
 ];
 
 /** Derived so the Parallel Batch's `--ignore` list is unchanged. Content and order come from SEQUENTIAL_TESTS. */

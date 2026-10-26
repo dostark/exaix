@@ -18,9 +18,9 @@ FROM denoland/deno:2.8.2 AS builder
 ENV DENO_DIR=/deno-dir
 WORKDIR /app
 
-# Install the Node/build toolchain FIRST: the `deno cache` below runs npm lifecycle
-# scripts (the tree-sitter grammar packages compile via node-gyp), which need node,
-# npm, make, g++ and python3 on PATH. Installing after the cache makes it fail.
+# Install the Node/build toolchain FIRST: some npm packages still resolve native
+# artifacts at install time, and `deno bundle` needs the platform esbuild binary.
+# Installing it after the cache would make the cache step fail.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates curl nodejs npm build-essential python3 \
   && rm -rf /var/lib/apt/lists/*
@@ -28,6 +28,19 @@ RUN apt-get update \
 # Copy the module-graph inputs first so dependency caching is its own layer.
 COPY deno.json deno.lock ./
 COPY unslop.config.json layout.json ./
+
+# Warm the tree-sitter grammar tarballs before the source copy. They are only read as
+# WASM from the npm cache (the native install scripts are not allowed), and this layer
+# depends only on the lockfile, so a source change never refetches or rebuilds them.
+RUN --mount=type=cache,target=/cache/deno,sharing=locked \
+    printf '{"nodeModulesDir":"none"}\n' > /tmp/grammar-cache.json \
+    && DENO_DIR=/cache/deno deno cache --config /tmp/grammar-cache.json \
+      npm:web-tree-sitter@0.26.12 npm:tree-sitter@0.25.0 npm:tree-sitter-python@0.25.0 \
+      npm:tree-sitter-rust@0.24.0 npm:tree-sitter-go@0.25.0 npm:tree-sitter-java@0.23.5 \
+      npm:tree-sitter-javascript@0.25.0 \
+    && cp -a /cache/deno/. /deno-dir/ \
+    && rm /tmp/grammar-cache.json
+
 COPY packages/ packages/
 COPY apps/ apps/
 COPY exaix-team/ exaix-team/
@@ -133,7 +146,7 @@ ENTRYPOINT ["deno", "run", \
 # delegate's filesystem. Solution leakage becomes structurally impossible, and the
 # opencode permission config / claude tool flags become defense-in-depth.
 # The jail does NOT run the Exaix daemon, so it deliberately skips the builder's
-# deno module-graph cache (which needs native tree-sitter compilation) — it only
+# deno module-graph cache (which carries the grammar and native packages) — it only
 # needs node (for Claude Code) and the delegate CLIs.
 # Build:   docker build --target eval-jail -t exaix-eval-jail .
 # ---------------------------------------------------------------------------
@@ -184,13 +197,19 @@ COPY docs/CODE_STYLE.md docs/CODE_STYLE.md
 # Warm the driver entrypoint's import graph (plus the test/package/app graph) so the
 # worker resolves every module with `--network none`. Cache the entrypoint, not the
 # whole scripts/ tree: `deno task check` excludes scripts/, so a directory-wide cache
-# can fail on an unrelated script error. The grammar packages are imported through a
-# computed specifier (`npm:tree-sitter-<lang>/…wasm`), so name them explicitly or a
-# Batch-2 file that builds a workspace would fetch them from npm at run time.
-RUN deno cache --config deno.json scripts/test_container_driver.ts tests/ packages/ apps/ exaix-team/ unslop-ts/ \
-  packages/core/tests/skills/skill_folder_performance_test.ts \
-  npm:web-tree-sitter@0.26.12 npm:tree-sitter-python@0.25.0 npm:tree-sitter-rust@0.24.0 npm:tree-sitter-go@0.25.0 npm:tree-sitter-java@0.23.5 \
-  npm:tree-sitter@0.25.0
+# can fail on an unrelated script error. The computed `npm:tree-sitter-<lang>/…wasm`
+# specifiers are warmed by the builder's source-independent grammar layer.
+# Cache the engine entries and source, not `unslop-ts/`: its Bun/Node examples import
+# packages (for example `typescript-eslint`) that the parent import map does not define.
+RUN deno cache --config deno.json scripts/test_container_driver.ts tests/ packages/ apps/ exaix-team/ \
+  unslop-ts/deno.json unslop-ts/mod.ts unslop-ts/deno.ts unslop-ts/eslint.ts unslop-ts/src \
+  packages/core/tests/skills/skill_folder_performance_test.ts
+
+# `deno bundle` fetches the esbuild platform binary lazily. The portal policy installer runs
+# it in the network-isolated test container, so warm the exact dependency during the image build.
+RUN printf 'export const probe = 1;\n' > /tmp/bundle_probe.ts \
+  && deno bundle --config deno.json /tmp/bundle_probe.ts -o /tmp/bundle_probe.js \
+  && rm -f /tmp/bundle_probe.ts /tmp/bundle_probe.js
 
 # The worker runs as `--user <host-uid>:<host-gid>`; make the warmed cache writable by
 # any uid (the runtime stage pins a fixed uid; dev-test cannot).

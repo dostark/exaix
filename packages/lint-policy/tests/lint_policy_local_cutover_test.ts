@@ -12,7 +12,8 @@ import { dirname, fromFileUrl, join } from "@std/path";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
 const CEILINGS_PATH = "packages/lint-policy/rule_ceilings.json";
-const FIRST_CUTOVER_COMMIT = "772fbc96c081baedec792cf77bb5eb2b7f27bf75";
+/** The production-only ratchet starts at this cut-over commit. Earlier values mixed test scope. */
+const FIRST_CUTOVER_COMMIT = "3467f53ccf95b9664514294c45f26a1df6ba8fa5";
 const ENGINE_SUBMODULE = "unslop-ts";
 const GITLINK_FIELDS = 3;
 

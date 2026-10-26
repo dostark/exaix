@@ -277,6 +277,8 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "packages/ai/tests/providers/mock_strict_env_test.ts",
   "tests/scenario_framework/tests/unit/strict_scoped_per_step_test.ts",
   "packages/lint-policy/tests/shared_tree_parity_test.ts",
+  "packages/lint-policy/tests/unslop_cli_integration_test.ts",
+  "packages/lint-policy/tests/lint_policy_move_equivalence_test.ts",
 ];
 
 Deno.test("SEQUENTIAL_FILES matches the required isolation files and order", () => {
