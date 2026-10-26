@@ -282,57 +282,9 @@ export class RequestRouter {
 
     const { selectedAgentRole, policyDecision } = await this.selectAgentRole(request, agentRole);
 
-    if (policyDecision) {
-      await this.logRoutingDecision(requestId, traceId, {
-        explicit_agent_role: agentRole,
-      }, policyDecision);
-
-      if (policyDecision.strategy === "capability_fallback" || policyDecision.strategy === "static_fallback") {
-        await this.eventLogger.log({
-          action: DomainEventType.RoutingFallbackUsed,
-          target: requestId,
-          payload: {
-            fallback_agent_role: selectedAgentRole,
-            strategy: policyDecision.strategy,
-            reason: "Routing policy returned a fallback candidate",
-          },
-          traceId,
-        });
-      }
-
-      if (policyDecision.experimentApplied) {
-        await this.eventLogger.log({
-          action: DomainEventType.RoutingExperimentApplied,
-          target: requestId,
-          payload: {
-            selected_agent_role: policyDecision.selectedAgentRole,
-            selected_version: policyDecision.selectedVersion,
-            strategy: policyDecision.strategy,
-            matched_rule_id: policyDecision.matchedRuleId ?? null,
-            experiment_bucket: policyDecision.experimentBucket ?? null,
-          },
-          traceId,
-        });
-      }
-    }
-
-    // Load blueprint
-    const blueprint = await this.loadBlueprint(selectedAgentRole);
-    if (!blueprint) {
-      throw new RoutingError(`Agent blueprint not found: ${selectedAgentRole}`, requestId);
-    }
-
-    // Create parsed request
-    const parsedRequest = this.createParsedRequest(request, Boolean(policyDecision));
-
-    // Execute agent
-    const result = await this.runAgentRunnerWithJournal(blueprint, parsedRequest, requestId, traceId);
-
-    return {
-      type: RequestKind.AGENT_ROLE,
-      agentRole: selectedAgentRole,
-      result,
-    };
+    return await this.executeSelectedAgent(request, selectedAgentRole, policyDecision, {
+      explicit_agent_role: agentRole,
+    });
   }
 
   public async routeToDefaultAgent(request: RouterRequest): Promise<IRoutingDecision> {
@@ -348,10 +300,23 @@ export class RequestRouter {
 
     const { selectedAgentRole, policyDecision } = await this.selectAgentRole(request, undefined);
 
+    return await this.executeSelectedAgent(request, selectedAgentRole, policyDecision, {
+      default_agent_role: this.defaultAgentRole,
+    });
+  }
+
+  /** Logs the routing-policy outcome, loads the selected blueprint, and runs it, shared by routeToAgent and
+   *  routeToDefaultAgent. */
+  private async executeSelectedAgent(
+    request: RouterRequest,
+    selectedAgentRole: string,
+    policyDecision: Opt<IRoutingPolicyDecision, Reason.OptionalInput>,
+    decisionContext: Record<string, JSONValue>,
+  ): Promise<IRoutingDecision> {
+    const { traceId, requestId } = request;
+
     if (policyDecision) {
-      await this.logRoutingDecision(requestId, traceId, {
-        default_agent_role: this.defaultAgentRole,
-      }, policyDecision);
+      await this.logRoutingDecision(requestId, traceId, decisionContext, policyDecision);
 
       if (policyDecision.strategy === "capability_fallback" || policyDecision.strategy === "static_fallback") {
         await this.eventLogger.log({
@@ -382,16 +347,12 @@ export class RequestRouter {
       }
     }
 
-    // Load selected blueprint
     const blueprint = await this.loadBlueprint(selectedAgentRole);
     if (!blueprint) {
       throw new RoutingError(`Agent blueprint not found: ${selectedAgentRole}`, requestId);
     }
 
-    // Create parsed request
     const parsedRequest = this.createParsedRequest(request, Boolean(policyDecision));
-
-    // Execute default agent
     const result = await this.runAgentRunnerWithJournal(blueprint, parsedRequest, requestId, traceId);
 
     return {
