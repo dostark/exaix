@@ -666,6 +666,10 @@ barrel cannot police.
 | ----------------------- | --------------------------------------------------------------- |
 | `barrel-only-reexports` | A module re-export in a file that is not `mod.ts` or `index.ts` |
 
+The engine rule `barrel-only-reexports` owns this check; the policy enables it as
+`exaix/barrel-only-reexports` with the default barrel suffixes. Its `barrelSuffixes` and `allowPaths`
+options tune the suffixes and exempt path prefixes.
+
 Test files and helpers are exempt, because compatibility shims under `tests/` intentionally forward
 test support. When a symbol belongs to a lower layer, import it from that layer and re-export it from
 the package barrel instead of the module that happens to declare it.

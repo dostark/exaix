@@ -1380,17 +1380,6 @@
         "allowPartialMockInTests": true,
         "allowNeverAnyMockInTests": true
       }
-    },
-    "barrel-only-reexports": {
-      "engine": "script",
-      "severity": "error",
-      "scope": "prod",
-      "codeStyle": "docs/CODE_STYLE.md#barrel-only-reexports",
-      "tags": [
-        "module-structure",
-        "package"
-      ],
-      "limits": "Reads the file's export declarations; test paths and barrel modules (mod.ts, index.ts) are exempt."
     }
   }
 }

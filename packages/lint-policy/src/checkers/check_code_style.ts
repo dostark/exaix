@@ -1266,24 +1266,6 @@ function scanFileLines(
   };
 }
 
-const BARREL_SUFFIXES = ["/mod.ts", "/index.ts"] as const;
-const NON_BARREL_TEST_PATH = /(^|\/)(tests?|testing)\//;
-
-/** Errors on a module re-export outside a barrel module, where test paths and barrels are exempt. */
-function checkBarrelOnlyReExports(sourceFile: ts.SourceFile, repoPath: string): void {
-  if (BARREL_SUFFIXES.some((suffix) => repoPath.endsWith(suffix))) return;
-  if (NON_BARREL_TEST_PATH.test(repoPath)) return;
-  if (repoPath.endsWith("_test.ts") || repoPath.endsWith(".test.ts")) return;
-  ts.forEachChild(sourceFile, (node) => {
-    if (!ts.isExportDeclaration(node) || !node.moduleSpecifier) return;
-    const line = sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1;
-    console.log(
-      `ERROR [barrel-only-reexports] ${repoPath}:${line} – A module re-export belongs in the package barrel (mod.ts or index.ts), not in an ordinary module.`,
-    );
-    errorCount++;
-  });
-}
-
 function checkFileFromText(path: string, text: string, catalog: ICatalog): void {
   const repoPath = path.startsWith(REPO_ROOT + "/") ? path.slice(REPO_ROOT.length + 1) : path;
   const lines = text.split(/\r?\n/);
@@ -1293,7 +1275,6 @@ function checkFileFromText(path: string, text: string, catalog: ICatalog): void 
 
   // AST-based layer-aware constant import check (supersedes the old regex rule)
   checkLayerLeaks(sourceFile, repoPath);
-  checkBarrelOnlyReExports(sourceFile, repoPath);
 
   const templateLiteralLines = collectTemplateLiteralLines(sourceFile);
 

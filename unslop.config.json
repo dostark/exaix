@@ -103,14 +103,6 @@
     }
   },
   "rules": {
-    "barrel-only-reexports": {
-      "level": "error",
-      "scope": "prod",
-      "tags": [
-        "module-structure",
-        "package"
-      ]
-    },
     "duplicate-constant": {
       "level": "error",
       "options": {
@@ -1674,6 +1666,12 @@
         ],
         "pluginRuleId": "exaix/require-optional-wrapper"
       }
+    },
+    "exaix/barrel-only-reexports": {
+      "level": "error",
+      "scope": "prod",
+      "optIn": true,
+      "reason": "Opt-in: keeps module re-exports in barrel files (mod.ts, index.ts) so each symbol has one public path."
     }
   }
 }
