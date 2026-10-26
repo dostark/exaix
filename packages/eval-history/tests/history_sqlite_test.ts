@@ -7,39 +7,10 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { EvalScoringMode } from "@exaix/core";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
-import { EvalSqliteStore, type IEvalHistoryEntry } from "@exaix/eval-history";
-
-function makeTestEntry(overrides: Partial<IEvalHistoryEntry> = {}): IEvalHistoryEntry {
-  return {
-    run_id: crypto.randomUUID(),
-    scenario_id: "test-scenario",
-    pack: "smoke",
-    outcome: "success",
-    mode: "auto",
-    scoring_mode: EvalScoringMode.ADDITIVE,
-    suite_score: 0.95,
-    passed: true,
-    timestamp: new Date().toISOString(),
-    component_versions: { binary_version: "1.0.3", schema_version: "1.5.0" },
-    ...overrides,
-  };
-}
-
-function withStore(fn: (store: EvalSqliteStore, dbPath: string) => void): void {
-  const dbPath = join(Deno.makeTempDirSync({ prefix: "scenario-framework-sqlite-" }), "eval.db");
-  const store = new EvalSqliteStore(dbPath);
-  try {
-    fn(store, dbPath);
-  } finally {
-    store.close();
-    try {
-      Deno.removeSync(dbPath);
-    } catch { /* ok */ }
-  }
-}
+import { EvalSqliteStore } from "@exaix/eval-history";
+import { makeTestEntry, withStore } from "./helpers/eval_store_fixtures.ts";
 
 Deno.test("[ScenarioFrameworkHistorySqlite] initialize creates all tables and applies all migrations", () => {
   withStore((store) => {

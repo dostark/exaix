@@ -12,25 +12,9 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { EvalScoringMode } from "@exaix/core";
 import { join } from "@std/path";
-import { EvalSqliteStore, type IEvalHistoryEntry } from "@exaix/eval-history";
-
-function makeTestEntry(overrides: Partial<IEvalHistoryEntry> = {}): IEvalHistoryEntry {
-  return {
-    run_id: crypto.randomUUID(),
-    scenario_id: "test-scenario",
-    pack: "smoke",
-    outcome: "success",
-    mode: "auto",
-    scoring_mode: EvalScoringMode.ADDITIVE,
-    suite_score: 0.95,
-    passed: true,
-    timestamp: new Date().toISOString(),
-    component_versions: { binary_version: "1.0.3", schema_version: "1.5.0" },
-    ...overrides,
-  };
-}
+import { EvalSqliteStore } from "@exaix/eval-history";
+import { makeTestEntry } from "./helpers/eval_store_fixtures.ts";
 
 function withStore(fn: (store: EvalSqliteStore, dbPath: string) => void): void {
   const dbPath = join(Deno.makeTempDirSync({ prefix: "scenario-framework-sqlite-step-duration-" }), "eval.db");
