@@ -14,6 +14,22 @@ import type { PlanStatus } from "@exaix/core/status";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
 import type { IDisplayService } from "@exaix/core/types";
 import { type JSONObject, toSafeJson } from "@exaix/core/types";
+import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
+
+/** Prints the added, updated, and removed steps of an amendment patch. */
+function displayAmendmentChanges(display: IDisplayService, patch: IPlanAmendmentPatch): void {
+  if (patch.adds.length > 0) {
+    display.info("Adds", "", {});
+    patch.adds.forEach((a) => display.info(`+ Step ${a.number}`, a.title, { content: a.content }));
+  }
+  if (patch.updates.length > 0) {
+    display.info("Updates", "", {});
+    patch.updates.forEach((u) => display.info(`~ Step ${u.number}`, u.title, { content: u.content }));
+  }
+  if (patch.removes.length > 0) {
+    display.info("Removes", "", { steps: patch.removes.join(", ") });
+  }
+}
 
 export interface IPlanActionContext {
   planCommands: PlanCommands;
@@ -247,17 +263,7 @@ export async function handlePlanAmendmentShow(
       created_at: patch.createdAt,
     });
 
-    if (patch.adds.length > 0) {
-      display.info("Adds", "", {});
-      patch.adds.forEach((a) => display.info(`+ Step ${a.number}`, a.title, { content: a.content }));
-    }
-    if (patch.updates.length > 0) {
-      display.info("Updates", "", {});
-      patch.updates.forEach((u) => display.info(`~ Step ${u.number}`, u.title, { content: u.content }));
-    }
-    if (patch.removes.length > 0) {
-      display.info("Removes", "", { steps: patch.removes.join(", ") });
-    }
+    displayAmendmentChanges(display, patch);
   } catch (error) {
     display.error("cli.error", "plan amendment show", {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -350,17 +356,7 @@ export async function handlePlanAmendmentShowAll(
         affected_steps: patch.affectedRemainingStepIds.length,
       });
 
-      if (patch.adds.length > 0) {
-        display.info("Adds", "", {});
-        patch.adds.forEach((a) => display.info(`+ Step ${a.number}`, a.title, { content: a.content }));
-      }
-      if (patch.updates.length > 0) {
-        display.info("Updates", "", {});
-        patch.updates.forEach((u) => display.info(`~ Step ${u.number}`, u.title, { content: u.content }));
-      }
-      if (patch.removes.length > 0) {
-        display.info("Removes", "", { steps: patch.removes.join(", ") });
-      }
+      displayAmendmentChanges(display, patch);
     }
   } catch (error) {
     display.error("cli.error", "plan amendment show-all", {

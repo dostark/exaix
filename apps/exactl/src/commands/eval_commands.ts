@@ -1630,7 +1630,7 @@ function padRight(s: string, len: number): string {
   return s.length >= len ? s : s + " ".repeat(len - s.length);
 }
 
-interface IHarnessLiftViewFamilyRow {
+interface IViewFamilyBase {
   family: string;
   tool: string;
   provider: string;
@@ -1652,8 +1652,31 @@ interface IHarnessLiftViewFamilyRow {
 
 interface IHarnessLiftViewReport {
   arm: { kind: string; metric: string };
-  families: IHarnessLiftViewFamilyRow[];
+  families: IViewFamilyBase[];
   unmatchedWarningCount: number;
+}
+
+function formatMeanDelta(family: IViewFamilyBase): string {
+  return `${family.comparison.meanDelta >= 0 ? "+" : ""}${family.comparison.meanDelta.toFixed(3)}`;
+}
+
+function renderFamilyBasis(family: IViewFamilyBase): void {
+  console.log(
+    `  basis: control=${family.basis.controlCell} (runs: ${
+      family.basis.controlRunIds.join(", ") || "—"
+    }) | treatment=${family.basis.treatmentCell} (runs: ${family.basis.treatmentRunIds.join(", ") || "—"})`,
+  );
+  if (family.basis.unmatchedTaskIds.length > 0) {
+    console.log(`  excluded (no matched pair): ${family.basis.unmatchedTaskIds.join(", ")}`);
+  }
+}
+
+function renderUnmatchedWarning(unmatchedWarningCount: number): void {
+  if (unmatchedWarningCount > 0) {
+    console.log(
+      `Warning: ${unmatchedWarningCount} unmatched task(s) had no matched pair and were excluded`,
+    );
+  }
 }
 
 function renderHarnessLiftTable(stdout: string): void {
@@ -1676,7 +1699,7 @@ function renderHarnessLiftTable(stdout: string): void {
     } ${padRight(TASKS_COLUMN, 6)} ${padRight("MeanDelta", 10)} ${padRight("StdevDelta", 10)} NoEffect`,
   );
   for (const family of report.families) {
-    const meanDelta = `${family.comparison.meanDelta >= 0 ? "+" : ""}${family.comparison.meanDelta.toFixed(3)}`;
+    const meanDelta = formatMeanDelta(family);
     const verdict = family.comparison.noEffect ? "no-effect" : "effect";
     console.log(
       `  ${padRight(family.family, 24)} ${padRight(family.tool, 12)} ${padRight(family.provider, 10)} ${
@@ -1685,41 +1708,13 @@ function renderHarnessLiftTable(stdout: string): void {
         padRight(family.comparison.stdevDelta.toFixed(3), 10)
       } ${verdict}`,
     );
-    console.log(
-      `  basis: control=${family.basis.controlCell} (runs: ${
-        family.basis.controlRunIds.join(", ") || "—"
-      }) | treatment=${family.basis.treatmentCell} (runs: ${family.basis.treatmentRunIds.join(", ") || "—"})`,
-    );
-    if (family.basis.unmatchedTaskIds.length > 0) {
-      console.log(`  excluded (no matched pair): ${family.basis.unmatchedTaskIds.join(", ")}`);
-    }
+    renderFamilyBasis(family);
   }
-  if (report.unmatchedWarningCount > 0) {
-    console.log(
-      `Warning: ${report.unmatchedWarningCount} unmatched task(s) had no matched pair and were excluded`,
-    );
-  }
+  renderUnmatchedWarning(report.unmatchedWarningCount);
 }
 
-interface IAblationViewFamilyRow {
-  family: string;
-  tool: string;
-  provider: string;
-  model: string | null;
+interface IAblationViewFamilyRow extends IViewFamilyBase {
   subsystem: string;
-  taskCount: number;
-  comparison: {
-    meanDelta: number;
-    stdevDelta: number;
-    noEffect: boolean;
-  };
-  basis: {
-    controlCell: string;
-    treatmentCell: string;
-    controlRunIds: string[];
-    treatmentRunIds: string[];
-    unmatchedTaskIds: string[];
-  };
 }
 
 interface IAblationViewReport {
@@ -1751,7 +1746,7 @@ function renderAblationTable(stdout: string): void {
     } ${padRight(TASKS_COLUMN, 6)} ${padRight("MeanDelta", 10)} ${padRight("StdevDelta", 10)} NoEffect`,
   );
   for (const family of report.families) {
-    const meanDelta = `${family.comparison.meanDelta >= 0 ? "+" : ""}${family.comparison.meanDelta.toFixed(3)}`;
+    const meanDelta = formatMeanDelta(family);
     const verdict = family.comparison.noEffect ? "no-effect" : "effect";
     console.log(
       `  ${padRight(family.family, 24)} ${padRight(family.subsystem, 16)} ${padRight(family.tool, 12)} ${
@@ -1760,18 +1755,7 @@ function renderAblationTable(stdout: string): void {
         padRight(family.comparison.stdevDelta.toFixed(3), 10)
       } ${verdict}`,
     );
-    console.log(
-      `  basis: control=${family.basis.controlCell} (runs: ${
-        family.basis.controlRunIds.join(", ") || "—"
-      }) | treatment=${family.basis.treatmentCell} (runs: ${family.basis.treatmentRunIds.join(", ") || "—"})`,
-    );
-    if (family.basis.unmatchedTaskIds.length > 0) {
-      console.log(`  excluded (no matched pair): ${family.basis.unmatchedTaskIds.join(", ")}`);
-    }
+    renderFamilyBasis(family);
   }
-  if (report.unmatchedWarningCount > 0) {
-    console.log(
-      `Warning: ${report.unmatchedWarningCount} unmatched task(s) had no matched pair and were excluded`,
-    );
-  }
+  renderUnmatchedWarning(report.unmatchedWarningCount);
 }

@@ -422,9 +422,9 @@ export class ReviewCommands extends BaseCommand {
     return resolve(dirname(portalEntryPath), linkTarget);
   }
 
-  private async findRepoForBranch(branchName: string): Promise<string> {
+  /** Lists the git repositories that the Portals directory links to. A missing directory gives an empty list. */
+  private async scanPortalDirectory(): Promise<string[]> {
     const portalsDir = join(this.config.system.root, this.config.paths.portals);
-
     const portalPaths: string[] = [];
     try {
       for await (const entry of Deno.readDir(portalsDir)) {
@@ -434,6 +434,7 @@ export class ReviewCommands extends BaseCommand {
           const resolvedPath = await Deno.readLink(portalEntryPath)
             .then((linkTarget) => this.resolvePortalEntryTarget(portalEntryPath, linkTarget))
             .catch(() => portalEntryPath);
+          // Skip broken portals and non-git repos.
           await Deno.stat(join(resolvedPath, ".git"));
           portalPaths.push(resolvedPath);
         } catch {
@@ -445,6 +446,11 @@ export class ReviewCommands extends BaseCommand {
         throw error;
       }
     }
+    return portalPaths;
+  }
+
+  private async findRepoForBranch(branchName: string): Promise<string> {
+    const portalPaths = await this.scanPortalDirectory();
 
     portalPaths.push(this.config.system.root);
 
@@ -650,32 +656,7 @@ export class ReviewCommands extends BaseCommand {
   }
 
   private async getPortalRepoPaths(): Promise<string[]> {
-    const portalPaths: string[] = [];
-    const portalsDir = join(this.config.system.root, this.config.paths.portals);
-
-    // Get all portal directories
-    try {
-      for await (const entry of Deno.readDir(portalsDir)) {
-        const portalEntryPath = join(portalsDir, entry.name);
-        try {
-          // Prefer resolving symlink targets if possible, but also allow direct directories.
-          const resolvedPath = await Deno.readLink(portalEntryPath)
-            .then((linkTarget) => this.resolvePortalEntryTarget(portalEntryPath, linkTarget))
-            .catch(() => portalEntryPath);
-          // Check if target still exists and is a git repo
-          await Deno.stat(join(resolvedPath, ".git"));
-          portalPaths.push(resolvedPath);
-        } catch {
-          // Skip broken portals or non-git repos
-          continue;
-        }
-      }
-    } catch (error) {
-      if (!(error instanceof Deno.errors.NotFound)) {
-        throw error;
-      }
-      // Portals directory doesn't exist yet - continue with empty list
-    }
+    const portalPaths = await this.scanPortalDirectory();
 
     // Also scan configured portals (fallback for missing/broken symlinks)
     for (const portal of this.config.portals || []) {
