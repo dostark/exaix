@@ -35,7 +35,7 @@ export const PORTAL_POLICY_CONFIG = join(POLICY_ROOT, "portal", "unslop.config.j
 const USAGE = "Usage: deno run -A packages/lint-policy/src/tools/install_portal_policy.ts [--out <dir>]";
 
 /** Inputs of one portal policy installation. */
-export interface IInstallPortalPolicyOptions {
+interface IInstallPortalPolicyOptions {
   /** The directory that receives the policy subdirectory. */
   readonly out: string;
   /** A version 2 configuration path. Defaults to the portal configuration. */

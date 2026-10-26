@@ -15,7 +15,7 @@ import type { IToolParameterSchema, IToolSchema } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
 /** Result of checking one example (or anti-example) input against a tool's parameter schema. */
-export interface IAciExampleValidationResult {
+interface IAciExampleValidationResult {
   compatible: boolean;
   /** Human-readable, named-constraint violations; empty when compatible. */
   violations: string[];

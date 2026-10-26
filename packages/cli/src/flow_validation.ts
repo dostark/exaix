@@ -11,7 +11,7 @@
 import { FlowStepExecutionMode } from "@exaix/core";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 
-export interface ICliValidationReport {
+interface ICliValidationReport {
   errors: string[];
   warnings: string[];
   valid: boolean;

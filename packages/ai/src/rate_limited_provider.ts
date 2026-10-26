@@ -27,7 +27,7 @@ import {
 /**
  * Configuration for rate limiting
  */
-export interface IRateLimitConfig {
+interface IRateLimitConfig {
   /** Maximum API calls per minute */
   maxCallsPerMinute: number;
   /** Maximum tokens per hour */

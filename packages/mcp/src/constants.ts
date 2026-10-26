@@ -20,7 +20,7 @@ import {
 import { type IToolManifestEntry, TOOL_MANIFEST } from "./manifest.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface IMcpToolClassificationSets {
+interface IMcpToolClassificationSets {
   readOnlyTools: ReadonlySet<McpToolName>;
   writeTools: ReadonlySet<McpToolName>;
 }

@@ -11,7 +11,7 @@ import { OPENAI_COMPATIBLE_UNPRICED_PROFILES } from "@exaix/core";
 import type { CompatibleChatConfig } from "@exaix/schemas";
 import type { IGenerateResult, ProviderCostStatus } from "./providers/common.ts";
 
-export interface ICompatiblePrice {
+interface ICompatiblePrice {
   costStatus: ProviderCostStatus;
   cost_usd?: number;
 }

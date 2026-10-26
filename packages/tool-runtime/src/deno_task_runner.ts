@@ -12,7 +12,7 @@
 import { SafeSubprocess, SubprocessTimeoutError, SystemCommand } from "@exaix/core";
 
 /** Options for one deno task invocation. */
-export interface IDenoTaskRunOptions {
+interface IDenoTaskRunOptions {
   task: string;
   args?: string[];
   /** Absolute path passed as the trailing positional argument. */

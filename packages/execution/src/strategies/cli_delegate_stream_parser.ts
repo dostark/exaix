@@ -14,7 +14,7 @@
  */
 
 /** One turn's accumulated outcome — mirrors IDelegateParsedReturn's shape for reuse downstream. */
-export interface ICliDelegateTurnResult {
+interface ICliDelegateTurnResult {
   lastText: string;
   isError: boolean;
   tokenStats: {

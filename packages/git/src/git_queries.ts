@@ -70,7 +70,7 @@ const QUERY_FAILURE_CODE = {
 
 export type GitQueryFailureCode = (typeof QUERY_FAILURE_CODE)[keyof typeof QUERY_FAILURE_CODE];
 
-export interface IGitQueryFailure {
+interface IGitQueryFailure {
   readonly ok: false;
   readonly code: GitQueryFailureCode;
 }
@@ -78,41 +78,41 @@ export interface IGitQueryFailure {
 export type GitQueryResult<T> = { readonly ok: true; readonly value: T } | IGitQueryFailure;
 
 /** One changed source the strict discovery selected. */
-export interface IGitChangedSource {
+interface IGitChangedSource {
   readonly path: string;
   readonly status: "added" | "modified" | "type_changed";
 }
 
 /** One closed changed-line interval on the destination side. */
-export interface IGitLineRange {
+interface IGitLineRange {
   readonly start: number;
   readonly end: number;
 }
 
 /** One regular blob read at an immutable commit. */
-export interface IGitBlob {
+interface IGitBlob {
   readonly bytes: Uint8Array;
   readonly mode: string;
 }
 
-export interface IGitCommitQueryOptions {
+interface IGitCommitQueryOptions {
   readonly maxOutputBytes?: number;
   readonly timeoutMs?: number;
 }
 
-export interface IGitChangedSourcesOptions {
+interface IGitChangedSourcesOptions {
   readonly extensions: readonly string[];
   readonly maxFiles: number;
   readonly maxOutputBytes: number;
   readonly timeoutMs?: number;
 }
 
-export interface IGitLineRangeOptions {
+interface IGitLineRangeOptions {
   readonly maxOutputBytes: number;
   readonly timeoutMs?: number;
 }
 
-export interface IGitBlobOptions {
+interface IGitBlobOptions {
   readonly maxBytes: number;
   readonly timeoutMs?: number;
 }
@@ -271,7 +271,7 @@ export async function listChangedSources(
 }
 
 /** Options of one tracked-file listing at an immutable commit. */
-export interface IGitTrackedFilesOptions {
+interface IGitTrackedFilesOptions {
   readonly maxOutputBytes: number;
   readonly timeoutMs?: number;
 }

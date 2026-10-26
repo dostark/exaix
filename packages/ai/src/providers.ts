@@ -12,13 +12,6 @@ import type { IGenerateResult } from "./providers/common.ts";
 
 import { DEFAULT_MOCK_MODEL, DEFAULT_MOCK_PROVIDER_ID, MOCK_DELAY_MS } from "@exaix/ai";
 
-/**
- * Provider configuration options
- */
-export interface IProviderConfig {
-  [key: string]: string | number | boolean | string[] | null | undefined;
-}
-
 declare const Deno: { env: { get(key: string): string | undefined } };
 
 // Mock Provider (for testing)

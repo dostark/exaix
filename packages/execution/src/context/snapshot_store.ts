@@ -18,7 +18,7 @@
 import type { IContextBudgetSnapshot } from "@exaix/schemas/execution/context_budget.ts";
 
 /** Minimal path resolver interface — satisfied by both real PathResolver and test mocks. */
-export interface ISnapshotPathResolver {
+interface ISnapshotPathResolver {
   resolve(path: string): Promise<string>;
 }
 

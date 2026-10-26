@@ -59,7 +59,7 @@ export interface IFlowResult {
   };
 }
 
-export interface IFlowRunnerRequest {
+interface IFlowRunnerRequest {
   userPrompt: string;
   traceId?: string;
   requestId?: string;

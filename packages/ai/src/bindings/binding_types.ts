@@ -24,7 +24,7 @@ export interface IBoundStepProvider {
 
 /** A session-tool delegate target (adapter `cli-delegate`): the strategy cli_delegate
  *  launch reads `tool` + `service_model_id`, not an `IModelProvider`. */
-export interface IBoundSessionTool {
+interface IBoundSessionTool {
   kind: typeof BOUND_TARGET_KIND_SESSION_TOOL;
   binding: IResolvedBinding;
   tool: SessionTool;

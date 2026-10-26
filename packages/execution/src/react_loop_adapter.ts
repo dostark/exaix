@@ -81,7 +81,7 @@ export interface IReActLoopExecutor {
 }
 
 /** ACI tool-guidance options, nested inside IReActLoopAdapterOptions. */
-export interface IReActLoopAdapterAciOptions {
+interface IReActLoopAdapterAciOptions {
   /** Whether ACI tool guidance is injected into the ReAct execution prompt. */
   enabled?: boolean;
   /** The configured aggregate ACI prompt-injection character budget. */
@@ -90,7 +90,7 @@ export interface IReActLoopAdapterAciOptions {
 
 /** Trailing optional-dependency bundle for ReActLoopAdapter's constructor, kept as one
  * parameter object so the constructor stays within the project's 7-parameter limit. */
-export interface IReActLoopAdapterOptions {
+interface IReActLoopAdapterOptions {
   eventBus?: Opt<IEventBusService, Reason.OptionalDependency>;
   guardrailRunner?: Opt<IGuardrailRunner, Reason.OptionalDependency>;
   aci?: IReActLoopAdapterAciOptions;

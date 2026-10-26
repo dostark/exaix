@@ -14,7 +14,7 @@ import { RateLimiterError } from "./rate_limited_provider.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { ProviderRegistry } from "./provider_registry.ts";
 
-export interface ICircuitBreakerOptions {
+interface ICircuitBreakerOptions {
   /** Number of consecutive failures before opening circuit */
   failureThreshold: number;
   /** Time in milliseconds to wait before transitioning to half-open */

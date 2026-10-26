@@ -10,7 +10,7 @@
 import layoutJson from "../../../layout.json" with { type: "json" };
 
 /** Repository path tokens, defined once in the catalog's `layout` section. */
-export interface IRepoLayout {
+interface IRepoLayout {
   readonly packageRoot: string;
   readonly appRoot: string;
   readonly teamRoot: string;

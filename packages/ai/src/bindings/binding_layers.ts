@@ -39,7 +39,7 @@ type BindingOutcome = SharedBindingOutcome;
 
 /** One LLM-calling step's audit resolution: the winning binding and any resolution issues.
  *  Provider construction and validation are intentionally not performed. */
-export interface IStepAuditResolution {
+interface IStepAuditResolution {
   stepId: string;
   agentRole: string;
   stepType: string;

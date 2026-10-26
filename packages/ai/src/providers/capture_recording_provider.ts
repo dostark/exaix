@@ -24,7 +24,7 @@ import { DEFAULT_CAPTURE_MAX_ATTEMPTS } from "../constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { validateJudgeResponse } from "./judge_response_contract.ts";
 
-export interface ICaptureRecordingProviderOptions {
+interface ICaptureRecordingProviderOptions {
   /** Directory fixtures are written into. Created if it does not exist. */
   dir: string;
   /** Max attempts per logical call before refusing to write a fixture. */

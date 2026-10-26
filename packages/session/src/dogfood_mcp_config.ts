@@ -28,13 +28,13 @@ export interface IDogfoodMcpConnectionInput {
   toolNames: readonly string[];
 }
 
-export interface IClaudeMcpHttpServerEntry {
+interface IClaudeMcpHttpServerEntry {
   type: "http";
   url: string;
   headers: Record<string, string>;
 }
 
-export interface IClaudeMcpConfigFile {
+interface IClaudeMcpConfigFile {
   mcpServers: Record<string, IClaudeMcpHttpServerEntry>;
 }
 

@@ -21,7 +21,7 @@ import { BINDING_OUTCOME_BOUND } from "./binding_types.ts";
 type CanonicalValue = string | number | boolean | null | CanonicalValue[] | { [key: string]: CanonicalValue };
 type CanonicalInput = object | string | number | boolean | null | undefined;
 
-export interface IBindingLockDigests {
+interface IBindingLockDigests {
   flow_content_sha256: string;
   pin_sha256: string;
   catalog_sha256: string;

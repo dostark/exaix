@@ -33,7 +33,7 @@ import { MemoryUpdateProposalSchema } from "@exaix/schemas/memory_bank.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import { HeuristicExtractionStrategy } from "./heuristic_extraction_strategy.ts";
 
-export interface IMemoryExtractorOptions {
+interface IMemoryExtractorOptions {
   costRouter?: Opt<IMemoryCostRouter, Reason.OptionalDependency>;
   llmStrategy?: Opt<IExtractionStrategy, Reason.OptionalDependency>;
   heuristicStrategy?: Opt<IExtractionStrategy, Reason.SensibleDefault>;

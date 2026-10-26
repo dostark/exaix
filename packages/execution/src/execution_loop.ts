@@ -97,7 +97,7 @@ interface RawFrontmatter {
   [key: string]: JSONValue;
 }
 
-export interface IExecutionLoopConfig {
+interface IExecutionLoopConfig {
   config: Config;
   db?: IDatabaseService;
   logger?: IEventLogger;
@@ -156,13 +156,13 @@ export interface IExecutionResult {
   error?: string;
 }
 
-export interface ITaskLease {
+interface ITaskLease {
   filePath: string;
   holder: string;
   acquiredAt: Date;
 }
 
-export interface ISuccessArtifactContext {
+interface ISuccessArtifactContext {
   isReadOnly: boolean;
   planAgentId?: string;
   portal?: string;
@@ -173,7 +173,7 @@ export interface ISuccessArtifactContext {
 }
 
 /** Options for internal execution */
-export interface IExecuteOptions {
+interface IExecuteOptions {
   /** Path to the plan file */
   planPath: string;
   /** Whether to require actions in the plan */

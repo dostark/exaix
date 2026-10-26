@@ -15,7 +15,7 @@ import { OPENROUTER_MODEL_ID_MAX_CHARS } from "./constants.ts";
 import { cleanUpstreamText } from "./openrouter_upstream_text.ts";
 
 /** OpenRouter usage block — OpenAI-shaped plus the reported `cost` (usage accounting). */
-export interface IOpenRouterUsage {
+interface IOpenRouterUsage {
   prompt_tokens: number;
   completion_tokens: number;
   total_tokens?: number;

@@ -19,7 +19,7 @@ import { BINDING_OUTCOME_BOUND, BINDING_OUTCOME_UNBOUND } from "./binding_types.
 
 export type IBindingLock = ReturnType<typeof BindingLockSchema.parse>;
 
-export interface IBuildLockInput {
+interface IBuildLockInput {
   flow: IFlow;
   traceId: string;
   layers: IBindingLayers;
@@ -28,7 +28,7 @@ export interface IBuildLockInput {
   envIgnored: boolean;
 }
 
-export interface IPersistedLock {
+interface IPersistedLock {
   path: string;
   sha256: string;
 }

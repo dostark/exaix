@@ -11,7 +11,7 @@ import { DependencyResolver } from "./dependency_resolver.ts";
 import { exists } from "@std/fs";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 
-export interface IFlowLoader {
+interface IFlowLoader {
   loadFlow(flowId: string): Promise<IFlow>;
   flowExists(flowId: string): Promise<boolean>;
 }

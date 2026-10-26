@@ -30,7 +30,7 @@ import { canonicalizeToolCall, canonicalizeToolName, ToolName } from "@exaix/cor
 import type { JSONObject, JSONValue } from "@exaix/core";
 
 /** Result of running a plan-JSON string through the adapter. */
-export interface IAdaptOpencodePlanJsonResult {
+interface IAdaptOpencodePlanJsonResult {
   /** The (possibly rewritten) plan JSON text. Always valid JSON if the input was. */
   json: string;
   /** True when at least one tool name or params shape was rewritten. */

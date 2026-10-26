@@ -15,8 +15,9 @@ import {
 import { calculateCost, fetchJsonWithRetries, type OllamaResponse } from "@exaix/ai/provider_common_utils.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
-export interface ILlamaProviderRuntimeConfig {
+interface ILlamaProviderRuntimeConfig {
   ai_endpoints?: {
     ollama?: string;
   };
@@ -35,7 +36,7 @@ export interface ILlamaProviderRuntimeConfig {
   };
 }
 
-export interface ILlamaProviderOptions {
+interface ILlamaProviderOptions {
   model: string;
   endpoint?: string;
   id?: string;
@@ -74,7 +75,7 @@ export class LlamaProvider implements IModelProvider {
       DEFAULT_OLLAMA_TIMEOUT_MS;
   }
 
-  async generate(prompt: string, _options?: IModelOptions): Promise<IGenerateResult> {
+  async generate(prompt: string, _options?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
     const body = {
       model: this.model,
       prompt,

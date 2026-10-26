@@ -13,14 +13,14 @@
 import { DEFAULT_CAPTURE_FAILURE_PRODUCT_FINDING_THRESHOLD } from "../constants.ts";
 import { describeCallSite, type IRecordedResponse } from "./mock_llm_provider.ts";
 
-export interface IFlakinessEntry {
+interface IFlakinessEntry {
   /** Call-site description, or the fixture's promptHash when unkeyed. */
   callSite: string;
   attempts: number;
   failureRate: number;
 }
 
-export interface IFlakinessSummary {
+interface IFlakinessSummary {
   totalFixtures: number;
   flakyFixtures: IFlakinessEntry[];
 }

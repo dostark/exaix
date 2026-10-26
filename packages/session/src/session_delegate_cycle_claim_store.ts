@@ -37,7 +37,7 @@ export type ISessionDelegateCycleClaimAcquireResult =
   | { outcome: typeof SessionDelegateCycleClaimAcquireOutcomeSchema.enum.acquired; claim: ISessionDelegateCycleClaim }
   | { outcome: typeof SessionDelegateCycleClaimAcquireOutcomeSchema.enum.existing; claim: ISessionDelegateCycleClaim };
 
-export interface ISessionDelegateCycleClaimTransitionInput {
+interface ISessionDelegateCycleClaimTransitionInput {
   outcome?: ISessionDelegationOutcome;
   failureReason?: string;
 }

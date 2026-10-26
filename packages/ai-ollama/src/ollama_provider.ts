@@ -24,7 +24,7 @@ import {
 } from "@exaix/ai/providers";
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 
-export interface IOllamaProviderOptions {
+interface IOllamaProviderOptions {
   baseUrl?: string;
   model?: string;
   timeoutMs?: number;

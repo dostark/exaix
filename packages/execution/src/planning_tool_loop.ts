@@ -135,7 +135,7 @@ interface ILoopProgress {
   completionTokens: number;
 }
 
-export interface IPlanningToolLoopResult {
+interface IPlanningToolLoopResult {
   final: IGenerateResult;
   rounds: number;
   toolCalls: number;

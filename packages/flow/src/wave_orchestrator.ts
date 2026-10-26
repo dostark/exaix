@@ -71,7 +71,7 @@ interface IWaveExecutionResult {
 }
 
 /** Callbacks WaveOrchestrator needs from FlowRunner: step execution, logging helpers, and milestones. */
-export interface IWaveOrchestratorCallbacks {
+interface IWaveOrchestratorCallbacks {
   executeStepSafe(
     flowRunId: string,
     stepId: string,

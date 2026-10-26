@@ -87,7 +87,7 @@ export interface IProviderToolCall {
 }
 
 /** Options of withRetry. onRetry runs before each wait, so a caller can journal the scheduled retry. */
-export interface IWithRetryOptions {
+interface IWithRetryOptions {
   maxRetries: number;
   baseDelayMs: number;
   signal?: AbortSignal;

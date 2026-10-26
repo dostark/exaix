@@ -16,7 +16,7 @@ import { hasReasoningOption } from "./openrouter_reasoning.ts";
 import type { IOpenRouterModelEntry } from "./openrouter_model_capabilities.ts";
 
 /** Body fields that a route can silently drop unless `provider.require_parameters` is true. */
-export interface IOpenRouterRoutedFeatures {
+interface IOpenRouterRoutedFeatures {
   tools?: JSONValue[];
   response_format?: Record<string, JSONValue>;
   reasoning?: Record<string, JSONValue>;

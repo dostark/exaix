@@ -57,7 +57,7 @@ import {
 /**
  * Options for OpenAIProvider.
  */
-export interface IOpenAIProviderOptions extends IBaseProviderOptions {
+interface IOpenAIProviderOptions extends IBaseProviderOptions {
   compatible?: CompatibleChatConfig;
   tokenizer?: ITokenizer;
   pricingLookup?: IModelPricingLookup;

@@ -11,13 +11,13 @@ export type ErrorPayload = Error | string | object | null | undefined;
 
 export type ErrorArgs = object | null | undefined;
 
-export interface IErrorContext {
+interface IErrorContext {
   commandName: string;
   args?: ErrorArgs;
   error: ErrorPayload;
 }
 
-export interface IErrorStrategy {
+interface IErrorStrategy {
   handle(context: IErrorContext): Promise<void>;
 }
 

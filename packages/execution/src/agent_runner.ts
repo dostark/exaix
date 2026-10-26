@@ -119,7 +119,7 @@ import type { IRecordingLane, Opt, Reason } from "@exaix/core/types";
 import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
 import { FLOW_BRANCH_JSON_OUTPUT_INSTRUCTION, ToolsRoundLoop } from "@exaix/core";
 
-export interface ISelectedModelIdentity {
+interface ISelectedModelIdentity {
   provider: string;
   model: string;
   /** Canonical provider type — set from IProviderInfo.type at the construction sites;

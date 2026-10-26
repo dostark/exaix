@@ -44,7 +44,7 @@ export type JournalEntry = Record<string, JSONValue>;
 /**
  * Result from a dynamic step execution
  */
-export interface IDynamicStepResult {
+interface IDynamicStepResult {
   stepId: string;
   output: string;
   toolCallsLog: IDynamicToolCall[];
@@ -55,7 +55,7 @@ export interface IDynamicStepResult {
 /**
  * Log of a single tool call during dynamic execution
  */
-export interface IDynamicToolCall {
+interface IDynamicToolCall {
   tool: McpToolName;
   args: ToolArgs;
   result: string;

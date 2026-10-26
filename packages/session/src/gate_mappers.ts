@@ -26,7 +26,7 @@ export interface IReviewDecisionPatch {
 }
 
 /** Accepted-result fields consumed by gate mappers after reconciliation. */
-export interface ISessionDecisionResult {
+interface ISessionDecisionResult {
   decision: SessionDecision;
   summary: string;
 }

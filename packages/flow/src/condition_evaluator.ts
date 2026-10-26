@@ -39,7 +39,7 @@ export interface IConditionContext {
 /**
  * Step result context for condition evaluation
  */
-export interface IStepResultContext {
+interface IStepResultContext {
   /** Whether the step succeeded */
   success: boolean;
   /** Whether the step was skipped due to condition */
@@ -57,7 +57,7 @@ export interface IStepResultContext {
 /**
  * Result of condition evaluation
  */
-export interface IConditionResult {
+interface IConditionResult {
   /** Whether condition evaluated to true */
   shouldExecute: boolean;
   /** Original condition expression */

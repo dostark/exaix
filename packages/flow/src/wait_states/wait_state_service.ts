@@ -22,7 +22,7 @@ import {
 } from "./wait_state.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface IWaitStateTransitionPolicy {
+interface IWaitStateTransitionPolicy {
   validate(input: {
     current: IWaitState;
     action: WaitStateAction;
@@ -34,7 +34,7 @@ export interface IWaitStateService {
   getById(waitStateId: string): Promise<IWaitState | null>;
   getByToken(resumeToken: string): Promise<IWaitState | null>;
   transition(input: TransitionWaitStateInput): Promise<IWaitState>;
-  listPending(traceId?: string): Promise<IWaitState[]>;
+  listPending(traceId?: Opt<string, Reason.OptionalInput>): Promise<IWaitState[]>;
 }
 
 const APPROVE = "approve";

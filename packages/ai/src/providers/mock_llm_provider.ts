@@ -73,7 +73,7 @@ export interface IRecordedResponse {
 
 /** One call of a replayed round: its id, position, tool and exact input.
  *  Its result must include a substring. */
-export interface IRecordedRoundCall {
+interface IRecordedRoundCall {
   toolUseId: string;
   index: number;
   toolName: string;
@@ -106,7 +106,7 @@ interface IRecordedReplay {
 
 /** A call-site hit whose current prompt hash no longer matches the recorded fixture. It still
  *  replays, but the mismatch is reported so a human can decide whether to re-capture. */
-export interface IFixtureDriftReport {
+interface IFixtureDriftReport {
   callSite: ICallSite;
   expectedHash: string;
   actualHash: string;
@@ -114,7 +114,7 @@ export interface IFixtureDriftReport {
 
 /** Aggregated drift, reported per run. `totalCallSiteLookups` counts only call-site lookups
  *  that found a recording — a miss is a coverage gap, not drift, so it can't dilute the rate. */
-export interface IDriftSummary {
+interface IDriftSummary {
   totalCallSiteLookups: number;
   driftedCalls: number;
   driftRate: number;
@@ -135,7 +135,7 @@ export interface IPatternMatcher {
 /**
  * Token tracking
  */
-export interface ITokenCount {
+interface ITokenCount {
   input: number;
   output: number;
 }
@@ -143,7 +143,7 @@ export interface ITokenCount {
 /**
  * Record of a call made to the provider
  */
-export interface ICallRecord {
+interface ICallRecord {
   /** The prompt that was sent */
   prompt: string;
   /** Options passed with the call */
@@ -157,7 +157,7 @@ export interface ICallRecord {
 /**
  * Options for configuring MockLLMProvider
  */
-export interface IMockLLMProviderOptions {
+interface IMockLLMProviderOptions {
   /** Custom provider ID */
   id?: string;
   /** Responses for scripted/slow strategies */

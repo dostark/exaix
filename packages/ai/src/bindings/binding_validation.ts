@@ -39,7 +39,7 @@ import {
   ISSUE_PRICING_UNAVAILABLE,
 } from "./binding_resolver.ts";
 
-export interface IBindingValidationDeps {
+interface IBindingValidationDeps {
   binding: IResolvedBinding;
   /** The catalog service the binding resolved to, with key_env and endpoint. */
   service?: ICatalogService;

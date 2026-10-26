@@ -12,14 +12,14 @@ import { getOverlayEntry } from "@exaix/model-registry";
 import { TOKENS_PER_MTOK } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface IRegistryPredictedCostTokens {
+interface IRegistryPredictedCostTokens {
   promptTokens: number;
   completionTokens: number;
   cacheReadTokens?: number;
   cacheCreationTokens?: number;
 }
 
-export interface IRegistryPredictedCostPrice {
+interface IRegistryPredictedCostPrice {
   inputPerMtok?: number;
   outputPerMtok?: number;
 }

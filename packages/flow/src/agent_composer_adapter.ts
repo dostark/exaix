@@ -115,7 +115,7 @@ export interface IRunner {
 
 /** For constructing a fresh, per-call `AgentComposer` — never a shared instance, since
  *  it carries mutable state (`planWrittenFiles`) that must not survive past one call. */
-export interface IAgentComposerConstructionDeps {
+interface IAgentComposerConstructionDeps {
   config: Config;
   db: IDatabaseService;
   logger: IEventLogger;

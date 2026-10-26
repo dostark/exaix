@@ -11,7 +11,7 @@
 import { SafeSubprocess } from "@exaix/core";
 
 /** One host diagnostic with its raw file URL and half-open range. */
-export interface IDenoLintHostDiagnostic {
+interface IDenoLintHostDiagnostic {
   readonly filename: string;
   readonly code: string;
   readonly message: string;
@@ -24,7 +24,7 @@ export interface IDenoLintHostDiagnostic {
 export const DENO_LINT_DEADLINE_EXCEEDED = "deadline_exceeded";
 
 /** The parsed host JSON document. */
-export interface IDenoLintHostOutput {
+interface IDenoLintHostOutput {
   readonly diagnostics: readonly IDenoLintHostDiagnostic[];
   readonly errors: readonly string[];
 }

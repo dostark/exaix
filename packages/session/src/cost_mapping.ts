@@ -16,7 +16,7 @@ import type { IProviderCostRecord } from "@exaix/core/types";
 import type { SessionTokenStats, SessionTool } from "@exaix/schemas/session_delegate.ts";
 
 /** Reconciled usage fields consumed by cost attribution. */
-export interface ISessionCostResult {
+interface ISessionCostResult {
   token_stats: SessionTokenStats;
   cost_usd?: number;
 }

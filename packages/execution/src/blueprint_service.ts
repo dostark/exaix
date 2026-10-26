@@ -30,7 +30,7 @@ import { deriveTaskType } from "./task_type_derivation.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 /** Result of loadBlueprint: the parsed blueprint plus optional resolved call options. */
-export interface IBlueprintLoadResult {
+interface IBlueprintLoadResult {
   blueprint: IAgentFileBlueprint;
   resolvedCallOptions?: IModelCallOptions;
 }

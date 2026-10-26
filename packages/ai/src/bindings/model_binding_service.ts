@@ -51,7 +51,7 @@ import {
   type IBoundStepTarget,
 } from "./binding_types.ts";
 
-export interface IModelBindingServiceDeps {
+interface IModelBindingServiceDeps {
   configSource: { get(): Config };
   logger: IEventLogger;
   probe: {

@@ -159,7 +159,7 @@ export interface IAgentComposerOptions {
 }
 
 /** Dependencies for AgentComposer constructor. */
-export interface IAgentComposerDeps {
+interface IAgentComposerDeps {
   config: Config;
   db: IDatabaseService;
   logger: IEventLogger;

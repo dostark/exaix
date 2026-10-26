@@ -56,7 +56,7 @@ export interface IVerificationRunContext {
 }
 
 /** The adapter contract the runner dispatches a deno_lint check to. */
-export interface IDenoLintCheckExecutor {
+interface IDenoLintCheckExecutor {
   run(context: IDenoLintCheckContext): Promise<IDenoLintCheckOutcome>;
 }
 
@@ -96,7 +96,7 @@ function fromDenoLintOutcome(outcome: IDenoLintCheckOutcome): TLintStepOutcome {
 }
 
 /** Optional runners of non-Deno check kinds. */
-export interface IVerificationRunnerOptions {
+interface IVerificationRunnerOptions {
   /** Required when a block contains a deno_lint check. */
   deno_lint?: IDenoLintCheckExecutor;
 }

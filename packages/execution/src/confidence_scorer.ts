@@ -39,7 +39,7 @@ import {
 import type { ICritique } from "./types.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface IConfidenceScorerConfig {
+interface IConfidenceScorerConfig {
   lowConfidenceThreshold?: number;
   veryLowThreshold?: number;
   highConfidenceThreshold?: number;
@@ -52,14 +52,14 @@ export interface IConfidenceScorerConfig {
   goalAlignmentWeight?: number;
 }
 
-export interface IConfidenceResult {
+interface IConfidenceResult {
   content: string;
   confidence: ConfidenceAssessment;
   flaggedForReview: boolean;
   extractedAt: Date;
 }
 
-export interface IAggregatedConfidence {
+interface IAggregatedConfidence {
   average: number;
   min: number;
   max: number;
@@ -73,7 +73,7 @@ export interface IAggregatedConfidence {
   anyFlaggedForReview: boolean;
 }
 
-export interface IConfidenceMetrics {
+interface IConfidenceMetrics {
   totalAssessments: number;
   averageScore: number;
   flaggedCount: number;

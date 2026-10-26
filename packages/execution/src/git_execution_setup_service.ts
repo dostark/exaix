@@ -16,7 +16,7 @@ import { PortalExecutionStrategy } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
 /** Result of preparing the git working tree for plan execution. */
-export interface IGitExecutionSetupResult {
+interface IGitExecutionSetupResult {
   executionRoot: string;
   executionGitService: IGitService;
   baseBranch?: string;

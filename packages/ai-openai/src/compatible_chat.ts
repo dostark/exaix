@@ -66,7 +66,7 @@ const CompatibleResponseSchema = z.object({
 });
 
 /** The wire RequestInit plus its structured-output mode, for the caller to attach to IGenerateResult. */
-export interface ICompatibleChatRequestInit {
+interface ICompatibleChatRequestInit {
   init: RequestInit;
   structuredOutputMode?: StructuredOutputMode;
   structuredOutputModeReason?: StructuredOutputModeReason;

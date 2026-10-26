@@ -16,12 +16,12 @@ import type { IToolAliasRewrittenPayload } from "@exaix/core/events";
 import type { Opt, Reason } from "@exaix/core/types";
 
 /** The part of an MCP tool handler this module reads. */
-export interface IMcpToolSchemaSource {
+interface IMcpToolSchemaSource {
   getToolDefinition(): { name: string; inputSchema: Record<string, JSONValue> };
 }
 
 /** A tool call resolved to a registered handler, with canonical name and arguments. */
-export interface IResolvedMcpToolCall<T> {
+interface IResolvedMcpToolCall<T> {
   handler: T;
   call: ICanonicalizedToolCall;
 }

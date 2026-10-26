@@ -21,12 +21,12 @@ import type { ISelectionCriteria } from "./provider_selector.ts";
 export type ModelSize = "S" | "M" | "L" | "XL";
 
 /** Structural selector shape consumed by resolveAgentRoleModel (avoids coupling to the ProviderSelector class). */
-export interface ISelectorLike {
+interface ISelectorLike {
   selectProvider(criteria: ISelectionCriteria): Promise<string>;
 }
 
 /** Declarative model preferences read from an agent role's frontmatter; all fields are optional. */
-export interface IModelPreferences {
+interface IModelPreferences {
   /** Explicit provider:model override (highest precedence; e.g. mock-agent). */
   model?: string;
   /** Preferred provider hint, mapped to a required capability. */

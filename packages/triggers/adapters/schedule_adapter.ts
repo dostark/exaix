@@ -14,7 +14,7 @@
 import type { ExecutionTriggerEnvelope, ITriggerAdapter } from "@exaix/core/triggers";
 import { normalizeIdempotencyKey } from "@exaix/core/triggers";
 
-export interface IScheduleInput {
+interface IScheduleInput {
   cronExpression: string;
   /** Human-readable label for the scheduled job. Defaults to the cron expression. */
   subject?: string;

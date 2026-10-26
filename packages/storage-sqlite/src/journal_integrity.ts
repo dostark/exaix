@@ -24,7 +24,7 @@ export interface IActivityChainRow {
 }
 
 /** The non-link fields that feed one row's hash. */
-export interface IActivityHashInput {
+interface IActivityHashInput {
   id: string;
   trace_id: string;
   actor: string;

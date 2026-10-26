@@ -16,12 +16,12 @@ import type { ExecutionTriggerEnvelope, ITriggerAdapter } from "@exaix/core/trig
 import { normalizeIdempotencyKey } from "@exaix/core/triggers";
 import { FilesystemEventKind } from "@exaix/core/types";
 
-export interface IFilesystemAdapterConfig {
+interface IFilesystemAdapterConfig {
   /** Absolute path of the directory where file events are permitted. */
   allowedDir: string;
 }
 
-export interface IFilesystemInput {
+interface IFilesystemInput {
   path: string;
   kind?: FilesystemEventKind;
 }

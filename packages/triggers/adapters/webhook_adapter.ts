@@ -30,7 +30,7 @@ interface IWebhookBodyObject {
   [key: string]: TWebhookBodyValue;
 }
 
-export interface IWebhookAdapterConfig {
+interface IWebhookAdapterConfig {
   /** HMAC-SHA256 secret. Without a secret the adapter fails closed and rejects payloads. */
   secret?: string;
   /** Override header name for the HMAC signature. Defaults to "x-hub-signature-256". */
@@ -39,7 +39,7 @@ export interface IWebhookAdapterConfig {
   maxPayloadBytes?: number;
 }
 
-export interface IWebhookInput {
+interface IWebhookInput {
   body: string | Uint8Array;
   headers: Record<string, string>;
   /** Human-readable event label. Falls back to "webhook" if omitted. */

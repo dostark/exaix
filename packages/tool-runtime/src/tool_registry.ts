@@ -81,7 +81,7 @@ type RemediationPolicyResolver = (
   policy: IToolResultRemediationPolicy,
 ) => IToolResultRemediationPolicy;
 
-export interface IToolRegistryConfig {
+interface IToolRegistryConfig {
   config: Config;
   logger?: IEventLogger;
   traceId?: string;

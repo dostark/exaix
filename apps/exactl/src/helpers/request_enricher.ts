@@ -9,7 +9,7 @@ import type { RequestCommands } from "../commands/request_commands.ts";
 import { isTestMode } from "@exaix/core/config";
 import type { IRequestMetadata } from "@exaix/core/request";
 
-export interface IRequestEnrichable {
+interface IRequestEnrichable {
   request_id?: string;
   request_subject?: string;
   request_agent_role?: string;

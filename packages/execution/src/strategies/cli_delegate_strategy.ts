@@ -108,7 +108,7 @@ interface ICodexThreadEvent {
 }
 
 /** Result of running the headless CLI subprocess (subset of SafeSubprocess.run's shape). */
-export interface ICliDelegateProcessResult {
+interface ICliDelegateProcessResult {
   code: number;
   stdout: string;
   stderr: string;
@@ -130,7 +130,7 @@ export type IResolvePortalPath = (portalAlias: string) => string | undefined;
 export type IWriteConfigFile = (path: string, content: string, options: { mode: number }) => Promise<void>;
 
 /** Dependencies for CliDelegateStrategy (constructor DI, config-free). */
-export interface ICliDelegateStrategyDeps {
+interface ICliDelegateStrategyDeps {
   /** Which headless CLI tool to invoke. */
   tool: SessionTool;
   /** Bare binary name or absolute path — never shell-interpolated. */

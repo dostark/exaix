@@ -10,7 +10,7 @@
 import type { Config } from "@exaix/schemas";
 import type { IEventLogger } from "@exaix/core/logger";
 
-export interface IGitServiceContext {
+interface IGitServiceContext {
   config?: Config | { get(): Config };
 }
 

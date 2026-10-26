@@ -16,7 +16,7 @@ import type { INotificationService } from "@exaix/core/types";
 import type { SessionMemoryService } from "../session/session_memory.ts";
 import type { MemoryBankService } from "../bank/memory_bank.ts";
 
-export interface IMemoryMaintenanceOptions {
+interface IMemoryMaintenanceOptions {
   notificationService: Pick<INotificationService, "notifyPendingDigestIfNeeded">;
   memoryExtractor: Pick<MemoryExtractorService, "listPending">;
   autoApprovalService: Pick<MemoryAutoApprovalService, "runApprovalCycle">;

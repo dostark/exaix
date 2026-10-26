@@ -42,7 +42,7 @@ import {
   DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
   DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
 } from "@exaix/schemas/constants.ts";
-export interface IReflexiveAgentConvergenceConfig {
+interface IReflexiveAgentConvergenceConfig {
   qualityExitThreshold: number;
   minImprovementDelta: number;
   oscillationWindow: number;
@@ -65,14 +65,14 @@ export interface IReflexiveAgentConfig extends IAgentRunnerConfig {
   logger?: IEventLogger;
 }
 
-export interface IReflexionIteration {
+interface IReflexionIteration {
   iteration: number;
   response: IAgentExecutionResult;
   critique: ICritique | null;
   durationMs: number;
 }
 
-export interface IIterationScore {
+interface IIterationScore {
   iteration: number;
   score: number;
   delta: number | null;
@@ -92,7 +92,7 @@ export interface IReflexiveExecutionResult {
   averageConfidence: number;
 }
 
-export interface IReflexionMetrics {
+interface IReflexionMetrics {
   totalExecutions: number;
   totalIterations: number;
   averageIterationsPerExecution: number;

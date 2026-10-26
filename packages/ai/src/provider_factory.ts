@@ -49,7 +49,7 @@ declare const Deno: { env: { get(key: string): string | undefined } };
 export type ProviderRegistryBootstrap = () => void;
 
 /** Budget wiring for a bound provider. It names the service and transport, the per-service cloud cap, and the run or global budget mode. */
-export interface IBindingBudgetOptions {
+interface IBindingBudgetOptions {
   /** Binding service identity, carried into cost accounting and reservations. */
   bindingIdentity: { service: string; transport: BindingTransport; dailyCostCapUsd?: number };
   /** The finite global daily cap when the operator binding layer activates it. */

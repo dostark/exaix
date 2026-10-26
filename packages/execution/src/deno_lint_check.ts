@@ -30,7 +30,7 @@ const RULE_PATTERN = /^([a-z][a-z0-9-]*\/)?[a-z][a-z0-9-]*$/;
 export type IDenoLintFinding = ILintFinding;
 
 /** A check that retained no finding. */
-export interface IDenoLintCheckOutcomePassed {
+interface IDenoLintCheckOutcomePassed {
   readonly kind: typeof VerificationStatus.PASSED;
   readonly total: 0;
   readonly findings: readonly [];
@@ -38,7 +38,7 @@ export interface IDenoLintCheckOutcomePassed {
 }
 
 /** A check that retained findings. */
-export interface IDenoLintCheckOutcomeFailed {
+interface IDenoLintCheckOutcomeFailed {
   readonly kind: typeof VerificationStatus.FAILED;
   readonly total: number;
   readonly findings: readonly IDenoLintFinding[];
@@ -46,7 +46,7 @@ export interface IDenoLintCheckOutcomeFailed {
 }
 
 /** A check that could not produce a valid result. */
-export interface IDenoLintCheckOutcomeError {
+interface IDenoLintCheckOutcomeError {
   readonly kind: typeof VerificationStatus.ERROR;
   readonly error_class: LintErrorClass;
   readonly total: null;
@@ -80,7 +80,7 @@ export type IDenoLintBatchRunner = (
 ) => Promise<IDenoLintBatchOutcome>;
 
 /** The confinement check the runner needs from the path resolver. */
-export interface IDenoLintPathValidator {
+interface IDenoLintPathValidator {
   validatePath(path: string, allowedRoots: string[]): Promise<string>;
 }
 

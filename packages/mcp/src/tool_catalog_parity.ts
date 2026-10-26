@@ -17,7 +17,7 @@ import type { ITool } from "@exaix/core/types";
 import type { IToolManifestEntry } from "./manifest.ts";
 
 /** Result of a tool-catalog parity check run. Mirrors checkToolResultParity()'s IParityCheckResult shape. */
-export interface IToolCatalogParityResult {
+interface IToolCatalogParityResult {
   success: boolean;
   errors: string[];
   warnings: string[];

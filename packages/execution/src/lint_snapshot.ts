@@ -17,7 +17,7 @@ import {
 } from "@exaix/schemas";
 
 /** Inputs of the terminal snapshot. */
-export interface ILintSnapshotInput {
+interface ILintSnapshotInput {
   readonly requestId: string;
   readonly runId: string;
   readonly attempt: number;

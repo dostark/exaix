@@ -33,7 +33,7 @@ import {
 import { cleanUpstreamText } from "./openrouter_upstream_text.ts";
 
 /** Budget fields that OpenRouter reports on a 402 or on a spent-budget 403. */
-export interface IOpenRouterBillingDetail {
+interface IOpenRouterBillingDetail {
   limitSource?: string;
   limitUsd?: number;
   spendUsd?: number;

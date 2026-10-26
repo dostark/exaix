@@ -15,7 +15,7 @@
 import type { IContextSegmentKind } from "@exaix/schemas/execution/context_budget.ts";
 
 /** Named metadata fields for context segments. */
-export interface IContextSegmentMetadata {
+interface IContextSegmentMetadata {
   /** ID of the flow/plan step that produced this segment. */
   sourceStepId?: string;
   /** MCP tool name that generated this segment (for tool_result kind). */

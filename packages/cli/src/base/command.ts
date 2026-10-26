@@ -9,25 +9,19 @@
 
 import type { JSONValue } from "@exaix/core";
 
-export interface IHelperResult {
-  success: boolean;
-  message?: string;
-  data?: JSONValue;
-}
-
 export interface IValidationResult {
   isValid: boolean;
   errors: string[];
 }
 
-export interface ICommandArgs {
+interface ICommandArgs {
   [key: string]: JSONValue;
 }
 
 /**
  * Standard interface for all CLI commands.
  */
-export interface ICommand<T = void> {
+interface ICommand<T = void> {
   name: string;
   description: string;
 

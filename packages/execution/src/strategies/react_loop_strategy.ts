@@ -97,14 +97,14 @@ import {
   renderAciDocFragments,
 } from "@exaix/tool-runtime";
 
-export interface IReActAction {
+interface IReActAction {
   tool: string;
   params: Record<string, JSONValue>;
   description?: string;
 }
 
 /** Internal type for dynamically-built provider.generate() options. */
-export interface IGeneratedOptions {
+interface IGeneratedOptions {
   traceId?: string;
   temperature: number;
   max_tokens: number;

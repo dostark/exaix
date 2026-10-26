@@ -94,7 +94,7 @@ export interface IEffortResolver {
   resolve(declarations: IEffortDeclarations, signals: IEffortResolutionSignals): IEffortResolution;
 }
 
-export interface IEffortResolverOptions {
+interface IEffortResolverOptions {
   /** Overrides JUDGE_EFFORT_FLOOR for this instance; validated against EffortTierSchema. */
   judgeEffortFloor?: EffortTier;
   /** Overrides EFFORT_FLOOR_AGENT_ROLE_IDS for this instance. */

@@ -18,7 +18,7 @@ import type { IEffortDeclarationPair, IEffortResolution } from "@exaix/ai";
 import type { IProjectedCallOptions } from "@exaix/ai";
 
 /** Everything an emitter owns that the payload must represent. */
-export interface IAgentEffortResolvedInput {
+interface IAgentEffortResolvedInput {
   path: EffortResolutionPath;
   /** The resolution whose outcome is journaled. */
   resolution: IEffortResolution;

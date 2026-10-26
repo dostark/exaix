@@ -95,7 +95,7 @@ import { adaptOpencodePlanJson } from "./opencode_plan_schema_adapter.ts";
 import { ERROR_STDOUT_PREVIEW_MAX_CHARS } from "@exaix/core";
 
 /** Result of running the headless CLI subprocess (subset of SafeSubprocess.run's shape). */
-export interface ICliDelegateProcessResult {
+interface ICliDelegateProcessResult {
   code: number;
   stdout: string;
   stderr: string;
@@ -108,7 +108,7 @@ export type IRunCliDelegateProcess = (
   options: { cwd: string; env?: Record<string, string>; timeoutMs?: number; clearEnv?: boolean },
 ) => Promise<ICliDelegateProcessResult>;
 
-export interface ICliDelegateModelProviderOptions {
+interface ICliDelegateModelProviderOptions {
   /** Which headless CLI tool to invoke. */
   tool: SessionTool;
   /** Bare binary name or absolute path — never shell-interpolated. */

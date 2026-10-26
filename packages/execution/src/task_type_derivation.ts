@@ -36,7 +36,7 @@ export interface ITaskTypeDerivationContext {
   analyzerTaskType?: TaskType;
 }
 
-export interface ITaskTypeDerivationResult {
+interface ITaskTypeDerivationResult {
   taskType: TaskType;
   source: TaskTypeSource;
 }

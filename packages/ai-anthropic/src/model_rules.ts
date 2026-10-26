@@ -33,13 +33,13 @@ export interface IAnthropicModelRules {
 }
 
 /** A thinking field as the Messages API takes it. */
-export interface IAnthropicThinkingField {
+interface IAnthropicThinkingField {
   type: string;
   budget_tokens?: number;
 }
 
 /** The request settings the rules shape: the caller's thinking flag, token limit, budget and effort. */
-export interface IRequestTuningInput {
+interface IRequestTuningInput {
   /** The caller's thinking flag, after the config default. */
   thinking: boolean | undefined;
   maxTokens: number;
@@ -48,7 +48,7 @@ export interface IRequestTuningInput {
 }
 
 /** The fields a request takes from the rules. */
-export interface IRequestTuning {
+interface IRequestTuning {
   maxTokens: number;
   thinking?: IAnthropicThinkingField;
   outputConfig?: { effort: string };
