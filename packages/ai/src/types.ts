@@ -6,6 +6,7 @@
  * @related-files [packages/ai/src/providers.ts, packages/ai/src/provider_registry.ts]
  */
 import type { ChatFormat, ConfigSource, JSONValue, McpToolName, MockStrategy, ProviderType } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type {
   CompatibleChatConfig,
@@ -27,7 +28,7 @@ import type { IProviderCallCapabilities } from "./provider_call_options.ts";
 /**
  * Cache TTL values for Anthropic prompt caching.
  */
-export type ToolCacheControlTtl = "5m" | "1h";
+type ToolCacheControlTtl = "5m" | "1h";
 
 /** Cache control annotation for tool definitions (Anthropic prompt caching).
  *  Defaults to "5m" when omitted. */
@@ -231,15 +232,18 @@ export interface IModelProvider {
   id: string;
   readonly callCapabilities?: IProviderCallCapabilities;
   /** Pure measurement of the same input projection used for transport. */
-  measureInputTokens?(prompt: string, options?: IModelOptions): Promise<INativeInputMeasurement>;
+  measureInputTokens?(
+    prompt: string,
+    options?: Opt<IModelOptions, Reason.OptionalInput>,
+  ): Promise<INativeInputMeasurement>;
   /** Verified monetary reservation for complete input and maximum output. Missing rates remain unknown. */
   estimateCallCost?(inputTokens: number, outputTokens: number): Promise<number | undefined>;
 
   /** Generate a response from the model. @param prompt The input prompt to send to the model @param options Optional generation parameters @returns The generated response payload */
-  generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult>;
+  generate(prompt: string, options?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult>;
 
   /** Optional streaming variant. If implemented, yields content chunks as they are produced by the provider. Consumers collect chunks into the final IGenerateResult with streamed: true. @param prompt The input prompt to send to the model @param options Optional generation parameters (stream option hints streaming) */
-  generateStream?(prompt: string, options?: IModelOptions): AsyncGenerator<string>;
+  generateStream?(prompt: string, options?: Opt<IModelOptions, Reason.OptionalInput>): AsyncGenerator<string>;
 
   /** Optional release of resources the provider owns. The binding pool calls it on the innermost provider once no run holds it. */
   dispose?(): Promise<void>;

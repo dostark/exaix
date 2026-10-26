@@ -43,7 +43,7 @@ import { PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
 /**
  * Options for GoogleProvider.
  */
-export type GoogleProviderOptions = IBaseProviderOptions & { tokenizer?: ITokenizer };
+type GoogleProviderOptions = IBaseProviderOptions & { tokenizer?: ITokenizer };
 
 /** Text parts a user message carries after its results: the no-tools instruction, then a round instruction. */
 function trailingParts(noTools: boolean, instruction?: Opt<string, Reason.OptionalInput>): Array<{ text: string }> {

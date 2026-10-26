@@ -9,7 +9,7 @@ import type { IServiceContext } from "@exaix/core/types";
 /**
  * Middleware function type
  */
-export type Middleware<T extends IServiceContext> = (
+type Middleware<T extends IServiceContext> = (
   context: T,
   next: () => Promise<void>,
 ) => Promise<void>;

@@ -23,7 +23,7 @@ interface IOpenRouterRoutedFeatures {
 }
 
 /** A body whose hint fields can be dropped. Each hint is optional on the wire. */
-export type IOpenRouterHintTarget = { [Hint in (typeof OPENROUTER_HINT_PARAMETERS)[number]]?: JSONValue };
+type IOpenRouterHintTarget = { [Hint in (typeof OPENROUTER_HINT_PARAMETERS)[number]]?: JSONValue };
 
 /** The routing fields that the policy reads and writes on the body. */
 export interface IOpenRouterPolicyTarget extends IOpenRouterRoutedFeatures {

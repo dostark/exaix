@@ -8,7 +8,7 @@
 import { ModelProviderError } from "./providers/common.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export type ProviderFactoryReasonCode =
+type ProviderFactoryReasonCode =
   | "credential_missing"
   | "env_permission_denied"
   | "net_permission_denied"
@@ -26,7 +26,7 @@ export class ProviderFactoryError extends Error {
   }
 }
 
-export type ProviderCallPolicyReasonCode = "unsupported_call_option" | "pricing_unavailable";
+type ProviderCallPolicyReasonCode = "unsupported_call_option" | "pricing_unavailable";
 
 /** Terminal failure of the bounded compatible conversation contract. */
 export class ProviderProtocolError extends ModelProviderError {

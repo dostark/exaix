@@ -13,7 +13,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 /**
  * Structured error codes for embedding operations.
  */
-export type EmbeddingErrorCode =
+type EmbeddingErrorCode =
   | "PROVIDER_UNAVAILABLE"
   | "MODEL_NOT_FOUND"
   | "EMBEDDING_FAILED"

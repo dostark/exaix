@@ -11,8 +11,8 @@
 import type { JSONValue, StepAttemptClass, StepExecutionDisposition } from "@exaix/core";
 import { StepSideEffectClass } from "@exaix/core";
 
-export type StepEntryMetadata = { [key: string]: JSONValue };
-export type StepReplayContext = { [key: string]: JSONValue };
+type StepEntryMetadata = { [key: string]: JSONValue };
+type StepReplayContext = { [key: string]: JSONValue };
 
 /** Used for replay detection and result reuse across flow trace sessions. */
 export interface IStepExecutionRecord {

@@ -17,7 +17,7 @@ import { BindingLockSchema } from "@exaix/schemas";
 import { canonicalJson, lockDigests, sha256Hex } from "./binding_replay.ts";
 import { BINDING_OUTCOME_BOUND, BINDING_OUTCOME_UNBOUND } from "./binding_types.ts";
 
-export type IBindingLock = ReturnType<typeof BindingLockSchema.parse>;
+type IBindingLock = ReturnType<typeof BindingLockSchema.parse>;
 
 interface IBuildLockInput {
   flow: IFlow;

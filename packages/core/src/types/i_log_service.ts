@@ -66,6 +66,3 @@ export interface ILogService {
    */
   exportLogs(filename: string, entries: IStructuredLogEntry[]): Promise<void>;
 }
-
-/** Alias for ILogService for compatibility */
-export type IStructuredLoggerService = ILogService;

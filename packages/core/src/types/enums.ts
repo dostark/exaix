@@ -177,8 +177,6 @@ export const EXECUTION_TOOL_NAMES = [
   ToolName.SEARCH_MEMORY,
 ] as const;
 
-export type ExecutionToolName = typeof EXECUTION_TOOL_NAMES[number];
-
 /** The entry point that canonicalized an aliased tool call, journaled on
  *  `tool.alias.rewritten`. Load-time allowlist/schema canonicalization has no value here:
  *  it rewrites static configuration, not a model call. */

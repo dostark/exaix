@@ -29,7 +29,7 @@ const MAX_EVAL_OPERATIONS = 10_000;
 const LENGTH_PROPERTY = "length";
 
 /** JSON-compatible value (with `undefined` for optional/missing reads) accepted as context input. */
-export type ExpressionInput =
+type ExpressionInput =
   | string
   | number
   | boolean

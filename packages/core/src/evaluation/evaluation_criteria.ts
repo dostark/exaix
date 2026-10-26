@@ -35,8 +35,6 @@ export const RequirementFulfillmentSchema = z.object({
   status: z.nativeEnum(FulfillmentStatus),
 });
 
-export type IRequirementFulfillment = z.infer<typeof RequirementFulfillmentSchema>;
-
 export const EvaluationResultSchema = z.object({
   overallScore: z.number().min(0).max(1),
   criteriaScores: z.record(z.string(), CriterionResultSchema),

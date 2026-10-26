@@ -50,7 +50,7 @@ export interface IReflectionCycleResult {
 }
 
 /** The extractor-service surface the reflection service writes synthesis proposals through. */
-export type IReflectionProposalStore = Pick<MemoryExtractorService, "createProposal" | "listPending">;
+type IReflectionProposalStore = Pick<MemoryExtractorService, "createProposal" | "listPending">;
 
 /** Constructor dependencies for the reflection service. */
 /** The skill reads the reflection pass needs: the policy skill and its durable submission record. */

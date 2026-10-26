@@ -50,7 +50,6 @@ export const TriggerDecisionSchema = z.object({
 });
 
 export type TTriggerSource = z.infer<typeof TriggerSourceSchema>;
-export type TTriggerAction = z.infer<typeof TriggerActionSchema>;
 export type ExecutionTriggerEnvelope = z.infer<typeof ExecutionTriggerEnvelopeSchema>;
 export type TTriggerDecision = z.infer<typeof TriggerDecisionSchema>;
 

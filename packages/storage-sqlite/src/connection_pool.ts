@@ -18,8 +18,6 @@ export interface IDatabaseConnection {
   close(): Promise<void>;
 }
 
-export type DatabaseConnection = IDatabaseConnection;
-
 /**
  * SQLite database connection implementation
  */

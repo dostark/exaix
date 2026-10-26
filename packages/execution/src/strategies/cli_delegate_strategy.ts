@@ -122,12 +122,12 @@ export type IRunCliDelegateProcess = (
 ) => Promise<ICliDelegateProcessResult>;
 
 /** Resolves a portal alias to its absolute checkout path. Backed by AgentComposer.getPortalConfig. */
-export type IResolvePortalPath = (portalAlias: string) => string | undefined;
+type IResolvePortalPath = (portalAlias: string) => string | undefined;
 
 /** Injectable seam over Deno.writeTextFile for the MCP config file write — defaults to the
  *  real implementation; overridden in tests to deterministically simulate a write failure
  *  without real filesystem permission tricks. */
-export type IWriteConfigFile = (path: string, content: string, options: { mode: number }) => Promise<void>;
+type IWriteConfigFile = (path: string, content: string, options: { mode: number }) => Promise<void>;
 
 /** Dependencies for CliDelegateStrategy (constructor DI, config-free). */
 interface ICliDelegateStrategyDeps {

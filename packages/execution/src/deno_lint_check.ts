@@ -27,7 +27,7 @@ const LINE_PREFIX_MAX_BYTES = 4_096;
 const RULE_PATTERN = /^([a-z][a-z0-9-]*\/)?[a-z][a-z0-9-]*$/;
 
 /** One retained diagnostic of one lint run. Paths are repo-relative until safe projection. */
-export type IDenoLintFinding = ILintFinding;
+type IDenoLintFinding = ILintFinding;
 
 /** A check that retained no finding. */
 interface IDenoLintCheckOutcomePassed {
@@ -75,7 +75,7 @@ export interface IDenoLintCheckContext {
 }
 
 /** The bounded host batch runner the check dispatches to. */
-export type IDenoLintBatchRunner = (
+type IDenoLintBatchRunner = (
   options: Parameters<typeof runDenoLintBatch>[0],
 ) => Promise<IDenoLintBatchOutcome>;
 

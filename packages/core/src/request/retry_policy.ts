@@ -31,7 +31,7 @@ interface IRetryableOperationOptions {
   signal?: AbortSignal;
 }
 
-export type RetryAttempt = {
+type RetryAttempt = {
   attempt: number;
   error: string;
   errorType: string;
@@ -49,7 +49,7 @@ export interface IRetryResult<T> {
   retryHistory: RetryAttempt[];
 }
 
-export type RetryEventCallback = (context: IRetryContext) => void;
+type RetryEventCallback = (context: IRetryContext) => void;
 
 export interface IRetryPolicy {
   execute<T>(

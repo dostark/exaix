@@ -113,5 +113,3 @@ export const AnthropicMessagesRequestSchema = z.object({
     z.object({ type: z.literal(ANTHROPIC_TOOL_CHOICE_NONE) }),
   ]).optional(),
 });
-
-export type AnthropicMessagesRequest = z.infer<typeof AnthropicMessagesRequestSchema>;

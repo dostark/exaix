@@ -18,7 +18,7 @@ export interface ICommitOptions {
 }
 
 /** How much detail a Git command event carries. `categorical` omits raw argv and error text. */
-export type GitAuditMode = "full" | "categorical";
+type GitAuditMode = "full" | "categorical";
 
 export interface IGitCommandOptions {
   throwOnError?: boolean;

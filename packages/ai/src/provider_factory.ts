@@ -46,7 +46,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 declare const Deno: { env: { get(key: string): string | undefined } };
 
-export type ProviderRegistryBootstrap = () => void;
+type ProviderRegistryBootstrap = () => void;
 
 /** Budget wiring for a bound provider. It names the service and transport, the per-service cloud cap, and the run or global budget mode. */
 interface IBindingBudgetOptions {

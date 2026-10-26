@@ -18,7 +18,7 @@ export type ConfigReloadLogger = {
   ) => Promise<void> | void;
 };
 
-export type FileWatcherEvent = {
+type FileWatcherEvent = {
   path: string;
 };
 

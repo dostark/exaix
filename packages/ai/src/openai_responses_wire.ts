@@ -33,7 +33,7 @@ import {
 } from "./provider_common_utils.ts";
 
 /** One item of the Responses `input` array. A replayed output item keeps its own shape. */
-export type ResponsesInputItem = JSONObject;
+type ResponsesInputItem = JSONObject;
 
 /** The Responses reply fields this module reads. `output` holds the items in their original order. */
 export interface IResponsesResponse {
@@ -51,7 +51,7 @@ export interface IResponsesResponse {
 }
 
 /** One function tool in the Responses wire shape. Strict mode is off, because the tool schemas are not strict-mode schemas. */
-export type ResponsesWireTool = {
+type ResponsesWireTool = {
   type: "function";
   name: string;
   description?: string;
@@ -60,7 +60,7 @@ export type ResponsesWireTool = {
 };
 
 /** The Responses `tool_choice`. A single named function uses the flat form. */
-export type ResponsesWireToolChoice = "auto" | "none" | "required" | { type: "function"; name: string };
+type ResponsesWireToolChoice = "auto" | "none" | "required" | { type: "function"; name: string };
 
 /** Asks for the encrypted reasoning items, so the next request can replay them without server-side state. */
 const REASONING_ENCRYPTED_CONTENT = "reasoning.encrypted_content";

@@ -33,7 +33,7 @@ export interface ISessionDelegateCycleClaim extends ISessionDelegateCycleClaimKe
   updatedAt: string;
 }
 
-export type ISessionDelegateCycleClaimAcquireResult =
+type ISessionDelegateCycleClaimAcquireResult =
   | { outcome: typeof SessionDelegateCycleClaimAcquireOutcomeSchema.enum.acquired; claim: ISessionDelegateCycleClaim }
   | { outcome: typeof SessionDelegateCycleClaimAcquireOutcomeSchema.enum.existing; claim: ISessionDelegateCycleClaim };
 

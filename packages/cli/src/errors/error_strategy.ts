@@ -7,9 +7,9 @@
  * @related-files [packages/cli/tests/errors/error_strategy_test.ts]
  */
 
-export type ErrorPayload = Error | string | object | null | undefined;
+type ErrorPayload = Error | string | object | null | undefined;
 
-export type ErrorArgs = object | null | undefined;
+type ErrorArgs = object | null | undefined;
 
 interface IErrorContext {
   commandName: string;

@@ -112,7 +112,7 @@ export type OllamaResponse = {
   eval_duration?: number;
 };
 
-export type OpenAIUsage = {
+type OpenAIUsage = {
   prompt_tokens: number;
   completion_tokens: number;
   total_tokens?: number;
@@ -126,7 +126,7 @@ export type OpenAIUsage = {
 /** One OpenAI-format tool call, as it appears on the wire — `arguments` is a
  *  JSON-ENCODED STRING (unlike Anthropic's already-parsed `input` object), parsed by
  *  extractOpenAIToolCalls(). */
-export type OpenAIToolCall = {
+type OpenAIToolCall = {
   id: string;
   type: "function";
   function: { name: string; arguments: string };
@@ -149,7 +149,7 @@ export type OpenAIResponse = {
   }>;
 };
 
-export type GoogleUsageMetadata = {
+type GoogleUsageMetadata = {
   promptTokenCount: number;
   candidatesTokenCount: number;
   totalTokenCount?: number;
@@ -175,7 +175,7 @@ export type GoogleResponse = {
   }>;
 };
 
-export type AnthropicUsage = {
+type AnthropicUsage = {
   input_tokens?: number;
   output_tokens?: number;
   /** Real, documented Anthropic Messages API fields — populated only when prompt caching
@@ -465,7 +465,7 @@ export function stringifyOpenAiToolResultContent(content: string | ReadonlyArray
  *  three shapes this module constructs (priorTurn's assistant tool_calls + tool result,
  *  plus the plain user prompt). Exported for reuse by other OpenAI-compatible callers. */
 /** One outbound function tool call in the Chat Completions wire shape. */
-export type OpenAiWireToolCall = { id: string; type: "function"; function: { name: string; arguments: string } };
+type OpenAiWireToolCall = { id: string; type: "function"; function: { name: string; arguments: string } };
 
 export type OpenAiChatMessage =
   | {

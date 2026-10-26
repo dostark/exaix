@@ -15,8 +15,6 @@ const WRITE_CAPABILITIES_REQUIRING_GIT_TRACKING = [
   ToolName.GIT_CREATE_BRANCH,
 ] as const;
 
-export type WriteCapabilityRequiringGitTracking = typeof WRITE_CAPABILITIES_REQUIRING_GIT_TRACKING[number];
-
 /** Write-capable if EITHER the legacy `capabilities` list OR `permitted_tools` grants a
  *  write tool — some blueprints only declare write tools via `permitted_tools`. */
 export function requiresGitTracking(

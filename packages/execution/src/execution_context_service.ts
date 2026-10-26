@@ -22,7 +22,7 @@ import type { IContextBudgetManager } from "./context/context_budget_manager.ts"
 import { DomainEventType } from "@exaix/core/events";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
 /** Token counting strategy: BPE via ITokenizer, or character-heuristic fallback. */
-export type TokenSource = "bpe" | "heuristic";
+type TokenSource = "bpe" | "heuristic";
 
 /** Allocates prompt budget for a given model and request context. */
 export interface IPromptBudgetAllocator {

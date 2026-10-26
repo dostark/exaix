@@ -11,7 +11,7 @@ import type { IValidationResult } from "../base/command.ts";
 import type { JSONObject } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
-export type ValidationRule = (value: JSONValue) => string | null;
+type ValidationRule = (value: JSONValue) => string | null;
 
 export class ValidationChain {
   private rules: Map<string, ValidationRule[]> = new Map();

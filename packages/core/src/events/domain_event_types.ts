@@ -9,13 +9,7 @@
  * typos and establish a single source of truth for the event taxonomy.
  */
 
-import type {
-  EffortResolutionBasis,
-  EffortTier,
-  IExecutionCompletedVerification,
-  IExecutionVerificationLintFindingsEventPayload,
-  IRouteReason,
-} from "@exaix/schemas";
+import type { EffortResolutionBasis, EffortTier, IExecutionCompletedVerification, IRouteReason } from "@exaix/schemas";
 import type { EffortDeclarationSource, IEffortDeclarationPair, TaskComplexitySource } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core/types";
 import type {
@@ -82,10 +76,6 @@ export interface IBindingSnapshotCreatedEventPayload {
   /** True when the run was submitted with `--locked` and matched its lock. */
   replayed: boolean;
 }
-
-export type GuardrailVerdict = "pass" | "violation";
-/** Guardrail severity type. */
-export type GuardrailSeverity = "warn" | "block";
 
 /** Typed payload for voting.* events. */
 export interface IVotingEventPayload {
@@ -252,7 +242,7 @@ export interface IModelCostDivergencePayload {
 }
 
 /** Reason a model cleared the admission bar. */
-export type ModelAdmittedReason = "curated" | "native" | "explicit_use" | "benchmark_topn";
+type ModelAdmittedReason = "curated" | "native" | "explicit_use" | "benchmark_topn";
 
 /** Typed payload for model.admitted events (F12). */
 export interface IModelAdmittedPayload {
@@ -324,7 +314,7 @@ export interface IModelRegistryRefreshFailedPayload {
 }
 
 /** Why an OpenRouter per-model capability lookup failed. The call then proceeds without capability data. */
-export type OpenRouterCapabilityLookupFailureReason = "http_error" | "parse_error" | "timeout" | "size_limit";
+type OpenRouterCapabilityLookupFailureReason = "http_error" | "parse_error" | "timeout" | "size_limit";
 
 /** Typed payload for openrouter.capability_lookup.failed events. It never carries the key or the response body. */
 export interface IOpenRouterCapabilityLookupFailedPayload {
@@ -486,9 +476,6 @@ export interface IJournalIntegrityPayload {
 
 /** Verification fields of execution.completed. Commit identity is additive for old journals. */
 export type IExecutionCompletedVerificationEventPayload = IExecutionCompletedVerification;
-
-/** Payload of `execution.verification.lint_findings`. It is the terminal snapshot. */
-export type IExecutionVerificationLintFindingsEventPayloadContract = IExecutionVerificationLintFindingsEventPayload;
 
 export const DomainEventType = {
   // Flow step events

@@ -52,7 +52,7 @@ import type { JSONValue } from "@exaix/core";
 /**
  * Options for AnthropicProvider.
  */
-export type AnthropicProviderOptions = IBaseProviderOptions;
+type AnthropicProviderOptions = IBaseProviderOptions;
 
 /** Error thrown when tool_choice conflicts with extended thinking. */
 class AnthropicToolChoiceThinkingConflictError extends ModelProviderError {

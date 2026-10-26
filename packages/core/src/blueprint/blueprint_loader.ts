@@ -255,7 +255,7 @@ export function validateRuntimeFrontmatter(
   return { ok: true, data: parsed.data, warnings, errors: [] };
 }
 
-export type RuntimeBlueprintFrontmatter = z.infer<typeof RuntimeBlueprintFrontmatterSchema>;
+type RuntimeBlueprintFrontmatter = z.infer<typeof RuntimeBlueprintFrontmatterSchema>;
 
 // Loaded Blueprint Type
 

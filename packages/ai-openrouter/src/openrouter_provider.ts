@@ -72,9 +72,9 @@ import {
 } from "./constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export type OpenRouterSortStrategy = "throughput" | "latency" | "cost";
-export type OpenRouterDataCollection = "allow" | "deny";
-export type OpenRouterQuantization = (typeof OPENROUTER_QUANTIZATIONS)[number];
+type OpenRouterSortStrategy = "throughput" | "latency" | "cost";
+type OpenRouterDataCollection = "allow" | "deny";
+type OpenRouterQuantization = (typeof OPENROUTER_QUANTIZATIONS)[number];
 
 /** OpenRouter passthrough for provider routing, fallback models, and privacy. */
 export interface IOpenRouterRouting {
@@ -191,7 +191,7 @@ function applyRouting(body: OpenRouterRequestBody, routing: Opt<IOpenRouterRouti
 }
 
 /** Options for OpenRouterProvider. `siteName`/`siteUrl` populate OpenRouter ranking headers. */
-export type OpenRouterProviderOptions = IBaseProviderOptions & {
+type OpenRouterProviderOptions = IBaseProviderOptions & {
   siteName?: string;
   siteUrl?: string;
   /** Control-surface passthrough: serialized into the request body alongside model/messages. */

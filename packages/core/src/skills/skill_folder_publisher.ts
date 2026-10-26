@@ -37,7 +37,7 @@ interface IPublicationIntent {
 export type SkillLockMode = "shared" | "exclusive";
 
 /** Called after each publication stage completes. A throw simulates a crash at exactly that boundary. */
-export type SkillPublicationFaultHook = (stage: SkillPublicationStage, name: string) => void | Promise<void>;
+type SkillPublicationFaultHook = (stage: SkillPublicationStage, name: string) => void | Promise<void>;
 
 /** Reads a skill directory back into a snapshot without caps, for verifying folders this module wrote. */
 async function readFolderSnapshot(dir: string): Promise<ISkillRevisionSnapshot> {

@@ -75,7 +75,7 @@ export interface IServiceContext extends ICliApplicationContext {
   error?: string;
 }
 
-export type ServiceContext = IServiceContext;
+type ServiceContext = IServiceContext;
 
 // Helper to create IDatabaseService-compatible stub
 function createDatabaseStub(): IDatabaseService {

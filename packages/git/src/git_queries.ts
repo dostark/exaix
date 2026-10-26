@@ -68,14 +68,14 @@ const QUERY_FAILURE_CODE = {
   limitExceeded: "limit_exceeded",
 } as const;
 
-export type GitQueryFailureCode = (typeof QUERY_FAILURE_CODE)[keyof typeof QUERY_FAILURE_CODE];
+type GitQueryFailureCode = (typeof QUERY_FAILURE_CODE)[keyof typeof QUERY_FAILURE_CODE];
 
 interface IGitQueryFailure {
   readonly ok: false;
   readonly code: GitQueryFailureCode;
 }
 
-export type GitQueryResult<T> = { readonly ok: true; readonly value: T } | IGitQueryFailure;
+type GitQueryResult<T> = { readonly ok: true; readonly value: T } | IGitQueryFailure;
 
 /** One changed source the strict discovery selected. */
 interface IGitChangedSource {

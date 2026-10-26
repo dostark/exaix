@@ -44,7 +44,7 @@ interface IOpenRouterUsage {
 }
 
 /** One OpenRouter choice: the OpenAI shape plus the finish reasons that the OpenAI type omits. */
-export type IOpenRouterChoice = NonNullable<OpenAIResponse["choices"]>[number] & {
+type IOpenRouterChoice = NonNullable<OpenAIResponse["choices"]>[number] & {
   finish_reason?: string | null;
   native_finish_reason?: string | null;
 };

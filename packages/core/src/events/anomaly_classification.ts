@@ -12,7 +12,7 @@
 import { DomainEventType, type TDomainEventType } from "./domain_event_types.ts";
 import type { IActivityRecord } from "../types/database.ts";
 
-export type AnomalySeverity = "high" | "medium" | "low";
+type AnomalySeverity = "high" | "medium" | "low";
 
 export interface IAnomalyFinding {
   eventType: TDomainEventType;

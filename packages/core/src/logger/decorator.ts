@@ -31,8 +31,8 @@ interface IMethodLogPayload {
   [extra: string]: JSONValue;
 }
 
-export type PayloadMapper<Args extends unknown[], Return> = (args: Args, result?: Return) => IMethodLogPayload;
-export type TraceIdMapper<Args extends unknown[]> = (args: Args) => string | undefined;
+type PayloadMapper<Args extends unknown[], Return> = (args: Args, result?: Return) => IMethodLogPayload;
+type TraceIdMapper<Args extends unknown[]> = (args: Args) => string | undefined;
 
 /** Per-lifecycle-phase registered actions, for an operation whose started/completed/failed
  *  events must stay independently taxonomy-distinguishable rather than sharing one action
@@ -59,7 +59,7 @@ interface ILogMethodOptions<Args extends unknown[], Return> {
 
 /** A generator has no single `result` the way an async function does, so this receives
  *  `yieldCount`/`durationMs` instead of `PayloadMapper`'s `result`. */
-export type GeneratorPayloadMapper<Args extends unknown[]> = (
+type GeneratorPayloadMapper<Args extends unknown[]> = (
   args: Args,
   yieldCount: number,
   durationMs: number,
@@ -75,7 +75,7 @@ interface ILogGeneratorMethodOptions<Args extends unknown[]> {
 }
 
 /** Resolves a logger at invocation time for constructor-injected dependencies. */
-export type LoggerResolver<This> = (instance: This) => IEventLogger | undefined;
+type LoggerResolver<This> = (instance: This) => IEventLogger | undefined;
 type LoggerSource<This> = IEventLogger | LoggerResolver<This>;
 
 const PHASE_STARTED = "started";

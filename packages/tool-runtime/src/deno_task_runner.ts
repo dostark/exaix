@@ -26,7 +26,7 @@ interface IDenoTaskRunOptions {
 }
 
 /** Typed result of one deno task invocation. */
-export type IDenoTaskOutcome =
+type IDenoTaskOutcome =
   | { kind: "exited"; code: number; stdout: string; stderr: string }
   | { kind: "timed_out" }
   | { kind: "spawn_failed"; error_class: string };
