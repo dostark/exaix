@@ -12,38 +12,9 @@ import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { ICON_FAILURE, ICON_SUCCESS } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
-import type { IAgentExecutionResult } from "@exaix/execution";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { Opt, Reason } from "@exaix/core/types";
-
-export interface IFlowResult {
-  flowRunId: string;
-  success: boolean;
-  stepResults: Map<string, IStepResult>;
-  output: string;
-  duration: number;
-  startedAt: Date;
-  completedAt: Date;
-  namespaceArtifactPath?: string;
-  tokenSummary?: {
-    input_tokens: number;
-    output_tokens: number;
-    total_tokens: number;
-    token_provider?: string;
-    token_model?: string;
-    token_cost_usd?: number;
-  };
-}
-
-export interface IStepResult {
-  stepId: string;
-  success: boolean;
-  result?: IAgentExecutionResult;
-  error?: string;
-  duration: number;
-  startedAt: Date;
-  completedAt: Date;
-}
+import type { IFlowResult } from "./flow_runner.ts";
 
 export interface IFlowReportConfig {
   reportsDirectory: string;

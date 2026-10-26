@@ -7,9 +7,9 @@
  */
 
 import { z } from "zod";
-import { type EvaluationCriterion, EvaluationCriterionSchema, getCriteriaByNames } from "@exaix/core/evaluation";
+import { type EvaluationCriterion, EvaluationCriterionSchema } from "@exaix/core/evaluation";
 import { FlowGateOnFail, GeneralStatus, ICON_FAILURE, ICON_SUCCESS } from "@exaix/core";
-import type { GateEvaluator } from "./gate_evaluator.ts";
+import { type GateEvaluator, resolveCriteria } from "./gate_evaluator.ts";
 import type { IGateResult } from "@exaix/core/types";
 import type { CriterionResult } from "@exaix/core/evaluation";
 
@@ -122,7 +122,7 @@ export class FeedbackLoop {
     let previousScore = 0;
 
     // Resolve criteria (used internally by gateEvaluator)
-    const _criteria = this.resolveCriteria(config.criteria);
+    const _criteria = resolveCriteria(config.criteria);
 
     for (let iteration = 1; iteration <= config.maxIterations; iteration++) {
       const iterationStart = performance.now();
@@ -279,26 +279,6 @@ export class FeedbackLoop {
     }
 
     return parts.join("\n");
-  }
-
-  /**
-   * Resolve criteria from string names or criterion objects
-   */
-  private resolveCriteria(
-    criteriaInput: Array<string | EvaluationCriterion>,
-  ): EvaluationCriterion[] {
-    const criteria: EvaluationCriterion[] = [];
-
-    for (const item of criteriaInput) {
-      if (typeof item === "string") {
-        const resolved = getCriteriaByNames([item]);
-        criteria.push(...resolved);
-      } else {
-        criteria.push(item as EvaluationCriterion);
-      }
-    }
-
-    return criteria;
   }
 }
 

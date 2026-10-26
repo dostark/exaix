@@ -1100,29 +1100,7 @@ export class FlowRunner implements IFlowRunner {
     const activityJournal = new ActivityJournal(this.eventLogger);
     const config = this.config;
     const db = this.db;
-    const _context = (this.options.context || {
-      config: {
-        get: () => config,
-        getAll: () => config,
-        getConfigPath: () => "",
-        reload: () => config,
-        getSchemaVersion: () => "1.0.0",
-        getPortals: () => [],
-        getPortal: (_alias: string) => undefined,
-        addPortal: (_alias: string, _path: string) => Promise.resolve(),
-        removePortal: (_alias: string) => Promise.resolve(),
-      },
-      db: db!,
-      provider: createProviderStub(),
-      display: {
-        info: () => Promise.resolve(),
-        warn: () => Promise.resolve(),
-        error: () => Promise.resolve(),
-        debug: () => Promise.resolve(),
-        fatal: () => Promise.resolve(),
-      },
-      git: createGitServiceStub(),
-    }) as IApplicationContext;
+    const _context = (this.options.context || this.buildFallbackContext(config, db)) as IApplicationContext;
     const llmClient = new LlmClient(
       config,
       undefined,

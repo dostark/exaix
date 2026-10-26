@@ -50,6 +50,22 @@ export const GateConfigSchema = z.object({
 
 export type GateConfig = z.infer<typeof GateConfigSchema>;
 
+/** Resolves criteria from string names or criterion objects. */
+export function resolveCriteria(criteriaInput: Array<string | EvaluationCriterion>): EvaluationCriterion[] {
+  const criteria: EvaluationCriterion[] = [];
+
+  for (const item of criteriaInput) {
+    if (typeof item === "string") {
+      const resolved = getCriteriaByNames([item]);
+      criteria.push(...resolved);
+    } else {
+      criteria.push(item);
+    }
+  }
+
+  return criteria;
+}
+
 /**
  * GateEvaluator class for quality gate evaluation
  */
@@ -71,7 +87,7 @@ export class GateEvaluator implements IGateEvaluator {
 
     try {
       // Resolve criteria from names or objects
-      const criteria = this.resolveCriteria(config.criteria);
+      const criteria = resolveCriteria(config.criteria);
 
       // Merge dynamic criteria from request analysis when enabled
       let allCriteria = criteria;
@@ -145,28 +161,6 @@ export class GateEvaluator implements IGateEvaluator {
   ): Promise<IGateResult> {
     const content = stepResult.result?.content ?? "";
     return this.evaluate(config, content, originalRequest, previousAttempts);
-  }
-
-  /**
-   * Resolve criteria from string names or criterion objects
-   */
-  private resolveCriteria(
-    criteriaInput: Array<string | EvaluationCriterion>,
-  ): EvaluationCriterion[] {
-    const criteria: EvaluationCriterion[] = [];
-
-    for (const item of criteriaInput) {
-      if (typeof item === "string") {
-        // Look up by name
-        const resolved = getCriteriaByNames([item]);
-        criteria.push(...resolved);
-      } else {
-        // Use as-is (already a criterion object)
-        criteria.push(item as EvaluationCriterion);
-      }
-    }
-
-    return criteria;
   }
 
   /**
