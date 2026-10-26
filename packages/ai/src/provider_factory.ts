@@ -681,7 +681,7 @@ export function initializeRegistry(): void {
 // Provider Validation and Health Checks
 
 /** Validates a provider connection via a lightweight test request; used for health checks in fallback chains. */
-export async function validateProviderConnection(provider: IModelProvider): Promise<void> {
+async function validateProviderConnection(provider: IModelProvider): Promise<void> {
   try {
     // Use a minimal test prompt that should work with any provider
     const testPrompt = DEFAULTS.PROVIDER_HEALTH_CHECK_TEST_PROMPT;

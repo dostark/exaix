@@ -9,7 +9,7 @@
 import { ToolName } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export const WRITE_CAPABILITIES_REQUIRING_GIT_TRACKING = [
+const WRITE_CAPABILITIES_REQUIRING_GIT_TRACKING = [
   ToolName.WRITE_FILE,
   ToolName.GIT_COMMIT,
   ToolName.GIT_CREATE_BRANCH,

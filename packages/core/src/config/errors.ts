@@ -25,15 +25,6 @@ export class ConfigValidationError extends Error {
   }
 }
 
-export class ConfigWriteError extends Error {
-  constructor(key: string, cause?: Opt<IConfigWriteCause, Reason.OptionalContext>) {
-    const msg = `Failed to write configuration key '${key}'`;
-    super(cause ? `${msg}: ${cause.message}` : msg);
-    this.name = "ConfigWriteError";
-    if (cause instanceof Error) this.cause = cause;
-  }
-}
-
 /** Thrown when an MCP config write targets a path in config_mcp_blocklist. */
 export class ConfigPathBlockedError extends Error {
   constructor(key: string, reason?: Opt<string, Reason.OptionalContext>) {

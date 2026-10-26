@@ -30,7 +30,7 @@ export interface ICanonicalizedToolCall {
 }
 
 /** Canonical parameter keys the alias tables rename to. */
-export const PATH_PARAM = "path";
+const PATH_PARAM = "path";
 const PATTERN_PARAM = "pattern";
 const SEARCH_PARAM = "search";
 const REPLACE_PARAM = "replace";

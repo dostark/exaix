@@ -38,7 +38,7 @@ export const PLAN_STATUS_VALUES = [
   PlanStatus.AMENDMENT_PENDING,
 ] as const;
 
-export function isPlanStatus(value: JSONValue): value is PlanStatus {
+function isPlanStatus(value: JSONValue): value is PlanStatus {
   return typeof value === "string" && (PLAN_STATUS_VALUES as readonly string[]).includes(value);
 }
 

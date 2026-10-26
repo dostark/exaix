@@ -68,7 +68,7 @@ export const CAPABILITY_EDITION: Record<string, string> = {
 };
 
 /** Minimum tier comparison does not prove runtime module installation. */
-export const EDITION_RANK: Readonly<Record<string, number>> = {
+const EDITION_RANK: Readonly<Record<string, number>> = {
   [EDITION_SOLO]: 0,
   [EDITION_TEAM]: 1,
   [EDITION_ENTERPRISE]: 2,

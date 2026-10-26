@@ -49,12 +49,12 @@ interface IStepAuditResolution {
 
 export const LAYER_FLOW = "flow";
 export const LAYER_CONFIG = "config";
-export const LAYER_OVERLAY = "overlay";
+const LAYER_OVERLAY = "overlay";
 export const LAYER_RUN = "run";
 export const LAYER_CLI = "cli";
 
 /** Raised by the layer loader for any operator file that fails validation. */
-export class OverlayLoadError extends Error {
+class OverlayLoadError extends Error {
   constructor(detail: string) {
     super(`overlay_invalid: ${detail}`);
     this.name = "OverlayLoadError";
@@ -62,7 +62,7 @@ export class OverlayLoadError extends Error {
 }
 
 /** Project the current config.ai selection to a catalog canonical model, when unique. */
-export function projectConfigDefaultModel(config: Config, catalog: IBindingLayers["catalog"]): string | undefined {
+function projectConfigDefaultModel(config: Config, catalog: IBindingLayers["catalog"]): string | undefined {
   const ai = config.ai;
   if (!ai?.provider) return undefined;
   const direct = `${ai.provider}/${ai.model ?? ""}`;

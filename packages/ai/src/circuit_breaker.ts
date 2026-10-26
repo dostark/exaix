@@ -28,7 +28,7 @@ interface ICircuitBreakerOptions {
 }
 
 /** Error thrown when circuit is open and calls are rejected */
-export class CircuitOpenError extends Error {
+class CircuitOpenError extends Error {
   constructor(message = "Circuit breaker is OPEN") {
     super(message);
     this.name = "CircuitOpenError";

@@ -22,7 +22,7 @@ interface IBudgetOverrideReader {
   get<T>(key: string): T | undefined;
 }
 
-export const COST_TARGET_TOKENS_CONFIG_KEY = "budget.cost_target_tokens_per_request";
+const COST_TARGET_TOKENS_CONFIG_KEY = "budget.cost_target_tokens_per_request";
 
 /** Config DB overrides public TOML, which overrides the legacy camelCase field. */
 export function resolveEffectiveBudgetPolicy(

@@ -48,7 +48,7 @@ export async function measureNativeConversation(
 
 /** Counts the messages a replayed round or a snapshot adds after the leading prompt.
  *  Each round adds one assistant message and one tool message per call. Each turn adds two. */
-export function replayedOpenAiMessageCount(options: Opt<IModelOptions, Reason.OptionalInput>): number {
+function replayedOpenAiMessageCount(options: Opt<IModelOptions, Reason.OptionalInput>): number {
   if (options?.priorRound) return 1 + options.priorRound.calls.length;
   const snapshot = options?.nativeConversation;
   if (!snapshot) return 0;

@@ -209,7 +209,7 @@ export type AnthropicResponse = {
 /**
  * Google bills input and output at different rates. Thinking tokens are passed as output tokens.
  */
-export function calculateGoogleCost(promptTokens: number, outputTokens: number): number {
+function calculateGoogleCost(promptTokens: number, outputTokens: number): number {
   return (promptTokens * COST_RATE_GOOGLE_INPUT + outputTokens * COST_RATE_GOOGLE) / TOKENS_PER_COST_UNIT;
 }
 

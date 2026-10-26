@@ -727,7 +727,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
 
 /** Reads a PID from a file. Returns undefined if the file does not exist or contains an
  *  invalid number. */
-export function readPidFile(pidPath: string): number | undefined {
+function readPidFile(pidPath: string): number | undefined {
   try {
     const content = Deno.readTextFileSync(pidPath);
     const pid = Number.parseInt(content.trim(), 10);
@@ -850,7 +850,7 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
 /** Checks whether a process is alive via `kill -0` (sends no signal, only checks
  *  existence/permission). Core-local so the config layer does not depend on the CLI
  *  package. Returns false on any error (dead pid, no permission, no `kill`). */
-export async function isPidAlive(pid: number): Promise<boolean> {
+async function isPidAlive(pid: number): Promise<boolean> {
   try {
     const result = await new Deno.Command("kill", {
       args: ["-0", pid.toString()],

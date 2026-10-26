@@ -68,7 +68,7 @@ interface IRetryPolicyOptions {
 }
 
 /** Error types that should trigger a retry. */
-export const RETRYABLE_ERROR_TYPES: string[] = [
+const RETRYABLE_ERROR_TYPES: string[] = [
   "NetworkError",
   "TimeoutError",
   "RateLimitError",
@@ -79,7 +79,7 @@ export const RETRYABLE_ERROR_TYPES: string[] = [
 
 /** HTTP status codes that should trigger a retry. */
 /** Error message patterns that should trigger a retry. */
-export const RETRYABLE_MESSAGE_PATTERNS: string[] = [
+const RETRYABLE_MESSAGE_PATTERNS: string[] = [
   "rate limit",
   "timeout",
   "network",
@@ -100,7 +100,7 @@ const DEFAULT_RETRY_POLICY_MAX_DELAY_MS = 30000;
 /**
  * Zod schema for retry policy configuration
  */
-export const RetryPolicyConfigSchema = z.object({
+const RetryPolicyConfigSchema = z.object({
   /** Maximum number of retry attempts (excluding initial attempt) */
   maxRetries: z.number().min(0).max(10).default(3),
 

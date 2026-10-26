@@ -21,7 +21,7 @@ import { buildBuiltInCatalog, mergeCatalogs } from "@exaix/model-registry";
 import { SCHEME_HTTP, SCHEME_HTTPS } from "@exaix/core";
 
 /** Raised for any invalid operator overlay or catalog endpoint during grant computation. */
-export class NetGrantError extends Error {
+class NetGrantError extends Error {
   constructor(detail: string) {
     super(`net_grant: ${detail}`);
     this.name = "NetGrantError";

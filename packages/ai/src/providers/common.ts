@@ -191,7 +191,7 @@ export class RateLimitError extends ModelProviderError {
 /**
  * Quota exceeded error for model providers.
  */
-export class QuotaExceededError extends ModelProviderError {
+class QuotaExceededError extends ModelProviderError {
   constructor(provider: string, message: string) {
     super(message, provider);
     this.name = "QuotaExceededError";
@@ -202,7 +202,7 @@ export class QuotaExceededError extends ModelProviderError {
 /**
  * Model not found error for model providers.
  */
-export class ModelNotFoundError extends ModelProviderError {
+class ModelNotFoundError extends ModelProviderError {
   constructor(provider: string, message: string) {
     super(message, provider);
     this.name = "ModelNotFoundError";
@@ -213,7 +213,7 @@ export class ModelNotFoundError extends ModelProviderError {
 /**
  * Context length error for model providers.
  */
-export class ContextLengthError extends ModelProviderError {
+class ContextLengthError extends ModelProviderError {
   constructor(provider: string, message: string) {
     super(message, provider);
     this.name = "ContextLengthError";

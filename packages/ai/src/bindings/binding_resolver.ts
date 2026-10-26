@@ -61,7 +61,7 @@ const JUDGE_PREFIX = "judge:";
 
 /** True when a selector names a judge. A judge ref matches judge selectors only, so it
  *  competes with no agent-step selector. */
-export function isJudgeSelector(selector: string): boolean {
+function isJudgeSelector(selector: string): boolean {
   return selector === SELECTOR_JUDGE || selector.startsWith(JUDGE_PREFIX);
 }
 /** Specificity of the bare `judge` selector. It outranks `default` and nothing else. */

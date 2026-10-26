@@ -33,7 +33,7 @@ export const ANOMALY_SEVERITY_HIGH: AnomalySeverity = "high";
 export const ANOMALY_SEVERITY_MEDIUM: AnomalySeverity = "medium";
 export const ANOMALY_SEVERITY_LOW: AnomalySeverity = "low";
 
-export const ANOMALY_EVENT_SEVERITY: Partial<Record<TDomainEventType, AnomalySeverity>> = {
+const ANOMALY_EVENT_SEVERITY: Partial<Record<TDomainEventType, AnomalySeverity>> = {
   [DomainEventType.SecurityViolation]: ANOMALY_SEVERITY_HIGH,
   [DomainEventType.SecuritySymlinkDetected]: ANOMALY_SEVERITY_HIGH,
   [DomainEventType.SecurityPathTraversalAttempted]: ANOMALY_SEVERITY_HIGH,

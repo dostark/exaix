@@ -462,14 +462,6 @@ export enum FlowGateAction {
 }
 
 /**
- * Log rotation intervals.
- */
-export enum LogRotationInterval {
-  DAILY = "daily",
-  HOURLY = "hourly",
-}
-
-/**
  * Types of requests in the system.
  */
 export enum RequestKind {
@@ -618,15 +610,6 @@ export enum ArtifactSubtype {
   ANALYSIS = "analysis",
   REPORT = "report",
   DIAGRAM = "diagram",
-}
-
-/**
- * Memory scope for storage.
- */
-export enum StorageScope {
-  USER = "user",
-  SESSION = "session",
-  REPO = "repo",
 }
 
 /**
@@ -871,12 +854,6 @@ export enum HitlRuleSource {
   MANDATORY = "mandatory",
 }
 
-/** Execution surface where a HITL policy match occurred. */
-export enum HitlSurface {
-  TOOL_REGISTRY = "tool_registry",
-  DYNAMIC = "dynamic",
-}
-
 /**
  * Sources for flow step input data.
  */
@@ -1109,28 +1086,6 @@ export enum ArchiveStatus {
 }
 
 /**
- * Type of a session memory item.
- */
-export enum SessionMemoryItemType {
-  LEARNING = "learning",
-  PATTERN = "pattern",
-  DECISION = "decision",
-  EXECUTION = "execution",
-  INSIGHT = "insight",
-}
-
-/**
- * Types of search results and entries in memory banks.
- */
-export enum MemoryEntryType {
-  PROJECT = MemoryType.PROJECT,
-  EXECUTION = MemoryType.EXECUTION,
-  PATTERN = MemoryType.PATTERN,
-  DECISION = MemoryType.DECISION,
-  LEARNING = MemoryType.LEARNING,
-}
-
-/**
  * Types of activity in the system for summaries and journaling.
  */
 export enum ActivityType {
@@ -1163,16 +1118,6 @@ export enum HealthCheckVerdict {
   PASS = "pass",
   WARN = "warn",
   FAIL = "fail",
-}
-
-/**
- * Capabilities supported by AI providers.
- */
-export enum ProviderCapability {
-  CHAT = "chat",
-  STREAMING = "streaming",
-  VISION = "vision",
-  TOOLS = "tools",
 }
 
 /**

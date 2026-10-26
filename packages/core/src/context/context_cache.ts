@@ -19,7 +19,7 @@ interface ICachedSection {
 }
 
 /** Default max entries in the context cache before LRU eviction. */
-export const DEFAULT_CONTEXT_CACHE_MAX_ENTRIES = 100;
+const DEFAULT_CONTEXT_CACHE_MAX_ENTRIES = 100;
 
 /** Stores stable sections (system prompt, portal context) reused across multiple
  *  execution steps, enabling cache_control for Anthropic API. */

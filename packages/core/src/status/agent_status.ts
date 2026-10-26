@@ -18,7 +18,7 @@ export const AgentStatus = {
 
 export type AgentStatusType = typeof AgentStatus[keyof typeof AgentStatus];
 
-export const AGENT_STATUS_VALUES: readonly AgentStatusType[] = [
+const AGENT_STATUS_VALUES: readonly AgentStatusType[] = [
   AgentStatus.ACTIVE,
   AgentStatus.INACTIVE,
   AgentStatus.ERROR,
