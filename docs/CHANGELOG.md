@@ -18,6 +18,21 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 233 (Lean Portal Lint Verification)
+
+### Added
+
+- A portal can run its post-execution lint verification with the generic `deno_lint` check, which
+  runs `deno lint` under a daemon-owned installed policy and lists the remaining findings in the
+  review (see [Portal Commands](Exaix_User_Guide.md#portal-commands---manage-external-project-access)).
+- `deno task unslop-ts:policy --out <workspace>/lint` installs a complete portal lint policy
+  directory — engine bundle, catalog, plugin, config and manifest — for deployment.
+
+### Changed
+
+- A source deploy installs the portal lint policy under `lint/unslop/`, and a redeploy copies the
+  verified directory without rebuilding the engine.
+
 ## Unreleased — Phase 228 (unslop-ts Linter and Runtime Interoperability)
 
 ### Changed
