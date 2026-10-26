@@ -321,3 +321,15 @@ Examples
   #test-development Write security tests for file path validation
   #test-development Create integration test for workspace bootstrap flow
 ```
+
+## Parallel isolation for repo-mutating tests
+
+- A test that rewrites a repository config, or runs a whole-tree task over the checkout, must be
+  registered in `scripts/test_parallel.ts` `SEQUENTIAL_TESTS` with the `sharedPath` reason and
+  `exclusive: true`. Otherwise a neighbouring worker observes a half-written file and fails with a
+  spurious `check:style` or `check:magic` error.
+- Whole-tree walkers must ignore hidden transient fixtures that a neighbouring test writes (a
+  dot-prefixed `.ts` file under `scripts/`). The plugin host skips dotfiles while a filesystem
+  walker does not, so a parity test sees a finding the plugin never reports.
+- A test that pins a Dockerfile cache line (for example `ci_submodule_init_test.ts`) must change in
+  the same commit as that line.

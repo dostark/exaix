@@ -15,6 +15,7 @@ version: "1.3.0"
 topics: ["cleanup", "validation", "linting", "style", "qa", "ci", "architecture"]
 qwen_skill: clean-codebase
 ---
+
 ```text
 Key points
 
@@ -186,6 +187,9 @@ Phase 23 — Final full-suite validation
   - `deno compile` writes `denort` into `DENO_DIR`. A read-only `~/.cache/deno` fails the build
     with "Read-only file system (os error 30)"; export `DENO_DIR` to a writable path outside the
     worktree for the whole run.
+  - Do not point `DENO_DIR` at an empty directory for the suite. `@db/sqlite` downloads its native
+    library at first load, and a network-restricted child fails on the GitHub fetch. Reuse the
+    host cache or warm the new one first.
   - Scenario tests need a runnable `exactl` and a daemon script. After the build, make a shell
     shim that execs `dist/bin/exactl-solo-<target>`, then set `EXA_BIN_PATH` to the shim FILE:
     tests that call `runSyntheticScenario` directly stat it with `isFile`, not as a directory.
@@ -193,6 +197,19 @@ Phase 23 — Final full-suite validation
     `import.meta.url` inside its compile temp dir and cannot find `apps/daemon/main.ts`.
   - Attribute a failed full run before calling it a regression: re-run each failed file with these
     variables. Scenario and build failures under a read-only cache all clear with writable paths.
+  - The Containered Batch looks for `dist/bin/exactl-solo-<target>`. Run `deno task build:solo`
+    before the suite, or every scenario case fails on a missing binary.
+  - Dynamic `npm:` specifiers (the tree-sitter grammars) must be cached in a Docker layer keyed only
+    on `deno.json`/`deno.lock`, before the source copy. Deny their native lifecycle scripts
+    (`allowScripts: []`): the extractors read the WASM inside the package, and a source change must
+    not refetch or rebuild the grammars.
+  - Warm the `deno bundle` esbuild platform package in the image. The portal policy installer runs
+    `deno bundle` inside the network-isolated test container.
+  - Whole-tree checkers must skip generated `lint/` output. A scenario run leaves the installed
+    policy there, and `check:style`/`check:magic` fail on its generated `plugin.ts`.
+  - A test that rewrites a repo config or runs whole-tree tasks belongs in `SEQUENTIAL_TESTS` with
+    `sharedPath` and `exclusive`. Update every test that pins the Dockerfile cache line when that
+    line changes.
  46. Fastest path first:
      a. `deno run -A scripts/ci.ts check` — ONE command, all static gates (do NOT
         hand-chain `deno task check:X`; a second hand-maintained list is how gates went

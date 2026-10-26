@@ -113,3 +113,14 @@ Deno.test("process-guards: the review-remediation-retro guardrails stay pinned",
   assert(nextSteps.includes("git branch --show-current"), "plan-step commits must check the branch");
   assert(commit.includes("Pre-commit the plan submodule"), "the commit skill must keep the submodule staged");
 });
+
+Deno.test("process-guards: the container-suite guidance is pinned", async () => {
+  const cleanCodebase = await Deno.readTextFile(".copilot/skills/clean-codebase/SKILL.md");
+  const testDevelopment = await Deno.readTextFile(".copilot/skills/test-development/SKILL.md");
+  for (const token of ["dist/bin/exactl-solo", "allowScripts", "tree-sitter", "generated `lint/`"]) {
+    assert(cleanCodebase.includes(token), `clean-codebase must name ${token}`);
+  }
+  for (const token of ["SEQUENTIAL_TESTS", "sharedPath", "exclusive"]) {
+    assert(testDevelopment.includes(token), `test-development must name ${token}`);
+  }
+});
