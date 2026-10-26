@@ -17,32 +17,10 @@ import { DEFAULT_TITLE_PLACEHOLDER } from "@exaix/core";
 import { MemoryScope } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
-import type { IMemoryNotification } from "@exaix/core/types";
+import type { IMemoryNotification, INotificationService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { Opt, Reason } from "@exaix/core/types";
-/**
- * Interface for Notification Service to support mocks and strict typing
- */
-export interface INotificationService {
-  notifyMemoryUpdate(proposal: IMemoryUpdateProposal): Promise<void>;
-  notify(
-    message: string,
-    type?: string,
-    proposalId?: string,
-    traceId?: string,
-    metadata?: string,
-  ): Promise<void>;
-  notifyApproval(proposalId: string, learningTitle: string): void;
-  notifyRejection(proposalId: string, reason: string): void;
-  getNotifications(): Promise<IMemoryNotification[]>;
-  getPendingCount(): Promise<number>;
-  notifyPendingDigestIfNeeded(pendingCount: number): Promise<boolean>;
-  clearNotification(proposalId: string): Promise<void>;
-  clearAllNotifications(): Promise<void>;
-  readonly database: IDatabaseService;
-}
-
 /** Handles user notifications for memory updates via SQLite storage. */
 export class NotificationService implements INotificationService {
   constructor(

@@ -12,7 +12,7 @@ import process from "node:process";
 import type { IDashboardViewState, IPane } from "../src/tui_dashboard.ts";
 import { noColorTheme } from "@exaix/tui/helpers/colors.ts";
 import { prodRender } from "../src/dashboard/renderer.ts";
-import type { INotificationService } from "@exaix/core/notification";
+import type { INotificationService } from "@exaix/core/types";
 import type { IMemoryNotification } from "@exaix/core/types";
 import type { IPortalDetails, IPortalInfo } from "@exaix/core/types";
 import type { IPortalService } from "@exaix/core/types";
