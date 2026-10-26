@@ -9,6 +9,7 @@
  */
 
 import { dirname, join } from "@std/path";
+import { TraceLock } from "./trace_lock.ts";
 import {
   type ISessionDelegationOutcome,
   type ISessionDelegationResultRecord,
@@ -30,7 +31,7 @@ export type { ISessionDelegationResultRecord };
 const RESULT_FILE = "session_delegate_result.json";
 
 export class SessionDelegationResultStore implements ISessionDelegationResultStore {
-  private readonly traceQueues = new Map<string, Promise<void>>();
+  private readonly traceLock = new TraceLock();
 
   constructor(
     private readonly baseDir: string,
@@ -61,7 +62,7 @@ export class SessionDelegationResultStore implements ISessionDelegationResultSto
   }
 
   async markDelivered(traceId: string): Promise<boolean> {
-    return await this.withTraceLock(traceId, async (): Promise<boolean> => {
+    return await this.traceLock.run(traceId, async (): Promise<boolean> => {
       const current = await this.getRecord(traceId);
       if (!current || current.state === SessionDelegationResultStateSchema.enum.delivered) return false;
       const delivered = SessionDelegationResultRecordSchema.parse({
@@ -79,7 +80,7 @@ export class SessionDelegationResultStore implements ISessionDelegationResultSto
     result: ISessionDelegationOutcome,
     state: ISessionDelegationResultRecord["state"],
   ): Promise<void> {
-    await this.withTraceLock(traceId, async (): Promise<void> => {
+    await this.traceLock.run(traceId, async (): Promise<void> => {
       const parsed = SessionDelegationOutcomeSchema.parse(result);
       if (parsed.delegationTraceId !== traceId) {
         throw new Error("delegation trace mismatch");
@@ -108,22 +109,5 @@ export class SessionDelegationResultStore implements ISessionDelegationResultSto
     const temporary = `${target}.tmp`;
     await Deno.writeTextFile(temporary, JSON.stringify(record, null, 2));
     await Deno.rename(temporary, target);
-  }
-
-  private async withTraceLock<T>(traceId: string, operation: () => Promise<T>): Promise<T> {
-    const previous = this.traceQueues.get(traceId) ?? Promise.resolve();
-    let release: () => void = () => {};
-    const pending = new Promise<void>((resolve: () => void): void => {
-      release = resolve;
-    });
-    const queued = previous.then((): Promise<void> => pending);
-    this.traceQueues.set(traceId, queued);
-    await previous;
-    try {
-      return await operation();
-    } finally {
-      release();
-      if (this.traceQueues.get(traceId) === queued) this.traceQueues.delete(traceId);
-    }
   }
 }

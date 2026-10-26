@@ -19,6 +19,7 @@ import { reconcile } from "./reconcile.ts";
 import { buildSessionDelegationOutcome, type ISessionDelegationOutcome } from "./session_delegation.ts";
 import type { ISessionDelegationResultStore } from "./session_delegation_result_store.ts";
 import type { ISessionWaitStore } from "./wait/i_session_wait_store.ts";
+import { TraceLock } from "./trace_lock.ts";
 
 /** Outcome of processing a dropped return.json for one trace. */
 export interface ISessionReturnOutcome {
@@ -55,13 +56,13 @@ const NOT_PROCESSED: ISessionReturnOutcome = {
 };
 
 export class SessionReturnProcessor {
-  private readonly traceQueues = new Map<string, Promise<void>>();
+  private readonly traceLock = new TraceLock();
 
   constructor(private readonly deps: ISessionReturnProcessorDeps) {}
 
   /** Reconciles the brief + return for `traceId` and resumes the wait store on accept. Returns processed=false (a no-op) when the brief or return.json is absent/invalid. */
   async processReturn(traceId: string): Promise<ISessionReturnOutcome> {
-    return await this.withTraceLock(
+    return await this.traceLock.run(
       traceId,
       (): Promise<ISessionReturnOutcome> => this.processReturnLocked(traceId),
     );
@@ -128,23 +129,6 @@ export class SessionReturnProcessor {
       budgetExceeded: result.budgetExceeded,
       delegationOutcome,
     };
-  }
-
-  private async withTraceLock<T>(traceId: string, operation: () => Promise<T>): Promise<T> {
-    const previous = this.traceQueues.get(traceId) ?? Promise.resolve();
-    let release: () => void = () => {};
-    const pending = new Promise<void>((resolve: () => void): void => {
-      release = resolve;
-    });
-    const queued = previous.then((): Promise<void> => pending);
-    this.traceQueues.set(traceId, queued);
-    await previous;
-    try {
-      return await operation();
-    } finally {
-      release();
-      if (this.traceQueues.get(traceId) === queued) this.traceQueues.delete(traceId);
-    }
   }
 }
 
