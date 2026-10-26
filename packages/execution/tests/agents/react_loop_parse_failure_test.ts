@@ -22,8 +22,7 @@ import {
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
-
-type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
+import type { ReActExecutor } from "../helpers/react_loop_fixtures.ts";
 
 class SingleResponseProvider implements IModelProvider {
   readonly id = "mock-parse-provider";

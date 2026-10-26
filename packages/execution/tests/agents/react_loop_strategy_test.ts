@@ -8,15 +8,20 @@
 
 import { assert, assertEquals, assertFalse, assertRejects } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
-import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
-import { ExecutionStrategyName, SecurityMode, TOKEN_ESTIMATION_CHARS_PER_TOKEN, ToolName } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN, ToolName } from "@exaix/core";
+import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, REACT_THOUGHT_PREFIX } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
 import { createCoreToolSchemas, ToolRegistry } from "@exaix/tool-runtime";
 import { createMockConfig } from "@exaix/testing";
+import {
+  createOptions,
+  type ReActExecutor,
+  testBlueprint,
+  type TestToolParams,
+} from "../helpers/react_loop_fixtures.ts";
 
 class MockModelProvider implements IModelProvider {
   readonly id = "mock-react-provider";
@@ -43,17 +48,6 @@ class MockModelProvider implements IModelProvider {
   }
 }
 
-type TestToolParams = Record<string, JSONValue>;
-type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
-
-const testBlueprint = {
-  name: "test-agent",
-  model: "mock:test",
-  provider: "mock",
-  capabilities: [ExecutionStrategyName.REACT],
-  systemPrompt: "",
-} satisfies IAgentFileBlueprint;
-
 const testContext = {
   trace_id: "trace-11111111-1111-4111-8111-111111111111",
   request_id: "request-1",
@@ -61,17 +55,6 @@ const testContext = {
   plan: "test",
   portal: "test",
 } satisfies IExecutionContext;
-
-function createOptions(portal: string): IAgentExecutionOptions {
-  return {
-    agent_role: "test-agent",
-    portal,
-    security_mode: SecurityMode.SANDBOXED,
-    timeout_ms: 300000,
-    max_tool_calls: 100,
-    audit_enabled: true,
-  };
-}
 
 const mockExecutor = {
   logAgentOutput: async () => {

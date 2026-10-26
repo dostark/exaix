@@ -13,30 +13,16 @@
 
 import { assertEquals } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
-import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
+import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, REACT_THOUGHT_PREFIX, ToolName } from "@exaix/core";
+import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import {
-  ExecutionStrategyName,
-  REACT_STATUS_COMPLETE,
-  REACT_SUMMARY_PREFIX,
-  REACT_THOUGHT_PREFIX,
-  SecurityMode,
-  ToolName,
-} from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
-import type { JSONValue } from "@exaix/core/types";
-
-type TestToolParams = Record<string, JSONValue>;
-type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
-
-const testBlueprint = {
-  name: "test-agent",
-  model: "mock:test",
-  provider: "mock",
-  capabilities: [ExecutionStrategyName.REACT],
-  systemPrompt: "",
-} satisfies IAgentFileBlueprint;
+  createOptions,
+  type ReActExecutor,
+  testBlueprint,
+  type TestToolParams,
+} from "../helpers/react_loop_fixtures.ts";
 
 const testContext = {
   trace_id: "trace-66666666-6666-4666-8666-666666666666",
@@ -45,17 +31,6 @@ const testContext = {
   plan: "test",
   portal: "test",
 } satisfies IExecutionContext;
-
-function createOptions(portal: string): IAgentExecutionOptions {
-  return {
-    agent_role: "test-agent",
-    portal,
-    security_mode: SecurityMode.SANDBOXED,
-    timeout_ms: 300000,
-    max_tool_calls: 100,
-    audit_enabled: true,
-  };
-}
 
 Deno.test("[ReActLoopGenerationDuration] each provider.generate() call in a multi-turn loop produces a real duration_ms on logGeneration", async () => {
   const capturedDurations: (number | undefined)[] = [];

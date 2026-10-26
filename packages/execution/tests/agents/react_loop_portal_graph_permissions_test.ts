@@ -29,8 +29,7 @@ import {
 } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { ITool, JSONValue } from "@exaix/core/types";
-
-type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
+import type { ReActExecutor } from "../helpers/react_loop_fixtures.ts";
 
 class ScriptedProvider implements IModelProvider {
   private callCount = 0;

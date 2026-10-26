@@ -16,77 +16,16 @@
 
 import { assertEquals } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
-import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
+import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX } from "@exaix/core";
 import {
-  ExecutionStrategyName,
-  REACT_STATUS_COMPLETE,
-  REACT_SUMMARY_PREFIX,
-  SecurityMode,
-  ToolName,
-} from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
-import type { JSONValue } from "@exaix/core/types";
-
-type TestToolParams = Record<string, JSONValue>;
-type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
-
-const testBlueprint = {
-  name: "test-agent",
-  model: "mock:test",
-  provider: "mock",
-  capabilities: [ExecutionStrategyName.REACT],
-  systemPrompt: "",
-} satisfies IAgentFileBlueprint;
-
-const testContext = {
-  trace_id: "trace-33333333-3333-4333-8333-333333333333",
-  request_id: "request-1",
-  request: "test",
-  plan: "test",
-  portal: "test",
-} satisfies IExecutionContext;
-
-function createOptions(portal: string): IAgentExecutionOptions {
-  return {
-    agent_role: "test-agent",
-    portal,
-    security_mode: SecurityMode.SANDBOXED,
-    timeout_ms: 300000,
-    max_tool_calls: 100,
-    audit_enabled: true,
-  };
-}
-
-const mockExecutor = {
-  logAgentOutput: async () => {
-    await Promise.resolve();
-  },
-  validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
-  parseAgentResponse: (): IChangesetResult => ({
-    branch: "feat/test",
-    commit_sha: "0000000000000000000000000000000000000000",
-    files_changed: [],
-    description: "Task completed",
-    tool_calls: 0,
-    execution_time_ms: 0,
-  }),
-  logGeneration: async () => {
-    await Promise.resolve();
-  },
-  toolRegistry: {
-    execute: async (tool: string, params: TestToolParams) => {
-      await Promise.resolve();
-      if (tool === ToolName.WRITE_FILE) {
-        return { success: true, data: `Wrote ${params.path}` };
-      }
-      return { success: false, error: "Unknown tool" };
-    },
-    getTools: () => [],
-    getBaseDir: () => "/nonexistent-test-basedir",
-  },
-};
+  createOptions,
+  mockExecutor,
+  type ReActExecutor,
+  testBlueprint,
+  testContext,
+} from "../helpers/react_loop_fixtures.ts";
 
 Deno.test("[ReActLoopUsageCacheTokensE2e] cache tokens survive provider.generate() -> accumulation -> finishLoop into IChangesetResult.usage, tagged predicted", async () => {
   const provider: IModelProvider = {

@@ -19,10 +19,7 @@ import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, SecurityMode, ToolName } from "@exaix/core";
 import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, REACT_THOUGHT_PREFIX } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
-import type { JSONValue } from "@exaix/core/types";
-
-type TestToolParams = Record<string, JSONValue>;
-type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
+import type { ReActExecutor, TestToolParams } from "../helpers/react_loop_fixtures.ts";
 
 /** Provider that captures every prompt it is sent and replays scripted responses. */
 class CapturingMockProvider implements IModelProvider {

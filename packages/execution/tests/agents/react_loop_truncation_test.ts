@@ -26,8 +26,7 @@ import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
-
-type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
+import type { ReActExecutor } from "../helpers/react_loop_fixtures.ts";
 
 /** Provider that captures per-call options and stamps a scripted stop_reason. */
 class OptionsCapturingProvider implements IModelProvider {
