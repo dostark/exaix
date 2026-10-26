@@ -17,21 +17,7 @@ import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { computeMemoryAbilityRows, computeMemoryMetricRows, EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-
-interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
-
-function withCapturedOutput<T>(fn: () => T): Promise<{ output: string[]; result: T }> {
-  const output: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: IConsoleArgs) => output.push(args.join(" "));
-
-  const result = fn();
-  return Promise.resolve(result)
-    .then((resolved) => ({ output, result: resolved }))
-    .finally(() => {
-      console.log = originalLog;
-    });
-}
+import { withCapturedOutput } from "./helpers/captured_output.ts";
 
 function seedMemoryRun(
   store: EvalSqliteStore,

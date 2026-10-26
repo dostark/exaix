@@ -33,21 +33,7 @@ import {
 import { SCHEMA_VERSION } from "../../../tests/scenario_framework/schema/version.ts";
 import type { IRunManifest } from "../../../tests/scenario_framework/runner/evidence_collector.ts";
 import type { IScenarioVerdict } from "../../../tests/scenario_framework/runner/scoring.ts";
-
-interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
-
-function withCapturedOutput<T>(fn: () => T): Promise<{ output: string[]; result: T }> {
-  const output: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: IConsoleArgs) => output.push(args.join(" "));
-
-  const result = fn();
-  return Promise.resolve(result)
-    .then((resolved) => ({ output, result: resolved }))
-    .finally(() => {
-      console.log = originalLog;
-    });
-}
+import { withCapturedOutput } from "./helpers/captured_output.ts";
 
 const GRID_STEPS = [
   {

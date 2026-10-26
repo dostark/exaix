@@ -13,55 +13,11 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { assert, assertStringIncludes } from "@std/assert";
-import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { VERIFY_TESTS_STEP_ID } from "../../../tests/scenario_framework/runner/scenario_templates.ts";
-
-interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
-
-function withCapturedOutput<T>(fn: () => T): Promise<{ output: string[]; result: T }> {
-  const output: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: IConsoleArgs) => output.push(args.join(" "));
-
-  const result = fn();
-  return Promise.resolve(result)
-    .then((resolved) => ({ output, result: resolved }))
-    .finally(() => {
-      console.log = originalLog;
-    });
-}
-
-function seedRun(
-  store: EvalSqliteStore,
-  overrides: {
-    runId: string;
-    scenarioId: string;
-    cellId: string;
-    provider: string;
-    model: string;
-    score: number;
-    tags?: string[];
-  },
-): void {
-  store.writeRun({
-    run_id: overrides.runId,
-    scenario_id: overrides.scenarioId,
-    pack: "swe_tasks",
-    tags: overrides.tags ?? ["task:bug-fix"],
-    outcome: "success",
-    mode: "auto",
-    scoring_mode: EvalScoringMode.ADDITIVE,
-    suite_score: overrides.score,
-    passed: true,
-    timestamp: new Date().toISOString(),
-    cell_id: overrides.cellId,
-    provider: overrides.provider,
-    model: overrides.model,
-  }, [{ stepId: VERIFY_TESTS_STEP_ID, score: overrides.score }]);
-}
+import { withCapturedOutput } from "./helpers/captured_output.ts";
+import { seedOutcomeRun } from "./helpers/eval_outcome_seed.ts";
 
 Deno.test("[EvalReportLiftView] renders per-family meanDelta/stdevDelta/noEffect with basis from seeded runs", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
@@ -73,7 +29,7 @@ Deno.test("[EvalReportLiftView] renders per-family meanDelta/stdevDelta/noEffect
   store.initialize();
 
   // Matched pair T1: Exaix 0.8 vs bare 0.6 → delta +0.2
-  seedRun(store, {
+  seedOutcomeRun(store, {
     runId: "run-e1",
     scenarioId: "fix-bug-null-guard",
     cellId: "claude-code-anthropic",
@@ -81,7 +37,7 @@ Deno.test("[EvalReportLiftView] renders per-family meanDelta/stdevDelta/noEffect
     model: "claude-sonnet-4-5",
     score: 0.8,
   });
-  seedRun(store, {
+  seedOutcomeRun(store, {
     runId: "run-b1",
     scenarioId: "fix-bug-null-guard",
     cellId: "bare/claude-code/anthropic",
@@ -90,7 +46,7 @@ Deno.test("[EvalReportLiftView] renders per-family meanDelta/stdevDelta/noEffect
     score: 0.6,
   });
   // Matched pair T2: Exaix 0.9 vs bare 0.5 → delta +0.4 → meanDelta +0.300, stdevDelta 0.100
-  seedRun(store, {
+  seedOutcomeRun(store, {
     runId: "run-e2",
     scenarioId: "fix-bug-typo-route",
     cellId: "claude-code-anthropic",
@@ -98,7 +54,7 @@ Deno.test("[EvalReportLiftView] renders per-family meanDelta/stdevDelta/noEffect
     model: "claude-sonnet-4-5",
     score: 0.9,
   });
-  seedRun(store, {
+  seedOutcomeRun(store, {
     runId: "run-b2",
     scenarioId: "fix-bug-typo-route",
     cellId: "bare/claude-code/anthropic",
@@ -107,7 +63,7 @@ Deno.test("[EvalReportLiftView] renders per-family meanDelta/stdevDelta/noEffect
     score: 0.5,
   });
   // Unmatched T3: Exaix only → excluded with a warning
-  seedRun(store, {
+  seedOutcomeRun(store, {
     runId: "run-e3",
     scenarioId: "fix-bug-unmatched",
     cellId: "claude-code-anthropic",

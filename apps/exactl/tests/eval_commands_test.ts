@@ -10,28 +10,12 @@ import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { buildRunArgs, EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
+import { withCapturedOutput } from "./helpers/captured_output.ts";
 
 // history({}) resolves paths relative to Deno.cwd(), not tempDir, so tests chdir into
 // tempDir for the duration of each history test. ORIGINAL_CWD is anchored to the repo root
 // (not a module-load Deno.cwd()) because `deno test --parallel` shares cwd across workers.
 const ORIGINAL_CWD = fromFileUrl(new URL("../../..", import.meta.url));
-
-interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
-
-function withCapturedOutput<T>(fn: () => T | Promise<T>): Promise<{ output: string[]; result: T }> {
-  const output: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: IConsoleArgs) => output.push(args.join(" "));
-
-  const result = fn();
-  const promise = result instanceof Promise ? result : Promise.resolve(result);
-
-  return promise
-    .then((resolved) => ({ output, result: resolved }))
-    .finally(() => {
-      console.log = originalLog;
-    });
-}
 
 type TestHistoryEntry = {
   run_id: string;

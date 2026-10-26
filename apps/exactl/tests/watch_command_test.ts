@@ -11,31 +11,15 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { WatchCommand } from "../src/commands/watch.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { ActivityActor } from "@exaix/core";
+import { withCapturedOutput } from "./helpers/captured_output.ts";
 
 // Helpers
 
 const VALID_TRACE_ID = "550e8400-e29b-41d4-a716-446655440000";
 
-interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
-
 /**
  * Captures console.log output into an array for assertions.
  */
-function withCapturedOutput<T>(fn: () => T | Promise<T>): Promise<{ output: string[]; result: T }> {
-  const output: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: IConsoleArgs) => output.push(args.join(" "));
-
-  const result = fn();
-  const promise = result instanceof Promise ? result : Promise.resolve(result);
-
-  return promise
-    .then((resolved) => ({ output, result: resolved }))
-    .finally(() => {
-      console.log = originalLog;
-    });
-}
-
 // Command Instantiation Tests
 
 Deno.test("WatchCommand: should construct without errors", async () => {

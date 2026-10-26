@@ -14,55 +14,11 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { assert, assertStringIncludes } from "@std/assert";
-import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { VERIFY_TESTS_STEP_ID } from "../../../tests/scenario_framework/runner/scenario_templates.ts";
-
-interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
-
-function withCapturedOutput<T>(fn: () => T): Promise<{ output: string[]; result: T }> {
-  const output: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: IConsoleArgs) => output.push(args.join(" "));
-
-  const result = fn();
-  return Promise.resolve(result)
-    .then((resolved) => ({ output, result: resolved }))
-    .finally(() => {
-      console.log = originalLog;
-    });
-}
-
-function seedRun(
-  store: EvalSqliteStore,
-  overrides: {
-    runId: string;
-    scenarioId: string;
-    cellId: string;
-    provider: string;
-    model: string;
-    score: number;
-    tags?: string[];
-  },
-): void {
-  store.writeRun({
-    run_id: overrides.runId,
-    scenario_id: overrides.scenarioId,
-    pack: "swe_tasks",
-    tags: overrides.tags ?? ["task:bug-fix"],
-    outcome: "success",
-    mode: "auto",
-    scoring_mode: EvalScoringMode.ADDITIVE,
-    suite_score: overrides.score,
-    passed: true,
-    timestamp: new Date().toISOString(),
-    cell_id: overrides.cellId,
-    provider: overrides.provider,
-    model: overrides.model,
-  }, [{ stepId: VERIFY_TESTS_STEP_ID, score: overrides.score }]);
-}
+import { withCapturedOutput } from "./helpers/captured_output.ts";
+import { seedOutcomeRun } from "./helpers/eval_outcome_seed.ts";
 
 Deno.test("[EvalReportAblationView] renders per-subsystem meanDelta/stdevDelta/noEffect with basis from seeded runs", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
@@ -80,7 +36,7 @@ Deno.test("[EvalReportAblationView] renders per-subsystem meanDelta/stdevDelta/n
   const ablatePk = "ablate-portal-knowledge/claude-code/anthropic";
 
   // T1: full 0.8; skills 0.6 → +0.2; gate 0.7 → +0.1; pk 0.75 → +0.05
-  seedRun(store, {
+  seedOutcomeRun(store, {
     runId: "run-e1",
     scenarioId: "fix-bug-null-guard",
     cellId: fullCell,
@@ -88,7 +44,7 @@ Deno.test("[EvalReportAblationView] renders per-subsystem meanDelta/stdevDelta/n
     model,
     score: 0.8,
   });
-  seedRun(store, {
+  seedOutcomeRun(store, {
     runId: "run-s1",
     scenarioId: "fix-bug-null-guard",
     cellId: ablateSkills,
@@ -96,7 +52,7 @@ Deno.test("[EvalReportAblationView] renders per-subsystem meanDelta/stdevDelta/n
     model,
     score: 0.6,
   });
-  seedRun(store, {
+  seedOutcomeRun(store, {
     runId: "run-g1",
     scenarioId: "fix-bug-null-guard",
     cellId: ablateGate,
@@ -104,7 +60,7 @@ Deno.test("[EvalReportAblationView] renders per-subsystem meanDelta/stdevDelta/n
     model,
     score: 0.7,
   });
-  seedRun(store, {
+  seedOutcomeRun(store, {
     runId: "run-p1",
     scenarioId: "fix-bug-null-guard",
     cellId: ablatePk,
@@ -114,7 +70,7 @@ Deno.test("[EvalReportAblationView] renders per-subsystem meanDelta/stdevDelta/n
   });
 
   // T2: full 0.9; skills 0.5 → +0.4; gate 0.9 → 0.0; pk 0.95 → -0.05
-  seedRun(store, {
+  seedOutcomeRun(store, {
     runId: "run-e2",
     scenarioId: "fix-bug-typo-route",
     cellId: fullCell,
@@ -122,7 +78,7 @@ Deno.test("[EvalReportAblationView] renders per-subsystem meanDelta/stdevDelta/n
     model,
     score: 0.9,
   });
-  seedRun(store, {
+  seedOutcomeRun(store, {
     runId: "run-s2",
     scenarioId: "fix-bug-typo-route",
     cellId: ablateSkills,
@@ -130,7 +86,7 @@ Deno.test("[EvalReportAblationView] renders per-subsystem meanDelta/stdevDelta/n
     model,
     score: 0.5,
   });
-  seedRun(store, {
+  seedOutcomeRun(store, {
     runId: "run-g2",
     scenarioId: "fix-bug-typo-route",
     cellId: ablateGate,
@@ -138,7 +94,7 @@ Deno.test("[EvalReportAblationView] renders per-subsystem meanDelta/stdevDelta/n
     model,
     score: 0.9,
   });
-  seedRun(store, {
+  seedOutcomeRun(store, {
     runId: "run-p2",
     scenarioId: "fix-bug-typo-route",
     cellId: ablatePk,
@@ -148,7 +104,7 @@ Deno.test("[EvalReportAblationView] renders per-subsystem meanDelta/stdevDelta/n
   });
 
   // T3: skills control only — unmatched on every arm, surfaced as a warning.
-  seedRun(store, {
+  seedOutcomeRun(store, {
     runId: "run-s3",
     scenarioId: "fix-bug-unmatched",
     cellId: ablateSkills,
