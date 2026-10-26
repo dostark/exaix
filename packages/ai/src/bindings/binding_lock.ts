@@ -9,9 +9,10 @@
  * @related-files [packages/ai/src/bindings/model_binding_service.ts, packages/ai/src/bindings/binding_replay.ts]
  */
 
+import type { IBindingLayers } from "@exaix/ai";
 import { join } from "@std/path";
 import type { JSONValue } from "@exaix/core";
-import type { BindingOutcome, IBindingLayers, IFlow } from "@exaix/schemas";
+import type { BindingOutcome, IFlow } from "@exaix/schemas";
 import { BindingLockSchema } from "@exaix/schemas";
 import { canonicalJson, lockDigests, sha256Hex } from "./binding_replay.ts";
 import { BINDING_OUTCOME_BOUND, BINDING_OUTCOME_UNBOUND } from "./binding_types.ts";

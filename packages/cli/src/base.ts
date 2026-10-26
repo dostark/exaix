@@ -7,9 +7,9 @@
  * @ungrounded
  */
 
+import type { ICliApplicationContext } from "./types/cli_context.ts";
 import type {
   IArchiveService,
-  ICliApplicationContext,
   IContextCardGeneratorService,
   ICostTracker,
   IFlowValidatorService,
@@ -21,7 +21,7 @@ import type {
   IPortalService,
   IRequestService,
   ISkillsService,
-} from "./types/cli_context.ts";
+} from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 
 export interface ICommandContext extends ICliApplicationContext {}

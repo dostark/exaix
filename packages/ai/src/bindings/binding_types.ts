@@ -11,20 +11,6 @@ import type { IBindingIssue, IResolvedBinding } from "@exaix/schemas";
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import type { IModelProvider } from "../types.ts";
 
-export type {
-  BindingField,
-  BindingLayer,
-  BindingOutcome,
-  IBindingCatalog,
-  IBindingIssue,
-  IBindingLayers,
-  IBindingRunSnapshot,
-  IBindingSpec,
-  IBindingStepRef,
-  IResolvedBinding,
-  IStepPin,
-} from "@exaix/schemas";
-
 export interface IBindingEnvProbe {
   hasKey(name: string): boolean;
   hasOptIn(name: string): boolean;

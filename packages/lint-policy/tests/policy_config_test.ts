@@ -35,6 +35,7 @@ const SCRIPT_IDS = [
   "package-subpath-promotion",
   "package-testing-import",
   "package-canonical-import",
+  "barrel-only-reexports",
   "package-instantiates-event-logger",
   "package-concrete-logger-type",
   "package-uses-config-reader",
@@ -82,7 +83,7 @@ Deno.test("every_script_rule_has_metadata", () => {
 });
 
 Deno.test("consumer_descriptor_loads_without_compiled_policy", async () => {
-  assertEquals(Object.keys(descriptor.scriptRules).length, 14);
+  assertEquals(Object.keys(descriptor.scriptRules).length, 15);
   assertEquals(Object.keys(descriptor.wholeTreeHosts).length, 7);
   const model = compiled();
   for (const id of SCRIPT_IDS) assertEquals(model.rules[id].engine, "script", id);

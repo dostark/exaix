@@ -1,7 +1,7 @@
 /**
  * @module ExaixScriptRules
  * @path packages/lint-policy/src/script_rules.ts
- * @description The fourteen consumer script specs and the six whole-tree host commands.
+ * @description The fifteen consumer script specs and the six whole-tree host commands.
  * @architectural-layer Tooling
  * @dependencies [@dostark/unslop-ts]
  * @related-files [packages/lint-policy/unslop.project.ts, packages/lint-policy/src/script_rule_schemas.ts]
@@ -184,6 +184,16 @@ const SCRIPT_ROWS: readonly IScriptRow[] = [
     limits: "AST-based over this file only; dynamic imports and re-exports are not followed.",
     hasOptions: false,
   },
+  {
+    id: "barrel-only-reexports",
+    description: "A re-export outside a barrel module.",
+    category: "module-structure",
+    severity: ERROR,
+    scope: PROD,
+    docs: "docs/CODE_STYLE.md#barrel-only-reexports",
+    limits: "Reads the file's export declarations; test paths and barrel modules (mod.ts, index.ts) are exempt.",
+    hasOptions: false,
+  },
 ];
 
 function controlsFor(row: IScriptRow): IRuleControls {
@@ -210,7 +220,7 @@ function controlsFor(row: IScriptRow): IRuleControls {
   };
 }
 
-/** The fourteen consumer script specs, in catalog order. */
+/** The fifteen consumer script specs, in catalog order. */
 export const SCRIPT_RULES: Readonly<Record<string, IScriptRuleSpec>> = Object.fromEntries(
   SCRIPT_ROWS.map((row) => [
     row.id,

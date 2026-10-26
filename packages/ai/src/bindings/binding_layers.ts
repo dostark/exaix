@@ -12,6 +12,7 @@
  * @related-files [packages/ai/src/bindings/binding_resolver.ts, packages/ai/src/bindings/model_binding_service.ts]
  */
 
+import type { IBindingIssue, IBindingLayers, IBindingStepRef } from "@exaix/ai";
 import { parse as parseToml } from "@std/toml";
 import { join } from "@std/path";
 import { buildBuiltInCatalog, mergeCatalogs } from "@exaix/model-registry";
@@ -20,9 +21,6 @@ import {
   BindingOverlaySchema,
   type Config,
   getDefaultModels,
-  type IBindingIssue,
-  type IBindingLayers,
-  type IBindingStepRef,
   type IFlow,
   type IRunBindingsFile,
 } from "@exaix/schemas";

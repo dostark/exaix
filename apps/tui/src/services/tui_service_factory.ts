@@ -8,6 +8,7 @@
  * @related-files [apps/tui/src/dashboard/view_registry.ts, apps/exactl/src/commands/dashboard_commands.ts]
  */
 
+import type { IPlanService, IPortalService, IRequestService, ISkillsService } from "@exaix/core/types";
 import { join } from "@std/path";
 import { PlanCommands } from "../../../../apps/exactl/src/commands/plan_commands.ts";
 import { RequestCommands } from "../../../../apps/exactl/src/commands/request_commands.ts";
@@ -31,15 +32,7 @@ import { MemoryBankService } from "@exaix/memory";
 import { MemoryExtractorService } from "@exaix/memory";
 import { SkillsService } from "@exaix/core/skills";
 import { GitBranchName } from "@exaix/git";
-import type {
-  IAgentService,
-  IConfigService,
-  IPlanService,
-  IPortalConfigEntry,
-  IPortalService,
-  IRequestService,
-  ISkillsService,
-} from "@exaix/core/types";
+import type { IAgentService, IConfigService, IPortalConfigEntry } from "@exaix/core/types";
 import type { IDaemonService, IDatabaseService, IJournalService, ILogService, IMemoryService } from "@exaix/core/types";
 import type { IStructuredLogger } from "@exaix/core/types";
 import type { JSONValue, Opt, Reason } from "@exaix/core/types";

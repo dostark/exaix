@@ -425,3 +425,52 @@ Deno.test("check_code_style is not fooled by comment, escaped-string, or nested 
   assertStringIncludes(result.output, "[edition-conditional-outside-composer]");
   assertStringIncludes(result.output, `${filePath}:12`);
 });
+
+Deno.test("check_code_style flags a re-export outside a barrel module", async () => {
+  const filePath = join(REPO_ROOT, "packages", "core", "src", "__temp_reexport_smell.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempReexportSmell
+ * @path packages/core/src/__temp_reexport_smell.ts
+ * @description Temporary regression file for barrel-only re-export enforcement.
+ * @architectural-layer Core
+ * @related-files []
+ */
+
+export { join } from "@std/path";
+`,
+  );
+  try {
+    const result = await runCheckCodeStyle(filePath);
+    assertEquals(result.code, 1, result.output);
+    assertStringIncludes(result.output, "[barrel-only-reexports]");
+  } finally {
+    await Deno.remove(filePath);
+  }
+});
+
+Deno.test("check_code_style allows a re-export in a barrel module", async () => {
+  const dir = join(REPO_ROOT, "packages", "core", "src", "__temp_barrel");
+  await Deno.mkdir(dir, { recursive: true });
+  const filePath = join(dir, "mod.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempBarrel
+ * @path packages/core/src/__temp_barrel/mod.ts
+ * @description Temporary barrel for re-export placement.
+ * @architectural-layer Core
+ * @related-files []
+ */
+
+export { join } from "@std/path";
+`,
+  );
+  try {
+    const result = await runCheckCodeStyle(filePath);
+    assertFalse(result.output.includes("[barrel-only-reexports]"), result.output);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});

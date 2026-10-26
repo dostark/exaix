@@ -12,21 +12,3 @@ import type { Opt, Reason } from "@exaix/core/types";
 export interface ICliApplicationContext extends IApplicationContext {
   edition?: Opt<string, Reason.OptionalContext>;
 }
-
-export type {
-  IArchiveService,
-  IContextCardGeneratorService,
-  ICostTracker,
-  IFlowValidatorService,
-  IMemoryBankService,
-  IMemoryEmbeddingService,
-  IMemoryExtractorService,
-  IMemoryService,
-  IPlanService,
-  IPortalKnowledgeConfig,
-  IPortalKnowledgeService,
-  IPortalService,
-  IRequestService,
-  ISkillsService,
-  IToolRegistry,
-} from "@exaix/core/types";

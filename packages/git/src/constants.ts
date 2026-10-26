@@ -20,20 +20,6 @@ export const GIT_REQUEST_BRANCH_PREFIX = "feat/request-";
 // Imported from @exaix/core (configurable in core's constants.ts — see check:config-keys)
 export const DEFAULT_GIT_BRANCH_PREFIX_PATTERN = "^(feature|bugfix|hotfix|chore)/";
 
-export {
-  DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES,
-  DEFAULT_GIT_BRANCH_SUFFIX_LENGTH,
-  DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
-  DEFAULT_GIT_CLEAN_TIMEOUT_MS,
-  DEFAULT_GIT_COMMAND_TIMEOUT_MS,
-  DEFAULT_GIT_DIFF_TIMEOUT_MS,
-  DEFAULT_GIT_LOG_TIMEOUT_MS,
-  DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
-  DEFAULT_GIT_MAX_RETRIES,
-  DEFAULT_GIT_RETRY_BACKOFF_BASE_MS,
-  DEFAULT_GIT_STATUS_TIMEOUT_MS,
-  DEFAULT_GIT_TRACE_ID_SHORT_LENGTH,
-} from "@exaix/core";
 export const DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT: number = configurable({
   key: "git.revert_concurrency_limit",
   default: 1,

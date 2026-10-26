@@ -31,7 +31,7 @@ import {
   PORTAL_KNOWLEDGE_PROMPT_MAX_LINES,
   RunnerKind,
 } from "@exaix/core";
-import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
+import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai";
 import type {
   IApplicationContext,
   IDatabaseService,

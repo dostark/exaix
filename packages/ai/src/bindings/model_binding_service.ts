@@ -10,6 +10,7 @@
  * @related-files [packages/ai/src/bindings/binding_resolver.ts, packages/ai/src/bindings/binding_layers.ts, packages/ai/src/bindings/run_bindings_store.ts, packages/flow/src/flow_runner.ts]
  */
 
+import type { IBindingIssue, IBindingLayers, IBindingRunSnapshot, IBindingStepRef, IResolvedBinding } from "@exaix/ai";
 import { DomainEventType, type IEventRegistry } from "@exaix/core/events";
 import {
   BINDING_OVERLAYS_DIR,
@@ -20,17 +21,7 @@ import {
 } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import { join } from "@std/path";
-import type {
-  BindingOutcome,
-  Config,
-  IBindingIssue,
-  IBindingLayers,
-  IBindingRunSnapshot,
-  IBindingStepRef,
-  IFlow,
-  IResolvedBinding,
-  IRunBindingsFile,
-} from "@exaix/schemas";
+import type { BindingOutcome, Config, IFlow, IRunBindingsFile } from "@exaix/schemas";
 import type { IModelRegistry, Opt, Reason } from "@exaix/core/types";
 import type { IProviderMetadata } from "../provider_registry.ts";
 import { buildBuiltInCatalog } from "@exaix/model-registry";

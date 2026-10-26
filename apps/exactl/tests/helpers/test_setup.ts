@@ -8,6 +8,7 @@
  */
 
 import * as pathBuilders from "@exaix/shared";
+import type { IPortalKnowledgeService } from "@exaix/core/types";
 import {
   DEFAULT_ACTIVE_PATH,
   DEFAULT_AGENTS_PATH,
@@ -36,7 +37,7 @@ import { getMemoryProjectsDir } from "@exaix/testing";
 import { GitTestHelper, setupGitRepo } from "@exaix/git/testing";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import { createMockKnowledgeService, DEFAULT_KNOWLEDGE_CONFIG } from "../../../../tests/helpers/portal_test_helper.ts";
-import type { IPortalKnowledgeConfig, IPortalKnowledgeService, Opt, Reason } from "@exaix/core/types";
+import type { IPortalKnowledgeConfig, Opt, Reason } from "@exaix/core/types";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 
 /**

@@ -103,6 +103,14 @@
     }
   },
   "rules": {
+    "barrel-only-reexports": {
+      "level": "error",
+      "scope": "prod",
+      "tags": [
+        "module-structure",
+        "package"
+      ]
+    },
     "duplicate-constant": {
       "level": "error",
       "options": {

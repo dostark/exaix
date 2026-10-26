@@ -7,7 +7,8 @@
  * @related-files [packages/ai/src/provider_factory.ts, packages/ai/src/provider_registry.ts]
  */
 
-import * as DEFAULTS from "@exaix/ai/constants.ts";
+import * as DEFAULTS from "./constants.ts";
+import { DEFAULT_AI_TIMEOUT_MS, DEFAULT_MOCK_STRATEGY } from "@exaix/core";
 import type { BindingTransport, Config, IResolvedBinding } from "@exaix/schemas";
 
 import {
@@ -131,7 +132,7 @@ export class ProviderFactory {
     const options: IResolvedProviderOptions = {
       provider: ProviderType.OPENAI_CHAT,
       model: binding.service_model_id,
-      timeoutMs: config.ai?.timeout_ms ?? DEFAULTS.DEFAULT_AI_TIMEOUT_MS,
+      timeoutMs: config.ai?.timeout_ms ?? DEFAULT_AI_TIMEOUT_MS,
       compatible,
       logger,
       config,
@@ -162,8 +163,8 @@ export class ProviderFactory {
     const options: IResolvedProviderOptions = {
       provider: provider as ProviderType,
       model: binding.service_model_id,
-      timeoutMs: config.ai?.timeout_ms ?? DEFAULTS.DEFAULT_AI_TIMEOUT_MS,
-      mockStrategy: config.ai?.mock?.strategy ?? DEFAULTS.DEFAULT_MOCK_STRATEGY,
+      timeoutMs: config.ai?.timeout_ms ?? DEFAULT_AI_TIMEOUT_MS,
+      mockStrategy: config.ai?.mock?.strategy ?? DEFAULT_MOCK_STRATEGY,
       mockFixturesDir: config.ai?.mock?.fixtures_dir,
       mockStrict: config.ai?.mock?.strict,
       logger,
@@ -414,7 +415,7 @@ export class ProviderFactory {
     // Base ai config from global config or sensible defaults
     const baseAi: AiConfig = (config.ai as AiConfig) ?? {
       provider: ProviderType.MOCK,
-      timeout_ms: DEFAULTS.DEFAULT_AI_TIMEOUT_MS,
+      timeout_ms: DEFAULT_AI_TIMEOUT_MS,
     };
 
     // Merge model-level config (may be from config.models[name]) on top of baseAi
@@ -454,7 +455,7 @@ export class ProviderFactory {
       (providerType === ProviderType.OPENAI_CHAT && baseAi.provider !== providerType
         ? undefined
         : config.ai?.timeout_ms);
-    let timeoutMs = DEFAULTS.DEFAULT_AI_TIMEOUT_MS;
+    let timeoutMs = DEFAULT_AI_TIMEOUT_MS;
     if (envTimeout) {
       timeoutMs = parseInt(envTimeout, 10);
     } else if (explicitTimeoutMs) {
@@ -467,7 +468,7 @@ export class ProviderFactory {
     }
 
     // Mock-specific
-    const mockStrategy = merged.mock?.strategy ?? baseAi?.mock?.strategy ?? DEFAULTS.DEFAULT_MOCK_STRATEGY;
+    const mockStrategy = merged.mock?.strategy ?? baseAi?.mock?.strategy ?? DEFAULT_MOCK_STRATEGY;
     const mockFixturesDir = merged.mock?.fixtures_dir ?? baseAi?.mock?.fixtures_dir;
     // MOCK_STRICT env lets a scenario pack scope strict mode per step — the sandbox has one shared
     // exa.config.toml, so per-pack strictness can't be a config key. Unset falls back to the config value.

@@ -7,7 +7,7 @@
  * @description Package-owned TUI log streaming helpers for buffering, delivery, websocket fallback, and polling.
  */
 
-import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
+import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai";
 import { ConnectionStatus } from "@exaix/core";
 import type { IStructuredLogEntry, JSONObject } from "@exaix/core/types";
 

@@ -13,22 +13,6 @@ import { configurable } from "@exaix/core/config";
 import { ConfigValueType, ProviderCostTier, ProviderType, SwapClass } from "@exaix/core";
 
 // Re-export canonical defaults from core (single source of truth)
-export {
-  DEFAULT_AI_MODEL,
-  DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
-  DEFAULT_AI_RETRY_MAX_ATTEMPTS,
-  DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS,
-  DEFAULT_AI_TEMPERATURE_MAX,
-  DEFAULT_AI_TEMPERATURE_MIN,
-  DEFAULT_AI_TIMEOUT_MS,
-  DEFAULT_FAST_MODEL_NAME,
-  DEFAULT_LOCAL_MODEL_NAME,
-  DEFAULT_MOCK_MODEL,
-  DEFAULT_MOCK_STRATEGY,
-  MOCK_DELAY_MS,
-  MOCK_INPUT_TOKENS,
-  MOCK_OUTPUT_TOKENS,
-} from "@exaix/core";
 
 // AI-package-local tunable defaults (not duplicated in core)
 export const DEFAULT_MODEL_TIMEOUT_MS: number = configurable({

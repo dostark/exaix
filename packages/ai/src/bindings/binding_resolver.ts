@@ -7,23 +7,25 @@
  * @related-files [packages/ai/src/bindings/model_binding_service.ts, packages/model-registry/src/binding_catalog.ts]
  */
 
+import type {
+  BindingLayer,
+  BindingOutcome,
+  IBindingIssue,
+  IBindingLayers,
+  IBindingSpec,
+  IBindingStepRef,
+  IResolvedBinding,
+  IStepPin,
+} from "@exaix/ai";
 import { crypto } from "@std/crypto";
 import { encodeHex } from "@std/encoding/hex";
 import {
   type BindingField,
-  type BindingLayer,
-  type BindingOutcome,
   EFFORT_AUTO,
   getDefaultModels,
   type IBindingFieldSource,
-  type IBindingIssue,
-  type IBindingLayers,
-  type IBindingSpec,
-  type IBindingStepRef,
   type ICatalogModel,
   type ICatalogService,
-  type IResolvedBinding,
-  type IStepPin,
   ModelCapabilitySchema,
 } from "@exaix/schemas";
 import { OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE } from "@exaix/core";

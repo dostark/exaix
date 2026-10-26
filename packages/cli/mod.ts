@@ -23,3 +23,21 @@ export * from "./src/formatters/portal_knowledge.ts";
 export * from "./src/base/command.ts";
 export type * from "./src/types/cli_context.ts";
 export type * from "./src/types/memory_types.ts";
+
+export type {
+  IArchiveService,
+  IContextCardGeneratorService,
+  ICostTracker,
+  IFlowValidatorService,
+  IMemoryBankService,
+  IMemoryEmbeddingService,
+  IMemoryExtractorService,
+  IMemoryService,
+  IPlanService,
+  IPortalKnowledgeConfig,
+  IPortalKnowledgeService,
+  IPortalService,
+  IRequestService,
+  ISkillsService,
+  IToolRegistry,
+} from "@exaix/core/types";

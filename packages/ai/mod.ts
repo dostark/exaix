@@ -45,3 +45,34 @@ export * from "./src/native_conversation_budget.ts";
 export * from "./src/provider_call_options.ts";
 export * from "./src/compatible_usage.ts";
 export * from "./src/structured_output.ts";
+
+export {
+  DEFAULT_AI_MODEL,
+  DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
+  DEFAULT_AI_RETRY_MAX_ATTEMPTS,
+  DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS,
+  DEFAULT_AI_TEMPERATURE_MAX,
+  DEFAULT_AI_TEMPERATURE_MIN,
+  DEFAULT_AI_TIMEOUT_MS,
+  DEFAULT_FAST_MODEL_NAME,
+  DEFAULT_LOCAL_MODEL_NAME,
+  DEFAULT_MOCK_MODEL,
+  DEFAULT_MOCK_STRATEGY,
+  MOCK_DELAY_MS,
+  MOCK_INPUT_TOKENS,
+  MOCK_OUTPUT_TOKENS,
+} from "@exaix/core";
+
+export type {
+  BindingField,
+  BindingLayer,
+  BindingOutcome,
+  IBindingCatalog,
+  IBindingIssue,
+  IBindingLayers,
+  IBindingRunSnapshot,
+  IBindingSpec,
+  IBindingStepRef,
+  IResolvedBinding,
+  IStepPin,
+} from "@exaix/schemas";

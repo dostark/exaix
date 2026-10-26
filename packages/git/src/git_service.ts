@@ -13,19 +13,21 @@
  * @related-files ["packages/core/src/planning/plan_executor.ts"]
  */
 
+import {
+  DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES,
+  DEFAULT_GIT_BRANCH_SUFFIX_LENGTH,
+  DEFAULT_GIT_COMMAND_TIMEOUT_MS,
+  DEFAULT_GIT_MAX_RETRIES,
+  DEFAULT_GIT_RETRY_BACKOFF_BASE_MS,
+  DEFAULT_GIT_TRACE_ID_SHORT_LENGTH,
+} from "@exaix/core";
 import type { Config } from "@exaix/schemas";
 import { DAEMON_AGENT_ROLE_ID } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 
 import {
-  DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES,
-  DEFAULT_GIT_BRANCH_SUFFIX_LENGTH,
-  DEFAULT_GIT_COMMAND_TIMEOUT_MS,
   DEFAULT_GIT_EXIT_CODE_FATAL,
-  DEFAULT_GIT_MAX_RETRIES,
-  DEFAULT_GIT_RETRY_BACKOFF_BASE_MS,
-  DEFAULT_GIT_TRACE_ID_SHORT_LENGTH,
   GIT_CLEAN_DESTRUCTIVE_SHORT_FLAGS,
   GIT_CMD_ADD,
   GIT_CMD_BRANCH,

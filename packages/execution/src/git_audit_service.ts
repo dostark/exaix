@@ -7,17 +7,19 @@
  * @related-files [packages/execution/src/agent_composer.ts]
  */
 
-import { join } from "@std/path";
-import { AgentExecutionErrorType, SafeSubprocess, SubprocessTimeoutError } from "@exaix/core";
 import {
-  DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
   DEFAULT_GIT_CLEAN_TIMEOUT_MS,
   DEFAULT_GIT_DIFF_TIMEOUT_MS,
   DEFAULT_GIT_LOG_TIMEOUT_MS,
   DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
+  DEFAULT_GIT_STATUS_TIMEOUT_MS,
+} from "@exaix/git";
+import { join } from "@std/path";
+import { AgentExecutionErrorType, SafeSubprocess, SubprocessTimeoutError } from "@exaix/core";
+import {
+  DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
   DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
   DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT,
-  DEFAULT_GIT_STATUS_TIMEOUT_MS,
   GIT_EMPTY_SHA,
 } from "@exaix/git";
 import { GIT_CMD_REV_PARSE, GIT_CMD_STATUS, GIT_FLAG_UNTRACKED_FILES_ALL } from "@exaix/git/constants.ts";

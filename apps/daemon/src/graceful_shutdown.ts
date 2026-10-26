@@ -6,7 +6,7 @@
  * @architectural-layer Services
  * @related-files ["apps/daemon/main.ts", "packages/core/src/logger/event_logger.ts"]
  */
-import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
+import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { Opt, Reason } from "@exaix/core/types";

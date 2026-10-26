@@ -655,6 +655,21 @@ daemon.
 Every module follows the order of the [generic guide](../unslop-ts/docs/style_guide.md#module-order): header
 comment, imports, exported types, then code.
 
+### Re-export placement {#barrel-only-reexports}
+
+A module re-export (`export … from "…"`) belongs in the package barrel (`mod.ts`) or a directory
+`index.ts`. An ordinary module states its own surface and imports what it uses; forwarding another
+module's symbols from it hides where those symbols live and adds a second public path that the
+barrel cannot police.
+
+| Check                   | Reports                                                         |
+| ----------------------- | --------------------------------------------------------------- |
+| `barrel-only-reexports` | A module re-export in a file that is not `mod.ts` or `index.ts` |
+
+Test files and helpers are exempt, because compatibility shims under `tests/` intentionally forward
+test support. When a symbol belongs to a lower layer, import it from that layer and re-export it from
+the package barrel instead of the module that happens to declare it.
+
 ### Module headers {#module-headers}
 
 Each source file starts with a JSDoc header. The tags are:

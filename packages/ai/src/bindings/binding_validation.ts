@@ -12,6 +12,7 @@
  * @related-files [packages/ai/src/bindings/model_binding_service.ts, packages/ai/src/provider_registry.ts]
  */
 
+import type { IBindingStepRef } from "@exaix/ai";
 import {
   OPENAI_COMPATIBLE_LOCAL_PROFILE,
   OPENAI_COMPATIBLE_PROFILE_DEFAULTS,
@@ -19,7 +20,7 @@ import {
   ProviderType,
 } from "@exaix/core";
 import { EFFORT_AUTO } from "@exaix/schemas";
-import type { IBindingIssue, IBindingStepRef, IResolvedBinding } from "@exaix/schemas";
+import type { IBindingIssue, IResolvedBinding } from "@exaix/schemas";
 import type { ICatalogModel, ICatalogService } from "@exaix/schemas";
 import type { IModelPricing, IModelRegistry, PricingProvenance } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";

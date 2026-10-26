@@ -9,9 +9,10 @@
  * @related-files [packages/ai/src/bindings/model_binding_service.ts]
  */
 
+import type { IBindingCatalog, IBindingIssue } from "@exaix/ai";
 import { crypto as stdCrypto } from "@std/crypto";
 import { encodeHex } from "@std/encoding/hex";
-import type { BindingOutcome, IBindingCatalog, IBindingIssue, IFlow, IRunBindingsFile } from "@exaix/schemas";
+import type { BindingOutcome, IFlow, IRunBindingsFile } from "@exaix/schemas";
 import { BindingLockSchema } from "@exaix/schemas";
 import type { Opt, Reason } from "@exaix/core/types";
 import { ISSUE_LOCK_MISMATCH } from "./binding_resolver.ts";
