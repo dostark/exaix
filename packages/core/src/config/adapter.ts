@@ -381,25 +381,18 @@ export class DirectConfigAdapter implements IConfigAdapter {
     return coerceDbValue(dbValue, registered?.opts) as T;
   }
 
-  async set(
-    key: string,
-    value: ConfigValue,
-    options: Opt<{ swap_class?: string }, Reason.SensibleDefault> = {},
-  ): Promise<void> {
-    // Resolve the key that owns the validation metadata: the exact key if
-    // registered, the base key for a profile-scoped key, or a matching pattern
-    // key. Genuinely unknown keys resolve to undefined → reject.
+  /**
+   * Rejects a write to an unknown key, a locked key, or an invalid value before anything is persisted.
+   * The validation key is the exact key, the base key of a profile-scoped key, or a pattern key.
+   * A lock on the base key also covers profile-scoped and pattern-keyed writes.
+   */
+  protected assertValidWrite(key: string, value: ConfigValue): void {
     const validationKey = this.resolveValidationKey(key);
     if (validationKey === undefined) {
       throw new ConfigKeyNotFoundError(key);
     }
-
-    // Refuse writes to a locked key (shared guard, no blocklist dependency). Uses the
-    // resolved validation key so a lock on the base key also covers profile-scoped and
-    // pattern-keyed writes.
     this.assertWritable(validationKey);
 
-    // Validate value against the resolved key's metadata.
     const report = this.validateAtPath(key, value);
     if (!report.valid) {
       throw new ConfigValidationError(
@@ -407,6 +400,14 @@ export class DirectConfigAdapter implements IConfigAdapter {
         report.issues.map((i) => i.message).join("; "),
       );
     }
+  }
+
+  async set(
+    key: string,
+    value: ConfigValue,
+    options: Opt<{ swap_class?: string }, Reason.SensibleDefault> = {},
+  ): Promise<void> {
+    this.assertValidWrite(key, value);
 
     // Persist under the ORIGINAL key (profile/per-name keys keep their full path).
     const swapClass = options?.swap_class ?? SwapClass.HOT;
@@ -779,23 +780,8 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
     value: ConfigValue,
     options: Opt<{ swap_class?: string }, Reason.SensibleDefault> = {},
   ): Promise<void> {
-    const validationKey = this.resolveValidationKey(key);
-    if (validationKey === undefined) {
-      throw new ConfigKeyNotFoundError(key);
-    }
-
-    // The daemon's set() is a full override, so the shared lock guard must run here too —
-    // inheriting DirectConfigAdapter.set() does NOT cover this path. Use validationKey so
-    // profile-scoped writes are also covered.
-    this.assertWritable(validationKey);
-
-    const report = this.validateAtPath(key, value);
-    if (!report.valid) {
-      throw new ConfigValidationError(
-        key,
-        report.issues.map((i) => i.message).join("; "),
-      );
-    }
+    // The daemon's set() is a full override, so the shared write guard must run here too.
+    this.assertValidWrite(key, value);
 
     const swapClass = options?.swap_class ?? SwapClass.HOT;
     const source = ConfigAdapterMode.DAEMON;
