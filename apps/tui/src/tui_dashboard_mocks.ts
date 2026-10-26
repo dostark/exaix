@@ -21,18 +21,8 @@ import {
   RequestSource,
   SkillStatus,
 } from "@exaix/core";
-import type {
-  IPinnedSkill,
-  ISkillDiagnostic,
-  ISkillOperationContext,
-  ISkillPin,
-  ISkillRevisionRecord,
-  ISkillSubmission,
-  ISkillUsageRecord,
-  ISkillUsageSummary,
-} from "@exaix/core/skills";
-import { SKILL_CONFIG_GENERATION_STATIC } from "@exaix/core/skills";
-import { runtimeSkillFixture } from "@exaix/testing";
+import type { ISkillOperationContext } from "@exaix/core/skills";
+import { runtimeSkillFixture, StubSkillsService } from "@exaix/testing";
 import {
   type Opt,
   type PortalAnalysisMode,
@@ -61,7 +51,6 @@ import type {
   IPattern,
   IProjectMemory,
   ISkill,
-  ISkillMatch,
   SkillDefinition,
   SkillUpdates,
 } from "@exaix/schemas/memory_bank.ts";
@@ -72,7 +61,6 @@ import type {
   IPlanService,
   IPortalService,
   IRequestService,
-  ISkillsService,
 } from "@exaix/core/types";
 import type { IDaemonService } from "@exaix/core/types";
 import type { ILogService, IStructuredLogger } from "@exaix/core/types";
@@ -92,8 +80,6 @@ import type { PlanStatusType } from "@exaix/core/status";
 import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
 import { AgentStatus, type AgentStatusType as _AgentStatusType } from "@exaix/core/status";
 import type { MemoryStatus as _MemoryStatus, MemoryStatusType } from "@exaix/core/status";
-
-import type { ISkillMatchRequest } from "@exaix/core/types";
 import type { IDatabaseService, IJournalIntegrityResult } from "@exaix/core/types";
 import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "@exaix/core/types";
 
@@ -911,64 +897,18 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
 /**
  * MockSkillsService
  */
-export class MockSkillsService implements ISkillsService {
-  initialize(): Promise<void> {
-    return Promise.resolve();
-  }
-
-  forContext(_ctx: ISkillOperationContext): ISkillsService {
-    return this;
-  }
-
-  ensureRevisions(_revisionIds: readonly string[]): Promise<void> {
-    return Promise.resolve();
-  }
-
-  getRevision(_revisionId: string): Promise<ISkillRevisionRecord | null> {
-    return Promise.resolve(null);
-  }
-
-  listRevisions(_skillId: string): Promise<ISkillRevisionRecord[]> {
-    return Promise.resolve([]);
-  }
-
-  currentConfigGeneration(): string {
-    return SKILL_CONFIG_GENERATION_STATIC;
-  }
-
-  resolvePinned(_pins: readonly ISkillPin[]): Promise<IPinnedSkill[]> {
-    return Promise.resolve([]);
-  }
-
-  recordSubmission(_submission: ISkillSubmission, _ctx: ISkillOperationContext): Promise<void> {
-    return Promise.resolve();
-  }
-
-  getUsageSummary(skillId: string): Promise<ISkillUsageSummary> {
-    return Promise.resolve({ name: skillId, totalUses: 0, lastUsedAt: null, revisions: [] });
-  }
-
-  usageByTrace(_traceId: string): Promise<ISkillUsageRecord[]> {
-    return Promise.resolve([]);
-  }
-
-  createSkill(skillDef: SkillDefinition, _ctx: ISkillOperationContext): Promise<ISkill> {
+export class MockSkillsService extends StubSkillsService {
+  override createSkill(skillDef: SkillDefinition, _ctx: ISkillOperationContext): Promise<ISkill> {
     return Promise.resolve(
       runtimeSkillFixture({ skill_id: skillDef.name, name: skillDef.name, title: skillDef.title ?? skillDef.name }),
     );
   }
 
-  matchSkills(
-    _request: ISkillMatchRequest,
-  ): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
-    return Promise.resolve({ matches: [], totalAvailable: 0 });
-  }
-
-  buildSkillContext(_skillIds: string[]): Promise<string> {
+  override buildSkillContext(_skillIds: string[]): Promise<string> {
     return Promise.resolve("Mock skill context");
   }
 
-  deriveSkillFromLearnings(
+  override deriveSkillFromLearnings(
     _learningIds: string[],
     _skillDef: SkillDefinition,
     _ctx: ISkillOperationContext,
@@ -984,27 +924,11 @@ export class MockSkillsService implements ISkillsService {
     );
   }
 
-  updateSkill(skillId: string, _updates: SkillUpdates, _ctx: ISkillOperationContext): Promise<ISkill | null> {
+  override updateSkill(skillId: string, _updates: SkillUpdates, _ctx: ISkillOperationContext): Promise<ISkill | null> {
     return Promise.resolve(runtimeSkillFixture({ skill_id: skillId, status: SkillStatus.DRAFT }));
   }
 
-  approveSkill(skillId: string, _expectedRevisionId: string, _ctx: ISkillOperationContext): Promise<ISkill> {
-    return Promise.resolve(runtimeSkillFixture({ skill_id: skillId }));
-  }
-
-  activateSkill(skillId: string, expectedRevisionId: string, ctx: ISkillOperationContext): Promise<ISkill> {
-    return this.approveSkill(skillId, expectedRevisionId, ctx);
-  }
-
-  deprecateSkill(skillId: string, _ctx: ISkillOperationContext): Promise<ISkill> {
-    return Promise.resolve(runtimeSkillFixture({ skill_id: skillId, status: SkillStatus.DEPRECATED }));
-  }
-
-  listDiagnostics(): Promise<ISkillDiagnostic[]> {
-    return Promise.resolve([]);
-  }
-
-  listSkills(_filter?: Opt<{ source?: string; status?: string }, Reason.TestStub>): Promise<ISkill[]> {
+  override listSkills(_filter?: Opt<{ source?: string; status?: string }, Reason.TestStub>): Promise<ISkill[]> {
     return Promise.resolve([
       runtimeSkillFixture({
         id: "user-skill-id",
@@ -1016,11 +940,11 @@ export class MockSkillsService implements ISkillsService {
     ]);
   }
 
-  getSkill(skillId: string): Promise<ISkill | null> {
+  override getSkill(skillId: string): Promise<ISkill | null> {
     return Promise.resolve(runtimeSkillFixture({ id: skillId, skill_id: skillId, source: MemoryBankSource.LEARNED }));
   }
 
-  deleteSkill(skillId: string, _ctx: ISkillOperationContext): Promise<boolean> {
+  override deleteSkill(skillId: string, _ctx: ISkillOperationContext): Promise<boolean> {
     // protect user skills from deletion in tests
     if (skillId === "tdd-methodology") return Promise.resolve(false);
     return Promise.resolve(true);

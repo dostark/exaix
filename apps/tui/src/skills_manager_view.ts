@@ -26,20 +26,9 @@ import {
   TUI_SOURCE_ICONS,
   TUI_STATUS_ICONS,
 } from "@exaix/tui/helpers/constants.ts";
-import type { ISkill, ISkillMatch, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
-import type {
-  IPinnedSkill,
-  ISkillDiagnostic,
-  ISkillOperationContext,
-  ISkillPin,
-  ISkillRevisionRecord,
-  ISkillSubmission,
-  ISkillUsageRecord,
-  ISkillUsageSummary,
-} from "@exaix/core/skills";
-import { SKILL_CONFIG_GENERATION_STATIC } from "@exaix/core/skills";
-import { runtimeSkillFixture } from "@exaix/testing";
-import type { ISkillMatchRequest } from "@exaix/core/types";
+import type { ISkill, SkillDefinition, SkillUpdates } from "@exaix/schemas/memory_bank.ts";
+import type { ISkillOperationContext } from "@exaix/core/skills";
+import { runtimeSkillFixture, StubSkillsService } from "@exaix/testing";
 import type { Opt, Reason } from "@exaix/core/types";
 
 // Interfaces
@@ -276,14 +265,15 @@ export class SkillsManagerView {
 
 // Minimal Mock for Tests
 
-export class MinimalSkillsServiceMock implements ISkillsService {
+export class MinimalSkillsServiceMock extends StubSkillsService {
   private skills: ISkill[] = [];
 
   constructor(skills: ISkill[] = []) {
+    super();
     this.skills = skills;
   }
 
-  listSkills(
+  override listSkills(
     filter?: Opt<{ source?: MemoryBankSource; status?: SkillStatus }, Reason.QueryFilter>,
   ): Promise<ISkill[]> {
     let result = [...this.skills];
@@ -296,11 +286,11 @@ export class MinimalSkillsServiceMock implements ISkillsService {
     return Promise.resolve(result);
   }
 
-  getSkill(skillId: string): Promise<ISkill | null> {
+  override getSkill(skillId: string): Promise<ISkill | null> {
     return Promise.resolve(this.skills.find((s) => s.id === skillId) || null);
   }
 
-  deleteSkill(skillId: string, _ctx: ISkillOperationContext): Promise<boolean> {
+  override deleteSkill(skillId: string, _ctx: ISkillOperationContext): Promise<boolean> {
     const idx = this.skills.findIndex((s) => s.id === skillId);
     if (idx >= 0) {
       this.skills.splice(idx, 1);
@@ -313,15 +303,7 @@ export class MinimalSkillsServiceMock implements ISkillsService {
     this.skills = skills;
   }
 
-  matchSkills(_request: ISkillMatchRequest): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
-    return Promise.resolve({ matches: [], totalAvailable: 0 });
-  }
-
-  buildSkillContext(_skillIds: string[]): Promise<string> {
-    return Promise.resolve("");
-  }
-
-  deriveSkillFromLearnings(
+  override deriveSkillFromLearnings(
     _learningIds: string[],
     _skillDef: SkillDefinition,
     _ctx: ISkillOperationContext,
@@ -338,67 +320,11 @@ export class MinimalSkillsServiceMock implements ISkillsService {
     );
   }
 
-  updateSkill(skillId: string, _updates: SkillUpdates, _ctx: ISkillOperationContext): Promise<ISkill | null> {
+  override updateSkill(skillId: string, _updates: SkillUpdates, _ctx: ISkillOperationContext): Promise<ISkill | null> {
     return Promise.resolve(this.skills.find((s) => s.skill_id === skillId) ?? null);
   }
 
-  approveSkill(skillId: string, _expectedRevisionId: string, _ctx: ISkillOperationContext): Promise<ISkill> {
-    return Promise.resolve(runtimeSkillFixture({ skill_id: skillId }));
-  }
-
-  activateSkill(skillId: string, expectedRevisionId: string, ctx: ISkillOperationContext): Promise<ISkill> {
-    return this.approveSkill(skillId, expectedRevisionId, ctx);
-  }
-
-  deprecateSkill(skillId: string, _ctx: ISkillOperationContext): Promise<ISkill> {
-    return Promise.resolve(runtimeSkillFixture({ skill_id: skillId, status: SkillStatus.DEPRECATED }));
-  }
-
-  listDiagnostics(): Promise<ISkillDiagnostic[]> {
-    return Promise.resolve([]);
-  }
-
-  initialize(): Promise<void> {
-    return Promise.resolve();
-  }
-
-  forContext(_ctx: ISkillOperationContext): ISkillsService {
-    return this;
-  }
-
-  ensureRevisions(_revisionIds: readonly string[]): Promise<void> {
-    return Promise.resolve();
-  }
-
-  getRevision(_revisionId: string): Promise<ISkillRevisionRecord | null> {
-    return Promise.resolve(null);
-  }
-
-  listRevisions(_skillId: string): Promise<ISkillRevisionRecord[]> {
-    return Promise.resolve([]);
-  }
-
-  currentConfigGeneration(): string {
-    return SKILL_CONFIG_GENERATION_STATIC;
-  }
-
-  resolvePinned(_pins: readonly ISkillPin[]): Promise<IPinnedSkill[]> {
-    return Promise.resolve([]);
-  }
-
-  recordSubmission(_submission: ISkillSubmission, _ctx: ISkillOperationContext): Promise<void> {
-    return Promise.resolve();
-  }
-
-  getUsageSummary(skillId: string): Promise<ISkillUsageSummary> {
-    return Promise.resolve({ name: skillId, totalUses: 0, lastUsedAt: null, revisions: [] });
-  }
-
-  usageByTrace(_traceId: string): Promise<ISkillUsageRecord[]> {
-    return Promise.resolve([]);
-  }
-
-  createSkill(skillDef: SkillDefinition, _ctx: ISkillOperationContext): Promise<ISkill> {
+  override createSkill(skillDef: SkillDefinition, _ctx: ISkillOperationContext): Promise<ISkill> {
     const newSkill = runtimeSkillFixture({
       id: `skill-${Date.now()}`,
       skill_id: skillDef.name,
