@@ -13,8 +13,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
 import { DomainEventType } from "@exaix/core/events";
-import type { IEventLogger } from "@exaix/core/logger";
-import type { LogMetadata } from "@exaix/core/types";
+import { createCapturingLogger, type ICapturedEvent } from "@exaix/testing";
 
 const sampleBlueprint: IBlueprint = {
   systemPrompt: "You are a helpful coding assistant.",
@@ -27,29 +26,6 @@ const sampleRequest: IParsedRequest = {
 };
 
 const wellFormedResponse = `<thought>ok</thought>\n<content>done</content>`;
-
-interface ICapturedEvent {
-  action: string;
-  target: string | null;
-  payload?: LogMetadata;
-}
-
-function createCapturingLogger(captured: ICapturedEvent[]): IEventLogger {
-  const record = (action: string, target: string | null, payload?: LogMetadata): Promise<void> => {
-    captured.push({ action, target, payload });
-    return Promise.resolve();
-  };
-  const logger: IEventLogger = {
-    log: (event) => record(event.action ?? "", event.target ?? null, event.payload),
-    info: record,
-    warn: record,
-    error: record,
-    fatal: record,
-    debug: record,
-    child: () => logger,
-  };
-  return logger;
-}
 
 Deno.test("[AgentRunner] run() emits exactly one AgentPromptAssembled event via the registered taxonomy member", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);

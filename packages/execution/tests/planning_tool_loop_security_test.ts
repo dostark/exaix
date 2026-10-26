@@ -14,74 +14,22 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { PlanningToolLoop } from "../src/planning_tool_loop.ts";
 import type { IPlanningToolLoopDeps, IPlanningToolLoopOptions } from "../src/planning_tool_loop.ts";
-import type { ICallSite, IModelOptions } from "@exaix/ai/types.ts";
-import type { IGenerateResult } from "@exaix/ai/providers";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
-import type { ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
+import type { JSONValue } from "@exaix/core/types";
 import { initTestDbService, makeGenerateResult } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import { PricingTier, ProviderCostTier } from "@exaix/core";
 import type { GuardrailIncident } from "@exaix/schemas";
 import type { IGuardrailRunner } from "../src/guardrail_runner.ts";
-
-class StubToolRegistry implements IToolRegistry {
-  public calls: Array<{ name: string; params: Record<string, JSONValue> }> = [];
-  constructor(
-    private readonly tools: ITool[] = [],
-    private readonly defaultResult: IToolResult = { success: true, data: {} },
-  ) {}
-  getTools(): ITool[] {
-    return this.tools;
-  }
-  execute(toolName: string, params: Record<string, JSONValue>): Promise<IToolResult> {
-    this.calls.push({ name: toolName, params });
-    return Promise.resolve(this.defaultResult);
-  }
-  getBaseDir(): string {
-    return "/tmp/stub-tool-registry";
-  }
-}
-
-function fixtureTool(name: string): ITool {
-  return { name, description: `${name} description`, parameters: { type: "object", properties: {} } };
-}
-
-const stubTokenizer = {
-  countTokens: (text: string) => Promise.resolve(Math.ceil(text.length / 4)),
-  countTokensBatch: (texts: string[]) => Promise.resolve(texts.map((t) => Math.ceil(t.length / 4))),
-};
-
-class ScriptedGenerate {
-  public calls: Array<{ prompt: string; options: IModelOptions }> = [];
-  private index = 0;
-  constructor(private readonly responses: IGenerateResult[]) {}
-  generate = (prompt: string, options: IModelOptions): Promise<IGenerateResult> => {
-    this.calls.push({ prompt, options });
-    const response = this.responses[this.index];
-    this.index++;
-    if (!response) throw new Error(`ScriptedGenerate: no scripted response for call #${this.index}`);
-    return Promise.resolve(response);
-  };
-}
-
-function makeDeps(overrides: Partial<IPlanningToolLoopDeps> = {}): IPlanningToolLoopDeps {
-  return {
-    toolRegistry: new StubToolRegistry(),
-    tokenizer: stubTokenizer,
-    modelId: "gpt-4",
-    generate: () => {
-      throw new Error("generate() not stubbed for this test");
-    },
-    ...overrides,
-  };
-}
-
-function nextCallSiteFrom(scenarioId: string, stepId: string): () => ICallSite {
-  let callIndex = 0;
-  return () => ({ scenarioId, stepId, callIndex: callIndex++ });
-}
+import {
+  fixtureTool,
+  makeDeps,
+  nextCallSiteFrom,
+  ScriptedGenerate,
+  StubToolRegistry,
+} from "./helpers/planning_tool_loop_doubles.ts";
 
 function makeOptions(portalRoot: string, overrides: Partial<IPlanningToolLoopOptions> = {}): IPlanningToolLoopOptions {
   return {
@@ -325,7 +273,7 @@ Deno.test("[planning_tool_loop][security] git_info with repo_path outside the po
 Deno.test("[planning_tool_loop][security] a legitimate portal-relative path is accepted and reaches execute", async () => {
   const fixture = makePortalFixture();
   try {
-    const registry = new StubToolRegistry([fixtureTool("read_file")], { success: true, data: { content: "ok" } });
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {}, { success: true, data: { content: "ok" } });
     const deps = makeDeps({ toolRegistry: registry });
     const options = makeOptions(fixture.portalRoot);
 
@@ -357,7 +305,7 @@ class StubGuardrailRunner implements IGuardrailRunner {
 Deno.test("[planning_tool_loop][security] a guardrail blocking violation on a tool result replaces it with an error result and forces the final round", async () => {
   const fixture = makePortalFixture();
   try {
-    const registry = new StubToolRegistry([fixtureTool("read_file")], { success: true, data: { content: "ok" } });
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {}, { success: true, data: { content: "ok" } });
     const guardrailRunner = new StubGuardrailRunner(1); // blocks starting from the very first screen() call
     const deps = makeDeps({ toolRegistry: registry, guardrailRunner });
     const options = makeOptions(fixture.portalRoot, { maxRounds: 5 }); // would run 5 rounds absent the guardrail
@@ -396,7 +344,7 @@ Deno.test("[planning_tool_loop][security][native] a guardrail-blocked result rea
     supportsNativeConversation: true,
   });
   try {
-    const registry = new StubToolRegistry([fixtureTool("read_file")], { success: true, data: { content: "ok" } });
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {}, { success: true, data: { content: "ok" } });
     const guardrailRunner = new StubGuardrailRunner(1);
     const deps = makeDeps({ toolRegistry: registry, guardrailRunner, providerId: NATIVE_SECURITY_PROVIDER_ID });
     const options = makeOptions(fixture.portalRoot, { maxRounds: 5 });

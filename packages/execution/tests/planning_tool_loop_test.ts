@@ -12,12 +12,11 @@
 
 import { assert, assertEquals, assertExists, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { PlanningToolLoop } from "../src/planning_tool_loop.ts";
-import type { IPlanningToolLoopDeps, IPlanningToolLoopOptions } from "../src/planning_tool_loop.ts";
-import type { ICallSite, IModelOptions } from "@exaix/ai/types.ts";
+import type { IPlanningToolLoopOptions } from "../src/planning_tool_loop.ts";
+import type { IModelOptions } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { type INativeInputMeasurement, ProviderRegistry } from "@exaix/ai";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
-import type { ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
 import {
   AGENT_EVENT_RESPONSE_REFUSED,
   PlanningToolLoopStopReason,
@@ -41,74 +40,16 @@ import { createCoreToolSchemas, readOnlyEditorTools } from "@exaix/tool-runtime"
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import { ContextBudgetExceededError } from "@exaix/core/errors";
 import { ProviderProtocolError } from "@exaix/ai/errors.ts";
+import {
+  fixtureTool,
+  makeDeps,
+  nextCallSiteFrom,
+  ScriptedGenerate,
+  stubTokenizer,
+  StubToolRegistry,
+} from "./helpers/planning_tool_loop_doubles.ts";
 
 // Test doubles
-
-/** Records every execute() call and dispatches to a per-tool handler (or a default). */
-class StubToolRegistry implements IToolRegistry {
-  public calls: Array<{ name: string; params: Record<string, JSONValue> }> = [];
-  constructor(
-    private readonly tools: ITool[] = [],
-    private readonly handlers: Record<
-      string,
-      (params: Record<string, JSONValue>) => IToolResult | Promise<IToolResult>
-    > = {},
-    private readonly defaultResult: IToolResult = { success: true, data: {} },
-  ) {}
-  getTools(): ITool[] {
-    return this.tools;
-  }
-  async execute(toolName: string, params: Record<string, JSONValue>): Promise<IToolResult> {
-    this.calls.push({ name: toolName, params });
-    const handler = this.handlers[toolName];
-    return handler ? await handler(params) : this.defaultResult;
-  }
-  getBaseDir(): string {
-    return "/tmp/stub-tool-registry";
-  }
-}
-
-function fixtureTool(name: string): ITool {
-  return { name, description: `${name} description`, parameters: { type: "object", properties: {} } };
-}
-
-/** Simple, deterministic, network-free tokenizer for tests that don't need the real
- *  ai-token-estimator catalog — one token per 4 chars, matching TOKEN_ESTIMATION_CHARS_PER_TOKEN. */
-const stubTokenizer = {
-  countTokens: (text: string) => Promise.resolve(Math.ceil(text.length / 4)),
-  countTokensBatch: (texts: string[]) => Promise.resolve(texts.map((t) => Math.ceil(t.length / 4))),
-};
-
-/** Replays scripted IGenerateResult responses in order and records every (prompt, options) pair. */
-class ScriptedGenerate {
-  public calls: Array<{ prompt: string; options: IModelOptions }> = [];
-  private index = 0;
-  constructor(private readonly responses: IGenerateResult[]) {}
-  generate = (prompt: string, options: IModelOptions): Promise<IGenerateResult> => {
-    this.calls.push({ prompt, options });
-    const response = this.responses[this.index];
-    this.index++;
-    if (!response) throw new Error(`ScriptedGenerate: no scripted response for call #${this.index}`);
-    return Promise.resolve(response);
-  };
-}
-
-function makeDeps(overrides: Partial<IPlanningToolLoopDeps> = {}): IPlanningToolLoopDeps {
-  return {
-    toolRegistry: new StubToolRegistry(),
-    tokenizer: stubTokenizer,
-    modelId: "gpt-4",
-    generate: () => {
-      throw new Error("generate() not stubbed for this test");
-    },
-    ...overrides,
-  };
-}
-
-function nextCallSiteFrom(scenarioId: string, stepId: string): () => ICallSite {
-  let callIndex = 0;
-  return () => ({ scenarioId, stepId, callIndex: callIndex++ });
-}
 
 /** Real, existing directory so PathSecurity.resolveWithinRoots (the confinement guard)
  *  succeeds for a bare portal-relative tool path in tests that aren't exercising

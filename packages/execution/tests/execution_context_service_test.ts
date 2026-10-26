@@ -13,34 +13,8 @@ import { assertEquals } from "@std/assert";
 import { ContextCache } from "@exaix/core/context";
 import { DomainEventType } from "@exaix/core/events";
 import { ExecutionContextService, type IPromptBudgetAllocator } from "@exaix/execution";
-import { castAny, initTestDbService } from "@exaix/testing";
+import { castAny, createCapturingLogger, type ICapturedEvent, initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
-import type { IEventLogger } from "@exaix/core/logger";
-import type { LogMetadata } from "@exaix/core/types";
-
-interface ICapturedEvent {
-  action: string;
-  target: string | null;
-  payload?: LogMetadata;
-}
-
-/** In-memory IEventLogger recording every emitted event for assertion. */
-function createCapturingLogger(captured: ICapturedEvent[]): IEventLogger {
-  const record = (action: string, target: string | null, payload?: LogMetadata): Promise<void> => {
-    captured.push({ action, target, payload });
-    return Promise.resolve();
-  };
-  const logger: IEventLogger = {
-    log: (event) => record(event.action ?? "", event.target ?? null, event.payload),
-    info: record,
-    warn: record,
-    error: record,
-    fatal: record,
-    debug: record,
-    child: () => logger,
-  };
-  return logger;
-}
 
 Deno.test("[ExecutionContextService] clearBudget emits ExecutionContextBudgetCleared", () => {
   const captured: ICapturedEvent[] = [];

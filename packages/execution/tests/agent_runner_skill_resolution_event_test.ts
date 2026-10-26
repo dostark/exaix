@@ -18,11 +18,9 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { AgentRunner } from "@exaix/execution";
 import type { IBlueprint } from "@exaix/execution";
-import { SKILL_EVENT_RESOLVED } from "@exaix/core";
-import type { IEventLogger } from "@exaix/core/logger";
-import type { LogMetadata } from "@exaix/core/types";
+import type { ICapturedEvent } from "@exaix/testing";
+import { createRunner, resolutionEvents } from "./helpers/skill_runner_fixture.ts";
 
 /** The `skills.resolved` payload fields these tests assert on. */
 interface IResolutionPayload {
@@ -31,75 +29,6 @@ interface IResolutionPayload {
   pinned_skill_ids?: string[];
   matched_skill_ids?: string[];
   default_skill_ids?: string[];
-}
-
-interface ICapturedEvent {
-  action: string;
-  target: string | null;
-  payload?: LogMetadata;
-}
-
-/** In-memory IEventLogger recording every emitted event for assertion. */
-function createCapturingLogger(captured: ICapturedEvent[]): IEventLogger {
-  const record = (action: string, target: string | null, payload?: LogMetadata): Promise<void> => {
-    captured.push({ action, target, payload });
-    return Promise.resolve();
-  };
-  const logger: IEventLogger = {
-    log: (event) => record(event.action ?? "", event.target ?? null, event.payload),
-    info: record,
-    warn: record,
-    error: record,
-    fatal: record,
-    debug: record,
-    child: () => logger,
-  };
-  return logger;
-}
-
-function makeMockProvider() {
-  return {
-    generate: () =>
-      Promise.resolve({
-        content: "{}",
-        toolCalls: [] as any[],
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-        model: "mock",
-        provider: "mock",
-      }),
-    stream: () => Promise.reject(new Error("not implemented")),
-    getModelInfo: () => ({ provider: "mock", model: "mock" }),
-    name: "mock",
-  };
-}
-
-function makeSkillsService(matches: { skillId: string; confidence: number }[]) {
-  return {
-    forContext() {
-      return this;
-    },
-    recordSubmission: () => Promise.resolve(),
-    currentConfigGeneration: () => "test-generation",
-    ensureRevisions: () => Promise.resolve(),
-    matchSkills: () =>
-      Promise.resolve({ matches: matches.map((m) => ({ ...m, matchedTriggers: {} })), totalAvailable: matches.length }),
-    buildSkillContext: (_ids: string[]) => Promise.resolve("context"),
-    getSkill: (id: string) =>
-      Promise.resolve({ id, name: id, description: "", instructions: "", triggers: {}, critical: false } as any),
-    initialize: () => Promise.resolve(),
-  };
-}
-
-function createRunner(captured: ICapturedEvent[], matches: { skillId: string; confidence: number }[] = []) {
-  return new AgentRunner(makeMockProvider() as any, {
-    skillsService: makeSkillsService(matches),
-    disableSkills: false,
-    logger: createCapturingLogger(captured),
-  } as any);
-}
-
-function resolutionEvents(captured: ICapturedEvent[]): ICapturedEvent[] {
-  return captured.filter((event) => event.action === SKILL_EVENT_RESOLVED);
 }
 
 Deno.test("[step17e] a pinned request journals skills.resolved even though matching is skipped", async () => {

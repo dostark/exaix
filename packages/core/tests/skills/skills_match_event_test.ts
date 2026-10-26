@@ -17,33 +17,7 @@ import { assertEquals, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
 import { SkillsService } from "@exaix/core/skills";
-import { initTestDbService, REPO_ROOT } from "@exaix/testing";
-import type { IEventLogger } from "@exaix/core/logger";
-import type { LogMetadata } from "@exaix/core/types";
-
-interface ICapturedEvent {
-  action: string;
-  target: string | null;
-  payload?: LogMetadata;
-}
-
-/** In-memory IEventLogger recording every emitted event for assertion. */
-function createCapturingLogger(captured: ICapturedEvent[]): IEventLogger {
-  const record = (action: string, target: string | null, payload?: LogMetadata): Promise<void> => {
-    captured.push({ action, target, payload });
-    return Promise.resolve();
-  };
-  const logger: IEventLogger = {
-    log: (event) => record(event.action ?? "", event.target ?? null, event.payload),
-    info: record,
-    warn: record,
-    error: record,
-    fatal: record,
-    debug: record,
-    child: () => logger,
-  };
-  return logger;
-}
+import { createCapturingLogger, type ICapturedEvent, initTestDbService, REPO_ROOT } from "@exaix/testing";
 
 const REPO_BLUEPRINT_SKILLS = pathBuilders.blueprintsPath(REPO_ROOT, DEFAULT_SKILLS_MEMORY_PATH);
 
