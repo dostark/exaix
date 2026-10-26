@@ -41,7 +41,7 @@ export interface IHealthCheck {
 /**
  * Result of a health check operation
  */
-export interface IHealthCheckResult {
+interface IHealthCheckResult {
   /** Status of the check: pass, warn, or fail */
   status: HealthCheckVerdict;
   /** Optional human-readable message */
@@ -55,7 +55,7 @@ export interface IHealthCheckResult {
 /**
  * Overall health report of the service
  */
-export interface IHealthReport {
+interface IHealthReport {
   /** Overall status: healthy, degraded, or unhealthy */
   status: HealthStatus;
   /** ISO timestamp when the check was performed */

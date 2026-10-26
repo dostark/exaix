@@ -7,7 +7,7 @@
  * @related-files ["packages/core/src/config/registry.ts"]
  */
 import type { Opt, Reason } from "../types/optional_marker.ts";
-export interface IConfigWriteCause {
+interface IConfigWriteCause {
   message: string;
 }
 

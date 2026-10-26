@@ -46,7 +46,7 @@ export interface IAllocationHints {
 }
 
 /** Mutable weight ratios for budget section allocation. */
-export interface IPromptBudgetSectionsWeights {
+interface IPromptBudgetSectionsWeights {
   system: number;
   plan: number;
   portalKnowledge: number;

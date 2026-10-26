@@ -9,12 +9,12 @@
 import type { IDatabaseService } from "../types/i_database_service.ts";
 import type { JSONValue } from "../types/json.ts";
 
-import type { IActivityRecord } from "@exaix/core/types";
+import type { IActivityRecord, Opt, Reason } from "@exaix/core/types";
 
 /**
  * Domain entity representing an activity/event
  */
-export interface IActivity {
+interface IActivity {
   id: string;
   traceId: string;
   actor: string | null;
@@ -75,7 +75,7 @@ export interface IActivityRepository {
   /**
    * Get recent activities
    */
-  getRecentActivities(limit?: number): Promise<IActivity[]>;
+  getRecentActivities(limit?: Opt<number, Reason.OptionalInput>): Promise<IActivity[]>;
 }
 
 /**

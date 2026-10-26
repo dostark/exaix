@@ -23,7 +23,7 @@ import {
 } from "./portal_knowledge_scorer.ts";
 import type { ITokenizer } from "./tokenizer.ts";
 
-export interface IPortalKnowledgeSelectorOptions {
+interface IPortalKnowledgeSelectorOptions {
   tokenizer: ITokenizer;
   modelId: string;
   availableTokens: number;

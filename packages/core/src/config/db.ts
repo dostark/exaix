@@ -47,7 +47,7 @@ export interface ILockedKeyEntry {
 }
 
 /** Optional insertOverride settings; `hardLimit`/`warnThreshold` exist only so tests can exercise the DB page-limit rejection at small scale. Production uses the real constants. */
-export interface IInsertOverrideOpts {
+interface IInsertOverrideOpts {
   logger?: IEventLogger;
   hardLimit?: number;
   warnThreshold?: number;

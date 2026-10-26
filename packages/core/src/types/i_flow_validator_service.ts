@@ -14,7 +14,7 @@ export interface IFlowValidationResult {
   warnings: string[];
 }
 
-export interface IVerifyFlowResult {
+interface IVerifyFlowResult {
   valid: boolean;
   error?: string;
 }

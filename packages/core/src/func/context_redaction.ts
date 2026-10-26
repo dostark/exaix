@@ -9,7 +9,7 @@
  * @related-files [packages/core/src/func/context_items.ts]
  */
 
-export interface IRedactionResult {
+interface IRedactionResult {
   text: string;
   redactedCount: number;
 }

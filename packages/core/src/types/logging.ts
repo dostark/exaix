@@ -27,7 +27,7 @@ export interface ILogContext {
 /**
  * Performance metrics associated with a log entry.
  */
-export interface ILogPerformance {
+interface ILogPerformance {
   duration_ms?: number;
   memory_mb?: number;
   cpu_percent?: number;
@@ -36,7 +36,7 @@ export interface ILogPerformance {
 /**
  * Error information in a log entry.
  */
-export interface ILogError {
+interface ILogError {
   name: string;
   message: string;
   stack?: string;

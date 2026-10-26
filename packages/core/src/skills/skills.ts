@@ -87,13 +87,13 @@ export interface ISkillsConfig {
 }
 
 /** The current validated config and the checksum that names its generation. */
-export interface ISkillsConfigProvider {
+interface ISkillsConfigProvider {
   get(): Config;
   getChecksum(): string;
 }
 
 /** Filesystem layout the service reads. Without a config provider the layout is fixed at construction. */
-export interface ISkillsServiceConfig {
+interface ISkillsServiceConfig {
   memoryDir?: Opt<string, Reason.OptionalInput>;
   /** Read-only Blueprint skills root, `<Blueprints>/Skills`. */
   blueprintSkillsDir?: Opt<string, Reason.OptionalInput>;

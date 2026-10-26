@@ -15,7 +15,7 @@ import type { QualityGateMode } from "@exaix/core";
 /**
  * Score thresholds that drive quality gate routing decisions.
  */
-export interface IRequestQualityThresholds {
+interface IRequestQualityThresholds {
   /** Below this score: route to clarification or reject. Default `DEFAULT_QG_MINIMUM_THRESHOLD` (20). */
   minimum: number;
   /** Below this score (but above minimum): auto-enrich via LLM. Default `DEFAULT_QG_ENRICHMENT_THRESHOLD` (50). */

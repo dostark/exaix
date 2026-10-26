@@ -6,13 +6,6 @@
  * @related-files [apps/common/adapters/context_card_adapter.ts, packages/cli/src/types/cli_context.ts]
  */
 
-export interface IContextCardOptions {
-  includeEnvironment?: boolean;
-  includeArchitecture?: boolean;
-  includeRecentActivity?: boolean;
-  maxEntries?: number;
-}
-
 export interface IContextCardPortalInfo {
   alias: string;
   path: string;

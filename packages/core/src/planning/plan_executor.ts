@@ -80,7 +80,7 @@ export interface IPlanContext {
   steps: IPlanStep[];
 }
 
-export interface IPlanExecutionResult {
+interface IPlanExecutionResult {
   lastCommitSha: string | null;
   report?: string;
 }
@@ -132,7 +132,7 @@ export interface IPlanExecutorOptions {
   runPhase?: string;
 }
 
-export interface IPlanActionReport {
+interface IPlanActionReport {
   stepNumber: number;
   stepTitle: string;
   tool: string;

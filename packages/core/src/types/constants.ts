@@ -3625,7 +3625,7 @@ export const DAEMON_DEFAULT_NET_HOSTS: readonly string[] = [
 ];
 
 /** Structured least-privilege permission set for the daemon spawn. `buildSpawnFlags(config)` assembles the concrete `--allow-*` flags from these typed fields, so per-flag scoping is expressible. Read scope decision: `--allow-read` is kept UNSCOPED. The daemon reads far beyond `config.system.root` — the Deno module/plug cache (incl. the sqlite native plugin), `$HOME` for identity, and the repo root for dynamic import — and a scoped `--allow-read` that omits any of these fails the sqlite FFI load at boot. Narrowing the headline SSRF surface is achieved by the `write` scope (`config.system.root`) and the `net` allowlist, not by scoping reads. */
-export interface IDaemonSpawnPermissions {
+interface IDaemonSpawnPermissions {
   /** Read scopes; empty array means unscoped `--allow-read` (see above). */
   readonly read: readonly string[];
   /** Write scopes (resolved absolute paths); empty means unscoped. */

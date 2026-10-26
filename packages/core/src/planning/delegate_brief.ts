@@ -6,7 +6,7 @@
  * @architectural-layer Core
  * @related-files ["packages/core/src/planning/plan_executor.ts", "apps/daemon/main.ts"]
  */
-export interface IDelegateBriefArgs {
+interface IDelegateBriefArgs {
   objective: string;
   acceptanceCriteria?: string[];
 }

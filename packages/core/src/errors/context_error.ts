@@ -12,7 +12,7 @@ import type { Opt, Reason } from "../types/optional_marker.ts";
 /**
  * Context data attached to errors for debugging
  */
-export interface IErrorContext {
+interface IErrorContext {
   [key: string]: string | number | boolean | null | undefined;
 }
 

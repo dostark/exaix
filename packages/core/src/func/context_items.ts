@@ -11,7 +11,7 @@
 
 import type { ITokenizer } from "./tokenizer.ts";
 
-export interface IFitContextItemsResult {
+interface IFitContextItemsResult {
   /** The selected items, in their original relative order. */
   selected: readonly string[];
   /** Total counted tokens across selected items plus the delimiters between them. */

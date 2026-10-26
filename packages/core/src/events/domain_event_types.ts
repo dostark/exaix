@@ -12,33 +12,19 @@
 import type {
   EffortResolutionBasis,
   EffortTier,
-  IDenoTaskCheck,
   IExecutionCompletedVerification,
   IExecutionVerificationLintFindingsEventPayload,
   IRouteReason,
-  LintCheckRunOutcome,
-  LintErrorClass,
-  ModelResolutionReason,
-  TaskTypeSource,
-  VerificationCheckName,
 } from "@exaix/schemas";
 import type { EffortDeclarationSource, IEffortDeclarationPair, TaskComplexitySource } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core/types";
-import type { IBindingFieldSource, IBindingIssue } from "@exaix/schemas/model_binding.ts";
 import type {
   ContextInspectionResult,
   FlowGateAction,
-  HitlRuleSource,
-  HitlSurface,
   OtelDestinationScheme,
   PlanningToolLoopStopReason,
   PlanningToolsSkipReason,
   ProviderType,
-  SkillAuditStage,
-  SkillInitOutcome,
-  SkillMutationOperation,
-  SkillStatus,
-  SkillSubmissionKind,
   TaskComplexity,
   TaskType,
   ToolCallEntryPoint,
@@ -80,29 +66,6 @@ export interface IFlowGateEvaluatedEventPayload {
   attempt: number;
 }
 
-/** Guardrail verdict type. */
-export interface IBindingResolvedEventPayload {
-  flow_id: string;
-  step_id: string;
-  agent_role: string;
-  trace_id: string;
-  service: string;
-  model_provider: string;
-  model: string;
-  service_model_id: string;
-  transport: string;
-  interface: string;
-  adapter: string;
-  sources: Partial<Record<string, IBindingFieldSource>>;
-  fingerprint: string;
-}
-
-export interface IBindingRejectedEventPayload {
-  flow_id: string;
-  trace_id: string;
-  issues: readonly IBindingIssue[];
-}
-
 /** Payload of the binding.snapshot.created event: the durable lockfile hash per run. */
 export interface IBindingSnapshotCreatedEventPayload {
   flow_id: string;
@@ -118,13 +81,6 @@ export interface IBindingSnapshotCreatedEventPayload {
   env_ignored: boolean;
   /** True when the run was submitted with `--locked` and matched its lock. */
   replayed: boolean;
-}
-
-/** Payload of the binding.run.released event: a run gave up its pooled providers. */
-export interface IBindingRunReleasedEventPayload {
-  trace_id: string;
-  held_providers: number;
-  evicted_providers: number;
 }
 
 export type GuardrailVerdict = "pass" | "violation";
@@ -144,7 +100,7 @@ export interface IVotingEventPayload {
 }
 
 /** Planning-producer variant of agent.prompt_assembled — preserves every legacy field `AgentRunner.run` already emitted. */
-export interface IAgentPromptAssembledPlanningPayload {
+interface IAgentPromptAssembledPlanningPayload {
   prompt_kind: "planning";
   agent_role: string;
   prompt_length: number;
@@ -247,7 +203,7 @@ export interface IPlanningToolLoopAbortedPayload {
 
 /** Typed payload for planning.tools.skipped events — one per AgentRunner.run() call where
  *  `planning.tools_enabled` is on but a gate denied the tools path. */
-export interface IPlanningToolsSkippedPayload {
+interface IPlanningToolsSkippedPayload {
   reason: PlanningToolsSkipReason;
 }
 
@@ -261,42 +217,8 @@ export interface IPortalKnowledgeSelectionAppliedPayload {
   includedTokens: number;
 }
 
-/** Typed payload for hitl.policy.matched events. */
-export interface IHitlPolicyMatchedPayload {
-  traceId: string;
-  stepId?: string;
-  tool: string;
-  ruleSource: HitlRuleSource;
-  reason?: string;
-  surface: HitlSurface;
-}
-
-/** Typed payload for model.resolved events. */
-export interface IModelResolutionTraceEventPayload {
-  intent: {
-    model_size?: string;
-    thinking?: boolean;
-    effort?: EffortTier;
-    characteristics?: string[];
-    required_capabilities?: string[];
-    preferred_provider?: string;
-    model?: string;
-  };
-  candidate_providers: string[];
-  scores: Record<string, number>;
-  selected: { provider: string; model: string; attempt: number };
-  reason: ModelResolutionReason;
-  duration_ms: number;
-  /** The route policy that chose the provider (when more than one route was considered). */
-  route_reason?: IRouteReason;
-  /** The routes weighed, with price + health, for the journal. */
-  considered_routes?: IConsideredRoute[];
-  /** How task_type was derived (frontmatter|agent_role|skill|static_map|analyzer|unknown); lives here (not just IResolvedModel) so it reaches `exactl logs`. */
-  task_type_source?: TaskTypeSource;
-}
-
 /** One weighed route in a multi-route decision. */
-export interface IConsideredRoute {
+interface IConsideredRoute {
   provider: string;
   price?: number;
   health_score: number;
@@ -426,22 +348,10 @@ export interface IModelBenchmarkMissingPayload {
   task_type: TaskType;
 }
 
-/** Typed payload for guardrail.* events. */
-export interface IGuardrailEventPayload {
-  policy_id: string;
-  iteration: number;
-  verdict: GuardrailVerdict;
-  severity: GuardrailSeverity;
-  flagged_excerpt?: string;
-  explanation?: string;
-  /** Present only on guardrail.screen.error. */
-  error_message?: string;
-}
-
 /** Metric-triple shape shared by every calibration payload below — mirrors
  *  packages/eval-history's IMetricResult but flattened to a bare number-or-null, since
  *  event payloads never carry the full undefined-reason detail. */
-export interface ICalibrationMetricOutcome {
+interface ICalibrationMetricOutcome {
   exact: number | null;
   kappa: number | null;
   alpha: number | null;
@@ -483,7 +393,7 @@ export interface ICalibrationFailedPayload {
 }
 
 /** Shared identity/correlation fields on every dogfood.context.* event payload. */
-export interface IContextEventIdentity {
+interface IContextEventIdentity {
   record_id: string;
   parent_trace_id: string;
   child_trace_id: string;
@@ -530,13 +440,6 @@ export interface IContextConnectionClosedPayload {
   reason: string;
 }
 
-/** Typed payload for dogfood.context.records_pruned — one per prune pass, not per record. */
-export interface IContextRecordsPrunedPayload {
-  pruned_count: number;
-  retention_days: number;
-  duration_ms: number;
-}
-
 /** Typed payload for dogfood.context.inspected — `exactl request inspect` successful
  *  access. Never carries `promptText` or any other captured content. */
 export interface IContextInspectedPayload {
@@ -555,7 +458,7 @@ export interface IContextInspectionFailedPayload {
 }
 
 /** Shared operation identity for skill-folder events. Events never carry raw skill bodies. */
-export interface ISkillEventIdentityPayload {
+interface ISkillEventIdentityPayload {
   request_id: string | null;
   flow_id: string | null;
   flow_step_id: string | null;
@@ -563,171 +466,12 @@ export interface ISkillEventIdentityPayload {
   config_generation: string;
 }
 
-/** Typed payload for skills.revision_recorded — emitted only on a new revision insert. */
-export interface ISkillsRevisionRecordedPayload extends ISkillEventIdentityPayload {
-  name: string;
-  revision_id: string;
-  content_sha256: string;
-}
-
-/** Typed payload for skills.load_failed — one invalid or unavailable skill entry. */
-export interface ISkillsLoadFailedPayload extends ISkillEventIdentityPayload {
-  name: string | null;
-  root_kind: string;
-  safe_path: string;
-  reason: string;
-}
-
-/** Typed payload for skills.shadowed — a name defined by several roots. */
-export interface ISkillsShadowedPayload extends ISkillEventIdentityPayload {
-  name: string;
-  winner_path: string;
-  shadowed_paths: string[];
-}
-
-/** Typed payload for skills.audit_failed — a terminal snapshot or usage write failure. */
-export interface ISkillsAuditFailedPayload extends ISkillEventIdentityPayload {
-  stage: SkillAuditStage;
-  call_id: string | null;
-  reason: string;
-}
-
-/** Typed payload for skill.created — a draft folder published into a writable root. */
-export interface ISkillsCreatedPayload extends ISkillEventIdentityPayload {
-  name: string;
-  revision_id: string;
-  status: SkillStatus;
-}
-
-/** Typed payload for skill.updated — an edit that returned the skill to draft. */
-export interface ISkillsUpdatedPayload extends ISkillEventIdentityPayload {
-  name: string;
-  previous_revision_id: string;
-  revision_id: string;
-  status: SkillStatus;
-}
-
-/** Typed payload for skill.derived — a draft derived from learnings. */
-export interface ISkillsDerivedPayload extends ISkillEventIdentityPayload {
-  name: string;
-  revision_id: string;
-  learning_ids: string[];
-  status: SkillStatus;
-}
-
-/** Typed payload for skills.approved — a reviewed draft activated. */
-export interface ISkillsApprovedPayload extends ISkillEventIdentityPayload {
-  name: string;
-  reviewed_revision_id: string;
-  active_revision_id: string;
-  actor: string;
-}
-
-/** Typed payload for skill.deprecated. */
-export interface ISkillsDeprecatedPayload extends ISkillEventIdentityPayload {
-  name: string;
-  revision_id: string;
-  previous_status: SkillStatus;
-}
-
-/** Typed payload for skill.deleted. */
-export interface ISkillsDeletedPayload extends ISkillEventIdentityPayload {
-  name: string;
-  revision_id: string;
-  root_kind: string;
-}
-
-/** Typed payload for skills.mutation_failed — every refused or failed mutation. */
-export interface ISkillsMutationFailedPayload extends ISkillEventIdentityPayload {
-  name: string;
-  operation: SkillMutationOperation;
-  reason: string;
-}
-
-/** Typed payload for skills.match_completed — the dynamic-matching stage outcome. */
-export interface ISkillsMatchCompletedPayload extends ISkillEventIdentityPayload {
-  matched_skill_ids: string[];
-  matched_count: number;
-  total_available: number;
-  max_per_request: number;
-  budget_truncated: boolean;
-  confidence_by_name: Record<string, number>;
-  triggers_source_by_name: Record<string, string>;
-}
-
-/** Typed payload for skills.usage_recorded: one committed usage vector for one model submission. */
-export interface ISkillsUsageRecordedPayload extends ISkillEventIdentityPayload {
-  call_id: string;
-  submission_kind: SkillSubmissionKind;
-  round: number;
-  attempt: number;
-  revisions: string[];
-  count: number;
-}
-
-/** Typed payload for skills.pin_drifted: a pinned revision that differs from the live one. */
-export interface ISkillsPinDriftedPayload {
-  name: string;
-  pinned_revision_id: string;
-  current_revision_id: string | null;
-  request_id: string | null;
-}
-
-/** Typed payload for skills.initialized — skill service readiness. */
-export interface ISkillsInitializedPayload extends ISkillEventIdentityPayload {
-  writable_roots: number;
-  recovered_operations: number;
-  outcome: SkillInitOutcome;
-}
-
 /** Privacy-safe destination metadata shared by OTel export lifecycle events. */
-export interface IOtelExportDestinationPayload {
+interface IOtelExportDestinationPayload {
   destination_scheme: OtelDestinationScheme;
   destination_host: string;
   destination_port: number;
   record_count: number;
-}
-
-export interface IOtelExportStartedPayload extends IOtelExportDestinationPayload {}
-
-export interface IOtelExportCompletedPayload extends IOtelExportDestinationPayload {
-  span_count: number;
-  duration_ms: number;
-  retry_count: number;
-}
-
-export interface IOtelExportFailedPayload extends IOtelExportDestinationPayload {
-  duration_ms: number;
-  error_code: string;
-  retry_count: number;
-}
-
-/** Payload of `routing.decision` — the selected agent role/version, strategy, matched rule
- *  and candidate score breakdown. Never carries prompt text. */
-export interface IRoutingDecisionEventPayload {
-  selected_agent_role: string;
-  selected_version: string;
-  strategy: string;
-  matched_rule_id: string | null;
-  candidate_count: number;
-  top_candidates: Array<{ agent_role: string; version: string; score: number }>;
-  rationale: string;
-}
-
-/** Payload of `routing.fallback_used` — deterministic fallback selection. */
-export interface IRoutingFallbackUsedEventPayload {
-  fallback_agent_role: string;
-  strategy: string;
-  reason: string;
-}
-
-/** Payload of `routing.experiment_applied` — a bounded experiment picked a candidate. */
-export interface IRoutingExperimentAppliedEventPayload {
-  selected_agent_role: string;
-  selected_version: string;
-  strategy: string;
-  matched_rule_id: string | null;
-  experiment_bucket: number | null;
 }
 
 /** Payload of the journal-integrity events. Carries counts and, on failure, the first
@@ -743,75 +487,8 @@ export interface IJournalIntegrityPayload {
 /** Verification fields of execution.completed. Commit identity is additive for old journals. */
 export type IExecutionCompletedVerificationEventPayload = IExecutionCompletedVerification;
 
-/** Payload of `execution.verification.started` — one per verification run. */
-export interface IExecutionVerificationStartedEventPayload {
-  request_id: string;
-  attempt: number;
-  checks: string[];
-}
-
-/** Payload of `execution.verification.passed`. */
-export interface IExecutionVerificationPassedEventPayload {
-  request_id: string;
-  attempt: number;
-}
-
-/** Payload of `execution.verification.failed`. */
-export interface IExecutionVerificationFailedEventPayload {
-  request_id: string;
-  attempt: number;
-  failed_checks: Array<{
-    check: VerificationCheckName;
-    task?: IDenoTaskCheck["task"];
-    exit_code: number | null;
-  }>;
-}
-
-/** Payload of `execution.verification.lint_check.started`. */
-export interface IExecutionVerificationLintCheckStartedEventPayload {
-  request_id: string;
-  run_id: string;
-  attempt: number;
-  check_index: number;
-  target_sha: string;
-}
-
-/** Payload of `execution.verification.lint_check.completed`. */
-export interface IExecutionVerificationLintCheckCompletedEventPayload {
-  request_id: string;
-  run_id: string;
-  attempt: number;
-  check_index: number;
-  target_sha: string;
-  outcome: LintCheckRunOutcome;
-  total: number | null;
-  error_class: LintErrorClass | null;
-}
-
 /** Payload of `execution.verification.lint_findings`. It is the terminal snapshot. */
 export type IExecutionVerificationLintFindingsEventPayloadContract = IExecutionVerificationLintFindingsEventPayload;
-
-/** Payload of `execution.repair.started`. */
-export interface IExecutionRepairStartedEventPayload {
-  request_id: string;
-  attempt: number;
-}
-
-/** Payload of `execution.repair.completed`. `changed_files` lists repo-relative paths
- *  only. `error_class` is a categorical label, never message text. */
-export interface IExecutionRepairCompletedEventPayload {
-  request_id: string;
-  attempt: number;
-  commit_sha: string | null;
-  changed_files: string[];
-  error_class: string | null;
-}
-
-/** Payload of `execution.verification.exhausted`. */
-export interface IExecutionVerificationExhaustedEventPayload {
-  request_id: string;
-  attempts: number;
-}
 
 export const DomainEventType = {
   // Flow step events

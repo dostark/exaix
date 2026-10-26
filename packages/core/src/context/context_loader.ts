@@ -61,7 +61,7 @@ export interface IContextConfig {
 /**
  * Metadata about a context file
  */
-export interface IContextFile {
+interface IContextFile {
   /** Absolute path to file */
   path: string;
 

@@ -55,7 +55,7 @@ export interface IConfigValidationReport {
 /**
  * Report returned by diff() — compares effective values against registry defaults.
  */
-export interface IConfigDiffReport {
+interface IConfigDiffReport {
   overridden: Array<{ path: string; current: ConfigValue; default: ConfigValue }>;
   added: Array<{ path: string; value: ConfigValue }>;
   missing: Array<{ path: string; default: ConfigValue }>;
@@ -64,7 +64,7 @@ export interface IConfigDiffReport {
 /**
  * Provenance entry for a config value — where it was resolved from.
  */
-export interface IConfigProvenanceEntry {
+interface IConfigProvenanceEntry {
   value: ConfigValue;
   source: ConfigProvenanceSource;
   sourceDetail?: string;
@@ -108,7 +108,7 @@ export interface IConfigIntegrityPayload {
 }
 
 /** Result of verifyIntegrity(). */
-export interface IIntegrityResult {
+interface IIntegrityResult {
   /** True when the stored checksum matches a fresh compute (or on first-run seed). */
   ok: boolean;
   /** The previously stored checksum (undefined on first-run seed). */

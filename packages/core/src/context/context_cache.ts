@@ -11,7 +11,7 @@
 /**
  * A stable content section eligible for cache_control.
  */
-export interface ICachedSection {
+interface ICachedSection {
   key: string;
   content: string;
   tokens: number;

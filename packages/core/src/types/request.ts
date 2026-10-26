@@ -25,7 +25,7 @@ export enum AnalysisMode {
 /**
  * Detailed skills information for a request.
  */
-export interface IRequestSkills {
+interface IRequestSkills {
   explicit?: string[]; // User-specified skills
   autoMatched?: string[]; // Skills matched by triggers
   fromDefaults?: string[]; // Skills from agent defaults

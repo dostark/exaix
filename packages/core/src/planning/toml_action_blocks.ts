@@ -17,7 +17,7 @@ import { TOML_ACTION_BLOCK_MARKER_PATTERN } from "../types/constants.ts";
 import type { JSONValue } from "@exaix/core";
 
 /** Result of extracting TOML action blocks from a raw plan-generation response. */
-export interface ITomlActionBlockExtraction {
+interface ITomlActionBlockExtraction {
   /** The original text with every matched fenced block removed; TOML_BLOCK:N sentinel
    *  strings left in place inside the JSON envelope for the caller to substitute. */
   envelope: string;

@@ -20,7 +20,7 @@
  */
 
 /** Inputs to the net-policy evaluation. */
-export interface INetPolicyInput {
+interface INetPolicyInput {
   /** The configured `[system].allow_net` value (undefined = default hosts; [] = block). */
   readonly allowNet: readonly string[] | undefined;
   /** Whether the running process was actually granted (blanket) net access. */
@@ -28,7 +28,7 @@ export interface INetPolicyInput {
 }
 
 /** Result of evaluating the net policy against the granted permissions. */
-export interface INetPolicyResult {
+interface INetPolicyResult {
   /** True when the granted net access exceeds what `allow_net` permits. */
   readonly violated: boolean;
   /** Human-readable explanation when `violated` is true. */

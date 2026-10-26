@@ -62,7 +62,7 @@ export interface IPlanWriterConfig {
   logger?: IEventLogger;
 }
 
-export interface IPlanWriteResult {
+interface IPlanWriteResult {
   planPath: string;
   content: string;
   writtenAt: Date;
@@ -78,7 +78,7 @@ export interface IAgentExecutionResult {
   raw: string;
 }
 
-export interface ITokenUsageSummary {
+interface ITokenUsageSummary {
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;

@@ -1127,8 +1127,7 @@
           "Portals",
           "coverage",
           "exaix-dev-docs",
-          "exaix-enterprise",
-          "tests/scenario_framework"
+          "exaix-enterprise"
         ],
         "strictSkipPrefixes": [
           "packages/tui/",

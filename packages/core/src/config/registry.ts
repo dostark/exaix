@@ -31,7 +31,7 @@ export interface IConfigurableOpts<T = unknown> {
   tier?: ConfigTier;
 }
 
-export interface IRegisteredConfig {
+interface IRegisteredConfig {
   opts: IConfigurableOpts;
   registeredAt: Date;
 }

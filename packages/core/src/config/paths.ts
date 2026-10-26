@@ -21,7 +21,7 @@ import {
   DEFAULT_WORKSPACE_PATH,
   ExaPathDefaults,
 } from "@exaix/shared";
-export interface IExaPaths {
+interface IExaPaths {
   workspace: string;
   runtime: string;
   memory: string;
@@ -45,7 +45,7 @@ export interface IExaPaths {
 }
 
 /** The `paths` fields `resolveMemoryExecutionRoot` reads — narrower than `IExaPaths` so callers with a partial config can use the helper. */
-export interface IMemoryExecutionPaths {
+interface IMemoryExecutionPaths {
   memory: string;
   memoryExecution: string;
 }

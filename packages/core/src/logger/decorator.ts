@@ -24,7 +24,7 @@ type AsyncGeneratorMethodDecorator<This, Args extends unknown[], Yield> = (
   context: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => AsyncGenerator<Yield>>,
 ) => ((this: This, ...args: Args) => AsyncGenerator<Yield>) | void;
 
-export interface IMethodLogPayload {
+interface IMethodLogPayload {
   duration_ms?: number;
   error?: string;
   error_type?: string;
@@ -37,7 +37,7 @@ export type TraceIdMapper<Args extends unknown[]> = (args: Args) => string | und
 /** Per-lifecycle-phase registered actions, for an operation whose started/completed/failed
  *  events must stay independently taxonomy-distinguishable rather than sharing one action
  *  disambiguated only by `target` (e.g. `TracedProvider`'s Llm{Call,Stream}* triad). */
-export interface ILifecycleActions {
+interface ILifecycleActions {
   started: TDomainEventType;
   completed: TDomainEventType;
   failed: TDomainEventType;
@@ -46,11 +46,11 @@ export interface ILifecycleActions {
 /** `LogGeneratorMethod`'s lifecycle actions additionally require `cancelled` — early
  *  consumer cancellation (the iterator is stopped before natural exhaustion) is a fourth
  *  terminal outcome `LogMethod`/`LogSyncMethod` do not have. */
-export interface IGeneratorLifecycleActions extends ILifecycleActions {
+interface IGeneratorLifecycleActions extends ILifecycleActions {
   cancelled: TDomainEventType;
 }
 
-export interface ILogMethodOptions<Args extends unknown[], Return> {
+interface ILogMethodOptions<Args extends unknown[], Return> {
   /** Registered taxonomy member(s). Decorators never derive raw action names. */
   action: TDomainEventType | ILifecycleActions;
   payloadMapper?: Opt<PayloadMapper<Args, Return>, Reason.OptionalContext>;
@@ -65,7 +65,7 @@ export type GeneratorPayloadMapper<Args extends unknown[]> = (
   durationMs: number,
 ) => IMethodLogPayload;
 
-export interface ILogGeneratorMethodOptions<Args extends unknown[]> {
+interface ILogGeneratorMethodOptions<Args extends unknown[]> {
   /** Registered taxonomy member(s); the object form must also cover `cancelled`. */
   action: TDomainEventType | IGeneratorLifecycleActions;
   /** Defaults to `{ args: toSafeJson(args) }`. Override when the raw arguments are

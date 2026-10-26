@@ -66,7 +66,7 @@ export interface IBlueprint {
   modelSize?: ModelSize;
 }
 
-export interface IBlueprintLoaderOptions {
+interface IBlueprintLoaderOptions {
   /** Path to blueprints directory */
   blueprintsPath: string;
 
@@ -80,7 +80,7 @@ export interface IUnknownFieldWarning {
 }
 
 /** Result of {@link validateRuntimeFrontmatter}: parsed data + non-fatal warnings. */
-export interface IRuntimeFrontmatterValidation {
+interface IRuntimeFrontmatterValidation {
   ok: boolean;
   data: RuntimeBlueprintFrontmatter | null;
   warnings: IUnknownFieldWarning[];

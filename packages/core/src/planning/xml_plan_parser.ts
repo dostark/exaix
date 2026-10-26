@@ -25,7 +25,7 @@ export type IXmlPlanParseResult = IXmlPlanParseSuccess | IXmlPlanParseError;
 /**
  * Represents a parsed plan object matching PlanSchema shape.
  */
-export interface IXmlPlanObject {
+interface IXmlPlanObject {
   title?: string;
   description: string;
   steps?: IXmlPlanStep[];

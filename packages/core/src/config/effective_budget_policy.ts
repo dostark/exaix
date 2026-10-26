@@ -18,7 +18,7 @@ import {
   DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED,
 } from "../types/constants.ts";
 
-export interface IBudgetOverrideReader {
+interface IBudgetOverrideReader {
   get<T>(key: string): T | undefined;
 }
 

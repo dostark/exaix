@@ -10,7 +10,7 @@
 import { z } from "zod";
 import { DEFAULT_AGENT_ROLE } from "../types/constants.ts";
 
-export interface IStructuredPlanFrontmatter {
+interface IStructuredPlanFrontmatter {
   trace_id: string;
   request_id: string;
   agent_role?: string;

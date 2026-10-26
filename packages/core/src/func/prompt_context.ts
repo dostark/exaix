@@ -15,7 +15,7 @@ import {
   PORTAL_CONTEXT_SECTION_TITLE,
 } from "@exaix/core";
 
-export interface IPortalContextArgs {
+interface IPortalContextArgs {
   portalAlias: string;
   portalRoot: string;
   repositoryRoot?: string;

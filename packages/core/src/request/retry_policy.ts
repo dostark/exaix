@@ -25,7 +25,7 @@ export interface IRetryContext {
   temperature: number;
 }
 
-export interface IRetryableOperationOptions {
+interface IRetryableOperationOptions {
   baseTemperature?: number;
   maxRetries?: number;
   signal?: AbortSignal;
@@ -62,7 +62,7 @@ export interface IRetryPolicy {
 }
 
 /** Behavior hooks of a RetryPolicy that the plain config cannot hold. */
-export interface IRetryPolicyOptions {
+interface IRetryPolicyOptions {
   /** True for an error that must not be retried, whatever its type name or message says. */
   isPermanent?: (error: Error) => boolean;
 }

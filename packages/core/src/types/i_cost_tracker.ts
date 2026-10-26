@@ -11,7 +11,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 import type { BindingTransport } from "@exaix/schemas";
 
 /** Binding identity of a costed generation across a flow step binding. */
-export interface ICostBindingIdentity {
+interface ICostBindingIdentity {
   /** The binding service that hosts and bills the call. */
   service: string;
   /** Binding transport: cloud or local. Local rows never consume a cloud global cap. */

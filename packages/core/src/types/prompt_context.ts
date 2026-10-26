@@ -10,17 +10,6 @@ import { z } from "zod";
 import { SkillMatchSource, SkillRootKind } from "./enums.ts";
 
 /**
- * Structured context for agent prompt construction
- */
-export interface IAgentPromptContext {
-  systemPrompt: string;
-  memoryContext: string | null;
-  skillsContext: ISkillsContext | null;
-  portalKnowledge: string | null;
-  userRequest: string;
-}
-
-/**
  * Skill match result for prompt injection
  */
 /** Trigger fields a skill matched on. Mirrors the schema-owned skill triggers without a runtime dependency on it. */

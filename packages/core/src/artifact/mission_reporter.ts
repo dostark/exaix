@@ -81,7 +81,7 @@ export interface IReportConfig {
 /**
  * Result of report generation
  */
-export interface IReportResult {
+interface IReportResult {
   /** Whether the report generation succeeded */
   success: boolean;
 
@@ -107,7 +107,7 @@ export interface IReportResult {
 /**
  * Git change statistics from diff analysis
  */
-export interface IGitChangeStats {
+interface IGitChangeStats {
   filesCreated: string[];
   filesModified: string[];
   filesDeleted: string[];

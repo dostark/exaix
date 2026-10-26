@@ -14,7 +14,7 @@
 import { McpToolName, ToolName } from "./enums.ts";
 import type { JSONValue } from "./json.ts";
 
-export interface IToolAlias {
+interface IToolAlias {
   canonical: ToolName | McpToolName;
 }
 

@@ -16,7 +16,7 @@ export interface IFileChange {
   oldContent?: string;
 }
 
-export interface IParseResult {
+interface IParseResult {
   changes: IFileChange[];
   invalidPaths: string[];
   errors: string[];

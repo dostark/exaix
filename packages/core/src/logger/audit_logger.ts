@@ -18,7 +18,7 @@ import { DomainEventType } from "../events/mod.ts";
 /**
  * Configuration for AuditLogger
  */
-export interface IAuditLoggerConfig {
+interface IAuditLoggerConfig {
   /** Event logger for primary security event routing */
   logger?: IEventLogger;
 

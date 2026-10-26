@@ -29,13 +29,6 @@ export interface ILogger {
   ): Promise<T>;
 }
 
-/**
- * Interface for log output destinations.
- */
-export interface ILogOutput {
-  write(entry: IStructuredLogEntry): void | Promise<void>;
-}
-
 /** Alias for ILogger for compatibility */
 export type IStructuredLogger = ILogger;
 
