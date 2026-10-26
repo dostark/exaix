@@ -8,7 +8,7 @@
  */
 
 import { z } from "zod";
-import { MockStrategy, ProviderType, SecurityMode } from "@exaix/core";
+import { MockStrategy, ProviderType } from "@exaix/core";
 import {
   BLUEPRINT_NAME_MAX_LENGTH,
   FILENAME_MAX_LENGTH,
@@ -109,11 +109,6 @@ export const PlanSchema = z.string()
       }),
     "Non-whitespace control characters not allowed",
   );
-
-/**
- * Security mode validation
- */
-export const SecurityModeSchema = z.nativeEnum(SecurityMode);
 
 /**
  * Model configuration validation - prevents prototype pollution

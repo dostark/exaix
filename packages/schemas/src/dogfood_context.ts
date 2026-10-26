@@ -15,16 +15,16 @@ import { z } from "zod";
 export const CONTEXT_RECORD_SCHEMA_VERSION = 1;
 
 /** Which production dogfood launch path produced this record. */
-export const ContextRecordSurfaceSchema = z.enum(["cli_delegate", "session_delegate_cycle"]);
+const ContextRecordSurfaceSchema = z.enum(["cli_delegate", "session_delegate_cycle"]);
 export type ContextRecordSurface = z.infer<typeof ContextRecordSurfaceSchema>;
 
 /** Whether the final token count is a real tokenizer count or a conservative estimate. */
-export const ContextRecordTokenSourceSchema = z.enum(["counted", "heuristic"]);
+const ContextRecordTokenSourceSchema = z.enum(["counted", "heuristic"]);
 export type ContextRecordTokenSource = z.infer<typeof ContextRecordTokenSourceSchema>;
 
 /** Budget/selection evidence for one prompt section (a `PromptBudgetAllocator` section,
  *  or a capture/report subsection like `portalKnowledgeCrucial`/`memoryCrucial`). */
-export const ContextRecordSectionSchema = z.object({
+const ContextRecordSectionSchema = z.object({
   label: z.string().min(1),
   allocatorSection: z.string().min(1),
   allocatedTokens: z.number().int().nonnegative(),
@@ -39,7 +39,7 @@ export type ContextRecordSection = z.infer<typeof ContextRecordSectionSchema>;
 
 /** One MCP tool definition actually granted to the child for this record; empty when
  *  no tool transport is wired for a given launch. */
-export const ContextRecordToolSchema = z.object({
+const ContextRecordToolSchema = z.object({
   name: z.string().min(1),
   description: z.string(),
   inputSchema: z.record(z.string(), z.unknown()),

@@ -147,7 +147,7 @@ export enum AgentAction {
 }
 // Key Binding Categories
 
-export class AgentKeyBindings extends KeyBindingsBase<AgentAction, KeyBindingCategory> {
+class AgentKeyBindings extends KeyBindingsBase<AgentAction, KeyBindingCategory> {
   readonly KEY_BINDINGS: readonly IKeyBinding<AgentAction, KeyBindingCategory>[] = [
     {
       key: KEYS.UP,
@@ -1075,31 +1075,3 @@ export class AgentStatusTuiSession extends TuiSessionBase {
 }
 
 // Legacy Support
-
-/** @deprecated Use AgentStatusTuiSession instead. */
-export class LegacyAgentStatusTuiSession extends TuiSessionBase {
-  private readonly agentView: AgentStatusView;
-  private agents: IAgentStatusItem[] = [];
-
-  constructor(agentView: AgentStatusView, useColors = true) {
-    super(useColors);
-    this.agentView = agentView;
-  }
-
-  async initialize(): Promise<void> {
-    this.agents = await this.agentView.getAgentList();
-  }
-
-  getAgentCount(): number {
-    return this.agents.length;
-  }
-
-  getSelectedAgentId(): string | null {
-    const agent = this.agents[this.selectedIndex];
-    return agent?.id ?? null;
-  }
-
-  getFocusableElements(): string[] {
-    return this.agents.map((a) => a.id);
-  }
-}

@@ -155,7 +155,7 @@ export type IBlueprintFrontmatter = z.infer<typeof BlueprintFrontmatterSchema>;
 /**
  * Agent roles that cannot be used for custom blueprints
  */
-export const RESERVED_AGENT_ROLES = new Set<string>([
+const RESERVED_AGENT_ROLES = new Set<string>([
   ActivityActor.SYSTEM,
   TaskType.TEST,
 ]);

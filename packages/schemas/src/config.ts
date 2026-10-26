@@ -270,7 +270,7 @@ export const ModelRegistryConfigSchema = z.object({
 }).optional();
 
 /** ModelPreset — capability profile for model_size-based selection. */
-export const ModelPresetSchema = z.object({
+const ModelPresetSchema = z.object({
   max_cost_per_mtok: z.number().min(0),
   min_context_window: z.number().int().min(1),
   supports_thinking: z.boolean(),
@@ -335,7 +335,7 @@ export const OtelExportConfigSchema = z.object({
 const LINT_POLICY_ROOT = "lint";
 
 /** True when `value` is a relative directory at or below the trusted lint policy root. */
-export function isLintPolicyRoot(value: string): boolean {
+function isLintPolicyRoot(value: string): boolean {
   if (value.length === 0 || isAbsolute(value)) return false;
   return normalize(value).split(SEPARATOR)[0] === LINT_POLICY_ROOT;
 }

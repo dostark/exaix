@@ -12,7 +12,7 @@ import { VotingModelSlot, VotingStrategy } from "@exaix/core";
 
 export const VotingStrategySchema = z.nativeEnum(VotingStrategy);
 
-export const VotingCandidateSchema = z.object({
+const VotingCandidateSchema = z.object({
   runner_id: z.string().min(1),
   response: z.string().min(1),
   confidence: z.number().min(0).max(1).optional(),

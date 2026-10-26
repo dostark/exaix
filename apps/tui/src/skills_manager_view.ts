@@ -117,7 +117,7 @@ export enum SkillsAction {
   BACK = "back",
   CLOSE = "close",
 }
-export class SkillsKeyBindings extends KeyBindingsBase<SkillsAction, KeyBindingCategory> {
+class SkillsKeyBindings extends KeyBindingsBase<SkillsAction, KeyBindingCategory> {
   readonly KEY_BINDINGS: readonly IKeyBinding<SkillsAction, KeyBindingCategory>[] = [
     {
       key: KEYS.UP,

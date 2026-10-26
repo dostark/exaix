@@ -23,7 +23,7 @@ export const ContextSegmentKindSchema = z.enum([
   "summary",
 ]);
 
-export const ContextBudgetActionSchema = z.enum([
+const ContextBudgetActionSchema = z.enum([
   "keep",
   "trim",
   "summarize",
@@ -53,7 +53,7 @@ export const ContextBudgetSnapshotSchema = z.object({
 });
 
 /** Token estimation backend identifiers. */
-export const TOKEN_SOURCE_METHODS = {
+const TOKEN_SOURCE_METHODS = {
   BPE: "bpe",
   HEURISTIC: "heuristic",
 } as const;

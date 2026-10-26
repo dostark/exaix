@@ -341,23 +341,6 @@ export function startLoading(state: ILoadingState, message: string): ILoadingSta
 }
 
 /**
- * Start loading with progress
- */
-export function startLoadingWithProgress(
-  state: ILoadingState,
-  message: string,
-  total: number,
-): ILoadingState {
-  return {
-    ...state,
-    isLoading: true,
-    message,
-    spinner: startSpinner(state.spinner, message),
-    progress: createProgressState(total, message),
-  };
-}
-
-/**
  * Stop loading
  */
 export function stopLoading(state: ILoadingState): ILoadingState {
@@ -368,32 +351,4 @@ export function stopLoading(state: ILoadingState): ILoadingState {
     spinner: stopSpinner(state.spinner),
     progress: undefined,
   };
-}
-
-/**
- * Render loading state
- */
-export function renderLoadingState(
-  state: ILoadingState,
-  options: { useColors?: boolean; width?: number } = {},
-): string {
-  const { useColors = true, width = 30 } = options;
-
-  if (!state.isLoading) return "";
-
-  // If we have progress, show progress bar
-  if (state.progress) {
-    return renderProgressBar(state.progress, {
-      width,
-      useColors,
-      showPercent: true,
-      showEta: true,
-    });
-  }
-
-  // Otherwise show spinner
-  return renderSpinner(state.spinner, {
-    useColors,
-    showElapsed: true,
-  });
 }

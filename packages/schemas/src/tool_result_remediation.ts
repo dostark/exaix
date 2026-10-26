@@ -74,14 +74,6 @@ export const REMEDIATION_OUTCOME_RETRY_EXHAUSTED = "retry_exhausted" as const;
 /** Normalization was attempted but revalidation still failed. */
 export const REMEDIATION_OUTCOME_NORMALIZATION_FAILED = "normalization_failed" as const;
 
-export const REMEDIATION_OUTCOME_VALUES = [
-  REMEDIATION_OUTCOME_PASSED,
-  REMEDIATION_OUTCOME_FAIL_CLOSED,
-  REMEDIATION_OUTCOME_ESCALATED,
-  REMEDIATION_OUTCOME_RETRY_EXHAUSTED,
-  REMEDIATION_OUTCOME_NORMALIZATION_FAILED,
-] as const;
-
 function canRetryTool(
   policy: IToolResultRemediationPolicy,
   toolMetadata?: Opt<IRemediationToolMetadata, Reason.OptionalInput>,

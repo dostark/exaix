@@ -180,14 +180,14 @@ export interface IBindingGateContext {
 }
 
 export const BINDING_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
-export const CANONICAL_MODEL_PATTERN = /^[a-z0-9][a-z0-9-]*\/[A-Za-z0-9._:\-]+$/;
-export const SERVICE_MODEL_ID_PATTERN = /^[A-Za-z0-9._:/@\-]+$/;
+const CANONICAL_MODEL_PATTERN = /^[a-z0-9][a-z0-9-]*\/[A-Za-z0-9._:\-]+$/;
+const SERVICE_MODEL_ID_PATTERN = /^[A-Za-z0-9._:/@\-]+$/;
 export const ENV_VAR_NAME_PATTERN = /^[A-Z][A-Z0-9_]*$/;
-export const BINDING_SELECTOR_PATTERN =
+const BINDING_SELECTOR_PATTERN =
   /^(default|judge|judge:[A-Za-z0-9._-]+|role:[a-z0-9-]+|flow:[A-Za-z0-9._*-]+(\/step:[A-Za-z0-9._*-]+)?)$/;
 
 export const BindingTransportSchema = z.enum(["cloud", "local"]);
-export const BindingInterfaceSchema = z.enum(["api", "cli"]);
+const BindingInterfaceSchema = z.enum(["api", "cli"]);
 export const BindingFieldSchema = z.enum([
   "service",
   "model_provider",
@@ -210,7 +210,7 @@ export const BindingSpecSchema = z.object({
 }).strict();
 export const BindingsTableSchema = z.record(z.string().regex(BINDING_SELECTOR_PATTERN), BindingSpecSchema);
 export const ModelCapabilitySchema = z.enum(["native_tools", "thinking", "effort"]);
-export const CatalogModelSchema = z.object({
+const CatalogModelSchema = z.object({
   model_provider: z.string().regex(BINDING_ID_PATTERN),
   context_window: z.number().int().positive().optional(),
   capabilities: z.array(ModelCapabilitySchema).optional(),
@@ -266,8 +266,8 @@ export const BindOneOffSchema = z.array(
     spec: BindingSpecSchema,
   }).strict(),
 );
-export const BindingLayerSchema = z.enum(["flow", "config", "overlay", "run", "cli"]);
-export const BindingFieldSourceSchema = z.object({
+const BindingLayerSchema = z.enum(["flow", "config", "overlay", "run", "cli"]);
+const BindingFieldSourceSchema = z.object({
   layer: BindingLayerSchema,
   selector: z.string().regex(BINDING_SELECTOR_PATTERN),
   pin_kept: z.object({
@@ -275,7 +275,7 @@ export const BindingFieldSourceSchema = z.object({
     skipped_layer: BindingLayerSchema,
   }).strict().optional(),
 }).strict();
-export const ResolvedBindingSchema = z.object({
+const ResolvedBindingSchema = z.object({
   service: z.string().regex(BINDING_ID_PATTERN),
   model_provider: z.string().regex(BINDING_ID_PATTERN),
   model: z.string().min(1),
@@ -294,7 +294,7 @@ export const ResolvedBindingSchema = z.object({
   sources: z.record(z.string().pipe(BindingFieldSchema), BindingFieldSourceSchema),
   fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
 }).strict();
-export const BindingOutcomeSchema = z.discriminatedUnion("kind", [
+const BindingOutcomeSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("bound"), binding: ResolvedBindingSchema }).strict(),
   z.object({ kind: z.literal("unbound") }).strict(),
 ]);

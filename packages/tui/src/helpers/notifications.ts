@@ -33,7 +33,7 @@ export interface IDashboardContext {
   rejectMemoryUpdate: (id: string) => Promise<void>;
 }
 
-export function formatTimeAgo(date: Date): string {
+function formatTimeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
 
   if (seconds < 60) return "just now";

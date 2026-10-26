@@ -36,7 +36,7 @@ export type IToolResultJsonSchemaProperties = Record<string, IToolResultJsonSche
 
 /** Validates packages/core/src/types/i_tool_registry.ts's `IToolResult`, not
  *  tool_reflector.ts's separate, unrelated `IToolResult`. */
-export const ToolResultEnvelopeMetaSchema = z.object({
+const ToolResultEnvelopeMetaSchema = z.object({
   tool: z.string().min(1),
   resultType: z.string().min(1),
   schemaVersion: z.string().min(1),
@@ -70,7 +70,7 @@ export type IToolResultEnvelope = z.infer<typeof ToolResultEnvelopeSchema>;
 
 // Tool Result Validation Failure Schema
 
-export const TOOL_RESULT_VALIDATION_STAGE_VALUES = [
+const TOOL_RESULT_VALIDATION_STAGE_VALUES = [
   "executor_boundary",
   "registry_boundary",
   "adapter_boundary",
@@ -223,5 +223,4 @@ export const ToolResultSchemaRequestSchema = z.object({
 
 export type IToolResultSchemaRequest = z.infer<typeof ToolResultSchemaRequestSchema>;
 
-export const ToolResultSchemaResponseSchema = ToolResultSchemaDescriptorSchema;
 export type IToolResultSchemaResponse = IToolResultSchemaDescriptor;

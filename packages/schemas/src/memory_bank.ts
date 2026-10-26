@@ -76,7 +76,7 @@ export interface IActivitySummary {
   trace_id?: string;
 }
 
-export const PatternSchema = z.object({
+const PatternSchema = z.object({
   id: z.string().uuid().optional().describe(
     "Stable identity for the embedding index; lazily backfilled for legacy markdown entries on first parse",
   ),
@@ -86,7 +86,7 @@ export const PatternSchema = z.object({
   tags: z.array(z.string()).optional().describe("Searchable tags (e.g., 'architecture', 'database')"),
 });
 
-export const DecisionSchema = z.object({
+const DecisionSchema = z.object({
   id: z.string().uuid().optional().describe(
     "Stable identity for the embedding index; lazily backfilled for legacy markdown entries on first parse",
   ),
@@ -97,7 +97,7 @@ export const DecisionSchema = z.object({
   tags: z.array(z.string()).optional().describe("Searchable tags"),
 });
 
-export const ReferenceSchema = z.object({
+const ReferenceSchema = z.object({
   type: z.nativeEnum(MemoryReferenceType).describe("Type of reference"),
   path: z.string().describe("Path or URL to the reference"),
   description: z.string().describe("What this reference is about"),
@@ -118,13 +118,13 @@ export type IProjectMemory = z.infer<typeof ProjectMemorySchema>;
 
 // Execution Memory Schemas
 
-export const ChangesSchema = z.object({
+const ChangesSchema = z.object({
   files_created: z.array(z.string()).describe("Files created during execution"),
   files_modified: z.array(z.string()).describe("Files modified during execution"),
   files_deleted: z.array(z.string()).describe("Files deleted during execution"),
 });
 
-export const AmendmentSummarySchema = z.object({
+const AmendmentSummarySchema = z.object({
   id: z.string().uuid().describe("Unique amendment ID"),
   trigger: z.string().describe("Source/reason for the amendment"),
   summary: z.string().describe("Human-readable summary of changes"),
@@ -160,13 +160,13 @@ export type IExecutionMemory = z.infer<typeof ExecutionMemorySchema>;
 /**
  * Learning reference - links to supporting evidence
  */
-export const LearningReferenceSchema = z.object({
+const LearningReferenceSchema = z.object({
   type: z.nativeEnum(MemoryReferenceType),
   path: z.string(),
 });
 
 /** Typed inter-memory link: an edge record over the flat store enabling multi-hop retrieval (no graph engine). */
-export const LearningLinkSchema = z.object({
+const LearningLinkSchema = z.object({
   target_id: z.string().describe("Learning id this entry is linked to"),
   type: z.string().describe("Link type, e.g. 'supersedes' | 'superseded_by' | 'topical'"),
 });
@@ -212,7 +212,7 @@ export type ILearningPatch = Partial<Omit<ILearning, "id" | "created_at">>;
 /**
  * Global pattern - a code pattern that applies across projects
  */
-export const GlobalPatternSchema = z.object({
+const GlobalPatternSchema = z.object({
   name: z.string(),
   description: z.string(),
   applies_to: z.array(z.string()).describe("Project patterns or 'all'"),
@@ -223,7 +223,7 @@ export const GlobalPatternSchema = z.object({
 /**
  * Global anti-pattern - something to avoid across all projects
  */
-export const GlobalAntiPatternSchema = z.object({
+const GlobalAntiPatternSchema = z.object({
   name: z.string(),
   description: z.string(),
   reason: z.string().describe("Why this is an anti-pattern"),
@@ -234,7 +234,7 @@ export const GlobalAntiPatternSchema = z.object({
 /**
  * Global memory statistics
  */
-export const GlobalMemoryStatsSchema = z.object({
+const GlobalMemoryStatsSchema = z.object({
   total_learnings: z.number(),
   by_category: z.record(z.string(), z.number()),
   by_project: z.record(z.string(), z.number()),
@@ -361,7 +361,7 @@ export type SkillUpdates = ISkillAuthoringUpdate;
 // Helper Types
 
 /** Scratchpad entry schema - a lightweight ephemeral "worth remembering" note captured by an agent during execution (remember_fact). */
-export const ScratchpadEntrySchema = z.object({
+const ScratchpadEntrySchema = z.object({
   id: z.string().describe("Unique entry id"),
   trace_id: z.string().describe("Execution trace this entry is scoped to"),
   content: z.string().describe("The captured note text or namespace value"),

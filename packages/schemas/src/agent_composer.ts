@@ -21,7 +21,7 @@ import { SkillPinVectorSchema } from "./skill_pin.ts";
 /**
  * Security mode for agent execution
  */
-export const SecurityModeSchema = z.nativeEnum(SecurityMode);
+const SecurityModeSchema = z.nativeEnum(SecurityMode);
 
 /**
  * Execution context passed to agent via MCP
@@ -105,7 +105,7 @@ export type IAgentExecutionOptionsInput = z.input<
  */
 /** Distinguishes a real, provider/tool-reported cost_usd ("tracked") from Exaix's own
  *  calculateCost() rate-based guess ("predicted"). */
-export const ChangesetCostSourceSchema = z.enum(["tracked", "predicted", "unknown"]);
+const ChangesetCostSourceSchema = z.enum(["tracked", "predicted", "unknown"]);
 export type IChangesetCostSource = z.infer<typeof ChangesetCostSourceSchema>;
 
 export const ChangesetResultSchema = z.object({
@@ -147,12 +147,12 @@ export type IChangesetResult = z.infer<typeof ChangesetResultSchema>;
 /**
  * Agent execution error types
  */
-export const AgentExecutionErrorTypeSchema = z.nativeEnum(AgentExecutionErrorType);
+const AgentExecutionErrorTypeSchema = z.nativeEnum(AgentExecutionErrorType);
 
 /**
  * Agent execution error details
  */
-export const AgentExecutionErrorSchema = z.object({
+const AgentExecutionErrorSchema = z.object({
   type: AgentExecutionErrorTypeSchema,
   message: z.string(),
   details: z.record(z.string(), JSONValueSchema).optional(),

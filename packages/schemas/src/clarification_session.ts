@@ -79,7 +79,7 @@ export type IClarificationRound = z.infer<typeof ClarificationRoundSchema>;
 /**
  * Quality score snapshot for a single round, used to track improvement.
  */
-export const QualityHistoryEntrySchema = z.object({
+const QualityHistoryEntrySchema = z.object({
   round: z.number().int().min(0),
   score: z.number().int().min(0).max(100),
   level: z.string().min(1),

@@ -8,14 +8,7 @@
  */
 
 import { LogLevel } from "@exaix/core";
-import {
-  LOG_RENDERER_MAX_MESSAGE_LENGTH,
-  LOG_RENDERER_SEPARATOR_LENGTH,
-  LOG_RENDERER_TRACE_ID_LENGTH,
-  TIME_MS_PER_HOUR,
-  TIME_MS_PER_MINUTE,
-  TIME_MS_PER_SECOND,
-} from "@exaix/core";
+import { LOG_RENDERER_MAX_MESSAGE_LENGTH, LOG_RENDERER_TRACE_ID_LENGTH } from "@exaix/core";
 import type { IStructuredLogEntry } from "@exaix/core/types";
 import { TuiColorName } from "../types/enums.ts";
 import { ANSI, colorize, type ITuiTheme } from "@exaix/tui/helpers/colors.ts";
@@ -30,9 +23,7 @@ export interface ILogRenderOptions {
   theme: ITuiTheme;
 }
 
-const LOG_RENDERER_SEPARATOR_WIDTH = 80;
-
-export const DEFAULT_LOG_RENDER_OPTIONS: ILogRenderOptions = {
+const DEFAULT_LOG_RENDER_OPTIONS: ILogRenderOptions = {
   showTimestamp: true,
   showContext: true,
   showPerformance: true,
@@ -116,7 +107,7 @@ export function renderLogEntry(entry: IStructuredLogEntry, options: Partial<ILog
   return parts.join(" ");
 }
 
-export function renderContextBadges(entry: IStructuredLogEntry, options: ILogRenderOptions): string {
+function renderContextBadges(entry: IStructuredLogEntry, options: ILogRenderOptions): string {
   const badges: string[] = [];
 
   if (entry.context.trace_id) {
@@ -150,7 +141,7 @@ export function renderContextBadges(entry: IStructuredLogEntry, options: ILogRen
   return badges.length > 0 ? `[${badges.join(" ")}]` : "";
 }
 
-export function renderPerformanceMetrics(
+function renderPerformanceMetrics(
   performance: IStructuredLogEntry["performance"],
   _options: ILogRenderOptions,
 ): string {
@@ -161,138 +152,6 @@ export function renderPerformanceMetrics(
   if (performance.memory_mb !== undefined) metrics.push(`${performance.memory_mb}MB`);
   if (performance.cpu_percent !== undefined) metrics.push(`${performance.cpu_percent}%`);
   return metrics.length > 0 ? `(${metrics.join(", ")})` : "";
-}
-
-export function renderDetailedLogEntry(entry: IStructuredLogEntry, options: Partial<ILogRenderOptions> = {}): string[] {
-  const resolvedOptions = { ...DEFAULT_LOG_RENDER_OPTIONS, ...options };
-  const lines: string[] = [renderLogEntry(entry, resolvedOptions)];
-
-  lines.push(
-    colorize("─".repeat(LOG_RENDERER_SEPARATOR_WIDTH), resolvedOptions.theme.border, resolvedOptions.theme.reset),
-  );
-
-  if (Object.keys(entry.context).some((key) => entry.context[key as keyof typeof entry.context])) {
-    lines.push(colorize("Context:", resolvedOptions.theme.h2, resolvedOptions.theme.reset));
-    for (const [key, value] of Object.entries(entry.context)) {
-      if (value) lines.push(`  ${key}: ${value}`);
-    }
-    lines.push("");
-  }
-
-  if (entry.metadata && Object.keys(entry.metadata).length > 0) {
-    lines.push(colorize("Metadata:", resolvedOptions.theme.h2, resolvedOptions.theme.reset));
-    lines.push(JSON.stringify(entry.metadata, null, 2));
-    lines.push("");
-  }
-
-  if (entry.performance) {
-    lines.push(colorize("Performance:", resolvedOptions.theme.h2, resolvedOptions.theme.reset));
-    lines.push(JSON.stringify(entry.performance, null, 2));
-    lines.push("");
-  }
-
-  if (entry.error) {
-    lines.push(colorize("Error:", resolvedOptions.theme.error, resolvedOptions.theme.reset));
-    lines.push(`  Name: ${entry.error.name}`);
-    lines.push(`  Message: ${entry.error.message}`);
-    if (entry.error.code) lines.push(`  Code: ${entry.error.code}`);
-    if (entry.error.stack) {
-      lines.push(colorize("  Stack:", resolvedOptions.theme.textDim, resolvedOptions.theme.reset));
-      for (const line of entry.error.stack.split("\n")) {
-        lines.push(`    ${line}`);
-      }
-    }
-    lines.push("");
-  }
-
-  return lines;
-}
-
-export function renderLogSummary(entries: IStructuredLogEntry[], options: Partial<ILogRenderOptions> = {}): string[] {
-  const resolvedOptions = { ...DEFAULT_LOG_RENDER_OPTIONS, ...options };
-  const lines: string[] = [];
-  lines.push(colorize("Log Summary", resolvedOptions.theme.h1, resolvedOptions.theme.reset));
-  lines.push(
-    colorize("─".repeat(LOG_RENDERER_SEPARATOR_LENGTH), resolvedOptions.theme.border, resolvedOptions.theme.reset),
-  );
-
-  const totalEntries = entries.length;
-  const levelCounts = entries.reduce((accumulator, entry) => {
-    accumulator[entry.level] = (accumulator[entry.level] || 0) + 1;
-    return accumulator;
-  }, {} as Record<LogLevel, number>);
-
-  lines.push(`Total Entries: ${totalEntries}`);
-  for (const level of Object.values(LogLevel)) {
-    const count = levelCounts[level] || 0;
-    if (count > 0) {
-      const levelInfo = getLevelInfo(level);
-      lines.push(
-        colorize(
-          `  ${level}: ${count} (${((count / totalEntries) * 100).toFixed(1)}%)`,
-          levelInfo.color,
-          resolvedOptions.theme.reset,
-        ),
-      );
-    }
-  }
-
-  if (entries.length > 0) {
-    const timestamps = entries.map((entry) => new Date(entry.timestamp).getTime());
-    const start = new Date(Math.min(...timestamps));
-    const end = new Date(Math.max(...timestamps));
-    const duration = end.getTime() - start.getTime();
-    lines.push("");
-    lines.push("Time Range:");
-    lines.push(`  Start: ${start.toLocaleString()}`);
-    lines.push(`  End: ${end.toLocaleString()}`);
-    lines.push(`  Duration: ${formatDuration(duration)}`);
-  }
-
-  const contextStats = analyzeContext(entries);
-  if (contextStats.correlationIds > 0 || contextStats.traceIds > 0 || contextStats.agentRoles > 0) {
-    lines.push("");
-    lines.push("Context Summary:");
-    if (contextStats.correlationIds > 0) lines.push(`  Correlations: ${contextStats.correlationIds}`);
-    if (contextStats.traceIds > 0) lines.push(`  Traces: ${contextStats.traceIds}`);
-    if (contextStats.agentRoles > 0) lines.push(`  Agents: ${contextStats.agentRoles}`);
-  }
-
-  return lines;
-}
-
-export function createLogLevelIndicator(level: LogLevel, theme: ITuiTheme): string {
-  const levelInfo = getLevelInfo(level);
-  return colorize(levelInfo.icon, levelInfo.color, theme.reset);
-}
-
-export function renderCorrelationVisualization(
-  correlationId: string,
-  entries: IStructuredLogEntry[],
-  options: Partial<ILogRenderOptions> = {},
-): string[] {
-  const resolvedOptions = { ...DEFAULT_LOG_RENDER_OPTIONS, ...options };
-  const lines: string[] = [];
-  lines.push(colorize(`Correlation: ${correlationId}`, resolvedOptions.theme.h1, resolvedOptions.theme.reset));
-  lines.push(
-    colorize("═".repeat(LOG_RENDERER_SEPARATOR_WIDTH), resolvedOptions.theme.border, resolvedOptions.theme.reset),
-  );
-
-  const sortedEntries = [...entries].sort((left, right) =>
-    new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime()
-  );
-  for (const entry of sortedEntries) {
-    const time = new Date(entry.timestamp).toLocaleTimeString();
-    const levelIndicator = createLogLevelIndicator(entry.level, resolvedOptions.theme);
-    const operation = entry.context.operation || "unknown";
-    let line = `${time} ${levelIndicator} ${operation}: ${entry.message}`;
-    if (entry.level === LogLevel.ERROR || entry.level === LogLevel.FATAL) {
-      line = colorize(line, resolvedOptions.theme.error, resolvedOptions.theme.reset);
-    }
-    lines.push(line);
-  }
-
-  return lines;
 }
 
 function getLevelInfo(level: LogLevel): { icon: string; color: string } {
@@ -310,20 +169,4 @@ function getLevelInfo(level: LogLevel): { icon: string; color: string } {
     default:
       return { icon: "📋", color: TuiColorName.WHITE };
   }
-}
-
-function formatDuration(ms: number): string {
-  if (ms < TIME_MS_PER_SECOND) return `${ms}ms`;
-  if (ms < TIME_MS_PER_MINUTE) return `${(ms / TIME_MS_PER_SECOND).toFixed(1)}s`;
-  if (ms < TIME_MS_PER_HOUR) return `${(ms / TIME_MS_PER_MINUTE).toFixed(1)}m`;
-  return `${(ms / TIME_MS_PER_HOUR).toFixed(1)}h`;
-}
-
-function analyzeContext(
-  entries: IStructuredLogEntry[],
-): { correlationIds: number; traceIds: number; agentRoles: number } {
-  const correlationIds = new Set(entries.map((entry) => entry.context.correlation_id).filter(Boolean));
-  const traceIds = new Set(entries.map((entry) => entry.context.trace_id).filter(Boolean));
-  const agentRoles = new Set(entries.map((entry) => entry.context.agent_role).filter(Boolean));
-  return { correlationIds: correlationIds.size, traceIds: traceIds.size, agentRoles: agentRoles.size };
 }

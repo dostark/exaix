@@ -60,7 +60,7 @@ export interface ILayoutPreset {
 
 // Layout Constants
 
-export const LAYOUT_VERSION = "1.2";
+const LAYOUT_VERSION = "1.2";
 
 export const MIN_PANE_WIDTH = 20;
 export const MIN_PANE_HEIGHT = 5;

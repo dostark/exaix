@@ -43,7 +43,7 @@ export interface IFlatTreeNode<T = unknown> {
   index: number;
 }
 
-export const defaultTreeOptions: ITreeRenderOptions = {
+const defaultTreeOptions: ITreeRenderOptions = {
   useColors: true,
   showIcons: true,
   showBadges: true,

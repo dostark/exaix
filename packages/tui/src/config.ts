@@ -43,6 +43,5 @@ export const LOG_COLORS: Record<string, string> = {
   "default": TuiColorName.WHITE,
 };
 
-export const MONITOR_REFRESH_INTERVAL_MS = 1000;
 export const MONITOR_AUTO_REFRESH_INTERVAL_MS = 5000;
 export const MEMORY_STALE_MS = 30000;

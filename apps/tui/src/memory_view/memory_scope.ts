@@ -21,7 +21,7 @@ export const MemoryTuiScope = {
 
 export type IMemoryTuiScopeType = typeof MemoryTuiScope[keyof typeof MemoryTuiScope];
 
-export const MEMORY_TUI_SCOPE_VALUES: readonly IMemoryTuiScopeType[] = [
+const MEMORY_TUI_SCOPE_VALUES: readonly IMemoryTuiScopeType[] = [
   MemoryTuiScope.GLOBAL,
   MemoryTuiScope.PROJECTS,
   MemoryTuiScope.EXECUTIONS,

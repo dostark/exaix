@@ -6,7 +6,6 @@
  * @related-files ["apps/tui/src/tui_dashboard.ts"]
  */
 import {
-  ActivityType,
   AgentHealth,
   ConfidenceAssessmentLevel,
   DaemonStatus,
@@ -41,7 +40,7 @@ import {
   PortalStatus,
   type Reason,
 } from "@exaix/core/types";
-import { TuiIcon } from "@exaix/tui";
+
 import { GitBranchName } from "@exaix/git";
 import type { JSONValue as _JSONValue } from "@exaix/core";
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types";
@@ -70,7 +69,6 @@ import type {
   IAgentService,
   IMemoryBankService,
   IMemoryEmbeddingService,
-  INotificationService,
   IPlanService,
   IPortalService,
   IRequestService,
@@ -94,7 +92,7 @@ import type { PlanStatusType } from "@exaix/core/status";
 import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
 import { AgentStatus, type AgentStatusType as _AgentStatusType } from "@exaix/core/status";
 import type { MemoryStatus as _MemoryStatus, MemoryStatusType } from "@exaix/core/status";
-import type { IMemoryNotification } from "@exaix/core/types";
+
 import type { ISkillMatchRequest } from "@exaix/core/types";
 import type { IDatabaseService, IJournalIntegrityResult } from "@exaix/core/types";
 import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "@exaix/core/types";
@@ -1081,61 +1079,3 @@ export class MockStructuredLoggerService implements ILogService {
     return Promise.resolve();
   }
 }
-
-/**
- * MockNotificationService
- */
-export class MockNotificationService implements INotificationService {
-  notifyMemoryUpdate(_proposal: IMemoryUpdateProposal): Promise<void> {
-    return Promise.resolve();
-  }
-
-  notify(
-    message: string,
-    _type?: Opt<string, Reason.TestStub>,
-    _proposalId?: Opt<string, Reason.TestStub>,
-    _traceId?: Opt<string, Reason.TestStub>,
-    _metadata?: Opt<string, Reason.TestStub>,
-  ): Promise<void> {
-    console.log(`[Notification] ${message}`);
-    return Promise.resolve();
-  }
-
-  notifyApproval(_proposalId: string, _learningTitle: string): void {}
-  notifyRejection(_proposalId: string, _reason: string): void {}
-
-  getNotifications(): Promise<IMemoryNotification[]> {
-    return Promise.resolve([]);
-  }
-
-  getPendingCount(): Promise<number> {
-    return Promise.resolve(0);
-  }
-
-  notifyPendingDigestIfNeeded(_pendingCount: number): Promise<boolean> {
-    return Promise.resolve(false);
-  }
-
-  clearNotification(_proposalId: string): Promise<void> {
-    return Promise.resolve();
-  }
-
-  clearAllNotifications(): Promise<void> {
-    return Promise.resolve();
-  }
-}
-
-/**
- * Placeholder for TuiIcon to avoid lint errors if unused elsewhere
- */
-export const _USED_ICONS = {
-  INFO: TuiIcon.INFO,
-  FOLDER: TuiIcon.FOLDER,
-};
-
-/**
- * Placeholder for ActivityType to avoid lint errors
- */
-export const _USED_ACTIVITY = {
-  EXECUTION: ActivityType.EXECUTION,
-};

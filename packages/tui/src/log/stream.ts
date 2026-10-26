@@ -9,7 +9,7 @@
 
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai";
 import { ConnectionStatus } from "@exaix/core";
-import type { IStructuredLogEntry, JSONObject } from "@exaix/core/types";
+import type { IStructuredLogEntry } from "@exaix/core/types";
 
 export interface ILogStreamConfig {
   maxBufferSize: number;
@@ -133,112 +133,4 @@ export function createLogStreamManager(service: ILogStreamSource): LogStreamMana
     cleanupInterval: DEFAULT_AI_TIMEOUT_MS,
     maxEntryAge: 300000,
   });
-}
-
-export class WebSocketLogStream {
-  private ws?: WebSocket;
-  private reconnectTimer?: ReturnType<typeof setTimeout>;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000;
-
-  constructor(
-    private url: string,
-    private onMessage: (data: JSONObject) => void,
-    private onError: (error: Error) => void,
-    private onConnect: () => void,
-    private onDisconnect: () => void,
-  ) {}
-
-  connect(): void {
-    try {
-      this.ws = new WebSocket(this.url);
-      this.ws.onopen = () => {
-        this.reconnectAttempts = 0;
-        this.onConnect();
-      };
-      this.ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          this.onMessage(data);
-        } catch (error) {
-          this.onError(new Error(`Failed to parse WebSocket message: ${error}`));
-        }
-      };
-      this.ws.onclose = () => {
-        this.onDisconnect();
-        this.scheduleReconnect();
-      };
-      this.ws.onerror = () => {
-        this.onError(new Error("WebSocket error"));
-      };
-    } catch (error) {
-      this.onError(error as Error);
-      this.scheduleReconnect();
-    }
-  }
-
-  disconnect(): void {
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = undefined;
-    }
-    if (this.ws) {
-      this.ws.close();
-      this.ws = undefined;
-    }
-  }
-
-  private scheduleReconnect(): void {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      this.onError(new Error("Max reconnection attempts reached"));
-      return;
-    }
-    this.reconnectAttempts++;
-    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-    this.reconnectTimer = setTimeout(() => this.connect(), delay);
-  }
-}
-
-export class PollingLogStream {
-  private timer?: ReturnType<typeof setInterval>;
-  private lastTimestamp?: string;
-
-  constructor(
-    private endpoint: string,
-    private interval: number,
-    private onEntries: (entries: IStructuredLogEntry[]) => void,
-    private onError: (error: Error) => void,
-  ) {}
-
-  start(): void {
-    this.timer = setInterval(() => this.poll(), this.interval);
-  }
-
-  stop(): void {
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = undefined;
-    }
-  }
-
-  private async poll(): Promise<void> {
-    try {
-      const url = this.lastTimestamp
-        ? `${this.endpoint}?since=${encodeURIComponent(this.lastTimestamp)}`
-        : this.endpoint;
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const entries: IStructuredLogEntry[] = await response.json();
-      if (entries.length > 0) {
-        this.onEntries(entries);
-        this.lastTimestamp = entries[entries.length - 1].timestamp;
-      }
-    } catch (error) {
-      this.onError(error as Error);
-    }
-  }
 }

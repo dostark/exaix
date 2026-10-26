@@ -84,7 +84,7 @@ export interface IVerificationResult {
 const PARENT_SEGMENT = "..";
 
 /** True when `path` is relative and carries no `..` segment after normalization. */
-export function isConfinedRelativePath(path: string): boolean {
+function isConfinedRelativePath(path: string): boolean {
   if (isAbsolute(path)) return false;
   return !normalize(path).split(SEPARATOR).includes(PARENT_SEGMENT);
 }
@@ -110,12 +110,12 @@ function isForbiddenVerificationArg(arg: string): boolean {
 }
 
 /** True when `args` contains no unscoped permission grant and no in-place-mutation flag. */
-export function hasNoForbiddenVerificationArgs(args: readonly string[]): boolean {
+function hasNoForbiddenVerificationArgs(args: readonly string[]): boolean {
   return !args.some(isForbiddenVerificationArg);
 }
 
 /** One operator-configured Deno task check. */
-export const DenoTaskCheckSchema = z.object({
+const DenoTaskCheckSchema = z.object({
   kind: z.literal("deno_task"),
   task: z.enum(["test", "lint", "check", "fmt"]),
   /** Relative to the worktree root, defaulting to ".". Absolute paths and ".." segments are rejected. */
@@ -130,13 +130,13 @@ export type IDenoTaskCheck = z.infer<typeof DenoTaskCheckSchema>;
 const CHECK_KIND_FIELD = "kind";
 
 /** True when an include glob stays repo-relative and carries no NUL or escape. */
-export function isSafeIncludeGlob(glob: string): boolean {
+function isSafeIncludeGlob(glob: string): boolean {
   if (glob.includes("\u0000") || glob.startsWith("/") || glob.startsWith("\\")) return false;
   return !glob.split("/").includes("..");
 }
 
 /** True when a value is a literal repo file path with no escape or platform prefix. */
-export function isLiteralRepoFilePath(value: string): boolean {
+function isLiteralRepoFilePath(value: string): boolean {
   if (value.length === 0 || value === "." || value.startsWith("/")) return false;
   if (value.includes("\u0000") || value.startsWith("\\")) return false;
   if (/^[A-Za-z]:/.test(value)) return false;
@@ -230,9 +230,9 @@ export const LintErrorClass = {
 } as const satisfies Record<string, LintErrorClass>;
 
 /** The outcome of one configured generic lint check in the terminal snapshot. */
-export const LINT_CHECK_NOT_RUN = "not_run";
+const LINT_CHECK_NOT_RUN = "not_run";
 
-export const LINT_CHECK_RUN_OUTCOMES = [
+const LINT_CHECK_RUN_OUTCOMES = [
   GeneralStatus.PASSED,
   GeneralStatus.FAILED,
   GeneralStatus.ERROR,
@@ -242,7 +242,7 @@ export const LINT_CHECK_RUN_OUTCOMES = [
 export type LintCheckRunOutcome = (typeof LINT_CHECK_RUN_OUTCOMES)[number];
 
 /** The verification status wire values, for runtime validation. */
-export const VERIFICATION_STATUS_VALUES = [
+const VERIFICATION_STATUS_VALUES = [
   VerificationStatus.NOT_CONFIGURED,
   VerificationStatus.SKIPPED,
   VerificationStatus.PASSED,
@@ -251,7 +251,7 @@ export const VERIFICATION_STATUS_VALUES = [
   VerificationStatus.ERROR,
 ] as const;
 
-export const VerificationStatusSchema = z.enum(VERIFICATION_STATUS_VALUES);
+const VerificationStatusSchema = z.enum(VERIFICATION_STATUS_VALUES);
 
 /** Verification identity on execution.completed. Older rows may omit the added fields. */
 export const ExecutionCompletedVerificationSchema = z.object({

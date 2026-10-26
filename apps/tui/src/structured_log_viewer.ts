@@ -24,7 +24,7 @@ import {
 } from "@exaix/tui/helpers/constants.ts";
 import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "@exaix/tui/config.ts";
 import { DialogStatus, LogLevel, MessageType } from "@exaix/core";
-import { LogGroupingMode, TuiColorName, TuiNodeType } from "@exaix/tui";
+import { LogGroupingMode, TuiNodeType } from "@exaix/tui";
 
 // View State
 
@@ -62,7 +62,7 @@ export interface ILogViewExtensions {
 
 // Icons and Visual Constants
 
-export const STRUCTURED_LOG_ICONS: Record<string, string> = {
+const STRUCTURED_LOG_ICONS: Record<string, string> = {
   "debug": "🔍",
   "info": "ℹ️",
   "warn": "⚠️",
@@ -78,17 +78,9 @@ export const STRUCTURED_LOG_ICONS: Record<string, string> = {
   "default": "📋",
 };
 
-export const STRUCTURED_LOG_LEVEL_COLORS: Record<LogLevel, string> = {
-  [LogLevel.DEBUG]: TuiColorName.GRAY,
-  [LogLevel.INFO]: TuiColorName.BLUE,
-  [LogLevel.WARN]: TuiColorName.YELLOW,
-  [LogLevel.ERROR]: TuiColorName.RED,
-  [LogLevel.FATAL]: TuiColorName.MAGENTA,
-};
-
 // Key Bindings
 
-export enum StructuredLogViewerAction {
+enum StructuredLogViewerAction {
   NAVIGATE_UP = "navigate-up",
   NAVIGATE_DOWN = "navigate-down",
   NAVIGATE_HOME = "navigate-home",
@@ -114,7 +106,7 @@ export enum StructuredLogViewerAction {
   CANCEL = "cancel",
 }
 
-export class StructuredLogViewerKeyBindings extends KeyBindingsBase<StructuredLogViewerAction, KeyBindingCategory> {
+class StructuredLogViewerKeyBindings extends KeyBindingsBase<StructuredLogViewerAction, KeyBindingCategory> {
   readonly KEY_BINDINGS: readonly IKeyBinding<StructuredLogViewerAction, KeyBindingCategory>[] = [
     {
       key: KEYS.UP,
@@ -257,7 +249,7 @@ export class StructuredLogViewerKeyBindings extends KeyBindingsBase<StructuredLo
   ];
 }
 
-export const STRUCTURED_LOG_VIEWER_KEY_BINDINGS = new StructuredLogViewerKeyBindings().KEY_BINDINGS;
+const STRUCTURED_LOG_VIEWER_KEY_BINDINGS = new StructuredLogViewerKeyBindings().KEY_BINDINGS;
 
 // StructuredLogViewer Class
 

@@ -80,7 +80,7 @@ export type IRequestQualityIssue = z.infer<typeof RequestQualityIssueSchema>;
 /**
  * Assessment metadata — timing and strategy information.
  */
-export const RequestQualityAssessmentMetadataSchema = z.object({
+const RequestQualityAssessmentMetadataSchema = z.object({
   /** ISO 8601 timestamp when assessment was performed. */
   assessedAt: z.string(),
   /** Assessment strategy used to produce this result. */

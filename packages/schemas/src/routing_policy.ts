@@ -21,7 +21,7 @@ export interface IRoutingContext {
   allowDynamicRouting?: boolean;
 }
 
-export const ZRoutingMatchCriteria = z.object({
+const ZRoutingMatchCriteria = z.object({
   capability: z.string().min(1).optional(),
   complexityMin: z.number().min(0).max(10).optional(),
   complexityMax: z.number().min(0).max(10).optional(),
@@ -35,7 +35,7 @@ export const ZRoutingMatchCriteria = z.object({
 
 export type IRoutingMatchCriteria = z.infer<typeof ZRoutingMatchCriteria>;
 
-export const ZRoutingPreference = z.object({
+const ZRoutingPreference = z.object({
   agentRole: z.string().min(1),
   version: z.string().min(1).optional(),
   fallbackAgentRole: z.string().min(1).optional(),
@@ -46,7 +46,7 @@ export const ZRoutingPreference = z.object({
 
 export type IRoutingPreference = z.infer<typeof ZRoutingPreference>;
 
-export const ZRoutingRule = z.object({
+const ZRoutingRule = z.object({
   ruleId: z.string().min(1),
   priority: z.number().int().min(0).default(100),
   match: ZRoutingMatchCriteria,

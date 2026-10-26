@@ -21,7 +21,7 @@ export interface IRenderOptions {
 
 // ANSI Styles
 
-export const MarkdownStyles = {
+const MarkdownStyles = {
   h1: `${ANSI.bold}${ANSI.cyan}`, // Bold Cyan
   h2: `${ANSI.bold}${ANSI.blue}`, // Bold Blue
   h3: `${ANSI.bold}${ANSI.magenta}`, // Bold Magenta

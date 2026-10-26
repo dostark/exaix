@@ -9,21 +9,16 @@
 
 import { z } from "zod";
 import { ArtifactSubtype as ArtifactType } from "@exaix/core";
-import { REVIEW_STATUS_VALUES, ReviewStatus as ReviewStatusValue } from "@exaix/core/status";
+import { REVIEW_STATUS_VALUES } from "@exaix/core/status";
 
 import type { IReviewStatus } from "@exaix/core/status";
-
-/**
- * Artifact status values
- */
-export const ArtifactStatus = ReviewStatusValue;
 
 export type IArtifactStatusType = IReviewStatus;
 
 /**
  * Artifact frontmatter schema (YAML)
  */
-export const ArtifactFrontmatterSchema = z.object({
+const ArtifactFrontmatterSchema = z.object({
   status: z.enum(REVIEW_STATUS_VALUES),
   type: z.nativeEnum(ArtifactType),
   agent_role: z.string(),
@@ -38,7 +33,7 @@ export type IArtifactFrontmatter = z.infer<typeof ArtifactFrontmatterSchema>;
 /**
  * Artifact database record schema
  */
-export const ArtifactSchema = z.object({
+const ArtifactSchema = z.object({
   id: z.string(),
   status: z.enum(REVIEW_STATUS_VALUES),
   type: z.nativeEnum(ArtifactType),
@@ -65,7 +60,7 @@ export interface IArtifactWithContent extends IArtifact {
 /**
  * Artifact creation input
  */
-export const CreateArtifactInputSchema = z.object({
+const CreateArtifactInputSchema = z.object({
   request_id: z.string(),
   agent_role: z.string(),
   content: z.string(), // Markdown content (frontmatter will be added)
@@ -79,7 +74,7 @@ export type ICreateArtifactInput = z.infer<typeof CreateArtifactInputSchema>;
 /**
  * Artifact list filters
  */
-export const ArtifactFiltersSchema = z.object({
+const ArtifactFiltersSchema = z.object({
   status: z.enum(REVIEW_STATUS_VALUES).optional(),
   agent_role: z.string().optional(),
   portal: z.string().nullable().optional(),

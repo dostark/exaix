@@ -90,12 +90,6 @@ export const DAEMON_STATUS_COLORS: Record<string, string> = {
   [DaemonStatus.UNKNOWN]: ANSI.brightBlack,
 };
 
-export const LOG_LEVEL_COLORS: Record<string, string> = {
-  info: ANSI.white,
-  warn: ANSI.yellow,
-  error: ANSI.red,
-};
-
 // Key Bindings
 
 // Daemon Key Action Types
@@ -113,7 +107,7 @@ export enum DaemonKeyAction {
 }
 // Key Binding Categories
 
-export class DaemonKeyBindings extends KeyBindingsBase<DaemonKeyAction, KeyBindingCategory> {
+class DaemonKeyBindings extends KeyBindingsBase<DaemonKeyAction, KeyBindingCategory> {
   readonly KEY_BINDINGS: readonly IKeyBinding<DaemonKeyAction, KeyBindingCategory>[] = [
     {
       key: KEYS.S,

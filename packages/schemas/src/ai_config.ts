@@ -10,7 +10,6 @@ import { z } from "zod";
 import { ENV_VAR_NAME_PATTERN } from "./model_binding.ts";
 import {
   BYTES_PER_KB,
-  DEFAULT_AI_MODEL,
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
   DEFAULT_AI_RETRY_MAX_ATTEMPTS,
   DEFAULT_AI_TEMPERATURE_MAX,
@@ -88,14 +87,14 @@ export const ProviderTypeSchema = z.string().min(1).refine(
 /**
  * Mock strategy types
  */
-export const MockStrategySchema = z.nativeEnum(MockStrategy);
+const MockStrategySchema = z.nativeEnum(MockStrategy);
 
 export type MockStrategyType = z.infer<typeof MockStrategySchema>;
 
 /**
  * Mock-specific configuration
  */
-export const MockConfigSchema = z.object({
+const MockConfigSchema = z.object({
   /** Mock strategy: recorded, scripted, pattern, failing, slow */
   strategy: MockStrategySchema.default(DEFAULT_MOCK_STRATEGY),
   /** Directory for recorded response fixtures */
@@ -154,15 +153,6 @@ export const AiConfigSchema = z.object({
 );
 
 export type AiConfig = z.infer<typeof AiConfigSchema>;
-
-/**
- * Default AI configuration
- */
-export const DEFAULT_AI_CONFIG: AiConfig = {
-  provider: ProviderType.MOCK,
-  model: DEFAULT_AI_MODEL,
-  timeout_ms: DEFAULT_AI_TIMEOUT_MS,
-};
 
 type ProviderRegistryGlobal = typeof globalThis & {
   __exaixRegisteredProviderTypes?: string[];

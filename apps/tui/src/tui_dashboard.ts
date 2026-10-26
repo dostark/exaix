@@ -26,7 +26,7 @@ import {
   TUI_TREE_ICONS,
 } from "@exaix/tui/helpers/constants.ts";
 import { colorize, getTheme, type ITuiTheme } from "@exaix/tui/helpers/colors.ts";
-import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import {
   handleMemoryNotifications as _handleMemoryNotifications,
   type IDashboardContext,
@@ -40,7 +40,7 @@ import {
   saveLayout as helperSaveLayout,
 } from "@exaix/tui/layout/persistence.ts";
 import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
-import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
+
 import type { IDatabaseService } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import { initDashboardViews } from "./dashboard/view_registry.ts";
@@ -198,7 +198,7 @@ const prodHandleKeyModulePromise = import("@exaix/tui/helpers/prod_handle_key.ts
 // deno-lint-ignore exaix/dynamic-import -- dynamic std/streams import used in non-tty fallback
 const stdStreamsModulePromise = import("@std/streams");
 
-export const DASHBOARD_ICONS = {
+const DASHBOARD_ICONS = {
   views: {
     PortalManagerView: TUI_DASHBOARD_ICONS.views.PortalManagerView,
     PlanReviewerView: TUI_DASHBOARD_ICONS.views.PlanReviewerView,
@@ -269,69 +269,6 @@ type DashboardAction =
   | "resize_right"
   | "resize_up"
   | "resize_down";
-
-export class DashboardKeyBindings extends KeyBindingsBase<DashboardAction> {
-  readonly KEY_BINDINGS: readonly IKeyBinding<DashboardAction>[] = [
-    // Navigation
-    { key: KEYS.TAB, action: "next_pane", description: "Next pane", category: KeyBindingCategory.NAVIGATION },
-    { key: KEYS.SHIFT_TAB, action: "prev_pane", description: "Previous pane", category: KeyBindingCategory.NAVIGATION },
-    {
-      key: KEYS.ONE_TO_SEVEN,
-      action: "view_1",
-      description: "Jump to pane 1-7",
-      category: KeyBindingCategory.NAVIGATION,
-    },
-
-    // Layout
-    {
-      key: KEYS.V,
-      action: "split_vertical",
-      description: "Split pane vertically",
-      category: KeyBindingCategory.LAYOUT,
-    },
-    {
-      key: KEYS.H,
-      action: "split_horizontal",
-      description: "Split pane horizontally",
-      category: KeyBindingCategory.LAYOUT,
-    },
-    { key: KEYS.C, action: "close_pane", description: "Close current pane", category: KeyBindingCategory.LAYOUT },
-    {
-      key: KEYS.CAP_Z,
-      action: "maximize_pane",
-      description: "Maximize/restore pane",
-      category: KeyBindingCategory.LAYOUT,
-    },
-    { key: KEYS.S, action: "save_layout", description: "Save layout", category: KeyBindingCategory.LAYOUT },
-    { key: KEYS.R, action: "restore_layout", description: "Restore layout", category: KeyBindingCategory.LAYOUT },
-    { key: KEYS.D, action: "reset_layout", description: "Reset to default", category: KeyBindingCategory.LAYOUT },
-
-    // Resizing
-    { key: KEYS.CTRL_LEFT, action: "resize_left", description: "Resize left", category: KeyBindingCategory.LAYOUT },
-    { key: KEYS.CTRL_RIGHT, action: "resize_right", description: "Resize right", category: KeyBindingCategory.LAYOUT },
-    { key: KEYS.CTRL_UP, action: "resize_up", description: "Resize up", category: KeyBindingCategory.LAYOUT },
-    { key: KEYS.CTRL_DOWN, action: "resize_down", description: "Resize down", category: KeyBindingCategory.LAYOUT },
-
-    // Dialogs
-    { key: KEYS.QUESTION, action: "show_help", description: "Show help", category: KeyBindingCategory.GENERAL },
-    {
-      key: KEYS.N,
-      action: "show_notifications",
-      description: "Toggle notifications",
-      category: KeyBindingCategory.GENERAL,
-    },
-    {
-      key: KEYS.M,
-      action: "show_memory_notifications",
-      description: "Memory updates",
-      category: KeyBindingCategory.GENERAL,
-    },
-    { key: KEYS.P, action: "show_view_picker", description: "View picker", category: KeyBindingCategory.GENERAL },
-    { key: KEYS.ESC_Q, action: "quit", description: "Quit dashboard", category: KeyBindingCategory.GENERAL },
-  ];
-}
-
-export const DASHBOARD_KEY_BINDINGS = new DashboardKeyBindings().KEY_BINDINGS;
 
 // Help Sections
 

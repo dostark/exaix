@@ -8,7 +8,7 @@
  */
 
 import { colorize, type ITuiTheme, visibleLength } from "./colors.ts";
-import { renderBoxBottom, renderBoxLine, renderBoxTop, wrapToWidth } from "./dialog_base.ts";
+import { renderBoxBottom, renderBoxLine, renderBoxTop } from "./dialog_base.ts";
 
 // Common Rendering Functions
 
@@ -45,7 +45,7 @@ export function renderEmptyDialogLine(innerWidth: number, theme: ITuiTheme): str
 /**
  * Renders a focused button with consistent styling
  */
-export function renderFocusedButton(
+function renderFocusedButton(
   text: string,
   isFocused: boolean,
   theme: ITuiTheme,
@@ -80,33 +80,6 @@ export function renderInputField(
 
   const line = `${label}: ${beforeCursor}${colorize(atCursor, theme.primary)}${afterCursor}`;
   return line;
-}
-
-/**
- * Renders a multi-line message with word wrapping
- */
-export function renderWrappedMessage(
-  message: string | string[],
-  maxWidth: number,
-  theme: ITuiTheme,
-): string[] {
-  const messages = Array.isArray(message) ? message : wrapToWidth(message, maxWidth);
-  return messages.map((msg) => renderDialogLine(`  ${msg}`, maxWidth + 4, theme));
-}
-
-/**
- * Renders a list of options with focus indicator
- */
-export function renderOptionList(
-  options: string[],
-  focusIndex: number,
-  maxWidth: number,
-  theme: ITuiTheme,
-): string[] {
-  return options.map((option, index) => {
-    const prefix = index === focusIndex ? colorize("▶ ", theme.primary) : "  ";
-    return renderDialogLine(`${prefix}${option}`, maxWidth + 4, theme);
-  });
 }
 
 /**

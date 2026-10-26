@@ -11,10 +11,10 @@ import type { Opt, Reason } from "@exaix/core/types";
 import { type Config, type ILintSettings, LintSettingsSchema } from "./config.ts";
 
 /** The settings prefix every registered lint key carries. */
-export const LINT_SETTINGS_PREFIX = "verification.lint.";
+const LINT_SETTINGS_PREFIX = "verification.lint.";
 
 /** Every registered lint setting key, in schema order. */
-export const LINT_SETTING_KEYS: readonly string[] = [
+const LINT_SETTING_KEYS: readonly string[] = [
   `${LINT_SETTINGS_PREFIX}findings_limit`,
   `${LINT_SETTINGS_PREFIX}json_max_bytes`,
   `${LINT_SETTINGS_PREFIX}stderr_max_bytes`,

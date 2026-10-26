@@ -130,7 +130,7 @@ export enum RequestAction {
   CANCEL = "cancel",
 }
 
-export class RequestKeyBindings extends KeyBindingsBase<RequestAction, KeyBindingCategory> {
+class RequestKeyBindings extends KeyBindingsBase<RequestAction, KeyBindingCategory> {
   readonly KEY_BINDINGS: readonly IKeyBinding<RequestAction, KeyBindingCategory>[] = [
     {
       key: KEYS.UP,

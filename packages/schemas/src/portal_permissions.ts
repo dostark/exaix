@@ -71,24 +71,24 @@ export interface IPortalPermissionsChecker {
 
 /** sandboxed: no file system access, all operations via MCP tools. hybrid: read-only
  *  portal access, writes via MCP tools with audit. */
-export const SecurityModeSchema = z.nativeEnum(SecurityMode);
+const SecurityModeSchema = z.nativeEnum(SecurityMode);
 
 /**
  * Operations that can be permitted on a portal
  */
-export const PortalOperationSchema = z.nativeEnum(PortalOperation);
+const PortalOperationSchema = z.nativeEnum(PortalOperation);
 
 // Enhanced Permission Model
 
 /**
  * Permission action types
  */
-export const PermissionActionSchema = z.nativeEnum(PermissionAction);
+const PermissionActionSchema = z.nativeEnum(PermissionAction);
 
 /**
  * Permission conditions for fine-grained access control
  */
-export const PermissionConditionsSchema = z.object({
+const PermissionConditionsSchema = z.object({
   timeWindow: z.object({
     start: z.string(), // HH:MM format (e.g., "09:00")
     end: z.string(), // HH:MM format (e.g., "17:00")
@@ -102,7 +102,7 @@ export type IPermissionConditions = z.infer<typeof PermissionConditionsSchema>;
 /**
  * Enhanced permission with resource/action/condition model
  */
-export const PermissionSchema = z.object({
+const PermissionSchema = z.object({
   resource: z.string(), // Resource pattern (e.g., "/portal/*", "/portal/project")
   action: z.union([
     PermissionActionSchema,
@@ -118,7 +118,7 @@ export type IPermission = z.infer<typeof PermissionSchema>;
 /**
  * Security settings for a portal
  */
-export const PortalSecurityConfigSchema = z.object({
+const PortalSecurityConfigSchema = z.object({
   mode: SecurityModeSchema.default(SecurityMode.SANDBOXED),
   audit_enabled: z.boolean().default(true),
   log_all_actions: z.boolean().default(true),

@@ -19,7 +19,7 @@ import { SKILL_NAME_PATTERN, SkillToolListSchema } from "./skill_folder.ts";
 
 /** A validated `references/*.md` file bundled with a skill. `linked` marks files the body
  *  links to. Unlinked files are hashed and snapshotted but not rendered. */
-export const SkillReferenceSchema = z.object({
+const SkillReferenceSchema = z.object({
   path: z.string().regex(/^references\/[a-z0-9]+(-[a-z0-9]+)*\.md$/),
   content: z.string(),
   linked: z.boolean(),

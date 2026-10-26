@@ -138,12 +138,12 @@ export type ThinkingDeclaration = z.infer<typeof ThinkingDeclarationSchema>;
  *  Parse-boundary code names the offending field without scattering literals, and the field union is a shared named alias. */
 export const DECLARATION_FIELD_EFFORT = "effort";
 export const DECLARATION_FIELD_THINKING = "thinking";
-export const DECLARATION_FIELDS = [DECLARATION_FIELD_EFFORT, DECLARATION_FIELD_THINKING] as const;
+const DECLARATION_FIELDS = [DECLARATION_FIELD_EFFORT, DECLARATION_FIELD_THINKING] as const;
 export type DeclarationField = typeof DECLARATION_FIELDS[number];
 
 /** Why EffortResolver produced the value it did — journaled per request for
  *  measurement reproducibility. */
-export const EffortResolutionBasisSchema = z.enum([
+const EffortResolutionBasisSchema = z.enum([
   "unset", // no surface declared a value -> field omitted (today's behavior)
   "declared", // caller gave a concrete value; resolver passed it through unchanged
   "native-adaptive", // thinking auto + Anthropic native-adaptive model + thinking_default != false -> omit the field

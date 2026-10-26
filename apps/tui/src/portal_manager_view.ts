@@ -45,7 +45,7 @@ export interface IPortalViewExtensions {
 
 // Portal Actions
 
-export enum PortalAction {
+enum PortalAction {
   NAVIGATE_UP = "navigate-up",
   NAVIGATE_DOWN = "navigate-down",
   NAVIGATE_HOME = "navigate-home",
@@ -75,7 +75,7 @@ const PORTAL_ICONS = {
 
 // Key Bindings
 
-export class PortalKeyBindings extends KeyBindingsBase<PortalAction, KeyBindingCategory> {
+class PortalKeyBindings extends KeyBindingsBase<PortalAction, KeyBindingCategory> {
   readonly KEY_BINDINGS: readonly IKeyBinding<PortalAction, KeyBindingCategory>[] = [
     {
       key: KEYS.UP,
@@ -140,7 +140,7 @@ export class PortalKeyBindings extends KeyBindingsBase<PortalAction, KeyBindingC
   ];
 }
 
-export const PORTAL_KEY_BINDINGS = new PortalKeyBindings().KEY_BINDINGS;
+const PORTAL_KEY_BINDINGS = new PortalKeyBindings().KEY_BINDINGS;
 
 // TUI Session
 

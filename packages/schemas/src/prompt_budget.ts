@@ -60,7 +60,7 @@ export enum PromptBudgetSection {
   LOOP_HISTORY = "loopHistory",
 }
 
-export const ZPromptBudgetSections = z.object({
+const ZPromptBudgetSections = z.object({
   [PromptBudgetSection.SYSTEM]: z.number().int().nonnegative(),
   [PromptBudgetSection.PLAN]: z.number().int().nonnegative(),
   [PromptBudgetSection.PORTAL_KNOWLEDGE]: z.number().int().nonnegative(),

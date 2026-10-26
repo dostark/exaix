@@ -19,11 +19,11 @@ import { EffortTierSchema } from "./model_intent.ts";
 
 /** Spec slug: lowercase ASCII alphanumerics in single-hyphen-separated groups, 1-64 characters. */
 export const SKILL_NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-export const SKILL_DESCRIPTION_MAX_LENGTH = 1024;
-export const SKILL_COMPATIBILITY_MAX_LENGTH = 500;
+const SKILL_DESCRIPTION_MAX_LENGTH = 1024;
+const SKILL_COMPATIBILITY_MAX_LENGTH = 500;
 
 /** Frontmatter `metadata` is a flat string-to-string map per the Agent Skills spec. */
-export const SkillMetadataSchema = z.record(z.string(), z.string());
+const SkillMetadataSchema = z.record(z.string(), z.string());
 
 /** Strict `SKILL.md` frontmatter. Unknown top-level keys are rejected, matching the reference validator's `ALLOWED_FIELDS` rule. */
 export const SkillFrontmatterSchema = z.object({
@@ -68,7 +68,7 @@ export const SkillToolListSchema = z.array(
 );
 
 /** Compatibility projection stored in the sidecar as `applies_to`. */
-export const SkillAppliesToSchema = z.object({
+const SkillAppliesToSchema = z.object({
   agents: z.array(z.string()).default(["*"]).describe('Compatible agent role ids ("*" for all)'),
   flows: z.array(z.string()).optional().describe("Flow ids this skill may be used in"),
 }).strict();

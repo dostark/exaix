@@ -14,7 +14,7 @@ import type { IReviewStatus } from "@exaix/core/status";
 /**
  * Review status values
  */
-export const ReviewStatusSchema: z.ZodType<IReviewStatus> = z.enum(REVIEW_STATUS_VALUES);
+const ReviewStatusSchema: z.ZodType<IReviewStatus> = z.enum(REVIEW_STATUS_VALUES);
 
 /**
  * Review schema with all fields
@@ -63,7 +63,7 @@ export type IRegisterReviewInput = z.infer<typeof RegisterReviewSchema>;
 /**
  * Filters for listing reviews
  */
-export const ReviewFiltersSchema = z.object({
+const ReviewFiltersSchema = z.object({
   trace_id: z.string().uuid().optional(),
   portal: z.string().optional(),
   status: ReviewStatusSchema.optional(),

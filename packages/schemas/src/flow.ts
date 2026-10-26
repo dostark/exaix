@@ -48,7 +48,7 @@ const DateOrStringSchema = z.union([z.string().datetime(), z.date()]).transform(
   return value instanceof Date ? value.toISOString() : value;
 });
 
-export const ZToolCall = z.object({
+const ZToolCall = z.object({
   /** Preprocessed through canonicalizeToolName: a dynamic decision or compensate call naming
    *  a supported general-purpose alias (`Read`) parses to its canonical name. Excluded/
    *  retired native names and native case/whitespace variants fail the enum check. */
@@ -76,7 +76,7 @@ export const ZFlowStepOnError = z.object({
   compensate: z.array(ZToolCall).optional(),
 });
 
-export const ZFlowStepResult = z.object({
+const ZFlowStepResult = z.object({
   stepId: z.string().min(1),
   success: z.boolean(),
   skipped: z.boolean().optional(),
@@ -89,7 +89,7 @@ export const ZFlowStepResult = z.object({
   completedAt: DateOrStringSchema,
 });
 
-export const ZFlowGateResult = z.object({
+const ZFlowGateResult = z.object({
   passed: z.boolean(),
   score: z.number().min(0).max(1),
   evaluation: EvaluationResultSchema,
@@ -114,7 +114,7 @@ export const ZBranchDecision = z.object({
   notTaken: z.array(z.string().min(1)),
   data: JSONValueSchema,
 });
-export const ZBranchState = z.object({
+const ZBranchState = z.object({
   phase: z.literal("settled"),
   decision: ZBranchDecision,
   inputIds: z.array(z.string().min(1)),
@@ -197,7 +197,7 @@ export const GateEvaluateSchema = z.object({
 });
 
 // Feedback loop configuration schema
-export const FeedbackLoopSchema = z.object({
+const FeedbackLoopSchema = z.object({
   /** Maximum iterations */
   maxIterations: z.number().int().min(1).max(10).optional(),
   /** Target score to achieve */
@@ -207,7 +207,7 @@ export const FeedbackLoopSchema = z.object({
 });
 
 // Branch condition schema
-export const BranchConditionSchema = z.object({
+const BranchConditionSchema = z.object({
   /** Condition expression */
   condition: z.string(),
   /** Step ID to goto if condition matches */
@@ -215,7 +215,7 @@ export const BranchConditionSchema = z.object({
 });
 
 // Consensus configuration schema
-export const ConsensusConfigSchema = z.object({
+const ConsensusConfigSchema = z.object({
   /** Consensus method */
   method: z.nativeEnum(FlowConsensusMethod).default(FlowConsensusMethod.JUDGE),
   /** Judge agent for "judge" method */
@@ -227,7 +227,7 @@ export const ConsensusConfigSchema = z.object({
 /** Agent strategies a flow step may force on a DECLARED step, bypassing the strategy
  *  registry's capability-based dispatch. Reuses `ExecutionStrategyName`, excluding the
  *  internal `legacy` fallback — that value is never a deliberate author choice. */
-export const FlowStepStrategySchema = z.enum([
+const FlowStepStrategySchema = z.enum([
   ExecutionStrategyName.REACT,
   ExecutionStrategyName.MCP,
   ExecutionStrategyName.CLI_DELEGATE,
@@ -310,7 +310,7 @@ const FlowStepSchemaBase = z.object({
 /** Configuration for a `session_delegate_cycle` flow step. The plan itself is request
  *  provenance (`plan_context_ref`), not flow configuration — this schema carries only
  *  the review gate and the non-empty-touched-paths requirement. */
-export const SessionDelegateCycleConfigSchema = z.object({
+const SessionDelegateCycleConfigSchema = z.object({
   requireChangedPaths: z.literal(true).default(true),
   review: GateEvaluateSchema,
 }).superRefine((config, ctx) => {
@@ -600,9 +600,9 @@ export type IConsensusConfig = z.infer<typeof ConsensusConfigSchema>;
 
 export const StepExecutionDispositionSchema = z.nativeEnum(StepExecutionDisposition);
 
-export const StepSideEffectClassSchema = z.nativeEnum(StepSideEffectClass);
+const StepSideEffectClassSchema = z.nativeEnum(StepSideEffectClass);
 
-export const StepAttemptClassSchema = z.nativeEnum(StepAttemptClass);
+const StepAttemptClassSchema = z.nativeEnum(StepAttemptClass);
 
 /** Idempotency key uniquely identifying a step execution attempt. Used for replay
  *  detection and result reuse. */

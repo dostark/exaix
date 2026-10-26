@@ -118,7 +118,7 @@ export const SessionReturnSchema = z.object({
 export type SessionReturn = z.infer<typeof SessionReturnSchema>;
 
 /** Wait state persisted under Memory/Execution/{traceId}/session_wait.json. */
-export const SessionWaitStatusSchema = z.enum([
+const SessionWaitStatusSchema = z.enum([
   "pending",
   "resumed",
   "expired",
@@ -179,7 +179,7 @@ export const SessionReconcileRejectionSchema = z.enum([
 export type SessionReconcileRejection = z.infer<typeof SessionReconcileRejectionSchema>;
 
 /** Provider resolution for a delegate tool. */
-export const SessionDelegateProviderSchema = z.object({
+const SessionDelegateProviderSchema = z.object({
   name: z.string().min(1),
   key_env: z.string().min(1),
   base_url: z.string().url().optional(),

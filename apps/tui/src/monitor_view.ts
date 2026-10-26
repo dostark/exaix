@@ -51,7 +51,7 @@ export interface ILogViewExtensions {
   groupBy: GroupingMode;
 }
 
-export enum MonitorViewAction {
+enum MonitorViewAction {
   NAVIGATE_UP = "navigate-up",
   NAVIGATE_DOWN = "navigate-down",
   NAVIGATE_HOME = "navigate-home",
@@ -77,7 +77,7 @@ export enum MonitorViewAction {
   CANCEL = "cancel",
 }
 
-export class MonitorViewBindings extends KeyBindingsBase<MonitorViewAction, KeyBindingCategory> {
+class MonitorViewBindings extends KeyBindingsBase<MonitorViewAction, KeyBindingCategory> {
   readonly KEY_BINDINGS: readonly IKeyBinding<MonitorViewAction, KeyBindingCategory>[] = [
     {
       key: KEYS.UP,
@@ -327,47 +327,6 @@ export class MonitorView {
 }
 
 // Minimal Mock for Tests
-
-/**
- * Minimal LogService mock for TUI session tests
- */
-export class MinimalLogServiceMock implements IJournalService {
-  private logs: ILogEntry[] = [];
-
-  constructor(logs: ILogEntry[] = []) {
-    this.logs = logs;
-  }
-
-  query(filter: IJournalFilterOptions): Promise<IActivityRecord[]> {
-    let filtered = this.logs;
-
-    if (filter.agentRole) {
-      filtered = filtered.filter((l) => l.agent_role === filter.agentRole);
-    }
-    if (filter.actionType) {
-      filtered = filtered.filter((l) => l.action_type === filter.actionType);
-    }
-    if (filter.traceId) {
-      filtered = filtered.filter((l) => l.trace_id === filter.traceId);
-    }
-
-    return Promise.resolve([...filtered.map((log) => ({
-      ...log,
-      payload: JSON.stringify(log.payload),
-      actor_type: log.actor_type ?? null,
-      agent_role: log.agent_role ?? null,
-      runner_kind: log.runner_kind ?? null,
-    }))]);
-  }
-
-  setLogs(logs: ILogEntry[]): void {
-    this.logs = logs;
-  }
-
-  getDistinctValues(_field: string): Promise<string[]> {
-    return Promise.resolve([]);
-  }
-}
 
 /**
  * Interactive TUI session for Monitor View

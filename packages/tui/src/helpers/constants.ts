@@ -13,8 +13,6 @@ export const TUI_DETAIL_DATE_LOCALE = "en-US";
 
 export const TUI_PREFIX_PROJECT = "project:";
 export const TUI_PREFIX_EXECUTION = "execution:";
-export const TUI_PREFIX_PENDING = "pending:";
-
 export const TUI_STATUS_MSG_CANCELLED = "Cancelled";
 export const TUI_STATUS_MSG_ERROR_PREFIX = "Error: ";
 export const TUI_STATUS_MSG_PROPOSAL_APPROVED = "Proposal approved";
@@ -30,14 +28,12 @@ export const TUI_LABEL_EXECUTIONS = "Executions";
 export const TUI_LABEL_PENDING = "Pending Proposals";
 export const TUI_LABEL_REQUEST_DETAILS = "REQUEST DETAILS";
 
-export const TUI_MSG_SELECT_ITEM = "Select an item to view details.";
 export const TUI_MSG_PRESS_QUIT = "Press ESC or q to close";
 
 export const TUI_MSG_PRESS_CLOSE_HELP = "\nPress ? or Esc to close help";
 export const TUI_MSG_DASHBOARD_HEADER = "                         Exaix TUI Dashboard                               ";
 
 // TUI Layout and Display Constants
-export const TUI_LAYOUT_LABEL_WIDTH = 30;
 export const TUI_LAYOUT_FULL_WIDTH = 80;
 export const TUI_LAYOUT_MEDIUM_WIDTH = 60;
 export const TUI_LAYOUT_DIALOG_WIDTH = 70;
@@ -48,16 +44,11 @@ export const TUI_VIEW_PICKER_INNER_WIDTH = 36;
 export const TUI_LAYOUT_PRESET_LIST_WIDTH = 38;
 export const TUI_LAYOUT_VALUE_WIDTH = 50;
 export const TUI_LAYOUT_DEFAULT_HEIGHT = 24;
-export const TUI_LIMIT_PREVIEW_ITEMS = 10;
-export const TUI_LIMIT_SEARCH_RESULTS = 20;
 export const TUI_LIMIT_SHORT = 5;
 export const TUI_LIMIT_MEDIUM = 10;
 export const TUI_LIMIT_LONG = 15;
 export const TUI_LIMIT_LOGS_MAX = 1000;
 export const TUI_LIMIT_LOGS_DEFAULT = 500;
-export const TUI_PREVIEW_SHORT = 40;
-export const TUI_PREVIEW_MEDIUM = 60;
-export const TUI_SPINNER_FRAMES = 10;
 export const TUI_MAIN_PANE_ID = "main";
 
 // TUI Focusable Element IDs
@@ -69,18 +60,14 @@ export const TUI_ELEMENT_ACTION_BUTTONS = "action-buttons";
 export const TUI_LAYOUT_NARROW_WIDTH = 50;
 
 // TUI Portal Icons
-export const TUI_ICON_PORTAL_ACTIVE = "🟢";
-export const TUI_ICON_PORTAL_BROKEN = "🔴";
-export const TUI_ICON_PORTAL_INACTIVE = "⚪";
-export const TUI_ICON_FOLDER = "📂";
+const TUI_ICON_PORTAL_ACTIVE = "🟢";
+const TUI_ICON_PORTAL_BROKEN = "🔴";
+const TUI_ICON_PORTAL_INACTIVE = "⚪";
+const TUI_ICON_FOLDER = "📂";
 export const TUI_ICON_AGENT = "🤖";
 export const TUI_ICON_BRAIN = "🧠";
 export const TUI_ICON_SUCCESS = "✅";
 export const TUI_ICON_FAILURE = "❌";
-export const TUI_ICON_WARNING = "⚠️";
-export const TUI_ICON_DEBUG = "🔍";
-export const TUI_ICON_FATAL = "💀";
-
 // TUI Priority Icons
 export const TUI_PRIORITY_ICONS: Record<string, string> = {
   critical: "🔴",
@@ -167,14 +154,6 @@ export const TUI_TREE_ICONS = {
 } as const;
 
 // TUI Default Log Icons
-export const TUI_DEFAULT_ICONS: Record<string, string> = {
-  info: TUI_ICON_SUCCESS,
-  warn: TUI_ICON_WARNING,
-  error: TUI_ICON_FAILURE,
-  debug: TUI_ICON_DEBUG,
-  fatal: TUI_ICON_FATAL,
-};
-
 // TUI Log Event Icons
 export const TUI_LOG_ICONS: Record<string, string> = {
   "request_created": "📝",
@@ -248,8 +227,6 @@ export const TUI_NODE_TYPE_STATUS_GROUP = "status_group";
 
 // TUI View Labels
 export const TUI_LABEL_CANCEL = "Cancel";
-export const TUI_LABEL_PORTAL_MANAGER = "Portal Manager";
-
 // TUI Separator Strings
 export const TUI_SEPARATOR_ROW = "├────────────────────────────────────────┤";
 

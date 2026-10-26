@@ -259,7 +259,7 @@ const MCPStructuredDataContentSchema = z.object({
   data: JSONValueSchema,
 });
 
-export const MCPContentSchema = z.discriminatedUnion("type", [
+const MCPContentSchema = z.discriminatedUnion("type", [
   MCPTextContentSchema,
   MCPStructuredDataContentSchema,
 ]);
@@ -269,7 +269,7 @@ export const MCPToolResponseSchema = z.object({
   isError: z.boolean().optional(),
 });
 
-export const MCPErrorSchema = z.object({
+const MCPErrorSchema = z.object({
   code: z.number(),
   message: z.string(),
   data: z.unknown().optional(),
@@ -281,7 +281,7 @@ export type MCPError = z.infer<typeof MCPErrorSchema>;
 
 // MCP Resource Schemas
 
-export const MCPResourceSchema = z.object({
+const MCPResourceSchema = z.object({
   uri: z.string().startsWith("portal://", "URI must start with portal://"),
   name: z.string(),
   mimeType: z.string().optional(),
@@ -292,13 +292,13 @@ export type IMCPResource = z.infer<typeof MCPResourceSchema>;
 
 // MCP Prompt Schemas
 
-export const MCPPromptArgumentSchema = z.object({
+const MCPPromptArgumentSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
   required: z.boolean().optional(),
 });
 
-export const MCPPromptSchema = z.object({
+const MCPPromptSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
   arguments: z.array(MCPPromptArgumentSchema).optional(),
@@ -308,7 +308,7 @@ export type IMCPPrompt = z.infer<typeof MCPPromptSchema>;
 
 // MCP Tool Definition Schema
 
-export const MCPToolSchema = z.object({
+const MCPToolSchema = z.object({
   name: z.string(),
   description: z.string(),
   inputSchema: z.object({

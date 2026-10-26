@@ -878,7 +878,7 @@ const UNKNOWN_FAMILY = "unknown-family";
 /** Accuracy-vs-cost frontier per cell: cost_per_solved = Σ cost / count(passed) (— when no
  *  passes). Pareto-dominant iff meanScore(A) >= meanScore(B) AND meanCost(A) <= meanCost(B)
  *  with a strict inequality; ties are co-dominant; cells with no cost data are excluded. */
-export function computeFrontierRows(runs: IFrontierRunRow[]): IFrontierCellRow[] {
+function computeFrontierRows(runs: IFrontierRunRow[]): IFrontierCellRow[] {
   const groups = new Map<string, IFrontierRunRow[]>();
   for (const run of runs) {
     const cell = run.cell_id ?? COST_REPORT_UNKNOWN_CELL;
@@ -1119,7 +1119,7 @@ function renderMemoryMetricTable(rows: IMemoryMetricRow[]): void {
 /** Aggregates seeded history runs into the failures report: per-class counts with the class ×
  *  family × cell breakdown, and the top class per cell. `failure_classes`/`tags` are JSON
  *  strings in the row; family is the first `task:` tag. */
-export function computeFailuresReport(runs: IFailuresRunRow[]): IFailuresReport {
+function computeFailuresReport(runs: IFailuresRunRow[]): IFailuresReport {
   const classMap = new Map<string, { count: number; families: Map<string, number>; cells: Map<string, number> }>();
   const cellClassCounts = new Map<string, Map<string, number>>();
 
@@ -1502,7 +1502,7 @@ interface IExternalRunRow {
 /** Computes external-benchmark comparability rows per (benchmark, benchmark_version, cell_id):
  *  tasksRun is the run-verdict count (resolved-rate denominator, never silently partial),
  *  resolvedRate = passed / tasksRun; subsetSize/coveragePct come from the coverage manifest. */
-export function computeExternalRows(
+function computeExternalRows(
   runs: IExternalRunRow[],
   subsetByVersion: ReadonlyMap<string, number>,
 ): IExternalCellRow[] {
