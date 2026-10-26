@@ -4,7 +4,7 @@
  * @description Module for LogServiceAdapter, providing ILogService implementation that
  * bridges EventLogger outputs to the TUI log service interface.
  * @architectural-layer Services
- * @related-files ["packages/core/src/logger/structured_event_output.ts", "apps/tui/src/structured_log_service.ts"]
+ * @related-files ["packages/core/src/logger/structured_event_output.ts"]
  */
 import type { ILogQueryOptions, ILogService, IStructuredLogEntry } from "@exaix/core/types";
 import { EventLoggerStructuredOutput } from "@exaix/core/logger";

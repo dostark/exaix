@@ -119,6 +119,13 @@ jobs:
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task check:arch
 
+      # --- GATE 9b: Unused Files ---
+      # Reports production files that no entry point reaches. Relaxed (warn) until the
+      # exaix-team pointer moves; switch the task to check:unused-files:strict after that.
+      - name: "Gate 9b: Unused Files"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:unused-files
+
       # --- GATE 10: Agent Documentation Nervous System ---
       - name: "Gate 10: Agent-Native Documentation"
         if: always() && steps.setup-deno.outcome == 'success'

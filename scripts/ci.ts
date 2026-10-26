@@ -81,6 +81,7 @@ const STATIC_CHECK_TASKS: Array<{ cmd: string[]; desc: string }> = [
   { cmd: ["deno", "task", "check:scenario-declarative", "--", "--fail"], desc: "Scenario Declarative-Purity Check" },
   { cmd: ["deno", "task", "check:complexity"], desc: "Code Complexity Gate" },
   { cmd: ["deno", "task", "check:arch"], desc: "Architecture Validation" },
+  { cmd: ["deno", "task", "check:unused-files"], desc: "Unused Files Gate (relaxed until the exaix-team pointer moves)" },
   { cmd: ["deno", "task", "docs-agent-validate"], desc: "Agent-Native Documentation Nervous System Check" },
   { cmd: ["deno", "task", "docs-bench"], desc: "Hallucination Benchmarks (Ground Truth)" },
   { cmd: ["deno", "task", "check:tool-result-parity"], desc: "Tool Result Parity Check" },
