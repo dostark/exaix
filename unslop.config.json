@@ -1105,7 +1105,7 @@
             "paths": ["packages/", "apps/", "scripts/", "unslop-ts/"],
             "ignore": ["**/*.d.ts", "**/*.md", "**/node_modules/**", "**/dist/**"],
             "pattern": "**/{tests,tests_node}/**/*.ts",
-            "threshold": 9.3
+            "threshold": 3
           },
           {
             "name": "integration-tests",
