@@ -656,64 +656,22 @@ ${systemPrompt}
    * Validate blueprint format
    */
   async validate(agentRole: string): Promise<IBlueprintValidationResult> {
-    const errors: string[] = [];
-    const warnings: string[] = [];
-
-    try {
-      const blueprintPath = join(this.getBlueprintsDir(), `${agentRole}.md`);
-
-      if (!await exists(blueprintPath)) {
-        throw new Error(`Blueprint file not found: ${agentRole}.md`);
-      }
-
-      const content = await Deno.readTextFile(blueprintPath);
-      const { frontmatter, body } = this.extractTomlFrontmatter(content);
-
-      if (!frontmatter) {
-        errors.push("Missing or invalid TOML frontmatter");
-        return { valid: false, errors, warnings };
-      }
-
-      // Validate frontmatter against schema
-      const validation = BlueprintFrontmatterSchema.safeParse(frontmatter);
-      if (!validation.success) {
-        for (const issue of validation.error.issues) {
-          errors.push(`${issue.path.join(".")}: ${issue.message}`);
-        }
-      }
-
-      // Check system prompt has required tags
-      if (!body.includes("<thought>")) {
-        errors.push("System prompt must include <thought> tag for reasoning");
-      }
-      if (!body.includes("<content>")) {
-        errors.push("System prompt must include <content> tag for responses");
-      }
-
-      // Warnings
-      if (body.length < 50) {
-        warnings.push("System prompt is very short (< 50 characters)");
-      }
-
-      return {
-        valid: errors.length === 0,
-        errors,
-        warnings,
-      };
-    } catch (error) {
-      errors.push(error instanceof Error ? error.message : String(error));
-      return { valid: false, errors, warnings };
-    }
+    return await this.validateBlueprintFile(join(this.getBlueprintsDir(), `${agentRole}.md`), `${agentRole}.md`);
   }
 
   /** Validate a blueprint file at an arbitrary path (unlike validate(), no directory lookup). */
   async validateFile(filePath: string): Promise<IBlueprintValidationResult> {
+    return await this.validateBlueprintFile(filePath, filePath);
+  }
+
+  /** Reads, parses, and checks one blueprint file. `displayName` names it in the not-found error. */
+  private async validateBlueprintFile(filePath: string, displayName: string): Promise<IBlueprintValidationResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
 
     try {
       if (!await exists(filePath)) {
-        throw new Error(`Blueprint file not found: ${filePath}`);
+        throw new Error(`Blueprint file not found: ${displayName}`);
       }
 
       const content = await Deno.readTextFile(filePath);

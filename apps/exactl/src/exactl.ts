@@ -134,6 +134,40 @@ const DEFAULT_CAPABILITIES_LABEL = "general";
 const CLI_LIMIT_OPTION = "-l, --limit <limit:number>";
 const CLI_LIMIT_HELP = "Maximum results";
 const DISPLAY_CATEGORY_BLUEPRINTS = "blueprints";
+
+interface IBlueprintCliLabels {
+  createDescription: string;
+  nameOption: string;
+  listDescription: string;
+  listHint: string;
+  showDescription: string;
+  editDescription: string;
+  removeDescription: string;
+  deprecateDescription: string;
+}
+
+const BLUEPRINT_CLI_LABELS: IBlueprintCliLabels = {
+  createDescription: "Create a new agent blueprint",
+  nameOption: "Agent name (required)",
+  listDescription: "List all agent blueprints",
+  listHint: 'Create a blueprint with: exactl blueprint create <agent-id> --name "Name" --model "provider:model"',
+  showDescription: "Show blueprint details",
+  editDescription: "Edit blueprint in $EDITOR",
+  removeDescription: "Remove a blueprint",
+  deprecateDescription: "Mark a blueprint as deprecated (retires it without deleting the file)",
+};
+
+const AGENT_ROLE_CLI_LABELS: IBlueprintCliLabels = {
+  createDescription: "Create a new agent role blueprint",
+  nameOption: "Agent role name (required)",
+  listDescription: "List all agent role blueprints",
+  listHint:
+    'Create an agent role with: exactl blueprint agent-role create <agent-role-id> --name "Name" --model "provider:model"',
+  showDescription: "Show agent role blueprint details",
+  editDescription: "Edit agent role blueprint in $EDITOR",
+  removeDescription: "Remove an agent role blueprint",
+  deprecateDescription: "Mark an agent role blueprint as deprecated (retires it without deleting the file)",
+};
 const CLI_CMD_SHOW_ID = "show <id>";
 const CLI_CMD_LIST = "list";
 const CLI_OPTION_REASON = "-r, --reason <reason:string>";
@@ -1803,107 +1837,9 @@ const baseCommand: ExaCtlBaseCommand = new Command()
     "blueprint",
     new Command()
       .description("Manage agent blueprints")
-      .command(
-        "create <agent-id>",
-        new Command()
-          .description("Create a new agent blueprint")
-          .option("-n, --name <name:string>", "Agent name (required)")
-          .option("-m, --model <model:string>", "Model in provider:model format (required)")
-          .option("-d, --description <description:string>", "Brief description")
-          .option("-c, --capabilities <capabilities:string>", "Comma-separated capabilities")
-          .option("-p, --system-prompt <prompt:string>", "Inline system prompt")
-          .option("-f, --system-prompt-file <file:string>", "Load system prompt from file")
-          .option(
-            "--from <agent-role-id:string>",
-            "Clone an existing agent role as a prototype (seeds model, capabilities, and body)",
-          )
-          .action(async (options, ...args: string[]) => {
-            const agentRole = args[0];
-            try {
-              const result = await blueprintCommands.create(agentRole, {
-                name: options.name,
-                model: options.model,
-                description: options.description,
-                capabilities: options.capabilities,
-                systemPrompt: options.systemPrompt,
-                systemPromptFile: options.systemPromptFile,
-                from: options.from,
-              });
-              display.info("blueprint.created", result.agent_role, {
-                name: result.name,
-                model: result.model,
-                path: result.path,
-              });
-            } catch (error) {
-              display.error("cli.error", "blueprint create", {
-                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-              });
-              Deno.exit(1);
-            }
-          }),
-      )
-      .command(
-        RequestOperation.LIST,
-        new Command()
-          .description("List all agent blueprints")
-          .option("--capability <capability:string>", "Only show blueprints that declare this capability")
-          .option("--status <status:string>", "Only show blueprints in this lifecycle status (active|deprecated)")
-          .action(async (options: { capability?: string; status?: string }) => {
-            try {
-              const blueprints = await blueprintCommands.list({
-                capability: options.capability,
-                status: options.status as BlueprintStatus | undefined,
-              });
-              if (blueprints.length === 0) {
-                display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, {
-                  count: 0,
-                  hint:
-                    'Create a blueprint with: exactl blueprint create <agent-id> --name "Name" --model "provider:model"',
-                });
-                return;
-              }
-              display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: blueprints.length });
-              for (const blueprint of blueprints) {
-                display.info(blueprint.agent_role, blueprint.name, {
-                  model: blueprint.model,
-                  capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
-                  status: blueprint.status,
-                  created: blueprint.created,
-                });
-              }
-            } catch (error) {
-              display.error("cli.error", "blueprint list", {
-                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-              });
-              Deno.exit(1);
-            }
-          }),
-      )
-      .command(
-        "show <agent-id>",
-        new Command()
-          .description("Show blueprint details")
-          .action(async (_options, ...args: string[]) => {
-            const agentRole = args[0];
-            try {
-              const blueprint = await blueprintCommands.show(agentRole);
-              display.info("blueprint.show", blueprint.agent_role, {
-                name: blueprint.name,
-                model: blueprint.model,
-                capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
-                version: blueprint.version,
-                created: blueprint.created,
-                created_by: blueprint.created_by,
-                content_preview: blueprint.content.substring(0, 200) + "...",
-              });
-            } catch (error) {
-              display.error("cli.error", "blueprint show", {
-                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-              });
-              Deno.exit(1);
-            }
-          }),
-      )
+      .command("create <agent-id>", blueprintCreateCommand(BLUEPRINT_CLI_LABELS))
+      .command(RequestOperation.LIST, blueprintListCommand(BLUEPRINT_CLI_LABELS))
+      .command("show <agent-id>", blueprintShowCommand(BLUEPRINT_CLI_LABELS))
       .command(
         "validate [agent-id]",
         new Command()
@@ -1953,57 +1889,9 @@ const baseCommand: ExaCtlBaseCommand = new Command()
             }
           }),
       )
-      .command(
-        "edit <agent-id>",
-        new Command()
-          .description("Edit blueprint in $EDITOR")
-          .action(async (_options, ...args: string[]) => {
-            const agentRole = args[0];
-            try {
-              await blueprintCommands.edit(agentRole);
-            } catch (error) {
-              display.error("cli.error", "blueprint edit", {
-                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-              });
-              Deno.exit(1);
-            }
-          }),
-      )
-      .command(
-        "remove <agent-id>",
-        new Command()
-          .description("Remove a blueprint")
-          .option("--force", "Skip confirmation")
-          .action(async (options, ...args: string[]) => {
-            const agentRole = args[0];
-            try {
-              await blueprintCommands.remove(agentRole, { force: options.force });
-              display.info("blueprint.removed", agentRole, { status: "Removed ✓" });
-            } catch (error) {
-              display.error("cli.error", "blueprint remove", {
-                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-              });
-              Deno.exit(1);
-            }
-          }),
-      )
-      .command(
-        "deprecate <agent-id>",
-        new Command()
-          .description("Mark a blueprint as deprecated (retires it without deleting the file)")
-          .action(async (_options, ...args: string[]) => {
-            const agentRole = args[0];
-            try {
-              await blueprintCommands.deprecate(agentRole);
-              display.info("blueprint.deprecated", agentRole, { status: "Deprecated ✓" });
-            } catch (error) {
-              display.error("cli.error", "blueprint deprecate", {
-                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-              });
-              Deno.exit(1);
-            }
-          }),
-      )
+      .command("edit <agent-id>", blueprintEditCommand(BLUEPRINT_CLI_LABELS))
+      .command("remove <agent-id>", blueprintRemoveCommand(BLUEPRINT_CLI_LABELS))
+      .command("deprecate <agent-id>", blueprintDeprecateCommand(BLUEPRINT_CLI_LABELS))
       .command(
         "ls",
         new Command().description("Alias for 'list'").action(async () => {
@@ -2036,110 +1924,9 @@ const baseCommand: ExaCtlBaseCommand = new Command()
         "agent-role",
         new Command()
           .description("Manage agent role blueprints")
-          .command(
-            "create <agent-role-id>",
-            new Command()
-              .description("Create a new agent role blueprint")
-              .option("-n, --name <name:string>", "Agent role name (required)")
-              .option("-m, --model <model:string>", "Model in provider:model format (required)")
-              .option("-d, --description <description:string>", "Brief description")
-              .option("-c, --capabilities <capabilities:string>", "Comma-separated capabilities")
-              .option("-p, --system-prompt <prompt:string>", "Inline system prompt")
-              .option("-f, --system-prompt-file <file:string>", "Load system prompt from file")
-              .option(
-                "--from <agent-role-id:string>",
-                "Clone an existing agent role as a prototype (seeds model, capabilities, and body)",
-              )
-              .action(async (options, ...args: string[]) => {
-                const agentRole = args[0];
-                try {
-                  const result = await blueprintCommands.create(agentRole, {
-                    name: options.name,
-                    model: options.model,
-                    description: options.description,
-                    capabilities: options.capabilities,
-                    systemPrompt: options.systemPrompt,
-                    systemPromptFile: options.systemPromptFile,
-                    from: options.from,
-                  });
-                  display.info("blueprint.created", result.agent_role, {
-                    name: result.name,
-                    model: result.model,
-                    path: result.path,
-                  });
-                } catch (error) {
-                  display.error("cli.error", "blueprint create", {
-                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-                  });
-                  Deno.exit(1);
-                }
-              }),
-          )
-          .command(
-            RequestOperation.LIST,
-            new Command()
-              .description("List all agent role blueprints")
-              .option("--capability <capability:string>", "Only show blueprints that declare this capability")
-              .option(
-                "--status <status:string>",
-                "Only show blueprints in this lifecycle status (active|deprecated)",
-              )
-              .action(async (options: { capability?: string; status?: string }) => {
-                try {
-                  const blueprints = await blueprintCommands.list({
-                    capability: options.capability,
-                    status: options.status as BlueprintStatus | undefined,
-                  });
-                  if (blueprints.length === 0) {
-                    display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, {
-                      count: 0,
-                      hint:
-                        'Create an agent role with: exactl blueprint agent-role create <agent-role-id> --name "Name" --model "provider:model"',
-                    });
-                    return;
-                  }
-                  display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: blueprints.length });
-                  for (const blueprint of blueprints) {
-                    display.info(blueprint.agent_role, blueprint.name, {
-                      model: blueprint.model,
-                      capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
-                      status: blueprint.status,
-                      created: blueprint.created,
-                    });
-                  }
-                } catch (error) {
-                  display.error("cli.error", "blueprint list", {
-                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-                  });
-                  Deno.exit(1);
-                }
-              }),
-          )
-          .command(
-            "show <agent-role-id>",
-            new Command()
-              .description("Show agent role blueprint details")
-              .action(async (_options, ...args: string[]) => {
-                const agentRole = args[0];
-                try {
-                  const blueprint = await blueprintCommands.show(agentRole);
-                  display.info("blueprint.show", blueprint.agent_role, {
-                    name: blueprint.name,
-                    model: blueprint.model,
-                    capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
-                    version: blueprint.version,
-                    created: blueprint.created,
-                    created_by: blueprint.created_by,
-                    content_preview: blueprint.content.substring(0, 200) + "...",
-                  });
-                } catch (error) {
-                  display.error("cli.error", "blueprint show", {
-                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-                  });
-                  Deno.exit(1);
-                }
-              }),
-          )
+          .command("create <agent-role-id>", blueprintCreateCommand(AGENT_ROLE_CLI_LABELS))
+          .command(RequestOperation.LIST, blueprintListCommand(AGENT_ROLE_CLI_LABELS))
+          .command("show <agent-role-id>", blueprintShowCommand(AGENT_ROLE_CLI_LABELS))
           .command(
             "validate <agent-role-id>",
             new Command()
@@ -2168,57 +1955,9 @@ const baseCommand: ExaCtlBaseCommand = new Command()
                 }
               }),
           )
-          .command(
-            "edit <agent-role-id>",
-            new Command()
-              .description("Edit agent role blueprint in $EDITOR")
-              .action(async (_options, ...args: string[]) => {
-                const agentRole = args[0];
-                try {
-                  await blueprintCommands.edit(agentRole);
-                } catch (error) {
-                  display.error("cli.error", "blueprint edit", {
-                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-                  });
-                  Deno.exit(1);
-                }
-              }),
-          )
-          .command(
-            "remove <agent-role-id>",
-            new Command()
-              .description("Remove an agent role blueprint")
-              .option("--force", "Skip confirmation")
-              .action(async (options, ...args: string[]) => {
-                const agentRole = args[0];
-                try {
-                  await blueprintCommands.remove(agentRole, { force: options.force });
-                  display.info("blueprint.removed", agentRole, { status: "Removed ✓" });
-                } catch (error) {
-                  display.error("cli.error", "blueprint remove", {
-                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-                  });
-                  Deno.exit(1);
-                }
-              }),
-          )
-          .command(
-            "deprecate <agent-role-id>",
-            new Command()
-              .description("Mark an agent role blueprint as deprecated (retires it without deleting the file)")
-              .action(async (_options, ...args: string[]) => {
-                const agentRole = args[0];
-                try {
-                  await blueprintCommands.deprecate(agentRole);
-                  display.info("blueprint.deprecated", agentRole, { status: "Deprecated ✓" });
-                } catch (error) {
-                  display.error("cli.error", "blueprint deprecate", {
-                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
-                  });
-                  Deno.exit(1);
-                }
-              }),
-          ),
+          .command("edit <agent-role-id>", blueprintEditCommand(AGENT_ROLE_CLI_LABELS))
+          .command("remove <agent-role-id>", blueprintRemoveCommand(AGENT_ROLE_CLI_LABELS))
+          .command("deprecate <agent-role-id>", blueprintDeprecateCommand(AGENT_ROLE_CLI_LABELS)),
       ),
   )
   .command(
@@ -3088,6 +2827,157 @@ const evalCommand = new Command()
 baseCommand.command("eval", evalCommand);
 
 const editionRegistrations = new Set<IExaCtlCommandOptions["registerEditionCommands"]>();
+
+function blueprintCreateCommand(labels: IBlueprintCliLabels) {
+  return new Command()
+    .description(labels.createDescription)
+    .option("-n, --name <name:string>", labels.nameOption)
+    .option("-m, --model <model:string>", "Model in provider:model format (required)")
+    .option("-d, --description <description:string>", "Brief description")
+    .option("-c, --capabilities <capabilities:string>", "Comma-separated capabilities")
+    .option("-p, --system-prompt <prompt:string>", "Inline system prompt")
+    .option("-f, --system-prompt-file <file:string>", "Load system prompt from file")
+    .option(
+      "--from <agent-role-id:string>",
+      "Clone an existing agent role as a prototype (seeds model, capabilities, and body)",
+    )
+    .action(async (options, ...args: string[]) => {
+      const agentRole = args[0];
+      try {
+        const result = await blueprintCommands.create(agentRole, {
+          name: options.name,
+          model: options.model,
+          description: options.description,
+          capabilities: options.capabilities,
+          systemPrompt: options.systemPrompt,
+          systemPromptFile: options.systemPromptFile,
+          from: options.from,
+        });
+        display.info("blueprint.created", result.agent_role, {
+          name: result.name,
+          model: result.model,
+          path: result.path,
+        });
+      } catch (error) {
+        display.error("cli.error", "blueprint create", {
+          message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+        });
+        Deno.exit(1);
+      }
+    });
+}
+
+function blueprintListCommand(labels: IBlueprintCliLabels) {
+  return new Command()
+    .description(labels.listDescription)
+    .option("--capability <capability:string>", "Only show blueprints that declare this capability")
+    .option("--status <status:string>", "Only show blueprints in this lifecycle status (active|deprecated)")
+    .action(async (options: { capability?: string; status?: string }) => {
+      try {
+        const blueprints = await blueprintCommands.list({
+          capability: options.capability,
+          status: options.status as BlueprintStatus | undefined,
+        });
+        if (blueprints.length === 0) {
+          display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, {
+            count: 0,
+            hint: labels.listHint,
+          });
+          return;
+        }
+        display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: blueprints.length });
+        for (const blueprint of blueprints) {
+          display.info(blueprint.agent_role, blueprint.name, {
+            model: blueprint.model,
+            capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
+            status: blueprint.status,
+            created: blueprint.created,
+          });
+        }
+      } catch (error) {
+        display.error("cli.error", "blueprint list", {
+          message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+        });
+        Deno.exit(1);
+      }
+    });
+}
+
+function blueprintShowCommand(labels: IBlueprintCliLabels) {
+  return new Command()
+    .description(labels.showDescription)
+    .action(async (_options, ...args: string[]) => {
+      const agentRole = args[0];
+      try {
+        const blueprint = await blueprintCommands.show(agentRole);
+        display.info("blueprint.show", blueprint.agent_role, {
+          name: blueprint.name,
+          model: blueprint.model,
+          capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
+          version: blueprint.version,
+          created: blueprint.created,
+          created_by: blueprint.created_by,
+          content_preview: blueprint.content.substring(0, 200) + "...",
+        });
+      } catch (error) {
+        display.error("cli.error", "blueprint show", {
+          message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+        });
+        Deno.exit(1);
+      }
+    });
+}
+
+function blueprintEditCommand(labels: IBlueprintCliLabels) {
+  return new Command()
+    .description(labels.editDescription)
+    .action(async (_options, ...args: string[]) => {
+      const agentRole = args[0];
+      try {
+        await blueprintCommands.edit(agentRole);
+      } catch (error) {
+        display.error("cli.error", "blueprint edit", {
+          message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+        });
+        Deno.exit(1);
+      }
+    });
+}
+
+function blueprintRemoveCommand(labels: IBlueprintCliLabels) {
+  return new Command()
+    .description(labels.removeDescription)
+    .option("--force", "Skip confirmation")
+    .action(async (options, ...args: string[]) => {
+      const agentRole = args[0];
+      try {
+        await blueprintCommands.remove(agentRole, { force: options.force });
+        display.info("blueprint.removed", agentRole, { status: "Removed ✓" });
+      } catch (error) {
+        display.error("cli.error", "blueprint remove", {
+          message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+        });
+        Deno.exit(1);
+      }
+    });
+}
+
+function blueprintDeprecateCommand(labels: IBlueprintCliLabels) {
+  return new Command()
+    .description(labels.deprecateDescription)
+    .action(async (_options, ...args: string[]) => {
+      const agentRole = args[0];
+      try {
+        await blueprintCommands.deprecate(agentRole);
+        display.info("blueprint.deprecated", agentRole, { status: "Deprecated ✓" });
+      } catch (error) {
+        display.error("cli.error", "blueprint deprecate", {
+          message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+        });
+        Deno.exit(1);
+      }
+    });
+}
 
 /** Returns the single initialized CLI command tree, applying edition contributions before parsing. */
 export function createExaCtlCommand(options: IExaCtlCommandOptions = {}): typeof baseCommand {
