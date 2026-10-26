@@ -12,3 +12,4 @@ export * from "./lazy_provider.ts";
 export * from "./mock_llm_provider.ts";
 export * from "./capture_recording_provider.ts";
 export * from "./fixture_reports.ts";
+export * from "./openai_embedding_client.ts";

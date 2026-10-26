@@ -10,5 +10,5 @@
 export * from "./src/openai_provider.ts";
 export * from "./src/openai_factory.ts";
 export * from "./src/compatible_factory.ts";
-export * from "./src/openai_embedding_client.ts";
+export { type IOpenAIEmbeddingConfig, OpenAIEmbeddingClient } from "@exaix/ai/providers";
 export * from "./src/constants.ts";
