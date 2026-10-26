@@ -27,7 +27,7 @@ interface IResolvedMcpToolCall<T> {
 }
 
 /** The parameter keys a handler declares, excluding auth-only keys. */
-export function mcpAcceptedParams(source: IMcpToolSchemaSource): ReadonlySet<string> {
+function mcpAcceptedParams(source: IMcpToolSchemaSource): ReadonlySet<string> {
   const properties = source.getToolDefinition().inputSchema.properties;
   const keys = properties !== null && typeof properties === "object" && !Array.isArray(properties)
     ? Object.keys(properties)

@@ -98,7 +98,7 @@ interface LogEntry {
 }
 
 /** Activity record schema for database validation */
-export const ActivityRecordSchema = z.object({
+const ActivityRecordSchema = z.object({
   id: z.string(),
   trace_id: z.string(),
   actor: z.string().nullable(),

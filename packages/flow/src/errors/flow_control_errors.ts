@@ -10,14 +10,14 @@ import { FlowGateAction } from "@exaix/core";
 import type { IGateResult, Opt, Reason } from "@exaix/core/types";
 import type { IAgentExecutionResult } from "@exaix/execution";
 
-export const FLOW_GATE_HALTED_CODE = "gate_halted";
+const FLOW_GATE_HALTED_CODE = "gate_halted";
 export const FLOW_CONTROL_RESUME_UNSUPPORTED_CODE = "flow_control_resume_unsupported";
 export const FLOW_GATE_EVALUATION_LIMIT_CODE = "gate_evaluation_limit";
 export const FLOW_RETRY_BUDGET_UNAVAILABLE_CODE = "flow_retry_budget_unavailable";
 export const FLOW_RETRY_BUDGET_EXCEEDED_CODE = "flow_retry_budget_exceeded";
 export const GATE_LOOP_BODY_FAILED_CODE = "gate_loop_body_failed";
 export const GATE_LOOP_BODY_SKIPPED_CODE = "gate_loop_body_skipped";
-export const GATE_RETRY_REQUIRES_RUNNER_CODE = "gate_retry_requires_runner";
+const GATE_RETRY_REQUIRES_RUNNER_CODE = "gate_retry_requires_runner";
 export const BRANCH_OUTPUT_UNPARSEABLE_CODE = "branch_output_unparseable";
 export const BRANCH_CONDITION_ERROR_CODE = "branch_condition_error";
 export const BRANCH_NO_MATCH_CODE = "branch_no_match";

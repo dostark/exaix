@@ -10,7 +10,7 @@
 
 import type { IEventLogger } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
-import type { IDatabaseService, IPlanAmendmentService } from "@exaix/core/types";
+import type { IPlanAmendmentService } from "@exaix/core/types";
 import type { IToolResultRemediationPolicy } from "@exaix/schemas/tool_result.ts";
 import type { IRemediationResult } from "@exaix/schemas/tool_result_remediation.ts";
 import {
@@ -81,13 +81,6 @@ export async function logValidationResult(
       toolName,
     });
   }
-}
-
-export function createValidationEventLogger(_db?: IDatabaseService, _traceId?: string): IEventLogger {
-  throw new Error(
-    "createValidationEventLogger must not be called from package code. " +
-      "Inject IEventLogger via constructor instead.",
-  );
 }
 
 function resolveEventAction(result: IRemediationResult): string {

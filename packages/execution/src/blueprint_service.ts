@@ -58,7 +58,7 @@ function effortLike(value: Opt<EffortTier | EffortDeclaration, Reason.OptionalIn
 }
 
 /** Strict validation prevents YAML deserialization attacks. */
-export const BlueprintSchema = z.object({
+const BlueprintSchema = z.object({
   agent_role: z.string().optional(),
   name: z.string().max(100).optional(),
   model: z.string().max(100),

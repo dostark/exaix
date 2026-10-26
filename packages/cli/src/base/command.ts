@@ -31,17 +31,3 @@ interface ICommand<T = void> {
   /** Validate the command arguments. */
   validate(args: ICommandArgs): IValidationResult;
 }
-
-/**
- * Abstract base class for commands to inherit common functionality.
- */
-export abstract class AbstractCommand<T = void> implements ICommand<T> {
-  abstract name: string;
-  abstract description: string;
-
-  abstract execute(args: ICommandArgs): Promise<T>;
-
-  validate(_args: ICommandArgs): IValidationResult {
-    return { isValid: true, errors: [] };
-  }
-}

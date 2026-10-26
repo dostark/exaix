@@ -151,7 +151,7 @@ function failureFromError(error: unknown): IGitQueryFailure {
 }
 
 /** True when `value` is an exact full repository object id. */
-export function isFullObjectId(value: string): boolean {
+function isFullObjectId(value: string): boolean {
   return FULL_OBJECT_ID.test(value);
 }
 
@@ -168,38 +168,6 @@ export function decodeUtf8(bytes: Uint8Array): string | null {
     return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   } catch {
     return null;
-  }
-}
-
-/** True when any closed changed range intersects the closed `[startLine, endLine]` interval. */
-export function intersectsChangedLines(
-  ranges: readonly IGitLineRange[],
-  startLine: number,
-  endLine: number,
-): boolean {
-  return ranges.some((range) => startLine <= range.end && endLine >= range.start);
-}
-
-/** Reads the verified current commit with bounded categorical capture. */
-export async function readVerificationHead(
-  gitService: IGitService,
-  options: IGitCommitQueryOptions,
-): Promise<GitQueryResult<string>> {
-  try {
-    const result = await gitService.runGitCommand(
-      [GIT_CMD_REV_PARSE, GIT_FLAG_VERIFY, `HEAD${GIT_COMMIT_PEEL_SUFFIX}`],
-      {
-        maxOutputBytes: options.maxOutputBytes ?? DEFAULT_GIT_QUERY_MAX_OUTPUT_BYTES,
-        timeoutMs: options.timeoutMs,
-        auditMode: QUERY_AUDIT_MODE,
-      },
-    );
-    const value = result.output.trim();
-    return result.exitCode === 0 && isFullObjectId(value)
-      ? { ok: true, value }
-      : queryFailure(QUERY_FAILURE_CODE.invalidOutput);
-  } catch (error) {
-    return failureFromError(error);
   }
 }
 

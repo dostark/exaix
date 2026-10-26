@@ -24,7 +24,6 @@ import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { Config } from "@exaix/schemas/config.ts";
 import { CritiqueSchema, type ICritique } from "./types.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { type ConfidenceAssessment, ConfidenceScorer } from "./confidence_scorer.ts";
@@ -786,28 +785,5 @@ export function createHighQualityReflexiveAgent(
     minQuality: CritiqueQuality.EXCELLENT,
     confidenceThreshold: 90,
     ...config,
-  });
-}
-
-export function createReflexiveAgentFromConfig(
-  modelProvider: IModelProvider,
-  config: Config,
-  overrides: IReflexiveAgentConfig = {},
-): ReflexiveAgent {
-  const convergence = config.agents.convergence ?? {};
-  return new ReflexiveAgent(modelProvider, {
-    maxIterations: overrides.maxIterations ?? convergence.base_max_iterations ?? config.agents.max_iterations,
-    scoreEveryNIterations: overrides.scoreEveryNIterations ?? convergence.score_every_n_iterations,
-    convergenceConfig: {
-      qualityExitThreshold: convergence.quality_exit_threshold,
-      minImprovementDelta: convergence.min_improvement_delta,
-      oscillationWindow: convergence.oscillation_window,
-      baseMaxIterations: convergence.base_max_iterations,
-      complexityScaleFactor: convergence.complexity_scale_factor,
-      absoluteMaxIterations: convergence.absolute_max_iterations,
-      scoreEveryNIterations: convergence.score_every_n_iterations,
-      ...overrides.convergenceConfig,
-    },
-    ...overrides,
   });
 }

@@ -37,7 +37,7 @@ export function buildVerificationCheckEnv(): { env: Record<string, string>; clea
 
 /** Make check output safe to embed in an agent prompt. Removes ANSI escapes and control
  *  characters, and escapes the markup tags that agent input validation rejects. */
-export function sanitizeVerificationOutput(output: string): string {
+function sanitizeVerificationOutput(output: string): string {
   const withoutAnsi = output.replace(ANSI_CSI_PATTERN, "");
   const printable = [...withoutAnsi].filter((char) => {
     const code = char.charCodeAt(0);

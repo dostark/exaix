@@ -55,12 +55,12 @@ export interface IDenoLintBatchOptions {
 }
 
 /** The complete `deno lint` argv for one batch. */
-export function denoLintArgs(configPath: string, files: readonly string[]): string[] {
+function denoLintArgs(configPath: string, files: readonly string[]): string[] {
   return ["lint", "--deny-import", "--config", configPath, "--rules-tags=", "--json", ...files];
 }
 
 /** Strict host JSON guard. Null means malformed JSON or a malformed shape. */
-export function parseDenoLintHostOutput(stdout: string): IDenoLintHostOutput | null {
+function parseDenoLintHostOutput(stdout: string): IDenoLintHostOutput | null {
   let document: unknown;
   try {
     document = JSON.parse(stdout);

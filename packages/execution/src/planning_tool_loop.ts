@@ -232,7 +232,7 @@ function escapesSearchRoot(toolName: string, params: Record<string, JSONValue>):
 
 /** Maps ToolRegistry's ITool[] to the provider-agnostic IToolDefinition[] the planner may
  *  call, filtered to the read-only catalog names AgentRunner resolved for this request. */
-export function buildAllowedToolDefinitions(tools: ITool[], allowed: ReadonlySet<string>): IToolDefinition[] {
+function buildAllowedToolDefinitions(tools: ITool[], allowed: ReadonlySet<string>): IToolDefinition[] {
   return buildNativeToolDefinitions(tools.filter((t) => allowed.has(t.name)));
 }
 

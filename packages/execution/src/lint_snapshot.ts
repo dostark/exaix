@@ -36,7 +36,7 @@ const CONTROL_REPLACEMENTS = new Map<string, string>([
 ]);
 
 /** Projects one raw repo path into its display-safe persisted form. */
-export function projectLintFilePath(path: string, knownSecrets: readonly string[]): string {
+function projectLintFilePath(path: string, knownSecrets: readonly string[]): string {
   const redacted = redactKnownSecrets(path, knownSecrets).text;
   return [...redacted].map((char) => {
     const replacement = CONTROL_REPLACEMENTS.get(char);
@@ -102,7 +102,7 @@ export interface ILintFinding {
 }
 
 /** Orders findings before any safe display projection. */
-export function compareLintFindings(left: ILintFinding, right: ILintFinding): number {
+function compareLintFindings(left: ILintFinding, right: ILintFinding): number {
   return left.file.localeCompare(right.file) || left.start_line - right.start_line ||
     left.start_column - right.start_column || left.rule.localeCompare(right.rule) ||
     left.end_line - right.end_line || left.end_column - right.end_column;

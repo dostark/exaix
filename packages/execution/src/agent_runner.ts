@@ -1775,11 +1775,3 @@ function createNoopPlanAdapter(): IPlanAdapter {
     getSchemaInstructions: () => "",
   };
 }
-
-export function createAgentRunner(
-  planAdapter?: Opt<IPlanAdapter, Reason.OptionalDependency>,
-  modelProvider?: Opt<IModelProvider, Reason.OptionalDependency>,
-  agentConfig?: Opt<IAgentRunnerConfig, Reason.OptionalDependency>,
-): IAgentRunner {
-  return new AgentRunner(planAdapter, modelProvider, agentConfig);
-}

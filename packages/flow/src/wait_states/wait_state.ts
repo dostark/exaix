@@ -23,7 +23,7 @@ export const WaitStateStatusSchema = z.enum([
   "cancelled",
 ]);
 
-export const WaitStateKindSchema = z.enum([
+const WaitStateKindSchema = z.enum([
   "plan_approval",
   "review_approval",
   "clarification",

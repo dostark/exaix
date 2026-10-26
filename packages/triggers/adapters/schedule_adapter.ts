@@ -23,7 +23,7 @@ interface IScheduleInput {
 }
 
 // Matches a valid cron field token: *, number, range (n-m), list (a,b), or step (*/n, n-m/n).
-export const CRON_FIELD_PATTERN =
+const CRON_FIELD_PATTERN =
   /^(\*|[0-9]+(-[0-9]+)?(\/[0-9]+)?|(\*\/[0-9]+))(,(\*|[0-9]+(-[0-9]+)?(\/[0-9]+)?|(\*\/[0-9]+)))*$/;
 
 export function validateCronExpression(expr: string): void {

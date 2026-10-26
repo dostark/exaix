@@ -60,8 +60,6 @@ const derivedMcpToolClassificationSets = deriveMcpToolClassificationSets();
 
 export const READ_ONLY_TOOLS = derivedMcpToolClassificationSets.readOnlyTools;
 export const WRITE_TOOLS = derivedMcpToolClassificationSets.writeTools;
-export const TOTAL_MCP_TOOLS = READ_ONLY_TOOLS.size + WRITE_TOOLS.size;
-
 /** Distinct from WRITE_TOOLS and not derivable from it: `exaix_config_set` and
  *  `exaix_config_apply` mutate configuration while declaring `side_effect_scope: none`,
  *  so the read/write split classified them read-only. */
