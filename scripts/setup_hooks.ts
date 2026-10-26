@@ -151,6 +151,13 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# 9b. Unused Exports Check
+deno task check:unused-exports:strict
+if [ $? -ne 0 ]; then
+  echo "❌ Error: An export is unused. Remove it or wire it."
+  exit 1
+fi
+
 # 10. Agent-Native Documentation Nervous System Check
 deno task docs-agent-validate
 if [ $? -ne 0 ]; then

@@ -119,6 +119,13 @@ jobs:
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task check:arch
 
+      # --- GATE 9c: Unused Exports ---
+      # The engine reports exports no other production file imports. Strict mode uses the
+      # project's exemption list, so it stays green while the backlog is triaged.
+      - name: "Gate 9c: Unused Exports"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:unused-exports:strict
+
       # --- GATE 9b: Unused Files ---
       - name: "Gate 9b: Unused Files"
         if: always() && steps.setup-deno.outcome == 'success'
