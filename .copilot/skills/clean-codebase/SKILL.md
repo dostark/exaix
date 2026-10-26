@@ -108,10 +108,10 @@ Phase 7 — Magic values
  16. Re-run `check:magic` — target 0.
 
 Phase 8 — Duplication
- 17. `deno task check:duplication` (three categories, configured thresholds).
+ 17. `deno task check:duplication` (four categories, configured thresholds).
  18. Over threshold: extract common code into shared utilities — only identical behavior,
      not similar-looking code.
- 19. Re-run — all three categories pass.
+ 19. Re-run — all four categories pass.
 
 Phase 9 — Complexity
  20. `deno task check:complexity` (no function over cyclomatic 15).

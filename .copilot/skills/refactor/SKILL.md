@@ -136,8 +136,8 @@ Magic-value & duplication pass (check:magic)
   Deliverable: before/after for top offenders and total violations; every file changed and
   why safe; literals left unchanged with a reason; next 3 candidates.
 
-  Duplication detection (Gate 9): `deno run --allow-run --allow-read --allow-write
-  scripts/measure_duplication.ts --threshold 2.0`.
+  Duplication detection (Gate 9): `deno task check:duplication`
+  (`deno task measure:duplication` lists every clone). The thresholds live in `unslop.config.json`.
     | Level | Percentage | Action |
     | ----- | ---------- | ------ |
     | 🟢 Good | < 2% | No action needed |

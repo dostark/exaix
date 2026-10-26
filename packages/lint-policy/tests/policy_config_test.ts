@@ -83,7 +83,7 @@ Deno.test("every_script_rule_has_metadata", () => {
 
 Deno.test("consumer_descriptor_loads_without_compiled_policy", async () => {
   assertEquals(Object.keys(descriptor.scriptRules).length, 14);
-  assertEquals(Object.keys(descriptor.wholeTreeHosts).length, 7);
+  assertEquals(Object.keys(descriptor.wholeTreeHosts).length, 8);
   const model = compiled();
   for (const id of SCRIPT_IDS) assertEquals(model.rules[id].engine, "script", id);
   assertEquals(model.rules["duplicate-type"].command, ["deno", "task", "check:style"]);
@@ -144,9 +144,10 @@ function originalIds(v1: typeof catalog): string[] {
 
 Deno.test("the_compiled_exaix_model_preserves_the_version_1_projection", async () => {
   const ids = originalIds(catalog);
-  // The version 1 fixture predates wholeTree.unusedFiles, so compare only the sections it carries.
+  // The version 1 fixture predates wholeTree.unusedFiles and wholeTree.duplicateCode, so compare only its sections.
   const actual = semanticCompiledProjection(POLICY_COMPILED, descriptor, ids);
   delete (actual.wholeTree as Record<string, unknown>).unusedFiles;
+  delete (actual.wholeTree as Record<string, unknown>).duplicateCode;
   assertEquals(actual, semanticCatalogProjection(catalog as JsonValue, descriptor, ids));
   const layout = JSON.parse(await Deno.readTextFile(new URL("../../../layout.json", import.meta.url)));
   assertEquals(layout, (catalog as { layout?: unknown }).layout);

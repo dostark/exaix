@@ -272,4 +272,8 @@ export const WHOLE_TREE_HOSTS: Readonly<Record<string, IWholeTreeHostSpec>> = {
     controls: WHOLE_TREE_CHECKS["optional-params"].controls,
     command: hostCommand("check:optional-params"),
   },
+  "duplicate-code": {
+    controls: WHOLE_TREE_CHECKS["duplicate-code"].controls,
+    command: hostCommand("check:duplication"),
+  },
 };
