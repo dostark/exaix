@@ -17,40 +17,9 @@ import { assertEquals } from "@std/assert";
 import { createMockConfig } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
 import { DefaultRoutingStrategy, ModelResolver, ProviderRegistry } from "@exaix/ai";
-import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import { createStubCostTracker, createStubHealthChecker } from "../../../ai/tests/helpers/service_stubs.ts";
-import { PricingTier, ProviderCostTier } from "@exaix/core";
 import { PlanExecutor } from "../../src/planning/mod.ts";
-
-const stubProvider = {
-  id: "stub",
-  generate: () =>
-    Promise.resolve({
-      content: "STATUS: COMPLETE\nSUMMARY: done",
-      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-      model: "",
-      provider: "",
-    }),
-};
-
-const stubDb = {
-  prepare: () => {},
-  exec: () => {},
-  all: () => [],
-  close: () => Promise.resolve(),
-};
-
-function registerLocalProvider(name: string): void {
-  ProviderRegistry.registerWithMetadata(name, new MockProviderFactory(), {
-    name,
-    description: name,
-    capabilities: ["chat"],
-    costTier: ProviderCostTier.LOCAL,
-    pricingTier: PricingTier.LOCAL,
-    strengths: ["general"],
-    contextWindow: 128_000,
-  });
-}
+import { registerLocalProvider, stubDb, stubProvider } from "./helpers/plan_executor_stubs.ts";
 
 Deno.test("PlanExecutor accepts modelResolver via IPlanExecutorOptions", () => {
   const config = createMockConfig("/tmp/test", {});

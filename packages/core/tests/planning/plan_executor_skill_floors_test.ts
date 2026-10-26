@@ -21,53 +21,16 @@ import {
 } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
 import { DefaultRoutingStrategy, ModelResolver, ProviderRegistry } from "@exaix/ai";
-import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import { createStubCostTracker, createStubHealthChecker } from "../../../ai/tests/helpers/service_stubs.ts";
-import {
-  MemoryBankSource,
-  PricingTier,
-  ProviderCostTier,
-  SkillMatchSource,
-  SkillRenderOutcome,
-  SkillRootKind,
-} from "@exaix/core";
+import { MemoryBankSource, SkillMatchSource, SkillRenderOutcome, SkillRootKind } from "@exaix/core";
 import type { IPinnedSkill, ISkillPin } from "@exaix/core/skills";
 import type { IApplicationContext, ISkillsService } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core/types";
 import type { ISkill } from "@exaix/schemas";
 import { PlanExecutor } from "../../src/planning/mod.ts";
+import { registerLocalProvider, stubDb, stubProvider } from "./helpers/plan_executor_stubs.ts";
 
 const FLOOR_SKILL_ID = "response-contract-security-analysis";
-
-const stubProvider = {
-  id: "stub",
-  generate: () =>
-    Promise.resolve({
-      content: "STATUS: COMPLETE\nSUMMARY: done",
-      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-      model: "",
-      provider: "",
-    }),
-};
-
-const stubDb = {
-  prepare: () => {},
-  exec: () => {},
-  all: () => [],
-  close: () => Promise.resolve(),
-};
-
-function registerLocalProvider(name: string): void {
-  ProviderRegistry.registerWithMetadata(name, new MockProviderFactory(), {
-    name,
-    description: name,
-    capabilities: ["chat"],
-    costTier: ProviderCostTier.LOCAL,
-    pricingTier: PricingTier.LOCAL,
-    strengths: ["general"],
-    contextWindow: 128_000,
-  });
-}
 
 function floorSkill(skillId: string): ISkill {
   return runtimeSkillFixture({
