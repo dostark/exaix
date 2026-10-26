@@ -152,7 +152,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # 9b. Unused Exports Check
-deno task check:unused-exports:strict
+deno task check:unused-exports:fail
 if [ $? -ne 0 ]; then
   echo "❌ Error: An export is unused. Remove it or wire it."
   exit 1
