@@ -15,116 +15,22 @@
 import { walk } from "@std/fs";
 import { basename, dirname, extname, join, relative } from "@std/path";
 import { mergeDuplicateImportStatements } from "./package_import_migration.ts";
+import {
+  fileExists,
+  type IImportMap,
+  type IImportSpecifier,
+  normalizePathForImport,
+  parseExportNames,
+  parseImportSpecifiers,
+  readImportMap,
+  REPO_ROOT,
+  resolveModuleFile,
+  stripIndexOrModImport,
+  toFsPath,
+  tryResolveFile,
+} from "./package_import_common.ts";
 
-const REPO_ROOT = Deno.cwd();
 const EDIT_MODE = Deno.args.includes("--edit");
-const DENO_CONFIG_PATH = join(REPO_ROOT, "deno.json");
-
-interface JsonImportMap {
-  imports?: ImportMap;
-}
-
-interface ImportMap {
-  [key: string]: string;
-}
-
-interface ImportSpecifier {
-  importedName: string;
-  text: string;
-}
-
-async function readImportMap(): Promise<ImportMap> {
-  try {
-    const content = await Deno.readTextFile(DENO_CONFIG_PATH);
-    const config = JSON.parse(content) as JsonImportMap;
-    return config.imports as ImportMap ?? {};
-  } catch {
-    return {};
-  }
-}
-
-function parseImportSpecifiers(importClause: string): ImportSpecifier[] {
-  const match = importClause.match(/\{([\s\S]*)\}/);
-  if (!match) return [];
-  return match[1]
-    .split(",")
-    .map((specifier) => specifier.trim())
-    .filter(Boolean)
-    .map((specifier) => {
-      const importedName = specifier.replace(/^type\s+/, "").split(/\s+as\s+/)[0].trim();
-      return { importedName, text: specifier };
-    });
-}
-
-async function fileExists(path: string): Promise<boolean> {
-  try {
-    const stat = await Deno.lstat(path);
-    return stat.isFile || stat.isDirectory;
-  } catch {
-    return false;
-  }
-}
-
-async function tryResolveFile(path: string): Promise<string | null> {
-  if (await fileExists(path)) {
-    const stat = await Deno.lstat(path);
-    if (stat.isFile) return path;
-    if (stat.isDirectory) {
-      const candidates = ["mod.ts", "mod.tsx", "index.ts", "index.tsx"];
-      for (const candidate of candidates) {
-        const candidatePath = join(path, candidate);
-        if (await fileExists(candidatePath)) return candidatePath;
-      }
-    }
-  }
-
-  const candidates = [".ts", ".tsx", ".js", ".jsx"].map((ext) => `${path}${ext}`);
-  for (const candidate of candidates) {
-    if (await fileExists(candidate)) return candidate;
-  }
-
-  return null;
-}
-
-function normalizePathForImport(path: string): string {
-  return path.replace(/\\/g, "/");
-}
-
-function stripIndexOrModImport(importSource: string): string {
-  return importSource.replace(/(?:\/mod|\/index)\.(ts|tsx|js|jsx)$/, "");
-}
-
-function mapImportSource(importSource: string, imports: ImportMap): string | null {
-  if (imports[importSource]) {
-    return imports[importSource];
-  }
-
-  const prefixCandidates = Object.keys(imports)
-    .filter((key) => key.endsWith("/") && importSource.startsWith(key))
-    .sort((a, b) => b.length - a.length);
-
-  if (prefixCandidates.length > 0) {
-    const prefix = prefixCandidates[0];
-    const target = imports[prefix];
-    const separator = target.endsWith("/") ? "" : "/";
-    return `${target}${separator}${importSource.slice(prefix.length)}`;
-  }
-
-  return null;
-}
-
-function toFsPath(resolvedPath: string): string {
-  if (resolvedPath.startsWith("file://")) {
-    return new URL(resolvedPath).pathname;
-  }
-  if (resolvedPath.startsWith("./") || resolvedPath.startsWith("../")) {
-    return join(REPO_ROOT, resolvedPath);
-  }
-  if (resolvedPath.startsWith("/")) {
-    return resolvedPath;
-  }
-  return join(REPO_ROOT, resolvedPath);
-}
 
 function getPackageName(importSource: string): string | null {
   const match = importSource.match(/^(@[^/]+\/[^/]+)(?:\/.*)?$/);
@@ -136,7 +42,7 @@ function getPackageDir(packageName: string): string {
   return join(REPO_ROOT, "packages", segments[1]);
 }
 
-function filePathToImportSource(fsPath: string, moduleDir: string, imports: ImportMap): string {
+function filePathToImportSource(fsPath: string, moduleDir: string, imports: IImportMap): string {
   const aliasImport = findAliasImportForFsPath(fsPath, imports);
   if (aliasImport) {
     return stripIndexOrModImport(aliasImport);
@@ -149,7 +55,7 @@ function filePathToImportSource(fsPath: string, moduleDir: string, imports: Impo
   return stripIndexOrModImport(relativePath);
 }
 
-function findAliasImportForFsPath(fsPath: string, imports: ImportMap): string | null {
+function findAliasImportForFsPath(fsPath: string, imports: IImportMap): string | null {
   const normalizedFsPath = normalizePathForImport(fsPath);
   const aliasCandidates = Object.entries(imports)
     .map(([key, value]) => ({ key, value: normalizePathForImport(toFsPath(value)) }))
@@ -170,13 +76,7 @@ function findAliasImportForFsPath(fsPath: string, imports: ImportMap): string | 
   return null;
 }
 
-async function resolveModuleFile(importSource: string, imports: ImportMap): Promise<string | null> {
-  const mappedPath = mapImportSource(importSource, imports) ?? importSource;
-  const fsPath = toFsPath(mappedPath);
-  return await tryResolveFile(fsPath);
-}
-
-async function resolveImportFile(importSource: string, moduleDir: string, imports: ImportMap): Promise<string | null> {
+async function resolveImportFile(importSource: string, moduleDir: string, imports: IImportMap): Promise<string | null> {
   if (importSource.startsWith("./") || importSource.startsWith("../") || importSource.startsWith("/")) {
     return await tryResolveFile(join(moduleDir, importSource));
   }
@@ -184,7 +84,7 @@ async function resolveImportFile(importSource: string, moduleDir: string, import
   return await resolveModuleFile(importSource, imports);
 }
 
-async function collectExports(filePath: string, imports: ImportMap, visited: Set<string>): Promise<Set<string>> {
+async function collectExports(filePath: string, imports: IImportMap, visited: Set<string>): Promise<Set<string>> {
   if (visited.has(filePath)) {
     return new Set();
   }
@@ -234,7 +134,7 @@ async function collectExports(filePath: string, imports: ImportMap, visited: Set
   return exports;
 }
 
-async function resolveReexportSource(source: string, moduleDir: string, imports: ImportMap): Promise<string | null> {
+async function resolveReexportSource(source: string, moduleDir: string, imports: IImportMap): Promise<string | null> {
   if (source.startsWith("./") || source.startsWith("../")) {
     return await tryResolveFile(join(moduleDir, source));
   }
@@ -243,7 +143,7 @@ async function resolveReexportSource(source: string, moduleDir: string, imports:
 
 async function getExportsForSource(
   importSource: string,
-  imports: ImportMap,
+  imports: IImportMap,
   cache: Map<string, Set<string>>,
 ): Promise<Set<string>> {
   const resolvedPath = await resolveModuleFile(importSource, imports);
@@ -275,20 +175,6 @@ async function ensureBarrelExportsSymbol(barrelPath: string, sourceFile: string)
   await Deno.writeTextFile(barrelPath, `${text.trimEnd()}\n${exportLine}\n`);
 }
 
-function parseExportNames(exportClause: string): string[] {
-  return exportClause
-    .split(",")
-    .map((specifier) => specifier.trim())
-    .filter(Boolean)
-    .map((specifier) => {
-      const aliasMatch = specifier.match(/\s+as\s+([A-Za-z_$][A-Za-z0-9_$]*)$/);
-      if (aliasMatch) {
-        return aliasMatch[1];
-      }
-      return specifier.replace(/^type\s+/, "").trim();
-    });
-}
-
 function getCandidateBarrelPaths(filePath: string, packageDir: string): string[] {
   const barrelPaths: string[] = [];
   let currentDir = dirname(filePath);
@@ -318,7 +204,7 @@ function getCandidateBarrelPaths(filePath: string, packageDir: string): string[]
 async function getBestCanonicalImportSourceForSymbol(
   importSource: string,
   moduleDir: string,
-  imports: ImportMap,
+  imports: IImportMap,
   symbol: string,
   cache: Map<string, Set<string>>,
   options: { editMode: boolean },
@@ -406,8 +292,8 @@ async function main() {
         continue;
       }
 
-      const importGroups = new Map<string, ImportSpecifier[]>();
-      const keepSpecifiers: ImportSpecifier[] = [];
+      const importGroups = new Map<string, IImportSpecifier[]>();
+      const keepSpecifiers: IImportSpecifier[] = [];
 
       const isSpecificPackageFileImport = importSource.startsWith("@exaix/") && /\.[jt]sx?$/.test(importSource);
       if (!isSpecificPackageFileImport) {

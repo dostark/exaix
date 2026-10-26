@@ -13,10 +13,13 @@ import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { MigrationDirection } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
-import { upgradeActivityCacheColumns } from "./activity_cache_schema.ts";
-import { upgradeActivityChainColumns } from "./journal_integrity_schema.ts";
-import { upgradeProviderCostsIdentityColumns } from "./provider_costs_schema.ts";
-import { upgradeSkillJournalSchema } from "./skill_journal_schema.ts";
+import {
+  extractSql,
+  listMigrationFiles,
+  prepareMigrationsTable,
+  readAppliedMigrations,
+  upgradeLegacySchemas,
+} from "./migration_support.ts";
 
 /** Env override letting a caller point migrations at the repo while CWD stays the workspace. */
 const ENV_MIGRATIONS_DIR = "EXA_MIGRATIONS_DIR";
@@ -39,32 +42,9 @@ async function runMigrations() {
   const db = new Database(DB_PATH);
 
   try {
-    // Ensure migrations table exists and set PRAGMAs (must be outside transaction)
-    db.exec("PRAGMA journal_mode = WAL");
-    db.exec("PRAGMA foreign_keys = ON");
-
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS schema_migrations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        version TEXT NOT NULL UNIQUE,
-        applied_at DATETIME DEFAULT (datetime('now'))
-      );
-    `);
-
-    // Get applied migrations
-    const appliedRows = db.prepare("SELECT version FROM schema_migrations ORDER BY id ASC").all() as Array<
-      { version: string }
-    >;
-    const applied = new Set(appliedRows.map((row) => row.version));
-
-    // Get available migrations
-    const files = [];
-    for await (const entry of Deno.readDir(MIGRATIONS_DIR)) {
-      if (entry.isFile && entry.name.endsWith(".sql")) {
-        files.push(entry.name);
-      }
-    }
-    files.sort();
+    prepareMigrationsTable(db);
+    const applied = readAppliedMigrations(db);
+    const files = await listMigrationFiles(MIGRATIONS_DIR);
 
     for (const file of files) {
       if (!applied.has(file)) {
@@ -85,34 +65,11 @@ async function runMigrations() {
         }
       }
     }
-    upgradeActivityCacheColumns(db);
-    upgradeActivityChainColumns(db);
-    upgradeProviderCostsIdentityColumns(db);
-    upgradeSkillJournalSchema(db);
+    upgradeLegacySchemas(db);
     console.log("All migrations up to date.");
   } finally {
     await db.close();
   }
-}
-
-function extractSql(content: string, type: MigrationDirection): string {
-  const lines = content.split("\n");
-  let sql = "";
-  let capturing = false;
-
-  for (const line of lines) {
-    if (line.trim().startsWith(`-- ${type}`)) {
-      capturing = true;
-      continue;
-    }
-    if (line.trim().startsWith("-- ") && (line.includes("up") || line.includes("down"))) {
-      if (capturing) break; // Stop if we hit the next section
-    }
-    if (capturing) {
-      sql += line + "\n";
-    }
-  }
-  return sql;
 }
 
 async function main() {
