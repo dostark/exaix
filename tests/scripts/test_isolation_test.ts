@@ -25,6 +25,7 @@ import {
   parseDockerTimestamp,
   parseWorkerResultLine,
   resolveContainerResourceBounds,
+  resolveDockerBuildEnv,
   runBatch2InContainers,
   selectBatch2Strategy,
   startWorkerContainer,
@@ -135,6 +136,32 @@ Deno.test("dev-test image provider keeps a present image whose creation time is 
     },
   });
   assertEquals(built, 0);
+});
+
+Deno.test("docker build env keeps an explicit BUILDX_CONFIG", () => {
+  const env = resolveDockerBuildEnv({ BUILDX_CONFIG: "/chosen" }, () => false, () => "/tmp/fallback");
+  assertEquals(env.BUILDX_CONFIG, "/chosen");
+});
+
+Deno.test("docker build env keeps a writable docker config", () => {
+  const env = resolveDockerBuildEnv(
+    { DOCKER_CONFIG: "/writable/docker", HOME: "/home/dev" },
+    () => true,
+    () => "/tmp/fallback",
+  );
+  assertEquals(env.BUILDX_CONFIG, undefined);
+  assertEquals(env.DOCKER_CONFIG, "/writable/docker");
+});
+
+Deno.test("docker build env falls back when the buildx state directory is read-only", () => {
+  const env = resolveDockerBuildEnv({ HOME: "/home/dev" }, () => false, () => "/tmp/fallback");
+  assertEquals(env.BUILDX_CONFIG, "/tmp/fallback");
+  assertEquals(env.DOCKER_CONFIG, "/tmp/fallback");
+});
+
+Deno.test("docker build env falls back when no docker config home is known", () => {
+  const env = resolveDockerBuildEnv({}, () => true, () => "/tmp/fallback");
+  assertEquals(env.BUILDX_CONFIG, "/tmp/fallback");
 });
 
 Deno.test("parseDockerTimestamp reads docker's nanosecond RFC 3339 timestamp", () => {

@@ -8,6 +8,7 @@
  * Usage:
  *   Imported as a library by `scripts/test_parallel.ts`. No standalone CLI yet.
  *   `ensureDevTestImage(image)` builds the image only when `docker image inspect` misses it.
+ *   The build redirects buildx state to a temporary directory when the docker config is read-only.
  * @architectural-layer Tooling
  * @dependencies [@std/path, @std/streams, tests/scenario_framework/runner/matrix_expander.ts, scripts/test_parallel.ts, scripts/test_container_driver.ts]
  * @related-files [Dockerfile, .dockerignore, tests/scripts/test_isolation_test.ts]
@@ -145,6 +146,10 @@ const DOCKER_INSPECT_SUBCOMMAND = "inspect";
 const DOCKER_BUILD_SUBCOMMAND = "build";
 const DOCKER_TARGET_FLAG = "--target";
 const DEV_TEST_TARGET = "dev-test";
+const DOCKER_HOME_DIR = ".docker";
+const DOCKER_BUILDX_STATE_DIR = "buildx";
+const DOCKER_CONFIG_FILE = "config.json";
+const DOCKER_BUILDX_FALLBACK_PREFIX = "exaix-buildx-";
 const DOCKER_TAG_FLAG = "-t";
 const DOCKER_BUILD_CONTEXT = ".";
 const DOCKER_KILL_SUBCOMMAND = "kill";
@@ -224,6 +229,67 @@ async function defaultBuildInputsModifiedAt(): Promise<Date> {
   return new Date(newest);
 }
 
+/** The docker config directory the CLI would use, or null when no home is known. */
+function dockerConfigDir(env: Readonly<Record<string, string>>): string | null {
+  if (env.DOCKER_CONFIG !== undefined && env.DOCKER_CONFIG.length > 0) return env.DOCKER_CONFIG;
+  const home = env.HOME;
+  return home === undefined || home.length === 0 ? null : join(home, DOCKER_HOME_DIR);
+}
+
+/** Resolve a docker build environment whose buildx state can be written. */
+export function resolveDockerBuildEnv(
+  env: Readonly<Record<string, string>>,
+  writable: (dir: string) => boolean,
+  makeFallbackDir: () => string,
+): Record<string, string> {
+  const resolved = { ...env };
+  if (env.BUILDX_CONFIG !== undefined) return resolved;
+  const configDir = dockerConfigDir(env);
+  if (configDir !== null && writable(join(configDir, DOCKER_BUILDX_STATE_DIR))) return resolved;
+  const fallback = makeFallbackDir();
+  resolved.DOCKER_CONFIG = fallback;
+  resolved.BUILDX_CONFIG = fallback;
+  return resolved;
+}
+
+/** True when the directory can be created and a file written inside it. */
+function isWritableDirectory(dir: string): boolean {
+  try {
+    Deno.mkdirSync(dir, { recursive: true });
+    const probe = Deno.makeTempFileSync({ dir });
+    Deno.removeSync(probe);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Copy the readable docker config into the fallback directory so registry auth still resolves. */
+function copyDockerConfig(source: Readonly<Record<string, string>>, target: string): void {
+  const sourceDir = dockerConfigDir(source);
+  if (sourceDir === null) return;
+  try {
+    const text = Deno.readTextFileSync(join(sourceDir, DOCKER_CONFIG_FILE));
+    Deno.writeTextFileSync(join(target, DOCKER_CONFIG_FILE), text);
+  } catch {
+    // No readable config: the build only needs public images.
+  }
+}
+
+/** The environment for the image build: a writable buildx state when the docker config is read-only. */
+function dockerBuildEnv(): Record<string, string> {
+  const original = Deno.env.toObject();
+  const resolved = resolveDockerBuildEnv(
+    original,
+    isWritableDirectory,
+    () => Deno.makeTempDirSync({ prefix: DOCKER_BUILDX_FALLBACK_PREFIX }),
+  );
+  if (resolved.DOCKER_CONFIG !== original.DOCKER_CONFIG && resolved.DOCKER_CONFIG !== undefined) {
+    copyDockerConfig(original, resolved.DOCKER_CONFIG);
+  }
+  return resolved;
+}
+
 /** Builds the `dev-test` image from the repo root and returns the process exit code. */
 async function defaultBuildImage(image: string): Promise<number> {
   const out = await new Deno.Command(DOCKER_BIN, {
@@ -236,6 +302,7 @@ async function defaultBuildImage(image: string): Promise<number> {
       DOCKER_BUILD_CONTEXT,
     ],
     cwd: REPO_ROOT,
+    env: dockerBuildEnv(),
     stdout: "inherit",
     stderr: "inherit",
   }).output();
