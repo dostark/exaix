@@ -17,6 +17,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core";
 import type { IWaitStateService } from "@exaix/flow/wait_states/wait_state_service.ts";
 import type { IWaitState } from "@exaix/flow/wait_states/wait_state.ts";
+import { withTempDir } from "@exaix/testing";
 
 // Helpers
 
@@ -118,8 +119,7 @@ function ingestionTest(
     const gate = new TriggerPolicyGate(ledger);
     const logger = createMockLogger();
     const waitStateService = createMockWaitStateService();
-    const tmpDir = await Deno.makeTempDir({ prefix: "exaix-trigger-test-" });
-    try {
+    await withTempDir(async (tmpDir) => {
       const service = new TriggerIngestionService({
         policyGate: gate,
         eventLogger: logger,
@@ -128,9 +128,7 @@ function ingestionTest(
         ...(options.waitStates ? { waitStateService } : {}),
       });
       await body({ service, logger, ledger, gate, tmpDir, waitStateService });
-    } finally {
-      await Deno.remove(tmpDir, { recursive: true });
-    }
+    }, { prefix: "exaix-trigger-test-" });
   });
 }
 
