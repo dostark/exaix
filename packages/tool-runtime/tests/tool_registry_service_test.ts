@@ -15,6 +15,7 @@ import { join } from "@std/path";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { createTestGitServiceFactory } from "./helpers.ts";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
+import { withTempDir } from "@exaix/testing";
 // Mock dependencies
 const mockConfig = ConfigSchema.parse({
   system: { root: "/tmp/test", log_level: "info" },
@@ -190,14 +191,11 @@ Deno.test("ToolRegistry: run_command rejects a dangerous npm subcommand", async 
 
 // Helper for file tests
 async function runToolRegistryTest(fn: (registry: ToolRegistry, tempDir: string) => Promise<void>) {
-  const tempDir = await Deno.makeTempDir({ prefix: "tool-registry-test-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const registry = createRegistry(tempDir);
     await Deno.mkdir(pathBuilders.workspacePath(tempDir), { recursive: true });
     await fn(registry, tempDir);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "tool-registry-test-" });
 }
 
 // File Operations Tests

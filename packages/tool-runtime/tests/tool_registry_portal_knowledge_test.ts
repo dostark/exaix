@@ -12,7 +12,7 @@
 
 import { assertEquals } from "@std/assert";
 import { ToolRegistry } from "@exaix/tool-runtime";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import { MAX_GRAPH_TOOL_RESULTS, PortalAnalysisMode, ToolName } from "@exaix/core";
 import type { IApplicationContext, IPortalKnowledgeService } from "@exaix/core/types";
 import { ContextResultStatus, ContextUnavailableReason } from "@exaix/core";
@@ -122,20 +122,16 @@ function makeRegistry(dir: string, knowledge: IPortalKnowledge | undefined): {
 }
 
 Deno.test("[ToolRegistry] query_symbols and get_module_dependencies are registered", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-graph-registered-" });
-  try {
+  await withTempDir((dir) => {
     const { registry } = makeRegistry(dir, makeKnowledge());
     const names = registry.getTools().map((t) => t.name);
     assertEquals(names.includes(ToolName.QUERY_SYMBOLS), true);
     assertEquals(names.includes(ToolName.GET_MODULE_DEPENDENCIES), true);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-graph-registered-" });
 });
 
 Deno.test("[ToolRegistry] query_symbols filters by name/kind/file and ranks by pageRankScore then name/file", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-graph-symbols-" });
-  try {
+  await withTempDir(async (dir) => {
     const { registry, service } = makeRegistry(dir, makeKnowledge());
 
     const all = await registry.execute(ToolName.QUERY_SYMBOLS, {});
@@ -158,14 +154,11 @@ Deno.test("[ToolRegistry] query_symbols filters by name/kind/file and ranks by p
 
     assertEquals(service.getOrAnalyzeCalls, 0, "query_symbols must never call getOrAnalyze");
     assertEquals(service.analyzeCalls, 0, "query_symbols must never call analyze");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-graph-symbols-" });
 });
 
 Deno.test("[ToolRegistry] query_symbols caps limit at MAX_GRAPH_TOOL_RESULTS and rejects a non-finite/negative/fractional limit", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-graph-symbols-limit-" });
-  try {
+  await withTempDir(async (dir) => {
     const { registry } = makeRegistry(dir, makeKnowledge());
 
     const capped = await registry.execute(ToolName.QUERY_SYMBOLS, { limit: 999999 });
@@ -176,27 +169,21 @@ Deno.test("[ToolRegistry] query_symbols caps limit at MAX_GRAPH_TOOL_RESULTS and
       const result = await registry.execute(ToolName.QUERY_SYMBOLS, { limit: invalid });
       assertEquals(result.success, false, `limit ${invalid} must be rejected`);
     }
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-graph-symbols-limit-" });
 });
 
 Deno.test("[ToolRegistry] query_symbols rejects absolute, drive-prefixed, and '..' file paths", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-graph-symbols-path-" });
-  try {
+  await withTempDir(async (dir) => {
     const { registry } = makeRegistry(dir, makeKnowledge());
     for (const badPath of ["/etc/passwd", "C:\\secrets.txt", "../outside.ts", "..", ""]) {
       const result = await registry.execute(ToolName.QUERY_SYMBOLS, { file: badPath });
       assertEquals(result.success, false, `file '${badPath}' must be rejected`);
     }
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-graph-symbols-path-" });
 });
 
 Deno.test("[ToolRegistry] get_module_dependencies breadth-first traverses forward import edges, capped by depth", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-graph-deps-" });
-  try {
+  await withTempDir(async (dir) => {
     const { registry, service } = makeRegistry(dir, makeKnowledge());
 
     const depth1 = await registry.execute(ToolName.GET_MODULE_DEPENDENCIES, { path: "src/router.ts" });
@@ -217,14 +204,11 @@ Deno.test("[ToolRegistry] get_module_dependencies breadth-first traverses forwar
 
     assertEquals(service.getOrAnalyzeCalls, 0, "get_module_dependencies must never call getOrAnalyze");
     assertEquals(service.analyzeCalls, 0, "get_module_dependencies must never call analyze");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-graph-deps-" });
 });
 
 Deno.test("[ToolRegistry] get_module_dependencies rejects a missing path, a depth beyond MAX_GRAPH_TOOL_DEPTH, and non-finite/negative depth", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-graph-deps-invalid-" });
-  try {
+  await withTempDir(async (dir) => {
     const { registry } = makeRegistry(dir, makeKnowledge());
 
     const noPath = await registry.execute(ToolName.GET_MODULE_DEPENDENCIES, {});
@@ -243,14 +227,11 @@ Deno.test("[ToolRegistry] get_module_dependencies rejects a missing path, a dept
 
     const badPath = await registry.execute(ToolName.GET_MODULE_DEPENDENCIES, { path: "../outside.ts" });
     assertEquals(badPath.success, false);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-graph-deps-invalid-" });
 });
 
 Deno.test("[ToolRegistry] query_symbols and get_module_dependencies error gracefully on a cold cache, a portal mismatch, no service, and no matching portal", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-graph-cold-" });
-  try {
+  await withTempDir(async (dir) => {
     const { registry: coldRegistry } = makeRegistry(dir, undefined);
     const cold = await coldRegistry.execute(ToolName.QUERY_SYMBOLS, {});
     assertEquals(cold.success, false);
@@ -279,14 +260,11 @@ Deno.test("[ToolRegistry] query_symbols and get_module_dependencies error gracef
     const noPortalRegistry = new ToolRegistry({ config: noPortalConfig, baseDir: dir, context: noPortalContext });
     const noPortal = await noPortalRegistry.execute(ToolName.GET_MODULE_DEPENDENCIES, { path: "src/router.ts" });
     assertEquals(noPortal.success, false);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-graph-cold-" });
 });
 
 Deno.test("[ToolRegistry] query_symbols and get_module_dependencies tokenize results with a CLI-delegate provider's bare model name, not a provider-prefixed composite", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-graph-cli-delegate-model-" });
-  try {
+  await withTempDir(async (dir) => {
     const config = createMockConfig(dir, {
       ai: { provider: "claude-cli", model: "claude-haiku-5-5", timeout_ms: 60000 },
       portals: [{
@@ -310,14 +288,11 @@ Deno.test("[ToolRegistry] query_symbols and get_module_dependencies tokenize res
       true,
       `get_module_dependencies must not fail on a claude-cli model id: ${deps.error}`,
     );
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-graph-cli-delegate-model-" });
 });
 
 Deno.test("[ToolRegistry] query_symbols falls back to a chars-per-token estimate instead of failing when the configured model is outside the tokenizer's catalog", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-graph-unknown-model-" });
-  try {
+  await withTempDir(async (dir) => {
     const config = createMockConfig(dir, {
       ai: { provider: "mock", model: "not-a-real-model-xyz", timeout_ms: 60000 },
       portals: [{
@@ -334,14 +309,11 @@ Deno.test("[ToolRegistry] query_symbols falls back to a chars-per-token estimate
 
     const result = await registry.execute(ToolName.QUERY_SYMBOLS, {});
     assertEquals(result.success, true, `query_symbols must not fail on an unrecognized model id: ${result.error}`);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-graph-unknown-model-" });
 });
 
 Deno.test("[ToolRegistry][security] query_symbols bounds an oversized result to MAX_GRAPH_TOOL_RESULT_TOKENS and reports truncation", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-graph-oversized-" });
-  try {
+  await withTempDir(async (dir) => {
     const manySymbols: ISymbolEntry[] = Array.from({ length: MAX_GRAPH_TOOL_RESULTS }, (_, i) => ({
       name: `Symbol${i}`,
       kind: "function" as const,
@@ -359,7 +331,5 @@ Deno.test("[ToolRegistry][security] query_symbols bounds an oversized result to 
       assertEquals((symbol.doc?.length ?? 0) < 2000, true);
     }
     assertEquals(service.getOrAnalyzeCalls, 0);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-graph-oversized-" });
 });

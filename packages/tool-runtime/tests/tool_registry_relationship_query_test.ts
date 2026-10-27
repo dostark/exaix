@@ -11,7 +11,7 @@
 
 import { assertEquals } from "@std/assert";
 import { ToolRegistry } from "@exaix/tool-runtime";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import { ToolName } from "@exaix/core";
 import type { IApplicationContext, IPortalKnowledgeService } from "@exaix/core/types";
 import { ContextResultStatus, ContextUnavailableReason, PortalAnalysisMode } from "@exaix/core";
@@ -71,8 +71,7 @@ function makeContext(
 }
 
 Deno.test("[ToolRegistry] query_relationships and who_depends_on are registered", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-relq-registered-" });
-  try {
+  await withTempDir((dir) => {
     const config = createMockConfig(dir, {
       portals: [{
         alias: PORTAL_ALIAS,
@@ -86,14 +85,11 @@ Deno.test("[ToolRegistry] query_relationships and who_depends_on are registered"
     const names = registry.getTools().map((t) => t.name);
     assertEquals(names.includes(ToolName.QUERY_RELATIONSHIPS), true);
     assertEquals(names.includes(ToolName.WHO_DEPENDS_ON), true);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-relq-registered-" });
 });
 
 Deno.test("[ToolRegistry] query_relationships returns edges from the current portal's knowledge", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-relq-query-" });
-  try {
+  await withTempDir(async (dir) => {
     const knowledge = makeKnowledge();
     const config = createMockConfig(dir, {
       portals: [{
@@ -110,14 +106,11 @@ Deno.test("[ToolRegistry] query_relationships returns edges from the current por
     const result = await registry.execute(ToolName.QUERY_RELATIONSHIPS, { from: "services" });
     assertEquals(result.success, true);
     assertEquals(result.data, [{ from: "services", to: "services/main.ts", kind: "layer_contains_file" }]);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-relq-query-" });
 });
 
 Deno.test("[ToolRegistry] who_depends_on returns reverse edges from the current portal's knowledge", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-relq-whodep-" });
-  try {
+  await withTempDir(async (dir) => {
     const knowledge = makeKnowledge();
     const config = createMockConfig(dir, {
       portals: [{
@@ -134,14 +127,11 @@ Deno.test("[ToolRegistry] who_depends_on returns reverse edges from the current 
     const result = await registry.execute(ToolName.WHO_DEPENDS_ON, { path: "util.ts" });
     assertEquals(result.success, true);
     assertEquals(result.data, [{ from: "main.ts", to: "util.ts", kind: "file_imports_file_internal" }]);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-relq-whodep-" });
 });
 
 Deno.test("[ToolRegistry] query_relationships errors gracefully when no portal-knowledge service is configured", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-relq-noservice-" });
-  try {
+  await withTempDir(async (dir) => {
     const config = createMockConfig(dir, {
       portals: [{
         alias: PORTAL_ALIAS,
@@ -156,14 +146,11 @@ Deno.test("[ToolRegistry] query_relationships errors gracefully when no portal-k
     const result = await registry.execute(ToolName.QUERY_RELATIONSHIPS, { from: "services" });
     assertEquals(result.success, false);
     assertEquals(typeof result.error, "string");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-relq-noservice-" });
 });
 
 Deno.test("[ToolRegistry] who_depends_on errors gracefully when baseDir matches no configured portal", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "tool-relq-noportal-" });
-  try {
+  await withTempDir(async (dir) => {
     const knowledge = makeKnowledge();
     const config = createMockConfig(dir, { portals: [] });
     const context = makeContext(config, makeMockKnowledgeService(knowledge));
@@ -172,7 +159,5 @@ Deno.test("[ToolRegistry] who_depends_on errors gracefully when baseDir matches 
     const result = await registry.execute(ToolName.WHO_DEPENDS_ON, { path: "util.ts" });
     assertEquals(result.success, false);
     assertEquals(typeof result.error, "string");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "tool-relq-noportal-" });
 });

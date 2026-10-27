@@ -10,22 +10,19 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { ToolRegistry } from "@exaix/tool-runtime";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 
 const ACCESS_DENIED = "Access denied";
 
 async function withPortal(run: (registry: ToolRegistry, root: string) => Promise<void>): Promise<void> {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await Deno.mkdir(`${root}/portal/src`, { recursive: true });
     await Deno.writeTextFile(`${root}/portal/src/main.ts`, "export const a = 1;\n");
     await Deno.writeTextFile(`${root}/secret.txt`, "OUTSIDE\n");
     const config = createMockConfig(root);
     config.portals = [{ alias: "p", target_path: `${root}/portal` } as never];
     await run(new ToolRegistry({ config, baseDir: `${root}/portal` }), root);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 }
 
 Deno.test("[security] search_files rejects a pattern with .. segments instead of listing outside paths", async () => {

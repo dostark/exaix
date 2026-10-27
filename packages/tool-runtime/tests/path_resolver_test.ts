@@ -10,7 +10,7 @@ import { DEFAULT_BLUEPRINTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { MemoryReferenceType } from "@exaix/core";
 import type { ActivityRecord } from "@exaix/storage-sqlite";
-import { initTestDbService } from "@exaix/testing";
+import { initTestDbService, withTempDir } from "@exaix/testing";
 import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
@@ -20,8 +20,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 /** Tests for PathResolver alias and security validation. */
 
 Deno.test("PathResolver: resolves valid alias path", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const blueprintsDir = pathBuilders.blueprintsPath(tempDir);
     await Deno.mkdir(blueprintsDir);
     const testFile = join(blueprintsDir, "agent.md");
@@ -33,14 +32,11 @@ Deno.test("PathResolver: resolves valid alias path", async () => {
     const resolved = await resolver.resolve("@Blueprints/agent.md");
 
     assertEquals(resolved, testFile);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-" });
 });
 
 Deno.test("[security] PathResolver: throws on path traversal attempt", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-traversal-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const blueprintsDir = pathBuilders.blueprintsPath(tempDir);
     await Deno.mkdir(blueprintsDir);
     const secretFile = join(tempDir, "secret.txt");
@@ -57,9 +53,7 @@ Deno.test("[security] PathResolver: throws on path traversal attempt", async () 
       Error,
       "Access denied",
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-traversal-" });
 });
 
 Deno.test("[security] PathResolver: throws on accessing file outside allowed roots", async () => {
@@ -96,8 +90,7 @@ Deno.test("[security] PathResolver: throws on accessing file outside allowed roo
 });
 
 Deno.test("PathResolver: throws on unknown alias", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-unknown-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir);
 
     const resolver = new PathResolver(config);
@@ -109,14 +102,11 @@ Deno.test("PathResolver: throws on unknown alias", async () => {
       Error,
       "Unknown portal alias",
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-unknown-" });
 });
 
 Deno.test("PathResolver: root path itself is valid", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-root-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const blueprintsDir = pathBuilders.blueprintsPath(tempDir);
     await Deno.mkdir(blueprintsDir);
 
@@ -129,16 +119,13 @@ Deno.test("PathResolver: root path itself is valid", async () => {
     // Deno.realPath will return the canonical path
     const expected = await Deno.realPath(blueprintsDir);
     assertEquals(resolved, expected);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-root-" });
 });
 
 // Additional Security Tests
 
 Deno.test("PathResolver: rejects path without @ alias", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-no-alias-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir);
     const resolver = new PathResolver(config);
 
@@ -149,14 +136,11 @@ Deno.test("PathResolver: rejects path without @ alias", async () => {
       Error,
       "Path must start with a portal alias",
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-no-alias-" });
 });
 
 Deno.test("[security] PathResolver: rejects absolute path attempt", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-absolute-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir);
     const resolver = new PathResolver(config);
 
@@ -168,14 +152,11 @@ Deno.test("[security] PathResolver: rejects absolute path attempt", async () => 
       Error,
       "Path must start with a portal alias",
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-absolute-" });
 });
 
 Deno.test("[security] PathResolver: handles Windows-style path traversal", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-windows-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const blueprintsDir = pathBuilders.blueprintsPath(tempDir);
     await Deno.mkdir(blueprintsDir);
     const secretFile = join(tempDir, "secret.txt");
@@ -188,14 +169,11 @@ Deno.test("[security] PathResolver: handles Windows-style path traversal", async
     const resolved = await resolver.resolve("@Blueprints/..\\secret.txt");
     // Resolution succeeds because path is within Blueprints root
     assert(resolved.includes("Blueprints"), "Resolved path should include Blueprints");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-windows-" });
 });
 
 Deno.test("[security] PathResolver: handles multiple path traversal attempts", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-multi-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const blueprintsDir = pathBuilders.blueprintsPath(tempDir);
     await Deno.mkdir(blueprintsDir);
     // Place the file inside Blueprints directory
@@ -208,14 +186,11 @@ Deno.test("[security] PathResolver: handles multiple path traversal attempts", a
     // Try valid path within allowed root - no ../ escape
     const resolved = await resolver.resolve("@Blueprints/secret.txt");
     assert(resolved.includes("secret.txt"), "Resolved path should include filename");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-multi-" });
 });
 
 Deno.test("PathResolver: handles non-existent file in valid directory", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-nonexist-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const blueprintsDir = pathBuilders.blueprintsPath(tempDir);
     await Deno.mkdir(blueprintsDir);
 
@@ -227,14 +202,11 @@ Deno.test("PathResolver: handles non-existent file in valid directory", async ()
     const resolved = await resolver.resolve("@Blueprints/nonexistent.md");
     assert(resolved.includes("nonexistent.md"), "Resolved path should include filename");
     assert(resolved.includes("Blueprints"), "Resolved path should include Blueprints");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-nonexist-" });
 });
 
 Deno.test("PathResolver: resolves nested directories", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-nested-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const nestedDir = pathBuilders.memoryPath(tempDir, "deep", "nested");
     await Deno.mkdir(nestedDir, { recursive: true });
     const testFile = join(nestedDir, "file.md");
@@ -245,14 +217,11 @@ Deno.test("PathResolver: resolves nested directories", async () => {
 
     const resolved = await resolver.resolve("@Memory/deep/nested/file.md");
     assertEquals(resolved, await Deno.realPath(testFile));
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-nested-" });
 });
 
 Deno.test("PathResolver: resolves all valid aliases", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-aliases-" });
-  try {
+  await withTempDir(async (tempDir) => {
     // Create all directories
     const workspaceDir = pathBuilders.workspacePath(tempDir);
     const memoryDir = pathBuilders.memoryPath(tempDir);
@@ -284,14 +253,11 @@ Deno.test("PathResolver: resolves all valid aliases", async () => {
     assertEquals(knowledgeResolved, await Deno.realPath(join(memoryDir, "knowledge.md")));
     assertEquals(runtimeResolved, await Deno.realPath(join(runtimeDir, "journal.db")));
     assertEquals(blueprintsResolved, await Deno.realPath(join(blueprintsDir, "blueprint.md")));
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-aliases-" });
 });
 
 Deno.test("PathResolver: handles special characters in filenames", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-special-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const blueprintsDir = pathBuilders.blueprintsPath(tempDir);
     await Deno.mkdir(blueprintsDir);
     const testFile = join(blueprintsDir, "file with spaces.md");
@@ -302,14 +268,11 @@ Deno.test("PathResolver: handles special characters in filenames", async () => {
 
     const resolved = await resolver.resolve("@Blueprints/file with spaces.md");
     assertEquals(resolved, await Deno.realPath(testFile));
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-special-" });
 });
 
 Deno.test("PathResolver: handles unicode in paths", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-unicode-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const blueprintsDir = pathBuilders.blueprintsPath(tempDir);
     await Deno.mkdir(blueprintsDir);
     const testFile = join(blueprintsDir, "文件.md");
@@ -320,14 +283,11 @@ Deno.test("PathResolver: handles unicode in paths", async () => {
 
     const resolved = await resolver.resolve("@Blueprints/文件.md");
     assertEquals(resolved, await Deno.realPath(testFile));
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-unicode-" });
 });
 
 Deno.test("PathResolver: rejects empty path after alias", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-empty-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir);
     const resolver = new PathResolver(config);
 
@@ -338,16 +298,13 @@ Deno.test("PathResolver: rejects empty path after alias", async () => {
       },
       Deno.errors.NotFound,
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-empty-" });
 });
 
 // IActivity Logging Tests
 
 Deno.test("[security] PathResolver: logs security violations to console when no DB", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-log-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir);
     // Create resolver without DB
     const resolver = new PathResolver(config);
@@ -378,9 +335,7 @@ Deno.test("[security] PathResolver: logs security violations to console when no 
     } finally {
       console.warn = originalWarn;
     }
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "resolver-test-log-" });
 });
 
 // IActivity Logging with Database Tests

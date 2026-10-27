@@ -17,6 +17,7 @@ import {
   SystemCommand,
 } from "@exaix/core";
 import { runDenoTask } from "@exaix/tool-runtime";
+import { withTempDir } from "@exaix/testing";
 
 type StubRun = (
   command: string,
@@ -74,8 +75,7 @@ Deno.test("[deno-task-runner] an exited task returns stdout and stderr separatel
 });
 
 Deno.test("[deno-task-runner] a timed-out task returns kind timed_out and does not hang", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "deno-task-timeout-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const started = Date.now();
     const outcome = await runDenoTask({
       task: "eval",
@@ -88,9 +88,7 @@ Deno.test("[deno-task-runner] a timed-out task returns kind timed_out and does n
 
     assertEquals(outcome.kind, "timed_out");
     assert(elapsed < 5_000, `expected the timeout to fire fast, took ${elapsed}ms`);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "deno-task-timeout-" });
 });
 
 Deno.test("[deno-task-runner] a SubprocessTimeoutError maps to timed_out", async () => {
