@@ -9,7 +9,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseConnectionPool } from "../../../packages/storage-sqlite/src/connection_pool.ts";
 import { DatabaseService } from "../../../packages/storage-sqlite/src/database_service.ts";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import { withEnv } from "@exaix/testing";
 
 type IDatabasePoolOptions = ConstructorParameters<typeof DatabaseConnectionPool>[0];
@@ -27,8 +27,7 @@ async function withPoolTest(
     tempDir: string;
   }) => Promise<void>,
 ) {
-  const tempDir = await Deno.makeTempDir({ prefix: "pool-test-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir);
     // Create runtime directory for database
     await Deno.mkdir(`${tempDir}/${config.paths.runtime}`, { recursive: true });
@@ -39,9 +38,7 @@ async function withPoolTest(
     } finally {
       await pool.destroy();
     }
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "pool-test-" });
 }
 
 /**
@@ -182,8 +179,7 @@ Deno.test("DatabaseConnectionPool: times out queued requests", async () => {
 });
 
 Deno.test("DatabaseService: accepts pool connection and persists activity", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "pool-db-svc-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir);
     await Deno.mkdir(join(tempDir, config.paths.runtime), { recursive: true });
 
@@ -214,7 +210,5 @@ Deno.test("DatabaseService: accepts pool connection and persists activity", asyn
     } finally {
       await pool.destroy();
     }
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "pool-db-svc-" });
 });
