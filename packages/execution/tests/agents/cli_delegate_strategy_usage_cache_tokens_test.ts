@@ -16,20 +16,9 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { CliDelegateStrategy } from "@exaix/execution";
-import type { IAgentFileBlueprint } from "@exaix/execution";
-import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import type { IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { IRunCliDelegateProcess } from "@exaix/execution";
-
-function makeBlueprint(): IAgentFileBlueprint {
-  return {
-    name: "senior-coder",
-    model: "",
-    provider: "",
-    capabilities: ["code_generation", "cli_delegate"],
-    systemPrompt: "You are an expert software engineer.",
-  };
-}
+import { cliStrategy, makeBlueprint, makeOptions, systemLine } from "../helpers/cli_delegate_fixtures.ts";
 
 function makeContext(): IExecutionContext {
   return {
@@ -39,21 +28,6 @@ function makeContext(): IExecutionContext {
     plan: "Step 1: patch",
     portal: "main",
   };
-}
-
-function makeOptions(): IAgentExecutionOptions {
-  return {
-    agent_role: "senior-coder",
-    portal: "main",
-    security_mode: "sandboxed" as IAgentExecutionOptions["security_mode"],
-    timeout_ms: 300000,
-    max_tool_calls: 100,
-    audit_enabled: true,
-  };
-}
-
-function systemLine(sessionId: string): string {
-  return JSON.stringify({ type: "system", session_id: sessionId });
 }
 
 function resultLineWithCache(result: string): string {
@@ -81,12 +55,7 @@ Deno.test("CliDelegateStrategy: cache tokens and a real costUsd survive into ICh
       stderr: "",
     });
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   const result = await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
 

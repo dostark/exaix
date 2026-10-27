@@ -12,49 +12,13 @@
 
 import { assertArrayIncludes, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { CliDelegateStrategy } from "@exaix/execution";
-import { AgentExecutionError, type IAgentFileBlueprint } from "@exaix/execution";
+import { AgentExecutionError } from "@exaix/execution";
 import { AgentExecutionErrorType, CLI_DELEGATE_TURN_TIMEOUT_MS, ExecutionStrategyName } from "@exaix/core";
-import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { IRunCliDelegateProcess } from "@exaix/execution";
-
-function makeBlueprint(): IAgentFileBlueprint {
-  return {
-    name: "senior-coder",
-    model: "",
-    provider: "",
-    capabilities: ["code_generation", "cli_delegate"],
-    systemPrompt: "You are an expert software engineer.",
-  };
-}
-
-function makeContext(overrides: Partial<IExecutionContext> = {}): IExecutionContext {
-  return {
-    trace_id: "11111111-1111-1111-1111-111111111111",
-    request_id: "REQ-1",
-    request: "Fix the null-guard bug in renderAvatar",
-    plan: "Step 1: patch renderAvatar",
-    portal: "main",
-    ...overrides,
-  };
-}
-
-function makeOptions(): IAgentExecutionOptions {
-  return {
-    agent_role: "senior-coder",
-    portal: "main",
-    security_mode: "sandboxed" as IAgentExecutionOptions["security_mode"],
-    timeout_ms: 300000,
-    max_tool_calls: 100,
-    audit_enabled: true,
-  };
-}
+import { cliStrategy, makeBlueprint, makeContext, makeOptions, systemLine } from "../helpers/cli_delegate_fixtures.ts";
 
 interface IResultLineOverrides {
   total_cost_usd?: number;
-}
-
-function systemLine(sessionId: string): string {
-  return JSON.stringify({ type: "system", session_id: sessionId });
 }
 
 function resultLine(result: string, extra: IResultLineOverrides = {}): string {
@@ -81,12 +45,7 @@ Deno.test("CliDelegateStrategy: parses a claude-code turn's result into a change
       stderr: "",
     });
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   const result = await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
 
@@ -103,12 +62,7 @@ Deno.test("CliDelegateStrategy: builds claude argv with -p <objective>, stream-j
     return Promise.resolve({ code: 0, stdout: resultLine("done"), stderr: "" });
   };
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
 
@@ -198,12 +152,7 @@ Deno.test("[security] CliDelegateStrategy rejects a malformed Codex thread id be
       stdout: JSON.stringify({ type: "thread.started", thread_id: "--dangerously-bypass-approvals-and-sandbox" }),
       stderr: "",
     });
-  const strategy = new CliDelegateStrategy({
-    tool: "codex",
-    bin: "codex",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("codex", run);
 
   await assertRejects(
     () => strategy.execute(makeBlueprint(), makeContext(), makeOptions()),
@@ -263,12 +212,7 @@ Deno.test("CliDelegateStrategy: omits --effort for claude when deps.effort is ab
     return Promise.resolve({ code: 0, stdout: resultLine("done"), stderr: "" });
   };
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
 
@@ -307,12 +251,7 @@ Deno.test("CliDelegateStrategy: a non-zero exit with empty stderr surfaces stdou
       stderr: "",
     });
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   const err = await assertRejects(
     () => strategy.execute(makeBlueprint(), makeContext(), makeOptions()),
@@ -328,12 +267,7 @@ Deno.test("CliDelegateStrategy: passes CLI_DELEGATE_TURN_TIMEOUT_MS (not SafeSub
     return Promise.resolve({ code: 0, stdout: resultLine("done"), stderr: "" });
   };
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
 
@@ -347,12 +281,7 @@ Deno.test("CliDelegateStrategy: a trace's first claude turn includes context.ful
     return Promise.resolve({ code: 0, stdout: resultLine("done"), stderr: "" });
   };
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   await strategy.execute(
     makeBlueprint(),
@@ -381,12 +310,7 @@ Deno.test("CliDelegateStrategy: a trace's second claude turn omits the full plan
     return Promise.resolve({ code: 0, stdout: resultLine("step 2 done"), stderr: "" });
   };
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   const context = makeContext({ full_plan: "STEP 1: read files\n\n---\n\nSTEP 2: patch the bug" });
   await strategy.execute(makeBlueprint(), context, makeOptions());
@@ -403,12 +327,7 @@ Deno.test("CliDelegateStrategy: without context.full_plan, the objective has no 
     return Promise.resolve({ code: 0, stdout: resultLine("done"), stderr: "" });
   };
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
 
@@ -422,12 +341,7 @@ Deno.test("CliDelegateStrategy: passes CLI_DELEGATE_TURN_TIMEOUT_MS to an openco
     return Promise.resolve({ code: 0, stdout: "", stderr: "" });
   };
 
-  const strategy = new CliDelegateStrategy({
-    tool: "opencode",
-    bin: "opencode",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("opencode", run);
 
   await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
 
@@ -447,12 +361,7 @@ Deno.test("CliDelegateStrategy: strips ANTHROPIC_API_KEY and ANTHROPIC_AUTH_TOKE
   };
 
   try {
-    const strategy = new CliDelegateStrategy({
-      tool: "claude-code",
-      bin: "claude",
-      resolvePortalPath: () => "/tmp/portal",
-      run,
-    });
+    const strategy = cliStrategy("claude-code", run);
     await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
 
     assertEquals(capturedEnv?.ANTHROPIC_API_KEY, undefined);
@@ -564,12 +473,7 @@ Deno.test("CliDelegateStrategy: claude's second call for the same trace_id resum
     return Promise.resolve({ code: 0, stdout: resultLine("step 2 done"), stderr: "" });
   };
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   const context = makeContext();
   const first = await strategy.execute(makeBlueprint(), context, makeOptions());
@@ -594,12 +498,7 @@ Deno.test("CliDelegateStrategy: two different trace_ids never pass --resume to c
     });
   };
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   await strategy.execute(
     makeBlueprint(),
@@ -623,12 +522,7 @@ Deno.test("CliDelegateStrategy: builds opencode argv with run, --format json, an
     return Promise.resolve({ code: 0, stdout: "", stderr: "" });
   };
 
-  const strategy = new CliDelegateStrategy({
-    tool: "opencode",
-    bin: "opencode",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("opencode", run);
 
   await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
 
@@ -679,12 +573,7 @@ Deno.test("CliDelegateStrategy: opencode's second call for the same trace_id pas
     return Promise.resolve({ code: 0, stdout: "", stderr: "" });
   };
 
-  const strategy = new CliDelegateStrategy({
-    tool: "opencode",
-    bin: "opencode",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("opencode", run);
 
   const context = makeContext();
   await strategy.execute(makeBlueprint(), context, makeOptions());
@@ -701,12 +590,7 @@ Deno.test("CliDelegateStrategy: throws AgentExecutionError (no fallback) when th
     throw new Error("Command not found: claude");
   };
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   const err = await assertRejects(
     () => strategy.execute(makeBlueprint(), makeContext(), makeOptions()),
@@ -728,12 +612,7 @@ Deno.test("CliDelegateStrategy: throws AgentExecutionError when a claude turn re
       stderr: "",
     });
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   const err = await assertRejects(
     () => strategy.execute(makeBlueprint(), makeContext(), makeOptions()),
@@ -746,12 +625,7 @@ Deno.test("CliDelegateStrategy: throws AgentExecutionError when a claude turn re
 Deno.test("CliDelegateStrategy: throws AgentExecutionError when the claude subprocess exits non-zero", async () => {
   const run: IRunCliDelegateProcess = () => Promise.resolve({ code: 1, stdout: "", stderr: "authentication failed" });
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   const err = await assertRejects(
     () => strategy.execute(makeBlueprint(), makeContext(), makeOptions()),
@@ -765,12 +639,7 @@ Deno.test("CliDelegateStrategy: throws AgentExecutionError when the opencode sub
   const run: IRunCliDelegateProcess = (_command, _args, _options) =>
     Promise.resolve({ code: 1, stdout: "", stderr: "authentication failed" });
 
-  const strategy = new CliDelegateStrategy({
-    tool: "opencode",
-    bin: "opencode",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("opencode", run);
 
   const err = await assertRejects(
     () => strategy.execute(makeBlueprint(), makeContext(), makeOptions()),
@@ -799,12 +668,7 @@ Deno.test("CliDelegateStrategy: parses opencode JSONL events for files_changed a
   const run: IRunCliDelegateProcess = (_command, _args, _options) =>
     Promise.resolve({ code: 0, stdout: events, stderr: "" });
 
-  const strategy = new CliDelegateStrategy({
-    tool: "opencode",
-    bin: "opencode",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("opencode", run);
 
   const result = await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
 
@@ -875,12 +739,7 @@ Deno.test("CliDelegateStrategy: dispose() clears tracked session ids without thr
       stderr: "",
     });
 
-  const strategy = new CliDelegateStrategy({
-    tool: "claude-code",
-    bin: "claude",
-    resolvePortalPath: () => "/tmp/portal",
-    run,
-  });
+  const strategy = cliStrategy("claude-code", run);
 
   await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
   strategy.dispose();

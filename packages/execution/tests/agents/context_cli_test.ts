@@ -13,30 +13,10 @@
 
 import { assertEquals, assertFalse, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
 import { AgentExecutionError, CliDelegateStrategy } from "@exaix/execution";
-import type { IAgentFileBlueprint, IRunCliDelegateProcess } from "@exaix/execution";
-import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import type { IRunCliDelegateProcess } from "@exaix/execution";
+import type { IAgentExecutionOptions } from "@exaix/schemas/agent_composer.ts";
 import type { IDogfoodContextHandle, IDogfoodContextInput, IDogfoodContextPort } from "@exaix/core/types";
-
-function makeBlueprint(): IAgentFileBlueprint {
-  return {
-    name: "senior-coder",
-    model: "",
-    provider: "",
-    capabilities: ["code_generation", "cli_delegate"],
-    systemPrompt: "You are an expert software engineer.",
-  };
-}
-
-function makeContext(overrides: Partial<IExecutionContext> = {}): IExecutionContext {
-  return {
-    trace_id: "11111111-1111-1111-1111-111111111111",
-    request_id: "REQ-1",
-    request: "Fix the null-guard bug in renderAvatar",
-    plan: "Step 1: patch renderAvatar",
-    portal: "main",
-    ...overrides,
-  };
-}
+import { makeBlueprint, makeContext } from "../helpers/cli_delegate_fixtures.ts";
 
 /** Mirrors dogfood-loop.flow.yaml's real agent roles (Blueprints/Flows/dogfood-loop.flow.yaml). */
 const TRUSTED_AGENT_ROLES = new Set(["dogfood-coder", "quality-judge"]);
