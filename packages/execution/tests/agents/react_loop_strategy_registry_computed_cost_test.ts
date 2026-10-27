@@ -46,7 +46,17 @@ function createOptions(portal: string): IAgentExecutionOptions {
   };
 }
 
-Deno.test("[ReActLoopStrategyRegistryComputedCost] cost_usd for a known model is re-priced from the real per-model split rate, not the old flat rate", async () => {
+interface IPricedTurn {
+  /** The provider id of the mock provider. */
+  providerId: string;
+  model: string;
+  usage: { promptTokens: number; completionTokens: number; totalTokens: number };
+  /** The cost that the provider itself reports. */
+  reportedCostUsd: number;
+}
+
+/** Runs one ReAct turn against a mock provider and returns the cost that the strategy logged for it. */
+async function loggedCostUsd(turn: IPricedTurn): Promise<number | undefined> {
   let capturedCostUsd: number | undefined;
   const mockExecutor = {
     logAgentOutput: async () => {
@@ -82,82 +92,44 @@ Deno.test("[ReActLoopStrategyRegistryComputedCost] cost_usd for a known model is
   };
 
   const provider: IModelProvider = {
-    id: "registry-cost-mock-provider",
+    id: turn.providerId,
     async generate(): Promise<IGenerateResult> {
       await Promise.resolve();
       return {
-        // 1M prompt + 1M completion tokens on claude-sonnet-5 ($3/$15 per MTok) = $18 real.
-        // The old flat COST_RATE_ANTHROPIC ($0.005/1K on 2M combined tokens) would be $10.
         content: `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Done`,
-        usage: { promptTokens: 1_000_000, completionTokens: 1_000_000, totalTokens: 2_000_000 },
-        model: "claude-sonnet-5",
+        usage: turn.usage,
+        model: turn.model,
         provider: "anthropic",
-        cost_usd: 10, // the OLD flat-rate figure, simulating what performProviderCall used to return
+        cost_usd: turn.reportedCostUsd,
       };
     },
   };
 
   const strategy = new ReActLoopStrategy(mockExecutor as Partial<AgentComposer> as AgentComposer, provider);
-  await strategy.execute(testBlueprint, testContext, createOptions("test"));
+  await strategy.execute({ ...testBlueprint, model: turn.model }, testContext, createOptions("test"));
+  return capturedCostUsd;
+}
 
-  assertAlmostEquals(capturedCostUsd!, 18);
+Deno.test("[ReActLoopStrategyRegistryComputedCost] cost_usd for a known model is re-priced from the real per-model split rate, not the old flat rate", async () => {
+  // 1M prompt + 1M completion tokens on claude-sonnet-5 ($3/$15 per MTok) = $18 real.
+  // The old flat COST_RATE_ANTHROPIC ($0.005/1K on 2M combined tokens) would be $10.
+  const cost = await loggedCostUsd({
+    providerId: "registry-cost-mock-provider",
+    model: "claude-sonnet-5",
+    usage: { promptTokens: 1_000_000, completionTokens: 1_000_000, totalTokens: 2_000_000 },
+    reportedCostUsd: 10, // the OLD flat-rate figure, simulating what performProviderCall used to return
+  });
+
+  assertAlmostEquals(cost!, 18);
 });
 
 Deno.test("[ReActLoopStrategyRegistryComputedCost] an unknown model falls back to response.cost_usd unchanged (no overlay entry)", async () => {
-  let capturedCostUsd: number | undefined;
-  const mockExecutor = {
-    logAgentOutput: async () => {
-      await Promise.resolve();
-    },
-    validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
-    parseAgentResponse: (): IChangesetResult => ({
-      branch: "feat/test",
-      commit_sha: "0000000000000000000000000000000000000000",
-      files_changed: [],
-      description: "Task completed",
-      tool_calls: 0,
-      execution_time_ms: 0,
-    }),
-    logGeneration: async (
-      _traceId: string,
-      _agentRole: string,
-      _model: string,
-      _provider: string,
-      usage: { costUsd: number },
-    ) => {
-      await Promise.resolve();
-      capturedCostUsd = usage.costUsd;
-    },
-    toolRegistry: {
-      execute: async () => {
-        await Promise.resolve();
-        return { success: true };
-      },
-      getTools: () => [],
-      getBaseDir: () => "/nonexistent-test-basedir",
-    },
-  };
+  const cost = await loggedCostUsd({
+    providerId: "registry-cost-mock-provider-unknown",
+    model: "some-unlisted-future-model",
+    usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
+    reportedCostUsd: 0.042,
+  });
 
-  const provider: IModelProvider = {
-    id: "registry-cost-mock-provider-unknown",
-    async generate(): Promise<IGenerateResult> {
-      await Promise.resolve();
-      return {
-        content: `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Done`,
-        usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
-        model: "some-unlisted-future-model",
-        provider: "anthropic",
-        cost_usd: 0.042,
-      };
-    },
-  };
-
-  const strategy = new ReActLoopStrategy(mockExecutor as Partial<AgentComposer> as AgentComposer, provider);
-  await strategy.execute(
-    { ...testBlueprint, model: "some-unlisted-future-model" },
-    testContext,
-    createOptions("test"),
-  );
-
-  assertEquals(capturedCostUsd, 0.042);
+  assertEquals(cost, 0.042);
 });
