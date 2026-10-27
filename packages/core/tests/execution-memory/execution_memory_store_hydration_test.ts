@@ -12,6 +12,7 @@ import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
+import { withTempDir } from "@exaix/testing";
 
 function makeConfig(root: string): Config {
   return ConfigSchema.parse({
@@ -27,8 +28,7 @@ function makeConfig(root: string): Config {
 }
 
 Deno.test("ExecutionMemoryStore: a fresh instance hydrates prior namespace state on first readKeys (GAP-16)", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-exec-mem-hyd-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const traceId = crypto.randomUUID();
     const firstInstance = new ExecutionMemoryStore(makeConfig(tempDir));
     await firstInstance.writeNamespaceEntries(
@@ -44,14 +44,11 @@ Deno.test("ExecutionMemoryStore: a fresh instance hydrates prior namespace state
     const read = await resumedInstance.readKeys(traceId, ["alpha", "log"]);
     assertEquals(read.alpha, "prior-value");
     assertEquals(read.log, "prior-output");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-exec-mem-hyd-" });
 });
 
 Deno.test("ExecutionMemoryStore: a fresh instance hydrates prior notes on first readNotes", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-exec-mem-hyd-note-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const traceId = crypto.randomUUID();
     const firstInstance = new ExecutionMemoryStore(makeConfig(tempDir));
     await firstInstance.appendNote(traceId, "jotted mid-run");
@@ -60,14 +57,11 @@ Deno.test("ExecutionMemoryStore: a fresh instance hydrates prior notes on first 
     const notes = await resumedInstance.readNotes(traceId);
     assertEquals(notes.length, 1);
     assertEquals(notes[0].content, "jotted mid-run");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-exec-mem-hyd-note-" });
 });
 
 Deno.test("ExecutionMemoryStore: hydrate-once stays correct across subsequent writes in the resumed instance", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-exec-mem-hyd-mix-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const traceId = crypto.randomUUID();
     const firstInstance = new ExecutionMemoryStore(makeConfig(tempDir));
     await firstInstance.writeNamespaceEntries(traceId, "step-1", [{ key: "alpha", mode: "write" }], "prior-output");
@@ -83,7 +77,5 @@ Deno.test("ExecutionMemoryStore: hydrate-once stays correct across subsequent wr
     assertEquals(entries.alpha, "resumed-output");
     const notes = await resumedInstance.readNotes(traceId);
     assertEquals(notes.map((n) => n.content).sort(), ["prior note", "resumed note"]);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-exec-mem-hyd-mix-" });
 });

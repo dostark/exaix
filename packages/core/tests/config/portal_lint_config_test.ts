@@ -21,10 +21,10 @@ import {
 } from "@exaix/core/config";
 import { SwapClass } from "@exaix/core";
 import { resolveLintSettings } from "@exaix/schemas/lint_settings.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("[portal-lint-config] verification.lint defaults apply to a real TOML load", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "lint-config-" });
-  try {
+  await withTempDir(async (dir) => {
     const path = `${dir}/exa.config.toml`;
     await Deno.writeTextFile(
       path,
@@ -59,14 +59,11 @@ batch_max_files = 4
     assertEquals(configured.findings_limit, 12);
     assertEquals(configured.batch_max_files, 4);
     assertEquals(configured.git_max_bytes, 16_777_216);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "lint-config-" });
 });
 
 Deno.test("[portal-lint-config] a Config DB override wins over the TOML value", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "lint-config-" });
-  try {
+  await withTempDir(async (dir) => {
     const path = `${dir}/exa.config.toml`;
     await Deno.writeTextFile(
       path,
@@ -96,7 +93,5 @@ findings_limit = 12
     } finally {
       configDb.close();
     }
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "lint-config-" });
 });

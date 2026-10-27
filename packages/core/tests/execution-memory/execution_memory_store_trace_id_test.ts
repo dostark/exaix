@@ -14,6 +14,7 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { resolveMemoryExecutionRoot } from "../../src/config/mod.ts";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
+import { withTempDir } from "@exaix/testing";
 
 function makeConfig(root: string): Config {
   return ConfigSchema.parse({
@@ -31,8 +32,7 @@ function makeConfig(root: string): Config {
 const MALFORMED_IDS = ["../x", "a/b", "/abs/path", "..", ".", "trace id with spaces", "a\tb", ""];
 
 Deno.test("[security] every store method fail-closes on a traversal-shaped trace id with zero file I/O", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-trace-id-sec-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = makeConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
 
@@ -78,14 +78,11 @@ Deno.test("[security] every store method fail-closes on a traversal-shaped trace
       // root not created yet — also fine (no I/O happened)
     }
     assertEquals(entries.length, 0, "a rejected trace id must not create any directory or file");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-trace-id-sec-" });
 });
 
 Deno.test("[security] a valid trace id passes validation unchanged", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-trace-id-valid-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = makeConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
     const traceId = crypto.randomUUID();
@@ -99,7 +96,5 @@ Deno.test("[security] a valid trace id passes validation unchanged", async () =>
 
     assertExists(store.getNamespacePath(traceId));
     assertEquals(await exists(join(store.getNamespacePath(traceId))), true);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-trace-id-valid-" });
 });

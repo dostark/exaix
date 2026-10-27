@@ -22,7 +22,7 @@ import {
   SkillMutationError,
   SkillsService,
 } from "@exaix/core/skills";
-import { initTestDbService, REPO_ROOT } from "@exaix/testing";
+import { initTestDbService, REPO_ROOT, withTempDir } from "@exaix/testing";
 
 const NAME = "fault-skill";
 
@@ -75,8 +75,7 @@ async function run(
 
 for (const operation of Object.keys(EXPECTED_STAGES) as Operation[]) {
   Deno.test(`[fault] ${operation} reports its stages in order`, async () => {
-    const root = await Deno.makeTempDir({ prefix: "exa-skill-fault-" });
-    try {
+    await withTempDir(async (root) => {
       const fired: SkillPublicationStage[] = [];
       const publisher = new SkillFolderPublisher(createPathSecurity(), 500, (stage) => {
         fired.push(stage);
@@ -86,15 +85,12 @@ for (const operation of Object.keys(EXPECTED_STAGES) as Operation[]) {
       fired.length = 0;
       await run(publisher, root, operation);
       assertEquals(fired, EXPECTED_STAGES[operation]);
-    } finally {
-      await Deno.remove(root, { recursive: true });
-    }
+    }, { prefix: "exa-skill-fault-" });
   });
 
   for (const stage of EXPECTED_STAGES[operation]) {
     Deno.test(`[fault] ${operation} faulting at ${stage} recovers to a complete old or new folder`, async () => {
-      const root = await Deno.makeTempDir({ prefix: "exa-skill-fault-" });
-      try {
+      await withTempDir(async (root) => {
         let armed = false;
         const crashing = new SkillFolderPublisher(createPathSecurity(), 500, (reached) => {
           if (armed && reached === stage) throw new InjectedFault(stage);
@@ -123,9 +119,7 @@ for (const operation of Object.keys(EXPECTED_STAGES) as Operation[]) {
         for (const kind of ["intents", "staging", "backup"]) {
           assertEquals(await entries(join(root, ".exa-skill-state", kind)), [], `${kind} left behind`);
         }
-      } finally {
-        await Deno.remove(root, { recursive: true });
-      }
+      }, { prefix: "exa-skill-fault-" });
     });
   }
 }
@@ -201,14 +195,11 @@ Deno.test("[fault] two real processes creating one name yield exactly one winner
 });
 
 Deno.test("[fault] a name conflict surfaces as a typed mutation error", async () => {
-  const root = await Deno.makeTempDir({ prefix: "exa-skill-fault-" });
-  try {
+  await withTempDir(async (root) => {
     const publisher = new SkillFolderPublisher(createPathSecurity(), 500);
     await publisher.ensureState(root);
     await publisher.create(root, NAME, snap("old"));
     const error = await assertRejects(() => publisher.create(root, NAME, snap("new")), SkillMutationError);
     assertEquals(error.code, SkillMutationErrorCode.NAME_CONFLICT);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "exa-skill-fault-" });
 });

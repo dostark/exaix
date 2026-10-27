@@ -12,7 +12,7 @@ import { assertEquals, assertExists, assertFalse } from "@std/assert";
 import { join } from "@std/path";
 import { ContextCardGenerator } from "@exaix/core/context";
 import { EventLogger } from "@exaix/core/logger";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
 
 Deno.test("ContextCardGenerator: creates new card", async () => {
@@ -42,8 +42,7 @@ Deno.test("ContextCardGenerator: creates new card", async () => {
 });
 
 Deno.test("ContextCardGenerator: updates card preserving notes", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "card-test-update-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir);
     const projectsDir = join(tempDir, ExaPathDefaults.memoryProjects);
     await Deno.mkdir(projectsDir, { recursive: true });
@@ -77,14 +76,11 @@ They should be preserved.
     // Check preservation
     assertExists(content.match(/These are my custom notes\./));
     assertExists(content.match(/They should be preserved\./));
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "card-test-update-" });
 });
 
 Deno.test("ContextCardGenerator: sanitizes alias", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "card-test-sanitize-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir);
     await Deno.mkdir(join(tempDir, ExaPathDefaults.memoryProjects), { recursive: true });
 
@@ -106,9 +102,7 @@ Deno.test("ContextCardGenerator: sanitizes alias", async () => {
     const filename = entries[0];
     assertFalse(filename.includes(" "));
     assertFalse(filename.includes("!"));
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "card-test-sanitize-" });
 });
 
 Deno.test("ContextCardGenerator: logs activity", async () => {

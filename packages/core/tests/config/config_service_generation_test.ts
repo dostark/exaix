@@ -12,13 +12,12 @@
 import { assert, assertEquals, assertNotEquals, assertThrows } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
-import { readConfigFixture } from "@exaix/testing";
+import { readConfigFixture, withTempDir } from "@exaix/testing";
 
 const VALID = readConfigFixture("core-config-generation-valid");
 
 Deno.test("[config generation] a failed reload keeps the last valid config and checksum", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "config-generation-" });
-  try {
+  await withTempDir(async (dir) => {
     const path = join(dir, "exa.config.toml");
     await Deno.writeTextFile(path, VALID);
     const service = new ConfigService(path);
@@ -35,7 +34,5 @@ Deno.test("[config generation] a failed reload keeps the last valid config and c
     assertNotEquals(service.getChecksum(), firstChecksum);
     assertEquals(service.get().skills.max_per_request, 2);
     assert(service.getChecksum().length > 0);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "config-generation-" });
 });

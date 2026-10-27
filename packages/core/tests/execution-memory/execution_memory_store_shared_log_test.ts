@@ -14,6 +14,7 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { resolveMemoryExecutionRoot } from "../../src/config/mod.ts";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
+import { withTempDir } from "@exaix/testing";
 
 function makeConfig(root: string): Config {
   return ConfigSchema.parse({
@@ -29,8 +30,7 @@ function makeConfig(root: string): Config {
 }
 
 Deno.test("ExecutionMemoryStore: note and namespace entries coexist in one log, isolated by the kind discriminator", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-exec-mem-shared-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = makeConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
     const traceId = crypto.randomUUID();
@@ -57,14 +57,11 @@ Deno.test("ExecutionMemoryStore: note and namespace entries coexist in one log, 
       (JSON.parse(l) as { kind: string }).kind
     );
     assertEquals(kinds.sort(), ["namespace", "note"], "both kinds share the one log file");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-exec-mem-shared-" });
 });
 
 Deno.test("ExecutionMemoryStore: a namespace write that rewrites the log preserves existing notes", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-exec-mem-rewrite-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ExecutionMemoryStore(makeConfig(tempDir));
     const traceId = crypto.randomUUID();
 
@@ -79,7 +76,5 @@ Deno.test("ExecutionMemoryStore: a namespace write that rewrites the log preserv
     assertEquals(entries.k2, "v3");
     const notes = await store.readNotes(traceId);
     assertEquals(notes.map((n) => n.content).sort(), ["note before rewrite", "note between writes"]);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-exec-mem-rewrite-" });
 });

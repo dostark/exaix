@@ -15,6 +15,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import { resolveMemoryExecutionRoot } from "../../src/config/mod.ts";
 import { DEFAULT_SCRATCHPAD_MAX_ENTRY_BYTES } from "@exaix/core";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
+import { withTempDir } from "@exaix/testing";
 
 const LOG_FILE_NAME = "scratchpad.jsonl";
 
@@ -36,8 +37,7 @@ function logPath(root: string, config: Config, traceId: string): string {
 }
 
 Deno.test("ExecutionMemoryStore: appendNote/readNotes round-trip persists a note-kind entry", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-exec-mem-note-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = makeConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
     const appendResult = await store.appendNote("trace-a", "worth remembering: X breaks under load", ["perf"]);
@@ -53,14 +53,11 @@ Deno.test("ExecutionMemoryStore: appendNote/readNotes round-trip persists a note
     assertEquals(entries[0].tags, ["perf"]);
     assertEquals(entries[0].kind, "note");
     assertExists(entries[0].created_at);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-exec-mem-note-" });
 });
 
 Deno.test("ExecutionMemoryStore: concurrent appendNote calls do not corrupt the shared JSONL log", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-exec-mem-conc-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = makeConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
     const appends = Array.from({ length: 20 }, (_, i) => store.appendNote("trace-concurrent", `note ${i}`));
@@ -73,26 +70,20 @@ Deno.test("ExecutionMemoryStore: concurrent appendNote calls do not corrupt the 
     const parsed = lines.map((l) => JSON.parse(l) as { content: string; kind: string });
     assertEquals(parsed.every((e) => e.kind === "note"), true);
     assertEquals(parsed.map((e) => e.content).sort(), Array.from({ length: 20 }, (_, i) => `note ${i}`).sort());
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-exec-mem-conc-" });
 });
 
 Deno.test("ExecutionMemoryStore: notes for one trace_id are invisible when reading another", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-exec-mem-iso-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ExecutionMemoryStore(makeConfig(tempDir));
     await store.appendNote("trace-a", "private to trace-a");
     assertEquals(await store.readNotes("trace-b"), []);
     assertEquals((await store.readNotes("trace-a")).length, 1);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-exec-mem-iso-" });
 });
 
 Deno.test("ExecutionMemoryStore: over-cap note content is rejected with a clear error, not truncated", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-exec-mem-cap-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = makeConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
     const oversized = "x".repeat(DEFAULT_SCRATCHPAD_MAX_ENTRY_BYTES + 1);
@@ -106,7 +97,5 @@ Deno.test("ExecutionMemoryStore: over-cap note content is rejected with a clear 
     );
     assertEquals(await store.readNotes("trace-cap"), [], "rejected entries must not be written (no truncation)");
     assertEquals(await exists(logPath(tempDir, config, "trace-cap")), false);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-exec-mem-cap-" });
 });

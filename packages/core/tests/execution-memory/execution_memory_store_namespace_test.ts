@@ -16,6 +16,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
 import { resolveMemoryExecutionRoot } from "../../src/config/mod.ts";
 import { ExecutionMemoryStore, NamespaceQuotaExceededError } from "@exaix/core/execution-memory";
+import { withTempDir } from "@exaix/testing";
 
 function makeConfig(root: string): Config {
   return ConfigSchema.parse({
@@ -35,8 +36,7 @@ function executionDir(root: string, config: Config): string {
 }
 
 Deno.test("ExecutionMemoryStore: batch namespace writes with from-path extraction, full output, and append mode", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-exec-mem-ns-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ExecutionMemoryStore(makeConfig(tempDir));
     const traceId = "trace-batch";
 
@@ -51,14 +51,11 @@ Deno.test("ExecutionMemoryStore: batch namespace writes with from-path extractio
     assertEquals(second.summary, "extracted-value\nappended tail");
     assertEquals(second.full, JSON.stringify({ summary: "extracted-value" }));
     assertEquals(second.missing, undefined);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-exec-mem-ns-" });
 });
 
 Deno.test("ExecutionMemoryStore: an invalid namespace key is skipped (warned, not thrown) while the rest of the batch applies", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-exec-mem-key-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ExecutionMemoryStore(makeConfig(tempDir));
     const warns: string[] = [];
     const originalWarn = console.warn;
@@ -78,14 +75,11 @@ Deno.test("ExecutionMemoryStore: an invalid namespace key is skipped (warned, no
     const entries = await store.readKeys("trace-key", ["unsafe\nkey", "valid.key"]);
     assertEquals(entries["unsafe\nkey"], undefined, "invalid key must be skipped, not thrown");
     assertEquals(entries["valid.key"], "value", "the rest of the batch must still apply");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-exec-mem-key-" });
 });
 
 Deno.test("ExecutionMemoryStore: an oversized single namespace value is truncated, not rejected", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-exec-mem-trunc-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ExecutionMemoryStore(makeConfig(tempDir));
     const oversized = "v".repeat(10_000);
     await store.writeNamespaceEntries(
@@ -97,14 +91,11 @@ Deno.test("ExecutionMemoryStore: an oversized single namespace value is truncate
 
     const entries = await store.readKeys("trace-trunc", ["big"]);
     assertEquals(entries["big"]?.length, 8192, "value must be capped at the per-entry byte cap (8192)");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-exec-mem-trunc-" });
 });
 
 Deno.test("ExecutionMemoryStore: only a total-size-over-quota namespace batch throws NamespaceQuotaExceededError, before persisting", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-exec-mem-quota-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = makeConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
     const oversizedOutput = "q".repeat(DEFAULT_NAMESPACE_MAX_BYTES + 1024);
@@ -120,20 +111,15 @@ Deno.test("ExecutionMemoryStore: only a total-size-over-quota namespace batch th
       false,
       "a quota-throwing batch must never persist",
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-exec-mem-quota-" });
 });
 
 Deno.test("ExecutionMemoryStore: getNamespacePath resolves into the trace's execution directory (never namespace.md)", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exa-exec-mem-path-" });
-  try {
+  await withTempDir((tempDir) => {
     const config = makeConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
     const path = store.getNamespacePath("trace-path");
     assertStringIncludes(path, join(resolveMemoryExecutionRoot(config.paths), "trace-path"));
     assertFalse(path.endsWith("namespace.md"), "the markdown artifact must be retired");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "exa-exec-mem-path-" });
 });

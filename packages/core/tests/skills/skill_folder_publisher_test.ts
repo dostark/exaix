@@ -19,6 +19,7 @@ import {
   SkillFolderPublisher,
   SkillMutationError,
 } from "@exaix/core/skills";
+import { withTempDir } from "@exaix/testing";
 
 function snap(body: string): ISkillRevisionSnapshot {
   return {
@@ -253,15 +254,12 @@ Deno.test("[security] a symlinked state directory or lock file is refused", asyn
 
 Deno.test("[security] replace and remove refuse a folder that was swapped for a symlink", async () => {
   await withRoot(async (root, publisher) => {
-    const outside = await Deno.makeTempDir({ prefix: "exa-skill-pub-out-" });
-    try {
+    await withTempDir(async (outside) => {
       await Deno.symlink(outside, join(root, "pub-skill"));
       const replaced = await assertRejects(() => publisher.replace(root, "pub-skill", snap("x")), SkillMutationError);
       assertEquals(replaced.code === SkillMutationErrorCode.ROOT_UNAVAILABLE, true);
       await assertRejects(() => publisher.remove(root, "pub-skill"), SkillMutationError);
       assertEquals((await Deno.lstat(outside)).isDirectory, true);
-    } finally {
-      await Deno.remove(outside, { recursive: true });
-    }
+    }, { prefix: "exa-skill-pub-out-" });
   });
 });
