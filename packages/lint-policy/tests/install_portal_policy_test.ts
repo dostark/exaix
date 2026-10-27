@@ -10,6 +10,7 @@
 import { assert, assertEquals, assertMatch, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { installPortalPolicy, PORTAL_POLICY_CONFIG, PORTAL_POLICY_NAME } from "../src/tools/install_portal_policy.ts";
+import { withTempDir } from "@exaix/testing";
 
 const CAST_SEED = "export const s = 1 as unknown as string;\n";
 const POLICY_FILES = ["catalog.json", "deno.json", "manifest.json", "plugin.ts", "unslop_engine.js"];
@@ -50,8 +51,7 @@ async function lintSeed(policyDir: string, source: string): Promise<string[]> {
 }
 
 Deno.test("installed portal policy", async (test) => {
-  const out = await Deno.makeTempDir({ prefix: "portal-policy-out-" });
-  try {
+  await withTempDir(async (out) => {
     await installPortalPolicy({ out });
     const policyDir = join(out, PORTAL_POLICY_NAME);
 
@@ -135,7 +135,5 @@ Deno.test("installed portal policy", async (test) => {
       const codes = await lintSeed(policyDir, source);
       assert(codes.includes(IGNORE_CODE), codes.join(","));
     });
-  } finally {
-    await Deno.remove(out, { recursive: true });
-  }
+  }, { prefix: "portal-policy-out-" });
 });

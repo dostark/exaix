@@ -18,6 +18,7 @@ import { checkDuplicates } from "../../../unslop-ts/src/rules/whole_tree/duplica
 import { EXAIX_REGISTRY, EXAIX_RULE_PACKS } from "@exaix/lint-policy/rule_packs.ts";
 import { POLICY_CATALOG } from "../src/policy_config.ts";
 import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
+import { withTempDir } from "@exaix/testing";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
 const POLICY_ROOT = "packages/lint-policy";
@@ -478,8 +479,7 @@ async function runWholeTree(cwd: string, args: readonly string[]): Promise<IWhol
 }
 
 Deno.test("the whole-tree CLI prints the findings recorded before the engine took its settings from --catalog", async () => {
-  const root = await Deno.makeTempDir({ prefix: "whole_tree_fixture_" });
-  try {
+  await withTempDir(async (root) => {
     for (const [path, source] of Object.entries(FIXTURE_FILES)) {
       await Deno.mkdir(dirname(join(root, path)), { recursive: true });
       await Deno.writeTextFile(join(root, path), source);
@@ -488,9 +488,7 @@ Deno.test("the whole-tree CLI prints the findings recorded before the engine too
       const actual = await runWholeTree(root, expected.args);
       assertEquals(actual, expected, expected.args.join(" "));
     }
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "whole_tree_fixture_" });
 });
 
 Deno.test("the repository passes the constant-restatement check through the CLI", async () => {

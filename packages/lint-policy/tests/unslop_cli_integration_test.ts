@@ -13,6 +13,7 @@ import { POLICY_COMPILED } from "../src/policy_config.ts";
 import { checkRepository as checkConstantRestatement } from "../../../unslop-ts/src/rules/whole_tree/constant_restatement.ts";
 import { checkRepository as checkOptionalParams } from "../../../unslop-ts/src/rules/whole_tree/optional_params.ts";
 import { checkRepository as checkUnusedExports } from "../../../unslop-ts/src/rules/whole_tree/unused_exports.ts";
+import { withTempDir } from "@exaix/testing";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../", import.meta.url));
 
@@ -325,8 +326,7 @@ Deno.test("matched_host_report_benchmark_records_equivalent_samples", async () =
 });
 
 Deno.test("configured_options_reach_four_whole_tree_sections", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "whole_tree_options_" });
-  try {
+  await withTempDir(async (dir) => {
     await Deno.mkdir(join(dir, "src"), { recursive: true });
     await Deno.mkdir(join(dir, "tests"), { recursive: true });
     await Deno.writeTextFile(join(dir, "src", "constants.ts"), 'export const HOSTS = ["a.test", "b.test"];\n');
@@ -367,7 +367,5 @@ Deno.test("configured_options_reach_four_whole_tree_sections", async () => {
     };
     assert((await checkUnusedExports(dir, false, unused)).findings.length > 0);
     assert((await checkUnusedExports(dir, false, { ...unused, productionRoots: ["other"] })).findings.length === 0);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "whole_tree_options_" });
 });

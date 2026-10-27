@@ -18,6 +18,7 @@ import {
   trackedTextFiles,
 } from "./helpers/port_migration.ts";
 import { loadPortTables } from "./helpers/port_tables.ts";
+import { withTempDir } from "@exaix/testing";
 
 const CODES = ["REQUIRED_FOR_TEST", "PLUGINS"];
 const IMPORT_KEYWORD = "import";
@@ -86,8 +87,7 @@ const GUARD_NAME = "active tracked consumers name no bare ported rule id";
 const GIT_FAILURE_EXIT = 128;
 
 Deno.test("failed_git_inventory_fails_terminal_guard", async () => {
-  const bin = await Deno.makeTempDir({ prefix: "failing_git_" });
-  try {
+  await withTempDir(async (bin) => {
     const fake = join(bin, "git");
     await Deno.writeTextFile(fake, `#!/bin/sh\necho "fatal: not a git repository" >&2\nexit ${GIT_FAILURE_EXIT}\n`);
     await Deno.chmod(fake, 0o755);
@@ -100,9 +100,7 @@ Deno.test("failed_git_inventory_fails_terminal_guard", async () => {
     const output = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
     assertEquals(result.success, false, output);
     assertStringIncludes(output, `git ls-files failed with exit code ${GIT_FAILURE_EXIT}`);
-  } finally {
-    await Deno.remove(bin, { recursive: true });
-  }
+  }, { prefix: "failing_git_" });
 });
 
 function fakeSource(

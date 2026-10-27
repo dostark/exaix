@@ -9,6 +9,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
+import { withTempDir } from "@exaix/testing";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
 const ENGINE_SUBMODULE = "unslop-ts";
@@ -109,8 +110,7 @@ Deno.test({
   name: "a fresh clone runs every style gate through the embedded engine",
   ignore: SKIP_REASON !== null,
   fn: async () => {
-    const root = await Deno.makeTempDir({ prefix: "unslop_ts_embedding_" });
-    try {
+    await withTempDir(async (root) => {
       const clone = await prepareClone(root);
 
       const init = await run(Deno.execPath(), [...BOOTSTRAP_ARGS, "--init"], clone);
@@ -132,8 +132,6 @@ Deno.test({
         const clean = await task(clone, name);
         assertEquals(clean.code, 0, `${name}: ${clean.output}`);
       }
-    } finally {
-      await Deno.remove(root, { recursive: true });
-    }
+    }, { prefix: "unslop_ts_embedding_" });
   },
 });
