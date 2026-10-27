@@ -14,7 +14,7 @@ import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { normalize } from "@std/path";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import { type IRunBindingsFile, RunBindingsFileSchema } from "@exaix/schemas";
 import { RunBindingsStore } from "@exaix/ai/bindings/run_bindings_store.ts";
 
@@ -37,8 +37,7 @@ const sha256 = async (text: string): Promise<string> => {
 };
 
 Deno.test("[store] write stores an exclusive run-binding file and claim verifies path and content hash", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "bindings-store-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir, {});
     const store = new RunBindingsStore(config);
     const traceId = crypto.randomUUID();
@@ -51,14 +50,11 @@ Deno.test("[store] write stores an exclusive run-binding file and claim verifies
     assertEquals(claimed.trace_id, traceId);
     assertEquals(claimed.request_sha256, requestSha256);
     assertEquals(RunBindingsFileSchema.parse(JSON.parse(await Deno.readTextFile(storedPath))).trace_id, traceId);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "bindings-store-" });
 });
 
 Deno.test("[store] an altered request path or content hash is rejected with overlay_invalid", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "bindings-store-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir, {});
     const store = new RunBindingsStore(config);
     const traceId = crypto.randomUUID();
@@ -82,27 +78,21 @@ Deno.test("[store] an altered request path or content hash is rejected with over
       Error,
       "overlay_invalid",
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "bindings-store-" });
 });
 
 Deno.test("[store] a non-UUID or traversing trace id is refused before file access", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "bindings-store-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir, {});
     const store = new RunBindingsStore(config);
     const hash = await sha256("x");
     await assertRejects(() => store.claim("not-a-uuid", "x", hash), Error, "overlay_invalid");
     await assertRejects(() => store.claim("../../etc/passwd", "x", hash), Error, "overlay_invalid");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "bindings-store-" });
 });
 
 Deno.test("[store] a second claimant fails while a checkpoint resume for the same request succeeds", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "bindings-store-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir, {});
     const store = new RunBindingsStore(config);
     const traceId = crypto.randomUUID();
@@ -130,14 +120,11 @@ Deno.test("[store] a second claimant fails while a checkpoint resume for the sam
     // The same request (checkpoint resume, same trace + path + hash) may claim again.
     const resume = await store.claim(traceId, requestPath, requestSha256);
     assertExists(resume, "the same request may reclaim during a checkpoint resume");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "bindings-store-" });
 });
 
 Deno.test("[store] pruneOlderThan removes only files older than the window", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "bindings-store-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir, {});
     const store = new RunBindingsStore(config);
     const now = new Date("2026-10-01T00:00:00Z");
@@ -155,14 +142,11 @@ Deno.test("[store] pruneOlderThan removes only files older than the window", asy
     await store.pruneOlderThan(30, now);
     await assertRejects(() => Deno.stat(path), Deno.errors.NotFound);
     assertEquals((await Deno.stat(newFile)).isFile, true);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "bindings-store-" });
 });
 
 Deno.test("[store] exists reports a written run file without claiming it, and is false for absent or non-UUID traces", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "bindings-store-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new RunBindingsStore(createMockConfig(tempDir, {}));
     const traceId = crypto.randomUUID();
     assertEquals(await store.exists(traceId), false);
@@ -173,7 +157,5 @@ Deno.test("[store] exists reports a written run file without claiming it, and is
     assertEquals(await store.exists("../escape"), false);
     // Not claimed: a different request may still claim-fail on identity, but exists never throws.
     assertEquals(await store.exists(traceId), true);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "bindings-store-" });
 });

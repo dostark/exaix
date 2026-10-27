@@ -12,7 +12,7 @@
 import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertFalse, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import type { Config } from "@exaix/schemas/config.ts";
 import { computeStartNetGrant } from "@exaix/ai/bindings/net_grant.ts";
 
@@ -21,8 +21,7 @@ function configWith(root: string, overrides: Partial<Config> = {}): Config {
 }
 
 Deno.test("[net] unset allow_net grants every catalog host, bound or not", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "net-grant-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = configWith(tempDir, {
       catalog: {
         models: {},
@@ -50,14 +49,11 @@ Deno.test("[net] unset allow_net grants every catalog host, bound or not", async
     assertEquals(grant.includes("beta.example.com:8443"), true);
     assertEquals(grant.includes("api.anthropic.com"), true);
     assertEquals(new Set(grant).size, grant.length);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "net-grant-" });
 });
 
 Deno.test("[net] a set allow_net is returned unchanged, including the empty array", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "net-grant-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const explicit = configWith(tempDir, {
       system: {
         root: tempDir,
@@ -88,14 +84,11 @@ Deno.test("[net] a set allow_net is returned unchanged, including the empty arra
     });
     const blockedGrant = await computeStartNetGrant(blocked);
     assertEquals(blockedGrant, []);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "net-grant-" });
 });
 
 Deno.test("[net][security] an invalid catalog endpoint is rejected before spawn", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "net-grant-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const bad = configWith(tempDir, {
       catalog: {
         models: {},
@@ -111,14 +104,11 @@ Deno.test("[net][security] an invalid catalog endpoint is rejected before spawn"
       },
     });
     await assertRejects(() => computeStartNetGrant(bad), Error, "endpoint");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "net-grant-" });
 });
 
 Deno.test("[net][security] a symlinked catalog overlay is rejected", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "net-grant-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     await Deno.mkdir(overlaysDir, { recursive: true });
     const outsideTarget = join(tempDir, "outside.json");
@@ -126,14 +116,11 @@ Deno.test("[net][security] a symlinked catalog overlay is rejected", async () =>
     await Deno.symlink(outsideTarget, join(overlaysDir, "catalog.json"));
     const config = configWith(tempDir);
     await assertRejects(() => computeStartNetGrant(config), Error, "overlay_invalid");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "net-grant-" });
 });
 
 Deno.test("[net] daemon overlay catalog hosts are included in the grant", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "net-grant-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     await Deno.mkdir(overlaysDir, { recursive: true });
     await Deno.writeTextFile(
@@ -156,14 +143,11 @@ Deno.test("[net] daemon overlay catalog hosts are included in the grant", async 
     const config = configWith(tempDir);
     const grant = await computeStartNetGrant(config);
     assertEquals(grant.includes("gamma.internal.example.com"), true);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "net-grant-" });
 });
 
 Deno.test("[phase203.sentinel] an unsubstituted sentinel endpoint is skipped, never granted", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "net-grant-sentinel-" });
-  try {
+  await withTempDir(async (tempDir) => {
     // The endpoint schema is a URL, so a validated config never carries the sentinel. This
     // asserts the defensive contract for a catalog that reaches the grant mid-substitution.
     const config = {
@@ -186,7 +170,5 @@ Deno.test("[phase203.sentinel] an unsubstituted sentinel endpoint is skipped, ne
     const grant = await computeStartNetGrant(config);
 
     assertEquals(grant.some((entry) => entry.includes("__COMPAT_FIXTURE_PORT__")), false);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "net-grant-sentinel-" });
 });

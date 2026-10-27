@@ -23,6 +23,7 @@ import {
   MockLLMError,
   MockLLMProvider,
 } from "../src/providers/mock_llm_provider.ts";
+import { withTempDir } from "@exaix/testing";
 
 const ROUND_ONE_CALL_SITE = { scenarioId: "plan-tools", stepId: "round-1", callIndex: 0 };
 const TOOL_CALL: IProviderToolCall = {
@@ -73,8 +74,7 @@ Deno.test("[mock toolCalls] the same fixture without options.tools returns no to
 });
 
 Deno.test("[mock toolCalls] a malformed toolCalls entry is rejected by the recording validator", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "mock-fixture-" });
-  try {
+  await withTempDir(async (dir) => {
     await Deno.writeTextFile(
       `${dir}/recording.json`,
       JSON.stringify({
@@ -93,9 +93,7 @@ Deno.test("[mock toolCalls] a malformed toolCalls entry is rejected by the recor
       MockLLMError,
       "Corrupt fixture file",
     );
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "mock-fixture-" });
 });
 
 Deno.test("[mock toolCalls] mock provider metadata reports supportsNativeTools", () => {

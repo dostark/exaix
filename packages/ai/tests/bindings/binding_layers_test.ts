@@ -14,7 +14,7 @@
 import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import type { Config } from "@exaix/schemas/config.ts";
 import { loadBindingLayers } from "@exaix/ai/bindings/binding_layers.ts";
 
@@ -35,8 +35,7 @@ function baseConfig(root: string): Config {
 }
 
 Deno.test("[layers] config < daemon overlays (file-name order) < run overlays < run --bind, per field", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     const config = baseConfig(tempDir);
     await Deno.mkdir(overlaysDir, { recursive: true });
@@ -83,14 +82,11 @@ Deno.test("[layers] config < daemon overlays (file-name order) < run overlays < 
     assertEquals(overlayEntries.length, 1);
     assertEquals(overlayEntries[0].spec.model, "mock/beta");
     assertEquals(overlayEntries[0].spec.service, "beta");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "binding-layers-" });
 });
 
 Deno.test("[layers] a runtime directory inside Workspace or Portals is refused", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir, {
       paths: { runtime: pathBuilders.workspacePath("", ".exa-in-workspace") } as Config["paths"],
     });
@@ -99,14 +95,11 @@ Deno.test("[layers] a runtime directory inside Workspace or Portals is refused",
       paths: { runtime: pathBuilders.portalsPath("", ".exa-in-portals") } as Config["paths"],
     });
     await assertRejects(() => loadBindingLayers(portalConfig), Error, "overlay_invalid");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "binding-layers-" });
 });
 
 Deno.test("[layers] an overlay above the byte ceiling or with an unknown field is refused", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     const config = baseConfig(tempDir);
     await Deno.mkdir(overlaysDir, { recursive: true });
@@ -121,14 +114,11 @@ Deno.test("[layers] an overlay above the byte ceiling or with an unknown field i
     const badField = join(overlaysDir, "bad.json");
     await Deno.writeTextFile(badField, JSON.stringify({ schema: 1, bindings: {}, unknown: true }));
     await assertRejects(() => loadBindingLayers(config), Error, "overlay_invalid");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "binding-layers-" });
 });
 
 Deno.test("[layers][security] a symlinked overlay and a non-regular overlay entry are refused", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     const config = baseConfig(tempDir);
     await Deno.mkdir(overlaysDir, { recursive: true });
@@ -144,14 +134,11 @@ Deno.test("[layers][security] a symlinked overlay and a non-regular overlay entr
     const dirEntry = join(overlaysDir, "swap.json");
     await Deno.mkdir(dirEntry);
     await assertRejects(() => loadBindingLayers(config), Error, "overlay_invalid");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "binding-layers-" });
 });
 
 Deno.test("[layers] a regular daemon overlay applies and catalog merges over the built-ins", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     const config = baseConfig(tempDir);
     await Deno.mkdir(overlaysDir, { recursive: true });
@@ -170,14 +157,11 @@ Deno.test("[layers] a regular daemon overlay applies and catalog merges over the
     assertEquals(layers.operatorLayersPresent, true);
     assertEquals(layers.overlaySha256.length, 1);
     assertEquals(layers.catalog.services["extra-svc"] !== undefined, true);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "binding-layers-" });
 });
 
 Deno.test("[layers][ordering] two run overlays at one selector resolve to the later argument's value", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-run-order-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = baseConfig(tempDir);
     const layers = await loadBindingLayers(config, {
       trace_id: crypto.randomUUID(),
@@ -205,14 +189,11 @@ Deno.test("[layers][ordering] two run overlays at one selector resolve to the la
     assertEquals(runEntries[0].spec.model, "mock/beta");
     // Both files were still hashed, so the evidence keeps the full overlay list.
     assertEquals(layers.overlaySha256.length, 2);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "binding-layers-run-order-" });
 });
 
 Deno.test("[layers][ordering] two daemon overlay files at one selector resolve to the later file name", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-file-order-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const overlaysDir = pathBuilders.runtimePath(tempDir, "overlays");
     const config = baseConfig(tempDir);
     await Deno.mkdir(overlaysDir, { recursive: true });
@@ -231,7 +212,5 @@ Deno.test("[layers][ordering] two daemon overlay files at one selector resolve t
     // 02-second.json wins the field it sets. 01-first.json keeps the field it alone set.
     assertEquals(overlayEntries[0].spec.service, "beta");
     assertEquals(overlayEntries[0].spec.model, "mock/alpha");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "binding-layers-file-order-" });
 });

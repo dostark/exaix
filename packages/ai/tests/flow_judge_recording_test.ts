@@ -10,6 +10,7 @@ import { MockLLMProvider } from "../src/providers/mock_llm_provider.ts";
 import type { IModelOptions, IModelProvider } from "@exaix/ai";
 
 import type { IGenerateResult } from "@exaix/ai/providers";
+import { withTempDir } from "@exaix/testing";
 
 const JUDGE_JSON = JSON.stringify({
   criteriaScores: { CODE_CORRECTNESS: { score: 0.2, reasoning: "Missing change", issues: [] } },
@@ -30,8 +31,7 @@ class FixedJudgeProvider implements IModelProvider {
   }
 }
 Deno.test("[judge recording] raw criterion JSON captures and strict keyed replay preserves bytes", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const capture = new CaptureRecordingProvider(new FixedJudgeProvider(JUDGE_JSON), { dir, maxAttempts: 1 });
     await capture.generate("Judge the output", {
       callSite: SITE,
@@ -40,9 +40,7 @@ Deno.test("[judge recording] raw criterion JSON captures and strict keyed replay
     const replay = new MockLLMProvider(MockStrategy.RECORDED, { fixtureDir: dir, strictRecordings: true });
     assertEquals((await replay.generate("Changed wording", { callSite: SITE })).content, JUDGE_JSON);
     await assertRejects(() => replay.generate("Changed wording", { callSite: { ...SITE, callIndex: 1 } }));
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 for (
   const response of [
@@ -53,22 +51,18 @@ for (
   ]
 ) {
   Deno.test(`[security] [judge recording] rejects invalid judge shape ${response}`, async () => {
-    const dir = await Deno.makeTempDir();
-    try {
+    await withTempDir(async (dir) => {
       const capture = new CaptureRecordingProvider(new FixedJudgeProvider(response), { dir, maxAttempts: 1 });
       await assertRejects(
         () => capture.generate("Judge", { responseContract: { kind: "judge-json", criteria: ["CODE_CORRECTNESS"] } }),
         CaptureRecordingError,
       );
       assertEquals(Array.from(Deno.readDirSync(dir)), []);
-    } finally {
-      await Deno.remove(dir, { recursive: true });
-    }
+    });
   });
 }
 Deno.test("[judge recording] ordinary agent capture still requires XML tags", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     await assertRejects(
       () =>
         new CaptureRecordingProvider(new FixedJudgeProvider(JUDGE_JSON), { dir, maxAttempts: 1 }).generate(
@@ -76,9 +70,7 @@ Deno.test("[judge recording] ordinary agent capture still requires XML tags", as
         ),
       CaptureRecordingError,
     );
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 
 const LOW = JSON.stringify({
@@ -107,8 +99,7 @@ async function withRecordings(
   >,
   test: (dir: string) => Promise<void>,
 ): Promise<void> {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     for (const [index, recording] of recordings.entries()) {
       await Deno.writeTextFile(
         `${dir}/${index}.json`,
@@ -123,9 +114,7 @@ async function withRecordings(
       );
     }
     await test(dir);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 }
 
 Deno.test("[judge recording] identical judge prompts replay distinct keyed low then high verdicts", async () => {
