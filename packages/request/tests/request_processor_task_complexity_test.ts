@@ -9,28 +9,11 @@
  * @related-files [packages/request/src/processor.ts, packages/request/src/task_complexity_classifier.ts]
  */
 
-import * as pathBuilders from "@exaix/shared";
-import { DEFAULT_AGENTS_PATH, DEFAULT_PLANS_PATH } from "@exaix/shared";
 import { assert, assertArrayIncludes } from "@std/assert";
-import { join } from "@std/path";
-import { type IRequestProcessorConfig, RequestProcessor } from "@exaix/request";
 import type { IAgentRunner, IBlueprint, IParsedRequest } from "@exaix/execution";
-import { EventLogger } from "@exaix/core/logger";
-import { ProviderRegistry } from "@exaix/ai";
-import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
-import { PricingTier, ProviderCostTier, TaskComplexity } from "@exaix/core";
-import { CostTracker } from "@exaix/core/cost";
-import type { IApplicationContext } from "@exaix/core/types";
-import {
-  createStubConfig,
-  createStubDisplay,
-  createStubGit,
-  createStubProvider,
-  getBlueprintsAgentsDir,
-  getWorkspaceDir,
-  getWorkspaceRequestsDir,
-  initTestDbService,
-} from "@exaix/testing";
+import { TaskComplexity } from "@exaix/core";
+import { createStubProvider } from "@exaix/testing";
+import { withProcessorWorkspace } from "./helpers/processor_workspace.ts";
 
 const VALID_PLAN = JSON.stringify({
   subject: "Test",
@@ -52,72 +35,11 @@ function makeCapturingRunner() {
 }
 
 Deno.test("[RequestProcessor] the IParsedRequest passed to AgentRunner.run carries taskComplexity and taskComplexitySource", async () => {
-  const { db, config, cleanup, tempDir } = await initTestDbService();
-  try {
-    await Deno.mkdir(getWorkspaceRequestsDir(tempDir), { recursive: true });
-    await Deno.mkdir(pathBuilders.workspacePath(tempDir, DEFAULT_PLANS_PATH), { recursive: true });
-    await Deno.mkdir(pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH), { recursive: true });
-    await Deno.writeTextFile(
-      pathBuilders.blueprintsPath(tempDir, DEFAULT_AGENTS_PATH, "default.md"),
-      "---\nagent_role: default\n---\n\nYou are a helpful assistant.\n",
-    );
-
-    ProviderRegistry.clear();
-    ProviderRegistry.registerWithMetadata("mock", new MockProviderFactory(), {
-      name: "mock",
-      costTier: ProviderCostTier.FREE,
-      pricingTier: PricingTier.FREE,
-      capabilities: ["chat"],
-      description: "Mock provider for testing",
-      strengths: ["fast", "reliable", "deterministic"],
-    });
-
-    const traceId = crypto.randomUUID();
-    const requestPath = join(getWorkspaceRequestsDir(tempDir), `request-${traceId.slice(0, 8)}.md`);
-    await Deno.writeTextFile(
-      requestPath,
-      `---
-trace_id: "${traceId}"
-created: "${new Date().toISOString()}"
-status: pending
-priority: normal
-agent_role: default
-source: cli
-created_by: "test@example.com"
-subject: "Test Request Subject"
----
-# Request
-Add a hello world function.
-`,
-    );
-
-    const provider = createStubProvider(
-      `<thought>ok</thought><content>${VALID_PLAN}</content>`,
-    );
-    const logger = new EventLogger({ db });
-    const context: IApplicationContext = {
-      config: createStubConfig(config),
-      db,
-      provider,
-      git: createStubGit(),
-      display: createStubDisplay(db),
-    };
-    const costTracker = new CostTracker(db, config);
-    const { runner, getCaptured } = makeCapturingRunner();
-    const processor = new RequestProcessor(
-      {
-        workspacePath: getWorkspaceDir(tempDir),
-        requestsDir: getWorkspaceRequestsDir(tempDir),
-        blueprintsPath: getBlueprintsAgentsDir(tempDir),
-        includeReasoning: true,
-        context,
-        testProvider: provider,
-        costTracker,
-        logger,
-        agentRunner: runner,
-      } satisfies IRequestProcessorConfig,
-    );
-
+  const provider = createStubProvider(
+    `<thought>ok</thought><content>${VALID_PLAN}</content>`,
+  );
+  const { runner, getCaptured } = makeCapturingRunner();
+  await withProcessorWorkspace(provider, async ({ requestPath, processor }) => {
     // The capturing runner deliberately throws after recording the request; process()
     // routes that through the rejected-plan handler and returns null. The capture is
     // what matters here.
@@ -132,7 +54,5 @@ Add a hello world function.
     assertArrayIncludes(["analysis", "content_heuristic", "agent_role", "default"], [
       captured.taskComplexitySource ?? "",
     ], `taskComplexitySource must be one of the four sources, got ${captured.taskComplexitySource}`);
-  } finally {
-    await cleanup();
-  }
+  }, runner);
 });
