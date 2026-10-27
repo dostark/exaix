@@ -16,7 +16,7 @@ import {
 } from "@exaix/session/opencode_permission_generator.ts";
 import type { IOpencodePermissionConfig } from "@exaix/session/opencode_permission_generator.ts";
 import { PathResolver } from "@exaix/portal";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 
 const TEST_AGENT_ROLE = "dogfood-coder";
 
@@ -104,8 +104,7 @@ Deno.test(
 Deno.test(
   "[opencode_perm] async generator writes config and returns path",
   async () => {
-    const tmpDir = await Deno.makeTempDir();
-    try {
+    await withTempDir(async (tmpDir) => {
       await Deno.mkdir(pathBuilders.runtimePath(tmpDir));
       const resolver = new PathResolver(createMockConfig(tmpDir));
       const result: IOpencodePermissionConfig = await generateOpencodePermissionConfig(
@@ -129,8 +128,6 @@ Deno.test(
       );
       const parsed = OpencodeConfigSchema.safeParse(written);
       assertEquals(parsed.success, true);
-    } finally {
-      await Deno.remove(tmpDir, { recursive: true });
-    }
+    });
   },
 );

@@ -17,6 +17,7 @@ import {
 } from "@exaix/session/session_delegation.ts";
 import { SessionBriefReader } from "@exaix/session/session_brief_reader.ts";
 import { SessionDelegationResultStore } from "@exaix/session/session_delegation_result_store.ts";
+import { withTempDir } from "@exaix/testing";
 
 const TRACE_ID = "00000000-0000-4000-8000-000000000174";
 const PARENT_TRACE_ID = "00000000-0000-4000-8000-000000000173";
@@ -41,8 +42,7 @@ function completedOutcome(summary: string) {
 }
 
 Deno.test("[session_result_store] accepted outcome is hidden until delivered and CAS delivers once", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     const store = new SessionDelegationResultStore(root);
     const outcome = completedOutcome("first accepted result");
 
@@ -65,14 +65,11 @@ Deno.test("[session_result_store] accepted outcome is hidden until delivered and
     ]);
     assertEquals(transitions.filter(Boolean).length, 1);
     assertEquals((await store.get(TRACE_ID))?.summary, "first accepted result");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[session_result_store][race] duplicate publication preserves the first typed outcome", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     const store = new SessionDelegationResultStore(root);
     await Promise.all([
       store.publishAccepted(TRACE_ID, completedOutcome("authoritative")),
@@ -80,23 +77,18 @@ Deno.test("[session_result_store][race] duplicate publication preserves the firs
     ]);
 
     assertEquals((await store.getRecord(TRACE_ID))?.outcome.summary, "authoritative");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[session_result_store][security] trace mismatch is rejected before persistence", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     const store = new SessionDelegationResultStore(root);
     await assertRejects(
       () => store.publishAccepted(crypto.randomUUID(), completedOutcome("mismatch")),
       Error,
       "trace mismatch",
     );
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[session_brief_reader][security] recovery reads a schema-validated brief by trace", async () => {

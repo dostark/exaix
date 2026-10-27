@@ -14,6 +14,7 @@ import { assert, assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { ContextRecordAlreadyExistsError, ContextRecordSecurityError, ContextRecordStore } from "@exaix/session";
 import { CONTEXT_RECORD_SCHEMA_VERSION, type ContextRecord } from "@exaix/schemas/dogfood_context.ts";
+import { withTempDir } from "@exaix/testing";
 
 const TRACE_ID = "11111111-1111-4111-8111-111111111111";
 const RECORD_ID = "22222222-2222-4222-8222-222222222222";
@@ -60,36 +61,29 @@ function makeResolver(tempDir: string): { resolve(path: string): Promise<string>
 }
 
 Deno.test("[ContextRecordStore] save then read round-trips the exact record", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     const record = makeRecord();
     await store.save(record);
 
     const read = await store.read(TRACE_ID, RECORD_ID);
     assertEquals(read, record);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] save writes under @Memory/Execution/<trace>/context/<recordId>.json", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     await store.save(makeRecord());
 
     const expectedPath = pathBuilders.memoryExecutionPath(tempDir, TRACE_ID, "context", `${RECORD_ID}.json`);
     const raw = await Deno.readTextFile(expectedPath);
     assertEquals(JSON.parse(raw).recordId, RECORD_ID);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] save is atomic: no leftover temp file after success", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     await store.save(makeRecord());
 
@@ -97,14 +91,11 @@ Deno.test("[ContextRecordStore] save is atomic: no leftover temp file after succ
     const entries = await Array.fromAsync(Deno.readDir(contextDir));
     assertEquals(entries.length, 1, "only the final record file must remain, no .tmp artifact");
     assertEquals(entries[0].name, `${RECORD_ID}.json`);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] rejects saving a record with a duplicate id — never overwrites", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     await store.save(makeRecord());
 
@@ -116,40 +107,31 @@ Deno.test("[ContextRecordStore] rejects saving a record with a duplicate id — 
     // The original content must be unchanged.
     const read = await store.read(TRACE_ID, RECORD_ID);
     assertEquals(read.promptText, "the exact post-redaction submission");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] rejects an invalid executionTraceId (not a UUID) before touching the filesystem", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     await assertRejects(
       () => store.save(makeRecord({ executionTraceId: "../../etc/passwd" })),
       ContextRecordSecurityError,
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] rejects an invalid stepId with path-traversal characters", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     await assertRejects(
       () => store.save(makeRecord({ stepId: "../../etc" })),
       ContextRecordSecurityError,
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] refuses to write when a context directory ancestor is a symlink", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const realExecutionDir = join(tempDir, "RealExecution");
     await Deno.mkdir(realExecutionDir, { recursive: true });
     const executionLink = pathBuilders.memoryExecutionPath(tempDir);
@@ -160,34 +142,25 @@ Deno.test("[ContextRecordStore] refuses to write when a context directory ancest
       () => store.save(makeRecord()),
       ContextRecordSecurityError,
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] read throws for a record that was never captured", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     await assertRejects(() => store.read(TRACE_ID, RECORD_ID));
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] list returns an empty array for a trace with no captures", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     assertEquals(await store.list(TRACE_ID), []);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] list orders records by sequence, then turn, then attempt", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     const second = makeRecord({
       recordId: "44444444-4444-4444-8444-444444444444",
@@ -206,14 +179,11 @@ Deno.test("[ContextRecordStore] list orders records by sequence, then turn, then
 
     const summaries = await store.list(TRACE_ID);
     assertEquals(summaries.map((s) => s.recordId), [first.recordId, second.recordId]);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] pruneExpired removes only records older than the retention window", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     const now = new Date("2026-06-15T00:00:00.000Z");
     const oldRecord = makeRecord({
@@ -233,34 +203,25 @@ Deno.test("[ContextRecordStore] pruneExpired removes only records older than the
     await assertRejects(() => store.read(TRACE_ID, oldRecord.recordId));
     const stillThere = await store.read(TRACE_ID, recentRecord.recordId);
     assertEquals(stillThere.recordId, recentRecord.recordId);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] pruneExpired returns 0 when the execution root does not exist", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     assertEquals(await store.pruneExpired(7, new Date()), 0);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] listByParentTrace returns an empty array when nothing matches", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     assertEquals(await store.listByParentTrace(PARENT_TRACE_ID), []);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] listByParentTrace finds records across multiple child execution traces, bounded to the Execution root", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     const childA = "88888888-8888-4888-8888-888888888888";
     const childB = "99999999-9999-4999-8999-999999999999";
@@ -283,14 +244,11 @@ Deno.test("[ContextRecordStore] listByParentTrace finds records across multiple 
     // Ordered sequence/turn/attempt/timestamp/recordId — same ordering contract as list().
     assertEquals(summaries.map((s) => s.recordId), [recordInChildB.recordId, recordInChildA.recordId]);
     assertEquals(summaries.every((s) => s.parentTraceId === PARENT_TRACE_ID), true);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] listByParentTrace never returns a record belonging to an unrelated parent trace", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     const otherParent = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
     const unrelated = makeRecord({
@@ -301,14 +259,11 @@ Deno.test("[ContextRecordStore] listByParentTrace never returns a record belongi
     await store.save(unrelated);
 
     assertEquals(await store.listByParentTrace(PARENT_TRACE_ID), []);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] listByParentTrace never resurrects a pruned record — no reconstruction after expiry", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     const now = new Date("2026-06-15T00:00:00.000Z");
     await store.save(makeRecord({ timestamp: "2026-06-01T00:00:00.000Z" })); // 14 days before `now`
@@ -316,15 +271,12 @@ Deno.test("[ContextRecordStore] listByParentTrace never resurrects a pruned reco
     assertEquals((await store.listByParentTrace(PARENT_TRACE_ID)).length, 1);
     await store.pruneExpired(7, now);
     assertEquals(await store.listByParentTrace(PARENT_TRACE_ID), []);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ContextRecordStore] created files/directories are owner-only permissioned (POSIX)", async () => {
   if (Deno.build.os === "windows") return;
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new ContextRecordStore(makeResolver(tempDir));
     await store.save(makeRecord());
 
@@ -333,7 +285,5 @@ Deno.test("[ContextRecordStore] created files/directories are owner-only permiss
     const fileStat = await Deno.stat(join(contextDir, `${RECORD_ID}.json`));
     assert(dirStat.mode !== null && (dirStat.mode & 0o777) === 0o700, "directory must be 0700");
     assert(fileStat.mode !== null && (fileStat.mode & 0o777) === 0o600, "file must be 0600");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });

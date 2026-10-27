@@ -13,6 +13,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { SessionDelegateCycleStore } from "../src/session_delegate_cycle_store.ts";
 import type { ISessionDelegateCycleCheckpoint } from "../src/session_delegate_cycle_store.ts";
+import { withTempDir } from "@exaix/testing";
 
 function makeCheckpoint(overrides: Partial<ISessionDelegateCycleCheckpoint> = {}): ISessionDelegateCycleCheckpoint {
   return {
@@ -30,18 +31,14 @@ function makeCheckpoint(overrides: Partial<ISessionDelegateCycleCheckpoint> = {}
 }
 
 Deno.test("[unit] load() returns null when no checkpoint exists", async () => {
-  const root = await Deno.makeTempDir({ prefix: "cycle-store-" });
-  try {
+  await withTempDir(async (root) => {
     const store = new SessionDelegateCycleStore(root);
     assertEquals(await store.load(crypto.randomUUID(), "next-steps"), null);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "cycle-store-" });
 });
 
 Deno.test("[unit] save() then load() round-trips a schema-valid checkpoint", async () => {
-  const root = await Deno.makeTempDir({ prefix: "cycle-store-" });
-  try {
+  await withTempDir(async (root) => {
     const store = new SessionDelegateCycleStore(root);
     const checkpoint = makeCheckpoint();
 
@@ -49,14 +46,11 @@ Deno.test("[unit] save() then load() round-trips a schema-valid checkpoint", asy
     const loaded = await store.load(checkpoint.parentTraceId, checkpoint.flowStepId);
 
     assertEquals(loaded, checkpoint);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "cycle-store-" });
 });
 
 Deno.test("[unit] save() writes at the documented path and leaves no .tmp file behind", async () => {
-  const root = await Deno.makeTempDir({ prefix: "cycle-store-" });
-  try {
+  await withTempDir(async (root) => {
     const store = new SessionDelegateCycleStore(root);
     const checkpoint = makeCheckpoint();
 
@@ -72,14 +66,11 @@ Deno.test("[unit] save() writes at the documented path and leaves no .tmp file b
       tmpExists = false;
     }
     assertEquals(tmpExists, false, "the atomic temp file must not survive a successful save");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "cycle-store-" });
 });
 
 Deno.test("[unit] a second save() overwrites the checkpoint atomically", async () => {
-  const root = await Deno.makeTempDir({ prefix: "cycle-store-" });
-  try {
+  await withTempDir(async (root) => {
     const store = new SessionDelegateCycleStore(root);
     const first = makeCheckpoint({ nextSequence: 1, revision: 0 });
     await store.save(first);
@@ -95,7 +86,5 @@ Deno.test("[unit] a second save() overwrites the checkpoint atomically", async (
 
     assertEquals(loaded?.nextSequence, 2);
     assertEquals(loaded?.revision, 1);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "cycle-store-" });
 });

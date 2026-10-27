@@ -26,6 +26,7 @@ import {
   removeOrphanContextClientConfigs,
   writeClaudeMcpConfig,
 } from "@exaix/session/dogfood_mcp_config.ts";
+import { withTempDir } from "@exaix/testing";
 
 const FIXED_NOW = new Date("2026-06-26T00:00:00.000Z");
 const fixedClock = { now: () => FIXED_NOW };
@@ -110,8 +111,7 @@ Deno.test("[dogfood_mcp_config] buildCodexMcpArgs never includes the credential 
 });
 
 Deno.test("[dogfood_mcp_config] writeClaudeMcpConfig writes owner-only-permissioned JSON under @Runtime/<trace>/context-client/", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "dogfood-mcp-launch-" });
-  try {
+  await withTempDir(async (dir) => {
     const pathResolver = { resolve: (path: string) => Promise.resolve(`${dir}/${path.replace("@Runtime/", "")}`) };
     const configPath = await writeClaudeMcpConfig(CONNECTION, pathResolver as never, "trace-1");
     assertEquals(configPath, `${dir}/trace-1/context-client/claude_mcp_config.json`);
@@ -119,14 +119,11 @@ Deno.test("[dogfood_mcp_config] writeClaudeMcpConfig writes owner-only-permissio
     assertEquals(written.mcpServers[DOGFOOD_MCP_SERVER_KEY].url, CONNECTION.endpoint);
     const stat = await Deno.stat(configPath);
     assertEquals((stat.mode ?? 0) & 0o777, 0o600);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "dogfood-mcp-launch-" });
 });
 
 Deno.test("[dogfood_mcp_config] removeOrphanContextClientConfigs removes every context-client/ dir under @Runtime and reports the count", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "dogfood-mcp-launch-" });
-  try {
+  await withTempDir(async (dir) => {
     const pathResolver = { resolve: (path: string) => Promise.resolve(`${dir}/${path.replace(/^@Runtime\/?/, "")}`) };
     await writeClaudeMcpConfig(CONNECTION, pathResolver as never, "trace-a");
     await writeClaudeMcpConfig(CONNECTION, pathResolver as never, "trace-b");
@@ -136,9 +133,7 @@ Deno.test("[dogfood_mcp_config] removeOrphanContextClientConfigs removes every c
     assertEquals(removed, 2);
     await assertDirMissing(`${dir}/trace-a/context-client`);
     await assertDirMissing(`${dir}/trace-b/context-client`);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "dogfood-mcp-launch-" });
 });
 
 Deno.test("[dogfood_mcp_config] removeOrphanContextClientConfigs returns 0 when the runtime root does not exist", async () => {
@@ -159,8 +154,7 @@ async function assertDirMissing(path: string): Promise<void> {
 // resolveHardenedLaunch wiring
 
 Deno.test("[resolveHardenedLaunch+mcp] Claude Code: --mcp-config/--strict-mcp-config are appended and the MCP tools join the existing --allowedTools value", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "dogfood-mcp-launch-" });
-  try {
+  await withTempDir(async (dir) => {
     const service = makeService(dir);
     const { launch } = await service.resolveHardenedLaunch(
       briefFor("claude-code"),
@@ -190,26 +184,20 @@ Deno.test("[resolveHardenedLaunch+mcp] Claude Code: --mcp-config/--strict-mcp-co
       ),
     );
     assert(JSON.stringify(launch.args).includes("actual-secret-value") === false);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "dogfood-mcp-launch-" });
 });
 
 Deno.test("[resolveHardenedLaunch+mcp] Claude Code without a connection: no --mcp-config/--strict-mcp-config, existing behavior unchanged", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "dogfood-mcp-launch-" });
-  try {
+  await withTempDir(async (dir) => {
     const service = makeService(dir);
     const { launch } = await service.resolveHardenedLaunch(briefFor("claude-code"), "headless", {} as never);
     assertFalse(launch.args.includes("--mcp-config"));
     assertFalse(launch.args.includes("--strict-mcp-config"));
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "dogfood-mcp-launch-" });
 });
 
 Deno.test("[resolveHardenedLaunch+mcp] OpenCode: mcp.exaix_context is merged into the generated config, preserving edit/external_directory/bash", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "dogfood-mcp-launch-" });
-  try {
+  await withTempDir(async (dir) => {
     const service = makeService(dir);
     const { launch } = await service.resolveHardenedLaunch(briefFor("opencode"), "headless", {} as never, CONNECTION);
 
@@ -221,26 +209,20 @@ Deno.test("[resolveHardenedLaunch+mcp] OpenCode: mcp.exaix_context is merged int
     assertExists(agentConfig, "existing agent permission block must be preserved alongside the MCP grant");
     assertEquals(agentConfig.external_directory, { "**": "deny" });
     assertEquals(agentConfig.bash, { "*": "deny" });
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "dogfood-mcp-launch-" });
 });
 
 Deno.test("[resolveHardenedLaunch+mcp] OpenCode without a connection: no mcp key in the generated config (existing behavior unchanged)", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "dogfood-mcp-launch-" });
-  try {
+  await withTempDir(async (dir) => {
     const service = makeService(dir);
     const { launch } = await service.resolveHardenedLaunch(briefFor("opencode"), "headless", {} as never);
     const written = JSON.parse(await Deno.readTextFile(launch.configPath!));
     assertEquals("mcp" in written, false);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "dogfood-mcp-launch-" });
 });
 
 Deno.test("[resolveHardenedLaunch+mcp] Codex: -c overrides are appended and the pre-existing single --sandbox flag is untouched", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "dogfood-mcp-launch-" });
-  try {
+  await withTempDir(async (dir) => {
     const service = makeService(dir);
     const { launch } = await service.resolveHardenedLaunch(briefFor("codex"), "headless", {} as never, CONNECTION);
 
@@ -251,34 +233,26 @@ Deno.test("[resolveHardenedLaunch+mcp] Codex: -c overrides are appended and the 
     assert(joined.includes(`mcp_servers.${DOGFOOD_MCP_SERVER_KEY}.url="${CONNECTION.endpoint}"`));
     assert(joined.includes(`mcp_servers.${DOGFOOD_MCP_SERVER_KEY}.bearer_token_env_var="EXAIX_CONTEXT_BEARER"`));
     assert(!joined.includes("actual-secret-value"));
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "dogfood-mcp-launch-" });
 });
 
 Deno.test("[resolveHardenedLaunch+mcp] Codex without a connection: no mcp_servers overrides (existing behavior unchanged)", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "dogfood-mcp-launch-" });
-  try {
+  await withTempDir(async (dir) => {
     const service = makeService(dir);
     const { launch } = await service.resolveHardenedLaunch(briefFor("codex"), "headless", {} as never);
     assert(!launch.args.join(" ").includes("mcp_servers"));
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "dogfood-mcp-launch-" });
 });
 
 Deno.test("[resolveHardenedLaunch+mcp] an unsupported binary version still fails closed even when a connection is supplied", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "dogfood-mcp-launch-" });
-  try {
+  await withTempDir(async (dir) => {
     const service = makeService(dir, {
       versionProbe: () => Promise.resolve({ version: "0.0.1", supported: false }),
     });
     await assertRejectsAsync(() =>
       service.resolveHardenedLaunch(briefFor("claude-code"), "headless", {} as never, CONNECTION)
     );
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "dogfood-mcp-launch-" });
 });
 
 async function assertRejectsAsync(fn: () => Promise<unknown>): Promise<void> {
