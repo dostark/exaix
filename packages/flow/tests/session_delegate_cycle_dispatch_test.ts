@@ -13,7 +13,6 @@ import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 import { FlowExecutionError, FlowRunner, type IAgentExecutor, type IFlowEventLogger } from "@exaix/flow";
 import { FlowTraceStore, PlanContextResolver } from "@exaix/flow";
 import type { IFlow } from "@exaix/schemas/flow.ts";
@@ -26,6 +25,7 @@ import type {
   ISessionDelegationRequest,
 } from "@exaix/session/session_delegation.ts";
 import type { JSONValue } from "@exaix/core/types";
+import { delegateCycleFlow } from "@exaix/testing";
 
 class NoOpAgentExecutor implements IAgentExecutor {
   readonly reviewedWrites: Array<{ traceId: string; root: string; paths: readonly string[] }> = [];
@@ -87,37 +87,7 @@ async function makeOneStepWorktree(slug: string): Promise<string> {
 }
 
 function makeCycleFlow(): IFlow {
-  return {
-    id: "cycle-flow",
-    name: "Cycle Flow",
-    description: "test",
-    version: "1.0.0",
-    steps: [
-      {
-        id: "next-steps",
-        name: "Next Steps",
-        type: FlowStepType.SESSION_DELEGATE_CYCLE,
-        agent_role: "senior-coder",
-        execution_mode: FlowStepExecutionMode.DECLARED,
-        dependsOn: [],
-        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: 1000 },
-        delegateCycle: {
-          requireChangedPaths: true,
-          review: {
-            agent_role: "senior-reviewer",
-            criteria: ["correctness"],
-            threshold: 0.8,
-            onFail: "halt" as never,
-            maxRetries: 3,
-            includeRequestCriteria: false,
-          },
-        },
-      },
-    ],
-    output: { from: "next-steps", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 1, failFast: true, includeRequestCriteria: false },
-  };
+  return delegateCycleFlow("cycle-flow", "Cycle Flow");
 }
 
 Deno.test("[integration] a real FlowRunner dispatch reaches SessionDelegateCycleStepHandler and coordinator for a one-step PlanContext fixture", async () => {

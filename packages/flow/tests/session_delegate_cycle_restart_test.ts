@@ -14,7 +14,7 @@
 import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import type { JSONValue } from "@exaix/core";
-import { FlowInputSource, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
+import { FlowStepType } from "@exaix/core";
 import type { IGateEvaluator, IGateResult } from "@exaix/core/types";
 import { FlowGateAction } from "@exaix/core";
 import type { IFlowEventLogger, IFlowEventPayload } from "@exaix/flow";
@@ -36,6 +36,7 @@ import {
   type ISessionDelegateCycleCheckpoint,
   type ISessionDelegateCycleStore,
 } from "@exaix/session/session_delegate_cycle_store.ts";
+import { delegateCycleStep } from "@exaix/testing";
 
 const PARENT_STEP_ID = "next-steps";
 const FLOW_STEP_ID = "next-steps";
@@ -98,27 +99,7 @@ function completedOutcome(input: ISessionDelegationRequest): ISessionDelegationO
 function makeCtx(traceId: string, flowRunId = "flow-run-1"): IStepExecutionContext {
   return {
     stepType: FlowStepType.SESSION_DELEGATE_CYCLE,
-    step: {
-      id: FLOW_STEP_ID,
-      name: "Next Steps",
-      type: FlowStepType.SESSION_DELEGATE_CYCLE,
-      agent_role: "senior-coder",
-      execution_mode: FlowStepExecutionMode.DECLARED,
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: 1000 },
-      delegateCycle: {
-        requireChangedPaths: true,
-        review: {
-          agent_role: "senior-reviewer",
-          criteria: ["correctness"],
-          threshold: 0.8,
-          onFail: "halt",
-          maxRetries: 3,
-          includeRequestCriteria: false,
-        },
-      },
-    } as IStepExecutionContext["step"],
+    step: delegateCycleStep(FLOW_STEP_ID),
     flow: { id: "cycle-flow" },
     request: {
       userPrompt: "run",

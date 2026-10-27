@@ -16,7 +16,6 @@ import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { PricingTier, ProviderCostTier } from "@exaix/core";
-import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 import { FlowGateAction } from "@exaix/core";
 import { RequestProcessor } from "@exaix/request";
 import { AgentRunner } from "@exaix/execution";
@@ -53,6 +52,7 @@ import {
   createStubDisplay,
   createStubGit,
   createStubProvider,
+  delegateCycleFlow,
   getWorkspaceDir,
   getWorkspaceRequestsDir,
   initTestDbService,
@@ -198,35 +198,7 @@ class AlwaysPassGateEvaluator implements IGateEvaluator {
 }
 
 function makeCycleFlow(): IFlow {
-  return {
-    id: "dogfood-meta-workflow",
-    name: "Dogfood Meta Workflow",
-    description: "test",
-    version: "1.0",
-    steps: [{
-      id: "next-steps",
-      name: "Next Steps",
-      type: FlowStepType.SESSION_DELEGATE_CYCLE,
-      agent_role: "senior-coder",
-      execution_mode: FlowStepExecutionMode.DECLARED,
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: 1000 },
-      delegateCycle: {
-        requireChangedPaths: true,
-        review: {
-          agent_role: "senior-reviewer",
-          criteria: ["correctness"],
-          threshold: 0.8,
-          onFail: "halt",
-          maxRetries: 3,
-          includeRequestCriteria: false,
-        },
-      },
-    }],
-    output: { from: "next-steps", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 1, failFast: true, includeRequestCriteria: false },
-  } as IFlow;
+  return delegateCycleFlow("dogfood-meta-workflow", "Dogfood Meta Workflow");
 }
 
 Deno.test("[daemon] boot with session_delegate.enabled=true executes the fixture through the production-constructed handler", async () => {

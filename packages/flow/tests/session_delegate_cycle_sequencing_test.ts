@@ -15,8 +15,6 @@ import {
   DEFAULT_SESSION_DELEGATE_CYCLE_MAX_PLAN_BYTES,
   DEFAULT_SESSION_DELEGATE_CYCLE_MAX_STEPS,
   FlowGateAction,
-  FlowInputSource,
-  FlowStepExecutionMode,
   FlowStepType,
 } from "@exaix/core";
 import type { IGateConfig, IGateEvaluator, IGateResult } from "@exaix/core/types";
@@ -32,6 +30,7 @@ import type {
 import { createInMemorySessionDelegateCycleClaimStore } from "@exaix/session/session_delegate_cycle_claim_store.ts";
 import { createInMemorySessionDelegateCycleStore } from "@exaix/session/session_delegate_cycle_store.ts";
 import { createFlowRecordingContext } from "@exaix/flow";
+import { delegateCycleStep } from "@exaix/testing";
 
 function stepHeading(n: number): string {
   return `## Step ${n}\n\n**Actions:**\n- do ${n}\n\n\`\`\`yaml\n# step-manifest\nstep: ${n}\ntitle: Step ${n}\n\`\`\`\n`;
@@ -140,27 +139,7 @@ class ControllableGateEvaluator implements IGateEvaluator {
 function makeCtx(): IStepExecutionContext {
   return {
     stepType: FlowStepType.SESSION_DELEGATE_CYCLE,
-    step: {
-      id: "next-steps",
-      name: "Next Steps",
-      type: FlowStepType.SESSION_DELEGATE_CYCLE,
-      agent_role: "senior-coder",
-      execution_mode: FlowStepExecutionMode.DECLARED,
-      dependsOn: [],
-      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-      retry: { maxAttempts: 1, backoffMs: 1000 },
-      delegateCycle: {
-        requireChangedPaths: true,
-        review: {
-          agent_role: "senior-reviewer",
-          criteria: ["correctness"],
-          threshold: 0.8,
-          onFail: "halt",
-          maxRetries: 3,
-          includeRequestCriteria: false,
-        },
-      },
-    } as IStepExecutionContext["step"],
+    step: delegateCycleStep("next-steps"),
     flow: { id: "cycle-flow" },
     request: {
       userPrompt: "run",
