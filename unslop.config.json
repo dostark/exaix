@@ -1107,7 +1107,7 @@
             "ignore": ["**/*.d.ts", "**/*.md", "**/node_modules/**", "**/dist/**"],
             "pattern": "**/{tests,tests_node}/**/*.ts",
             "minLines": 10,
-            "threshold": 5.2
+            "threshold": 5.0
           },
           {
             "name": "integration-tests",
