@@ -18,8 +18,8 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, SecurityMode, ToolName } from "@exaix/core";
 import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, REACT_THOUGHT_PREFIX } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
-import type { ReActExecutor, TestToolParams } from "../helpers/react_loop_fixtures.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import { createStubExecutor, createStubToolRegistry } from "../helpers/react_loop_fixtures.ts";
 
 /** Provider that captures every prompt it is sent and replays scripted responses. */
 class CapturingMockProvider implements IModelProvider {
@@ -72,31 +72,14 @@ const testOptions: IAgentExecutionOptions = {
 const READ_RESULT_DATA = "port=1234 host=localhost";
 
 function buildExecutor(toolResults: Record<string, { success: boolean; data?: string; error?: string }>) {
-  return {
-    logAgentOutput: async () => {
-      await Promise.resolve();
-    },
-    validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
-    parseAgentResponse: (response: string, context: IExecutionContext, startTime: number): IChangesetResult => ({
-      branch: `feat/${context.portal || "test"}`,
-      commit_sha: "0000000000000000000000000000000000000000",
-      files_changed: [],
-      description: response,
-      tool_calls: 0,
-      execution_time_ms: Date.now() - startTime,
-    }),
-    logGeneration: async () => {
-      await Promise.resolve();
-    },
-    toolRegistry: {
-      execute: async (tool: string, _params: TestToolParams) => {
+  return createStubExecutor({
+    toolRegistry: createStubToolRegistry({
+      execute: async (tool: string) => {
         await Promise.resolve();
         return toolResults[tool] ?? { success: false, error: `Unknown tool: ${tool}` };
       },
-      getTools: () => [],
-      getBaseDir: () => "/nonexistent-test-basedir",
-    },
-  } as ReActExecutor;
+    }),
+  });
 }
 
 const READ_ACTION_RESPONSE = `${REACT_THOUGHT_PREFIX}I need to read the config first.
