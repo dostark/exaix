@@ -26,7 +26,7 @@ export interface IExecutorContext {
   runnerIndex?: Opt<number, Reason.OptionalContext>;
 }
 
-export interface IExecutorResult {
+interface IExecutorResult {
   content: string;
   confidence?: number;
 }

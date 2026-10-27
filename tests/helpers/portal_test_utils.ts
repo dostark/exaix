@@ -26,7 +26,6 @@ import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { Opt, Reason } from "@exaix/core/types";
 import { withCliProcessMutex } from "./cli_process_mutex.ts";
 
-export type { IPortalGitRepoSetup } from "@exaix/git/testing";
 export { setupPortalGitRepos } from "@exaix/git/testing";
 
 export interface IPortalTestSetup {

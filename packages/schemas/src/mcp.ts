@@ -249,30 +249,7 @@ export type MCPContent = z.infer<typeof MCPContentSchema>;
 export type MCPToolResponse = z.infer<typeof MCPToolResponseSchema>;
 // MCP Resource Schemas
 
-const MCPResourceSchema = z.object({
-  uri: z.string().startsWith("portal://", "URI must start with portal://"),
-  name: z.string(),
-  mimeType: z.string().optional(),
-  description: z.string().optional(),
-});
-
-export type IMCPResource = z.infer<typeof MCPResourceSchema>;
-
 // MCP Prompt Schemas
-
-const MCPPromptArgumentSchema = z.object({
-  name: z.string(),
-  description: z.string().optional(),
-  required: z.boolean().optional(),
-});
-
-const MCPPromptSchema = z.object({
-  name: z.string(),
-  description: z.string().optional(),
-  arguments: z.array(MCPPromptArgumentSchema).optional(),
-});
-
-export type IMCPPrompt = z.infer<typeof MCPPromptSchema>;
 
 // MCP Tool Definition Schema
 

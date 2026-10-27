@@ -16,7 +16,7 @@ import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import { setupGitRepo } from "./git_test_helper.ts";
 
-export interface IPortalGitRepoSetup {
+interface IPortalGitRepoSetup {
   tempDir: string;
   portalRepoDir: string;
   workspaceRepoDir: string;
