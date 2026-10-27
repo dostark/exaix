@@ -1087,12 +1087,15 @@
     "duplicate-code": {
       "level": "error",
       "options": {
+        "baseline": "packages/lint-policy/duplication_baseline.json",
+        "crossGroups": true,
         "groups": [
           {
             "name": "source",
             "paths": ["packages/", "apps/", "scripts/", "unslop-ts/"],
             "ignore": ["**/*.d.ts", "**/*.md", "**/tests/**", "**/tests_node/**", "**/node_modules/**", "**/dist/**"],
-            "threshold": 1.3
+            "pattern": "**/*.{ts,tsx,js,mjs,cjs}",
+            "threshold": 1.2
           },
           {
             "name": "tests",
@@ -1112,7 +1115,16 @@
           {
             "name": "integration-tests",
             "paths": ["tests/integration", "tests/scenario_framework"],
-            "ignore": ["**/*.d.ts", "**/*.md", "**/*.yaml", "**/*.yml", "**/*.toml", "**/fixtures/portals/**"],
+            "ignore": [
+              "**/*.d.ts",
+              "**/*.md",
+              "**/*.yaml",
+              "**/*.yml",
+              "**/*.toml",
+              "**/fixtures/portals/**",
+              "**/node_modules/**",
+              "**/dist/**"
+            ],
             "minLines": 10,
             "threshold": 2.5
           },
@@ -1120,7 +1132,8 @@
             "name": "team-source",
             "paths": ["exaix-team/"],
             "ignore": ["**/*.d.ts", "**/*.md", "**/tests/**", "**/tests_node/**", "**/node_modules/**", "**/dist/**"],
-            "threshold": 1.3
+            "pattern": "**/*.{ts,tsx,js,mjs,cjs}",
+            "threshold": 1.2
           },
           {
             "name": "team-tests",

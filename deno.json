@@ -359,6 +359,9 @@
       "packages/",
       "exaix-team/",
       "apps/"
+    ],
+    "exclude": [
+      "packages/lint-policy/duplication_baseline.json"
     ]
   },
   "test": {
