@@ -463,23 +463,13 @@ Deno.test("[PortalKnowledgeService] getOrAnalyze triggers async background re-an
 Deno.test(
   "[PortalKnowledgeService] getOrAnalyze analyzes synchronously when missing",
   { sanitizeOps: false, sanitizeResources: false },
-  async () => {
-    const tempDir = await makeTempPortal();
-    try {
-      const svc = new PortalKnowledgeService({
-        config: makeConfig({ useLlmInference: false }),
-        memoryBank: makeMockMemoryBank(),
-
-        runner: makeMockDocRunner(),
-      });
+  () =>
+    withPortalService({ useLlmInference: false }, async ({ svc, tempDir }) => {
       // No prior analyze — should run synchronously
       const result = await svc.getOrAnalyze("new-portal", tempDir);
       assertExists(result.gatheredAt);
       assertEquals(result.portal, "new-portal");
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
-  },
+    }),
 );
 
 Deno.test("[PortalKnowledgeService] logs portal.analyzed activity", async () => {
@@ -571,83 +561,86 @@ Deno.test("[PortalKnowledgeService] getRelevantContext falls back to undefined w
   });
 });
 
-Deno.test("[PortalKnowledgeService] indexPortalKnowledge then getRelevantContext returns chunks", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+/** What a test gets from {@link withEmbeddingService}. */
+interface IEmbeddingScenario {
+  svc: PortalKnowledgeService;
+  tempDir: string;
+  /** How many times the mock embedding provider has been called. */
+  embedCalls: () => number;
+}
+
+/** Runs a body against a service that uses a mock embedding provider, inside a fresh temp directory. */
+async function withEmbeddingService(
+  embeddingEnabled: boolean,
+  body: (scenario: IEmbeddingScenario) => Promise<void>,
+): Promise<void> {
+  await withTempDir(async (tempDir) => {
     const projectsDir = join(tempDir, DEFAULT_MEMORY_PROJECTS_DIR);
     await ensureDir(projectsDir);
-
+    let calls = 0;
     const mockEmbedder: IEmbeddingProvider = {
       providerId: "test-mock",
       dimension: 2,
       embed: (texts: string[]) => {
+        calls++;
         return Promise.resolve(texts.map((t, i) => [i + 1, t.length]));
       },
     };
-
     const svc = new PortalKnowledgeService({
-      config: makeConfig({ relevanceSearchEmbeddingEnabled: true }),
-      memoryBank: null as never,
-      runner: makeMockDocRunner(),
-      embeddingProvider: mockEmbedder,
-      createVectorIndex: () => new HnswVectorIndex(),
-      projectsDir,
-    });
-    const portalDir = join(tempDir, "test-portal");
-    await ensureDir(portalDir);
-    await Deno.writeTextFile(join(portalDir, "main.ts"), "export const x = 1;");
-
-    // Build a minimal IPortalKnowledge via the service's analyze, then override fields
-    const baseKnowledge = await svc.analyze("test-portal", portalDir);
-
-    const knowledge = {
-      ...baseKnowledge,
-      portal: "test-portal",
-      architectureOverview:
-        "This is a test portal architecture. It uses TypeScript. The main module exports constants.",
-      keyFiles: [{ description: "Entry point for the application", path: "main.ts", role: "entrypoint" as const }],
-      conventions: [{
-        name: "use-const",
-        description: "Always use const for variables",
-        category: "naming" as const,
-        examples: [],
-        evidenceCount: 1,
-        confidence: "low" as const,
-      }],
-    };
-
-    await svc.indexPortalKnowledge("test-portal", knowledge);
-
-    // Query with a related text
-    const result = await svc.getRelevantContext("TypeScript architecture constants export", portalDir, 5000);
-    assert(result, "getRelevantContext should return a result after indexing");
-    assert(result.length > 0, "context string should not be empty");
-    assert(result.includes("TypeScript"), "context should contain relevant content");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
-});
-
-Deno.test("[PortalKnowledgeService] analyze() indexes for retrieval automatically, with no manual indexPortalKnowledge call", async () => {
-  await withTempDir(async (tempDir) => {
-    const projectsDir = join(tempDir, DEFAULT_MEMORY_PROJECTS_DIR);
-    await ensureDir(projectsDir);
-
-    const mockEmbedder: IEmbeddingProvider = {
-      providerId: "test-mock",
-      dimension: 2,
-      embed: (texts: string[]) => Promise.resolve(texts.map((t, i) => [i + 1, t.length])),
-    };
-
-    const svc = new PortalKnowledgeService({
-      config: makeConfig({ relevanceSearchEmbeddingEnabled: true }),
+      config: makeConfig(embeddingEnabled ? { relevanceSearchEmbeddingEnabled: true } : {}),
       memoryBank: makeMockMemoryBank(),
       runner: makeMockDocRunner(),
       embeddingProvider: mockEmbedder,
       createVectorIndex: () => new HnswVectorIndex(),
       projectsDir,
     });
+    await body({ svc, tempDir, embedCalls: () => calls });
+  });
+}
 
+/** Writes a one-file portal under the temp directory, analyzes it, indexes it with the overrides, and returns its directory. */
+async function indexSmallPortal(
+  { svc, tempDir }: IEmbeddingScenario,
+  portal: { name: string; file: string; source: string },
+  overrides: Partial<Parameters<PortalKnowledgeService["indexPortalKnowledge"]>[1]>,
+): Promise<string> {
+  const portalDir = join(tempDir, portal.name);
+  await ensureDir(portalDir);
+  await Deno.writeTextFile(join(portalDir, portal.file), portal.source);
+  const base = await svc.analyze(portal.name, portalDir);
+  await svc.indexPortalKnowledge(portal.name, { ...base, portal: portal.name, ...overrides });
+  return portalDir;
+}
+
+Deno.test("[PortalKnowledgeService] indexPortalKnowledge then getRelevantContext returns chunks", () =>
+  withEmbeddingService(true, async (scenario) => {
+    const portalDir = await indexSmallPortal(
+      scenario,
+      { name: "test-portal", file: "main.ts", source: "export const x = 1;" },
+      {
+        architectureOverview:
+          "This is a test portal architecture. It uses TypeScript. The main module exports constants.",
+        keyFiles: [{ description: "Entry point for the application", path: "main.ts", role: "entrypoint" as const }],
+        conventions: [{
+          name: "use-const",
+          description: "Always use const for variables",
+          category: "naming" as const,
+          examples: [],
+          evidenceCount: 1,
+          confidence: "low" as const,
+        }],
+      },
+    );
+
+    // Query with a related text
+    const result = await scenario.svc.getRelevantContext("TypeScript architecture constants export", portalDir, 5000);
+    assert(result, "getRelevantContext should return a result after indexing");
+    assert(result.length > 0, "context string should not be empty");
+    assert(result.includes("TypeScript"), "context should contain relevant content");
+  }));
+
+Deno.test("[PortalKnowledgeService] analyze() indexes for retrieval automatically, with no manual indexPortalKnowledge call", () =>
+  withEmbeddingService(true, async ({ svc }) => {
     const portalDir = await makeTempPortal();
     try {
       // Only analyze() is called — indexPortalKnowledge must fire as a side effect of it.
@@ -658,139 +651,56 @@ Deno.test("[PortalKnowledgeService] analyze() indexes for retrieval automaticall
     } finally {
       await Deno.remove(portalDir, { recursive: true });
     }
-  });
-});
+  }));
 
-Deno.test("[PortalKnowledgeService] indexPortalKnowledge does not call the embedding provider when relevanceSearchEmbeddingEnabled is false", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
-    const projectsDir = join(tempDir, DEFAULT_MEMORY_PROJECTS_DIR);
-    await ensureDir(projectsDir);
-
-    let embedCalls = 0;
-    const mockEmbedder: IEmbeddingProvider = {
-      providerId: "test-mock",
-      dimension: 2,
-      embed: (texts: string[]) => {
-        embedCalls++;
-        return Promise.resolve(texts.map((t, i) => [i + 1, t.length]));
-      },
-    };
-
-    const svc = new PortalKnowledgeService({
-      // relevanceSearchEmbeddingEnabled defaults to false in makeConfig() — a provider
-      // being configured must not be enough to trigger embedding calls on its own,
-      // otherwise the opt-in flag (cost/privacy-motivated) has no effect.
-      config: makeConfig(),
-      memoryBank: makeMockMemoryBank(),
-      runner: makeMockDocRunner(),
-      embeddingProvider: mockEmbedder,
-      createVectorIndex: () => new HnswVectorIndex(),
-      projectsDir,
-    });
-
+Deno.test("[PortalKnowledgeService] indexPortalKnowledge does not call the embedding provider when relevanceSearchEmbeddingEnabled is false", () =>
+  // A provider being configured must not be enough to trigger embedding calls on its own,
+  // otherwise the opt-in flag (cost/privacy-motivated) has no effect.
+  withEmbeddingService(false, async ({ svc, embedCalls }) => {
     const portalDir = await makeTempPortal();
     try {
       await svc.analyze("no-embed-portal", portalDir, PortalAnalysisMode.QUICK);
-      assertEquals(embedCalls, 0, "embedding provider must not be called while the flag is off");
+      assertEquals(embedCalls(), 0, "embedding provider must not be called while the flag is off");
     } finally {
       await Deno.remove(portalDir, { recursive: true });
     }
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
-});
+  }));
 
-Deno.test("[PortalKnowledgeService] getRelevantContext respects maxTokens limit", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
-    const projectsDir = join(tempDir, DEFAULT_MEMORY_PROJECTS_DIR);
-    await ensureDir(projectsDir);
-
-    const mockEmbedder: IEmbeddingProvider = {
-      providerId: "test-mock",
-      dimension: 2,
-      embed: (texts: string[]) => {
-        return Promise.resolve(texts.map((t, i) => [i + 1, t.length]));
+Deno.test("[PortalKnowledgeService] getRelevantContext respects maxTokens limit", () =>
+  withEmbeddingService(true, async (scenario) => {
+    const portalDir = await indexSmallPortal(
+      scenario,
+      { name: "test-portal-2", file: "app.ts", source: "export const y = 2;" },
+      {
+        architectureOverview:
+          "This is a test portal architecture overview with significant content. It describes the system in detail. There is a lot of information here that should be chunked into pieces. Each sentence adds meaningful context that an LLM could use for relevance matching.",
       },
-    };
-
-    const svc = new PortalKnowledgeService({
-      config: makeConfig({ relevanceSearchEmbeddingEnabled: true }),
-      memoryBank: null as never,
-      runner: makeMockDocRunner(),
-      embeddingProvider: mockEmbedder,
-      createVectorIndex: () => new HnswVectorIndex(),
-      projectsDir,
-    });
-    const portalDir2 = join(tempDir, "test-portal-2");
-    await ensureDir(portalDir2);
-    await Deno.writeTextFile(join(portalDir2, "app.ts"), "export const y = 2;");
-
-    const baseKnowledge2 = await svc.analyze("test-portal-2", portalDir2);
-
-    const knowledge = {
-      ...baseKnowledge2,
-      portal: "test-portal-2",
-      architectureOverview:
-        "This is a test portal architecture overview with significant content. It describes the system in detail. There is a lot of information here that should be chunked into pieces. Each sentence adds meaningful context that an LLM could use for relevance matching.",
-    };
-
-    await svc.indexPortalKnowledge("test-portal-2", knowledge);
+    );
 
     // Query with very low maxTokens to force truncation
-    const result = await svc.getRelevantContext("architecture", portalDir2, 1);
+    const result = await scenario.svc.getRelevantContext("architecture", portalDir, 1);
     // Should either be undefined (no chunk fits) or a short string
     if (result) {
       assert(result.length < 100, "result with maxTokens=1 should be very short");
     }
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
-});
+  }));
 
-Deno.test("[PortalKnowledgeService] overlapping sentence groups provide broader context", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
-    const projectsDir = join(tempDir, DEFAULT_MEMORY_PROJECTS_DIR);
-    await ensureDir(projectsDir);
-
-    const mockEmbedder: IEmbeddingProvider = {
-      providerId: "test-mock",
-      dimension: 2,
-      embed: (texts: string[]) => {
-        return Promise.resolve(texts.map((t, i) => [i + 1, t.length]));
+Deno.test("[PortalKnowledgeService] overlapping sentence groups provide broader context", () =>
+  withEmbeddingService(true, async (scenario) => {
+    const portalDir = await indexSmallPortal(
+      scenario,
+      { name: "test-portal", file: "main.ts", source: "export const x = 1;" },
+      {
+        architectureOverview:
+          "The auth module handles user login. It uses JWT tokens for sessions. Tokens expire after 24 hours. " +
+          "The database stores user credentials. Passwords are hashed with bcrypt.",
+        keyFiles: [],
+        conventions: [],
       },
-    };
-
-    const svc = new PortalKnowledgeService({
-      config: makeConfig({ relevanceSearchEmbeddingEnabled: true }),
-      memoryBank: null as never,
-      runner: makeMockDocRunner(),
-      embeddingProvider: mockEmbedder,
-      createVectorIndex: () => new HnswVectorIndex(),
-      projectsDir,
-    });
-
-    const portalDir = join(tempDir, "test-portal");
-    await ensureDir(portalDir);
-    await Deno.writeTextFile(join(portalDir, "main.ts"), "export const x = 1;");
-
-    const baseKnowledge = await svc.analyze("test-portal", portalDir);
-    const knowledge = {
-      ...baseKnowledge,
-      portal: "test-portal",
-      architectureOverview:
-        "The auth module handles user login. It uses JWT tokens for sessions. Tokens expire after 24 hours. " +
-        "The database stores user credentials. Passwords are hashed with bcrypt.",
-      keyFiles: [],
-      conventions: [],
-    };
-
-    await svc.indexPortalKnowledge("test-portal", knowledge);
+    );
 
     // Query for a detail that appears late in the text
-    const result = await svc.getRelevantContext("bcrypt password hashing", portalDir, 5000);
+    const result = await scenario.svc.getRelevantContext("bcrypt password hashing", portalDir, 5000);
     assert(result, "should return context for bcrypt query");
     // With overlapping groups, the chunk containing "bcrypt" should also
     // contain its preceding sentence for context
@@ -798,10 +708,7 @@ Deno.test("[PortalKnowledgeService] overlapping sentence groups provide broader 
       result.includes("database stores user credentials"),
       "overlapping group should include preceding sentence for context",
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
-});
+  }));
 
 // language-aware source-file selection
 
@@ -994,34 +901,50 @@ Deno.test("[PortalKnowledgeService] metadata.symbolSourceFilesScanned equals TS/
   }
 });
 
+/** The constructor options of the service. */
+type TServiceOptions = ConstructorParameters<typeof PortalKnowledgeService>[0];
+
+/** An invalidation strategy that always asks for an incremental re-analysis. */
+const INCREMENTAL_INVALIDATION: IKnowledgeInvalidationStrategy = {
+  check: () =>
+    Promise.resolve({
+      isValid: false,
+      reason: KnowledgeValidityReason.TIME_TTL,
+      analysisMode: KnowledgeAnalysisMode.INCREMENTAL,
+    }),
+};
+
+/** Runs a body against a service that has the given config, over a temp portal that is removed afterwards. */
+async function withPortalService(
+  configOverrides: NonNullable<Parameters<typeof makeConfig>[0]>,
+  body: (scenario: { svc: PortalKnowledgeService; tempDir: string }) => Promise<void>,
+  extraOptions: Partial<TServiceOptions> = {},
+): Promise<void> {
+  const tempDir = await makeTempPortal();
+  try {
+    const svc = new PortalKnowledgeService({
+      config: makeConfig(configOverrides),
+      memoryBank: makeMockMemoryBank(),
+      runner: makeMockDocRunner(),
+      ...extraOptions,
+    });
+    await body({ svc, tempDir });
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+}
+
 // Incremental re-analysis merge semantics
 
 Deno.test(
   "[PortalKnowledgeService] incremental re-analysis preserves gitHistory from prior full analysis",
   { sanitizeOps: false, sanitizeResources: false },
-  async () => {
-    const tempDir = await makeTempPortal();
-    try {
-      const mockStrategy: IKnowledgeInvalidationStrategy = {
-        check: () =>
-          Promise.resolve({
-            isValid: false,
-            reason: KnowledgeValidityReason.TIME_TTL,
-            analysisMode: KnowledgeAnalysisMode.INCREMENTAL,
-          }),
-      };
-      const svc = new PortalKnowledgeService({
-        config: makeConfig({
-          useLlmInference: false,
-          enableAstAnalysis: false,
-          enableGitHistoryAnalysis: true,
-        }),
-        memoryBank: makeMockMemoryBank(),
-
-        runner: makeMockDocRunner(),
-        invalidationStrategy: mockStrategy,
-      });
-
+  () =>
+    withPortalService({
+      useLlmInference: false,
+      enableAstAnalysis: false,
+      enableGitHistoryAnalysis: true,
+    }, async ({ svc, tempDir }) => {
       // Full STANDARD analysis — populates gitHistory (empty values for non-git dir)
       const full = await svc.analyze("merge-git-portal", tempDir, PortalAnalysisMode.STANDARD);
       assertExists(full.gitHistory, "Full analysis should populate gitHistory");
@@ -1036,38 +959,18 @@ Deno.test(
         merged.gitHistory,
         "Incremental re-analysis must preserve gitHistory from prior full analysis",
       );
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
-  },
+    }, { invalidationStrategy: INCREMENTAL_INVALIDATION }),
 );
 
 Deno.test(
   "[PortalKnowledgeService] incremental re-analysis preserves licenses from prior full analysis",
   { sanitizeOps: false, sanitizeResources: false },
-  async () => {
-    const tempDir = await makeTempPortal();
-    try {
-      const mockStrategy: IKnowledgeInvalidationStrategy = {
-        check: () =>
-          Promise.resolve({
-            isValid: false,
-            reason: KnowledgeValidityReason.TIME_TTL,
-            analysisMode: KnowledgeAnalysisMode.INCREMENTAL,
-          }),
-      };
-      const svc = new PortalKnowledgeService({
-        config: makeConfig({
-          useLlmInference: false,
-          enableAstAnalysis: false,
-          enableGitHistoryAnalysis: false,
-        }),
-        memoryBank: makeMockMemoryBank(),
-
-        runner: makeMockDocRunner(),
-        invalidationStrategy: mockStrategy,
-      });
-
+  () =>
+    withPortalService({
+      useLlmInference: false,
+      enableAstAnalysis: false,
+      enableGitHistoryAnalysis: false,
+    }, async ({ svc, tempDir }) => {
       // Full STANDARD analysis — runs license detection (returns [] for temp dir)
       const full = await svc.analyze("merge-lic-portal", tempDir, PortalAnalysisMode.STANDARD);
       // licenses is populated (may be empty array) in standard mode
@@ -1084,10 +987,7 @@ Deno.test(
         true,
         "Incremental re-analysis must preserve licenses from prior full analysis",
       );
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
-  },
+    }, { invalidationStrategy: INCREMENTAL_INVALIDATION }),
 );
 
 // Mode-gating tests for strategies 7-11
@@ -1114,135 +1014,78 @@ Deno.test("[PortalKnowledgeService] quick mode produces no new strategy fields",
 
 Deno.test(
   "[PortalKnowledgeService] standard mode populates licenses and gitHistory (strategies 9 + 11)",
-  async () => {
-    const tempDir = await makeTempPortal();
-    try {
-      const svc = new PortalKnowledgeService({
-        config: makeConfig({
-          useLlmInference: false,
-          enableAstAnalysis: false,
-          enableTestExecution: false,
-          enableVulnerabilityScan: false,
-          enableGitHistoryAnalysis: true,
-        }),
-        memoryBank: makeMockMemoryBank(),
-
-        runner: makeMockDocRunner(),
-      });
+  () =>
+    withPortalService({
+      useLlmInference: false,
+      enableAstAnalysis: false,
+      enableTestExecution: false,
+      enableVulnerabilityScan: false,
+      enableGitHistoryAnalysis: true,
+    }, async ({ svc, tempDir }) => {
       const result = await svc.analyze("gate-std", tempDir, PortalAnalysisMode.STANDARD);
       assertEquals(Array.isArray(result.licenses), true, "standard mode must run strategy 9 (licenses)");
       assertEquals(result.gitHistory !== undefined, true, "standard mode must run strategy 11 (gitHistory)");
       assertEquals(result.testInfo, undefined, "standard mode must NOT run strategy 8 (deep only)");
       assertEquals(result.vulnerabilities, undefined, "standard mode must NOT run strategy 10 (deep only)");
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
-  },
+    }),
 );
 
 Deno.test(
   "[PortalKnowledgeService] enableAstAnalysis=false skips strategy 7 in standard mode",
-  async () => {
-    const tempDir = await makeTempPortal();
-    try {
-      const svc = new PortalKnowledgeService({
-        config: makeConfig({ useLlmInference: false, enableAstAnalysis: false }),
-        memoryBank: makeMockMemoryBank(),
-
-        runner: makeMockDocRunner(),
-      });
+  () =>
+    withPortalService({ useLlmInference: false, enableAstAnalysis: false }, async ({ svc, tempDir }) => {
       const result = await svc.analyze("gate-noast", tempDir, PortalAnalysisMode.STANDARD);
       assertEquals(result.astDiagnostics, undefined, "enableAstAnalysis=false must skip strategy 7");
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
-  },
+    }),
 );
 
 Deno.test(
   "[PortalKnowledgeService] enableGitHistoryAnalysis=false skips strategy 11 in standard mode",
-  async () => {
-    const tempDir = await makeTempPortal();
-    try {
-      const svc = new PortalKnowledgeService({
-        config: makeConfig({ useLlmInference: false, enableGitHistoryAnalysis: false }),
-        memoryBank: makeMockMemoryBank(),
-
-        runner: makeMockDocRunner(),
-      });
+  () =>
+    withPortalService({ useLlmInference: false, enableGitHistoryAnalysis: false }, async ({ svc, tempDir }) => {
       const result = await svc.analyze("gate-nogit", tempDir, PortalAnalysisMode.STANDARD);
       assertEquals(result.gitHistory, undefined, "enableGitHistoryAnalysis=false must skip strategy 11");
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
-  },
+    }),
 );
 
 Deno.test(
   "[PortalKnowledgeService] enableTestExecution=false skips strategy 8 in deep mode",
-  async () => {
-    const tempDir = await makeTempPortal();
-    try {
-      const svc = new PortalKnowledgeService({
-        config: makeConfig({
-          useLlmInference: false,
-          enableAstAnalysis: false,
-          enableGitHistoryAnalysis: false,
-          enableTestExecution: false,
-          enableVulnerabilityScan: false,
-        }),
-        memoryBank: makeMockMemoryBank(),
-
-        runner: makeMockDocRunner(),
-      });
+  () =>
+    withPortalService({
+      useLlmInference: false,
+      enableAstAnalysis: false,
+      enableGitHistoryAnalysis: false,
+      enableTestExecution: false,
+      enableVulnerabilityScan: false,
+    }, async ({ svc, tempDir }) => {
       const result = await svc.analyze("gate-notest", tempDir, PortalAnalysisMode.DEEP);
       assertEquals(result.testInfo, undefined, "enableTestExecution=false must skip strategy 8");
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
-  },
+    }),
 );
 
 Deno.test(
   "[PortalKnowledgeService] enableVulnerabilityScan=false skips strategy 10 in deep mode",
-  async () => {
-    const tempDir = await makeTempPortal();
-    try {
-      const svc = new PortalKnowledgeService({
-        config: makeConfig({
-          useLlmInference: false,
-          enableAstAnalysis: false,
-          enableGitHistoryAnalysis: false,
-          enableTestExecution: false,
-          enableVulnerabilityScan: false,
-        }),
-        memoryBank: makeMockMemoryBank(),
-
-        runner: makeMockDocRunner(),
-      });
+  () =>
+    withPortalService({
+      useLlmInference: false,
+      enableAstAnalysis: false,
+      enableGitHistoryAnalysis: false,
+      enableTestExecution: false,
+      enableVulnerabilityScan: false,
+    }, async ({ svc, tempDir }) => {
       const result = await svc.analyze("gate-novuln", tempDir, PortalAnalysisMode.DEEP);
       assertEquals(result.vulnerabilities, undefined, "enableVulnerabilityScan=false must skip strategy 10");
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
-  },
+    }),
 );
 
 Deno.test(
   "[PortalKnowledgeService] standard mode runs strategies 7, 9, 11 but not 8 or 10",
-  async () => {
-    const tempDir = await makeTempPortal();
-    try {
-      const svc = new PortalKnowledgeService({
-        config: makeConfig({
-          useLlmInference: false,
-          enableAstAnalysis: true,
-          enableGitHistoryAnalysis: true,
-        }),
-        memoryBank: makeMockMemoryBank(),
-
-        runner: makeMockDocRunner(),
-      });
+  () =>
+    withPortalService({
+      useLlmInference: false,
+      enableAstAnalysis: true,
+      enableGitHistoryAnalysis: true,
+    }, async ({ svc, tempDir }) => {
       const result = await svc.analyze("gate-all-std", tempDir, PortalAnalysisMode.STANDARD);
       assertEquals(
         result.astDiagnostics !== undefined,
@@ -1257,29 +1100,19 @@ Deno.test(
       );
       assertEquals(result.testInfo, undefined, "standard mode must NOT run strategy 8 (deep only)");
       assertEquals(result.vulnerabilities, undefined, "standard mode must NOT run strategy 10 (deep only)");
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
-  },
+    }),
 );
 
 Deno.test(
   "[PortalKnowledgeService] deep mode runs all 11 strategies when all flags enabled",
-  async () => {
-    const tempDir = await makeTempPortal();
-    try {
-      const svc = new PortalKnowledgeService({
-        config: makeConfig({
-          useLlmInference: false,
-          enableAstAnalysis: true,
-          enableTestExecution: true,
-          enableVulnerabilityScan: true,
-          enableGitHistoryAnalysis: true,
-        }),
-        memoryBank: makeMockMemoryBank(),
-
-        runner: makeMockDocRunner(),
-      });
+  () =>
+    withPortalService({
+      useLlmInference: false,
+      enableAstAnalysis: true,
+      enableTestExecution: true,
+      enableVulnerabilityScan: true,
+      enableGitHistoryAnalysis: true,
+    }, async ({ svc, tempDir }) => {
       const result = await svc.analyze("gate-all-deep", tempDir, PortalAnalysisMode.DEEP);
       assertEquals(
         result.astDiagnostics !== undefined,
@@ -1298,8 +1131,5 @@ Deno.test(
         true,
         "deep mode must run strategy 11 with enableGitHistoryAnalysis=true",
       );
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
-  },
+    }),
 );
