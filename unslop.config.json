@@ -1096,15 +1096,15 @@
           },
           {
             "name": "tests",
-            "paths": ["tests/"],
-            "ignore": ["**/*.d.ts", "**/*.md", "tests/integration/**", "tests/scenario_framework/**"],
-            "minLines": 10,
-            "threshold": 1.6
-          },
-          {
-            "name": "nested-tests",
-            "paths": ["packages/", "apps/", "scripts/", "unslop-ts/"],
-            "ignore": ["**/*.d.ts", "**/*.md", "**/node_modules/**", "**/dist/**"],
+            "paths": ["tests/", "packages/", "apps/", "scripts/", "unslop-ts/"],
+            "ignore": [
+              "**/*.d.ts",
+              "**/*.md",
+              "**/node_modules/**",
+              "**/dist/**",
+              "tests/integration/**",
+              "tests/scenario_framework/**"
+            ],
             "pattern": "**/{tests,tests_node}/**/*.ts",
             "minLines": 10,
             "threshold": 5.0
