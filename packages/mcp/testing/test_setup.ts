@@ -271,6 +271,21 @@ export async function initMCPTest(
   };
 }
 
+/**
+ * Run a body against a started MCP server with a portal, then always clean up.
+ */
+export async function withMCPTest(
+  options: IPortalTestOptions,
+  run: (ctx: IMCPTestContext) => Promise<void>,
+): Promise<void> {
+  const ctx = await initMCPTest(options);
+  try {
+    await run(ctx);
+  } finally {
+    await ctx.cleanup();
+  }
+}
+
 export async function initToolPermissionTest(
   options: IToolPermissionOptions = {},
 ): Promise<IToolPermissionTestContext> {
