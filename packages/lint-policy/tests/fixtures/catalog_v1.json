@@ -165,10 +165,9 @@
         "Memory",
         "Workspace",
         "Portals",
-        "coverage",
+        "(^|/)coverage/",
         "exaix-dev-docs",
-        "exaix-enterprise",
-        "tests/scenario_framework"
+        "exaix-enterprise"
       ],
       "strictSkipPrefixes": [
         "packages/tui/",
@@ -181,7 +180,12 @@
       "strictSkipSegments": [
         "/commands/",
         "/handlers/"
-      ]
+      ],
+      "severity": {
+        "type": "warning",
+        "value": "error",
+        "parity": "warning"
+      }
     },
     "constantRestatement": {
       "constantModules": [
@@ -1139,9 +1143,9 @@
             "hint": "what didn't work"
           },
           {
-            "pattern": "§",
+            "pattern": "\u00a7",
             "flags": "",
-            "hint": "a document-section reference (§)"
+            "hint": "a document-section reference (\u00a7)"
           }
         ]
       },

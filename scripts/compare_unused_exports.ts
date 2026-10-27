@@ -24,6 +24,7 @@ interface IUnusedName {
 
 /** Names fallow reports in its JSON output. */
 function parseFallow(raw: string): IUnusedName[] {
+  // SAFETY: fallow emits this documented JSON shape and every field read below is optional and narrowed.
   const data = JSON.parse(raw) as {
     unused_exports?: Array<{ export_name: string; path: string }>;
     unused_types?: Array<{ export_name: string; path: string }>;

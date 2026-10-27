@@ -46,7 +46,9 @@ Deno.test("the embedded engine reads the whole-tree settings of the Exaix catalo
 });
 
 Deno.test("embedded_engine_accepts_compiled_consumer_policy", () => {
-  assertEquals(Object.keys(POLICY_COMPILED.rules).length, 62);
+  for (const id of Object.keys(POLICY_COMPILED.catalog.rules)) {
+    assertEquals(id in POLICY_COMPILED.rules, true, id);
+  }
   assertEquals(POLICY_COMPILED.rules["exaix/no-explicit-unknown"].engine, "plugin");
   assertEquals(POLICY_COMPILED.rules["duplicate-type"].command, ["deno", "task", "check:style"]);
   assertEquals(POLICY_COMPILED.catalog.rules["duplicate-constant"].limits !== undefined, true);

@@ -9,6 +9,7 @@
 
 import { assert, assertEquals, assertFalse, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
+import { POLICY_COMPILED } from "../src/policy_config.ts";
 import { checkRepository as checkConstantRestatement } from "../../../unslop-ts/src/rules/whole_tree/constant_restatement.ts";
 import { checkRepository as checkOptionalParams } from "../../../unslop-ts/src/rules/whole_tree/optional_params.ts";
 import { checkRepository as checkUnusedExports } from "../../../unslop-ts/src/rules/whole_tree/unused_exports.ts";
@@ -53,11 +54,20 @@ async function runTask(task: string, args: readonly string[]): Promise<ITaskResu
   };
 }
 
-Deno.test("exaix_unslop_cli_lists_60_rules_and_reports_a_seeded_violation", async () => {
+/** Assert the CLI lists exactly the compiled rule set, without a hard-coded count. */
+function assertListsCompiledRules(stdout: string): void {
+  const listed = (JSON.parse(stdout) as { rules: Array<{ id: string }> }).rules;
+  const ids = listed.map((rule) => rule.id);
+  assertEquals(ids.length, Object.keys(POLICY_COMPILED.rules).length);
+  for (const id of Object.keys(POLICY_COMPILED.rules)) {
+    assertEquals(ids.includes(id), true, id);
+  }
+}
+
+Deno.test("exaix_unslop_cli_lists_the_compiled_rules_and_reports_a_seeded_violation", async () => {
   const listed = await runTask("unslop", ["rules", "list", "--format=json"]);
   assertEquals(listed.code, 0, listed.stderr);
-  const rules = (JSON.parse(listed.stdout) as { rules: unknown[] }).rules;
-  assertEquals(rules.length, 60);
+  assertListsCompiledRules(listed.stdout);
 
   const fixture = join(REPO_ROOT, "scripts", ".report_fixture.ts");
   try {
@@ -205,7 +215,7 @@ Deno.test("configured_options_reach_four_whole_tree_sections", async () => {
 Deno.test("final_report_and_management_path", async () => {
   const listed = await runTask("unslop", ["rules", "list", "--format=json"]);
   assertEquals(listed.code, 0, listed.stderr);
-  assertEquals((JSON.parse(listed.stdout) as { rules: unknown[] }).rules.length, 60);
+  assertListsCompiledRules(listed.stdout);
   const config = await runTask("unslop", ["config", "print"]);
   assertEquals(config.code, 0, config.stderr);
   const parked = join(REPO_ROOT, "scripts", ".final_parked.ts");

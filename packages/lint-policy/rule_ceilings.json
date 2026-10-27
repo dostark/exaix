@@ -1,8 +1,8 @@
 {
   "exaix/require-safety-comment": {
     "apps/daemon": 28,
-    "apps/exactl": 190,
-    "apps/tui": 73,
+    "apps/exactl": 189,
+    "apps/tui": 72,
     "exaix-team": 64,
     "packages/ai": 51,
     "packages/ai-anthropic": 3,
@@ -31,7 +31,7 @@
     "packages/testing": 14,
     "packages/tool-runtime": 12,
     "packages/triggers": 3,
-    "packages/tui": 20,
+    "packages/tui": 16,
     "scripts": 53
   },
   "exaix/no-runtime-typeof": {
@@ -128,28 +128,28 @@
   "exaix/no-repeated-assert-call": {},
   "exaix/no-constant-substring-assert": {},
   "exaix/re-export-imported": {
-    "packages/ai": 2,
-    "packages/cli": 1,
+    "packages/ai": 0,
+    "packages/cli": 0,
     "packages/core": 21,
-    "packages/git": 1,
+    "packages/git": 0,
     "packages/mcp": 6,
     "packages/schemas": 2,
     "packages/session": 1,
     "scripts": 6
   },
   "exaix/import-placement": {
-    "packages/cli": 1,
-    "packages/git": 1
+    "packages/cli": 0,
+    "packages/git": 0
   },
   "exaix/exported-interface-placement": {
-    "exaix-team": 1,
-    "packages/ai-openai": 1,
-    "packages/core": 2,
-    "packages/execution": 13,
-    "packages/flow": 1,
-    "packages/git": 9,
-    "packages/lint-policy": 1,
-    "packages/schemas": 7
+    "exaix-team": 0,
+    "packages/ai-openai": 0,
+    "packages/core": 1,
+    "packages/execution": 7,
+    "packages/flow": 0,
+    "packages/git": 0,
+    "packages/lint-policy": 0,
+    "packages/schemas": 5
   },
   "exaix/magic-union-type": {
     "apps/daemon": 1,

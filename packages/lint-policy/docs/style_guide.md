@@ -156,7 +156,7 @@ version 1 snapshot stays at `../tests/fixtures/catalog_v1.json`.
 The version 2 policy gives every rule a status. Check `unslop.config.json` or the generated
 [style_rules.md](./style_rules.md) for the details of one rule.
 
-- **Plugin gates (`severity: error`):** `exaix/decorative-comment`, `exaix/dynamic-import`,
+- **Plugin gates (`severity: error`):** `exaix/barrel-only-reexports`, `exaix/decorative-comment`, `exaix/dynamic-import`,
   `exaix/ephemeral-filename`, `exaix/exported-interface-naming`, `exaix/ignore-needs-reason`,
   `exaix/import-boundaries`, `exaix/import-inside-statement`, `exaix/inline-type-import`,
   `exaix/max-cyclomatic-complexity`, `exaix/no-chained-type-assertions`, `exaix/no-forbidden-lint-ignore`,
@@ -169,7 +169,8 @@ The version 2 policy gives every rule a status. Check `unslop.config.json` or th
   `exaix/no-conditional-empty-object-spread`, `exaix/no-constant-substring-assert`,
   `exaix/no-explicit-unknown`, `exaix/no-interface-rename-on-import`, `exaix/no-object-parameters`,
   `exaix/no-repeated-assert-call`, `exaix/no-runtime-typeof`, `exaix/no-typeof-escape`,
-  `exaix/no-unsafe-dictionary`, `exaix/promise-response-return`, `exaix/re-export-imported`,
+  `exaix/no-unsafe-dictionary`, `exaix/prefer-named-imports`, `exaix/promise-response-return`,
+  `exaix/re-export-imported`,
   `exaix/require-optional-wrapper`, `exaix/require-safety-comment`, and
   `exaix/test-inline-multiline-fixture`.
 - **Script gates (`engine: script`, `severity: error`):** `duplicate-constant`, `duplicate-type`,
