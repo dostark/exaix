@@ -135,6 +135,39 @@ function createAdapter(
   );
 }
 
+/** A mock config whose only portal, `workspace`, runs steps in a worktree. */
+function worktreePortalConfig(root: string): Config {
+  return createMockConfig(root, {
+    portals: [{
+      alias: "workspace",
+      target_path: join(root, "portal"),
+      default_branch: "main",
+      execution_strategy: PortalExecutionStrategy.WORKTREE,
+      agents_allowed: ["*"],
+      operations: [],
+    }],
+  });
+}
+
+/** An adapter with a spy ReAct strategy and the given worktree coordinator, plus the `test-agent` blueprint. */
+async function spyAdapter(
+  dbService: Awaited<ReturnType<typeof initTestDbService>>,
+  config: Config,
+  coordinator: RecordingWorktreeCoordinator,
+): Promise<AgentComposerAdapter> {
+  const strategyRegistry = new StrategyRegistry();
+  registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
+  await writeBlueprint(dbService.tempDir, "test-agent");
+  return createAdapter(dbService.tempDir, {
+    config,
+    db: dbService.db,
+    logger: new EventLogger({ db: dbService.db }),
+    permissions: new PortalPermissionsService(config.portals!),
+    strategyRegistry,
+    worktreeCoordinator: coordinator,
+  });
+}
+
 dbTest(
   "AgentComposerAdapter.runWithStrategy: fails fast when construction dependencies are absent",
   async (dbService) => {
@@ -233,30 +266,9 @@ dbTest("AgentComposerAdapter.runWithStrategy: WORKTREE portal resolves through t
   const traceId = crypto.randomUUID();
   const worktreePath = pathBuilders.runtimePath(dbService.tempDir, "worktrees", "workspace", traceId);
   await initGitPortal(worktreePath);
-  const config: Config = createMockConfig(dbService.tempDir, {
-    portals: [{
-      alias: "workspace",
-      target_path: join(dbService.tempDir, "portal"),
-      default_branch: "main",
-      execution_strategy: PortalExecutionStrategy.WORKTREE,
-      agents_allowed: ["*"],
-      operations: [],
-    }],
-  });
+  const config = worktreePortalConfig(dbService.tempDir);
   const coordinator = new RecordingWorktreeCoordinator(worktreePath);
-  const logger = new EventLogger({ db: dbService.db });
-  const permissions = new PortalPermissionsService(config.portals!);
-  await writeBlueprint(dbService.tempDir, "test-agent");
-  const strategyRegistry = new StrategyRegistry();
-  registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
-  const adapter = createAdapter(dbService.tempDir, {
-    config,
-    db: dbService.db,
-    logger,
-    permissions,
-    strategyRegistry,
-    worktreeCoordinator: coordinator,
-  });
+  const adapter = await spyAdapter(dbService, config, coordinator);
 
   await adapter.runWithStrategy!(
     "test-agent",
@@ -298,19 +310,7 @@ dbTest(
       ],
     });
     const coordinator = new RecordingWorktreeCoordinator(join(dbService.tempDir, "unexpected-worktree"));
-    const logger = new EventLogger({ db: dbService.db });
-    const permissions = new PortalPermissionsService(config.portals!);
-    await writeBlueprint(dbService.tempDir, "test-agent");
-    const strategyRegistry = new StrategyRegistry();
-    registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
-    const adapter = createAdapter(dbService.tempDir, {
-      config,
-      db: dbService.db,
-      logger,
-      permissions,
-      strategyRegistry,
-      worktreeCoordinator: coordinator,
-    });
+    const adapter = await spyAdapter(dbService, config, coordinator);
 
     await adapter.runWithStrategy!(
       "test-agent",
@@ -333,30 +333,9 @@ dbTest(
     const traceId = crypto.randomUUID();
     const worktreePath = pathBuilders.runtimePath(dbService.tempDir, "worktrees", "workspace", traceId);
     await initGitPortal(worktreePath);
-    const config: Config = createMockConfig(dbService.tempDir, {
-      portals: [{
-        alias: "workspace",
-        target_path: join(dbService.tempDir, "portal"),
-        default_branch: "main",
-        execution_strategy: PortalExecutionStrategy.WORKTREE,
-        agents_allowed: ["*"],
-        operations: [],
-      }],
-    });
+    const config = worktreePortalConfig(dbService.tempDir);
     const coordinator = new RecordingWorktreeCoordinator(worktreePath);
-    const logger = new EventLogger({ db: dbService.db });
-    const permissions = new PortalPermissionsService(config.portals!);
-    await writeBlueprint(dbService.tempDir, "test-agent");
-    const strategyRegistry = new StrategyRegistry();
-    registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
-    const adapter = createAdapter(dbService.tempDir, {
-      config,
-      db: dbService.db,
-      logger,
-      permissions,
-      strategyRegistry,
-      worktreeCoordinator: coordinator,
-    });
+    const adapter = await spyAdapter(dbService, config, coordinator);
 
     await adapter.runWithStrategy!(
       "test-agent",
@@ -379,33 +358,12 @@ dbTest(
 dbTest(
   "AgentComposerAdapter.runWithStrategy: worktree setup failures propagate without fallback",
   async (dbService) => {
-    const config: Config = createMockConfig(dbService.tempDir, {
-      portals: [{
-        alias: "workspace",
-        target_path: join(dbService.tempDir, "portal"),
-        default_branch: "main",
-        execution_strategy: PortalExecutionStrategy.WORKTREE,
-        agents_allowed: ["*"],
-        operations: [],
-      }],
-    });
+    const config = worktreePortalConfig(dbService.tempDir);
     const coordinator = new RecordingWorktreeCoordinator(
       join(dbService.tempDir, "failed-worktree"),
       new Error("worktree setup failed"),
     );
-    const logger = new EventLogger({ db: dbService.db });
-    const permissions = new PortalPermissionsService(config.portals!);
-    await writeBlueprint(dbService.tempDir, "test-agent");
-    const strategyRegistry = new StrategyRegistry();
-    registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
-    const adapter = createAdapter(dbService.tempDir, {
-      config,
-      db: dbService.db,
-      logger,
-      permissions,
-      strategyRegistry,
-      worktreeCoordinator: coordinator,
-    });
+    const adapter = await spyAdapter(dbService, config, coordinator);
 
     await assertRejects(
       () =>

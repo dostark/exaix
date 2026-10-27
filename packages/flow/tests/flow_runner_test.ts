@@ -19,6 +19,7 @@ import {
   FlowRunner,
   type IAgentExecutor,
   type IFlowEventLogger,
+  type IFlowResult,
   type IFlowStepRequest,
 } from "@exaix/flow";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -146,6 +147,39 @@ class SequencedMockAgentRunner implements IAgentExecutor {
     }
 
     return await Promise.resolve(next);
+  }
+}
+
+/** A flow runner on a mock agent runner and a mock logger, returned so a test can inspect all three. */
+function makeRunner(...args: ConstructorParameters<typeof MockAgentRunner>) {
+  const mockAgentRunner = new MockAgentRunner(...args);
+  const mockLogger = new MockEventLogger();
+  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  return { mockAgentRunner, mockLogger, runner };
+}
+
+/** Runs `flow` against a mock agent runner that answers with `results`, and returns the flow result. */
+function runFlowWithAgents(
+  flow: IFlowInput,
+  results: ConstructorParameters<typeof MockAgentRunner>[0],
+  request: Parameters<FlowRunner["execute"]>[1],
+): Promise<IFlowResult> {
+  const runner = new FlowRunner({ agentExecutor: new MockAgentRunner(results), eventLogger: new MockEventLogger() });
+  return runner.execute(flow as IFlow, request);
+}
+
+/** Runs `flow` and asserts that it throws a FlowExecutionError whose message contains `messagePart`. */
+async function assertFlowExecutionError(flow: IFlowInput, messagePart: string, userPrompt = "test"): Promise<void> {
+  const runner = new FlowRunner({
+    agentExecutor: new MockAgentRunner({ "test-agent": "Should not reach here" }),
+    eventLogger: new MockEventLogger(),
+  });
+  try {
+    await runner.execute(flow as IFlow, { userPrompt });
+    throw new Error("Expected FlowExecutionError to be thrown");
+  } catch (error) {
+    assert(error instanceof FlowExecutionError);
+    assert((error as Error).message.includes(messagePart));
   }
 }
 
@@ -312,10 +346,7 @@ Deno.test("FlowRunner: executes simple sequential flow", async () => {
     agent2: { thought: "Thinking 2", content: "Result 2", raw: "raw result 2" },
   };
 
-  const mockAgentRunner = new MockAgentRunner(mockResults);
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { mockLogger, runner } = makeRunner(mockResults);
   const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
 
   assertEquals(result.flowRunId.length, 36); // UUID length
@@ -384,10 +415,7 @@ Deno.test("FlowRunner: executes parallel steps in same wave", async () => {
     agent3: { thought: "Parallel 2 thinking", content: "Parallel 2 result", raw: "raw parallel 2" },
   };
 
-  const mockAgentRunner = new MockAgentRunner(mockResults);
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { runner } = makeRunner(mockResults);
   const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
 
   assertEquals(result.stepResults.size, 3);
@@ -422,10 +450,7 @@ Deno.test("FlowRunner: handles failFast behavior", async () => {
     agent3: { thought: "Step 3 thinking", content: "Step 3 result", raw: "raw step 3" },
   };
 
-  const mockAgentRunner = new MockAgentRunner(mockResults, ["failing-agent"]);
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { runner } = makeRunner(mockResults, ["failing-agent"]);
 
   try {
     await runner.execute(flow as IFlow, { userPrompt: "test request" });
@@ -676,10 +701,7 @@ Deno.test("FlowRunner: continues execution when failFast is false", async () => 
     agent1: { thought: "Step 1 thinking", content: "Step 1 result", raw: "raw step 1" },
   };
 
-  const mockAgentRunner = new MockAgentRunner(mockResults, ["failing-agent"]);
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { runner } = makeRunner(mockResults, ["failing-agent"]);
   const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
 
   assertEquals(result.stepResults.size, 2);
@@ -730,10 +752,7 @@ Deno.test("FlowRunner: respects maxParallelism setting", async () => {
     agent5: { thought: "P4", content: "P4 result", raw: "raw p4" },
   };
 
-  const mockAgentRunner = new MockAgentRunner(mockResults);
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { runner } = makeRunner(mockResults);
   const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
 
   assertEquals(result.stepResults.size, 5);
@@ -755,10 +774,7 @@ Deno.test("FlowRunner: generates unique flowRunId", async () => {
     agent1: { thought: "Thinking", content: "Result", raw: "raw result" },
   };
 
-  const mockAgentRunner = new MockAgentRunner(mockResults);
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { runner } = makeRunner(mockResults);
 
   const result1 = await runner.execute(flow as IFlow, { userPrompt: "request 1" });
   const result2 = await runner.execute(flow as IFlow, { userPrompt: "request 2" });
@@ -786,10 +802,7 @@ Deno.test("FlowRunner: aggregates output from multiple steps", async () => {
     agent2: { thought: "Step 2 thinking", content: "Result 2", raw: "raw result 2" },
   };
 
-  const mockAgentRunner = new MockAgentRunner(mockResults);
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { runner } = makeRunner(mockResults);
   const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
 
   assertEquals(result.output, '{"step1":"Result 1","step2":"Result 2"}');
@@ -803,10 +816,7 @@ Deno.test("FlowRunner: handles empty flow", async () => {
     output: { from: [], format: FlowOutputFormat.MARKDOWN },
   });
 
-  const mockAgentRunner = new MockAgentRunner();
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { runner } = makeRunner();
 
   try {
     await runner.execute(flow as IFlow, { userPrompt: "test request" });
@@ -834,13 +844,10 @@ Deno.test("FlowRunner: rejects flow with cyclic fallback chain at validation", a
     output: { from: "step-a", format: FlowOutputFormat.MARKDOWN },
   });
 
-  const mockAgentRunner = new MockAgentRunner({
+  const { mockLogger, runner } = makeRunner({
     "agent-a": "unused",
     "agent-b": "unused",
   });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
 
   await assertRejects(
     async () => await runner.execute(flow as IFlow, { userPrompt: "test request" }),
@@ -915,10 +922,7 @@ Deno.test("FlowRunner: handles step with invalid input source", async () => {
     agent1: { thought: "Thinking", content: "Result", raw: "raw result" },
   };
 
-  const mockAgentRunner = new MockAgentRunner(mockResults);
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { runner } = makeRunner(mockResults);
   const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
 
   assertEquals(result.success, false);
@@ -950,10 +954,7 @@ Deno.test("FlowRunner: handles step depending on failed step", async () => {
     agent2: { thought: "Thinking 2", content: "Result 2", raw: "raw result 2" },
   };
 
-  const mockAgentRunner = new MockAgentRunner(mockResults, ["failing-agent"]);
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { runner } = makeRunner(mockResults, ["failing-agent"]);
   const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
 
   assertEquals(result.success, false);
@@ -988,10 +989,7 @@ Deno.test("FlowRunner: handles circular dependencies", async () => {
     description: "A flow with circular dependencies",
   });
 
-  const mockAgentRunner = new MockAgentRunner();
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { runner } = makeRunner();
 
   try {
     await runner.execute(flow as IFlow, { userPrompt: "test request" });
@@ -1058,10 +1056,7 @@ Deno.test("FlowRunner: handles output aggregation with failed steps", async () =
     agent1: { thought: "Thinking 1", content: "Result 1", raw: "raw result 1" },
   };
 
-  const mockAgentRunner = new MockAgentRunner(mockResults, ["failing-agent"]);
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { runner } = makeRunner(mockResults, ["failing-agent"]);
   const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
 
   assertEquals(result.success, false); // Overall flow failed
@@ -1082,10 +1077,7 @@ Deno.test("FlowRunner: handles output aggregation with all failed steps", async 
     settings: { maxParallelism: 3, failFast: false },
   });
 
-  const mockAgentRunner = new MockAgentRunner({}, ["failing-agent1", "failing-agent2"]);
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { runner } = makeRunner({}, ["failing-agent1", "failing-agent2"]);
   const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
 
   assertEquals(result.success, false);
@@ -1107,10 +1099,7 @@ Deno.test("FlowRunner: applies mergeAsContext transform", async () => {
     "test-agent": { thought: "Thinking", content: "Step output", raw: "raw output" },
   };
 
-  const mockAgentRunner = new MockAgentRunner(mockResults);
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { runner } = makeRunner(mockResults);
   const result = await runner.execute(flow as IFlow, { userPrompt: "ignored since transformArgs provided" });
 
   assertEquals(result.success, true);
@@ -1126,13 +1115,9 @@ Deno.test("FlowRunner: applies extractSection transform", async () => {
     }),
   ]);
 
-  const mockAgentRunner = new MockAgentRunner({
+  const result = await runFlowWithAgents(flow, {
     "test-agent": "Extracted content",
-  });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
-  const result = await runner.execute(flow as IFlow, {
+  }, {
     userPrompt: "## Requirements\n\nThis is the requirements section\n\n## Implementation\n\nThis is implementation",
   });
 
@@ -1145,13 +1130,9 @@ Deno.test("FlowRunner: applies appendToRequest transform", async () => {
     makeStep("step1", "Step 1", "test-agent", [], { source: FlowInputSource.REQUEST, transform: "appendToRequest" }),
   ]);
 
-  const mockAgentRunner = new MockAgentRunner({
+  const result = await runFlowWithAgents(flow, {
     "test-agent": "Transformed output",
-  });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
-  const result = await runner.execute(flow as IFlow, { userPrompt: "original request" });
+  }, { userPrompt: "original request" });
 
   assertEquals(result.success, true);
   assertEquals(result.output, "Transformed output");
@@ -1166,13 +1147,9 @@ Deno.test("FlowRunner: applies jsonExtract transform", async () => {
     }),
   ]);
 
-  const mockAgentRunner = new MockAgentRunner({
+  const result = await runFlowWithAgents(flow, {
     "test-agent": "Extracted value",
-  });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
-  const result = await runner.execute(flow as IFlow, {
+  }, {
     userPrompt: JSON.stringify({ user: { name: "John", age: 30 } }),
   });
 
@@ -1189,13 +1166,9 @@ Deno.test("FlowRunner: applies templateFill transform", async () => {
     }),
   ]);
 
-  const mockAgentRunner = new MockAgentRunner({
+  const result = await runFlowWithAgents(flow, {
     "test-agent": "Filled template",
-  });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
-  const result = await runner.execute(flow as IFlow, {
+  }, {
     userPrompt: "Hello {{name}}, your task is {{task}}",
   });
 
@@ -1210,13 +1183,9 @@ Deno.test("FlowRunner: applies custom transform function", async () => {
     makeStep("step1", "Step 1", "test-agent", [], { source: FlowInputSource.REQUEST, transform: customTransform }),
   ]);
 
-  const mockAgentRunner = new MockAgentRunner({
+  const result = await runFlowWithAgents(flow, {
     "test-agent": "Custom transformed",
-  });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
-  const result = await runner.execute(flow as IFlow, { userPrompt: "test input" });
+  }, { userPrompt: "test input" });
 
   assertEquals(result.success, true);
   assertEquals(result.output, "Custom transformed");
@@ -1227,20 +1196,7 @@ Deno.test("FlowRunner: handles unknown transform", async () => {
     makeStep("step1", "Step 1", "test-agent", [], { source: FlowInputSource.REQUEST, transform: "unknownTransform" }),
   ]);
 
-  const mockAgentRunner = new MockAgentRunner({
-    "test-agent": "Should not reach here",
-  });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
-
-  try {
-    await runner.execute(flow as IFlow, { userPrompt: "test" });
-    throw new Error("Expected FlowExecutionError to be thrown");
-  } catch (error) {
-    assert(error instanceof FlowExecutionError);
-    assert((error as Error).message.includes("Unknown transform: unknownTransform"));
-  }
+  await assertFlowExecutionError(flow, "Unknown transform: unknownTransform");
 });
 
 Deno.test("FlowRunner: handles transform function throwing error", async () => {
@@ -1252,20 +1208,7 @@ Deno.test("FlowRunner: handles transform function throwing error", async () => {
     makeStep("step1", "Step 1", "test-agent", [], { source: FlowInputSource.REQUEST, transform: failingTransform }),
   ]);
 
-  const mockAgentRunner = new MockAgentRunner({
-    "test-agent": "Should not reach here",
-  });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
-
-  try {
-    await runner.execute(flow as IFlow, { userPrompt: "test" });
-    throw new Error("Expected FlowExecutionError to be thrown");
-  } catch (error) {
-    assert(error instanceof FlowExecutionError);
-    assert((error as Error).message.includes("Custom transform failed: Transform failed"));
-  }
+  await assertFlowExecutionError(flow, "Custom transform failed: Transform failed");
 });
 
 Deno.test("FlowRunner: handles invalid transform args for extractSection", async () => {
@@ -1280,20 +1223,7 @@ Deno.test("FlowRunner: handles invalid transform args for extractSection", async
     },
   ]);
 
-  const mockAgentRunner = new MockAgentRunner({
-    "test-agent": "Should not reach here",
-  });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
-
-  try {
-    await runner.execute(flow as IFlow, { userPrompt: "test" });
-    throw new Error("Expected FlowExecutionError to be thrown");
-  } catch (error) {
-    assert(error instanceof FlowExecutionError);
-    assert((error as Error).message.includes("extractSection requires a section name as transformArgs"));
-  }
+  await assertFlowExecutionError(flow, "extractSection requires a section name as transformArgs");
 });
 
 Deno.test("FlowRunner: handles invalid transform args for jsonExtract", async () => {
@@ -1308,20 +1238,7 @@ Deno.test("FlowRunner: handles invalid transform args for jsonExtract", async ()
     },
   ]);
 
-  const mockAgentRunner = new MockAgentRunner({
-    "test-agent": "Should not reach here",
-  });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
-
-  try {
-    await runner.execute(flow as IFlow, { userPrompt: "test" });
-    throw new Error("Expected FlowExecutionError to be thrown");
-  } catch (error) {
-    assert(error instanceof FlowExecutionError);
-    assert((error as Error).message.includes("jsonExtract requires a field path as transformArgs"));
-  }
+  await assertFlowExecutionError(flow, "jsonExtract requires a field path as transformArgs");
 });
 
 Deno.test("FlowRunner: handles invalid transform args for templateFill", async () => {
@@ -1333,12 +1250,9 @@ Deno.test("FlowRunner: handles invalid transform args for templateFill", async (
     }),
   ]);
 
-  const mockAgentRunner = new MockAgentRunner({
+  const { runner } = makeRunner({
     "test-agent": "Should not reach here",
   });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
 
   await assertRejects(
     async () => await runner.execute(flow as IFlow, { userPrompt: "test" }),
@@ -1352,10 +1266,7 @@ Deno.test("FlowRunner: handles agent execution throwing error in Promise.allSett
     makeStep("step1", "Step 1", "throwing-agent", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
   ], { settings: { maxParallelism: 3, failFast: false } });
 
-  const mockAgentRunner = new MockAgentRunner({}, ["throwing-agent"]);
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const { runner } = makeRunner({}, ["throwing-agent"]);
   const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
 
   assertEquals(result.success, false);
@@ -1368,14 +1279,10 @@ Deno.test("FlowRunner: handles aggregate output with concat format", async () =>
     makeStep("step2", "Step 2", "test-agent2", [], { source: FlowInputSource.REQUEST, transform: "passthrough" }),
   ], { output: { from: ["step1", "step2"], format: FlowOutputFormat.CONCAT } });
 
-  const mockAgentRunner = new MockAgentRunner({
+  const result = await runFlowWithAgents(flow, {
     "test-agent1": "Output 1",
     "test-agent2": "Output 2",
-  });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
-  const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
+  }, { userPrompt: "test request" });
 
   assertEquals(result.success, true);
   assertEquals(result.output, "Output 1\nOutput 2");
@@ -1397,13 +1304,10 @@ Deno.test("FlowRunner: executes step when condition evaluates to true", async ()
     output: { from: "step2", format: FlowOutputFormat.MARKDOWN },
   });
 
-  const mockAgentRunner = new MockAgentRunner({
+  const { mockLogger, runner } = makeRunner({
     agent1: "Step 1 result",
     agent2: "Step 2 result",
   });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
   const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
 
   assertEquals(result.success, true);
@@ -1443,14 +1347,11 @@ Deno.test("FlowRunner: skips step when condition evaluates to false", async () =
     output: { from: "step3", format: FlowOutputFormat.MARKDOWN },
   });
 
-  const mockAgentRunner = new MockAgentRunner({
+  const { mockLogger, runner } = makeRunner({
     agent1: "Step 1 result",
     agent2: "Step 2 result", // Won't be used since condition is false
     agent3: "Step 3 result",
   });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
   const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
 
   assertEquals(result.success, true);
@@ -1484,15 +1385,11 @@ Deno.test("FlowRunner: handles complex conditions with multiple results", async 
     settings: { maxParallelism: 3, failFast: false },
   });
 
-  const mockAgentRunner = new MockAgentRunner({
+  const result = await runFlowWithAgents(flow, {
     analyzer: "Analysis complete",
     reviewer: "Review complete",
     finalizer: "Final synthesis",
-  });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
-  const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
+  }, { userPrompt: "test request" });
 
   assertEquals(result.success, true);
   assertEquals(result.stepResults.get("final")?.success, true);
@@ -1519,14 +1416,10 @@ Deno.test("FlowRunner: handles condition syntax errors gracefully", async () => 
     output: { from: "step2", format: FlowOutputFormat.MARKDOWN },
   });
 
-  const mockAgentRunner = new MockAgentRunner({
+  const result = await runFlowWithAgents(flow, {
     agent1: "Step 1 result",
     agent2: "Step 2 result",
-  });
-  const mockLogger = new MockEventLogger();
-
-  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
-  const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
+  }, { userPrompt: "test request" });
 
   // Step with invalid condition should be skipped (error counts as false).
   // The skip reason carries the parser's diagnostic; we assert it is reported
