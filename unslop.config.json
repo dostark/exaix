@@ -1120,7 +1120,7 @@
             "name": "team-source",
             "paths": ["exaix-team/"],
             "ignore": ["**/*.d.ts", "**/*.md", "**/tests/**", "**/tests_node/**", "**/node_modules/**", "**/dist/**"],
-            "threshold": 5.9
+            "threshold": 1.3
           },
           {
             "name": "team-tests",
