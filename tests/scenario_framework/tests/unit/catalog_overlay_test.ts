@@ -17,7 +17,7 @@ import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "@exaix/core/skills";
-import { initTestDbService } from "@exaix/testing";
+import { initTestDbService, withTempDir } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing";
 import { BlueprintResolver, EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR } from "@exaix/request";
 import { produceSkillFolderOverlay } from "../../runner/skill_folder_overlay.ts";
@@ -236,8 +236,7 @@ Deno.test("[CatalogOverlay] a treatment that fails validation leaves no staged o
 });
 
 Deno.test("[CatalogOverlay] the producer refuses an existing target and a target outside the isolated root", async () => {
-  const base = await Deno.makeTempDir({ prefix: "skill-overlay-target-" });
-  try {
+  await withTempDir(async (base) => {
     const treatments = join(base, "treatments");
     await writeSkillFolder(treatments, "one-treatment", "one", "body");
     await Deno.mkdir(join(base, "taken"));
@@ -248,7 +247,5 @@ Deno.test("[CatalogOverlay] the producer refuses an existing target and a target
       produceSkillFolderOverlay({ root: join(base, "taken"), sourceDir: treatments, targetDir: join(base, "outside") })
     );
     assertEquals(await exists(join(base, "outside")), false);
-  } finally {
-    await Deno.remove(base, { recursive: true });
-  }
+  }, { prefix: "skill-overlay-target-" });
 });

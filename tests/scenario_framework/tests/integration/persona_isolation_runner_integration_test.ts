@@ -10,14 +10,13 @@ import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertFalse, assertThrows } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import { assertPersonaRunnerExitCode } from "../../../../scripts/run_persona_isolation.ts";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "../../../..");
 
 Deno.test("[PersonaIsolationRunner] --dry-run writes report input, uses discrete argv, and cleans overlays", async () => {
-  const root = await Deno.makeTempDir({ prefix: "persona-runner-" });
-  try {
+  await withTempDir(async (root) => {
     await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.mkdir(pathBuilders.memoryPath(root, "persona-overlays"), { recursive: true });
     await Deno.writeTextFile(
@@ -60,14 +59,11 @@ Deno.test("[PersonaIsolationRunner] --dry-run writes report input, uses discrete
     // throws "Unknown model" for the judge-quality LLM call.
     assertEquals(output.executionPlan[0].env.EXA_LLM_MODEL, "mock:test-model");
     assertFalse(await exists(pathBuilders.memoryPath(root, "persona-overlays", "coder")));
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "persona-runner-" });
 });
 
 Deno.test("[PersonaIsolationRunner] --dry-run rejects a scenario id absent from the live catalog", async () => {
-  const root = await Deno.makeTempDir({ prefix: "persona-runner-invalid-" });
-  try {
+  await withTempDir(async (root) => {
     await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.mkdir(pathBuilders.memoryPath(root, "persona-overlays"), { recursive: true });
     await Deno.writeTextFile(
@@ -97,9 +93,7 @@ Deno.test("[PersonaIsolationRunner] --dry-run rejects a scenario id absent from 
       stderr: "piped",
     }).output();
     assertEquals(result.success, false);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "persona-runner-invalid-" });
 });
 
 async function exists(path: string): Promise<boolean> {

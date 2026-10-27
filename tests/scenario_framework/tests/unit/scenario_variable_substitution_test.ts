@@ -28,6 +28,7 @@ import { join, resolve } from "@std/path";
 import { walk } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { SCENARIO_SUBSTITUTED_VARIABLES, stageFlowFixture } from "../../runner/synthetic_runner.ts";
+import { withTempDir } from "@exaix/testing";
 
 const FRAMEWORK_HOME = resolve(import.meta.dirname!, "..", "..");
 const REPO_ROOT = resolve(FRAMEWORK_HOME, "..", "..");
@@ -142,8 +143,7 @@ Deno.test("[flow-fixture] a declared flow is staged into the sandbox's flow cata
   // `assertFlowExists` resolves `<root>/Blueprints/Flows/<id>.flow.yaml`, so a flow fixture that
   // stays in the framework tree cannot be requested no matter how the variable expands. Staging
   // it here is the same move as mounting `portals:`.
-  const ws = await Deno.makeTempDir({ prefix: "stage-flow-" });
-  try {
+  await withTempDir(async (ws) => {
     const fixture = join(FRAMEWORK_HOME, "fixtures", "flows", "dynamic_execution", "explore.flow.yaml");
 
     await stageFlowFixture(ws, fixture);
@@ -151,22 +151,17 @@ Deno.test("[flow-fixture] a declared flow is staged into the sandbox's flow cata
     const staged = pathBuilders.blueprintsPath(ws, DEFAULT_FLOWS_PATH, "explore-codebase.flow.yaml");
     assertEquals(await Deno.stat(staged).then(() => true).catch(() => false), true, `expected ${staged}`);
     assertEquals(await Deno.readTextFile(staged), await Deno.readTextFile(fixture));
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "stage-flow-" });
 });
 
 Deno.test("[flow-fixture] staging names the file after the flow's own id, not the fixture file", async () => {
   // `explore.flow.yaml` declares `id: explore-codebase`. Copying under the fixture's filename
   // would put the flow at a path the loader never looks for.
-  const ws = await Deno.makeTempDir({ prefix: "stage-flow-id-" });
-  try {
+  await withTempDir(async (ws) => {
     await stageFlowFixture(ws, join(FRAMEWORK_HOME, "fixtures", "flows", "dynamic_execution", "explore.flow.yaml"));
     const wrong = pathBuilders.blueprintsPath(ws, DEFAULT_FLOWS_PATH, "explore.flow.yaml");
     assertEquals(await Deno.stat(wrong).then(() => true).catch(() => false), false, "must not use the fixture name");
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "stage-flow-id-" });
 });
 
 Deno.test("[flow-fixture] every agent role a fixture flow names exists in the catalog", async () => {

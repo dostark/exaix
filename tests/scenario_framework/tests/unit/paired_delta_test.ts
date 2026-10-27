@@ -16,6 +16,7 @@ import { ArmKind, ComparisonMetric } from "../../runner/arm_comparison.ts";
 import type { IArmComparisonSpec } from "../../runner/arm_comparison.ts";
 import { writeRunManifest } from "../../runner/evidence_collector.ts";
 import type { IRunManifest } from "../../runner/evidence_collector.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("[PairedDelta] a single task with a known delta produces that delta", () => {
   const result = computePairedComparison({
@@ -109,12 +110,9 @@ Deno.test("[PairedDelta] the arm comparison spec is persisted in the run manifes
     armComparison: spec,
   };
 
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const manifestPath = await writeRunManifest({ outputDir: tempDir, manifest });
     const written = JSON.parse(await Deno.readTextFile(manifestPath)) as IRunManifest;
     assertEquals(written.armComparison, spec);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });

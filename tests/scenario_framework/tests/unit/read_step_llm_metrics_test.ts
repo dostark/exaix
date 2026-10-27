@@ -16,6 +16,7 @@ import { ensureDir } from "@std/fs";
 import { Database } from "@db/sqlite";
 import { ACTIVITY_TABLE_SQL } from "@exaix/testing/helpers/init_db.ts";
 import { readStepLlmMetrics } from "../../runner/step_llm_metrics.ts";
+import { withTempDir } from "@exaix/testing";
 
 async function makeWorkspaceWithJournal(
   testName: string,
@@ -173,16 +174,13 @@ Deno.test({
 Deno.test({
   name: "[ReadStepLlmMetrics] a missing journal.db (no daemon ever ran) reports absent metrics, not a thrown error",
   fn: async () => {
-    const workspaceRoot = await Deno.makeTempDir({ prefix: "read-step-llm-metrics-missing-db-" });
-    try {
+    await withTempDir(async (workspaceRoot) => {
       const metrics = await readStepLlmMetrics(workspaceRoot, 0, 100);
 
       assertEquals(metrics.llmDurationMs, undefined);
       assertEquals(metrics.tokens, undefined);
       assertEquals(metrics.trackedCostUsd, undefined);
-    } finally {
-      await Deno.remove(workspaceRoot, { recursive: true });
-    }
+    }, { prefix: "read-step-llm-metrics-missing-db-" });
   },
   sanitizeOps: false,
   sanitizeResources: false,

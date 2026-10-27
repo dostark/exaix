@@ -11,6 +11,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { TaskJsonSchema } from "../../schema/task_schema.ts";
+import { withTempDir } from "@exaix/testing";
 
 const COMMIT_SHA = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0";
 
@@ -18,8 +19,7 @@ Deno.test(
   "[SweControls] null control: base_ref tests must fail",
   { sanitizeResources: false, sanitizeOps: false },
   async () => {
-    const dir = await Deno.makeTempDir();
-    try {
+    await withTempDir(async (dir) => {
       const task = {
         base_ref: COMMIT_SHA,
         scoped_test_cmd: `deno eval "Deno.exit(1)"`,
@@ -35,9 +35,7 @@ Deno.test(
       });
       const { code } = await cmd.output();
       assert(code !== 0, "null control: scoped_test_cmd must fail at base_ref (bug exists)");
-    } finally {
-      await Deno.remove(dir, { recursive: true });
-    }
+    });
   },
 );
 
@@ -45,8 +43,7 @@ Deno.test("[SweControls] reference control: tests pass after applying reference.
   sanitizeResources: false,
   sanitizeOps: false,
 }, async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const task = {
       base_ref: COMMIT_SHA,
       scoped_test_cmd: `deno eval "Deno.exit((await Deno.stat('patch_applied')).isFile ? 0 : 1)"`,
@@ -65,17 +62,14 @@ Deno.test("[SweControls] reference control: tests pass after applying reference.
     });
     const { code } = await cmd.output();
     assertEquals(code, 0, "reference control: scoped_test_cmd must pass after applying patch");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 
 Deno.test(
   "[SweControls] worktree cleanup on null-control failure",
   { sanitizeResources: false, sanitizeOps: false },
   async () => {
-    const dir = await Deno.makeTempDir();
-    try {
+    await withTempDir(async (dir) => {
       const keepCleanup = join(dir, "cleanup");
       let cleanupRan = false;
 
@@ -94,9 +88,7 @@ Deno.test(
       assert(cleanupRan, "cleanup must run even after null control failure");
       const stat = await Deno.stat(keepCleanup);
       assertEquals(stat.isFile, true, "cleanup must produce its marker");
-    } finally {
-      await Deno.remove(dir, { recursive: true });
-    }
+    });
   },
 );
 
@@ -104,8 +96,7 @@ Deno.test("[SweControls] worktree cleanup on reference-control success", {
   sanitizeResources: false,
   sanitizeOps: false,
 }, async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const keepCleanup = join(dir, "cleanup");
     let cleanupRan = false;
 
@@ -123,7 +114,5 @@ Deno.test("[SweControls] worktree cleanup on reference-control success", {
     assert(cleanupRan, "cleanup must run even after reference control success");
     const stat = await Deno.stat(keepCleanup);
     assertEquals(stat.isFile, true, "cleanup must produce its marker");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });

@@ -12,6 +12,7 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { assertMemoryAbilityCoverage } from "../../runner/memory_ability_coverage.ts";
+import { withTempDir } from "@exaix/testing";
 
 async function writeTask(root: string, id: string, ability: string): Promise<void> {
   const taskDir = join(root, id);
@@ -30,8 +31,7 @@ async function writeTask(root: string, id: string, ability: string): Promise<voi
 }
 
 Deno.test("[MemoryAbilityCoverage] a complete five-ability corpus has no missing abilities", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeTask(root, "t1", "information-extraction");
     await writeTask(root, "t2", "multi-session-reasoning");
     await writeTask(root, "t3", "temporal-reasoning");
@@ -39,33 +39,25 @@ Deno.test("[MemoryAbilityCoverage] a complete five-ability corpus has no missing
     await writeTask(root, "t5", "abstention");
     const result = await assertMemoryAbilityCoverage([root]);
     assertEquals(result.missing, []);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryAbilityCoverage] flags every ability with zero fixture coverage", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeTask(root, "t1", "information-extraction");
     const result = await assertMemoryAbilityCoverage([root]);
     assertEquals(
       result.missing.sort(),
       ["abstention", "knowledge-updates", "multi-session-reasoning", "temporal-reasoning"].sort(),
     );
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryAbilityCoverage] an empty corpus flags all five abilities missing", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     const result = await assertMemoryAbilityCoverage([root]);
     assertEquals(result.missing.length, 5);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryAbilityCoverage] the real fixtures/memory corpus has all five abilities represented", async () => {

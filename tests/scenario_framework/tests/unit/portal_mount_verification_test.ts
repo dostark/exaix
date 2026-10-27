@@ -16,7 +16,7 @@ import { ConfigSchema, isDenoTaskCheck } from "@exaix/schemas";
 import { PortalMountSchema } from "../../schema/step_schema.ts";
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";
 import { stageLintPolicy, verificationToml, withoutPortalRegions } from "../../runner/synthetic_runner.ts";
-import { installLintPolicyForTest } from "@exaix/testing";
+import { installLintPolicyForTest, withTempDir } from "@exaix/testing";
 
 Deno.test("[scenario-schema] re-mounting an alias drops its older portal entries and verification blocks", () => {
   const first =
@@ -151,16 +151,13 @@ Deno.test("[scenario-schema] stageLintPolicy copies a verified directory and rej
     assert(await exists(join(workspaceRoot, "lint", "unslop", "manifest.json")));
     assert(await exists(join(workspaceRoot, "lint", "unslop", "unslop_engine.js")));
 
-    const emptyRoot = await Deno.makeTempDir({ prefix: "lint-stage-empty-" });
-    try {
+    await withTempDir(async (emptyRoot) => {
       await assertRejects(
         () => stageLintPolicy(emptyRoot, workspaceRoot),
         Error,
         "lint policy manifest missing",
       );
-    } finally {
-      await Deno.remove(emptyRoot, { recursive: true });
-    }
+    }, { prefix: "lint-stage-empty-" });
   } finally {
     await Deno.remove(repoRoot, { recursive: true }).catch(() => {});
     await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});

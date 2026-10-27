@@ -11,7 +11,7 @@
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { withEnv } from "@exaix/testing";
+import { withEnv, withTempDir } from "@exaix/testing";
 import type { ICalibrationRubric } from "@exaix/eval-history";
 import {
   CalibrationRunner,
@@ -200,8 +200,7 @@ Deno.test("[CalibrationRunner] a judge failure aborts the run — no partial/fab
 });
 
 Deno.test("[CalibrationRunner] FileCalibrationStoreAdapter writes a real JSON file under the run id", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const store = new FileCalibrationStoreAdapter(dir);
     const result: ICalibrationRunResult = {
       runId: "11111111-1111-1111-1111-111111111111",
@@ -219,9 +218,7 @@ Deno.test("[CalibrationRunner] FileCalibrationStoreAdapter writes a real JSON fi
     const written = JSON.parse(await Deno.readTextFile(path));
     assertEquals(written.runId, result.runId);
     assertEquals(path, join(dir, `${result.runId}.json`));
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[CalibrationRunner] SystemCalibrationClock returns a real current Date", () => {

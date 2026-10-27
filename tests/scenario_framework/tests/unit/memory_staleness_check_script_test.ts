@@ -11,16 +11,14 @@
 
 import { assertEquals } from "@std/assert";
 import { runMemoryStalenessCheck } from "../../scripts/run_memory_staleness_check.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("[MemoryStalenessCheckScript] retrieves the current fact and excludes the retired one", async () => {
-  const workspaceRoot = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const result = await runMemoryStalenessCheck(workspaceRoot);
     assertEquals(result.retrieved_ids, ["57a1e000-0000-4000-8000-000000000002"]);
     assertEquals(result.staleness_correct, 1);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryStalenessCheckScript] is deterministic — two independent runs on fresh workspaces agree", async () => {

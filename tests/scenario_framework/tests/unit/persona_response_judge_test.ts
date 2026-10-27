@@ -6,7 +6,7 @@
  * @related-files [tests/scenario_framework/runner/assertions.ts]
  */
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { withEnv } from "@exaix/testing";
+import { withEnv, withTempDir } from "@exaix/testing";
 import { join } from "@std/path";
 import { stub } from "@std/testing/mock";
 import { MockProvider } from "@exaix/ai/providers.ts";
@@ -19,8 +19,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
-    const root = await Deno.makeTempDir({ prefix: "persona-judge-" });
-    try {
+    await withTempDir(async (root) => {
       await Deno.writeTextFile(join(root, "context.txt"), "Frozen original source and task");
       await Deno.writeTextFile(join(root, "response.txt"), "Actual response");
       await withEnv({
@@ -63,8 +62,6 @@ Deno.test({
         assertEquals(result.score, 0);
         assertEquals(result.judge?.model, "mock");
       });
-    } finally {
-      await Deno.remove(root, { recursive: true });
-    }
+    }, { prefix: "persona-judge-" });
   },
 });

@@ -18,6 +18,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { evaluateCriterion } from "../../runner/assertions.ts";
 import { CriterionKind, CriterionPhase, CriterionStatus } from "../../schema/step_schema.ts";
+import { withTempDir } from "@exaix/testing";
 
 /** Mirrors the CLI journal shape: `payload` arrives as a JSON string. */
 function resolvedRow(skillIds: string[], pinned: string[] = skillIds): string {
@@ -93,8 +94,7 @@ Deno.test("[journal_payload_includes] fails when no event of the type exists at 
 });
 
 Deno.test("[journal_payload_includes] a bare journal-event-exists is unchanged", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-payload-includes-compat-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     await Deno.writeTextFile(join(workspaceRoot, "journal.ndjson"), resolvedRow([]) + "\n");
     const result = await evaluateCriterion({
       workspaceRoot,
@@ -107,7 +107,5 @@ Deno.test("[journal_payload_includes] a bare journal-event-exists is unchanged",
       },
     });
     assertEquals(result.status, CriterionStatus.PASSED);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "scenario-payload-includes-compat-" });
 });

@@ -27,6 +27,7 @@ import {
   loadJudgeMethodologyInstructions,
   prependMethodologyInstructions,
 } from "../../runner/assertions.ts";
+import { withTempDir } from "@exaix/testing";
 
 async function writeSkillFixture(dir: string, skillId: string, instructions: string): Promise<void> {
   await Deno.mkdir(`${dir}/${skillId}`, { recursive: true });
@@ -37,8 +38,7 @@ async function writeSkillFixture(dir: string, skillId: string, instructions: str
 }
 
 Deno.test("[JudgeMethodologyInjection] loads and concatenates both methodology skills' instructions", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-methodology-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const skillsDir = pathBuilders.blueprintsPath(workspaceRoot, "Skills");
     await writeSkillFixture(skillsDir, "verdict-rubric", "RUBRIC INSTRUCTIONS TEXT");
     await writeSkillFixture(skillsDir, "response-contract-judge", "CONTRACT INSTRUCTIONS TEXT");
@@ -46,33 +46,25 @@ Deno.test("[JudgeMethodologyInjection] loads and concatenates both methodology s
     const methodology = await loadJudgeMethodologyInstructions(workspaceRoot);
     assertStringIncludes(methodology, "RUBRIC INSTRUCTIONS TEXT");
     assertStringIncludes(methodology, "CONTRACT INSTRUCTIONS TEXT");
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "judge-methodology-" });
 });
 
 Deno.test("[JudgeMethodologyInjection] a missing skill file degrades gracefully (empty contribution), matching resolveEvalJudgeContext's fallback convention", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-methodology-missing-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const skillsDir = pathBuilders.blueprintsPath(workspaceRoot, "Skills");
     await writeSkillFixture(skillsDir, "verdict-rubric", "RUBRIC ONLY");
     // response-contract-judge folder intentionally absent.
 
     const methodology = await loadJudgeMethodologyInstructions(workspaceRoot);
     assertStringIncludes(methodology, "RUBRIC ONLY");
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "judge-methodology-missing-" });
 });
 
 Deno.test("[JudgeMethodologyInjection] both skills missing returns an empty string, not a throw", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-methodology-none-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const methodology = await loadJudgeMethodologyInstructions(workspaceRoot);
     assertEquals(methodology, "");
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "judge-methodology-none-" });
 });
 
 Deno.test("[JudgeMethodologyInjection] prependMethodologyInstructions puts methodology before the evaluation request, unchanged when methodology is empty", () => {
@@ -87,8 +79,7 @@ Deno.test("[JudgeMethodologyInjection] prependMethodologyInstructions puts metho
 });
 
 Deno.test("[JudgeMethodologyInjection] provenance names each skill with its revision id and content hash", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-methodology-prov-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const skillsDir = pathBuilders.blueprintsPath(workspaceRoot, "Skills");
     await writeSkillFixture(skillsDir, "verdict-rubric", "RUBRIC TEXT");
     await writeSkillFixture(skillsDir, "response-contract-judge", "CONTRACT TEXT");
@@ -104,9 +95,7 @@ Deno.test("[JudgeMethodologyInjection] provenance names each skill with its revi
     const changed = await loadJudgeMethodology(workspaceRoot);
     assertNotEquals(changed.skills[0].revision_id, methodology.skills[0].revision_id);
     assertEquals(changed.skills[1], methodology.skills[1]);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "judge-methodology-prov-" });
 });
 
 Deno.test("[JudgeMethodologyInjection] an overlay and a suppression list of the arm under test never reach the judge methodology", async () => {
@@ -140,8 +129,7 @@ Deno.test("[JudgeMethodologyInjection] an overlay and a suppression list of the 
 });
 
 Deno.test("[JudgeMethodologyInjection] a judge result retains the methodology revisions the judge read", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-methodology-result-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const skillsDir = pathBuilders.blueprintsPath(workspaceRoot, "Skills");
     await writeSkillFixture(skillsDir, "verdict-rubric", "RUBRIC TEXT");
     await writeSkillFixture(skillsDir, "response-contract-judge", "CONTRACT TEXT");
@@ -155,7 +143,5 @@ Deno.test("[JudgeMethodologyInjection] a judge result retains the methodology re
     });
     assertEquals(result.status, CriterionStatus.PASSED);
     assertEquals(result.judge?.methodology, expected.skills);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "judge-methodology-result-" });
 });

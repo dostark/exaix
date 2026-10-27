@@ -10,7 +10,7 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { levenshteinTrajectory, scoreTrajectory } from "../../runner/trajectory_evaluator.ts";
 import type { IExpectedTrajectory } from "../../runner/trajectory_evaluator.ts";
 import type { ITrajectoryResult } from "../../runner/trajectory_evaluator.ts";
-import { initTestDbService } from "@exaix/testing";
+import { initTestDbService, withTempDir } from "@exaix/testing";
 import { ACTIVITY_EVENT_DYNAMIC_TOOL_CALL } from "@exaix/core";
 import { executeScenarioStep } from "../../runner/step_executor.ts";
 import { evaluateStepOutcome, StepFailureStage } from "../../runner/assertions.ts";
@@ -71,8 +71,7 @@ for (const threshold of [undefined, 0.5]) {
 }
 
 Deno.test("[TrajectoryEvaluator] a missing journal remains an execution failure", async () => {
-  const workspace = await Deno.makeTempDir({ prefix: "trajectory-missing-" });
-  try {
+  await withTempDir(async (workspace) => {
     const step = ScenarioStepSchema.parse({
       id: "missing-journal",
       type: "trajectory-assert",
@@ -85,9 +84,7 @@ Deno.test("[TrajectoryEvaluator] a missing journal remains an execution failure"
     assertEquals(execution.exitCode, 1);
     assertEquals(outcome.failureStage, StepFailureStage.EXECUTION);
     assertEquals(outcome.status, "failed");
-  } finally {
-    await Deno.remove(workspace, { recursive: true });
-  }
+  }, { prefix: "trajectory-missing-" });
 });
 
 Deno.test("[TrajectoryEvaluator] exact match with order_matters=true returns score 1.0", () => {

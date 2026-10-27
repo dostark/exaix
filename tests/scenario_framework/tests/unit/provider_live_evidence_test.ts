@@ -17,6 +17,7 @@ import {
   readRequestLockEntries,
   writeProviderLiveEvidence,
 } from "../../runner/provider_live_evidence.ts";
+import { withTempDir } from "@exaix/testing";
 
 function activity(action_type: string, payload: Record<string, JSONValue>, trace_id = "trace-live-1"): IActivityRecord {
   return {
@@ -33,8 +34,7 @@ function activity(action_type: string, payload: Record<string, JSONValue>, trace
 }
 
 Deno.test("binding evidence accepts shipped scenario IDs with underscores", async () => {
-  const outputDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (outputDir) => {
     const path = await writeProviderLiveEvidence({
       scenarioId: "dogfood_loop",
       outputDir,
@@ -46,9 +46,7 @@ Deno.test("binding evidence accepts shipped scenario IDs with underscores", asyn
     });
     assertEquals(path, `${outputDir}/provider-live-evidence/dogfood_loop.json`);
     assertEquals(JSON.parse(await Deno.readTextFile(path)).scenarioId, "dogfood_loop");
-  } finally {
-    await Deno.remove(outputDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("provider live evidence retains a redacted trace and normalized usage after sandbox cleanup", async () => {

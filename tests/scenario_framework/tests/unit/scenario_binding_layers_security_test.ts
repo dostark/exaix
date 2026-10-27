@@ -15,10 +15,10 @@ import { BINDING_OVERLAY_MAX_BYTES } from "@exaix/core";
 import { ScenarioStepSchema, ScenarioStepType } from "../../schema/step_schema.ts";
 import { planScenarioBindings } from "../../runner/binding_layers.ts";
 import { scenarioWith } from "./helpers/scenario_binding_fixtures.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("[security] planScenarioBindings refuses an output directory inside the sandbox tree", async () => {
-  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-refuse-" });
-  try {
+  await withTempDir(async (root) => {
     const sandboxRoot = join(root, "sandbox");
     await assertRejects(
       () =>
@@ -33,14 +33,11 @@ Deno.test("[security] planScenarioBindings refuses an output directory inside th
       Error,
       "overlay_invalid",
     );
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "scenario-bindings-refuse-" });
 });
 
 Deno.test("[security] an output directory symlink into the sandbox is refused before any overlay write", async () => {
-  const root = await Deno.makeTempDir({ prefix: "overlay-output-link-" });
-  try {
+  await withTempDir(async (root) => {
     const sandboxRoot = join(root, "sandbox");
     await Deno.mkdir(sandboxRoot, { recursive: true });
     const outputLink = join(root, "output-link");
@@ -59,14 +56,11 @@ Deno.test("[security] an output directory symlink into the sandbox is refused be
     assertStringIncludes(String(error), "overlay_invalid");
     // The refusal happens before any overlay directory reaches the sandbox.
     assertEquals(await Array.fromAsync(Deno.readDir(sandboxRoot)).catch(() => []), []);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "overlay-output-link-" });
 });
 
 Deno.test("[security] a bindings child symlink into the sandbox is refused before any overlay write", async () => {
-  const root = await Deno.makeTempDir({ prefix: "overlay-bindings-link-" });
-  try {
+  await withTempDir(async (root) => {
     const sandboxRoot = join(root, "sandbox");
     await Deno.mkdir(sandboxRoot, { recursive: true });
     const outputDir = join(root, "output");
@@ -84,14 +78,11 @@ Deno.test("[security] a bindings child symlink into the sandbox is refused befor
     );
     assertStringIncludes(String(error), "overlay_invalid");
     assertEquals(await Array.fromAsync(Deno.readDir(sandboxRoot)).catch(() => []), []);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "overlay-bindings-link-" });
 });
 
 Deno.test("[security] a new valid output directory outside the sandbox remains usable", async () => {
-  const root = await Deno.makeTempDir({ prefix: "overlay-valid-output-" });
-  try {
+  await withTempDir(async (root) => {
     const sandboxRoot = join(root, "sandbox");
     await Deno.mkdir(sandboxRoot, { recursive: true });
     const plan = await planScenarioBindings({
@@ -108,14 +99,11 @@ Deno.test("[security] a new valid output directory outside the sandbox remains u
       const physical = await Deno.realPath(overlay.path);
       assertEquals(physical === sandboxReal || physical.startsWith(`${sandboxReal}/`), false);
     }
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "overlay-valid-output-" });
 });
 
 Deno.test("[security] the runner refuses a symlinked, directory or oversized operator overlay", async () => {
-  const root = await Deno.makeTempDir({ prefix: "overlay-bounds-" });
-  try {
+  await withTempDir(async (root) => {
     const real = join(root, "real.json");
     await Deno.writeTextFile(real, JSON.stringify({ schema: 1, bindings: { default: { model: "mock/a" } } }));
     const link = join(root, "link.json");
@@ -143,14 +131,11 @@ Deno.test("[security] the runner refuses a symlinked, directory or oversized ope
       // The refusal happens before any overlay reaches the disk.
       assertEquals(await Array.fromAsync(Deno.readDir(outputDir)).catch(() => []), []);
     }
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "overlay-bounds-" });
 });
 
 Deno.test("[security] a step id with path segments cannot place an overlay outside the bindings directory", async () => {
-  const root = await Deno.makeTempDir({ prefix: "overlay-step-id-" });
-  try {
+  await withTempDir(async (root) => {
     for (const id of ["../../escape", "nested/step", ".."]) {
       const scenario = scenarioWith({
         steps: [
@@ -175,7 +160,5 @@ Deno.test("[security] a step id with path segments cannot place an overlay outsi
     }
     const escaped = await Array.fromAsync(Deno.readDir(root));
     assertEquals(escaped.map((entry) => entry.name).filter((name) => name.endsWith(".json")), []);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "overlay-step-id-" });
 });

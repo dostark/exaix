@@ -11,20 +11,17 @@ import { join } from "@std/path";
 import { readCachedPersonaTrialSnapshot, writePersonaResponseTrial } from "../../runner/persona_response_trial.ts";
 import { CriterionKind, CriterionPhase, CriterionStatus, ScenarioStepType } from "../../schema/step_schema.ts";
 import type { IRunManifest } from "../../runner/evidence_collector.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("[PersonaResponseTrialCache] returns undefined when no cached trial exists", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "persona-trial-cache-" });
-  try {
+  await withTempDir(async (dir) => {
     const cached = await readCachedPersonaTrialSnapshot(dir, "swe-persona-response-fix-bug-null-guard", 0);
     assertEquals(cached, undefined);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "persona-trial-cache-" });
 });
 
 Deno.test("[PersonaResponseTrialCache] reuses a previously persisted trial snapshot", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "persona-trial-cache-" });
-  try {
+  await withTempDir(async (dir) => {
     const manifest: IRunManifest = {
       scenarioId: "swe-persona-response-fix-bug-null-guard",
       pack: "persona_response_eval",
@@ -103,7 +100,5 @@ Deno.test("[PersonaResponseTrialCache] reuses a previously persisted trial snaps
       Error,
       "Invalid or drifted persona response judgment",
     );
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "persona-trial-cache-" });
 });

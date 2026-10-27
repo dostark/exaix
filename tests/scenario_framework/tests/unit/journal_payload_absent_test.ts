@@ -17,6 +17,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { evaluateCriterion } from "../../runner/assertions.ts";
 import { CriterionKind, CriterionPhase, CriterionStatus } from "../../schema/step_schema.ts";
+import { withTempDir } from "@exaix/testing";
 
 /** IActivityRecord.payload is a JSON-STRING field — these NDJSON rows mirror that shape. */
 const ACCEPTED_ROW = JSON.stringify({
@@ -71,8 +72,7 @@ Deno.test("[journal_payload_absent] passes when at least one accepted event exis
 });
 
 Deno.test("[journal_payload_absent] a plain journal-event-exists (no payload_absent) is unchanged — bare event-type match still passes", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-payload-absent-compat-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     // Even a rejected reconcile satisfies the OLD bare predicate (backward-compat).
     await Deno.writeTextFile(join(workspaceRoot, "journal.ndjson"), REJECTED_ROW + "\n");
     const result = await evaluateCriterion({
@@ -86,7 +86,5 @@ Deno.test("[journal_payload_absent] a plain journal-event-exists (no payload_abs
       },
     });
     assertEquals(result.status, CriterionStatus.PASSED);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "scenario-payload-absent-compat-" });
 });

@@ -28,6 +28,7 @@ import { SCHEMA_VERSION } from "../../schema/version.ts";
 import { planScenarioBindings } from "../../runner/binding_layers.ts";
 import { overlayRequestBindings } from "../../runner/matrix_expander.ts";
 import { scenarioWith } from "./helpers/scenario_binding_fixtures.ts";
+import { withTempDir } from "@exaix/testing";
 
 /** The digest the runner should have recorded for the bytes now on disk. */
 async function fileSha256(path: string): Promise<string> {
@@ -37,8 +38,7 @@ async function fileSha256(path: string): Promise<string> {
 }
 
 Deno.test("[bindings] planScenarioBindings writes the scenario overlay with its bindings and catalog", async () => {
-  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-" });
-  try {
+  await withTempDir(async (root) => {
     const outputDir = join(root, "output");
     const sandboxRoot = join(root, "sandbox");
     const plan = await planScenarioBindings({
@@ -66,14 +66,11 @@ Deno.test("[bindings] planScenarioBindings writes the scenario overlay with its 
     const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(scenarioOverlay.path)));
     assertEquals(written.bindings?.["flow:research/step:compose"]?.service, "alpha");
     assertEquals(written.catalog?.services?.alpha?.serves["alpha/one"], "one");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "scenario-bindings-" });
 });
 
 Deno.test("[bindings] planScenarioBindings normalizes operator overlays in order and records sha256", async () => {
-  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-op-" });
-  try {
+  await withTempDir(async (root) => {
     const outputDir = join(root, "output");
     const sandboxRoot = join(root, "sandbox");
     // A TOML-shaped source file must still arrive as JSON: exactl parses --overlay with JSON.parse.
@@ -108,14 +105,11 @@ Deno.test("[bindings] planScenarioBindings normalizes operator overlays in order
     assertEquals(first.bindings?.["flow:research/step:compose"]?.model, "alpha/one");
     const second = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(operators[1]!.path)));
     assertEquals(second.bindings?.["role:web-explorer"]?.service, "beta");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "scenario-bindings-op-" });
 });
 
 Deno.test("[bindings] planScenarioBindings writes operator --bind entries as the last overlay", async () => {
-  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-binds-" });
-  try {
+  await withTempDir(async (root) => {
     const plan = await planScenarioBindings({
       scenario: scenarioWith({ bindings: { "flow:research/step:compose": { service: "alpha" } } }),
       operatorOverlays: [],
@@ -130,14 +124,11 @@ Deno.test("[bindings] planScenarioBindings writes operator --bind entries as the
     const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(bindOverlay.path)));
     assertEquals(written.bindings?.["flow:research/step:compose"]?.service, "beta");
     assertEquals(written.bindings?.["flow:research/step:compose"]?.model, "beta/two");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "scenario-bindings-binds-" });
 });
 
 Deno.test("[bindings] planScenarioBindings substitutes the fixture-port sentinel before validation", async () => {
-  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-sentinel-" });
-  try {
+  await withTempDir(async (root) => {
     // The endpoint schema is `z.string().url()`, so a sentinel can only arrive in a RAW overlay
     // file. It must be substituted before BindingOverlaySchema sees it, and never reach the daemon.
     const overlayPath = join(root, "fixture-overlay.json");
@@ -176,14 +167,11 @@ Deno.test("[bindings] planScenarioBindings substitutes the fixture-port sentinel
       written.catalog?.services?.fixture?.endpoint,
       "http://127.0.0.1:43117/v1/chat/completions",
     );
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "scenario-bindings-sentinel-" });
 });
 
 Deno.test("[bindings] planScenarioBindings writes no scenario overlay when the scenario declares none", async () => {
-  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-empty-" });
-  try {
+  await withTempDir(async (root) => {
     const plan = await planScenarioBindings({
       scenario: scenarioWith(),
       operatorOverlays: [],
@@ -192,14 +180,11 @@ Deno.test("[bindings] planScenarioBindings writes no scenario overlay when the s
       sandboxRoot: join(root, "sandbox"),
     });
     assertEquals(plan.overlays, []);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "scenario-bindings-empty-" });
 });
 
 Deno.test("[bindings] planScenarioBindings writes the cell layer between the scenario and operator layers", async () => {
-  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-cell-" });
-  try {
+  await withTempDir(async (root) => {
     const plan = await planScenarioBindings({
       scenario: scenarioWith({ bindings: { default: { model: "alpha/one" } } }),
       cell: {
@@ -236,14 +221,11 @@ Deno.test("[bindings] planScenarioBindings writes the cell layer between the sce
     const args = overlayRequestBindings([step], plan)[0]!.args ?? [];
     const overlays = args.flatMap((arg, index) => (arg === "--overlay" ? [args[index + 1]!] : []));
     assertEquals(overlays, [plan.overlays[0]!.path, cellOverlay.path]);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "scenario-bindings-cell-" });
 });
 
 Deno.test("[bindings] a cell that binds without a scenario layer still produces its own overlay", async () => {
-  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-cell-only-" });
-  try {
+  await withTempDir(async (root) => {
     const plan = await planScenarioBindings({
       scenario: scenarioWith(),
       cell: { bindings: { default: { model: "beta/two" } } },
@@ -256,9 +238,7 @@ Deno.test("[bindings] a cell that binds without a scenario layer still produces 
     assertEquals(plan.overlays.map((overlay) => overlay.role), ["cell"]);
     const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(plan.overlays[0]!.path)));
     assertEquals(written.bindings?.default?.model, "beta/two");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "scenario-bindings-cell-only-" });
 });
 
 Deno.test("[bindings] the cell layer substitutes the fixture-port sentinel a preset catalog carries", async () => {
@@ -315,8 +295,7 @@ function alphaBindingPlan(outputDir: string, sandboxRoot: string, model: string)
 }
 
 Deno.test("[overlays] two scenarios sharing an output root retain different overlay paths and original bytes", async () => {
-  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-unique-" });
-  try {
+  await withTempDir(async (root) => {
     const outputDir = join(root, "output");
     const sandboxRoot = join(root, "sandbox");
     const first = await alphaBindingPlan(outputDir, sandboxRoot, "alpha/one");
@@ -330,14 +309,11 @@ Deno.test("[overlays] two scenarios sharing an output root retain different over
     const firstWritten = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(firstOverlay.path)));
     assertEquals(firstWritten.bindings?.["flow:research/step:compose"]?.model, "alpha/one");
     assertEquals(secondOverlay.sha256, await fileSha256(secondOverlay.path));
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "scenario-bindings-unique-" });
 });
 
 Deno.test("[overlays] repeating one scenario preserves both invocations and verifies every recorded digest", async () => {
-  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-repeat-" });
-  try {
+  await withTempDir(async (root) => {
     const outputDir = join(root, "output");
     const sandboxRoot = join(root, "sandbox");
     // Every layer role: the scenario, the cell, the request step's own bindings and --bind.
@@ -375,9 +351,7 @@ Deno.test("[overlays] repeating one scenario preserves both invocations and veri
     const written = [...first.overlays, ...second.overlays];
     assertEquals(new Set(written.map((overlay) => overlay.path)).size, written.length);
     for (const overlay of written) assertEquals(overlay.sha256, await fileSha256(overlay.path));
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "scenario-bindings-repeat-" });
 });
 
 // --- Scenario pins ---
@@ -407,8 +381,7 @@ function operatorOverlayOf(plan: Awaited<ReturnType<typeof planScenarioBindings>
 }
 
 Deno.test("[pins] an operator entry at least as specific as the pin that changes a pinned field fails with code pinned and the pin reason", async () => {
-  const root = await Deno.makeTempDir({ prefix: "pins-exact-" });
-  try {
+  await withTempDir(async (root) => {
     const base = {
       scenario: pinnedScenario(),
       operatorOverlays: [],
@@ -437,14 +410,11 @@ Deno.test("[pins] an operator entry at least as specific as the pin that changes
     assertStringIncludes(error.issues[0]?.detail ?? "", "qualifies the alpha provider");
     assertStringIncludes(error.issues[0]?.detail ?? "", "model");
     assertStringIncludes(error.issues[0]?.detail ?? "", "--bind");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "pins-exact-" });
 });
 
 Deno.test("[pins] a broader operator overlay has each pinned field stripped and recorded as pin_kept", async () => {
-  const root = await Deno.makeTempDir({ prefix: "pins-broad-overlay-" });
-  try {
+  await withTempDir(async (root) => {
     const overlayPath = await writeOperatorOverlay(root, {
       default: { service: "beta", model: "beta/two", transport: "cloud" },
     });
@@ -469,14 +439,11 @@ Deno.test("[pins] a broader operator overlay has each pinned field stripped and 
       ["model", "alpha/one", "default", "provider-qualification"],
     ]);
     assertStringIncludes(plan.pins[0]?.source ?? "", overlayPath);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "pins-broad-overlay-" });
 });
 
 Deno.test("[pins] a broad operator --bind that changes a pinned field is stripped too", async () => {
-  const root = await Deno.makeTempDir({ prefix: "pins-broad-bind-" });
-  try {
+  await withTempDir(async (root) => {
     const plan = await planScenarioBindings({
       scenario: pinnedScenario(),
       operatorOverlays: [],
@@ -492,14 +459,11 @@ Deno.test("[pins] a broad operator --bind that changes a pinned field is strippe
     // The daemon would therefore resolve the pinned values from the scenario layer.
     assertEquals(plan.pins.map((pin) => pin.value), ["alpha", "alpha/one"]);
     assertStringIncludes(plan.pins[0]?.source ?? "", "--bind");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "pins-broad-bind-" });
 });
 
 Deno.test("[pins] no pins overlay is written for any scenario", async () => {
-  const root = await Deno.makeTempDir({ prefix: "pins-no-overlay-" });
-  try {
+  await withTempDir(async (root) => {
     const plan = await planScenarioBindings({
       scenario: pinnedScenario(),
       operatorOverlays: [],
@@ -512,14 +476,11 @@ Deno.test("[pins] no pins overlay is written for any scenario", async () => {
     }
     // The broader entry is stripped rather than refused, so the pin still holds its value.
     assertEquals(plan.pins.map((pin) => [pin.field, pin.value]), [["service", "alpha"]]);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "pins-no-overlay-" });
 });
 
 Deno.test("[pins] a cell preset may change a scenario-pinned field at the pin's selector", async () => {
-  const root = await Deno.makeTempDir({ prefix: "pins-cell-" });
-  try {
+  await withTempDir(async (root) => {
     const plan = await planScenarioBindings({
       scenario: pinnedScenario(),
       cell: { bindings: { "flow:research/step:compose": { model: "beta/two" } } },
@@ -544,14 +505,11 @@ Deno.test("[pins] a cell preset may change a scenario-pinned field at the pin's 
       BindingIncompatibleError,
     );
     assertStringIncludes(error.issues[0]?.detail ?? "", "beta/two");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "pins-cell-" });
 });
 
 Deno.test("[pins] a scenario binding more specific than the pin that contradicts it is rejected at load", async () => {
-  const root = await Deno.makeTempDir({ prefix: "pins-load-" });
-  try {
+  await withTempDir(async (root) => {
     // The pin speaks for the whole flow. A step-exact binding contradicts it.
     const scenario = scenarioWith({
       bindings: {
@@ -580,14 +538,11 @@ Deno.test("[pins] a scenario binding more specific than the pin that contradicts
     assertEquals(error.issues[0]?.code, "pinned");
     assertEquals(error.issues[0]?.selector, "flow:research/step:compose");
     assertStringIncludes(error.issues[0]?.detail ?? "", "wire-compat-regression");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "pins-load-" });
 });
 
 Deno.test("[pins] a judge selector never contradicts a flow-step pin", async () => {
-  const root = await Deno.makeTempDir({ prefix: "pins-judge-family-" });
-  try {
+  await withTempDir(async (root) => {
     // A judge binding cannot change the value a flow-step pin protects.
     // A judge ref matches judge selectors only, so the two never meet.
     const cellLayer = await planScenarioBindings({
@@ -637,9 +592,7 @@ Deno.test("[pins] a judge selector never contradicts a flow-step pin", async () 
       BindingIncompatibleError,
     );
     assertEquals(judgeRefusal.issues[0]?.code, "pinned");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "pins-judge-family-" });
 });
 
 /** A pin protecting `service` at one selector, with the reason and note the schema requires. */
@@ -648,8 +601,7 @@ function servicePin(selector: string) {
 }
 
 Deno.test("[pins] a scenario with two pins enforces each one", async () => {
-  const root = await Deno.makeTempDir({ prefix: "pins-two-" });
-  try {
+  await withTempDir(async (root) => {
     const scenario = scenarioWith({
       bindings: {
         "flow:research/step:compose": { service: "alpha", model: "alpha/one" },
@@ -675,14 +627,11 @@ Deno.test("[pins] a scenario with two pins enforces each one", async () => {
     );
     assertEquals(judgeError.issues[0].code, "pinned");
     assertStringIncludes(judgeError.issues[0].detail, 'selector "judge"');
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "pins-two-" });
 });
 
 Deno.test("[pins] an operator entry for a sibling step of a pinned step is not refused", async () => {
-  const root = await Deno.makeTempDir({ prefix: "pins-sibling-" });
-  try {
+  await withTempDir(async (root) => {
     const plan = await planScenarioBindings({
       scenario: pinnedScenario(),
       operatorOverlays: [],
@@ -694,14 +643,11 @@ Deno.test("[pins] an operator entry for a sibling step of a pinned step is not r
     assertEquals(plan.pins, []);
     const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(operatorOverlayOf(plan).path)));
     assertEquals(written.bindings?.["flow:research/step:explore-1"], { service: "beta" });
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "pins-sibling-" });
 });
 
 Deno.test("[pins] a step binding that contradicts a pin is refused at load", async () => {
-  const root = await Deno.makeTempDir({ prefix: "pins-step-" });
-  try {
+  await withTempDir(async (root) => {
     const scenario = scenarioWith({
       bindings: { default: { service: "alpha", model: "alpha/one" } },
       pin: [servicePin("default")],
@@ -726,9 +672,7 @@ Deno.test("[pins] a step binding that contradicts a pin is refused at load", asy
     );
     assertEquals(error.issues[0].code, "pinned");
     assertStringIncludes(error.issues[0].detail, "step submit");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "pins-step-" });
 });
 
 /** The bindings the runner wrote for the operator's --bind entries. */

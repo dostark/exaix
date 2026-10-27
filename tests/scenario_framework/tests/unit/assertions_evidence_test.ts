@@ -22,18 +22,15 @@ import {
   ScenarioStepType,
 } from "../../schema/step_schema.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
-import { withEnv } from "@exaix/testing";
+import { withEnv, withTempDir } from "@exaix/testing";
 
 async function withTempWorkspace(
   fn: (workspaceRoot: string) => Promise<void>,
   prefix = "scenario-framework-",
 ): Promise<void> {
-  const workspaceRoot = await Deno.makeTempDir({ prefix });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     await fn(workspaceRoot);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix });
 }
 
 Deno.test("[ScenarioFrameworkAssertionsEvidence] criterion evaluator distinguishes input validation, execution failure, and output validation failure", async () => {
@@ -756,8 +753,7 @@ Deno.test({
 // short-circuited to EXECUTION failure on any non-zero exit and skipped output criteria —
 // a scenario deliberately eliciting failure "passed" without assertions ever running.
 Deno.test("[ScenarioFrameworkAssertionsEvidence] expect_failure evaluates output criteria on a non-zero exit", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-framework-expect-failure-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const outcome = await evaluateStepOutcome({
       workspaceRoot,
       step: {
@@ -790,14 +786,11 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] expect_failure evaluates output
     assertEquals(outcome.status, CriterionStatus.PASSED);
     assertEquals(outcome.criterionResults.length, 1);
     assertEquals(outcome.criterionResults[0].criterion_id, "error-text-present");
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "scenario-framework-expect-failure-" });
 });
 
 Deno.test("[ScenarioFrameworkAssertionsEvidence] expect_failure fails the step when the command unexpectedly succeeds", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-framework-expect-failure-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const outcome = await evaluateStepOutcome({
       workspaceRoot,
       step: {
@@ -822,9 +815,7 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] expect_failure fails the step w
     });
 
     assertEquals(outcome.status, CriterionStatus.FAILED);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "scenario-framework-expect-failure-" });
 });
 
 // Scenarios in a pack share one sandbox workspace, so a glob like `**/*_plan.md` matches
@@ -882,8 +873,7 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] file_pattern resolves the most 
 });
 
 Deno.test("[ScenarioFrameworkAssertionsEvidence] command-output-not-contains passes when output lacks the pattern", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-framework-not-contains-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const result = await evaluateCriterion({
       workspaceRoot,
       phase: CriterionPhase.OUTPUT,
@@ -906,14 +896,11 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] command-output-not-contains pas
     });
     assertEquals(result.status, CriterionStatus.PASSED);
     assertEquals(result.observed_value, 'write_file" is a write tool');
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "scenario-framework-not-contains-" });
 });
 
 Deno.test("[ScenarioFrameworkAssertionsEvidence] command-output-not-contains fails when any pattern appears (stdout+stderr)", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-framework-not-contains-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const result = await evaluateCriterion({
       workspaceRoot,
       phase: CriterionPhase.OUTPUT,
@@ -936,14 +923,11 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] command-output-not-contains fai
     });
     assertEquals(result.status, CriterionStatus.FAILED);
     assertEquals(result.expected_value, ['read_file" is a write tool', "approval required"]);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "scenario-framework-not-contains-" });
 });
 
 Deno.test("[ScenarioFrameworkAssertionsEvidence] text-not-contains fails on a present string and passes on an absent one", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-assert-notcontains-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     await Deno.writeTextFile(join(workspaceRoot, "artifact.json"), '{"kind": "symbol_references_symbol"}');
 
     const present = await evaluateCriterion({
@@ -981,9 +965,7 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] text-not-contains fails on a pr
       workspaceRoot,
     });
     assertEquals(missingFile.status, CriterionStatus.FAILED, "a missing file must not pass vacuously");
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "scenario-assert-notcontains-" });
 });
 
 Deno.test("[ScenarioFrameworkAssertionsEvidence] a judge artifact follows the step working directory", async () => {

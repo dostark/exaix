@@ -21,7 +21,7 @@ import { materializeCellConfig } from "../../runner/synthetic_runner.ts";
 import { MATRIX_START_DAEMON_STEP_ID } from "../../runner/matrix_expander.ts";
 import { ScenarioStepType } from "../../schema/step_schema.ts";
 import type { IScenarioStep } from "../../schema/step_schema.ts";
-import { readConfigFixture } from "@exaix/testing";
+import { readConfigFixture, withTempDir } from "@exaix/testing";
 
 const PRESET = [
   "[system]",
@@ -79,8 +79,7 @@ Deno.test("[materialize_cell_config] writes a sentinel-resolved config into the 
 });
 
 Deno.test("[materialize_cell_config] a step list without a start-daemon EXA_CONFIG_PATH is returned unchanged", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "materialize-cell-noop-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const plain = {
       id: "submit-request",
       type: ScenarioStepType.EXACTL,
@@ -97,9 +96,7 @@ Deno.test("[materialize_cell_config] a step list without a start-daemon EXA_CONF
     assertEquals(result.steps, [plain]);
     assertEquals(result.aiProvider, undefined);
     assertEquals(result.aiModel, undefined);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "materialize-cell-noop-" });
 });
 
 Deno.test("[materialize_cell_config] a preset with no sentinels still materializes a workspace copy (idempotent, boot-safe)", async () => {

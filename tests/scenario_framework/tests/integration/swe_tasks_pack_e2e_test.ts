@@ -14,6 +14,7 @@ import { loadScenarioFromYamlFile } from "../../runner/scenario_loader.ts";
 import { type IMatrixBlock, MATRIX_START_DAEMON_STEP_ID, resolveRunnableSteps } from "../../runner/matrix_expander.ts";
 import { loadCellCatalog, resolveCatalogCells } from "../../runner/cell_catalog.ts";
 import { materializeCellConfig } from "../../runner/synthetic_runner.ts";
+import { withTempDir } from "@exaix/testing";
 
 const FRAMEWORK_HOME = resolve(new URL(".", import.meta.url).pathname, "../..");
 const REPO_ROOT = resolve(FRAMEWORK_HOME, "..", "..");
@@ -141,8 +142,7 @@ for (const { name, cellTool, expectedProvider, expectedModel } of CONFIG_AGREEME
     const cellConfigPath = loaded.scenario.matrix?.cells?.find((c) => c.tool === cellTool)?.config;
     const daemonStep = loaded.steps.find((s) => s.id === MATRIX_START_DAEMON_STEP_ID);
 
-    const workspaceRoot = await Deno.makeTempDir({ prefix: "swe-tasks-config-agreement-" });
-    try {
+    await withTempDir(async (workspaceRoot) => {
       const steps = [{
         ...daemonStep!,
         env: { ...daemonStep!.env, EXA_CONFIG_PATH: resolve(REPO_ROOT, cellConfigPath!) },
@@ -150,8 +150,6 @@ for (const { name, cellTool, expectedProvider, expectedModel } of CONFIG_AGREEME
       const materialized = await materializeCellConfig(steps, { workspaceRoot, worktreePath: "/repo-under-test" });
       assertEquals(materialized.aiProvider, expectedProvider);
       assertEquals(materialized.aiModel, expectedModel);
-    } finally {
-      await Deno.remove(workspaceRoot, { recursive: true });
-    }
+    }, { prefix: "swe-tasks-config-agreement-" });
   });
 }

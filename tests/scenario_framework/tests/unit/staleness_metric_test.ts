@@ -18,7 +18,7 @@ import { MemoryBankService, SessionMemoryService } from "@exaix/memory";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
-import { castAny, createSampleLearning, initTestDbService } from "@exaix/testing";
+import { castAny, createSampleLearning, initTestDbService, withTempDir } from "@exaix/testing";
 import { MemoryStatus } from "@exaix/core/status";
 import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import { computeStalenessCorrect } from "../../runner/consolidation_metrics.ts";
@@ -43,8 +43,7 @@ Deno.test("[StalenessCorrect] current fact missing entirely scores 0", () => {
 });
 
 Deno.test("[StalenessCorrect] reflects real retrieval after a genuine supersedeLearning call — the retired id is excluded", async () => {
-  const workspaceRoot = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const config: Config = ConfigSchema.parse({
       system: { root: workspaceRoot },
       paths: {},
@@ -93,7 +92,5 @@ Deno.test("[StalenessCorrect] reflects real retrieval after a genuine supersedeL
     } finally {
       await cleanup();
     }
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  });
 });

@@ -15,6 +15,7 @@ import { loadScenarioFromYamlFile } from "../../runner/scenario_loader.ts";
 import { executeScenarioStep } from "../../runner/step_executor.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
 import { ScenarioStepType } from "../../schema/step_schema.ts";
+import { withTempDir } from "@exaix/testing";
 
 function createValidScenarioYaml(requestFixturePath: string): string {
   return [
@@ -46,12 +47,9 @@ function createValidScenarioYaml(requestFixturePath: string): string {
 async function withTempFrameworkHome(
   fn: (frameworkHome: string) => Promise<void>,
 ): Promise<void> {
-  const frameworkHome = await Deno.makeTempDir({ prefix: "scenario-framework-" });
-  try {
+  await withTempDir(async (frameworkHome) => {
     await fn(frameworkHome);
-  } finally {
-    await Deno.remove(frameworkHome, { recursive: true });
-  }
+  }, { prefix: "scenario-framework-" });
 }
 
 async function setupFixtureFiles(

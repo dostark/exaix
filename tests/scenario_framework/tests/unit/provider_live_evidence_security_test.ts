@@ -7,10 +7,10 @@
  */
 import { assertEquals, assertRejects } from "@std/assert";
 import { writeProviderLiveEvidence } from "../../runner/provider_live_evidence.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("[security] binding evidence rejects scenario path traversal before writing", async () => {
-  const outputDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (outputDir) => {
     for (const scenarioId of ["../escape", "nested/scenario", "scenario\\escape"]) {
       await assertRejects(
         () =>
@@ -28,7 +28,5 @@ Deno.test("[security] binding evidence rejects scenario path traversal before wr
       );
     }
     assertEquals(Array.from(Deno.readDirSync(outputDir)), []);
-  } finally {
-    await Deno.remove(outputDir, { recursive: true });
-  }
+  });
 });

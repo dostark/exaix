@@ -17,6 +17,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { loadArtefactCatalog } from "../../runner/artefact_catalog.ts";
 import { ArtefactKind } from "../../runner/artefact_decision_coverage.ts";
+import { withTempDir } from "@exaix/testing";
 
 async function writeFixtureBlueprints(root: string): Promise<void> {
   const agentRolesDir = pathBuilders.agentsPath(root);
@@ -51,8 +52,7 @@ async function writeFixtureBlueprints(root: string): Promise<void> {
 }
 
 Deno.test("[ArtefactCatalog] a fixture catalog resolves to the expected refs", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeFixtureBlueprints(root);
     const catalog = await loadArtefactCatalog(root);
 
@@ -64,37 +64,28 @@ Deno.test("[ArtefactCatalog] a fixture catalog resolves to the expected refs", a
         { kind: ArtefactKind.SKILL, artefactId: "response-contract" },
       ],
     );
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ArtefactCatalog] README files never appear in any kind", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeFixtureBlueprints(root);
     const catalog = await loadArtefactCatalog(root);
     assertEquals(catalog.some((ref) => ref.artefactId === "README"), false);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ArtefactCatalog] mock-agent and default are excluded (non-curated agent roles)", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeFixtureBlueprints(root);
     const catalog = await loadArtefactCatalog(root);
     const agentRoles = catalog.filter((r) => r.kind === ArtefactKind.AGENT_ROLE).map((r) => r.artefactId);
     assertEquals(agentRoles, ["senior-coder"]);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ArtefactCatalog] a flow's id comes from its declared `id:` field, not the filename", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await Deno.mkdir(pathBuilders.agentsPath(root), { recursive: true });
     await Deno.mkdir(pathBuilders.memorySkillsPath(root), { recursive: true });
     await Deno.mkdir(pathBuilders.flowsPath(root), { recursive: true });
@@ -105,21 +96,16 @@ Deno.test("[ArtefactCatalog] a flow's id comes from its declared `id:` field, no
 
     const catalog = await loadArtefactCatalog(root);
     assertEquals(catalog, [{ kind: ArtefactKind.FLOW, artefactId: "real-declared-id" }]);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ArtefactCatalog] flow templates under Flows/templates/ are not enumerated", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeFixtureBlueprints(root);
     const catalog = await loadArtefactCatalog(root);
     const flowIds = catalog.filter((r) => r.kind === ArtefactKind.FLOW).map((r) => r.artefactId);
     assertEquals(flowIds, ["feature-development"]);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[ArtefactCatalog] the real repo catalog enumerates each kind with no duplicate ids", async () => {

@@ -20,6 +20,7 @@ import { FlowLoader } from "@exaix/flow";
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";
 import { expandVariablesInStep } from "../../runner/synthetic_runner.ts";
 import { resolveCellConfig } from "../../runner/matrix_expander.ts";
+import { withTempDir } from "@exaix/testing";
 
 const FRAMEWORK_HOME = new URL("../../", import.meta.url).pathname;
 const REPO_ROOT = new URL("../../../../", import.meta.url).pathname;
@@ -87,8 +88,7 @@ Deno.test("[flow blueprint setup] the dynamic Team scenario receives an explicit
 
 for (const useSymlink of [false, true]) {
   Deno.test(`[flow blueprint delegate] emits the exact keyed recording with symlink=${useSymlink}`, async () => {
-    const directory = await Deno.makeTempDir();
-    try {
+    await withTempDir(async (directory) => {
       const key = "dogfood_loop__submit-flow-request__review__0";
       const fixture = JSON.parse(
         await Deno.readTextFile(`${FRAMEWORK_HOME}fixtures/mock_recordings/flow_blueprints/${key}.json`),
@@ -103,9 +103,7 @@ for (const useSymlink of [false, true]) {
       assertEquals(result.type, "result");
       assertEquals(result.result, fixture.response);
       assertEquals(result.usage, { input_tokens: fixture.tokens.input, output_tokens: fixture.tokens.output });
-    } finally {
-      await Deno.remove(directory, { recursive: true });
-    }
+    });
   });
 }
 

@@ -20,6 +20,7 @@ import {
 } from "../../runner/validity_gate.ts";
 import { writeRunManifest } from "../../runner/evidence_collector.ts";
 import type { IRunManifest } from "../../runner/evidence_collector.ts";
+import { withTempDir } from "@exaix/testing";
 
 function makeBinding(overrides: Partial<IMechanicsBinding> = {}): IMechanicsBinding {
   return {
@@ -106,13 +107,10 @@ Deno.test("[ValidityGate] mechanics evidence is persisted in the run manifest al
     mechanicsEvidence: evidence,
   };
 
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const manifestPath = await writeRunManifest({ outputDir: tempDir, manifest });
     const written = JSON.parse(await Deno.readTextFile(manifestPath)) as IRunManifest;
     assertEquals(written.mechanicsEvidence, evidence);
     assertEquals(written.armComparison, undefined);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });

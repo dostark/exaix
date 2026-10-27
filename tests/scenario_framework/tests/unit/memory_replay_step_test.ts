@@ -16,6 +16,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { runMemoryReplay } from "../../scripts/run_memory_replay.ts";
 import { computeRecallAtK } from "../../runner/retrieval_metrics.ts";
 import type { IMemoryTaskJson } from "../../schema/memory_task_schema.ts";
+import { withTempDir } from "@exaix/testing";
 
 const EXEMPLAR_LEARNING_ID = "aaaaaaaa-0000-4000-8000-000000000001";
 
@@ -39,24 +40,18 @@ const EXEMPLAR_TASK: IMemoryTaskJson = {
 };
 
 Deno.test("[MemoryReplayStep] seed→query→capture: retrieves the seeded learning's id via the real keyword-retrieval surface", async () => {
-  const workspaceRoot = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const result = await runMemoryReplay(workspaceRoot, EXEMPLAR_TASK);
     assertEquals(result.retrieved_ids, [EXEMPLAR_LEARNING_ID]);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryReplayStep] end-to-end: retrieved ids score a perfect recall@k against the fixture's own ground truth", async () => {
-  const workspaceRoot = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const result = await runMemoryReplay(workspaceRoot, EXEMPLAR_TASK);
     const score = computeRecallAtK(result.retrieved_ids, EXEMPLAR_TASK.queries[0].ground_truth_ids, 5);
     assertEquals(score, 1.0);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryReplayStep] is deterministic — two independent runs on fresh workspaces agree", async () => {
@@ -73,35 +68,28 @@ Deno.test("[MemoryReplayStep] is deterministic — two independent runs on fresh
 });
 
 Deno.test("[MemoryReplayStep] a query with no relevant memory seeded retrieves nothing (no fabrication)", async () => {
-  const workspaceRoot = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const unrelatedQueryTask: IMemoryTaskJson = {
       ...EXEMPLAR_TASK,
       queries: [{ text: "a completely unrelated fact never mentioned anywhere", ground_truth_ids: [] }],
     };
     const result = await runMemoryReplay(workspaceRoot, unrelatedQueryTask);
     assertEquals(result.retrieved_ids, []);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryReplayStep] throws a clear error when queryIndex is out of range", async () => {
-  const workspaceRoot = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (workspaceRoot) => {
     await assertRejects(
       () => runMemoryReplay(workspaceRoot, EXEMPLAR_TASK, 5),
       Error,
       "no query at index 5",
     );
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryReplayStep] returns retrieved_content (title + content) alongside retrieved_ids for judge evidence", async () => {
-  const workspaceRoot = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const result = await runMemoryReplay(workspaceRoot, EXEMPLAR_TASK);
     assertEquals(result.retrieved_content, [
       {
@@ -110,33 +98,25 @@ Deno.test("[MemoryReplayStep] returns retrieved_content (title + content) alongs
         content: "The rate limiter fully resets on a process restart, not on a per-request basis.",
       },
     ]);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryReplayStep] writes a query/expected-answer context file when the query has an expected_answer", async () => {
-  const workspaceRoot = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (workspaceRoot) => {
     await runMemoryReplay(workspaceRoot, EXEMPLAR_TASK);
     const context = await Deno.readTextFile(`${workspaceRoot}/memory-task-context.md`);
     assertEquals(context.includes(EXEMPLAR_TASK.queries[0].text), true);
     assertEquals(context.includes(EXEMPLAR_TASK.queries[0].expected_answer!), true);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryReplayStep] skips the context file when the query has no expected_answer (e.g. abstention)", async () => {
-  const workspaceRoot = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const abstentionTask: IMemoryTaskJson = {
       ...EXEMPLAR_TASK,
       queries: [{ text: "a fact never stored", ground_truth_ids: [] }],
     };
     await runMemoryReplay(workspaceRoot, abstentionTask);
     await assertRejects(() => Deno.readTextFile(`${workspaceRoot}/memory-task-context.md`));
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  });
 });

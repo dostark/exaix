@@ -12,25 +12,20 @@
 
 import { assertEquals } from "@std/assert";
 import { runMemoryConsolidationCheck } from "../../scripts/run_memory_consolidation_check.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("[MemoryConsolidationCheckScript] a genuine near-duplicate merge scores dedup_rate 1", async () => {
-  const workspaceRoot = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const result = await runMemoryConsolidationCheck(workspaceRoot);
     assertEquals(result.dedup_rate, 1);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryConsolidationCheckScript] a genuine contradiction-update scores contradiction_correct 1", async () => {
-  const workspaceRoot = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const result = await runMemoryConsolidationCheck(workspaceRoot);
     assertEquals(result.contradiction_correct, 1);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryConsolidationCheckScript] is deterministic — two independent runs on fresh workspaces agree", async () => {

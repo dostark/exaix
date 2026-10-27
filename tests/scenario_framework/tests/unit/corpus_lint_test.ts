@@ -12,6 +12,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { lintTaskCorpus } from "../../runner/corpus_lint.ts";
+import { withTempDir } from "@exaix/testing";
 
 const VALID_BASE_REF = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0";
 
@@ -32,8 +33,7 @@ async function writeTask(dir: string, id: string, task: ITestTaskFixture): Promi
 }
 
 Deno.test("[CorpusLint] accepts a well-formed clean/attacked pair", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeTask(root, "leak-clean", {
       base_ref: VALID_BASE_REF,
       scoped_test_cmd: "deno test",
@@ -53,14 +53,11 @@ Deno.test("[CorpusLint] accepts a well-formed clean/attacked pair", async () => 
     });
     const result = await lintTaskCorpus([root]);
     assertEquals(result.errors, []);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[CorpusLint] flags an attacked task whose twin_of does not resolve", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeTask(root, "leak-attacked", {
       base_ref: VALID_BASE_REF,
       scoped_test_cmd: "deno test",
@@ -75,26 +72,20 @@ Deno.test("[CorpusLint] flags an attacked task whose twin_of does not resolve", 
     const result = await lintTaskCorpus([root]);
     assertEquals(result.errors.length, 1);
     assertStringIncludes(result.errors[0], "does-not-exist");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[CorpusLint] flags a task.json that fails schema validation", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeTask(root, "broken", { scoped_test_cmd: "deno test" });
     const result = await lintTaskCorpus([root]);
     assertEquals(result.errors.length, 1);
     assertStringIncludes(result.errors[0], "broken");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[CorpusLint] flags a canary value shaped like a real secret", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeTask(root, "leak-clean", {
       base_ref: VALID_BASE_REF,
       scoped_test_cmd: "deno test",
@@ -118,14 +109,11 @@ Deno.test("[CorpusLint] flags a canary value shaped like a real secret", async (
     const result = await lintTaskCorpus([root]);
     assertEquals(result.errors.length, 1);
     assertStringIncludes(result.errors[0], "secret-shaped");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[CorpusLint] accepts a properly-shaped CANARY-<uuid> fixture value", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     const taskDir = join(root, "leak-clean");
     await Deno.mkdir(taskDir, { recursive: true });
     await Deno.writeTextFile(
@@ -140,9 +128,7 @@ Deno.test("[CorpusLint] accepts a properly-shaped CANARY-<uuid> fixture value", 
     await Deno.writeTextFile(join(taskDir, "canary.txt"), "CANARY-a1b2c3d4-e5f6-47a8-b9c0-d1e2f3a4b5c6");
     const result = await lintTaskCorpus([root]);
     assertEquals(result.errors, []);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[CorpusLint] the real fixtures/swe_tasks and fixtures/adversarial corpora are clean", async () => {

@@ -16,6 +16,7 @@ import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { CI_EXCLUDED_TAGS, listCiSafeScenarios, loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
+import { withTempDir } from "@exaix/testing";
 
 function scenarioYaml(id: string, tags: string[], requestFixturePath: string): string {
   return [
@@ -41,8 +42,7 @@ function scenarioYaml(id: string, tags: string[], requestFixturePath: string): s
 async function withCatalogFixture(
   fn: (frameworkHome: string) => Promise<void>,
 ): Promise<void> {
-  const frameworkHome = await Deno.makeTempDir({ prefix: "scenario-framework-docker-tag-" });
-  try {
+  await withTempDir(async (frameworkHome) => {
     const fixtureRelativePath = "fixtures/requests/shared/request.md";
     await Deno.mkdir(join(frameworkHome, "fixtures/requests/shared"), { recursive: true });
     await Deno.writeTextFile(join(frameworkHome, fixtureRelativePath), "# Request\n\nDo it.\n");
@@ -62,9 +62,7 @@ async function withCatalogFixture(
     );
 
     await fn(frameworkHome);
-  } finally {
-    await Deno.remove(frameworkHome, { recursive: true });
-  }
+  }, { prefix: "scenario-framework-docker-tag-" });
 }
 
 Deno.test("[ScenarioCatalogDockerTagExcluded] CI_EXCLUDED_TAGS contains docker directly, not merely incidentally via provider-live co-occurrence", () => {

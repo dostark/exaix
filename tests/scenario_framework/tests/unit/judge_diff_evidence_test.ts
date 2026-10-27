@@ -18,6 +18,7 @@ import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { computeGitDiffEvidence, evaluateLlmJudgeCriterion, resolveTestRunStatus } from "../../runner/assertions.ts";
 import type { IScenarioStepOutcome } from "../../runner/assertions.ts";
 import { CriterionKind, CriterionPhase, CriterionStatus } from "../../schema/step_schema.ts";
+import { withTempDir } from "@exaix/testing";
 
 async function runGit(cwd: string, args: string[]): Promise<void> {
   const output = await new Deno.Command("git", { args, cwd, stdout: "null", stderr: "piped" }).output();
@@ -43,8 +44,7 @@ async function initRepoWithFix(
 }
 
 Deno.test("[JudgeDiffEvidence] a genuine fix produces a non-empty diff showing the added lines", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-diff-evidence-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const repoDir = `${workspaceRoot}/todo-app`;
     await initRepoWithFix(
       repoDir,
@@ -55,17 +55,14 @@ Deno.test("[JudgeDiffEvidence] a genuine fix produces a non-empty diff showing t
 
     const diff = await computeGitDiffEvidence(workspaceRoot, "todo-app/utils.ts");
     assertStringIncludes(diff, "if (!x) return");
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "judge-diff-evidence-" });
 });
 
 Deno.test("[JudgeDiffEvidence] an uncommitted fix in the working tree is still captured, not silently reported as no changes", async () => {
   // A Haiku-solved trial left its correct fix uncommitted — diffing root..HEAD alone saw
   // nothing, since HEAD was still the init commit. Judging "(no changes)" against
   // genuinely-fixed-but-uncommitted code is exactly the failure the validity gate exists to catch.
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-diff-evidence-uncommitted-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const repoDir = `${workspaceRoot}/todo-app`;
     await Deno.mkdir(repoDir, { recursive: true });
     await Deno.writeTextFile(`${repoDir}/utils.ts`, "export function f() { return x.y; }\n");
@@ -77,14 +74,11 @@ Deno.test("[JudgeDiffEvidence] an uncommitted fix in the working tree is still c
 
     const diff = await computeGitDiffEvidence(workspaceRoot, "todo-app/utils.ts");
     assertStringIncludes(diff, "if (!x) return");
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "judge-diff-evidence-uncommitted-" });
 });
 
 Deno.test("[JudgeDiffEvidence] no changes since the root commit is reported explicitly, not as an empty/ambiguous string", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-diff-evidence-nochange-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const repoDir = `${workspaceRoot}/todo-app`;
     // A single commit only: root commit == HEAD, so a diff between them is trivially empty —
     // exercises the "nothing changed" path without a redundant no-op second commit.
@@ -96,14 +90,11 @@ Deno.test("[JudgeDiffEvidence] no changes since the root commit is reported expl
 
     const diff = await computeGitDiffEvidence(workspaceRoot, "todo-app/utils.ts");
     assertStringIncludes(diff, "no changes");
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "judge-diff-evidence-nochange-" });
 });
 
 Deno.test("[JudgeDiffEvidence] the diff is scoped to the requested file, not the whole repo", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-diff-evidence-scope-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const repoDir = `${workspaceRoot}/todo-app`;
     await Deno.mkdir(repoDir, { recursive: true });
     await Deno.writeTextFile(`${repoDir}/utils.ts`, "a\n");
@@ -120,14 +111,11 @@ Deno.test("[JudgeDiffEvidence] the diff is scoped to the requested file, not the
     assertStringIncludes(diff, "a-changed");
     assertFalse(diff.includes("other.ts"));
     assertFalse(diff.includes("b-changed"));
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "judge-diff-evidence-scope-" });
 });
 
 Deno.test("[JudgeDiffEvidence] whole-branch mode diffs EVERY applied change in the repo", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-diff-evidence-branch-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const repoDir = `${workspaceRoot}/todo-app`;
     await Deno.mkdir(repoDir, { recursive: true });
     await Deno.writeTextFile(`${repoDir}/utils.ts`, "a\n");
@@ -145,14 +133,11 @@ Deno.test("[JudgeDiffEvidence] whole-branch mode diffs EVERY applied change in t
     assertStringIncludes(diff, "b-changed");
     assertStringIncludes(diff, "utils.ts");
     assertStringIncludes(diff, "storage.ts");
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "judge-diff-evidence-branch-" });
 });
 
 Deno.test("[JudgeDiffEvidence] a git-diff judge records the diff dir as evidence and captures reasoning", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-diff-evidence-err-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const repoDir = `${workspaceRoot}/todo-app`;
     await Deno.mkdir(repoDir, { recursive: true });
     await Deno.writeTextFile(`${repoDir}/storage.ts`, "a\n");
@@ -180,9 +165,7 @@ Deno.test("[JudgeDiffEvidence] a git-diff judge records the diff dir as evidence
     assertEquals(result.evidence_refs, ["todo-app"], "the diff dir is the recorded evidence");
     assertEquals(result.judge?.provider, "claude-cli");
     assertStringIncludes(result.judge?.reasoning ?? "", "mock pass");
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "judge-diff-evidence-err-" });
 });
 
 function testOutcome(stepId: string, status: CriterionStatus, exitCode: number, output: string): IScenarioStepOutcome {

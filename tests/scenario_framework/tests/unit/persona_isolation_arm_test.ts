@@ -10,7 +10,7 @@ import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { PathResolver } from "@exaix/portal";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import {
   buildPersonaIsolationArmPlan,
   GENERIC_PERSONA_BODY,
@@ -31,8 +31,7 @@ Write careful code.
 `;
 
 Deno.test("[PersonaIsolationArm] materializes shipped, generic, and empty bodies with byte-identical frontmatter", async () => {
-  const root = await Deno.makeTempDir({ prefix: "persona-arm-" });
-  try {
+  await withTempDir(async (root) => {
     const source = pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH, "senior-coder.md");
     await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.mkdir(pathBuilders.memoryPath(root, "persona-overlays"), { recursive: true });
@@ -56,7 +55,5 @@ Deno.test("[PersonaIsolationArm] materializes shipped, generic, and empty bodies
     assertStringIncludes(contents[1], GENERIC_PERSONA_BODY);
     assertEquals(contents[2], `${frontmatters[2]}\n`);
     assertEquals(await Deno.readTextFile(source), BLUEPRINT);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "persona-arm-" });
 });

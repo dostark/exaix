@@ -16,7 +16,7 @@ import { MemoryBankService } from "@exaix/memory";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
-import { createSampleLearning, initTestDbService } from "@exaix/testing";
+import { createSampleLearning, initTestDbService, withTempDir } from "@exaix/testing";
 import { MemoryStatus } from "@exaix/core/status";
 import { computeDedupRate } from "../../runner/consolidation_metrics.ts";
 
@@ -37,8 +37,7 @@ Deno.test("[DedupRate] throws when no near-duplicates were present — rate is u
 });
 
 Deno.test("[DedupRate] reflects the real bank state after a genuine supersedeLearning merge", async () => {
-  const workspaceRoot = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const config: Config = ConfigSchema.parse({
       system: { root: workspaceRoot },
       paths: {},
@@ -80,7 +79,5 @@ Deno.test("[DedupRate] reflects the real bank state after a genuine supersedeLea
     } finally {
       await cleanup();
     }
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  });
 });

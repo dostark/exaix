@@ -15,17 +15,15 @@ import {
   reconcileManifest,
 } from "../helpers/expected_call_manifest.ts";
 import { type IManifestCase, loadManifestCases } from "./helpers/flows_fixture_coverage_fixture.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("[flows_fixture_coverage] [security] shared call prefixes reject path traversal", async () => {
-  const root = await Deno.makeTempDir({ prefix: "manifest-prefix-" });
-  try {
+  await withTempDir(async (root) => {
     const dir = join(root, "fixtures", "phase205", "expected_calls");
     await Deno.mkdir(dir, { recursive: true });
     await Deno.writeTextFile(join(dir, "invalid.json"), JSON.stringify({ callPrefix: "../outside", calls: [] }));
     await assertRejects(() => loadManifest(root, "invalid"), Error, "Invalid call prefix");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "manifest-prefix-" });
 });
 
 Deno.test("[flows_fixture_coverage] [security] omissions and extra fixtures cannot certify themselves", async () => {

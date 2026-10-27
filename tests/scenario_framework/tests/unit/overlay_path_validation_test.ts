@@ -15,12 +15,11 @@ import { DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import { validateCatalogOverlayDir } from "../../runner/arm_overlay.ts";
 
 Deno.test("[OverlayPathValidation] an overlay directory inside the workspace boundary resolves to an absolute path", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "overlay-path-valid-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const overlayDir = pathBuilders.memoryPath(tempDir, DEFAULT_SKILLS_MEMORY_PATH, "eval-overlay");
     await Deno.mkdir(overlayDir, { recursive: true });
 
@@ -29,28 +28,22 @@ Deno.test("[OverlayPathValidation] an overlay directory inside the workspace bou
 
     const resolved = await validateCatalogOverlayDir(resolver, "@Memory/Skills/eval-overlay");
     assertEquals(resolved, overlayDir);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "overlay-path-valid-" });
 });
 
 Deno.test("[OverlayPathValidation] a path traversal attempt outside the workspace boundary is rejected", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "overlay-path-traversal-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir);
     const resolver = new PathResolver(config);
 
     await assertRejects(
       () => validateCatalogOverlayDir(resolver, "@Memory/../../../etc"),
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "overlay-path-traversal-" });
 });
 
 Deno.test("[OverlayPathValidation] a bare path with no portal alias is rejected before ever touching the filesystem", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "overlay-path-no-alias-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir);
     const resolver = new PathResolver(config);
 
@@ -58,14 +51,11 @@ Deno.test("[OverlayPathValidation] a bare path with no portal alias is rejected 
       () => validateCatalogOverlayDir(resolver, "/etc/passwd"),
       Error,
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "overlay-path-no-alias-" });
 });
 
 Deno.test("[OverlayPathValidation] a symlink inside the alias root that escapes it is rejected", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "overlay-path-symlink-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const memoryDir = pathBuilders.memoryPath(tempDir);
     const skillsDir = pathBuilders.memorySkillsPath(memoryDir);
     const outsideDir = join(tempDir, "outside-secret");
@@ -80,7 +70,5 @@ Deno.test("[OverlayPathValidation] a symlink inside the alias root that escapes 
       () => validateCatalogOverlayDir(resolver, "@Memory/Skills/escape"),
     );
     assertStringIncludes(String(error), "denied");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "overlay-path-symlink-" });
 });

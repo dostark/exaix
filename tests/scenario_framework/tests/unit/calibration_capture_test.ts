@@ -12,7 +12,7 @@
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { withEnv } from "@exaix/testing";
+import { withEnv, withTempDir } from "@exaix/testing";
 import {
   callLlmEndpoint,
   evaluateLlmJudgeCriterion,
@@ -180,8 +180,7 @@ Deno.test({
   name:
     "[CalibrationCapture] --capture-calibration-evidence's env var writes a real snapshot when no explicit calibrationCapture is given",
   fn: async () => {
-    const captureDir = await Deno.makeTempDir();
-    try {
+    await withTempDir(async (captureDir) => {
       await withEnv({
         EXA_LLM_PROVIDER: "mock",
         [CAPTURE_CALIBRATION_EVIDENCE_ENV_VAR]: captureDir,
@@ -202,9 +201,7 @@ Deno.test({
       assertEquals(snapshot.real_run_marker, true);
       assertExists(snapshot.request_context);
       assertExists(snapshot.source_revision);
-    } finally {
-      await Deno.remove(captureDir, { recursive: true });
-    }
+    });
   },
   sanitizeOps: false,
   sanitizeResources: false,
@@ -213,8 +210,7 @@ Deno.test({
 Deno.test({
   name: "[CalibrationCapture] an explicit calibrationCapture takes precedence over the env-var default",
   fn: async () => {
-    const captureDir = await Deno.makeTempDir();
-    try {
+    await withTempDir(async (captureDir) => {
       await withEnv({
         EXA_LLM_PROVIDER: "mock",
         [CAPTURE_CALIBRATION_EVIDENCE_ENV_VAR]: captureDir,
@@ -240,9 +236,7 @@ Deno.test({
         indexExists = false;
       }
       assertEquals(indexExists, false);
-    } finally {
-      await Deno.remove(captureDir, { recursive: true });
-    }
+    });
   },
   sanitizeOps: false,
   sanitizeResources: false,

@@ -17,6 +17,7 @@ import type { IMatrixCell } from "../../runner/matrix_expander.ts";
 import { ConfigSchema } from "@exaix/schemas";
 import { loadCellCatalog, resolveCatalogCells } from "../../runner/cell_catalog.ts";
 import { resolveCellConfig } from "../../runner/matrix_expander.ts";
+import { withTempDir } from "@exaix/testing";
 
 /** Presets whose bindings differ from their own config's provider and model on purpose.
  *  The self-hosted preset test asserts each of those bindings by name. */
@@ -110,8 +111,7 @@ Deno.test("[CellCatalog] the exactl presets name the exactl tool and keep native
 });
 
 Deno.test("[CellCatalog] a row without a tool field defaults to the exactl tool", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "cell-catalog-defaults-" });
-  try {
+  await withTempDir(async (dir) => {
     const path = join(dir, "eval-cells.toml");
     await Deno.writeTextFile(
       path,
@@ -126,9 +126,7 @@ Deno.test("[CellCatalog] a row without a tool field defaults to the exactl tool"
     const catalog = await loadCellCatalog(path);
     assertEquals(catalog.presets["bare"]?.tool, "exactl");
     assertEquals(catalog.presets["bare"]?.requires_bin, "true");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "cell-catalog-defaults-" });
 });
 
 Deno.test("[CellCatalog] every referenced config file exists", async () => {
@@ -180,8 +178,7 @@ Deno.test("[CellCatalog] a preset's default binding names the canonical model it
 });
 
 Deno.test("[CellCatalog] a preset catalog carrying the fixture-port sentinel loads unresolved", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "cell-catalog-sentinel-" });
-  try {
+  await withTempDir(async (dir) => {
     const path = join(dir, "eval-cells.toml");
     await Deno.writeTextFile(
       path,
@@ -209,9 +206,7 @@ Deno.test("[CellCatalog] a preset catalog carrying the fixture-port sentinel loa
       catalog.presets["fixture"]?.catalog?.services?.fixture?.endpoint,
       "http://127.0.0.1:__COMPAT_FIXTURE_PORT__/v1/chat/completions",
     );
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "cell-catalog-sentinel-" });
 });
 
 Deno.test("[CellCatalog] resolveCatalogCells keeps the declared order", async () => {

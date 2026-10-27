@@ -18,6 +18,7 @@ import type { IEvaluateCriterionOptions } from "../../runner/assertions.ts";
 import { computeStepScore } from "../../runner/scoring.ts";
 import { DEFAULT_CLI_DELEGATE_TIMEOUT_MS } from "@exaix/ai-clidelegate";
 import { ProviderType } from "@exaix/core";
+import { withTempDir } from "@exaix/testing";
 
 function makeOptions(overrides?: Partial<IEvaluateCriterionOptions>): IEvaluateCriterionOptions {
   return {
@@ -146,8 +147,7 @@ Deno.test({
     // buildEvaluationPrompt's `context` slot was always fed `criterion.rubric`, never
     // populated for preset-based criteria (e.g. GOAL_ALIGNED_REVIEW has no rubric) — so the
     // judge scored goal_alignment/request_understanding blind, without the task/request text.
-    const tempDir = await Deno.makeTempDir();
-    try {
+    await withTempDir(async (tempDir) => {
       const requestPath = "request.md";
       await Deno.writeTextFile(
         join(tempDir, requestPath),
@@ -169,9 +169,7 @@ Deno.test({
         contextPath: requestPath,
       });
       assertStringIncludes(withContext ?? "", "Fix the null-safety bug in formatAssignee.");
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
+    });
   },
   sanitizeOps: false,
   sanitizeResources: false,

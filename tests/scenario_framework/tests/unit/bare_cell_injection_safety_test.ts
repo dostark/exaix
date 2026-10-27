@@ -17,6 +17,7 @@ import { CriterionKind, type IScenarioStep, ScenarioStepType } from "../../schem
 import { executeScenarioStep } from "../../runner/step_executor.ts";
 import { expandFileContentSentinels, expandVariablesInStep } from "../../runner/synthetic_runner.ts";
 import { REQUEST_FIXTURE_CONTENT_SENTINEL } from "../../runner/matrix_expander.ts";
+import { withTempDir } from "@exaix/testing";
 
 const METACHARACTER_TASK_CONTENT =
   "Fix the null guard; run $(rm -rf /tmp/exaix-probe) `id` \"unbalanced; 'semi'; # hash" +
@@ -51,8 +52,7 @@ Deno.test("[BareCellInjection] env expansion leaves the content sentinel verbati
 });
 
 Deno.test("[BareCellInjection] file-content expansion replaces the sentinel with the fixture bytes as one element", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const fixturePath = join(tempDir, "task.md");
     await Deno.writeTextFile(fixturePath, METACHARACTER_TASK_CONTENT);
 
@@ -70,14 +70,11 @@ Deno.test("[BareCellInjection] file-content expansion replaces the sentinel with
       !contentArgs.includes(REQUEST_FIXTURE_CONTENT_SENTINEL),
       "sentinel must not remain in the final args",
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[BareCellInjection] a spawned process receives the metacharacter content as a single verbatim argument", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const fixturePath = join(tempDir, "task.md");
     await Deno.writeTextFile(fixturePath, METACHARACTER_TASK_CONTENT);
 
@@ -106,7 +103,5 @@ Deno.test("[BareCellInjection] a spawned process receives the metacharacter cont
       !(result.stderr.includes("sh:") || result.stderr.includes("not found")),
       "no shell must be involved in the launch",
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });

@@ -18,7 +18,7 @@ import { MemoryBankService } from "@exaix/memory";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
-import { createSampleLearning, initTestDbService } from "@exaix/testing";
+import { createSampleLearning, initTestDbService, withTempDir } from "@exaix/testing";
 import { MemoryStatus } from "@exaix/core/status";
 import { computeContradictionCorrect } from "../../runner/consolidation_metrics.ts";
 
@@ -39,8 +39,7 @@ Deno.test("[ContradictionCorrect] throws on an empty outcome list — correctnes
 });
 
 Deno.test("[ContradictionCorrect] reflects the real bank state after a genuine updateLearning + supersedeLearning pair", async () => {
-  const workspaceRoot = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (workspaceRoot) => {
     const config: Config = ConfigSchema.parse({
       system: { root: workspaceRoot },
       paths: {},
@@ -100,7 +99,5 @@ Deno.test("[ContradictionCorrect] reflects the real bank state after a genuine u
     } finally {
       await cleanup();
     }
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  });
 });

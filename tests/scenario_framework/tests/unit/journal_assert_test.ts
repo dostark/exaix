@@ -16,6 +16,7 @@ import { assertEquals, assertObjectMatch } from "@std/assert";
 import { Database } from "@db/sqlite";
 import { executeScenarioStep, substituteRuntimeVars } from "../../runner/step_executor.ts";
 import { ScenarioStepSchema, ScenarioStepType } from "../../schema/step_schema.ts";
+import { withTempDir } from "@exaix/testing";
 
 function journalAssertStep(overrides: Partial<JournalAssertConfig> = {}) {
   return {
@@ -56,8 +57,7 @@ async function withJournal(
   rows: Array<[string, string, string]> = DEFAULT_ROWS,
   fn: (ws: string) => void | Promise<void>,
 ): Promise<void> {
-  const ws = await Deno.makeTempDir({ prefix: "journal-assert-" });
-  try {
+  await withTempDir(async (ws) => {
     await Deno.mkdir(pathBuilders.runtimePath(ws), { recursive: true });
     const db = new Database(pathBuilders.runtimePath(ws, "journal.db"));
     db.prepare(
@@ -70,9 +70,7 @@ async function withJournal(
     }
     db.close();
     await fn(ws);
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "journal-assert-" });
 }
 
 // expect_count

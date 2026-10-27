@@ -14,6 +14,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { executeScenarioStep } from "../../runner/step_executor.ts";
 import { ScenarioStepType } from "../../schema/step_schema.ts";
+import { withTempDir } from "@exaix/testing";
 
 const PASSING_TEST = "Deno.test('passes', () => { if (1 !== 1) throw new Error('no'); });\n";
 const FAILING_TEST = "Deno.test('fails', () => { throw new Error('boom'); });\n";
@@ -34,12 +35,9 @@ function testRunStep(overrides: Record<string, string | number | undefined> = {}
 }
 
 async function withWorkspace(fn: (ws: string) => Promise<void>): Promise<void> {
-  const ws = await Deno.makeTempDir({ prefix: "test-run-" });
-  try {
+  await withTempDir(async (ws) => {
     await fn(ws);
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "test-run-" });
 }
 
 Deno.test("[test_run] a passing repo test suite exits 0", async () => {

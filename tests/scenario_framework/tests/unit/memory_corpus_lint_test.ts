@@ -13,6 +13,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { lintMemoryTaskCorpus } from "../../runner/memory_corpus_lint.ts";
+import { withTempDir } from "@exaix/testing";
 
 interface ITestQuery {
   text?: string;
@@ -41,19 +42,15 @@ const VALID_INFO_EXTRACTION_TASK: ITestMemoryTaskFixture = {
 };
 
 Deno.test("[MemoryCorpusLint] accepts a well-formed non-abstention task", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeMemoryTask(root, "info-basic", VALID_INFO_EXTRACTION_TASK);
     const result = await lintMemoryTaskCorpus([root]);
     assertEquals(result.errors, []);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryCorpusLint] flags a non-abstention task with a query missing ground-truth ids", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeMemoryTask(root, "info-missing-gt", {
       ability: "information-extraction",
       session_writes: [{ id: VALID_UUID, title: "x", content: "y" }],
@@ -62,14 +59,11 @@ Deno.test("[MemoryCorpusLint] flags a non-abstention task with a query missing g
     const result = await lintMemoryTaskCorpus([root]);
     assertEquals(result.errors.length, 1);
     assertStringIncludes(result.errors[0], "info-missing-gt");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryCorpusLint] accepts an abstention task with zero ground-truth ids", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeMemoryTask(root, "abstention-basic", {
       ability: "abstention",
       session_writes: [{ id: VALID_UUID, title: "x", content: "y" }],
@@ -77,14 +71,11 @@ Deno.test("[MemoryCorpusLint] accepts an abstention task with zero ground-truth 
     });
     const result = await lintMemoryTaskCorpus([root]);
     assertEquals(result.errors, []);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryCorpusLint] flags an abstention task whose query has non-empty ground-truth ids", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeMemoryTask(root, "abstention-bad", {
       ability: "abstention",
       session_writes: [{ id: VALID_UUID, title: "x", content: "y" }],
@@ -93,21 +84,16 @@ Deno.test("[MemoryCorpusLint] flags an abstention task whose query has non-empty
     const result = await lintMemoryTaskCorpus([root]);
     assertEquals(result.errors.length, 1);
     assertStringIncludes(result.errors[0], "abstention-bad");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryCorpusLint] flags a task.json that fails schema validation", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     await writeMemoryTask(root, "broken", { ability: "not-a-real-ability" });
     const result = await lintMemoryTaskCorpus([root]);
     assertEquals(result.errors.length, 1);
     assertStringIncludes(result.errors[0], "broken");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[MemoryCorpusLint] the real fixtures/memory corpus is clean", async () => {

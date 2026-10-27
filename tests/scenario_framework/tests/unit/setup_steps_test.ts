@@ -14,14 +14,12 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { executeScenarioStep } from "../../runner/step_executor.ts";
 import { ScenarioStepType } from "../../schema/step_schema.ts";
+import { withTempDir } from "@exaix/testing";
 
 async function withWorkspace(fn: (ws: string) => Promise<void>): Promise<void> {
-  const ws = await Deno.makeTempDir({ prefix: "setup-steps-" });
-  try {
+  await withTempDir(async (ws) => {
     await fn(ws);
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "setup-steps-" });
 }
 
 Deno.test("[setup_steps] patch-blueprint adds a capability to the sandboxed blueprint", async () => {

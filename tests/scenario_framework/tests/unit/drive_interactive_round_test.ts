@@ -13,6 +13,7 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { join } from "@std/path";
 import { extractFirstQuestionId, main, stripDiagnosticPrefix } from "../../runner/drive_interactive_round.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("[DriveInteractiveRound] stripDiagnosticPrefix removes lines before the JSON opening brace", () => {
   const raw =
@@ -59,8 +60,7 @@ async function makeFakeExactl(dir: string): Promise<string> {
 }
 
 Deno.test("[DriveInteractiveRound] main() drives a full round through a fake exactl and writes the answer result", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const fakeExactl = await makeFakeExactl(dir);
     const outputPath = join(dir, "clarify-round-result.json");
     const code = await main([fakeExactl, "req-test-1", "A specific answer.", "user-simulator:cooperative", outputPath]);
@@ -69,9 +69,7 @@ Deno.test("[DriveInteractiveRound] main() drives a full round through a fake exa
     const written = JSON.parse(await Deno.readTextFile(outputPath));
     assertEquals(written.status, "questions");
     assertEquals(written.round, 2);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[DriveInteractiveRound] main() also forces a terminal resolution via --proceed after recording the answer round", async () => {

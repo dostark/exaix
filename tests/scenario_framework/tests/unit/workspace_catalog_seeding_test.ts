@@ -34,6 +34,7 @@ import {
   seedPortalFixtures,
   seedWorkspaceCatalogs,
 } from "../../runner/synthetic_runner.ts";
+import { withTempDir } from "@exaix/testing";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..", "..");
 
@@ -47,38 +48,31 @@ async function exists(path: string): Promise<boolean> {
 }
 
 Deno.test("[workspace_catalog_seeding] a fresh sandbox receives the flow catalog", async () => {
-  const ws = await Deno.makeTempDir({ prefix: "seed-flows-" });
-  try {
+  await withTempDir(async (ws) => {
     await seedWorkspaceCatalogs(ws, REPO_ROOT);
     assert(
       await exists(pathBuilders.blueprintsPath(ws, DEFAULT_FLOWS_PATH, "api-design.flow.yaml")),
       "flow blueprints must be seeded",
     );
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "seed-flows-" });
 });
 
 Deno.test("[workspace_catalog_seeding] a fresh sandbox receives the agent-role and skill catalogs", async () => {
-  const ws = await Deno.makeTempDir({ prefix: "seed-rest-" });
-  try {
+  await withTempDir(async (ws) => {
     await seedWorkspaceCatalogs(ws, REPO_ROOT);
     assert(
       await exists(pathBuilders.blueprintsPath(ws, DEFAULT_AGENTS_PATH, "senior-coder.md")),
       "agent roles must be seeded",
     );
     assert(await exists(pathBuilders.memoryPath(ws, DEFAULT_SKILLS_MEMORY_PATH)), "the skill catalog must be seeded");
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "seed-rest-" });
 });
 
 Deno.test("[workspace_catalog_seeding] seeding never overwrites a catalog already in the sandbox", async () => {
   // A scenario that patches an agent role in its own sandbox — the capability-patch step in
   // scenario_templates.ts does exactly this — must not have the patch reverted by a later
   // scenario's seeding pass over the shared workspace.
-  const ws = await Deno.makeTempDir({ prefix: "seed-nooverwrite-" });
-  try {
+  await withTempDir(async (ws) => {
     const agentRoles = pathBuilders.blueprintsPath(ws, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(agentRoles, { recursive: true });
     await Deno.writeTextFile(join(agentRoles, "senior-coder.md"), "PATCHED BY SCENARIO");
@@ -86,14 +80,11 @@ Deno.test("[workspace_catalog_seeding] seeding never overwrites a catalog alread
     await seedWorkspaceCatalogs(ws, REPO_ROOT);
 
     assertEquals(await Deno.readTextFile(join(agentRoles, "senior-coder.md")), "PATCHED BY SCENARIO");
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "seed-nooverwrite-" });
 });
 
 Deno.test("[workspace_catalog_seeding] seeding is idempotent", async () => {
-  const ws = await Deno.makeTempDir({ prefix: "seed-idempotent-" });
-  try {
+  await withTempDir(async (ws) => {
     await seedWorkspaceCatalogs(ws, REPO_ROOT);
     await seedWorkspaceCatalogs(ws, REPO_ROOT);
     // A second pass must not nest the catalog inside itself, which is exactly what the
@@ -103,9 +94,7 @@ Deno.test("[workspace_catalog_seeding] seeding is idempotent", async () => {
       false,
     );
     assertEquals(await exists(pathBuilders.blueprintsPath(ws, DEFAULT_BLUEPRINTS_PATH)), false);
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "seed-idempotent-" });
 });
 
 // Portal fixtures must be git repos: all portal mutation goes through a git worktree, and a
@@ -140,8 +129,7 @@ Deno.test("[portal_fixtures] every seeded portal is a git repo with a base commi
 
 Deno.test("[portal_fixtures] a seeded portal supports creating a worktree", async () => {
   // The whole point: if `git worktree add` fails, portal mutation has nowhere isolated to go.
-  const ws = await Deno.makeTempDir({ prefix: "seed-portals-wt-" });
-  try {
+  await withTempDir(async (ws) => {
     await seedPortalFixtures(ws, REPO_ROOT);
     const portal = join(ws, "fixtures", "portals", "simple_repo");
     const wt = join(ws, "wt");
@@ -150,14 +138,11 @@ Deno.test("[portal_fixtures] a seeded portal supports creating a worktree", asyn
 
     assert(added.ok, "a seeded portal must support git worktree add");
     assert(await exists(wt), "the worktree checkout must exist");
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "seed-portals-wt-" });
 });
 
 Deno.test("[portal_fixtures] seeding a portal twice does not reinitialise it", async () => {
-  const ws = await Deno.makeTempDir({ prefix: "seed-portals-idem-" });
-  try {
+  await withTempDir(async (ws) => {
     await seedPortalFixtures(ws, REPO_ROOT);
     const portal = join(ws, "fixtures", "portals", "simple_repo");
     const first = await gitIn(portal, ["rev-parse", "HEAD"]);
@@ -166,9 +151,7 @@ Deno.test("[portal_fixtures] seeding a portal twice does not reinitialise it", a
     const second = await gitIn(portal, ["rev-parse", "HEAD"]);
 
     assertEquals(second.out, first.out, "a second pass must not discard the portal's history");
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "seed-portals-idem-" });
 });
 
 // `getExecutionStrategy` forces WORKTREE for every portal task, but nothing checked the
@@ -176,8 +159,7 @@ Deno.test("[portal_fixtures] seeding a portal twice does not reinitialise it", a
 // like success.
 
 Deno.test("[portal_drift] a portal mutated through a worktree branch is not flagged", async () => {
-  const ws = await Deno.makeTempDir({ prefix: "drift-ok-" });
-  try {
+  await withTempDir(async (ws) => {
     await seedPortalFixtures(ws, REPO_ROOT);
     const baselines = await capturePortalBaselines(ws);
     const portal = join(ws, "fixtures", "portals", "simple_repo");
@@ -190,14 +172,11 @@ Deno.test("[portal_drift] a portal mutated through a worktree branch is not flag
     await gitIn(wt, ["-c", "user.email=a@b.c", "-c", "user.name=A", "commit", "-m", "feat: work"]);
 
     assertEquals(await detectPortalDrift(ws, baselines), [], "worktree-branch work must not count as drift");
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "drift-ok-" });
 });
 
 Deno.test("[portal_drift] a commit landing on the portal's default branch is caught", async () => {
-  const ws = await Deno.makeTempDir({ prefix: "drift-branch-" });
-  try {
+  await withTempDir(async (ws) => {
     await seedPortalFixtures(ws, REPO_ROOT);
     const baselines = await capturePortalBaselines(ws);
     const portal = join(ws, "fixtures", "portals", "simple_repo");
@@ -209,15 +188,12 @@ Deno.test("[portal_drift] a commit landing on the portal's default branch is cau
     const drift = await detectPortalDrift(ws, baselines);
     assertEquals(drift.length, 1, `expected drift to be reported, got: ${drift.join("; ")}`);
     assert(drift[0].includes("default branch moved"), drift[0]);
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "drift-branch-" });
 });
 
 Deno.test("[portal_drift] an uncommitted write into the portal root is caught", async () => {
   // The likelier real failure: a tool writes straight into the portal without committing.
-  const ws = await Deno.makeTempDir({ prefix: "drift-dirty-" });
-  try {
+  await withTempDir(async (ws) => {
     await seedPortalFixtures(ws, REPO_ROOT);
     const baselines = await capturePortalBaselines(ws);
 
@@ -226,9 +202,7 @@ Deno.test("[portal_drift] an uncommitted write into the portal root is caught", 
     const drift = await detectPortalDrift(ws, baselines);
     assertEquals(drift.length, 1, `expected drift to be reported, got: ${drift.join("; ")}`);
     assert(drift[0].includes("working tree dirty"), drift[0]);
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "drift-dirty-" });
 });
 
 // Seeding must be additive at the FILE level, not the directory level: seeding used to skip
@@ -236,8 +210,7 @@ Deno.test("[portal_drift] an uncommitted write into the portal root is caught", 
 // `cp -r`/`mkdir` left every later scenario in the shared sandbox with a partial catalog.
 
 Deno.test("[workspace_catalog_seeding] a partially-created catalog is completed, not skipped", async () => {
-  const ws = await Deno.makeTempDir({ prefix: "seed-partial-" });
-  try {
+  await withTempDir(async (ws) => {
     // What a scenario's own `cp -r`/`mkdir` leaves behind: the directory exists, the files do not.
     await Deno.mkdir(pathBuilders.blueprintsPath(ws, DEFAULT_AGENTS_PATH), { recursive: true });
     await Deno.mkdir(pathBuilders.blueprintsPath(ws, DEFAULT_FLOWS_PATH), { recursive: true });
@@ -249,16 +222,13 @@ Deno.test("[workspace_catalog_seeding] a partially-created catalog is completed,
       "the shipped flow catalog must be seeded even though Blueprints/ already existed",
     );
     assert(await exists(pathBuilders.blueprintsPath(ws, DEFAULT_AGENTS_PATH, "senior-coder.md")), "agent roles too");
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "seed-partial-" });
 });
 
 Deno.test("[workspace_catalog_seeding] completing a partial catalog still never overwrites", async () => {
   // The no-overwrite guarantee must survive the fix: a scenario that patches an agent role in
   // the shared sandbox keeps its patch.
-  const ws = await Deno.makeTempDir({ prefix: "seed-partial-nooverwrite-" });
-  try {
+  await withTempDir(async (ws) => {
     const agentRoles = pathBuilders.blueprintsPath(ws, DEFAULT_AGENTS_PATH);
     await Deno.mkdir(agentRoles, { recursive: true });
     await Deno.writeTextFile(join(agentRoles, "senior-coder.md"), "PATCHED BY SCENARIO");
@@ -267,15 +237,12 @@ Deno.test("[workspace_catalog_seeding] completing a partial catalog still never 
 
     assertEquals(await Deno.readTextFile(join(agentRoles, "senior-coder.md")), "PATCHED BY SCENARIO");
     assert(await exists(join(agentRoles, "code-analyst.md")), "the rest of the catalog still arrives");
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "seed-partial-nooverwrite-" });
 });
 
 Deno.test("[workspace_catalog_seeding] a flow staged by an earlier scenario does not starve the catalog", async () => {
   // The exact shape `stageFlowFixture` leaves: Blueprints/Flows exists holding one staged fixture.
-  const ws = await Deno.makeTempDir({ prefix: "seed-staged-" });
-  try {
+  await withTempDir(async (ws) => {
     const flows = pathBuilders.blueprintsPath(ws, DEFAULT_FLOWS_PATH);
     await Deno.mkdir(flows, { recursive: true });
     await Deno.writeTextFile(join(flows, "explore-codebase.flow.yaml"), 'id: "explore-codebase"');
@@ -288,7 +255,5 @@ Deno.test("[workspace_catalog_seeding] a flow staged by an earlier scenario does
       'id: "explore-codebase"',
       "the staged fixture must survive",
     );
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "seed-staged-" });
 });

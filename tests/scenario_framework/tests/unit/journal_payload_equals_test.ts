@@ -14,6 +14,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { evaluateCriterion } from "../../runner/assertions.ts";
 import { CriterionKind, CriterionPhase, CriterionStatus } from "../../schema/step_schema.ts";
+import { withTempDir } from "@exaix/testing";
 
 const EVENT_EFFORT_RESOLVED = "agent.effort_resolved";
 const JOURNAL_FILE = "journal.ndjson";
@@ -84,8 +85,7 @@ Deno.test("[journal_payload_equals] fails when NO matching event exists", async 
 });
 
 Deno.test("[journal_payload_equals] a plain journal-event-exists (no payload_equals) still passes on a bare match (backward-compat)", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-payload-equals-compat-" });
-  try {
+  await withTempDir(async (workspaceRoot) => {
     await Deno.writeTextFile(join(workspaceRoot, JOURNAL_FILE), MATCHING_ROW + "\n");
     const result = await evaluateCriterion({
       workspaceRoot,
@@ -98,7 +98,5 @@ Deno.test("[journal_payload_equals] a plain journal-event-exists (no payload_equ
       },
     });
     assertEquals(result.status, CriterionStatus.PASSED);
-  } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
-  }
+  }, { prefix: "scenario-payload-equals-compat-" });
 });

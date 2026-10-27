@@ -17,7 +17,7 @@ import {
   STEP_CONFIG_OVERRIDES_ENV,
 } from "../../runner/synthetic_runner.ts";
 import { patchWorkspaceConfig, renderTomlValue, splitConfigPath } from "../../runner/workspace_config_overrides.ts";
-import { readConfigFixture } from "@exaix/testing";
+import { readConfigFixture, withTempDir } from "@exaix/testing";
 
 const BASE = await Deno.readTextFile(
   new URL("../../fixtures/configs/workspace-config-overrides-base.toml", import.meta.url),
@@ -97,8 +97,7 @@ Deno.test("[workspace_config] the result stays parseable when the input already 
 });
 
 Deno.test("[workspace_config] applyWorkspaceConfigOverrides patches the sandbox config", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "ws-cfg-" });
-  try {
+  await withTempDir(async (dir) => {
     const configPath = join(dir, "exa.config.toml");
     await Deno.writeTextFile(configPath, BASE);
 
@@ -110,14 +109,11 @@ Deno.test("[workspace_config] applyWorkspaceConfigOverrides patches the sandbox 
       portal_knowledge: { enable_symbol_level_dependency_graph: boolean };
     };
     assertEquals(parsed.portal_knowledge.enable_symbol_level_dependency_graph, true);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "ws-cfg-" });
 });
 
 Deno.test("[workspace_config] applyWorkspaceConfigOverrides patches an operator-supplied config too", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "ws-cfg-existing-" });
-  try {
+  await withTempDir(async (dir) => {
     const configPath = join(dir, "exa.config.toml");
     await Deno.writeTextFile(configPath, readConfigFixture("workspace-config-operator"));
 
@@ -126,14 +122,11 @@ Deno.test("[workspace_config] applyWorkspaceConfigOverrides patches an operator-
     const parsed = parse(await Deno.readTextFile(configPath)) as { system: { log_level: string; root: string } };
     assertEquals(parsed.system.log_level, "debug");
     assert((await Deno.readTextFile(configPath)).includes("# operator config"));
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "ws-cfg-existing-" });
 });
 
 Deno.test("[workspace_config] applyWorkspaceConfigOverrides is a no-op with no overrides or no config", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "ws-cfg-noop-" });
-  try {
+  await withTempDir(async (dir) => {
     // No config file at all: must not throw and must not create one.
     await applyWorkspaceConfigOverrides(dir, { "system.log_level": "debug" });
     await applyWorkspaceConfigOverrides(dir, {});
@@ -144,9 +137,7 @@ Deno.test("[workspace_config] applyWorkspaceConfigOverrides is a no-op with no o
       created = true;
     } catch { /* expected */ }
     assertEquals(created, false, "an absent config must stay absent");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "ws-cfg-noop-" });
 });
 
 Deno.test("[workspace_config] the scenario schema accepts and validates the override map", () => {
@@ -163,8 +154,7 @@ Deno.test("[workspace_config] the scenario schema accepts and validates the over
 });
 
 Deno.test("[workspace_config] a step's escaped overrides apply to the sandbox config", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "ws-step-cfg-" });
-  try {
+  await withTempDir(async (dir) => {
     await Deno.writeTextFile(join(dir, "exa.config.toml"), BASE);
 
     // Applied one step at a time, so the value can flip between steps.
@@ -187,14 +177,11 @@ Deno.test("[workspace_config] a step's escaped overrides apply to the sandbox co
     await applyStepConfigOverrides(dir, [{ env: {} }]);
     parsed = parse(await Deno.readTextFile(join(dir, "exa.config.toml"))) as typeof parsed;
     assertEquals(parsed.portal_knowledge.enable_symbol_level_dependency_graph, false);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "ws-step-cfg-" });
 });
 
 Deno.test("[workspace_config] a malformed step override fails loudly instead of silently skipping", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "ws-step-bad-" });
-  try {
+  await withTempDir(async (dir) => {
     await Deno.writeTextFile(join(dir, "exa.config.toml"), BASE);
     let threw = false;
     try {
@@ -205,7 +192,5 @@ Deno.test("[workspace_config] a malformed step override fails loudly instead of 
       threw = true;
     }
     assertEquals(threw, true, "a malformed override must not pass silently");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "ws-step-bad-" });
 });

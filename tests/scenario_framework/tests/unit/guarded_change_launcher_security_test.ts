@@ -10,10 +10,10 @@ import { join } from "@std/path";
 import { writeGuardedProof } from "../../fixtures/bin/phase205-session-delegate.ts";
 import { sanitizeChildEnv } from "@exaix/session/supervised_launch.ts";
 import { buildGuardedLauncher } from "../helpers/guarded_change_fixture.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("[security] guarded launcher restores its explicit offline cache without forwarding ambient secrets", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     const fixture = join(root, "cache-probe.ts");
     const wrapper = join(root, "codex.ts");
     const cache = join(root, "cache's$(must-not-run)");
@@ -37,9 +37,7 @@ Deno.test("[security] guarded launcher restores its explicit offline cache witho
     }).output();
     assertEquals(child.code, 0, new TextDecoder().decode(child.stderr));
     assertEquals(JSON.parse(new TextDecoder().decode(child.stdout)), { cache });
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[security] guarded delegate rejects symlink escapes before either permitted write", async () => {

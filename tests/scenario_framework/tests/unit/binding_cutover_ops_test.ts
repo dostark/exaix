@@ -10,14 +10,14 @@ import * as pathBuilders from "@exaix/shared";
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { saveLock, setExploreService } from "../../scripts/binding_cutover_ops.ts";
+import { withTempDir } from "@exaix/testing";
 
 const FIXTURE =
   '"flow:binding-split/step:explore-*" = { service = "compat-fixture", model = "openai/compat-fixture-v1" }';
 const MOCK = '"flow:binding-split/step:explore-*" = { service = "mock", model = "mock/mock-model" }';
 
 Deno.test("[phase204] cutover helper edits only the explore selector and restores it", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     const configPath = join(root, "exa.config.toml");
     await Deno.writeTextFile(configPath, `[ai]\nprovider = "mock"\n[bindings]\n${FIXTURE}\n`);
     await setExploreService(root, "mock");
@@ -25,14 +25,11 @@ Deno.test("[phase204] cutover helper edits only the explore selector and restore
     await setExploreService(root, "compat-fixture");
     assertEquals(await Deno.readTextFile(configPath), `[ai]\nprovider = "mock"\n[bindings]\n${FIXTURE}\n`);
     await assertRejects(() => setExploreService(root, "unknown"), Error, "Unsupported service");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[phase204] cutover helper copies the newest lock for replay", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     const dir = pathBuilders.runtimePath(root, "bindings");
     await Deno.mkdir(dir, { recursive: true });
     const oldPath = join(dir, "old.lock.json");
@@ -42,14 +39,11 @@ Deno.test("[phase204] cutover helper copies the newest lock for replay", async (
     await Deno.utime(oldPath, new Date(0), new Date(0));
     await saveLock(root, "latest");
     assertEquals(await Deno.readTextFile(pathBuilders.runtimePath(root, "fifth.lock.json")), "latest");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[phase204] cutover helper copies the earliest lock for drift replay and refuses to overwrite", async () => {
-  const root = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (root) => {
     const dir = pathBuilders.runtimePath(root, "bindings");
     await Deno.mkdir(dir, { recursive: true });
     const oldPath = join(dir, "old.lock.json");
@@ -60,7 +54,5 @@ Deno.test("[phase204] cutover helper copies the earliest lock for drift replay a
     await saveLock(root, "earliest");
     assertEquals(await Deno.readTextFile(pathBuilders.runtimePath(root, "first.lock.json")), "old");
     await assertRejects(() => saveLock(root, "earliest"), Error, "already exists");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  });
 });

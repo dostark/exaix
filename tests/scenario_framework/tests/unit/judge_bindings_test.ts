@@ -21,7 +21,7 @@ import { bootstrapProviderRegistry } from "../../../../apps/common/registry_boot
 import { fromFileUrl, join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
 import { type IResolvedBinding, type IRunBindingsFile, RunBindingsFileSchema } from "@exaix/schemas";
-import { withEnv } from "@exaix/testing";
+import { withEnv, withTempDir } from "@exaix/testing";
 import { loadCellCatalog } from "../../runner/cell_catalog.ts";
 import { loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
 import {
@@ -153,8 +153,7 @@ Deno.test("[judge] a judge step ref names the scenario, the step and its judge i
 });
 
 Deno.test("[judge] a judge binding resolves against the scenario layer stack, and judge:<id> overrides one step only", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "judge-bindings-" });
-  try {
+  await withTempDir(async (dir) => {
     const config = new ConfigService(await writeJudgeConfig(dir)).get();
     const steps = [judgeStep("judge-one", true), judgeStep("judge-two", true), judgeStep("no-judge", false)];
     const runFile = judgeRunFile({
@@ -182,9 +181,7 @@ Deno.test("[judge] a judge binding resolves against the scenario layer stack, an
     const two = plan.bindings.get("judge-two")!;
     assertEquals(two.binding.model, "mock/judge-model-2");
     assertEquals(two.binding.sources.model?.selector, "judge:judge-two");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "judge-bindings-" });
 });
 
 /** A judge resolved to the DeepSeek service of the openai-chat adapter, as the catalog names it. */
@@ -240,8 +237,7 @@ Deno.test("[judge] an invalid judge binding fails the run and reports each issue
 });
 
 Deno.test("[judge] a judge whose service lacks its credential is reported by validation before grading", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "judge-bindings-key-" });
-  try {
+  await withTempDir(async (dir) => {
     const configPath = await writeJudgeConfig(dir);
     await Deno.writeTextFile(
       configPath,
@@ -262,14 +258,11 @@ Deno.test("[judge] a judge whose service lacks its credential is reported by val
     const present = await resolveJudgeBindings({ ...input, env: { JUDGE_KEY: "set" } });
     assertEquals(present.issues, []);
     assertEquals(present.bindings.get("judge-one")?.binding.service, "judge-svc");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "judge-bindings-key-" });
 });
 
 Deno.test("[judge] a judge binding that cannot resolve is reported as an issue", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "judge-bindings-issue-" });
-  try {
+  await withTempDir(async (dir) => {
     const config = new ConfigService(await writeJudgeConfig(dir)).get();
     const plan = await resolveJudgeBindings({
       scenarioId: "persona-eval",
@@ -281,9 +274,7 @@ Deno.test("[judge] a judge binding that cannot resolve is reported as an issue",
 
     assertEquals(plan.bindings.size, 0);
     assertEquals(plan.issues.map((issue) => [issue.stepId, issue.code]), [["judge-one", "unknown_service"]]);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "judge-bindings-issue-" });
 });
 
 Deno.test("[judge] a bound judge grades with no EXA_EVAL_LLM_PROVIDER or EXA_LLM_PROVIDER env", async () => {
@@ -536,8 +527,7 @@ async function scopeRunFile(
 }
 
 Deno.test("[judge.layers] the judge and daemon request use the same ordered overlay list", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "judge-layers-shared-" });
-  try {
+  await withTempDir(async (dir) => {
     const requestPath = join(dir, "request.md");
     await Deno.writeTextFile(requestPath, "grade\n");
     const operatorPath = join(dir, "operator.json");
@@ -568,14 +558,11 @@ Deno.test("[judge.layers] the judge and daemon request use the same ordered over
     assertEquals(bound[0]!.args, ordered.flatMap((overlay) => ["--overlay", overlay.path]));
     // The request's own step layer sits below the operator layers.
     assertEquals(ordered.map((overlay) => overlay.role), ["step", "operator", "operator"]);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "judge-layers-shared-" });
 });
 
 Deno.test("[judge.layers] an operator overlay wins over a request step's judge binding", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "judge-layers-operator-" });
-  try {
+  await withTempDir(async (dir) => {
     const config = new ConfigService(await writeJudgeConfig(dir)).get();
     const requestPath = join(dir, "request.md");
     await Deno.writeTextFile(requestPath, "grade\n");
@@ -614,14 +601,11 @@ Deno.test("[judge.layers] an operator overlay wins over a request step's judge b
     assertEquals(one.binding.model, "mock/judge-model-2");
     assertEquals(one.binding.service, "judge-svc");
     assertEquals(one.requestStepId, "request-one");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "judge-layers-operator-" });
 });
 
 Deno.test("[judge.layers] a later request's judge binding cannot change an earlier request's judge", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "judge-layers-future-" });
-  try {
+  await withTempDir(async (dir) => {
     const config = new ConfigService(await writeJudgeConfig(dir)).get();
     const requestPath = join(dir, "request.md");
     await Deno.writeTextFile(requestPath, "grade\n");
@@ -652,14 +636,11 @@ Deno.test("[judge.layers] a later request's judge binding cannot change an earli
       env: {},
     });
     assertEquals(judgePlan.bindings.get("grade-one")!.binding.model, "mock/judge-model");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "judge-layers-future-" });
 });
 
 Deno.test("[judge.layers] two requests retain separate judge models and request associations", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "judge-layers-two-" });
-  try {
+  await withTempDir(async (dir) => {
     const config = new ConfigService(await writeJudgeConfig(dir)).get();
     const requestPath = join(dir, "request.md");
     await Deno.writeTextFile(requestPath, "grade\n");
@@ -694,9 +675,7 @@ Deno.test("[judge.layers] two requests retain separate judge models and request 
     assertEquals(one.requestStepId, "request-one");
     assertEquals(two.binding.model, "mock/judge-model-2");
     assertEquals(two.requestStepId, "request-two");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "judge-layers-two-" });
 });
 
 /** A CLI judge whose canonical model owner differs from its transport adapter. */
@@ -840,8 +819,7 @@ for (const explicitEvidence of [false, true]) {
 }
 
 Deno.test("[judge.artifact] an unreadable declared artifact fails instead of grading stdout", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "judge-missing-artifact-" });
-  try {
+  await withTempDir(async (dir) => {
     const result = await evaluateLlmJudgeCriterion({
       workspaceRoot: dir,
       phase: CriterionPhase.OUTPUT,
@@ -856,7 +834,5 @@ Deno.test("[judge.artifact] an unreadable declared artifact fails instead of gra
     });
     assertEquals(result.status, CriterionStatus.ERROR);
     assertStringIncludes(result.message, "evidence file");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "judge-missing-artifact-" });
 });

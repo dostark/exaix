@@ -20,14 +20,12 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { Database } from "@db/sqlite";
 import { executeScenarioStep } from "../../runner/step_executor.ts";
 import { ScenarioStepType } from "../../schema/step_schema.ts";
+import { withTempDir } from "@exaix/testing";
 
 async function withTempWorkspace(fn: (ws: string) => Promise<void>): Promise<void> {
-  const ws = await Deno.makeTempDir({ prefix: "wait-for-file-" });
-  try {
+  await withTempDir(async (ws) => {
     await fn(ws);
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "wait-for-file-" });
 }
 
 /** Writes a minimal real journal.db under `ws/.exa/` — the same lightweight fixture shape

@@ -14,6 +14,7 @@
 import { assertEquals } from "@std/assert";
 import { writeEvalHistoryEntry } from "../../runner/history_writer.ts";
 import type { IRunManifest } from "../../runner/evidence_collector.ts";
+import { withTempDir } from "@exaix/testing";
 
 function makeManifest(steps: IRunManifest["steps"]): IRunManifest {
   return {
@@ -30,8 +31,7 @@ Deno.test({
   name:
     "[HistoryWriterMetricAggregation] step_results carries llm_duration_ms/tokens/trackedCostUsd from the manifest step",
   fn: async () => {
-    const dir = await Deno.makeTempDir({ prefix: "history-writer-metric-agg-" });
-    try {
+    await withTempDir(async (dir) => {
       const manifest = makeManifest([
         {
           stepId: "submit-request",
@@ -53,9 +53,7 @@ Deno.test({
       assertEquals(entry.step_results?.[0].tokens_cache_read, 20);
       assertEquals(entry.step_results?.[0].tokens_cache_creation, 10);
       assertEquals(entry.step_results?.[0].tracked_cost_usd, 0.05);
-    } finally {
-      await Deno.remove(dir, { recursive: true });
-    }
+    }, { prefix: "history-writer-metric-agg-" });
   },
   sanitizeOps: false,
   sanitizeResources: false,
@@ -64,8 +62,7 @@ Deno.test({
 Deno.test({
   name: "[HistoryWriterMetricAggregation] scenario-level total_* aggregates equal the sum of per-step fields",
   fn: async () => {
-    const dir = await Deno.makeTempDir({ prefix: "history-writer-metric-agg-sum-" });
-    try {
+    await withTempDir(async (dir) => {
       const manifest = makeManifest([
         {
           stepId: "step-1",
@@ -97,9 +94,7 @@ Deno.test({
       assertEquals(entry.total_tokens_cache_read, 4);
       assertEquals(entry.total_tokens_cache_creation, 6);
       assertEquals(entry.total_tracked_cost_usd, 0.05);
-    } finally {
-      await Deno.remove(dir, { recursive: true });
-    }
+    }, { prefix: "history-writer-metric-agg-sum-" });
   },
   sanitizeOps: false,
   sanitizeResources: false,
@@ -109,8 +104,7 @@ Deno.test({
   name:
     "[HistoryWriterMetricAggregation] total_tracked_cost_usd omits steps with no tracked_cost_usd rather than treating them as zero",
   fn: async () => {
-    const dir = await Deno.makeTempDir({ prefix: "history-writer-metric-agg-untracked-" });
-    try {
+    await withTempDir(async (dir) => {
       const manifest = makeManifest([
         {
           stepId: "tracked-step",
@@ -133,9 +127,7 @@ Deno.test({
       const entry = await writeEvalHistoryEntry({ outputDir: dir, scenarioId: "metric-aggregation-test", manifest });
 
       assertEquals(entry.total_tracked_cost_usd, 0.1);
-    } finally {
-      await Deno.remove(dir, { recursive: true });
-    }
+    }, { prefix: "history-writer-metric-agg-untracked-" });
   },
   sanitizeOps: false,
   sanitizeResources: false,
@@ -145,8 +137,7 @@ Deno.test({
   name:
     "[HistoryWriterMetricAggregation] no step has any tracked cost at all produces total_tracked_cost_usd: undefined",
   fn: async () => {
-    const dir = await Deno.makeTempDir({ prefix: "history-writer-metric-agg-none-tracked-" });
-    try {
+    await withTempDir(async (dir) => {
       const manifest = makeManifest([
         {
           stepId: "predicted-only-step",
@@ -160,9 +151,7 @@ Deno.test({
       const entry = await writeEvalHistoryEntry({ outputDir: dir, scenarioId: "metric-aggregation-test", manifest });
 
       assertEquals(entry.total_tracked_cost_usd, undefined);
-    } finally {
-      await Deno.remove(dir, { recursive: true });
-    }
+    }, { prefix: "history-writer-metric-agg-none-tracked-" });
   },
   sanitizeOps: false,
   sanitizeResources: false,

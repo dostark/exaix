@@ -8,6 +8,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { resolve } from "@std/path";
 import { accumulateRunVerdict, type IScenarioVerdict } from "../../runner/scoring.ts";
+import { withTempDir } from "@exaix/testing";
 
 interface IEvalReport {
   threshold: number | undefined;
@@ -43,8 +44,7 @@ async function writeEvalReport(
 }
 
 Deno.test("[EvalReport] eval-report.json is written with correct structure", async () => {
-  const outputDir = await Deno.makeTempDir({ prefix: "eval-report-test-" });
-  try {
+  await withTempDir(async (outputDir) => {
     const scenarios: IScenarioVerdict[] = [
       { scenarioId: "s1", pack: "p1", suiteScore: 0.9, passed: true },
       { scenarioId: "s2", pack: "p1", suiteScore: 0.4, passed: false },
@@ -67,14 +67,11 @@ Deno.test("[EvalReport] eval-report.json is written with correct structure", asy
     assertEquals(report.runVerdict.scenarios[1].passed, false);
     assertEquals(report.aggregateScore, 0.65);
     assertExists(report.timestamp);
-  } finally {
-    await Deno.remove(outputDir, { recursive: true });
-  }
+  }, { prefix: "eval-report-test-" });
 });
 
 Deno.test("[EvalReport] eval-report.json writes correct aggregateScore", async () => {
-  const outputDir = await Deno.makeTempDir({ prefix: "eval-report-test-" });
-  try {
+  await withTempDir(async (outputDir) => {
     const scenarios: IScenarioVerdict[] = [
       { scenarioId: "s1", pack: "p1", suiteScore: 1.0, passed: true },
       { scenarioId: "s2", pack: "p1", suiteScore: 0.5, passed: true },
@@ -87,14 +84,11 @@ Deno.test("[EvalReport] eval-report.json writes correct aggregateScore", async (
     const report = JSON.parse(content) as IEvalReport;
 
     assertEquals(report.aggregateScore, (1.0 + 0.5 + 0.0) / 3);
-  } finally {
-    await Deno.remove(outputDir, { recursive: true });
-  }
+  }, { prefix: "eval-report-test-" });
 });
 
 Deno.test("[EvalReport] eval-report.json with no threshold still produces report", async () => {
-  const outputDir = await Deno.makeTempDir({ prefix: "eval-report-test-" });
-  try {
+  await withTempDir(async (outputDir) => {
     const scenarios: IScenarioVerdict[] = [
       { scenarioId: "s1", pack: "p1", suiteScore: 0.8, passed: true },
     ];
@@ -107,14 +101,11 @@ Deno.test("[EvalReport] eval-report.json with no threshold still produces report
     assertEquals(report.threshold, undefined);
     assertEquals(report.runVerdict.allPassed, true);
     assertEquals(report.aggregateScore, 0.8);
-  } finally {
-    await Deno.remove(outputDir, { recursive: true });
-  }
+  }, { prefix: "eval-report-test-" });
 });
 
 Deno.test("[EvalReport] eval-report.json empty scenario list has undefined aggregate", async () => {
-  const outputDir = await Deno.makeTempDir({ prefix: "eval-report-test-" });
-  try {
+  await withTempDir(async (outputDir) => {
     const verdict = accumulateRunVerdict([]);
 
     await writeEvalReport(outputDir, { threshold: 0.5, runVerdict: verdict });
@@ -123,7 +114,5 @@ Deno.test("[EvalReport] eval-report.json empty scenario list has undefined aggre
 
     assertEquals(report.aggregateScore, undefined);
     assertEquals(report.runVerdict.scenarios.length, 0);
-  } finally {
-    await Deno.remove(outputDir, { recursive: true });
-  }
+  }, { prefix: "eval-report-test-" });
 });

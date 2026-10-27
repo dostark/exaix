@@ -13,12 +13,12 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { main } from "../../runner/check_interactive_result.ts";
+import { withTempDir } from "@exaix/testing";
 
 const EXPECTED_RESOLVED_BY = "user-simulator:cooperative";
 
 Deno.test("[CheckInteractiveResult] exits 0 and seeds a converged, adherent run", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const clarifyResultPath = join(dir, "clarify-result.json");
     await Deno.writeTextFile(clarifyResultPath, JSON.stringify({ status: "complete", round: 1 }));
 
@@ -44,14 +44,11 @@ Deno.test("[CheckInteractiveResult] exits 0 and seeds a converged, adherent run"
     } finally {
       store.close();
     }
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[CheckInteractiveResult] records non-convergence and a bypass when the wait state has no matching resolvedBy", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const clarifyResultPath = join(dir, "clarify-result.json");
     await Deno.writeTextFile(clarifyResultPath, JSON.stringify({ status: "questions", round: 2 }));
 
@@ -75,14 +72,11 @@ Deno.test("[CheckInteractiveResult] records non-convergence and a bypass when th
     } finally {
       store.close();
     }
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[CheckInteractiveResult] treats a missing wait-state directory as an empty (trivially adherent) run", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const clarifyResultPath = join(dir, "clarify-result.json");
     await Deno.writeTextFile(clarifyResultPath, JSON.stringify({ status: "questions", round: 1 }));
 
@@ -103,9 +97,7 @@ Deno.test("[CheckInteractiveResult] treats a missing wait-state directory as an 
     } finally {
       store.close();
     }
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[CheckInteractiveResult] exits 2 on missing arguments", async () => {

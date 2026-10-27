@@ -15,6 +15,7 @@ import { TriggerPolicyGate } from "../../../packages/triggers/services/policy_ga
 import { InMemoryIdempotencyLedger } from "../../../packages/triggers/services/idempotency_ledger.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core";
+import { withTempDir } from "@exaix/testing";
 
 // Shared helpers
 
@@ -97,8 +98,7 @@ Deno.test("[triggers_basic] ingestion service writes request file with correct f
   const gate = new TriggerPolicyGate(ledger);
   const logger = makeTrackedLogger();
 
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-triggers_basic-" });
-  try {
+  await withTempDir(async (tmpDir) => {
     const service = new TriggerIngestionService({
       policyGate: gate,
       eventLogger: logger,
@@ -129,9 +129,7 @@ Deno.test("[triggers_basic] ingestion service writes request file with correct f
     assertStringIncludes(content, "request_source: trigger");
     assertStringIncludes(content, "action: start_flow");
     assertStringIncludes(content, "subject: deploy trigger");
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  }, { prefix: "exaix-triggers_basic-" });
 });
 
 Deno.test("[triggers_basic] duplicate webhook trigger is deduplicated", async () => {
@@ -139,8 +137,7 @@ Deno.test("[triggers_basic] duplicate webhook trigger is deduplicated", async ()
   const gate = new TriggerPolicyGate(ledger);
   const logger = makeNullLogger();
 
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-triggers_basic-" });
-  try {
+  await withTempDir(async (tmpDir) => {
     const service = new TriggerIngestionService({
       policyGate: gate,
       eventLogger: logger,
@@ -162,7 +159,5 @@ Deno.test("[triggers_basic] duplicate webhook trigger is deduplicated", async ()
     const r2 = await service.ingest(second);
     assertEquals(r2.accepted, false);
     assertEquals(r2.disposition, "deduplicated");
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  }, { prefix: "exaix-triggers_basic-" });
 });

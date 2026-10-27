@@ -15,14 +15,12 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { executeScenarioStep } from "../../runner/step_executor.ts";
 import { CriterionKind, type IScenarioStep, ScenarioStepType } from "../../schema/step_schema.ts";
+import { withTempDir } from "@exaix/testing";
 
 async function withTempWorkspace(fn: (ws: string) => Promise<void>): Promise<void> {
-  const ws = await Deno.makeTempDir({ prefix: "file-contains-" });
-  try {
+  await withTempDir(async (ws) => {
     await fn(ws);
-  } finally {
-    await Deno.remove(ws, { recursive: true });
-  }
+  }, { prefix: "file-contains-" });
 }
 
 function step(overrides: Partial<IScenarioStep> = {}) {
