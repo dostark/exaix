@@ -157,6 +157,17 @@ const JSON_FORMAT = "json";
 /** Report views that spawn a Test-layer script bridge (never imported into production). */
 const SCRIPT_REPORT_VIEWS = new Set(["lift", "ablation"]);
 
+/** Opens the eval history store at the path, runs the body, and always closes the store. */
+function withEvalStore(dbPath: string, body: (store: EvalSqliteStore) => void): void {
+  const store = new EvalSqliteStore(dbPath);
+  try {
+    store.initialize();
+    body(store);
+  } finally {
+    store.close();
+  }
+}
+
 export class EvalCommands extends BaseCommand {
   constructor(context: ICommandContext) {
     super(context);
@@ -271,10 +282,7 @@ export class EvalCommands extends BaseCommand {
     }
 
     // SQLite primary path
-    const dbPath = resolveEvalDbPath();
-    const store = new EvalSqliteStore(dbPath);
-    try {
-      store.initialize();
+    withEvalStore(resolveEvalDbPath(), (store) => {
       const runs = store.queryRuns({
         scenario: options.scenario,
         pack: options.pack,
@@ -297,9 +305,7 @@ export class EvalCommands extends BaseCommand {
         timestamp: r.run_timestamp,
       }));
       this.renderHistory(entries, options.format);
-    } finally {
-      store.close();
-    }
+    });
   }
 
   private applyHistoryFilters(
@@ -366,19 +372,14 @@ export class EvalCommands extends BaseCommand {
       return;
     }
     if (view === "cost") {
-      const dbPath = resolveDb();
-      const store = new EvalSqliteStore(dbPath);
-      try {
-        store.initialize();
+      withEvalStore(resolveDb(), (store) => {
         const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
         if (runs.length === 0) {
           console.log("No evaluation history found for cost report.");
           return;
         }
         renderCostReportTable(groupRunsByCell(runs));
-      } finally {
-        store.close();
-      }
+      });
       return;
     }
 
@@ -392,10 +393,7 @@ export class EvalCommands extends BaseCommand {
     }
 
     if (view === "families") {
-      const dbPath = resolveDb();
-      const store = new EvalSqliteStore(dbPath);
-      try {
-        store.initialize();
+      withEvalStore(resolveDb(), (store) => {
         const summary = store.summarizeByTag("task:", { pack: options.pack });
         if (summary.length === 0) {
           console.log("No family summary data found.");
@@ -421,9 +419,7 @@ export class EvalCommands extends BaseCommand {
             }ms`,
           );
         }
-      } finally {
-        store.close();
-      }
+      });
       return;
     }
 
@@ -464,10 +460,7 @@ export class EvalCommands extends BaseCommand {
     format?: string;
     runIds?: string[];
   }): void {
-    const dbPath = options.dbPath ?? resolveEvalDbPath();
-    const store = new EvalSqliteStore(dbPath);
-    try {
-      store.initialize();
+    withEvalStore(options.dbPath ?? resolveEvalDbPath(), (store) => {
       const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
       const rows = computeRobustnessRows(runs, {
         vector: options.vector,
@@ -483,9 +476,7 @@ export class EvalCommands extends BaseCommand {
       } else {
         renderRobustnessTable(rows);
       }
-    } finally {
-      store.close();
-    }
+    });
   }
 
   /** `--view interactive`: per-persona convergence/adherence/pass^k, from runs tagged
@@ -498,10 +489,7 @@ export class EvalCommands extends BaseCommand {
     format?: string;
     runIds?: string[];
   }): void {
-    const dbPath = options.dbPath ?? resolveEvalDbPath();
-    const store = new EvalSqliteStore(dbPath);
-    try {
-      store.initialize();
+    withEvalStore(options.dbPath ?? resolveEvalDbPath(), (store) => {
       const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
       const rows = computeInteractiveRows(runs, { runIds: options.runIds });
       if (rows.length === 0) {
@@ -513,9 +501,7 @@ export class EvalCommands extends BaseCommand {
       } else {
         renderInteractiveTable(rows);
       }
-    } finally {
-      store.close();
-    }
+    });
   }
 
   private renderGroupedReport(options: {
@@ -523,10 +509,7 @@ export class EvalCommands extends BaseCommand {
     pack?: string;
     dbPath?: string;
   }): void {
-    const dbPath = options.dbPath ?? resolveEvalDbPath();
-    const store = new EvalSqliteStore(dbPath);
-    try {
-      store.initialize();
+    withEvalStore(options.dbPath ?? resolveEvalDbPath(), (store) => {
       const tagPrefix = options.groupBy === "subsystem" ? "subsystem:" : "entity:";
       const summary = store.summarizeByTag(tagPrefix, { pack: options.pack });
       if (summary.length === 0) {
@@ -558,9 +541,7 @@ export class EvalCommands extends BaseCommand {
           }% ${Math.round(row.meanDurationMs).toString().padEnd(9)}ms`,
         );
       }
-    } finally {
-      store.close();
-    }
+    });
   }
 
   private renderFrontierReport(options: {
@@ -569,10 +550,7 @@ export class EvalCommands extends BaseCommand {
     dbPath?: string;
     format?: string;
   }): void {
-    const dbPath = options.dbPath ?? resolveEvalDbPath();
-    const store = new EvalSqliteStore(dbPath);
-    try {
-      store.initialize();
+    withEvalStore(options.dbPath ?? resolveEvalDbPath(), (store) => {
       const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
       const rows = computeFrontierRows(runs);
       if (rows.length === 0) {
@@ -584,16 +562,11 @@ export class EvalCommands extends BaseCommand {
       } else {
         renderFrontierTable(rows);
       }
-    } finally {
-      store.close();
-    }
+    });
   }
 
   private renderMemoryAbilityReport(options: { last?: number; dbPath?: string; format?: string }): void {
-    const dbPath = options.dbPath ?? resolveEvalDbPath();
-    const store = new EvalSqliteStore(dbPath);
-    try {
-      store.initialize();
+    withEvalStore(options.dbPath ?? resolveEvalDbPath(), (store) => {
       const runs = store.queryRuns({ pack: EVAL_MEMORY_PACK, last: options.last });
       const rows = computeMemoryAbilityRows(runs);
       const metricRows = computeMemoryMetricRows(runs);
@@ -607,9 +580,7 @@ export class EvalCommands extends BaseCommand {
         if (rows.length > 0) renderMemoryAbilityTable(rows);
         renderMemoryMetricTable(metricRows);
       }
-    } finally {
-      store.close();
-    }
+    });
   }
 
   private renderFailuresReport(options: {
@@ -618,10 +589,7 @@ export class EvalCommands extends BaseCommand {
     dbPath?: string;
     format?: string;
   }): void {
-    const dbPath = options.dbPath ?? resolveEvalDbPath();
-    const store = new EvalSqliteStore(dbPath);
-    try {
-      store.initialize();
+    withEvalStore(options.dbPath ?? resolveEvalDbPath(), (store) => {
       const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
       const report = computeFailuresReport(runs);
       if (options.format === JSON_FORMAT) {
@@ -629,9 +597,7 @@ export class EvalCommands extends BaseCommand {
       } else {
         renderFailuresTable(report);
       }
-    } finally {
-      store.close();
-    }
+    });
   }
 
   /** `--view external`: external-benchmark comparability per (benchmark, version, cell).
@@ -643,10 +609,7 @@ export class EvalCommands extends BaseCommand {
     format?: string;
     externalManifestPath?: string;
   }): void {
-    const dbPath = options.dbPath ?? resolveEvalDbPath();
-    const store = new EvalSqliteStore(dbPath);
-    try {
-      store.initialize();
+    withEvalStore(options.dbPath ?? resolveEvalDbPath(), (store) => {
       const runs = store.queryExternalRuns({ pack: options.pack });
       if (runs.length === 0) {
         console.log("No external-benchmark runs found in history.");
@@ -670,9 +633,7 @@ export class EvalCommands extends BaseCommand {
       } else {
         renderExternalTable(rows);
       }
-    } finally {
-      store.close();
-    }
+    });
   }
 
   private renderScriptView(
@@ -707,10 +668,7 @@ export class EvalCommands extends BaseCommand {
   }
 
   compare(runA: string, runB: string): void {
-    const dbPath = resolveEvalDbPath();
-    const store = new EvalSqliteStore(dbPath);
-    try {
-      store.initialize();
+    withEvalStore(resolveEvalDbPath(), (store) => {
       const result = store.compareRuns(runA, runB);
       if (!result.runA && !result.runB) {
         console.log("Neither run found in SQLite history.");
@@ -744,9 +702,7 @@ export class EvalCommands extends BaseCommand {
           );
         }
       }
-    } finally {
-      store.close();
-    }
+    });
   }
 }
 
