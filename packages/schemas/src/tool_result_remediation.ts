@@ -28,7 +28,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 // Exported interfaces (must precede functional code — check:style requirement)
 
 /** Possible outcomes produced by applyRemediationPolicy. */
-export type IRemediationOutcome =
+type IRemediationOutcome =
   | "passed"
   | "fail_closed"
   | "escalated"
@@ -46,7 +46,7 @@ export interface IRemediationResult {
 }
 
 /** Callbacks provided by the caller for normalize and retry modes. */
-export interface IRemediationContext {
+interface IRemediationContext {
   /** Transforms the raw payload before revalidation (normalize_then_validate mode). */
   normalize?: (rawResult: JSONValue) => JSONValue;
   /** Re-executes the tool to obtain a fresh result (retry_once, retry_with_backoff modes). */

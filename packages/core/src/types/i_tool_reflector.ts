@@ -65,20 +65,3 @@ export interface IToolReflectorMetrics {
   toolDistribution: Record<string, number>;
   issueTypeDistribution: Record<string, number>;
 }
-
-export interface IToolReflector {
-  executeWithReflection(
-    toolCall: IToolCall,
-    executor: (params: Record<string, JSONValue>) => Promise<IToolResult>,
-    traceId?: string,
-  ): Promise<IReflectedToolResult>;
-
-  executeMultiple(
-    toolCalls: IToolCall[],
-    executor: (call: IToolCall) => Promise<IToolResult>,
-    traceId?: string,
-  ): Promise<IReflectedToolResult[]>;
-
-  getMetrics(): IToolReflectorMetrics;
-  resetMetrics(): void;
-}

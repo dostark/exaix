@@ -9,34 +9,19 @@
 export { CriteriaGenerator } from "./criteria_generator.ts";
 export { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "./skills.ts";
 export type { ISkillsConfig } from "./skills.ts";
-export {
-  createSkillOperationContext,
-  type ISkillOperationInput,
-  isValidSkillPortalName,
-  SKILL_CONFIG_GENERATION_STATIC,
-} from "./skill_context.ts";
+export { createSkillOperationContext, SKILL_CONFIG_GENERATION_STATIC } from "./skill_context.ts";
 export { SkillFolderLoader } from "./skill_folder_loader.ts";
-export { SkillFolderPublisher, type SkillLockMode } from "./skill_folder_publisher.ts";
-export {
-  buildSkillPin,
-  type ISkillEntryState,
-  type ISkillPinSelection,
-  type ISkillPinState,
-  orderSkillPins,
-  skillToContextEntry,
-} from "./skill_pins.ts";
+export { SkillFolderPublisher } from "./skill_folder_publisher.ts";
+export { buildSkillPin, orderSkillPins, skillToContextEntry } from "./skill_pins.ts";
 export { policySkillSubmission } from "./skill_submission.ts";
-export { SKILL_USAGE_STORE_SOURCE_ID, SkillUsageStore } from "./skill_usage_store.ts";
-export { SKILL_REVISION_STORE_SOURCE_ID, SkillRevisionStore } from "./skill_revision_store.ts";
+export { SkillUsageStore } from "./skill_usage_store.ts";
+export { SkillRevisionStore } from "./skill_revision_store.ts";
 export {
   analyzeReferenceLinks,
   canonicalizeSkillText,
   computeRevisionId,
   computeSkillContentSha256,
-  findLinkedReferencePaths,
   parseSkillSnapshot,
-  SKILL_REVISION_NAMESPACE,
-  synthesizeFallbackKeywords,
 } from "./skill_snapshot.ts";
 export {
   type ILoadedSkill,

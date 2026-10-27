@@ -29,9 +29,9 @@
  * @related-files [packages/core/src/helpers/subprocess.ts, packages/session/src/supervised_launch.ts, packages/ai-clidelegate/src/cli_delegate_model_provider.ts, packages/execution/src/strategies/cli_delegate_strategy.ts, apps/daemon/main.ts, apps/exactl/src/exactl.ts]
  */
 
-export type ChildEnvMode = "inherit" | "allowlist";
+type ChildEnvMode = "inherit" | "allowlist";
 
-export interface IChildEnvOptions {
+interface IChildEnvOptions {
   /** `inherit`: full parent env minus injection vars (first-party trusted tools).
    *  `allowlist`: safe parent keys + explicit launch env only (foreign agents). */
   mode: ChildEnvMode;
@@ -61,12 +61,12 @@ export const SECRET_ENV_PATTERN = /API_KEY|SECRET|PASSWORD|CREDENTIAL|PRIVATE_KE
 /** Env var name prefixes instructing the dynamic linker to load arbitrary shared
  *  libraries into the child. Deno's scoped `--allow-run=<bin>` permission refuses to
  *  forward these to a spawned child outright, so they can never be passed. */
-export const DYNAMIC_LINKER_ENV_PREFIXES: readonly string[] = ["LD_", "DYLD_"];
+const DYNAMIC_LINKER_ENV_PREFIXES: readonly string[] = ["LD_", "DYLD_"];
 
 /** Env vars that make a child process execute parent-controlled code or config at
  *  startup, independent of argv: interpreter/codegen overlay files (shell, node,
  *  python, ruby, perl) and gem/class roots. Same injection class as LD_PRELOAD. */
-export const INTERPRETER_OVERLAY_ENV_KEYS: readonly string[] = [
+const INTERPRETER_OVERLAY_ENV_KEYS: readonly string[] = [
   "BASH_ENV",
   "ENV",
   "NODE_OPTIONS",
@@ -82,15 +82,15 @@ export const INTERPRETER_OVERLAY_ENV_KEYS: readonly string[] = [
 /** Env vars that inject `git -c` configuration into every `git` child (CVE-2022-24765
  *  family): GIT_CONFIG_COUNT/KEY_n/VALUE_n and legacy GIT_CONFIG_PARAMETERS. Can redirect
  *  what an untrusted-repo `git submodule update` runs. */
-export const GIT_ENV_CONFIG_KEYS: readonly string[] = ["GIT_CONFIG_COUNT", "GIT_CONFIG_PARAMETERS"];
+const GIT_ENV_CONFIG_KEYS: readonly string[] = ["GIT_CONFIG_COUNT", "GIT_CONFIG_PARAMETERS"];
 
 /** Prefixes of the paired `GIT_CONFIG_KEY_n` / `GIT_CONFIG_VALUE_n` vars. */
-export const GIT_ENV_CONFIG_PREFIXES: readonly string[] = ["GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_"];
+const GIT_ENV_CONFIG_PREFIXES: readonly string[] = ["GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_"];
 
 /** Proxy/redirection vars that can point a child's network traffic at a
  *  man-in-the-middle. Excluded from foreign (allowlist) children; preserved for
  *  trusted (inherit) tools where a corporate proxy is legitimate. */
-export const PROXY_ENV_KEYS: readonly string[] = [
+const PROXY_ENV_KEYS: readonly string[] = [
   "HTTP_PROXY",
   "HTTPS_PROXY",
   "ALL_PROXY",
@@ -111,7 +111,7 @@ export function isInjectionEnvVar(key: string): boolean {
 }
 
 /** Return `env` with every injection-class var (`injection-env`) removed. */
-export function stripInjectionEnvVars(env: Record<string, string>): Record<string, string> {
+function stripInjectionEnvVars(env: Record<string, string>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(env)) {
     if (isInjectionEnvVar(key)) continue;

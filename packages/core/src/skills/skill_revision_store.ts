@@ -25,7 +25,7 @@ import {
 } from "./skill_types.ts";
 
 /** Event source id registered by the store. */
-export const SKILL_REVISION_STORE_SOURCE_ID = "skill-revision-store";
+const SKILL_REVISION_STORE_SOURCE_ID = "skill-revision-store";
 
 interface ISkillRevisionRow {
   revision_id: string;

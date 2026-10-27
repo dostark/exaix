@@ -48,8 +48,6 @@ export const RequestGoalSchema = z.object({
   priority: z.number().int().min(1),
 });
 
-export type IRequestGoal = z.infer<typeof RequestGoalSchema>;
-
 /**
  * A concrete requirement extracted from the request.
  */
@@ -69,8 +67,6 @@ export const RequirementSchema = z.object({
   /** Whether this requirement was stated explicitly in the request text, or inferred. */
   explicit: z.boolean().default(true),
 });
-
-export type IRequirement = z.infer<typeof RequirementSchema>;
 
 /**
  * An identified ambiguity or gap in the request specification.
@@ -102,8 +98,6 @@ const RequestAnalysisMetadataSchema = z.object({
   /** Semantic version of the analyzer that produced this result. */
   analyzerVersion: z.string().default(ANALYZER_VERSION),
 });
-
-export type IRequestAnalysisMetadata = z.infer<typeof RequestAnalysisMetadataSchema>;
 
 // Root schema
 

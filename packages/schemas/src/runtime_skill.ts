@@ -24,8 +24,6 @@ const SkillReferenceSchema = z.object({
   content: z.string(),
   linked: z.boolean(),
 });
-export type ISkillReference = z.infer<typeof SkillReferenceSchema>;
-
 /** How the effective trigger set was produced. */
 export const SkillTriggersSourceSchema = z.enum(["authored", "description"]);
 export type ISkillTriggersSource = z.infer<typeof SkillTriggersSourceSchema>;

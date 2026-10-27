@@ -89,8 +89,6 @@ export const ProviderTypeSchema = z.string().min(1).refine(
  */
 const MockStrategySchema = z.nativeEnum(MockStrategy);
 
-export type MockStrategyType = z.infer<typeof MockStrategySchema>;
-
 /**
  * Mock-specific configuration
  */
@@ -109,8 +107,6 @@ const MockConfigSchema = z.object({
 }).default({
   strategy: DEFAULT_MOCK_STRATEGY,
 });
-
-export type MockConfig = z.infer<typeof MockConfigSchema>;
 
 /**
  * AI configuration schema for [ai] section in

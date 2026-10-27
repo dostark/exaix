@@ -13,10 +13,10 @@
 import type { Opt, Reason } from "../types/optional_marker.ts";
 
 /** Concrete values are edition-specific; the interface is intentionally generic. */
-export type AuthorizationAction = string;
+type AuthorizationAction = string;
 
 /** Concrete values are edition-specific; the interface is intentionally generic. */
-export type AuthorizationResource = string;
+type AuthorizationResource = string;
 
 /**
  * Contextual information for an authorization decision.
@@ -31,7 +31,7 @@ export interface IAuthorizationContext {
 /**
  * Result of an authorization check.
  */
-export interface IAuthorizationDecision {
+interface IAuthorizationDecision {
   allowed: boolean;
   reason?: string;
 }
@@ -44,7 +44,7 @@ export interface IAuthorizer {
   authorize(
     action: AuthorizationAction,
     resource: AuthorizationResource,
-    context?: IAuthorizationContext,
+    context?: Opt<IAuthorizationContext, Reason.OptionalContext>,
   ): IAuthorizationDecision;
 }
 

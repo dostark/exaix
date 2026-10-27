@@ -32,7 +32,7 @@ import {
 } from "./skill_types.ts";
 
 /** Event source id registered by the store. */
-export const SKILL_USAGE_STORE_SOURCE_ID = "skill-usage-store";
+const SKILL_USAGE_STORE_SOURCE_ID = "skill-usage-store";
 
 /** Insert column list, in the order the parameters of one row are bound. */
 const USAGE_COLUMN_LIST =

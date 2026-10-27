@@ -16,7 +16,7 @@ export enum ProviderHealthVerdict {
   UNKNOWN = "unknown",
 }
 
-export interface IProviderHealthStatus {
+interface IProviderHealthStatus {
   status: ProviderHealthVerdict;
   lastCheck: number | null;
   consecutiveFailures: number;

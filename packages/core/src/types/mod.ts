@@ -82,7 +82,6 @@ export type {
   IReflectedToolResult,
   IToolCall,
   IToolReflection,
-  IToolReflector,
   IToolReflectorConfig,
   IToolReflectorMetrics,
 } from "./i_tool_reflector.ts";

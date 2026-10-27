@@ -34,7 +34,7 @@ interface IPublicationIntent {
   intended_sha256: string | null;
 }
 
-export type SkillLockMode = "shared" | "exclusive";
+type SkillLockMode = "shared" | "exclusive";
 
 /** Called after each publication stage completes. A throw simulates a crash at exactly that boundary. */
 type SkillPublicationFaultHook = (stage: SkillPublicationStage, name: string) => void | Promise<void>;

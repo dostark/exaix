@@ -39,8 +39,6 @@ export const SkillFrontmatterSchema = z.object({
     .describe("Advisory import metadata; never widens role tool permissions"),
 }).strict();
 
-export type ISkillFrontmatter = z.infer<typeof SkillFrontmatterSchema>;
-
 /** Knowledge-base frontmatter keys that the dogfood `.copilot/skills` corpus keeps because `.copilot/manifest.json` generation reads them.
  *  Runtime roots reject all of these. */
 export const DOGFOOD_FRONTMATTER_KEYS: readonly string[] = [

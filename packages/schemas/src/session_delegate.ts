@@ -124,8 +124,6 @@ const SessionWaitStatusSchema = z.enum([
   "expired",
   "cancelled",
 ]);
-export type SessionWaitStatus = z.infer<typeof SessionWaitStatusSchema>;
-
 export const SessionWaitStateSchema = z.object({
   trace_id: z.string().uuid(),
   gate: SessionGateSchema,
@@ -229,4 +227,3 @@ export const CliDelegateConfigSchema = z.object({
   /** Provider whose API key the daemon passes to the tool. Without it the tool gets no provider key. */
   provider: SessionDelegateProviderSchema.optional(),
 });
-export type CliDelegateConfig = z.infer<typeof CliDelegateConfigSchema>;

@@ -8,13 +8,7 @@
  */
 
 import { z } from "zod";
-import {
-  AgentExecutionErrorType,
-  ExecutionStrategyName,
-  isRejectedNativeToolName,
-  JSONValueSchema,
-  SecurityMode,
-} from "@exaix/core";
+import { ExecutionStrategyName, isRejectedNativeToolName, SecurityMode } from "@exaix/core";
 import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "./model_intent.ts";
 import { SkillPinVectorSchema } from "./skill_pin.ts";
 
@@ -143,19 +137,3 @@ export const ChangesetResultSchema = z.object({
   }).optional().describe("LLM usage metrics"),
 });
 export type IChangesetResult = z.infer<typeof ChangesetResultSchema>;
-
-/**
- * Agent execution error types
- */
-const AgentExecutionErrorTypeSchema = z.nativeEnum(AgentExecutionErrorType);
-
-/**
- * Agent execution error details
- */
-const AgentExecutionErrorSchema = z.object({
-  type: AgentExecutionErrorTypeSchema,
-  message: z.string(),
-  details: z.record(z.string(), JSONValueSchema).optional(),
-  trace_id: z.string().uuid().optional(),
-});
-export type IAgentExecutionError = z.infer<typeof AgentExecutionErrorSchema>;

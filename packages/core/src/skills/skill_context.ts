@@ -12,7 +12,7 @@
 import type { ISkillOperationContext } from "./skill_types.ts";
 
 /** Identity fields a caller knows about one operation. Everything but the role may be absent. */
-export interface ISkillOperationInput {
+interface ISkillOperationInput {
   agentRole: string;
   portal?: string | null;
   traceId?: string | null;
@@ -29,7 +29,7 @@ export const SKILL_CONFIG_GENERATION_STATIC = "static";
 const PORTAL_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 /** True for a plain portal name that is safe to use as a project skill root directory. */
-export function isValidSkillPortalName(name: string): boolean {
+function isValidSkillPortalName(name: string): boolean {
   return PORTAL_NAME_PATTERN.test(name);
 }
 

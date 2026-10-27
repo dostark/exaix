@@ -89,10 +89,6 @@ const RequestQualityAssessmentMetadataSchema = z.object({
   durationMs: z.number().nonnegative(),
 });
 
-export type IRequestQualityAssessmentMetadata = z.infer<
-  typeof RequestQualityAssessmentMetadataSchema
->;
-
 // Root schema
 
 /**

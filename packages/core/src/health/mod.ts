@@ -7,7 +7,6 @@
  */
 
 export type { IHealthCheck } from "./health_check_service.ts";
-export type { IProviderHealthStatus } from "./provider_health_monitor.ts";
 export { ProviderHealthMonitor, ProviderHealthVerdict } from "./provider_health_monitor.ts";
 export {
   DatabaseHealthCheck,

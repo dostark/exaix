@@ -18,7 +18,7 @@ import type { IOverrideEntry } from "@exaix/core/config";
 import { type Config, ConfigSchema, responseCallsCoverCaps, ToolsConfigSchema } from "./config.ts";
 
 /** The live config and Config DB overrides that a policy reader resolves from. */
-export interface IToolsRoundPolicySource {
+interface IToolsRoundPolicySource {
   config: { get(): Config };
   configAdapter?: {
     listOverrides?(): ReadonlyArray<{ key: string; value: string | number | boolean | null; swap_class: string }>;

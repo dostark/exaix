@@ -358,8 +358,6 @@ export const SessionDelegateCycleAggregateSchema = z.object({
   })),
 });
 
-export type ISessionDelegateCycleAggregate = z.infer<typeof SessionDelegateCycleAggregateSchema>;
-
 function validateGateLoopFields(step: z.infer<typeof FlowStepSchemaBase>, ctx: z.RefinementCtx): void {
   if (step.loop && step.type !== FlowStepType.GATE) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "loop is valid on gate steps only", path: ["loop"] });
@@ -581,7 +579,6 @@ export type IFlow = z.infer<typeof FlowSchema>;
 /** Flow input type (before defaults are applied) */
 export type IFlowInput = z.input<typeof FlowSchema>;
 export type IToolCall = z.infer<typeof ZToolCall>;
-export type IFlowStepOnError = z.infer<typeof ZFlowStepOnError>;
 export type IFlowStepResultSnapshot = z.infer<typeof ZFlowStepResult>;
 export type IFlowCheckpoint = z.infer<typeof ZFlowCheckpoint>;
 export type IFlowNamespaceConfig = z.infer<typeof ZFlowNamespaceConfig>;
@@ -590,12 +587,7 @@ export type IFlowNamespaceWrite = z.infer<typeof ZFlowNamespaceWrite>;
 export type IFlowStepNamespace = z.infer<typeof ZFlowStepNamespace>;
 export type IFlowNamespaceEntry = z.infer<typeof ZFlowNamespaceEntry>;
 export type IParallelMergeMode = z.infer<typeof ZParallelMergeMode>;
-export type IFlowParallelConfig = z.infer<typeof ZFlowParallelConfig>;
 export type IGateEvaluate = z.infer<typeof GateEvaluateSchema>;
-export type IFeedbackLoopConfig = z.infer<typeof FeedbackLoopSchema>;
-export type IBranchCondition = z.infer<typeof BranchConditionSchema>;
-export type IConsensusConfig = z.infer<typeof ConsensusConfigSchema>;
-
 // Step Execution Durability Schemas
 
 export const StepExecutionDispositionSchema = z.nativeEnum(StepExecutionDisposition);
@@ -640,8 +632,4 @@ export const StepExecutionRecordSchema = z.object({
   error: z.string().optional(),
 });
 
-export type IStepExecutionDisposition = z.infer<typeof StepExecutionDispositionSchema>;
-export type IStepSideEffectClass = z.infer<typeof StepSideEffectClassSchema>;
-export type IStepAttemptClass = z.infer<typeof StepAttemptClassSchema>;
-export type IStepIdempotencyKey = z.infer<typeof StepIdempotencyKeySchema>;
 export type IStepExecutionRecord = z.infer<typeof StepExecutionRecordSchema>;

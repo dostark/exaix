@@ -52,14 +52,6 @@ export const ContextBudgetSnapshotSchema = z.object({
   durationMs: z.number().int().nonnegative().optional(),
 });
 
-/** Token estimation backend identifiers. */
-const TOKEN_SOURCE_METHODS = {
-  BPE: "bpe",
-  HEURISTIC: "heuristic",
-} as const;
-export type ITokenSource = typeof TOKEN_SOURCE_METHODS[keyof typeof TOKEN_SOURCE_METHODS];
-
 export type IContextSegmentKind = z.infer<typeof ContextSegmentKindSchema>;
-export type IContextBudgetAction = z.infer<typeof ContextBudgetActionSchema>;
 export type IContextBudgetDecision = z.infer<typeof ContextBudgetDecisionSchema>;
 export type IContextBudgetSnapshot = z.infer<typeof ContextBudgetSnapshotSchema>;

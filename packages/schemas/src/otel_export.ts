@@ -27,7 +27,3 @@ export const OtelExportFailedPayloadSchema = DestinationSchema.extend({
   error_code: z.string().min(1).max(128),
   retry_count: z.number().int().nonnegative(),
 }).strict();
-
-export type IOtelExportStartedPayload = z.infer<typeof OtelExportStartedPayloadSchema>;
-export type IOtelExportCompletedPayload = z.infer<typeof OtelExportCompletedPayloadSchema>;
-export type IOtelExportFailedPayload = z.infer<typeof OtelExportFailedPayloadSchema>;

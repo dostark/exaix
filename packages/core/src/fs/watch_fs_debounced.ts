@@ -21,7 +21,7 @@ export interface IFsEventLike {
 }
 
 /** Options for {@link consumeFsEvents} / {@link watchFsDebounced}. */
-export interface IWatchFsDebouncedOptions {
+interface IWatchFsDebouncedOptions {
   /** Debounce window per path (ms). Defaults to DEFAULT_WATCHER_DEBOUNCE_MS. */
   debounceMs?: number;
   /** Which event kinds to act on. Defaults to FS_WRITE_EVENT_KINDS (create/modify/rename). */
@@ -86,15 +86,4 @@ export async function consumeFsEvents(
     }
     await Promise.all([...pending]);
   }
-}
-
-/** Use this for new watchers instead of hand-rolling a `for await` loop. */
-export function watchFsDebounced(
-  path: string | string[],
-  handler: (path: string) => void | Promise<void>,
-  options: IWatchFsDebouncedOptions & { recursive?: boolean } = {},
-): { watcher: Deno.FsWatcher; done: Promise<void> } {
-  const watcher = Deno.watchFs(path, { recursive: options.recursive ?? false });
-  const done = consumeFsEvents(watcher, handler, options);
-  return { watcher, done };
 }

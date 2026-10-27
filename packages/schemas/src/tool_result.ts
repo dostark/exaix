@@ -20,7 +20,7 @@ import {
   ToolSideEffectScope,
 } from "@exaix/core";
 
-export interface IToolResultJsonSchemaDescriptor {
+interface IToolResultJsonSchemaDescriptor {
   type: string;
   properties?: IToolResultJsonSchemaProperties;
   required?: string[];
@@ -28,9 +28,9 @@ export interface IToolResultJsonSchemaDescriptor {
   additionalProperties?: boolean;
 }
 
-export type IToolResultJsonSchemaProperty = IToolResultJsonSchemaDescriptor | { type: string };
+type IToolResultJsonSchemaProperty = IToolResultJsonSchemaDescriptor | { type: string };
 
-export type IToolResultJsonSchemaProperties = Record<string, IToolResultJsonSchemaProperty>;
+type IToolResultJsonSchemaProperties = Record<string, IToolResultJsonSchemaProperty>;
 
 // Tool Result Envelope Schema
 
@@ -66,8 +66,6 @@ export const ToolResultEnvelopeSchema = z.object({
   }
 });
 
-export type IToolResultEnvelope = z.infer<typeof ToolResultEnvelopeSchema>;
-
 // Tool Result Validation Failure Schema
 
 const TOOL_RESULT_VALIDATION_STAGE_VALUES = [
@@ -76,8 +74,6 @@ const TOOL_RESULT_VALIDATION_STAGE_VALUES = [
   "adapter_boundary",
   "mcp_boundary",
 ] as const;
-
-export type ToolResultValidationStage = typeof TOOL_RESULT_VALIDATION_STAGE_VALUES[number];
 
 /** `rawResult` MUST NOT be forwarded to MCP clients — internal audit logging only. */
 export const ToolResultValidationFailureSchema = z.object({
@@ -125,8 +121,6 @@ export const TOOL_RESULT_REMEDIATION_MODE_VALUES = [
 export const TOOL_RESULT_REMEDIATION_MODES: ReadonlySet<string> = new Set(
   TOOL_RESULT_REMEDIATION_MODE_VALUES,
 );
-
-export type ToolResultRemediationMode = typeof TOOL_RESULT_REMEDIATION_MODE_VALUES[number];
 
 export const ToolResultRemediationPolicySchema = z.object({
   tool: z.string().min(1),
@@ -220,7 +214,3 @@ export const TOOL_RESULT_SCHEMA_DESCRIPTOR_REGISTRY: Record<string, IToolResultJ
 export const ToolResultSchemaRequestSchema = z.object({
   tool: z.string().min(1),
 });
-
-export type IToolResultSchemaRequest = z.infer<typeof ToolResultSchemaRequestSchema>;
-
-export type IToolResultSchemaResponse = IToolResultSchemaDescriptor;

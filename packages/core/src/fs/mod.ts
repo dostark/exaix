@@ -7,5 +7,5 @@
  * @related-files [packages/core/src/fs/watch_fs_debounced.ts]
  */
 
-export { consumeFsEvents, watchFsDebounced } from "./watch_fs_debounced.ts";
-export type { IFsEventLike, IWatchFsDebouncedOptions } from "./watch_fs_debounced.ts";
+export { consumeFsEvents } from "./watch_fs_debounced.ts";
+export type { IFsEventLike } from "./watch_fs_debounced.ts";

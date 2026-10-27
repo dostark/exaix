@@ -10,11 +10,7 @@ import { z } from "zod";
 
 /** A violation either warns (journaled, execution continues) or blocks (halts via amendment). */
 export const GuardrailSeveritySchema = z.enum(["warn", "block"]);
-export type GuardrailSeverity = z.infer<typeof GuardrailSeveritySchema>;
-
 export const GuardrailVerdictSchema = z.enum(["pass", "violation"]);
-export type GuardrailVerdict = z.infer<typeof GuardrailVerdictSchema>;
-
 /** One screening policy, evaluated by a fast-slot model against the agent output. */
 export const GuardrailPolicySchema = z.object({
   policy_id: z.string().min(1),

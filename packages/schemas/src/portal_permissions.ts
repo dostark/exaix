@@ -111,8 +111,6 @@ const PermissionSchema = z.object({
   conditions: PermissionConditionsSchema,
 });
 
-export type IPermission = z.infer<typeof PermissionSchema>;
-
 // Portal Security Configuration
 
 /**
@@ -159,4 +157,3 @@ export const PortalPermissionsSchema = z.object({
 });
 
 export type IPortalPermissions = z.output<typeof PortalPermissionsSchema>;
-export type IPortalPermissionsInput = z.input<typeof PortalPermissionsSchema>;

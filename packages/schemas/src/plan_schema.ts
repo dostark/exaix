@@ -295,15 +295,3 @@ export type Plan = z.infer<typeof PlanSchema>;
 export function getPlanJsonSchema(): Record<string, JSONValue> {
   return zodToJsonSchema(PlanSchema);
 }
-
-/** Analysis results for code analysis agents */
-export type PlanAnalysis = z.infer<typeof PlanSchema>["analysis"];
-
-/** Security analysis results */
-export type PlanSecurity = z.infer<typeof PlanSchema>["security"];
-
-/** QA/testing results */
-export type PlanQA = z.infer<typeof PlanSchema>["qa"];
-
-/** Performance analysis results */
-export type PlanPerformance = z.infer<typeof PlanSchema>["performance"];

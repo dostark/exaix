@@ -20,8 +20,6 @@ export type ContextRecordSurface = z.infer<typeof ContextRecordSurfaceSchema>;
 
 /** Whether the final token count is a real tokenizer count or a conservative estimate. */
 const ContextRecordTokenSourceSchema = z.enum(["counted", "heuristic"]);
-export type ContextRecordTokenSource = z.infer<typeof ContextRecordTokenSourceSchema>;
-
 /** Budget/selection evidence for one prompt section (a `PromptBudgetAllocator` section,
  *  or a capture/report subsection like `portalKnowledgeCrucial`/`memoryCrucial`). */
 const ContextRecordSectionSchema = z.object({

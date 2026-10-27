@@ -23,7 +23,7 @@ const LINT_SETTING_KEYS: readonly string[] = [
 ];
 
 /** The override reader the resolver needs from the Config DB adapter. */
-export interface ILintOverrideReader {
+interface ILintOverrideReader {
   getOverride?<T = unknown>(key: string): T | undefined;
 }
 

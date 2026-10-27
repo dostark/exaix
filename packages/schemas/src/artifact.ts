@@ -11,10 +11,6 @@ import { z } from "zod";
 import { ArtifactSubtype as ArtifactType } from "@exaix/core";
 import { REVIEW_STATUS_VALUES } from "@exaix/core/status";
 
-import type { IReviewStatus } from "@exaix/core/status";
-
-export type IArtifactStatusType = IReviewStatus;
-
 /**
  * Artifact frontmatter schema (YAML)
  */
@@ -56,20 +52,6 @@ export interface IArtifactWithContent extends IArtifact {
   content: string; // Full markdown content with frontmatter
   body: string; // Markdown content without frontmatter
 }
-
-/**
- * Artifact creation input
- */
-const CreateArtifactInputSchema = z.object({
-  request_id: z.string(),
-  agent_role: z.string(),
-  content: z.string(), // Markdown content (frontmatter will be added)
-  portal: z.string().nullable().optional(),
-  target_branch: z.string().nullable().optional(),
-  type: z.nativeEnum(ArtifactType).default(ArtifactType.ANALYSIS),
-});
-
-export type ICreateArtifactInput = z.infer<typeof CreateArtifactInputSchema>;
 
 /**
  * Artifact list filters

@@ -2103,9 +2103,7 @@ export const EXECUTION_REPORT_PROMPT_MAX_CHARS: number = configurable({
 
 export const ICON_SUCCESS = "✅";
 export const ICON_FAILURE = "❌";
-export const ICON_WARNING = "⚠️";
-export const ICON_INFO = "ℹ️";
-
+const ICON_WARNING = "⚠️";
 export const SHARED_PRIORITY_ICONS: Record<string, string> = {
   [RequestPriority.CRITICAL]: "🔴",
   [RequestPriority.HIGH]: "🟠",

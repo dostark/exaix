@@ -14,9 +14,9 @@ import type { SessionTool } from "./session_delegate.ts";
 import type { EffortDeclaration, ThinkingDeclaration } from "./model_intent.ts";
 
 export type BindingTransport = "cloud" | "local";
-export type BindingInterface = "api" | "cli";
+type BindingInterface = "api" | "cli";
 export type BindingLayer = "flow" | "config" | "overlay" | "run" | "cli";
-export type BindingStepKind = "agent" | "gate" | "judge";
+type BindingStepKind = "agent" | "gate" | "judge";
 export type BindingField =
   | "service"
   | "model_provider"
@@ -34,7 +34,7 @@ export type PinReason =
   | "capability-gate"
   | "compliance";
 
-export type BindingIssueCode =
+type BindingIssueCode =
   | "overlay_invalid"
   | "ambiguous_selector"
   | "unknown_model"

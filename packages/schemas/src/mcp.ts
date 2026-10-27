@@ -39,8 +39,6 @@ export const MCPConfigSchema = z.object({
   auth_token_expiry_seconds: z.number().int().positive().default(DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS),
 });
 
-export type MCPConfig = z.infer<typeof MCPConfigSchema>;
-
 // MCP Tool Schemas
 
 const MCP_ERR_PORTAL_REQUIRED = "Portal name required";
@@ -225,28 +223,6 @@ export const QuerySymbolReferencesToolArgsSchema = z.object({
 });
 
 // Union type for all tool arguments
-export type MCPToolArgs =
-  | z.infer<typeof ReadFileToolArgsSchema>
-  | z.infer<typeof WriteFileToolArgsSchema>
-  | z.infer<typeof ListDirectoryToolArgsSchema>
-  | z.infer<typeof GitCreateBranchToolArgsSchema>
-  | z.infer<typeof GitCommitToolArgsSchema>
-  | z.infer<typeof GitStatusToolArgsSchema>
-  | z.infer<typeof GitLogToolArgsSchema>
-  | z.infer<typeof GitWorktreeToolArgsSchema>
-  | z.infer<typeof CreateRequestToolArgsSchema>
-  | z.infer<typeof ListPlansToolArgsSchema>
-  | z.infer<typeof ApprovePlanToolArgsSchema>
-  | z.infer<typeof QueryJournalToolArgsSchema>
-  | z.infer<typeof PatchFileToolArgsSchema>
-  | z.infer<typeof DeleteFileToolArgsSchema>
-  | z.infer<typeof MoveFileToolArgsSchema>
-  | z.infer<typeof CreateDirectoryToolArgsSchema>
-  | z.infer<typeof RunCommandToolArgsSchema>
-  | z.infer<typeof SearchFilesToolArgsSchema>
-  | z.infer<typeof PortalSymbolsToolArgsSchema>
-  | z.infer<typeof QuerySymbolReferencesToolArgsSchema>;
-
 // MCP Response Schemas
 
 const MCPTextContentSchema = z.object({
@@ -269,16 +245,8 @@ export const MCPToolResponseSchema = z.object({
   isError: z.boolean().optional(),
 });
 
-const MCPErrorSchema = z.object({
-  code: z.number(),
-  message: z.string(),
-  data: z.unknown().optional(),
-});
-
 export type MCPContent = z.infer<typeof MCPContentSchema>;
 export type MCPToolResponse = z.infer<typeof MCPToolResponseSchema>;
-export type MCPError = z.infer<typeof MCPErrorSchema>;
-
 // MCP Resource Schemas
 
 const MCPResourceSchema = z.object({

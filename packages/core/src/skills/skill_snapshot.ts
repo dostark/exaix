@@ -28,7 +28,7 @@ import type {
 } from "./skill_types.ts";
 
 /** Fixed UUIDv5 namespace for Exaix skill revision ids. */
-export const SKILL_REVISION_NAMESPACE = "7ca2dd7f-933c-51d6-bb14-728efc21406f";
+const SKILL_REVISION_NAMESPACE = "7ca2dd7f-933c-51d6-bb14-728efc21406f";
 
 type TriggersSource = IRuntimeSkill["triggers_source"];
 const TRIGGERS_SOURCE_OPTIONS = SkillTriggersSourceSchema.options;
@@ -204,7 +204,7 @@ function asciiWords(text: string): string[] {
 
 /** Trigger keywords for a skill that authored none. Name words come first and keep short words, then description words of minimum length.
  *  Stopwords and repeats drop, and the cap applies last. */
-export function synthesizeFallbackKeywords(
+function synthesizeFallbackKeywords(
   name: string,
   description: string,
   limits: ISkillFallbackLimits = DEFAULT_FALLBACK_LIMITS,
@@ -289,7 +289,7 @@ export function analyzeReferenceLinks(body: string): ISkillReferenceLinks {
 }
 
 /** Finds the `references/<slug>.md` targets a body links to, deduplicated and sorted. */
-export function findLinkedReferencePaths(body: string): string[] {
+function findLinkedReferencePaths(body: string): string[] {
   return analyzeReferenceLinks(body).linked;
 }
 

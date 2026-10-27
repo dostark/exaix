@@ -37,10 +37,3 @@ export const ZStreamingEvent = z.object({
 });
 
 export type IStreamingEvent = z.infer<typeof ZStreamingEvent>;
-
-/** Type-cast the payload to this when type === STREAMING_EVENT_LLM_STREAM. */
-export interface ITokenStreamPayload {
-  inputTokens?: number;
-  outputTokens?: number;
-  totalTokens?: number;
-}

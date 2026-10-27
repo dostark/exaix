@@ -17,21 +17,15 @@ const OpencodeGlobPermissionSchema = z.record(
   z.string(),
   OpencodePermissionValueSchema,
 );
-export type OpencodeGlobPermission = z.infer<typeof OpencodeGlobPermissionSchema>;
-
 const OpencodeAgentPermissionSchema = z.object({
   edit: OpencodeGlobPermissionSchema,
   external_directory: OpencodeGlobPermissionSchema,
   bash: OpencodeGlobPermissionSchema,
 });
-export type OpencodeAgentPermission = z.infer<typeof OpencodeAgentPermissionSchema>;
-
 const OpencodeAgentSchema = z.record(
   z.string(),
   OpencodeAgentPermissionSchema,
 );
-export type OpencodeAgent = z.infer<typeof OpencodeAgentSchema>;
-
 /** One remote MCP server entry — modelled on OpenCode's `mcp.<name>` config shape. The
  *  `headers` value is always an `{env:VAR}`-style reference, never a literal credential. */
 const OpencodeMcpRemoteServerSchema = z.object({
@@ -40,8 +34,6 @@ const OpencodeMcpRemoteServerSchema = z.object({
   oauth: z.literal(false),
   headers: z.record(z.string(), z.string()),
 });
-export type OpencodeMcpRemoteServer = z.infer<typeof OpencodeMcpRemoteServerSchema>;
-
 const OpencodeMcpSchema = z.record(z.string(), OpencodeMcpRemoteServerSchema);
 export type OpencodeMcp = z.infer<typeof OpencodeMcpSchema>;
 

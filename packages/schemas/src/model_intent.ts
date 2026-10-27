@@ -64,7 +64,7 @@ export interface IModelIntent {
 export type TaskTypeSource = "frontmatter" | "agent_role" | "skill" | "static_map" | "analyzer" | "unknown";
 
 /** @deprecated Use IModelIntent instead. Backward-compat alias. */
-export type IModelPreferences = IModelIntent;
+type IModelPreferences = IModelIntent;
 
 /** @deprecated Use IModelIntent instead. Backward-compat alias. */
 export type ISelectionCriteria = IModelIntent;
@@ -103,16 +103,6 @@ export type ModelResolutionReason =
   | "usage_ranked"
   /** The caller's client is fixed, so the intent selected only the call options. */
   | "fixed_client";
-
-/** Trace payload emitted on every ModelResolver.resolve() call: input intent, candidates considered, scores, selection, and duration. */
-export interface IModelResolutionTrace {
-  intent: IModelIntent;
-  candidate_providers: string[];
-  scores: Record<string, number>;
-  selected: { provider: string; model: string; attempt: number };
-  reason: ModelResolutionReason;
-  duration_ms: number;
-}
 
 /** Zod enum for the reasoning effort tiers, so intent parsing and validation round-trip
  *  through a schema. */

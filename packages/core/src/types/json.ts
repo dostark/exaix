@@ -25,11 +25,6 @@ export type JSONValue =
 export type JSONObject = { [key: string]: JSONValue };
 
 /**
- * Represents a JSON-serializable array.
- */
-export type JSONArray = JSONValue[];
-
-/**
  * Metadata for logging events, restricted to JSON-serializable values.
  */
 export type LogMetadata = JSONObject;

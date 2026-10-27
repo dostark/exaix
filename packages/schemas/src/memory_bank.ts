@@ -55,17 +55,6 @@ export interface ISkillMatch {
 }
 
 /**
- * Advanced search options for searchMemoryAdvanced
- */
-export interface IAdvancedSearchOptions {
-  tags?: string[];
-  keyword?: string;
-  portal?: string;
-  limit?: number;
-  useEmbeddings?: boolean;
-}
-
-/**
  * IActivity summary combining execution history and task activity
  */
 export interface IActivitySummary {
@@ -171,8 +160,6 @@ const LearningLinkSchema = z.object({
   type: z.string().describe("Link type, e.g. 'supersedes' | 'superseded_by' | 'topical'"),
 });
 
-export type ILearningLink = z.infer<typeof LearningLinkSchema>;
-
 /** Learning schema - represents a learned insight, pattern, or decision. Learnings can
  *  be project-scoped or global, and flow through a pending → approved workflow. */
 export const LearningSchema = z.object({
@@ -256,8 +243,6 @@ export const GlobalMemorySchema = z.object({
   statistics: GlobalMemoryStatsSchema,
 });
 
-export type IGlobalPattern = z.infer<typeof GlobalPatternSchema>;
-export type IGlobalAntiPattern = z.infer<typeof GlobalAntiPatternSchema>;
 export type IGlobalMemoryStats = z.infer<typeof GlobalMemoryStatsSchema>;
 export type IGlobalMemory = z.infer<typeof GlobalMemorySchema>;
 
@@ -347,8 +332,6 @@ export const SkillCompatibilitySchema = z.object({
 
 export type ISkillTriggers = z.infer<typeof SkillTriggersSchema>;
 export type ISkillQualityCriterion = z.infer<typeof SkillQualityCriterionSchema>;
-export type ISkillCompatibility = z.infer<typeof SkillCompatibilitySchema>;
-
 /** The runtime view of a loaded skill folder. `id` is the content-addressed revision. */
 export type ISkill = IRuntimeSkill;
 

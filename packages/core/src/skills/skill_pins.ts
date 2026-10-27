@@ -17,14 +17,14 @@ import type { ISkillPin } from "./skill_types.ts";
 type ISkillContextEntry = ISkillsContext["matched"][number];
 
 /** The selection facts that turn a loaded skill into one prompt-ready entry. */
-export interface ISkillEntryState {
+interface ISkillEntryState {
   confidence: number;
   source: SkillMatchSource;
   matchedTriggers: ISkillContextEntry["matchedTriggers"];
 }
 
 /** The selection facts a pin keeps about one resolved skill. */
-export interface ISkillPinSelection {
+interface ISkillPinSelection {
   skillId: string;
   revisionId: string;
   contentSha256: string;
@@ -37,7 +37,7 @@ export interface ISkillPinSelection {
 }
 
 /** What one operation decided about a selected skill. */
-export interface ISkillPinState {
+interface ISkillPinState {
   portal: string | null;
   renderMode: SkillRenderOutcome;
   contentIncluded: boolean;

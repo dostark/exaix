@@ -85,8 +85,6 @@ const QualityHistoryEntrySchema = z.object({
   level: z.string().min(1),
 });
 
-export type IQualityHistoryEntry = z.infer<typeof QualityHistoryEntrySchema>;
-
 // Root schema
 
 /**
