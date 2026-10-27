@@ -39,14 +39,14 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 type PackageDependencyFormat = "text" | "json" | "dot";
 
-export interface IDenoInfoDependency {
+interface IDenoInfoDependency {
   specifier: string;
   code?: {
     specifier: string;
   };
 }
 
-export interface IDenoInfoModule {
+interface IDenoInfoModule {
   specifier: string;
   local?: string;
   dependencies?: IDenoInfoDependency[];
@@ -58,7 +58,7 @@ export interface IDenoInfoJson {
   modules: IDenoInfoModule[];
 }
 
-export interface IPackageInfo {
+interface IPackageInfo {
   root: string;
   name: string;
   modules: string[];
@@ -66,7 +66,7 @@ export interface IPackageInfo {
   incoming: string[];
 }
 
-export interface ICandidateReport {
+interface ICandidateReport {
   targetPackage: string;
   targetRoot: string;
   directSrcModules: string[];
@@ -74,23 +74,23 @@ export interface ICandidateReport {
   allSrcModules: string[];
 }
 
-export interface IPackageGraph {
+interface IPackageGraph {
   packages: IPackageInfo[];
   edges: Array<{ from: string; to: string }>;
   externalPackages: string[];
   candidateReport?: ICandidateReport;
 }
 
-export interface IPackageGraphOptions {
+interface IPackageGraphOptions {
   importAliases?: Record<string, string>;
 }
 
-export interface IPackageDiscovery {
+interface IPackageDiscovery {
   roots: string[];
   importAliases: Record<string, string>;
 }
 
-export interface IBoundaryGroup {
+interface IBoundaryGroup {
   /** Display name of the owning package (e.g. "@exaix/mcp", "@exaix (retired src/)"). */
   packageName: string;
   /** Repo-relative paths of modules in this group. */
@@ -614,7 +614,7 @@ function findCanonicalPackageAlias(root: string, aliasMap: Record<string, string
   return undefined;
 }
 
-export function toRepoPath(
+function toRepoPath(
   specifier: string,
   baseModulePath?: Opt<string, Reason.OptionalContext>,
 ): string | undefined {
@@ -674,7 +674,7 @@ function isModuleFileTarget(path: string): boolean {
   return extname(path) !== "";
 }
 
-export function renderTextReport(entrypoint: string, graph: IPackageGraph): string {
+function renderTextReport(entrypoint: string, graph: IPackageGraph): string {
   const lines = [
     `Package dependency graph for '${entrypoint}':`,
     "",
@@ -727,7 +727,7 @@ export function renderTextReport(entrypoint: string, graph: IPackageGraph): stri
   return lines.join("\n");
 }
 
-export function renderDot(graph: IPackageGraph): string {
+function renderDot(graph: IPackageGraph): string {
   const lines = ["digraph IPackageGraph {", "  rankdir=LR;", "  node [shape=box, style=filled, fillcolor=lightgray];"];
   for (const pkg of graph.packages) {
     lines.push(`  "${pkg.name}";`);

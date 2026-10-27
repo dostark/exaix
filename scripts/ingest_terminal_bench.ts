@@ -31,15 +31,15 @@ import { type ITaskJson, TaskJsonSchema } from "../tests/scenario_framework/sche
 import { renderExternalBenchTaskTemplate } from "../tests/scenario_framework/runner/scenario_templates.ts";
 
 /** The 5 permissive, redistribution-safe licenses accepted for vendoring external benchmark content. */
-export type LicenseIdentifier = "MIT" | "Apache-2.0" | "BSD-2-Clause" | "BSD-3-Clause" | "ISC";
+type LicenseIdentifier = "MIT" | "Apache-2.0" | "BSD-2-Clause" | "BSD-3-Clause" | "ISC";
 
-export interface ILicenseEligibility {
+interface ILicenseEligibility {
   eligible: boolean;
   matched: LicenseIdentifier | null;
   reason?: string;
 }
 
-export interface IIngestOptions {
+interface IIngestOptions {
   sourceDir: string;
   taskId: string;
   benchmarkVersion: string;
@@ -52,7 +52,7 @@ export interface IIngestOptions {
   oracleSolutionTimeoutMs?: Opt<number, Reason.SensibleDefault>;
 }
 
-export interface IIngestResult {
+interface IIngestResult {
   taskId: string;
   contractDir: string;
   portalDir: string;
@@ -63,7 +63,7 @@ export interface IIngestResult {
 }
 
 /** Reasons classifyTerminalBenchTask can disqualify a task from the supported subset (`supported` = file-oriented, solvable/verifiable by editing/creating files in the working dir; everything else is `unsupported`). Every branch is a structural or content signal the bind-mount + single `docker run` substrate cannot faithfully represent. */
-export type UnsupportedReason =
+type UnsupportedReason =
   | "multi-container"
   | "custom-network-config"
   | "privileged-or-device-access"
@@ -73,7 +73,7 @@ export type UnsupportedReason =
   | "ambiguous-environment"
   | "ingest-error";
 
-export interface IClassifierInput {
+interface IClassifierInput {
   /** Raw docker-compose.yaml text from the upstream task dir. */
   dockerComposeText: string;
   /** Raw Dockerfile text from the upstream task dir. */
@@ -82,16 +82,16 @@ export interface IClassifierInput {
   testScriptsText: string;
 }
 
-export interface IClassificationResult {
+interface IClassificationResult {
   supported: boolean;
   reason?: UnsupportedReason;
 }
 
 /** A batch-ingested task's final disposition in the coverage manifest. */
-export type TaskClass = "supported" | "unsupported" | "license-ineligible";
+type TaskClass = "supported" | "unsupported" | "license-ineligible";
 /** Docker-gated controls-sweep outcome; ingest itself never runs docker,
  *  so every freshly-ingested task starts "pending" until the separate sweep updates it. */
-export type ControlsStatus = "pending" | "pass" | "fail" | "docker-unavailable";
+type ControlsStatus = "pending" | "pass" | "fail" | "docker-unavailable";
 
 /** One task's classification/ingestion outcome inside a batch manifest. */
 export interface IManifestTaskEntry {
@@ -111,7 +111,7 @@ export interface IManifest {
   tasks: IManifestTaskEntry[];
 }
 
-export interface IBatchIngestOptions {
+interface IBatchIngestOptions {
   /** Directory containing one subdirectory per upstream task. */
   upstreamRoot: string;
   benchmarkVersion: string;
@@ -254,7 +254,7 @@ const DIFFICULTY_MAP: Record<string, ITaskJson["difficulty"]> = {
 };
 
 /** Maps a Terminal-Bench difficulty rating onto Exaix's S/M scale (M absorbs "hard"). */
-export function mapDifficulty(upstreamDifficulty: string): ITaskJson["difficulty"] {
+function mapDifficulty(upstreamDifficulty: string): ITaskJson["difficulty"] {
   const mapped = DIFFICULTY_MAP[upstreamDifficulty.toLowerCase()];
   if (!mapped) {
     throw new Error(`Unknown upstream difficulty: ${upstreamDifficulty}`);
@@ -269,9 +269,9 @@ const UpstreamTaskYamlSchema = z.object({
   tags: z.array(z.string()).optional().default([]),
 });
 
-export type IUpstreamTaskMeta = z.infer<typeof UpstreamTaskYamlSchema>;
+type IUpstreamTaskMeta = z.infer<typeof UpstreamTaskYamlSchema>;
 
-export function parseUpstreamTaskYaml(yamlText: string): IUpstreamTaskMeta {
+function parseUpstreamTaskYaml(yamlText: string): IUpstreamTaskMeta {
   return UpstreamTaskYamlSchema.parse(parseYaml(yamlText));
 }
 
@@ -305,7 +305,7 @@ export const MIN_SUPPORTED_COVERAGE_PCT = 30;
  *  block the whole release; the task is simply recorded `ingest-error` and the batch continues. */
 export const DEFAULT_ORACLE_SOLUTION_TIMEOUT_MS = 180_000;
 /** Cap on bytes retained from a continuously-drained oracle-solution stdout/stderr stream — the pipe must be drained WHILE awaiting the child's exit (never only after) to avoid the OS pipe-buffer deadlock a verbose script can otherwise trigger; this bound stops a pathologically chatty script from growing the in-memory buffer unboundedly while still draining (and discarding) everything past it. */
-export const MAX_DRAINED_STREAM_BYTES = 65_536;
+const MAX_DRAINED_STREAM_BYTES = 65_536;
 
 async function runGit(
   args: string[],

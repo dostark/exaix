@@ -36,7 +36,7 @@ import {
 import { TEST_CONTAINER_REPORTER_ENV } from "./test_container_driver.ts";
 import type { IContainerRunResult } from "./test_container_driver.ts";
 
-export interface IDotReporterState {
+interface IDotReporterState {
   pendingDots: string;
   partialLine: string;
   wrapWidth: number;
@@ -56,9 +56,9 @@ const SUPPORTED_REPORTERS = ["pretty", "dot", "tap"] as const;
 export const DOT_REPORTER_LEGEND = "dot legend: .=passed ,=ignored !=failed";
 
 /** Human-readable label for the parallel batch (the whole suite with `--parallel`). */
-export const PARALLEL_BATCH_LABEL = "Parallel Batch";
+const PARALLEL_BATCH_LABEL = "Parallel Batch";
 /** Human-readable label for the container batch (the isolation-sensitive files). */
-export const CONTAINERED_BATCH_LABEL = "Containered Batch";
+const CONTAINERED_BATCH_LABEL = "Containered Batch";
 /** The Containered Batch always uses the pretty reporter, so every test name stays visible. */
 const CONTAINERED_BATCH_REPORTER = "pretty";
 
@@ -113,7 +113,7 @@ export const IsolationReason = {
   pressure: "pressure",
 } as const;
 
-export const IsolationReasonSchema = z.enum([
+const IsolationReasonSchema = z.enum([
   IsolationReason.moduleCache,
   IsolationReason.processEnv,
   IsolationReason.port,
@@ -130,7 +130,7 @@ export const SequentialTestSchema = z.object({
   network: z.boolean().default(false),
 });
 
-export type SequentialTest = z.input<typeof SequentialTestSchema>;
+type SequentialTest = z.input<typeof SequentialTestSchema>;
 
 /** Containered Batch files with their isolation reasons. Order is authoritative and feeds the Parallel Batch's ignore list. */
 export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
@@ -416,7 +416,7 @@ type TestRowData = Pick<TestStats, "passed" | "failed" | "ignored" | "durationSe
 const FAILURE_RULE = "═".repeat(60);
 
 /** Render one failure block in the same shape `runAndCapture` uses. */
-export function formatFailureBlock(batchTag: string, failedCount: number, body: string): string {
+function formatFailureBlock(batchTag: string, failedCount: number, body: string): string {
   return `\n${FAILURE_RULE}\n ${batchTag}: FAILURES (${failedCount} total)\n${FAILURE_RULE}\n${body}\n${FAILURE_RULE}\n`;
 }
 
@@ -625,7 +625,7 @@ export function flushDotReporterState(state: IDotReporterState): string {
 }
 
 /** Maps TAP lines to compact symbols: "ok" → ".", "not ok" → "!", "ok ... # SKIP" → ","; everything else (YAML/version/plan lines) is suppressed. */
-export function compactTapReporterChunk(text: string, state: IDotReporterState): string {
+function compactTapReporterChunk(text: string, state: IDotReporterState): string {
   const lines = text.split(/\r?\n/);
   let output = "";
 

@@ -28,13 +28,13 @@ import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 
 /** A single integrity violation. */
-export interface IIntegrityViolation {
+interface IIntegrityViolation {
   kind: "dangling-agent-role" | "dangling-skill" | "orphan-agent-role" | "orphan-skill";
   detail: string;
 }
 
 /** Result of a catalog integrity check. */
-export interface IIntegrityResult {
+interface IIntegrityResult {
   ok: boolean;
   violations: IIntegrityViolation[];
 }

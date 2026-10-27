@@ -40,7 +40,7 @@ export interface IGraphEdge {
 }
 
 /** A static leak: a non-dynamic edge from a lower tier into a strictly higher tier. */
-export interface IStaticEditionLeak extends IGraphEdge {
+interface IStaticEditionLeak extends IGraphEdge {
   fromTier: number;
   toTier: number;
 }

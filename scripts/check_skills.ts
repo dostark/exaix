@@ -23,7 +23,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 import { CATALOG_CONTEXT, createCatalogLoader } from "./skill_catalog_loader.ts";
 
 /** Outcome of validating the authored skill catalog. */
-export interface ISkillCatalogCheck {
+interface ISkillCatalogCheck {
   ok: boolean;
   /** Valid skill folders found across all roots, whatever their lifecycle status. */
   skillCount: number;
@@ -31,7 +31,7 @@ export interface ISkillCatalogCheck {
 }
 
 /** Folder counts a required corpus must have exactly. */
-export interface ISkillCorpusCounts {
+interface ISkillCorpusCounts {
   /** Blueprint skills plus the tracked project skills. */
   catalog: number;
   dogfood: number;

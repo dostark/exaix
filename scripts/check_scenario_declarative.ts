@@ -32,7 +32,7 @@ import { relative, resolve } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
 
 /** Procedural categories a `shell` step can be classified into. */
-export type ProceduralCategory =
+type ProceduralCategory =
   | "journal-sql"
   | "exactl-glue"
   | "test-run"
@@ -41,7 +41,7 @@ export type ProceduralCategory =
   | "inline-script"
   | "hardcoded-path";
 
-export interface IScenarioProceduralViolation {
+interface IScenarioProceduralViolation {
   file: string;
   line: number;
   step_id: string;
@@ -49,7 +49,7 @@ export interface IScenarioProceduralViolation {
   detail: string;
 }
 
-export interface IScenarioScanReport {
+interface IScenarioScanReport {
   violations: IScenarioProceduralViolation[];
   scenariosScanned: number;
   totalSteps: number;
@@ -58,14 +58,14 @@ export interface IScenarioScanReport {
 }
 
 /** A raw low-level binary spawn in framework code (`new Deno.Command("git", ...)`). */
-export interface IRawShellViolation {
+interface IRawShellViolation {
   file: string;
   line: number;
   bin: string;
   detail: string;
 }
 
-export interface IRawShellScanReport {
+interface IRawShellScanReport {
   violations: IRawShellViolation[];
   filesScanned: number;
   ok: boolean;
@@ -90,7 +90,7 @@ interface IScenarioShape {
   steps?: Opt<IStepShape[], Reason.OptionalInput>;
 }
 
-export const PROCEDURAL_CATEGORIES: readonly ProceduralCategory[] = [
+const PROCEDURAL_CATEGORIES: readonly ProceduralCategory[] = [
   "journal-sql",
   "exactl-glue",
   "test-run",
@@ -103,7 +103,7 @@ export const PROCEDURAL_CATEGORIES: readonly ProceduralCategory[] = [
 /** Low-level shell/utility binaries the scenario framework must not spawn directly. Native Deno
  *  fs APIs, the Exaix GitService, or typed step criteria are the sanctioned replacements.
  *  `deno` (the runtime) and `exactl` (the framework's own CLI) are deliberately allowed. */
-export const FRAMEWORK_RAW_SHELL_BINS: readonly string[] = [
+const FRAMEWORK_RAW_SHELL_BINS: readonly string[] = [
   "sh",
   "bash",
   "zsh",
@@ -305,7 +305,7 @@ export async function scanFrameworkRawShellDir(dir: string): Promise<IRawShellSc
 }
 
 /** Render the framework raw-shell report. */
-export function renderRawShellReport(report: IRawShellScanReport): string {
+function renderRawShellReport(report: IRawShellScanReport): string {
   const lines: string[] = [];
   lines.push("Framework raw-shell spawns (no raw shell in framework code)");
   lines.push("===========================================================");

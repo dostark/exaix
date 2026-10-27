@@ -45,7 +45,7 @@ export interface IReachabilityLedgerRow {
   status: string;
 }
 
-export interface IUnverifiedLedgerSymbol {
+interface IUnverifiedLedgerSymbol {
   docPath: string;
   ledgerRowSymbol: string;
   candidateIdentifier: string;
@@ -55,7 +55,7 @@ export interface IUnverifiedLedgerSymbol {
 // A Reachability Ledger table row that does not match the canonical 5-column shape
 // (`Symbol | Added in | Wiring step | Production call-site | Status`). Reported by
 // `detectLedgerShapeWarnings` instead of being silently skipped by `parseReachabilityLedgerRows`.
-export interface ILedgerShapeWarning {
+interface ILedgerShapeWarning {
   docPath: string;
   line: number;
   cellCount: number;
@@ -316,7 +316,7 @@ export function auditLedgerRows(rows: IReachabilityLedgerRow[], files: IFileReco
 }
 
 /** Reads every non-test `.ts` file under the given roots (that exist). */
-export async function readTsFiles(roots: string[]): Promise<IFileRecord[]> {
+async function readTsFiles(roots: string[]): Promise<IFileRecord[]> {
   const files: IFileRecord[] = [];
   for (const root of roots) {
     try {
@@ -334,7 +334,7 @@ export async function readTsFiles(roots: string[]): Promise<IFileRecord[]> {
 }
 
 /** Reads every doc matching `globPattern`. */
-export async function readPhaseDocs(globPattern: string): Promise<IFileRecord[]> {
+async function readPhaseDocs(globPattern: string): Promise<IFileRecord[]> {
   const docs: IFileRecord[] = [];
   for await (const entry of expandGlob(globPattern)) {
     if (!entry.isFile) continue;

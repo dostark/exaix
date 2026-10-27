@@ -55,7 +55,7 @@ import {
 } from "./check_md_paths.ts";
 
 /** A quoted section-citation whose title does not match any heading in its target file. */
-export interface ISectionRefViolation {
+interface ISectionRefViolation {
   /** Repo-relative path of the markdown file containing the citation. */
   file: string;
   /** 1-based line number of the citation. */
@@ -70,12 +70,12 @@ export interface ISectionRefViolation {
   headingFound: boolean;
 }
 
-export interface ISectionRefResult {
+interface ISectionRefResult {
   ok: boolean;
   violations: ISectionRefViolation[];
 }
 
-export interface ICheckOptions {
+interface ICheckOptions {
   /** Restrict violations to this set of repo-relative markdown files (the pre-commit
    * ratchet): only staged/changed docs block, not pre-existing drift elsewhere. */
   onlyFiles?: Set<string>;

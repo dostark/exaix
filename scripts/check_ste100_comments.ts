@@ -25,7 +25,7 @@ import { normalizeSteProse, runDeterministicSteChecks, stripProseMarkers } from 
 import type { FindingSeverity, ISteFinding } from "./ste100_prose_rules.ts";
 
 /** A single extracted comment span, with prose and a one-based source line. */
-export interface ICommentSpan {
+interface ICommentSpan {
   /** One-based line of the comment's first prose line. */
   line: number;
   /** Declares the actual comment text (including delimiters) for tests. */
@@ -34,7 +34,7 @@ export interface ICommentSpan {
   prose: string;
 }
 
-export interface ICommentFinding {
+interface ICommentFinding {
   path: string;
   line: number;
   column: number;
@@ -43,14 +43,14 @@ export interface ICommentFinding {
   message: string;
 }
 
-export interface ISteCommentsCheckResult {
+interface ISteCommentsCheckResult {
   exitCode: number;
   findings: ICommentFinding[];
   files: number;
   errors: string[];
 }
 
-export interface ISteCommentsCheckOptions {
+interface ISteCommentsCheckOptions {
   focused?: string[];
   staged?: boolean;
 }

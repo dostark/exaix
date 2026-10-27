@@ -54,9 +54,9 @@ export const TEST_CONTAINER_RESULT_PREFIX = "__EXA_TEST_RESULT__ ";
 /** Exit code reported when a file exceeds its per-file timeout. */
 export const TEST_CONTAINER_TIMEOUT_EXIT_CODE = 124;
 /** Cap on the failure detail carried in a result line. */
-export const TEST_CONTAINER_FAILURE_DETAIL_MAX_CHARS = 4000;
+const TEST_CONTAINER_FAILURE_DETAIL_MAX_CHARS = 4000;
 /** Per-file timeout. the driver kills the file's process group at this bound. */
-export const DEFAULT_TEST_CONTAINER_TIMEOUT_MS = 10 * 60 * 1000;
+const DEFAULT_TEST_CONTAINER_TIMEOUT_MS = 10 * 60 * 1000;
 
 const DAEMON_PATTERN = "daemon/main.ts";
 /** Environment variable the host sets to choose the reporter of every file the driver runs. */

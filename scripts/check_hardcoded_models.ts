@@ -20,7 +20,7 @@ import { walk } from "@std/fs";
 import { relative } from "@std/path";
 
 import type { Opt, Reason } from "@exaix/core/types";
-export interface IViolation {
+interface IViolation {
   file: string;
   line: number;
   col: number;
@@ -93,7 +93,7 @@ export function findModelViolations(
   return violations;
 }
 
-export async function checkAllFiles(
+async function checkAllFiles(
   allowlistArg?: Opt<Set<string>, Reason.TestOverride>,
 ): Promise<IViolation[]> {
   const list = allowlistArg ?? allowlist;

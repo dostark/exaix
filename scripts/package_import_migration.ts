@@ -20,7 +20,7 @@
 import { walk } from "@std/fs";
 import { dirname, extname, join, relative } from "@std/path";
 
-export interface IGetBestImportSourceForSymbolOptions {
+interface IGetBestImportSourceForSymbolOptions {
   importSource: string;
   moduleDir: string;
   imports: ImportMap;
@@ -329,7 +329,7 @@ async function resolveMigrationTarget(pathOrImport: string, imports: ImportMap):
   return await resolveModuleFile(pathOrImport, imports);
 }
 
-export async function resolveImportFile(
+async function resolveImportFile(
   importSource: string,
   moduleDir: string,
   imports: ImportMap,

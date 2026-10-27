@@ -295,7 +295,7 @@ function scanScenarioYaml(repoPath: string, text: string): IViolation[] {
 }
 
 /** Every violation in the repository. */
-export async function findPathBuilderViolations(): Promise<IViolation[]> {
+async function findPathBuilderViolations(): Promise<IViolation[]> {
   const violations: IViolation[] = [];
   for (const root of ROOTS) {
     for await (

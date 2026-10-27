@@ -212,7 +212,7 @@ async function buildAndInstallLintPolicies(repoRoot: string, dest: string): Prom
 }
 
 /** Copy each existing WORKSPACE_COPY_DIRS entry from repoRoot into dest. */
-export async function copyWorkspaceDirs(
+async function copyWorkspaceDirs(
   repoRoot: string,
   dest: string,
   copyOpts: CopyOptions,

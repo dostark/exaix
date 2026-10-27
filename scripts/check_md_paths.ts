@@ -42,7 +42,7 @@ import { walk } from "@std/fs";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "@std/path";
 
 /** A markdown path reference that failed to resolve. */
-export interface IMdPathViolation {
+interface IMdPathViolation {
   /** Repo-relative path of the markdown file containing the reference. */
   file: string;
   /** 1-based line number of the reference. */
@@ -56,7 +56,7 @@ export interface IMdPathViolation {
 }
 
 /** A bare (un-backticked, un-linked) prose path that resolves to a real file. */
-export interface IMdStyleViolation {
+interface IMdStyleViolation {
   /** Repo-relative path of the markdown file containing the reference. */
   file: string;
   /** 1-based line number of the reference. */
@@ -66,7 +66,7 @@ export interface IMdStyleViolation {
 }
 
 /** A markdown-link `#fragment` that does not match any heading in its target file. */
-export interface IMdAnchorViolation {
+interface IMdAnchorViolation {
   /** Repo-relative path of the markdown file containing the reference. */
   file: string;
   /** 1-based line number of the reference. */
@@ -79,7 +79,7 @@ export interface IMdAnchorViolation {
   fragment: string;
 }
 
-export interface IMdPathResult {
+interface IMdPathResult {
   ok: boolean;
   /** Path references that do not resolve (broken links / stale paths). */
   violations: IMdPathViolation[];
@@ -89,7 +89,7 @@ export interface IMdPathResult {
   anchorViolations: IMdAnchorViolation[];
 }
 
-export interface ICheckOptions {
+interface ICheckOptions {
   /** Skip the exaix-dev-docs submodule (used by the parent-repo pre-commit gate). */
   parentOnly?: boolean;
   /** Used by the pre-commit "ratchet" so only staged/changed docs block; pre-existing drift in untouched files is not enforced. The basename index still spans the whole repo. */
@@ -119,7 +119,7 @@ export const IGNORE_DIRS: Record<string, true> = {
 /** Frozen historical-documentation prefixes (repo-relative). These trees record past project state, such as pre-monorepo paths and resolved reports.
  *  A stale path there is history, not drift, so it is never reported. `planning/evidence/` holds raw run output.
  *  Living docs (`docs/`, `.copilot/`, `planning/`) stay fully checked. */
-export const FROZEN_DOC_PREFIXES: readonly string[] = [
+const FROZEN_DOC_PREFIXES: readonly string[] = [
   "exaix-dev-docs/dev/",
   "exaix-dev-docs/issues/",
   "exaix-dev-docs/not_actual/",
@@ -195,7 +195,7 @@ function hasReferableExt(p: string): boolean {
 }
 
 /** Split a `path/file.ts:Symbol` reference into its file part and optional symbol. */
-export function splitSymbolRef(ref: string): { file: string; symbol?: string } {
+function splitSymbolRef(ref: string): { file: string; symbol?: string } {
   const colon = ref.lastIndexOf(":");
   if (colon < 0) return { file: ref };
   const file = ref.slice(0, colon);

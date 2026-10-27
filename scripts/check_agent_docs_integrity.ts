@@ -21,7 +21,7 @@
  */
 import { join, resolve } from "@std/path";
 
-export interface IIntegrityViolation {
+interface IIntegrityViolation {
   kind:
     | "dangling-readme-link"
     | "dangling-docs-index-link"
@@ -33,7 +33,7 @@ export interface IIntegrityViolation {
   detail: string;
 }
 
-export interface IIntegrityResult {
+interface IIntegrityResult {
   ok: boolean;
   violations: IIntegrityViolation[];
 }
@@ -53,7 +53,7 @@ function extractMdLinks(content: string): string[] {
   return links;
 }
 
-export function checkAgentDocsIntegrity(copilotDir: string): IIntegrityResult {
+function checkAgentDocsIntegrity(copilotDir: string): IIntegrityResult {
   const violations: IIntegrityViolation[] = [];
   const docsDir = join(copilotDir, "docs");
   const readmePath = join(docsDir, "README.md");

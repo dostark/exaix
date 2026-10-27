@@ -28,7 +28,7 @@ interface FrontmatterFields {
   plan_context_ref?: string;
 }
 
-export interface IRelevantConstraints {
+interface IRelevantConstraints {
   /** Filtered `### Constraints` bullets sharing a token with the step slice. */
   constraints: string[];
   /** Filtered `### Design Decisions` bullets sharing a token with the step slice. */

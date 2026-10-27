@@ -17,21 +17,21 @@
  */
 
 export type SentenceMode = "procedural" | "descriptive";
-export type ParagraphMode = SentenceMode | "mixed";
+type ParagraphMode = SentenceMode | "mixed";
 export type FindingSeverity = "error" | "advisory";
 
-export interface ISteProseSentence {
+interface ISteProseSentence {
   text: string;
   words: string[];
   mode: SentenceMode;
 }
 
-export interface ISteProseParagraph {
+interface ISteProseParagraph {
   sentences: ISteProseSentence[];
   paragraphMode: ParagraphMode;
 }
 
-export interface ISteNormalizedProse {
+interface ISteNormalizedProse {
   paragraphs: ISteProseParagraph[];
   totalWordCount: number;
   semicolonCount: number;
@@ -45,12 +45,12 @@ export interface ISteFinding {
 }
 
 export const STE100_NORMALIZATION_VERSION = "norm-v1";
-export const STE100_SENTENCE_MAX_WORDS = 20;
-export const STE100_DESCRIPTIVE_PARAGRAPH_MAX_SENTENCES = 6;
+const STE100_SENTENCE_MAX_WORDS = 20;
+const STE100_DESCRIPTIVE_PARAGRAPH_MAX_SENTENCES = 6;
 
 /** Decodes `[label](url)` link labels and HTML entities in eligible prose.
  *  Keeps the label (counted) and drops the URL (a literal, not prose). */
-export function decodeProseEntities(text: string): string {
+function decodeProseEntities(text: string): string {
   return text
     .replace(/\[([^\]\n]*)\]\([^)\n]*\)/g, "$1")
     .replace(/&amp;/g, "&")

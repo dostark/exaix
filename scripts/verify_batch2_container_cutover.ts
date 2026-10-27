@@ -41,7 +41,7 @@ interface IFileCounts {
 }
 
 /** Parse `--jobs <N>` / `=<N>`, defaulting to `DEFAULT_TEST_CONTAINER_JOBS` (4). */
-export function parseJobs(args: readonly string[]): number {
+function parseJobs(args: readonly string[]): number {
   for (let index = 0; index < args.length; index++) {
     const arg = args[index];
     let raw: string | undefined;

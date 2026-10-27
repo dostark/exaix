@@ -39,13 +39,13 @@ import { validateAciExampleAgainstSchema } from "../packages/tool-runtime/src/ac
 import type { ITool } from "@exaix/core/types";
 
 /** One authoring non-compliance finding for a single tool. */
-export interface IAciDocIssue {
+interface IAciDocIssue {
   tool: string;
   reason: string;
 }
 
 /** Result of validating a full tool catalog's ACI authoring compliance. */
-export interface IAciDocsValidationResult {
+interface IAciDocsValidationResult {
   issues: IAciDocIssue[];
   checkedTools: number;
 }

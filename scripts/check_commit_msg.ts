@@ -16,7 +16,7 @@ export interface IPlanRef {
   step: number;
 }
 
-export interface IPlanStepPaths {
+interface IPlanStepPaths {
   criteriaPaths: string[];
   testPaths: string[];
   /** `→ <token>` of each `⚠️ deferred` criterion/test (must have a Reachability Ledger row). */
@@ -28,17 +28,17 @@ export interface IPlanStepPaths {
 }
 
 /** Whether the parent's staged submodule pointer matches the submodule's plan-doc state. */
-export type PlanSyncStatus = "in_sync" | "out_of_sync" | "unknown";
+type PlanSyncStatus = "in_sync" | "out_of_sync" | "unknown";
 
 /** Result of cross-repo plan-step diff consistency validation (pure; git done by caller). */
-export interface IPlanDiffResult {
+interface IPlanDiffResult {
   ok: boolean;
   errors: string[];
 }
 
 /** Inputs the pure validator needs for plan-step traceability; doc reads and git diffs
  *  are resolved by the CLI entry point so this stays pure and testable. */
-export interface IPlanValidation {
+interface IPlanValidation {
   criteriaPaths: string[];
   testPaths: string[];
   planErrors: string[];

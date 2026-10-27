@@ -82,7 +82,7 @@ function boundariesTable(catalog: ICatalog): string {
 }
 
 /** Builds the generated documentation block from the catalog. */
-export function buildGeneratedBlock(catalog: ICatalog): string {
+function buildGeneratedBlock(catalog: ICatalog): string {
   return [
     BEGIN_MARKER,
     "## Rule reference",

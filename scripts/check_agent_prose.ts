@@ -28,11 +28,8 @@ import {
   STE100_NORMALIZATION_VERSION,
 } from "./ste100_prose_rules.ts";
 
-export type AgentProseSourceKind = "instruction" | "documentation" | "mixed" | "unclassified";
-export type AgentProseSpanKind = "instruction" | "documentation" | "literal";
-export type AgentProseSpanMode = "procedural" | "descriptive" | "mixed";
-
-export interface IAgentProseFinding {
+type AgentProseSourceKind = "instruction" | "documentation" | "mixed" | "unclassified";
+interface IAgentProseFinding {
   ruleId: string;
   severity: FindingSeverity;
   path: string;
@@ -41,7 +38,7 @@ export interface IAgentProseFinding {
   message: string;
 }
 
-export interface IAgentProseResult {
+interface IAgentProseResult {
   exitCode: 0 | 1 | 2;
   policyPath: string;
   errors: string[];
@@ -50,12 +47,12 @@ export interface IAgentProseResult {
   sources: IProseSource[];
 }
 
-export interface IAgentProseCheckOptions {
+interface IAgentProseCheckOptions {
   policyPath?: string;
   focused?: string;
 }
 
-export interface IRuleCatalogState {
+interface IRuleCatalogState {
   catalogHash: string;
   technicalTermsHash: string;
   rules: string[];
@@ -116,14 +113,14 @@ const AgentProsePolicySchema = z.object({
 });
 
 export type IAgentProsePolicy = z.infer<typeof AgentProsePolicySchema>;
-export type IProseSource = z.infer<typeof ProseSourceSchema>;
-export type IProseSpan = z.infer<typeof ProseSpanSchema>;
+type IProseSource = z.infer<typeof ProseSourceSchema>;
+type IProseSpan = z.infer<typeof ProseSpanSchema>;
 export type IReview = z.infer<typeof ReviewSchema>;
 
 class PolicyError extends Error {}
 class ReadError extends Error {}
 
-export { PolicyError, ReadError };
+export { PolicyError };
 
 const IMPERATIVE_FIRST_WORD =
   /^(?:use|run|keep|do|apply|reject|preserve|state|omit|add|ensure|validate|fix|review|create|write|require|confirm|execute|set|remove|prevent|follow|submit|cover|drive|deliver|select|compare|honour|honor)/i;
@@ -469,7 +466,7 @@ function hashSpans(spans: IProseSpan[]): Promise<string> {
 
 /** Advisory extension heuristics (EXAIX-03 self-reflection, EXAIX-04 repetition).
  *  Advisory only — a deterministic violation can never be waived by these. */
-export function detectAdvisoryProse(prose: string): IAgentProseFinding[] {
+function detectAdvisoryProse(prose: string): IAgentProseFinding[] {
   const advisory: IAgentProseFinding[] = [];
   if (/\b(i think|i believe|let me|here is my reasoning)\b/i.test(prose)) {
     advisory.push({

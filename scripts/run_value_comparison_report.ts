@@ -147,7 +147,7 @@ export interface IFlowValueRequest {
   nonCoverage?: IFlowNonCoverageEntry[];
 }
 
-export interface IValueComparisonReportInput {
+interface IValueComparisonReportInput {
   armComparisons?: IArmComparisonRequest[];
   validityGates?: IValidityGateRequest[];
   placeboArms?: IArmComparisonRequest[];
@@ -160,24 +160,24 @@ export interface IValueComparisonReportInput {
   judgeCalibration?: IJudgeCalibrationInput;
 }
 
-export interface IArmComparisonReport {
+interface IArmComparisonReport {
   comparison: IPairedComparisonResult;
   valuePerToken?: number;
 }
 
-export interface IPlaceboReport {
+interface IPlaceboReport {
   comparison: IPairedComparisonResult;
   detected: boolean;
   error?: string;
 }
 
-export interface ISkillValueReportResult {
+interface ISkillValueReportResult {
   report: ISkillValueReport;
   decisionsOk: boolean;
   decisionsError?: string;
 }
 
-export interface IFlowValueReportResult {
+interface IFlowValueReportResult {
   reachability: IFlowReachabilityResult;
   valueReport: IFlowValueReport;
 }

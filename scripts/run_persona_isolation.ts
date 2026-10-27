@@ -26,14 +26,14 @@ import {
 import { loadScenarioCatalog } from "../tests/scenario_framework/runner/scenario_catalog.ts";
 import { readPersonaResponseTrial } from "../tests/scenario_framework/runner/persona_response_trial.ts";
 
-export interface IPersonaExecutionCell {
+interface IPersonaExecutionCell {
   variant: PersonaVariant;
   argv: string[];
   env: { [key: string]: string };
   outputDir: string;
 }
 
-export interface IPersonaOperatorOutput {
+interface IPersonaOperatorOutput {
   armComparisons: ReturnType<typeof buildPersonaComparisonInput>["armComparisons"];
   basisRunIds: string[];
   executionPlan: IPersonaExecutionCell[];
@@ -57,7 +57,7 @@ type PersonaIsolationManifest = z.infer<typeof PersonaIsolationManifestSchema>;
 const SCENARIO_FRAMEWORK_ROOT = resolve(fromFileUrl(new URL("../tests/scenario_framework", import.meta.url)));
 
 /** Runs a validated manifest, or plans the complete path without spawning in dry-run mode. */
-export async function runPersonaIsolation(
+async function runPersonaIsolation(
   manifest: PersonaIsolationManifest,
   dryRun: boolean,
 ): Promise<IPersonaOperatorOutput> {

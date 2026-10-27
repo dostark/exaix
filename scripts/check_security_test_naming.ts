@@ -16,7 +16,7 @@ import ts from "typescript";
 import { walk } from "@std/fs";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface ISecurityNamingViolation {
+interface ISecurityNamingViolation {
   path: string;
   message: string;
 }
@@ -56,7 +56,7 @@ function staticNameText(node: Opt<ts.Expression, Reason.SensibleDefault>): strin
   return null;
 }
 
-export function findTestNames(source: string, fileName: string): string[] {
+function findTestNames(source: string, fileName: string): string[] {
   const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true);
   const names: string[] = [];
   const visit = (node: ts.Node): void => {
@@ -73,7 +73,7 @@ export function findTestNames(source: string, fileName: string): string[] {
   return names;
 }
 
-export async function checkSecurityTestNaming(root = TESTS_ROOT): Promise<ISecurityNamingViolation[]> {
+async function checkSecurityTestNaming(root = TESTS_ROOT): Promise<ISecurityNamingViolation[]> {
   const violations: ISecurityNamingViolation[] = [];
   for await (
     const entry of walk(root, {

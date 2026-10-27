@@ -22,7 +22,7 @@ import { join } from "@std/path";
 
 /** One reported violation: a runtime-artifact path found either as a staged file itself, or
  *  embedded in a staged patch/diff file's content. */
-export interface IRuntimeArtifactViolation {
+interface IRuntimeArtifactViolation {
   /** The staged file that carries the violation. */
   stagedPath: string;
   /** The offending runtime-artifact path (may equal `stagedPath` itself, or be a path found
@@ -37,7 +37,7 @@ const REPO_ROOT = join(import.meta.dirname!, "..");
 /** Path segments that are unambiguously generated/runtime, never hand-authored source.
  *  Matched as a WHOLE path segment (split on "/"), not a substring — "venv" must not match
  *  "myvenv" or "prevented". Extend deliberately; a false-positive here blocks real commits. */
-export const RUNTIME_ARTIFACT_DIR_SEGMENTS: Record<string, true> = {
+const RUNTIME_ARTIFACT_DIR_SEGMENTS: Record<string, true> = {
   "venv": true,
   ".venv": true,
   "virtualenv": true,
@@ -51,7 +51,7 @@ export const RUNTIME_ARTIFACT_DIR_SEGMENTS: Record<string, true> = {
 };
 
 /** Exact basenames that are always OS/tool-generated cruft, regardless of directory. */
-export const RUNTIME_ARTIFACT_FILENAMES: Record<string, true> = {
+const RUNTIME_ARTIFACT_FILENAMES: Record<string, true> = {
   ".DS_Store": true,
   "Thumbs.db": true,
   "desktop.ini": true,
@@ -59,7 +59,7 @@ export const RUNTIME_ARTIFACT_FILENAMES: Record<string, true> = {
 
 /** File extensions that are always compiled/cached output, never source — a suffix check,
  *  not an exact-membership lookup, so this stays an array (iterated with `.some`). */
-export const RUNTIME_ARTIFACT_EXTENSIONS: readonly string[] = [".pyc", ".pyo"];
+const RUNTIME_ARTIFACT_EXTENSIONS: readonly string[] = [".pyc", ".pyo"];
 
 /** True if `path` (repo-root-relative, `/`-separated) is itself a runtime artifact. */
 export function isRuntimeArtifactPath(path: string): boolean {

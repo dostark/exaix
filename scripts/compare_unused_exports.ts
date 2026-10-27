@@ -17,13 +17,13 @@ const ROOT = dirname(dirname(fromFileUrl(import.meta.url)));
 const RAISE_SAMPLE = 12;
 
 /** One reported unused name. */
-export interface IUnusedName {
+interface IUnusedName {
   readonly name: string;
   readonly path: string;
 }
 
 /** Names fallow reports in its JSON output. */
-export function parseFallow(raw: string): IUnusedName[] {
+function parseFallow(raw: string): IUnusedName[] {
   const data = JSON.parse(raw) as {
     unused_exports?: Array<{ export_name: string; path: string }>;
     unused_types?: Array<{ export_name: string; path: string }>;
@@ -35,7 +35,7 @@ export function parseFallow(raw: string): IUnusedName[] {
 }
 
 /** Names the unslop parity report prints. */
-export function parseUnslop(raw: string): IUnusedName[] {
+function parseUnslop(raw: string): IUnusedName[] {
   const names: IUnusedName[] = [];
   for (const line of raw.split("\n")) {
     const match = line.match(/\[unwired-export\] ([^:]+):(\d+) – '([^']+)'/);
@@ -45,14 +45,14 @@ export function parseUnslop(raw: string): IUnusedName[] {
 }
 
 /** The three name sets of a comparison. */
-export interface IComparison {
+interface IComparison {
   readonly shared: string[];
   readonly fallowOnly: IUnusedName[];
   readonly unslopOnly: IUnusedName[];
 }
 
 /** Compare two reports by exported name. */
-export function compare(fallow: readonly IUnusedName[], unslop: readonly IUnusedName[]): IComparison {
+function compare(fallow: readonly IUnusedName[], unslop: readonly IUnusedName[]): IComparison {
   const fallowNames = new Set(fallow.map((entry) => entry.name));
   const unslopNames = new Set(unslop.map((entry) => entry.name));
   return {
@@ -63,7 +63,7 @@ export function compare(fallow: readonly IUnusedName[], unslop: readonly IUnused
 }
 
 /** Count the importing files of each name, by scope. */
-export function importerScopes(files: readonly string[]): Map<string, Set<string>> {
+function importerScopes(files: readonly string[]): Map<string, Set<string>> {
   const scopes = new Map<string, Set<string>>();
   const add = (name: string, scope: string): void => {
     const entry = scopes.get(name) ?? new Set<string>();

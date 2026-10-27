@@ -28,19 +28,19 @@
 import { join, relative } from "@std/path";
 
 /** One reviewed exception: an intentionally-shared exact prose line. */
-export interface ISkillDuplicationAllowlistEntry {
+interface ISkillDuplicationAllowlistEntry {
   text: string;
   reason: string;
 }
 
 /** Script-local policy schema: versioned allowlist of documented shared lines. */
-export interface ISkillDuplicationPolicy {
+interface ISkillDuplicationPolicy {
   version: string;
   allowlist: ISkillDuplicationAllowlistEntry[];
 }
 
 /** A confirmed duplication: one normalized prose line spanning two or more files. */
-export interface ISkillDuplicationFinding {
+interface ISkillDuplicationFinding {
   text: string;
   files: string[];
 }
@@ -159,7 +159,7 @@ export function runSkillDuplicationCheck(
 }
 
 /** Runs the check over a whole repo (both corpora); returns findings (empty = clean). */
-export function runRepoSkillDuplicationCheck(
+function runRepoSkillDuplicationCheck(
   options: { repoRoot: string; policyPath: string },
 ): ISkillDuplicationFinding[] {
   const policy = loadDuplicationPolicy(options.policyPath);

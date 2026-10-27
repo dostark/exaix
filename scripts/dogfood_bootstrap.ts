@@ -38,7 +38,7 @@ const DOGFOOD_PORTAL_ALIAS = "exaix-self";
 const DOGFOOD_SKILLS_DIR = join(".copilot", "skills");
 
 /** Result of checking the external worktree skills root before the daemon reads it. */
-export type DogfoodRootAdmission = { admitted: true; present: boolean } | { admitted: false; reason: string };
+type DogfoodRootAdmission = { admitted: true; present: boolean } | { admitted: false; reason: string };
 
 /** The worktree's `.copilot/skills` folder is admitted only when it resolves physically inside the worktree. */
 export async function admitDogfoodSkillRoot(worktreePath: string): Promise<DogfoodRootAdmission> {

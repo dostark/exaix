@@ -31,19 +31,19 @@
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { parse as parseArgs } from "@std/flags";
 
-export interface IPlanSandboxPruneOptions {
+interface IPlanSandboxPruneOptions {
   root: string;
   retentionDays: number;
 }
 
-export interface IPrunableSandbox {
+interface IPrunableSandbox {
   name: string;
   path: string;
   ageDays: number;
   bytes: number;
 }
 
-export interface ISandboxPrunePlan {
+interface ISandboxPrunePlan {
   root: string;
   retentionDays: number;
   selected: IPrunableSandbox[];

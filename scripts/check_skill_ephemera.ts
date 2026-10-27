@@ -31,7 +31,7 @@ import { walk } from "@std/fs";
 import { relative } from "@std/path";
 
 /** A flagged line of ephemeral narrative in a skill doc. */
-export interface IEphemeraFinding {
+interface IEphemeraFinding {
   /** Repo-relative path of the skill doc. */
   file: string;
   /** 1-based line number. */
@@ -95,7 +95,7 @@ export function isEphemeralNarrative(line: string): boolean {
 }
 
 /** Scan every `.copilot/skills/<name>/SKILL.md` and collect dated-narrative lines. */
-export async function scanSkills(root = "."): Promise<IEphemeraFinding[]> {
+async function scanSkills(root = "."): Promise<IEphemeraFinding[]> {
   const findings: IEphemeraFinding[] = [];
   for await (
     const entry of walk(root, {

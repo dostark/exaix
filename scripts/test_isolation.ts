@@ -26,10 +26,10 @@ import {
 } from "./test_container_driver.ts";
 
 /** Network mode for a worker container. */
-export type TestContainerNetwork = "none" | "bridge";
+type TestContainerNetwork = "none" | "bridge";
 
 /** Injectable seams for `ensureDevTestImage`. Every field defaults to the real docker call. */
-export interface IEnsureDevTestImageOptions {
+interface IEnsureDevTestImageOptions {
   /** True when the `docker` binary is on PATH. Defaults to the shared `dockerProbeSkipReason`. */
   dockerOnPath?: Opt<() => boolean, Reason.SensibleDefault>;
   /** True when `image` is present in the local image store. Defaults to `docker image inspect`. */
@@ -60,7 +60,7 @@ export interface IWorkerContainerLaunchOptions {
   watchdogMs: number;
 }
 
-export interface IWorkerContainerLaunch {
+interface IWorkerContainerLaunch {
   bin: "docker";
   args: string[];
 }
@@ -90,7 +90,7 @@ export interface IContainerTestEntry {
 }
 
 /** Factory used to start a worker. injectable so the scheduler is testable without Docker. */
-export type StartWorkerContainer = (
+type StartWorkerContainer = (
   options: IWorkerContainerLaunchOptions,
 ) => IWorkerContainer | Promise<IWorkerContainer>;
 
@@ -110,17 +110,17 @@ export interface IRunBatch2Options {
 }
 
 /** Batch-2 execution mode. */
-export type Batch2Mode = "container" | "serial";
+type Batch2Mode = "container" | "serial";
 
 /** The chosen Batch-2 strategy plus a one-line reason for the log. */
-export interface IBatch2Strategy {
+interface IBatch2Strategy {
   mode: Batch2Mode;
   jobs: number;
   reason: string;
 }
 
 /** CLI overrides for the strategy. The CLI flag wins over the env var. */
-export interface IStrategyOverrides {
+interface IStrategyOverrides {
   /** Worker-container count from `--test-container-jobs` (already validated positive). */
   jobs?: Opt<number, Reason.OptionalInput>;
   /** true when `--test-serial` requests the serial path explicitly. */
@@ -128,10 +128,10 @@ export interface IStrategyOverrides {
 }
 
 /** Async probe: true when the docker daemon is reachable. */
-export type IContainerRuntimeProbe = () => Promise<boolean>;
+type IContainerRuntimeProbe = () => Promise<boolean>;
 
 /** Resource bounds applied to each worker container. */
-export interface IContainerResourceBounds {
+interface IContainerResourceBounds {
   pidsLimit: number;
   memory: string;
   cpus: string;
@@ -156,7 +156,7 @@ const DOCKER_CREATED_TEMPLATE = "{{.Created}}";
 const DENO_JOBS_ENV = "DENO_JOBS";
 const WORKER_MOUNT_DEST = "/workspaces/exaix";
 /** The in-container driver the worker runs. */
-export const TEST_CONTAINER_DRIVER_SCRIPT = "scripts/test_container_driver.ts";
+const TEST_CONTAINER_DRIVER_SCRIPT = "scripts/test_container_driver.ts";
 /** Per-file inactivity watchdog. it resets on every dispatch and result, not worker lifetime. */
 export const DEFAULT_TEST_CONTAINER_WATCHDOG_MS = 15 * 60 * 1000;
 /** A wedged or exited worker requeues a file at most this many times before it is failed. */
@@ -168,22 +168,22 @@ const DOCKER_CPUS_PATTERN = /^\d+(?:\.\d+)?$/;
 
 export const DEFAULT_TEST_CONTAINER_IMAGE = "exaix-dev-test:dev";
 export const TEST_CONTAINER_IMAGE_ENV = "EXA_TEST_CONTAINER_IMAGE";
-export const TEST_CONTAINER_JOBS_ENV = "EXA_TEST_CONTAINER_JOBS";
-export const TEST_CONTAINERS_ENABLED_ENV = "EXA_TEST_CONTAINERS";
+const TEST_CONTAINER_JOBS_ENV = "EXA_TEST_CONTAINER_JOBS";
+const TEST_CONTAINERS_ENABLED_ENV = "EXA_TEST_CONTAINERS";
 export const MIN_TEST_CONTAINER_JOBS = 1;
 /** Default workers when no flag or env override is set. Four keeps the daemon/port tests in the
  *  Containered Batch from flaking under CPU contention (six was observed to). */
 export const DEFAULT_TEST_CONTAINER_JOBS = 4;
 export const DEFAULT_TEST_CONTAINER_NETWORK: TestContainerNetwork = "none";
 export const DEFAULT_TEST_CONTAINER_PIDS_LIMIT = 512;
-export const TEST_CONTAINER_PIDS_LIMIT_ENV = "EXA_TEST_CONTAINER_PIDS_LIMIT";
+const TEST_CONTAINER_PIDS_LIMIT_ENV = "EXA_TEST_CONTAINER_PIDS_LIMIT";
 export const DEFAULT_TEST_CONTAINER_MEMORY = "2g";
-export const TEST_CONTAINER_MEMORY_ENV = "EXA_TEST_CONTAINER_MEMORY";
+const TEST_CONTAINER_MEMORY_ENV = "EXA_TEST_CONTAINER_MEMORY";
 export const DEFAULT_TEST_CONTAINER_CPUS = "2.0";
-export const TEST_CONTAINER_CPUS_ENV = "EXA_TEST_CONTAINER_CPUS";
+const TEST_CONTAINER_CPUS_ENV = "EXA_TEST_CONTAINER_CPUS";
 /** Disable IPv6 in the worker so `localhost` resolves to IPv4. The host binds 127.0.0.1,
  *  but a container with IPv6 binds ::1, so a server and its client would disagree. */
-export const WORKER_CONTAINER_SYSCTLS: readonly string[] = ["net.ipv6.conf.all.disable_ipv6=1"];
+const WORKER_CONTAINER_SYSCTLS: readonly string[] = ["net.ipv6.conf.all.disable_ipv6=1"];
 
 /** True when `image` is present in the local docker image store. */
 async function defaultImageExists(image: string): Promise<boolean> {

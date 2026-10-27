@@ -20,22 +20,22 @@ import { join } from "@std/path";
 
 // Exported Types
 
-export interface ISemVer {
+interface ISemVer {
   major: number;
   minor: number;
   patch: number;
 }
 
-export interface IClassification {
+interface IClassification {
   requiresMinor: boolean;
 }
 
-export interface IVersionConstants {
+interface IVersionConstants {
   BINARY_VERSION: string;
   WORKSPACE_SCHEMA_VERSION: string;
 }
 
-export interface IVersionMeta {
+interface IVersionMeta {
   last_bump_date: string;
 }
 
@@ -124,11 +124,11 @@ export function writeVersionFile(
 
 // .version_meta.json I/O
 
-export function readMetaFile(path: string = META_FILE): IVersionMeta {
+function readMetaFile(path: string = META_FILE): IVersionMeta {
   return JSON.parse(Deno.readTextFileSync(path)) as IVersionMeta;
 }
 
-export function writeMetaFile(date: string, path: string = META_FILE): void {
+function writeMetaFile(date: string, path: string = META_FILE): void {
   Deno.writeTextFileSync(path, JSON.stringify({ last_bump_date: date }, null, 2) + "\n");
 }
 
@@ -140,12 +140,12 @@ async function runGit(...args: string[]): Promise<string> {
   return new TextDecoder().decode(stdout).trim();
 }
 
-export async function getStagedFiles(): Promise<string[]> {
+async function getStagedFiles(): Promise<string[]> {
   const out = await runGit("diff", "--cached", "--name-only");
   return out.split("\n").filter(Boolean);
 }
 
-export async function getCiFiles(): Promise<string[]> {
+async function getCiFiles(): Promise<string[]> {
   const out = await runGit("diff", "HEAD~1", "--name-only");
   return out.split("\n").filter(Boolean);
 }

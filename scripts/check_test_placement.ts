@@ -19,13 +19,13 @@
 import { relative, resolve } from "@std/path";
 import { walk } from "@std/fs";
 
-export interface ITestPlacementIssue {
+interface ITestPlacementIssue {
   path: string;
   message: string;
   suggestion?: string;
 }
 
-export interface ITestPlacementResult {
+interface ITestPlacementResult {
   success: boolean;
   issues: ITestPlacementIssue[];
   inspectedPaths: string[];
@@ -57,7 +57,7 @@ function normalizePath(path: string): string {
   return path.replaceAll("\\", "/").replace(/^\.\//, "");
 }
 
-export function isTestFilePath(path: string): boolean {
+function isTestFilePath(path: string): boolean {
   return TEST_FILE_PATTERN.test(normalizePath(path));
 }
 
@@ -160,12 +160,12 @@ async function runGit(...args: string[]): Promise<string> {
   return new TextDecoder().decode(stdout).trim();
 }
 
-export async function getStagedFiles(): Promise<string[]> {
+async function getStagedFiles(): Promise<string[]> {
   const output = await runGit("diff", "--cached", "--name-only", "--diff-filter=ACMR");
   return output.split("\n").map(normalizePath).filter(Boolean);
 }
 
-export async function getCiFiles(): Promise<string[]> {
+async function getCiFiles(): Promise<string[]> {
   const output = await runGit("diff", "HEAD~1", "HEAD", "--name-only", "--diff-filter=ACMR");
   return output.split("\n").map(normalizePath).filter(Boolean);
 }

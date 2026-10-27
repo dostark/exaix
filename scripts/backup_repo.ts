@@ -24,7 +24,7 @@ import { dirname, fromFileUrl, join, resolve } from "@std/path";
 const DEFAULT_BACKUP_BRANCH = "main";
 
 /** Parses .gitmodules submodule sections into `{ name, path, url }` records; returns [] if the file is absent. */
-export async function parseGitmodules(repoRoot: string): Promise<
+async function parseGitmodules(repoRoot: string): Promise<
   Array<{
     name: string;
     path: string;
@@ -81,7 +81,7 @@ async function submoduleShas(repoPath: string): Promise<string[]> {
 }
 
 /** Clone repoRoot into dest (full history), then populate submodules from local sources. */
-export async function backupRepo(
+async function backupRepo(
   repoRoot: string,
   dest: string,
   options: { branch?: string; verify?: boolean },

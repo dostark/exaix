@@ -75,7 +75,7 @@ async function loadTaskTemplateOptions(
 // Regenerates the scenario YAML for every `<task-id>.yaml` already present in `scenariosDir`
 // (the set of already-ingested, already-vendored tasks — never adds or removes a task).
 // Returns the regenerated task ids in the order processed.
-export async function regenerateTerminalBenchScenarios(options: IRegenerateOptions): Promise<string[]> {
+async function regenerateTerminalBenchScenarios(options: IRegenerateOptions): Promise<string[]> {
   const taskIds: string[] = [];
   for await (const entry of Deno.readDir(options.scenariosDir)) {
     if (entry.isFile && entry.name.endsWith(".yaml")) {

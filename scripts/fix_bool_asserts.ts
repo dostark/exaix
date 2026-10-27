@@ -15,13 +15,13 @@ import ts from "typescript";
 import { walk } from "@std/fs";
 
 /** A site the codemod could not rewrite. */
-export interface ISkippedSite {
+interface ISkippedSite {
   readonly line: number;
   readonly reason: string;
 }
 
 /** The outcome of a codemod run over one source text. */
-export interface IFixResult {
+interface IFixResult {
   readonly text: string;
   readonly changed: number;
   readonly skipped: readonly ISkippedSite[];
@@ -184,7 +184,7 @@ function applyReplacements(
 }
 
 /** Rewrites one parsed source file. */
-export function fixSourceFile(sourceFile: ts.SourceFile, checker: ts.TypeChecker, text: string): IFixResult {
+function fixSourceFile(sourceFile: ts.SourceFile, checker: ts.TypeChecker, text: string): IFixResult {
   const { replacements, skipped } = collectFixes(sourceFile, checker);
   const applied = applyReplacements(text, replacements);
   return { text: applied.text, changed: applied.applied, skipped };
@@ -201,7 +201,7 @@ function compilerOptions(): ts.CompilerOptions {
 }
 
 /** Builds a program from in-memory files, reading the standard library from disk. */
-export function createInMemoryProgram(files: Map<string, string>): ts.Program {
+function createInMemoryProgram(files: Map<string, string>): ts.Program {
   const options = compilerOptions();
   const host = ts.createCompilerHost(options);
   const readSource = host.getSourceFile.bind(host);

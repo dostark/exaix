@@ -24,10 +24,10 @@ import { loadCatalogRoot } from "./skill_catalog_loader.ts";
 /** The render mode whose contribution a finding measures. Full mode is the default
  *  renderer output (instructions carry the complete body, including any Examples
  *  section); trimmed mode is the same body with its Examples section removed. */
-export type ISkillSizeMode = "full" | "trimmed";
+type ISkillSizeMode = "full" | "trimmed";
 
 /** A skill whose rendered contribution (in the measured mode) exceeds the size threshold. */
-export interface ISkillSizeFinding {
+interface ISkillSizeFinding {
   /** Root-relative path of the skill's SKILL.md. */
   file: string;
   skillId: string;

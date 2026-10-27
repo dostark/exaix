@@ -34,7 +34,7 @@ export interface ICheckResult {
   skipped: number;
 }
 
-export interface ICheckOptions {
+interface ICheckOptions {
   since?: number;
 }
 

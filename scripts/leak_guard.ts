@@ -15,7 +15,7 @@ import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, normalize, resolve } from "@std/path";
 
 /** Options for the leak-guard scan. */
-export interface ILeakGuardOptions {
+interface ILeakGuardOptions {
   /** Only scan these subtrees (relative to repo root). Default: entire tree. */
   allowlist?: string[];
   /** Also check .gitmodules for enterprise submodule leaks. */
@@ -25,7 +25,7 @@ export interface ILeakGuardOptions {
 }
 
 /** Result of a leak-guard scan. */
-export interface ILeakResult {
+interface ILeakResult {
   passed: boolean;
   errors: string[];
 }

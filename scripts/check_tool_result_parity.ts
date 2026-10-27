@@ -22,7 +22,7 @@ import { TOOL_RESULT_REMEDIATION_MODE_VALUES, TOOL_RESULT_SCHEMA_REGISTRY } from
 // Exported types and functions (importable by tests)
 
 /** Result of a parity check run. */
-export interface IParityCheckResult {
+interface IParityCheckResult {
   success: boolean;
   errors: string[];
   warnings: string[];
@@ -30,7 +30,7 @@ export interface IParityCheckResult {
 }
 
 /** Runs parity checks and returns a structured result (does NOT exit). */
-export function checkToolResultParity(): IParityCheckResult {
+function checkToolResultParity(): IParityCheckResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const knownModes = new Set<string>(TOOL_RESULT_REMEDIATION_MODE_VALUES);
