@@ -9,10 +9,14 @@
 import { assertEquals } from "@std/assert";
 import { FlowGateOnFail, FlowStepType } from "@exaix/core";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
-import { delegateCycleFlow, delegateCycleStep } from "../src/helpers/delegate_cycle_fixtures.ts";
+import {
+  DELEGATE_CYCLE_STEP_ID,
+  delegateCycleFlow,
+  delegateCycleStep,
+} from "../src/helpers/delegate_cycle_fixtures.ts";
 
 Deno.test("the delegate-cycle step is a session_delegate_cycle step with a halting review gate", () => {
-  const step = delegateCycleStep();
+  const step = delegateCycleStep(DELEGATE_CYCLE_STEP_ID);
   assertEquals(step.id, "next-steps");
   assertEquals(step.type, FlowStepType.SESSION_DELEGATE_CYCLE);
   assertEquals(step.agent_role, "senior-coder");
@@ -23,9 +27,9 @@ Deno.test("the delegate-cycle step is a session_delegate_cycle step with a halti
 
 Deno.test("the step id can be chosen, and each call returns a fresh object", () => {
   assertEquals(delegateCycleStep("other").id, "other");
-  const first = delegateCycleStep();
+  const first = delegateCycleStep(DELEGATE_CYCLE_STEP_ID);
   first.name = "changed";
-  assertEquals(delegateCycleStep().name, "Next Steps");
+  assertEquals(delegateCycleStep(DELEGATE_CYCLE_STEP_ID).name, "Next Steps");
 });
 
 Deno.test("the delegate-cycle flow is one step that outputs its own result and passes the flow schema", () => {

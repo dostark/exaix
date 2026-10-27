@@ -13,8 +13,11 @@ import type { IFlow } from "@exaix/schemas/flow.ts";
 /** One step of a flow, as the flow schema defines it. */
 export type TFlowStep = IFlow["steps"][number];
 
+/** The id of the delegate-cycle step in the shared flow. */
+export const DELEGATE_CYCLE_STEP_ID = "next-steps";
+
 /** A session_delegate_cycle step whose review gate halts on failure. Each call returns a new object. */
-export function delegateCycleStep(id: string = "next-steps"): TFlowStep {
+export function delegateCycleStep(id: string): TFlowStep {
   return {
     id,
     name: "Next Steps",
@@ -45,8 +48,8 @@ export function delegateCycleFlow(id: string, name: string): IFlow {
     name,
     description: "test",
     version: "1.0.0",
-    steps: [delegateCycleStep()],
-    output: { from: "next-steps", format: FlowOutputFormat.MARKDOWN },
+    steps: [delegateCycleStep(DELEGATE_CYCLE_STEP_ID)],
+    output: { from: DELEGATE_CYCLE_STEP_ID, format: FlowOutputFormat.MARKDOWN },
     settings: { maxParallelism: 1, failFast: true, includeRequestCriteria: false },
   };
 }

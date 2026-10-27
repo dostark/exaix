@@ -30,7 +30,7 @@ import type {
 import { createInMemorySessionDelegateCycleClaimStore } from "@exaix/session/session_delegate_cycle_claim_store.ts";
 import { createInMemorySessionDelegateCycleStore } from "@exaix/session/session_delegate_cycle_store.ts";
 import { createFlowRecordingContext } from "@exaix/flow";
-import { delegateCycleStep } from "@exaix/testing";
+import { DELEGATE_CYCLE_STEP_ID, delegateCycleStep } from "@exaix/testing";
 
 function stepHeading(n: number): string {
   return `## Step ${n}\n\n**Actions:**\n- do ${n}\n\n\`\`\`yaml\n# step-manifest\nstep: ${n}\ntitle: Step ${n}\n\`\`\`\n`;
@@ -139,7 +139,7 @@ class ControllableGateEvaluator implements IGateEvaluator {
 function makeCtx(): IStepExecutionContext {
   return {
     stepType: FlowStepType.SESSION_DELEGATE_CYCLE,
-    step: delegateCycleStep("next-steps"),
+    step: delegateCycleStep(DELEGATE_CYCLE_STEP_ID),
     flow: { id: "cycle-flow" },
     request: {
       userPrompt: "run",
