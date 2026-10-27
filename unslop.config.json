@@ -1095,7 +1095,7 @@
             "paths": ["packages/", "apps/", "scripts/", "unslop-ts/"],
             "ignore": ["**/*.d.ts", "**/*.md", "**/tests/**", "**/tests_node/**", "**/node_modules/**", "**/dist/**"],
             "pattern": "**/*.{ts,tsx,js,mjs,cjs}",
-            "threshold": 1.2
+            "threshold": 1.15
           },
           {
             "name": "tests",

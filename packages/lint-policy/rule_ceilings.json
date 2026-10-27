@@ -76,7 +76,7 @@
     "packages/ai-openai": 4,
     "packages/ai-openrouter": 11,
     "packages/core": 9,
-    "packages/execution": 54,
+    "packages/execution": 52,
     "packages/flow": 31,
     "packages/git": 1,
     "packages/lint-policy": 1,
