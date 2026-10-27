@@ -8,13 +8,14 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
-import { ensureDir, exists } from "@std/fs";
+import { exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
 import type { IEmbeddableMemoryEntry, IEmbeddingSearchResult, Opt, Reason } from "@exaix/core/types";
 import { MemoryType } from "@exaix/core";
 import { HnswVectorIndex } from "./vector_index.ts";
 import {
+  ensureEmbeddingManifest,
   type IEmbeddingFile,
   type IEmbeddingManifest,
   type IManifestEntry,
@@ -122,17 +123,8 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
   }
 
   /** Initialize the embeddings directory and manifest. */
-  async initializeManifest(): Promise<void> {
-    await ensureDir(this.embeddingsDir);
-
-    // Create empty manifest if it doesn't exist
-    if (!await exists(this.manifestPath)) {
-      const manifest: IEmbeddingManifest = {
-        generated_at: new Date().toISOString(),
-        index: [],
-      };
-      await Deno.writeTextFile(this.manifestPath, JSON.stringify(manifest, null, 2));
-    }
+  initializeManifest(): Promise<void> {
+    return ensureEmbeddingManifest(this.embeddingsDir, this.manifestPath);
   }
 
   /** Embed a learning and save to file. */

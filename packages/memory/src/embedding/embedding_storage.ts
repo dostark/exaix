@@ -8,6 +8,7 @@
  */
 
 import { join } from "@std/path";
+import { ensureDir, exists } from "@std/fs";
 import type { IEmbeddingSearchResult } from "@exaix/core/types";
 import type { MemoryType } from "@exaix/core";
 import { LEGACY_EMBEDDING_KIND } from "./embeddable_entry.ts";
@@ -35,6 +36,14 @@ export interface IManifestEntry {
 export interface IEmbeddingManifest {
   generated_at: string;
   index: IManifestEntry[];
+}
+
+/** Creates the embeddings directory and an empty manifest when the manifest does not exist yet. */
+export async function ensureEmbeddingManifest(embeddingsDir: string, manifestPath: string): Promise<void> {
+  await ensureDir(embeddingsDir);
+  if (await exists(manifestPath)) return;
+  const manifest: IEmbeddingManifest = { generated_at: new Date().toISOString(), index: [] };
+  await Deno.writeTextFile(manifestPath, JSON.stringify(manifest, null, 2));
 }
 
 /** Loads the stored metadata of the index hits that reach the threshold, best match first, capped at the limit. */

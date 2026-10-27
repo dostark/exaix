@@ -11,14 +11,18 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
-import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
 import type { IEmbeddableMemoryEntry, IEmbeddingSearchResult, IMemoryCostRouter } from "@exaix/core/types";
 import type { IEmbeddingProvider } from "@exaix/ai";
 import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import { HnswVectorIndex } from "./vector_index.ts";
-import { type IEmbeddingFile, type IEmbeddingManifest, readEmbeddingSearchResults } from "./embedding_storage.ts";
+import {
+  ensureEmbeddingManifest,
+  type IEmbeddingFile,
+  type IEmbeddingManifest,
+  readEmbeddingSearchResults,
+} from "./embedding_storage.ts";
 import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
 import { computeTextHash, DiskBackedEmbeddingCache } from "./disk_cache.ts";
 import { chunkEmbeddingId, embeddableId, embeddableTextChunks, embeddableTitle } from "./embeddable_entry.ts";
@@ -51,16 +55,8 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
     this.hnsw = new HnswVectorIndex();
   }
 
-  async initializeManifest(): Promise<void> {
-    await ensureDir(this.embeddingsDir);
-
-    if (!await exists(this.manifestPath)) {
-      const manifest: IEmbeddingManifest = {
-        generated_at: new Date().toISOString(),
-        index: [],
-      };
-      await Deno.writeTextFile(this.manifestPath, JSON.stringify(manifest, null, 2));
-    }
+  initializeManifest(): Promise<void> {
+    return ensureEmbeddingManifest(this.embeddingsDir, this.manifestPath);
   }
 
   async embedLearning(learning: ILearning): Promise<void> {
