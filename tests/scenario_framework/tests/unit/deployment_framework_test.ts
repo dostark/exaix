@@ -10,7 +10,8 @@
  */
 
 import { assertEquals, assertMatch, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
+import { exists } from "@std/fs";
+import { dirname, fromFileUrl, join, relative, resolve } from "@std/path";
 import { deployFrameworkToDirectory, planFrameworkDeployment } from "../../scripts/deploy_framework.ts";
 import { planPortalMount, PortalLifecycleAction, resolveRuntimeConfigForExecution } from "../../runner/config.ts";
 import { ScenarioExecutionMode } from "../../schema/step_schema.ts";
@@ -169,6 +170,37 @@ Deno.test("[ScenarioFrameworkDeployment] a prefix import-map entry keeps its tra
     // The schemas prefix is the concrete import the CI failure named.
     assertMatch(denoConfig.imports["@exaix/schemas/"], /\/$/);
     assertMatch(denoConfig.imports["@exaix/schemas/"], /^\//, "rewritten to an absolute path");
+  } finally {
+    await Deno.remove(tempRoot, { recursive: true });
+  }
+});
+
+Deno.test("[ScenarioFrameworkDeployment] every relative import that leaves the deployed framework resolves in the deployment", async () => {
+  const tempRoot = await Deno.makeTempDir({ prefix: "scenario-framework-deploy-" });
+
+  try {
+    const sourceFrameworkRoot = resolve(fromFileUrl(import.meta.url), "../../..");
+    const deployment = await deployFrameworkToDirectory({
+      sourceFrameworkRoot,
+      destinationRoot: join(tempRoot, "framework"),
+      workspacePath: join(tempRoot, "workspace"),
+      outputDir: join(tempRoot, "output"),
+    });
+
+    const unresolved: string[] = [];
+    const pending = [join(deployment.destinationFrameworkRoot, "runner/main.ts")];
+    const visited = new Set<string>();
+    for (let filePath = pending.pop(); filePath !== undefined; filePath = pending.pop()) {
+      if (visited.has(filePath)) continue;
+      visited.add(filePath);
+      const source = await Deno.readTextFile(filePath);
+      for (const match of source.matchAll(/from\s+"(\.\.?\/[^"]+\.ts)"/g)) {
+        const target = resolve(dirname(filePath), match[1]);
+        if (await exists(target)) pending.push(target);
+        else unresolved.push(`${relative(deployment.destinationFrameworkRoot, filePath)} -> ${match[1]}`);
+      }
+    }
+    assertEquals(unresolved, []);
   } finally {
     await Deno.remove(tempRoot, { recursive: true });
   }

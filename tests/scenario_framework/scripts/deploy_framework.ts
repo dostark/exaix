@@ -120,6 +120,8 @@ export async function deployFrameworkToDirectory(
   const externalDeps: Array<{ src: string; relativeDest: string }> = [
     // assertions.ts imports apps/common/registry_bootstrap.ts via "../../../apps/common/registry_bootstrap.ts"
     { src: "apps/common/registry_bootstrap.ts", relativeDest: "apps/common/registry_bootstrap.ts" },
+    // synthetic_runner.ts imports scripts/deploy_workspace.ts via "../../../scripts/deploy_workspace.ts"
+    { src: "scripts/deploy_workspace.ts", relativeDest: "scripts/deploy_workspace.ts" },
   ];
   for (const dep of externalDeps) {
     const sourcePath = join(repoRoot, dep.src);
