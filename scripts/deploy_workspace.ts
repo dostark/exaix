@@ -37,6 +37,7 @@ export const WORKSPACE_COPY_DIRS: readonly string[] = [
 export const DEPLOYED_SCRIPT_FILES: readonly string[] = [
   "setup_db.ts",
   "migrate_db.ts",
+  "migration_support.ts",
   "scaffold.ts",
   "deploy_workspace.ts",
   "activity_cache_schema.ts",

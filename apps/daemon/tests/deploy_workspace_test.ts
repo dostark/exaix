@@ -501,6 +501,19 @@ parallelSafeTest("deployed-config-closure", async () => {
   assertEquals(stripped.workspace?.includes("./unslop-ts"), false);
 });
 
+parallelSafeTest("deployed-scripts-import-only-deployed-siblings", async () => {
+  const siblingImport = /from "\.\/([^"/]+\.ts)"/g;
+  for (const script of DEPLOYED_SCRIPT_FILES) {
+    const source = await Deno.readTextFile(join(REPO_ROOT, "scripts", script));
+    for (const match of source.matchAll(siblingImport)) {
+      assert(
+        DEPLOYED_SCRIPT_FILES.includes(match[1]),
+        `${script} imports ${match[1]}, which the deploy does not copy`,
+      );
+    }
+  }
+});
+
 parallelSafeTest("deployed-redeploy-real-entrypoint", async () => {
   const first = await Deno.makeTempDir({ prefix: "exaix-redeploy-source-" });
   const second = await Deno.makeTempDir({ prefix: "exaix-redeploy-target-" });
