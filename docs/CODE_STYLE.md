@@ -674,6 +674,23 @@ Test files and helpers are exempt, because compatibility shims under `tests/` in
 test support. When a symbol belongs to a lower layer, import it from that layer and re-export it from
 the package barrel instead of the module that happens to declare it.
 
+### Named imports {#prefer-named-imports}
+
+Import a symbol by name when a module consumes it. A namespace import (`import * as ns from "…"`)
+hides which symbols the module uses, so a boundary review cannot see the dependency and a rename
+inside the namespace is invisible to the consumer. Write `import { load } from "…"` instead of
+`import * as ns from "…"` when every use is `ns.load`.
+
+| Check                  | Reports                                                      |
+| ---------------------- | ------------------------------------------------------------ |
+| `prefer-named-imports` | A namespace import whose members are all read as `ns.member` |
+
+The engine rule `prefer-named-imports` ships in unslop-ts as an opt-in rule; a package enables it as
+`exaix/prefer-named-imports` with a package-local reason. The rule stays silent for spread, computed,
+whole-object, and member-free uses, so a facade that forwards the namespace stays valid. Keep such a
+facade intentional and mark it with `// unslop-ignore-next-line prefer-named-imports` above the
+import. Test files and helpers follow the same rule.
+
 ### Module headers {#module-headers}
 
 Each source file starts with a JSDoc header. The tags are:
