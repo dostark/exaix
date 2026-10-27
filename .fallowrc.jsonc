@@ -1,0 +1,5 @@
+{
+  "duplicates": {
+    "ignore": ["tests/scenario_framework/fixtures/portals/todo_app*/**"]
+  }
+}
