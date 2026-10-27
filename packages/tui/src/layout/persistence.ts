@@ -31,6 +31,26 @@ export interface ITuiLayoutPersistencePane {
 
 export const getLayoutFile = (): string => `${Deno.env.get("HOME")}/.exaix/tui_layout.json`;
 
+/** The default layout: one focused pane that fills the screen and shows the given view. */
+export function createMainPane<TView extends ITuiLayoutPersistenceView>(
+  view: TView,
+): ITuiLayoutPersistencePane & { view: TView } {
+  return {
+    id: TUI_MAIN_PANE_ID,
+    view,
+    flexX: 0,
+    flexY: 0,
+    flexWidth: 1.0,
+    flexHeight: 1.0,
+    x: 0,
+    y: 0,
+    width: TUI_LAYOUT_FULL_WIDTH,
+    height: TUI_LAYOUT_DEFAULT_HEIGHT,
+    focused: true,
+    maximized: false,
+  };
+}
+
 export async function saveLayout(
   panes: ITuiLayoutPersistencePane[],
   activePaneId: string,
@@ -111,20 +131,7 @@ export function resetToDefault(
   addNotification: (message: string, type?: string) => void,
 ): string {
   panes.length = 0;
-  panes.push({
-    id: TUI_MAIN_PANE_ID,
-    view: views[0],
-    flexX: 0,
-    flexY: 0,
-    flexWidth: 1.0,
-    flexHeight: 1.0,
-    x: 0,
-    y: 0,
-    width: TUI_LAYOUT_FULL_WIDTH,
-    height: TUI_LAYOUT_DEFAULT_HEIGHT,
-    focused: true,
-    maximized: false,
-  });
+  panes.push(createMainPane(views[0]));
   addNotification("Layout reset to default", MessageType.INFO);
   return TUI_MAIN_PANE_ID;
 }

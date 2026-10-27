@@ -10,6 +10,7 @@
 import { assertAlmostEquals, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 
 import {
+  createMainPane,
   getLayoutFile,
   type ITuiLayoutPersistencePane,
   type ITuiLayoutPersistenceView,
@@ -173,6 +174,27 @@ Deno.test("restoreLayout: upgrades v1.0 absolute coords to flex", async () => {
     assertAlmostEquals(panes[0].flexWidth, width / TUI_LAYOUT_FULL_WIDTH);
     assertAlmostEquals(panes[0].flexHeight, height / TUI_LAYOUT_DEFAULT_HEIGHT);
   });
+});
+
+Deno.test("createMainPane: fills the whole layout with one focused, unmaximized pane for the view", () => {
+  const view = { name: "MainView" };
+  const pane = createMainPane(view);
+
+  assertEquals(pane, {
+    id: "main",
+    view,
+    flexX: 0,
+    flexY: 0,
+    flexWidth: 1,
+    flexHeight: 1,
+    x: 0,
+    y: 0,
+    width: TUI_LAYOUT_FULL_WIDTH,
+    height: TUI_LAYOUT_DEFAULT_HEIGHT,
+    focused: true,
+    maximized: false,
+  });
+  assertEquals(pane.view, view);
 });
 
 Deno.test("resetToDefault: resets panes and returns 'main'", () => {

@@ -20,8 +20,6 @@ import type { INotificationService, IPortalService, Opt, Reason } from "@exaix/c
 import {
   TUI_DASHBOARD_ICONS,
   TUI_DASHBOARD_VIEW_PICKER_WIDTH,
-  TUI_LAYOUT_DEFAULT_HEIGHT,
-  TUI_LAYOUT_FULL_WIDTH,
   TUI_MAIN_PANE_ID,
   TUI_TREE_ICONS,
 } from "@exaix/tui/helpers/constants.ts";
@@ -35,6 +33,7 @@ import {
 import type { IPortalInfo } from "@exaix/core/types";
 import type { IMemoryNotification } from "@exaix/core/types";
 import {
+  createMainPane,
   resetToDefault as helperResetToDefault,
   restoreLayout as helperRestoreLayout,
   saveLayout as helperSaveLayout,
@@ -604,20 +603,7 @@ function createTestDashboard(options: {
   const portalService = services.portalService;
 
   // Initialize with single pane
-  const initialPane: IPane = {
-    id: TUI_MAIN_PANE_ID,
-    view: views[0],
-    flexX: 0,
-    flexY: 0,
-    flexWidth: 1.0,
-    flexHeight: 1.0,
-    x: 0,
-    y: 0,
-    width: TUI_LAYOUT_FULL_WIDTH,
-    height: TUI_LAYOUT_DEFAULT_HEIGHT,
-    focused: true,
-    maximized: false,
-  };
+  const initialPane: IPane = createMainPane(views[0]);
   const panes: IPane[] = [initialPane];
   const activePaneId = TUI_MAIN_PANE_ID;
 
@@ -759,20 +745,7 @@ function createTestDashboard(options: {
     async resetToDefault() {
       // Reset to single pane with PortalManagerView
       panes.length = 0;
-      panes.push({
-        id: TUI_MAIN_PANE_ID,
-        view: views[0],
-        flexX: 0,
-        flexY: 0,
-        flexWidth: 1.0,
-        flexHeight: 1.0,
-        x: 0,
-        y: 0,
-        width: TUI_LAYOUT_FULL_WIDTH,
-        height: TUI_LAYOUT_DEFAULT_HEIGHT,
-        focused: true,
-        maximized: false,
-      });
+      panes.push(createMainPane(views[0]));
       this.activePaneId = TUI_MAIN_PANE_ID;
       await this.clearNotifications();
       await this.notify("Layout reset to default", MessageType.INFO);
@@ -819,20 +792,7 @@ async function createProductionDashboard(options: {
   const portalService = services.portalService;
 
   // Initialize with single pane
-  const initialPane: IPane = {
-    id: TUI_MAIN_PANE_ID,
-    view: views[0],
-    flexX: 0,
-    flexY: 0,
-    flexWidth: 1.0,
-    flexHeight: 1.0,
-    x: 0,
-    y: 0,
-    width: TUI_LAYOUT_FULL_WIDTH,
-    height: TUI_LAYOUT_DEFAULT_HEIGHT,
-    focused: true,
-    maximized: false,
-  };
+  const initialPane: IPane = createMainPane(views[0]);
   const panes: IPane[] = [initialPane];
   let activePaneId = TUI_MAIN_PANE_ID;
 
