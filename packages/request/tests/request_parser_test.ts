@@ -29,6 +29,7 @@ import {
   TEST_REQUEST_STATUS_UNKNOWN,
   TEST_REQUEST_STATUS_VALID,
   TEST_REQUEST_TRACE_ID,
+  withTempDir,
 } from "@exaix/testing";
 import type { JSONObject } from "@exaix/core/types";
 
@@ -64,13 +65,10 @@ function buildFrontmatter(traceId?: string, status?: string): string {
 async function withTempRequestFile(
   testFn: (filePath: string) => Promise<void>,
 ): Promise<void> {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const filePath = join(tempDir, TEST_REQUEST_FILE_NAME);
     await testFn(filePath);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 }
 
 /** The parse() result is a parsed file (never a rejection) for these fixtures. */

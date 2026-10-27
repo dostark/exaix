@@ -15,6 +15,7 @@ import { ANALYZER_VERSION } from "@exaix/core";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
+import { withTempDir } from "@exaix/testing";
 
 // Fixture
 
@@ -43,8 +44,7 @@ function makeAnalysis(overrides: Partial<IRequestAnalysis> = {}): IRequestAnalys
 // Path derivation
 
 Deno.test("[AnalysisPersistence] derives correct _analysis.json path from .md path", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const requestPath = join(dir, "my-request.md");
     await Deno.writeTextFile(requestPath, "# Request");
 
@@ -53,16 +53,13 @@ Deno.test("[AnalysisPersistence] derives correct _analysis.json path from .md pa
     const expectedPath = join(dir, "my-request_analysis.json");
     const stat = await Deno.stat(expectedPath);
     assertEquals(stat.isFile, true);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 
 // Save & Load round-trip
 
 Deno.test("[AnalysisPersistence] saves analysis as JSON sibling file", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const requestPath = join(dir, "req.md");
     const analysis = makeAnalysis();
 
@@ -73,14 +70,11 @@ Deno.test("[AnalysisPersistence] saves analysis as JSON sibling file", async () 
     const parsed = JSON.parse(raw);
     assertEquals(parsed.actionabilityScore, 85);
     assertEquals(parsed.taskType, RequestTaskType.FEATURE);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[AnalysisPersistence] loads previously saved analysis", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const requestPath = join(dir, "req.md");
     const analysis = makeAnalysis();
 
@@ -92,14 +86,11 @@ Deno.test("[AnalysisPersistence] loads previously saved analysis", async () => {
     assertEquals(loaded!.complexity, RequestAnalysisComplexity.MEDIUM);
     assertEquals(loaded!.goals.length, 1);
     assertEquals(loaded!.metadata.mode, AnalysisMode.HEURISTIC);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[AnalysisPersistence] analysis data round-trips without loss", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const requestPath = join(dir, "req.md");
     const original = makeAnalysis();
 
@@ -111,57 +102,45 @@ Deno.test("[AnalysisPersistence] analysis data round-trips without loss", async 
     assertEquals(loaded!.constraints, original.constraints);
     assertEquals(loaded!.tags, original.tags);
     assertEquals(loaded!.metadata.durationMs, original.metadata.durationMs);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 
 // Missing / invalid files
 
 Deno.test("[AnalysisPersistence] returns null for missing analysis file", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const requestPath = join(dir, "nonexistent.md");
     const result = await loadAnalysis(requestPath);
     assertEquals(result, null);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[AnalysisPersistence] returns null for corrupted analysis file", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const requestPath = join(dir, "req.md");
     const jsonPath = join(dir, "req_analysis.json");
     await Deno.writeTextFile(jsonPath, "{ not valid json {{");
 
     const result = await loadAnalysis(requestPath);
     assertEquals(result, null);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[AnalysisPersistence] returns null for JSON not matching schema", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const requestPath = join(dir, "req.md");
     const jsonPath = join(dir, "req_analysis.json");
     await Deno.writeTextFile(jsonPath, JSON.stringify({ foo: "bar" }));
 
     const result = await loadAnalysis(requestPath);
     assertEquals(result, null);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
 
 // Atomic write
 
 Deno.test("[AnalysisPersistence] uses atomic write (temp file then rename)", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const requestPath = join(dir, "req.md");
     const analysis = makeAnalysis();
 
@@ -174,7 +153,5 @@ Deno.test("[AnalysisPersistence] uses atomic write (temp file then rename)", asy
     }
     assertEquals(entries.some((n) => n.endsWith(".tmp")), false);
     assertArrayIncludes(entries, ["req_analysis.json"]);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });
