@@ -158,6 +158,13 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# 9c. Unused Exports Parity Check (fallow-aligned, all findings are errors)
+deno task check:unused-exports:parity:strict
+if [ $? -ne 0 ]; then
+  echo "❌ Error: An export has no consumer. Remove it or add the unused-export pragma."
+  exit 1
+fi
+
 # 10. Agent-Native Documentation Nervous System Check
 deno task docs-agent-validate
 if [ $? -ne 0 ]; then

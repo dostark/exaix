@@ -126,6 +126,13 @@ jobs:
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task check:unused-exports:fail
 
+      # --- GATE 9d: Unused Exports Parity ---
+      # Fallow-aligned: re-exports, entry points, tests, scripts, defaults, and namespaces
+      # all report, and every finding is an error. Justified API carries the unused-export pragma.
+      - name: "Gate 9d: Unused Exports Parity"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:unused-exports:parity:strict
+
       # --- GATE 9b: Unused Files ---
       - name: "Gate 9b: Unused Files"
         if: always() && steps.setup-deno.outcome == 'success'
