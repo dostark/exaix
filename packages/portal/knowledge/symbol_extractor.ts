@@ -54,33 +54,33 @@ export interface IDocCommandRunner {
 // Types: deno doc --json node shapes
 
 /** A single parameter from a deno doc function definition. */
-export interface IDenoDocParam {
+interface IDenoDocParam {
   name?: string;
 }
 
 /** Return type repr from a deno doc function definition. */
-export interface IDenoDocReturnType {
+interface IDenoDocReturnType {
   repr?: string;
 }
 
 /** Function definition sub-node from deno doc --json. */
-export interface IDenoDocFunctionDef {
+interface IDenoDocFunctionDef {
   params?: IDenoDocParam[];
   returnType?: IDenoDocReturnType;
 }
 
 /** Variable definition sub-node from deno doc --json. */
-export interface IDenoDocVariableDef {
+interface IDenoDocVariableDef {
   kind?: string;
 }
 
 /** JSDoc block from deno doc --json. */
-export interface IDenoDocJsDoc {
+interface IDenoDocJsDoc {
   doc?: string;
 }
 
 /** Source location from deno doc --json. */
-export interface IDenoDocLocation {
+interface IDenoDocLocation {
   filename?: string;
 }
 

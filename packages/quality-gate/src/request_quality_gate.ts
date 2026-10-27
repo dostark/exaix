@@ -32,7 +32,7 @@ import { ClarificationEngine } from "./clarification_engine.ts";
 // Config factory
 
 /** TOML-derived quality-gate input before defaults are applied. */
-export interface IQualityGateTomlConfig {
+interface IQualityGateTomlConfig {
   enabled?: boolean;
   mode?: QualityGateMode | string;
   auto_enrich?: boolean;

@@ -11,7 +11,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface ICleanupTask {
+interface ICleanupTask {
   name: string;
   handler: () => Promise<void>;
   timeout: number;

@@ -12,14 +12,14 @@ import { ConfidenceAssessmentLevel } from "@exaix/core";
 import type { IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import type { IMemoryExtractorService } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
-export type IEligibleMemoryUpdateProposal = IMemoryUpdateProposal & {
+type IEligibleMemoryUpdateProposal = IMemoryUpdateProposal & {
   learning: IProposalLearning & { eligible_at: string };
 };
 
 /**
  * Result of an auto-approval run
  */
-export interface IAutoApprovalResult {
+interface IAutoApprovalResult {
   runAt: string;
   promoted: string[];
   skipped: string[];

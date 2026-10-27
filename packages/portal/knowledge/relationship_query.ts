@@ -25,14 +25,14 @@ export type RelationshipEdgeKind =
   | "file_imports_file_internal"
   | typeof SYMBOL_REFERENCE_EDGE_KIND;
 
-export interface IRelationshipEdge {
+interface IRelationshipEdge {
   from: string;
   to: string;
   kind: RelationshipEdgeKind;
 }
 
 /** A persisted edge kind. `layer_contains_file` is derived, never stored. */
-export type PersistedRelationshipEdgeKind =
+type PersistedRelationshipEdgeKind =
   | "file_imports_file_internal"
   | typeof SYMBOL_REFERENCE_EDGE_KIND;
 

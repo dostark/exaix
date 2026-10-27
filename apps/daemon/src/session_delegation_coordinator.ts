@@ -53,7 +53,7 @@ import type { ISessionDelegationResultStore } from "@exaix/session/session_deleg
 import type { ISessionWaitStore } from "@exaix/session/wait/i_session_wait_store.ts";
 import type { ISessionDelegateEventPayload } from "@exaix/session/event_payload.ts";
 
-export interface ISessionDelegationLauncher {
+interface ISessionDelegationLauncher {
   launch(
     launch: ISessionLaunch,
     traceId: string,
@@ -103,12 +103,12 @@ export interface ISessionDelegationCoordinatorDeps {
   worktreeCoordinator: IFlowWorktreeCoordinator;
 }
 
-export interface ICodeChangesDelegateAdapterDeps {
+interface ICodeChangesDelegateAdapterDeps {
   coordinator: ISessionDelegationCoordinator;
   logger: Pick<IEventLogger, "warn">;
 }
 
-export interface IDelegatedPlanStep {
+interface IDelegatedPlanStep {
   number: number;
   title: string;
   content: string;

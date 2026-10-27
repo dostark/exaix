@@ -39,7 +39,7 @@ export function createStubGitService(
   };
 }
 
-export function createStubDatabase(
+function createStubDatabase(
   overrides: Opt<Partial<IDatabaseService>, Reason.TestOverride> = {},
 ): IDatabaseService {
   const noop = () => {};
@@ -79,7 +79,7 @@ const defaultConfig = ConfigSchema.parse({
   paths: {},
 });
 
-export function createStubConfigService(
+function createStubConfigService(
   overrides: Opt<Partial<IConfigService>, Reason.TestOverride> = {},
 ): IConfigService {
   return {

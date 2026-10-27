@@ -15,7 +15,7 @@ export interface IFlowRecordingContext extends IRecordingLaneSource {
   readonly stepId: string;
 }
 
-export interface IFlowRecordingContextOptions {
+interface IFlowRecordingContextOptions {
   scenarioId?: Opt<string, Reason.OptionalContext>;
   stepId?: Opt<string, Reason.OptionalContext>;
   /** True only when the submitted request opted into recording lanes. */

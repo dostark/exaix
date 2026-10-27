@@ -16,7 +16,7 @@ import type { CriterionResult } from "@exaix/core/evaluation";
 /**
  * Context data for agent requests
  */
-export interface IAgentRequestContext {
+interface IAgentRequestContext {
   [key: string]:
     | string
     | number
@@ -31,7 +31,7 @@ export interface IAgentRequestContext {
 /**
  * Feedback loop configuration schema
  */
-export interface IIterationResult {
+interface IIterationResult {
   iteration: number;
   content: string;
   gateResult: IGateResult;
@@ -70,7 +70,7 @@ export interface IImprovementAgent {
   ): Promise<string>;
 }
 
-export interface ISelfCorrectingConfig {
+interface ISelfCorrectingConfig {
   /** Agent to generate initial response */
   generatorAgent: string;
   /** Agent to evaluate responses (can be same as generator) */
@@ -85,7 +85,7 @@ export interface ISelfCorrectingConfig {
   maxIterations: number;
 }
 
-export const FeedbackLoopConfigSchema = z.object({
+const FeedbackLoopConfigSchema = z.object({
   /** Maximum number of improvement iterations */
   maxIterations: z.number().int().min(1).max(10).default(3),
   /** Target score to achieve (0.0 - 1.0) */

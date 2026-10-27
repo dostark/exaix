@@ -8,8 +8,6 @@
  */
 export { MemoryBankService } from "./src/bank/memory_bank.ts";
 export {
-  calculateFrequency,
-  calculateRelevance,
   type ISearchDeps,
   searchByKeyword,
   searchByTags,
@@ -23,7 +21,7 @@ export { buildFilesIndex, buildPatternsIndex, buildTagsIndex, writeIndices } fro
 export { cosineSimilarity, generateMockEmbedding, MemoryEmbeddingService } from "./src/embedding/memory_embedding.ts";
 export type { IEmbeddingSearchResult } from "@exaix/core/types";
 export { HnswVectorIndex } from "./src/embedding/vector_index.ts";
-export type { IVectorIndexEntry, IVectorIndexSnapshot } from "./src/embedding/vector_index.ts";
+export type { IVectorIndexSnapshot } from "./src/embedding/vector_index.ts";
 export { ProviderEmbeddingService } from "./src/embedding/provider_embedding_service.ts";
 
 export { MemoryExtractorService } from "./src/extraction/memory_extractor.ts";
@@ -34,7 +32,7 @@ export { LearningContradictionResolver } from "./src/contradiction/learning_cont
 export { findDedupMatch, mergeLearnings } from "./src/dedup/semantic_dedup.ts";
 export type { IDedupCandidate } from "./src/dedup/semantic_dedup.ts";
 export { computeRecencyFactor, rankByTemporalRelevance } from "./src/temporal/temporal_scoring.ts";
-export type { ITemporalCandidate, ITemporalScoringOptions } from "./src/temporal/temporal_scoring.ts";
+export type { ITemporalCandidate } from "./src/temporal/temporal_scoring.ts";
 export { fuseHybridScores } from "./src/hybrid/hybrid_fusion.ts";
 export {
   chunkEmbeddingId,
@@ -45,15 +43,7 @@ export {
   overviewEmbeddingId,
 } from "./src/embedding/embeddable_entry.ts";
 
-export {
-  DEFAULT_SESSION_MEMORY_CONFIG,
-  EnhancedRequestSchema,
-  InsightSchema,
-  MemoryItemSchema,
-  SaveInsightResultSchema,
-  SessionMemoryConfigSchema,
-  SessionMemoryService,
-} from "./src/session/session_memory.ts";
+export { SessionMemoryService } from "./src/session/session_memory.ts";
 export type {
   EnhancedRequest,
   IMemoryRetrievalScope,
@@ -64,13 +54,6 @@ export type {
 } from "./src/session/session_memory.ts";
 
 export { MemoryAutoApprovalService } from "./src/approval/memory_auto_approval_service.ts";
-export type {
-  IAutoApprovalResult,
-  IEligibleMemoryUpdateProposal,
-} from "./src/approval/memory_auto_approval_service.ts";
 export { initializeMemoryAutoApprovalMaintenance } from "./src/approval/auto_approval_daemon.ts";
 export { MemoryReflectionService } from "./src/reflection/memory_reflection_service.ts";
-export type {
-  IMemoryReflectionServiceDeps,
-  IReflectionCycleResult,
-} from "./src/reflection/memory_reflection_service.ts";
+export type { IReflectionCycleResult } from "./src/reflection/memory_reflection_service.ts";

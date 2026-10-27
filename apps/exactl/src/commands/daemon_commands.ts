@@ -26,7 +26,7 @@ import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core/version.ts
 import type { IDaemonStatus } from "@exaix/core/types";
 
 /** Options for `daemon start`. Omitted fields fall back to the effective configuration. */
-export interface IDaemonStartOptions {
+interface IDaemonStartOptions {
   /** Ceiling in ms for daemon.ready. Overrides `daemon.ready_timeout_ms` for this start. */
   readyTimeoutMs?: number;
 }

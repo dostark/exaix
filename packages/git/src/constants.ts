@@ -87,4 +87,3 @@ export const GIT_FLAG_FORCE = "--force";
 export const GIT_CLEAN_DESTRUCTIVE_SHORT_FLAGS = /^-[a-z]*[fd][a-z]*$/i;
 
 export const GIT_ERROR_NOTHING_TO_COMMIT = "nothing to commit";
-export const GIT_ERROR_NOT_A_REPO = "not a git repository";

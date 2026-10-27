@@ -29,7 +29,7 @@ import {
   SessionDelegateCycleClaimStateSchema,
 } from "@exaix/session/session_delegate_cycle_claim_store.ts";
 
-export interface IRecoveryDeps {
+interface IRecoveryDeps {
   db: IDatabaseService;
   logger: IEventLogger;
   workspaceRoot: string;

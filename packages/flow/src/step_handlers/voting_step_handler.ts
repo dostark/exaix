@@ -15,7 +15,7 @@ import { DomainEventType } from "@exaix/core/events";
 import { FlowStepExecutionMode } from "@exaix/core";
 import type { IAgentExecutionResult } from "@exaix/execution";
 
-export interface IVotingStepHandlerDeps {
+interface IVotingStepHandlerDeps {
   votingService: IVotingConsensusService;
   eventLogger: IEventLogger;
 }

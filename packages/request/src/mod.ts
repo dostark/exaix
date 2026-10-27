@@ -10,7 +10,7 @@ export { applyAnalysisToRequest, buildParsedRequest, loadBlueprint, normalizeFro
 export { buildPlanValidationFeedbackPrompt } from "./common.ts";
 
 export { RequestAnalyzer } from "./analysis/mod.ts";
-export { analyzeHeuristic, deriveAnalysisPath, LlmAnalyzer, loadAnalysis, saveAnalysis } from "./analysis/mod.ts";
+export { analyzeHeuristic, LlmAnalyzer, loadAnalysis, saveAnalysis } from "./analysis/mod.ts";
 
 export {
   type IRequestParseRejection,
@@ -19,17 +19,9 @@ export {
   StatusManager,
 } from "./processing/mod.ts";
 
-export {
-  type IFlowResult,
-  type IFlowRunner,
-  type IFlowValidator,
-  type IRequestRouterConfig,
-  type IRoutingDecision,
-  RequestRouter,
-  RoutingError,
-} from "./router.ts";
+export { type IFlowResult, type IFlowRunner, type IFlowValidator, RequestRouter, RoutingError } from "./router.ts";
 
-export { type IRequestServiceConfig, RequestService } from "./service.ts";
+export { RequestService } from "./service.ts";
 
 export {
   buildPortalKnowledgeSummary,
@@ -44,24 +36,10 @@ export {
   BlueprintResolver,
   EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR,
   type IBlueprintResolver,
-  type IBlueprintResolverConfig,
 } from "./blueprint_resolver.ts";
 
-export {
-  type IPortalContextBuilder,
-  type IPortalContextBuilderConfig,
-  PortalContextBuilder,
-} from "./portal_context_builder.ts";
+export { type IPortalContextBuilder, PortalContextBuilder } from "./portal_context_builder.ts";
 
-export {
-  ClarificationGateway,
-  type IClarificationGateway,
-  type IClarificationGatewayDeps,
-  type IQualityGateOutcome,
-} from "./clarification_gateway.ts";
+export { ClarificationGateway, type IClarificationGateway } from "./clarification_gateway.ts";
 
-export {
-  type IRejectedPlanHandler,
-  type IRejectedPlanHandlerDeps,
-  RejectedPlanHandler,
-} from "./rejected_plan_handler.ts";
+export { type IRejectedPlanHandler, RejectedPlanHandler } from "./rejected_plan_handler.ts";

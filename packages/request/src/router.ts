@@ -75,7 +75,7 @@ export interface IFlowRunner {
   ): Promise<IFlowResult>;
 }
 
-export interface IRoutingDecision {
+interface IRoutingDecision {
   type: RequestKind;
   flowId?: string;
   agentRole?: string;
@@ -99,7 +99,7 @@ export interface IFlowValidator {
   validateFlow(flowId: string): Promise<{ valid: boolean; error?: string }>;
 }
 
-export interface IRequestRouterConfig {
+interface IRequestRouterConfig {
   flowRunner: IFlowRunner;
   agentRunner: IAgentRunner;
   flowValidator: IFlowValidator;

@@ -13,7 +13,7 @@ import { REMEDIATION_MODE_FAIL_CLOSED, REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE 
 
 /** Minimal JSON Schema draft-07 descriptor used in tool manifest output_schema fields.
  *  Only the properties needed to describe tool return shapes are modelled here. */
-export interface IJsonSchemaDescriptor {
+interface IJsonSchemaDescriptor {
   type?: string;
   description?: string;
   properties?: Record<string, IJsonSchemaDescriptor>;

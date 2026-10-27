@@ -15,7 +15,7 @@ interface IPackageJson {
   license?: string | Record<string, string>;
 }
 
-export interface ILicenseInfo {
+interface ILicenseInfo {
   type: string;
   source: LicenseSource;
   filePath?: string;

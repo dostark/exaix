@@ -35,7 +35,7 @@ export interface IArchitectureValidator {
 }
 
 /** Input bag for a single inference call. */
-export interface IArchitectureInferrerInput {
+interface IArchitectureInferrerInput {
   portalPath: string;
   directoryTree: string[];
   keyFiles: IFileSignificance[];
@@ -197,7 +197,7 @@ export class ArchitectureInferrer {
 }
 
 /** Fallback used when all LLM retry attempts fail. */
-export function buildFallbackOverview(input: IArchitectureInferrerInput): string {
+function buildFallbackOverview(input: IArchitectureInferrerInput): string {
   const lines: string[] = [];
 
   lines.push("# Architecture Overview (Heuristic)");

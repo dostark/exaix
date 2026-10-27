@@ -21,7 +21,7 @@ import { PORTAL_KNOWLEDGE_PROMPT_MAX_LINES } from "@exaix/core";
 import { buildPortalContextBlock } from "@exaix/core/func";
 import { buildPortalKnowledgeSummary } from "./processor.ts";
 
-export interface IPortalContextBuilderConfig {
+interface IPortalContextBuilderConfig {
   config: Config;
   portalKnowledgeService?: IPortalKnowledgeService;
 }

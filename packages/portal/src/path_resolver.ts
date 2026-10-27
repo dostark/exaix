@@ -16,7 +16,7 @@ import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
 import { DEFAULT_MCP_AGENT_ROLE_ID } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface IPathResolverConfig {
+interface IPathResolverConfig {
   /** Optional: Event logger for activity and security event routing */
   logger?: IEventLogger;
 

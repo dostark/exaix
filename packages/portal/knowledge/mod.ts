@@ -11,18 +11,12 @@ export { MODULE_DEPENDENCY_EDGE_KIND } from "@exaix/core";
 export { TreeSitterSymbolExtractor } from "./tree_sitter_symbol_extractor.ts";
 export { PythonSymbolExtractor } from "./python_symbol_extractor.ts";
 export * from "./symbol_extraction_constants.ts";
-export { analyzeDirectory, type IWalkResult, walkDirectory } from "./directory_analyzer.ts";
-export { type IConfigParseResult, parseConfigFiles } from "./config_parser.ts";
+export { analyzeDirectory, walkDirectory } from "./directory_analyzer.ts";
+export { parseConfigFiles } from "./config_parser.ts";
 export { identifyKeyFiles } from "./key_file_identifier.ts";
 export { computeAdaptiveSampleSize, detectPatterns, selectSampleFiles } from "./pattern_detector.ts";
 export {
-  type IDenoDocFunctionDef,
-  type IDenoDocJsDoc,
-  type IDenoDocLocation,
   type IDenoDocNode,
-  type IDenoDocParam,
-  type IDenoDocReturnType,
-  type IDenoDocVariableDef,
   type IDocCommandRunner,
   type ISymbolExtractor,
   type ISymbolExtractorOptions,
@@ -30,31 +24,24 @@ export {
 } from "./symbol_extractor.ts";
 export {
   createDefaultSymbolExtractorRegistry,
-  EMPTY_SYMBOL_EXTRACTOR,
   type ISymbolExtractorRegistry,
   SymbolExtractorRegistry,
 } from "./symbol_extractor_registry.ts";
 export { loadKnowledge, saveKnowledge } from "./knowledge_persistence.ts";
-export { buildPortalKnowledgeConfig, type PortalKnowledgeConfigSection } from "./portal_knowledge_config.ts";
+export { buildPortalKnowledgeConfig } from "./portal_knowledge_config.ts";
 export {
   createDefaultSymbolFileResolverRegistry,
   createDefaultSymbolReferenceExtractorRegistry,
-  EMPTY_SYMBOL_FILE_RESOLVER,
   EMPTY_SYMBOL_REFERENCE_EXTRACTOR,
-  type ISymbolFileResolver,
   type ISymbolFileResolverRegistry,
   type ISymbolReferenceExtractor,
   type ISymbolReferenceExtractorOptions,
   type ISymbolReferenceExtractorRegistry,
-  SymbolFileResolverRegistry,
-  SymbolReferenceExtractorRegistry,
 } from "./symbol_reference_extractor.ts";
 export { GitHeadResolver } from "./git_head_resolver.ts";
 export type { IGitHeadResolver } from "./git_head_resolver.ts";
 export { AstAnalyzer } from "./ast_analyzer.ts";
-export type { IAstDiagnostics } from "./ast_analyzer.ts";
 export { InternalImportGraphBuilder } from "./internal_import_graph.ts";
-export type { IDroppedInternalImport, IInternalImportGraphResult } from "./internal_import_graph.ts";
 export {
   decodeSymbolRef,
   deriveLayerContainsFileEdges,
@@ -64,22 +51,13 @@ export {
   traverseModuleDependencies,
   whoDependsOn,
 } from "./relationship_query.ts";
-export type {
-  IPersistedRelationshipEdge,
-  IRelationshipEdge,
-  PersistedRelationshipEdgeKind,
-  RelationshipEdgeKind,
-} from "./relationship_query.ts";
-export { ArchitectureInferrer, buildFallbackOverview } from "./architecture_inferrer.ts";
-export type { IArchitectureInferrerInput, IArchitectureValidator } from "./architecture_inferrer.ts";
+export type { IPersistedRelationshipEdge, RelationshipEdgeKind } from "./relationship_query.ts";
+export { ArchitectureInferrer } from "./architecture_inferrer.ts";
+export type { IArchitectureValidator } from "./architecture_inferrer.ts";
 export { GitHistoryAnalyzer } from "./git_history_analyzer.ts";
-export type { IGitAuthorStats, IGitHistoryResult, IGitHotspot } from "./git_history_analyzer.ts";
 export { LicenseDetector } from "./license_detector.ts";
-export type { ILicenseInfo } from "./license_detector.ts";
 export { TestRunner } from "./test_runner.ts";
-export type { ITestInfo } from "./test_runner.ts";
 export { VulnerabilityScanner } from "./vulnerability_scanner.ts";
-export type { IVulnerabilityResult } from "./vulnerability_scanner.ts";
 export { KnowledgeInvalidationStrategy } from "./knowledge_invalidation_strategy.ts";
 export type {
   IKnowledgeInvalidationStrategy,

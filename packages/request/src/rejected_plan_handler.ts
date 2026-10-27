@@ -22,7 +22,7 @@ import type { LogMetadata, Opt, Reason } from "@exaix/core/types";
 import type { StatusManager } from "./processing/status.ts";
 import { getProviderFailureReason } from "@exaix/ai/errors.ts";
 
-export interface IRejectedPlanHandlerDeps {
+interface IRejectedPlanHandlerDeps {
   config: Config;
   statusManager: StatusManager;
 }

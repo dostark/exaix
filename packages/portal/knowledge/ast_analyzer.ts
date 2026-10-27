@@ -17,7 +17,7 @@ import {
   SafeSubprocess,
 } from "@exaix/core";
 
-export interface IAstDiagnostics {
+interface IAstDiagnostics {
   totalModules: number;
   totalImports: number;
   diagnostics: Array<{ file: string; message: string }>;

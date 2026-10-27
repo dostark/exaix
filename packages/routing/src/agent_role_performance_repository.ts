@@ -24,25 +24,25 @@ export interface IAgentRolePerformanceSnapshot {
   weightedScore?: number;
 }
 
-export interface IBuildSnapshotOptions {
+interface IBuildSnapshotOptions {
   maxAgeMs?: number;
 }
 
-export interface IAgentRolePerformanceRepositoryOptions {
+interface IAgentRolePerformanceRepositoryOptions {
   db: IDatabaseService;
   sampleThreshold?: number;
 }
 
-export interface IAgentRolePerformanceRepository {
+interface IAgentRolePerformanceRepository {
   getPerformanceByCapability(
     capability: string,
-    portalName?: string,
-    options?: IBuildSnapshotOptions,
+    portalName?: Opt<string, Reason.OptionalInput>,
+    options?: Opt<IBuildSnapshotOptions, Reason.OptionalInput>,
   ): Promise<IAgentRolePerformanceSnapshot[]>;
 
   getPerformanceByAgentRole(
     agentRole: string,
-    options?: IBuildSnapshotOptions,
+    options?: Opt<IBuildSnapshotOptions, Reason.OptionalInput>,
   ): Promise<IAgentRolePerformanceSnapshot[]>;
 }
 

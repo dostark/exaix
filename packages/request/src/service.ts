@@ -25,7 +25,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "@exaix/tool-runtime";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface IRequestServiceConfig {
+interface IRequestServiceConfig {
   config: Config;
   display: IDisplayService;
   userIdentityGetter: () => Promise<string>;

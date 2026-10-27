@@ -18,7 +18,7 @@ import type { IRequestAnalysis } from "@exaix/core/request";
 
 /** Derive the `_analysis.json` path from the request `.md` path, e.g.
  * `Workspace/Requests/my-request.md` → `Workspace/Requests/my-request_analysis.json`. */
-export function deriveAnalysisPath(requestFilePath: string): string {
+function deriveAnalysisPath(requestFilePath: string): string {
   // Strip any extension and append `_analysis.json`
   const dotIdx = requestFilePath.lastIndexOf(".");
   const base = dotIdx > 0 ? requestFilePath.slice(0, dotIdx) : requestFilePath;

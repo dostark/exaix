@@ -51,7 +51,7 @@ export interface IFlowReportConfig {
   logger?: IEventLogger;
 }
 
-export interface IFlowReportResult {
+interface IFlowReportResult {
   reportPath: string;
   content: string;
   createdAt: Date;

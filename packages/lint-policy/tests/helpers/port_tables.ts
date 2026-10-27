@@ -97,8 +97,6 @@ const PortTablesSchema = z.object({
 }).strict();
 
 export type IPortTables = z.infer<typeof PortTablesSchema>;
-export type IPortRule = z.infer<typeof RuleRowSchema>;
-
 const POLICY_ROOT = new URL("../../", import.meta.url);
 
 /** Reads and validates the committed port table. */

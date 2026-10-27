@@ -40,12 +40,10 @@ import {
 } from "@exaix/cli/formatters/memory_formatter.ts";
 import type { IMemoryBankSummary, OutputFormat } from "@exaix/cli/types/memory_types.ts";
 
-export interface IMemoryCommandsContext extends ICommandContext {}
-
 const CLI_AGENT_ROLE = "cli";
 
 /** Exit code 1 reports a failed read or mutation, 2 reports a malformed argument. */
-export type SkillExitCode = 1 | 2;
+type SkillExitCode = 1 | 2;
 
 /** A skill command failure the registered command turns into its process exit code. */
 export class SkillCommandError extends Error {

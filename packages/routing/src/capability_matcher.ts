@@ -15,7 +15,7 @@ type BlueprintFrontmatterMap = {
   [key: string]: JSONValue;
 };
 
-export interface ICapabilityMatcherOptions {
+interface ICapabilityMatcherOptions {
   allowDeprecated?: boolean;
 }
 

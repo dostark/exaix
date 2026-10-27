@@ -35,7 +35,7 @@ export interface ISpawnArgs {
   clearEnv: boolean;
 }
 
-export interface IHeadlessSessionLauncherDeps {
+interface IHeadlessSessionLauncherDeps {
   /** Absolute Session/ directory under which {traceId}/return.json is expected. */
   sessionDir: string;
   /** Set of absolute binary paths or binary names permitted to spawn. */

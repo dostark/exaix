@@ -11,7 +11,7 @@ import { CapabilityMatcher } from "./capability_matcher.ts";
 import type { IRoutingCandidate, IRoutingMatchCriteria } from "@exaix/schemas/routing_policy.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface ICandidateDiscoveryOptions {
+interface ICandidateDiscoveryOptions {
   allowDeprecated?: boolean;
 }
 

@@ -9,7 +9,7 @@
  * @related-files [packages/model-registry/src/default_model_registry.ts, packages/core/src/types/constants.ts]
  */
 
-export interface IOverlayEntry {
+interface IOverlayEntry {
   inputPerMtok?: number;
   outputPerMtok?: number;
   cacheReadPerMtok?: number;
@@ -24,7 +24,7 @@ export interface IOverlayEntry {
   sourceUrl: string;
 }
 
-export type StaticOverlay = Record<string, IOverlayEntry>;
+type StaticOverlay = Record<string, IOverlayEntry>;
 
 const VERIFIED_AT_TIMESTAMP = 1_720_000_000_000;
 

@@ -10,7 +10,7 @@ import { GitService } from "@exaix/git";
 import type { IDatabaseService, IGitService } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 
-export interface IGitServiceOptions {
+interface IGitServiceOptions {
   config: Config;
   db: IDatabaseService;
   repoPath: string;

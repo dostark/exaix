@@ -23,7 +23,7 @@ import type { IArchitectureLayer, IMonorepoPackage, IPortalKnowledge } from "@ex
 // Internal types
 
 /** Result of a portal directory walk. */
-export interface IWalkResult {
+interface IWalkResult {
   files: string[];
   directories: Set<string>;
   extensionDistribution: Record<string, number>;

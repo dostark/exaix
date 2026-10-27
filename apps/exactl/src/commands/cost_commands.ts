@@ -10,7 +10,7 @@ import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import * as colors from "@std/fmt/colors";
 import { Table } from "@cliffy/table";
 import { CostGroupBy, type ICostFilter, type ICostTracker } from "@exaix/core/types";
-export interface ICostCommandOptions {
+interface ICostCommandOptions {
   traceId?: string;
   portal?: string;
   since?: string;

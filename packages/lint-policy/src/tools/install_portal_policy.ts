@@ -27,7 +27,7 @@ const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 export const PORTAL_POLICY_NAME = "unslop";
 
 /** The rule packs the portal policy loads, in plugin order. */
-export const PORTAL_POLICY_PACKS: readonly string[] = ["typescript", "deno"];
+const PORTAL_POLICY_PACKS: readonly string[] = ["typescript", "deno"];
 
 /** The version 2 configuration this package owns. */
 export const PORTAL_POLICY_CONFIG = join(POLICY_ROOT, "portal", "unslop.config.json");

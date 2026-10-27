@@ -22,11 +22,11 @@ import type { ISessionDelegationResultStore } from "@exaix/session/session_deleg
 import type { ISessionDelegateEventPayload } from "@exaix/session/event_payload.ts";
 
 /** Narrow journaling seam — satisfied structurally by EventLogger. */
-export interface ISessionEventSink {
+interface ISessionEventSink {
   log(event: ILogEvent): Promise<void>;
 }
 
-export interface ISessionReturnWatcherDeps {
+interface ISessionReturnWatcherDeps {
   /** Absolute Session/ directory watched for {traceId}/return.json drops. */
   sessionDir: string;
   processor: SessionReturnProcessor;

@@ -32,7 +32,7 @@ export const FLOW_WORKTREE_TRACE_MAX: number = configurable({
 });
 
 /** Construction dependencies for FlowWorktreeCoordinator. */
-export interface IFlowWorktreeCoordinatorDeps {
+interface IFlowWorktreeCoordinatorDeps {
   config: Config;
   gitServiceFactory: IGitServiceFactory;
   logger: IEventLogger;

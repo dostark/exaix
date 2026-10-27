@@ -19,7 +19,7 @@ import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import { IBlueprintLoader, type ILoadedBlueprint } from "@exaix/core/blueprint";
 
-export interface IBlueprintResolverConfig {
+interface IBlueprintResolverConfig {
   blueprintsPath: string;
 }
 

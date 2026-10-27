@@ -51,7 +51,7 @@ import { STEP_KIND_GATE } from "@exaix/ai/bindings/binding_types.ts";
 import { type IAgentExecutor, type IFlowEventLogger, toGateConfig } from "../flow_runner.ts";
 import { delegateReviewLane } from "../contracts/flow_recording_context.ts";
 
-export interface ISessionDelegateCycleStepHandlerDeps {
+interface ISessionDelegateCycleStepHandlerDeps {
   coordinator: ISessionDelegationCoordinator;
   planContextResolver: IPlanContextResolver;
   gateEvaluator: IGateEvaluator;

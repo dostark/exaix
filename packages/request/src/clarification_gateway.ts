@@ -23,11 +23,11 @@ import type { IRequestQualityGateService } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { StatusManager } from "./processing/status.ts";
 
-export type IQualityGateOutcome =
+type IQualityGateOutcome =
   | { earlyReturn: true }
   | { earlyReturn: false; enrichedBody?: string; specification?: IRequestSpecification };
 
-export interface IClarificationGatewayDeps {
+interface IClarificationGatewayDeps {
   statusManager: StatusManager;
   qualityGate?: IRequestQualityGateService;
   sessionDelegateEnabled?: boolean;

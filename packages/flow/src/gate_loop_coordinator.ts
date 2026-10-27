@@ -15,7 +15,7 @@ import {
   GATE_LOOP_BODY_FAILED_CODE,
   GATE_LOOP_BODY_SKIPPED_CODE,
 } from "./errors/flow_control_errors.ts";
-export interface IGateLoopCallbacks {
+interface IGateLoopCallbacks {
   evaluate(attempt: number): Promise<IGateResult>;
   admit(iteration: number, verdict: IGateResult): Promise<void>;
   runMember(id: string, iteration: number, feedback: Opt<string, Reason.OptionalContext>): Promise<IStepResult>;

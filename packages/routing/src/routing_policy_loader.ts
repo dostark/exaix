@@ -13,7 +13,7 @@ import { consumeFsEvents } from "@exaix/core/fs";
 import { type IRoutingPolicy, ZRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 
-export interface IRoutingPolicyLoaderOptions {
+interface IRoutingPolicyLoaderOptions {
   config: Config;
   root: string;
 }

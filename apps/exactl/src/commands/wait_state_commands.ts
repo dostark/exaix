@@ -20,7 +20,7 @@ import {
 import { DomainEventType } from "@exaix/core/events";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface IWaitStateListEntry {
+interface IWaitStateListEntry {
   waitStateId: string;
   traceId: string;
   kind: string;

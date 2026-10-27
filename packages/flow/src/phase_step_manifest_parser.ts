@@ -23,7 +23,7 @@ export type PhaseStepDiagnosticCode =
   | "non_contiguous_step_number"
   | "no_steps";
 
-export interface IPhaseStepDiagnostic {
+interface IPhaseStepDiagnostic {
   readonly code: PhaseStepDiagnosticCode;
   readonly message: string;
   readonly stepNumber?: number;
@@ -35,7 +35,7 @@ export interface IParsedPhaseStep {
   readonly manifest: StepManifest | null;
 }
 
-export interface IPhaseStepManifestParseResult {
+interface IPhaseStepManifestParseResult {
   readonly steps: IParsedPhaseStep[];
   readonly diagnostics: IPhaseStepDiagnostic[];
 }

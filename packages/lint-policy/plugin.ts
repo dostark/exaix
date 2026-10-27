@@ -13,10 +13,12 @@ import { EXAIX_PLUGIN_NAME } from "./src/rule_pack/mod.ts";
 import { EXAIX_RULE_PACKS } from "./src/rule_packs.ts";
 import { descriptor } from "./unslop.project.ts";
 
+// unslop-ignore-next-line unused-export
 export const project = {
   descriptor,
   config: POLICY_CONFIG,
   compiled: POLICY_COMPILED,
   plugin: createDenoPlugin(EXAIX_PLUGIN_NAME, POLICY_CATALOG, { rulePacks: EXAIX_RULE_PACKS }),
 };
+// unslop-ignore-next-line unused-export
 export default project.plugin;

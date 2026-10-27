@@ -21,7 +21,7 @@ export interface IDatabaseConnection {
 /**
  * SQLite database connection implementation
  */
-export class SQLiteConnection implements IDatabaseConnection {
+class SQLiteConnection implements IDatabaseConnection {
   constructor(
     public instance: Database,
     private config: Config,

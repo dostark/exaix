@@ -40,7 +40,7 @@ export interface IInvalidBindingOutcome {
 
 export const SELECTOR_DEFAULT = "default";
 const FALLBACK_LAYER: BindingLayer = "config";
-export const ISSUE_UNKNOWN_MODEL: IBindingIssue["code"] = "unknown_model";
+const ISSUE_UNKNOWN_MODEL: IBindingIssue["code"] = "unknown_model";
 export const ISSUE_INTERFACE_UNSUPPORTED: IBindingIssue["code"] = "interface_unsupported";
 export const ISSUE_CAPABILITY_MISSING: IBindingIssue["code"] = "capability_missing";
 export const ISSUE_KEY_MISSING: IBindingIssue["code"] = "key_missing";

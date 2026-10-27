@@ -10,7 +10,7 @@ import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { GIT_CMD_BRANCH } from "@exaix/git/constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface IBranchInfo {
+interface IBranchInfo {
   name: string;
   is_current: boolean;
   last_commit: string;
@@ -18,7 +18,7 @@ export interface IBranchInfo {
   trace_id?: string;
 }
 
-export interface ICommitInfo {
+interface ICommitInfo {
   sha: string;
   message: string;
   author: string;

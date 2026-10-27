@@ -52,7 +52,7 @@ export interface IMemoryRetrievalScope {
 /**
  * Session memory configuration
  */
-export const SessionMemoryConfigSchema = z.object({
+const SessionMemoryConfigSchema = z.object({
   enabled: z.boolean().default(true).describe("Whether session memory is enabled"),
   topK: z.number().min(1).max(20).default(5).describe("Number of memories to retrieve"),
   threshold: z.number().min(0).max(1).default(0.3).describe("Minimum similarity threshold"),
@@ -74,7 +74,7 @@ export type SessionMemoryConfig = z.infer<typeof SessionMemoryConfigSchema>;
 /**
  * A memory item retrieved for context injection
  */
-export const MemoryItemSchema = z.object({
+const MemoryItemSchema = z.object({
   type: z.nativeEnum(MemoryType),
   title: z.string(),
   content: z.string(),
@@ -88,7 +88,7 @@ export type MemoryItem = z.infer<typeof MemoryItemSchema>;
 /**
  * Enhanced request with memory context
  */
-export const EnhancedRequestSchema = z.object({
+const EnhancedRequestSchema = z.object({
   originalRequest: z.string().describe("The original request content"),
   memories: z.array(MemoryItemSchema).describe("Retrieved relevant memories"),
   memoryContext: z.string().describe("Formatted memory context for agent prompt"),
@@ -104,7 +104,7 @@ export type EnhancedRequest = z.infer<typeof EnhancedRequestSchema>;
 /**
  * New insight to save after agent execution
  */
-export const InsightSchema = z.object({
+const InsightSchema = z.object({
   title: z.string().max(100),
   description: z.string().max(SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS),
   category: z.nativeEnum(LearningCategory),
@@ -120,7 +120,7 @@ export type Insight = z.infer<typeof InsightSchema>;
 /**
  * Result of saving an insight
  */
-export const SaveInsightResultSchema = z.object({
+const SaveInsightResultSchema = z.object({
   success: z.boolean(),
   learningId: z.string().optional(),
   message: z.string(),
@@ -130,7 +130,7 @@ export type SaveInsightResult = z.infer<typeof SaveInsightResultSchema>;
 
 // Default Configuration
 
-export const DEFAULT_SESSION_MEMORY_CONFIG: SessionMemoryConfig = {
+const DEFAULT_SESSION_MEMORY_CONFIG: SessionMemoryConfig = {
   enabled: true,
   topK: 5,
   threshold: 0.3,

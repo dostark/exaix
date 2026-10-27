@@ -16,14 +16,14 @@ import { FLOW_EVENT_NAMESPACE_INITIALIZED, FLOW_EVENT_NAMESPACE_READ, FLOW_EVENT
 import type { IExecutionMemoryStore } from "@exaix/core/execution-memory";
 import type { IFlowEventLogger, IFlowStepRequest, IStepResult } from "./flow_runner.ts";
 
-export interface IFlowNamespaceOriginalRequest {
+interface IFlowNamespaceOriginalRequest {
   userPrompt: string;
   traceId?: string;
   requestId?: string;
   requestAnalysis?: IRequestAnalysis;
 }
 
-export interface IFlowNamespaceCoordinatorDeps {
+interface IFlowNamespaceCoordinatorDeps {
   namespaceService?: IExecutionMemoryStore;
   eventLogger: IFlowEventLogger;
 }

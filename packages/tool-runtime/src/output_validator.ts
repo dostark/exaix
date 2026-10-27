@@ -24,16 +24,9 @@ import type { JSONValue } from "@exaix/core";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export type IOutputFormat =
-  | "xml_tagged"
-  | "json"
-  | "json_in_content"
-  | "plain"
-  | "markdown";
-
 export type IOutputSchemaName = keyof typeof OutputSchemas;
 
-export interface IValidationError {
+interface IValidationError {
   path: string[];
   message: string;
   code: string;
@@ -41,13 +34,8 @@ export interface IValidationError {
   received?: string;
 }
 
-export type IEvaluation = z.infer<typeof OutputSchemas.evaluation>;
-export type IAnalysis = z.infer<typeof OutputSchemas.analysis>;
-export type ISimpleResponse = z.infer<typeof OutputSchemas.simpleResponse>;
 export type IToolCall = z.infer<typeof OutputSchemas.toolCall>;
-export type IActionSequence = z.infer<typeof OutputSchemas.actionSequence>;
-
-export interface IParsedXMLOutput {
+interface IParsedXMLOutput {
   thought: string;
   content: string;
   raw: string;
@@ -71,7 +59,7 @@ export interface IValidationMetrics {
   failuresByErrorType: Record<string, number>;
 }
 
-export interface IOutputValidatorConfig {
+interface IOutputValidatorConfig {
   autoRepair?: boolean;
   maxRepairAttempts?: number;
   llmRepairFn?: (content: string, schema: string, error: string) => Promise<string>;
@@ -104,7 +92,7 @@ export interface IOutputValidator {
   resetMetrics(): void;
 }
 
-export const OutputSchemas = {
+const OutputSchemas = {
   plan: PlanSchema,
   planStep: PlanStepSchema,
 
@@ -156,16 +144,6 @@ export const OutputSchemas = {
     fallback: z.string().optional(),
   }),
 } as const satisfies Record<string, z.ZodTypeAny>;
-
-export type OutputSchemaName = keyof typeof OutputSchemas;
-
-export type ValidationError = {
-  path: string[];
-  message: string;
-  code: string;
-  expected?: string;
-  received?: string;
-};
 
 export class OutputValidator implements IOutputValidator {
   private config: Required<Omit<IOutputValidatorConfig, "llmRepairFn">> & {

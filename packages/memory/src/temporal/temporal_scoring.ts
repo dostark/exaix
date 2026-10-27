@@ -20,7 +20,7 @@ export interface ITemporalCandidate {
 }
 
 /** Parameters for temporal scoring. */
-export interface ITemporalScoringOptions {
+interface ITemporalScoringOptions {
   now: Date;
   halfLifeDays: number;
 }

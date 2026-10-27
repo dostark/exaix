@@ -10,7 +10,7 @@ import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { IFlowCheckpointCoordinator, IFlowCheckpointRequest } from "./flow_checkpoint_coordinator.ts";
 import type { IFlowNamespaceCoordinator } from "./flow_namespace_coordinator.ts";
 import type { IStepResult } from "./flow_runner.ts";
-export interface IStepFinalizationContext {
+interface IStepFinalizationContext {
   flow: IFlow;
   request: IFlowCheckpointRequest;
   flowRunId: string;

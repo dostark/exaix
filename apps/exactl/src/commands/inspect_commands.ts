@@ -29,7 +29,7 @@ export interface IInspectCommandOptions {
   raw?: boolean;
 }
 
-export interface IInspectCommandsDeps {
+interface IInspectCommandsDeps {
   /** Defaults to a real `ContextRecordStore` over this context's own `PathResolver`. */
   store?: IContextInspectionReader;
   /** Defaults to a real `Deno.stdout` writer. Injectable so `--raw` output is testable

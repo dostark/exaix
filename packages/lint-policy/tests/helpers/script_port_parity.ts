@@ -13,17 +13,17 @@ import { checkSource } from "../../src/checkers/check_code_style.ts";
 import { EXAIX_PLUGIN_NAME } from "../../src/rule_pack/mod.ts";
 import { EXAIX_RULE_PACKS } from "../../src/rule_packs.ts";
 
-export interface IFindingKey {
+interface IFindingKey {
   readonly file: string;
   readonly line: number;
 }
 
-export interface IParityReport {
+interface IParityReport {
   readonly missing: readonly IFindingKey[];
   readonly extra: readonly IFindingKey[];
 }
 
-export interface IFileCover {
+interface IFileCover {
   readonly script: (file: string) => boolean;
   readonly plugin: (file: string) => boolean;
 }
@@ -101,7 +101,7 @@ export interface IRuleFinding {
 }
 
 /** A finding that differs between the two sides, with its accepted reason, or null when none applies. */
-export interface IAcceptedDifference {
+interface IAcceptedDifference {
   readonly finding: IRuleFinding;
   readonly reason: string;
 }
@@ -113,7 +113,7 @@ export interface IProductionParity {
   readonly unexplainedExtra: readonly IRuleFinding[];
 }
 
-export interface IProductionParityInput {
+interface IProductionParityInput {
   readonly baseline: readonly IRuleFinding[];
   readonly current: readonly IRuleFinding[];
   /** The reason a finding of the old side may be absent from the new side, or null when none applies. */

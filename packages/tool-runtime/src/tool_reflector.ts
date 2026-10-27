@@ -25,13 +25,13 @@ export interface IToolResult {
   durationMs: number;
 }
 
-export interface IReflectedToolResult extends IToolResult {
+interface IReflectedToolResult extends IToolResult {
   reflection: IToolReflection;
   retryCount: number;
   finalOutput: JSONValue;
 }
 
-export interface IToolReflectorConfig {
+interface IToolReflectorConfig {
   maxRetries?: number;
   reflectionThreshold?: number;
   parallelExecution?: boolean;
@@ -61,7 +61,7 @@ export const ToolReflectionSchema = z.object({
   insights: z.array(z.string()).default([]),
 }) satisfies z.ZodTypeAny;
 
-export type IToolReflection = z.infer<typeof ToolReflectionSchema>;
+type IToolReflection = z.infer<typeof ToolReflectionSchema>;
 
 // Types
 

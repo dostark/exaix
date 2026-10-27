@@ -19,24 +19,13 @@ export * from "./src/cli_confirmation_interceptor.ts";
 export * from "./src/notification_queue_confirmation_interceptor.ts";
 export * from "./src/confirmation_interceptor_factory.ts";
 export * from "./src/tool_validation_reporter.ts";
-export { createOutputValidator, createPlanValidator, OutputSchemas, OutputValidator } from "./src/output_validator.ts";
+export { createOutputValidator, createPlanValidator, OutputValidator } from "./src/output_validator.ts";
 export { createPathSecurity, PathSecurity } from "./src/path_security.ts";
 export { PATH_ACCESS_DENIED_MESSAGE, PathAccessError, PathTraversalError } from "./src/types.ts";
 export type { IActivityJournal, IMiddlewarePipeline, IPathSecurityOps, IToolAgentExecutor } from "./src/types.ts";
 export type {
-  IActionSequence,
-  IAnalysis,
-  IEvaluation,
-  IOutputFormat,
   IOutputSchemaName,
   IOutputValidator,
-  IOutputValidatorConfig,
-  IParsedXMLOutput,
-  ISimpleResponse,
-  IToolCall as OutputValidationToolCall,
-  IValidationError,
   IValidationMetrics,
   IValidationResult,
-  OutputSchemaName,
-  ValidationError,
 } from "./src/output_validator.ts";

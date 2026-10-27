@@ -244,7 +244,7 @@ export interface IParallelGroupSummary {
 /**
  * Configuration for FlowRunner
  */
-export interface IFlowRunnerConfig {
+interface IFlowRunnerConfig {
   edition?: Opt<string, Reason.OptionalInput>;
   installedCapabilities?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
   agentExecutor: IAgentExecutor;

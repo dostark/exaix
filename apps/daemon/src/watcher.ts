@@ -28,7 +28,7 @@ export interface IFileReadyEvent {
   content: string;
 }
 
-export interface IFileWatcherOptions {
+interface IFileWatcherOptions {
   db?: DatabaseService;
   customWatchPath?: string;
   extensions?: string[];

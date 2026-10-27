@@ -18,7 +18,7 @@ import {
   TestDetectionKind,
 } from "@exaix/core";
 
-export interface ITestInfo {
+interface ITestInfo {
   testFiles: string[];
   testCount: number;
   testFramework?: string;

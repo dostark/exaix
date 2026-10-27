@@ -22,13 +22,13 @@ import {
   type ICalibrationManifestV2,
 } from "./schema.ts";
 
-export interface IFrozenCalibrationSet {
+interface IFrozenCalibrationSet {
   readonly manifest: ICalibrationManifestV2;
   readonly items: readonly ICalibrationItemV2[];
 }
 
 /** A frozen-set integrity failure carries a stable, non-secret code. */
-export class CalibrationFrozenSetError extends Error {
+class CalibrationFrozenSetError extends Error {
   constructor(readonly code: string) {
     super(code);
     this.name = "CalibrationFrozenSetError";

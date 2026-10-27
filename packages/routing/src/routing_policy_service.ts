@@ -22,16 +22,22 @@ import type { IAgentRolePerformanceSnapshot } from "./agent_role_performance_rep
 import type { IRoutingPolicyLoadResult } from "./routing_policy_loader.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface IRoutingPolicyLoader {
+interface IRoutingPolicyLoader {
   loadPolicy(): Promise<IRoutingPolicyLoadResult>;
 }
 
-export interface ICandidateDiscovery {
-  listCandidates(criteria: IRoutingMatchCriteria, explicitAgentRole?: string): Promise<IRoutingCandidate[]>;
+interface ICandidateDiscovery {
+  listCandidates(
+    criteria: IRoutingMatchCriteria,
+    explicitAgentRole?: Opt<string, Reason.OptionalInput>,
+  ): Promise<IRoutingCandidate[]>;
 }
 
-export interface IAgentRolePerformanceProvider {
-  getPerformanceByCapability(capability: string, portalName?: string): Promise<IAgentRolePerformanceSnapshot[]>;
+interface IAgentRolePerformanceProvider {
+  getPerformanceByCapability(
+    capability: string,
+    portalName?: Opt<string, Reason.OptionalInput>,
+  ): Promise<IAgentRolePerformanceSnapshot[]>;
 }
 
 export interface IRoutingPolicyServiceOptions {

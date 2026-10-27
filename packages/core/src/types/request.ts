@@ -141,7 +141,7 @@ export interface IRequestShowResult {
   analysis?: IRequestAnalysis;
 }
 
-export const MemoryItemSchema = z.object({
+const MemoryItemSchema = z.object({
   type: z.string(),
   title: z.string(),
   content: z.string(),
@@ -152,7 +152,7 @@ export const MemoryItemSchema = z.object({
 
 export type MemoryItem = z.infer<typeof MemoryItemSchema>;
 
-export const EnhancedRequestSchema = z.object({
+const EnhancedRequestSchema = z.object({
   originalRequest: z.string(),
   memories: z.array(MemoryItemSchema),
   memoryContext: z.string(),

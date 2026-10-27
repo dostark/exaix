@@ -67,7 +67,7 @@ interface IMCPContentResult {
   content?: Array<{ type: string; text: string }>;
 }
 
-export interface IToolPermissionOptions {
+interface IToolPermissionOptions {
   portalAlias?: string;
   operations?: PortalOperation[];
   agentRole?: string;
@@ -83,7 +83,7 @@ export interface IMCPTestContext {
   cleanup: () => Promise<void>;
 }
 
-export interface IPortalTestOptions {
+interface IPortalTestOptions {
   portalAlias?: string;
   createFiles?: boolean;
   fileContent?: Record<string, string>;
@@ -94,7 +94,7 @@ export interface IPortalTestOptions {
   initGit?: boolean;
 }
 
-export interface IToolPermissionTestContext {
+interface IToolPermissionTestContext {
   tempDir: string;
   portalPath: string;
   config: ReturnType<typeof createMockConfig>;
@@ -508,17 +508,6 @@ export function assertMCPContentIncludes(response: IMCPResponseShape<IMCPContent
       `Expected content to include "${text}", got: ${JSON.stringify(content)}`,
     );
   }
-}
-
-/** @deprecated Use setupGitRepo instead. */
-export async function createGitPortal(
-  tempDir: string,
-  portalName: string = "TestPortal",
-): Promise<string> {
-  const portalPath = join(tempDir, portalName);
-  await ensureDir(portalPath);
-  await setupGitRepo(portalPath);
-  return portalPath;
 }
 
 /**

@@ -86,7 +86,7 @@ export interface IReviewDetails extends IReviewMetadata {
 }
 
 /** One configured lint check outcome in the review. */
-export interface IReviewLintCheck {
+interface IReviewLintCheck {
   check_index: number;
   outcome: `${LintCheckRunOutcome}`;
   total: number | null;

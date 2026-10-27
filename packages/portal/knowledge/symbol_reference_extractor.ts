@@ -44,7 +44,7 @@ export interface ISymbolReferenceExtractorRegistry {
 }
 
 /** Resolves a language's import specifiers into portal-relative file edges. */
-export interface ISymbolFileResolver {
+interface ISymbolFileResolver {
   /** Returns `file_imports_file_internal` edges for the supplied files. */
   resolveFileEdges(
     portalPath: string,
@@ -61,12 +61,12 @@ export interface ISymbolFileResolverRegistry {
 }
 
 /** A no-op resolver: returns no edges for any language. */
-export const EMPTY_SYMBOL_FILE_RESOLVER: ISymbolFileResolver = {
+const EMPTY_SYMBOL_FILE_RESOLVER: ISymbolFileResolver = {
   resolveFileEdges: () => Promise.resolve([]),
 };
 
 /** Map-backed file-resolver registry keyed by lower-cased language name. */
-export class SymbolFileResolverRegistry implements ISymbolFileResolverRegistry {
+class SymbolFileResolverRegistry implements ISymbolFileResolverRegistry {
   private readonly resolvers = new Map<string, ISymbolFileResolver>();
 
   register(language: string, resolver: ISymbolFileResolver): void {
@@ -89,7 +89,7 @@ export const EMPTY_SYMBOL_REFERENCE_EXTRACTOR: ISymbolReferenceExtractor = {
 };
 
 /** Map-backed registry keyed by lower-cased language name. */
-export class SymbolReferenceExtractorRegistry implements ISymbolReferenceExtractorRegistry {
+class SymbolReferenceExtractorRegistry implements ISymbolReferenceExtractorRegistry {
   private readonly extractors = new Map<string, ISymbolReferenceExtractor>();
 
   register(language: string, extractor: ISymbolReferenceExtractor): void {

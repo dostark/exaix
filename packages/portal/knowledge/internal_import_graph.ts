@@ -38,12 +38,12 @@ interface IDenoInfoJson {
   modules: IDenoInfoModule[];
 }
 
-export interface IDroppedInternalImport {
+interface IDroppedInternalImport {
   from: string;
   specifier: string;
 }
 
-export interface IInternalImportGraphResult {
+interface IInternalImportGraphResult {
   edges: IPortalKnowledgeRelationship[];
   droppedOutOfBounds: IDroppedInternalImport[];
   truncatedEntrypointCount: number;

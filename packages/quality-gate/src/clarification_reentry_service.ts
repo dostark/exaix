@@ -10,7 +10,7 @@
  */
 import { RequestStatus } from "@exaix/core/status";
 
-export const CLARIFICATION_SKIP_STATUSES: readonly string[] = [
+const CLARIFICATION_SKIP_STATUSES: readonly string[] = [
   RequestStatus.PLANNED,
   RequestStatus.COMPLETED,
   RequestStatus.FAILED,

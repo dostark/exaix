@@ -24,13 +24,13 @@ export interface ISearchDeps {
   loadLearningsFromFile: () => Promise<ILearning[]>;
 }
 
-export function calculateFrequency(text: Opt<string, Reason.OptionalInput>, keywordLower: string): number {
+function calculateFrequency(text: Opt<string, Reason.OptionalInput>, keywordLower: string): number {
   if (!text) return 0;
   const matches = text.toLowerCase().match(new RegExp(keywordLower, "gi"));
   return matches ? matches.length : 0;
 }
 
-export function calculateRelevance(titleFreq: number, descFreq: number): number {
+function calculateRelevance(titleFreq: number, descFreq: number): number {
   return Math.min(0.99, 0.5 + (titleFreq * 0.15) + (descFreq * 0.05));
 }
 

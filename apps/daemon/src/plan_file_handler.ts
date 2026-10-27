@@ -20,7 +20,7 @@ export interface IPlanExecutor {
 }
 
 /** Handles one file that the watcher reports as ready. */
-export interface IPlanFileHandler {
+interface IPlanFileHandler {
   handle(event: IFileReadyEvent): Promise<void>;
 }
 

@@ -12,10 +12,3 @@
 export function mtokToPer1k(perMtok: number): number {
   return perMtok / 1000;
 }
-
-/**
- * Convert USD per-1K-tokens to per million tokens.
- */
-export function per1kToMtok(per1k: number): number {
-  return per1k * 1000;
-}

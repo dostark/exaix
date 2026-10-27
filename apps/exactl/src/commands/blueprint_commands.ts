@@ -31,7 +31,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 /**
  * Frontmatter data parsed from YAML/TOML
  */
-export interface IBlueprintFrontmatterData {
+interface IBlueprintFrontmatterData {
   agent_role: string;
   name?: string;
   model?: string;
@@ -45,7 +45,7 @@ export interface IBlueprintFrontmatterData {
 }
 
 /** Filters for the blueprint list command. */
-export interface IBlueprintListOptions {
+interface IBlueprintListOptions {
   /** Only return blueprints whose `capabilities` array contains this identifier. */
   capability?: string;
   /** Only return blueprints in this lifecycle status. */

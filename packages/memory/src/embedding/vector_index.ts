@@ -14,7 +14,7 @@
 import { cosineSimilarity } from "./memory_embedding.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface IVectorIndexEntry {
+interface IVectorIndexEntry {
   id: string;
   vector: number[];
 }

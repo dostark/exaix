@@ -14,7 +14,7 @@
 import type { ZodType } from "zod";
 
 // Local validation-error type matching OutputValidator's real return shape.
-export interface IValidationError {
+interface IValidationError {
   path: string[];
   message: string;
   code: string;

@@ -6,7 +6,6 @@
  * @description Tool reflection types and interface for tool-runtime extraction.
  */
 
-import type { IDatabaseService } from "./i_database_service.ts";
 import type { JSONValue } from "./json.ts";
 
 export interface IToolCall {
@@ -25,7 +24,7 @@ export interface IToolResult {
   durationMs: number;
 }
 
-export interface IToolReflection {
+interface IToolReflection {
   success: boolean;
   confidence: number;
   issues: string[];
@@ -33,26 +32,6 @@ export interface IToolReflection {
   retry_reason?: string;
   alternative_parameters?: Record<string, JSONValue>;
   insights?: string[];
-}
-
-export interface IReflectedToolResult {
-  callId: string;
-  success: boolean;
-  output: JSONValue;
-  error?: string;
-  durationMs: number;
-  reflection: IToolReflection;
-  retryCount: number;
-  finalOutput: JSONValue;
-}
-
-export interface IToolReflectorConfig {
-  maxRetries?: number;
-  reflectionThreshold?: number;
-  parallelExecution?: boolean;
-  reflectionPromptTemplate?: string;
-  verbose?: boolean;
-  db?: IDatabaseService;
 }
 
 export interface IToolReflectorMetrics {

@@ -29,7 +29,7 @@ interface IBindingFingerprintIdentity {
   envIgnored: boolean;
   configDefaultModel?: string;
 }
-export interface IFlowControlRunContext {
+interface IFlowControlRunContext {
   state: IFlowControlState;
   ceiling: number;
   flowContentHash: string;

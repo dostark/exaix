@@ -33,7 +33,7 @@ import type {
 
 /** Injectable transport/client constructors, so unit tests can substitute the classes
  *  (e.g. to spy on construction order) without changing real connection behavior. */
-export interface IExternalMcpClientDeps {
+interface IExternalMcpClientDeps {
   ClientCtor?: typeof Client;
   StreamableHTTPTransportCtor?: typeof StreamableHTTPClientTransport;
   SSETransportCtor?: typeof SSEClientTransport;

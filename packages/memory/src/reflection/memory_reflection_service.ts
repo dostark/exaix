@@ -60,7 +60,7 @@ export interface IReflectionSkills {
   currentConfigGeneration: ISkillsService["currentConfigGeneration"];
 }
 
-export interface IMemoryReflectionServiceDeps {
+interface IMemoryReflectionServiceDeps {
   provider: IModelProvider;
   skillsService: IReflectionSkills;
   memoryBank: IMemoryBankService;

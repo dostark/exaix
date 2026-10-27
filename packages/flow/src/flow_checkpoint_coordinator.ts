@@ -44,7 +44,7 @@ export interface IFlowCheckpointRequest {
   requestAnalysis?: IRequestAnalysis;
 }
 
-export interface IFlowCheckpointCoordinatorDeps {
+interface IFlowCheckpointCoordinatorDeps {
   checkpointService?: IFlowCheckpointService;
   controlStateStore?: FlowControlStateStore;
   stepDurabilityStore: IStepDurabilityStore;

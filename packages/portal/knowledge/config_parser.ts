@@ -25,7 +25,7 @@ interface DenoJsonShape {
   tasks?: Record<string, string>;
 }
 
-export interface IConfigParseResult {
+interface IConfigParseResult {
   dependencies?: IDependencyInfo[];
   techStack?: {
     primaryLanguage?: string;

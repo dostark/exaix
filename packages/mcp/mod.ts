@@ -15,10 +15,9 @@ export * from "./src/tool_result_converter.ts";
 export * from "./src/tool_catalog_parity.ts";
 export { appendToolChoiceHint, TOOL_MANIFEST } from "./src/manifest.ts";
 export { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS } from "./src/manifest.ts";
-export type { IJsonSchemaDescriptor, IToolManifestEntry } from "./src/manifest.ts";
+export type { IToolManifestEntry } from "./src/manifest.ts";
 export type { IMcpClient, IMcpToolCallContext } from "./src/i_mcp_client.ts";
 export { ExternalMcpClient } from "./src/external_mcp_client.ts";
-export type { IExternalMcpClientDeps } from "./src/external_mcp_client.ts";
 export type {
   ExternalMcpTransportKind,
   IExternalMcpCallResult,

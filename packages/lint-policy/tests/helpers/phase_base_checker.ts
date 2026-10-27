@@ -10,7 +10,7 @@
 import { dirname, fromFileUrl, join } from "@std/path";
 
 /** The parent commit before the first rule of Phase 227 moved. */
-export const PHASE_BASE_COMMIT = "11df96584b404963ec0b28a26623c8c29b0a588c";
+const PHASE_BASE_COMMIT = "11df96584b404963ec0b28a26623c8c29b0a588c";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 const POLICY_ROOT = "packages/lint-policy";
@@ -29,12 +29,12 @@ const PACK_LIST_ENGINE_ONLY = "[TYPESCRIPT_RULE_PACK, DENO_RULE_PACK]";
 const EXAIX_PACK_IMPORT = 'import { EXAIX_PLUGIN_NAME, EXAIX_RULE_PACK } from "./rule_pack/mod.ts";';
 const PLUGIN_NAME_IMPORT = 'import { EXAIX_PLUGIN_NAME } from "./rule_pack/mod.ts";';
 
-export interface IBaselineHosts {
+interface IBaselineHosts {
   readonly style: string;
   readonly magic: string;
 }
 
-export interface ICheckerRun {
+interface ICheckerRun {
   readonly code: number;
   readonly output: string;
 }

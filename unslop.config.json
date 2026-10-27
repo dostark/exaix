@@ -1639,7 +1639,9 @@
             "target": "./packages/shared/src/"
           }
         ],
-        "skipPrefixes": [],
+        "skipPrefixes": [
+          "packages/lint-policy/plugin.ts"
+        ],
         "skipSegments": []
       }
     },

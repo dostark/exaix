@@ -30,7 +30,7 @@ interface IHistoryEntry {
 }
 
 /** A frontier cell row: per-cell mean score/cost, cost-per-solved, and Pareto marking. */
-export interface IFrontierCellRow {
+interface IFrontierCellRow {
   cell: string;
   provider: string;
   model: string;
@@ -45,7 +45,7 @@ export interface IFrontierCellRow {
 }
 
 /** A failure class row: overall count plus the family × cell breakdown. */
-export interface IFailuresClassRow {
+interface IFailuresClassRow {
   className: string;
   count: number;
   familyCounts: Array<{ family: string; count: number }>;
@@ -53,7 +53,7 @@ export interface IFailuresClassRow {
 }
 
 /** The failures aggregation: per-class rows and the top class per cell. */
-export interface IFailuresReport {
+interface IFailuresReport {
   classes: IFailuresClassRow[];
   topClassByCell: Array<{ cell: string; className: string; count: number }>;
 }
@@ -61,7 +61,7 @@ export interface IFailuresReport {
 /** An external-benchmark comparability row: per (benchmark, version, cell) — outcome-channel
  *  resolved rate over the tasks run, task count vs the manifest's supported subset size,
  *  coverage, mean tracked cost, latest run date, and the harness+model identifiers. */
-export interface IExternalCellRow {
+interface IExternalCellRow {
   benchmark: string;
   benchmarkVersion: string;
   cell: string;
@@ -84,7 +84,7 @@ export interface IExternalCellRow {
 
 /** One vector/family's AgentDojo triple. `matched` is false when only one side of the clean/
  *  attacked pair has runs — the triple fields are then undefined, never half-computed. */
-export interface IRobustnessRow {
+interface IRobustnessRow {
   vector: string;
   family: string;
   cleanRunCount: number;
@@ -100,7 +100,7 @@ export interface IRobustnessRow {
 }
 
 /** One persona's convergence/adherence/pass^k aggregate. */
-export interface IInteractiveRow {
+interface IInteractiveRow {
   persona: string;
   runCount: number;
   meanRoundsToConverge: number | undefined;

@@ -17,18 +17,18 @@ import {
   SafeSubprocess,
 } from "@exaix/core";
 
-export interface IGitHotspot {
+interface IGitHotspot {
   file: string;
   commitCount: number;
 }
 
-export interface IGitAuthorStats {
+interface IGitAuthorStats {
   name: string;
   commitCount: number;
   percentage: number;
 }
 
-export interface IGitHistoryResult {
+interface IGitHistoryResult {
   totalCommits: number;
   totalAuthors: number;
   hasSufficientHistory: boolean;

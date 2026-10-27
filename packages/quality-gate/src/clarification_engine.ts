@@ -22,7 +22,7 @@ import {
 import { RequestSpecificationSchema } from "@exaix/schemas/request_specification.ts";
 import { assessHeuristic } from "./heuristic_assessor.ts";
 /** Configuration for the clarification engine. */
-export interface IClarificationEngineConfig {
+interface IClarificationEngineConfig {
   /** Maximum clarification rounds before forced finalisation. */
   maxRounds: number;
 }

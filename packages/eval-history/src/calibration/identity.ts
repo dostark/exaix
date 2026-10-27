@@ -20,7 +20,7 @@ export interface IContextAssemblyInput {
   effectiveConfiguration: JSONObject;
 }
 
-export interface IContextAssemblyIdentity {
+interface IContextAssemblyIdentity {
   readonly kind: ContextAssemblyKind;
   readonly version: string;
   readonly digest: string;

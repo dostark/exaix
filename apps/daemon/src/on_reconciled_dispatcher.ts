@@ -45,7 +45,7 @@ export interface IReconciledLogger {
   ): void;
 }
 
-export interface IOnReconciledDeps {
+interface IOnReconciledDeps {
   briefReader: ISessionBriefReader;
   workspaceRoot: string;
   reviewRegistry: {

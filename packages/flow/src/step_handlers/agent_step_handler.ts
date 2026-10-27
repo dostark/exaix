@@ -18,7 +18,7 @@ import { FlowStepExecutionMode } from "@exaix/core";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { join } from "@std/path";
 
-export interface IAgentStepHandlerDeps {
+interface IAgentStepHandlerDeps {
   agentExecutor: IAgentExecutor;
   /** Lazily-resolved shared DYNAMIC executor for unbound steps (legacy path). */
   dynamicStepExecutor?: DynamicStepExecutor;

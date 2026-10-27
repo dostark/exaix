@@ -47,7 +47,7 @@ import type {
 import { EDITION_ENTERPRISE, EDITION_TEAM } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface ITeamCapabilityOptions {
+interface ITeamCapabilityOptions {
   edition: string;
   hitlPolicyEvaluator?: Opt<IHitlPolicyEvaluator, Reason.OptionalDependency>;
   /** Symbol-reference registry for the Enterprise symbol-level graph.
@@ -59,7 +59,7 @@ export interface ITeamCapabilityOptions {
 }
 
 /** Runtime dependencies the Team model-registry provider closes over. */
-export interface ITeamModelRegistryDeps {
+interface ITeamModelRegistryDeps {
   db: IDatabaseService;
   config: Config;
   logger: IEventLogger;

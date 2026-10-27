@@ -58,7 +58,7 @@ const Sha256HexSchema = z.string().regex(SHA256_HEX_PATTERN, "must be a lowercas
 const UtcDatetimeSchema = z.string().datetime({ offset: false });
 const CalibrationScalarSettingSchema = z.union([z.string(), z.number(), z.boolean()]);
 
-export const EvaluatorProvenanceSchema = z.object({
+const EvaluatorProvenanceSchema = z.object({
   vendor: z.nativeEnum(CalibrationVendor),
   transport: z.nativeEnum(CalibrationTransport),
   requested_model: z.string().min(1),
@@ -72,7 +72,7 @@ export const EvaluatorProvenanceSchema = z.object({
 
 export type IEvaluatorProvenance = z.infer<typeof EvaluatorProvenanceSchema>;
 
-export const CalibrationRubricCriterionSchema = z.object({
+const CalibrationRubricCriterionSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
   weight: z.number().min(0),
@@ -178,8 +178,6 @@ export const CalibrationManifestSchema = z.object({
   }
 }).describe("Publication requires both target-vendor tracks to be present and cover the identical artifact set");
 
-export type ICalibrationManifest = z.infer<typeof CalibrationManifestSchema>;
-
 const MetricResultSchema = z.union([
   z.object({ value: z.number() }).strict(),
   z.object({ value: z.null(), reason: z.nativeEnum(MetricUndefinedReason) }).strict(),
@@ -190,59 +188,6 @@ const CalibrationMetricsTripleSchema = z.object({
   kappa: MetricResultSchema,
   alpha: MetricResultSchema,
 }).strict();
-
-const CalibrationReportItemSchema = z.object({
-  id: Sha256HexSchema,
-  target_label: z.nativeEnum(CalibrationLabel),
-  reference_label: z.nativeEnum(CalibrationLabel),
-  target_score: z.number().min(0).max(1),
-  reference_score: z.number().min(0).max(1),
-  full_prompt_hash: Sha256HexSchema,
-}).strict();
-
-export const CalibrationReportSchema = z.object({
-  schema_version: z.literal(CALIBRATION_SCHEMA_VERSION),
-  run_id: z.string().uuid(),
-  evaluated_git_sha: z.string().min(1),
-  evaluated_tree_hash: Sha256HexSchema,
-  generation_time: UtcDatetimeSchema,
-  rubric_hash: Sha256HexSchema,
-  dataset_hash: Sha256HexSchema,
-  policy_hash: Sha256HexSchema,
-  target_provenance: EvaluatorProvenanceSchema,
-  reference_provenance: EvaluatorProvenanceSchema,
-  items: z.array(CalibrationReportItemSchema).min(1),
-  metrics: CalibrationMetricsTripleSchema,
-  sample_count: z.number().int().min(1),
-  real_execution_marker: z.literal(true),
-  diagnostics: z.array(z.string()),
-}).strict().superRefine((report, ctx) => {
-  const sortedIds = [...report.items.map((item) => item.id)].sort();
-  if (report.items.some((item, index) => item.id !== sortedIds[index])) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["items"], message: "items must be sorted ascending by id" });
-  }
-});
-
-export type ICalibrationReport = z.infer<typeof CalibrationReportSchema>;
-
-const CalibrationVendorTrackMetricsSchema = z.object({
-  target_provenance: EvaluatorProvenanceSchema,
-  reference_provenance: EvaluatorProvenanceSchema,
-  metrics: CalibrationMetricsTripleSchema,
-}).strict();
-
-export const CalibrationBaselineSchema = z.object({
-  schema_version: z.literal(CALIBRATION_SCHEMA_VERSION),
-  baseline_id: z.string().min(1),
-  rubric_hash: Sha256HexSchema,
-  dataset_hash: Sha256HexSchema,
-  policy_hash: Sha256HexSchema,
-  target_tracks: z.record(z.nativeEnum(CalibrationVendor), CalibrationVendorTrackMetricsSchema),
-  report_hashes: z.array(Sha256HexSchema).min(1),
-  created_at: UtcDatetimeSchema,
-}).strict();
-
-export type ICalibrationBaseline = z.infer<typeof CalibrationBaselineSchema>;
 
 const CalibrationDriftIdentitySchema = z.object({
   rubric_hash: Sha256HexSchema,
@@ -288,8 +233,6 @@ export const CalibrationDriftEntrySchema = z.object({
   }
 });
 
-export type ICalibrationDriftEntry = z.infer<typeof CalibrationDriftEntrySchema>;
-
 const CalibrationVendorTargetStringSchema = z.string().regex(
   /^[^:]+:.+$/,
   'must be "provider:model" (e.g. "claude-cli:claude-sonnet-5")',
@@ -308,16 +251,14 @@ export const CalibrationScoreOptionsSchema = z.object({
   label_threshold: z.number().min(0).max(1),
 }).strict();
 
-export type ICalibrationScoreOptions = z.infer<typeof CalibrationScoreOptionsSchema>;
-
 // Version-2 frozen lifecycle records. Version 1 remains inspectable only, never upgraded.
 
 const CALIBRATION_SCHEMA_VERSION_V2 = 2;
 
 /** Stored version-1 records stay readable but cannot establish a new v2 baseline. */
-export const LEGACY_CALIBRATION_SCHEMA_VERSION = 1;
+const LEGACY_CALIBRATION_SCHEMA_VERSION = 1;
 
-export class CalibrationLegacyRecordError extends Error {
+class CalibrationLegacyRecordError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "CalibrationLegacyRecordError";
@@ -340,7 +281,7 @@ export const CalibrationAssemblyIdentitySchema = z.object({
 export type ICalibrationAssemblyIdentity = z.infer<typeof CalibrationAssemblyIdentitySchema>;
 
 /** A frozen criterion definition, including the fields its prompt used. */
-export const CalibrationCriterionDefinitionSchema = z.object({
+const CalibrationCriterionDefinitionSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
   weight: z.number().min(0),
@@ -349,10 +290,8 @@ export const CalibrationCriterionDefinitionSchema = z.object({
   anchors: z.record(z.string(), z.string().min(1)).optional(),
 }).strict();
 
-export type ICalibrationCriterionDefinition = z.infer<typeof CalibrationCriterionDefinitionSchema>;
-
 /** Version-2 rubric freezes criteria, methodology, template and metric policy. */
-export const CalibrationRubricV2Schema = z.object({
+const CalibrationRubricV2Schema = z.object({
   schema_version: z.literal(CALIBRATION_SCHEMA_VERSION_V2),
   id: z.literal(RUBRIC_PLAN_QUALITY_ID),
   version: z.string().min(1),
@@ -369,27 +308,8 @@ export const CalibrationRubricV2Schema = z.object({
 
 export type ICalibrationRubricV2 = z.infer<typeof CalibrationRubricV2Schema>;
 
-/** Version-2 evidence snapshot keeps the true generation lineage and post-redaction bytes. */
-export const CalibrationEvidenceSnapshotV2Schema = z.object({
-  source_run_id: z.string().min(1),
-  source_step_id: z.string().min(1),
-  source_trace_id: z.string().uuid(),
-  execution_outcome: z.enum(["pass", "fail"]),
-  source_revision: z.string().min(1),
-  request_context: z.string().min(1),
-  artifact: z.string().min(1),
-  methodology: z.string().min(1),
-  redaction_version: z.string().min(1),
-  redaction_hash: Sha256HexSchema,
-  artifact_context_assembly: CalibrationAssemblyIdentitySchema,
-  capture_judge_context_assembly: CalibrationAssemblyIdentitySchema,
-  source_submission_hashes: z.record(z.string(), Sha256HexSchema),
-}).strict();
-
-export type ICalibrationEvidenceSnapshotV2 = z.infer<typeof CalibrationEvidenceSnapshotV2Schema>;
-
 /** Version-2 provenance names the canonical vendor, the CLI transport and the judge assembly. */
-export const CalibrationProvenanceV2Schema = z.object({
+const CalibrationProvenanceV2Schema = z.object({
   vendor: z.nativeEnum(CalibrationVendor),
   transport: z.nativeEnum(CalibrationTransport),
   requested_model: z.string().min(1),
@@ -404,13 +324,11 @@ export const CalibrationProvenanceV2Schema = z.object({
 
 export type ICalibrationProvenanceV2 = z.infer<typeof CalibrationProvenanceV2Schema>;
 
-export const CalibrationSourceLineageV2Schema = z.object({
+const CalibrationSourceLineageV2Schema = z.object({
   run_id: z.string().min(1),
   step_id: z.string().min(1),
   trace_id: z.string().uuid(),
 }).strict();
-
-export type ICalibrationSourceLineageV2 = z.infer<typeof CalibrationSourceLineageV2Schema>;
 
 /** Version-2 publication item binds one semantic artifact to one frozen reference label. */
 export const CalibrationItemV2Schema = z.object({

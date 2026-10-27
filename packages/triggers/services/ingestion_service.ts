@@ -24,7 +24,7 @@ import { DomainEventType } from "@exaix/core/events";
 import type { IWaitStateService } from "@exaix/flow/wait_states/wait_state_service.ts";
 import { RequestSource, TriggerDisposition } from "@exaix/core/types";
 
-export interface ITriggerIngestionConfig {
+interface ITriggerIngestionConfig {
   policyGate: ITriggerPolicyGate;
   eventLogger: IEventLogger;
   requestsDir: string;

@@ -19,29 +19,29 @@ import type { IBenchmarkReader, IModelRegistry, Opt, Reason } from "@exaix/core/
 import { DEFAULT_MODEL_PRESETS } from "@exaix/schemas/config.ts";
 
 /** A curated entry annotated with whether its provider is registered (Solo G10). */
-export interface ICuratedEntryStatus {
+interface ICuratedEntryStatus {
   entry: string;
   /** True when the entry's provider is not registered in the registry (pre-curation allowance). */
   unconfigured: boolean;
 }
 
 /** Per-size view of curated candidates with configuration status. */
-export interface ISizeCandidates {
+interface ISizeCandidates {
   entries: ICuratedEntryStatus[];
 }
 
 /** Per-characteristic curated sub-lists (e.g. `cheapest` → provider order). */
-export interface ICharacteristicMap {
+interface ICharacteristicMap {
   [characteristic: string]: string[];
 }
 
 /** Options for `models list`; `--benchmark` adds an optional advisory score column. */
-export interface IListModelsOptions {
+interface IListModelsOptions {
   benchmark?: string;
 }
 
 /** The subset of a preset entry this command reads/writes. */
-export interface IModelPresetToml {
+interface IModelPresetToml {
   max_cost_per_mtok?: number;
   min_context_window?: number;
   supports_thinking?: boolean;
@@ -50,14 +50,14 @@ export interface IModelPresetToml {
 }
 
 /** Per-size preset map keyed by capability tier (S/M/L/XL). */
-export interface IPresetMap {
+interface IPresetMap {
   [size: string]: IModelPresetToml;
 }
 
 /**
  * Only `model_presets` is typed; other keys survive the parse→mutate→stringify round-trip.
  */
-export interface IConfigToml {
+interface IConfigToml {
   model_presets?: IPresetMap;
   /** The Team live-registry block; only `enabled` is read by the CLI. */
   model_registry?: { enabled?: boolean };

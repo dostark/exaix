@@ -21,7 +21,7 @@ import type { JSONObject, JSONValue } from "@exaix/core";
 type ProviderResponseBody = JSONValue;
 
 /** Configuration for provider-specific response formats */
-export interface IProviderResponseConfig {
+interface IProviderResponseConfig {
   /** How to wrap the response text in the provider's response format */
   wrapResponse: (text: string) => JSONValue;
   /** How to create usage metadata in the provider's format */
@@ -31,7 +31,7 @@ export interface IProviderResponseConfig {
 }
 
 /** Configuration for a complete provider test suite */
-export interface IProviderTestSuiteConfig<T> {
+interface IProviderTestSuiteConfig<T> {
   /** Provider name for test descriptions */
   name: string;
   /** Factory to create provider instance */
@@ -104,7 +104,7 @@ export function stubFetchSuccess(responseBody: ProviderResponseBody): Stub {
 /**
  * Creates a fetch stub that returns an error response.
  */
-export function stubFetchError(errorMessage: string, status: number): Stub {
+function stubFetchError(errorMessage: string, status: number): Stub {
   return stub(
     globalThis,
     "fetch",
@@ -132,7 +132,7 @@ export function spyFetch(responseBody: ProviderResponseBody): { spy: Spy; restor
 /**
  * Test initialization with default and custom IDs.
  */
-export function testProviderInitialization<T extends { id: string }>(
+function testProviderInitialization<T extends { id: string }>(
   name: string,
   createProvider: (options?: JSONObject, logger?: EventLogger) => T,
   defaultId: string,
@@ -154,7 +154,7 @@ export function testProviderInitialization<T extends { id: string }>(
 /**
  * Test successful text generation.
  */
-export function testProviderGenerateSuccess<T extends { generate: (prompt: string) => Promise<IGenerateResult> }>(
+function testProviderGenerateSuccess<T extends { generate: (prompt: string) => Promise<IGenerateResult> }>(
   name: string,
   createProvider: (options?: JSONObject, logger?: EventLogger) => T,
   responseConfig: IProviderResponseConfig,
@@ -178,7 +178,7 @@ export function testProviderGenerateSuccess<T extends { generate: (prompt: strin
 /**
  * Test API key header is sent correctly.
  */
-export function testProviderHeaders<T extends { generate: (prompt: string) => Promise<IGenerateResult> }>(
+function testProviderHeaders<T extends { generate: (prompt: string) => Promise<IGenerateResult> }>(
   name: string,
   createProvider: (options?: JSONObject, logger?: EventLogger) => T,
   responseConfig: IProviderResponseConfig,
@@ -210,7 +210,7 @@ export function testProviderHeaders<T extends { generate: (prompt: string) => Pr
 /**
  * Test error handling for API errors.
  */
-export function testProviderErrorHandling<T extends { generate: (prompt: string) => Promise<IGenerateResult> }>(
+function testProviderErrorHandling<T extends { generate: (prompt: string) => Promise<IGenerateResult> }>(
   name: string,
   createProvider: (options?: JSONObject, logger?: EventLogger) => T,
 ): void {
@@ -235,7 +235,7 @@ export function testProviderErrorHandling<T extends { generate: (prompt: string)
  * Test options mapping (temperature, max_tokens, etc.).
  */
 
-export function testProviderOptionsMapping<
+function testProviderOptionsMapping<
   T extends { generate: (prompt: string, options?: JSONObject) => Promise<IGenerateResult> },
 >(
   name: string,
@@ -283,7 +283,7 @@ export function testProviderOptionsMapping<
 /**
  * Test token usage reporting via EventLogger.
  */
-export function testProviderTokenUsage<
+function testProviderTokenUsage<
   T extends { generate: (prompt: string) => Promise<IGenerateResult>; id: string },
 >(
   name: string,
@@ -322,7 +322,7 @@ export function testProviderTokenUsage<
 /**
  * Test retry behavior on 429 rate limit.
  */
-export function testProviderRetryOn429<T extends { generate: (prompt: string) => Promise<IGenerateResult> }>(
+function testProviderRetryOn429<T extends { generate: (prompt: string) => Promise<IGenerateResult> }>(
   name: string,
   createProvider: (options?: JSONObject, logger?: EventLogger) => T,
   responseConfig: IProviderResponseConfig,

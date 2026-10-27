@@ -18,7 +18,7 @@ import type { IStepResult } from "./flow_runner.ts";
 
 type IFlowOutput = IFlow["output"];
 
-export interface IStepOutputFormatter {
+interface IStepOutputFormatter {
   applyTransform(
     input: string,
     transform: string | ((input: string) => string),

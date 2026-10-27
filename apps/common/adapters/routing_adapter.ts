@@ -15,7 +15,7 @@ import { AgentRolePerformanceRepository } from "@exaix/routing";
 import { RoutingPolicyLoader } from "@exaix/routing";
 import { RoutingPolicyService } from "@exaix/routing";
 
-export interface ICreateRoutingPolicyServiceOptions {
+interface ICreateRoutingPolicyServiceOptions {
   config: Config;
   root: string;
   db: IDatabaseService;

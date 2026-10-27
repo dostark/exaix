@@ -50,18 +50,18 @@ import type { IDogfoodContextServerDeps, IDogfoodContextServerHandle } from "@ex
 export interface IDogfoodMemorySource {
   lookupMemories(
     query: string,
-    tokenCap: number | undefined,
-    options: Partial<SessionMemoryConfig> | undefined,
+    tokenCap: Opt<number, Reason.OptionalInput>,
+    options: Opt<Partial<SessionMemoryConfig>, Reason.OptionalInput>,
     scope: IMemoryRetrievalScope,
   ): Promise<MemoryItem[]>;
 }
 
 /** Narrow slice of ContextRecordStore this service depends on. */
-export interface IDogfoodContextRecordWriter {
+interface IDogfoodContextRecordWriter {
   save(record: ContextRecord): Promise<void>;
 }
 
-export interface IDogfoodContextServiceConfig {
+interface IDogfoodContextServiceConfig {
   portalTopK: number;
   memoryTopK: number;
   portalTokens: number;
@@ -86,9 +86,9 @@ export type IStartDogfoodContextServer = (
 ) => Promise<IDogfoodContextServerHandle>;
 
 /** The narrow slice of IPortalKnowledgeService this service depends on. */
-export type IDogfoodPortalKnowledgeSource = Pick<IPortalKnowledgeService, "queryContext" | "loadCachedKnowledge">;
+type IDogfoodPortalKnowledgeSource = Pick<IPortalKnowledgeService, "queryContext" | "loadCachedKnowledge">;
 
-export interface IDogfoodContextServiceDeps {
+interface IDogfoodContextServiceDeps {
   /** Trusted, daemon-resolved portal alias — never taken from `prepare`'s input. */
   portalAlias: string;
   portalKnowledge: IDogfoodPortalKnowledgeSource;

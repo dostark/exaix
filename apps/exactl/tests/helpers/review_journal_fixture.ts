@@ -13,7 +13,7 @@ import { createCliTestContext, initGitRepo, runGitCommand } from "./test_setup.t
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 /** The persisted review, its journal writer and both read paths. */
-export type IReviewJournalFixture = Awaited<ReturnType<typeof createCliTestContext>> & {
+type IReviewJournalFixture = Awaited<ReturnType<typeof createCliTestContext>> & {
   trace: string;
   log: (overrides?: Record<string, unknown>, status?: string) => Promise<void>;
   cli: () => Promise<string>;

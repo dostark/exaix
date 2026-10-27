@@ -15,6 +15,5 @@ export * from "./adapters/schedule_adapter.ts";
 export * from "./adapters/filesystem_adapter.ts";
 export { AdapterRegistry, UnsupportedTriggerSourceError } from "./adapters/adapter_registry.ts";
 export { TriggerIngestionService } from "./services/ingestion_service.ts";
-export type { ITriggerIngestionConfig } from "./services/ingestion_service.ts";
 export { TriggerPolicyGate } from "./services/policy_gate.ts";
 export { InMemoryIdempotencyLedger } from "./services/idempotency_ledger.ts";

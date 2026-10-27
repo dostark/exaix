@@ -78,10 +78,4 @@ export * from "./prompt_context.ts";
 export * from "./service_context.ts";
 export * from "./audit_logger.ts";
 export * from "./validation.ts";
-export type {
-  IReflectedToolResult,
-  IToolCall,
-  IToolReflection,
-  IToolReflectorConfig,
-  IToolReflectorMetrics,
-} from "./i_tool_reflector.ts";
+export type { IToolCall, IToolReflectorMetrics } from "./i_tool_reflector.ts";

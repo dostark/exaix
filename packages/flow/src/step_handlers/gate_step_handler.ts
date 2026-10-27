@@ -21,7 +21,7 @@ export interface IPendingWaitStateRef {
   current: string | undefined;
 }
 
-export interface IGateStepHandlerDeps {
+interface IGateStepHandlerDeps {
   gateEvaluator: IGateEvaluator;
   eventLogger: IFlowEventLogger;
 }

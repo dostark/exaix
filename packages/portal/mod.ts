@@ -15,8 +15,6 @@ export {
 
 // Portal service modules
 export { PathResolver } from "./src/path_resolver.ts";
-export type { IPathResolverConfig } from "./src/path_resolver.ts";
-
 export { PortalPermissionsService } from "./src/portal_permissions.ts";
 
 export { PortalService } from "./src/portal.ts";

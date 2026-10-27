@@ -25,7 +25,7 @@ export interface ISymbolExtractorRegistry {
 }
 
 /** A no-op extractor: returns an empty symbol index for any language. */
-export const EMPTY_SYMBOL_EXTRACTOR: ISymbolExtractor = {
+const EMPTY_SYMBOL_EXTRACTOR: ISymbolExtractor = {
   extractSymbols: () => Promise.resolve([]),
 };
 

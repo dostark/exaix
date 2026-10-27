@@ -6,7 +6,7 @@
  * @description Shared validation result types.
  */
 
-export interface IValidationError {
+interface IValidationError {
   path: string;
   message: string;
   code: string;

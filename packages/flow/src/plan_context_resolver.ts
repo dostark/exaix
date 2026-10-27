@@ -12,12 +12,12 @@
 import { join, resolve, SEPARATOR } from "@std/path";
 import { PlanContextRefSchema } from "@exaix/schemas/request.ts";
 
-export interface IPlanContextResolveInput {
+interface IPlanContextResolveInput {
   readonly executionRoot: string;
   readonly planContextRef: string;
 }
 
-export interface IPlanContextResolveResult {
+interface IPlanContextResolveResult {
   readonly absolutePath: string;
   readonly content: string;
 }
