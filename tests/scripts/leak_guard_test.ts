@@ -11,16 +11,14 @@
 
 import { assertEquals } from "@std/assert";
 import { runLeakGuard } from "../../scripts/leak_guard.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("[leak-guard] an uninitialized (empty) submodule directory does not throw and reports zero errors", async () => {
-  const emptyDir = await Deno.makeTempDir({ prefix: "leak_guard_uninit_submodule_" });
-  try {
+  await withTempDir(async (emptyDir) => {
     const result = await runLeakGuard({ allowlist: [emptyDir] });
     assertEquals(result.passed, true);
     assertEquals(result.errors, []);
-  } finally {
-    await Deno.remove(emptyDir, { recursive: true });
-  }
+  }, { prefix: "leak_guard_uninit_submodule_" });
 });
 
 Deno.test("[leak-guard] the real exaix-team submodule tree scans clean", async () => {

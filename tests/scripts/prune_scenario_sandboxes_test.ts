@@ -20,6 +20,7 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { applySandboxPrune, planSandboxPrune } from "../../scripts/prune_scenario_sandboxes.ts";
 import { DAY_MS, seedSandboxRoot } from "./helpers/prune_scenario_sandboxes_fixture.ts";
+import { withTempDir } from "@exaix/testing";
 
 async function exists(path: string): Promise<boolean> {
   return await Deno.stat(path).then(() => true).catch(() => false);
@@ -121,8 +122,7 @@ Deno.test("[prune] an already-reclaimed sandbox is still prunable", async () => 
   // After cleanup a sandbox holds only `output/` — it has no `exa.config.toml` any more. Those
   // remnants are exactly what a backlog sweep should eventually collect, so the marker check has
   // to recognise them too.
-  const root = await Deno.makeTempDir({ prefix: "prune-reclaimed-" });
-  try {
+  await withTempDir(async (root) => {
     const reclaimed = join(root, "reclaimed-run");
     await Deno.mkdir(join(reclaimed, "output"), { recursive: true });
     await Deno.writeTextFile(join(reclaimed, "output", "run-manifest.json"), "{}");
@@ -132,7 +132,5 @@ Deno.test("[prune] an already-reclaimed sandbox is still prunable", async () => 
     const plan = await planSandboxPrune({ root, retentionDays: 7 });
 
     assertEquals(plan.selected.map((entry) => entry.name), ["reclaimed-run"]);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "prune-reclaimed-" });
 });

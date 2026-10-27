@@ -7,10 +7,10 @@
  */
 import { assert, assertEquals } from "@std/assert";
 import { fromFileUrl } from "@std/path";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("[security] rejects hook installation outside a Git repository", async () => {
-  const tmpDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tmpDir) => {
     const result = await new Deno.Command(Deno.execPath(), {
       args: ["run", "--allow-all", fromFileUrl(new URL("../../scripts/setup_hooks.ts", import.meta.url))],
       cwd: tmpDir,
@@ -18,7 +18,5 @@ Deno.test("[security] rejects hook installation outside a Git repository", async
     assertEquals(result.success, false);
     assert(new TextDecoder().decode(result.stderr).includes("Cannot resolve Git hooks"));
     assertEquals([...Deno.readDirSync(tmpDir)], []);
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  });
 });

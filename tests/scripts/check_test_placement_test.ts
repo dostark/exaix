@@ -12,6 +12,7 @@ import {
   recommendTestDirectoryForSource,
   validateTestPlacement,
 } from "../../scripts/check_test_placement.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("validateTestPlacement: accepts correctly placed service tests", () => {
   const result = validateTestPlacement([
@@ -77,14 +78,11 @@ Deno.test("getTestPlacementIssue: accepts package-local tests", () => {
 });
 
 Deno.test("getAllRepoFiles: skips the unslop-ts submodule, which has its own test layout", async () => {
-  const root = await Deno.makeTempDir({ prefix: "test_placement_" });
-  try {
+  await withTempDir(async (root) => {
     for (const path of ["unslop-ts/tests/engine_test.ts", "packages/p/tests/a_test.ts"]) {
       await Deno.mkdir(join(root, path, ".."), { recursive: true });
       await Deno.writeTextFile(join(root, path), "");
     }
     assertEquals(await getAllRepoFiles(root), ["packages/p/tests/a_test.ts"]);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "test_placement_" });
 });

@@ -13,6 +13,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { checkStepManifests, type ICheckResult } from "../../scripts/check_step_manifests.ts";
+import { withTempDir } from "@exaix/testing";
 
 const MANIFEST_YAML = `
 \`\`\`yaml
@@ -66,22 +67,18 @@ ${steps}
 }
 
 Deno.test("[check_step_manifests] a plan with a manifest per step passes", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "csm-pass-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const content = stepMd(1, MANIFEST_YAML);
     const file = createPlanDoc(tempDir, "phase-99-test.md", content);
 
     const result: ICheckResult = await checkStepManifests(file);
     assertEquals(result.success, true);
     assertEquals(result.errors.length, 0);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "csm-pass-" });
 });
 
 Deno.test("[check_step_manifests] a plan with a manifest-less step fails", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "csm-fail-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const content = stepMd(1, ""); // no manifest
     const file = createPlanDoc(tempDir, "phase-99-test.md", content);
 
@@ -89,14 +86,11 @@ Deno.test("[check_step_manifests] a plan with a manifest-less step fails", async
     assertEquals(result.success, false);
     assert(result.errors.length > 0, "must report manifest-less step");
     assert(result.errors[0].includes("Step 1"), "error must name the step");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "csm-fail-" });
 });
 
 Deno.test("[check_step_manifests] an invalid manifest fails", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "csm-invalid-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const invalidYaml = `
 \`\`\`yaml
 # step-manifest
@@ -112,14 +106,11 @@ acceptance:
     const result: ICheckResult = await checkStepManifests(file);
     assertEquals(result.success, false);
     assert(result.errors.length > 0, "must report invalid manifest");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "csm-invalid-" });
 });
 
 Deno.test("[check_step_manifests] a malformed YAML block is rejected", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "csm-malformed-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const badYaml = `
 \`\`\`yaml
 # step-manifest
@@ -133,14 +124,11 @@ title: ${"a".repeat(300)} ${"b".repeat(200)}  # over max 200
     const result: ICheckResult = await checkStepManifests(file);
     assertEquals(result.success, false);
     assert(result.errors.length > 0, "must reject invalid title length");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "csm-malformed-" });
 });
 
 Deno.test("[check_step_manifests] a file exceeding MAX_PLAN_FILE_BYTES is rejected", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "csm-oversize-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const oversized = "x".repeat(2_000_000); // 2 MB — > 1 MB limit
     const file = createPlanDoc(tempDir, "phase-99-test.md", oversized);
 
@@ -148,14 +136,11 @@ Deno.test("[check_step_manifests] a file exceeding MAX_PLAN_FILE_BYTES is reject
     assertEquals(result.success, false);
     assert(result.errors.length > 0, "must reject oversized file");
     assert(result.errors[0].includes("exceeds"), "error must mention exceeds");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "csm-oversize-" });
 });
 
 Deno.test("[check_step_manifests] --since skips phase-NN files where NN < threshold", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "csm-since-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const content = stepMd(1, MANIFEST_YAML);
     // phase-99 is below threshold 130 => should be skipped
     const file = createPlanDoc(tempDir, "phase-99-test.md", content);
@@ -163,14 +148,11 @@ Deno.test("[check_step_manifests] --since skips phase-NN files where NN < thresh
     const result: ICheckResult = await checkStepManifests(file, { since: 130 });
     assertEquals(result.success, true);
     assertEquals(result.skipped, 1, "must skip phases below threshold");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "csm-since-" });
 });
 
 Deno.test("[check_step_manifests] multiple steps all need manifests", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "csm-multi-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const step2WithManifest = MANIFEST_YAML.replace("step: 1", "step: 2")
       .replace("Test step", "Step 2");
     const content = stepMd(1, MANIFEST_YAML) + "\n" + stepMd(2, step2WithManifest) + "\n" + stepMd(3, "");
@@ -179,14 +161,11 @@ Deno.test("[check_step_manifests] multiple steps all need manifests", async () =
     const result: ICheckResult = await checkStepManifests(file);
     assertEquals(result.success, false);
     assert(result.errors.some((e: string) => e.includes("Step 3")), "must flag step 3");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "csm-multi-" });
 });
 
 Deno.test("[check_step_manifests] a step with a non-manifest yaml fence before its real manifest passes", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "csm-fence-order-" });
-  try {
+  await withTempDir(async (tempDir) => {
     // An illustrative yaml fence (no # step-manifest) appears BEFORE the real
     // manifest fence within the same step section.
     const illustrative = "\n```yaml\n# just an example, not a manifest\nfoo: bar\n```\n";
@@ -196,7 +175,5 @@ Deno.test("[check_step_manifests] a step with a non-manifest yaml fence before i
     const result: ICheckResult = await checkStepManifests(file);
     assertEquals(result.success, true, "must find the real manifest regardless of fence order");
     assertEquals(result.errors.length, 0);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "csm-fence-order-" });
 });

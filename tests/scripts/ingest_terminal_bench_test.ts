@@ -14,6 +14,7 @@ import { assert, assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { PathTraversalError } from "@exaix/tool-runtime";
 import { ingestTerminalBenchTask } from "../../scripts/ingest_terminal_bench.ts";
+import { withTempDir } from "@exaix/testing";
 
 const FIXTURES_ROOT = new URL("./fixtures/terminal_bench_upstream", import.meta.url).pathname;
 const ALLOWLISTED_LICENSE_TEXT = "MIT License\n\nPermission is hereby granted, free of charge...";
@@ -92,8 +93,7 @@ Deno.test("[IngestTerminalBench] ingests a fixture task dir to an exact expected
 
 Deno.test("[IngestTerminalBench] a hanging oracle solution is killed at the timeout, not left to run forever", async () => {
   await withTempDirs(async (outFixturesDir, outPortalsDir) => {
-    const sourceDir = await Deno.makeTempDir({ prefix: "exaix-tb-hanging-source-" });
-    try {
+    await withTempDir(async (sourceDir) => {
       await Deno.mkdir(join(sourceDir, "data"));
       await Deno.writeTextFile(join(sourceDir, "data", "numbers.txt"), "1\n2\n3\n");
       await Deno.mkdir(join(sourceDir, "tests"));
@@ -132,9 +132,7 @@ Deno.test("[IngestTerminalBench] a hanging oracle solution is killed at the time
         elapsedMs < 5000,
         `must abort near the 300ms timeout, not wait out the full 30s sleep (took ${elapsedMs}ms)`,
       );
-    } finally {
-      await Deno.remove(sourceDir, { recursive: true });
-    }
+    }, { prefix: "exaix-tb-hanging-source-" });
   });
 });
 

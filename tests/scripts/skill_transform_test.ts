@@ -17,6 +17,7 @@ import { ensureDir } from "@std/fs";
 import { SkillRootKind } from "@exaix/core";
 import { loadCatalogRoot } from "../../scripts/skill_catalog_loader.ts";
 import { runIsolatedGenerator } from "../scenario_framework/runner/ste100_assets.ts";
+import { withTempDir } from "@exaix/testing";
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 const COPILOT_SKILLS = join(REPO_ROOT, ".copilot", "skills");
@@ -46,8 +47,7 @@ async function fingerprintDir(root: string): Promise<string[]> {
 }
 
 Deno.test("[skill_transform] a .copilot skill without a sidecar is a valid dogfood skill with description triggers", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "skill-transform-skip-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const skillDir = join(tempDir, "skills", "plain-skill");
     await ensureDir(skillDir);
     await Deno.writeTextFile(
@@ -57,14 +57,11 @@ Deno.test("[skill_transform] a .copilot skill without a sidecar is a valid dogfo
     const loaded = await loadCatalogRoot(join(tempDir, "skills"), SkillRootKind.DOGFOOD);
     assertEquals(loaded.map((entry) => entry.skill.name), ["plain-skill"]);
     assertEquals(loaded[0].skill.triggers_source, "description");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "skill-transform-skip-" });
 });
 
 Deno.test("[skill_transform] the isolated copy leaves the repo Memory/Skills and Blueprints/Skills byte-unchanged", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "skill-transform-noleak-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const memoryBefore = await fingerprintDir(REPO_MEMORY_SKILLS);
     const blueprintsBefore = await fingerprintDir(REPO_BLUEPRINTS_SKILLS);
 
@@ -87,7 +84,5 @@ Deno.test("[skill_transform] the isolated copy leaves the repo Memory/Skills and
       blueprintsBefore,
       `${DEFAULT_BLUEPRINTS_PATH}/Skills must be byte-unchanged`,
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "skill-transform-noleak-" });
 });

@@ -20,6 +20,7 @@ import {
   scanFrameworkRawShellDir,
   scanScenarioDir,
 } from "../../scripts/check_scenario_declarative.ts";
+import { withTempDir } from "@exaix/testing";
 
 const DECLARATIVE_YAML = await Deno.readTextFile(new URL("./fixtures/declarative.yaml", import.meta.url));
 
@@ -85,8 +86,7 @@ Deno.test("[scenario-declarative] a hardcoded worktree glob is a hardcoded-path 
 });
 
 Deno.test("[scenario-declarative] multi-file scan aggregates and reports non-ok", async () => {
-  const root = await Deno.makeTempDir({ prefix: "scenario-declarative-" });
-  try {
+  await withTempDir(async (root) => {
     await ensureDir(join(root, "scenarios", "a"));
     await ensureDir(join(root, "scenarios", "b"));
     await Deno.writeTextFile(join(root, "scenarios", "a", "clean.yaml"), DECLARATIVE_YAML);
@@ -103,9 +103,7 @@ Deno.test("[scenario-declarative] multi-file scan aggregates and reports non-ok"
     assertEquals(report.categories["filesystem-probe"], 1);
     assertEquals(report.categories["inline-script"], 0);
     assert(report.violations.every((v) => v.file === "a/clean.yaml" || v.file === "b/dirty.yaml"));
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "scenario-declarative-" });
 });
 
 Deno.test("[scenario-declarative] raw-shell scanner flags low-level binaries but allows deno/exactl", () => {
@@ -131,8 +129,7 @@ Deno.test("[scenario-declarative] raw-shell scanner flags low-level binaries but
 });
 
 Deno.test("[scenario-declarative] framework raw-shell scan aggregates across files", async () => {
-  const root = await Deno.makeTempDir({ prefix: "scenario-rawshell-" });
-  try {
+  await withTempDir(async (root) => {
     await ensureDir(join(root, "a"));
     await ensureDir(join(root, "b"));
     await Deno.writeTextFile(
@@ -149,7 +146,5 @@ Deno.test("[scenario-declarative] framework raw-shell scan aggregates across fil
     assertEquals(report.violations.length, 1);
     assertEquals(report.violations[0].file, "b/dirty.ts");
     assertEquals(report.violations[0].bin, "git");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "scenario-rawshell-" });
 });

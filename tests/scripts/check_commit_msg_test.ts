@@ -17,6 +17,7 @@ import {
   validateCommitMsg,
   validatePlanStepDiff,
 } from "../../scripts/check_commit_msg.ts";
+import { withTempDir } from "@exaix/testing";
 
 describe("validateCommitMsg", () => {
   it("passes a valid structured message", () => {
@@ -995,8 +996,7 @@ describe("gitOut", () => {
     // Reproduces the live failure: git sets GIT_DIR/GIT_INDEX_FILE/GIT_PREFIX for every hook
     // subprocess. Without sanitization, a nested `git -C <submodule> diff HEAD~1 HEAD` silently
     // resolves against the INHERITED (wrong) repo, returning an empty diff that blocked commits.
-    const repoDir = await Deno.makeTempDir();
-    try {
+    await withTempDir(async (repoDir) => {
       const run = (args: string[]) =>
         new Deno.Command("git", { args, cwd: repoDir, env: { LD_LIBRARY_PATH: "" } }).output();
       await run(["init", "-q"]);
@@ -1034,9 +1034,7 @@ describe("gitOut", () => {
       } finally {
         await Deno.remove(otherRepo, { recursive: true });
       }
-    } finally {
-      await Deno.remove(repoDir, { recursive: true });
-    }
+    });
   });
 });
 

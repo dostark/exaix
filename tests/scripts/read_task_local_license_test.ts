@@ -14,31 +14,25 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { readTaskLocalLicense } from "../../scripts/ingest_terminal_bench.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("[ReadTaskLocalLicense] a genuinely absent LICENSE/NOTICE resolves to undefined (no override present) — happy path unaffected", async () => {
-  const sourceDir = await Deno.makeTempDir({ prefix: "exaix-tb-license-absent-" });
-  try {
+  await withTempDir(async (sourceDir) => {
     const result = await readTaskLocalLicense(sourceDir);
     assertEquals(result, undefined);
-  } finally {
-    await Deno.remove(sourceDir, { recursive: true });
-  }
+  }, { prefix: "exaix-tb-license-absent-" });
 });
 
 Deno.test("[ReadTaskLocalLicense] a real task-local LICENSE file is read and returned", async () => {
-  const sourceDir = await Deno.makeTempDir({ prefix: "exaix-tb-license-present-" });
-  try {
+  await withTempDir(async (sourceDir) => {
     await Deno.writeTextFile(join(sourceDir, "LICENSE"), "MIT License\n");
     const result = await readTaskLocalLicense(sourceDir);
     assertEquals(result, "MIT License\n");
-  } finally {
-    await Deno.remove(sourceDir, { recursive: true });
-  }
+  }, { prefix: "exaix-tb-license-present-" });
 });
 
 Deno.test("[ReadTaskLocalLicense] a non-NotFound I/O error reading LICENSE (e.g. it is a directory) propagates rather than being swallowed as no-override (GAP-7)", async () => {
-  const sourceDir = await Deno.makeTempDir({ prefix: "exaix-tb-license-ioerror-" });
-  try {
+  await withTempDir(async (sourceDir) => {
     // A directory named "LICENSE" makes Deno.readTextFile fail with a real I/O error
     // (IsADirectory), not NotFound — the exact "override exists but is unreadable" case.
     await Deno.mkdir(join(sourceDir, "LICENSE"));
@@ -46,7 +40,5 @@ Deno.test("[ReadTaskLocalLicense] a non-NotFound I/O error reading LICENSE (e.g.
       () => readTaskLocalLicense(sourceDir),
       Error,
     );
-  } finally {
-    await Deno.remove(sourceDir, { recursive: true });
-  }
+  }, { prefix: "exaix-tb-license-ioerror-" });
 });

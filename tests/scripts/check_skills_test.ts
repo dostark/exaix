@@ -14,15 +14,14 @@ import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_BLUEPRINTS_PATH, DEFAULT_MEMORY_PATH, DEFAULT_SKILLS_MEMORY_PATH } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { REPO_ROOT } from "@exaix/testing";
+import { REPO_ROOT, withTempDir } from "@exaix/testing";
 import { checkSkillCatalog, REPOSITORY_EXPECTED_COUNTS } from "../../scripts/check_skills.ts";
 
 const CATALOG_SIZE = 27 + 28;
 const NO_COUNTS = undefined;
 
 async function withRepo(fn: (root: string) => Promise<void>): Promise<void> {
-  const root = await Deno.makeTempDir({ prefix: "exa-check-skills-" });
-  try {
+  await withTempDir(async (root) => {
     await Deno.mkdir(pathBuilders.blueprintsPath(root, DEFAULT_SKILLS_MEMORY_PATH, "good-skill"), {
       recursive: true,
     });
@@ -31,9 +30,7 @@ async function withRepo(fn: (root: string) => Promise<void>): Promise<void> {
       "---\nname: good-skill\ndescription: A valid skill\n---\nBody.\n",
     );
     await fn(root);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "exa-check-skills-" });
 }
 
 Deno.test("[check-skills] the repository catalog passes with all Blueprint, project and dogfood folders", async () => {
@@ -82,12 +79,9 @@ Deno.test("[check-skills] the tracked Exaix project root is validated", async ()
 });
 
 Deno.test("[check-skills] a missing Blueprint root is a warning, not an error", async () => {
-  const root = await Deno.makeTempDir({ prefix: "exa-check-skills-empty-" });
-  try {
+  await withTempDir(async (root) => {
     assertEquals((await checkSkillCatalog(root)).ok, true);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "exa-check-skills-empty-" });
 });
 
 Deno.test("[check-skills] a dogfood folder with an invalid sidecar is reported under .copilot/skills", async () => {
