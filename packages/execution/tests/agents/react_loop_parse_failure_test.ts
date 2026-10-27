@@ -21,8 +21,8 @@ import {
 } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
-import type { ReActExecutor } from "../helpers/react_loop_fixtures.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import { createStubExecutor, createStubToolRegistry, type ReActExecutor } from "../helpers/react_loop_fixtures.ts";
 
 class SingleResponseProvider implements IModelProvider {
   readonly id = "mock-parse-provider";
@@ -57,33 +57,16 @@ function buildExecutor(warnSink: ICapturedWarn[], callsSink: string[] = []): ReA
     debug: () => Promise.resolve(),
     child: () => logger,
   };
-  return {
-    logAgentOutput: async () => {
-      await Promise.resolve();
-    },
-    validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
-    parseAgentResponse: (response: string, ctx: IExecutionContext, startTime: number): IChangesetResult => ({
-      branch: `feat/${ctx.portal || "test"}`,
-      commit_sha: "0000000000000000000000000000000000000000",
-      files_changed: [],
-      description: response,
-      tool_calls: 0,
-      execution_time_ms: Date.now() - startTime,
-    }),
-    logGeneration: async () => {
-      await Promise.resolve();
-    },
+  return createStubExecutor({
     budgetLogger: logger,
-    toolRegistry: {
+    toolRegistry: createStubToolRegistry({
       execute: async (tool: string) => {
         await Promise.resolve();
         callsSink.push(tool);
         return { success: true, data: "ok" };
       },
-      getTools: () => [],
-      getBaseDir: () => "/nonexistent-test-basedir",
-    },
-  } as ReActExecutor;
+    }),
+  });
 }
 
 const blueprint = {

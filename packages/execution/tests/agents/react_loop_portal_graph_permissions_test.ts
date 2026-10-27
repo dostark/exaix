@@ -27,9 +27,9 @@ import {
   SecurityMode,
   ToolName,
 } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { ITool, JSONValue } from "@exaix/core/types";
-import type { ReActExecutor } from "../helpers/react_loop_fixtures.ts";
+import { createStubExecutor, createStubToolRegistry, type ReActExecutor } from "../helpers/react_loop_fixtures.ts";
 
 class ScriptedProvider implements IModelProvider {
   private callCount = 0;
@@ -64,26 +64,11 @@ function buildExecutor(
   executedParams?: Array<Record<string, JSONValue>>,
   toolsForNativeDefinitions: ITool[] = [],
 ): ReActExecutor {
-  return {
-    logAgentOutput: async () => {
-      await Promise.resolve();
-    },
+  return createStubExecutor({
     logDynamicToolCall: async () => {
       await Promise.resolve();
     },
-    validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
-    parseAgentResponse: (response: string, ctx: IExecutionContext, startTime: number): IChangesetResult => ({
-      branch: `feat/${ctx.portal || "test"}`,
-      commit_sha: "0000000000000000000000000000000000000000",
-      files_changed: [],
-      description: response,
-      tool_calls: 0,
-      execution_time_ms: Date.now() - startTime,
-    }),
-    logGeneration: async () => {
-      await Promise.resolve();
-    },
-    toolRegistry: {
+    toolRegistry: createStubToolRegistry({
       execute: async (tool: string, params: Record<string, JSONValue>) => {
         executedTools.push(tool);
         executedParams?.push(params);
@@ -91,9 +76,8 @@ function buildExecutor(
         return { success: true, data: { symbols: [], truncated: false } };
       },
       getTools: () => toolsForNativeDefinitions,
-      getBaseDir: () => "/nonexistent-test-basedir",
-    },
-  } as ReActExecutor;
+    }),
+  });
 }
 
 const NATIVE_PROVIDER_ID = "native-permissions-provider";

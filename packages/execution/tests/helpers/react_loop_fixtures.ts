@@ -71,3 +71,41 @@ export const mockExecutor = {
     getBaseDir: () => "/nonexistent-test-basedir",
   },
 };
+
+type TStubToolRegistry = NonNullable<ReActExecutor["toolRegistry"]>;
+
+/** A tool registry double that runs every tool with "ok" and lists no tools. */
+export function createStubToolRegistry(overrides: Partial<TStubToolRegistry> = {}): TStubToolRegistry {
+  return {
+    execute: async () => {
+      await Promise.resolve();
+      return { success: true, data: "ok" };
+    },
+    getTools: () => [],
+    getBaseDir: () => "/nonexistent-test-basedir",
+    ...overrides,
+  };
+}
+
+/** A ReAct executor double that journals nothing and returns the model response as the description. */
+export function createStubExecutor(overrides: Partial<ReActExecutor> = {}): ReActExecutor {
+  return {
+    logAgentOutput: async () => {
+      await Promise.resolve();
+    },
+    validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
+    parseAgentResponse: (response: string, ctx: IExecutionContext, startTime: number): IChangesetResult => ({
+      branch: `feat/${ctx.portal || "test"}`,
+      commit_sha: "0000000000000000000000000000000000000000",
+      files_changed: [],
+      description: response,
+      tool_calls: 0,
+      execution_time_ms: Date.now() - startTime,
+    }),
+    logGeneration: async () => {
+      await Promise.resolve();
+    },
+    toolRegistry: createStubToolRegistry(),
+    ...overrides,
+  } as ReActExecutor;
+}
