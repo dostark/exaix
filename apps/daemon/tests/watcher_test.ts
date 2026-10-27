@@ -8,7 +8,7 @@
 import { assert, assertEquals, assertMatch, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { FileWatcher } from "../../../apps/daemon/src/watcher.ts";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
 import { createWatcherTestContext } from "../../../tests/helpers/watcher_test_helper.ts";
 import {
@@ -868,13 +868,10 @@ Deno.test("FileWatcher: readFileWhenStable handles errors", async () => {
 });
 
 Deno.test("FileWatcher: private property accessibility for coverage", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir((tempDir) => {
     const watcher = new FileWatcher(createMockConfig(tempDir), () => {});
     assertEquals(watcher.getProcessingFilesCount(), 0);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("File Stability - Event loop remains responsive", async () => {

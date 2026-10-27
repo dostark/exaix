@@ -13,7 +13,7 @@ import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IFlowWorktreeCoordinator } from "@exaix/core/types";
-import { initTestDbService } from "@exaix/testing";
+import { initTestDbService, withTempDir } from "@exaix/testing";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionBrief, SessionDelegateConfig } from "@exaix/schemas/session_delegate.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
@@ -296,8 +296,7 @@ function realDelegateService(sessionDir: string): SessionDelegateService {
 }
 
 Deno.test("[session_delegation_coordinator][security] harden_permissions=true keys the generated permission config on the caller-supplied agentRole, not a default", async () => {
-  const sessionDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (sessionDir) => {
     const waitStore = new RecordingWaitStore();
     const resultStore = new OutcomeResultStore();
     const launcher = new RecordingLauncher();
@@ -325,7 +324,5 @@ Deno.test("[session_delegation_coordinator][security] harden_permissions=true ke
         `config must not carry any agent-role key other than '${agentRole}'`,
       );
     }
-  } finally {
-    await Deno.remove(sessionDir, { recursive: true });
-  }
+  });
 });

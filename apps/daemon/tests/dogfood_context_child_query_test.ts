@@ -43,6 +43,7 @@ import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
 import { generateOpencodePermissionConfig } from "@exaix/session/opencode_permission_generator.ts";
 import type { PathResolver } from "@exaix/portal";
+import { withTempDir } from "@exaix/testing";
 
 const CHILD_SCRIPT = fromFileUrl(new URL("./fixtures/dogfood_mcp_child.ts", import.meta.url));
 const SEEDED_QUERY = "zephyr-seeded-fact";
@@ -154,8 +155,7 @@ Deno.test({
     "[dogfood_context_child_query] CliDelegateStrategy: a real spawned child retrieves the seeded fact through the live MCP connection",
   ignore: !(await hasDeno()),
   async fn() {
-    const portalDir = await Deno.makeTempDir({ prefix: "dogfood-child-cli-" });
-    try {
+    await withTempDir(async (portalDir) => {
       const dogfoodService = makeDogfoodContextService();
       const { port: contextPort, closes, connections } = spyOnCloses(dogfoodService);
 
@@ -206,9 +206,7 @@ Deno.test({
 
       // A query against the now-closed connection's endpoint is refused, not answered.
       await assertConnectionRefusesAfterClose(connections[0]);
-    } finally {
-      await Deno.remove(portalDir, { recursive: true });
-    }
+    }, { prefix: "dogfood-child-cli-" });
   },
 });
 

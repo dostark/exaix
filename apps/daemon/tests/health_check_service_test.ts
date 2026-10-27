@@ -9,7 +9,7 @@ import { assert, assertArrayIncludes, assertEquals, assertExists } from "@std/as
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { ExecutionStatus, HealthCheckVerdict, HealthStatus, MockStrategy } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import {
   DatabaseHealthCheck,
   DiskSpaceHealthCheck,
@@ -247,8 +247,7 @@ Deno.test("LLMProviderHealthCheck: handles timeout gracefully", async () => {
 });
 
 Deno.test("DiskSpaceHealthCheck: passes when disk space is sufficient", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "disk-test-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const check = new DiskSpaceHealthCheck(tempDir, { warn: 99, critical: 99.9 });
     const result = await check.check();
 
@@ -257,14 +256,11 @@ Deno.test("DiskSpaceHealthCheck: passes when disk space is sufficient", async ()
     assertExists(result.metadata);
     assertEquals(typeof result.metadata?.used_percent, "number");
     assertExists(result.metadata?.path);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "disk-test-" });
 });
 
 Deno.test("DiskSpaceHealthCheck: warns when disk space is low", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "disk-test-" });
-  try {
+  await withTempDir(async (tempDir) => {
     // Use a very low threshold to trigger warning
     const check = new DiskSpaceHealthCheck(tempDir, { warn: 0, critical: 99.9 });
     const result = await check.check();
@@ -274,9 +270,7 @@ Deno.test("DiskSpaceHealthCheck: warns when disk space is low", async () => {
     assertExists(result.message);
     assertExists(result.metadata);
     assertEquals(typeof result.metadata?.used_percent, "number");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "disk-test-" });
 });
 
 Deno.test("DiskSpaceHealthCheck: fails when disk access fails", async () => {

@@ -12,6 +12,7 @@ import { ensureDir } from "@std/fs";
 import { HeadlessSessionLauncher } from "../src/headless_session_launcher.ts";
 import type { ISpawnArgs } from "../src/headless_session_launcher.ts";
 import { SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
+import { withTempDir } from "@exaix/testing";
 
 const TRACE_ID = "00000000-0000-4000-8000-0000000000a1";
 
@@ -311,8 +312,7 @@ Deno.test("[launcher_stdout] non-JSON stdout synthesizes fallback return", async
 });
 
 Deno.test("[launcher_stdout] missing brief.json returns false", async () => {
-  const emptyDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (emptyDir) => {
     const launcher = new HeadlessSessionLauncher({
       sessionDir: emptyDir,
       allowlist: new Set(["test"]),
@@ -324,9 +324,7 @@ Deno.test("[launcher_stdout] missing brief.json returns false", async () => {
       join(emptyDir, "no-trace", "return.json"),
     );
     assertEquals(synth, false);
-  } finally {
-    await Deno.remove(emptyDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[launcher_stdout] step_finish without tokens uses zeroed stats", async () => {
