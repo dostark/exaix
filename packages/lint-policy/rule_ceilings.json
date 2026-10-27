@@ -1,7 +1,7 @@
 {
   "exaix/require-safety-comment": {
     "apps/daemon": 28,
-    "apps/exactl": 189,
+    "apps/exactl": 188,
     "apps/tui": 72,
     "exaix-team": 64,
     "packages/ai": 51,
@@ -15,11 +15,11 @@
     "packages/core": 88,
     "packages/eval-history": 6,
     "packages/execution": 66,
-    "packages/flow": 72,
+    "packages/flow": 70,
     "packages/git": 4,
     "packages/lint-policy": 2,
     "packages/mcp": 18,
-    "packages/memory": 17,
+    "packages/memory": 16,
     "packages/model-registry": 5,
     "packages/portal": 33,
     "packages/quality-gate": 3,
@@ -32,7 +32,7 @@
     "packages/tool-runtime": 12,
     "packages/triggers": 3,
     "packages/tui": 16,
-    "scripts": 53
+    "scripts": 49
   },
   "exaix/no-runtime-typeof": {
     "apps/daemon": 1,
@@ -48,7 +48,7 @@
     "packages/core": 44,
     "packages/eval-history": 8,
     "packages/execution": 44,
-    "packages/flow": 34,
+    "packages/flow": 33,
     "packages/git": 1,
     "packages/lint-policy": 3,
     "packages/mcp": 2,
