@@ -15,6 +15,7 @@ import type { IMemoryBankService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IPattern, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
 import { PortalAnalysisMode } from "@exaix/core";
+import { withTempDir } from "@exaix/testing";
 
 // Fixtures
 
@@ -123,8 +124,7 @@ function makeMockMemoryBank(
 // Tests
 
 Deno.test("[KnowledgePersistence] saves knowledge.json atomically", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const memoryBank = makeMockMemoryBank();
     const knowledge = makeKnowledge();
     await saveKnowledge("test-portal", knowledge, memoryBank, tempDir);
@@ -134,14 +134,11 @@ Deno.test("[KnowledgePersistence] saves knowledge.json atomically", async () => 
     const parsed = JSON.parse(raw);
     assertEquals(parsed.portal, "test-portal");
     assertEquals(parsed.version, 1);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[KnowledgePersistence] loads previously saved knowledge", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const memoryBank = makeMockMemoryBank();
     const knowledge = makeKnowledge({ headCommitSha: "0123456789abcdef0123456789abcdef01234567", fullAnalysis: true });
     await saveKnowledge("test-portal", knowledge, memoryBank, tempDir);
@@ -153,14 +150,11 @@ Deno.test("[KnowledgePersistence] loads previously saved knowledge", async () =>
     assertEquals(loaded.architectureOverview, knowledge.architectureOverview);
     assertEquals(loaded.headCommitSha, knowledge.headCommitSha);
     assertEquals(loaded.fullAnalysis, knowledge.fullAnalysis);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[KnowledgePersistence] loads legacy knowledge without headCommitSha", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const portalDir = join(tempDir, "legacy-portal");
     await Deno.mkdir(portalDir, { recursive: true });
     const legacyKnowledge = { ...makeKnowledge(), headCommitSha: undefined, fullAnalysis: undefined };
@@ -170,38 +164,29 @@ Deno.test("[KnowledgePersistence] loads legacy knowledge without headCommitSha",
     assertExists(result);
     assertEquals(result.portal, "test-portal");
     assertEquals(result.metadata.mode, PortalAnalysisMode.QUICK);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[KnowledgePersistence] returns null for missing knowledge", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const result = await loadKnowledge("nonexistent-portal", tempDir);
     assertEquals(result, null);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[KnowledgePersistence] returns null for corrupted knowledge", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const portalDir = join(tempDir, "bad-portal");
     await Deno.mkdir(portalDir, { recursive: true });
     await Deno.writeTextFile(join(portalDir, "knowledge.json"), "{ invalid json }");
 
     const result = await loadKnowledge("bad-portal", tempDir);
     assertEquals(result, null);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[KnowledgePersistence] maps architectureOverview to overview.md", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const memoryBank = makeMockMemoryBank();
     const knowledge = makeKnowledge({ architectureOverview: "## Architecture" });
     await saveKnowledge("test-portal", knowledge, memoryBank, tempDir);
@@ -211,14 +196,11 @@ Deno.test("[KnowledgePersistence] maps architectureOverview to overview.md", asy
     );
     assertExists(overviewUpdate, "Should call updateProjectMemory with overview");
     assertEquals(overviewUpdate.updates.overview, "## Architecture");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[KnowledgePersistence] maps conventions to patterns.md", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const memoryBank = makeMockMemoryBank();
     const knowledge = makeKnowledge();
     await saveKnowledge("test-portal", knowledge, memoryBank, tempDir);
@@ -229,14 +211,11 @@ Deno.test("[KnowledgePersistence] maps conventions to patterns.md", async () => 
     assertExists(patternUpdate, "Should call updateProjectMemory with patterns");
     assertEquals(patternUpdate.updates.patterns?.length, 1);
     assertEquals(patternUpdate.updates.patterns?.[0].name, "*.service.ts");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[KnowledgePersistence] does not write references.md", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const memoryBank = makeMockMemoryBank();
     const knowledge = makeKnowledge();
     await saveKnowledge("test-portal", knowledge, memoryBank, tempDir);
@@ -255,14 +234,11 @@ Deno.test("[KnowledgePersistence] does not write references.md", async () => {
       (c) => c.updates.references !== undefined,
     );
     assertEquals(refUpdate, undefined, "Should not update references via memoryBank");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[KnowledgePersistence] does not overwrite decisions.md", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const memoryBank = makeMockMemoryBank();
     const knowledge = makeKnowledge();
     await saveKnowledge("test-portal", knowledge, memoryBank, tempDir);
@@ -281,14 +257,11 @@ Deno.test("[KnowledgePersistence] does not overwrite decisions.md", async () => 
       (c) => c.updates.decisions !== undefined,
     );
     assertEquals(decisionsUpdate, undefined, "Should not update decisions via memoryBank");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[KnowledgePersistence] skips overview update when sentinel is present", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const portalDir = join(tempDir, "guarded-portal");
     await Deno.mkdir(portalDir, { recursive: true });
     await Deno.writeTextFile(
@@ -304,7 +277,5 @@ Deno.test("[KnowledgePersistence] skips overview update when sentinel is present
       (c) => c.updates.overview !== undefined,
     );
     assertEquals(overviewUpdate, undefined, "Should skip overview when sentinel present");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });

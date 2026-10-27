@@ -9,6 +9,7 @@
 import { assertEquals, assertGreaterOrEqual } from "@std/assert";
 import { GIT_HISTORY_SUFFICIENT_COMMITS } from "@exaix/core";
 import { GitHistoryAnalyzer } from "../git_history_analyzer.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("GitHistoryAnalyzer: parseLogAuthors parses standard format", () => {
   const analyzer = new GitHistoryAnalyzer();
@@ -63,8 +64,7 @@ Deno.test("GitHistoryAnalyzer: parseFileFrequencies handles empty input", () => 
 });
 
 Deno.test("GitHistoryAnalyzer: returns empty state when not a git repo", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const analyzer = new GitHistoryAnalyzer();
 
     const result = await analyzer.analyze(tempDir);
@@ -72,16 +72,13 @@ Deno.test("GitHistoryAnalyzer: returns empty state when not a git repo", async (
     assertEquals(result.totalCommits, 0);
     assertEquals(result.totalAuthors, 0);
     assertEquals(result.hasSufficientHistory, false);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test(
   "GitHistoryAnalyzer: hasSufficientHistory is true for totalCommits >= GIT_HISTORY_SUFFICIENT_COMMITS",
   async () => {
-    const tempDir = await Deno.makeTempDir();
-    try {
+    await withTempDir(async (tempDir) => {
       await new Deno.Command("git", { args: ["init"], cwd: tempDir }).output();
       await new Deno.Command("git", {
         args: ["config", "user.email", "t@t.com"],
@@ -108,17 +105,14 @@ Deno.test(
         true,
         `hasSufficientHistory should be true for ${GIT_HISTORY_SUFFICIENT_COMMITS} commits`,
       );
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
+    });
   },
 );
 
 Deno.test(
   "GitHistoryAnalyzer: hasSufficientHistory is false for totalCommits < GIT_HISTORY_SUFFICIENT_COMMITS",
   async () => {
-    const tempDir = await Deno.makeTempDir();
-    try {
+    await withTempDir(async (tempDir) => {
       await new Deno.Command("git", { args: ["init"], cwd: tempDir }).output();
       await new Deno.Command("git", {
         args: ["config", "user.email", "t@t.com"],
@@ -145,15 +139,12 @@ Deno.test(
         false,
         `hasSufficientHistory should be false for ${GIT_HISTORY_SUFFICIENT_COMMITS - 1} commits`,
       );
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
+    });
   },
 );
 
 Deno.test("GitHistoryAnalyzer: commitLimit bounds the number of commits analyzed", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     await new Deno.Command("git", { args: ["init"], cwd: tempDir }).output();
     await new Deno.Command("git", {
       args: ["config", "user.email", "t@t.com"],
@@ -182,14 +173,11 @@ Deno.test("GitHistoryAnalyzer: commitLimit bounds the number of commits analyzed
       1,
       "commitLimit=1 should restrict analysis to 1 commit, so main.ts appears only once",
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("GitHistoryAnalyzer: extracts history from git repo", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     await new Deno.Command("git", { args: ["init"], cwd: tempDir }).output();
     await new Deno.Command("git", { args: ["config", "user.email", "test@test.com"], cwd: tempDir }).output();
     await new Deno.Command("git", { args: ["config", "user.name", "Test User"], cwd: tempDir }).output();
@@ -211,7 +199,5 @@ Deno.test("GitHistoryAnalyzer: extracts history from git repo", async () => {
     assertEquals(result.topAuthors?.[0].name, "Test User");
     assertEquals(result.topAuthors?.[0].commitCount, 1);
     assertGreaterOrEqual(result.topChangedFiles?.length ?? 0, 1);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });

@@ -9,26 +9,22 @@
 import { assertEquals, assertMatch } from "@std/assert";
 import { join } from "@std/path";
 import { GitHeadResolver } from "@exaix/portal/knowledge";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import { createGitServiceFactory, setupGitRepo } from "@exaix/git/testing";
 
 Deno.test("[GitHeadResolver] resolves HEAD SHA in a git repo", async () => {
-  const repoDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (repoDir) => {
     await setupGitRepo(repoDir, { initialCommit: true });
 
     const resolver = new GitHeadResolver(createGitServiceFactory(createMockConfig(repoDir)));
     const sha = await resolver.resolve(repoDir);
 
     assertMatch(sha ?? "", /^[0-9a-f]{40}$/);
-  } finally {
-    await Deno.remove(repoDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[GitHeadResolver] returns empty changed files when HEAD has no diff", async () => {
-  const repoDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (repoDir) => {
     await setupGitRepo(repoDir, { initialCommit: true });
 
     const resolver = new GitHeadResolver(createGitServiceFactory(createMockConfig(repoDir)));
@@ -37,14 +33,11 @@ Deno.test("[GitHeadResolver] returns empty changed files when HEAD has no diff",
 
     const changes = await resolver.changedFilesSince(repoDir, sha ?? "");
     assertEquals(changes, []);
-  } finally {
-    await Deno.remove(repoDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[GitHeadResolver] detects changed files since a previous commit", async () => {
-  const repoDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (repoDir) => {
     await setupGitRepo(repoDir, { initialCommit: true });
     const initialSha = await new GitHeadResolver(createGitServiceFactory(createMockConfig(repoDir))).resolve(repoDir);
 
@@ -66,21 +59,16 @@ Deno.test("[GitHeadResolver] detects changed files since a previous commit", asy
     const changedFiles = await resolver.changedFilesSince(repoDir, initialSha ?? "");
 
     assertEquals(changedFiles, ["new-file.txt"]);
-  } finally {
-    await Deno.remove(repoDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[GitHeadResolver] returns null for non-git directories", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (dir) => {
     const resolver = new GitHeadResolver();
     const sha = await resolver.resolve(dir);
     assertEquals(sha, null);
 
     const changes = await resolver.changedFilesSince(dir, "0000000000000000000000000000000000000000");
     assertEquals(changes, null);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  });
 });

@@ -11,6 +11,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { SYMBOL_EXTRACT_MAX_NODES } from "@exaix/core";
 import { PythonSymbolExtractor } from "@exaix/portal/knowledge";
+import { withTempDir } from "@exaix/testing";
 
 /** Writes a Python file whose call nesting produces a specified node depth. */
 async function writeDeeplyNested(root: string, depth: number): Promise<void> {
@@ -41,8 +42,7 @@ Deno.test("[node ceiling] a deeply nested file does not exhaust the call stack",
 });
 
 Deno.test("[node ceiling] an ordinary file is still extracted", async () => {
-  const root = await Deno.makeTempDir({ prefix: "exa_node_ok_" });
-  try {
+  await withTempDir(async (root) => {
     await Deno.writeTextFile(join(root, "normal.py"), "def small():\n    return 1\n");
     const symbols = await new PythonSymbolExtractor().extractSymbols(root, ["normal.py"], {
       primaryLanguage: "python",
@@ -50,7 +50,5 @@ Deno.test("[node ceiling] an ordinary file is still extracted", async () => {
     } as never);
     assertEquals(symbols.map((s) => s.name).includes("small"), true, "the ceiling must not reject normal files");
     assertEquals(SYMBOL_EXTRACT_MAX_NODES > 0, true);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "exa_node_ok_" });
 });

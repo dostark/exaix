@@ -12,6 +12,7 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { InternalImportGraphBuilder } from "../internal_import_graph.ts";
+import { withTempDir } from "@exaix/testing";
 
 async function makeTempDir(): Promise<string> {
   return await Deno.makeTempDir({ prefix: "exa_internal_import_graph_test_" });
@@ -85,8 +86,7 @@ Deno.test("InternalImportGraphBuilder: does not include bare/external specifiers
 });
 
 Deno.test("InternalImportGraphBuilder: drops a specifier resolving outside the portal root", async () => {
-  const parent = await Deno.makeTempDir({ prefix: "exa_internal_import_graph_test_parent_" });
-  try {
+  await withTempDir(async (parent) => {
     const outsideFile = join(parent, "outside.ts");
     await Deno.writeTextFile(outsideFile, `export function outside() {}\n`);
 
@@ -103,9 +103,7 @@ Deno.test("InternalImportGraphBuilder: drops a specifier resolving outside the p
     assertEquals(result.edges, []);
     assertEquals(result.droppedOutOfBounds.length, 1);
     assertEquals(result.droppedOutOfBounds[0].from, "main.ts");
-  } finally {
-    await Deno.remove(parent, { recursive: true });
-  }
+  }, { prefix: "exa_internal_import_graph_test_parent_" });
 });
 
 Deno.test("InternalImportGraphBuilder: handles missing directory gracefully", async () => {

@@ -26,6 +26,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import type { IEmbeddingProvider, IModelProvider } from "@exaix/ai";
 import { KnowledgeAnalysisMode, KnowledgeValidityReason, PortalAnalysisMode } from "@exaix/core";
 import type { ISymbolEntry } from "@exaix/schemas";
+import { withTempDir } from "@exaix/testing";
 
 // Mock helpers
 
@@ -544,8 +545,7 @@ Deno.test("[PortalKnowledgeService] handles LLM failure in standard mode gracefu
 // getRelevantContext
 
 Deno.test("[PortalKnowledgeService] getRelevantContext returns undefined when embedding disabled", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const svc = new PortalKnowledgeService({
       config: makeConfig({ relevanceSearchEmbeddingEnabled: false }),
       memoryBank: null as never,
@@ -554,14 +554,11 @@ Deno.test("[PortalKnowledgeService] getRelevantContext returns undefined when em
 
     const result = await svc.getRelevantContext("test request", tempDir, 1000);
     assertEquals(result, undefined);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[PortalKnowledgeService] getRelevantContext falls back to undefined when index cold", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const svc = new PortalKnowledgeService({
       config: makeConfig({ relevanceSearchEmbeddingEnabled: true }),
       memoryBank: null as never,
@@ -571,9 +568,7 @@ Deno.test("[PortalKnowledgeService] getRelevantContext falls back to undefined w
     const result = await svc.getRelevantContext("test request", tempDir, 1000);
     // HNSW index is cold (not yet built) — must return undefined
     assertEquals(result, undefined);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[PortalKnowledgeService] indexPortalKnowledge then getRelevantContext returns chunks", async () => {
@@ -634,8 +629,7 @@ Deno.test("[PortalKnowledgeService] indexPortalKnowledge then getRelevantContext
 });
 
 Deno.test("[PortalKnowledgeService] analyze() indexes for retrieval automatically, with no manual indexPortalKnowledge call", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const projectsDir = join(tempDir, DEFAULT_MEMORY_PROJECTS_DIR);
     await ensureDir(projectsDir);
 
@@ -664,9 +658,7 @@ Deno.test("[PortalKnowledgeService] analyze() indexes for retrieval automaticall
     } finally {
       await Deno.remove(portalDir, { recursive: true });
     }
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[PortalKnowledgeService] indexPortalKnowledge does not call the embedding provider when relevanceSearchEmbeddingEnabled is false", async () => {

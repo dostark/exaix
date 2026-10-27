@@ -11,6 +11,7 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { PythonSymbolExtractor } from "@exaix/portal/knowledge";
 import { DEFAULT_SYMBOL_MAP_LIMIT, SYMBOL_EXTRACT_MAX_FILE_BYTES, SYMBOL_EXTRACT_MAX_FILES } from "@exaix/core";
+import { withTempDir } from "@exaix/testing";
 
 // Fixture helpers
 
@@ -230,8 +231,7 @@ Deno.test({
   name: "[PythonSymbolExtractor] [security] caps a zone with more than SYMBOL_EXTRACT_MAX_FILES files",
   fn: async () => {
     const extractor = new PythonSymbolExtractor();
-    const dir = await Deno.makeTempDir({ prefix: "py_extract_fcap_" });
-    try {
+    await withTempDir(async (dir) => {
       // Create SYMBOL_EXTRACT_MAX_FILES + 10 tiny Python files
       const extraCount = 10;
       const manyFiles: string[] = [];
@@ -249,9 +249,7 @@ Deno.test({
 
       // Should not crash — extraction handles file-count cap gracefully
       assert(Array.isArray(result), "should return an array with many files");
-    } finally {
-      await Deno.remove(dir, { recursive: true });
-    }
+    }, { prefix: "py_extract_fcap_" });
   },
 });
 

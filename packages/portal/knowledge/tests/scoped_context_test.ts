@@ -19,6 +19,7 @@ import type { IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/typ
 import type { IEmbeddingProvider } from "@exaix/ai";
 import { HnswVectorIndex } from "@exaix/memory";
 import { ContextItemScoreKind, ContextResultStatus, ContextUnavailableReason, PortalAnalysisMode } from "@exaix/core";
+import { withTempDir } from "@exaix/testing";
 
 function makeConfig(overrides: Partial<IPortalKnowledgeConfig> = {}): IPortalKnowledgeConfig {
   return {
@@ -93,8 +94,7 @@ async function analyzeAndIndexDistinctly(
 }
 
 Deno.test("[PortalKnowledgeService] getRelevantContext resolves the queried path's own portal, not another cached portal", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const svc = await makeService(tempDir);
     const portalADir = await makePortalDir(tempDir, "portal-a");
     const portalBDir = await makePortalDir(tempDir, "portal-b");
@@ -108,14 +108,11 @@ Deno.test("[PortalKnowledgeService] getRelevantContext resolves the queried path
     assert(resultA, "portal-a's own path must resolve to portal-a's indexed content");
     assert(resultB, "portal-b's own path must resolve to portal-b's indexed content");
     assert(resultA !== resultB, "two distinct portals must not resolve to the same chunk text");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[PortalKnowledgeService] getRelevantContext is correct regardless of cache insertion order (reversed order)", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const svc = await makeService(tempDir);
     const portalADir = await makePortalDir(tempDir, "portal-a");
     const portalBDir = await makePortalDir(tempDir, "portal-b");
@@ -135,14 +132,11 @@ Deno.test("[PortalKnowledgeService] getRelevantContext is correct regardless of 
       resultForA !== resultForB,
       "querying portal-a's path must never return portal-b's chunk text just because portal-b was cached first",
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[PortalKnowledgeService] getRelevantContext returns undefined for a path that was never analyzed", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const svc = await makeService(tempDir);
     const portalADir = await makePortalDir(tempDir, "portal-a");
     const unknownDir = await makePortalDir(tempDir, "unknown-portal");
@@ -151,9 +145,7 @@ Deno.test("[PortalKnowledgeService] getRelevantContext returns undefined for a p
 
     const result = await svc.getRelevantContext("architecture overview", unknownDir, 5000);
     assertEquals(result, undefined, "an unregistered/unknown path must never fall back to another cached portal");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[PortalKnowledgeService] getRelevantContext rejects an ambiguous path claimed by two different aliases", async () => {
@@ -177,8 +169,7 @@ Deno.test("[PortalKnowledgeService] getRelevantContext rejects an ambiguous path
 // queryContext / loadCachedKnowledge — structured, scored API
 
 Deno.test("[PortalKnowledgeService] queryContext returns status:unavailable reason:disabled when embedding is off", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const svc = await makeService(tempDir, { relevanceSearchEmbeddingEnabled: false });
     const portalDir = await makePortalDir(tempDir, "portal-a");
     await analyzeAndIndexDistinctly(svc, "portal-a", portalDir, "Portal Alpha handles authentication.");
@@ -195,14 +186,11 @@ Deno.test("[PortalKnowledgeService] queryContext returns status:unavailable reas
       reason: ContextUnavailableReason.DISABLED,
       items: [],
     });
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[PortalKnowledgeService] queryContext returns status:unavailable reason:cold for an unanalyzed alias", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const svc = await makeService(tempDir);
 
     const result = await svc.queryContext({
@@ -213,14 +201,11 @@ Deno.test("[PortalKnowledgeService] queryContext returns status:unavailable reas
     });
 
     assertEquals(result, { status: ContextResultStatus.UNAVAILABLE, reason: ContextUnavailableReason.COLD, items: [] });
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[PortalKnowledgeService] queryContext returns status:unavailable reason:timeout when the signal is already aborted", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const svc = await makeService(tempDir);
     const portalDir = await makePortalDir(tempDir, "portal-a");
     await analyzeAndIndexDistinctly(svc, "portal-a", portalDir, "Portal Alpha handles authentication.");
@@ -241,14 +226,11 @@ Deno.test("[PortalKnowledgeService] queryContext returns status:unavailable reas
       reason: ContextUnavailableReason.TIMEOUT,
       items: [],
     });
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[PortalKnowledgeService] queryContext returns scored, provenance-labelled items on a hit", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const svc = await makeService(tempDir);
     const portalDir = await makePortalDir(tempDir, "portal-a");
     await analyzeAndIndexDistinctly(svc, "portal-a", portalDir, "Portal Alpha handles authentication.");
@@ -268,14 +250,11 @@ Deno.test("[PortalKnowledgeService] queryContext returns scored, provenance-labe
       assertEquals(typeof item.score, "number");
       assert(item.text.length > 0);
     }
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[PortalKnowledgeService] queryContext returns status:unavailable reason:budget_denied when no item fits maxTokens", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const svc = await makeService(tempDir);
     const portalDir = await makePortalDir(tempDir, "portal-a");
     await analyzeAndIndexDistinctly(svc, "portal-a", portalDir, "Portal Alpha handles authentication end to end.");
@@ -292,14 +271,11 @@ Deno.test("[PortalKnowledgeService] queryContext returns status:unavailable reas
       reason: ContextUnavailableReason.BUDGET_DENIED,
       items: [],
     });
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[PortalKnowledgeService] loadCachedKnowledge returns the cached entry without triggering analysis", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const svc = await makeService(tempDir);
     const portalDir = await makePortalDir(tempDir, "portal-a");
 
@@ -308,7 +284,5 @@ Deno.test("[PortalKnowledgeService] loadCachedKnowledge returns the cached entry
     await svc.analyze("portal-a", portalDir, PortalAnalysisMode.QUICK);
     const cached = await svc.loadCachedKnowledge("portal-a");
     assertEquals(cached?.portal, "portal-a");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });

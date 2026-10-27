@@ -12,12 +12,11 @@
 import { assertFalse, assertInstanceOf, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 Deno.test("security: PathResolver rejects an in-portal symlink that escapes the portal root", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "path-resolver-symlink-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const portalDir = join(tempDir, "Project");
     const outsideDir = join(tempDir, "outside");
     await Deno.mkdir(portalDir, { recursive: true });
@@ -44,14 +43,11 @@ Deno.test("security: PathResolver rejects an in-portal symlink that escapes the 
       Error,
       "Access denied",
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "path-resolver-symlink-" });
 });
 
 Deno.test("security: PathResolver error message does not leak absolute host paths (Finding 10)", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "path-resolver-leak-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const portalDir = join(tempDir, "Project");
     const outsideDir = join(tempDir, "outside");
     await Deno.mkdir(portalDir, { recursive: true });
@@ -74,14 +70,11 @@ Deno.test("security: PathResolver error message does not leak absolute host path
     assertInstanceOf(error, Error);
     // The caller-facing message must not disclose absolute host filesystem paths.
     assertFalse(error.message.includes(tempDir), `error message leaked an absolute host path: ${error.message}`);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "path-resolver-leak-" });
 });
 
 Deno.test("security: PathResolver still resolves a legitimate in-portal path", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "path-resolver-ok-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const portalDir = join(tempDir, "Project");
     await Deno.mkdir(join(portalDir, "src"), { recursive: true });
     await Deno.writeTextFile(join(portalDir, "src", "main.ts"), "export const x = 1;");
@@ -100,7 +93,5 @@ Deno.test("security: PathResolver still resolves a legitimate in-portal path", a
     const resolver = new PathResolver(config);
     // Must not throw for a real path within the portal.
     await resolver.resolve("@Project/src/main.ts");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "path-resolver-ok-" });
 });

@@ -17,6 +17,7 @@ import {
   EMPTY_SYMBOL_REFERENCE_EXTRACTOR,
   type ISymbolReferenceExtractor,
 } from "@exaix/portal/knowledge";
+import { withTempDir } from "@exaix/testing";
 
 function makeConfig(overrides: Partial<IPortalKnowledgeConfig> = {}): IPortalKnowledgeConfig {
   return {
@@ -86,14 +87,11 @@ Deno.test("[PortalKnowledgeService] constructor accepts an absent symbolReferenc
     memoryBank: makeFakeMemoryBank(),
   });
 
-  const portalRoot = await Deno.makeTempDir({ prefix: "exa_symref_absent_" });
-  try {
+  await withTempDir(async (portalRoot) => {
     await Deno.writeTextFile(`${portalRoot}/main.ts`, "export const x = 1;\n");
     const knowledge = await service.analyze("absent-registry", portalRoot, PortalAnalysisMode.STANDARD);
     assertEquals(knowledge.portal, "absent-registry");
-  } finally {
-    await Deno.remove(portalRoot, { recursive: true });
-  }
+  }, { prefix: "exa_symref_absent_" });
 });
 
 Deno.test("[PortalKnowledgeService] analyze() performs no reference extraction when the flag is unset, even with a registered extractor", async () => {
@@ -112,14 +110,11 @@ Deno.test("[PortalKnowledgeService] analyze() performs no reference extraction w
     symbolReferenceExtractorRegistry: registry,
   });
 
-  const portalRoot = await Deno.makeTempDir({ prefix: "exa_symref_off_" });
-  try {
+  await withTempDir(async (portalRoot) => {
     await Deno.writeTextFile(`${portalRoot}/main.ts`, "export const x = 1;\n");
     await service.analyze("flag-off", portalRoot, PortalAnalysisMode.STANDARD);
     assertEquals(calls, 0, "the flag must gate the pass, not the registry's presence");
-  } finally {
-    await Deno.remove(portalRoot, { recursive: true });
-  }
+  }, { prefix: "exa_symref_off_" });
 });
 
 Deno.test("[PortalKnowledgeService] binds the capped symbolMap and the merged edge set to the reference extractor", async () => {
@@ -144,8 +139,7 @@ Deno.test("[PortalKnowledgeService] binds the capped symbolMap and the merged ed
     symbolReferenceExtractorRegistry: registry,
   });
 
-  const portalRoot = await Deno.makeTempDir({ prefix: "exa_symref_bind_" });
-  try {
+  await withTempDir(async (portalRoot) => {
     // A relative import pair so the internal graph produces at least one edge.
     await Deno.writeTextFile(`${portalRoot}/main.ts`, 'import { util } from "./util.ts";\nutil();\n');
     await Deno.writeTextFile(`${portalRoot}/util.ts`, "export function util() {}\n");
@@ -169,9 +163,7 @@ Deno.test("[PortalKnowledgeService] binds the capped symbolMap and the merged ed
       true,
       "the merged set must carry the file-import edges",
     );
-  } finally {
-    await Deno.remove(portalRoot, { recursive: true });
-  }
+  }, { prefix: "exa_symref_bind_" });
 });
 
 Deno.test("[PortalKnowledgeService] appends symbol edges to the persisted relationships without duplicates", async () => {
@@ -189,8 +181,7 @@ Deno.test("[PortalKnowledgeService] appends symbol edges to the persisted relati
     symbolReferenceExtractorRegistry: registry,
   });
 
-  const portalRoot = await Deno.makeTempDir({ prefix: "exa_symref_merge_" });
-  try {
+  await withTempDir(async (portalRoot) => {
     await Deno.writeTextFile(`${portalRoot}/main.ts`, 'import { util } from "./util.ts";\nutil();\n');
     await Deno.writeTextFile(`${portalRoot}/util.ts`, "export function util() {}\n");
 
@@ -204,9 +195,7 @@ Deno.test("[PortalKnowledgeService] appends symbol edges to the persisted relati
       true,
       "the symbol edge must be persisted",
     );
-  } finally {
-    await Deno.remove(portalRoot, { recursive: true });
-  }
+  }, { prefix: "exa_symref_merge_" });
 });
 
 Deno.test("[PortalKnowledgeService] quick mode leaves relationships undefined even with the flag enabled", async () => {
@@ -224,14 +213,11 @@ Deno.test("[PortalKnowledgeService] quick mode leaves relationships undefined ev
     symbolReferenceExtractorRegistry: registry,
   });
 
-  const portalRoot = await Deno.makeTempDir({ prefix: "exa_symref_quick_" });
-  try {
+  await withTempDir(async (portalRoot) => {
     await Deno.writeTextFile(`${portalRoot}/main.ts`, "export const x = 1;\n");
     const knowledge = await service.analyze("quick", portalRoot, PortalAnalysisMode.QUICK);
     assertEquals(knowledge.relationships, undefined);
-  } finally {
-    await Deno.remove(portalRoot, { recursive: true });
-  }
+  }, { prefix: "exa_symref_quick_" });
 });
 
 Deno.test("[PortalKnowledgeService] [regression] the flag off reproduces the same relationships as no registry at all", async () => {
@@ -334,8 +320,7 @@ Deno.test("[PortalKnowledgeService] a throwing file resolver degrades to file-im
     symbolFileResolverRegistry: resolverRegistry,
   });
 
-  const portalRoot = await Deno.makeTempDir({ prefix: "exa_symref_rethrow_" });
-  try {
+  await withTempDir(async (portalRoot) => {
     await Deno.writeTextFile(`${portalRoot}/main.ts`, 'import { util } from "./util.ts";\nutil();\n');
     await Deno.writeTextFile(`${portalRoot}/util.ts`, "export function util() {}\n");
 
@@ -343,9 +328,7 @@ Deno.test("[PortalKnowledgeService] a throwing file resolver degrades to file-im
     const edges = knowledge.relationships ?? [];
     assertEquals(edges.some((e) => e.kind === "file_imports_file_internal"), true);
     assertEquals(edges.some((e) => e.kind === "symbol_references_symbol"), false);
-  } finally {
-    await Deno.remove(portalRoot, { recursive: true });
-  }
+  }, { prefix: "exa_symref_rethrow_" });
 });
 
 Deno.test("[PortalKnowledgeService] turning the flag off after an enabled run leaves no symbol edges persisted", async () => {
