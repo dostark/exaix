@@ -377,7 +377,7 @@ const DESCRIPTOR_PATH = join(REPO_ROOT, POLICY_ROOT, "unslop.project.ts");
 const WHOLE_TREE_TASKS: readonly string[] = [
   "check:constant-restatement",
   "check:unused-exports",
-  "check:unused-exports:strict",
+  "check:unused-exports:fail",
   "check:optional-params",
   "check:optional-params:staged",
 ];
@@ -388,9 +388,7 @@ const FIXTURE_FILES: { [path: string]: string } = {
   "packages/p/src/a.ts":
     "export function unwiredHelper(): number {\n  return 1;\n}\n\nexport function takesBare(value?: string): string {\n  return String(value);\n}\n",
 };
-const UNWIRED = "is exported but never imported by production code.";
-const UNWIRED_STRICT = "is exported, NOT re-exported through any barrel, and never imported.";
-const STRICT_TAIL = "This is likely dead code or was never wired. Remove it or wire it.";
+const UNWIRED = "is exported and never imported by a production file under the exemption list.";
 const BARE_MESSAGE = "'value' is optional without a codified reason (`value?: string`) — declare it with the Opt " +
   "wrapper: `value?: Opt<string, Reason.*>` (import Opt + Reason from @exaix/core/types; pick a Reason that fits, " +
   "e.g. TraceAbsent / OptionalInput / OptionalContext). A bare `?` and a bare `| undefined` are equivalent and " +
@@ -426,12 +424,8 @@ const WHOLE_TREE_CASES: readonly IWholeTreeCase[] = [
       `WARN [unwired-export] packages/p/src/a.ts:5 – 'takesBare' ${UNWIRED}`,
       `WARN [unwired-export] packages/core/src/types/constants.ts:1 – 'FIXTURE_HOSTS' ${UNWIRED}`,
       "",
-      "⚠️  3 unwired export(s) found (relaxed mode).",
-      "  Run with --strict for CI-grade dead-code detection.",
-      "",
-      "Top directories:",
-      "  packages/p: 2",
-      "  packages/core: 1",
+      "⚠️  3 unwired export(s) in the trusted report: 3 error(s), 0 warning(s).",
+      "  Add `--fail` to the host command to make the error findings fail the run.",
       "",
     ].join("\n"),
     stderr: "",
@@ -440,11 +434,11 @@ const WHOLE_TREE_CASES: readonly IWholeTreeCase[] = [
     args: ["--rule=unused-exports", "--strict"],
     code: 1,
     stdout: [
-      `ERROR [unwired-export] packages/p/src/a.ts:1 – 'unwiredHelper' ${UNWIRED_STRICT} ${STRICT_TAIL}`,
-      `ERROR [unwired-export] packages/p/src/a.ts:5 – 'takesBare' ${UNWIRED_STRICT} ${STRICT_TAIL}`,
-      `ERROR [unwired-export] packages/core/src/types/constants.ts:1 – 'FIXTURE_HOSTS' ${UNWIRED_STRICT} ${STRICT_TAIL}`,
+      `ERROR [unwired-export] packages/p/src/a.ts:1 – 'unwiredHelper' ${UNWIRED}`,
+      `ERROR [unwired-export] packages/p/src/a.ts:5 – 'takesBare' ${UNWIRED}`,
+      `ERROR [unwired-export] packages/core/src/types/constants.ts:1 – 'FIXTURE_HOSTS' ${UNWIRED}`,
       "",
-      "❌ 3 strictly unwired export(s) — likely dead code. Fix before commit.",
+      "❌ 3 unwired export(s) in the trusted report: 3 error(s), 0 warning(s).",
       "",
     ].join("\n"),
     stderr: "",
@@ -738,7 +732,7 @@ Deno.test("active_readers_use_new_policy_and_layout", async () => {
     const task of [
       "check:constant-restatement",
       "check:unused-exports",
-      "check:unused-exports:strict",
+      "check:unused-exports:fail",
       "check:optional-params",
       "check:optional-params:staged",
     ]
