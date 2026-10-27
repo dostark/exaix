@@ -11,10 +11,10 @@ import { assert } from "@std/assert";
 import { join } from "@std/path";
 
 import { buildIndex, extractFrontmatter } from "../../scripts/build_agents_index.ts";
+import { withTempDir } from "@exaix/testing";
 
 Deno.test("build_agents_index writes the manifest and DOCS index into the target dir", async () => {
-  const outDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (outDir) => {
     await buildIndex(false, outDir);
 
     const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json")));
@@ -22,9 +22,7 @@ Deno.test("build_agents_index writes the manifest and DOCS index into the target
 
     const docs = await Deno.readTextFile(join(outDir, "DOCS.md"));
     assert(docs.includes("## Task → Doc"), "DOCS index should contain the task table");
-  } finally {
-    await Deno.remove(outDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("extractFrontmatter returns the frontmatter block as string", () => {
