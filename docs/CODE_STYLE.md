@@ -697,8 +697,10 @@ The engine ships a parity mode that mirrors fallow's dead-export definition. Run
 `deno task check:unused-exports:parity` to list every export that no consumer imports, including
 re-exports, entry-point declarations, test helpers, script helpers, default exports, and namespaces.
 Every parity finding is an error, but the task is advisory and stays outside the CI gates until the
-reported surface is cleaned. `configurable(…)` registrations and `__test_*` hooks stay exempt, and an
-intentional value export carries `// unslop-ignore-next-line unused-export` above the declaration.
+reported surface is cleaned. The audit is relaxed (warnings) by default; `check:unused-exports:parity:strict`
+raises the same findings to errors and fails, and `check:unused-exports:compare` prints the diff against
+fallow. `configurable(…)` registrations and `__test_*` hooks stay exempt, and an intentional value
+export carries `// unslop-ignore-next-line unused-export` above the declaration.
 
 ### Module headers {#module-headers}
 

@@ -1137,6 +1137,11 @@
           "apps/daemon/src/",
           "apps/common/"
         ],
+        "severity": {
+          "type": "warning",
+          "value": "error",
+          "parity": "warning"
+        },
         "strictSkipSegments": [
           "/commands/",
           "/handlers/"
