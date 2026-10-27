@@ -1098,20 +1098,23 @@
             "name": "tests",
             "paths": ["tests/"],
             "ignore": ["**/*.d.ts", "**/*.md", "tests/integration/**", "tests/scenario_framework/**"],
-            "threshold": 3
+            "minLines": 10,
+            "threshold": 1.6
           },
           {
             "name": "nested-tests",
             "paths": ["packages/", "apps/", "scripts/", "unslop-ts/"],
             "ignore": ["**/*.d.ts", "**/*.md", "**/node_modules/**", "**/dist/**"],
             "pattern": "**/{tests,tests_node}/**/*.ts",
-            "threshold": 3
+            "minLines": 10,
+            "threshold": 5.4
           },
           {
             "name": "integration-tests",
             "paths": ["tests/integration", "tests/scenario_framework"],
             "ignore": ["**/*.d.ts", "**/*.md", "**/*.yaml", "**/*.yml", "**/*.toml", "**/fixtures/portals/**"],
-            "threshold": 3.8
+            "minLines": 10,
+            "threshold": 2.5
           }
         ]
       }

@@ -341,14 +341,6 @@
         "minProperties": 2,
         "allow": [
           {
-            "name": "IOpenAIEmbeddingConfig",
-            "files": [
-              "packages/ai/src/providers/openai_embedding_client.ts",
-              "packages/ai-openai/src/openai_embedding_client.ts"
-            ],
-            "reason": "The ai copy exists to avoid a circular dependency between @exaix/ai and @exaix/ai-openai."
-          },
-          {
             "name": "IValidationError",
             "files": [
               "packages/quality-gate/src/internal_types.ts",
