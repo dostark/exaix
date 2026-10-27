@@ -11,6 +11,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import type { IContextBudgetSnapshot } from "@exaix/schemas";
 import { FileSnapshotStore, SecurityError } from "@exaix/execution";
+import { withTempDir } from "@exaix/testing";
 
 // Helpers
 
@@ -40,8 +41,7 @@ function makeResolver(tempDir: string): { resolve(path: string): Promise<string>
 // Tests
 
 Deno.test("[SnapshotStore] FileSnapshotStore: saves snapshot JSON to path rooted in @Memory/Execution/", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new FileSnapshotStore(makeResolver(tempDir));
     await store.save(makeSnapshot("trace-abc123"));
 
@@ -50,27 +50,21 @@ Deno.test("[SnapshotStore] FileSnapshotStore: saves snapshot JSON to path rooted
     const parsed = JSON.parse(raw);
     assertEquals(parsed.traceId, "trace-abc123");
     assertEquals(parsed.stepId, "step-1");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[SnapshotStore] FileSnapshotStore: rejects traceId containing path traversal (../../etc)", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new FileSnapshotStore(makeResolver(tempDir));
     await assertRejects(
       () => store.save(makeSnapshot("../../etc")),
       SecurityError,
     );
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[SnapshotStore] FileSnapshotStore: rejects traceId with shell metacharacter ($, ;, |)", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new FileSnapshotStore(makeResolver(tempDir));
     for (const badId of ["trace$1", "trace;1", "trace|1", "trace id", "trace/1"]) {
       await assertRejects(
@@ -78,14 +72,11 @@ Deno.test("[SnapshotStore] FileSnapshotStore: rejects traceId with shell metacha
         SecurityError,
       );
     }
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[SnapshotStore] FileSnapshotStore: rejects stepId with path traversal characters", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new FileSnapshotStore(makeResolver(tempDir));
     for (const badStepId of ["../../etc", "step$1", "step;1", "step/1", "step|1", "step id"]) {
       await assertRejects(
@@ -93,14 +84,11 @@ Deno.test("[SnapshotStore] FileSnapshotStore: rejects stepId with path traversal
         SecurityError,
       );
     }
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[SnapshotStore] FileSnapshotStore: writes atomically (tmp file then rename)", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
+  await withTempDir(async (tempDir) => {
     const store = new FileSnapshotStore(makeResolver(tempDir));
     await store.save(makeSnapshot("trace-atomic", "step-1"));
 
@@ -120,7 +108,5 @@ Deno.test("[SnapshotStore] FileSnapshotStore: writes atomically (tmp file then r
       tmpExists = false;
     }
     assertEquals(tmpExists, false);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });

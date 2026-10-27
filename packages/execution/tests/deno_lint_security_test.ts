@@ -14,7 +14,7 @@ import type { GitService } from "@exaix/git";
 import { createGitTestContext, setupGitRepo } from "@exaix/git/testing";
 import { LintSettingsSchema } from "@exaix/schemas/config.ts";
 import { DENO_LINT_CHECK_KIND, DenoLintCheckSchema } from "@exaix/schemas/portal_verification.ts";
-import { installLintPolicyForTest } from "@exaix/testing";
+import { installLintPolicyForTest, withTempDir } from "@exaix/testing";
 import {
   DenoLintCheckRunner,
   type IDenoLintCheckContext,
@@ -86,8 +86,7 @@ function errorClass(outcome: IDenoLintCheckOutcome): string | null {
 }
 
 Deno.test("policy-trust-boundaries", async (test) => {
-  const systemRoot = await Deno.makeTempDir({ prefix: "deno-lint-trust-" });
-  try {
+  await withTempDir(async (systemRoot) => {
     await installLintPolicyForTest(join(systemRoot, "lint"));
     const repo = await makeRepo("deno-lint-trust-repo-", { "seed.ts": CAST_SEED });
     try {
@@ -144,9 +143,7 @@ Deno.test("policy-trust-boundaries", async (test) => {
     } finally {
       await repo.cleanup();
     }
-  } finally {
-    await Deno.remove(systemRoot, { recursive: true });
-  }
+  }, { prefix: "deno-lint-trust-" });
 });
 
 Deno.test("file-ignore-rejected", async (test) => {
