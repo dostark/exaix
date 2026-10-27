@@ -21,12 +21,7 @@ export { REPO_ROOT, withRepoRoot } from "./src/helpers/repo_root.ts";
 export { installLintPolicyForTest, LINT_POLICY_TASK } from "./src/helpers/lint_policy.ts";
 export { createCapturingLogger, type ICapturedEvent } from "./src/helpers/capturing_logger.ts";
 export { withTempDir } from "./src/helpers/temp_dir.ts";
-export {
-  DELEGATE_CYCLE_STEP_ID,
-  delegateCycleFlow,
-  delegateCycleStep,
-  type TFlowStep,
-} from "./src/helpers/delegate_cycle_fixtures.ts";
+export { DELEGATE_CYCLE_STEP_ID, delegateCycleFlow, delegateCycleStep } from "./src/helpers/delegate_cycle_fixtures.ts";
 export { StubSkillsService } from "./src/helpers/stub_skills_service.ts";
 export {
   createSkillLoaderFor,

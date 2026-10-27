@@ -10,7 +10,7 @@ import { ExaPathDefaults } from "@exaix/shared";
 import { LogLevel } from "@exaix/core";
 
 /** A config input that holds only the required sections. */
-export interface IBaseConfig {
+interface IBaseConfig {
   system: { root: string; log_level: string };
   paths: typeof ExaPathDefaults;
 }

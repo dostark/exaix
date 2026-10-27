@@ -30,7 +30,7 @@ import {
 } from "@exaix/testing";
 
 /** What a test gets once the workspace, the pending request, and the processor exist. */
-export interface IProcessorWorkspace {
+interface IProcessorWorkspace {
   db: Awaited<ReturnType<typeof initTestDbService>>["db"];
   traceId: string;
   requestPath: string;

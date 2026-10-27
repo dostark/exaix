@@ -11,7 +11,7 @@
 import { join } from "@std/path";
 
 export const REPO_ROOT = Deno.cwd();
-export const DENO_CONFIG_PATH = join(REPO_ROOT, "deno.json");
+const DENO_CONFIG_PATH = join(REPO_ROOT, "deno.json");
 
 interface JsonImportMap {
   imports?: IImportMap;

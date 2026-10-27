@@ -11,7 +11,7 @@ import { FlowGateOnFail, FlowInputSource, FlowOutputFormat, FlowStepExecutionMod
 import type { IFlow } from "@exaix/schemas/flow.ts";
 
 /** One step of a flow, as the flow schema defines it. */
-export type TFlowStep = IFlow["steps"][number];
+type TFlowStep = IFlow["steps"][number];
 
 /** The id of the delegate-cycle step in the shared flow. */
 export const DELEGATE_CYCLE_STEP_ID = "next-steps";
