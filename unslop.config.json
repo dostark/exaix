@@ -1128,7 +1128,7 @@
             "ignore": ["**/*.d.ts", "**/*.md", "**/node_modules/**", "**/dist/**"],
             "pattern": "**/{tests,tests_node}/**/*.ts",
             "minLines": 10,
-            "threshold": 5.4
+            "threshold": 2.6
           }
         ]
       }
