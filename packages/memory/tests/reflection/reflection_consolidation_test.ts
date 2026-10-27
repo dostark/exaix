@@ -5,7 +5,6 @@
  * @architectural-layer Tests
  */
 import { assertEquals } from "@std/assert";
-import type { IModelProvider } from "@exaix/ai";
 import type { IMemoryBankService, IMemoryEmbeddingService } from "@exaix/core/types";
 import type { IReflectionSkills } from "@exaix/memory/reflection/memory_reflection_service.ts";
 import { MemoryStatus } from "@exaix/core/status";
@@ -13,37 +12,11 @@ import { LearningCategory } from "@exaix/core";
 import { MemoryBankService, MemoryExtractorService, MemoryReflectionService } from "@exaix/memory";
 import type { IReflectionCycleResult } from "@exaix/memory";
 import { castAny, createSampleLearning, initTestDbService } from "@exaix/testing";
+import { FixedContentProvider, reflectionSkills } from "../helpers/reflection_doubles.ts";
 
 const POLICY_INSTRUCTIONS = "Retain non-derivable knowledge; prune structural restatements.";
 
-class StubProvider implements IModelProvider {
-  id = "reflection-test";
-  prompt = "";
-  constructor(private content: string) {}
-  generate(prompt: string) {
-    this.prompt = prompt;
-    return Promise.resolve({
-      content: this.content,
-      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
-      model: "mock-memory",
-      provider: "mock",
-      cost_usd: 0.002,
-    });
-  }
-}
-
-function skillsService(): IReflectionSkills {
-  return castAny<IReflectionSkills>({
-    recordSubmission: () => Promise.resolve(),
-    currentConfigGeneration: () => "static",
-    getSkill: (skillId: string) =>
-      Promise.resolve(
-        skillId === "memory-extraction-content-policy"
-          ? { skill_id: skillId, instructions: POLICY_INSTRUCTIONS }
-          : null,
-      ),
-  });
-}
+const skillsService = (): IReflectionSkills => reflectionSkills(POLICY_INSTRUCTIONS);
 
 /** Query-keyed similarity stub: `similar[title]` lists ids that pair with a learning whose title appears in the query. */
 function embedding(similar: Record<string, Array<{ id: string; similarity: number }>>): IMemoryEmbeddingService {
@@ -88,7 +61,7 @@ Deno.test("related APPROVED learnings synthesise into a higher-order PENDING pro
     await bank.addGlobalLearning(b);
     const extractor = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
     const reflection = new MemoryReflectionService({
-      provider: new StubProvider(JSON.stringify({
+      provider: new FixedContentProvider(JSON.stringify({
         actions: [{
           action: "synthesise",
           source_ids: [a.id, b.id],
@@ -144,7 +117,7 @@ Deno.test("the reflection pass is idempotent (a second run proposes nothing new)
     await bank.addGlobalLearning(a);
     await bank.addGlobalLearning(b);
     const extractor = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
-    const provider = new StubProvider(JSON.stringify({
+    const provider = new FixedContentProvider(JSON.stringify({
       actions: [{
         action: "synthesise",
         source_ids: [a.id, b.id],
@@ -187,7 +160,7 @@ Deno.test("low-value entries are soft-deleted reversibly with the record retaine
     await bank.addGlobalLearning(lowValue);
     const extractor = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
     const reflection = new MemoryReflectionService({
-      provider: new StubProvider(
+      provider: new FixedContentProvider(
         JSON.stringify({
           actions: [{
             action: "prune",
@@ -246,7 +219,7 @@ Deno.test("near-duplicate APPROVED learnings merge deterministically without an 
     await bank.addGlobalLearning(weaker);
     const extractor = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
     const reflection = new MemoryReflectionService({
-      provider: new StubProvider(JSON.stringify({ actions: [] })),
+      provider: new FixedContentProvider(JSON.stringify({ actions: [] })),
       skillsService: skillsService(),
       memoryBank: bank,
       embeddingService: embedding({ "Retry flaky network calls": related(weaker.id, 0.95) }),
@@ -291,7 +264,7 @@ Deno.test("reflection input and actions are scoped to APPROVED (PENDING entries 
     await bank.addGlobalLearning(approved);
     const extractor = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
     const reflection = new MemoryReflectionService({
-      provider: new StubProvider(JSON.stringify({
+      provider: new FixedContentProvider(JSON.stringify({
         actions: [
           { action: "prune", target_id: pending.id, reason: "should be rejected" },
           {

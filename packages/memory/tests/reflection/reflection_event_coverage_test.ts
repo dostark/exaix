@@ -5,7 +5,6 @@
  * @architectural-layer Tests
  */
 import { assertEquals } from "@std/assert";
-import type { IModelProvider } from "@exaix/ai";
 import type { IMemoryBankService, IMemoryEmbeddingService } from "@exaix/core/types";
 import type { IReflectionSkills } from "@exaix/memory/reflection/memory_reflection_service.ts";
 import { DomainEventType } from "@exaix/core/events";
@@ -13,33 +12,11 @@ import { MemoryStatus } from "@exaix/core/status";
 import { EventLogger } from "@exaix/core/logger";
 import { MemoryBankService, MemoryExtractorService, MemoryReflectionService } from "@exaix/memory";
 import { castAny, createSampleLearning, initTestDbService } from "@exaix/testing";
+import { FixedContentProvider, reflectionSkills } from "../helpers/reflection_doubles.ts";
 
 const SERVICE_SOURCE_URL = new URL("../../src/reflection/memory_reflection_service.ts", import.meta.url);
 
-class StubProvider implements IModelProvider {
-  id = "reflection-events-test";
-  constructor(private content: string) {}
-  generate() {
-    return Promise.resolve({
-      content: this.content,
-      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
-      model: "mock-memory",
-      provider: "mock",
-      cost_usd: 0.002,
-    });
-  }
-}
-
-function skillsService(): IReflectionSkills {
-  return castAny<IReflectionSkills>({
-    recordSubmission: () => Promise.resolve(),
-    currentConfigGeneration: () => "static",
-    getSkill: (skillId: string) =>
-      Promise.resolve(
-        skillId === "memory-extraction-content-policy" ? { skill_id: skillId, instructions: "policy" } : null,
-      ),
-  });
-}
+const skillsService = (): IReflectionSkills => reflectionSkills("policy");
 
 function embedding(similar: Array<{ id: string; similarity: number }>): IMemoryEmbeddingService {
   return castAny<IMemoryEmbeddingService>({
@@ -93,7 +70,7 @@ Deno.test("a completed cycle journals MemoryReflectionCycleCompleted with synthe
     await bank.addGlobalLearning(lowValue);
     const extractor = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank), logger);
     const reflection = new MemoryReflectionService({
-      provider: new StubProvider(
+      provider: new FixedContentProvider(
         JSON.stringify({ actions: [{ action: "prune", target_id: lowValue.id, reason: "Restates structural facts" }] }),
       ),
       skillsService: skillsService(),

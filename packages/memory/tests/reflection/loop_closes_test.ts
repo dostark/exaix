@@ -5,7 +5,6 @@
  * @architectural-layer Tests
  */
 import { assertEquals } from "@std/assert";
-import type { IModelProvider } from "@exaix/ai";
 import { ConfidenceAssessmentLevel, ExecutionStatus } from "@exaix/core";
 import {
   LlmLearningExtractor,
@@ -17,35 +16,11 @@ import type { IMemoryBankService, IMemoryCostRouter, ISkillsService } from "@exa
 import type { IReflectionSkills } from "@exaix/memory/reflection/memory_reflection_service.ts";
 import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import { castAny, createMinimalExecutionMemory, initTestDbService } from "@exaix/testing";
+import { FixedContentProvider, reflectionSkills } from "../helpers/reflection_doubles.ts";
 
 const POLICY_INSTRUCTIONS = "Retain non-derivable knowledge; prune structural restatements.";
 
-class StubProvider implements IModelProvider {
-  id = "loop-closes-test";
-  constructor(private content: string) {}
-  generate() {
-    return Promise.resolve({
-      content: this.content,
-      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
-      model: "mock-memory",
-      provider: "mock",
-      cost_usd: 0.002,
-    });
-  }
-}
-
-function skillsService(): IReflectionSkills {
-  return castAny<IReflectionSkills>({
-    recordSubmission: () => Promise.resolve(),
-    currentConfigGeneration: () => "static",
-    getSkill: (skillId: string) =>
-      Promise.resolve(
-        skillId === "memory-extraction-content-policy"
-          ? { skill_id: skillId, instructions: POLICY_INSTRUCTIONS }
-          : null,
-      ),
-  });
-}
+const skillsService = (): IReflectionSkills => reflectionSkills(POLICY_INSTRUCTIONS);
 
 function execution(lessons: string[]): IExecutionMemory {
   return {
@@ -79,7 +54,7 @@ Deno.test("high-quality extracted learning auto-approves; low-quality stays pend
           recordOperation: () => Promise.resolve(),
         }),
         llmStrategy: new LlmLearningExtractor(
-          new StubProvider(JSON.stringify({
+          new FixedContentProvider(JSON.stringify({
             learnings: [
               {
                 title: "Wrap flaky integration calls in exponential backoff",

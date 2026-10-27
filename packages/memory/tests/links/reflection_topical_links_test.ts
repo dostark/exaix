@@ -5,42 +5,17 @@
  * @architectural-layer Tests
  */
 import { assertEquals } from "@std/assert";
-import type { IModelProvider } from "@exaix/ai";
 import type { IMemoryBankService, IMemoryEmbeddingService } from "@exaix/core/types";
 import type { IReflectionSkills } from "@exaix/memory/reflection/memory_reflection_service.ts";
 import { MemoryStatus } from "@exaix/core/status";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
 import { MemoryBankService, MemoryExtractorService, MemoryReflectionService } from "@exaix/memory";
 import { castAny, createSampleLearning, initTestDbService } from "@exaix/testing";
+import { FixedContentProvider, reflectionSkills } from "../helpers/reflection_doubles.ts";
 
 const POLICY_INSTRUCTIONS = "Retain non-derivable knowledge.";
 
-class StubProvider implements IModelProvider {
-  id = "reflection-topical-test";
-  constructor(private content: string) {}
-  generate() {
-    return Promise.resolve({
-      content: this.content,
-      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
-      model: "mock-memory",
-      provider: "mock",
-      cost_usd: 0.002,
-    });
-  }
-}
-
-function skillsService(): IReflectionSkills {
-  return castAny<IReflectionSkills>({
-    recordSubmission: () => Promise.resolve(),
-    currentConfigGeneration: () => "static",
-    getSkill: (skillId: string) =>
-      Promise.resolve(
-        skillId === "memory-extraction-content-policy"
-          ? { skill_id: skillId, instructions: POLICY_INSTRUCTIONS }
-          : null,
-      ),
-  });
-}
+const skillsService = (): IReflectionSkills => reflectionSkills(POLICY_INSTRUCTIONS);
 
 function embedding(similar: Record<string, Array<{ id: string; similarity: number }>>): IMemoryEmbeddingService {
   return castAny<IMemoryEmbeddingService>({
@@ -91,7 +66,7 @@ async function withSynthesisScenario(
     await bank.addGlobalLearning(b);
     const extractor = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
     const reflection = new MemoryReflectionService({
-      provider: new StubProvider(JSON.stringify({
+      provider: new FixedContentProvider(JSON.stringify({
         actions: [{
           action: "synthesise",
           source_ids: [a.id, b.id],

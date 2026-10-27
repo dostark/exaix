@@ -6,34 +6,16 @@
  */
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { z } from "zod";
-import type { IModelProvider } from "@exaix/ai";
 import type { IMemoryBankService, IMemoryEmbeddingService } from "@exaix/core/types";
 import type { IReflectionSkills } from "@exaix/memory/reflection/memory_reflection_service.ts";
 import { LearningCategory } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import { MemoryBankService, MemoryExtractorService, MemoryReflectionService } from "@exaix/memory";
 import { castAny, createSampleLearning, initTestDbService, loadRepoSkillCatalog } from "@exaix/testing";
+import { FixedContentProvider, reflectionSkills } from "../helpers/reflection_doubles.ts";
 
 const SKILL_INSTRUCTIONS: string = (await loadRepoSkillCatalog()).get("memory-extraction-content-policy")!.skill
   .instructions;
-
-class CapturingProvider implements IModelProvider {
-  id = "reflection-policy-test";
-  prompt = "";
-  calls = 0;
-  constructor(private content: string) {}
-  generate(prompt: string) {
-    this.calls++;
-    this.prompt = prompt;
-    return Promise.resolve({
-      content: this.content,
-      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
-      model: "mock-memory",
-      provider: "mock",
-      cost_usd: 0.002,
-    });
-  }
-}
 
 Deno.test("offline reflection skips the LLM and completes its deterministic pass", async () => {
   const { config, db, cleanup } = await initTestDbService();
@@ -41,7 +23,7 @@ Deno.test("offline reflection skips the LLM and completes its deterministic pass
     const bank = new MemoryBankService(config);
     await bank.initGlobalMemory();
     const extractor = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
-    const provider = new CapturingProvider(JSON.stringify({ actions: [] }));
+    const provider = new FixedContentProvider(JSON.stringify({ actions: [] }));
     const reflection = new MemoryReflectionService({
       provider,
       skillsService: skillsService(),
@@ -65,16 +47,7 @@ Deno.test("offline reflection skips the LLM and completes its deterministic pass
   }
 });
 
-function skillsService(): IReflectionSkills {
-  return castAny<IReflectionSkills>({
-    recordSubmission: () => Promise.resolve(),
-    currentConfigGeneration: () => "static",
-    getSkill: (skillId: string) =>
-      Promise.resolve(
-        skillId === "memory-extraction-content-policy" ? { skill_id: skillId, instructions: SKILL_INSTRUCTIONS } : null,
-      ),
-  });
-}
+const skillsService = (): IReflectionSkills => reflectionSkills(SKILL_INSTRUCTIONS);
 
 function embedding(): IMemoryEmbeddingService {
   return castAny<IMemoryEmbeddingService>({
@@ -91,7 +64,7 @@ Deno.test("fix(reflection): the prompt advertises the validated output schema an
     const bank = new MemoryBankService(config);
     await bank.initGlobalMemory();
     await bank.addGlobalLearning(createSampleLearning({ id: crypto.randomUUID(), status: MemoryStatus.APPROVED }));
-    const provider = new CapturingProvider(JSON.stringify({ actions: [] }));
+    const provider = new FixedContentProvider(JSON.stringify({ actions: [] }));
     const reflection = new MemoryReflectionService({
       provider,
       skillsService: skillsService(),
@@ -142,7 +115,7 @@ Deno.test("fix(reflection): [security] synthesis titles accept the boundary and 
         for (const source of sources) await bank.addGlobalLearning(source);
         const writer = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
         const title = "x".repeat(length);
-        const provider = new CapturingProvider(JSON.stringify({
+        const provider = new FixedContentProvider(JSON.stringify({
           actions: [{
             action: "synthesise",
             source_ids: sources.map((source) => source.id),
@@ -195,7 +168,7 @@ Deno.test("synthesis prompt includes the Step 1 content-curation skill instructi
       }),
     );
     const extractor = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
-    const provider = new CapturingProvider(JSON.stringify({ actions: [] }));
+    const provider = new FixedContentProvider(JSON.stringify({ actions: [] }));
     const reflection = new MemoryReflectionService({
       provider,
       skillsService: skillsService(),
@@ -236,7 +209,7 @@ Deno.test("a structural-fact restatement is pruned while a genuine decision entr
     await bank.addGlobalLearning(genuineDecision);
     const extractor = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
     const reflection = new MemoryReflectionService({
-      provider: new CapturingProvider(JSON.stringify({
+      provider: new FixedContentProvider(JSON.stringify({
         actions: [
           {
             action: "prune",
@@ -279,7 +252,7 @@ Deno.test("missing content-policy skill fails the cycle loudly", async () => {
       getSkill: () => Promise.resolve(null),
     });
     const reflection = new MemoryReflectionService({
-      provider: new CapturingProvider(JSON.stringify({ actions: [] })),
+      provider: new FixedContentProvider(JSON.stringify({ actions: [] })),
       skillsService: missingSkill,
       memoryBank: bank,
       embeddingService: embedding(),
