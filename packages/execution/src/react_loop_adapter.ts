@@ -11,11 +11,10 @@
 import type { JSONValue } from "@exaix/core";
 import type { IEventBusService } from "@exaix/core/observability";
 import type { IEventLogger } from "@exaix/core/logger";
-import { ActorType, AGENT_GENERATION_COMPLETED, DEFAULT_MCP_AGENT_ROLE_ID, RunnerKind } from "@exaix/core";
 import { DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS, ToolsRoundLoop } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IAgentPromptAssembledReactPayload } from "@exaix/core/events";
-import type { IChangesetCostSource, IChangesetResult } from "@exaix/schemas/agent_composer.ts";
+import type { IChangesetResult } from "@exaix/schemas/agent_composer.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import { defaultToolsRoundPolicy, type IToolsRoundPolicy } from "@exaix/schemas";
 import type { IToolRegistry } from "@exaix/core/types";
@@ -24,6 +23,7 @@ import type { ITokenizer } from "@exaix/core/func";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import type { IOutputParserContext, OutputParser } from "./output_parser.ts";
 import type { ExecutionContextService } from "./execution_context_service.ts";
+import { type IGenerationUsage, logGenerationCompleted } from "./generation_log.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 /** Interface the ReAct loop strategy requires from its executor, decoupled from AgentComposer's internal types. */
@@ -48,16 +48,7 @@ export interface IReActLoopExecutor {
     agentRole: string,
     model: string,
     providerStr: string,
-    usage: {
-      promptTokens: number;
-      completionTokens: number;
-      totalTokens: number;
-      costUsd?: number;
-      costSource?: IChangesetCostSource;
-      cacheReadTokens?: Opt<number, Reason.OptionalInput>;
-      cacheCreationTokens?: Opt<number, Reason.OptionalInput>;
-      durationMs?: Opt<number, Reason.OptionalInput>;
-    },
+    usage: IGenerationUsage,
   ): Promise<void>;
   eventBus?: IEventBusService;
   contextBudgetManager?: IContextBudgetManager;
@@ -178,47 +169,14 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
     return this.outputParser.parseAgentResponse(response, context, startTime);
   }
 
-  async logGeneration(
+  logGeneration(
     traceId: string,
     agentRole: string,
     model: string,
     providerStr: string,
-    usage: {
-      promptTokens: number;
-      completionTokens: number;
-      totalTokens: number;
-      costUsd?: number;
-      costSource?: IChangesetCostSource;
-      cacheReadTokens?: Opt<number, Reason.OptionalInput>;
-      cacheCreationTokens?: Opt<number, Reason.OptionalInput>;
-      durationMs?: Opt<number, Reason.OptionalInput>;
-    },
+    usage: IGenerationUsage,
   ): Promise<void> {
-    await this.logger.log({
-      action: AGENT_GENERATION_COMPLETED,
-      target: model,
-      actor: DEFAULT_MCP_AGENT_ROLE_ID,
-      actorType: ActorType.SERVICE,
-      traceId,
-      runnerId: "agent-composer",
-      runnerKind: RunnerKind.AGENT_COMPOSER,
-      agentRole,
-      promptTokens: usage.promptTokens,
-      completionTokens: usage.completionTokens,
-      costUsd: usage.costSource === "unknown" ? null : usage.costUsd,
-      cacheReadTokens: usage.cacheReadTokens,
-      cacheCreationTokens: usage.cacheCreationTokens,
-      payload: {
-        model,
-        provider: providerStr,
-        prompt_tokens: usage.promptTokens,
-        completion_tokens: usage.completionTokens,
-        total_tokens: usage.totalTokens,
-        ...(usage.costUsd === undefined ? {} : { cost_usd: usage.costUsd }),
-        ...(usage.costSource === undefined ? {} : { cost_source: usage.costSource }),
-        duration_ms: usage.durationMs,
-      },
-    });
+    return logGenerationCompleted(this.logger, traceId, agentRole, model, providerStr, usage);
   }
 
   async logPromptAssembled(

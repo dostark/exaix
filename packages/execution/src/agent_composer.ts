@@ -24,14 +24,7 @@ import type { HitlPolicy } from "@exaix/schemas/hitl.ts";
 import type { IDatabaseService, ISkillsService } from "@exaix/core/types";
 import { createSkillOperationContext, SkillUnavailableError } from "@exaix/core/skills";
 import type { IEventLogger } from "@exaix/core/logger";
-import {
-  ActorType,
-  AGENT_GENERATION_COMPLETED,
-  canonicalizeToolName,
-  LogLevel,
-  RunnerKind,
-  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
-} from "@exaix/core";
+import { ActorType, canonicalizeToolName, LogLevel, RunnerKind, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -101,6 +94,7 @@ import { PLANNING_TOOL_CALL_OVERHEAD_TOKENS } from "@exaix/core";
 import { ContextBudgetManager, type IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import { ExecutionContextService } from "./execution_context_service.ts";
+import { type IGenerationUsage, logGenerationCompleted } from "./generation_log.ts";
 import { BlueprintService } from "./blueprint_service.ts";
 import { PromptBuilder } from "./prompt_builder.ts";
 import { readDelegateProviderEnv } from "@exaix/session/delegate_provider_env.ts";
@@ -1122,47 +1116,13 @@ export class AgentComposer {
   validateReviewResult(result: JSONValue): IChangesetResult {
     return this.outputParser.validateReviewResult(result);
   }
-  async logGeneration(
+  logGeneration(
     traceId: string,
     agentRole: string,
     model: string,
     providerStr: string,
-    usage: {
-      promptTokens: number;
-      completionTokens: number;
-      totalTokens: number;
-      costUsd?: number;
-      costSource?: IChangesetCostSource;
-      cacheReadTokens?: Opt<number, Reason.OptionalInput>;
-      cacheCreationTokens?: Opt<number, Reason.OptionalInput>;
-      /** Real wall-clock duration of this individual provider.generate() call, ms. */
-      durationMs?: Opt<number, Reason.OptionalInput>;
-    },
+    usage: IGenerationUsage,
   ): Promise<void> {
-    await this.logger.log({
-      action: AGENT_GENERATION_COMPLETED,
-      target: model,
-      actor: DEFAULT_MCP_AGENT_ROLE_ID,
-      actorType: ActorType.SERVICE,
-      traceId: traceId,
-      runnerId: AGENT_COMPOSER_ID,
-      runnerKind: RunnerKind.AGENT_COMPOSER,
-      agentRole: agentRole,
-      promptTokens: usage.promptTokens,
-      completionTokens: usage.completionTokens,
-      costUsd: usage.costSource === "unknown" ? null : usage.costUsd,
-      cacheReadTokens: usage.cacheReadTokens,
-      cacheCreationTokens: usage.cacheCreationTokens,
-      payload: {
-        model,
-        provider: providerStr,
-        prompt_tokens: usage.promptTokens,
-        completion_tokens: usage.completionTokens,
-        total_tokens: usage.totalTokens,
-        ...(usage.costUsd === undefined ? {} : { cost_usd: usage.costUsd }),
-        ...(usage.costSource === undefined ? {} : { cost_source: usage.costSource }),
-        duration_ms: usage.durationMs,
-      },
-    });
+    return logGenerationCompleted(this.logger, traceId, agentRole, model, providerStr, usage);
   }
 }
