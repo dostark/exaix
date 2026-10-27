@@ -7,26 +7,12 @@
  * @related-files ["packages/schemas/src/config.ts"]
  */
 
-import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
 
-import { LogLevel, PortalAnalysisMode } from "@exaix/core";
+import { PortalAnalysisMode } from "@exaix/core";
 import * as DEFAULTS from "@exaix/core";
-
-// Minimal valid config base (only truly required fields — system + paths)
-
-interface IBaseConfig {
-  system: { root: string; log_level: string };
-  paths: typeof ExaPathDefaults;
-}
-
-function baseConfig(): IBaseConfig {
-  return {
-    system: { root: "/tmp/exa-test", log_level: LogLevel.INFO },
-    paths: { ...ExaPathDefaults },
-  };
-}
+import { baseConfig } from "./helpers/base_config.ts";
 
 // Tests
 

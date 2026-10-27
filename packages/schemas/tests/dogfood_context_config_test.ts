@@ -9,18 +9,10 @@
  * @related-files [packages/schemas/src/config.ts]
  */
 
-import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
-import { LogLevel } from "@exaix/core";
 import * as DEFAULTS from "@exaix/core";
-
-function baseConfig() {
-  return {
-    system: { root: "/tmp/exa-test", log_level: LogLevel.INFO },
-    paths: { ...ExaPathDefaults },
-  };
-}
+import { baseConfig } from "./helpers/base_config.ts";
 
 Deno.test("[ConfigSchema] dogfood.context defaults to disabled when the block is absent (old-config compatibility)", () => {
   const result = ConfigSchema.safeParse(baseConfig());

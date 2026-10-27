@@ -8,24 +8,11 @@
  * @related-files ["packages/schemas/src/config.ts", "packages/core/src/types/constants.ts"]
  */
 
-import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
 
-import { LogLevel } from "@exaix/core";
 import * as DEFAULTS from "@exaix/core";
-
-interface IBaseConfig {
-  system: { root: string; log_level: string };
-  paths: typeof ExaPathDefaults;
-}
-
-function baseConfig(): IBaseConfig {
-  return {
-    system: { root: "/tmp/exa-test", log_level: LogLevel.INFO },
-    paths: { ...ExaPathDefaults },
-  };
-}
+import { baseConfig } from "./helpers/base_config.ts";
 
 Deno.test("[ConfigSchema] planning defaults to tools_enabled=false, max_tool_rounds=2, max_tool_result_tokens=2000 when absent", () => {
   const result = ConfigSchema.safeParse(baseConfig());

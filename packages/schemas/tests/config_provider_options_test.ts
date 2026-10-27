@@ -8,22 +8,9 @@
  * is obsolete: @exaix/schemas/config.ts is the single ConfigSchema definition.
  */
 
-import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
-import { LogLevel } from "@exaix/core";
-
-interface IBaseConfig {
-  system: { root: string; log_level: string };
-  paths: typeof ExaPathDefaults;
-}
-
-function baseConfig(): IBaseConfig {
-  return {
-    system: { root: "/tmp/exa-test", log_level: LogLevel.INFO },
-    paths: { ...ExaPathDefaults },
-  };
-}
+import { baseConfig } from "./helpers/base_config.ts";
 
 Deno.test("[ConfigSchema] applies ai_vertex / ai_openrouter defaults when omitted", () => {
   const result = ConfigSchema.safeParse(baseConfig());

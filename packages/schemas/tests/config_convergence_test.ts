@@ -7,11 +7,9 @@
  * @related-files ["packages/schemas/src/config.ts"]
  */
 
-import { ExaPathDefaults } from "@exaix/shared";
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
 
-import { LogLevel } from "@exaix/core";
 import {
   DEFAULT_AGENT_MAX_ITERATIONS,
   DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW,
@@ -23,18 +21,7 @@ import {
   DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
   DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
 } from "@exaix/schemas/constants.ts";
-interface IBaseConfig {
-  system: { root: string; log_level: string };
-  paths: typeof ExaPathDefaults;
-}
-
-function baseConfig(): IBaseConfig {
-  return {
-    system: { root: "/tmp/exa-test", log_level: LogLevel.INFO },
-    paths: { ...ExaPathDefaults },
-  };
-}
-
+import { baseConfig } from "./helpers/base_config.ts";
 Deno.test("[ConfigSchema] validates agents.convergence section", () => {
   const result = ConfigSchema.safeParse({
     ...baseConfig(),
