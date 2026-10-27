@@ -7,6 +7,7 @@
 
 import { assert, assertEquals, assertFalse, assertRejects } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
+import { withTempDir } from "@exaix/testing";
 import {
   buildWorkerContainerLaunch,
   DEFAULT_TEST_CONTAINER_CPUS,
@@ -21,6 +22,7 @@ import {
   isContainerModeEnabled,
   type IWorkerContainer,
   type IWorkerContainerLaunchOptions,
+  linkedWorktreeGitMounts,
   MIN_TEST_CONTAINER_JOBS,
   parseDockerTimestamp,
   parseWorkerResultLine,
@@ -370,6 +372,66 @@ Deno.test("buildWorkerContainerLaunch isolates HOME, EXA_HOME and DENO_DIR, defa
   assert(joined.includes("--sysctl net.ipv6.conf.all.disable_ipv6=1"), "IPv6 disabled for deterministic loopback");
   assert(!joined.includes("DENO_JOBS"), "DENO_JOBS must never be forwarded");
   assert(joined.includes("scripts/test_container_driver.ts"), "runs the driver");
+});
+
+/** Writes a linked-worktree layout: a `.git` file in the checkout that points into the common git directory. */
+async function writeLinkedWorktree(root: string): Promise<{ checkout: string; commonDir: string }> {
+  const commonDir = join(root, "primary", ".git");
+  const worktreeGitDir = join(commonDir, "worktrees", "wt");
+  const checkout = join(root, "linked");
+  await Deno.mkdir(worktreeGitDir, { recursive: true });
+  await Deno.mkdir(checkout, { recursive: true });
+  await Deno.writeTextFile(join(worktreeGitDir, "commondir"), "../..\n");
+  await Deno.writeTextFile(join(checkout, ".git"), `gitdir: ${worktreeGitDir}\n`);
+  return { checkout, commonDir };
+}
+
+Deno.test("a linked worktree mounts its common git directory read-only at the host path", async () => {
+  await withTempDir(async (root) => {
+    const { checkout, commonDir } = await writeLinkedWorktree(root);
+    assertEquals(linkedWorktreeGitMounts(checkout), [`type=bind,src=${commonDir},dst=${commonDir},readonly`]);
+  });
+});
+
+Deno.test("a normal checkout or a directory without git needs no extra git mount", async () => {
+  await withTempDir(async (root) => {
+    const normal = join(root, "normal");
+    await Deno.mkdir(join(normal, ".git"), { recursive: true });
+    assertEquals(linkedWorktreeGitMounts(normal), []);
+    const bare = join(root, "bare");
+    await Deno.mkdir(bare, { recursive: true });
+    assertEquals(linkedWorktreeGitMounts(bare), []);
+  });
+});
+
+Deno.test("a .git file that does not point to a git directory adds no mount", async () => {
+  await withTempDir(async (root) => {
+    await Deno.writeTextFile(join(root, ".git"), "not a gitdir pointer\n");
+    assertEquals(linkedWorktreeGitMounts(root), []);
+  });
+});
+
+Deno.test("buildWorkerContainerLaunch adds the git mount for a linked worktree and only then", async () => {
+  await withTempDir(async (root) => {
+    const { checkout, commonDir } = await writeLinkedWorktree(root);
+    const base = {
+      image: "exaix-dev-test:dev",
+      workerName: "exaix-test-worker-0",
+      network: "none" as const,
+      env: {},
+      pidsLimit: 512,
+      memory: "2g",
+      cpus: "2.0",
+      watchdogMs: 60_000,
+    };
+    const linked = buildWorkerContainerLaunch({ ...base, repoRoot: checkout }).args.join(" ");
+    assert(
+      linked.includes(`--mount type=bind,src=${commonDir},dst=${commonDir},readonly`),
+      "git dir mounted read-only",
+    );
+    const plain = buildWorkerContainerLaunch({ ...base, repoRoot: "/repo" }).args.join(" ");
+    assertFalse(plain.includes("readonly"), "no extra mount for a plain checkout");
+  });
 });
 
 Deno.test("parseWorkerResultLine parses a result line and ignores non-prefixed or malformed stdout", () => {

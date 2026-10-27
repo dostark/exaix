@@ -14,7 +14,7 @@
  * @related-files [Dockerfile, .dockerignore, tests/scripts/test_isolation_test.ts]
  */
 
-import { fromFileUrl, join } from "@std/path";
+import { fromFileUrl, join, resolve } from "@std/path";
 import { TextLineStream } from "@std/streams";
 import type { Opt, Reason } from "@exaix/core/types";
 import { buildJailLaunch, dockerProbeSkipReason } from "../tests/scenario_framework/runner/matrix_expander.ts";
@@ -419,6 +419,24 @@ export function resolveContainerResourceBounds(
   return { pidsLimit, memory, cpus };
 }
 
+const GIT_ENTRY = ".git";
+const GIT_POINTER_PREFIX = "gitdir:";
+const GIT_COMMON_DIR_FILE = "commondir";
+
+/** The read-only mount that lets `git` run in a worker container on a linked worktree. */
+export function linkedWorktreeGitMounts(repoRoot: string): string[] {
+  try {
+    const pointer = Deno.readTextFileSync(join(repoRoot, GIT_ENTRY)).trim();
+    if (!pointer.startsWith(GIT_POINTER_PREFIX)) return [];
+    const gitDir = resolve(repoRoot, pointer.slice(GIT_POINTER_PREFIX.length).trim());
+    const commonDir = resolve(gitDir, Deno.readTextFileSync(join(gitDir, GIT_COMMON_DIR_FILE)).trim());
+    return [`type=bind,src=${commonDir},dst=${commonDir},readonly`];
+  } catch {
+    // A normal checkout has a .git directory, and a bare directory has none: neither needs a mount.
+    return [];
+  }
+}
+
 /** Build the worker-container `docker run` argv by reusing the hardened `buildJailLaunch`
  *  shape. It passes no `--init`, because the image entrypoint already runs tini as PID 1.
  *  The worker runs the driver with a piped stdin/stdout protocol. */
@@ -432,6 +450,7 @@ export function buildWorkerContainerLaunch(options: IWorkerContainerLaunchOption
       mountSource: options.repoRoot,
       mountDest: WORKER_MOUNT_DEST,
       workdir: WORKER_MOUNT_DEST,
+      extraMounts: linkedWorktreeGitMounts(options.repoRoot),
       extraEnv: { HOME: "/tmp/home", EXA_HOME: "/tmp/exa", DENO_DIR: "/deno-dir", ...env },
       network: options.network,
       pidsLimit: options.pidsLimit,
