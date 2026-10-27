@@ -6,7 +6,7 @@
  * @related-files ["packages/tui/src/helpers/keyboard.ts", "packages/tui/src/helpers/colors.ts"]
  */
 
-import { colorize, getTheme, padEnd, visibleLength } from "./colors.ts";
+import { colorize, getTheme, visibleLength } from "./colors.ts";
 import { TUI_TREE_ICONS } from "./constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -387,58 +387,6 @@ export function renderTree<T>(
   const opts = { ...defaultTreeOptions, ...options };
   const flat = flattenTree(nodes);
   return flat.map((f) => renderTreeLine(f, opts));
-}
-
-/**
- * Render tree panel with border
- */
-export function renderTreePanel<T>(
-  nodes: ITreeNode<T>[],
-  options: Partial<ITreeRenderOptions> & {
-    title?: string;
-    height?: number;
-    scrollOffset?: number;
-  } = {},
-): string[] {
-  const {
-    title,
-    height = 20,
-    scrollOffset = 0,
-    ...treeOptions
-  } = options;
-
-  const opts = { ...defaultTreeOptions, ...treeOptions };
-  const theme = getTheme(opts.useColors);
-  const width = opts.maxWidth;
-
-  const lines: string[] = [];
-
-  // Top border with title
-  const titleStr = title ? " " + title + " " : "";
-  const topBorder = TREE_CHARS.corner + titleStr +
-    TREE_CHARS.horizontal.repeat(Math.max(0, width - titleStr.length - 2));
-  lines.push(colorize(topBorder, theme.border, theme.reset));
-
-  // Tree content
-  const treeLines = renderTree(nodes, opts);
-  const visibleLines = treeLines.slice(scrollOffset, scrollOffset + height - 2);
-
-  for (const line of visibleLines) {
-    lines.push(padEnd(line, width));
-  }
-
-  // Pad remaining height
-  const emptyLines = height - 2 - visibleLines.length;
-  for (let i = 0; i < emptyLines; i++) {
-    lines.push(" ".repeat(width));
-  }
-
-  // Bottom border
-  const bottomBorder = TREE_CHARS.corner +
-    TREE_CHARS.horizontal.repeat(width - 1);
-  lines.push(colorize(bottomBorder, theme.border, theme.reset));
-
-  return lines;
 }
 
 // Navigation Helpers

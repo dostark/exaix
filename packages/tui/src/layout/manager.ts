@@ -340,7 +340,7 @@ const RESIZE_PANE_HANDLERS: Record<
     resizePaneDown(pane, affected, amount, terminalHeight),
 };
 
-export class LayoutManager {
+class LayoutManager {
   private terminalWidth: number;
   private terminalHeight: number;
   private namedLayouts: Map<string, ILayout> = new Map();

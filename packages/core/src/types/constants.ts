@@ -24,8 +24,6 @@ import {
 import { configurable } from "../config/registry.ts";
 import { PortalKnowledgeInclusion } from "./portal.ts";
 
-import { DEFAULT_MEMORY_EXECUTION_DIR } from "@exaix/shared";
-
 export const OPENAI_COMPATIBLE_LOCAL_PROFILE = "local-test";
 /** A service the operator hosts. Its catalog declares the endpoint and the model. */
 export const OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE = "self-hosted";
@@ -87,8 +85,6 @@ export const HTTP_UNAUTHORIZED = 401;
 export const HTTP_PAYMENT_REQUIRED = 402;
 export const HTTP_FORBIDDEN = 403;
 export const HTTP_TOO_MANY_REQUESTS = 429;
-export const HTTP_SERVER_ERROR = 500;
-
 // Edition Constants
 export const EDITION_SOLO = "solo";
 export const EDITION_TEAM = "team";
@@ -590,8 +586,8 @@ export const BINDING_PROVIDER_POOL_MAX_SIZE: number = configurable({
 });
 
 // Agent Validation Limits
-export const AGENT_MAX_ITERATIONS_MIN = 1;
-export const AGENT_MAX_ITERATIONS_MAX = 100;
+const AGENT_MAX_ITERATIONS_MIN = 1;
+const AGENT_MAX_ITERATIONS_MAX = 100;
 
 // Agent defaults
 export const DEFAULT_AGENT_MODEL = "default";
@@ -722,7 +718,6 @@ export const SKILL_EVENT_RETRIEVAL_TIMEOUT = "skills.retrieval_timeout";
 export const SKILL_EVENT_RETRIEVAL_FAILED = "skills.retrieval_failed";
 /** The final skill set for a request, with the pinned/matched/default breakdown that produced it. Distinct from DomainEventType.SkillsMatchCompleted, which reports only the dynamic-matching stage and is not reached at all when a request pins skills explicitly. */
 export const SKILL_EVENT_RESOLVED = "skills.resolved";
-export const MEMORY_EVENT_AUTO_APPROVED = "memory.auto_approved";
 export const MEMORY_EVENT_TIER_SELECTED = "memory.tier_selected";
 export const MEMORY_MIN_VECTORS_FOR_LOCAL_SEARCH: number = configurable({
   key: "memory.min_vectors_local_search",
@@ -799,7 +794,6 @@ export const REACT_THOUGHT_PREFIX = "THOUGHT: ";
 export const REACT_STATUS_COMPLETE = "STATUS: COMPLETE";
 export const REACT_SUMMARY_PREFIX = "SUMMARY: ";
 export const REACT_CALLING_TOOL_PREFIX = "CALLING TOOL: ";
-export const REACT_TOOL_ERROR_PREFIX = "TOOL ERROR: ";
 /** Max chars of a serialized tool result kept in the dynamic_tool_call journal summary. */
 export const REACT_TOOL_RESULT_SUMMARY_MAX = 200;
 export const REACT_TOOL_RESULT_HISTORY_MAX: number = configurable({
@@ -1518,10 +1512,6 @@ export const SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS = 2_000;
 // HARDCODED_MODEL_ALLOWLIST removed in Step 7b — the gate served its transition purpose. All business logic now resolves models through IModelRegistry/IModelPricingLookup. The curated data file (packages/model-registry/src/static_overlay.ts) is intentionally exempt — it IS the Solo-tier data source, not an ad-hoc reference.
 
 // Tokenizer backend modes
-export const TOKENIZER_BACKEND_AUTO = "auto" as const;
-export const TOKENIZER_BACKEND_LOCAL = "local" as const;
-export const TOKENIZER_BACKEND_API = "api" as const;
-
 /** Ratio-based weight floors for adaptive reallocation (0.0–1.0 scale, NOT token counts). */
 export const SECTION_WEIGHT_RATIO_FLOORS = {
   system: 0.20,
@@ -1545,9 +1535,6 @@ export const ADJUSTMENT_EPSILON = 0.001;
 
 /** Decimal precision for re-normalized weight values. */
 export const ADJUSTMENT_PRECISION = 4;
-
-/** Minimum hint value to avoid surplus reallocation. */
-export const MINIMUM_HINT_THRESHOLD = 100;
 
 /** Promotion score threshold for WORKING → EPISODIC memory tier promotion. */
 export const MEMORY_TIER_EPISODIC_PROMOTION_THRESHOLD = 50;
@@ -1590,10 +1577,10 @@ export const MEMORY_TIER_PROMOTION_SCORE_MEDIUM = 50;
 export const MEMORY_TIER_PROMOTION_SCORE_LOW = 20;
 
 // Cost Tracking Validation Limits
-export const COST_TRACKING_BATCH_DELAY_MS_MIN = 100;
-export const COST_TRACKING_BATCH_DELAY_MS_MAX = 60000;
-export const COST_TRACKING_MAX_BATCH_SIZE_MIN = 1;
-export const COST_TRACKING_MAX_BATCH_SIZE_MAX = 1000;
+const COST_TRACKING_BATCH_DELAY_MS_MIN = 100;
+const COST_TRACKING_BATCH_DELAY_MS_MAX = 60000;
+const COST_TRACKING_MAX_BATCH_SIZE_MIN = 1;
+const COST_TRACKING_MAX_BATCH_SIZE_MAX = 1000;
 export const COST_TRACKING_RATES_MIN = 0;
 export const COST_TRACKING_RATES_MAX = 1;
 
@@ -1723,10 +1710,10 @@ export const TOKENS_PER_COST_UNIT: number = configurable({
 });
 
 // Health Check Validation Limits
-export const HEALTH_MEMORY_WARN_PERCENT_MIN = 1;
-export const HEALTH_MEMORY_WARN_PERCENT_MAX = 99;
-export const HEALTH_MEMORY_CRITICAL_PERCENT_MIN = 1;
-export const HEALTH_MEMORY_CRITICAL_PERCENT_MAX = 99;
+const HEALTH_MEMORY_WARN_PERCENT_MIN = 1;
+const HEALTH_MEMORY_WARN_PERCENT_MAX = 99;
+const HEALTH_MEMORY_CRITICAL_PERCENT_MIN = 1;
+const HEALTH_MEMORY_CRITICAL_PERCENT_MAX = 99;
 
 // Health check defaults
 export const DEFAULT_HEALTH_CHECK_TIMEOUT_MS: number = configurable({
@@ -1898,9 +1885,6 @@ export const DEFAULT_LOG_MAX_FILES: number = configurable({
   max: 100,
   swap: SwapClass.RESTART,
 });
-export const LOG_FILE_PREFIX = "structured-log";
-export const LOG_FILE_EXTENSION = ".jsonl";
-
 // Trigger Adapter Constants
 export const TRIGGER_PAYLOAD_MAX_BYTES = 1_048_576; // 1 MB
 
@@ -1909,37 +1893,8 @@ export const PORTAL_ALIAS_MAX_LENGTH = 50;
 
 export const LOG_RENDERER_MAX_MESSAGE_LENGTH = 100;
 export const LOG_RENDERER_TRACE_ID_LENGTH = 8;
-export const LOG_RENDERER_SEPARATOR_LENGTH = 50;
-
-export const TIME_MS_PER_SECOND = 1000;
-export const TIME_MS_PER_MINUTE = 60_000;
 export const TIME_MS_PER_HOUR = 3_600_000;
 // Retry and Error Constants
-
-/** Error types that should trigger a retry */
-export const RETRYABLE_ERROR_TYPES = [
-  "RateLimitError",
-  "TimeoutError",
-  "NetworkError",
-  "ServiceUnavailable",
-  "InternalServerError",
-  "ConnectionError",
-  "ECONNRESET",
-  "ETIMEDOUT",
-];
-
-/** Message substrings that indicate a retryable condition */
-export const RETRYABLE_MESSAGE_PATTERNS = [
-  "rate limit",
-  "timeout",
-  "network",
-  "unavailable",
-  "internal server",
-  "connection",
-  "econnreset",
-  "etimedout",
-  "socket hang up",
-];
 
 /** HTTP status codes that are considered retryable */
 export const RETRYABLE_HTTP_STATUS_CODES = [
@@ -1968,9 +1923,6 @@ export const DEFAULT_QUERY_LIMIT: number = configurable({
   max: 10_000,
   swap: SwapClass.RESTART,
 });
-
-/** Minimum length threshold for meaningful content (summary, prompt, etc.) */
-export const MIN_CONTENT_THRESHOLD = 50;
 
 /** Default refresh interval for TUI views */
 export const DEFAULT_REFRESH_INTERVAL_MS: number = configurable({
@@ -2147,9 +2099,6 @@ export const EXECUTION_REPORT_PROMPT_MAX_CHARS: number = configurable({
   max: 500_000,
   swap: SwapClass.RESTART,
 });
-export const EXECUTION_REPORT_TEMPERATURE = 0.2;
-export const EXECUTION_REPORT_MAX_TOKENS = 2000;
-
 // Shared UI Icons (used by both Core and TUI)
 
 export const ICON_SUCCESS = "✅";
@@ -2322,17 +2271,11 @@ export const FLOW_EVENT_PARALLEL_GROUP_STARTED = "flow.parallel_group.started";
 export const FLOW_EVENT_PARALLEL_GROUP_COMPLETED = "flow.parallel_group.completed";
 export const FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED = "flow.parallel_group.merge_failed";
 export const FLOW_EVENT_COMPLETED = "flow.completed";
-export const FLOW_EVENT_ABORTED = "flow.aborted";
-export const FLOW_EVENT_FAILED = "flow.failed";
 export const FLOW_EVENT_VALIDATION_FAILED = "flow.validation.failed";
 
 export const FLOW_EVENT_STEP_SKIPPED_BY_REUSE = "flow.step.skipped_by_reuse";
 
 // Step durability success metric thresholds
-export const STEP_REPLAY_REUSE_TARGET_PERCENT = 80;
-export const STEP_DURABILITY_OVERHEAD_TARGET_MS = 10;
-export const STEP_DURABILITY_RECORD_TARGET_PERCENT = 100;
-
 /** Default max serialized size for a flow namespace artifact in bytes. */
 
 /** Semantic version for global memory. Bump on breaking schema changes. */
@@ -3034,12 +2977,6 @@ export const QG_TECH_SPECIFICS_PATTERN =
 
 // Cross-phase context keys
 
-/** Key under which the quality gate stores its `IRequestSpecification` in `IParsedRequest.context`. */
-export const REQUEST_SPECIFICATION_KEY = "requestSpecification";
-
-/** Key under which the `IRequestQualityAssessment` snapshot is stored in `IParsedRequest.context`. */
-export const REQUEST_QUALITY_ASSESSMENT_KEY = "qualityAssessment";
-
 /** Config model-alias key for the clarification planning agent.
  *  It resolves against the provider's model map and falls back to the fast model. */
 export const DEFAULT_CLARIFICATION_MODEL_KEY: string = configurable({
@@ -3100,15 +3037,9 @@ export const MAX_CRITIQUE_REQUIREMENTS = 10;
  *  Bullets are lines that start with "- " or "* ". */
 export const COMPLEXITY_BULLET_THRESHOLD_HIGH = 8;
 
-/** Bullet count below which a request can qualify as a SIMPLE candidate, together with other low-signal checks. */
-export const COMPLEXITY_BULLET_THRESHOLD_LOW = 2;
-
 /** Minimum distinct file references in a request body that makes checkContentHeuristics() classify it COMPLEX.
  *  COMPLEXITY_FILE_REF_PATTERN detects the references. */
 export const COMPLEXITY_FILE_REF_THRESHOLD_HIGH = 5;
-
-/** Minimum request body length in characters that makes checkContentHeuristics() classify it COMPLEX. */
-export const COMPLEXITY_BODY_LENGTH_HIGH = 500;
 
 /** Request body length in characters below which a request can qualify as a SIMPLE candidate, together with other low-signal checks. */
 export const COMPLEXITY_BODY_LENGTH_LOW = 50;
@@ -3130,12 +3061,9 @@ export const PROMPT_PLAN_STEP_REASONING_PREFIX = "\n\nREASONING:\n";
 /** Maximum length for sanitized user input in agent prompts */
 export const MAX_USER_INPUT_LENGTH = 10000;
 
-/** Regular expression for extracting TOML blocks from model responses */
-export const TOML_BLOCK_PATTERN = /```toml\s*([\s\S]*?)```/g;
-
 /** Regex that extracts step-scoped TOML action blocks from a plan-generation <content> reply.
  *  The block is a fenced ```toml block whose first line is a `# TOML_BLOCK:N` marker.
- *  TOML_BLOCK_PATTERN above has no marker and serves single-turn execution actions. */
+ *  The unmarked form serves single-turn execution actions. */
 export const TOML_ACTION_BLOCK_MARKER_PATTERN = /```toml\n# TOML_BLOCK:(\d+)\n([\s\S]*?)\n```/g;
 
 /** Generic fallback timeout in milliseconds (30s). */
@@ -3178,18 +3106,6 @@ export const DEFAULT_KEEP_LAST_N_STEPS: number = configurable({
   max: 50,
   swap: SwapClass.RESTART,
 });
-
-/** Event name emitted after initial budget allocation with full breakdown. @deprecated Use `DomainEventType.ContextBudgetAllocated` from `@exaix/core/events` instead. */
-export const CONTEXT_BUDGET_ALLOCATED = "context.budget.allocated";
-
-/** Event name emitted after each section is built in the execution prompt. @deprecated Use `DomainEventType.ContextBudgetConsumed` from `@exaix/core/events` instead. */
-export const CONTEXT_BUDGET_CONSUMED = "context.budget.consumed";
-
-/** Event name emitted when a section is truncated to fit budget. @deprecated Use `DomainEventType.ContextSectionTruncated` from `@exaix/core/events` instead. */
-export const CONTEXT_SECTION_TRUNCATED = "context.section.truncated";
-
-/** Event name emitted when total estimated tokens exceed context window. @deprecated Use `DomainEventType.ContextBudgetExceeded` from `@exaix/core/events` instead. */
-export const CONTEXT_BUDGET_EXCEEDED = "context.budget.exceeded";
 
 // Context Budget Manager — Segment-Level Compaction
 
@@ -3397,12 +3313,6 @@ export const SYMBOL_EXTRACTOR_CONCURRENCY: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-/** Directory name for session-delegation handoffs under the workspace root. */
-export const SESSION_DELEGATE_DIR = "Session";
-
-/** Sub-directory for session wait-state files: Memory/Execution/{traceId}/. */
-export const SESSION_WAIT_STATE_DIR = DEFAULT_MEMORY_EXECUTION_DIR;
-
 /** Default delegation deadline in hours from brief creation. */
 export const SESSION_DEFAULT_DEADLINE_HOURS: number = configurable({
   key: "session.default_deadline_hours",
@@ -3474,8 +3384,6 @@ export const SESSION_OUTPUT_FORMAT_JSON = "json";
 /** Headless model selector: `claude --model <m>` / `opencode run --model <m>`. */
 export const SESSION_FLAG_MODEL = "--model";
 
-/** Claude Code headless output-streaming flags: `claude -p <objective> --output-format stream-json --verbose` emits newline-delimited JSON events for one turn, then exits — used by CliDelegateStrategy to parse tool-use and usage out of a single cold-spawn call. */
-export const SESSION_FLAG_INPUT_FORMAT = "--input-format";
 export const SESSION_INPUT_FORMAT_STREAM_JSON = "stream-json";
 export const SESSION_FLAG_VERBOSE = "--verbose";
 

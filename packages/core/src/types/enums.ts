@@ -546,15 +546,6 @@ export enum GitWorktreeAction {
   UNLOCK = "unlock",
 }
 /**
- * Types of artifacts produced by agents.
- */
-export enum ArtifactType {
-  ANALYSIS = "analysis",
-  REPORT = "report",
-  DIAGRAM = "diagram",
-}
-
-/**
  * Cost tier classification for providers.
  */
 export enum ProviderCostTier {

@@ -142,7 +142,7 @@ export const EFFORT_TIER_ORDER: readonly EffortTier[] = [
 ];
 
 /** Effort reached per TaskComplexity when a declaration resolves through the heuristic. */
-export const EFFORT_AUTO_HEURISTIC: Record<TaskComplexity, EffortTier> = {
+const EFFORT_AUTO_HEURISTIC: Record<TaskComplexity, EffortTier> = {
   [TaskComplexity.SIMPLE]: EffortTierSchema.enum.low,
   [TaskComplexity.MEDIUM]: EffortTierSchema.enum.medium,
   [TaskComplexity.COMPLEX]: EffortTierSchema.enum.high,
@@ -152,7 +152,7 @@ export const EFFORT_AUTO_HEURISTIC: Record<TaskComplexity, EffortTier> = {
 /** Thinking reached per TaskComplexity when a declaration resolves through the heuristic.
  *  A `true` entry resolves to `true` only when the provider supports thinking; a `false`
  *  entry resolves to `undefined`, so `auto` never sends an explicit disable. */
-export const THINKING_AUTO_HEURISTIC: Record<TaskComplexity, boolean> = {
+const THINKING_AUTO_HEURISTIC: Record<TaskComplexity, boolean> = {
   [TaskComplexity.SIMPLE]: false,
   [TaskComplexity.MEDIUM]: false,
   [TaskComplexity.COMPLEX]: true,
@@ -160,12 +160,12 @@ export const THINKING_AUTO_HEURISTIC: Record<TaskComplexity, boolean> = {
 };
 
 /** Cap on heuristic effort for small models: modelSize "S" never resolves above "medium". */
-export const EFFORT_AUTO_SMALL_MODEL_CAP: EffortTier = EffortTierSchema.enum.medium;
+const EFFORT_AUTO_SMALL_MODEL_CAP: EffortTier = EffortTierSchema.enum.medium;
 
 /** Model prefixes that run adaptive thinking when the `thinking` field is omitted.
  *  Verified against the Claude API reference: Fable 5/5.1 (and Mythos), Opus 5/5.5 and
  *  Sonnet 5. Unknown or newer models fall back to the heuristic (Risk R5). */
-export const NATIVE_ADAPTIVE_THINKING_MODEL_PREFIXES: readonly string[] = [
+const NATIVE_ADAPTIVE_THINKING_MODEL_PREFIXES: readonly string[] = [
   "claude-fable-5",
   "claude-mythos-5",
   "claude-opus-5",

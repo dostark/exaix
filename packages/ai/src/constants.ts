@@ -81,27 +81,14 @@ export const DEFAULT_MOCK_PROVIDER_ID = "mock-provider";
 
 export const PROVIDER_MOCK_DESCRIPTION = "Mock provider for testing and development";
 
-export const PROVIDER_CAPABILITIES_CHAT = "chat";
-export const PROVIDER_CAPABILITIES_STREAMING = "streaming";
-export const PROVIDER_CAPABILITIES_VISION = "vision";
-export const PROVIDER_CAPABILITIES_TOOLS = "tools";
-
+const PROVIDER_CAPABILITIES_CHAT = "chat";
+const PROVIDER_CAPABILITIES_STREAMING = "streaming";
 export const PROVIDER_MOCK_CAPABILITIES = [PROVIDER_CAPABILITIES_CHAT, PROVIDER_CAPABILITIES_STREAMING];
 
 export const PROVIDER_COST_TIER_FREE = ProviderCostTier.FREE;
-export const PROVIDER_COST_TIER_PAID = ProviderCostTier.PAID;
-export const PROVIDER_COST_TIER_FREEMIUM = ProviderCostTier.FREEMIUM;
-
 export const PROVIDER_MOCK_STRENGTHS = ["testing", "development"] as const;
 
-export const DEFAULT_LLAMACPP_EMBED_CHUNK_SIZE = 1000;
-export const DEFAULT_LLAMACPP_EMBED_BASE_URL = "http://127.0.0.1:8080";
-
 export const PROVIDER_MOCK = ProviderType.MOCK;
-
-export const KNOWN_PROVIDERS = [
-  "mock",
-] as const;
 
 export const PROVIDER_HEALTH_CHECK_TEST_PROMPT = "Hello";
 export const PROVIDER_HEALTH_CHECK_MAX_TOKENS = 1;

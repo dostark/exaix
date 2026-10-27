@@ -92,7 +92,7 @@ export type IAmbiguity = z.infer<typeof AmbiguitySchema>;
 /**
  * Analysis metadata — timing, mode, and version information.
  */
-export const RequestAnalysisMetadataSchema = z.object({
+const RequestAnalysisMetadataSchema = z.object({
   /** ISO 8601 timestamp when analysis was performed. */
   analyzedAt: z.string().datetime(),
   /** Wall-clock time taken to produce this analysis, in milliseconds. */

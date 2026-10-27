@@ -318,7 +318,7 @@ export class MinimalDaemonServiceMock implements IDaemonService {
 /**
  * Interactive TUI session for Daemon Control View
  */
-export class DaemonControlTuiSession extends TuiSessionBase {
+class DaemonControlTuiSession extends TuiSessionBase {
   private readonly daemonView: DaemonControlView;
   private state: IDaemonViewState;
   private localSpinnerState: ISpinnerState;

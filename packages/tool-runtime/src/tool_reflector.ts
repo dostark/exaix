@@ -109,7 +109,7 @@ Respond with a JSON object:
 
 // ToolReflector Class
 
-export class ToolReflector {
+class ToolReflector {
   private agentRunner: IToolAgentExecutor;
   private outputValidator: IOutputValidator;
 
