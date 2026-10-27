@@ -84,7 +84,7 @@ Deno.test("User Guide inheritance and finite-cost TOML example parses through Co
 Deno.test("User Guide lists every provider factory reason code from source", async () => {
   const guide = await readUserGuide();
   const source = await Deno.readTextFile("packages/ai/src/errors.ts");
-  const union = source.match(/export type ProviderFactoryReasonCode =([\s\S]*?);/)?.[1] ?? "";
+  const union = source.match(/(?:export )?type ProviderFactoryReasonCode =([\s\S]*?);/)?.[1] ?? "";
   const codes = [...union.matchAll(/"([a-z_]+)"/g)].map((match) => match[1]);
   assert(codes.length > 0, "No reason codes parsed from source");
   for (const code of [...codes, "unsupported_call_option", "pricing_unavailable", "protocol_invalid"]) {

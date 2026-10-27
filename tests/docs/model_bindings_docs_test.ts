@@ -41,7 +41,7 @@ Deno.test("flow binding guide TOML example parses through ConfigSchema", async (
 Deno.test("flow binding guide lists every issue code and pin reason", async () => {
   const guide = await bindingGuide();
   const source = await Deno.readTextFile("packages/schemas/src/model_binding.ts");
-  const issueUnion = source.match(/export type BindingIssueCode =([\s\S]*?);/)?.[1];
+  const issueUnion = source.match(/(?:export )?type BindingIssueCode =([\s\S]*?);/)?.[1];
   assert(issueUnion, "BindingIssueCode union not found");
   const codes = [...issueUnion.matchAll(/"([a-z_]+)"/g)].map((match) => match[1]);
   assert(codes.length > 0, "No binding issue codes parsed");
