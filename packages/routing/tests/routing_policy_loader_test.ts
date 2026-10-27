@@ -5,13 +5,12 @@
  * @description TODO: Add description */
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import { RoutingPolicyLoader } from "@exaix/routing";
 import { delay } from "@exaix/core/func";
 
 Deno.test("RoutingPolicyLoader: missing file returns default policy", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "routing-policy-loader-missing-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const config = createMockConfig(tempDir);
     const loader = new RoutingPolicyLoader({ config, root: tempDir });
     const result = await loader.loadPolicy();
@@ -19,14 +18,11 @@ Deno.test("RoutingPolicyLoader: missing file returns default policy", async () =
     assertEquals(result.success, true);
     assertEquals(result.policy.rules.length, 0);
     assertEquals(result.path.endsWith(".exaix/routing.policy.yaml"), true);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "routing-policy-loader-missing-" });
 });
 
 Deno.test("RoutingPolicyLoader: valid YAML loads successfully", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "routing-policy-loader-valid-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const policyDir = join(tempDir, ".exaix");
     await Deno.mkdir(policyDir, { recursive: true });
     const policyPath = join(policyDir, "routing.policy.yaml");
@@ -42,14 +38,11 @@ Deno.test("RoutingPolicyLoader: valid YAML loads successfully", async () => {
     assertEquals(result.success, true);
     assertEquals(result.policy.rules.length, 1);
     assertEquals(result.policy.rules[0].ruleId, "test");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "routing-policy-loader-valid-" });
 });
 
 Deno.test("RoutingPolicyLoader: invalid YAML returns validation errors", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "routing-policy-loader-invalid-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const policyDir = join(tempDir, ".exaix");
     await Deno.mkdir(policyDir, { recursive: true });
     const policyPath = join(policyDir, "routing.policy.yaml");
@@ -66,14 +59,11 @@ Deno.test("RoutingPolicyLoader: invalid YAML returns validation errors", async (
     assertExists(result.errors);
     assertEquals(result.errors.length > 0, true);
     assertStringIncludes(result.errors.join(" "), "ruleId");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "routing-policy-loader-invalid-" });
 });
 
 Deno.test("RoutingPolicyLoader: startWatching and close lifecycle", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "routing-policy-loader-lifecycle-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const policyDir = join(tempDir, ".exaix");
     await Deno.mkdir(policyDir, { recursive: true });
     await Deno.writeTextFile(
@@ -87,14 +77,11 @@ Deno.test("RoutingPolicyLoader: startWatching and close lifecycle", async () => 
     loader.startWatching();
     await delay(50);
     loader.close();
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "routing-policy-loader-lifecycle-" });
 });
 
 Deno.test("RoutingPolicyLoader: malformed file preserves previous valid policy", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "routing-policy-loader-malformed-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const policyDir = join(tempDir, ".exaix");
     await Deno.mkdir(policyDir, { recursive: true });
     const policyPath = join(policyDir, "routing.policy.yaml");
@@ -122,14 +109,11 @@ Deno.test("RoutingPolicyLoader: malformed file preserves previous valid policy",
     assertEquals(second.success, false);
     assertEquals(second.policy.rules[0].ruleId, "test");
     assertExists(second.errors);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "routing-policy-loader-malformed-" });
 });
 
 Deno.test("RoutingPolicyLoader: modified file triggers cache invalidation", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "routing-policy-loader-modified-" });
-  try {
+  await withTempDir(async (tempDir) => {
     const policyDir = join(tempDir, ".exaix");
     await Deno.mkdir(policyDir, { recursive: true });
     const policyPath = join(policyDir, "routing.policy.yaml");
@@ -156,7 +140,5 @@ Deno.test("RoutingPolicyLoader: modified file triggers cache invalidation", asyn
     const second = await loader.loadPolicy();
     assertEquals(second.success, true);
     assertEquals(second.policy.allowExperiments, true);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { prefix: "routing-policy-loader-modified-" });
 });
