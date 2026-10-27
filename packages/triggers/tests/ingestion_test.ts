@@ -98,6 +98,42 @@ function createMockWaitStateService(): IMockWaitStateService {
   };
 }
 
+interface IIngestionFixture {
+  service: TriggerIngestionService;
+  logger: IMockLogger;
+  ledger: IIdempotencyLedger;
+  gate: TriggerPolicyGate;
+  tmpDir: string;
+  waitStateService: IMockWaitStateService;
+}
+
+/** Registers a test with an ingestion service on a temporary requests directory. Wait states are passed on request. */
+function ingestionTest(
+  name: string,
+  body: (fixture: IIngestionFixture) => Promise<void>,
+  options: { waitStates?: boolean } = {},
+): void {
+  Deno.test(name, async () => {
+    const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();
+    const gate = new TriggerPolicyGate(ledger);
+    const logger = createMockLogger();
+    const waitStateService = createMockWaitStateService();
+    const tmpDir = await Deno.makeTempDir({ prefix: "exaix-trigger-test-" });
+    try {
+      const service = new TriggerIngestionService({
+        policyGate: gate,
+        eventLogger: logger,
+        requestsDir: tmpDir,
+        idempotencyLedger: ledger,
+        ...(options.waitStates ? { waitStateService } : {}),
+      });
+      await body({ service, logger, ledger, gate, tmpDir, waitStateService });
+    } finally {
+      await Deno.remove(tmpDir, { recursive: true });
+    }
+  });
+}
+
 // TriggerPolicyGate Tests
 
 Deno.test("[TriggerPolicyGate] evaluates idempotency check first", async () => {
@@ -136,100 +172,55 @@ Deno.test("[TriggerPolicyGate] rejects triggers produce typed event", async () =
 
 // TriggerIngestionService Tests
 
-Deno.test("[TriggerIngestion] start_flow with valid envelope creates request", async () => {
-  const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();
-  const gate = new TriggerPolicyGate(ledger);
-  const logger = createMockLogger();
+ingestionTest("[TriggerIngestion] start_flow with valid envelope creates request", async ({ service, tmpDir }) => {
+  const envelope = makeEnvelope();
+  const result = await service.ingest(envelope);
 
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-trigger-test-" });
-  try {
-    const service = new TriggerIngestionService({
-      policyGate: gate,
-      eventLogger: logger,
-      requestsDir: tmpDir,
-      idempotencyLedger: ledger,
-    });
+  assertEquals(result.accepted, true);
+  assertEquals(result.disposition, "started");
+  assertEquals(result.triggerId, envelope.triggerId);
+  assertExists(result.resultingRequestId);
 
-    const envelope = makeEnvelope();
-    const result = await service.ingest(envelope);
-
-    assertEquals(result.accepted, true);
-    assertEquals(result.disposition, "started");
-    assertEquals(result.triggerId, envelope.triggerId);
-    assertExists(result.resultingRequestId);
-
-    // Verify the .md file was written
-    const files: string[] = [];
-    for await (const entry of Deno.readDir(tmpDir)) {
-      if (entry.isFile && entry.name.endsWith(".md")) files.push(entry.name);
-    }
-    assertEquals(files.length, 1);
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
+  // Verify the .md file was written
+  const files: string[] = [];
+  for await (const entry of Deno.readDir(tmpDir)) {
+    if (entry.isFile && entry.name.endsWith(".md")) files.push(entry.name);
   }
+  assertEquals(files.length, 1);
 });
 
-Deno.test("[TriggerIngestion] start_flow with duplicate idempotency key is rejected", async () => {
-  const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();
-  const gate = new TriggerPolicyGate(ledger);
-  const logger = createMockLogger();
+ingestionTest("[TriggerIngestion] start_flow with duplicate idempotency key is rejected", async ({ service }) => {
+  const key = `dup-${Date.now()}`;
+  const envelope = makeEnvelope({ idempotencyKey: key });
 
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-trigger-test-" });
-  try {
-    const service = new TriggerIngestionService({
-      policyGate: gate,
-      eventLogger: logger,
-      requestsDir: tmpDir,
-      idempotencyLedger: ledger,
-    });
+  // First ingest should succeed
+  const first = await service.ingest(envelope);
+  assertEquals(first.accepted, true);
 
-    const key = `dup-${Date.now()}`;
-    const envelope = makeEnvelope({ idempotencyKey: key });
-
-    // First ingest should succeed
-    const first = await service.ingest(envelope);
-    assertEquals(first.accepted, true);
-
-    // Second ingest with same key should be deduplicated
-    const second = await service.ingest(envelope);
-    assertEquals(second.accepted, false);
-    assertEquals(second.disposition, "deduplicated");
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  // Second ingest with same key should be deduplicated
+  const second = await service.ingest(envelope);
+  assertEquals(second.accepted, false);
+  assertEquals(second.disposition, "deduplicated");
 });
 
-Deno.test("[TriggerIngestion] resume_flow with valid waitStateId resumes flow", async () => {
-  const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();
-  const gate = new TriggerPolicyGate(ledger);
-  const logger = createMockLogger();
-  const waitStateService = createMockWaitStateService();
+ingestionTest(
+  "[TriggerIngestion] resume_flow with valid waitStateId resumes flow",
+  async ({ service, waitStateService }) => {
+    const traceId = crypto.randomUUID();
+    const resumeToken = crypto.randomUUID();
 
-  const traceId = crypto.randomUUID();
-  const resumeToken = crypto.randomUUID();
-
-  const waitState: IWaitState = {
-    waitStateId: crypto.randomUUID(),
-    traceId,
-    kind: "plan_approval",
-    status: "pending",
-    artifactPath: "/tmp/test-artifact.md",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    resumeToken,
-    metadata: {},
-  };
-  waitStateService.seed(waitState);
-
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-trigger-test-" });
-  try {
-    const service = new TriggerIngestionService({
-      policyGate: gate,
-      eventLogger: logger,
-      requestsDir: tmpDir,
-      idempotencyLedger: ledger,
-      waitStateService,
-    });
+    const waitState: IWaitState = {
+      waitStateId: crypto.randomUUID(),
+      traceId,
+      kind: "plan_approval",
+      status: "pending",
+      artifactPath: "/tmp/test-artifact.md",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      resumeToken,
+      metadata: {},
+    };
+    waitStateService.seed(waitState);
 
     const envelope = makeEnvelope({
       action: "resume_flow",
@@ -239,82 +230,35 @@ Deno.test("[TriggerIngestion] resume_flow with valid waitStateId resumes flow", 
     const result = await service.ingest(envelope);
     assertEquals(result.accepted, true);
     assertEquals(result.disposition, "resumed");
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  },
+  { waitStates: true },
+);
+
+ingestionTest("[TriggerIngestion] resume_flow with unknown waitStateId is rejected", async ({ service }) => {
+  const envelope = makeEnvelope({
+    action: "resume_flow",
+    targetFlowId: crypto.randomUUID(), // unknown token
+  });
+
+  const result = await service.ingest(envelope);
+  assertEquals(result.accepted, false);
+  assertEquals(result.disposition, "rejected");
+}, { waitStates: true });
+
+ingestionTest("[TriggerIngestion] append_signal dispatch emits TriggerAccepted event", async ({ service, logger }) => {
+  const envelope = makeEnvelope({ action: "append_signal" });
+  const result = await service.ingest(envelope);
+
+  assertEquals(result.accepted, true);
+  assertEquals(result.disposition, "queued");
+
+  const acceptedCall = logger.calls.find((c) => c.action === DomainEventType.TriggerAccepted);
+  assertExists(acceptedCall, "TriggerAccepted event must be emitted for append_signal");
 });
 
-Deno.test("[TriggerIngestion] resume_flow with unknown waitStateId is rejected", async () => {
-  const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();
-  const gate = new TriggerPolicyGate(ledger);
-  const logger = createMockLogger();
-  const waitStateService = createMockWaitStateService();
-
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-trigger-test-" });
-  try {
-    const service = new TriggerIngestionService({
-      policyGate: gate,
-      eventLogger: logger,
-      requestsDir: tmpDir,
-      idempotencyLedger: ledger,
-      waitStateService,
-    });
-
-    const envelope = makeEnvelope({
-      action: "resume_flow",
-      targetFlowId: crypto.randomUUID(), // unknown token
-    });
-
-    const result = await service.ingest(envelope);
-    assertEquals(result.accepted, false);
-    assertEquals(result.disposition, "rejected");
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
-});
-
-Deno.test("[TriggerIngestion] append_signal dispatch emits TriggerAccepted event", async () => {
-  const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();
-  const gate = new TriggerPolicyGate(ledger);
-  const logger = createMockLogger();
-
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-trigger-test-" });
-  try {
-    const service = new TriggerIngestionService({
-      policyGate: gate,
-      eventLogger: logger,
-      requestsDir: tmpDir,
-      idempotencyLedger: ledger,
-    });
-
-    const envelope = makeEnvelope({ action: "append_signal" });
-    const result = await service.ingest(envelope);
-
-    assertEquals(result.accepted, true);
-    assertEquals(result.disposition, "queued");
-
-    const acceptedCall = logger.calls.find((c) => c.action === DomainEventType.TriggerAccepted);
-    assertExists(acceptedCall, "TriggerAccepted event must be emitted for append_signal");
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
-});
-
-Deno.test("[TriggerIngestion] resume_flow with no waitStateService emits TriggerRejected", async () => {
-  const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();
-  const gate = new TriggerPolicyGate(ledger);
-  const logger = createMockLogger();
-
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-trigger-test-" });
-  try {
-    const service = new TriggerIngestionService({
-      policyGate: gate,
-      eventLogger: logger,
-      requestsDir: tmpDir,
-      idempotencyLedger: ledger,
-      // waitStateService intentionally absent
-    });
-
+ingestionTest(
+  "[TriggerIngestion] resume_flow with no waitStateService emits TriggerRejected",
+  async ({ service, logger }) => {
     const envelope = makeEnvelope({ action: "resume_flow", targetFlowId: crypto.randomUUID() });
     const result = await service.ingest(envelope);
 
@@ -323,27 +267,12 @@ Deno.test("[TriggerIngestion] resume_flow with no waitStateService emits Trigger
 
     const rejectedCall = logger.calls.find((c) => c.action === DomainEventType.TriggerRejected);
     assertExists(rejectedCall, "TriggerRejected event must be emitted when waitStateService is absent");
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
-});
+  },
+);
 
-Deno.test("[TriggerIngestion] resume_flow with missing targetFlowId emits TriggerRejected", async () => {
-  const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();
-  const gate = new TriggerPolicyGate(ledger);
-  const logger = createMockLogger();
-  const waitStateService = createMockWaitStateService();
-
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-trigger-test-" });
-  try {
-    const service = new TriggerIngestionService({
-      policyGate: gate,
-      eventLogger: logger,
-      requestsDir: tmpDir,
-      idempotencyLedger: ledger,
-      waitStateService,
-    });
-
+ingestionTest(
+  "[TriggerIngestion] resume_flow with missing targetFlowId emits TriggerRejected",
+  async ({ service, logger }) => {
     const envelope = makeEnvelope({ action: "resume_flow" }); // no targetFlowId
     const result = await service.ingest(envelope);
 
@@ -351,25 +280,13 @@ Deno.test("[TriggerIngestion] resume_flow with missing targetFlowId emits Trigge
 
     const rejectedCall = logger.calls.find((c) => c.action === DomainEventType.TriggerRejected);
     assertExists(rejectedCall, "TriggerRejected event must be emitted when targetFlowId is absent");
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
-});
+  },
+  { waitStates: true },
+);
 
-Deno.test("[TriggerIngestion] unknown action emits TriggerRejected and returns rejected", async () => {
-  const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();
-  const gate = new TriggerPolicyGate(ledger);
-  const logger = createMockLogger();
-
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-trigger-test-" });
-  try {
-    const service = new TriggerIngestionService({
-      policyGate: gate,
-      eventLogger: logger,
-      requestsDir: tmpDir,
-      idempotencyLedger: ledger,
-    });
-
+ingestionTest(
+  "[TriggerIngestion] unknown action emits TriggerRejected and returns rejected",
+  async ({ service, logger }) => {
     // Force an unknown action by bypassing the schema via JSON round-trip
     const envelope = makeEnvelope({ action: "start_flow" });
     const badEnvelope = JSON.parse(
@@ -382,25 +299,12 @@ Deno.test("[TriggerIngestion] unknown action emits TriggerRejected and returns r
 
     const rejectedCall = logger.calls.find((c) => c.action === DomainEventType.TriggerRejected);
     assertExists(rejectedCall, "TriggerRejected event must be emitted for unknown action");
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
-});
+  },
+);
 
-Deno.test("[TriggerIngestion] dispatches emit TriggerIngested and TriggerAccepted events", async () => {
-  const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();
-  const gate = new TriggerPolicyGate(ledger);
-  const logger = createMockLogger();
-
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-trigger-test-" });
-  try {
-    const service = new TriggerIngestionService({
-      policyGate: gate,
-      eventLogger: logger,
-      requestsDir: tmpDir,
-      idempotencyLedger: ledger,
-    });
-
+ingestionTest(
+  "[TriggerIngestion] dispatches emit TriggerIngested and TriggerAccepted events",
+  async ({ service, logger }) => {
     const envelope = makeEnvelope();
     await service.ingest(envelope);
 
@@ -409,54 +313,25 @@ Deno.test("[TriggerIngestion] dispatches emit TriggerIngested and TriggerAccepte
 
     const acceptedCall = logger.calls.find((c) => c.action === DomainEventType.TriggerAccepted);
     assertExists(acceptedCall);
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
-});
+  },
+);
 
 // Cleanup Tests
 
-Deno.test("[TriggerIngestion] duplicate idempotency key returns DEDUPLICATED disposition", async () => {
-  const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();
-  const gate = new TriggerPolicyGate(ledger);
-  const logger = createMockLogger();
+ingestionTest("[TriggerIngestion] duplicate idempotency key returns DEDUPLICATED disposition", async ({ service }) => {
+  const key = `dedup-${Date.now()}`;
+  const envelope = makeEnvelope({ idempotencyKey: key });
 
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-trigger-test-" });
-  try {
-    const service = new TriggerIngestionService({
-      policyGate: gate,
-      eventLogger: logger,
-      requestsDir: tmpDir,
-      idempotencyLedger: ledger,
-    });
+  await service.ingest(envelope);
+  const second = await service.ingest(envelope);
 
-    const key = `dedup-${Date.now()}`;
-    const envelope = makeEnvelope({ idempotencyKey: key });
-
-    await service.ingest(envelope);
-    const second = await service.ingest(envelope);
-
-    assertEquals(second.accepted, false);
-    assertEquals(second.disposition, "deduplicated");
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  assertEquals(second.accepted, false);
+  assertEquals(second.disposition, "deduplicated");
 });
 
-Deno.test("[TriggerIngestion] start_flow frontmatter includes request_source: trigger", async () => {
-  const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();
-  const gate = new TriggerPolicyGate(ledger);
-  const logger = createMockLogger();
-
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-trigger-test-" });
-  try {
-    const service = new TriggerIngestionService({
-      policyGate: gate,
-      eventLogger: logger,
-      requestsDir: tmpDir,
-      idempotencyLedger: ledger,
-    });
-
+ingestionTest(
+  "[TriggerIngestion] start_flow frontmatter includes request_source: trigger",
+  async ({ service, tmpDir }) => {
     const envelope = makeEnvelope({ source: "webhook" });
     await service.ingest(envelope);
 
@@ -468,7 +343,5 @@ Deno.test("[TriggerIngestion] start_flow frontmatter includes request_source: tr
       }
     }
     assertStringIncludes(fileContent, "request_source: trigger", "Frontmatter must include request_source: trigger");
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
-});
+  },
+);
