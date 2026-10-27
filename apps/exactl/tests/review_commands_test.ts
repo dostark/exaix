@@ -18,7 +18,7 @@ import { ReviewCommands } from "../src/commands/review_commands.ts";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider, withTempDir } from "@exaix/testing";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
@@ -119,8 +119,7 @@ describe("ReviewCommands", () => {
 
     it("should scan config.portals for reviews", async () => {
       // Create a separate git repo to simulate a portal
-      const portalDir = await Deno.makeTempDir({ prefix: "portal-repo-" });
-      try {
+      await withTempDir(async (portalDir) => {
         // Initialize git repo in portal directory
         await initGitRepo(portalDir); // Uses shared helper
 
@@ -157,9 +156,7 @@ describe("ReviewCommands", () => {
         assertEquals(reviews[0].branch, "feat/request-006-portal-456-ghi");
         assertEquals(reviews[0].request_id, "request-006");
         assertEquals(reviews[0].trace_id, "portal-456-ghi");
-      } finally {
-        await Deno.remove(portalDir, { recursive: true });
-      }
+      }, { prefix: "portal-repo-" });
     });
 
     it("should include artifact-backed reviews by default", async () => {

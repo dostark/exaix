@@ -18,6 +18,7 @@ import type { DatabaseService } from "@exaix/storage-sqlite";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+import { withTempDir } from "@exaix/testing";
 
 interface IReviewCommandsInternals {
   normalizeTypeFilter(value?: string): string;
@@ -91,17 +92,14 @@ describe("ReviewCommands Targeted Coverage", () => {
     });
 
     it("getDefaultBranch: handles main fallback", async () => {
-      const mainDir = await Deno.makeTempDir({ prefix: "main-repo-" });
-      try {
+      await withTempDir(async (mainDir) => {
         await runGitCommand(mainDir, ["init", "-b", "main"]);
         await runGitCommand(mainDir, ["config", "user.name", "Test"]);
         await runGitCommand(mainDir, ["config", "user.email", "test@test.com"]);
         await runGitCommand(mainDir, ["commit", "--allow-empty", "-m", "init"]);
         const branch = await internals().getDefaultBranch(mainDir);
         assertEquals(branch, "main");
-      } finally {
-        await Deno.remove(mainDir, { recursive: true });
-      }
+      }, { prefix: "main-repo-" });
     });
 
     it("resolvePortalEntryTarget: handles absolute and relative paths", () => {
@@ -238,8 +236,7 @@ branch refs/heads/other
     });
 
     it("approve: throws if on wrong branch in portal repo", async () => {
-      const portalDir = await Deno.makeTempDir({ prefix: "portal-" });
-      try {
+      await withTempDir(async (portalDir) => {
         await initGitRepo(portalDir);
         const branchName = "feat/request-p1-trace1";
         await runGitCommand(portalDir, ["checkout", "-b", branchName]);
@@ -259,9 +256,7 @@ branch refs/heads/other
           Error,
           `Must be on '${TEST_DEFAULT_BRANCH}' branch`,
         );
-      } finally {
-        await Deno.remove(portalDir, { recursive: true });
-      }
+      }, { prefix: "portal-" });
     });
 
     it("updateArtifactStatus: handles missing frontmatter", async () => {

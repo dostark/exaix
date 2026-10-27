@@ -25,6 +25,7 @@ import { createCliTestContext } from "./helpers/test_setup.ts";
 import { captureAllOutputs } from "./helpers/console_utils.ts";
 import { withTestMod } from "./helpers/test_utils.ts";
 import { readConfigFixture } from "../../../tests/integration/helpers/config_fixture.ts";
+import { withTempDir } from "@exaix/testing";
 
 const TRACE_ID = "66666666-6666-4666-8666-666666666666";
 const RECORD_ID = "77777777-7777-4777-8777-777777777777";
@@ -139,8 +140,7 @@ function buildMinimalConfig(root: string): string {
 // since the in-process dispatch tests above already cover the same handler at unit speed.
 if (Deno.env.get("RUN_EXACTL_TEST")) {
   Deno.test("[dispatch] a real `exactl` child process returns the exact post-redaction bytes via --raw", async () => {
-    const tempDir = await Deno.makeTempDir({ prefix: "exactl-inspect-dispatch-" });
-    try {
+    await withTempDir(async (tempDir) => {
       await Deno.mkdir(join(tempDir, ExaPathDefaults.memory), { recursive: true });
       const configPath = join(tempDir, "config.toml");
       await Deno.writeTextFile(configPath, buildMinimalConfig(tempDir));
@@ -176,17 +176,14 @@ if (Deno.env.get("RUN_EXACTL_TEST")) {
       const { code, stdout, stderr } = await command.output();
       assertEquals(code, 0, `exactl exited non-zero. stderr: ${new TextDecoder().decode(stderr)}`);
       assertEquals(new TextDecoder().decode(stdout), PRODUCTION_PROMPT_BYTES);
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
+    }, { prefix: "exactl-inspect-dispatch-" });
   });
 
   // Regression: a real EventLogger (unlike the stub display used by every other test in
   // this file) prints emitInspected's audit banner to console.log — a real subprocess is
   // the only way to catch it polluting --json's own machine-consumable stdout contract.
   Deno.test("[dispatch] a real `exactl` child process's --json stdout is pure, parseable JSON — no audit banner interleaved", async () => {
-    const tempDir = await Deno.makeTempDir({ prefix: "exactl-inspect-dispatch-json-" });
-    try {
+    await withTempDir(async (tempDir) => {
       await Deno.mkdir(join(tempDir, ExaPathDefaults.memory), { recursive: true });
       const configPath = join(tempDir, "config.toml");
       await Deno.writeTextFile(configPath, buildMinimalConfig(tempDir));
@@ -224,9 +221,7 @@ if (Deno.env.get("RUN_EXACTL_TEST")) {
       const parsed = JSON.parse(new TextDecoder().decode(stdout));
       assertEquals(parsed.recordId, RECORD_ID);
       assertEquals(parsed.promptText, PRODUCTION_PROMPT_BYTES);
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
+    }, { prefix: "exactl-inspect-dispatch-json-" });
   });
 } else {
   Deno.test({
