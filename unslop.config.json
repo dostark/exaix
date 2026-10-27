@@ -1115,6 +1115,20 @@
             "ignore": ["**/*.d.ts", "**/*.md", "**/*.yaml", "**/*.yml", "**/*.toml", "**/fixtures/portals/**"],
             "minLines": 10,
             "threshold": 2.5
+          },
+          {
+            "name": "team-source",
+            "paths": ["exaix-team/"],
+            "ignore": ["**/*.d.ts", "**/*.md", "**/tests/**", "**/tests_node/**", "**/node_modules/**", "**/dist/**"],
+            "threshold": 5.9
+          },
+          {
+            "name": "team-tests",
+            "paths": ["exaix-team/"],
+            "ignore": ["**/*.d.ts", "**/*.md", "**/node_modules/**", "**/dist/**"],
+            "pattern": "**/{tests,tests_node}/**/*.ts",
+            "minLines": 10,
+            "threshold": 5.4
           }
         ]
       }
