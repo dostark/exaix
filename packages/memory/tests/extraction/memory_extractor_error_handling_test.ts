@@ -10,15 +10,14 @@
 import { assertEquals } from "@std/assert";
 
 import { MemoryExtractorService } from "@exaix/memory";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/core";
 import type { IMemoryBankService } from "@exaix/core/types";
 import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 
 Deno.test("MemoryExtractorService: logActivity errors do not break createProposal", async () => {
-  const root = await Deno.makeTempDir({ prefix: "memory-extractor-" });
-  try {
+  await withTempDir(async (root) => {
     const config = createMockConfig(root);
 
     const db = {
@@ -51,7 +50,5 @@ Deno.test("MemoryExtractorService: logActivity errors do not break createProposa
     );
 
     assertEquals(typeof proposalId, "string");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "memory-extractor-" });
 });

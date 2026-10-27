@@ -9,13 +9,13 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { computeTextHash, DiskBackedEmbeddingCache } from "../../src/embedding/disk_cache.ts";
+import { withTempDir } from "@exaix/testing";
 
 const testVectorA = [0.1, 0.2, 0.3];
 const testVectorB = [0.4, 0.5, 0.6];
 
 Deno.test("DiskBackedEmbeddingCache: set and get a value", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "emb-cache-" });
-  try {
+  await withTempDir(async (dir) => {
     const cache = new DiskBackedEmbeddingCache(dir);
     await cache.init();
 
@@ -23,14 +23,11 @@ Deno.test("DiskBackedEmbeddingCache: set and get a value", async () => {
     const got = cache.get("hash-a");
     assert(got !== undefined);
     assertEquals(got, testVectorA);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "emb-cache-" });
 });
 
 Deno.test("DiskBackedEmbeddingCache: has returns correctly", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "emb-cache-" });
-  try {
+  await withTempDir(async (dir) => {
     const cache = new DiskBackedEmbeddingCache(dir);
     await cache.init();
 
@@ -38,14 +35,11 @@ Deno.test("DiskBackedEmbeddingCache: has returns correctly", async () => {
     await cache.set("hash-a", testVectorA);
     assertEquals(cache.has("hash-a"), true);
     assertEquals(cache.has("hash-b"), false);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "emb-cache-" });
 });
 
 Deno.test("DiskBackedEmbeddingCache: delete removes entry", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "emb-cache-" });
-  try {
+  await withTempDir(async (dir) => {
     const cache = new DiskBackedEmbeddingCache(dir);
     await cache.init();
 
@@ -55,14 +49,11 @@ Deno.test("DiskBackedEmbeddingCache: delete removes entry", async () => {
     await cache.delete("hash-a");
     assertEquals(cache.has("hash-a"), false);
     assertEquals(cache.get("hash-a"), undefined);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "emb-cache-" });
 });
 
 Deno.test("DiskBackedEmbeddingCache: clear removes all entries", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "emb-cache-" });
-  try {
+  await withTempDir(async (dir) => {
     const cache = new DiskBackedEmbeddingCache(dir);
     await cache.init();
 
@@ -74,14 +65,11 @@ Deno.test("DiskBackedEmbeddingCache: clear removes all entries", async () => {
     assertEquals(cache.size, 0);
     assertEquals(cache.get("hash-a"), undefined);
     assertEquals(cache.get("hash-b"), undefined);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "emb-cache-" });
 });
 
 Deno.test("DiskBackedEmbeddingCache: persists across instances", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "emb-cache-" });
-  try {
+  await withTempDir(async (dir) => {
     const cache1 = new DiskBackedEmbeddingCache(dir);
     await cache1.init();
     await cache1.set("hash-a", testVectorA);
@@ -93,14 +81,11 @@ Deno.test("DiskBackedEmbeddingCache: persists across instances", async () => {
     assertEquals(cache2.size, 2);
     assertEquals(cache2.get("hash-a"), testVectorA);
     assertEquals(cache2.get("hash-b"), testVectorB);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "emb-cache-" });
 });
 
 Deno.test("DiskBackedEmbeddingCache: LRU eviction evicts oldest", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "emb-cache-" });
-  try {
+  await withTempDir(async (dir) => {
     const cache = new DiskBackedEmbeddingCache(dir, 3);
     await cache.init();
 
@@ -117,14 +102,11 @@ Deno.test("DiskBackedEmbeddingCache: LRU eviction evicts oldest", async () => {
     assertEquals(cache.get("k2"), undefined, "k2 should be evicted (oldest)");
     assertEquals(cache.get("k3") !== undefined, true, "k3 should survive");
     assertEquals(cache.get("k4") !== undefined, true, "k4 should survive");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "emb-cache-" });
 });
 
 Deno.test("DiskBackedEmbeddingCache: get updates LRU order", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "emb-cache-" });
-  try {
+  await withTempDir(async (dir) => {
     const cache = new DiskBackedEmbeddingCache(dir, 3);
     await cache.init();
 
@@ -141,9 +123,7 @@ Deno.test("DiskBackedEmbeddingCache: get updates LRU order", async () => {
     assertEquals(cache.get("k1") !== undefined, true);
     assertEquals(cache.get("k2") !== undefined, true);
     assertEquals(cache.get("k4") !== undefined, true);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "emb-cache-" });
 });
 
 Deno.test("computeTextHash: consistent for same text", async () => {
@@ -159,8 +139,7 @@ Deno.test("computeTextHash: different for different text", async () => {
 });
 
 Deno.test("DiskBackedEmbeddingCache: size property is accurate", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "emb-cache-" });
-  try {
+  await withTempDir(async (dir) => {
     const cache = new DiskBackedEmbeddingCache(dir);
     await cache.init();
 
@@ -171,7 +150,5 @@ Deno.test("DiskBackedEmbeddingCache: size property is accurate", async () => {
     assertEquals(cache.size, 2);
     await cache.delete("k1");
     assertEquals(cache.size, 1);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "emb-cache-" });
 });

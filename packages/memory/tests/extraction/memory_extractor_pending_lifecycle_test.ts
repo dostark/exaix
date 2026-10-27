@@ -22,7 +22,7 @@ import {
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import type { ILearning, IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 import type { IDatabaseService } from "@exaix/core";
 import type { IMemoryBankService } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core/types";
@@ -47,12 +47,9 @@ function makeProposalLearning(overrides: Partial<IProposalLearning> = {}): IProp
 }
 
 async function withTempRoot(fn: (root: string) => Promise<void>): Promise<void> {
-  const root = await Deno.makeTempDir({ prefix: "mem-extractor-" });
-  try {
+  await withTempDir(async (root) => {
     await fn(root);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+  }, { prefix: "mem-extractor-" });
 }
 
 function makeService(root: string, overrides: {
