@@ -19,6 +19,7 @@ import { FlowRuntimeValidator } from "@exaix/flow";
 import { FlowValidatorImpl } from "@exaix/flow";
 import { FlowLoader } from "@exaix/flow";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
+import { withTempDir } from "@exaix/testing";
 
 function makeStep(id: string, agent_role: string): IFlowStep {
   return {
@@ -91,8 +92,7 @@ Deno.test("FlowRuntimeValidator.validateStepAgentRoles covers hand-off targets (
 });
 
 Deno.test("FlowValidatorImpl rejects a flow whose step agent role is absent from a real blueprint catalog", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "exa-flow-id-" });
-  try {
+  await withTempDir(async (dir) => {
     await Deno.mkdir(`${dir}/Agents`, { recursive: true });
     await Deno.writeTextFile(
       `${dir}/Agents/senior-coder.md`,
@@ -124,14 +124,11 @@ output: { from: "s1", format: "markdown" }
     const result = await validator.validateFlow("bad-flow");
     assertEquals(result.valid, false);
     assertStringIncludes(result.error ?? "", "typo-role");
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "exa-flow-id-" });
 });
 
 Deno.test("FlowValidatorImpl accepts a flow whose step agent roles exist in the catalog", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "exa-flow-id-" });
-  try {
+  await withTempDir(async (dir) => {
     await Deno.mkdir(`${dir}/Agents`, { recursive: true });
     await Deno.writeTextFile(
       `${dir}/Agents/senior-coder.md`,
@@ -162,7 +159,5 @@ output: { from: "s1", format: "markdown" }
     const validator = new FlowValidatorImpl(loader, dir);
     const result = await validator.validateFlow("good-flow");
     assertEquals(result.valid, true);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "exa-flow-id-" });
 });

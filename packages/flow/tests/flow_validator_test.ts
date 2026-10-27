@@ -9,6 +9,7 @@ import { assertEquals } from "@std/assert";
 
 import { FlowLoader } from "@exaix/flow";
 import { FlowValidatorImpl } from "@exaix/flow";
+import { withTempDir } from "@exaix/testing";
 
 // Utility: create isolated temp dir for each test
 async function setupTestDir() {
@@ -64,16 +65,13 @@ Deno.test("FlowValidatorImpl: validates existing flow with valid structure", asy
 });
 
 Deno.test("FlowValidatorImpl: fails for missing flow", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "exa-flow-" });
-  try {
+  await withTempDir(async (dir) => {
     const loader = new FlowLoader(dir);
     const validator = new FlowValidatorImpl(loader, "unused-blueprints-path");
     const result = await validator.validateFlow("nonexistent");
     assertEquals(result.valid, false);
     assertEquals(typeof result.error === "string" && (result.error ?? "").includes("not found"), true);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+  }, { prefix: "exa-flow-" });
 });
 
 Deno.test("FlowValidatorImpl: fails for flow with no steps", async () => {
