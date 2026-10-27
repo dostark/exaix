@@ -133,15 +133,64 @@ function orchestratorTest(name: string, body: () => void | Promise<void>): void 
   });
 }
 
+/** A tool registry that advertises `tools` and accepts every call. */
+function stubToolRegistry(tools: ITool[]): IToolRegistry {
+  return {
+    getTools: () => tools,
+    execute: () => Promise.resolve({ success: true }),
+    getBaseDir: () => "/tmp",
+  };
+}
+
+const REACT_DONE_RESULT: IGenerateResult = {
+  content: REACT_DONE_RESPONSE,
+  usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+  model: "mock-model",
+  provider: "mock",
+  cost_usd: 0,
+};
+
+/** A provider that completes every ReAct turn at once. */
+function reactDoneProvider(): IModelProvider {
+  return { id: "mock", generate: () => Promise.resolve(REACT_DONE_RESULT) };
+}
+
+/** A completing provider that remembers the last prompt it was given. */
+function promptCapture(): { provider: IModelProvider; readonly prompt: string } {
+  let prompt = "";
+  return {
+    provider: {
+      id: "mock",
+      generate: (text: string) => {
+        prompt = text;
+        return Promise.resolve(REACT_DONE_RESULT);
+      },
+    },
+    get prompt() {
+      return prompt;
+    },
+  };
+}
+
+/** The execution context that the provider-backed step tests use, for one trace and request id. */
+function stepContext(traceId: string, requestId: string): IExecutionContext {
+  return { trace_id: traceId, request_id: requestId, request: "Work", plan: "Plan", portal: "TestPortal" };
+}
+
 const TEST_AGENT_BLUEPRINT =
   "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.";
 
-/** Writes the `test-agent` blueprint into the test config's blueprints directory and returns its path. */
-async function writeTestAgentBlueprint(): Promise<string> {
+/** Writes `content` as the `test-agent` blueprint file and returns its path. */
+async function writeBlueprintFile(content: string): Promise<string> {
   const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
   await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
-  await Deno.writeTextFile(blueprintPath, TEST_AGENT_BLUEPRINT);
+  await Deno.writeTextFile(blueprintPath, content);
   return blueprintPath;
+}
+
+/** Writes the standard `test-agent` blueprint and returns its path. */
+function writeTestAgentBlueprint(): Promise<string> {
+  return writeBlueprintFile(TEST_AGENT_BLUEPRINT);
 }
 
 /** The execution options that most tests run `test-agent` with. */
@@ -1062,8 +1111,8 @@ orchestratorTest("AgentComposer: allows authorized changes via MCP tools", async
 });
 
 orchestratorTest("AgentComposer: logs execution start to IActivity Journal", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const { db } = getServices();
+  const executor = createComposer();
 
   const trace_id = crypto.randomUUID();
   await executor.logExecutionStart(trace_id, "test-agent", "TestPortal");
@@ -1081,8 +1130,8 @@ orchestratorTest("AgentComposer: logs execution start to IActivity Journal", asy
 });
 
 orchestratorTest("AgentComposer: logs execution completion to IActivity Journal", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const { db } = getServices();
+  const executor = createComposer();
 
   const trace_id = crypto.randomUUID();
   await executor.logExecutionComplete(trace_id, "test-agent", {
@@ -1107,8 +1156,8 @@ orchestratorTest("AgentComposer: logs execution completion to IActivity Journal"
 });
 
 orchestratorTest("AgentComposer: logs execution errors to IActivity Journal", async () => {
-  const { db, logger, pathResolver, permissions } = getServices();
-  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
+  const { db } = getServices();
+  const executor = createComposer();
 
   const trace_id = crypto.randomUUID();
   await executor.logExecutionError(trace_id, "test-agent", {
@@ -1367,11 +1416,7 @@ orchestratorTest(
         },
       },
     ];
-    const fakeToolRegistry: IToolRegistry = {
-      getTools: () => fakeTools,
-      execute: () => Promise.resolve({ success: true }),
-      getBaseDir: () => "/tmp",
-    };
+    const fakeToolRegistry = stubToolRegistry(fakeTools);
     const executor = createComposer({ toolRegistry: fakeToolRegistry });
 
     const blueprint = promptBlueprint([PortalOperation.READ, PortalOperation.WRITE]);
@@ -1431,11 +1476,7 @@ orchestratorTest(
         parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
       },
     ];
-    const fakeToolRegistry: IToolRegistry = {
-      getTools: () => fakeTools,
-      execute: () => Promise.resolve({ success: true }),
-      getBaseDir: () => "/tmp",
-    };
+    const fakeToolRegistry = stubToolRegistry(fakeTools);
     const executor = createComposer({ toolRegistry: fakeToolRegistry });
 
     const blueprint = promptBlueprint([PortalOperation.READ, PortalOperation.WRITE]);
@@ -2118,27 +2159,10 @@ orchestratorTest(
         parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
       },
     ];
-    const fakeToolRegistry: IToolRegistry = {
-      getTools: () => fakeTools,
-      execute: () => Promise.resolve({ success: true }),
-      getBaseDir: () => "/tmp",
-    };
+    const fakeToolRegistry = stubToolRegistry(fakeTools);
 
-    let capturedPrompt = "";
-    const mockProvider: IModelProvider = {
-      id: "mock",
-      generate: async (prompt: string): Promise<IGenerateResult> => {
-        capturedPrompt = prompt;
-        await Promise.resolve();
-        return {
-          content: REACT_DONE_RESPONSE,
-          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-          model: "mock-model",
-          provider: "mock",
-          cost_usd: 0,
-        };
-      },
-    };
+    const capture = promptCapture();
+    const mockProvider = capture.provider;
 
     const executor = createComposer({
       provider: mockProvider,
@@ -2154,26 +2178,17 @@ orchestratorTest(
     // The agent role permits a broader set, including list_directory, which no matched skill declares.
     // The filter must remove list_directory. It must keep delete_file, because both the skills and the role declare it.
     // The test uses "test-agent" because getServices() allows only ["test-agent", "ollama-agent"] on TestPortal.
-    const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
-    await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
-    await Deno.writeTextFile(
-      blueprintPath,
+    await writeBlueprintFile(
       "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n" +
         'permitted_tools: ["read_file", "write_file", "delete_file", "list_directory"]\n---\nPrompt',
     );
 
-    const context: IExecutionContext = {
-      trace_id: "8e5c81f3-4236-461d-adcb-bf5741a2c0c8",
-      request_id: "r-skill-tools",
-      request: "Work",
-      plan: "Plan",
-      portal: "TestPortal",
-    };
+    const context = stepContext("8e5c81f3-4236-461d-adcb-bf5741a2c0c8", "r-skill-tools");
     const options = testExecutionOptions();
 
     await executor.executeStep(context, options);
 
-    const visibleTools = getVisibleToolList(capturedPrompt);
+    const visibleTools = getVisibleToolList(capture.prompt);
     assertStringIncludes(visibleTools, "read_file");
     assertStringIncludes(visibleTools, "write_file");
     assertStringIncludes(
@@ -2198,27 +2213,10 @@ orchestratorTest(
         parameters: { type: "object", properties: { pattern: { type: "string" } }, required: ["pattern"] },
       },
     ];
-    const fakeToolRegistry: IToolRegistry = {
-      getTools: () => fakeTools,
-      execute: () => Promise.resolve({ success: true }),
-      getBaseDir: () => "/tmp",
-    };
+    const fakeToolRegistry = stubToolRegistry(fakeTools);
 
-    let capturedPrompt = "";
-    const mockProvider: IModelProvider = {
-      id: "mock",
-      generate: async (prompt: string): Promise<IGenerateResult> => {
-        capturedPrompt = prompt;
-        await Promise.resolve();
-        return {
-          content: REACT_DONE_RESPONSE,
-          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-          model: "mock-model",
-          provider: "mock",
-          cost_usd: 0,
-        };
-      },
-    };
+    const capture = promptCapture();
+    const mockProvider = capture.provider;
 
     // The matched skill declares the alias "grep". The agent role declares the alias
     // "grep_search". Both canonicalize to "search_text" before the intersection.
@@ -2228,27 +2226,18 @@ orchestratorTest(
       options: { matchedSkillTools: [["grep"]] },
     });
 
-    const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
-    await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
-    await Deno.writeTextFile(
-      blueprintPath,
+    await writeBlueprintFile(
       "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n" +
         'permitted_tools: ["grep_search"]\n---\nPrompt',
     );
 
-    const context: IExecutionContext = {
-      trace_id: "8e5c81f3-4236-461d-adcb-bf5741a2c0c9",
-      request_id: "r-skill-alias-tools",
-      request: "Work",
-      plan: "Plan",
-      portal: "TestPortal",
-    };
+    const context = stepContext("8e5c81f3-4236-461d-adcb-bf5741a2c0c9", "r-skill-alias-tools");
     const options = testExecutionOptions();
 
     await executor.executeStep(context, options);
 
     assertStringIncludes(
-      getVisibleToolList(capturedPrompt),
+      getVisibleToolList(capture.prompt),
       "search_text",
       "search_text must survive the intersection: both the role's and the skill's alias must canonicalize to match",
     );
@@ -2256,44 +2245,20 @@ orchestratorTest(
 );
 
 orchestratorTest("[scope-alias] execution-option and skill aliases resolve without a blueprint scope", async () => {
-  const fakeToolRegistry: IToolRegistry = {
-    getTools: () => [{
-      name: "search_text",
-      description: "Search file contents by pattern inside a portal.",
-      parameters: { type: "object", properties: { pattern: { type: "string" } } },
-    }],
-    execute: () => Promise.resolve({ success: true }),
-    getBaseDir: () => "/tmp",
-  };
-  let capturedPrompt = "";
-  const mockProvider: IModelProvider = {
-    id: "mock",
-    generate: (prompt: string): Promise<IGenerateResult> => {
-      capturedPrompt = prompt;
-      return Promise.resolve({
-        content: REACT_DONE_RESPONSE,
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-        model: "mock-model",
-        provider: "mock",
-        cost_usd: 0,
-      });
-    },
-  };
+  const fakeToolRegistry = stubToolRegistry([{
+    name: "search_text",
+    description: "Search file contents by pattern inside a portal.",
+    parameters: { type: "object", properties: { pattern: { type: "string" } } },
+  }]);
+  const capture = promptCapture();
+  const mockProvider = capture.provider;
   const executor = createComposer({
     provider: mockProvider,
     toolRegistry: fakeToolRegistry,
     options: { matchedSkillTools: [["grep"]] },
   });
-  const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
-  await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
-  await Deno.writeTextFile(blueprintPath, "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n---\nPrompt");
-  const context: IExecutionContext = {
-    trace_id: "8e5c81f3-4236-461d-adcb-bf5741a2c0ca",
-    request_id: "r-skill-option-alias-tools",
-    request: "Work",
-    plan: "Plan",
-    portal: "TestPortal",
-  };
+  await writeBlueprintFile("---\nmodel: gpt\nprovider: mock\ncapabilities: []\n---\nPrompt");
+  const context = stepContext("8e5c81f3-4236-461d-adcb-bf5741a2c0ca", "r-skill-option-alias-tools");
   const options: IAgentExecutionOptions = {
     portal: "TestPortal",
     agent_role: "test-agent",
@@ -2306,50 +2271,25 @@ orchestratorTest("[scope-alias] execution-option and skill aliases resolve witho
 
   await executor.executeStep(context, options);
 
-  assertStringIncludes(getVisibleToolList(capturedPrompt), "search_text");
+  assertStringIncludes(getVisibleToolList(capture.prompt), "search_text");
   await executor.executeStep({ ...context, request_id: "r-empty-tool-scope" }, { ...options, permitted_tools: [] });
-  assertFalse(getVisibleToolList(capturedPrompt).includes("search_text"));
+  assertFalse(getVisibleToolList(capture.prompt).includes("search_text"));
   await executor.executeStep(
     { ...context, request_id: "r-undefined-tool-scope" },
     { ...options, permitted_tools: undefined },
   );
-  assertStringIncludes(getVisibleToolList(capturedPrompt), "search_text");
+  assertStringIncludes(getVisibleToolList(capture.prompt), "search_text");
 });
 
 orchestratorTest("AgentComposer: executeStep with provider accepts ReAct completion", async () => {
-  const mockProvider: IModelProvider = {
-    id: "mock",
-    generate: async (): Promise<IGenerateResult> => {
-      await Promise.resolve();
-      return {
-        content: REACT_DONE_RESPONSE,
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-        model: "mock-model",
-        provider: "mock",
-        cost_usd: 0,
-      };
-    },
-  };
+  const mockProvider = reactDoneProvider();
 
   const executor = createComposer({ provider: mockProvider });
 
   // Create blueprint file
-  const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
-  await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), {
-    recursive: true,
-  });
-  await Deno.writeTextFile(
-    blueprintPath,
-    "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n---\nPrompt",
-  );
+  await writeBlueprintFile("---\nmodel: gpt\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
-  const context: IExecutionContext = {
-    trace_id: "7e5c81f3-4236-461d-adcb-bf5741a2c0c7",
-    request_id: "r-prov",
-    request: "Work",
-    plan: "Plan",
-    portal: "TestPortal",
-  };
+  const context = stepContext("7e5c81f3-4236-461d-adcb-bf5741a2c0c7", "r-prov");
   const options = testExecutionOptions();
 
   const result = await executor.executeStep(context, options);
@@ -2427,17 +2367,9 @@ Deno.test({
     try {
       const executor = createComposer(); // No provider passed
 
-      const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
-      await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
-      await Deno.writeTextFile(blueprintPath, "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n---\nPrompt");
+      await writeBlueprintFile("---\nmodel: gpt\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
-      const context: IExecutionContext = {
-        trace_id: "6e5c81f3-4236-461d-adcb-bf5741a2c0c7",
-        request_id: "r-prov",
-        request: "Work",
-        plan: "Plan",
-        portal: "TestPortal",
-      };
+      const context = stepContext("6e5c81f3-4236-461d-adcb-bf5741a2c0c7", "r-prov");
 
       const options = testExecutionOptions();
 
@@ -2491,9 +2423,7 @@ Deno.test({
     try {
       const executor = createComposer({ provider: mockProvider });
 
-      const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
-      await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
-      await Deno.writeTextFile(blueprintPath, "---\nmodel: mock\nprovider: mock\ncapabilities: []\n---\nPrompt");
+      await writeBlueprintFile("---\nmodel: mock\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
       const context: IExecutionContext = {
         trace_id: "9e5c81f3-4236-461d-adcb-bf5741a2c0c7",
@@ -2539,9 +2469,7 @@ Deno.test({
     try {
       const executor = createComposer({ provider: mockProvider });
 
-      const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
-      await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
-      await Deno.writeTextFile(blueprintPath, "---\nmodel: mock\nprovider: mock\ncapabilities: []\n---\nPrompt");
+      await writeBlueprintFile("---\nmodel: mock\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
       const context: IExecutionContext = {
         trace_id: "ae5c81f3-4236-461d-adcb-bf5741a2c0c7",
@@ -2587,9 +2515,7 @@ Deno.test({
     try {
       const executor = createComposer({ provider: mockProvider });
 
-      const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
-      await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
-      await Deno.writeTextFile(blueprintPath, "---\nmodel: mock\nprovider: mock\ncapabilities: []\n---\nPrompt");
+      await writeBlueprintFile("---\nmodel: mock\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
       const context: IExecutionContext = {
         trace_id: "ce5c81f3-4236-461d-adcb-bf5741a2c0c7",
@@ -3000,10 +2926,7 @@ orchestratorTest("AgentComposer: applyTokenBudget emits CONTEXT_SECTION_TRUNCATE
     }),
   });
 
-  const blueprintPath = pathBuilders.agentsPath(testConfig.paths.blueprints, "test-agent.md");
-  await Deno.mkdir(pathBuilders.agentsPath(testConfig.paths.blueprints), { recursive: true });
-  await Deno.writeTextFile(
-    blueprintPath,
+  await writeBlueprintFile(
     "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\n" + "X".repeat(10000),
   );
 
@@ -3149,7 +3072,7 @@ orchestratorTest("AgentComposer: loadBlueprint delegates to BlueprintService", a
 orchestratorTest(
   "AgentComposer: executeStep's usage re-shape forwards cache_read_tokens/cache_creation_tokens/cost_source into agent.execution_completed (Phase 140a GAP-2)",
   async () => {
-    const { db, logger, pathResolver, permissions } = getServices();
+    const { db } = getServices();
     const strategyRegistry = reactRegistry(() =>
       Promise.resolve({
         branch: "feat/cache-passthrough",
@@ -3169,14 +3092,7 @@ orchestratorTest(
       })
     );
 
-    const executor = new AgentComposer({
-      config: testConfig,
-      db,
-      logger,
-      pathResolver,
-      permissions,
-      strategyRegistry,
-    });
+    const executor = createComposer({ strategyRegistry });
 
     await writeTestAgentBlueprint();
 
@@ -3210,7 +3126,7 @@ orchestratorTest(
 orchestratorTest(
   "AgentComposer: executeStep's usage re-shape forwards reasoning_tokens into agent.execution_completed (Phase 167 Step 12)",
   async () => {
-    const { db, logger, pathResolver, permissions } = getServices();
+    const { db } = getServices();
     const strategyRegistry = reactRegistry(() =>
       Promise.resolve({
         branch: "feat/reasoning-passthrough",
@@ -3229,14 +3145,7 @@ orchestratorTest(
       })
     );
 
-    const executor = new AgentComposer({
-      config: testConfig,
-      db,
-      logger,
-      pathResolver,
-      permissions,
-      strategyRegistry,
-    });
+    const executor = createComposer({ strategyRegistry });
 
     await writeTestAgentBlueprint();
 
