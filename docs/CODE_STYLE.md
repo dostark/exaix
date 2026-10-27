@@ -691,6 +691,15 @@ whole-object, and member-free uses, so a facade that forwards the namespace stay
 facade intentional and mark it with `// unslop-ignore-next-line prefer-named-imports` above the
 import. Test files and helpers follow the same rule.
 
+### Fallow-aligned audit {#unused-exports-parity}
+
+The engine ships a parity mode that mirrors fallow's dead-export definition. Run
+`deno task check:unused-exports:parity` to list every export that no consumer imports, including
+re-exports, entry-point declarations, test helpers, script helpers, default exports, and namespaces.
+Every parity finding is an error, but the task is advisory and stays outside the CI gates until the
+reported surface is cleaned. `configurable(…)` registrations and `__test_*` hooks stay exempt, and an
+intentional value export carries `// unslop-ignore-next-line unused-export` above the declaration.
+
 ### Module headers {#module-headers}
 
 Each source file starts with a JSDoc header. The tags are:
