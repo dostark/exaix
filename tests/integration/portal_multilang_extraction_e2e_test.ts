@@ -16,6 +16,7 @@ import { PortalAnalysisMode } from "@exaix/core";
 import { PortalKnowledgeService } from "@exaix/portal/knowledge";
 import type { IDocCommandRunner, IPortalKnowledgeServiceOptions } from "@exaix/portal/knowledge";
 import type { IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
+import { withTempDir } from "@exaix/testing";
 
 // Helpers
 
@@ -116,8 +117,7 @@ async function createMixedPortal(baseDir: string): Promise<string> {
 Deno.test({
   name: "[portal] [E2E] Solo default registry extracts Python symbols — real symbolMap",
   fn: async () => {
-    const tempDir = await Deno.makeTempDir({ prefix: "p119_py_e2e_" });
-    try {
+    await withTempDir(async (tempDir) => {
       const portalDir = await createPythonPortal(tempDir);
       const svc = new PortalKnowledgeService(makeServiceOptions());
       const result = await svc.analyze("py-e2e", portalDir, PortalAnalysisMode.STANDARD);
@@ -126,33 +126,27 @@ Deno.test({
       const names = result.symbolMap.map((s) => s.name);
       assert(names.includes("hello"), "hello function should be in symbolMap");
       assert(names.includes("world"), "world function should be in symbolMap");
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
+    }, { prefix: "p119_py_e2e_" });
   },
 });
 
 Deno.test({
   name: "[portal] [E2E] Solo yields empty symbolMap for Rust portal (no extractor registered)",
   fn: async () => {
-    const tempDir = await Deno.makeTempDir({ prefix: "p119_rs_e2e_" });
-    try {
+    await withTempDir(async (tempDir) => {
       const portalDir = await createRustPortal(tempDir);
       const svc = new PortalKnowledgeService(makeServiceOptions());
       const result = await svc.analyze("rs-e2e", portalDir, PortalAnalysisMode.STANDARD);
       assertExists(result.symbolMap, "symbolMap should exist for Rust portal");
       assertEquals(result.symbolMap.length, 0, "Rust portal should have empty symbolMap (no extractor)");
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
+    }, { prefix: "p119_rs_e2e_" });
   },
 });
 
 Deno.test({
   name: "[portal] [E2E] mixed portal extracts dominant (Python) only; Rust files fail-soft",
   fn: async () => {
-    const tempDir = await Deno.makeTempDir({ prefix: "p119_mixed_e2e_" });
-    try {
+    await withTempDir(async (tempDir) => {
       const portalDir = await createMixedPortal(tempDir);
       const svc = new PortalKnowledgeService(makeServiceOptions());
       const result = await svc.analyze("mixed-e2e", portalDir, PortalAnalysisMode.STANDARD);
@@ -163,8 +157,6 @@ Deno.test({
       assert(names.includes("start"), "start (Python) should be in symbolMap");
       // Rust files should not cause an error (fail-soft)
       // The portal should not crash despite having unextractable files
-    } finally {
-      await Deno.remove(tempDir, { recursive: true });
-    }
+    }, { prefix: "p119_mixed_e2e_" });
   },
 });

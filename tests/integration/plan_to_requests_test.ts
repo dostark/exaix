@@ -28,6 +28,7 @@ import {
   REPO_ROOT,
   runGenerator,
 } from "./helpers/plan_to_requests_helpers.ts";
+import { withTempDir } from "@exaix/testing";
 
 const noopTraceLogger: IEventLogger = {
   log: () => Promise.resolve(),
@@ -338,8 +339,7 @@ Deno.test("[plan-to-requests] heading-scrape fallback uses default portal and ta
 });
 
 Deno.test("[plan-to-requests][context] doc-shaped fixture emits Why This Step Exists with Executive Summary + only shared bullets", async () => {
-  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-context-" });
-  try {
+  await withTempDir(async (tmpDir) => {
     const { stdout, stderr } = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", tmpDir]);
     assertEquals(stderr, "");
     assertMatch(stdout, /Wrote 2 request file/);
@@ -368,14 +368,11 @@ Deno.test("[plan-to-requests][context] doc-shaped fixture emits Why This Step Ex
     assertEquals(step2.includes("**The Goal.**"), true);
     assertFalse(step2.includes("### Relevant Constraints"));
     assertFalse(step2.includes("### Relevant Design Decisions"));
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  }, { prefix: "plan-to-req-context-" });
 });
 
 Deno.test("[plan-to-requests][context] legacy minimal fixture output unchanged â€” no Why This Step Exists block", async () => {
-  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-context-reg-" });
-  try {
+  await withTempDir(async (tmpDir) => {
     const { stderr } = await runGenerator([join(FIXTURES_DIR, "phase-nn-fixture.md"), "--out-dir", tmpDir]);
     assertEquals(stderr, "");
 
@@ -386,9 +383,7 @@ Deno.test("[plan-to-requests][context] legacy minimal fixture output unchanged â
         `step ${stepNum}: docs without an Executive Summary keep legacy output`,
       );
     }
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  }, { prefix: "plan-to-req-context-reg-" });
 });
 
 Deno.test("[plan-to-requests][context] a real repo phase doc yields requests far smaller than the source doc", async () => {
@@ -626,21 +621,17 @@ async function admissionKindOf(frontmatter: JSONObject): Promise<RequestKind | n
 }
 
 Deno.test("[plan-context][admission] generated frontmatter carries ONLY agent_role (legacy duplicate key must not return)", async () => {
-  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-admit-" });
-  try {
+  await withTempDir(async (tmpDir) => {
     assertEquals((await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", tmpDir])).code, 0);
     const file = join(tmpDir, `${CONTEXT_SLUG}-step-1.md`);
     const fm = productionFrontmatterOf(file);
     assertEquals(fm.agent_role, "senior-coder");
     assertEquals(fm.identity, undefined, "GAP-1 root fix: legacy identity key must not coexist with agent_role");
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  }, { prefix: "plan-to-req-admit-" });
 });
 
 Deno.test("[plan-context][admission] consumer contract: real getRequestKindOrFail returns AGENT_ROLE for generated output", async () => {
-  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-admit-kind-" });
-  try {
+  await withTempDir(async (tmpDir) => {
     assertEquals((await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", tmpDir])).code, 0);
     const file = join(tmpDir, `${CONTEXT_SLUG}-step-1.md`);
     const fm = productionFrontmatterOf(file);
@@ -650,14 +641,11 @@ Deno.test("[plan-context][admission] consumer contract: real getRequestKindOrFai
       RequestKind.AGENT_ROLE,
       "generated requests must be admitted as agent-role-kind, not marked FAILED for missing agent field",
     );
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  }, { prefix: "plan-to-req-admit-kind-" });
 });
 
 Deno.test("[plan-context][admission] manifest agent role resolves to a loadable blueprint file", async () => {
-  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-admit-bp-" });
-  try {
+  await withTempDir(async (tmpDir) => {
     assertEquals((await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", tmpDir])).code, 0);
     const file = join(tmpDir, `${CONTEXT_SLUG}-step-1.md`);
     const fm = productionFrontmatterOf(file);
@@ -669,21 +657,16 @@ Deno.test("[plan-context][admission] manifest agent role resolves to a loadable 
       loaded,
       `blueprint '${fm.agent_role}' must load - BlueprintNotFound guard not reachable from generator output`,
     );
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  }, { prefix: "plan-to-req-admit-bp-" });
 });
 
 Deno.test("[regression][admission] strict RequestSchema accepts canonical generator output", async () => {
-  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-admit-schema-" });
-  try {
+  await withTempDir(async (tmpDir) => {
     assertEquals((await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", tmpDir])).code, 0);
     const file = join(tmpDir, `${CONTEXT_SLUG}-step-1.md`);
     const fm = productionFrontmatterOf(file);
     assertEquals(RequestSchema.safeParse(fm).success, true);
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  }, { prefix: "plan-to-req-admit-schema-" });
 });
 
 // plan_context_ref frontmatter provenance.
@@ -706,16 +689,13 @@ Deno.test("[plan-to-requests][plan-context] frontmatter carries plan_context_ref
 });
 
 Deno.test("[regression][plan-context] default output (no --plan-context-root) has no plan_context_ref field", async () => {
-  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-no-ref-" });
-  try {
+  await withTempDir(async (tmpDir) => {
     assertEquals((await runGenerator([join(FIXTURES_DIR, "phase-nn-fixture.md"), "--out-dir", tmpDir])).code, 0);
     for (const stepNum of [1, 2, 3]) {
       const content = await Deno.readTextFile(join(tmpDir, `phase-nn-fixture-step-${stepNum}.md`));
       assertFalse(content.includes("plan_context_ref"), `step ${stepNum} must omit plan_context_ref`);
     }
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  }, { prefix: "plan-to-req-no-ref-" });
 });
 
 Deno.test("[plan-context][metrics] treatment request stays within 3x stripped control across repeated runs", async () => {
