@@ -1110,7 +1110,7 @@
             ],
             "pattern": "**/{tests,tests_node}/**/*.ts",
             "minLines": 10,
-            "threshold": 5.0
+            "threshold": 4.5
           },
           {
             "name": "integration-tests",
