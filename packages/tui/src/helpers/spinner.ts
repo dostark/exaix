@@ -11,7 +11,7 @@ import { SpinnerStyle } from "../types/enums.ts";
 import { SECONDS_PER_HOUR } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface ISpinnerConfig {
+interface ISpinnerConfig {
   style: SpinnerStyle;
   frames: string[];
   interval: number; // ms
@@ -26,14 +26,14 @@ export interface ISpinnerState {
   startTime: number;
 }
 
-export interface IProgressState {
+interface IProgressState {
   current: number;
   total: number;
   message: string;
   startTime: number;
 }
 
-export interface ILoadingState {
+interface ILoadingState {
   isLoading: boolean;
   message: string;
   spinner: ISpinnerState;

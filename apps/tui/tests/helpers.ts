@@ -64,7 +64,7 @@ import { MemoryViewTuiSession } from "../src/memory_view.ts";
 import type { ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
 import type { PortalAnalysisMode } from "@exaix/core";
 
-export interface IPortalInfoOverrides {
+interface IPortalInfoOverrides {
   alias?: string;
   status?: PortalStatus;
   targetPath?: string;
@@ -73,11 +73,11 @@ export interface IPortalInfoOverrides {
   [key: string]: any;
 }
 
-export interface ILogEntryPayload {
+interface ILogEntryPayload {
   [key: string]: string | number | boolean | null | undefined;
 }
 
-export interface ILogEntryOverrides {
+interface ILogEntryOverrides {
   id?: string;
   trace_id?: string;
   actor?: string;
@@ -113,21 +113,12 @@ export const sampleGroupedRequests = (): IRequest[] => commonTestData.requests.g
 export const sampleNewRequest = (): IRequest[] => [sampleRequest({ trace_id: "new-req", subject: "New Request" })];
 
 // Legacy aliases for backward compatibility
-export const sampleIRequest = sampleRequest;
-export const sampleBasicIRequest = sampleBasicRequest;
-export const sampleNewIRequest = sampleNewRequest;
-
 // Plan helpers using shared utilities
 export const sampleBasicPlans = (): IPlan[] => commonTestData.plans.basic();
-export const sampleSinglePlan = (): IPlan[] => commonTestData.plans.single();
 export const samplePlansWithStatuses = (): IPlan[] => commonTestData.plans.withStatuses();
 export const samplePendingPlans = (): IPlan[] => commonTestData.plans.pending();
 
 // Skill helpers using shared utilities
-export const sampleBasicSkills = (): ISkillSummary[] => commonTestData.skills.basic() as ISkillSummary[];
-export const sampleSingleSkill = (): ISkillSummary => commonTestData.skills.single()[0] as ISkillSummary;
-export const sampleSkillsWithStatuses = (): ISkillSummary[] => commonTestData.skills.withStatuses() as ISkillSummary[];
-
 export function createMockRequestService(initial: IRequest[] = []): IRequestService & { requests: IRequest[] } {
   class MockRequestService implements IRequestService {
     requests: IRequest[];
@@ -313,7 +304,7 @@ export function sampleSingleMonitorLog(): ILogEntry[] {
 }
 
 // Portal helpers
-export function samplePortal(overrides: IPortalInfoOverrides = {}): IPortalInfo {
+function samplePortal(overrides: IPortalInfoOverrides = {}): IPortalInfo {
   return {
     alias: overrides.alias ?? `Portal-${Math.floor(Math.random() * 1e6)}`,
     status: overrides.status ?? PortalStatus.ACTIVE,
@@ -324,11 +315,11 @@ export function samplePortal(overrides: IPortalInfoOverrides = {}): IPortalInfo 
   } as IPortalInfo;
 }
 
-export function samplePortals(arr: IPortalInfoOverrides[]): IPortalInfo[] {
+function samplePortals(arr: IPortalInfoOverrides[]): IPortalInfo[] {
   return arr.map((a) => samplePortal(a));
 }
 
-export function createMockPortalService(initial: IPortalInfo[] = []): IPortalService & {
+function createMockPortalService(initial: IPortalInfo[] = []): IPortalService & {
   portals: IPortalInfo[];
   actions: Array<{ type: string; id: string }>;
 } {
@@ -420,7 +411,7 @@ export function createMockPortalService(initial: IPortalInfo[] = []): IPortalSer
   return new MockPortalService(initial);
 }
 
-export function createPortalViewWithPortals(arr: IPortalInfoOverrides[] = []): {
+function createPortalViewWithPortals(arr: IPortalInfoOverrides[] = []): {
   service: IPortalService & { portals: IPortalInfo[]; actions: Array<{ type: string; id: string }> };
   view: PortalManagerView;
 } {
@@ -608,7 +599,7 @@ export function createMonitorViewWithLogs(arr: Array<ILogEntry | ILogEntryOverri
   return { db, monitorView };
 }
 
-export function createMonitorTuiSession(arr: Array<ILogEntry | ILogEntryOverrides> = []): {
+function createMonitorTuiSession(arr: Array<ILogEntry | ILogEntryOverrides> = []): {
   db: IDatabaseService & IJournalService;
   monitorView: MonitorView;
   session: ReturnType<MonitorView["createTuiSession"]>;
@@ -699,69 +690,10 @@ export function createTestTree(): ITreeNode[] {
   ];
 }
 
-export function createLargeTestTree(depth: number = 3, breadth: number = 5): ITreeNode[] {
-  function createLevel(currentDepth: number, prefix: string): ITreeNode[] {
-    if (currentDepth >= depth) return [];
-
-    const nodes: ITreeNode[] = [];
-    for (let i = 0; i < breadth; i++) {
-      const id = `${prefix}${i}`;
-      nodes.push({
-        id,
-        label: `Node ${id}`,
-        type: currentDepth === 0 ? "root" : "item",
-        expanded: currentDepth === 0,
-        children: createLevel(currentDepth + 1, `${id}-`),
-      });
-    }
-    return nodes;
-  }
-
-  return createLevel(0, "node-");
-}
-
 // Key simulation helpers
-export async function simulateKeySequence(
-  handler: (key: string) => void | Promise<void>,
-  keys: string[],
-  delayMs: number = 0,
-): Promise<void> {
-  for (const key of keys) {
-    await handler(key);
-    if (delayMs > 0) {
-      await new Promise((r) => setTimeout(r, delayMs));
-    }
-  }
-}
-
-export function typeString(text: string): string[] {
-  return text.split("");
-}
-
 // Render assertion helpers
-export function getVisibleText(lines: string[]): string[] {
-  // Strip ANSI codes for easier assertions
-  // deno-lint-ignore no-control-regex
-  const ansiRegex = /\x1b\[[0-9;]*m/g;
-  return lines.map((line) => line.replace(ansiRegex, ""));
-}
-
-export function findLineContaining(lines: string[], text: string): number {
-  const visibleLines = getVisibleText(lines);
-  return visibleLines.findIndex((line) => line.includes(text));
-}
-
-export function hasLineContaining(lines: string[], text: string): boolean {
-  return findLineContaining(lines, text) !== -1;
-}
-
-export function countLinesContaining(lines: string[], text: string): number {
-  const visibleLines = getVisibleText(lines);
-  return visibleLines.filter((line) => line.includes(text)).length;
-}
-
 // Legacy request manager helpers
-export function createLegacyMockRequestService(): IRequestService {
+function createLegacyMockRequestService(): IRequestService {
   return {
     list: () => Promise.resolve([]),
     listRequests: () => Promise.resolve([]),
@@ -877,12 +809,12 @@ export function createMockDialogRenderOptions(width: number = 60, height: number
 
 // Skills Manager helpers
 
-export enum SkillSource {
+enum SkillSource {
   CORE = "core",
   PROJECT = "project",
 }
 
-export interface ISkillSummaryOverrides {
+interface ISkillSummaryOverrides {
   id?: string;
   skill_id?: string;
   name?: string;
@@ -912,7 +844,7 @@ export function sampleSkill(overrides: ISkillSummaryOverrides = {}): ISkillSumma
   } as Partial<ISkillSummary>);
 }
 
-export function sampleSkills(arr: ISkillSummaryOverrides[]): ISkillSummary[] {
+function sampleSkills(arr: ISkillSummaryOverrides[]): ISkillSummary[] {
   return arr.map((a) => sampleSkill(a));
 }
 
@@ -967,10 +899,6 @@ export function createTestSkills(): ISkillSummary[] {
 }
 
 // MinimalSkillsServiceMock is now imported from src/tui/skills_manager_view.ts
-
-export function createMockSkillsService(initial: ISkillSummaryOverrides[] = []): MinimalSkillsServiceMock {
-  return new MinimalSkillsServiceMock(sampleSkills(initial));
-}
 
 export function createSkillsManagerViewWithMock(skills: ISkillSummary[] = sampleTestSkills()): {
   service: MinimalSkillsServiceMock;
@@ -1082,7 +1010,7 @@ export function createMockProposals(): IMemoryUpdateProposal[] {
   ];
 }
 
-export function createMemoryViewSession(proposals: IMemoryUpdateProposal[] = []): {
+function createMemoryViewSession(proposals: IMemoryUpdateProposal[] = []): {
   service: MinimalMemoryServiceMock;
   session: MemoryViewTuiSession;
 } {

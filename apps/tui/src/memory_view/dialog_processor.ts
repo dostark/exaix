@@ -24,7 +24,7 @@ import {
 } from "@exaix/tui/helpers/constants.ts";
 import type { IMemoryService } from "@exaix/core/types";
 
-export interface IDialogProcessorContext {
+interface IDialogProcessorContext {
   service: IMemoryService;
   onStatusUpdate: (message: string) => void;
   onTreeReload: () => Promise<void>;

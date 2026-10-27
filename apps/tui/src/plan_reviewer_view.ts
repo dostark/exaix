@@ -23,14 +23,14 @@ import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/k
 export type IPlan = IPlanMetadata;
 
 /** Plan-specific state extensions beyond BaseTreeView's selection/filter/dialog fields. */
-export interface IPlanViewExtensions {
+interface IPlanViewExtensions {
   /** Show diff view */
   showDiff: boolean;
   /** Current diff content */
   diff: string;
 }
 
-export interface IDbLike {
+interface IDbLike {
   getPendingPlans(): Promise<IPlan[]>;
   getPlanDiff(planId: string): Promise<string>;
   updatePlanStatus(planId: string, status: PlanStatusType): Promise<void>;

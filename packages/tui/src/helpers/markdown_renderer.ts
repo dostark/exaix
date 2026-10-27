@@ -14,7 +14,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 // Interfaces
 
-export interface IRenderOptions {
+interface IRenderOptions {
   useColors: boolean;
   maxWidth?: number;
 }

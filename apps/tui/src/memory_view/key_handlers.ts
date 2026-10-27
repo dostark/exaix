@@ -10,7 +10,7 @@ import type { ITreeNode } from "./types.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { MemoryTuiScope } from "./memory_scope.ts";
 
-export interface IShortcutHandlers {
+interface IShortcutHandlers {
   jumpToScope?: (scope: string) => Promise<void>;
   startSearch?: () => void;
   showHelp?: () => void;

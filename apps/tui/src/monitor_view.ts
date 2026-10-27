@@ -41,7 +41,7 @@ export interface ILogEntry {
 
 // View State
 
-export interface ILogViewExtensions {
+interface ILogViewExtensions {
   /** Whether detail view is shown */
   showDetail: boolean;
   /** Detail content for expanded log */

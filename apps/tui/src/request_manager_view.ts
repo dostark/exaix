@@ -57,7 +57,7 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 /**
  * View state interface
  */
-export interface IRequestViewState {
+interface IRequestViewState {
   selectedRequestId: string | null;
   requestTree: ITreeNode[];
   showHelp: boolean;
@@ -74,7 +74,7 @@ export interface IRequestViewState {
 /**
  * Internal action types for request management.
  */
-export type InternalRequestAction = RequestOperation;
+type InternalRequestAction = RequestOperation;
 
 // Visual constants
 export const PRIORITY_ICONS: Record<string, string> = {

@@ -10,7 +10,7 @@
 import type { DialogStatus } from "@exaix/core";
 import type { IMemoryService } from "@exaix/core/types";
 
-export interface IMemoryViewTestContext {
+interface IMemoryViewTestContext {
   statuses: string[];
   counters: {
     readonly treeReloads: number;

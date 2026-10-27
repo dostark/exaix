@@ -7,6 +7,7 @@
  * @description Package-owned test-mode key routing for the TUI dashboard.
  */
 
+import type { Opt, Reason } from "@exaix/core/types";
 import { SplitDirection } from "../types/enums.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import {
@@ -18,7 +19,7 @@ import {
   splitPane,
 } from "@exaix/tui/layout/pane_manager.ts";
 
-export interface ITestModeDashboardState {
+interface ITestModeDashboardState {
   showHelp: boolean;
   showNotifications: boolean;
   showViewPicker: boolean;
@@ -26,18 +27,18 @@ export interface ITestModeDashboardState {
   selectedMemoryNotifIndex: number;
 }
 
-export interface ITestModeNotificationServiceLike {
+interface ITestModeNotificationServiceLike {
   getNotifications(): Promise<readonly unknown[]>;
-  notify(message: string, type?: string): Promise<void>;
+  notify(message: string, type?: Opt<string, Reason.OptionalInput>): Promise<void>;
   clearNotification(id: string): Promise<void>;
 }
 
-export interface ITestModeDashboardCallbackHost {
+interface ITestModeDashboardCallbackHost {
   state: ITestModeDashboardState;
   activePaneId: string;
 }
 
-export interface ITestModeMemoryDashboardCallbackHost extends ITestModeDashboardCallbackHost {
+interface ITestModeMemoryDashboardCallbackHost extends ITestModeDashboardCallbackHost {
   approveMemoryUpdate(proposalId: string): Promise<void>;
   rejectMemoryUpdate(proposalId: string): Promise<void>;
 }
@@ -65,11 +66,11 @@ type MemoryNotificationsHandler = {
   ): Promise<number> | number;
 }["bivarianceHack"];
 
-export interface ITestModeDashboard {
+interface ITestModeDashboard {
   state: ITestModeDashboardState;
   activePaneId: string;
   notificationService?: ITestModeNotificationServiceLike;
-  notify(message: string, type?: string): Promise<void>;
+  notify(message: string, type?: Opt<string, Reason.OptionalInput>): Promise<void>;
   handleHelpOverlay?: HelpOverlayHandler;
   handleViewPicker?: ViewPickerHandler;
   handleMemoryNotifications?: MemoryNotificationsHandler;

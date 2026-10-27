@@ -13,7 +13,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 export type KeyHandler = (key: string) => boolean | void | Promise<boolean | void>;
 
-export interface IKeyEvent {
+interface IKeyEvent {
   key: string;
   modifiers: Set<KeyModifier>;
   raw?: string;
@@ -28,16 +28,11 @@ export interface IKeyBinding<TAction extends string | KeyHandler = string, TCate
   global?: boolean;
 }
 
-export interface IKeyBindingGroup<TAction extends string | KeyHandler = string> {
-  name: string;
-  bindings: IKeyBinding<TAction>[];
-}
-
-export interface IKeyHandlerMap {
+interface IKeyHandlerMap {
   [key: string]: KeyHandler;
 }
 
-export interface INavigationState {
+interface INavigationState {
   selectedIndex: number;
   length: number;
   pageSize?: number;

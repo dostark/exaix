@@ -7,7 +7,7 @@
  * @related-files [apps/tui/src/analytics/correlation_analyzer.ts, apps/tui/src/analytics/trace_analyzer.ts]
  */
 
-export interface ITimeRange {
+interface ITimeRange {
   start: Date;
   end: Date;
   duration: number;
@@ -29,7 +29,7 @@ export interface ICorrelationAnalysis {
   };
 }
 
-export interface ITraceOperation {
+interface ITraceOperation {
   operation: string;
   timestamp: Date;
   duration?: number;

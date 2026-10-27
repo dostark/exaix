@@ -31,7 +31,7 @@ import { LogGroupingMode, TuiNodeType } from "@exaix/tui";
 /**
  * View-specific extensions for StructuredLogViewer
  */
-export interface ILogViewExtensions {
+interface ILogViewExtensions {
   /** Bookmarked log IDs */
   bookmarkedIds: Set<string>;
   /** Current grouping mode */

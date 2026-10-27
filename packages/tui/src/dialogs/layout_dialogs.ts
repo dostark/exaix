@@ -18,25 +18,25 @@ import {
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { type ILayoutPresetDisplay, renderLayoutPresetListLines } from "@exaix/tui/layout/rendering.ts";
 
-export interface IViewInfo {
+interface IViewInfo {
   name: string;
   icon: string;
   description: string;
 }
 
-export interface IViewPickerDialogState {
+interface IViewPickerDialogState {
   isOpen: boolean;
   selectedIndex: number;
   purpose: DialogPurpose;
   targetPaneId?: string;
 }
 
-export interface ILayoutPresetDialogState {
+interface ILayoutPresetDialogState {
   isOpen: boolean;
   selectedIndex: number;
 }
 
-export interface ILayoutPresetInfo {
+interface ILayoutPresetInfo {
   id: string;
   name: string;
   icon: string;
@@ -44,7 +44,7 @@ export interface ILayoutPresetInfo {
   shortcut: string;
 }
 
-export interface INamedLayoutDialogState {
+interface INamedLayoutDialogState {
   isOpen: boolean;
   mode: LayoutMode;
   layouts: string[];
@@ -53,7 +53,7 @@ export interface INamedLayoutDialogState {
   inputActive: boolean;
 }
 
-export interface IResizeModeState {
+interface IResizeModeState {
   isActive: boolean;
   paneId: string | null;
 }

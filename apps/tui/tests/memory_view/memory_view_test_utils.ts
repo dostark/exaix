@@ -32,7 +32,7 @@ import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 // Interfaces
 
-export interface IMemoryViewServiceOptions {
+interface IMemoryViewServiceOptions {
   projects?: string[];
   executions?: IExecutionMemory[];
   pending?: IMemoryUpdateProposal[];
@@ -253,7 +253,7 @@ export function createTestSession(): MemoryViewTuiSession {
   return new MemoryViewTuiSession(mockService as Partial<IMemoryService> as IMemoryService);
 }
 
-export function createConfiguredService(options: IMemoryViewServiceOptions = {}): ExtendedMockMemoryService {
+function createConfiguredService(options: IMemoryViewServiceOptions = {}): ExtendedMockMemoryService {
   const service = new ExtendedMockMemoryService();
   service.setProjects(options.projects || []);
   service.setExecutions(options.executions || []);
@@ -279,7 +279,7 @@ export async function setupSession(
   return { session, service };
 }
 
-export function createSessionWithService(service: ExtendedMockMemoryService): MemoryViewTuiSession {
+function createSessionWithService(service: ExtendedMockMemoryService): MemoryViewTuiSession {
   return new MemoryViewTuiSession(service as Partial<IMemoryService> as IMemoryService);
 }
 

@@ -7,6 +7,7 @@
  * @description Package-owned production key routing for the TUI dashboard.
  */
 
+import type { Opt, Reason } from "@exaix/core/types";
 import { MessageType } from "@exaix/core";
 import { SplitDirection } from "../types/enums.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
@@ -19,33 +20,33 @@ import {
   splitPane,
 } from "@exaix/tui/layout/pane_manager.ts";
 
-export interface IProdDashboardState {
+interface IProdDashboardState {
   showHelp: boolean;
   showNotifications: boolean;
   showMemoryNotifications: boolean;
   selectedMemoryNotifIndex: number;
 }
 
-export interface IMemoryNotificationLike {
+interface IMemoryNotificationLike {
   id?: string;
   proposal_id?: string;
   message: string;
   type: string;
 }
 
-export interface INotificationServiceLike {
+interface INotificationServiceLike {
   getNotifications(): Promise<IMemoryNotificationLike[]>;
-  notify(message: string, type?: string): Promise<void>;
+  notify(message: string, type?: Opt<string, Reason.OptionalInput>): Promise<void>;
   clearNotification(id: string): Promise<void>;
 }
 
-export interface IProdHandleCtx {
+interface IProdHandleCtx {
   prodState: IProdDashboardState;
   panes: IPaneLike[];
   views: ITuiViewLike[];
   activePaneRef: { id: string };
   notificationService: INotificationServiceLike;
-  addNotification: (message: string, type?: string) => Promise<void>;
+  addNotification: (message: string, type?: Opt<string, Reason.OptionalInput>) => Promise<void>;
   saveLayout: () => Promise<void> | void;
   restoreLayout: () => Promise<void> | void;
   resetToDefault: () => void;

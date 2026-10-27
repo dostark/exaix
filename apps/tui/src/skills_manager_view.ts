@@ -47,10 +47,10 @@ import type { Opt, Reason } from "@exaix/core/types";
 /**
  * Service interface for skills operations
  */
-export type ISkillsViewService = ISkillsService;
+type ISkillsViewService = ISkillsService;
 export type ISkillSummary = ISkill;
 
-export interface ISkillsViewExtensions {
+interface ISkillsViewExtensions {
   /** Whether detail view is shown */
   showDetail: boolean;
   /** Detail content for expanded skill */

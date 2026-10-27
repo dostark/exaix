@@ -21,7 +21,7 @@ import type { JSONValue } from "@exaix/core";
 
 // Layout Interfaces
 
-export interface IPaneBounds extends JSONObject {
+interface IPaneBounds extends JSONObject {
   x: number;
   y: number;
   width: number;
@@ -40,7 +40,7 @@ export interface ILayoutPane extends JSONObject {
   previousBounds?: IPaneBounds;
 }
 
-export interface ILayout extends JSONObject {
+interface ILayout extends JSONObject {
   name: string;
   panes: ILayoutPane[];
   activePaneId: string;
@@ -49,7 +49,7 @@ export interface ILayout extends JSONObject {
   description?: string;
 }
 
-export interface ILayoutPreset {
+interface ILayoutPreset {
   id: string;
   name: string;
   description: string;

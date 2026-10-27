@@ -37,7 +37,7 @@ export interface IStatusBarState {
   spinner?: ISpinnerState;
 }
 
-export interface IMultiLineStatusBarState extends IStatusBarState {
+interface IMultiLineStatusBarState extends IStatusBarState {
   lines: string[];
   expanded: boolean;
 }

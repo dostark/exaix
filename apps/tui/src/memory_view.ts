@@ -31,7 +31,7 @@ import { coerceMemoryTuiScope, type IMemoryTuiScopeType, MemoryTuiScope } from "
 
 // Interfaces
 
-export interface IMemoryViewState {
+interface IMemoryViewState {
   activeScope: IMemoryTuiScopeType;
   selectedNodeId: string | null;
   searchQuery: string;

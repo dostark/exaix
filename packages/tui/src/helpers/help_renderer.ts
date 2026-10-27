@@ -16,7 +16,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 // Help Interfaces
 
-export interface IHelpItem {
+interface IHelpItem {
   key: string;
   description: string;
   category?: string;
@@ -27,7 +27,7 @@ export interface IHelpSection {
   items: IHelpItem[];
 }
 
-export interface IHelpScreenOptions {
+interface IHelpScreenOptions {
   title: string;
   sections: IHelpSection[];
   footer?: string;

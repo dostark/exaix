@@ -13,7 +13,7 @@ import type { IStructuredLogEntry } from "@exaix/core/types";
 import { TuiColorName } from "../types/enums.ts";
 import { ANSI, colorize, type ITuiTheme } from "@exaix/tui/helpers/colors.ts";
 
-export interface ILogRenderOptions {
+interface ILogRenderOptions {
   showTimestamp: boolean;
   showContext: boolean;
   showPerformance: boolean;

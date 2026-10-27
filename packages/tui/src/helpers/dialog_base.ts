@@ -24,9 +24,9 @@ import { DialogStatus, MemoryScope, RequestOperation } from "@exaix/core";
 import { KEYS } from "./keyboard.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export type DialogState = DialogStatus;
+type DialogState = DialogStatus;
 
-export type DialogResult<T = unknown> =
+type DialogResult<T = unknown> =
   | { type: DialogStatus.CONFIRMED; value: T }
   | { type: DialogStatus.CANCELLED };
 
@@ -36,7 +36,7 @@ export interface IDialogRenderOptions {
   height: number;
 }
 
-export interface IConfirmDialogOptions {
+interface IConfirmDialogOptions {
   title: string;
   message: string | string[];
   confirmText?: string;
@@ -44,7 +44,7 @@ export interface IConfirmDialogOptions {
   destructive?: boolean;
 }
 
-export interface IInputDialogOptions {
+interface IInputDialogOptions {
   title: string;
   label: string;
   placeholder?: string;
@@ -53,13 +53,13 @@ export interface IInputDialogOptions {
   maxLength?: number;
 }
 
-export interface ISelectOption<T = string> {
+interface ISelectOption<T = string> {
   value: T;
   label: string;
   description?: string;
 }
 
-export interface ISelectDialogOptions<T = string> {
+interface ISelectDialogOptions<T = string> {
   title: string;
   options: ISelectOption<T>[];
   selectedIndex?: number;

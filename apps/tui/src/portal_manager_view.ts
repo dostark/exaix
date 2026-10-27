@@ -36,7 +36,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 // Portal View Extensions
 
-export interface IPortalViewExtensions {
+interface IPortalViewExtensions {
   /** Detail panel content */
   detailContent: string[];
   /** Last refresh timestamp */

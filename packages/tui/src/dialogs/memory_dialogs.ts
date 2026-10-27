@@ -6,6 +6,7 @@
  * @description Package-owned TUI dialogs for approving, rejecting, adding, and promoting memory learnings.
  */
 
+import type { Opt, Reason } from "@exaix/core/types";
 import { DEFAULT_DESCRIPTION_PLACEHOLDER, DialogStatus, MemoryScope } from "@exaix/core";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import {
@@ -21,25 +22,25 @@ import {
 import { TUI_DIALOG_INNER_PADDING, TUI_LAYOUT_DIALOG_WIDTH } from "@exaix/tui/helpers/constants.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
-export interface IPromoteDialogResult {
+interface IPromoteDialogResult {
   learningTitle: string;
   sourcePortal: string;
 }
 
-export interface IBulkApproveResult {
+interface IBulkApproveResult {
   count: number;
 }
 
-export interface IApproveDialogResult {
+interface IApproveDialogResult {
   proposalId: string;
 }
 
-export interface IRejectDialogResult {
+interface IRejectDialogResult {
   proposalId: string;
   reason: string;
 }
 
-export interface IAddLearningResult {
+interface IAddLearningResult {
   title: string;
   category: string;
   content: string;
@@ -48,11 +49,9 @@ export interface IAddLearningResult {
   portal?: string;
 }
 
-export type DialogResult<T = unknown> =
+type DialogResult<T = unknown> =
   | { type: DialogStatus.CONFIRMED; value: T }
   | { type: DialogStatus.CANCELLED };
-
-export type DialogState = DialogStatus;
 
 const CANCEL_BTN_ID = "cancel-btn";
 
@@ -323,7 +322,7 @@ export class AddLearningDialog extends DialogBase<IAddLearningResult> {
   private editMode = false;
   private readonly categories = ["pattern", "decision", "anti-pattern", "insight", "troubleshooting"];
 
-  constructor(defaultPortal?: string) {
+  constructor(defaultPortal?: Opt<string, Reason.OptionalInput>) {
     super();
     if (defaultPortal) {
       this.portal = defaultPortal;

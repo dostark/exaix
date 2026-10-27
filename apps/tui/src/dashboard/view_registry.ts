@@ -42,7 +42,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 /**
  * Service bundle interface for TUI initialization
  */
-export interface IDashboardViewOptions {
+interface IDashboardViewOptions {
   testMode?: boolean;
   databaseService?: IDatabaseService;
   config?: Config;
@@ -50,7 +50,7 @@ export interface IDashboardViewOptions {
   services?: ITuiServiceBundle;
 }
 
-export interface IDashboardServices {
+interface IDashboardServices {
   portalService: IPortalService;
   planService: IPlanService;
   logService: IJournalService | IDatabaseService;
@@ -63,7 +63,7 @@ export interface IDashboardServices {
   skillsService: ISkillsService;
 }
 
-export interface IDashboardViewsAndServices {
+interface IDashboardViewsAndServices {
   views: ITuiView[];
   services: IDashboardServices;
 }

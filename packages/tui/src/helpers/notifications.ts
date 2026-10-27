@@ -17,12 +17,12 @@ interface ITuiNotification extends IMemoryNotification {
   icon?: string;
 }
 
-export interface ITuiNotificationDashboardState {
+interface ITuiNotificationDashboardState {
   showMemoryNotifications: boolean;
   selectedMemoryNotifIndex: number;
 }
 
-export interface ITuiNotificationPane {
+interface ITuiNotificationPane {
   id: string;
 }
 

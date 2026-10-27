@@ -8,7 +8,7 @@
 
 import type { TuiNodeType } from "@exaix/tui";
 
-export type ITreeNodeType = TuiNodeType;
+type ITreeNodeType = TuiNodeType;
 
 type TreeNodeData = object | string | number | boolean | null;
 

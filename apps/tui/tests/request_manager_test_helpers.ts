@@ -11,7 +11,7 @@ import type { ConfirmDialog, InputDialog } from "@exaix/tui/helpers/dialog_base.
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import type { MessageType } from "@exaix/core";
 
-export interface IRequestManagerMockHandlers {
+interface IRequestManagerMockHandlers {
   handleSearchResult: (value: string) => void;
   handleFilterStatusResult: (value: string) => void;
   handleFilterAgentRoleResult: (value: string) => void;

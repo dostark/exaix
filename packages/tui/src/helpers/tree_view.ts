@@ -35,7 +35,7 @@ export interface ITreeRenderOptions {
   focusedId?: string;
 }
 
-export interface IFlatTreeNode<T = unknown> {
+interface IFlatTreeNode<T = unknown> {
   node: ITreeNode<T>;
   depth: number;
   isLast: boolean;
@@ -77,8 +77,6 @@ export const TREE_ICONS = {
   request: TUI_TREE_ICONS.request,
   log: TUI_TREE_ICONS.log,
 } as const;
-
-export type TreeIconType = keyof typeof TREE_ICONS;
 
 // Flat Node (for rendering)
 

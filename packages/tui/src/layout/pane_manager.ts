@@ -14,7 +14,7 @@ export interface ITuiViewLike {
   name: string;
 }
 
-export interface IPaneBounds {
+interface IPaneBounds {
   flexX: number;
   flexY: number;
   flexWidth: number;
@@ -41,7 +41,7 @@ export interface IPaneLike {
   previousBounds?: IPaneBounds;
 }
 
-export type TPaneNotification = (message: string, type?: string) => Promise<void>;
+type TPaneNotification = (message: string, type?: string) => Promise<void>;
 
 function isDebugEnvEnabled(name: string): boolean {
   try {

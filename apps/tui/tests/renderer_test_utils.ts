@@ -19,12 +19,12 @@ import type { IPortalService } from "@exaix/core/types";
 
 // Types
 
-export type CapturedConsole = {
+type CapturedConsole = {
   logs: string[];
   clears: number;
 };
 
-export function captureConsole(): { captured: CapturedConsole; restore: () => void } {
+function captureConsole(): { captured: CapturedConsole; restore: () => void } {
   const captured: CapturedConsole = { logs: [], clears: 0 };
 
   const originalLog = console.log;
@@ -50,7 +50,7 @@ export function captureConsole(): { captured: CapturedConsole; restore: () => vo
   };
 }
 
-export function captureStdout(): { writes: string[]; restore: () => void } {
+function captureStdout(): { writes: string[]; restore: () => void } {
   const writes: string[] = [];
   const originalWrite = process.stdout.write.bind(process.stdout);
 

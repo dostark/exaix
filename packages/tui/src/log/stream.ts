@@ -11,7 +11,7 @@ import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai";
 import { ConnectionStatus } from "@exaix/core";
 import type { IStructuredLogEntry } from "@exaix/core/types";
 
-export interface ILogStreamConfig {
+interface ILogStreamConfig {
   maxBufferSize: number;
   updateInterval: number;
   enabled: boolean;
@@ -19,7 +19,7 @@ export interface ILogStreamConfig {
   maxEntryAge: number;
 }
 
-export interface ILogStreamState {
+interface ILogStreamState {
   isActive: boolean;
   bufferSize: number;
   subscriberCount: number;
@@ -27,7 +27,7 @@ export interface ILogStreamState {
   status: ConnectionStatus;
 }
 
-export interface ILogStreamSource {
+interface ILogStreamSource {
   subscribeToLogs(callback: (entry: IStructuredLogEntry) => void): () => void;
 }
 

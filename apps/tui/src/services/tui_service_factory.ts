@@ -58,7 +58,7 @@ export interface ITuiServiceBundle {
 /**
  * Options for creating TUI services
  */
-export interface ITuiServiceFactoryOptions {
+interface ITuiServiceFactoryOptions {
   config: Config;
   databaseService: IDatabaseService;
 }

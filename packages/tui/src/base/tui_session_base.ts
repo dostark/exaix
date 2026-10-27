@@ -21,7 +21,7 @@ import type { IKeyBinding, KeyHandler } from "@exaix/tui/helpers/keyboard.ts";
 import { MessageType } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface ITuiViewState {
+interface ITuiViewState {
   selectedIndex: number;
   itemCount: number;
   scrollOffset: number;
@@ -32,7 +32,7 @@ export interface ITuiViewState {
   activeDialog: string | null;
 }
 
-export interface IRefreshConfig {
+interface IRefreshConfig {
   autoRefreshInterval: number;
   onRefresh: () => Promise<void>;
   enabled: boolean;
