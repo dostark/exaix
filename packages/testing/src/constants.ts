@@ -8,7 +8,7 @@
  * Incorporates test-specific constants (prompts, mock data, test environment variables, etc.).
  */
 
-import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_SKILL_INDEX_VERSION } from "@exaix/core";
+import { DEFAULT_BLUEPRINT_VERSION } from "@exaix/core";
 
 export const TEST_MODEL_OPENAI = "openai-gpt-4.1";
 
@@ -35,8 +35,6 @@ export const TEST_SUBPROCESS_ABORT_DELAY_MS = 50;
 
 // MCP CLI / Server tests
 export const TEST_MCP_PORT = 34567;
-export const TEST_MCP_DEFAULT_PORT = 3000;
-
 // AI Config Tests
 export const TEST_AI_INVALID_URL = "invalid-url";
 export const TEST_EMPTY_STRING = "";
@@ -70,7 +68,6 @@ export const TEST_SUMMARY_TEXT = "Execution summary";
 export const TEST_CONTEXT_FILE = "src/feature.ts";
 export const TEST_LESSON_TEXT = "Lesson learned";
 export const TEST_ERROR_TEXT = "Execution error";
-export const TEST_SEARCH_QUERY = "query";
 export const TEST_GLOBAL_VERSION = "1.0";
 export const TEST_GLOBAL_UPDATED_AT = "2026-02-08T02:00:00.000Z";
 export const TEST_GLOBAL_CATEGORY = "pattern";
@@ -81,7 +78,6 @@ export const TEST_SKILL_ID = "quality-skill";
 export const TEST_SKILL_NAME = "Quality Skill";
 export const TEST_SKILL_DESCRIPTION = "Improve code quality through refactoring.";
 export const TEST_SKILL_INSTRUCTIONS = "Line 1\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6";
-export const TEST_SKILL_VERSION = DEFAULT_SKILL_INDEX_VERSION;
 export const TEST_SKILL_KEYWORD = "refactor";
 export const TEST_SKILL_TASK_TYPE = "code";
 export const TEST_SKILL_TAG = "quality";
@@ -205,27 +201,12 @@ export enum SchemaDescriberToken {
 
 // Journal Formatter / Commands Test Constants
 
-export enum JournalFormat {
-  Json = "json",
-  Table = "table",
-  Text = "text",
-}
-
-export const JOURNAL_FORMAT_JSON = JournalFormat.Json;
-export const JOURNAL_FORMAT_TABLE = JournalFormat.Table;
-export const JOURNAL_FORMAT_TEXT = JournalFormat.Text;
-
 export enum JournalAction {
   Error = "test.error",
   Approve = "test.approve",
   Create = "test.create",
   Generic = "test.action",
 }
-
-export const JOURNAL_ACTION_ERROR = JournalAction.Error;
-export const JOURNAL_ACTION_APPROVE = JournalAction.Approve;
-export const JOURNAL_ACTION_CREATE = JournalAction.Create;
-export const JOURNAL_ACTION_GENERIC = JournalAction.Generic;
 
 export const JOURNAL_ID_ONE = "activity-1";
 export const JOURNAL_ID_TWO = "activity-2";

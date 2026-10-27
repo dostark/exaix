@@ -9,7 +9,7 @@
 import { type Spy, spy } from "@std/testing/mock";
 import type { IEventLogger } from "@exaix/core/logger";
 
-export interface IMockEventLogger extends IEventLogger {
+interface IMockEventLogger extends IEventLogger {
   log: Spy<IEventLogger["log"]>;
   info: Spy<IEventLogger["info"]>;
   warn: Spy<IEventLogger["warn"]>;

@@ -1125,7 +1125,7 @@
           "Memory",
           "Workspace",
           "Portals",
-          "coverage",
+          "(^|/)coverage/",
           "exaix-dev-docs",
           "exaix-enterprise"
         ],

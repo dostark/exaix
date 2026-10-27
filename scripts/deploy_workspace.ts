@@ -77,7 +77,7 @@ export function stripDevOnlyConfig<T extends IDenoConfigShape>(denoConfig: T): T
 }
 
 /** The trusted portal lint policy root a deploy installs. */
-export const LINT_POLICY_DIR = "lint";
+const LINT_POLICY_DIR = "lint";
 
 /** The root task that builds a policy directory from the portal configuration. */
 const LINT_POLICY_TASK = "unslop-ts:policy";

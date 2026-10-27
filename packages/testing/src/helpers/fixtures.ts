@@ -9,7 +9,7 @@
 
 import { dirname, join } from "@std/path";
 
-export function getFixtureRoot(importMetaUrl: string): string {
+function getFixtureRoot(importMetaUrl: string): string {
   let currentDir = dirname(new URL(importMetaUrl).pathname);
 
   while (true) {
@@ -39,8 +39,4 @@ export function getFixturePath(importMetaUrl: string, ...segments: string[]): st
 
 export function readFixtureTextSync(importMetaUrl: string, ...segments: string[]): string {
   return Deno.readTextFileSync(getFixturePath(importMetaUrl, ...segments));
-}
-
-export async function readFixtureText(importMetaUrl: string, ...segments: string[]): Promise<string> {
-  return await Deno.readTextFile(getFixturePath(importMetaUrl, ...segments));
 }

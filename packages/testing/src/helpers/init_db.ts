@@ -7,7 +7,6 @@
  * @description Test helper utilities for database setup and testing.
  */
 
-import { Database } from "@db/sqlite";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { createMockConfig } from "./config.ts";
 import { existsSync } from "@std/fs";
@@ -42,38 +41,13 @@ export const ACTIVITY_TABLE_SQL = `
   CREATE INDEX IF NOT EXISTS idx_activity_runner_kind ON activity(runner_kind);
 `;
 
-/** In-memory `Database` with just the `activity` table (raw handle, not a `DatabaseService`). */
-export function initTestDb(): Database {
-  const db = new Database(":memory:");
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS activity (
-      id TEXT PRIMARY KEY,
-      trace_id TEXT NOT NULL,
-      actor TEXT NOT NULL,
-      actor_type TEXT,
-      agent_role TEXT,
-      runner_kind TEXT,
-      action_type TEXT NOT NULL,
-      target TEXT,
-      payload TEXT NOT NULL,
-      prompt_tokens INTEGER DEFAULT 0,
-      completion_tokens INTEGER DEFAULT 0,
-      cost_usd REAL DEFAULT 0.0,
-      timestamp DATETIME DEFAULT (datetime('now')),
-      prev_hash TEXT,
-      row_hash TEXT
-    );
-  `);
-  return db;
-}
-
 /** For reconnection tests: a new DatabaseService connecting to already-existing data. */
 export function initActivityTableSchema(db: DatabaseService): void {
   db.instance.exec(ACTIVITY_TABLE_SQL);
 }
 
 /** SQL for reviews table (mirrors migrations/001_init.sql). */
-export const REVIEWS_TABLE_SQL = `
+const REVIEWS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS reviews (
     id TEXT PRIMARY KEY,
     trace_id TEXT NOT NULL,
@@ -105,7 +79,7 @@ export const REVIEWS_TABLE_SQL = `
 /**
  * SQL for activity_journal table (from migration 001)
  */
-export const ACTIVITY_JOURNAL_TABLE_SQL = `
+const ACTIVITY_JOURNAL_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS activity_journal (
     id TEXT PRIMARY KEY,
     trace_id TEXT NOT NULL,
@@ -122,7 +96,7 @@ export const ACTIVITY_JOURNAL_TABLE_SQL = `
 /**
  * SQL for notifications table (from migration 003)
  */
-export const NOTIFICATIONS_TABLE_SQL = `
+const NOTIFICATIONS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS notifications (
     id TEXT PRIMARY KEY,
     type TEXT NOT NULL,
@@ -139,7 +113,7 @@ export const NOTIFICATIONS_TABLE_SQL = `
   CREATE INDEX IF NOT EXISTS idx_notifications_proposal ON notifications(proposal_id);
 `;
 
-export const PENDING_TOOL_CONFIRMATIONS_TABLE_SQL = `
+const PENDING_TOOL_CONFIRMATIONS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS pending_tool_confirmations (
     id TEXT PRIMARY KEY,
     tool_name TEXT NOT NULL,
@@ -161,7 +135,7 @@ export const PENDING_TOOL_CONFIRMATIONS_TABLE_SQL = `
 /**
  * SQL for provider_costs table (from migration 004)
  */
-export const PROVIDER_COSTS_TABLE_SQL = `
+const PROVIDER_COSTS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS provider_costs (
     id TEXT PRIMARY KEY,
     provider TEXT NOT NULL,
@@ -190,7 +164,7 @@ export const PROVIDER_COSTS_TABLE_SQL = `
 
 const ARTIFACT_STATUS_CHECK_VALUES = REVIEW_STATUS_VALUES.map((status) => `'${status}'`).join(", ");
 
-export const ARTIFACTS_TABLE_SQL = `
+const ARTIFACTS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS artifacts (
     id TEXT PRIMARY KEY,
     status TEXT NOT NULL CHECK (status IN (${ARTIFACT_STATUS_CHECK_VALUES})),
@@ -212,7 +186,7 @@ export const ARTIFACTS_TABLE_SQL = `
 `;
 
 /** SQL for the session-delegate-cycle claims table (mirrors migrations/001_init.sql). */
-export const SESSION_DELEGATE_CYCLE_CLAIMS_TABLE_SQL = `
+const SESSION_DELEGATE_CYCLE_CLAIMS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS session_delegate_cycle_claims (
     parent_trace_id     TEXT NOT NULL,
     parent_step_id      TEXT NOT NULL,
@@ -295,7 +269,7 @@ export const REGISTRY_TABLES_SQL = `
   CREATE INDEX IF NOT EXISTS idx_benchmark_rank ON model_benchmark (benchmark, score DESC);
 `;
 
-export const SKILL_REVISIONS_TABLE_SQL = `
+const SKILL_REVISIONS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS skill_revisions (
     revision_id    TEXT PRIMARY KEY,
     content_sha256 TEXT NOT NULL,
@@ -339,7 +313,7 @@ export const SKILL_REVISIONS_TABLE_SQL = `
 /**
  * Initialize full database schema for integration tests
  */
-export function initFullSchema(db: DatabaseService): void {
+function initFullSchema(db: DatabaseService): void {
   db.instance.exec(ACTIVITY_TABLE_SQL);
   db.instance.exec(ACTIVITY_JOURNAL_TABLE_SQL);
   db.instance.exec(REVIEWS_TABLE_SQL);

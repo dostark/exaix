@@ -125,8 +125,3 @@ export class StubSkillsService implements ISkillsService {
     return Promise.resolve(false);
   }
 }
-
-/** A stub service whose listed methods are replaced, so a test overrides only what it asserts on. */
-export function stubSkillsServiceWith(overrides: Partial<ISkillsService>): ISkillsService {
-  return Object.assign(new StubSkillsService(), overrides);
-}

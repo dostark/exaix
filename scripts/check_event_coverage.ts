@@ -54,7 +54,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 /** An audit-logger binding: either a class field (`this.<name>`) or a plain parameter
  *  (`<name>`) in scope for the body being scanned. */
-export interface IAuditBinding {
+interface IAuditBinding {
   name: string;
   isField: boolean;
 }
@@ -94,13 +94,13 @@ export interface IMissingLoggerFinding {
 }
 
 /** Result of analyzing one class declaration. */
-export interface IAnalyzeClassResult {
+interface IAnalyzeClassResult {
   findings: IEventCoverageFinding[];
   wiredUnused: IWiredUnusedFinding | null;
 }
 
 /** Result of analyzing every exported class/function at the top level of a source file. */
-export interface IAnalyzeSourceFileResult {
+interface IAnalyzeSourceFileResult {
   findings: IEventCoverageFinding[];
   wiredUnused: IWiredUnusedFinding[];
   missingLogger: IMissingLoggerFinding[];

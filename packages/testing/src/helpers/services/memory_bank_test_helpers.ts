@@ -113,7 +113,7 @@ export function createSampleLearning(overrides: Partial<ILearning> = {}): ILearn
 /**
  * Creates a sample IPattern for testing
  */
-export function createSamplePattern(
+function createSamplePattern(
   overrides: Opt<Partial<IPattern>, Reason.TestOverride> = {},
 ): IPattern {
   return {
@@ -128,7 +128,7 @@ export function createSamplePattern(
 /**
  * Creates a sample IDecision for testing
  */
-export function createSampleDecision(
+function createSampleDecision(
   overrides: Opt<Partial<IDecision>, Reason.TestOverride> = {},
 ): IDecision {
   return {

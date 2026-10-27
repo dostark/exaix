@@ -9,25 +9,21 @@
 export * from "./src/constants.ts";
 export { TestEnvironment } from "../../tests/integration/helpers/test_environment.ts";
 export { readConfigFixture } from "../../tests/integration/helpers/config_fixture.ts";
-export type { ILoggedActivity, ITestDatabaseService } from "./src/helpers/db.ts";
 export { createLoggingTestDb } from "./src/helpers/db.ts";
 // deno-fmt-ignore
 export { createMockConfig, createTestAdapter, createTestConfigDb, simulateDaemonBoot, writeTestConfigFile } from "./src/helpers/config.ts";
 export { createMockLogger } from "./src/helpers/services/graceful_shutdown_test_helpers.ts";
-export type { IMockEventLogger } from "./src/helpers/services/graceful_shutdown_test_helpers.ts";
 export { createMockProvider } from "./src/helpers/mock_provider.ts";
 export { getFixturePath, readFixtureTextSync } from "./src/helpers/fixtures.ts";
 export { initActivityTableSchema, initTestDbService, REGISTRY_TABLES_SQL } from "./src/helpers/init_db.ts";
-export { isCi, withEnv } from "./src/helpers/env.ts";
+export { withEnv } from "./src/helpers/env.ts";
 export { REPO_ROOT, withRepoRoot } from "./src/helpers/repo_root.ts";
-export { installLintPolicyForTest, LINT_POLICY_DIR, LINT_POLICY_TASK } from "./src/helpers/lint_policy.ts";
-export { StubSkillsService, stubSkillsServiceWith } from "./src/helpers/stub_skills_service.ts";
+export { installLintPolicyForTest, LINT_POLICY_TASK } from "./src/helpers/lint_policy.ts";
+export { StubSkillsService } from "./src/helpers/stub_skills_service.ts";
 export {
   createSkillLoaderFor,
   type ISkillFolderSeed,
   loadRepoSkillCatalog,
-  REPO_SKILL_PROJECT,
-  repoSkillRoots,
   runtimeSkillFixture,
   skillMatchFixture,
   testSkillContext,
@@ -55,7 +51,6 @@ export {
 } from "./src/helpers/services/barrel.ts";
 export {
   createApprovedProposal,
-  createBaseLearning,
   createFailedExecutionMemory,
   createGlobalProposal,
   createInvalidProposal,
@@ -68,9 +63,7 @@ export {
 export {
   createMinimalExecutionMemory,
   createMinimalProjectMemory,
-  createSampleDecision,
   createSampleLearning,
-  createSamplePattern,
   createSampleProjectMemory,
 } from "./src/helpers/services/memory_bank_test_helpers.ts";
 export {

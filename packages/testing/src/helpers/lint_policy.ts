@@ -14,7 +14,7 @@ import { REPO_ROOT } from "./repo_root.ts";
 export const LINT_POLICY_TASK = "unslop-ts:policy";
 
 /** The policy subdirectory the installer writes under the requested directory. */
-export const LINT_POLICY_DIR = "unslop";
+const LINT_POLICY_DIR = "unslop";
 
 const pending = new Map<string, Promise<string>>();
 

@@ -50,7 +50,7 @@ function makeDbLogger(db: IDatabaseService): IEventLogger {
 /**
  * Creates test environment for notification tests
  */
-export async function initNotificationTest(): Promise<{
+async function initNotificationTest(): Promise<{
   config: Awaited<ReturnType<typeof initTestDbService>>["config"];
   db: Awaited<ReturnType<typeof initTestDbService>>["db"];
   notification: NotificationService;

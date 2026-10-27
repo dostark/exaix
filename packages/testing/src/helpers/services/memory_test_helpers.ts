@@ -101,7 +101,7 @@ export async function createTestProposal(
 /**
  * Base learning object for testing
  */
-export function createBaseLearning(
+function createBaseLearning(
   overrides: Partial<IMemoryUpdateProposal["learning"]> = {},
 ): IMemoryUpdateProposal["learning"] {
   return {

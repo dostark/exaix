@@ -36,7 +36,7 @@ export interface ISkillFolderSeed {
 }
 
 /** Portal that owns the repository's project-scoped skill folder. */
-export const REPO_SKILL_PROJECT = "Exaix";
+const REPO_SKILL_PROJECT = "Exaix";
 
 const PROJECT_SKILLS_DIR = "project";
 const TEST_AGENT_ROLE = "test";
@@ -56,7 +56,7 @@ export function testSkillContext(): ISkillOperationContext {
 }
 
 /** The repository's default skill roots: the Exaix project root, then the Blueprint root. */
-export function repoSkillRoots(repoRoot: string = REPO_ROOT): IResolvedSkillRoot[] {
+function repoSkillRoots(repoRoot: string = REPO_ROOT): IResolvedSkillRoot[] {
   return [
     {
       path: pathBuilders.memoryPath(repoRoot, DEFAULT_SKILLS_MEMORY_PATH, PROJECT_SKILLS_DIR, REPO_SKILL_PROJECT),

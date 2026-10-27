@@ -6,9 +6,10 @@
  * @ungrounded
  * @description Shared DB-related test helpers for package-local tests.
  */
+import type { Opt, Reason } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
-export interface ILoggedActivity {
+interface ILoggedActivity {
   actor: string;
   actionType: string;
   target: string | null;
@@ -22,23 +23,23 @@ export interface ILoggedActivity {
   costUsd?: number;
 }
 
-export interface ITestDatabaseService {
+interface ITestDatabaseService {
   logActivity(
     actor: string,
     actionType: string,
     target: string | null,
     payload: Record<string, JSONValue>,
-    traceId?: string,
-    actorType?: string | null,
-    agentRole?: string | null,
-    runnerKind?: string | null,
-    promptTokens?: number,
-    completionTokens?: number,
-    costUsd?: number,
+    traceId?: Opt<string, Reason.OptionalInput>,
+    actorType?: Opt<string | null, Reason.OptionalInput>,
+    agentRole?: Opt<string | null, Reason.OptionalInput>,
+    runnerKind?: Opt<string | null, Reason.OptionalInput>,
+    promptTokens?: Opt<number, Reason.OptionalInput>,
+    completionTokens?: Opt<number, Reason.OptionalInput>,
+    costUsd?: Opt<number, Reason.OptionalInput>,
   ): void;
 }
 
-export interface ILoggingTestDb {
+interface ILoggingTestDb {
   activities: ILoggedActivity[];
   db: ITestDatabaseService;
 }
