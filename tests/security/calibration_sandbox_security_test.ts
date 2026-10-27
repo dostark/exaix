@@ -35,6 +35,7 @@ import type {
   ICalibrationSourceItem,
   ICalibrationSourceSelection,
 } from "../scenario_framework/runner/calibration_sources.ts";
+import { withTempDir } from "@exaix/testing";
 
 const REPO_ROOT = resolve(new URL(".", import.meta.url).pathname, "../..");
 const SCRATCH_ROOT = "/tmp";
@@ -200,8 +201,7 @@ Deno.test({
       methodology_hash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     };
 
-    const storeDir = await Deno.makeTempDir();
-    try {
+    await withTempDir(async (storeDir) => {
       const runner = new CalibrationRunner({
         judge: new LocalCalibrationJudgeAdapter(REPO_ROOT),
         reference: new SandboxedCalibrationReferenceAdapter(SCRATCH_ROOT),
@@ -226,8 +226,6 @@ Deno.test({
       assertExists(result.items[0].targetScore);
       assertExists(result.items[0].referenceScore);
       assertEquals(result.referenceProvenance.provider, "codex-cli");
-    } finally {
-      await Deno.remove(storeDir, { recursive: true });
-    }
+    });
   },
 });
