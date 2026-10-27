@@ -10,27 +10,13 @@ import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 
-import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { resolveMemoryExecutionRoot } from "../../src/config/mod.ts";
 import { DEFAULT_SCRATCHPAD_MAX_ENTRY_BYTES } from "@exaix/core";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
-import { withTempDir } from "@exaix/testing";
+import { createMockConfig, withTempDir } from "@exaix/testing";
 
 const LOG_FILE_NAME = "scratchpad.jsonl";
-
-function makeConfig(root: string): Config {
-  return ConfigSchema.parse({
-    system: { root },
-    paths: {},
-    database: {},
-    watcher: {},
-    agents: {},
-    models: {},
-    portals: [],
-    mcp: {},
-  });
-}
 
 function logPath(root: string, config: Config, traceId: string): string {
   return join(root, resolveMemoryExecutionRoot(config.paths), traceId, LOG_FILE_NAME);
@@ -38,7 +24,7 @@ function logPath(root: string, config: Config, traceId: string): string {
 
 Deno.test("ExecutionMemoryStore: appendNote/readNotes round-trip persists a note-kind entry", async () => {
   await withTempDir(async (tempDir) => {
-    const config = makeConfig(tempDir);
+    const config = createMockConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
     const appendResult = await store.appendNote("trace-a", "worth remembering: X breaks under load", ["perf"]);
     assertEquals(appendResult.success, true);
@@ -58,7 +44,7 @@ Deno.test("ExecutionMemoryStore: appendNote/readNotes round-trip persists a note
 
 Deno.test("ExecutionMemoryStore: concurrent appendNote calls do not corrupt the shared JSONL log", async () => {
   await withTempDir(async (tempDir) => {
-    const config = makeConfig(tempDir);
+    const config = createMockConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
     const appends = Array.from({ length: 20 }, (_, i) => store.appendNote("trace-concurrent", `note ${i}`));
     const results = await Promise.all(appends);
@@ -75,7 +61,7 @@ Deno.test("ExecutionMemoryStore: concurrent appendNote calls do not corrupt the 
 
 Deno.test("ExecutionMemoryStore: notes for one trace_id are invisible when reading another", async () => {
   await withTempDir(async (tempDir) => {
-    const store = new ExecutionMemoryStore(makeConfig(tempDir));
+    const store = new ExecutionMemoryStore(createMockConfig(tempDir));
     await store.appendNote("trace-a", "private to trace-a");
     assertEquals(await store.readNotes("trace-b"), []);
     assertEquals((await store.readNotes("trace-a")).length, 1);
@@ -84,7 +70,7 @@ Deno.test("ExecutionMemoryStore: notes for one trace_id are invisible when readi
 
 Deno.test("ExecutionMemoryStore: over-cap note content is rejected with a clear error, not truncated", async () => {
   await withTempDir(async (tempDir) => {
-    const config = makeConfig(tempDir);
+    const config = createMockConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
     const oversized = "x".repeat(DEFAULT_SCRATCHPAD_MAX_ENTRY_BYTES + 1);
     const result = await store.appendNote("trace-cap", oversized);

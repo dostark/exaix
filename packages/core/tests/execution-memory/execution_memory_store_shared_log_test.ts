@@ -10,28 +10,13 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 
-import { ConfigSchema } from "@exaix/schemas/config.ts";
-import type { Config } from "@exaix/schemas/config.ts";
 import { resolveMemoryExecutionRoot } from "../../src/config/mod.ts";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
-import { withTempDir } from "@exaix/testing";
-
-function makeConfig(root: string): Config {
-  return ConfigSchema.parse({
-    system: { root },
-    paths: {},
-    database: {},
-    watcher: {},
-    agents: {},
-    models: {},
-    portals: [],
-    mcp: {},
-  });
-}
+import { createMockConfig, withTempDir } from "@exaix/testing";
 
 Deno.test("ExecutionMemoryStore: note and namespace entries coexist in one log, isolated by the kind discriminator", async () => {
   await withTempDir(async (tempDir) => {
-    const config = makeConfig(tempDir);
+    const config = createMockConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
     const traceId = crypto.randomUUID();
 
@@ -62,7 +47,7 @@ Deno.test("ExecutionMemoryStore: note and namespace entries coexist in one log, 
 
 Deno.test("ExecutionMemoryStore: a namespace write that rewrites the log preserves existing notes", async () => {
   await withTempDir(async (tempDir) => {
-    const store = new ExecutionMemoryStore(makeConfig(tempDir));
+    const store = new ExecutionMemoryStore(createMockConfig(tempDir));
     const traceId = crypto.randomUUID();
 
     await store.appendNote(traceId, "note before rewrite");

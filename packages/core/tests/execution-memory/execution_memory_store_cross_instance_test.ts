@@ -9,27 +9,12 @@
 
 import { assertEquals } from "@std/assert";
 
-import { ConfigSchema } from "@exaix/schemas/config.ts";
-import type { Config } from "@exaix/schemas/config.ts";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
-import { withTempDir } from "@exaix/testing";
-
-function makeConfig(root: string): Config {
-  return ConfigSchema.parse({
-    system: { root },
-    paths: {},
-    database: {},
-    watcher: {},
-    agents: {},
-    models: {},
-    portals: [],
-    mcp: {},
-  });
-}
+import { createMockConfig, withTempDir } from "@exaix/testing";
 
 Deno.test("GAP-4: a note appended by instance B survives instance A's namespace batch rewrite", async () => {
   await withTempDir(async (tempDir) => {
-    const config = makeConfig(tempDir);
+    const config = createMockConfig(tempDir);
     const traceId = crypto.randomUUID();
     const instanceA = new ExecutionMemoryStore(config);
     const instanceB = new ExecutionMemoryStore(config);
@@ -56,7 +41,7 @@ Deno.test("GAP-4: a note appended by instance B survives instance A's namespace 
 
 Deno.test("GAP-4: concurrent namespace batches from different instances union instead of clobbering", async () => {
   await withTempDir(async (tempDir) => {
-    const config = makeConfig(tempDir);
+    const config = createMockConfig(tempDir);
     const traceId = crypto.randomUUID();
     const instanceA = new ExecutionMemoryStore(config);
     const instanceB = new ExecutionMemoryStore(config);
@@ -82,7 +67,7 @@ Deno.test("GAP-4: concurrent namespace batches from different instances union in
 
 Deno.test("GAP-4: notes appended between an instance's namespace batches are preserved across rewrites", async () => {
   await withTempDir(async (tempDir) => {
-    const config = makeConfig(tempDir);
+    const config = createMockConfig(tempDir);
     const traceId = crypto.randomUUID();
     const instanceA = new ExecutionMemoryStore(config);
     const instanceB = new ExecutionMemoryStore(config);

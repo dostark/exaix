@@ -10,30 +10,15 @@ import { assertEquals, assertExists, assertRejects, assertThrows } from "@std/as
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 
-import { ConfigSchema } from "@exaix/schemas/config.ts";
-import type { Config } from "@exaix/schemas/config.ts";
 import { resolveMemoryExecutionRoot } from "../../src/config/mod.ts";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
-import { withTempDir } from "@exaix/testing";
-
-function makeConfig(root: string): Config {
-  return ConfigSchema.parse({
-    system: { root },
-    paths: {},
-    database: {},
-    watcher: {},
-    agents: {},
-    models: {},
-    portals: [],
-    mcp: {},
-  });
-}
+import { createMockConfig, withTempDir } from "@exaix/testing";
 
 const MALFORMED_IDS = ["../x", "a/b", "/abs/path", "..", ".", "trace id with spaces", "a\tb", ""];
 
 Deno.test("[security] every store method fail-closes on a traversal-shaped trace id with zero file I/O", async () => {
   await withTempDir(async (tempDir) => {
-    const config = makeConfig(tempDir);
+    const config = createMockConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
 
     for (const bad of MALFORMED_IDS) {
@@ -83,7 +68,7 @@ Deno.test("[security] every store method fail-closes on a traversal-shaped trace
 
 Deno.test("[security] a valid trace id passes validation unchanged", async () => {
   await withTempDir(async (tempDir) => {
-    const config = makeConfig(tempDir);
+    const config = createMockConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
     const traceId = crypto.randomUUID();
 

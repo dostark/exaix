@@ -11,25 +11,11 @@ import { assertEquals, assertFalse, assertRejects, assertStringIncludes } from "
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 
-import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
 import { resolveMemoryExecutionRoot } from "../../src/config/mod.ts";
 import { ExecutionMemoryStore, NamespaceQuotaExceededError } from "@exaix/core/execution-memory";
-import { withTempDir } from "@exaix/testing";
-
-function makeConfig(root: string): Config {
-  return ConfigSchema.parse({
-    system: { root },
-    paths: {},
-    database: {},
-    watcher: {},
-    agents: {},
-    models: {},
-    portals: [],
-    mcp: {},
-  });
-}
+import { createMockConfig, withTempDir } from "@exaix/testing";
 
 function executionDir(root: string, config: Config): string {
   return join(root, resolveMemoryExecutionRoot(config.paths));
@@ -37,7 +23,7 @@ function executionDir(root: string, config: Config): string {
 
 Deno.test("ExecutionMemoryStore: batch namespace writes with from-path extraction, full output, and append mode", async () => {
   await withTempDir(async (tempDir) => {
-    const store = new ExecutionMemoryStore(makeConfig(tempDir));
+    const store = new ExecutionMemoryStore(createMockConfig(tempDir));
     const traceId = "trace-batch";
 
     await store.writeNamespaceEntries(traceId, "step-1", [
@@ -56,7 +42,7 @@ Deno.test("ExecutionMemoryStore: batch namespace writes with from-path extractio
 
 Deno.test("ExecutionMemoryStore: an invalid namespace key is skipped (warned, not thrown) while the rest of the batch applies", async () => {
   await withTempDir(async (tempDir) => {
-    const store = new ExecutionMemoryStore(makeConfig(tempDir));
+    const store = new ExecutionMemoryStore(createMockConfig(tempDir));
     const warns: string[] = [];
     const originalWarn = console.warn;
     const warnSpy = (message?: string) => {
@@ -80,7 +66,7 @@ Deno.test("ExecutionMemoryStore: an invalid namespace key is skipped (warned, no
 
 Deno.test("ExecutionMemoryStore: an oversized single namespace value is truncated, not rejected", async () => {
   await withTempDir(async (tempDir) => {
-    const store = new ExecutionMemoryStore(makeConfig(tempDir));
+    const store = new ExecutionMemoryStore(createMockConfig(tempDir));
     const oversized = "v".repeat(10_000);
     await store.writeNamespaceEntries(
       "trace-trunc",
@@ -96,7 +82,7 @@ Deno.test("ExecutionMemoryStore: an oversized single namespace value is truncate
 
 Deno.test("ExecutionMemoryStore: only a total-size-over-quota namespace batch throws NamespaceQuotaExceededError, before persisting", async () => {
   await withTempDir(async (tempDir) => {
-    const config = makeConfig(tempDir);
+    const config = createMockConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
     const oversizedOutput = "q".repeat(DEFAULT_NAMESPACE_MAX_BYTES + 1024);
     const writes: IFlowNamespaceWrite[] = Array.from({ length: 9 }, (_, i) => ({ key: `key-${i}`, mode: "write" }));
@@ -116,7 +102,7 @@ Deno.test("ExecutionMemoryStore: only a total-size-over-quota namespace batch th
 
 Deno.test("ExecutionMemoryStore: getNamespacePath resolves into the trace's execution directory (never namespace.md)", async () => {
   await withTempDir((tempDir) => {
-    const config = makeConfig(tempDir);
+    const config = createMockConfig(tempDir);
     const store = new ExecutionMemoryStore(config);
     const path = store.getNamespacePath("trace-path");
     assertStringIncludes(path, join(resolveMemoryExecutionRoot(config.paths), "trace-path"));

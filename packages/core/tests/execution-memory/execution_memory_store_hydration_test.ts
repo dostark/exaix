@@ -9,28 +9,13 @@
 
 import { assertEquals } from "@std/assert";
 
-import { ConfigSchema } from "@exaix/schemas/config.ts";
-import type { Config } from "@exaix/schemas/config.ts";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
-import { withTempDir } from "@exaix/testing";
-
-function makeConfig(root: string): Config {
-  return ConfigSchema.parse({
-    system: { root },
-    paths: {},
-    database: {},
-    watcher: {},
-    agents: {},
-    models: {},
-    portals: [],
-    mcp: {},
-  });
-}
+import { createMockConfig, withTempDir } from "@exaix/testing";
 
 Deno.test("ExecutionMemoryStore: a fresh instance hydrates prior namespace state on first readKeys (GAP-16)", async () => {
   await withTempDir(async (tempDir) => {
     const traceId = crypto.randomUUID();
-    const firstInstance = new ExecutionMemoryStore(makeConfig(tempDir));
+    const firstInstance = new ExecutionMemoryStore(createMockConfig(tempDir));
     await firstInstance.writeNamespaceEntries(
       traceId,
       "step-1",
@@ -40,7 +25,7 @@ Deno.test("ExecutionMemoryStore: a fresh instance hydrates prior namespace state
     await firstInstance.writeNamespaceEntries(traceId, "step-2", [{ key: "log", mode: "write" }], "prior-output");
 
     // Fresh instance, no writes in it — the resume-after-checkpoint shape.
-    const resumedInstance = new ExecutionMemoryStore(makeConfig(tempDir));
+    const resumedInstance = new ExecutionMemoryStore(createMockConfig(tempDir));
     const read = await resumedInstance.readKeys(traceId, ["alpha", "log"]);
     assertEquals(read.alpha, "prior-value");
     assertEquals(read.log, "prior-output");
@@ -50,10 +35,10 @@ Deno.test("ExecutionMemoryStore: a fresh instance hydrates prior namespace state
 Deno.test("ExecutionMemoryStore: a fresh instance hydrates prior notes on first readNotes", async () => {
   await withTempDir(async (tempDir) => {
     const traceId = crypto.randomUUID();
-    const firstInstance = new ExecutionMemoryStore(makeConfig(tempDir));
+    const firstInstance = new ExecutionMemoryStore(createMockConfig(tempDir));
     await firstInstance.appendNote(traceId, "jotted mid-run");
 
-    const resumedInstance = new ExecutionMemoryStore(makeConfig(tempDir));
+    const resumedInstance = new ExecutionMemoryStore(createMockConfig(tempDir));
     const notes = await resumedInstance.readNotes(traceId);
     assertEquals(notes.length, 1);
     assertEquals(notes[0].content, "jotted mid-run");
@@ -63,11 +48,11 @@ Deno.test("ExecutionMemoryStore: a fresh instance hydrates prior notes on first 
 Deno.test("ExecutionMemoryStore: hydrate-once stays correct across subsequent writes in the resumed instance", async () => {
   await withTempDir(async (tempDir) => {
     const traceId = crypto.randomUUID();
-    const firstInstance = new ExecutionMemoryStore(makeConfig(tempDir));
+    const firstInstance = new ExecutionMemoryStore(createMockConfig(tempDir));
     await firstInstance.writeNamespaceEntries(traceId, "step-1", [{ key: "alpha", mode: "write" }], "prior-output");
     await firstInstance.appendNote(traceId, "prior note");
 
-    const resumedInstance = new ExecutionMemoryStore(makeConfig(tempDir));
+    const resumedInstance = new ExecutionMemoryStore(createMockConfig(tempDir));
     assertEquals((await resumedInstance.readKeys(traceId, ["alpha"])).alpha, "prior-output");
 
     await resumedInstance.appendNote(traceId, "resumed note");
