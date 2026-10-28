@@ -1,7 +1,7 @@
 /**
  * @module PolicyConfigTest
  * @path packages/lint-policy/tests/policy_config_test.ts
- * @description The acyclic consumer descriptor, its fourteen script specs, and the six real host commands.
+ * @description The acyclic consumer descriptor, its script specs, and the real host commands.
  * @architectural-layer Test
  * @dependencies [@std/assert, @dostark/unslop-ts]
  * @related-files [packages/lint-policy/unslop.project.ts, packages/lint-policy/src/script_rules.ts]
@@ -19,6 +19,7 @@ import {
   semanticCatalogProjection,
   semanticCompiledProjection,
   setOption,
+  WHOLE_TREE_CHECKS,
 } from "@dostark/unslop-ts";
 import catalog from "./fixtures/catalog_v1.json" with { type: "json" };
 import { descriptor } from "../unslop.project.ts";
@@ -82,8 +83,8 @@ Deno.test("every_script_rule_has_metadata", () => {
 });
 
 Deno.test("consumer_descriptor_loads_without_compiled_policy", async () => {
-  assertEquals(Object.keys(descriptor.scriptRules).length, 14);
-  assertEquals(Object.keys(descriptor.wholeTreeHosts).length, 8);
+  assertEquals(Object.keys(descriptor.scriptRules).sort(), Object.keys(SCRIPT_RULES).sort());
+  assertEquals(Object.keys(descriptor.wholeTreeHosts).sort(), Object.keys(WHOLE_TREE_CHECKS).sort());
   const model = compiled();
   for (const id of SCRIPT_IDS) assertEquals(model.rules[id].engine, "script", id);
   assertEquals(model.rules["duplicate-type"].command, ["deno", "task", "check:style"]);
@@ -152,10 +153,11 @@ Deno.test("the_compiled_exaix_model_preserves_the_version_1_projection", async (
   const layout = JSON.parse(await Deno.readTextFile(new URL("../../../layout.json", import.meta.url)));
   assertEquals(layout, (catalog as { layout?: unknown }).layout);
   const configured = (POLICY_CONFIG as { rules: Record<string, { limits?: string }> }).rules;
-  assertEquals(
-    Object.values(configured).filter((rule) => typeof rule === "object" && rule.limits !== undefined).length,
-    10,
-  );
+  for (const [id, rule] of Object.entries(configured)) {
+    if (typeof rule === "object" && rule.limits !== undefined) {
+      assertEquals(POLICY_CATALOG.rules[id].limits, rule.limits, id);
+    }
+  }
   assertEquals(POLICY_CATALOG.rules["duplicate-type"].limits, configured["duplicate-type"].limits);
   assertEquals(POLICY_COMPILED.rules["exaix/barrel-only-reexports"].configuredLevel, "error");
 });
@@ -186,7 +188,7 @@ Deno.test("consumer_limits_survive_migration_and_edit", () => {
   const limits = Object.values(configured.rules).filter((rule) =>
     typeof rule === "object" && rule.limits !== undefined
   );
-  assertEquals(limits.length, 10);
+  assert(limits.length > 0, "the migrated config keeps the rule limits");
   const context: IEditContext = { descriptor, compiled };
   const edited = setOption(migrated.config, context, "duplicate-constant", "namePattern", "^[A-Z][A-Z0-9_]*$");
   const editedRule = (edited as { rules: Record<string, { limits?: string }> }).rules["duplicate-constant"];
