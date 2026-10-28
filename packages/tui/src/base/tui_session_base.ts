@@ -8,13 +8,7 @@
  */
 
 import { getTheme, type ITuiTheme } from "@exaix/tui/helpers/colors.ts";
-import {
-  createSpinnerState,
-  type ISpinnerState,
-  nextFrame,
-  startSpinner,
-  stopSpinner,
-} from "@exaix/tui/helpers/spinner.ts";
+import { createSpinnerState, type ISpinnerState, startSpinner, stopSpinner } from "@exaix/tui/helpers/spinner.ts";
 import { createStatusBarState, type IStatusBarState, setStatusMessage } from "@exaix/tui/helpers/status_bar.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import type { IKeyBinding, KeyHandler } from "@exaix/tui/helpers/keyboard.ts";
@@ -149,12 +143,6 @@ export class TuiSessionBase {
     this.viewState.isLoading = false;
   }
 
-  protected advanceSpinner(): void {
-    if (this.spinnerState.active) {
-      this.spinnerState = nextFrame(this.spinnerState);
-    }
-  }
-
   getSpinnerState(): ISpinnerState {
     return this.spinnerState;
   }
@@ -275,19 +263,6 @@ export class TuiSessionBase {
       this.setStatus(`Error: ${msg}`, MessageType.ERROR);
       return null;
     }
-  }
-
-  onActivate(): void {
-    if (this.viewState.needsRefresh && this.refreshConfig) {
-      this.refresh();
-    }
-    if (this.refreshConfig?.enabled) {
-      this.startAutoRefresh();
-    }
-  }
-
-  onDeactivate(): void {
-    this.stopAutoRefresh();
   }
 
   dispose(): void {
