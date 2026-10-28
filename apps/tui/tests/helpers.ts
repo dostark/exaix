@@ -96,6 +96,7 @@ interface IIndexedActivityRecord extends IActivityRecord {
 let requestIdCounter = 1;
 
 // Use shared test data factories with deterministic IDs
+// unslop-ignore-next-line unused-export
 export const sampleRequest = (overrides: Partial<IRequest> = {}): IRequest => {
   const deterministicOverrides = {
     trace_id: `req-${requestIdCounter++}`,
@@ -118,6 +119,7 @@ export const samplePlansWithStatuses = (): IPlan[] => commonTestData.plans.withS
 export const samplePendingPlans = (): IPlan[] => commonTestData.plans.pending();
 
 // Skill helpers using shared utilities
+// unslop-ignore-next-line unused-export
 export function createMockRequestService(initial: IRequest[] = []): IRequestService & { requests: IRequest[] } {
   class MockRequestService implements IRequestService {
     requests: IRequest[];

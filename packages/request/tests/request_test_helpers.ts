@@ -6,7 +6,6 @@
  * @description Common utilities and factory functions for Request migration and processor tests.
  */
 
-import * as pathBuilders from "@exaix/shared";
 import { join } from "@std/path";
 import { ANALYZER_VERSION, PortalAnalysisMode, RequestSource } from "@exaix/core";
 import { RequestStatus } from "@exaix/core/status";
@@ -156,15 +155,6 @@ ${body}`;
 
   Deno.writeTextFileSync(filePath, content);
   return filePath;
-}
-
-export function makeBlueprintFileSync(blueprintsPath: string, agent_role: string): string {
-  const blueprintPath = pathBuilders.agentsPath(blueprintsPath, `${agent_role}.md`);
-  const content = `# Blueprint for ${agent_role}
-You are a helpful assistant.
-`;
-  Deno.writeTextFileSync(blueprintPath, content);
-  return blueprintPath;
 }
 
 export function makeKnowledge(overrides: Partial<IPortalKnowledge> = {}): IPortalKnowledge {

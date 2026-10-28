@@ -36,7 +36,6 @@ import {
 import {
   makeAgentRequestFileSync as makeAgentRequestFile,
   makeAnalysis,
-  type makeBlueprintFileSync as _makeBlueprintFile,
   makeFakeAnalyzer,
   makeFlowRequestFileSync as makeFlowRequestFile,
   makeRequestProcessorEnv,

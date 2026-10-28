@@ -43,6 +43,7 @@ interface IMemoryViewServiceOptions {
 
 // Mock Service
 
+// unslop-ignore-next-line unused-export
 export class ExtendedMockMemoryService implements IMemoryService {
   private projects: string[] = ["TestPortal"];
   private projectMemories: Map<string, IProjectMemory | null> = new Map();
