@@ -421,9 +421,9 @@ const WHOLE_TREE_CASES: readonly IWholeTreeCase[] = [
     args: ["--rule=unused-exports"],
     code: 0,
     stdout: [
+      `WARN [unwired-export] packages/core/src/types/constants.ts:1 – 'FIXTURE_HOSTS' ${UNWIRED}`,
       `WARN [unwired-export] packages/p/src/a.ts:1 – 'unwiredHelper' ${UNWIRED}`,
       `WARN [unwired-export] packages/p/src/a.ts:5 – 'takesBare' ${UNWIRED}`,
-      `WARN [unwired-export] packages/core/src/types/constants.ts:1 – 'FIXTURE_HOSTS' ${UNWIRED}`,
       "",
       "⚠️  3 unwired export(s) in the trusted report: 3 error(s), 0 warning(s).",
       "  Add `--fail` to the host command to make the error findings fail the run.",
@@ -435,9 +435,9 @@ const WHOLE_TREE_CASES: readonly IWholeTreeCase[] = [
     args: ["--rule=unused-exports", "--strict"],
     code: 1,
     stdout: [
+      `ERROR [unwired-export] packages/core/src/types/constants.ts:1 – 'FIXTURE_HOSTS' ${UNWIRED}`,
       `ERROR [unwired-export] packages/p/src/a.ts:1 – 'unwiredHelper' ${UNWIRED}`,
       `ERROR [unwired-export] packages/p/src/a.ts:5 – 'takesBare' ${UNWIRED}`,
-      `ERROR [unwired-export] packages/core/src/types/constants.ts:1 – 'FIXTURE_HOSTS' ${UNWIRED}`,
       "",
       "❌ 3 unwired export(s) in the trusted report: 3 error(s), 0 warning(s).",
       "",
