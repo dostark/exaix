@@ -2,7 +2,7 @@
  * @module ToolRegistryAciCatalogTest
  * @path packages/tool-runtime/tests/tool_registry_aci_catalog_test.ts
  * @description Phase 112 Step 4 (extended by Phase 176 Step 2's search_memory) — verifies the
- *   complete `createCoreToolSchemas()` catalog: all 18 ReAct tools have a schema-valid
+ *   complete `createCoreToolSchemas()` catalog: every ReAct tool has a schema-valid
  *   `aciDoc`, a non-empty rendered fragment, the canonical `sideEffectScope`, a worked example
  *   compatible with the tool's own `parameters` schema, and an anti-example that genuinely
  *   violates a named constraint (unknown key, missing required key, wrong type, or invalid
@@ -42,9 +42,9 @@ const EXPECTED_SCOPES: Record<string, ToolSideEffectScope> = {
   list_available_tools: ToolSideEffectScope.NONE,
 };
 
-Deno.test("[ToolRegistryAciCatalog] createCoreToolSchemas returns exactly the 22 named ReAct tools", () => {
+Deno.test("[ToolRegistryAciCatalog] createCoreToolSchemas returns exactly the named ReAct tools", () => {
   const tools = createCoreToolSchemas();
-  assertEquals(tools.length, 22);
+  assertEquals(tools.length, Object.keys(EXPECTED_SCOPES).length);
   assertEquals(new Set(tools.map((t) => t.name)), new Set(Object.keys(EXPECTED_SCOPES)));
 });
 

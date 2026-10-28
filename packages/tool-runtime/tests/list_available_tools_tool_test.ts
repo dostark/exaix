@@ -51,7 +51,7 @@ Deno.test("[list_available_tools] returns the full registered tool catalog with 
   assertEquals(result.success, true, result.error ?? "expected success");
   const catalog = readCatalog(result.data);
   const names = catalog.map((t) => t.name);
-  assert(names.length >= 18, `expected at least the core tool set, got ${names.length}`);
+  assertEquals(new Set(names), new Set(registry.getTools().map((tool) => tool.name)));
 
   const readFile = catalog.find((t) => t.name === ToolName.READ_FILE);
   assert(readFile, "catalog must include read_file");

@@ -15,7 +15,7 @@ import ts from "typescript";
 import type { IToolResult } from "@exaix/core/types";
 import { join } from "@std/path";
 import type { DatabaseService } from "@exaix/storage-sqlite";
-import { ToolRegistry } from "@exaix/tool-runtime";
+import { createCoreToolSchemas, ToolRegistry } from "@exaix/tool-runtime";
 import { createMockConfig, createStubConfig, createStubContext } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
@@ -379,7 +379,7 @@ Deno.test("ToolRegistry: getTools - returns all registered tools", () => {
 
   const tools = registry.getTools();
 
-  assertEquals(tools.length, 22);
+  assertEquals(tools.length, createCoreToolSchemas().length);
   const toolNames = tools.map((t) => t.name);
   assertEquals(toolNames.includes(ToolName.READ_FILE), true);
   assertEquals(toolNames.includes(ToolName.WRITE_FILE), true);
