@@ -233,7 +233,7 @@ export async function scanScenarioDir(
 }
 
 /** Render a human-readable report. */
-export function renderReport(report: IScenarioScanReport): string {
+function renderReport(report: IScenarioScanReport): string {
   const lines: string[] = [];
   lines.push("Scenario YAML declarative-purity violations");
   lines.push("============================================");

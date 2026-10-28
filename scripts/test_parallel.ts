@@ -42,14 +42,7 @@ interface IDotReporterState {
   wrapWidth: number;
 }
 
-export {
-  DOT_REPORTER_SYMBOLS_PATTERN,
-  extractTapFailures,
-  parseDotReporterCounts,
-  parseSummaryLine,
-  parseTapOutput,
-  stripAnsi,
-};
+export { extractTapFailures, parseDotReporterCounts, parseSummaryLine, parseTapOutput };
 
 const REPO_ROOT = join(fromFileUrl(import.meta.url), "..", "..");
 const SUPPORTED_REPORTERS = ["pretty", "dot", "tap"] as const;
@@ -864,7 +857,7 @@ async function preparePortalLintAssetsForOfflineTest(): Promise<void> {
   }
 }
 
-export async function main(args: string[]): Promise<number> {
+async function main(args: string[]): Promise<number> {
   const reporter = resolveReporter(args);
   const forwardedArgs = stripTestControlArgs(stripReporterArgs(args));
   const cliJobs = resolveContainerJobs(args);

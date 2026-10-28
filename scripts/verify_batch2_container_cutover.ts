@@ -141,7 +141,7 @@ async function runSerialBatch2(): Promise<{ wallSec: number; counts: Map<string,
   return { wallSec: (Date.now() - startedAt) / 1000, counts };
 }
 
-export async function main(args: readonly string[] = Deno.args): Promise<number> {
+async function main(args: readonly string[] = Deno.args): Promise<number> {
   const jobs = parseJobs(args);
   const image = Deno.env.get(TEST_CONTAINER_IMAGE_ENV) ?? DEFAULT_TEST_CONTAINER_IMAGE;
   await ensureDevTestImage(image);

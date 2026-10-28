@@ -115,7 +115,6 @@ const AgentProsePolicySchema = z.object({
 export type IAgentProsePolicy = z.infer<typeof AgentProsePolicySchema>;
 type IProseSource = z.infer<typeof ProseSourceSchema>;
 type IProseSpan = z.infer<typeof ProseSpanSchema>;
-export type IReview = z.infer<typeof ReviewSchema>;
 
 class PolicyError extends Error {}
 class ReadError extends Error {}
