@@ -9,6 +9,7 @@ import { assert, assertArrayIncludes, assertEquals, assertExists } from "@std/as
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { ExecutionStatus, HealthCheckVerdict, HealthStatus, MockStrategy } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
+import { EventLogger, type IEventLoggerOutput } from "@exaix/core/logger";
 import { createMockConfig, withTempDir } from "@exaix/testing";
 import {
   DatabaseHealthCheck,
@@ -29,6 +30,17 @@ import { initTestDbService } from "@exaix/testing";
 Deno.test("HealthCheckService: initializes with version", () => {
   const service = new HealthCheckService(DEFAULT_MCP_VERSION);
   assertEquals(service.version, "1.0.0");
+});
+
+Deno.test("HealthCheckService: checkHealth logs through the injected logger", async () => {
+  const actions: string[] = [];
+  const recorder: IEventLoggerOutput = { write: (event) => void actions.push(event.action) };
+  const logger = new EventLogger({ outputs: [recorder] });
+  const service = new HealthCheckService(DEFAULT_MCP_VERSION, undefined, logger);
+
+  await service.checkHealth();
+
+  assertEquals(actions.includes(DomainEventType.HealthCheckAll), true);
 });
 
 Deno.test("HealthCheckService: registers health checks", () => {

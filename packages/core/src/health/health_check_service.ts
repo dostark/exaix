@@ -147,7 +147,7 @@ export class HealthCheckService {
   /**
    * Perform all registered health checks and return overall status
    */
-  @LogMethod(new EventLogger({ prefix: "[IHealthCheck]" }), { action: DomainEventType.HealthCheckAll })
+  @LogMethod((self: HealthCheckService) => self.logger, { action: DomainEventType.HealthCheckAll })
   async checkHealth(): Promise<IHealthReport> {
     const results: Record<string, IHealthCheckResult> = {};
     let hasFailure = false;
@@ -214,7 +214,7 @@ export class HealthCheckService {
   }
 
   /** Cached. */
-  @LogMethod(new EventLogger({ prefix: "[IHealthCheck]" }), { action: DomainEventType.HealthCheckProvider })
+  @LogMethod((self: HealthCheckService) => self.logger, { action: DomainEventType.HealthCheckProvider })
   async checkProvider(providerName: string): Promise<boolean> {
     // ... existing implementation ...
     const now = Date.now();
