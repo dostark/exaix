@@ -34,7 +34,6 @@ interface IValidationError {
   received?: string;
 }
 
-export type IToolCall = z.infer<typeof OutputSchemas.toolCall>;
 interface IParsedXMLOutput {
   thought: string;
   content: string;
