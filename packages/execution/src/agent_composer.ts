@@ -888,13 +888,6 @@ export class AgentComposer {
   }
 
   /**
-   * Sanitize user input to prevent prompt injection attacks.
-   */
-  public sanitizeUserInput(input: string): string {
-    return this.promptBuilder.sanitizeUserInput(input);
-  }
-
-  /**
    * Parse agent response to extract changeset result
    */
 

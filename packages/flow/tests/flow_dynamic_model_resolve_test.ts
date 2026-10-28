@@ -204,10 +204,6 @@ function createDynamicFlow(): IFlowInput {
 }
 
 class RecordingMcpClient implements IMcpClient, IToolManifestResolver {
-  getAvailableToolNames(): McpToolName[] {
-    return [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY, McpToolName.SEARCH_FILES];
-  }
-
   getToolDefinitions(tools: McpToolName[]) {
     return tools.map((t) => ({
       name: t,

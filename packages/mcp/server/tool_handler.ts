@@ -159,22 +159,6 @@ export abstract class ToolHandler {
     };
   }
 
-  /** Formats a protocol-level error with logging and re-throws; use only for unrecoverable server failures, not tool-logic errors. */
-  protected formatError(
-    toolName: string,
-    portal: string,
-    agentRole: string,
-    error: Error | string | unknown,
-    metadata: LogMetadata,
-  ): never {
-    this.logToolExecution(toolName, portal, agentRole, {
-      ...metadata,
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    throw error;
-  }
-
   /** Validates that a portal has a git repository; throws if .git doesn't exist. */
   protected async validateGitRepository(portalPath: string, portalName: string): Promise<void> {
     try {

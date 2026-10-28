@@ -10,7 +10,6 @@
 import type { ICliApplicationContext } from "./types/cli_context.ts";
 import type {
   IArchiveService,
-  IContextCardGeneratorService,
   ICostTracker,
   IFlowValidatorService,
   IMemoryBankService,
@@ -86,11 +85,6 @@ export abstract class BaseCommand {
   protected get flowValidator(): IFlowValidatorService {
     if (!this.context.flowValidator) throw new Error("Flow Validator service not initialized");
     return this.context.flowValidator;
-  }
-
-  protected get contextCardGenerator(): IContextCardGeneratorService {
-    if (!this.context.contextCards) throw new Error("Context Card Generator service not initialized");
-    return this.context.contextCards;
   }
 
   protected get skills(): ISkillsService {
