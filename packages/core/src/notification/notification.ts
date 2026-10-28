@@ -12,7 +12,6 @@
  * @related-files ["packages/memory/src/bank/index_builder.ts", @exaix/core/types]
  */
 
-import type { Config } from "@exaix/schemas/config.ts";
 import { DEFAULT_TITLE_PLACEHOLDER } from "@exaix/core";
 import { MemoryScope } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/core/types";
@@ -24,7 +23,6 @@ import type { Opt, Reason } from "@exaix/core/types";
 /** Handles user notifications for memory updates via SQLite storage. */
 export class NotificationService implements INotificationService {
   constructor(
-    private config: Config,
     private db: IDatabaseService,
     private logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {

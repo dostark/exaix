@@ -13,21 +13,16 @@ import { PlanStatus } from "@exaix/core/status";
 import type { PlanStatusType } from "@exaix/core/status";
 import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types";
 import type { IDisplayService } from "@exaix/core/types";
-import type { IConfigService } from "@exaix/core/types";
-import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export class PlanService {
   private workspacePlansDir: string;
   private workspaceActiveDir: string;
-  private workspaceRequestsDir: string;
   private workspaceRejectedDir: string;
   private workspaceArchiveDir: string;
 
   constructor(
-    private config: Config,
-    private configService: IConfigService,
-    private db: IDatabaseService,
+    config: Config,
     private display: IDisplayService,
     private userIdentityGetter: () => Promise<string>,
   ) {
@@ -37,7 +32,6 @@ export class PlanService {
     this.workspaceActiveDir = join(root, workspace, config.paths.active!);
     this.workspaceRejectedDir = join(root, workspace, config.paths.rejected!);
     this.workspaceArchiveDir = join(root, workspace, config.paths.archive!);
-    this.workspaceRequestsDir = join(root, workspace, config.paths.requests!);
   }
 
   // Private helpers

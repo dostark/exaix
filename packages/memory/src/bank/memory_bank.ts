@@ -89,7 +89,7 @@ export class MemoryBankService implements IMemoryBankService {
 
   /** Create a new Memory Bank Service instance @param config - Exaix configuration @param db - Database service for IActivity Journal integration */
   constructor(
-    private config: Config,
+    config: Config,
     private logger?: Opt<IEventLogger, Reason.OptionalDependency>,
     options: { contradictionResolver?: Opt<ILearningContradictionResolver, Reason.OptionalDependency> } = {},
   ) {

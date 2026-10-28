@@ -16,7 +16,6 @@
 
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "@exaix/tool-runtime";
-import type { IDatabaseService } from "@exaix/core/types";
 import type { IRequestAnalysisContext, IRequestAnalyzerConfig, IRequestAnalyzerService } from "@exaix/core/types";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
@@ -112,9 +111,8 @@ export class RequestAnalyzer implements IRequestAnalyzerService {
 
   constructor(
     private readonly config: IRequestAnalyzerConfig,
-    private readonly provider?: Opt<IModelProvider, Reason.OptionalDependency>,
-    private readonly validator?: Opt<IOutputValidator, Reason.OptionalDependency>,
-    private readonly db?: Opt<Pick<IDatabaseService, "logActivity">, Reason.OptionalDependency>,
+    provider?: Opt<IModelProvider, Reason.OptionalDependency>,
+    validator?: Opt<IOutputValidator, Reason.OptionalDependency>,
     private readonly logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     this.threshold = config.actionabilityThreshold ?? DEFAULT_ACTIONABILITY_THRESHOLD;

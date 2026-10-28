@@ -256,7 +256,6 @@ export class RequestProcessor {
       analyzerConfig,
       defaultProvider,
       outputValidator,
-      this.db,
       this.logger,
     );
 

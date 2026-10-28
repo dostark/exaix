@@ -46,7 +46,7 @@ export class MemoryExtractorService {
   private pendingDir: string;
 
   constructor(
-    private config: Config,
+    config: Config,
     private db: IDatabaseService,
     private memoryBank: IMemoryBankService,
     private logger?: Opt<IEventLogger, Reason.OptionalDependency>,

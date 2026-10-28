@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { createMockConfig, createStubDb } from "@exaix/testing";
+import { createStubDb } from "@exaix/testing";
 import { NotificationService } from "@exaix/core/notification";
 import { MemoryScope } from "@exaix/core";
 import { type JSONValue, toSafeJson } from "@exaix/core/types";
@@ -91,15 +91,13 @@ function initNotificationTest() {
     },
   });
 
-  const config = createMockConfig(Deno.cwd());
-  const notification = new NotificationService(config, stub);
+  const notification = new NotificationService(stub);
 
   const cleanup = async () => {
     // nothing to cleanup for in-memory stub
   };
 
   return {
-    config,
     db: stub,
     notification,
     cleanup,
@@ -197,14 +195,13 @@ Deno.test("NotificationService: getPendingCount returns 0 on empty database", as
 // logActivity Edge Cases
 
 Deno.test("NotificationService: notifyApproval handles db errors gracefully", () => {
-  const config = createMockConfig(Deno.cwd());
   // Create a mock DB that throws on logActivity
   const mockDb = createStubDb({
     logActivity: () => {
       throw new Error("Database error");
     },
   });
-  const notification = new NotificationService(config, mockDb);
+  const notification = new NotificationService(mockDb);
 
   // Should not throw even when DB fails
   notification.notifyApproval("proposal-123", "Test ILearning as ILearning");
@@ -213,14 +210,13 @@ Deno.test("NotificationService: notifyApproval handles db errors gracefully", ()
 });
 
 Deno.test("NotificationService: notifyRejection handles db errors gracefully", () => {
-  const config = createMockConfig(Deno.cwd());
   // Create a mock DB that throws on logActivity
   const mockDb = createStubDb({
     logActivity: () => {
       throw new Error("Database connection lost");
     },
   });
-  const notification = new NotificationService(config, mockDb);
+  const notification = new NotificationService(mockDb);
 
   // Should not throw even when DB fails
   notification.notifyRejection("proposal-456", "Not relevant");
@@ -229,7 +225,6 @@ Deno.test("NotificationService: notifyRejection handles db errors gracefully", (
 });
 
 Deno.test("NotificationService: notifyMemoryUpdate handles db errors gracefully", async () => {
-  const config = createMockConfig(Deno.cwd());
   // Create a mock DB that throws on preparedRun
   const mockDb = createStubDb({
     preparedRun: () => {
@@ -237,7 +232,7 @@ Deno.test("NotificationService: notifyMemoryUpdate handles db errors gracefully"
     },
   });
 
-  const notification = new NotificationService(config, mockDb);
+  const notification = new NotificationService(mockDb);
   const proposal = createNotificationTestProposal();
 
   // Should throw or handle error based on implementation.

@@ -309,7 +309,7 @@ export async function initializeServices(
       logger: displayLogger,
     });
 
-    const plans = new PlanService(cfg, configAdapter, dbLocal, displayAdapter, userIdentityGetter);
+    const plans = new PlanService(cfg, displayAdapter, userIdentityGetter);
     const amendments = new PlanAmendmentService(cfg, providerLocal);
     const amendmentGate = new PlanAmendmentGate(cfg, amendments, undefined, displayLogger);
 

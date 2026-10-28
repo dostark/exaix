@@ -44,7 +44,7 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
   private indexBuilt = false;
 
   constructor(
-    private config: Config,
+    config: Config,
     private provider: IEmbeddingProvider = new OllamaEmbeddingClient(),
     private costRouter?: Opt<IMemoryCostRouter, Reason.OptionalDependency>,
   ) {

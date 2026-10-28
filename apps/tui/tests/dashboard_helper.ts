@@ -30,8 +30,8 @@ export async function createTuiDashboardWithNotification(testProps: TestDashboar
   db: IDatabaseService;
   cleanup: () => Promise<void>;
 }> {
-  const { db, config, cleanup } = await initTestDbService();
-  const notificationService = new NotificationService(config, db);
+  const { db, cleanup } = await initTestDbService();
+  const notificationService = new NotificationService(db);
 
   const dashboard = await launchTuiDashboard({
     testMode: true,

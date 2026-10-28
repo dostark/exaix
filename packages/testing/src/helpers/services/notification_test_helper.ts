@@ -57,7 +57,7 @@ async function initNotificationTest(): Promise<{
   cleanup: () => Promise<void>;
 }> {
   const { db, config, cleanup: dbCleanup } = await initTestDbService();
-  const notification = new NotificationService(config, db, makeDbLogger(db));
+  const notification = new NotificationService(db, makeDbLogger(db));
 
   const cleanup = async () => {
     await dbCleanup();

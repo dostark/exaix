@@ -564,7 +564,7 @@ if (import.meta.main) {
       config,
     });
 
-    const notificationService = new NotificationService(config, dbService);
+    const notificationService = new NotificationService(dbService);
 
     // Extraction loads the content policy by explicit skill_id, so the shared skills
     // service must be ready before memory services are composed.

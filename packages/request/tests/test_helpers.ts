@@ -13,7 +13,6 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import { createOutputValidator } from "@exaix/tool-runtime";
 import { RequestAnalyzer } from "@exaix/request";
 import { LlmAnalyzer } from "@exaix/request";
-import type { IDatabaseService } from "@exaix/core/types";
 /**
  * Creates a valid JSON string for a RequestAnalysis object.
  */
@@ -71,11 +70,10 @@ export function createMockProvider(
 export function setupTestAnalyzer(
   modeOrConfig: AnalysisMode | { mode: AnalysisMode; actionabilityThreshold?: number },
   provider: IModelProvider,
-  db?: IDatabaseService,
 ): { analyzer: RequestAnalyzer; validator: ReturnType<typeof createOutputValidator> } {
   const config = typeof modeOrConfig === "string" ? { mode: modeOrConfig } : modeOrConfig;
   const validator = createOutputValidator({ autoRepair: false });
-  const analyzer = new RequestAnalyzer(config, provider, validator, db);
+  const analyzer = new RequestAnalyzer(config, provider, validator);
   return { analyzer, validator };
 }
 

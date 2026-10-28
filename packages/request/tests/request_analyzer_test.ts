@@ -165,7 +165,6 @@ Deno.test("[RequestAnalyzer] logs activity to database when db provided", async 
     { mode: AnalysisMode.HEURISTIC },
     undefined,
     undefined,
-    undefined,
     logger,
   );
 

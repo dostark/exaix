@@ -294,7 +294,6 @@ export class RequestService {
       },
       this.provider,
       this.validator,
-      this.db,
       this.eventLogger,
     );
 

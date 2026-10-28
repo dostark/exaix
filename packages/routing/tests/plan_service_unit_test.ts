@@ -10,18 +10,14 @@ import { ensureDir } from "@std/fs";
 import { PlanService } from "@exaix/core/planning";
 import { PlanStatus } from "@exaix/core/status";
 import { createMockConfig } from "@exaix/testing";
-import { createStubConfig, createStubDb, createStubDisplay } from "@exaix/testing";
+import { createStubDisplay } from "@exaix/testing";
 
 function createPlanTestEnv(root: string) {
   const config = createMockConfig(root);
-  const configService = createStubConfig(config);
-  const db = createStubDb();
   const display = createStubDisplay();
 
   const service = new PlanService(
     config,
-    configService,
-    db,
     display,
     () => Promise.resolve("reviewer"),
   );
