@@ -12,7 +12,7 @@
  */
 
 import { assertNoNativeConversation } from "../provider_registry.ts";
-import { MockStrategy, ProviderType } from "@exaix/core";
+import { MockStrategy } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import type {
   ICallSite,
@@ -856,13 +856,6 @@ export class MockLLMProvider implements IModelProvider {
   }
 
   /**
-   * Failing strategy: Always throw error
-   */
-  private generateFailing(): Promise<never> {
-    throw new MockLLMError(this.errorMessage);
-  }
-
-  /**
    * Slow strategy: Add delay before returning response
    */
   private async generateSlow(): Promise<string> {
@@ -941,23 +934,6 @@ export class MockLLMProvider implements IModelProvider {
     return hashPrompt(prompt);
   }
 
-  /**
-   * Record a response for later playback
-   */
-  recordResponse(prompt: string, response: string, model: string = ProviderType.MOCK): IRecordedResponse {
-    const recording: IRecordedResponse = {
-      promptHash: this.hashPrompt(prompt),
-      promptPreview: prompt.substring(0, 100),
-      response,
-      model,
-      tokens: { ...this.tokensPerResponse },
-      recordedAt: new Date().toISOString(),
-    };
-
-    this.recordings.push(recording);
-    return recording;
-  }
-
   // Private Helpers
 
   /**
@@ -995,15 +971,6 @@ export class MockLLMProvider implements IModelProvider {
    */
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  private isExecutionPrompt(prompt: string): boolean {
-    return (
-      prompt.includes("executing a plan") ||
-      prompt.includes("autonomous coding agent") ||
-      /Step \d+/i.test(prompt) ||
-      prompt.includes("execute") && prompt.includes("step")
-    );
   }
 
   /** True when this provider replayed nothing and is really pattern-matching. `recorded` is the

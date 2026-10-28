@@ -437,19 +437,6 @@ class MockDatabaseService implements IDatabaseService, IJournalService {
   waitForFlush() {
     return Promise.resolve();
   }
-  private fromActivityRecord(record: IActivityRecord): ILogEntry {
-    try {
-      return {
-        ...record,
-        payload: JSON.parse(record.payload),
-      };
-    } catch {
-      return {
-        ...record,
-        payload: { error: "Parse error", raw: record.payload },
-      };
-    }
-  }
   queryActivity(filter: IJournalFilterOptions): Promise<IActivityRecord[]> {
     return this.query(filter);
   }
@@ -526,11 +513,6 @@ class MockDatabaseService implements IDatabaseService, IJournalService {
   }
   listPendingToolConfirmations() {
     return Promise.resolve([]);
-  }
-  // Test-only method used in some tests
-  addLog(log: IActivityRecord) {
-    this._activityRecords.push(log);
-    return Promise.resolve();
   }
 }
 

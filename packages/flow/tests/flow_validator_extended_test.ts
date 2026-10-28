@@ -26,14 +26,6 @@ class MockFlowLoader extends FlowLoader {
     this.existingFlows.add(id);
   }
 
-  setFlowExists(id: string, exists: boolean): void {
-    if (exists) {
-      this.existingFlows.add(id);
-    } else {
-      this.existingFlows.delete(id);
-    }
-  }
-
   override flowExists(flowId: string): Promise<boolean> {
     return Promise.resolve(this.existingFlows.has(flowId));
   }

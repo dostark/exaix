@@ -144,10 +144,6 @@ export class GitTestHelper {
     return await this.runGit([GIT_CMD_CONFIG, "--local", "user.name"]);
   }
 
-  async getUserEmail(): Promise<string> {
-    return await this.runGit([GIT_CMD_CONFIG, "--local", "user.email"]);
-  }
-
   async assertBranchExists(branchName: string): Promise<void> {
     const output = await this.runGit([FlowStepType.BRANCH, "--list", branchName]);
     assert(output.includes(branchName), `Expected branch '${branchName}' to exist, but it doesn't`);
@@ -197,15 +193,5 @@ export class GitTestHelper {
   async assertCleanWorkingDir(): Promise<void> {
     const status = await this.getStatus();
     assertEquals(status, "", "Expected clean working directory");
-  }
-
-  async getLastCommitFiles(): Promise<string[]> {
-    const output = await this.runGit(["diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"]);
-    return output.split("\n").filter((file) => file.trim().length > 0);
-  }
-
-  async assertLastCommitContains(substring: string): Promise<void> {
-    const message = await this.getLastCommitMessage();
-    assert(message.includes(substring), `Expected commit message to contain '${substring}', but got:\n${message}`);
   }
 }

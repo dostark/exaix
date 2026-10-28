@@ -45,10 +45,6 @@ class TestSession extends TuiSessionBase {
     this.stopLoading();
   }
 
-  public testAdvanceSpinner(): void {
-    this.advanceSpinner();
-  }
-
   public testPerformWithLoading<T>(fn: () => Promise<T>): Promise<T | null> {
     return this.performWithLoading(fn);
   }
