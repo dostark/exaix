@@ -84,10 +84,7 @@ Deno.test("[configuring] registry stores all metadata fields", () => {
 });
 
 Deno.test("[configuring] EDITION_GATED_PATHS contains expected keys", () => {
-  assertEquals(EDITION_GATED_PATHS.has("guardrail"), true);
-  assertEquals(EDITION_GATED_PATHS.has("hitl"), true);
-  assertEquals(EDITION_GATED_PATHS.has("voting"), true);
-  assertEquals(EDITION_GATED_PATHS.size, 3);
+  assertEquals([...EDITION_GATED_PATHS].sort(), ["guardrail", "hitl", "voting"]);
 });
 
 // resolveTier() three-tier authorization
