@@ -14,7 +14,6 @@ import {
   DEFAULT_AI_RETRY_MAX_ATTEMPTS,
   DEFAULT_AI_TEMPERATURE_MAX,
   DEFAULT_AI_TEMPERATURE_MIN,
-  DEFAULT_AI_TIMEOUT_MS,
   DEFAULT_MOCK_MODEL,
   DEFAULT_MOCK_STRATEGY,
   MockStrategy,
@@ -138,15 +137,7 @@ export const AiConfigSchema = z.object({
 
   /** Explicit profile-scoped OpenAI-compatible Chat Completions settings. */
   compatible: CompatibleChatOverrideSchema.optional(),
-}).prefault({
-  provider: ProviderType.MOCK,
-  timeout_ms: DEFAULT_AI_TIMEOUT_MS,
-}).transform((config) =>
-  config.provider === ProviderType.OPENAI_CHAT ? config : ({
-    ...config,
-    timeout_ms: config.timeout_ms ?? DEFAULT_AI_TIMEOUT_MS,
-  })
-);
+});
 
 export type AiConfig = z.infer<typeof AiConfigSchema>;
 

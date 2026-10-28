@@ -30,6 +30,7 @@ import {
   MockStrategy,
   PricingTier,
   ProviderCostTier,
+  ProviderDefaultsRegistry,
   ProviderType,
   SecureCredentialStore,
 } from "@exaix/core";
@@ -158,14 +159,14 @@ Deno.test("AiConfigSchema: accepts minimal config", () => {
   assertEquals(result.success, true);
 });
 
-Deno.test("AiConfigSchema: provides defaults", () => {
+Deno.test("AiConfigSchema: leaves timeout_ms unset so the provider default applies", () => {
   const minimalConfig = {
     provider: ProviderType.MOCK,
   };
 
   const result = AiConfigSchema.parse(minimalConfig);
   assertEquals(result.provider, ProviderType.MOCK);
-  assertEquals(result.timeout_ms, 30000); // default
+  assertEquals(result.timeout_ms, undefined);
 });
 
 Deno.test("AiConfigSchema: validates provider enum", () => {
@@ -445,6 +446,91 @@ Deno.test(
     } finally {
       ProviderRegistry.clear();
     }
+  },
+);
+
+const CLI_PROVIDER_DEFAULT_TIMEOUT_MS = 777_000;
+
+/** Resolves the timeout that `ProviderFactory` hands to a registered claude-cli test double. */
+async function resolvedCliTimeoutMs(config: Config): Promise<number | undefined> {
+  ProviderRegistry.clear();
+  ProviderDefaultsRegistry.register(ProviderType.CLAUDE_CLI, {
+    defaultModel: "claude-sonnet-5",
+    defaultEndpoint: "",
+    defaultTimeoutMs: CLI_PROVIDER_DEFAULT_TIMEOUT_MS,
+    defaultRetryMaxAttempts: 1,
+    defaultRetryBackoffMs: 0,
+  });
+  let capturedTimeoutMs: number | undefined;
+  ProviderRegistry.registerWithMetadata(
+    ProviderType.CLAUDE_CLI,
+    {
+      create: (options) => {
+        capturedTimeoutMs = options.timeoutMs;
+        return Promise.resolve<IModelProvider>({
+          id: "claude-cli-test",
+          generate: () =>
+            Promise.resolve({
+              content: "",
+              usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+              model: "claude-sonnet-5",
+              provider: "claude-cli",
+            }),
+        });
+      },
+    },
+    {
+      name: "Claude CLI (test double)",
+      description: "test double",
+      capabilities: [],
+      costTier: ProviderCostTier.FREE,
+      pricingTier: PricingTier.FREE,
+      strengths: [],
+    },
+  );
+  try {
+    const provider = await ProviderFactory.createByName(config, "default");
+    await provider.generate("probe", {});
+    return capturedTimeoutMs;
+  } finally {
+    ProviderRegistry.clear();
+    ProviderDefaultsRegistry.clear();
+  }
+}
+
+Deno.test(
+  "ProviderFactory: a provider without a configured timeout gets the default that the provider registers",
+  async () => {
+    const config: Config = {
+      ...createTestConfig(),
+      ai: undefined,
+      models: { default: { provider: ProviderType.CLAUDE_CLI, model: "claude-sonnet-5" } },
+      ai_timeout: { default_ms: 30000 },
+    };
+
+    assertEquals(await resolvedCliTimeoutMs(config), CLI_PROVIDER_DEFAULT_TIMEOUT_MS);
+  },
+);
+
+Deno.test(
+  "ProviderFactory: ai_timeout.providers and an explicit model timeout win over the provider default",
+  async () => {
+    const base: Config = {
+      ...createTestConfig(),
+      ai: undefined,
+      models: { default: { provider: ProviderType.CLAUDE_CLI, model: "claude-sonnet-5" } },
+    };
+    const perProvider: Config = {
+      ...base,
+      ai_timeout: { default_ms: 30000, providers: { [ProviderType.CLAUDE_CLI]: 12_345 } },
+    };
+    const perModel: Config = {
+      ...base,
+      models: { default: { provider: ProviderType.CLAUDE_CLI, model: "claude-sonnet-5", timeout_ms: 54_321 } },
+    };
+
+    assertEquals(await resolvedCliTimeoutMs(perProvider), 12_345);
+    assertEquals(await resolvedCliTimeoutMs(perModel), 54_321);
   },
 );
 

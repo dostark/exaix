@@ -79,3 +79,10 @@ Deno.test("[config.ai-models] ai.timeout_ms is inherited by the derived default"
 
   assertEquals(config.models.default.timeout_ms, 12345);
 });
+
+Deno.test("[config.ai-models] an [ai] section without timeout_ms leaves the timeout unset for the provider default", () => {
+  const config = parse({ ai: { provider: "ollama" } });
+
+  assertEquals(config.ai?.timeout_ms, undefined);
+  assertEquals(config.models.default.timeout_ms, undefined);
+});

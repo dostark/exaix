@@ -8,7 +8,7 @@
  */
 
 import * as DEFAULTS from "./constants.ts";
-import { DEFAULT_AI_TIMEOUT_MS, DEFAULT_MOCK_STRATEGY } from "@exaix/core";
+import { DEFAULT_AI_TIMEOUT_MS, DEFAULT_MOCK_STRATEGY, ProviderDefaultsRegistry } from "@exaix/core";
 import type { BindingTransport, Config, IResolvedBinding } from "@exaix/schemas";
 
 import {
@@ -398,6 +398,14 @@ export class ProviderFactory {
     return providerType;
   }
 
+  /** The per-provider timeout from `ai_timeout.providers`, else the default the provider registers, else the global default. */
+  private static providerTimeoutMs(config: Config, providerType: ProviderType): number {
+    if (providerType === ProviderType.MOCK) return DEFAULT_AI_TIMEOUT_MS;
+    return config.ai_timeout?.providers?.[providerType] ||
+      ProviderDefaultsRegistry.getDefaultTimeoutMs(providerType) ||
+      DEFAULT_AI_TIMEOUT_MS;
+  }
+
   private static resolveOptions(
     config: Config,
     rawModelConfig?: Opt<JSONValue, Reason.OptionalInput>,
@@ -455,17 +463,9 @@ export class ProviderFactory {
       (providerType === ProviderType.OPENAI_CHAT && baseAi.provider !== providerType
         ? undefined
         : config.ai?.timeout_ms);
-    let timeoutMs = DEFAULT_AI_TIMEOUT_MS;
-    if (envTimeout) {
-      timeoutMs = parseInt(envTimeout, 10);
-    } else if (explicitTimeoutMs) {
-      timeoutMs = explicitTimeoutMs;
-    } else if (config.ai_timeout && providerType !== ProviderType.MOCK) {
-      const providerTimeout = config.ai_timeout.providers?.[providerType];
-      if (providerTimeout) {
-        timeoutMs = providerTimeout;
-      }
-    }
+    const timeoutMs = envTimeout
+      ? parseInt(envTimeout, 10)
+      : explicitTimeoutMs || this.providerTimeoutMs(config, providerType);
 
     // Mock-specific
     const mockStrategy = merged.mock?.strategy ?? baseAi?.mock?.strategy ?? DEFAULT_MOCK_STRATEGY;
