@@ -166,22 +166,6 @@ export class PortalPermissionsService {
   }
 
   /**
-   * List all portals accessible by an agent
-   */
-  listAccessiblePortals(agentRole: string): IPortalPermissions[] {
-    const accessible: IPortalPermissions[] = [];
-
-    for (const portal of this.portals.values()) {
-      const check = this.checkAgentAllowed(portal.alias, agentRole);
-      if (check.allowed) {
-        accessible.push(portal);
-      }
-    }
-
-    return accessible;
-  }
-
-  /**
    * Get all portal aliases
    */
   listPortalAliases(): string[] {
@@ -203,18 +187,6 @@ export class PortalPermissionsService {
       // If .git doesn't exist or can't be accessed, return false
       return false;
     }
-  }
-
-  listGitEnabledPortals(): IPortalPermissions[] {
-    const allPortals = Array.from(this.portals.values());
-    return allPortals.filter((portal) => {
-      try {
-        return this.validateGitRepo(portal.alias);
-      } catch {
-        // If validation throws, portal doesn't have git
-        return false;
-      }
-    });
   }
 
   /**

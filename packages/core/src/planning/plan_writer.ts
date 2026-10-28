@@ -458,46 +458,6 @@ export class PlanWriter {
   }
 
   /**
-   * Extract title from content (first # heading)
-   */
-  private extractTitle(content: string): string | null {
-    const match = content.match(/^#\s+(.+)$/m);
-    return match ? match[1] : null;
-  }
-
-  /**
-   * Extract summary (first paragraph or generate from title)
-   */
-  private extractSummary(content: string): string {
-    // Find first paragraph after any headings
-    const lines = content.split("\n");
-    let inParagraph = false;
-    const paragraphLines: string[] = [];
-
-    for (const line of lines) {
-      if (line.startsWith("#")) {
-        inParagraph = false;
-        continue;
-      }
-
-      if (line.trim() && !inParagraph) {
-        inParagraph = true;
-      }
-
-      if (inParagraph) {
-        if (!line.trim()) {
-          break; // End of paragraph
-        }
-        paragraphLines.push(line);
-      }
-    }
-
-    return paragraphLines.length > 0
-      ? paragraphLines.join("\n")
-      : "Generated implementation plan based on request analysis.";
-  }
-
-  /**
    * Generate next steps section
    */
   private generateNextSteps(requestId: string): string {

@@ -1694,11 +1694,6 @@ export class AgentRunner implements IAgentRunner {
     return this.outputValidator.getMetrics();
   }
 
-  /** Resets validation metrics. */
-  resetValidationMetrics(): void {
-    this.outputValidator.resetMetrics();
-  }
-
   /**
    * Log activity to IActivity Journal (if database provided)
    */

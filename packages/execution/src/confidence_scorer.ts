@@ -405,18 +405,6 @@ export class ConfidenceScorer {
     };
   }
 
-  /**
-   * Create confidence-aware wrapper for agent execution
-   */
-  wrapWithConfidence(
-    agentRunner: AgentRunner,
-  ): (blueprint: IBlueprint, request: IParsedRequest) => Promise<IConfidenceResult> {
-    return async (blueprint: IBlueprint, request: IParsedRequest): Promise<IConfidenceResult> => {
-      const result = await agentRunner.run(blueprint, request, undefined);
-      return await this.assess(request.userPrompt, result.content, request.traceId);
-    };
-  }
-
   getMetrics(): IConfidenceMetrics {
     return { ...this.metrics };
   }

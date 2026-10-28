@@ -7,7 +7,6 @@
  * - Multiple output schemas (Plan, Evaluation, Analysis, etc.)
  * - XML tag extraction (<thought>, <content>)
  * - JSON parsing with common error repair
- * - LLM-based repair for complex failures
  * - Validation metrics tracking
  *
  * @architectural-layer Services
@@ -18,7 +17,6 @@ import { z, ZodError, type ZodType } from "zod";
 import { PlanSchema, PlanStepSchema } from "@exaix/schemas/plan_schema.ts";
 import { AnalysisFindingSeverity, AnalysisFindingType } from "@exaix/core";
 import { repairJSON } from "@exaix/core/func";
-import { describeSchema } from "@exaix/schemas/schema_describer.ts";
 import { JSONValueSchema } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
@@ -61,7 +59,6 @@ export interface IValidationMetrics {
 interface IOutputValidatorConfig {
   autoRepair?: boolean;
   maxRepairAttempts?: number;
-  llmRepairFn?: (content: string, schema: string, error: string) => Promise<string>;
 }
 
 export interface IOutputValidator {
@@ -145,9 +142,7 @@ const OutputSchemas = {
 } as const satisfies Record<string, z.ZodTypeAny>;
 
 export class OutputValidator implements IOutputValidator {
-  private config: Required<Omit<IOutputValidatorConfig, "llmRepairFn">> & {
-    llmRepairFn?: IOutputValidatorConfig["llmRepairFn"];
-  };
+  private config: Required<IOutputValidatorConfig>;
 
   private metrics: IValidationMetrics = {
     totalAttempts: 0,
@@ -161,7 +156,6 @@ export class OutputValidator implements IOutputValidator {
     this.config = {
       autoRepair: config.autoRepair ?? true,
       maxRepairAttempts: config.maxRepairAttempts ?? 3,
-      llmRepairFn: config.llmRepairFn,
     };
   }
 
@@ -300,37 +294,6 @@ export class OutputValidator implements IOutputValidator {
       raw,
       schema as ZodType<z.infer<(typeof OutputSchemas)[K]>>,
     );
-  }
-
-  async repairWithLLM<T>(
-    content: string,
-    schema: ZodType<T>,
-    errors: IValidationError[],
-  ): Promise<IValidationResult<T>> {
-    if (!this.config.llmRepairFn) {
-      throw new Error("LLM repair function not configured");
-    }
-
-    const schemaDescription = describeSchema(schema);
-    const errorDescription = errors
-      .map((e) => `- ${e.path.join(".")}: ${e.message}`)
-      .join("\n");
-
-    const repairedContent = await this.config.llmRepairFn(
-      content,
-      schemaDescription,
-      errorDescription,
-    );
-
-    const result = this.validate(repairedContent, schema);
-    result.repairAttempted = true;
-    result.repairSucceeded = result.success;
-
-    if (result.success) {
-      this.metrics.successfulRepairs++;
-    }
-
-    return result;
   }
 
   getMetrics(): IValidationMetrics {

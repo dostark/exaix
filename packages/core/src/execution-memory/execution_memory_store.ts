@@ -318,10 +318,6 @@ export class ExecutionMemoryStore implements IExecutionMemoryStore {
     }
   }
 
-  private async recordLogFingerprint(traceId: string): Promise<void> {
-    this.logFingerprintByTrace.set(traceId, await this.currentLogFingerprint(traceId));
-  }
-
   /** Replays the durable log from disk into a fresh index — used for hydration and for the locked re-read inside namespace writes. */
   private async replayLog(traceId: string): Promise<ITraceIndex> {
     const index: ITraceIndex = { notes: [], namespace: new Map() };
