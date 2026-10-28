@@ -695,7 +695,11 @@ import. Test files and helpers follow the same rule.
 
 The engine ships a parity mode that mirrors fallow's dead-export definition. Run
 `deno task check:unused-exports:parity` to list every export that no consumer imports, including
-re-exports, entry-point declarations, test helpers, script helpers, default exports, and namespaces.
+re-exports, entry-point declarations, test helpers, script helpers, default exports, and namespaces. The audit
+matches each import to the module that defines the export, so a name that another module imports does not hide an
+unused one, and a barrel entry that nobody imports through the barrel is a finding. The files that a manifest exports
+are public API. The `publicEntries` option of the rule lists tool-consumed entries such as the prebuilt bundle and
+the lint demo examples.
 Every parity finding is an error, but the task is advisory and stays outside the CI gates until the
 reported surface is cleaned. `check:unused-exports:parity` is the relaxed local audit (warnings), while
 `check:unused-exports:parity:strict` runs in CI and fails on any finding; `check:unused-exports:compare`

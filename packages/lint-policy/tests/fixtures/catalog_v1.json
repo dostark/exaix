@@ -138,7 +138,8 @@
       "productionRoots": [
         "packages/",
         "exaix-team/",
-        "apps/"
+        "apps/",
+        "unslop-ts/"
       ],
       "testSegments": [
         "/tests/",
@@ -175,7 +176,8 @@
         "exaix-team/",
         "packages/schemas/",
         "apps/daemon/src/",
-        "apps/common/"
+        "apps/common/",
+        "unslop-ts/"
       ],
       "strictSkipSegments": [
         "/commands/",
@@ -185,7 +187,11 @@
         "type": "warning",
         "value": "error",
         "parity": "warning"
-      }
+      },
+      "publicEntries": [
+        "unslop-ts/src/bundle/engine.ts",
+        "unslop-ts/examples/**"
+      ]
     },
     "constantRestatement": {
       "constantModules": [
@@ -305,14 +311,6 @@
             "reason": "The git test helpers keep their own schema text rather than depend on the shared testing package."
           },
           {
-            "name": "TEST_DEFAULT_BRANCH",
-            "files": [
-              "packages/git/testing/helpers/constants.ts",
-              "packages/testing/src/helpers/constants.ts"
-            ],
-            "reason": "The git test helpers keep their own branch default rather than depend on the shared testing package."
-          },
-          {
             "name": "GIT_FLAG_UNTRACKED_FILES_ALL",
             "files": [
               "packages/execution/src/strategies/cli_delegate_strategy.ts",
@@ -355,14 +353,6 @@
               "packages/execution/src/strategies/cli_delegate_strategy.ts"
             ],
             "reason": "The two packages have no dependency edge and each owns its subprocess seam."
-          },
-          {
-            "name": "IToolResult",
-            "files": [
-              "packages/core/src/types/i_tool_reflector.ts",
-              "packages/tool-runtime/src/tool_reflector.ts"
-            ],
-            "reason": "Core exports a second IToolResult from i_tool_registry, so the reflector copy is not reachable through the core barrel."
           }
         ]
       },
