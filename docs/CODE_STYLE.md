@@ -702,6 +702,16 @@ reported surface is cleaned. `check:unused-exports:parity` is the relaxed local 
 prints the diff against fallow. `configurable(…)` registrations and `__test_*` hooks stay exempt, and an intentional value
 export carries `// unslop-ignore-next-line unused-export` above the declaration.
 
+### Manifest-based unused files {#unused-files-manifest}
+
+`deno task check:unused-files:manifest` starts the unused-file walk at the entry points of every `deno.json` and
+`package.json`: `exports`, the code paths in `tasks`, `lint.plugins`, and the files that `deno test` discovers. A script,
+a `mod.ts` barrel, and a file in a `tests` folder are not entries by name, so a dead one is reported. The
+`manifest` section of the `unused-files` rule in `unslop.config.json` holds the exemptions: `extraEntries` for a tool
+that runs a file outside the manifests, `referenceGlobs` for scenario YAML and workflow files that name a script, and
+`walkSkipPatterns` for generated and fixture trees. `check:unused-files:manifest:fail` fails on any finding. Both
+tasks stay outside the CI gates. Rename a test that `deno test` does not discover (`foo_test.ts`) or delete the file.
+
 ### Module headers {#module-headers}
 
 Each source file starts with a JSDoc header. The tags are:

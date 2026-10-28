@@ -1,6 +1,6 @@
 /**
  * @module MilestonePerfBenchmark
- * @path packages/flow/tests/milestone_perf_benchmark.ts
+ * @path packages/flow/tests/milestone_perf_benchmark_test.ts
  * @description Benchmark measuring median overhead of milestone emission
  * across 1,000 iterations, asserting < 5ms median per call.
  * @architectural-layer Tests

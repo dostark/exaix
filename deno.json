@@ -143,6 +143,8 @@
     "check:unused-exports:parity:strict": "deno run -A unslop-ts/src/cli/whole_tree.ts --descriptor=packages/lint-policy/unslop.project.ts --rule=unused-exports --parity --severity=error --fail",
     "check:unused-exports:compare": "deno run -A scripts/compare_unused_exports.ts",
     "check:unused-files:fail": "deno run -A unslop-ts/src/cli/whole_tree.ts --descriptor=packages/lint-policy/unslop.project.ts --rule=unused-files --fail",
+    "check:unused-files:manifest": "deno run -A unslop-ts/src/cli/whole_tree.ts --descriptor=packages/lint-policy/unslop.project.ts --rule=unused-files --manifest",
+    "check:unused-files:manifest:fail": "deno run -A unslop-ts/src/cli/whole_tree.ts --descriptor=packages/lint-policy/unslop.project.ts --rule=unused-files --manifest --fail",
     "check:optional-params": "deno run -A unslop-ts/src/cli/whole_tree.ts --descriptor=packages/lint-policy/unslop.project.ts --rule=optional-params",
     "unslop": "deno run --allow-read --allow-env unslop-ts/src/cli/unslop.ts",
     "unslop:write": "deno run --allow-read --allow-env --allow-write unslop-ts/src/cli/unslop.ts",

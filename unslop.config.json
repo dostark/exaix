@@ -1696,7 +1696,47 @@
         "skipPrefixes": [
           "packages/lint-policy/plugin.ts"
         ],
-        "skipSegments": []
+        "skipSegments": [],
+        "manifest": {
+          "walkSkipPatterns": [
+            "/\\.git(/|$)",
+            "/node_modules(/|$)",
+            "/\\.venv(/|$)",
+            "/\\.exa(/|$)",
+            "/\\.cache(/|$)",
+            "/\\.fallow(/|$)",
+            "/dist(/|$)",
+            "/coverage(/|$)",
+            "/Workspace(/|$)",
+            "/Portals(/|$)",
+            "/Memory(/|$)",
+            "/Blueprints(/|$)",
+            "/\\.copilot(/|$)",
+            "/\\.claude(/|$)",
+            "/\\.agents(/|$)",
+            "/\\.cursor(/|$)",
+            "/\\.qwen(/|$)",
+            "/\\.codex(/|$)",
+            "/tests/scenario_framework/fixtures(/|$)",
+            "/tests/scenario_framework/output(/|$)",
+            "/exaix-dev-docs/planning/evidence(/|$)"
+          ],
+          "extraEntries": [
+            "scripts/backup_repo.ts",
+            "scripts/commit_plan_step.ts",
+            "scripts/generate_bare_swe_scenarios.ts",
+            "scripts/regenerate_terminal_bench_scenarios.ts",
+            "unslop-ts/examples/**",
+            "unslop-ts/scripts/*.mjs",
+            "unslop-ts/tests/fixtures/**",
+            "unslop-ts/tests_node/hosts/*.mjs"
+          ],
+          "referenceGlobs": [
+            ".github/**/*.yml",
+            "tests/scenario_framework/scenarios/**/*.yaml",
+            "exaix-dev-docs/vc/**/*.html"
+          ]
+        }
       }
     },
     "optional-params": {

@@ -1,6 +1,6 @@
 /**
  * @module ProviderStrategyTest
- * @path tests/infra/test_provider_strategy.ts
+ * @path tests/infra/provider_strategy_test.ts
  * @description Integration tests for LLM Provider Strategy, verifying provider
  * switching, fallback chains, budget enforcement, and concurrent requests.
  */

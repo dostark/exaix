@@ -37,7 +37,7 @@ export interface ICalibrationScoredItem {
   readonly score: number;
 }
 
-export interface ICalibrationAlignedPair {
+interface ICalibrationAlignedPair {
   readonly id: string;
   readonly targetScore: number;
   readonly referenceScore: number;

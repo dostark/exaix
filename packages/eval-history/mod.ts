@@ -18,7 +18,7 @@ export { alignCalibrationPairs, CalibrationLabel, deriveCalibrationLabel } from 
 export { CalibrationMetricError, CalibrationMetricErrorCode } from "./src/calibration/metrics.ts";
 export { computeCohenKappa, computeExactAgreement, computeIntervalAlpha } from "./src/calibration/metrics.ts";
 export { MetricUndefinedReason } from "./src/calibration/metrics.ts";
-export type { ICalibrationAlignedPair, ICalibrationScoredItem } from "./src/calibration/metrics.ts";
+export type { ICalibrationScoredItem } from "./src/calibration/metrics.ts";
 export type { IMetricResult } from "./src/calibration/metrics.ts";
 export { canonicalJsonStringify, hashCalibrationValue, sha256Hex } from "./src/calibration/identity.ts";
 export { CalibrationCanonicalizationError, SHA256_HEX_PATTERN } from "./src/calibration/identity.ts";
