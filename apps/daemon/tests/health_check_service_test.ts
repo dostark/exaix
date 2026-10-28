@@ -422,8 +422,8 @@ Deno.test("[integration] initializeHealthChecks returns operational health check
     const healthService = initializeHealthChecks(db, mockProvider, config);
     const report = await healthService.checkHealth();
 
-    // All 4 checks must have run and produced a result
-    assertEquals(Object.keys(report.checks).length, 4);
+    // Every registered check must have run and produced a result
+    assertEquals(Object.keys(report.checks).sort(), ["database", "disk_space", "llm_provider", "memory"]);
     assertEquals(report.checks.database.status, "pass");
     assertEquals(typeof report.checks.database.metadata?.response_time_ms, "number");
     assertEquals(report.checks.llm_provider.status, "pass");
@@ -509,7 +509,7 @@ Deno.test("[integration] health report is serializable to JSON", async () => {
     assertEquals(parsed.status, report.status);
     assertEquals(parsed.timestamp, report.timestamp);
     assertEquals(parsed.version, report.version);
-    assertEquals(Object.keys(parsed.checks).length, 4);
+    assertEquals(Object.keys(parsed.checks), Object.keys(report.checks));
     assertEquals(parsed.checks.database.status, report.checks.database.status);
     assertEquals(typeof parsed.uptime_seconds, "number");
   } finally {
