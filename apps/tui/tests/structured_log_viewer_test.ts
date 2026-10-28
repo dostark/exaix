@@ -189,6 +189,51 @@ Deno.test("StructuredLogViewer: Search and Filter", async () => {
   assertEquals(extensions.filteredEntries[0].message, "Log message 0");
 });
 
+/** Replaces the text of the open level filter dialog with `text` and confirms it. */
+async function submitLevelFilter(viewer: StructuredLogViewer, text: string): Promise<void> {
+  const dialog = viewer.getActiveDialog();
+  assert(dialog instanceof InputDialog);
+  await viewer.handleKey(KEYS.ENTER); // Start editing
+  for (const _ of dialog.getValue()) {
+    await viewer.handleKey(KEYS.BACKSPACE);
+  }
+  for (const character of text) {
+    await viewer.handleKey(character);
+  }
+  await viewer.handleKey(KEYS.ENTER); // Stop editing
+  await viewer.handleKey(KEYS.ENTER); // Confirm dialog
+}
+
+Deno.test("StructuredLogViewer: the level filter dialog limits the logs to the named levels", async () => {
+  const logs = createTestLogs(10);
+  const viewer = new StructuredLogViewer(new MockLogService(logs), { testMode: true });
+  await viewer.initialize();
+
+  await viewer.handleKey(KEYS.F);
+  const dialog = viewer.getActiveDialog();
+  assertExists(dialog);
+  assert(dialog.render({ useColors: false, width: 80, height: 20 }).join(" ").includes("Filter by Log Level"));
+
+  await submitLevelFilter(viewer, "Error, fatal");
+
+  const extensions = viewer.getExtensions();
+  assertEquals(extensions.logLevelFilter, [LogLevel.ERROR, LogLevel.FATAL]);
+  const expected = logs.filter((entry) => entry.level === LogLevel.ERROR);
+  assertEquals(extensions.filteredEntries.length, expected.length);
+  assert(extensions.filteredEntries.every((entry) => entry.level === LogLevel.ERROR));
+});
+
+Deno.test("StructuredLogViewer: a level filter without a known level keeps the current filter", async () => {
+  const viewer = new StructuredLogViewer(new MockLogService(createTestLogs(10)), { testMode: true });
+  await viewer.initialize();
+  const before = [...viewer.getExtensions().logLevelFilter];
+
+  await viewer.handleKey(KEYS.F);
+  await submitLevelFilter(viewer, "loud");
+
+  assertEquals(viewer.getExtensions().logLevelFilter, before);
+});
+
 Deno.test("StructuredLogViewer: Detail View", async () => {
   const logs = createTestLogs(1);
   const service = new MockLogService(logs);

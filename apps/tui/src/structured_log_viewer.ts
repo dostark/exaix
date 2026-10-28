@@ -253,6 +253,14 @@ const STRUCTURED_LOG_VIEWER_KEY_BINDINGS = new StructuredLogViewerKeyBindings().
 
 // StructuredLogViewer Class
 
+const LOG_LEVELS: readonly LogLevel[] = Object.values(LogLevel);
+
+/** The known log levels named in a comma-separated list, ignoring case and unknown names. */
+function parseLogLevels(input: string): LogLevel[] {
+  const names = input.split(",").map((name) => name.trim().toLowerCase());
+  return LOG_LEVELS.filter((level) => names.includes(level));
+}
+
 /**
  * View/controller for structured log monitoring with real-time streaming.
  */
@@ -261,7 +269,7 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
   private logService: ILogService;
   private unsubscribeRealTime?: () => void;
   private refreshInterval?: ReturnType<typeof setInterval>;
-  private pendingDialogType: "search" | "filter-level" | "export" | null = null;
+  private pendingDialogType: "search" | StructuredLogViewerAction.FILTER_LEVEL | "export" | null = null;
 
   constructor(
     logService: ILogService,
@@ -704,9 +712,11 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
       case TUI_ACTION_SEARCH:
         this.setSearchQuery(value);
         break;
-      case "filter-level":
-        // Handle filter level if implemented
+      case StructuredLogViewerAction.FILTER_LEVEL: {
+        const levels = parseLogLevels(value);
+        if (levels.length > 0) this.setLogLevelFilter(levels);
         break;
+      }
       case "export":
         // Handle export if implemented via dialog
         break;
@@ -796,7 +806,12 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
         this.pendingDialogType = TUI_ACTION_SEARCH;
         return true;
       case KEYS.F:
-        // Toggle log level filter dialog would go here
+        this.showInputDialog({
+          title: "Filter by Log Level",
+          label: "Enter levels (comma-separated):",
+          defaultValue: this.logViewExtensions.logLevelFilter.join(","),
+        });
+        this.pendingDialogType = StructuredLogViewerAction.FILTER_LEVEL;
         return true;
       default:
         return false;
