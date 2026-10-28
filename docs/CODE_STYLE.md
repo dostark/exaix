@@ -704,13 +704,13 @@ export carries `// unslop-ignore-next-line unused-export` above the declaration.
 
 ### Manifest-based unused files {#unused-files-manifest}
 
-`deno task check:unused-files:manifest` starts the unused-file walk at the entry points of every `deno.json` and
+`deno task check:unused-files` starts the unused-file walk at the entry points of every `deno.json` and
 `package.json`: `exports`, the code paths in `tasks`, `lint.plugins`, and the files that `deno test` discovers. A script,
 a `mod.ts` barrel, and a file in a `tests` folder are not entries by name, so a dead one is reported. The
 `manifest` section of the `unused-files` rule in `unslop.config.json` holds the exemptions: `extraEntries` for a tool
 that runs a file outside the manifests, `referenceGlobs` for scenario YAML and workflow files that name a script, and
-`walkSkipPatterns` for generated and fixture trees. `check:unused-files:manifest:fail` fails on any finding. Both
-tasks stay outside the CI gates. Rename a test that `deno test` does not discover (`foo_test.ts`) or delete the file.
+`walkSkipPatterns` for generated and fixture trees. `check:unused-files:fail` fails on any finding and runs in CI.
+Rename a test that `deno test` does not discover (`foo_test.ts`) or delete the file.
 
 ### Module headers {#module-headers}
 
