@@ -705,6 +705,11 @@ the lint demo examples.
 advisory and stays outside the CI gates: a member can be part of a closed set whose values arrive as data, such as
 a protocol code or a stored status. Put `// unslop-ignore-next-line unused-enum-member` above the enum for such a set,
 or delete a member that nothing needs.
+
+`deno task check:unused-class-members` adds the class members that nothing reads: a private member that its class never
+reads, and a public method or accessor whose name no code accesses. It is advisory too. A member that an interface, a
+base class, or the runtime calls is exempt, and `// unslop-ignore-next-line unused-class-member` exempts a member that
+a caller outside the walk uses.
 Every parity finding is an error, but the task is advisory and stays outside the CI gates until the
 reported surface is cleaned. `check:unused-exports:parity` is the relaxed local audit (warnings), while
 `check:unused-exports:parity:strict` runs in CI and fails on any finding; `check:unused-exports:compare`
