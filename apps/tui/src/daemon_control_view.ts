@@ -93,7 +93,7 @@ export const DAEMON_STATUS_COLORS: Record<string, string> = {
 // Key Bindings
 
 // Daemon Key Action Types
-export enum DaemonKeyAction {
+enum DaemonKeyAction {
   START = "start",
   STOP = "stop",
   RESTART = "restart",

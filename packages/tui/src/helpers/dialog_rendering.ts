@@ -59,7 +59,7 @@ function renderFocusedButton(
 /**
  * Renders a standard button with consistent styling
  */
-export function renderButton(text: string): string {
+function renderButton(text: string): string {
   return `[${text}]`;
 }
 

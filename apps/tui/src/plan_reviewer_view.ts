@@ -56,7 +56,7 @@ const PLAN_ICONS: Record<PlanStatusType | "folder", string> = {
 } as const;
 
 // Plan Action Types
-export enum IPlanAction {
+enum IPlanAction {
   VIEW_DIFF = "view-diff",
   APPROVE = "approve",
   REJECT = "reject",
