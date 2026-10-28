@@ -11,7 +11,7 @@ export { MODULE_DEPENDENCY_EDGE_KIND } from "@exaix/core";
 export { TreeSitterSymbolExtractor } from "./tree_sitter_symbol_extractor.ts";
 export { PythonSymbolExtractor } from "./python_symbol_extractor.ts";
 export * from "./symbol_extraction_constants.ts";
-export { analyzeDirectory, walkDirectory } from "./directory_analyzer.ts";
+export { analyzeDirectory } from "./directory_analyzer.ts";
 export { parseConfigFiles } from "./config_parser.ts";
 export { identifyKeyFiles } from "./key_file_identifier.ts";
 export { computeAdaptiveSampleSize, detectPatterns, selectSampleFiles } from "./pattern_detector.ts";
@@ -40,11 +40,9 @@ export {
 } from "./symbol_reference_extractor.ts";
 export { GitHeadResolver } from "./git_head_resolver.ts";
 export type { IGitHeadResolver } from "./git_head_resolver.ts";
-export { AstAnalyzer } from "./ast_analyzer.ts";
 export { InternalImportGraphBuilder } from "./internal_import_graph.ts";
 export {
   decodeSymbolRef,
-  deriveLayerContainsFileEdges,
   encodeSymbolRef,
   mergeRelationships,
   queryRelationships,
@@ -54,16 +52,7 @@ export {
 export type { IPersistedRelationshipEdge, RelationshipEdgeKind } from "./relationship_query.ts";
 export { ArchitectureInferrer } from "./architecture_inferrer.ts";
 export type { IArchitectureValidator } from "./architecture_inferrer.ts";
-export { GitHistoryAnalyzer } from "./git_history_analyzer.ts";
-export { LicenseDetector } from "./license_detector.ts";
-export { TestRunner } from "./test_runner.ts";
-export { VulnerabilityScanner } from "./vulnerability_scanner.ts";
 export { KnowledgeInvalidationStrategy } from "./knowledge_invalidation_strategy.ts";
-export type {
-  IKnowledgeInvalidationStrategy,
-  IKnowledgeValidityCheck,
-  KnowledgeAnalysisMode,
-  KnowledgeValidityReason,
-} from "./knowledge_invalidation_strategy.ts";
+export type { IKnowledgeInvalidationStrategy, IKnowledgeValidityCheck } from "./knowledge_invalidation_strategy.ts";
 export { PortalKnowledgeService } from "./portal_knowledge_service.ts";
 export type { IPortalKnowledgeServiceOptions } from "./portal_knowledge_service.ts";
