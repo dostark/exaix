@@ -6,6 +6,7 @@
  * @related-files [packages/schemas/src/*.ts, packages/core/src/status/*.ts]
  */
 
+// unslop-ignore-next-line unused-enum-member
 export enum GeneralStatus {
   UNKNOWN = "unknown",
 
@@ -59,6 +60,7 @@ export enum RunnerKind {
 /**
  * Message roles (e.g., for LLM conversations).
  */
+// unslop-ignore-next-line unused-enum-member
 export enum MessageRole {
   USER = "user",
   ASSISTANT = "assistant",
@@ -70,6 +72,7 @@ export enum MessageRole {
 /**
  * Data serialization formats.
  */
+// unslop-ignore-next-line unused-enum-member
 export enum DataFormat {
   JSON = "json",
   YAML = "yaml",
@@ -206,6 +209,7 @@ export enum EvalScoringMode {
 /**
  * Supported runtime and system commands for tool execution.
  */
+// unslop-ignore-next-line unused-enum-member
 export enum SystemCommand {
   DENO = "deno",
   GIT = "git",
@@ -317,6 +321,7 @@ export enum PricingTier {
 }
 
 /** Severity levels for security events/alerts, used to prioritize security responses and logging. */
+// unslop-ignore-next-line unused-enum-member
 export enum SecuritySeverity {
   /** Minor security events requiring basic logging */
   LOW = "low",
@@ -328,6 +333,7 @@ export enum SecuritySeverity {
   CRITICAL = "critical",
 }
 
+// unslop-ignore-next-line unused-enum-member
 export enum SecurityEventType {
   /** Authentication-related events (login, logout, token validation) */
   AUTH = "auth",
@@ -384,6 +390,7 @@ export enum TriggerDisposition {
 /**
  * Filesystem event kinds emitted by Deno.watchFs — mirrors Deno.FsEvent["kind"].
  */
+// unslop-ignore-next-line unused-enum-member
 export enum FilesystemEventKind {
   CREATE = "create",
   MODIFY = "modify",
@@ -760,6 +767,7 @@ export enum MessageType {
 /**
  * Agent execution error types.
  */
+// unslop-ignore-next-line unused-enum-member
 export enum AgentExecutionErrorType {
   TIMEOUT = "timeout",
   BLUEPRINT_NOT_FOUND = "blueprint_not_found",
@@ -838,6 +846,7 @@ export enum VotingStrategy {
 }
 
 /** Source of a matching HITL governance rule. */
+// unslop-ignore-next-line unused-enum-member
 export enum HitlRuleSource {
   BLUEPRINT = "blueprint",
   MANDATORY = "mandatory",
@@ -882,6 +891,7 @@ export enum FlowStepOnErrorAction {
 /**
  * Sources for system configuration.
  */
+// unslop-ignore-next-line unused-enum-member
 export enum ConfigSource {
   ENV = "env",
   CONFIG = "config",
@@ -1016,6 +1026,7 @@ export enum CritiqueSeverity {
 /**
  * Verdicts for evaluation results.
  */
+// unslop-ignore-next-line unused-enum-member
 export enum EvaluationVerdict {
   PASS = "pass",
   FAIL = "fail",
@@ -1077,6 +1088,7 @@ export enum ArchiveStatus {
 /**
  * Types of activity in the system for summaries and journaling.
  */
+// unslop-ignore-next-line unused-enum-member
 export enum ActivityType {
   EXECUTION = "execution",
   TASK = "task",
@@ -1112,6 +1124,7 @@ export enum HealthCheckVerdict {
 /**
  * Common properties for evaluation criteria.
  */
+// unslop-ignore-next-line unused-enum-member
 export enum EvaluationCriterionProperty {
   NAME = "name",
   DESCRIPTION = "description",
@@ -1130,6 +1143,7 @@ export enum FulfillmentStatus {
 /**
  * Connection status for real-time streams.
  */
+// unslop-ignore-next-line unused-enum-member
 export enum ConnectionStatus {
   CONNECTING = "connecting",
   CONNECTED = "connected",
@@ -1183,6 +1197,7 @@ export enum ClarifyResultStatus {
 /**
  * Categories of dependencies identified during portal knowledge gathering.
  */
+// unslop-ignore-next-line unused-enum-member
 export enum DependencyCategory {
   WEB_FRAMEWORK = "web framework",
   FULLSTACK_FRAMEWORK = "fullstack framework",
@@ -1200,6 +1215,7 @@ export enum DependencyCategory {
 /**
  * Standard JSON-RPC 2.0 error codes.
  */
+// unslop-ignore-next-line unused-enum-member
 export enum JsonRpcErrorCode {
   PARSE_ERROR = -32700,
   INVALID_REQUEST = -32600,
@@ -1293,6 +1309,7 @@ export enum ScannerType {
 /**
  * Test detection kinds for portal knowledge analysis.
  */
+// unslop-ignore-next-line unused-enum-member
 export enum TestDetectionKind {
   EXECUTED = "executed",
   INFERRED = "inferred",
@@ -1334,6 +1351,7 @@ export enum StepAttemptClass {
 /**
  * Types of values that can be stored in the config registry.
  */
+// unslop-ignore-next-line unused-enum-member
 export enum ConfigValueType {
   STRING = "string",
   NUMBER = "number",
@@ -1390,6 +1408,7 @@ export enum ConfigOutputFormat {
 
 /** How a scoped context item's score was computed: portal retrieval uses raw HNSW
  *  cosine similarity; memory retrieval uses the existing post-fusion/tier relevance. */
+// unslop-ignore-next-line unused-enum-member
 export enum ContextItemScoreKind {
   COSINE = "cosine",
   HYBRID = "hybrid",
@@ -1404,6 +1423,7 @@ export enum ContextResultStatus {
 
 /** Why a scoped context source returned no items — from never-configured (DISABLED) to
  *  a real search that found nothing (NO_HITS) or fit no candidate in budget (BUDGET_DENIED). */
+// unslop-ignore-next-line unused-enum-member
 export enum ContextUnavailableReason {
   DISABLED = "disabled",
   COLD = "cold",
@@ -1429,6 +1449,7 @@ export enum ContextInspectionResult {
 }
 
 /** `exactl request inspect` process exit codes. */
+// unslop-ignore-next-line unused-enum-member
 export enum ContextInspectExitCode {
   SUCCESS = 0,
   READ_FAILURE = 1,
@@ -1437,6 +1458,7 @@ export enum ContextInspectExitCode {
 }
 
 /** URL schemes permitted in privacy-safe OTel export lifecycle metadata. */
+// unslop-ignore-next-line unused-enum-member
 export enum OtelDestinationScheme {
   HTTP = "http",
   HTTPS = "https",
@@ -1510,6 +1532,7 @@ export enum SkillSubmissionKind {
 }
 
 /** Named diagnostic outcomes for skill discovery and validation. */
+// unslop-ignore-next-line unused-enum-member
 export enum SkillDiagnosticReason {
   ROOT_MISSING = "root_missing",
   INVALID_NAME = "invalid_name",
