@@ -667,10 +667,6 @@ class LayoutManager {
     return Array.from(this.namedLayouts.keys());
   }
 
-  getNamedLayouts(): ILayout[] {
-    return Array.from(this.namedLayouts.values());
-  }
-
   // Layout Serialization
 
   serializeLayout(panes: ILayoutPane[], activePaneId: string): string {

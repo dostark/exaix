@@ -1016,11 +1016,6 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
     return this.state;
   }
 
-  /** Exposed for testing to force tree rebuild */
-  rebuildTree(): void {
-    this.buildTree();
-  }
-
   /** Exposed for testing to set selected ID directly */
   setSelectedId(id: string | null): void {
     this.state.selectedId = id;
@@ -1029,11 +1024,6 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
   /** Exposed for testing to format log entry */
   formatLogEntryForTest(entry: IStructuredLogEntry): string {
     return this.formatLogEntry(entry);
-  }
-
-  /** Exposed for testing to check refresh interval */
-  getRefreshInterval(): ReturnType<typeof setInterval> | undefined {
-    return this.refreshInterval;
   }
 
   private getHelpSections(): IHelpSection[] {

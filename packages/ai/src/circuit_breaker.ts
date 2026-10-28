@@ -92,13 +92,6 @@ export class CircuitBreaker {
     return this.failureCount;
   }
 
-  /**
-   * Get success count (in half-open state)
-   */
-  getSuccessCount(): number {
-    return this.successCount;
-  }
-
   private onSuccess(): void {
     if (this.state === CircuitState.HALF_OPEN) {
       this.successCount++;

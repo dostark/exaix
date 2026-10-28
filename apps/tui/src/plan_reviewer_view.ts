@@ -441,17 +441,8 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
     this.buildTree(newPlans);
   }
 
-  getSelectedPlanDetails(): IPlan | undefined {
-    const selected = this.getSelectedNode();
-    return selected?.data as IPlan | undefined;
-  }
-
   getExtensions(): IPlanViewExtensions {
     return this.planExtensions;
-  }
-
-  closeDiff(): void {
-    this.planExtensions.showDiff = false;
   }
 
   getPlanTree(): ITreeNode<IPlan>[] {

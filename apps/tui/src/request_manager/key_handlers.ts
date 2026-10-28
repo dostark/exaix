@@ -104,10 +104,11 @@ export class TreeManipulationHandler {
 /**
  * Check if a node ID represents a group node
  */
-export function isGroupNode(tree: ITreeNode[], nodeId: string): boolean {
+function isGroupNode(tree: ITreeNode[], nodeId: string): boolean {
   const node = findNode(tree, nodeId);
   return node?.type === TuiNodeType.GROUP;
 }
+
 /**
  * Main key handler for Request Manager view
  */

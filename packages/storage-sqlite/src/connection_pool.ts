@@ -172,11 +172,4 @@ export class DatabaseConnectionPool {
   getWaitingCount(): number {
     return this.waiting.length;
   }
-
-  /**
-   * Check if pool has been destroyed
-   */
-  isDestroyed(): boolean {
-    return this.destroyed;
-  }
 }

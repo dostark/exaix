@@ -487,26 +487,8 @@ export class AddLearningDialog extends DialogBase<IAddLearningResult> {
   setTitle(title: string): void {
     this.title = title;
   }
-  setContent(content: string): void {
-    this.content = content;
-  }
-  setCategory(category: string): void {
-    this.category = category;
-  }
-  setScope(scope: MemoryScope): void {
-    this.scope = scope;
-  }
-  setPortal(portal: string): void {
-    this.portal = portal;
-  }
   getTitle(): string {
     return this.title;
-  }
-  getCategory(): string {
-    return this.category;
-  }
-  getScope(): MemoryScope {
-    return this.scope;
   }
 }
 

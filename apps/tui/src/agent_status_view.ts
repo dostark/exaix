@@ -258,11 +258,6 @@ export class AgentStatusView {
     return this.agents;
   }
 
-  /** Get cached agents (without fetch) */
-  getCachedAgents(): IAgentStatusItem[] {
-    return [...this.agents];
-  }
-
   /** Get detailed health for an agent. */
   async getAgentHealth(agentRole: string): Promise<IAgentHealthData> {
     return await this.agentService.getAgentHealth(agentRole);
@@ -449,10 +444,6 @@ export class AgentStatusTuiSession extends TuiSessionBase {
 
   override getViewName(): string {
     return DEFAULT_AGENTS_PATH;
-  }
-
-  getAgentTree(): ITreeNode[] {
-    return this.state.agentTree;
   }
 
   getAgents(): IAgentStatusItem[] {

@@ -221,10 +221,6 @@ export abstract class BaseCommand {
     return str.substring(0, maxLength - 3) + "...";
   }
 
-  protected getCommandLine(): string[] {
-    return Deno.args;
-  }
-
   protected getCommandLineString(): string {
     return `exactl ${Deno.args.join(" ")}`;
   }

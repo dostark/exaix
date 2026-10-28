@@ -23,12 +23,7 @@ import type { IKeyBinding } from "@exaix/tui/helpers/keyboard.ts";
 import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
 
 // Extracted utilities
-import {
-  isGroupNode as helperIsGroupNode,
-  MainKeyHandler,
-  NavigationHandler,
-  TreeManipulationHandler,
-} from "./request_manager/key_handlers.ts";
+import { MainKeyHandler, NavigationHandler, TreeManipulationHandler } from "./request_manager/key_handlers.ts";
 import { RequestFormatter } from "./request_manager/formatters.ts";
 import {
   processDialogCompletion as helperProcessDialogCompletion,
@@ -351,13 +346,6 @@ export class RequestManagerTuiSession extends TuiSessionBase {
   getSelectedRequest(): IRequest | null {
     if (!this.state.selectedRequestId) return null;
     return this.requests.find((r) => r.trace_id === this.state.selectedRequestId) || null;
-  }
-
-  /**
-   * Check if an ID is a group node ID (not a request ID).
-   */
-  private isGroupNode(id: string): boolean {
-    return helperIsGroupNode(this.state.requestTree, id);
   }
 
   /** Index of the selected request in `requests`, or 0 if none selected (back-compat with array-based selection). */

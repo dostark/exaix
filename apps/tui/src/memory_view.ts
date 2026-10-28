@@ -90,10 +90,6 @@ export class MemoryViewTuiSession extends TuiSessionBase {
     return this.state.selectedNodeId;
   }
 
-  setTree(tree: ITreeNode[]): void {
-    this.state.tree = tree;
-  }
-
   getTree(): ITreeNode[] {
     return this.state.tree;
   }
