@@ -19,6 +19,7 @@ import { EXAIX_REGISTRY, EXAIX_RULE_PACKS } from "@exaix/lint-policy/rule_packs.
 import { POLICY_CATALOG } from "../src/policy_config.ts";
 import catalogJson from "./fixtures/catalog_v1.json" with { type: "json" };
 import { withTempDir } from "@exaix/testing";
+import { DEFAULT_RUNTIME_PATH } from "@exaix/shared";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
 const POLICY_ROOT = "packages/lint-policy";
@@ -499,7 +500,7 @@ Deno.test("the repository passes the constant-restatement check through the CLI"
 Deno.test("the committed catalog gives the whole-tree settings and the selection variable the gates expect", () => {
   const settings = parseWholeTreeSettings(catalogJson);
   assertEquals(settings.optionalParams?.pluginRuleId, `${EXAIX_PLUGIN_NAME}/require-optional-wrapper`);
-  assertEquals(settings.optionalParams?.walkSkipSegments, ["/.copilot/", "/.exa/", "/types/"]);
+  assertEquals(settings.optionalParams?.walkSkipSegments, ["/.copilot/", `/${DEFAULT_RUNTIME_PATH}/`, "/types/"]);
   assertEquals(selectionEnvName(EXAIX_PLUGIN_NAME), SELECTION_VARIABLE);
 });
 

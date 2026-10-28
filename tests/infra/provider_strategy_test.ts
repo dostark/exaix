@@ -37,12 +37,27 @@ function registerTierProvider(
   });
 }
 
+/** The cost tracker, the health service, and the selector over them, for one test environment. */
+function createSelector(env: TestEnvironment) {
+  const costTracker = new CostTracker(env.db);
+  const healthCheck = new HealthCheckService(DEFAULT_MCP_VERSION);
+  const selector = new ProviderSelector(ProviderRegistry, costTracker, healthCheck);
+  return { costTracker, healthCheck, selector };
+}
+
+/** Registers the FREEMIUM, PAID, and LOCAL tier providers that the preferFree steps compete against. */
+function registerFreemiumPaidAndLocalTiers(): void {
+  registerTierProvider("freemium-provider", "Freemium tier provider", ProviderCostTier.FREEMIUM, PricingTier.LOW, [
+    "testing",
+  ]);
+  registerTierProvider("paid-provider", "Paid tier provider", ProviderCostTier.PAID, PricingTier.HIGH, ["complex"]);
+  registerTierProvider("local-provider", "Local tier provider", ProviderCostTier.LOCAL, PricingTier.LOCAL, ["testing"]);
+}
+
 async function selectPreferFreeChatProvider(): Promise<string> {
   const env = await TestEnvironment.create();
   try {
-    const costTracker = new CostTracker(env.db);
-    const healthCheck = new HealthCheckService(DEFAULT_MCP_VERSION);
-    const selector = new ProviderSelector(ProviderRegistry, costTracker, healthCheck);
+    const { selector } = createSelector(env);
     return await selector.selectProvider({ preferFree: true, requiredCapabilities: ["chat"] });
   } finally {
     await env.cleanup();
@@ -98,12 +113,8 @@ You are an expert developer. Provide detailed technical analysis and implementat
 ## Cost: Premium required for complex tasks`,
       );
 
-      // Set up services
-      const costTracker = new CostTracker(env.db);
-      const healthCheck = new HealthCheckService(DEFAULT_MCP_VERSION);
-
-      // Create provider selector with budget constraints
-      const selector = new ProviderSelector(ProviderRegistry, costTracker, healthCheck);
+      // Set up services and the provider selector with budget constraints
+      const { costTracker, selector } = createSelector(env);
 
       // First request: simple analysis (should use free provider)
       const _simpleRequest = await env.createRequest(
@@ -154,10 +165,7 @@ You are an expert developer. Provide detailed technical analysis and implementat
     const env = await TestEnvironment.create();
 
     try {
-      const costTracker = new CostTracker(env.db);
-      const healthCheck = new HealthCheckService(DEFAULT_MCP_VERSION);
-
-      const selector = new ProviderSelector(ProviderRegistry, costTracker, healthCheck);
+      const { costTracker, selector } = createSelector(env);
 
       // Track high cost for openai provider type
       await costTracker.trackGeneration(
@@ -191,8 +199,7 @@ Deno.test("Provider Strategy: Free-to-paid fallback scenarios", async (t) => {
     const env = await TestEnvironment.create();
 
     try {
-      const costTracker = new CostTracker(env.db);
-      const healthCheck = new HealthCheckService(DEFAULT_MCP_VERSION);
+      const { healthCheck, selector } = createSelector(env);
 
       // Register a failing health check for free provider
       healthCheck.registerCheck({
@@ -200,8 +207,6 @@ Deno.test("Provider Strategy: Free-to-paid fallback scenarios", async (t) => {
         critical: true,
         check: async () => await ({ status: HealthCheckVerdict.FAIL, message: "Ollama not responding" }),
       });
-
-      const selector = new ProviderSelector(ProviderRegistry, costTracker, healthCheck);
 
       // Create request that would normally use free provider
       await env.createBlueprint("analyzer");
@@ -229,10 +234,7 @@ Deno.test("Provider Strategy: Multi-provider concurrent requests", async (t) => 
     const env = await TestEnvironment.create();
 
     try {
-      const costTracker = new CostTracker(env.db);
-      const healthCheck = new HealthCheckService(DEFAULT_MCP_VERSION);
-
-      const selector = new ProviderSelector(ProviderRegistry, costTracker, healthCheck);
+      const { costTracker, selector } = createSelector(env);
 
       // Create blueprints
       await env.createBlueprint("analyzer");
@@ -303,13 +305,7 @@ Deno.test("Provider Strategy: preferFree cost-tier filtering with all four tiers
   await t.step("preferFree selects FREE or FREEMIUM, never PAID or LOCAL", async () => {
     ProviderRegistry.clear();
     registerTierProvider("free-provider", "Free tier provider", ProviderCostTier.FREE, PricingTier.FREE, ["testing"]);
-    registerTierProvider("freemium-provider", "Freemium tier provider", ProviderCostTier.FREEMIUM, PricingTier.LOW, [
-      "testing",
-    ]);
-    registerTierProvider("paid-provider", "Paid tier provider", ProviderCostTier.PAID, PricingTier.HIGH, ["complex"]);
-    registerTierProvider("local-provider", "Local tier provider", ProviderCostTier.LOCAL, PricingTier.LOCAL, [
-      "testing",
-    ]);
+    registerFreemiumPaidAndLocalTiers();
 
     const provider = await selectPreferFreeChatProvider();
 
@@ -321,13 +317,7 @@ Deno.test("Provider Strategy: preferFree cost-tier filtering with all four tiers
 
   await t.step("preferFree selects FREEMIUM when no FREE providers are registered", async () => {
     ProviderRegistry.clear();
-    registerTierProvider("freemium-provider", "Freemium tier provider", ProviderCostTier.FREEMIUM, PricingTier.LOW, [
-      "testing",
-    ]);
-    registerTierProvider("paid-provider", "Paid tier provider", ProviderCostTier.PAID, PricingTier.HIGH, ["complex"]);
-    registerTierProvider("local-provider", "Local tier provider", ProviderCostTier.LOCAL, PricingTier.LOCAL, [
-      "testing",
-    ]);
+    registerFreemiumPaidAndLocalTiers();
 
     const provider = await selectPreferFreeChatProvider();
 

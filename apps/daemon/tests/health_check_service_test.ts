@@ -424,15 +424,19 @@ Deno.test("HTTP Endpoint Integration: handles HTTP status code mapping", async (
   assertEquals(unhealthyStatus.status, HealthStatus.UNHEALTHY);
 });
 
+/** Runs every check that `initializeHealthChecks` registers, over a mock provider that answers OK. */
+function checkInitializedHealth(
+  db: Parameters<typeof initializeHealthChecks>[0],
+  config: Parameters<typeof initializeHealthChecks>[2],
+) {
+  const mockProvider = new MockLLMProvider(MockStrategy.PATTERN, { responses: ["OK"] });
+  return initializeHealthChecks(db, mockProvider, config).checkHealth();
+}
+
 Deno.test("[integration] initializeHealthChecks returns operational health check results", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {
-    const mockProvider = new MockLLMProvider(MockStrategy.PATTERN, {
-      responses: ["OK"],
-    });
-
-    const healthService = initializeHealthChecks(db, mockProvider, config);
-    const report = await healthService.checkHealth();
+    const report = await checkInitializedHealth(db, config);
 
     // Every registered check must have run and produced a result
     assertEquals(Object.keys(report.checks).sort(), ["database", "disk_space", "llm_provider", "memory"]);
@@ -508,12 +512,7 @@ Deno.test("[integration] health checks degrade when LLM provider is unavailable"
 Deno.test("[integration] health report is serializable to JSON", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {
-    const mockProvider = new MockLLMProvider(MockStrategy.PATTERN, {
-      responses: ["OK"],
-    });
-
-    const healthService = initializeHealthChecks(db, mockProvider, config);
-    const report = await healthService.checkHealth();
+    const report = await checkInitializedHealth(db, config);
 
     const json = JSON.stringify(report);
     const parsed = JSON.parse(json);
