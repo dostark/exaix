@@ -11,7 +11,7 @@ scope: dev
 title: "Coverage Skill (#coverage)"
 description: Identify uncovered code paths, write targeted tests to meet thresholds, and verify with measure_coverage.ts
 short_summary: "Coverage improvement workflow: measure → identify gaps → write targeted tests → re-measure until thresholds pass."
-version: "1.0.0"
+version: "1.0.1"
 topics: ["testing", "coverage", "tdd", "ci", "quality"]
 qwen_skill: coverage
 ---
@@ -42,6 +42,7 @@ Do / Don't
 - ✅ Re-run measure_coverage.ts after each batch.
 - ✅ Check branch coverage separately — 90% line with 30% branch is common.
 - ❌ Add empty assertions or trivial tests to inflate numbers.
+- ❌ Pin a literal count of repo-defined state in a new test. Derive it from its source (see #test-development).
 - ❌ Suppress coverage via ignore comments without documented justification.
 - ❌ Skip CI gates (lint, type-check) when adding test files.
 

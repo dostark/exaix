@@ -64,6 +64,7 @@ Before reviewing code:
 - [ ] **Test quality** - Do tests verify behavior, not implementation?
 - [ ] **Edge cases** - Are edge cases tested?
 - [ ] **Test independence** - Do tests run independently?
+- [ ] **No count pins** - Do tests avoid literal sizes of registries, corpora, and ceilings?
 
 ## 8. Documentation
 

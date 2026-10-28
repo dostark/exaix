@@ -29,6 +29,7 @@ constraints:
   - Run tests after each change
   - 'Keep tests focused on behavior, not implementation'
   - One logical assertion per test
+  - 'Never pin a literal count of repo-defined state (registry size, corpus size, ceiling) - derive it from its source of truth or compare the explicit set'
 output_requirements:
   - Test file must exist before implementation
   - All tests must pass before completion

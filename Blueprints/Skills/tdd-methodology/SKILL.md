@@ -54,6 +54,17 @@ function calculateTotal(items: Item[]): number {
 - **Test behavior, not implementation** - Tests shouldn't break when refactoring
 - **One logical assertion per test** - Makes failures clear
 - **Test edge cases** - Empty inputs, nulls, boundaries
+- **Never pin a literal count of data the code defines** - A registry size, a corpus size, or a ceiling that must
+  be edited on every legitimate change protects nothing. Derive the expectation from its source of truth, or compare
+  the explicit set or list so a change shows as a diff. A "the data loaded" guard is `> 0`.
+
+```typescript
+// ✅ Derived from the source: adding a tool changes nothing here
+assertEquals(registry.getTools().map((t) => t.name), createCoreToolSchemas().map((t) => t.name));
+
+// ❌ Pinned: every legitimate add or remove breaks it
+assertEquals(registry.getTools().length, 22);
+```
 
 ## Example Workflow
 

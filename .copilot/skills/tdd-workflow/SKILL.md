@@ -11,7 +11,7 @@ scope: dev
 title: "TDD Workflow Skill (#tdd-workflow)"
 description: Enforce test-driven development for any code change — write failing tests first, implement minimally, refactor, verify coverage
 short_summary: "Autonomous skill for applying rigorous TDD red-green-refactor to any Exaix code change."
-version: "1.0.0"
+version: "1.0.1"
 topics: ["tdd", "testing", "red-green-refactor", "coverage", "helpers"]
 qwen_skill: tdd-workflow
 ---
@@ -48,6 +48,8 @@ RED
      - New file: import the not-yet-existing module. RED = TS2307.
      - Existing file: add tests there. RED = assertion failure.
      - Name tests by expected behavior and conditions.
+     - Assert behavior. Do not pin a literal count of a registry, corpus, or ceiling:
+       derive it from its source or compare the explicit set (#test-development, anti-pattern 9).
      - Cover happy path, edge cases, errors.
      - New test files need a module-header JSDoc (check:arch):
          /** @module XxxTest @path tests/... @description ... */
@@ -101,6 +103,7 @@ Do / Don't
 - ❌ Use `as any` to fake a service. Implement the full IFoo interface.
 - ❌ Leave suppressed or skipped tests in the commit.
 - ❌ Reduce coverage thresholds. Add tests instead.
+- ❌ Pin a literal count of repo-defined state (registry size, corpus size, ceiling). Derive it from its source.
 
 Related
 - #next-steps — multi-step plan execution uses this TDD cycle per step

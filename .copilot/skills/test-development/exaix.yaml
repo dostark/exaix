@@ -22,6 +22,7 @@ constraints:
   - Use EXA_TEST_* env vars
   - No raw SQL table creation in tests
   - 'Canary every new or edited test — break what it names, confirm red, restore'
+  - 'Never pin a literal count of repo-defined state (registry size, corpus size, ceiling) - derive it from its source of truth or compare the explicit set'
   - 'No tautologies: never restate a constant, derive the expectation from the input, assert the test''s own scaffolding, or test the runtime instead of our code'
   - No blind sleep where a readiness signal exists — poll the event (daemon.ready) or rely on the verifying command
   - Do not re-do work a helper already did (e.g. re-mount + restart after the runner already mounted portals)

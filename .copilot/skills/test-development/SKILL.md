@@ -11,7 +11,7 @@ scope: test
 title: "Test Development Skill (#test-development)"
 description: Write tests following Exaix conventions — helpers, placement, patterns, CI
 short_summary: "Write tests for Exaix using the right helpers, placement rules, and patterns."
-version: "1.3.0"
+version: "1.4.0"
 topics: ["testing", "tdd", "coverage", "test-helpers", "assertion-sensitivity"]
 qwen_skill: test-development
 ---
@@ -26,6 +26,9 @@ Key points
   malformed-input crashes — cover the 6 edge case dimensions (§Edge case coverage).
 - A test's wall time is a budget, not an accident. Never `sleep` for an effect that has a
   readiness signal, and never re-do work a helper already did (§Execution-time budget).
+- A literal count of something the code defines (registry size, corpus size, ceiling) breaks
+  on every legitimate change and checks nothing. Derive it from its source of truth
+  (§Assertion sensitivity, anti-pattern 9).
 
 See also
   Test directory → [tests/README.md](../../tests/README.md)
@@ -123,6 +126,16 @@ Assertion sensitivity — a test that cannot fail is worse than no test
        survives non-final drops). Use exact equality / strict `<`. Also: **zero-test files
        and assertion-free bodies** (`*_test.ts` with no `Deno.test`, or a body that is one
        comment) — delete them.
+    9. **Pinning a literal count of repo-defined state** — `assertEquals(tools.length, 22)`,
+       `files.length >= 200`, a ceiling that must equal the measured value. Every legitimate
+       add, remove, or cleanup breaks it, and the fix is to edit the number, so the test
+       records a fact and checks nothing. Derive the expectation from its source of truth
+       (the registry, schema table, or catalog). Compare the explicit set or ordered list,
+       so a change shows as a diff. Write a "the corpus loaded" guard as `> 0`, followed by
+       the per-item loop. Fail a ratchet on a RISE only, and report a fall without failing.
+       Keep a literal when it is a format (UUID 36, SHA 64) or data the test seeds itself.
+       A count in a test name, title, or comment ("all 18 tools") goes stale the same way:
+       leave it out.
 
   SWEEPING AN EXISTING SUITE — run over a directory before trusting coverage. Every hit is
   a CANDIDATE, verify by reading (internal-assert helpers, generic type params like
@@ -137,6 +150,8 @@ Assertion sensitivity — a test that cannot fail is worse than no test
       rg -n "Array\.isArray\(|!== undefined\)|typeof .* === \"string\" \|\|" -g "*_test.ts" <dir>
       # a constant compared to its own name — needs grep -P (rg has no backreferences)
       grep -rPn --include="*_test.ts" 'assertEquals\(\s*(\w+)\.(\w+),\s*"\2"' <dir>
+      # literal sizes of collections — formats (36, 64) and seeded data are noise
+      grep -rPn --include="*_test.ts" '(\.length|\.size)\s*(,|===|>=|>)\s*[0-9]{2,}' <dir>
 
   A file with a raw NUL byte classifies binary and is SKIPPED by rg/grep — it looks like a
   zero-test file while holding many. Write `\0` as an escape, never a literal byte. Run the

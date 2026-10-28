@@ -237,7 +237,7 @@
       "scope": "dev",
       "title": "Coverage Skill (#coverage)",
       "short_summary": "Coverage improvement workflow: measure → identify gaps → write targeted tests → re-measure until thresholds pass.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "topics": [
         "testing",
         "coverage",
@@ -307,7 +307,7 @@
       "scope": "dev",
       "title": "Review-Code Skill (#review-code)",
       "short_summary": "Autonomous code review against Exaix standards: correctness, security (Phase 3b), test coverage, architecture grounding, and style compliance.",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "topics": [
         "code-review",
         "quality-assurance",
@@ -486,7 +486,7 @@
       "scope": "test",
       "title": "Test Development Skill (#test-development)",
       "short_summary": "Write tests for Exaix using the right helpers, placement rules, and patterns.",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "topics": [
         "testing",
         "tdd",
@@ -589,7 +589,7 @@
       "scope": "dev",
       "title": "TDD Workflow Skill (#tdd-workflow)",
       "short_summary": "Autonomous skill for applying rigorous TDD red-green-refactor to any Exaix code change.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "topics": [
         "tdd",
         "testing",

@@ -9,7 +9,7 @@ scope: dev
 title: "Review-Code Skill (#review-code)"
 description: Systematic code review — correctness, security, test coverage, architecture, and Exaix conventions
 short_summary: "Autonomous code review against Exaix standards: correctness, security (Phase 3b), test coverage, architecture grounding, and style compliance."
-version: "1.3.0"
+version: "1.3.1"
 topics: ["code-review", "quality-assurance", "security", "testing", "architecture", "best-practices"]
 qwen_skill: review-code
 ---
@@ -225,6 +225,7 @@ For every new code path:
 - Edge cases: empty input, null, max size, error path?
 - Correct helpers (`initTestDbService`, `createCliTestContext`, etc.)?
 - Descriptive names ("returns X when Y", not "test 1")?
+- A literal count of repo-defined state (registry size, corpus size, ceiling)? That is 🟠 Testing: derive it from its source.
 - Timer-based TUI tests: `sanitizeOps: false, sanitizeResources: false`?
 
 ### Phase 9 — Documentation Compliance (§3D)

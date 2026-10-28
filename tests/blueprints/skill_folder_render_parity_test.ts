@@ -1,7 +1,7 @@
 /**
  * @module SkillFolderRenderParityTest
  * @path tests/blueprints/skill_folder_render_parity_test.ts
- * @description Phase 206 Step 3 — the 27 converted skill folders reproduce the rendered
+ * @description Phase 206 Step 3 — the converted skill folders reproduce the rendered
  *   prompt blocks and every authored field captured from the former compiled JSON store.
  *   The golden fixture is the independent baseline captured before conversion.
  * @architectural-layer Test
@@ -11,7 +11,6 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { MemoryScope } from "@exaix/core";
 import { renderCriticalSkillsSection, renderSkillsSection } from "@exaix/core/func";
 import type { ISkill } from "@exaix/schemas/memory_bank.ts";
 import { loadRepoSkillCatalog, REPO_ROOT, skillMatchFixture } from "@exaix/testing";
@@ -41,23 +40,20 @@ interface IGolden {
   critical: string;
 }
 
-const GOLDEN_COUNT = 27;
-const GLOBAL_COUNT = 26;
 const goldens: Record<string, IGolden> = JSON.parse(
   Deno.readTextFileSync(join(REPO_ROOT, "tests", "blueprints", "fixtures", "skill_render_goldens.json")),
 );
 
-Deno.test("[catalog] the loader discovers exactly 26 global and 1 project skill folders", async () => {
+Deno.test("[catalog] the loader discovers exactly the golden skill folders, each in its golden scope", async () => {
   const catalog = await loadRepoSkillCatalog();
-  assertEquals(catalog.size, GOLDEN_COUNT);
-  const scopes = [...catalog.values()].map((entry) => entry.skill.scope);
-  assertEquals(scopes.filter((scope) => scope === MemoryScope.GLOBAL).length, GLOBAL_COUNT);
-  assertEquals(scopes.filter((scope) => scope === MemoryScope.PROJECT).length, 1);
+  for (const [name, golden] of Object.entries(goldens)) {
+    assertEquals(catalog.get(name)?.skill.scope, golden.scope, `${name} scope`);
+  }
   assertEquals(catalog.get("portal-grounding")?.skill.project, "Exaix");
   assertEquals([...catalog.keys()].sort(), Object.keys(goldens).sort());
 });
 
-Deno.test("[catalog] all 27 converted skills render byte-identically to the golden blocks", async () => {
+Deno.test("[catalog] every converted skill renders byte-identically to the golden blocks", async () => {
   const catalog = await loadRepoSkillCatalog();
   for (const [name, golden] of Object.entries(goldens)) {
     const skill = catalog.get(name)?.skill;

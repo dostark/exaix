@@ -17,6 +17,7 @@ constraints:
   - Write the failing test BEFORE writing any source code (RED must come first)
   - TDD is non-negotiable -- no implementation without a prior failing test
   - 'When the scope involves more than ~20 files, work in batches of 5-10'
+  - 'Never pin a literal count of repo-defined state (registry size, corpus size, ceiling) - derive it from its source of truth or compare the explicit set'
 output_requirements:
   - 'CONTEXT: Component, test helper selection, test file path'
   - 'RED evidence: failing test run output (error type and line)'

@@ -1,7 +1,7 @@
 /**
  * @module DogfoodSkillFoldersTest
  * @path tests/scripts/dogfood_skill_folders_test.ts
- * @description The 28 `.copilot/skills` folders load directly through the folder loader as a dogfood root.
+ * @description The `.copilot/skills` folders load directly through the folder loader as a dogfood root.
  *   Every folder reproduces the independent baseline captured from the removed generator, field for field,
  *   and the three runtime ids that differed from their folder names are pinned by an explicit alias table.
  * @architectural-layer Test
@@ -16,6 +16,7 @@ import { createNoopEventLogger } from "@exaix/core/logger";
 import { EventRegistry } from "@exaix/core/events";
 import { createPathSecurity } from "@exaix/tool-runtime";
 import { REPO_ROOT, testSkillContext } from "@exaix/testing";
+import { countSkillFolders } from "../helpers/skill_sources.ts";
 
 interface IBaselineCriterion {
   name: string;
@@ -42,7 +43,6 @@ interface IBaselineSkill {
   compatible_with: { agents: string[] };
 }
 
-const BASELINE_COUNT = 28;
 /** Skills whose prose was edited on purpose after the baseline capture. Only their opening is pinned. */
 const EDITED_SINCE_BASELINE = new Set([
   "audit-security",
@@ -96,17 +96,16 @@ async function loadDogfood() {
   return { loaded: await loader.list(ctx), diagnostics: await loader.diagnostics(ctx) };
 }
 
-Deno.test("[dogfood] all 28 folders load as active skills with no diagnostics", async () => {
+Deno.test("[dogfood] every folder loads as an active skill with no diagnostics", async () => {
   const { loaded, diagnostics } = await loadDogfood();
   assertEquals(diagnostics.filter((d) => d.severity === "error"), []);
-  assertEquals(loaded.length, BASELINE_COUNT);
+  assertEquals(loaded.length, await countSkillFolders(join(REPO_ROOT, ".copilot", "skills")));
 });
 
 Deno.test("[dogfood] every folder reproduces the generator baseline field for field", async () => {
   const baseline: IBaselineSkill[] = JSON.parse(
     await Deno.readTextFile(join(REPO_ROOT, "tests", "fixtures", "skills", "dogfood_baseline.json")),
   );
-  assertEquals(baseline.length, BASELINE_COUNT);
   const { loaded } = await loadDogfood();
   const byName = new Map(loaded.map((entry) => [entry.skill.name, entry.skill]));
   for (const expected of baseline) {
