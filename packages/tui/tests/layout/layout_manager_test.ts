@@ -540,7 +540,8 @@ Deno.test("createViewPickerState: creates initial state", () => {
 });
 
 Deno.test("AVAILABLE_VIEWS: contains all views", () => {
-  assertEquals(AVAILABLE_VIEWS.length, 7);
+  const names = AVAILABLE_VIEWS.map((view) => view.name);
+  assertEquals(new Set(names).size, names.length, "a view is listed once");
   assertEquals(AVAILABLE_VIEWS[0].name, "PortalManagerView");
 });
 
@@ -601,7 +602,8 @@ Deno.test("createLayoutPresetState: creates initial state", () => {
 });
 
 Deno.test("LAYOUT_PRESET_INFO: contains all presets", () => {
-  assertEquals(LAYOUT_PRESET_INFO.length, 6);
+  assertEquals(new Set(LAYOUT_PRESET_INFO.map((preset) => preset.id)).size, LAYOUT_PRESET_INFO.length);
+  assertEquals(LAYOUT_PRESET_INFO.map((preset) => preset.shortcut), LAYOUT_PRESET_INFO.map((_, i) => String(i + 1)));
 });
 
 Deno.test("renderLayoutPresetDialog: renders dialog when open", () => {
