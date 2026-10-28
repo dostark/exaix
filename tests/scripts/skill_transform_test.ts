@@ -17,6 +17,7 @@ import { ensureDir } from "@std/fs";
 import { SkillRootKind } from "@exaix/core";
 import { loadCatalogRoot } from "../../scripts/skill_catalog_loader.ts";
 import { runIsolatedGenerator } from "../scenario_framework/runner/ste100_assets.ts";
+import { countSkillFolders } from "../helpers/skill_sources.ts";
 import { withTempDir } from "@exaix/testing";
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
@@ -72,7 +73,7 @@ Deno.test("[skill_transform] the isolated copy leaves the repo Memory/Skills and
       targetDir: join(tempDir, "arm"),
     });
     assertEquals(result.errors, []);
-    assertEquals(result.generated.length, 28);
+    assertEquals(result.generated.length, await countSkillFolders(COPILOT_SKILLS));
 
     assertEquals(
       await fingerprintDir(REPO_MEMORY_SKILLS),

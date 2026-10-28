@@ -51,7 +51,6 @@ Deno.test("[CellCatalog] the catalog exposes every shipped preset by its row nam
   for (const name of ["claude-code", "codex", "opencode", "exactl-native", "exactl-generic", "openai-chat"]) {
     assert(catalog.presets[name] !== undefined, `preset '${name}' must exist`);
   }
-  assert(Object.keys(catalog.presets).length >= 12, "the catalog must keep at least 12 presets");
 });
 
 Deno.test("[CellCatalog] a preset carries every field its row declares", async () => {

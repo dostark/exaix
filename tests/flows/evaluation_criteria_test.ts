@@ -518,28 +518,28 @@ Deno.test("[EvaluationCriteria] REQUEST_UNDERSTANDING has correct weight and cat
   assertEquals(CRITERIA.REQUEST_UNDERSTANDING.category, EvaluationCategory.CORRECTNESS);
 });
 
-Deno.test("[EvaluationCriteria] CRITERION_SETS.GOAL_ALIGNED_REVIEW contains 5 criteria", () => {
+Deno.test("[EvaluationCriteria] CRITERION_SETS.GOAL_ALIGNED_REVIEW holds the goal-aligned criteria", () => {
   assertExists(CRITERION_SETS.GOAL_ALIGNED_REVIEW);
-  assertEquals(CRITERION_SETS.GOAL_ALIGNED_REVIEW.length, 5);
-  const names = CRITERION_SETS.GOAL_ALIGNED_REVIEW.map((c) => c.name);
-  assertEquals(names.includes("goal_alignment"), true);
-  assertEquals(names.includes("task_fulfillment"), true);
-  assertEquals(names.includes("request_understanding"), true);
-  assertEquals(names.includes("code_correctness"), true);
-  assertEquals(names.includes("code_completeness"), true);
+  assertEquals(CRITERION_SETS.GOAL_ALIGNED_REVIEW.map((c) => c.name), [
+    "goal_alignment",
+    "task_fulfillment",
+    "request_understanding",
+    "code_correctness",
+    "code_completeness",
+  ]);
 });
 
-Deno.test("[EvaluationCriteria] CRITERION_SETS.FULL_QUALITY_GATE contains 7 criteria", () => {
+Deno.test("[EvaluationCriteria] CRITERION_SETS.FULL_QUALITY_GATE holds the full quality criteria", () => {
   assertExists(CRITERION_SETS.FULL_QUALITY_GATE);
-  assertEquals(CRITERION_SETS.FULL_QUALITY_GATE.length, 7);
-  const names = CRITERION_SETS.FULL_QUALITY_GATE.map((c) => c.name);
-  assertEquals(names.includes("goal_alignment"), true);
-  assertEquals(names.includes("task_fulfillment"), true);
-  assertEquals(names.includes("code_correctness"), true);
-  assertEquals(names.includes("code_completeness"), true);
-  assertEquals(names.includes("no_security_issues"), true);
-  assertEquals(names.includes("has_tests"), true);
-  assertEquals(names.includes("error_handling"), true);
+  assertEquals(CRITERION_SETS.FULL_QUALITY_GATE.map((c) => c.name), [
+    "goal_alignment",
+    "task_fulfillment",
+    "code_correctness",
+    "code_completeness",
+    "no_security_issues",
+    "has_tests",
+    "error_handling",
+  ]);
 });
 
 Deno.test("[EvaluationCriteria] existing criteria remain unchanged", () => {
@@ -547,7 +547,13 @@ Deno.test("[EvaluationCriteria] existing criteria remain unchanged", () => {
   assertEquals(CRITERIA.CODE_CORRECTNESS.weight, 2.0);
   assertEquals(CRITERIA.NO_SECURITY_ISSUES.required, true);
   assertEquals(CRITERIA.ACCURACY.category, EvaluationCategory.CORRECTNESS);
-  assertEquals(CRITERION_SETS.CODE_REVIEW.length, 5);
+  assertEquals(CRITERION_SETS.CODE_REVIEW.map((c) => c.name), [
+    "code_correctness",
+    "code_completeness",
+    "follows_conventions",
+    "error_handling",
+    "no_security_issues",
+  ]);
 });
 
 // RequirementFulfillmentSchema

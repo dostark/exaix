@@ -17,6 +17,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { dirname, join } from "@std/path";
 import { freezeSte100Baseline, reconstructSte100Baseline, runIsolatedGenerator } from "../../runner/ste100_assets.ts";
+import { countSkillFolders } from "../../../helpers/skill_sources.ts";
 import { withTempRoot } from "./helpers/ste100_assets_fixture.ts";
 
 async function writeFile(path: string, content: string): Promise<void> {
@@ -183,7 +184,7 @@ Deno.test("ste100 isolated dogfood skills: the repository corpus is copied as 28
       targetDir: join(root, "arm-dogfood"),
     });
     assertEquals(result.errors, []);
-    assertEquals(result.generated.length, 28);
+    assertEquals(result.generated.length, await countSkillFolders(source));
     assertEquals(
       await Deno.readTextFile(join(root, "arm-dogfood", "commit", "SKILL.md")),
       await Deno.readTextFile(join(source, "commit", "SKILL.md")),

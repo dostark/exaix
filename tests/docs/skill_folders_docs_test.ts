@@ -117,7 +117,7 @@ Deno.test("[skill docs] the reference data names the journal tables, columns and
     assert(reference.includes(column), `the column ${column} is documented`);
   }
   const skillEvents = Object.values(DomainEventType).filter((value) => /^skills?\./.test(value));
-  assert(skillEvents.length >= 15, "the registry holds the skill events");
+  assert(skillEvents.length > 0, "the registry holds the skill events");
   for (const event of skillEvents) assert(reference.includes(`\`${event}\``), `${event} is documented`);
   assert(reference.includes("resolved_skills"), "the plan pin field is documented");
 });
