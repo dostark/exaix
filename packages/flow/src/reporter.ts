@@ -7,7 +7,6 @@
  */
 
 import { join } from "@std/path";
-import type { Config } from "@exaix/schemas/config.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { ICON_FAILURE, ICON_SUCCESS } from "@exaix/core";
@@ -29,11 +28,9 @@ interface IFlowReportResult {
 }
 
 export class FlowReporter {
-  private config: Config;
   private reportConfig: IFlowReportConfig;
 
-  constructor(config: Config, reportConfig: IFlowReportConfig) {
-    this.config = config;
+  constructor(reportConfig: IFlowReportConfig) {
     this.reportConfig = reportConfig;
   }
 

@@ -10,7 +10,6 @@ import { join } from "@std/path";
 import { resolveMemoryExecutionRoot } from "@exaix/core/config";
 import { ensureDir, exists } from "@std/fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
-import { FrontmatterParser } from "@exaix/core/parsing";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { PlanStatus } from "@exaix/core/status";
 import { type PlanStatusType, RequestStatus } from "@exaix/core/status";
@@ -74,7 +73,6 @@ export class PlanCommands extends BaseCommand {
   private workspaceRequestsDir: string;
   private workspaceRejectedDir: string;
   private workspaceArchiveDir: string;
-  private parser: FrontmatterParser;
   private requestCommands: RequestCommands;
 
   constructor(
@@ -90,7 +88,6 @@ export class PlanCommands extends BaseCommand {
     this.workspaceRejectedDir = join(root, workspace, config.paths.rejected!);
     this.workspaceArchiveDir = join(root, workspace, config.paths.archive!);
     this.workspaceRequestsDir = join(root, workspace, config.paths.requests!);
-    this.parser = new FrontmatterParser();
     this.requestCommands = new RequestCommands(context);
   }
 

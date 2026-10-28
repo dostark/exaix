@@ -71,14 +71,6 @@ export interface ITraceData {
 }
 
 /**
- * Configuration for the MissionReporter
- */
-export interface IReportConfig {
-  /** Directory where reports are written (now Memory/Execution/) */
-  reportsDirectory: string;
-}
-
-/**
  * Result of report generation
  */
 interface IReportResult {
@@ -122,20 +114,17 @@ interface IGitChangeStats {
 /** @visible */
 export class MissionReporter {
   private config: Config;
-  private reportConfig: IReportConfig;
   private memoryBank: MemoryBankService;
   private logger?: IEventLogger;
   private reader?: IEventJournalReader;
 
   constructor(
     config: Config,
-    reportConfig: IReportConfig,
     memoryBank: MemoryBankService,
     logger?: Opt<IEventLogger, Reason.OptionalDependency>,
     reader?: Opt<IEventJournalReader, Reason.OptionalDependency>,
   ) {
     this.config = config;
-    this.reportConfig = reportConfig;
     this.memoryBank = memoryBank;
     this.logger = logger;
     this.reader = reader;

@@ -13,7 +13,7 @@ import type { ITreeViewState } from "@exaix/tui/base/tree_view_state.ts";
 import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
-import type { ILogger, ILogService } from "@exaix/core/types";
+import type { ILogService } from "@exaix/core/types";
 import type { ILogQueryOptions, IStructuredLogEntry } from "@exaix/core/types";
 import {
   TUI_ACTION_SEARCH,
@@ -259,20 +259,17 @@ const STRUCTURED_LOG_VIEWER_KEY_BINDINGS = new StructuredLogViewerKeyBindings().
 export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
   protected logViewExtensions: ILogViewExtensions;
   private logService: ILogService;
-  private structuredLogger: ILogger;
   private unsubscribeRealTime?: () => void;
   private refreshInterval?: ReturnType<typeof setInterval>;
   private pendingDialogType: "search" | "filter-level" | "export" | null = null;
 
   constructor(
     logService: ILogService,
-    structuredLogger: ILogger,
     options: { testMode?: boolean } = {},
   ) {
     super(options.testMode ? false : true);
 
     this.logService = logService;
-    this.structuredLogger = structuredLogger;
     this.logViewExtensions = this.createInitialExtensions(options.testMode);
 
     // Setup real-time streaming if enabled

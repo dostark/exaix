@@ -9,9 +9,8 @@
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { StructuredLogViewer } from "../src/structured_log_viewer.ts";
-import type { ILogger, ILogService } from "@exaix/core/types";
-import type { ILogContext, ILogQueryOptions, IStructuredLogEntry } from "@exaix/core/types";
-import type { LogMetadata } from "@exaix/core/types";
+import type { ILogService } from "@exaix/core/types";
+import type { ILogQueryOptions, IStructuredLogEntry } from "@exaix/core/types";
 import { LogLevel } from "@exaix/core";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
@@ -57,21 +56,6 @@ class MockLogService implements ILogService {
   }
 }
 
-class MockStructuredLogger implements ILogger {
-  setContext(_context: Partial<ILogContext>): void {}
-  child(_additionalContext: Partial<ILogContext>): ILogger {
-    return this;
-  }
-  debug(_message: string, _metadata?: LogMetadata): void {}
-  info(_message: string, _metadata?: LogMetadata): void {}
-  warn(_message: string, _metadata?: LogMetadata): void {}
-  error(_message: string, _error?: Error, _metadata?: LogMetadata): void {}
-  fatal(_message: string, _error?: Error, _metadata?: LogMetadata): void {}
-  time<T>(_operation: string, fn: () => Promise<T>, _metadata?: LogMetadata): Promise<T> {
-    return fn();
-  }
-}
-
 const createTestLogs = (count: number): IStructuredLogEntry[] => {
   return Array.from({ length: count }, (_, i) => ({
     timestamp: new Date(Date.now() - i * 60000).toISOString(),
@@ -89,8 +73,7 @@ const createTestLogs = (count: number): IStructuredLogEntry[] => {
 Deno.test("StructuredLogViewer: Initialization", async () => {
   const logs = createTestLogs(10);
   const service = new MockLogService(logs);
-  const logger = new MockStructuredLogger();
-  const viewer = new StructuredLogViewer(service, logger, { testMode: true });
+  const viewer = new StructuredLogViewer(service, { testMode: true });
 
   await viewer.initialize();
 
@@ -102,8 +85,7 @@ Deno.test("StructuredLogViewer: Initialization", async () => {
 Deno.test("StructuredLogViewer: Navigation", async () => {
   const logs = createTestLogs(5);
   const service = new MockLogService(logs);
-  const logger = new MockStructuredLogger();
-  const viewer = new StructuredLogViewer(service, logger, { testMode: true });
+  const viewer = new StructuredLogViewer(service, { testMode: true });
   await viewer.initialize();
 
   // Initial selection
@@ -119,8 +101,7 @@ Deno.test("StructuredLogViewer: Navigation", async () => {
 Deno.test("StructuredLogViewer: Grouping toggles", async () => {
   const logs = createTestLogs(5);
   const service = new MockLogService(logs);
-  const logger = new MockStructuredLogger();
-  const viewer = new StructuredLogViewer(service, logger, { testMode: true });
+  const viewer = new StructuredLogViewer(service, { testMode: true });
   await viewer.initialize();
 
   const extensions = viewer.getExtensions();
@@ -139,8 +120,7 @@ Deno.test("StructuredLogViewer: Grouping toggles", async () => {
 Deno.test("StructuredLogViewer: Real-time updates", async () => {
   const logs = createTestLogs(0);
   const service = new MockLogService(logs);
-  const logger = new MockStructuredLogger();
-  const viewer = new StructuredLogViewer(service, logger, { testMode: true }); // autoRefresh disabled in testMode
+  const viewer = new StructuredLogViewer(service, { testMode: true }); // autoRefresh disabled in testMode
 
   // testMode disables realTime setup in the constructor; call toggleRealTime() to enable
   // the subscription manually so handleNewLogEntry can be exercised.
@@ -168,8 +148,7 @@ Deno.test("StructuredLogViewer: Real-time updates", async () => {
 Deno.test("StructuredLogViewer: Search and Filter", async () => {
   const logs = createTestLogs(10);
   const service = new MockLogService(logs);
-  const logger = new MockStructuredLogger();
-  const viewer = new StructuredLogViewer(service, logger, { testMode: true });
+  const viewer = new StructuredLogViewer(service, { testMode: true });
   await viewer.initialize();
 
   // Open search dialog
@@ -213,8 +192,7 @@ Deno.test("StructuredLogViewer: Search and Filter", async () => {
 Deno.test("StructuredLogViewer: Detail View", async () => {
   const logs = createTestLogs(1);
   const service = new MockLogService(logs);
-  const logger = new MockStructuredLogger();
-  const viewer = new StructuredLogViewer(service, logger, { testMode: true });
+  const viewer = new StructuredLogViewer(service, { testMode: true });
   await viewer.initialize();
 
   // Select the item (it's inside a group, so expand group first)
@@ -248,8 +226,7 @@ Deno.test("StructuredLogViewer: Detail View", async () => {
 Deno.test("StructuredLogViewer: Format Entry", () => {
   // Test formatting logic
   const service = new MockLogService([]);
-  const logger = new MockStructuredLogger();
-  const viewer = new StructuredLogViewer(service, logger, { testMode: true });
+  const viewer = new StructuredLogViewer(service, { testMode: true });
 
   const entry: IStructuredLogEntry = {
     timestamp: "2024-01-01T12:00:00Z",

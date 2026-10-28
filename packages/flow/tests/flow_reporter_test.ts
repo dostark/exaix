@@ -13,14 +13,12 @@ import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { FlowReporter, type IFlowReportConfig, type IFlowResult, type IStepResult } from "@exaix/flow";
-import { createMockConfig, initTestDbService, TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "@exaix/testing";
+import { initTestDbService, TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "@exaix/testing";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
-import type { Config } from "@exaix/schemas/config.ts";
 import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 describe("FlowReporter", () => {
   let tempDir: string;
   let cleanup: () => Promise<void>;
-  let config: Config;
   let reportConfig: IFlowReportConfig;
   let reporter: FlowReporter;
 
@@ -28,7 +26,6 @@ describe("FlowReporter", () => {
     const dbResult = await initTestDbService();
     tempDir = dbResult.tempDir;
     cleanup = dbResult.cleanup;
-    config = createMockConfig(tempDir);
 
     reportConfig = {
       reportsDirectory: pathBuilders.memoryPath(tempDir, "Reports"),
@@ -38,7 +35,7 @@ describe("FlowReporter", () => {
     // Ensure reports directory exists
     await Deno.mkdir(reportConfig.reportsDirectory, { recursive: true });
 
-    reporter = new FlowReporter(config, reportConfig);
+    reporter = new FlowReporter(reportConfig);
   });
 
   afterEach(async () => {
@@ -52,7 +49,7 @@ describe("FlowReporter", () => {
 
     it("should initialize without database", () => {
       const configWithoutDb = { ...reportConfig, db: undefined };
-      const reporterWithoutDb = new FlowReporter(config, configWithoutDb);
+      const reporterWithoutDb = new FlowReporter(configWithoutDb);
       assertExists(reporterWithoutDb);
     });
   });

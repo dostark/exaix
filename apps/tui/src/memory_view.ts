@@ -55,12 +55,10 @@ export class MemoryViewTuiSession extends TuiSessionBase {
   private state: IMemoryViewState;
   private service: IMemoryService;
   private flatNodes: ITreeNode[] = [];
-  private keyHandler: KeyHandler;
 
   constructor(service: IMemoryService, useColors = true) {
     super();
     this.service = service;
-    this.keyHandler = new KeyHandler();
     this.state = {
       activeScope: MemoryTuiScope.PROJECTS,
       selectedNodeId: null,

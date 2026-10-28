@@ -9,24 +9,23 @@
 
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Safe error that prevents information leakage
  */
 export class SafeError extends Error {
   public readonly errorCode: string;
-  private readonly internalError?: Error;
 
   constructor(
     userMessage: string,
     errorCode: string,
-    internalError?: Error,
-    logger?: IEventLogger,
+    internalError?: Opt<Error, Reason.OptionalInput>,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     super(userMessage);
     this.name = "SafeError";
     this.errorCode = errorCode;
-    this.internalError = internalError;
 
     // Log internal error details securely if logger is provided
     if (logger && internalError) {

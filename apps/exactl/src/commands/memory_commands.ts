@@ -62,12 +62,10 @@ const SKILL_NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 export class MemoryCommands extends BaseCommand {
   private formatter: MemoryFormatter;
-  private memoryRoot: string;
   private _autoApprovalService?: MemoryAutoApprovalAdapter;
 
   constructor(context: ICommandContext) {
     super(context);
-    this.memoryRoot = join(this.context.config.getAll().system.root, this.context.config.getAll().paths.memory);
     this.formatter = new MemoryFormatter();
   }
 

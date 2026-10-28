@@ -1708,9 +1708,6 @@ export class ExecutionLoop {
         "ExecutionLoop: memoryBank is required for mission reports. Provide `memoryBank` in IExecutionLoopConfig or via context.memoryBank.",
       );
     }
-    const reportConfig = {
-      reportsDirectory: pathBuilders.memoryExecutionPath(join(this.config.system.root, this.config.paths.memory)),
-    };
     const reader = this.db
       ? {
         getActivitiesByTrace: (id: string) => this.db!.getActivitiesByTrace(id),
@@ -1719,7 +1716,7 @@ export class ExecutionLoop {
         queryActivity: (filter) => this.db!.queryActivity(filter),
       } as IEventJournalReader
       : undefined;
-    return new MissionReporter(this.config, reportConfig, this.memoryBank as MemoryBankService, this.logger, reader);
+    return new MissionReporter(this.config, this.memoryBank as MemoryBankService, this.logger, reader);
   }
 
   /** Extracts learnings from execution with the configured MemoryExtractorService.

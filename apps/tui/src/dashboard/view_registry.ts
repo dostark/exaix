@@ -136,7 +136,7 @@ export function initDashboardViews(
     Object.assign(new PlanReviewerView(planService), { name: "PlanReviewerView" }),
     Object.assign(new MonitorView(logService as IJournalService), { name: "MonitorView" }),
     Object.assign(
-      new StructuredLogViewer(structuredLoggerService, structuredLogger, {
+      new StructuredLogViewer(structuredLoggerService, {
         testMode: options.testMode,
       }),
       {

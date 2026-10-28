@@ -72,8 +72,6 @@ import { type IPortalContextBuilder, PortalContextBuilder } from "./portal_conte
 import { ClarificationGateway, type IClarificationGateway } from "./clarification_gateway.ts";
 import { type IRejectedPlanHandler, RejectedPlanHandler } from "./rejected_plan_handler.ts";
 import type { ILogEvent, JSONValue } from "@exaix/core";
-import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
-import type { IMilestoneEmitter } from "@exaix/core/observability";
 
 import type { AnalysisMode } from "@exaix/core/types";
 
@@ -191,7 +189,6 @@ export class RequestProcessor {
   private readonly testProvider?: IModelProvider;
   private readonly flowRunner?: IFlowRunner;
   private readonly flowLoader?: IFlowLoaderService;
-  private readonly milestoneEmitter?: IMilestoneEmitter;
   private readonly taskComplexityClassifier: ITaskComplexityClassifier;
   private readonly blueprintResolver: IBlueprintResolver;
   private readonly portalContextBuilder: IPortalContextBuilder;
@@ -206,9 +203,6 @@ export class RequestProcessor {
     this.config = ctx.config.get();
 
     this.db = ctx.db;
-
-    // Initialize milestone emitter(s): bus streaming + optional journal file
-    this.milestoneEmitter = buildMilestoneEmitterFromConfig(this.config);
 
     // Initialize services
     this.logger = processorConfig.logger ??

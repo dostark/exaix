@@ -33,7 +33,6 @@ export class DiskBackedEmbeddingCache {
   private maxEntries: number;
   private cacheDir: string;
   private cacheFile: string;
-  private initialized = false;
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(cacheDir: string, maxEntries = DEFAULT_MAX_ENTRIES) {
@@ -61,7 +60,6 @@ export class DiskBackedEmbeddingCache {
         }
       }
     }
-    this.initialized = true;
   }
 
   get(key: string): number[] | undefined {

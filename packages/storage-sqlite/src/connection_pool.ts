@@ -24,7 +24,6 @@ export interface IDatabaseConnection {
 class SQLiteConnection implements IDatabaseConnection {
   constructor(
     public instance: Database,
-    private config: Config,
   ) {}
 
   async close(): Promise<void> {
@@ -133,7 +132,7 @@ export class DatabaseConnectionPool {
     await db.exec("PRAGMA journal_mode = WAL;");
     await db.exec("PRAGMA foreign_keys = ON;");
 
-    return await new SQLiteConnection(db, this.config);
+    return await new SQLiteConnection(db);
   }
 
   /**
