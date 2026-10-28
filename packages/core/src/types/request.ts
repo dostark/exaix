@@ -150,8 +150,6 @@ const MemoryItemSchema = z.object({
   tags: z.array(z.string()).optional(),
 });
 
-export type MemoryItem = z.infer<typeof MemoryItemSchema>;
-
 const EnhancedRequestSchema = z.object({
   originalRequest: z.string(),
   memories: z.array(MemoryItemSchema),

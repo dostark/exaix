@@ -16,14 +16,6 @@ export interface IToolCall {
   dependencies?: string[];
 }
 
-export interface IToolResult {
-  callId: string;
-  success: boolean;
-  output: JSONValue;
-  error?: string;
-  durationMs: number;
-}
-
 interface IToolReflection {
   success: boolean;
   confidence: number;

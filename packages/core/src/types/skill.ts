@@ -7,20 +7,6 @@
  */
 
 /**
- * Configuration for the Skills Service.
- */
-export interface ISkillsConfig {
-  /** Enable automatic skill matching */
-  autoMatch: boolean;
-  /** Maximum number of skills to inject into a single request */
-  maxSkillsPerRequest: number;
-  /** Maximum character budget for skill context */
-  skillContextBudget: number;
-  /** Minimum confidence score for skill matching (0-1) */
-  matchThreshold: number;
-}
-
-/**
  * Request context for skill matching.
  */
 export interface ISkillMatchRequest {

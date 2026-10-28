@@ -17,7 +17,6 @@ export { policySkillSubmission } from "./skill_submission.ts";
 export { SkillUsageStore } from "./skill_usage_store.ts";
 export { SkillRevisionStore } from "./skill_revision_store.ts";
 export {
-  analyzeReferenceLinks,
   canonicalizeSkillText,
   computeRevisionId,
   computeSkillContentSha256,
@@ -28,16 +27,12 @@ export {
   type IPinnedSkill,
   type IResolvedSkillRoot,
   type ISkillDiagnostic,
-  type ISkillFallbackLimits,
   type ISkillFolderLimits,
-  type ISkillFolderLoaderDeps,
   type ISkillOperationContext,
   type ISkillPin,
-  type ISkillReferenceLinks,
   type ISkillRevisionRecord,
   type ISkillRevisionSnapshot,
   type ISkillRootContext,
-  type ISkillStoreDeps,
   type ISkillSubmission,
   type ISkillSubmissionItem,
   type ISkillUsageRecord,

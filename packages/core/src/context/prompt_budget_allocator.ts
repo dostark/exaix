@@ -11,7 +11,7 @@ import {
   PromptBudgetAllocator as CorePromptBudgetAllocator,
 } from "@exaix/core";
 
-export type IAllocationHints = ICoreAllocationHints;
+type IAllocationHints = ICoreAllocationHints;
 export type PromptBudgetAllocator = InstanceType<typeof CorePromptBudgetAllocator>;
 
 const PromptBudgetAllocator = CorePromptBudgetAllocator;
