@@ -48,8 +48,6 @@ export enum ResizeDirection {
 export enum ScrollDirection {
   UP = "up",
   DOWN = "down",
-  TOP = "top",
-  BOTTOM = "bottom",
 }
 
 export enum KeyModifier {
@@ -129,17 +127,10 @@ export enum RequestDialogType {
 }
 
 export enum TuiViewName {
-  DASHBOARD = "TuiDashboard",
   PORTAL_MANAGER = "PortalManagerView",
   MONITOR = "MonitorView",
   PLAN_REVIEWER = "PlanReviewerView",
   DAEMON_CONTROL = "DaemonControlView",
-  SKILLS_MANAGER = "SkillsManagerView",
-  MEMORY_VIEW = "MemoryView",
-  REQUEST_MANAGER = "RequestManagerView",
-  AGENT_STATUS = "AgentStatusView",
-  LOG_VIEWER = "LogViewer",
-  STRUCTURED_LOG_VIEWER = "StructuredLogViewer",
 }
 
 export enum StatusIndicator {
@@ -171,8 +162,6 @@ export enum SkillGroupingMode {
 export enum GroupingField {
   SOURCE = "source",
   STATUS = "status",
-  CATEGORY = "category",
-  PRIORITY = "priority",
 }
 
 export enum DaemonKeyAction {
@@ -182,8 +171,5 @@ export enum DaemonKeyAction {
   VIEW_LOGS = "view-logs",
   VIEW_CONFIG = "view-config",
   REFRESH = "refresh",
-  AUTO_REFRESH = "auto-refresh",
   HELP = "help",
-  QUIT = "quit",
-  CANCEL = "cancel",
 }

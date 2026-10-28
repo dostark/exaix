@@ -172,8 +172,6 @@ export enum KeyBindingCategory {
   ACTIONS = "Actions",
   VIEW = "View",
   HELP = "Help",
-  LAYOUT = "Layout",
-  GENERAL = "General",
 }
 
 // Keyboard Manager

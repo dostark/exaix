@@ -744,18 +744,13 @@ export function createLegacyTuiSessionWithErrors(): InstanceType<typeof _LegacyR
 
 // Skills Manager helpers
 
-enum SkillSource {
-  CORE = "core",
-  PROJECT = "project",
-}
-
 interface ISkillSummaryOverrides {
   id?: string;
   skill_id?: string;
   name?: string;
   version?: string;
   status?: SkillStatus;
-  source?: MemoryBankSource | SkillSource;
+  source?: MemoryBankSource;
   description?: string;
   triggers?: { keywords?: string[]; taskTypes?: string[]; filePatterns?: string[]; [key: string]: any };
   instructions?: string;

@@ -61,7 +61,6 @@ enum PortalAction {
   HELP = "help",
   EXPAND_ALL = "expand-all",
   COLLAPSE_ALL = "collapse-all",
-  ANALYZE = "analyze",
 }
 
 // Portal Status Icons
