@@ -700,6 +700,11 @@ matches each import to the module that defines the export, so a name that anothe
 unused one, and a barrel entry that nobody imports through the barrel is a finding. The files that a manifest exports
 are public API. The `publicEntries` option of the rule lists tool-consumed entries such as the prebuilt bundle and
 the lint demo examples.
+
+`deno task check:unused-enum-members` adds the enum members that no `Enum.Member` reference reaches. The report is
+advisory and stays outside the CI gates: a member can be part of a closed set whose values arrive as data, such as
+a protocol code or a stored status. Put `// unslop-ignore-next-line unused-enum-member` above the enum for such a set,
+or delete a member that nothing needs.
 Every parity finding is an error, but the task is advisory and stays outside the CI gates until the
 reported surface is cleaned. `check:unused-exports:parity` is the relaxed local audit (warnings), while
 `check:unused-exports:parity:strict` runs in CI and fails on any finding; `check:unused-exports:compare`
