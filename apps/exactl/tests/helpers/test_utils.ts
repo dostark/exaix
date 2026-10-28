@@ -13,11 +13,7 @@ import * as exactlModule from "../../src/exactl.ts";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { readConfigFixture } from "../../../../tests/integration/helpers/config_fixture.ts";
-import {
-  captureAllOutputs as captureAllOutputsShared,
-  captureConsoleOutput as captureConsoleOutputShared,
-  runWithTimeout,
-} from "./console_utils.ts";
+import { captureConsoleOutput as captureConsoleOutputShared, runWithTimeout } from "./console_utils.ts";
 
 // Static import avoids a runtime dynamic import statement inside a function,
 // which is prohibited by the test style checker.
@@ -107,13 +103,6 @@ export async function captureConsoleOutput(
   timeoutMs: number = 10000,
 ): Promise<string> {
   return await captureConsoleOutputShared(fn, timeoutMs);
-}
-
-export async function captureAllOutputs(
-  fn: () => Promise<void> | void,
-  timeoutMs: number = 10000,
-): Promise<{ logs: string[]; warns: string[]; errs: string[] }> {
-  return await captureAllOutputsShared(fn, timeoutMs);
 }
 
 /**
