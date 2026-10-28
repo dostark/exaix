@@ -710,6 +710,11 @@ or delete a member that nothing needs.
 reads, and a public method or accessor whose name no code accesses. It is advisory too. A member that an interface, a
 base class, or the runtime calls is exempt, and `// unslop-ignore-next-line unused-class-member` exempts a member that
 a caller outside the walk uses.
+
+`deno task check:unused-production` stops counting test files as uses and labels each finding as used by nothing or used
+only by test files. It is advisory: a test double or a test seam is test-only on purpose. Work through it in this
+order: move test doubles out of production source, drop barrel entries that only tests import, wire in or delete
+production code that only tests reach, and mark the intended test seams with the pragma.
 Every parity finding is an error, but the task is advisory and stays outside the CI gates until the
 reported surface is cleaned. `check:unused-exports:parity` is the relaxed local audit (warnings), while
 `check:unused-exports:parity:strict` runs in CI and fails on any finding; `check:unused-exports:compare`
