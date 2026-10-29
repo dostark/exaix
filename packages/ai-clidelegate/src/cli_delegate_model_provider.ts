@@ -291,18 +291,10 @@ export class CliDelegateModelProvider implements IModelProvider {
     const jsonSchema = options?.jsonSchema;
     const args = await this.buildArgsForTool(prompt, sessionId, jsonSchema, options?.effort);
 
-    const env = buildDelegateEnv();
-    if (!this.isTextPassthroughTool()) {
-      this.opencodeReadOnlyConfigPath ??= writeOpencodeReadOnlyConfig(this.options.cwd);
-      env.OPENCODE_CONFIG = await this.opencodeReadOnlyConfigPath;
-    }
+    const env = await this.delegateEnv();
 
     const startedAt = Date.now();
-    console.log(
-      `[CliDelegateModelProvider] generate start: model=${this.options.model} promptLen=${prompt.length} ` +
-        `hasContentTag=${prompt.includes("<content>")} sessionId=${sessionId ?? UNSET_LOG_LABEL} ` +
-        `conversationId=${conversationId ?? UNSET_LOG_LABEL}`,
-    );
+    console.log(startLogMessage(this.options.model, prompt, sessionId, conversationId));
 
     let result: ICliDelegateProcessResult;
     try {
@@ -313,39 +305,17 @@ export class CliDelegateModelProvider implements IModelProvider {
         timeoutMs: this.options.timeoutMs ?? DEFAULT_CLI_DELEGATE_TIMEOUT_MS,
       });
     } catch (error) {
-      console.log(
-        `[CliDelegateModelProvider] generate threw after ${Date.now() - startedAt}ms: ` +
-          `${error instanceof Error ? error.message : String(error)}`,
-      );
-      throw new ModelProviderError(
-        `CliDelegateModelProvider could not run '${this.options.bin}': ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-        this.id,
-      );
+      console.log(runFailureLogMessage(Date.now() - startedAt, error));
+      throw runFailureErrorOf(error, this.options.bin, this.id);
     } finally {
       // codex's --output-schema temp file (buildCodexArgs) must never accumulate across
       // calls, whether the subprocess succeeded or failed.
       await this.cleanupCodexSchemaTempFile(args);
     }
-    console.log(
-      `[CliDelegateModelProvider] generate exited: code=${result.code} durationMs=${Date.now() - startedAt} ` +
-        `stdoutLen=${result.stdout.length} stderrLen=${result.stderr.length}`,
-    );
+    console.log(exitLogMessage(result, Date.now() - startedAt));
 
-    if (result.code !== 0) {
-      throw new ModelProviderError(
-        `CliDelegateModelProvider '${this.options.bin}' exited with code ${result.code}: stderr=${
-          result.stderr.trim() || "(empty)"
-        } stdout=${result.stdout.trim().slice(0, ERROR_STDOUT_PREVIEW_MAX_CHARS) || "(empty)"}`,
-        this.id,
-      );
-    }
-
-    if (conversationId && !sessionId) {
-      const capturedSessionId = this.extractSessionIdForTool(result.stdout);
-      if (capturedSessionId) this.sessionIds.set(conversationId, capturedSessionId);
-    }
+    if (result.code !== 0) throw exitFailureErrorOf(result, this.options.bin, this.id);
+    this.recordSessionFrom(conversationId, sessionId, result.stdout);
 
     const parsed = parseDelegateStdout(result.stdout, this.options.tool);
     console.log(
@@ -354,20 +324,28 @@ export class CliDelegateModelProvider implements IModelProvider {
     // opencode's read-only planning calls have no real tool-calling to anchor output, so a
     // freehand plan JSON can use tool names outside McpToolName — normalize before PlanAdapter
     // validation. No-op for claude/codex and for non-plan-JSON responses.
-    const content = this.isTextPassthroughTool() ? parsed.lastText : adaptOpencodePlanJson(parsed.lastText).json;
-    return {
-      content,
-      usage: {
-        promptTokens: parsed.tokenStats.input,
-        completionTokens: parsed.tokenStats.output,
-        totalTokens: parsed.tokenStats.total,
-        cacheReadTokens: parsed.tokenStats.cacheRead,
-        cacheCreationTokens: parsed.tokenStats.cacheCreation,
-      },
-      model: this.options.model,
-      provider: this.options.tool,
-      cost_usd: parsed.costUsd ?? 0,
-    };
+    return resultOf(parsed, this.options.model, this.options.tool, this.isTextPassthroughTool());
+  }
+
+  /** The delegate environment with the opencode read-only config when that tool needs it. */
+  private async delegateEnv(): Promise<Record<string, string>> {
+    const env = buildDelegateEnv();
+    if (!this.isTextPassthroughTool()) {
+      this.opencodeReadOnlyConfigPath ??= writeOpencodeReadOnlyConfig(this.options.cwd);
+      env.OPENCODE_CONFIG = await this.opencodeReadOnlyConfigPath;
+    }
+    return env;
+  }
+
+  /** Records the provider session id of a new conversation. */
+  private recordSessionFrom(
+    conversationId: Opt<string, Reason.OptionalInput>,
+    sessionId: Opt<string, Reason.OptionalInput>,
+    stdout: string,
+  ): void {
+    if (!conversationId || sessionId) return;
+    const capturedSessionId = this.extractSessionIdForTool(stdout);
+    if (capturedSessionId) this.sessionIds.set(conversationId, capturedSessionId);
   }
 
   /** claude and codex both return plain text directly; only opencode needs the plan-JSON adapter. */
@@ -528,4 +506,71 @@ export class CliDelegateModelProvider implements IModelProvider {
       prompt,
     ];
   }
+}
+
+/** The generate start log line. */
+function startLogMessage(
+  model: string,
+  prompt: string,
+  sessionId: Opt<string, Reason.TraceAbsent>,
+  conversationId: Opt<string, Reason.OptionalInput>,
+): string {
+  return `[CliDelegateModelProvider] generate start: model=${model} promptLen=${prompt.length} ` +
+    `hasContentTag=${prompt.includes("<content>")} sessionId=${sessionId ?? UNSET_LOG_LABEL} ` +
+    `conversationId=${conversationId ?? UNSET_LOG_LABEL}`;
+}
+
+/** The log line of a failed delegate run. */
+function runFailureLogMessage(durationMs: number, error: Error | unknown): string {
+  return `[CliDelegateModelProvider] generate threw after ${durationMs}ms: ${errorMessageOf(error)}`;
+}
+
+/** The provider error of a failed delegate run. */
+function runFailureErrorOf(error: Error | unknown, bin: string, id: string): ModelProviderError {
+  return new ModelProviderError(`CliDelegateModelProvider could not run '${bin}': ${errorMessageOf(error)}`, id);
+}
+
+/** The log line of a finished delegate run. */
+function exitLogMessage(result: ICliDelegateProcessResult, durationMs: number): string {
+  return `[CliDelegateModelProvider] generate exited: code=${result.code} durationMs=${durationMs} ` +
+    `stdoutLen=${result.stdout.length} stderrLen=${result.stderr.length}`;
+}
+
+/** The provider error of a non-zero delegate exit. */
+function exitFailureErrorOf(result: ICliDelegateProcessResult, bin: string, id: string): ModelProviderError {
+  return new ModelProviderError(
+    `CliDelegateModelProvider '${bin}' exited with code ${result.code}: stderr=${
+      result.stderr.trim() || "(empty)"
+    } stdout=${result.stdout.trim().slice(0, ERROR_STDOUT_PREVIEW_MAX_CHARS) || "(empty)"}`,
+    id,
+  );
+}
+
+/** The text of one error value. */
+function errorMessageOf(error: Error | unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/** The generate result of one parsed delegate response. */
+function resultOf(
+  parsed: ReturnType<typeof parseDelegateStdout>,
+  model: string,
+  provider: string,
+  passthrough: boolean,
+): IGenerateResult {
+  // Opencode planning calls have no tool-calling anchor. A freehand plan JSON can use names
+  // outside McpToolName, so normalize it before PlanAdapter validation. Other tools are unchanged.
+  return {
+    content: passthrough ? parsed.lastText : adaptOpencodePlanJson(parsed.lastText).json,
+    usage: {
+      promptTokens: parsed.tokenStats.input,
+      completionTokens: parsed.tokenStats.output,
+      totalTokens: parsed.tokenStats.total,
+      cacheReadTokens: parsed.tokenStats.cacheRead,
+      cacheCreationTokens: parsed.tokenStats.cacheCreation,
+    },
+    model,
+    provider,
+    cost_usd: parsed.costUsd ?? 0,
+  };
 }
