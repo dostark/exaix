@@ -304,9 +304,7 @@ export async function parseSkillSnapshot(
   const { frontmatter, body } = splitFrontmatter(canonicalMd);
   const identity = validateFrontmatter(frontmatter, rootContext.rootKind, rootContext.name);
 
-  const sidecar = snapshot.exaix_yaml === null
-    ? null
-    : SkillSidecarSchema.parse(parseYaml(canonicalizeSkillText(snapshot.exaix_yaml)));
+  const sidecar = sidecarOf(snapshot);
 
   const { instructions, examples } = splitInstructionsAndExamples(body);
   const contentSha256 = await computeSkillContentSha256(snapshot);
@@ -315,39 +313,88 @@ export async function parseSkillSnapshot(
 
   const defaultStatus = DRAFT_DEFAULT_ROOTS.includes(rootContext.rootKind) ? SkillStatus.DRAFT : SkillStatus.ACTIVE;
 
-  return {
-    id: revisionId,
-    skill_id: identity.name,
-    name: identity.name,
-    title: sidecar?.title ?? identity.name,
-    description: identity.description,
-    status: sidecar?.status ?? defaultStatus,
-    source: rootContext.source,
-    scope: rootContext.scope,
-    project: rootContext.scope === MemoryScope.PROJECT ? rootContext.project ?? undefined : undefined,
-    root_kind: rootContext.rootKind,
-    path: rootContext.path,
-    content_sha256: contentSha256,
-    triggers: sidecar?.triggers ??
-      { keywords: synthesizeFallbackKeywords(identity.name, identity.description, fallback) },
-    triggers_source: sidecar?.triggers ? AUTHORED_TRIGGERS_SOURCE : DESCRIPTION_TRIGGERS_SOURCE,
+  return runtimeSkillOf({
+    revisionId,
+    identity,
+    sidecar,
+    defaultStatus,
+    rootContext,
+    contentSha256,
     instructions,
     examples,
-    constraints: sidecar?.constraints,
-    output_requirements: sidecar?.output_requirements,
-    quality_criteria: sidecar?.quality_criteria,
-    critical: sidecar?.critical,
-    effort: sidecar?.effort,
-    thinking: sidecar?.thinking,
-    tools: sidecar?.tools,
-    compatible_with: sidecar?.applies_to,
-    derived_from: sidecar?.derived_from,
-    related_skills: sidecar?.related_skills,
-    references: snapshot.references.map((reference) => ({
+    fallback,
+    linked,
+    snapshot,
+  });
+}
+
+/** The optional sidecar metadata of one snapshot. */
+function sidecarOf(snapshot: ISkillRevisionSnapshot): ReturnType<typeof SkillSidecarSchema.parse> | null {
+  return snapshot.exaix_yaml === null
+    ? null
+    : SkillSidecarSchema.parse(parseYaml(canonicalizeSkillText(snapshot.exaix_yaml)));
+}
+
+/** The runtime skill of one parsed snapshot. */
+function runtimeSkillOf(input: {
+  revisionId: string;
+  identity: ReturnType<typeof validateFrontmatter>;
+  sidecar: ReturnType<typeof sidecarOf>;
+  defaultStatus: SkillStatus;
+  rootContext: ISkillRootContext;
+  contentSha256: string;
+  instructions: ReturnType<typeof splitInstructionsAndExamples>["instructions"];
+  examples: ReturnType<typeof splitInstructionsAndExamples>["examples"];
+  fallback: ISkillFallbackLimits;
+  linked: ReadonlySet<string>;
+  snapshot: ISkillRevisionSnapshot;
+}): IRuntimeSkill {
+  const triggers = triggersOf(input.sidecar, input.identity, input.fallback);
+  return {
+    id: input.revisionId,
+    skill_id: input.identity.name,
+    name: input.identity.name,
+    title: input.sidecar?.title ?? input.identity.name,
+    description: input.identity.description,
+    status: input.sidecar?.status ?? input.defaultStatus,
+    source: input.rootContext.source,
+    scope: input.rootContext.scope,
+    project: input.rootContext.scope === MemoryScope.PROJECT ? input.rootContext.project ?? undefined : undefined,
+    root_kind: input.rootContext.rootKind,
+    path: input.rootContext.path,
+    content_sha256: input.contentSha256,
+    triggers: triggers.triggers,
+    triggers_source: triggers.source,
+    instructions: input.instructions,
+    examples: input.examples,
+    constraints: input.sidecar?.constraints,
+    output_requirements: input.sidecar?.output_requirements,
+    quality_criteria: input.sidecar?.quality_criteria,
+    critical: input.sidecar?.critical,
+    effort: input.sidecar?.effort,
+    thinking: input.sidecar?.thinking,
+    tools: input.sidecar?.tools,
+    compatible_with: input.sidecar?.applies_to,
+    derived_from: input.sidecar?.derived_from,
+    related_skills: input.sidecar?.related_skills,
+    references: input.snapshot.references.map((reference) => ({
       path: reference.path,
       content: canonicalizeSkillText(reference.content),
-      linked: linked.has(reference.path),
+      linked: input.linked.has(reference.path),
     })),
+  };
+}
+
+/** The trigger set and its source for one skill. */
+function triggersOf(
+  sidecar: ReturnType<typeof sidecarOf>,
+  identity: ReturnType<typeof validateFrontmatter>,
+  fallback: ISkillFallbackLimits,
+): { triggers: IRuntimeSkill["triggers"]; source: IRuntimeSkill["triggers_source"] } {
+  if (sidecar?.triggers) return { triggers: sidecar.triggers, source: AUTHORED_TRIGGERS_SOURCE };
+  return {
+    triggers: { keywords: synthesizeFallbackKeywords(identity.name, identity.description, fallback) },
+    source: DESCRIPTION_TRIGGERS_SOURCE,
   };
 }
 
