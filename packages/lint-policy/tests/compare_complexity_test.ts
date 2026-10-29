@@ -11,9 +11,11 @@ import { assert, assertEquals, assertThrows } from "@std/assert";
 import { basename, dirname, fromFileUrl, join } from "@std/path";
 import type { IMeasuredFunction } from "@dostark/unslop-ts/report";
 import {
+  CALIBRATION_EXCLUSIONS,
   compareComplexity,
   CompareError,
   coreKeyOf,
+  type IExclusion,
   type IFallowFinding,
   type IFallowReport,
   matchFunctions,
@@ -94,21 +96,98 @@ Deno.test("compare-complexity-matching: schema, version, kind and empty populati
   );
 });
 
-Deno.test("compare-complexity-matching: the comparison scopes to common files and reports the exclusions", () => {
+Deno.test("compare-complexity-matching: the comparison keeps both full populations and reports tool-only files", () => {
   const fallow = report([finding(1, 0), finding(2, 0)]);
   const core = [coreRow(1, 0, 2, 1), { ...coreRow(1, 0), path: "src/b.ts" }];
-  const comparison = compareComplexity(fallow, core, 1);
+  const comparison = compareComplexity(fallow, core, 1, []);
   assertEquals(comparison.populations.fallow_files, 1);
   assertEquals(comparison.populations.core_files, 2);
   assertEquals(comparison.populations.common_files, 1);
   assertEquals(comparison.populations.fallow, 2);
-  assertEquals(comparison.populations.core, 1);
-  assertEquals(comparison.populations.core_outside_fallow, 1);
+  assertEquals(comparison.populations.core, 2);
   assertEquals(comparison.populations.core_parse_failures, 1);
   assertEquals(comparison.populations.matched, 1);
   assertEquals(comparison.populations.unmatched_fallow, 1);
+  assertEquals(comparison.populations.unmatched_core, 1);
   assertEquals(comparison.differences.length, 1);
   assertEquals(comparison.differences[0].core_cyclomatic, 2);
+  assertEquals(comparison.sufficient, false);
+});
+
+/** `count` fallow findings and the same count of core rows, on one file, at consecutive lines from `start`. */
+function populations(count: number, start = 1): { fallow: IFallowFinding[]; core: IMeasuredFunction[] } {
+  const lines = Array.from({ length: count }, (_, index) => start + index);
+  return { fallow: lines.map((line) => finding(line, 0)), core: lines.map((line) => coreRow(line, 0)) };
+}
+
+Deno.test("compare-full-population-sufficiency: one common match among 101 subjects fails and parse failures or ambiguity cannot pass", () => {
+  const sparse = populations(101);
+  const shifted = sparse.core.map((row, index) => (index === 0 ? row : { ...row, line: row.line + 1000 }));
+  const lonely = compareComplexity(report(sparse.fallow), shifted, 5, []);
+  assertEquals(lonely.populations.matched, 1);
+  assertEquals(lonely.coverage.fallow < 0.99, true);
+  assertEquals(lonely.sufficient, false);
+
+  const toolOnly = populations(100);
+  const otherFiles = toolOnly.fallow.map((row, index) => ({ ...row, path: `only/fallow_${index}.ts` }));
+  const withTail = compareComplexity(
+    report([...populations(1).fallow, ...otherFiles]),
+    [...populations(1).core, ...toolOnly.core.map((row, index) => ({ ...row, path: `only/core_${index}.ts` }))],
+    0,
+    [],
+  );
+  assertEquals(withTail.populations.matched, 1);
+  assertEquals(withTail.sufficient, false);
+
+  const exact = populations(200);
+  assertEquals(compareComplexity(report(exact.fallow), exact.core, 0, []).sufficient, true);
+  assertEquals(compareComplexity(report(exact.fallow), exact.core, 1, []).sufficient, false);
+
+  const duplicated = compareComplexity(report([...exact.fallow, finding(1, 0, 9, 9, "twin")]), exact.core, 0, []);
+  assertEquals(duplicated.populations.ambiguous, 1);
+  assertEquals(duplicated.coverage.fallow >= 0.99, true);
+  assertEquals(duplicated.sufficient, false);
+  assertEquals(duplicated.unmatched.ambiguous.length, 1);
+});
+
+Deno.test("compare-explicit-exclusions: only justified exclusions leave a population and every identity stays available", () => {
+  const exact = populations(150);
+  const extraFallow = [1, 2, 3].map((line) => ({ ...finding(line, 0), path: "tests/fixtures/x.ts" }));
+  const extraCore = [1, 2].map((line) => ({ ...coreRow(line, 0), path: "generated/bundle.js" }));
+  const exclusions: IExclusion[] = [
+    { tool: "fallow", path: "tests/fixtures/", reason: "Fixture projects are test data." },
+    { tool: "core", path: "generated/bundle.js", reason: "A generated bundle." },
+  ];
+  const excluded = compareComplexity(
+    report([...exact.fallow, ...extraFallow]),
+    [...exact.core, ...extraCore],
+    0,
+    exclusions,
+  );
+  assertEquals(excluded.sufficient, true);
+  assertEquals(excluded.populations.fallow, 150);
+  assertEquals(excluded.populations.core, 150);
+  assertEquals(excluded.exclusions.map((entry) => [entry.tool, entry.path, entry.functions, entry.files]), [
+    ["fallow", "tests/fixtures/", 3, ["tests/fixtures/x.ts"]],
+    ["core", "generated/bundle.js", 2, ["generated/bundle.js"]],
+  ]);
+  assertEquals(excluded.exclusions.every((entry) => entry.reason.length > 0), true);
+
+  const unlisted = compareComplexity(
+    report([...exact.fallow, ...extraFallow]),
+    [...exact.core, ...extraCore],
+    0,
+    exclusions.slice(0, 1),
+  );
+  assertEquals(unlisted.populations.unmatched_core, 2);
+  assertEquals(unlisted.unmatched.core.length, 2);
+  assertEquals(unlisted.unmatched.core[0].path, "generated/bundle.js");
+  assertThrows(
+    () => compareComplexity(report(exact.fallow), exact.core, 0, [{ tool: "core", path: "generated/", reason: " " }]),
+    CompareError,
+    "needs a path and a reason",
+  );
+  assertEquals(CALIBRATION_EXCLUSIONS.every((entry) => entry.reason.trim().length > 0 && entry.path.length > 0), true);
 });
 
 Deno.test("compare-complexity-matching: a contribution-kind difference is reported by kind", () => {

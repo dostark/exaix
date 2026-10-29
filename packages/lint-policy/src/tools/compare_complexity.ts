@@ -94,6 +94,25 @@ export interface IDifference {
   readonly contributions: readonly IContributionDifference[];
 }
 
+const TOOL_FALLOW = "fallow";
+const TOOL_CORE = "core";
+
+/** The two tools whose populations the calibration compares. */
+type ExclusionTool = typeof TOOL_FALLOW | typeof TOOL_CORE;
+
+/** One justified subject that leaves a tool's population: a file, or a directory when the path ends in a slash. */
+export interface IExclusion {
+  readonly tool: ExclusionTool;
+  readonly path: string;
+  readonly reason: string;
+}
+
+/** One exclusion with the functions it removed, so the accounting stays complete. */
+export interface IExclusionAccount extends IExclusion {
+  readonly files: readonly string[];
+  readonly functions: number;
+}
+
 /** The complete comparison result. */
 export interface IComparison {
   readonly fallow_version: string;
@@ -116,6 +135,13 @@ export interface IComparison {
     readonly fallow: readonly IUnmatchedRow[];
     readonly core: readonly IUnmatchedRow[];
   };
+  /** Every unmatched and ambiguous identity, beyond the display samples. */
+  readonly unmatched: {
+    readonly fallow: readonly IUnmatchedRow[];
+    readonly core: readonly IUnmatchedRow[];
+    readonly ambiguous: readonly { readonly key: string; readonly fallow: number; readonly core: number }[];
+  };
+  readonly exclusions: readonly IExclusionAccount[];
   readonly coverage: { readonly fallow: number; readonly core: number };
   readonly exact: {
     readonly cyclomatic: { readonly equal: number; readonly percent: number };
@@ -136,6 +162,43 @@ const REQUIRED_COVERAGE = 0.99;
 
 /** The exact cyclomatic agreement the plan targets. */
 const REQUIRED_EXACT_AGREEMENT = 0.95;
+
+/**
+ * The subjects the calibration leaves out of a population, each with its own reason. A tool-only file is never
+ * dropped automatically: it counts against coverage unless a line here names it.
+ */
+export const CALIBRATION_EXCLUSIONS: readonly IExclusion[] = [
+  {
+    tool: TOOL_FALLOW,
+    path: "tests/scenario_framework/fixtures/",
+    reason: "Scenario fixture projects are test data, and the two tools scan different fixture files.",
+  },
+  {
+    tool: TOOL_CORE,
+    path: "tests/scenario_framework/fixtures/",
+    reason: "Scenario fixture projects are test data, and the two tools scan different fixture files.",
+  },
+  {
+    tool: TOOL_CORE,
+    path: "lint/unslop/unslop_engine.js",
+    reason: "A generated engine bundle that the fallow run does not report.",
+  },
+  {
+    tool: TOOL_CORE,
+    path: ".cache/",
+    reason: "A local scratch cache, not tracked source.",
+  },
+  {
+    tool: TOOL_CORE,
+    path: "exaix-dev-docs/planning/evidence/",
+    reason: "Evidence probes in the plan submodule that the fallow run does not scan.",
+  },
+  {
+    tool: TOOL_CORE,
+    path: "tests/scenario_framework/output/",
+    reason: "Generated scenario output that the fallow run does not scan.",
+  },
+];
 
 /** The measured defaults the calibration counts with. */
 const DEFAULT_SETTINGS: IHealthSettings = {
@@ -268,17 +331,76 @@ function coverageOf(matched: number, population: number): number {
 /** The first few unmatched rows, for attribution in the report. */
 const SAMPLE_SIZE = 10;
 
-/** Compares a validated fallow report with the engine rows over the files both tools measured. */
+/** Rejects an exclusion without a path or a stated reason. */
+function assertExclusions(exclusions: readonly IExclusion[]): void {
+  for (const exclusion of exclusions) {
+    if (exclusion.path.trim() === "" || exclusion.reason.trim() === "") {
+      throw new CompareError(`an exclusion needs a path and a reason: '${exclusion.path}'`);
+    }
+  }
+}
+
+/** True when the exclusion names the file: the exact path, or a directory prefix. */
+function excludes(exclusion: IExclusion, path: string): boolean {
+  const normalized = normalizePath(path);
+  return exclusion.path.endsWith("/") ? normalized.startsWith(exclusion.path) : normalized === exclusion.path;
+}
+
+/** Splits one tool's rows into the kept population and the per-exclusion accounts. */
+function applyExclusions<T extends { readonly path: string }>(
+  tool: ExclusionTool,
+  rows: readonly T[],
+  exclusions: readonly IExclusion[],
+): { kept: T[]; accounts: IExclusionAccount[] } {
+  const own = exclusions.filter((exclusion) => exclusion.tool === tool);
+  const files = new Map<IExclusion, Map<string, number>>();
+  const kept: T[] = [];
+  for (const row of rows) {
+    const hit = own.find((exclusion) => excludes(exclusion, row.path));
+    if (hit === undefined) {
+      kept.push(row);
+      continue;
+    }
+    const counts = files.get(hit) ?? new Map<string, number>();
+    counts.set(normalizePath(row.path), (counts.get(normalizePath(row.path)) ?? 0) + 1);
+    files.set(hit, counts);
+  }
+  const accounts = own.map((exclusion): IExclusionAccount => {
+    const counts = files.get(exclusion) ?? new Map<string, number>();
+    return {
+      ...exclusion,
+      files: [...counts.keys()].sort((left, right) => left.localeCompare(right)),
+      functions: [...counts.values()].reduce((sum, count) => sum + count, 0),
+    };
+  });
+  return { kept, accounts };
+}
+
+/** The identity of one unmatched row. */
+function unmatchedRowOf(
+  row: { readonly path: string; readonly name: string; readonly line: number; readonly col: number },
+): IUnmatchedRow {
+  return { path: normalizePath(row.path), name: row.name, line: row.line, col: row.col };
+}
+
+/**
+ * Compares a fallow report with the engine rows over their full supported populations.
+ * Only the listed exclusions leave a population. A tool-only file counts against the coverage of the tool that lacks it.
+ */
 export function compareComplexity(
   report: IFallowReport,
   core: readonly IMeasuredFunction[],
   coreParseFailures = 0,
+  exclusions: readonly IExclusion[] = CALIBRATION_EXCLUSIONS,
 ): IComparison {
-  const fallowPaths = new Set(report.findings.map((finding) => normalizePath(finding.path)));
-  const corePaths = new Set(core.map((row) => normalizePath(row.path)));
+  assertExclusions(exclusions);
+  const fallowKept = applyExclusions(TOOL_FALLOW, report.findings, exclusions);
+  const coreKept = applyExclusions(TOOL_CORE, core, exclusions);
+  const scopedFallow = fallowKept.kept;
+  const scoped = coreKept.kept;
+  const fallowPaths = new Set(scopedFallow.map((finding) => normalizePath(finding.path)));
+  const corePaths = new Set(scoped.map((row) => normalizePath(row.path)));
   const commonPaths = new Set([...fallowPaths].filter((path) => corePaths.has(path)));
-  const scopedFallow = report.findings.filter((finding) => commonPaths.has(normalizePath(finding.path)));
-  const scoped = core.filter((row) => commonPaths.has(normalizePath(row.path)));
   const match = matchFunctions(scopedFallow, scoped);
   const differences: IDifference[] = [];
   let equalCyclomatic = 0;
@@ -324,9 +446,15 @@ export function compareComplexity(
       ambiguous: match.ambiguous.length,
     },
     unmatched_samples: {
-      fallow: match.fallowOnly.slice(0, SAMPLE_SIZE),
-      core: match.coreOnly.slice(0, SAMPLE_SIZE),
+      fallow: match.fallowOnly.slice(0, SAMPLE_SIZE).map(unmatchedRowOf),
+      core: match.coreOnly.slice(0, SAMPLE_SIZE).map(unmatchedRowOf),
     },
+    unmatched: {
+      fallow: match.fallowOnly.map(unmatchedRowOf),
+      core: match.coreOnly.map(unmatchedRowOf),
+      ambiguous: match.ambiguous,
+    },
+    exclusions: [...fallowKept.accounts, ...coreKept.accounts],
     coverage: { fallow: fallowCoverage, core: coreCoverage },
     exact: {
       cyclomatic: {
@@ -339,6 +467,7 @@ export function compareComplexity(
       },
     },
     sufficient: matched > 0 && fallowCoverage >= REQUIRED_COVERAGE && coreCoverage >= REQUIRED_COVERAGE &&
+      coreParseFailures === 0 && match.ambiguous.length === 0 &&
       equalCyclomatic / Math.max(matched, 1) >= REQUIRED_EXACT_AGREEMENT,
     differences,
   };
@@ -471,6 +600,7 @@ async function main(): Promise<void> {
       nowEpoch: 0,
       duplication: null,
       duplicateRunner: null,
+      publicEntries: [],
     });
     const comparison = compareComplexity(report, collection.rows, collection.errors.length);
     console.log(asJson ? `${JSON.stringify(comparison, null, 2)}\n` : `${renderText(comparison)}\n`);
