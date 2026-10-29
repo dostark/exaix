@@ -119,62 +119,12 @@ export class AnthropicProvider extends BaseProvider {
     assertForcedChoiceAllowed(options?.toolChoice?.type, thinkingRequested, rules);
 
     const messages: AnthropicRequestMessage[] = [];
-
-    // Current user prompt
-    const cachedSections = options?.cachedSections;
-    const currentMessage: AnthropicRequestMessage = (cachedSections && cachedSections.length > 0)
-      ? {
-        role: ANTHROPIC_MESSAGE_ROLE_USER,
-        content: [
-          { type: ANTHROPIC_CONTENT_TYPE_TEXT, text: prompt },
-        ].map((block, i) =>
-          cachedSections.includes(i) ? { ...block, cache_control: { type: ANTHROPIC_CACHE_CONTROL_EPHEMERAL } } : block
-        ),
-      }
-      : {
-        role: ANTHROPIC_MESSAGE_ROLE_USER,
-        content: [{
-          type: ANTHROPIC_CONTENT_TYPE_TEXT,
-          text: prompt,
-          cache_control: { type: ANTHROPIC_CACHE_CONTROL_EPHEMERAL },
-        }],
-      };
-
+    const currentMessage = currentUserMessage(prompt, options?.cachedSections);
     if (options?.priorRound) {
       // A completed round leads with the prompt, then replays every original block and every result.
       messages.push(currentMessage, ...priorRoundMessages(options.priorRound, options.toolChoice));
     } else {
-      // Legacy single-call replay: the assistant tool_use, its tool_result, then the prompt.
-      if (options?.priorTurn) {
-        const priorTurn = options.priorTurn;
-        // Anthropic requires passing prior thinking blocks back verbatim alongside tool_use.
-        const content: AnthropicRequestContentBlock[] = [
-          ...(priorTurn.thinkingBlocks?.map((block): AnthropicRequestContentBlock => ({
-            type: "thinking",
-            thinking: block.thinking,
-            signature: block.signature,
-          })) ?? []),
-          {
-            type: ANTHROPIC_CONTENT_TYPE_TOOL_USE,
-            id: priorTurn.toolUseId,
-            name: priorTurn.toolName,
-            input: priorTurn.toolInput,
-          },
-        ];
-        messages.push({
-          role: ANTHROPIC_MESSAGE_ROLE_ASSISTANT,
-          content,
-        });
-        messages.push({
-          role: ANTHROPIC_MESSAGE_ROLE_USER,
-          content: [{
-            type: ANTHROPIC_CONTENT_TYPE_TOOL_RESULT,
-            tool_use_id: priorTurn.toolUseId,
-            content: priorTurn.toolResultContent,
-            is_error: priorTurn.toolResultIsError,
-          }],
-        });
-      }
+      appendLegacyReplay(messages, options);
       messages.push(currentMessage);
     }
 
@@ -191,18 +141,7 @@ export class AnthropicProvider extends BaseProvider {
         effort: options?.effort ?? "unset",
       });
     }
-    const requestBody: AnthropicRequestBody = {
-      model: this.model,
-      max_tokens: tuning.maxTokens,
-      messages,
-      temperature: options?.temperature,
-      top_p: options?.top_p,
-      stop_sequences: options?.stop,
-      thinking: tuning.thinking,
-      ...(tuning.outputConfig ? { output_config: tuning.outputConfig } : {}),
-      tools: options?.tools?.map(mapToolDefinition),
-      tool_choice: options?.toolChoice ? mapToolChoice(options.toolChoice) : undefined,
-    };
+    const requestBody = messagesRequestOf(this.model, messages, tuning, options);
 
     try {
       return await this.postMessages(requestBody, options);
@@ -377,4 +316,81 @@ function stripRejectedParameter(
   const stripped = { ...requestBody };
   delete stripped[param];
   return stripped;
+}
+
+/** The current user message, with cache control on the cached sections. */
+function currentUserMessage(
+  prompt: string,
+  cachedSections: Opt<readonly number[], Reason.OptionalInput>,
+): AnthropicRequestMessage {
+  if (!cachedSections || cachedSections.length === 0) {
+    return {
+      role: ANTHROPIC_MESSAGE_ROLE_USER,
+      content: [{
+        type: ANTHROPIC_CONTENT_TYPE_TEXT,
+        text: prompt,
+        cache_control: { type: ANTHROPIC_CACHE_CONTROL_EPHEMERAL },
+      }],
+    };
+  }
+  return {
+    role: ANTHROPIC_MESSAGE_ROLE_USER,
+    content: [{ type: ANTHROPIC_CONTENT_TYPE_TEXT, text: prompt }].map((block, index) =>
+      cachedSections.includes(index) ? { ...block, cache_control: { type: ANTHROPIC_CACHE_CONTROL_EPHEMERAL } } : block
+    ),
+  };
+}
+
+/** Appends the legacy single-call replay: the assistant tool_use, then its tool_result. */
+function appendLegacyReplay(
+  messages: AnthropicRequestMessage[],
+  options: Opt<IModelOptions, Reason.OptionalInput>,
+): void {
+  const priorTurn = options?.priorTurn;
+  if (!priorTurn) return;
+  // Anthropic requires passing prior thinking blocks back verbatim alongside tool_use.
+  const content: AnthropicRequestContentBlock[] = [
+    ...(priorTurn.thinkingBlocks?.map((block): AnthropicRequestContentBlock => ({
+      type: "thinking",
+      thinking: block.thinking,
+      signature: block.signature,
+    })) ?? []),
+    {
+      type: ANTHROPIC_CONTENT_TYPE_TOOL_USE,
+      id: priorTurn.toolUseId,
+      name: priorTurn.toolName,
+      input: priorTurn.toolInput,
+    },
+  ];
+  messages.push({ role: ANTHROPIC_MESSAGE_ROLE_ASSISTANT, content });
+  messages.push({
+    role: ANTHROPIC_MESSAGE_ROLE_USER,
+    content: [{
+      type: ANTHROPIC_CONTENT_TYPE_TOOL_RESULT,
+      tool_use_id: priorTurn.toolUseId,
+      content: priorTurn.toolResultContent,
+      is_error: priorTurn.toolResultIsError,
+    }],
+  });
+}
+
+/** The Messages API request body of one attempt. */
+function messagesRequestOf(
+  model: string,
+  messages: AnthropicRequestMessage[],
+  tuning: ReturnType<typeof requestTuning>,
+  options: Opt<IModelOptions, Reason.OptionalInput>,
+): AnthropicRequestBody {
+  return {
+    model,
+    max_tokens: tuning.maxTokens,
+    messages,
+    temperature: options?.temperature,
+    top_p: options?.top_p,
+    stop_sequences: options?.stop,
+    thinking: tuning.thinking,
+    ...(tuning.outputConfig ? { output_config: tuning.outputConfig } : {}),
+    tools: options?.tools?.map(mapToolDefinition),
+    tool_choice: options?.toolChoice ? mapToolChoice(options.toolChoice) : undefined,
+  };
 }
