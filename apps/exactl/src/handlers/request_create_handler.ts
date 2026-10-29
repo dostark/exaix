@@ -407,25 +407,47 @@ function mergeFileFrontmatterIntoOptions(
 ): IRequestOptions {
   const priority = VALID_PRIORITIES.find((candidate) => candidate === frontmatter.priority);
   const flow = options.flow ?? frontmatter.flow;
+  const identity = agentIdentityOf(frontmatter, options, flow);
   return {
     ...options,
-    agent_role: flow ? undefined : (options.agent_role ?? options.agent ?? frontmatter.agent_role),
-    agent: flow ? undefined : options.agent,
+    agent_role: identity.agent_role,
+    agent: identity.agent,
     priority: options.priority ?? priority,
-    portal: options.portal ?? frontmatter.portal,
-    target_branch: options.target_branch ?? frontmatter.target_branch,
-    plan_context_ref: options.plan_context_ref ?? frontmatter.plan_context_ref,
-    model: options.model ?? frontmatter.model,
-    model_size: options.model_size ?? frontmatter.model_size,
-    preferred_provider: options.preferred_provider ?? frontmatter.preferred_provider,
-    thinking: options.thinking ?? frontmatter.thinking,
-    effort: options.effort ?? frontmatter.effort,
-    characteristics: options.characteristics ?? frontmatter.characteristics,
+    portal: inherit(options.portal, frontmatter.portal),
+    target_branch: inherit(options.target_branch, frontmatter.target_branch),
+    plan_context_ref: inherit(options.plan_context_ref, frontmatter.plan_context_ref),
+    model: inherit(options.model, frontmatter.model),
+    model_size: inherit(options.model_size, frontmatter.model_size),
+    preferred_provider: inherit(options.preferred_provider, frontmatter.preferred_provider),
+    thinking: inherit(options.thinking, frontmatter.thinking),
+    effort: inherit(options.effort, frontmatter.effort),
+    characteristics: inherit(options.characteristics, frontmatter.characteristics),
     flow,
-    subject: options.subject ?? frontmatter.subject,
+    subject: inherit(options.subject, frontmatter.subject),
     skills: options.skills ?? normalizeFrontmatterList(frontmatter.skills),
     tags: options.tags ?? normalizeFrontmatterList(frontmatter.tags),
-    acceptanceCriteria: options.acceptanceCriteria ?? frontmatter.acceptance_criteria,
-    expectedOutcomes: options.expectedOutcomes ?? frontmatter.expected_outcomes,
+    acceptanceCriteria: inherit(options.acceptanceCriteria, frontmatter.acceptance_criteria),
+    expectedOutcomes: inherit(options.expectedOutcomes, frontmatter.expected_outcomes),
+  };
+}
+
+/** The value or its frontmatter fallback. */
+function inherit<T>(
+  value: Opt<T, Reason.OptionalInput>,
+  fallback: Opt<T, Reason.OptionalInput>,
+): Opt<T, Reason.OptionalInput> {
+  return value ?? fallback;
+}
+
+/** The agent identity of one file-created request. A flow request carries no agent identity. */
+function agentIdentityOf(
+  frontmatter: IRequestFrontmatter,
+  options: IRequestOptions,
+  flow: Opt<string, Reason.OptionalInput>,
+): { agent_role: Opt<string, Reason.OptionalInput>; agent: Opt<string, Reason.OptionalInput> } {
+  if (flow) return { agent_role: undefined, agent: undefined };
+  return {
+    agent_role: options.agent_role ?? options.agent ?? frontmatter.agent_role,
+    agent: options.agent,
   };
 }

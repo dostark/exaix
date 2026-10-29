@@ -30,6 +30,7 @@ import { createGitService } from "../../../../apps/common/adapters/git_adapter.t
 import {
   GIT_CMD_BRANCH,
   GIT_CMD_CHECKOUT,
+  GIT_CMD_DIFF,
   GIT_CMD_LIST,
   GIT_CMD_REV_PARSE,
   GIT_CMD_WORKTREE,
@@ -165,6 +166,12 @@ type ArtifactFrontmatterData = {
 /**
  * Commands for reviewing and managing agent-generated code reviews
  */
+/** The discriminator of a resolved review branch target. */
+const REVIEW_TARGET_BRANCH = "branch";
+
+/** The discriminator of a resolved review artifact target. */
+const REVIEW_TARGET_ARTIFACT = "artifact";
+
 export class ReviewCommands extends BaseCommand {
   private requestCommands: RequestCommands;
   private planCommands: PlanCommands;
@@ -1039,151 +1046,46 @@ export class ReviewCommands extends BaseCommand {
   }
 
   async show(branchName: string): Promise<IReviewDetails> {
-    // Artifact-backed review
-    if (this.isArtifactId(branchName)) {
-      const artifact = await this.getArtifact(branchName);
-      return {
-        type: ReviewType.ARTIFACT,
-        branch: artifact.id,
-        trace_id: artifact.id,
-        request_id: artifact.request_id,
-        files_changed: 0,
-        created_at: artifact.created,
-        agent_role: artifact.agent_role,
-        portal: artifact.portal ?? undefined,
-        status: artifact.status,
-        rejection_reason: artifact.rejection_reason ?? undefined,
-        approved_at: artifact.status === ReviewStatus.APPROVED ? artifact.updated ?? undefined : undefined,
-        rejected_at: artifact.status === ReviewStatus.REJECTED ? artifact.updated ?? undefined : undefined,
-        diff: artifact.body,
-        commits: [],
-      };
-    }
+    if (this.isArtifactId(branchName)) return this.artifactDetailsOf(await this.getArtifact(branchName));
+    const target = await this.resolveReviewTarget(branchName);
+    if (target.kind === REVIEW_TARGET_ARTIFACT) return target.details;
 
-    // If not a full branch name, try to find matching branch
-    let fullBranch = branchName;
-    if (!branchName.startsWith("feat/")) {
-      const branches = await this.list(undefined, ReviewFilterEnum.CODE);
-      const match = branches.find((b) => b.request_id === branchName || b.branch === `feat/${branchName}`);
-      if (match) {
-        fullBranch = match.branch;
-      } else {
-        // Fallback: allow request_id shorthand for artifacts
-        const artifacts = await this.listArtifacts();
-        const byRequest = artifacts.find((a) => a.request_id === branchName);
-        if (byRequest) {
-          const artifact = await this.getArtifact(byRequest.id);
-          return {
-            type: ReviewType.ARTIFACT,
-            branch: artifact.id,
-            trace_id: artifact.id,
-            request_id: artifact.request_id,
-            files_changed: 0,
-            created_at: artifact.created,
-            agent_role: artifact.agent_role,
-            file_path: artifact.file_path,
-            portal: artifact.portal ?? undefined,
-            status: artifact.status,
-            rejection_reason: artifact.rejection_reason ?? undefined,
-            approved_at: artifact.status === ReviewStatus.APPROVED ? artifact.updated ?? undefined : undefined,
-            rejected_at: artifact.status === ReviewStatus.REJECTED ? artifact.updated ?? undefined : undefined,
-            diff: artifact.body,
-            commits: [],
-          };
-        }
-
-        throw new Error(`Review not found: ${branchName}\nRun 'exactl review list' to see available reviews`);
-      }
-    }
-
+    const fullBranch = target.branch;
     const repoPath = await this.findRepoForBranch(fullBranch);
     const defaultBranch = await this.getDefaultBranch(repoPath);
     const baseBranch = await this.resolveBaseBranchForBranch(fullBranch, repoPath, defaultBranch);
     const storedWorktreePath = await this.getStoredReviewWorktreePath(fullBranch);
     const storedTraceId = await this.getStoredReviewTraceId(fullBranch);
+    await this.assertBranchExists(repoPath, fullBranch);
 
-    // Verify branch exists
-    const checkCmd = new Deno.Command("git", {
-      args: [GIT_CMD_REV_PARSE, "--verify", fullBranch],
-      cwd: repoPath,
-      stdout: "piped",
-      stderr: "piped",
-    });
-
-    const checkResult = await checkCmd.output();
-    if (!checkResult.success) {
-      throw new Error(`Branch not found: ${fullBranch}`);
-    }
-
-    // Get commit history
-    const logCmd = new Deno.Command("git", {
-      args: [
+    const commits = parseCommitHistory(
+      await this.gitOutput(repoPath, [
         "log",
         fullBranch,
         "--not",
         baseBranch,
         "--format=%H|||%s|||%aI",
-      ],
-      cwd: repoPath,
-      stdout: "piped",
-      stderr: "piped",
-    });
+      ]),
+    );
+    const diff = await this.gitOutput(repoPath, [GIT_CMD_DIFF, `${baseBranch}...${fullBranch}`]);
+    const files = (await this.gitOutput(repoPath, [GIT_CMD_DIFF, "--name-only", `${baseBranch}...${fullBranch}`]))
+      .trim().split("\n").filter((file) => file);
 
-    const logResult = await logCmd.output();
-    const commits = new TextDecoder().decode(logResult.stdout)
-      .trim()
-      .split("\n")
-      .filter((l) => l)
-      .map((line) => {
-        const [sha, message, timestamp] = line.split("|||");
-        return { sha, message, timestamp };
-      });
-
-    // Get diff
-    const diffCmd = new Deno.Command("git", {
-      args: ["diff", `${baseBranch}...${fullBranch}`],
-      cwd: repoPath,
-      stdout: "piped",
-      stderr: "piped",
-    });
-
-    const diffResult = await diffCmd.output();
-    const diff = new TextDecoder().decode(diffResult.stdout);
-
-    // Get files changed count
-    const filesCmd = new Deno.Command("git", {
-      args: ["diff", "--name-only", `${baseBranch}...${fullBranch}`],
-      cwd: repoPath,
-      stdout: "piped",
-      stderr: "piped",
-    });
-
-    const filesResult = await filesCmd.output();
-    const files = new TextDecoder().decode(filesResult.stdout).trim().split("\n").filter((f) => f);
-
-    // Extract metadata from branch name
-    // request_id format: request-NNN, trace_id format: xxx-yyy-zzz
-    const match = fullBranch.match(/^feat\/(request-[\w]+)-(.+)$/);
-    const [, request_id, trace_id] = match || ["", fullBranch, "unknown"];
-
-    const basicMetadata = {
-      type: ReviewType.CODE,
-      branch: fullBranch,
-      trace_id: storedTraceId ?? trace_id,
-      request_id,
-      base_branch: baseBranch,
-      worktree_path: storedWorktreePath ?? undefined,
-      files_changed: files.length,
-      created_at: commits[commits.length - 1]?.timestamp || new Date().toISOString(),
-      agent_role: commits[0]?.sha.substring(0, 8) || "unknown",
-    } as IReviewMetadata;
-
-    // Enrich with request and plan context
+    const basicMetadata = this.basicMetadataOf(
+      fullBranch,
+      baseBranch,
+      storedWorktreePath,
+      files,
+      commits,
+      storedTraceId,
+    );
     const enrichedMetadata = await this.extractReviewMetadataWithContext(basicMetadata);
-
-    const anomalyPayload = await this.loadAnomalyPayload(storedTraceId ?? trace_id);
-    const verification = await this.loadVerificationProjection(storedTraceId ?? trace_id, commits[0]?.sha, request_id);
-
+    const anomalyPayload = await this.loadAnomalyPayload(storedTraceId ?? basicMetadata.trace_id);
+    const verification = await this.loadVerificationProjection(
+      storedTraceId ?? basicMetadata.trace_id,
+      commits[0]?.sha,
+      basicMetadata.request_id,
+    );
     return {
       ...enrichedMetadata,
       diff,
@@ -1192,6 +1094,95 @@ export class ReviewCommands extends BaseCommand {
       ...(verification.status ? { verification_status: verification.status } : {}),
       ...(verification.lint ? { lint: verification.lint } : {}),
     };
+  }
+
+  /** The review details of one artifact. */
+  private artifactDetailsOf(
+    artifact: Awaited<ReturnType<ReviewCommands["getArtifact"]>>,
+    withFilePath = false,
+  ): IReviewDetails {
+    const details: IReviewDetails = {
+      type: ReviewType.ARTIFACT,
+      branch: artifact.id,
+      trace_id: artifact.id,
+      request_id: artifact.request_id,
+      files_changed: 0,
+      created_at: artifact.created,
+      agent_role: artifact.agent_role,
+      portal: artifact.portal ?? undefined,
+      status: artifact.status,
+      rejection_reason: artifact.rejection_reason ?? undefined,
+      approved_at: artifact.status === ReviewStatus.APPROVED ? artifact.updated ?? undefined : undefined,
+      rejected_at: artifact.status === ReviewStatus.REJECTED ? artifact.updated ?? undefined : undefined,
+      diff: artifact.body,
+      commits: [],
+    };
+    return withFilePath ? { ...details, file_path: artifact.file_path } : details;
+  }
+
+  /** Resolves a review name to a branch, an artifact, or a not-found error. */
+  private async resolveReviewTarget(
+    branchName: string,
+  ): Promise<
+    { kind: typeof REVIEW_TARGET_BRANCH; branch: string } | {
+      kind: typeof REVIEW_TARGET_ARTIFACT;
+      details: IReviewDetails;
+    }
+  > {
+    if (branchName.startsWith("feat/")) return { kind: REVIEW_TARGET_BRANCH, branch: branchName };
+    const branches = await this.list(undefined, ReviewFilterEnum.CODE);
+    const match = branches.find((branch) => branch.request_id === branchName || branch.branch === `feat/${branchName}`);
+    if (match) return { kind: REVIEW_TARGET_BRANCH, branch: match.branch };
+    const artifacts = await this.listArtifacts();
+    const byRequest = artifacts.find((artifact) => artifact.request_id === branchName);
+    if (byRequest) {
+      return {
+        kind: REVIEW_TARGET_ARTIFACT,
+        details: this.artifactDetailsOf(await this.getArtifact(byRequest.id), true),
+      };
+    }
+    throw new Error(`Review not found: ${branchName}\nRun 'exactl review list' to see available reviews`);
+  }
+
+  /** Rejects a branch that does not exist in the repository. */
+  private async assertBranchExists(repoPath: string, branch: string): Promise<void> {
+    const output = await new Deno.Command("git", {
+      args: [GIT_CMD_REV_PARSE, "--verify", branch],
+      cwd: repoPath,
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    if (!output.success) throw new Error(`Branch not found: ${branch}`);
+  }
+
+  /** Runs one Git command in the repository and returns its stdout. */
+  private async gitOutput(cwd: string, args: string[]): Promise<string> {
+    const output = await new Deno.Command("git", { args, cwd, stdout: "piped", stderr: "piped" }).output();
+    return new TextDecoder().decode(output.stdout);
+  }
+
+  /** The branch, request and commit metadata of one review. */
+  private basicMetadataOf(
+    fullBranch: string,
+    baseBranch: string,
+    storedWorktreePath: string | null,
+    files: readonly string[],
+    commits: readonly { sha: string; message: string; timestamp: string }[],
+    storedTraceId: string | null,
+  ): IReviewMetadata {
+    const [, requestId, parsedTraceId] = fullBranch.match(/^feat\/(request-[\w]+)-(.+)$/) ||
+      ["", fullBranch, "unknown"];
+    return {
+      type: ReviewType.CODE,
+      branch: fullBranch,
+      trace_id: storedTraceId ?? parsedTraceId,
+      request_id: requestId,
+      base_branch: baseBranch,
+      worktree_path: storedWorktreePath ?? undefined,
+      files_changed: files.length,
+      created_at: commits[commits.length - 1]?.timestamp || new Date().toISOString(),
+      agent_role: commits[0]?.sha.substring(0, 8) || "unknown",
+    } as IReviewMetadata;
   }
 
   /** Reads the verification status and the terminal lint snapshot of the review commit. */
@@ -1531,4 +1522,12 @@ export class ReviewCommands extends BaseCommand {
 
     return null;
   }
+}
+
+/** Parses one git log line list into review commits. */
+function parseCommitHistory(stdout: string): { sha: string; message: string; timestamp: string }[] {
+  return stdout.trim().split("\n").filter((line) => line).map((line) => {
+    const [sha, message, timestamp] = line.split("|||");
+    return { sha, message, timestamp };
+  });
 }

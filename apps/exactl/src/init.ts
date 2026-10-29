@@ -134,12 +134,7 @@ export async function initializeServices(
 ): Promise<ServiceContext> {
   try {
     if (opts?.simulateFail) throw new Error("simulate-failure");
-    let configPath = opts?.configPath;
-    if (!configPath && isTestMode()) {
-      // In test mode, use a temp directory to avoid polluting the root
-      const tempDir = await Deno.makeTempDir({ prefix: "exactl-test-" });
-      configPath = `${tempDir}/exa.config.toml`;
-    }
+    const configPath = await resolveConfigPath(opts);
     // Register provider factories and default models before ConfigSchema.parse.
     // A derived `[ai]` model entry needs the provider default model.
     bootstrapProviderRegistry();
@@ -149,22 +144,7 @@ export async function initializeServices(
     // Only import/instantiate DatabaseService when explicitly requested: it may load native
     // dynamic libraries during module initialization, which tests must avoid unless they're
     // prepared to close them.
-    let dbLocal: IDatabaseService;
-    if (opts?.instantiateDb) {
-      dbLocal = new DatabaseService(cfg);
-      if (dbLocal.close) {
-        try {
-          await dbLocal.close();
-        } catch {
-          // ignore close errors in test helper
-        }
-      }
-    } else if (!isTestMode()) {
-      dbLocal = new DatabaseService(cfg);
-    } else {
-      // Stub db with no-op methods to prevent crashes
-      dbLocal = createDatabaseStub();
-    }
+    const dbLocal = await createDatabase(opts, cfg);
 
     const gitLocal = new GitService({ config: cfg });
     // For provider, ensure we have a valid model name or fallback
@@ -178,16 +158,7 @@ export async function initializeServices(
     // Reading the journal or printing config needs no model.
     // Build the provider defensively, so a failed credential degrades only the provider.
     // Every other command then keeps the real database, git service and adapters.
-    let providerLocal: IModelProvider;
-    try {
-      providerLocal = await ProviderFactory.createByName(cfg, model);
-    } catch (error) {
-      displayLogger.warn(DomainEventType.RequestProviderSelectionFailed, ActivityActor.SYSTEM, {
-        message: `AI provider unavailable (${error}). Commands that need a model will fail.`,
-        hint: "Set the provider credential, or set EXA_LLM_PROVIDER to a usable provider.",
-      });
-      providerLocal = createProviderStub();
-    }
+    const providerLocal = await createProviderOrStub(cfg, model, displayLogger);
     const displayAdapter = new DisplayAdapter(displayLogger);
     const configAdapter = new ConfigAdapter(cfgService);
 
@@ -366,5 +337,54 @@ export async function initializeServices(
       config: new ConfigAdapter(new ConfigService()),
       // Minimal optional adapters can be undefined in fallback
     };
+  }
+}
+
+/** The config path of one initialization, or a temp config in test mode. */
+async function resolveConfigPath(
+  opts: Opt<{ configPath?: string }, Reason.TestOverride>,
+): Promise<string | undefined> {
+  const configured = opts?.configPath;
+  if (configured || !isTestMode()) return configured;
+  // In test mode, use a temp directory to avoid polluting the root
+  const tempDir = await Deno.makeTempDir({ prefix: "exactl-test-" });
+  return `${tempDir}/exa.config.toml`;
+}
+
+/** The database of one initialization, closed for a test override or stubbed in test mode. */
+async function createDatabase(
+  opts: Opt<{ instantiateDb?: boolean }, Reason.TestOverride>,
+  cfg: ReturnType<ConfigService["get"]>,
+): Promise<IDatabaseService> {
+  if (opts?.instantiateDb) {
+    const db = new DatabaseService(cfg);
+    if (db.close) {
+      try {
+        await db.close();
+      } catch {
+        // ignore close errors in test helper
+      }
+    }
+    return db;
+  }
+  if (!isTestMode()) return new DatabaseService(cfg);
+  // Stub db with no-op methods to prevent crashes
+  return createDatabaseStub();
+}
+
+/** The provider of one initialization, or a stub when its credentials fail. */
+async function createProviderOrStub(
+  cfg: ReturnType<ConfigService["get"]>,
+  model: string,
+  displayLogger: EventLogger,
+): Promise<IModelProvider> {
+  try {
+    return await ProviderFactory.createByName(cfg, model);
+  } catch (error) {
+    displayLogger.warn(DomainEventType.RequestProviderSelectionFailed, ActivityActor.SYSTEM, {
+      message: `AI provider unavailable (${error}). Commands that need a model will fail.`,
+      hint: "Set the provider credential, or set EXA_LLM_PROVIDER to a usable provider.",
+    });
+    return createProviderStub();
   }
 }

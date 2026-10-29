@@ -1,7 +1,7 @@
 {
   "exaix/max-cyclomatic-complexity": {
     "apps/daemon": 3,
-    "apps/exactl": 11,
+    "apps/exactl": 8,
     "apps/tui": 5,
     "packages/ai": 17,
     "packages/ai-anthropic": 2,
@@ -25,7 +25,7 @@
   },
   "exaix/max-cognitive-complexity": {
     "apps/daemon": 6,
-    "apps/exactl": 27,
+    "apps/exactl": 24,
     "apps/tui": 7,
     "packages/ai": 15,
     "packages/ai-anthropic": 1,
@@ -52,7 +52,7 @@
   },
   "exaix/max-function-lines": {
     "apps/daemon": 4,
-    "apps/exactl": 12,
+    "apps/exactl": 11,
     "apps/tui": 7,
     "packages/ai": 5,
     "packages/ai-anthropic": 1,
