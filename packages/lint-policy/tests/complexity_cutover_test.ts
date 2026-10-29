@@ -136,7 +136,10 @@ export default createUnslopProject({ descriptor, config }).plugin;
 `;
 
 /** Writes the isolated cutover fixture to a temp dir and runs `body` in it. */
-async function withCutoverProject(body: (dir: string) => Promise<void>): Promise<void> {
+async function withCutoverProject(
+  body: (dir: string) => Promise<void>,
+  options: { readonly plugin: boolean } = { plugin: true },
+): Promise<void> {
   const dir = await Deno.makeTempDir({ prefix: "complexity_cutover_" });
   try {
     await Deno.mkdir(join(dir, "packages/x/src"), { recursive: true });
@@ -144,7 +147,7 @@ async function withCutoverProject(body: (dir: string) => Promise<void>): Promise
       join(dir, "deno.json"),
       JSON.stringify({
         imports: { "@dostark/unslop-ts": ENGINE_MODULE },
-        lint: { plugins: ["./plugin.ts"] },
+        lint: options.plugin ? { plugins: ["./plugin.ts"] } : {},
       }),
     );
     await Deno.writeTextFile(join(dir, "unslop.project.ts"), DESCRIPTOR);
@@ -247,6 +250,30 @@ Deno.test("check-complexity-cutover: each seeded function exceeds only its rule 
     assertEquals(size.over.length, 1);
     assertEquals(size.over[0].count, 2);
     assertEquals(cyclomatic.over[0].packageName, ".");
+  });
+});
+
+Deno.test("complexity-host-completeness: all three gates refuse an unobserved plugin and keep the ceiling behavior", async () => {
+  await withCutoverProject(async (dir) => {
+    for (const rule of THREE_RULES) {
+      const result = await runDeno([
+        "run",
+        "-A",
+        REPORTER,
+        `--rule=${rule}`,
+        "--roots=packages",
+        "--descriptor=unslop.project.ts",
+        "--ceilings=rule_ceilings.json",
+        "--json",
+        "--fail",
+      ], dir);
+      assert(result.code !== 0, `${rule} passed without its plugin`);
+      assert(result.stderr.includes("reported no observation"), result.stderr);
+      assertEquals(result.stdout, "");
+    }
+  }, { plugin: false });
+  await withCutoverProject(async (dir) => {
+    for (const rule of THREE_RULES) assertEquals((await reportRule(dir, rule)).code, 1, rule);
   });
 });
 
