@@ -474,6 +474,8 @@ async function main(): Promise<void> {
       sinceEpoch: 0,
       minCommits: 3,
       nowEpoch: 0,
+      duplication: null,
+      duplicateRunner: null,
     });
     const comparison = compareComplexity(report, collection.rows, collection.errors.length);
     console.log(asJson ? `${JSON.stringify(comparison, null, 2)}\n` : `${renderText(comparison)}\n`);
