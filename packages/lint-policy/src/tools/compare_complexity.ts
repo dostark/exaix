@@ -471,6 +471,9 @@ async function main(): Promise<void> {
       coverageSha256: null,
       coverageManifest: null,
       testGlobs: [],
+      sinceEpoch: 0,
+      minCommits: 3,
+      nowEpoch: 0,
     });
     const comparison = compareComplexity(report, collection.rows, collection.errors.length);
     console.log(asJson ? `${JSON.stringify(comparison, null, 2)}\n` : `${renderText(comparison)}\n`);
