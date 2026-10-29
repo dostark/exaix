@@ -138,11 +138,7 @@ export class DynamicStepExecutor {
     input: string,
     opts: IDynamicStepExecutorOptions,
   ): Promise<IDynamicStepResult> {
-    if (step.execution_mode !== FlowStepExecutionMode.DYNAMIC) {
-      throw new Error(
-        `DynamicStepExecutor called on step "${step.id}" which is not in dynamic mode`,
-      );
-    }
+    assertDynamicMode(step);
 
     // Defensive: enforce read-only boundary at runtime even if loader validation passed
     const effectiveTools = this.resolvePermittedTools(step, agent_role);
@@ -158,17 +154,14 @@ export class DynamicStepExecutor {
     };
     const nativeToolsEnabled = opts.config?.execution?.native_tools_enabled ?? false;
     const initialTools = this.mcpClient.getToolDefinitions(effectiveTools);
-    let nativeConversation: INativeConversationSnapshot | undefined = nativeToolsEnabled
-      ? await this.llmClient.createNativeConversation({
-        agentRole: agent_role,
-        stepObjective: step.name,
-        originalInput: input,
-        availableTools: initialTools,
-      })
-      : undefined;
-    const maxIterations = step.timeout
-      ? Math.min(DEFAULT_MAX_ITERATIONS, Math.floor(step.timeout / 1000))
-      : DEFAULT_MAX_ITERATIONS;
+    let nativeConversation = await this.initialNativeConversation(
+      nativeToolsEnabled,
+      agent_role,
+      step,
+      input,
+      initialTools,
+    );
+    const maxIterations = maxIterationsOf(step);
 
     while (iterations < maxIterations) {
       iterations++;
@@ -177,22 +170,19 @@ export class DynamicStepExecutor {
 
       // ReAct: model reasons about what tool to call next (or declares done)
       const callSite = opts.recordingLane?.current();
-      const decision = await this.llmClient.reasonNextAction({
-        agent_role,
-        stepObjective: step.name,
-        accumulatedContext: context,
-        availableTools: toolsMetadata,
-        iteration: iterations,
+      const decision = await this.llmClient.reasonNextAction(iterationRequestOf({
+        agentRole: agent_role,
+        step,
+        context,
+        toolsMetadata,
+        iterations,
         maxIterations,
-        // Forward the resolver's per-call options; undefined is backward compatible.
-        options: this.callOptions,
+        callOptions: this.callOptions,
         nativeToolsEnabled,
         traceId: opts.traceId,
-        flowStepEffort: step.effort,
-        flowStepThinking: step.thinking,
-        ...(nativeConversation ? { nativeConversation } : {}),
-        ...(callSite ? { callSite } : {}),
-      });
+        nativeConversation,
+        callSite,
+      }));
       if (callSite) opts.recordingLane!.consume(callSite);
       this.addModelUsage(modelUsage, decision);
 
@@ -215,16 +205,10 @@ export class DynamicStepExecutor {
         };
       }
 
-      // Validate tool choice against permitted list (runtime guard)
-      if (!decision.tool || !effectiveTools.includes(decision.tool)) {
-        throw new Error(
-          `Dynamic step "${step.id}": model selected tool "${decision.tool}" ` +
-            `which is not in permitted_tools. Permitted: [${effectiveTools.join(", ")}]`,
-        );
-      }
+      const tool = assertPermittedTool(decision, effectiveTools, step);
 
       const denialText = await this.requestApprovalIfRequired(
-        decision.tool,
+        tool,
         decision.args ?? {},
         agent_role,
         step.id,
@@ -232,26 +216,15 @@ export class DynamicStepExecutor {
         opts.config?.tools?.confirmation_timeout_s,
       );
       if (denialText !== undefined) {
-        context = this.appendObservation(context, decision.tool, denialText);
-        nativeConversation = this.appendNativeRound(nativeConversation, decision, decision.tool, denialText, true);
+        context = this.appendObservation(context, tool, denialText);
+        nativeConversation = this.appendNativeRound(nativeConversation, decision, tool, denialText, true);
         continue;
       }
 
-      // Execute the tool call
-      await this.emitMilestone(MILESTONE_TOOL_CALL_STARTED, opts.traceId, `Tool call started: ${decision.tool}`);
-      const toolResult = await this.mcpClient.callTool(
-        decision.tool,
-        decision.args ?? {},
-        {
-          traceId: opts.traceId,
-          ...(decision.provider ? { provider: decision.provider } : {}),
-          ...(decision.model ? { model: decision.model } : {}),
-        },
-      );
-      await this.emitMilestone(MILESTONE_TOOL_CALL_COMPLETED, opts.traceId, `Tool call completed: ${decision.tool}`);
+      const toolResult = await this.callToolWithMilestones(tool, decision, opts.traceId);
 
       const call: IDynamicToolCall = {
-        tool: decision.tool,
+        tool,
         args: decision.args ?? {},
         result: toolResult,
         timestamp: new Date().toISOString(),
@@ -263,15 +236,15 @@ export class DynamicStepExecutor {
         traceId: opts.traceId,
         stepId: step.id,
         event: ACTIVITY_EVENT_DYNAMIC_TOOL_CALL,
-        tool: decision.tool,
+        tool,
         args: decision.args,
         resultSummary: toolResult.substring(0, 200),
         iteration: iterations,
       });
 
       // Feed observation back into context for next iteration
-      context = this.appendObservation(context, decision.tool, toolResult);
-      nativeConversation = this.appendNativeRound(nativeConversation, decision, decision.tool, toolResult, false);
+      context = this.appendObservation(context, tool, toolResult);
+      nativeConversation = this.appendNativeRound(nativeConversation, decision, tool, toolResult, false);
     }
 
     // Max iterations reached — return with what we have
@@ -291,6 +264,39 @@ export class DynamicStepExecutor {
       iterations,
       completed: false,
     };
+  }
+
+  /** Creates the initial native conversation when the config enables native tools. */
+  private async initialNativeConversation(
+    enabled: boolean,
+    agent_role: IBlueprintFrontmatter,
+    step: IFlowStep,
+    input: string,
+    initialTools: ReturnType<DynamicStepExecutor["mcpClient"]["getToolDefinitions"]>,
+  ): Promise<INativeConversationSnapshot | undefined> {
+    if (!enabled) return undefined;
+    return await this.llmClient.createNativeConversation({
+      agentRole: agent_role,
+      stepObjective: step.name,
+      originalInput: input,
+      availableTools: initialTools,
+    });
+  }
+
+  /** Calls one permitted tool with its start and completion milestones. */
+  private async callToolWithMilestones(
+    tool: McpToolName,
+    decision: Awaited<ReturnType<DynamicStepExecutor["llmClient"]["reasonNextAction"]>>,
+    traceId: string,
+  ): Promise<string> {
+    await this.emitMilestone(MILESTONE_TOOL_CALL_STARTED, traceId, `Tool call started: ${tool}`);
+    const toolResult = await this.mcpClient.callTool(tool, decision.args ?? {}, {
+      traceId,
+      ...(decision.provider ? { provider: decision.provider } : {}),
+      ...(decision.model ? { model: decision.model } : {}),
+    });
+    await this.emitMilestone(MILESTONE_TOOL_CALL_COMPLETED, traceId, `Tool call completed: ${tool}`);
+    return toolResult;
   }
 
   /** Agent role's permitted_tools, narrowed to the step's if specified, then filtered to
@@ -488,4 +494,67 @@ export class DynamicStepExecutor {
     });
     return undefined;
   }
+}
+
+/** Rejects a step that is not in dynamic mode. */
+function assertDynamicMode(step: IFlowStep): void {
+  if (step.execution_mode !== FlowStepExecutionMode.DYNAMIC) {
+    throw new Error(`DynamicStepExecutor called on step "${step.id}" which is not in dynamic mode`);
+  }
+}
+
+/** The iteration cap of one dynamic step. */
+function maxIterationsOf(step: IFlowStep): number {
+  return step.timeout ? Math.min(DEFAULT_MAX_ITERATIONS, Math.floor(step.timeout / 1000)) : DEFAULT_MAX_ITERATIONS;
+}
+
+/** Rejects a model tool choice outside the permitted list. */
+function assertPermittedTool(
+  decision: Awaited<ReturnType<DynamicStepExecutor["llmClient"]["reasonNextAction"]>>,
+  effectiveTools: readonly string[],
+  step: IFlowStep,
+): McpToolName {
+  const tool = decision.tool;
+  if (!tool || !effectiveTools.includes(tool)) {
+    throw new Error(
+      `Dynamic step "${step.id}": model selected tool "${decision.tool}" ` +
+        `which is not in permitted_tools. Permitted: [${effectiveTools.join(", ")}]`,
+    );
+  }
+  return tool;
+}
+
+/** The request one reasoning turn sends to the model. */
+function iterationRequestOf(input: {
+  agentRole: IBlueprintFrontmatter;
+  step: IFlowStep;
+  context: string;
+  toolsMetadata: ReturnType<DynamicStepExecutor["mcpClient"]["getToolDefinitions"]>;
+  iterations: number;
+  maxIterations: number;
+  callOptions: Opt<IModelCallOptions, Reason.OptionalContext>;
+  nativeToolsEnabled: boolean;
+  traceId: string;
+  nativeConversation: Opt<INativeConversationSnapshot, Reason.OptionalContext>;
+  callSite: Opt<
+    NonNullable<ReturnType<NonNullable<IDynamicStepExecutorOptions["recordingLane"]>["current"]>>,
+    Reason.OptionalContext
+  >;
+}) {
+  return {
+    agent_role: input.agentRole,
+    stepObjective: input.step.name,
+    accumulatedContext: input.context,
+    availableTools: input.toolsMetadata,
+    iteration: input.iterations,
+    maxIterations: input.maxIterations,
+    // Forward the resolver's per-call options. Undefined is backward compatible.
+    options: input.callOptions,
+    nativeToolsEnabled: input.nativeToolsEnabled,
+    traceId: input.traceId,
+    flowStepEffort: input.step.effort,
+    flowStepThinking: input.step.thinking,
+    ...(input.nativeConversation ? { nativeConversation: input.nativeConversation } : {}),
+    ...(input.callSite ? { callSite: input.callSite } : {}),
+  };
 }

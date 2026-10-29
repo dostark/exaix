@@ -107,49 +107,12 @@ export class FlowRuntimeValidator {
 
   validateParallelGroups(flow: IFlow): string | null {
     const stepsById = new Map(flow.steps.map((step) => [step.id, step]));
-    const groupMembers = new Map<string, Set<string>>();
-
+    const groupMembers = collectParallelGroups(flow);
     for (const step of flow.steps) {
-      const groupId = step.parallel?.group;
-      if (!groupId) {
-        continue;
-      }
-
-      const members = groupMembers.get(groupId) ?? new Set<string>();
-      members.add(step.id);
-      groupMembers.set(groupId, members);
+      const error = validateMergeFromGroups(step, groupMembers) ?? validateGroupOrder(step, groupMembers) ??
+        validateDependencyGroups(stepsById, step);
+      if (error) return error;
     }
-
-    for (const step of flow.steps) {
-      for (const groupId of step.mergeFromGroups ?? []) {
-        if (!groupMembers.has(groupId)) {
-          return `Step '${step.id}' references unknown parallel group '${groupId}'`;
-        }
-      }
-
-      const order = step.parallel?.order;
-      const groupId = step.parallel?.group;
-      if (groupId && order) {
-        const members = groupMembers.get(groupId) ?? new Set<string>();
-        for (const orderedStepId of order) {
-          if (!members.has(orderedStepId)) {
-            return `Parallel group '${groupId}' order entry '${orderedStepId}' does not match any group member step ID`;
-          }
-        }
-      }
-
-      for (const dependencyId of step.dependsOn ?? []) {
-        const dependency = stepsById.get(dependencyId);
-        if (!dependency?.parallel?.group || !step.parallel?.group) {
-          continue;
-        }
-
-        if (dependency.parallel.group !== step.parallel.group) {
-          return `Steps '${dependency.id}' and '${step.id}' cannot declare different parallel groups across a dependency edge`;
-        }
-      }
-    }
-
     return null;
   }
 
@@ -184,4 +147,62 @@ export class FlowRuntimeValidator {
     }
     return null;
   }
+}
+
+/** The member step ids of every declared parallel group. */
+function collectParallelGroups(flow: IFlow): Map<string, Set<string>> {
+  const groupMembers = new Map<string, Set<string>>();
+  for (const step of flow.steps) {
+    const groupId = step.parallel?.group;
+    if (!groupId) continue;
+    const members = groupMembers.get(groupId) ?? new Set<string>();
+    members.add(step.id);
+    groupMembers.set(groupId, members);
+  }
+  return groupMembers;
+}
+
+/** Rejects a merge reference to an unknown parallel group. */
+function validateMergeFromGroups(
+  step: IFlow["steps"][number],
+  groupMembers: ReadonlyMap<string, ReadonlySet<string>>,
+): string | null {
+  for (const groupId of step.mergeFromGroups ?? []) {
+    if (!groupMembers.has(groupId)) {
+      return `Step '${step.id}' references unknown parallel group '${groupId}'`;
+    }
+  }
+  return null;
+}
+
+/** Rejects an order entry that names no member of its group. */
+function validateGroupOrder(
+  step: IFlow["steps"][number],
+  groupMembers: ReadonlyMap<string, ReadonlySet<string>>,
+): string | null {
+  const order = step.parallel?.order;
+  const groupId = step.parallel?.group;
+  if (!groupId || !order) return null;
+  const members = groupMembers.get(groupId) ?? new Set<string>();
+  for (const orderedStepId of order) {
+    if (!members.has(orderedStepId)) {
+      return `Parallel group '${groupId}' order entry '${orderedStepId}' does not match any group member step ID`;
+    }
+  }
+  return null;
+}
+
+/** Rejects a dependency edge that crosses two parallel groups. */
+function validateDependencyGroups(
+  stepsById: ReadonlyMap<string, IFlow["steps"][number]>,
+  step: IFlow["steps"][number],
+): string | null {
+  for (const dependencyId of step.dependsOn ?? []) {
+    const dependency = stepsById.get(dependencyId);
+    if (!dependency?.parallel?.group || !step.parallel?.group) continue;
+    if (dependency.parallel.group !== step.parallel.group) {
+      return `Steps '${dependency.id}' and '${step.id}' cannot declare different parallel groups across a dependency edge`;
+    }
+  }
+  return null;
 }
