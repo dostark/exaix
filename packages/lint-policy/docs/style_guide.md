@@ -165,7 +165,8 @@ The version 2 policy gives every rule a status. Check `unslop.config.json` or th
   `exaix/unslop-isolation`.
 - **Parked plugin rules (`severity: off`, opt-in):** `exaix/ephemeral-comment`,
   `exaix/exported-interface-placement`, `exaix/import-placement`, `exaix/long-comment`,
-  `exaix/magic-union-type`, `exaix/max-class-size`, `exaix/max-params`, `exaix/no-boolean-assert`,
+  `exaix/magic-union-type`, `exaix/max-class-size`, `exaix/max-cognitive-complexity`, `exaix/max-params`,
+  `exaix/no-boolean-assert`,
   `exaix/no-conditional-empty-object-spread`, `exaix/no-constant-substring-assert`,
   `exaix/no-explicit-unknown`, `exaix/no-interface-rename-on-import`, `exaix/no-object-parameters`,
   `exaix/no-repeated-assert-call`, `exaix/no-runtime-typeof`, `exaix/no-typeof-escape`,
