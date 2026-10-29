@@ -90,47 +90,12 @@ export class OpenAIProvider extends BaseProvider {
   private readonly pricingLookup?: IModelPricingLookup;
 
   constructor(options: IOpenAIProviderOptions) {
-    super({
-      ...options,
-      defaultModel: DEFAULT_OPENAI_MODEL,
-      defaultEndpoint: options.compatible?.endpoint ??
-        (options.config?.ai_endpoints?.[options.compatible ? ProviderType.OPENAI_CHAT : ProviderType.OPENAI] ||
-          DEFAULT_OPENAI_ENDPOINT),
-      defaultTimeout:
-        options.config?.ai_timeout?.providers?.[options.compatible ? ProviderType.OPENAI_CHAT : ProviderType.OPENAI] ??
-          DEFAULT_OPENAI_TIMEOUT_MS,
-      defaultRetryDelay:
-        options.config?.ai_retry?.providers?.[options.compatible ? ProviderType.OPENAI_CHAT : ProviderType.OPENAI]
-          ?.backoff_base_ms ??
-          DEFAULT_OPENAI_RETRY_BACKOFF_MS,
-      defaultMaxRetries:
-        options.config?.ai_retry?.providers?.[options.compatible ? ProviderType.OPENAI_CHAT : ProviderType.OPENAI]
-          ?.max_attempts ??
-          DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
-    }, options.compatible ? ProviderType.OPENAI_CHAT : ProviderType.OPENAI);
+    super(superOptionsOf(options), providerTypeOf(options));
     this.compatible = options.compatible !== undefined;
     this.compatibleConfig = options.compatible ? Object.freeze({ ...options.compatible }) : undefined;
     this.tokenizer = options.tokenizer ?? new AiTokenEstimatorTokenizer();
     this.pricingLookup = options.pricingLookup;
-    if (this.compatibleConfig) {
-      const profile = this.compatibleConfig.profile;
-      const isDeepSeek = profile === "deepseek";
-      const isLocal = profile === OPENAI_COMPATIBLE_LOCAL_PROFILE;
-      // Only DeepSeek and the local fixture support explicit thinking and effort.
-      // DeepSeek maps effort only while thinking is enabled.
-      this.callCapabilities = Object.freeze({
-        profile,
-        supportsThinking: isLocal || isDeepSeek,
-        supportedEffortTiers: Object.freeze(isLocal || isDeepSeek ? ["low", "medium", "high"] as const : []),
-        // DeepSeek thinking mode accepts tool_choice "auto" only.
-        ...(isDeepSeek ? { effortRequiresThinking: true, supportsForcedToolChoiceWithThinking: false } : {}),
-        // A self-hosted service declares whether it honors an explicit tool_choice.
-        ...(profile === OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE &&
-            this.compatibleConfig.supports_tool_choice !== true
-          ? { supportsToolChoice: false }
-          : {}),
-      });
-    }
+    if (this.compatibleConfig) this.callCapabilities = compatibleCapabilitiesOf(this.compatibleConfig);
   }
 
   async measureInputTokens(
@@ -288,4 +253,44 @@ export class OpenAIProvider extends BaseProvider {
       ? await this.attemptCompatibleGenerate(prompt, options)
       : await this.attemptResponsesGenerate(prompt, options);
   }
+}
+
+/** The provider type of one OpenAI provider. */
+function providerTypeOf(options: IOpenAIProviderOptions): ProviderType {
+  return options.compatible ? ProviderType.OPENAI_CHAT : ProviderType.OPENAI;
+}
+
+/** The base provider options of one OpenAI provider. */
+function superOptionsOf(options: IOpenAIProviderOptions) {
+  const providerType = providerTypeOf(options);
+  return {
+    ...options,
+    defaultModel: DEFAULT_OPENAI_MODEL,
+    defaultEndpoint: options.compatible?.endpoint ??
+      (options.config?.ai_endpoints?.[providerType] || DEFAULT_OPENAI_ENDPOINT),
+    defaultTimeout: options.config?.ai_timeout?.providers?.[providerType] ?? DEFAULT_OPENAI_TIMEOUT_MS,
+    defaultRetryDelay: options.config?.ai_retry?.providers?.[providerType]?.backoff_base_ms ??
+      DEFAULT_OPENAI_RETRY_BACKOFF_MS,
+    defaultMaxRetries: options.config?.ai_retry?.providers?.[providerType]?.max_attempts ??
+      DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
+  };
+}
+
+/** The call capabilities of one compatible profile. */
+function compatibleCapabilitiesOf(config: NonNullable<IOpenAIProviderOptions["compatible"]>) {
+  const profile = config.profile;
+  const isDeepSeek = profile === "deepseek";
+  const isLocal = profile === OPENAI_COMPATIBLE_LOCAL_PROFILE;
+  // Only DeepSeek and the local fixture support explicit thinking and effort. DeepSeek maps effort only while thinking is enabled.
+  return Object.freeze({
+    profile,
+    supportsThinking: isLocal || isDeepSeek,
+    supportedEffortTiers: Object.freeze(isLocal || isDeepSeek ? ["low", "medium", "high"] as const : []),
+    // DeepSeek thinking mode accepts tool_choice "auto" only.
+    ...(isDeepSeek ? { effortRequiresThinking: true, supportsForcedToolChoiceWithThinking: false } : {}),
+    // A self-hosted service declares whether it honors an explicit tool_choice.
+    ...(profile === OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE && config.supports_tool_choice !== true
+      ? { supportsToolChoice: false }
+      : {}),
+  });
 }

@@ -30,7 +30,7 @@
     "packages/ai": 15,
     "packages/ai-anthropic": 0,
     "packages/ai-clidelegate": 1,
-    "packages/ai-openai": 1,
+    "packages/ai-openai": 0,
     "packages/cli": 1,
     "packages/core": 12,
     "packages/eval-history": 2,
