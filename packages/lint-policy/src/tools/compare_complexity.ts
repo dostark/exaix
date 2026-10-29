@@ -30,6 +30,7 @@ const REQUIRED_EXACT_AGREEMENT = 0.95;
 
 /** The measured defaults the calibration counts with. */
 const DEFAULT_SETTINGS = {
+  maxCrap: 30,
   maxCyclomatic: 15,
   maxCognitive: 15,
   maxLines: 60,
@@ -466,6 +467,10 @@ async function main(): Promise<void> {
       scopes: { test: [], fixture: [] },
       settings: DEFAULT_SETTINGS,
       sort: "cyclomatic",
+      coverageText: null,
+      coverageSha256: null,
+      coverageManifest: null,
+      testGlobs: [],
     });
     const comparison = compareComplexity(report, collection.rows, collection.errors.length);
     console.log(asJson ? `${JSON.stringify(comparison, null, 2)}\n` : `${renderText(comparison)}\n`);
