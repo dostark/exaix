@@ -363,48 +363,33 @@ export class ToolRegistry implements IToolRegistry {
     // Support both calling patterns:
     //   new ToolRegistry({ config, db, ... })  (old-style, no DI)
     //   new ToolRegistry(pipeline, pathSecurity, { config, db, ... })  (DI style)
-    const hasConfigLike = middlewarePipelineOrOptions != null && "config" in middlewarePipelineOrOptions;
-    const resolvedOptions: IToolRegistryConfig | undefined = hasConfigLike
-      ? (middlewarePipelineOrOptions as IToolRegistryConfig)
-      : options;
-    const resolvedPipeline = hasConfigLike
-      ? (middlewarePipelineOrOptions as IToolRegistryConfig).middlewarePipeline
-      : (middlewarePipelineOrOptions as IMiddlewarePipeline<IToolContext> | undefined);
-    const resolvedPathSecurity = hasConfigLike
-      ? (middlewarePipelineOrOptions as IToolRegistryConfig).pathSecurity
-      : pathSecurity;
+    const inputs = resolveConstructorInputs(middlewarePipelineOrOptions, pathSecurity, options);
+    const registryOptions: Partial<IToolRegistryConfig> = inputs.options ?? {};
+    const resolvedPipeline = inputs.pipeline;
+    const resolvedPathSecurity = inputs.pathSecurity;
 
-    const ctx = resolvedOptions?.context;
-    this.config = ctx?.config.get() || resolvedOptions?.config || ConfigSchema.parse({
-      system: { root: Deno.cwd(), log_level: LogLevel.INFO },
-      paths: {},
-      database: {},
-      watcher: {},
-      agents: {},
-      models: {},
-      portals: [],
-      mcp: {},
-    });
+    const ctx = registryOptions.context;
+    this.config = resolveRegistryConfig(inputs.options, ctx);
 
-    this.logger = resolvedOptions?.logger;
+    this.logger = registryOptions.logger;
 
-    this.traceId = resolvedOptions?.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID;
-    this.agentRole = resolvedOptions?.agentRole ?? DEFAULT_MCP_AGENT_ROLE_ID;
-    this.baseDir = resolvedOptions?.baseDir ? resolve(resolvedOptions.baseDir) : resolve(this.config.system.root);
+    this.traceId = registryOptions.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID;
+    this.agentRole = registryOptions.agentRole ?? DEFAULT_MCP_AGENT_ROLE_ID;
+    this.baseDir = registryOptions.baseDir ? resolve(registryOptions.baseDir) : resolve(this.config.system.root);
 
-    this.pathResolver = resolvedOptions?.pathResolver;
-    this.gitServiceFactory = resolvedOptions?.gitServiceFactory ?? ctx?.gitServiceFactory;
+    this.pathResolver = registryOptions.pathResolver;
+    this.gitServiceFactory = registryOptions.gitServiceFactory ?? ctx?.gitServiceFactory;
     this.applicationContext = ctx;
     this.tools = new Map();
     this.pipeline = resolvedPipeline ?? createNoopPipeline<IToolContext>();
     this.pathSecurity = resolvedPathSecurity ?? createPathSecurity();
-    this.resultValidator = resolvedOptions?.resultValidator;
-    this.validationReportContext = resolvedOptions?.validationReportContext;
-    this.remediationPolicyResolver = resolvedOptions?.remediationPolicyResolver;
-    this.validationEventLogger = resolvedOptions?.validationEventLogger ?? this.logger;
-    this.confirmationInterceptor = resolvedOptions?.confirmationInterceptor;
-    this.hitlPolicyEvaluator = resolvedOptions?.hitlPolicyEvaluator;
-    this.hitlBlueprintRules = resolvedOptions?.hitlBlueprintRules;
+    this.resultValidator = registryOptions.resultValidator;
+    this.validationReportContext = registryOptions.validationReportContext;
+    this.remediationPolicyResolver = registryOptions.remediationPolicyResolver;
+    this.validationEventLogger = registryOptions.validationEventLogger ?? this.logger;
+    this.confirmationInterceptor = registryOptions.confirmationInterceptor;
+    this.hitlPolicyEvaluator = registryOptions.hitlPolicyEvaluator;
+    this.hitlBlueprintRules = registryOptions.hitlBlueprintRules;
 
     this.registerCoreTools();
     this.registerCoreExecutors();
@@ -1982,4 +1967,54 @@ function createNoopPipeline<T>(): IMiddlewarePipeline<T> {
       await next();
     },
   };
+}
+
+/** The adapter, configuration, pipeline and path security of one constructor call. */
+function resolveConstructorInputs(
+  middlewarePipelineOrOptions: Opt<
+    IMiddlewarePipeline<IToolContext> | IToolRegistryConfig,
+    Reason.OptionalDependency
+  >,
+  pathSecurity: Opt<IPathSecurityOps, Reason.OptionalDependency>,
+  options: Opt<IToolRegistryConfig, Reason.OptionalDependency>,
+): {
+  options: IToolRegistryConfig | undefined;
+  pipeline: IMiddlewarePipeline<IToolContext> | undefined;
+  pathSecurity: IPathSecurityOps | undefined;
+} {
+  const hasConfigLike = middlewarePipelineOrOptions != null && "config" in middlewarePipelineOrOptions;
+  if (hasConfigLike) {
+    const config = middlewarePipelineOrOptions as IToolRegistryConfig;
+    return { options: config, pipeline: config.middlewarePipeline, pathSecurity: config.pathSecurity };
+  }
+  return {
+    options,
+    pipeline: middlewarePipelineOrOptions as IMiddlewarePipeline<IToolContext> | undefined,
+    pathSecurity,
+  };
+}
+
+/** The config of one registry: the application context, the registry config, or the default. */
+function resolveRegistryConfig(
+  resolvedOptions: Opt<IToolRegistryConfig, Reason.OptionalDependency>,
+  ctx: Opt<IApplicationContext, Reason.OptionalDependency>,
+): ReturnType<typeof ConfigSchema.parse> {
+  const fromContext = ctx?.config.get();
+  if (fromContext) return fromContext;
+  if (resolvedOptions?.config) return resolvedOptions.config;
+  return defaultRegistryConfig();
+}
+
+/** The fallback registry config of one local repository. */
+function defaultRegistryConfig(): ReturnType<typeof ConfigSchema.parse> {
+  return ConfigSchema.parse({
+    system: { root: Deno.cwd(), log_level: LogLevel.INFO },
+    paths: {},
+    database: {},
+    watcher: {},
+    agents: {},
+    models: {},
+    portals: [],
+    mcp: {},
+  });
 }

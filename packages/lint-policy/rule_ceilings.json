@@ -20,7 +20,7 @@
     "packages/routing": 1,
     "packages/schemas": 2,
     "packages/storage-sqlite": 1,
-    "packages/tool-runtime": 2,
+    "packages/tool-runtime": 1,
     "packages/tui": 1
   },
   "exaix/max-cognitive-complexity": {
