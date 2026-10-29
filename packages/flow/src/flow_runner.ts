@@ -1315,15 +1315,16 @@ export class FlowRunner implements IFlowRunner {
       );
       await this.validateIFlow(flow, request, flowRunId, this.controlStateStore.get(stepResults).ceiling);
       await this.ensureDynamicExecutor(flow, flowRunId);
-      const captureBindingSnapshot = async (): Promise<string | undefined> => {
+      const captureBindingSnapshot = async (): Promise<void> => {
         const service = this.options.bindingService;
-        if (!service) return undefined;
+        if (!service) return;
         const flowDeclaresBindings = flow.steps.some((step) => step.binding !== undefined || step.pin !== undefined);
         if (
           !(flowDeclaresBindings || await service.isActive() ||
             await service.hasRunFile(request.traceId))
-        ) return undefined;
+        ) return;
         const traceId = request.traceId ?? crypto.randomUUID();
+        snapshotTraceId = traceId;
         request = {
           ...request,
           traceId,
@@ -1335,9 +1336,8 @@ export class FlowRunner implements IFlowRunner {
             requestSha256: request.requestSha256,
           }),
         };
-        return traceId;
       };
-      snapshotTraceId = await captureBindingSnapshot();
+      await captureBindingSnapshot();
       await this.checkpointCoordinator.loadCheckpointIfAvailable(
         flow,
         request,

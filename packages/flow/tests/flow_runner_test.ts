@@ -32,6 +32,7 @@ import type { JSONValue } from "@exaix/core/types";
 import type { ActivityRecord, SqliteParam } from "@exaix/storage-sqlite";
 import type { IJournalFilterOptions } from "@exaix/core/types";
 import { createMockConfig } from "@exaix/testing";
+import type { ModelBindingService } from "@exaix/ai";
 
 import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 /** Local type matching the shape logged by FlowRunner for flow.token_summary events */
@@ -1934,4 +1935,38 @@ Deno.test("FlowRunner: retry aborts when cost budget is exceeded", async () => {
     }
     await Deno.remove(tempDir, { recursive: true });
   }
+});
+
+Deno.test("flow-snapshot-acquisition-failure: a snapshot that holds then rejects still releases the trace", async () => {
+  const holds = new Set<string>();
+  const releases: string[] = [];
+  const fixture: Pick<ModelBindingService, "isActive" | "hasRunFile" | "snapshotForRun" | "releaseRun"> = {
+    isActive: () => Promise.resolve(true),
+    hasRunFile: () => Promise.resolve(false),
+    snapshotForRun: (_flow, run) => {
+      holds.add(run.traceId);
+      return Promise.reject(new Error("snapshot acquisition rejected after the hold"));
+    },
+    releaseRun: (traceId: string) => {
+      releases.push(traceId);
+      holds.delete(traceId);
+      return Promise.resolve();
+    },
+  };
+  const bindingService = fixture as ModelBindingService;
+  const flow = makeFlow([makeStep("step1", "Step 1", "agent1", [], { source: FlowInputSource.REQUEST })], {
+    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
+  });
+  const runner = new FlowRunner({
+    agentExecutor: new MockAgentRunner({ agent1: { thought: "t", content: "c", raw: "r" } }),
+    bindingService,
+    eventLogger: new MockEventLogger(),
+  });
+  await assertRejects(
+    () => runner.execute(flow as IFlow, { userPrompt: "bind", traceId: "hold-trace" }),
+    Error,
+    "snapshot acquisition rejected after the hold",
+  );
+  assertEquals(releases, ["hold-trace"]);
+  assertEquals(holds.size, 0);
 });
