@@ -52,21 +52,7 @@ export class TracedProvider implements IModelProvider {
       void this.logger.log({
         action: DomainEventType.LlmCallCompleted,
         target: this.id,
-        payload: {
-          duration_ms: Math.round(durationMs),
-          prompt_tokens: result.usage?.promptTokens ?? 0,
-          completion_tokens: result.usage?.completionTokens ?? 0,
-          total_tokens: result.usage?.totalTokens ?? 0,
-          cache_read_tokens: result.usage?.cacheReadTokens ?? 0,
-          cache_creation_tokens: result.usage?.cacheCreationTokens ?? 0,
-          ...(result.costStatus === "unknown" ? { cost_status: "unknown" } : { cost_usd: result.cost_usd ?? 0 }),
-          model: result.costStatus !== undefined ? result.model : this.id,
-          ...(result.structuredOutputMode ? { structured_output_mode: result.structuredOutputMode } : {}),
-          ...(result.structuredOutputModeReason
-            ? { structured_output_mode_reason: result.structuredOutputModeReason }
-            : {}),
-          trace_id: traceId,
-        },
+        payload: this.completedPayloadOf(result, traceId, durationMs),
         traceId,
         promptTokens: result.usage?.promptTokens,
         completionTokens: result.usage?.completionTokens,
@@ -75,16 +61,7 @@ export class TracedProvider implements IModelProvider {
         cacheCreationTokens: result.usage?.cacheCreationTokens,
       });
 
-      await this.logger.info(DomainEventType.LlmUsageRecorded, this.id, {
-        provider: result.provider,
-        model: result.model,
-        input_tokens: result.usage?.promptTokens ?? 0,
-        output_tokens: result.usage?.completionTokens ?? 0,
-        total_tokens: result.usage?.totalTokens ?? 0,
-        ...(result.costStatus === "unknown" || result.cost_usd === undefined
-          ? { cost_status: "unknown" }
-          : { cost_usd: result.cost_usd }),
-      }, traceId);
+      await this.logger.info(DomainEventType.LlmUsageRecorded, this.id, this.usagePayloadOf(result), traceId);
       return result;
     } catch (error) {
       const durationMs = performance.now() - startTime;
@@ -101,6 +78,60 @@ export class TracedProvider implements IModelProvider {
 
       throw error;
     }
+  }
+
+  /** The completed-call payload of one provider result. */
+  private completedPayloadOf(result: IGenerateResult, traceId: string, durationMs: number): {
+    duration_ms: number;
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+    cache_read_tokens: number;
+    cache_creation_tokens: number;
+    cost_status?: string;
+    cost_usd?: number;
+    model: string;
+    structured_output_mode?: string;
+    structured_output_mode_reason?: string;
+    trace_id: string;
+  } {
+    return {
+      duration_ms: Math.round(durationMs),
+      prompt_tokens: result.usage?.promptTokens ?? 0,
+      completion_tokens: result.usage?.completionTokens ?? 0,
+      total_tokens: result.usage?.totalTokens ?? 0,
+      cache_read_tokens: result.usage?.cacheReadTokens ?? 0,
+      cache_creation_tokens: result.usage?.cacheCreationTokens ?? 0,
+      ...(result.costStatus === "unknown" ? { cost_status: "unknown" } : { cost_usd: result.cost_usd ?? 0 }),
+      model: result.costStatus !== undefined ? result.model : this.id,
+      ...(result.structuredOutputMode ? { structured_output_mode: result.structuredOutputMode } : {}),
+      ...(result.structuredOutputModeReason
+        ? { structured_output_mode_reason: result.structuredOutputModeReason }
+        : {}),
+      trace_id: traceId,
+    };
+  }
+
+  /** The usage-recorded payload of one provider result. */
+  private usagePayloadOf(result: IGenerateResult): {
+    provider: string;
+    model: string;
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+    cost_status?: string;
+    cost_usd?: number;
+  } {
+    return {
+      provider: result.provider,
+      model: result.model,
+      input_tokens: result.usage?.promptTokens ?? 0,
+      output_tokens: result.usage?.completionTokens ?? 0,
+      total_tokens: result.usage?.totalTokens ?? 0,
+      ...(result.costStatus === "unknown" || result.cost_usd === undefined
+        ? { cost_status: "unknown" }
+        : { cost_usd: result.cost_usd }),
+    };
   }
 
   @LogGeneratorMethod<TracedProvider, [string, Opt<IModelOptions, Reason.AbstractBoundary>?], string>(

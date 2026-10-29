@@ -614,13 +614,10 @@ export function createOpenAIChatCompletionsRequestInit(
   options?: Opt<IModelOptions, Reason.OptionalInput>,
 ): RequestInit {
   const reasoningModel = isOpenAiReasoningModel(model);
-  const hasTools = Boolean(options?.tools?.length);
   // gpt-5.6+ rejects function tools on Chat Completions unless reasoning_effort is
   // exactly "none"; force it whenever tools are present so native tool-calling
   // functions on this model family, overriding any caller-preferred effort tier.
-  const reasoningEffort = reasoningModel
-    ? (hasTools ? OPENAI_REASONING_EFFORT_NONE : openAiReasoningEffort(options?.effort))
-    : undefined;
+  const reasoningEffort = openAiReasoningEffortFor(reasoningModel, options);
   return {
     method: "POST",
     ...(options?.requestSignal ? { signal: options.requestSignal } : {}),
@@ -629,23 +626,42 @@ export function createOpenAIChatCompletionsRequestInit(
       // An absent or empty key means the endpoint needs no credential, so send no header.
       ...(apiKey ? { "Authorization": `Bearer ${apiKey}` } : {}),
     },
-    body: JSON.stringify({
-      model,
-      messages: buildOpenAiMessages(prompt, options?.priorTurn, options?.nativeConversation, options?.priorRound),
-      // OpenAI deprecated max_tokens in favor of max_completion_tokens and rejects
-      // max_tokens outright on o-series/gpt-5 reasoning models; IModelOptions.max_tokens
-      // is Exaix's own field name — only the OpenAI wire serialization moves.
-      max_completion_tokens: options?.max_tokens,
-      temperature: reasoningModel ? undefined : options?.temperature,
-      top_p: reasoningModel ? undefined : options?.top_p,
-      reasoning_effort: reasoningEffort,
-      stop: options?.stop,
-      tools: options?.tools?.map(mapToolDefinitionOpenAI),
-      tool_choice: options?.toolChoice ? mapToolChoiceOpenAI(options.toolChoice) : undefined,
-      // Off asks for one call per response. Auto omits the field, so the API default applies.
-      parallel_tool_calls: options?.tools?.length && disablesParallelToolUse(options.toolChoice) ? false : undefined,
-    }),
+    body: openAiChatBodyOf(model, prompt, options, reasoningModel, reasoningEffort),
   };
+}
+
+/** The reasoning effort a Chat Completions request carries. */
+function openAiReasoningEffortFor(
+  reasoningModel: boolean,
+  options: Opt<IModelOptions, Reason.OptionalInput>,
+): Opt<string, Reason.OptionalInput> {
+  if (!reasoningModel) return undefined;
+  return options?.tools?.length ? OPENAI_REASONING_EFFORT_NONE : openAiReasoningEffort(options?.effort);
+}
+
+/** The serialized Chat Completions request body. */
+function openAiChatBodyOf(
+  model: string,
+  prompt: string,
+  options: Opt<IModelOptions, Reason.OptionalInput>,
+  reasoningModel: boolean,
+  reasoningEffort: Opt<string, Reason.OptionalInput>,
+): string {
+  return JSON.stringify({
+    model,
+    messages: buildOpenAiMessages(prompt, options?.priorTurn, options?.nativeConversation, options?.priorRound),
+    // OpenAI replaced max_tokens with max_completion_tokens. Reasoning models reject the old field.
+    // Only the OpenAI wire name changes. The Exaix option stays `max_tokens`.
+    max_completion_tokens: options?.max_tokens,
+    temperature: reasoningModel ? undefined : options?.temperature,
+    top_p: reasoningModel ? undefined : options?.top_p,
+    reasoning_effort: reasoningEffort,
+    stop: options?.stop,
+    tools: options?.tools?.map(mapToolDefinitionOpenAI),
+    tool_choice: options?.toolChoice ? mapToolChoiceOpenAI(options.toolChoice) : undefined,
+    // Off asks for one call per response. Auto omits the field, so the API default applies.
+    parallel_tool_calls: options?.tools?.length && disablesParallelToolUse(options.toolChoice) ? false : undefined,
+  });
 }
 
 /** Extract ALL tool calls from an OpenAI response, or undefined when none exist.
@@ -1082,11 +1098,7 @@ export async function performProviderCall<T>(
     errorMapper?: ProviderErrorMapper;
   },
 ): Promise<IGenerateResult> {
-  if (maxRequestBytes !== undefined && typeof fetchOptions.body === "string") {
-    if (new TextEncoder().encode(fetchOptions.body).byteLength > maxRequestBytes) {
-      throw new ProviderProtocolError("Request exceeds configured byte limit", id);
-    }
-  }
+  assertRequestSize(fetchOptions, maxRequestBytes, id);
   if (logger && logResponseBody !== false && typeof fetchOptions.body === "string") {
     journalProviderRequest(logger, id, fetchOptions.body, traceId);
   }
@@ -1110,27 +1122,13 @@ export async function performProviderCall<T>(
   // Debug-level dump of the raw response body: content extraction strips parts of
   // it (e.g. thinking blocks), so investigating a live-provider issue needs the
   // unfiltered body in the journal.
-  if (logger && logResponseBody !== false) {
-    void logger.debug(PROVIDER_EVENT_RESPONSE_DEBUG_DUMP, id, {
-      provider: id,
-      response_body: toSafeJson(data as SafeJsonInput) ?? {},
-    }, traceId);
-  }
-  const content = extractor
-    ? extractor(data)
-    : ((data as OpenAIResponse)?.choices?.[0]?.message?.content ?? (data as OpenAIResponse)?.choices?.[0]?.text ?? "");
+  journalResponseBody(logger, logResponseBody, data, id, traceId);
+  const content = contentOf(data, extractor);
 
   const tokens = tokenMapper ? tokenMapper(data, id) : undefined;
   return {
     content: content ?? "",
-    usage: {
-      promptTokens: tokens?.prompt_tokens ?? 0,
-      completionTokens: tokens?.completion_tokens ?? 0,
-      totalTokens: tokens?.total_tokens ?? 0,
-      cacheReadTokens: tokens?.cache_read_tokens,
-      cacheCreationTokens: tokens?.cache_creation_tokens,
-      reasoningTokens: tokens?.reasoning_tokens,
-    },
+    usage: usageOf(tokens),
     cost_usd: tokens?.cost_usd,
     model: tokens?.model ?? "unknown",
     provider: tokens?.provider ?? id,
@@ -1138,4 +1136,51 @@ export async function performProviderCall<T>(
     toolCalls: toolCallExtractor?.(data),
     nativeAssistantReplay: assistantReplayExtractor?.(data),
   };
+}
+
+/** Rejects a request body that exceeds the configured byte limit. */
+function assertRequestSize(
+  fetchOptions: RequestInit,
+  maxRequestBytes: Opt<number, Reason.OptionalInput>,
+  id: string,
+): void {
+  if (maxRequestBytes !== undefined && typeof fetchOptions.body === "string") {
+    if (new TextEncoder().encode(fetchOptions.body).byteLength > maxRequestBytes) {
+      throw new ProviderProtocolError("Request exceeds configured byte limit", id);
+    }
+  }
+}
+
+/** The usage block of one token map. */
+function usageOf(tokens: Opt<TokenMap, Reason.OptionalInput>) {
+  return {
+    promptTokens: tokens?.prompt_tokens ?? 0,
+    completionTokens: tokens?.completion_tokens ?? 0,
+    totalTokens: tokens?.total_tokens ?? 0,
+    cacheReadTokens: tokens?.cache_read_tokens,
+    cacheCreationTokens: tokens?.cache_creation_tokens,
+    reasoningTokens: tokens?.reasoning_tokens,
+  };
+}
+
+/** The extracted response content. */
+function contentOf<T>(data: T, extractor: Opt<(d: T) => string, Reason.OptionalInput>): string {
+  if (extractor) return extractor(data);
+  const openAi = data as OpenAIResponse;
+  return openAi?.choices?.[0]?.message?.content ?? openAi?.choices?.[0]?.text ?? "";
+}
+
+/** Journals the raw response body when response-body logging is on. */
+function journalResponseBody<T>(
+  logger: Opt<IEventLogger, Reason.OptionalDependency>,
+  logResponseBody: Opt<boolean, Reason.OptionalInput>,
+  data: T,
+  id: string,
+  traceId: Opt<string, Reason.TraceAbsent>,
+): void {
+  if (!logger || logResponseBody === false) return;
+  void logger.debug(PROVIDER_EVENT_RESPONSE_DEBUG_DUMP, id, {
+    provider: id,
+    response_body: toSafeJson(data as SafeJsonInput) ?? {},
+  }, traceId);
 }

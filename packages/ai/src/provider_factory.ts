@@ -341,12 +341,7 @@ export class ProviderFactory {
       rawGlobalCompatible?.profile !== undefined && rawModelCompatible.profile !== rawGlobalCompatible.profile;
     const inheritCompatibleDefaults = !switchedProfile && baseAi.provider === providerType;
     if (providerType !== ProviderType.OPENAI_CHAT) {
-      if (rawModelCompatible !== undefined || (!hasNamedModel && rawGlobalCompatible !== undefined)) {
-        throw new ProviderFactoryError(
-          "Compatible settings require the openai-chat provider",
-          PROVIDER_REASON_PROFILE_MISMATCH,
-        );
-      }
+      this.assertCompatibleProvider(rawModelCompatible, rawGlobalCompatible, hasNamedModel);
       return { inheritCompatibleDefaults };
     }
     const profile = rawModelCompatible?.profile ?? rawGlobalCompatible?.profile;
@@ -359,12 +354,48 @@ export class ProviderFactory {
     const compatibleOverrides = switchedProfile
       ? rawModelCompatible
       : { ...rawGlobalCompatible, ...rawModelCompatible };
-    const endpoint = envBaseUrl ?? modelConfig?.base_url ?? compatibleOverrides?.endpoint ??
-      (inheritCompatibleDefaults ? baseAi.base_url : undefined) ?? OPENAI_COMPATIBLE_PROFILE_DEFAULTS[profile].endpoint;
     return {
-      compatible: CompatibleChatConfigSchema.parse({ ...compatibleOverrides, profile, endpoint }),
+      compatible: CompatibleChatConfigSchema.parse({
+        ...compatibleOverrides,
+        profile,
+        endpoint: this.compatibleEndpointOf(
+          envBaseUrl,
+          modelConfig,
+          compatibleOverrides,
+          inheritCompatibleDefaults,
+          baseAi,
+          profile,
+        ),
+      }),
       inheritCompatibleDefaults,
     };
+  }
+
+  /** Rejects compatible settings on a provider that is not openai-chat. */
+  private static assertCompatibleProvider(
+    rawModelCompatible: Opt<z.infer<typeof ModelConfigSchema>["compatible"], Reason.OptionalInput>,
+    rawGlobalCompatible: Opt<AiConfig["compatible"], Reason.OptionalInput>,
+    hasNamedModel: boolean,
+  ): void {
+    if (rawModelCompatible !== undefined || (!hasNamedModel && rawGlobalCompatible !== undefined)) {
+      throw new ProviderFactoryError(
+        "Compatible settings require the openai-chat provider",
+        PROVIDER_REASON_PROFILE_MISMATCH,
+      );
+    }
+  }
+
+  /** Resolves the compatible endpoint (env > model > overrides > inherited base > profile default). */
+  private static compatibleEndpointOf(
+    envBaseUrl: Opt<string, Reason.OptionalInput>,
+    modelConfig: Opt<z.infer<typeof ModelConfigSchema>, Reason.OptionalInput>,
+    compatibleOverrides: Opt<z.infer<typeof ModelConfigSchema>["compatible"], Reason.OptionalInput>,
+    inheritCompatibleDefaults: boolean,
+    baseAi: AiConfig,
+    profile: keyof typeof OPENAI_COMPATIBLE_PROFILE_DEFAULTS,
+  ): Opt<string, Reason.OptionalInput> {
+    return envBaseUrl ?? modelConfig?.base_url ?? compatibleOverrides?.endpoint ??
+      (inheritCompatibleDefaults ? baseAi.base_url : undefined) ?? OPENAI_COMPATIBLE_PROFILE_DEFAULTS[profile].endpoint;
   }
 
   private static resolveRegisteredProvider(
@@ -411,14 +442,8 @@ export class ProviderFactory {
     rawModelConfig?: Opt<JSONValue, Reason.OptionalInput>,
   ): IResolvedProviderOptions {
     // ✓ Validate model config to prevent type confusion attacks
-    const modelConfig = rawModelConfig && this.isModelConfigInput(rawModelConfig)
-      ? InputValidator.validateModelConfig(rawModelConfig)
-      : undefined;
-    const envProvider = this.safeEnvGet("EXA_LLM_PROVIDER");
-    const envModel = this.safeEnvGet("EXA_LLM_MODEL");
-    // Backward compat: EXA_LLM_ENDPOINT → EXA_LLM_BASE_URL
-    const envBaseUrl = this.safeEnvGet("EXA_LLM_BASE_URL") ?? this.safeEnvGet("EXA_LLM_ENDPOINT");
-    const envTimeout = this.safeEnvGet("EXA_LLM_TIMEOUT_MS");
+    const modelConfig = this.validatedModelConfig(rawModelConfig);
+    const env = this.resolveEnvInputs();
 
     // Base ai config from global config or sensible defaults
     const baseAi: AiConfig = (config.ai as AiConfig) ?? {
@@ -436,26 +461,86 @@ export class ProviderFactory {
     // cannot observe a partially-registered provider set.
     ensureProviderRegistryInitialized();
 
-    const providerType = this.resolveRegisteredProvider(envProvider, merged.provider);
-
+    const providerType = this.resolveRegisteredProvider(env.envProvider, merged.provider);
     const { compatible, inheritCompatibleDefaults } = this.resolveCompatibleOptions(
       baseAi,
       modelConfig,
       providerType,
-      envBaseUrl,
+      env.envBaseUrl,
       rawModelConfig !== undefined,
     );
+    const mock = this.resolveMockSettings(merged, baseAi, env.envMockStrict);
+    return {
+      provider: providerType,
+      model: this.resolveModelId(
+        env.envModel,
+        modelConfig,
+        compatible,
+        inheritCompatibleDefaults,
+        baseAi,
+        providerType,
+      ),
+      baseUrl: env.envBaseUrl ?? merged.base_url,
+      timeoutMs: this.resolveTimeoutMs(config, providerType, modelConfig, baseAi, env.envTimeout),
+      ...mock,
+      captureFixturesDir: env.captureFixturesDir,
+      config,
+      ...(compatible ? { compatible } : {}),
+    };
+  }
 
-    // Resolve model (env > merged.model > default per provider).
-    // A profile switch does not carry the prior compatible model identifier.
-    const model = envModel ?? modelConfig?.model ?? compatible?.model ??
+  /** The validated model config of one factory call. */
+  private static validatedModelConfig(
+    rawModelConfig: Opt<JSONValue, Reason.OptionalInput>,
+  ): Opt<z.infer<typeof ModelConfigSchema>, Reason.OptionalInput> {
+    if (!rawModelConfig || !this.isModelConfigInput(rawModelConfig)) return undefined;
+    return InputValidator.validateModelConfig(rawModelConfig);
+  }
+
+  /** The environment inputs one factory call reads. */
+  private static resolveEnvInputs(): {
+    envProvider: string | undefined;
+    envModel: string | undefined;
+    envBaseUrl: string | undefined;
+    envTimeout: string | undefined;
+    envMockStrict: string | undefined;
+    captureFixturesDir: string | undefined;
+  } {
+    return {
+      envProvider: this.safeEnvGet("EXA_LLM_PROVIDER"),
+      envModel: this.safeEnvGet("EXA_LLM_MODEL"),
+      // Backward compat: EXA_LLM_ENDPOINT → EXA_LLM_BASE_URL
+      envBaseUrl: this.safeEnvGet("EXA_LLM_BASE_URL") ?? this.safeEnvGet("EXA_LLM_ENDPOINT"),
+      envTimeout: this.safeEnvGet("EXA_LLM_TIMEOUT_MS"),
+      envMockStrict: this.safeEnvGet("MOCK_STRICT"),
+      // Operator-triggered capture — env-only, never a committed config value.
+      captureFixturesDir: this.safeEnvGet("EXA_CAPTURE_FIXTURES_DIR"),
+    };
+  }
+
+  /** Resolves the model identifier (env > model config > compatible profile > provider default). */
+  private static resolveModelId(
+    envModel: Opt<string, Reason.OptionalInput>,
+    modelConfig: Opt<z.infer<typeof ModelConfigSchema>, Reason.OptionalInput>,
+    compatible: Opt<IResolvedProviderOptions["compatible"], Reason.OptionalInput>,
+    inheritCompatibleDefaults: boolean,
+    baseAi: AiConfig,
+    providerType: ProviderType,
+  ): string {
+    return envModel ?? modelConfig?.model ?? compatible?.model ??
       (compatible && !inheritCompatibleDefaults ? undefined : baseAi.model) ??
       (compatible ? OPENAI_COMPATIBLE_PROFILE_DEFAULTS[compatible.profile].model : undefined) ??
       getDefaultModels()[providerType];
+  }
 
-    // Resolve base url and timeout (env > merged > defaults)
-    const baseUrl = envBaseUrl ?? merged.base_url;
-
+  /** Resolves the timeout (env > model config > provider timeout > default). */
+  private static resolveTimeoutMs(
+    config: Config,
+    providerType: ProviderType,
+    modelConfig: Opt<z.infer<typeof ModelConfigSchema>, Reason.OptionalInput>,
+    baseAi: AiConfig,
+    envTimeout: Opt<string, Reason.OptionalInput>,
+  ): number {
     // Reads modelConfig's own timeout_ms and config.ai's pre-fallback timeout_ms directly (not
     // merged.timeout_ms) — merged always carries baseAi's synthetic default when config.ai is
     // unset, which would otherwise shadow the config.ai_timeout.providers[providerType] branch below.
@@ -463,34 +548,23 @@ export class ProviderFactory {
       (providerType === ProviderType.OPENAI_CHAT && baseAi.provider !== providerType
         ? undefined
         : config.ai?.timeout_ms);
-    const timeoutMs = envTimeout
-      ? parseInt(envTimeout, 10)
-      : explicitTimeoutMs || this.providerTimeoutMs(config, providerType);
+    return envTimeout ? parseInt(envTimeout, 10) : explicitTimeoutMs || this.providerTimeoutMs(config, providerType);
+  }
 
-    // Mock-specific
-    const mockStrategy = merged.mock?.strategy ?? baseAi?.mock?.strategy ?? DEFAULT_MOCK_STRATEGY;
-    const mockFixturesDir = merged.mock?.fixtures_dir ?? baseAi?.mock?.fixtures_dir;
-    // MOCK_STRICT env lets a scenario pack scope strict mode per step — the sandbox has one shared
-    // exa.config.toml, so per-pack strictness can't be a config key. Unset falls back to the config value.
-    const envMockStrict = this.safeEnvGet("MOCK_STRICT");
-    const mockStrict = envMockStrict !== undefined
-      ? envMockStrict === "1"
-      : (merged.mock?.strict ?? baseAi?.mock?.strict ?? false);
-
-    // Operator-triggered capture — env-only, never a committed config value.
-    const captureFixturesDir = this.safeEnvGet("EXA_CAPTURE_FIXTURES_DIR");
-
+  /** The mock settings one factory call carries. */
+  private static resolveMockSettings(
+    merged: Partial<AiConfig>,
+    baseAi: AiConfig,
+    envMockStrict: Opt<string, Reason.OptionalInput>,
+  ): { mockStrategy: MockStrategy; mockFixturesDir: string | undefined; mockStrict: boolean } {
     return {
-      provider: providerType,
-      model,
-      baseUrl,
-      timeoutMs,
-      mockStrategy: mockStrategy as MockStrategy,
-      mockFixturesDir,
-      mockStrict,
-      captureFixturesDir,
-      config,
-      ...(compatible ? { compatible } : {}),
+      mockStrategy: (merged.mock?.strategy ?? baseAi?.mock?.strategy ?? DEFAULT_MOCK_STRATEGY) as MockStrategy,
+      mockFixturesDir: merged.mock?.fixtures_dir ?? baseAi?.mock?.fixtures_dir,
+      // A scenario pack scopes strict mode per step through MOCK_STRICT. The sandbox shares one
+      // exa.config.toml, so this is not a config key. Unset falls back to the config value.
+      mockStrict: envMockStrict !== undefined
+        ? envMockStrict === "1"
+        : (merged.mock?.strict ?? baseAi?.mock?.strict ?? false),
     };
   }
 
