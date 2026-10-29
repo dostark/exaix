@@ -1455,10 +1455,8 @@ export class AgentRunner implements IAgentRunner {
         })),
       );
 
-    let adaptiveEntryIndex = -1;
-    let adaptivePayload: IPortalKnowledgeSelectionAppliedPayload | undefined;
-    if (inclusionMode === PortalKnowledgeInclusion.ADAPTIVE && request.portalKnowledgeSnapshot && tokenizer) {
-      const adaptive = await this.buildAdaptiveKnowledgeEntry({
+    const adaptive = await this.maybeAddAdaptiveKnowledge(
+      {
         request,
         entries,
         directoryListingEntryIndex,
@@ -1466,13 +1464,10 @@ export class AgentRunner implements IAgentRunner {
         tokenizer,
         modelId,
         toSegments,
-      });
-      if (adaptive) {
-        adaptiveEntryIndex = entries.length;
-        entries.push({ content: adaptive.content, kind: k.portal_knowledge, priority: 60, nonCompactable: false });
-        adaptivePayload = adaptive.payload;
-      }
-    }
+      },
+      inclusionMode,
+      k.portal_knowledge,
+    );
 
     const allSegments = await toSegments(entries);
     const allocationHints = this.buildAllocationHints(allSegments);
@@ -1496,21 +1491,50 @@ export class AgentRunner implements IAgentRunner {
       })).segments
       : allSegments;
 
-    if (adaptivePayload) {
-      const includedById = new Map(includedSegments.map((segment) => [segment.segmentId, segment]));
-      adaptivePayload.includedTokens = includedById.get(`prompt-part-${adaptiveEntryIndex}`)?.tokenEstimate ?? 0;
-      if (opts?.journal !== false) {
-        this.logActivity(
-          ACTIVITY_ACTOR_AGENT,
-          DomainEventType.PortalKnowledgeSelectionApplied,
-          request.requestId ?? null,
-          { ...adaptivePayload },
-          request.traceId,
-        );
-      }
-    }
+    this.journalSelection(adaptive.payload, includedSegments, adaptive.index, request, opts);
 
     return { allSegments, includedSegments, budget };
+  }
+
+  /** Adds adaptive mode's knowledge entry to the entries, returning its payload and index. */
+  private async maybeAddAdaptiveKnowledge(
+    args: Omit<Parameters<AgentRunner["buildAdaptiveKnowledgeEntry"]>[0], "tokenizer"> & {
+      tokenizer: Opt<ITokenizer, Reason.OptionalContext>;
+    },
+    inclusionMode: string,
+    kind: IContextSegment["kind"],
+  ): Promise<{ payload: IPortalKnowledgeSelectionAppliedPayload | undefined; index: number }> {
+    if (
+      inclusionMode !== PortalKnowledgeInclusion.ADAPTIVE || !args.request.portalKnowledgeSnapshot || !args.tokenizer
+    ) {
+      return { payload: undefined, index: -1 };
+    }
+    const adaptive = await this.buildAdaptiveKnowledgeEntry({ ...args, tokenizer: args.tokenizer });
+    if (!adaptive) return { payload: undefined, index: -1 };
+    const index = args.entries.length;
+    args.entries.push({ content: adaptive.content, kind, priority: 60, nonCompactable: false });
+    return { payload: adaptive.payload, index };
+  }
+
+  /** Journals the applied adaptive selection, with its included token count. */
+  private journalSelection(
+    payload: Opt<IPortalKnowledgeSelectionAppliedPayload, Reason.OptionalContext>,
+    includedSegments: readonly IContextSegment[],
+    adaptiveEntryIndex: number,
+    request: IParsedRequest,
+    opts: Opt<{ journal?: boolean }, Reason.OptionalContext>,
+  ): void {
+    if (!payload) return;
+    const includedById = new Map(includedSegments.map((segment) => [segment.segmentId, segment]));
+    payload.includedTokens = includedById.get(`prompt-part-${adaptiveEntryIndex}`)?.tokenEstimate ?? 0;
+    if (opts?.journal === false) return;
+    this.logActivity(
+      ACTIVITY_ACTOR_AGENT,
+      DomainEventType.PortalKnowledgeSelectionApplied,
+      request.requestId ?? null,
+      { ...payload },
+      request.traceId,
+    );
   }
 
   /** Sizes and renders adaptive mode's knowledge entry: a preliminary allocation (without

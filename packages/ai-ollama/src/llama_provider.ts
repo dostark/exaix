@@ -58,21 +58,13 @@ export class LlamaProvider implements IModelProvider {
     if (!/^codellama:|^llama[0-9.]*:/.test(options.model)) {
       throw new Error("Unsupported model");
     }
-
+    const settings = llamaSettingsOf(options);
     this.model = options.model;
-    this.endpoint = options.endpoint ||
-      options.config?.ai_endpoints?.ollama ||
-      DEFAULT_OLLAMA_ENDPOINT;
-    this.id = options.id || `llama-${this.model}`;
-    this.maxAttempts = options.maxAttempts ||
-      options.config?.ai_retry?.providers?.ollama?.max_attempts ||
-      DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS;
-    this.backoffBaseMs = options.backoffBaseMs ||
-      options.config?.ai_retry?.providers?.ollama?.backoff_base_ms ||
-      DEFAULT_OLLAMA_RETRY_BACKOFF_MS;
-    this.timeoutMs = options.timeoutMs ||
-      options.config?.ai_timeout?.providers?.ollama ||
-      DEFAULT_OLLAMA_TIMEOUT_MS;
+    this.endpoint = settings.endpoint;
+    this.id = settings.id;
+    this.maxAttempts = settings.maxAttempts;
+    this.backoffBaseMs = settings.backoffBaseMs;
+    this.timeoutMs = settings.timeoutMs;
   }
 
   async generate(prompt: string, _options?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
@@ -129,4 +121,32 @@ export class LlamaProvider implements IModelProvider {
       return generateResult(data.response);
     }
   }
+}
+
+/** The settings of one Llama provider. */
+function llamaSettingsOf(options: ILlamaProviderOptions) {
+  return { ...endpointSettingsOf(options), ...retrySettingsOf(options) };
+}
+
+/** The endpoint and id of one Llama provider. */
+function endpointSettingsOf(options: ILlamaProviderOptions) {
+  return {
+    endpoint: options.endpoint || options.config?.ai_endpoints?.ollama || DEFAULT_OLLAMA_ENDPOINT,
+    id: options.id || `llama-${options.model}`,
+  };
+}
+
+/** The retry and timeout settings of one Llama provider. */
+function retrySettingsOf(options: ILlamaProviderOptions) {
+  return {
+    maxAttempts: options.maxAttempts ||
+      options.config?.ai_retry?.providers?.ollama?.max_attempts ||
+      DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS,
+    backoffBaseMs: options.backoffBaseMs ||
+      options.config?.ai_retry?.providers?.ollama?.backoff_base_ms ||
+      DEFAULT_OLLAMA_RETRY_BACKOFF_MS,
+    timeoutMs: options.timeoutMs ||
+      options.config?.ai_timeout?.providers?.ollama ||
+      DEFAULT_OLLAMA_TIMEOUT_MS,
+  };
 }

@@ -392,20 +392,22 @@ export class ExecutionLoop {
         await this.persistExecutionReport(traceId, workResult.report);
       }
 
-      const commitSha = workResult.commitSha ??
-        (workResult.didMutateRepo && gitSetup.branchName
-          ? await this.gitExecutionSetupService.commitChanges(
-            gitSetup.executionGitService,
-            requestId!,
-            traceId!,
-            this.agentRole,
-            (noChangesTraceId, noChangesRequestId) => {
-              this.logActivity(DomainEventType.ExecutionNoChanges, noChangesTraceId, {
-                request_id: noChangesRequestId,
-              });
-            },
-          )
-          : null);
+      const commitShaOf = async (): Promise<string | null> => {
+        if (workResult.commitSha) return workResult.commitSha;
+        if (!workResult.didMutateRepo || !gitSetup.branchName) return null;
+        return await this.gitExecutionSetupService.commitChanges(
+          gitSetup.executionGitService,
+          requestId!,
+          traceId!,
+          this.agentRole,
+          (noChangesTraceId, noChangesRequestId) => {
+            this.logActivity(DomainEventType.ExecutionNoChanges, noChangesTraceId, {
+              request_id: noChangesRequestId,
+            });
+          },
+        );
+      };
+      const commitSha = await commitShaOf();
 
       const originalStepTitles = prepared.structuredPlan?.steps.map((step) => step.title) ??
         prepared.actions.map((action) => action.description ?? action.tool);
@@ -422,21 +424,24 @@ export class ExecutionLoop {
       });
 
       // Register review
-      if (verification.commitSha) {
+      const planFrontmatter = frontmatter;
+      const registerReviewForVerification = async (): Promise<void> => {
+        if (!verification.commitSha) return;
         const baseBranch = gitSetup.baseBranch ??
-          await this.gitExecutionSetupService.resolveBaseBranch(frontmatter, portalGitService!, portalRepoRoot);
+          await this.gitExecutionSetupService.resolveBaseBranch(planFrontmatter, portalGitService!, portalRepoRoot);
         const branch = await gitSetup.executionGitService.getCurrentBranch();
         await this.registerReview({
           requestId: requestId!,
           traceId: traceId!,
-          portal: frontmatter.portal || "unknown",
+          portal: planFrontmatter.portal || "unknown",
           branch,
           commitSha: verification.commitSha,
           repository: portalRepoRoot,
           baseBranch,
           worktreePath: gitSetup.worktreePath,
         });
-      }
+      };
+      await registerReviewForVerification();
 
       // Handle success
       await this.handleSuccess(

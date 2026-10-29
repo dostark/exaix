@@ -1315,26 +1315,29 @@ export class FlowRunner implements IFlowRunner {
       );
       await this.validateIFlow(flow, request, flowRunId, this.controlStateStore.get(stepResults).ceiling);
       await this.ensureDynamicExecutor(flow, flowRunId);
-      const flowDeclaresBindings = flow.steps.some((step) => step.binding !== undefined || step.pin !== undefined);
-      if (
-        this.options.bindingService &&
-        (flowDeclaresBindings || await this.options.bindingService.isActive() ||
-          await this.options.bindingService.hasRunFile(request.traceId))
-      ) {
+      const captureBindingSnapshot = async (): Promise<string | undefined> => {
+        const service = this.options.bindingService;
+        if (!service) return undefined;
+        const flowDeclaresBindings = flow.steps.some((step) => step.binding !== undefined || step.pin !== undefined);
+        if (
+          !(flowDeclaresBindings || await service.isActive() ||
+            await service.hasRunFile(request.traceId))
+        ) return undefined;
         const traceId = request.traceId ?? crypto.randomUUID();
-        snapshotTraceId = traceId;
         request = {
           ...request,
           traceId,
           flowId: flow.id,
-          bindingSnapshot: await this.options.bindingService.snapshotForRun(flow, {
+          bindingSnapshot: await service.snapshotForRun(flow, {
             traceId,
             requestId: request.requestId,
             requestPath: request.requestPath,
             requestSha256: request.requestSha256,
           }),
         };
-      }
+        return traceId;
+      };
+      snapshotTraceId = await captureBindingSnapshot();
       await this.checkpointCoordinator.loadCheckpointIfAvailable(
         flow,
         request,
@@ -1351,8 +1354,9 @@ export class FlowRunner implements IFlowRunner {
 
       // If any step entered a wait state, return early without aggregating — the flow
       // will resume when an operator resolves the wait state externally.
-      const waitingSteps = [...stepResults.values()].filter((r) => r.waitStateId);
-      if (waitingSteps.length > 0) {
+      const waitingResult = (): IFlowResult | null => {
+        const waitingSteps = [...stepResults.values()].filter((r) => r.waitStateId);
+        if (waitingSteps.length === 0) return null;
         return {
           flowRunId,
           success: true,
@@ -1362,7 +1366,9 @@ export class FlowRunner implements IFlowRunner {
           waiting: true,
           waitStateId: waitingSteps[0].waitStateId,
         } as IFlowResult;
-      }
+      };
+      const waiting = waitingResult();
+      if (waiting) return waiting;
 
       // Aggregate output and finalize
       return await this.aggregateAndFinalize(flow, request, flowRunId, stepResults, startedAt);

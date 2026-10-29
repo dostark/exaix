@@ -90,22 +90,9 @@ export class AnthropicProvider extends BaseProvider {
   private readonly thinkingDefault?: boolean;
 
   constructor(options: AnthropicProviderOptions & { apiVersion?: string }) {
-    super({
-      ...options,
-      defaultModel: options.config?.ai_anthropic?.default_model || DEFAULT_ANTHROPIC_MODEL,
-      defaultEndpoint: options.config?.ai_endpoints?.anthropic || DEFAULT_ANTHROPIC_ENDPOINT,
-      defaultTimeout: options.config?.ai_timeout?.providers?.anthropic || DEFAULT_ANTHROPIC_TIMEOUT_MS,
-      defaultRetryDelay: options.config?.ai_retry?.providers?.anthropic?.backoff_base_ms ||
-        DEFAULT_ANTHROPIC_RETRY_BACKOFF_MS,
-      defaultMaxRetries: options.config?.ai_retry?.providers?.anthropic?.max_attempts ||
-        DEFAULT_ANTHROPIC_RETRY_MAX_ATTEMPTS,
-    }, PROVIDER_ANTHROPIC);
-
-    this.apiVersion = options.apiVersion ||
-      options.config?.ai_anthropic?.api_version ||
-      DEFAULT_ANTHROPIC_API_VERSION;
-    this.maxTokensDefault = options.config?.ai_anthropic?.max_tokens_default ||
-      DEFAULT_ANTHROPIC_MAX_TOKENS;
+    super(superOptionsOf(options), PROVIDER_ANTHROPIC);
+    this.apiVersion = apiVersionOf(options);
+    this.maxTokensDefault = maxTokensOf(options);
     this.thinkingDefault = options.config?.ai_anthropic?.thinking_default;
     this.callCapabilities = anthropicCallCapabilities(this.model);
   }
@@ -393,4 +380,38 @@ function messagesRequestOf(
     tools: options?.tools?.map(mapToolDefinition),
     tool_choice: options?.toolChoice ? mapToolChoice(options.toolChoice) : undefined,
   };
+}
+
+/** The base provider options of one Anthropic provider. */
+function superOptionsOf(options: AnthropicProviderOptions & { apiVersion?: string }) {
+  return { ...options, ...modelDefaultsOf(options), ...retryDefaultsOf(options) };
+}
+
+/** The model and endpoint defaults of one Anthropic provider. */
+function modelDefaultsOf(options: AnthropicProviderOptions & { apiVersion?: string }) {
+  return {
+    defaultModel: options.config?.ai_anthropic?.default_model || DEFAULT_ANTHROPIC_MODEL,
+    defaultEndpoint: options.config?.ai_endpoints?.anthropic || DEFAULT_ANTHROPIC_ENDPOINT,
+  };
+}
+
+/** The timeout and retry defaults of one Anthropic provider. */
+function retryDefaultsOf(options: AnthropicProviderOptions & { apiVersion?: string }) {
+  return {
+    defaultTimeout: options.config?.ai_timeout?.providers?.anthropic || DEFAULT_ANTHROPIC_TIMEOUT_MS,
+    defaultRetryDelay: options.config?.ai_retry?.providers?.anthropic?.backoff_base_ms ||
+      DEFAULT_ANTHROPIC_RETRY_BACKOFF_MS,
+    defaultMaxRetries: options.config?.ai_retry?.providers?.anthropic?.max_attempts ||
+      DEFAULT_ANTHROPIC_RETRY_MAX_ATTEMPTS,
+  };
+}
+
+/** The API version of one Anthropic provider. */
+function apiVersionOf(options: AnthropicProviderOptions & { apiVersion?: string }): string {
+  return options.apiVersion || options.config?.ai_anthropic?.api_version || DEFAULT_ANTHROPIC_API_VERSION;
+}
+
+/** The default max tokens of one Anthropic provider. */
+function maxTokensOf(options: AnthropicProviderOptions & { apiVersion?: string }): number {
+  return options.config?.ai_anthropic?.max_tokens_default || DEFAULT_ANTHROPIC_MAX_TOKENS;
 }

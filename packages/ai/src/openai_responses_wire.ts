@@ -92,22 +92,7 @@ export function createOpenAIResponsesRequestInit(
       // An absent or empty key means the endpoint needs no credential, so send no header.
       ...(apiKey ? { "Authorization": `Bearer ${apiKey}` } : {}),
     },
-    body: JSON.stringify({
-      model,
-      input: responsesInput(prompt, options),
-      tools: hasTools ? options?.tools?.map(mapToolDefinitionResponses) : undefined,
-      tool_choice: hasTools && options?.toolChoice ? mapToolChoiceResponses(options.toolChoice) : undefined,
-      parallel_tool_calls: hasTools && disablesParallelToolUse(options?.toolChoice) ? false : undefined,
-      temperature: reasoningModel ? undefined : options?.temperature,
-      top_p: reasoningModel ? undefined : options?.top_p,
-      // The caller's tier applies here, clamped to high. Without a tier the API default applies.
-      reasoning: reasoningModel && options?.effort !== undefined
-        ? { effort: openAiReasoningEffort(options.effort) }
-        : undefined,
-      max_output_tokens: options?.max_tokens,
-      store: false,
-      include: [REASONING_ENCRYPTED_CONTENT],
-    }),
+    body: responsesBodyOf(model, prompt, options, reasoningModel, hasTools),
   };
 }
 
@@ -292,4 +277,30 @@ function mapToolDefinitionResponses(tool: IToolDefinition): ResponsesWireTool {
 function mapToolChoiceResponses(choice: IToolChoice): ResponsesWireToolChoice {
   const mapped = mapToolChoiceOpenAI(choice);
   return typeof mapped === "string" ? mapped : { type: FUNCTION_TOOL_TYPE, name: mapped.function.name };
+}
+
+/** The serialized Responses API request body. */
+function responsesBodyOf(
+  model: string,
+  prompt: string,
+  options: Opt<IModelOptions, Reason.OptionalInput>,
+  reasoningModel: boolean,
+  hasTools: boolean,
+): string {
+  return JSON.stringify({
+    model,
+    input: responsesInput(prompt, options),
+    tools: hasTools ? options?.tools?.map(mapToolDefinitionResponses) : undefined,
+    tool_choice: hasTools && options?.toolChoice ? mapToolChoiceResponses(options.toolChoice) : undefined,
+    parallel_tool_calls: hasTools && disablesParallelToolUse(options?.toolChoice) ? false : undefined,
+    temperature: reasoningModel ? undefined : options?.temperature,
+    top_p: reasoningModel ? undefined : options?.top_p,
+    // The caller's tier applies here, clamped to high. Without a tier the API default applies.
+    reasoning: reasoningModel && options?.effort !== undefined
+      ? { effort: openAiReasoningEffort(options.effort) }
+      : undefined,
+    max_output_tokens: options?.max_tokens,
+    store: false,
+    include: [REASONING_ENCRYPTED_CONTENT],
+  });
 }

@@ -79,37 +79,43 @@ export async function buildTagsIndex(
 ): Promise<Record<string, string[]>> {
   const tagsIndex: Record<string, string[]> = {};
 
-  // Index project memory tags
   for await (const entry of Deno.readDir(projectsDir)) {
-    if (entry.isDirectory) {
-      const projectMem = await getProjectMemory(entry.name);
-      if (projectMem) {
-        // Index pattern tags
-        for (const pattern of projectMem.patterns) {
-          for (const tag of (pattern.tags ?? [])) {
-            pushTagRef(tagsIndex, tag, `pattern:${entry.name}:${pattern.name}`);
-          }
-        }
-
-        // Index decision tags
-        for (const decision of projectMem.decisions) {
-          for (const tag of (decision.tags ?? [])) {
-            pushTagRef(tagsIndex, tag, `decision:${entry.name}:${decision.date}`);
-          }
-        }
-      }
-    }
+    if (!entry.isDirectory) continue;
+    const projectMem = await getProjectMemory(entry.name);
+    if (projectMem) indexProjectMemory(tagsIndex, entry.name, projectMem);
   }
 
-  // Index global learnings tags
+  indexLearningTags(tagsIndex, learnings);
+
+  return tagsIndex;
+}
+
+/** Indexes the pattern and decision tags of one project. */
+function indexProjectMemory(
+  tagsIndex: Record<string, string[]>,
+  portal: string,
+  memory: NonNullable<Awaited<ReturnType<Parameters<typeof buildTagsIndex>[1]>>>,
+): void {
+  for (const pattern of memory.patterns) {
+    for (const tag of pattern.tags ?? []) {
+      pushTagRef(tagsIndex, tag, `pattern:${portal}:${pattern.name}`);
+    }
+  }
+  for (const decision of memory.decisions) {
+    for (const tag of decision.tags ?? []) {
+      pushTagRef(tagsIndex, tag, `decision:${portal}:${decision.date}`);
+    }
+  }
+}
+
+/** Indexes the tags of the approved global learnings. */
+function indexLearningTags(tagsIndex: Record<string, string[]>, learnings: readonly ILearning[]): void {
   for (const learning of learnings) {
     if (learning.status !== MemoryStatus.APPROVED) continue;
-    for (const tag of (learning.tags ?? [])) {
+    for (const tag of learning.tags ?? []) {
       pushTagRef(tagsIndex, tag, `learning:global:${learning.id}`);
     }
   }
-
-  return tagsIndex;
 }
 
 /**
