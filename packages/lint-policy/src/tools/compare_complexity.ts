@@ -94,11 +94,8 @@ export interface IDifference {
   readonly contributions: readonly IContributionDifference[];
 }
 
-const TOOL_FALLOW = "fallow";
-const TOOL_CORE = "core";
-
 /** The two tools whose populations the calibration compares. */
-type ExclusionTool = typeof TOOL_FALLOW | typeof TOOL_CORE;
+type ExclusionTool = "fallow" | "core";
 
 /** One justified subject that leaves a tool's population: a file, or a directory when the path ends in a slash. */
 export interface IExclusion {
@@ -157,16 +154,16 @@ const FALLOW_SCHEMA_VERSION = 12;
 /** The fallow version this calibration accepts. */
 const FALLOW_VERSION = "3.36.0";
 
+const TOOL_FALLOW: ExclusionTool = "fallow";
+const TOOL_CORE: ExclusionTool = "core";
+
 /** The matching coverage each population needs before the exactness rate is meaningful. */
 const REQUIRED_COVERAGE = 0.99;
 
 /** The exact cyclomatic agreement the plan targets. */
 const REQUIRED_EXACT_AGREEMENT = 0.95;
 
-/**
- * The subjects the calibration leaves out of a population, each with its own reason. A tool-only file is never
- * dropped automatically: it counts against coverage unless a line here names it.
- */
+/** The subjects the calibration leaves out of a population, each with a stated reason. */
 export const CALIBRATION_EXCLUSIONS: readonly IExclusion[] = [
   {
     tool: TOOL_FALLOW,
@@ -383,10 +380,7 @@ function unmatchedRowOf(
   return { path: normalizePath(row.path), name: row.name, line: row.line, col: row.col };
 }
 
-/**
- * Compares a fallow report with the engine rows over their full supported populations.
- * Only the listed exclusions leave a population. A tool-only file counts against the coverage of the tool that lacks it.
- */
+/** Compares the full populations of both tools. Only the listed exclusions leave a population. */
 export function compareComplexity(
   report: IFallowReport,
   core: readonly IMeasuredFunction[],

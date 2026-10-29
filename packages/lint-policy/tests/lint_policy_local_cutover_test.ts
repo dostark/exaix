@@ -14,6 +14,8 @@ const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
 const CEILINGS_PATH = "packages/lint-policy/rule_ceilings.json";
 /** The production-only ratchet starts at this cut-over commit. Earlier values mixed test scope. */
 const FIRST_CUTOVER_COMMIT = "3467f53ccf95b9664514294c45f26a1df6ba8fa5";
+/** The three complexity rules enter the ceiling table at this commit, so their ceilings start here. */
+const COMPLEXITY_CUTOVER_COMMIT = "84d370479037b8c56e4a14e94de57fc074cf5c75";
 const ENGINE_SUBMODULE = "unslop-ts";
 const GITLINK_FIELDS = 3;
 
@@ -40,7 +42,12 @@ function raisedCeilings(before: Ceilings, after: Ceilings): string[] {
 }
 
 Deno.test("phase227_remediation_cutover", async () => {
-  const before: Ceilings = JSON.parse(await gitOutput(REPO_ROOT, "show", `${FIRST_CUTOVER_COMMIT}:${CEILINGS_PATH}`));
+  const first: Ceilings = JSON.parse(await gitOutput(REPO_ROOT, "show", `${FIRST_CUTOVER_COMMIT}:${CEILINGS_PATH}`));
+  const complexity: Ceilings = JSON.parse(
+    await gitOutput(REPO_ROOT, "show", `${COMPLEXITY_CUTOVER_COMMIT}:${CEILINGS_PATH}`),
+  );
+  const introduced = Object.fromEntries(Object.entries(complexity).filter(([rule]) => !(rule in first)));
+  const before: Ceilings = { ...introduced, ...first };
   const after: Ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, CEILINGS_PATH)));
   assertEquals(raisedCeilings(before, after), []);
   assert(Object.keys(after).length > 0, "the ceiling table is empty");

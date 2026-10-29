@@ -405,7 +405,7 @@
         "max": 15,
         "variant": "extended"
       },
-      "limits": "Classic keeps the legacy body-only count for the parent gate until the cutover step activates the extended variant."
+      "limits": "Extended counts the modern constructs the engine now measures."
     },
     "exaix/max-cognitive-complexity": {
       "engine": "plugin",
@@ -423,7 +423,8 @@
       "options": {
         "max": 15,
         "countNullish": true
-      }
+      },
+      "limits": "Campbell cognitive complexity with the extended nullish option."
     },
     "exaix/max-function-lines": {
       "engine": "plugin",
@@ -440,7 +441,8 @@
       ],
       "options": {
         "max": 60
-      }
+      },
+      "limits": "Function length in source lines, excluding blank and comment-only lines."
     },
     "exaix/max-class-size": {
       "engine": "plugin",
