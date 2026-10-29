@@ -222,6 +222,18 @@ export class AgentExecutionError extends Error {
 /** Orchestrator and strategy dispatcher for agent execution — delegates blueprint
  *  loading, prompt building, budget/context, git audit, output parsing, and loop history
  *  to the injected services named in the module header. */
+/** The real usage block one strategy may report. */
+type IComposerUsage = {
+  tokens: number;
+  cost_usd_estimate: number | null;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  cache_read_tokens?: number;
+  cache_creation_tokens?: number;
+  reasoning_tokens?: number;
+  cost_source?: IChangesetCostSource;
+};
+
 export class AgentComposer {
   private executionContext?: IWorkspaceExecutionContext;
   private originalWorkingDirectory?: string;
@@ -676,130 +688,43 @@ export class AgentComposer {
     rawContext: IExecutionContext,
     rawOptions: IAgentExecutionOptionsInput,
   ): Promise<IChangesetResult> {
-    // ✓ Validate inputs first to prevent injection attacks
-    const context = InputValidator.validateExecutionContext(rawContext);
-    const options: IAgentExecutionOptions = InputValidator.validateAgentExecutionOptions(rawOptions);
-
+    const { context, options, portal } = this.resolveStepTargets(rawContext, rawOptions);
     const startTime = Date.now();
 
     try {
-      // Validate portal exists
-      const portal = this.config.portals?.find((p) => p.alias === options.portal);
-      if (!portal) {
-        throw new Error(`Portal not found: ${options.portal}`);
-      }
-
-      // Validate agent has permissions (check before loading blueprint)
-      if (!this.permissions.checkAgentAllowed(options.portal, options.agent_role ?? "").allowed) {
-        throw new Error(
-          `Agent role not allowed to access portal: ${options.agent_role} -> ${options.portal}`,
-        );
-      }
-
-      // Load the blueprint. Keep MCP and CLI delegation as explicit routes.
-      // Use ReAct for all other provider-backed plan steps.
       const _blueprint = await this.loadBlueprint(options.agent_role ?? "", context.trace_id);
       const pinnedSkills = await this.resolvePinnedSkillPrompt(context, options);
       const strategyName = this.resolveStrategyName(_blueprint, options);
       await this.prepareStepBudget(_blueprint, options, context.trace_id, pinnedSkills, strategyName);
 
-      // Log execution start
-      await this.logExecutionStart(
-        context.trace_id,
-        options.agent_role ?? "",
-        options.portal,
-      );
-
+      await this.logExecutionStart(context.trace_id, options.agent_role ?? "", options.portal);
       this.applyBlueprintToolScope(_blueprint, options);
-
-      // Apply the blueprint's secondary-approval rules to the ToolRegistry before the selected strategy executes tools.
       this.toolRegistry?.setHitlBlueprintRules?.(_blueprint.hitl?.require_secondary_approval ?? []);
 
-      const strategy = this.strategyRegistry!.resolve(strategyName);
-      // Forward resolved per-call options (thinking/effort) to the strategy
-      if (this._resolvedCallOptions && "callOptions" in strategy) {
-        (strategy as { callOptions?: IModelCallOptions }).callOptions = this._resolvedCallOptions;
-      }
+      const strategy = this.selectStrategy(strategyName);
       const validated = await strategy.execute(_blueprint, context, options, pinnedSkills);
+      const usage = this.usageReportOf(validated);
 
-      // Real usage from the strategy, when reported; otherwise undefined — no heuristic
-      // cost estimation, since output tokens are unknowable pre-call and input-side
-      // cache-tier pricing is unpopulated data.
-      const usage = validated.usage
-        ? {
-          tokens: validated.usage.prompt_tokens + validated.usage.completion_tokens,
-          cost_usd_estimate: validated.usage.cost_usd,
-          prompt_tokens: validated.usage.prompt_tokens,
-          completion_tokens: validated.usage.completion_tokens,
-          cache_read_tokens: validated.usage.cache_read_tokens,
-          cache_creation_tokens: validated.usage.cache_creation_tokens,
-          reasoning_tokens: validated.usage.reasoning_tokens,
-          cost_source: validated.usage.cost_source,
-        }
-        : undefined;
-
-      // Real SHA and Audit
       const portalPath = this.resolveAuditPortalPath(portal);
-
-      // 1. Capture real SHA
       validated.commit_sha = await this.getPortalHeadSha(portalPath);
 
-      // Perform Audit. Authorize allowed_paths plus every file an EARLIER step already
-      // wrote through legitimate tools; when allowed_paths is declared, this step's own
-      // files_changed must NOT widen it, or a self-reporting agent could rubber-stamp any path.
-      const declaresAllowedPaths = (options.allowed_paths?.length ?? 0) > 0;
-      const authorizedPaths = declaresAllowedPaths
-        ? [...(options.allowed_paths ?? []), ...this.planWrittenFiles]
-        : [...this.planWrittenFiles, ...(validated.files_changed ?? [])];
       const unauthorizedChanges = await this.auditGitChanges(
         portalPath,
-        authorizedPaths,
+        this.authorizedPathsOf(options, validated),
       );
-
       if (unauthorizedChanges.length > 0) {
-        // Revert if breach detected
-        await this.revertUnauthorizedChanges(portalPath, unauthorizedChanges);
-
-        // Log security violation
-        await this.logger.error(AGENT_EVENT_SECURITY_VIOLATION, context.trace_id, {
-          portal: options.portal,
-          unauthorized_files: unauthorizedChanges,
-          agent_role: options.agent_role,
-        });
-
-        throw new AgentExecutionError(
-          `Security violation: Unauthorized file modifications detected in portal '${options.portal}'`,
-          AgentExecutionErrorType.SECURITY_VIOLATION,
+        await this.rejectUnauthorizedChanges(
+          portalPath,
+          options.portal,
+          options.agent_role ?? "",
+          context,
+          unauthorizedChanges,
         );
       }
 
-      // Audit passed: this step's writes are now legitimate and accumulate for later
-      // steps' audits (see planWrittenFiles above) — a self-reported files_changed entry
-      // outside allowed_paths never reaches here since the audit above would have thrown.
       for (const file of validated.files_changed ?? []) this.planWrittenFiles.add(file);
-
-      // Track step in loop history for potential summarization. Falls back to a
-      // char-count heuristic over the full step context when no strategy-reported usage
-      // exists; loop-history token tracking is unrelated to cost estimation.
-      const loopHistoryTokens = usage?.tokens ?? Math.max(
-        1,
-        this.ctx.estimateTokensSync(
-          _blueprint.systemPrompt + context.request + context.plan + validated.description,
-        ),
-      );
-      this.historyManager.addEntry({
-        type: "step",
-        stepId: `${context.trace_id}-step-${this.historyManager.loopHistory.length + 1}`,
-        description: validated.description || "executed step",
-        filesChanged: validated.files_changed ?? [],
-        tokens: loopHistoryTokens,
-        timestamp: Date.now(),
-      });
-
-      // Budget-pressure check: compact if loop history exceeds 80% of its budget
+      this.recordStepHistory(validated, _blueprint, context, usage);
       await this._checkLoopHistoryBudget();
-
-      // Log completion
       await this.logExecutionComplete(
         context.trace_id,
         options.agent_role || "unknown",
@@ -807,10 +732,8 @@ export class AgentComposer {
         usage,
         Date.now() - startTime,
       );
-
       return validated;
     } catch (error) {
-      // Log error
       const providerReasonCode = error instanceof Error ? getProviderFailureReason(error) : undefined;
       await this.logExecutionError(context.trace_id, options.agent_role ?? "", {
         type: AgentExecutionErrorType.EXECUTION_ERROR,
@@ -818,11 +741,101 @@ export class AgentComposer {
         trace_id: context.trace_id,
         ...(providerReasonCode ? { providerReasonCode } : {}),
       });
-
       throw error;
     } finally {
       this.ctx.clearBudget();
     }
+  }
+
+  /** Validates one step's inputs and resolves its target portal. */
+  private resolveStepTargets(
+    rawContext: IExecutionContext,
+    rawOptions: IAgentExecutionOptionsInput,
+  ): { context: IExecutionContext; options: IAgentExecutionOptions; portal: IPortalConfig } {
+    const context = InputValidator.validateExecutionContext(rawContext);
+    const options: IAgentExecutionOptions = InputValidator.validateAgentExecutionOptions(rawOptions);
+    const portal = this.config.portals?.find((p) => p.alias === options.portal);
+    if (!portal) throw new Error(`Portal not found: ${options.portal}`);
+    if (!this.permissions.checkAgentAllowed(options.portal, options.agent_role ?? "").allowed) {
+      throw new Error(`Agent role not allowed to access portal: ${options.agent_role} -> ${options.portal}`);
+    }
+    return { context, options, portal };
+  }
+
+  /** Reserves the strategy for this step and forwards the resolved call options. */
+  private selectStrategy(strategyName: ExecutionStrategyName): ReturnType<StrategyRegistry["resolve"]> {
+    const strategy = this.strategyRegistry!.resolve(strategyName);
+    if (this._resolvedCallOptions && "callOptions" in strategy) {
+      (strategy as { callOptions?: IModelCallOptions }).callOptions = this._resolvedCallOptions;
+    }
+    return strategy;
+  }
+
+  /** The real usage block of one strategy result, when one was reported. */
+  private usageReportOf(validated: IChangesetResult): Opt<IComposerUsage, Reason.OptionalInput> {
+    if (!validated.usage) return undefined;
+    const usage = validated.usage;
+    return {
+      tokens: usage.prompt_tokens + usage.completion_tokens,
+      cost_usd_estimate: usage.cost_usd,
+      prompt_tokens: usage.prompt_tokens,
+      completion_tokens: usage.completion_tokens,
+      cache_read_tokens: usage.cache_read_tokens,
+      cache_creation_tokens: usage.cache_creation_tokens,
+      reasoning_tokens: usage.reasoning_tokens,
+      cost_source: usage.cost_source,
+    };
+  }
+
+  /** Authorizes this step's reported writes against the step policy. */
+  private authorizedPathsOf(options: IAgentExecutionOptions, validated: IChangesetResult): string[] {
+    const declaresAllowedPaths = (options.allowed_paths?.length ?? 0) > 0;
+    return declaresAllowedPaths
+      ? [...(options.allowed_paths ?? []), ...this.planWrittenFiles]
+      : [...this.planWrittenFiles, ...(validated.files_changed ?? [])];
+  }
+
+  /** Reverts and rejects one step that changed an unauthorized path. */
+  private async rejectUnauthorizedChanges(
+    portalPath: string,
+    portalAlias: string,
+    agentRole: string,
+    context: IExecutionContext,
+    unauthorizedChanges: string[],
+  ): Promise<never> {
+    await this.revertUnauthorizedChanges(portalPath, unauthorizedChanges);
+    await this.logger.error(AGENT_EVENT_SECURITY_VIOLATION, context.trace_id, {
+      portal: portalAlias,
+      unauthorized_files: unauthorizedChanges,
+      agent_role: agentRole,
+    });
+    throw new AgentExecutionError(
+      `Security violation: Unauthorized file modifications detected in portal '${portalAlias}'`,
+      AgentExecutionErrorType.SECURITY_VIOLATION,
+    );
+  }
+
+  /** Records one executed step in the loop history. */
+  private recordStepHistory(
+    validated: IChangesetResult,
+    blueprint: IAgentFileBlueprint,
+    context: IExecutionContext,
+    usage: Opt<IComposerUsage, Reason.OptionalInput>,
+  ): void {
+    const loopHistoryTokens = usage?.tokens ?? Math.max(
+      1,
+      this.ctx.estimateTokensSync(
+        blueprint.systemPrompt + context.request + context.plan + validated.description,
+      ),
+    );
+    this.historyManager.addEntry({
+      type: "step",
+      stepId: `${context.trace_id}-step-${this.historyManager.loopHistory.length + 1}`,
+      description: validated.description || "executed step",
+      filesChanged: validated.files_changed ?? [],
+      tokens: loopHistoryTokens,
+      timestamp: Date.now(),
+    });
   }
 
   private async prepareStepBudget(
@@ -1013,19 +1026,7 @@ export class AgentComposer {
     traceId: string,
     agentRole: string,
     result: IChangesetResult,
-    usage?: Opt<
-      {
-        tokens: number;
-        cost_usd_estimate: number | null;
-        prompt_tokens?: number;
-        completion_tokens?: number;
-        cache_read_tokens?: number;
-        cache_creation_tokens?: number;
-        reasoning_tokens?: number;
-        cost_source?: IChangesetCostSource;
-      },
-      Reason.OptionalInput
-    >,
+    usage?: Opt<IComposerUsage, Reason.OptionalInput>,
     /** Real per-step wall-clock duration around executeStep, distinct from the
      *  strategy-internal execution_time_ms already on `result`. */
     durationMs?: Opt<number, Reason.OptionalInput>,

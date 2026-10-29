@@ -87,6 +87,13 @@ const BlueprintSchema = z.object({
   default_skills: z.array(z.string()).optional(),
 }).passthrough();
 
+/** Splits one `provider:model` declaration, or keeps the provider empty. */
+function splitProviderModel(model: string): { provider: string; model: string } {
+  const colonIdx = model.indexOf(":");
+  if (colonIdx === -1) return { provider: "", model };
+  return { provider: model.substring(0, colonIdx), model: model.substring(colonIdx + 1) };
+}
+
 export class BlueprintService {
   constructor(
     private config: Config,
@@ -168,49 +175,45 @@ export class BlueprintService {
     let model = validatedFrontmatter.model;
     let provider = validatedFrontmatter.provider;
     let resolvedCallOptions: IModelCallOptions | undefined;
-
     if (this.modelResolver) {
-      const extras = validatedFrontmatter as BlueprintInput;
-      const requestIntent = this.options?.requestIntent;
-      const derivedTaskType = deriveTaskType({
-        frontmatterTaskType: requestIntent?.task_type,
-        agentRoleTaskType: extras.task_type,
-        topSkillTaskTypes: this.options?.topSkillTaskTypes,
-        agentRole: validatedFrontmatter.agent_role,
-        taskTypeMap: this.config.model_registry?.task_type_map,
-      });
-      const intent: IModelIntent = {
-        // Request-level intent overrides the blueprint for any explicitly-set field.
-        model: requestIntent?.model || validatedFrontmatter.model,
-        model_size: requestIntent?.model_size ?? extras.model_size,
-        characteristics: requestIntent?.characteristics ?? extras.characteristics,
-        preferred_provider: requestIntent?.preferred_provider ?? extras.preferred_provider,
-        // A declaration-time "auto" never reaches ModelResolver, which only knows concrete values.
-        // The caller resolves it after selection.
-        thinking: thinkingLike(requestIntent?.thinking ?? extras.thinking),
-        effort: effortLike(requestIntent?.effort ?? extras.effort),
-        task_type: derivedTaskType.taskType,
-        task_type_source: derivedTaskType.source,
-        ...(traceId ? { trace_id: traceId } : {}),
-        ...(this.options?.fixedClient ? { fixed_client: this.options.fixedClient } : {}),
-      };
-      const resolved = await this.modelResolver.resolve(intent);
+      const resolved = await this.modelResolver.resolve(this.modelIntentOf(validatedFrontmatter, traceId));
       provider = resolved.provider;
       model = resolved.model;
-      if (resolved.options) {
-        resolvedCallOptions = resolved.options as IModelCallOptions;
-      }
+      if (resolved.options) resolvedCallOptions = resolved.options as IModelCallOptions;
     } else if (!provider) {
-      const colonIdx = model.indexOf(":");
-      if (colonIdx !== -1) {
-        provider = model.substring(0, colonIdx);
-        model = model.substring(colonIdx + 1);
-      }
+      const split = splitProviderModel(model);
+      provider = split.provider;
+      model = split.model;
     }
-    if (!provider) {
-      provider = DEFAULT_MCP_AGENT_ROLE_ID;
-    }
-    return { model, provider, resolvedCallOptions };
+    return { model, provider: provider || DEFAULT_MCP_AGENT_ROLE_ID, resolvedCallOptions };
+  }
+
+  /** The model intent the resolver receives, with the request-level declarations taking precedence. */
+  private modelIntentOf(
+    validatedFrontmatter: z.infer<typeof BlueprintSchema>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): IModelIntent {
+    const extras = validatedFrontmatter as BlueprintInput;
+    const requestIntent = this.options?.requestIntent;
+    const derivedTaskType = deriveTaskType({
+      frontmatterTaskType: requestIntent?.task_type,
+      agentRoleTaskType: extras.task_type,
+      topSkillTaskTypes: this.options?.topSkillTaskTypes,
+      agentRole: validatedFrontmatter.agent_role,
+      taskTypeMap: this.config.model_registry?.task_type_map,
+    });
+    return {
+      model: requestIntent?.model || validatedFrontmatter.model,
+      model_size: requestIntent?.model_size ?? extras.model_size,
+      characteristics: requestIntent?.characteristics ?? extras.characteristics,
+      preferred_provider: requestIntent?.preferred_provider ?? extras.preferred_provider,
+      thinking: thinkingLike(requestIntent?.thinking ?? extras.thinking),
+      effort: effortLike(requestIntent?.effort ?? extras.effort),
+      task_type: derivedTaskType.taskType,
+      task_type_source: derivedTaskType.source,
+      ...(traceId ? { trace_id: traceId } : {}),
+      ...(this.options?.fixedClient ? { fixed_client: this.options.fixedClient } : {}),
+    };
   }
 
   /** Resolve the absolute filesystem path for a blueprint file. */

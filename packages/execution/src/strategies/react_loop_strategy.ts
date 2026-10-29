@@ -443,24 +443,15 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       const forcedChoiceRefused = capabilities?.supportsForcedToolChoice === false ||
         (thinkingOn && capabilities?.supportsForcedToolChoiceWithThinking === false);
       if (capabilities?.supportsToolChoice !== false) {
-        // PGAP-3: a detected preferred tool forces tool_choice: {type: "tool", name: "..."}.
-        // That entry replaces the unconstrained {type: "any"} for a targeted-edit task.
-        if (forcedChoiceRefused) {
-          base.toolChoice = { type: TOOL_CHOICE_TYPE_AUTO, ...parallel };
-          base.nativeToolChoiceMode = TOOL_CHOICE_TYPE_AUTO;
-        } else if (
-          nativePreferredTool && !nativeToolsPriorTurn &&
-          nativeToolDefinitions.some((tool) => tool.name === nativePreferredTool)
-        ) {
-          // A forced choice must name a tool in the list, or strict upstreams reject the request.
-          base.toolChoice = { type: "tool" as const, name: nativePreferredTool, ...parallel };
-          base.nativeToolChoiceMode = "forced";
-        } else {
-          base.toolChoice = nativeToolsPriorTurn
-            ? { type: TOOL_CHOICE_TYPE_AUTO, ...parallel }
-            : { type: "any" as const, ...parallel };
-          base.nativeToolChoiceMode = nativeToolsPriorTurn ? TOOL_CHOICE_TYPE_AUTO : "any";
-        }
+        const choice = this.nativeToolChoiceOf(
+          nativeToolDefinitions,
+          nativeToolsPriorTurn,
+          nativePreferredTool,
+          parallel,
+          forcedChoiceRefused,
+        );
+        base.toolChoice = choice.toolChoice;
+        base.nativeToolChoiceMode = choice.nativeToolChoiceMode;
       }
       // One-line diagnostic of the native toolChoice branch chosen.
       console.debug(
@@ -472,6 +463,29 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       }
     }
     return base;
+  }
+
+  /** The native toolChoice and its mode for one round. */
+  private nativeToolChoiceOf(
+    definitions: IToolDefinition[],
+    priorTurn: Opt<IProviderTurn, Reason.OptionalInput>,
+    preferredTool: Opt<string, Reason.OptionalInput>,
+    parallel: { disable_parallel_tool_use?: boolean },
+    forcedChoiceRefused: boolean,
+  ): {
+    toolChoice: NonNullable<IGeneratedOptions["toolChoice"]>;
+    nativeToolChoiceMode: NonNullable<IGeneratedOptions["nativeToolChoiceMode"]>;
+  } {
+    if (forcedChoiceRefused) {
+      return { toolChoice: { type: TOOL_CHOICE_TYPE_AUTO, ...parallel }, nativeToolChoiceMode: TOOL_CHOICE_TYPE_AUTO };
+    }
+    if (preferredTool && !priorTurn && definitions.some((tool) => tool.name === preferredTool)) {
+      // A forced choice must name a tool in the list, or strict upstreams reject the request.
+      return { toolChoice: { type: "tool", name: preferredTool, ...parallel }, nativeToolChoiceMode: "forced" };
+    }
+    return priorTurn
+      ? { toolChoice: { type: TOOL_CHOICE_TYPE_AUTO, ...parallel }, nativeToolChoiceMode: TOOL_CHOICE_TYPE_AUTO }
+      : { toolChoice: { type: "any", ...parallel }, nativeToolChoiceMode: "any" };
   }
 
   /** Log a warning when the response was truncated at max_tokens. */
@@ -660,24 +674,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   private async runSingleIteration(
     params: IIterationParams,
   ): Promise<IIterationResult> {
-    const {
-      i,
-      startTime,
-      blueprint,
-      context,
-      options,
-      history,
-      writtenFiles,
-      toolCallCount,
-      totalPromptTokens,
-      totalCompletionTokens,
-      totalCostUsd,
-      totalCacheReadTokens,
-      totalCacheCreationTokens,
-      totalReasoningTokens,
-      nativeToolsUsed,
-      nativeToolsPriorTurn,
-    } = params;
+    const { i, context, options, history } = params;
     // One policy per model turn: the request hint, the cap and the result cap all come from it.
     const policy = this.roundPolicy();
     if (this.executor.guardrailRunner?.hasBlockingViolation(context.trace_id)) {
@@ -692,7 +689,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       policy.mode,
     );
     await this.preflightNativeConversationBudget(
-      blueprint,
+      params.blueprint,
       generateOptions.nativeConversation,
       generateOptions,
       context.trace_id,
@@ -705,113 +702,157 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
     this.logMaxTokensTruncation(response, options, i, context);
     this.logRefusal(response, options, i, context);
-
     const costUsd = await this.logIterationGeneration(response, context, options, generateDurationMs);
+    const totals = this.iterationTotalsOf(params, response, costUsd);
+    const parsed = this.parseIterationResponse(response, params.nativeToolsUsed);
 
-    const iterPromptTokens = response.usage.promptTokens;
-    const iterCompletionTokens = response.usage.completionTokens;
-    const iterCostUsd = costUsd;
-    const iterCacheReadTokens = response.usage.cacheReadTokens ?? 0;
-    const iterCacheCreationTokens = response.usage.cacheCreationTokens ?? 0;
-    const iterReasoningTokens = response.usage.reasoningTokens ?? 0;
-
-    const newTotalPromptTokens = totalPromptTokens + iterPromptTokens;
-    const newTotalCompletionTokens = totalCompletionTokens + iterCompletionTokens;
-    const newTotalCostUsd = this.accumulateKnownCost(totalCostUsd, iterCostUsd);
-    const newTotalCacheReadTokens = totalCacheReadTokens + iterCacheReadTokens;
-    const newTotalCacheCreationTokens = totalCacheCreationTokens + iterCacheCreationTokens;
-    const newTotalReasoningTokens = totalReasoningTokens + iterReasoningTokens;
-
-    const parsed = this.parseIterationResponse(response, nativeToolsUsed);
-
-    if (!nativeToolsUsed) {
+    if (!params.nativeToolsUsed) {
       this.journalParseErrors(parsed.parseErrors, context, i);
     }
-
     if (parsed.thought) {
       history.push({ role: ReActRole.THOUGHT, content: parsed.thought });
       await this.executor.logAgentOutput(context.trace_id, `${REACT_THOUGHT_PREFIX} ${parsed.thought}`);
     }
-
     if (parsed.isComplete && parsed.actions.length === 0) {
       const result = this.finishLoop(
         response.content,
         context,
-        startTime,
-        toolCallCount,
-        writtenFiles,
-        {
-          promptTokens: newTotalPromptTokens,
-          completionTokens: newTotalCompletionTokens,
-          costUsd: newTotalCostUsd,
-          cacheReadTokens: newTotalCacheReadTokens,
-          cacheCreationTokens: newTotalCacheCreationTokens,
-          reasoningTokens: newTotalReasoningTokens,
-        },
+        params.startTime,
+        params.toolCallCount,
+        params.writtenFiles,
+        totals,
       );
-      return {
-        toolCallCount,
-        totalPromptTokens: newTotalPromptTokens,
-        totalCompletionTokens: newTotalCompletionTokens,
-        totalCostUsd: newTotalCostUsd,
-        totalCacheReadTokens: newTotalCacheReadTokens,
-        totalCacheCreationTokens: newTotalCacheCreationTokens,
-        totalReasoningTokens: newTotalReasoningTokens,
-        done: true,
+      return this.iterationResultOf(
+        params,
+        totals,
+        {
+          toolCallCount: params.toolCallCount,
+          lastPriorTurn: params.nativeToolsPriorTurn,
+          turns: params.nativeConversationTurns,
+          rounds: params.nativeConversationRounds === undefined ? undefined : [...params.nativeConversationRounds],
+          allActionsSucceeded: true,
+        },
+        initialPrompt,
+        initialSections,
         result,
-      };
+      );
     }
-
     if (parsed.actions.length === 0) {
       throw new AgentExecutionError(
         "No actions generated in ReAct iteration",
         AgentExecutionErrorType.EXECUTION_ERROR,
       );
     }
-
-    this.assertNativeRoundAdmitted(nativeToolsUsed, parsed.nativeToolCalls, policy, {
+    this.assertNativeRoundAdmitted(params.nativeToolsUsed, parsed.nativeToolCalls, policy, {
       provider: response.provider,
       earlierIds: this.consumedCallIds(
         params.nativeConversationTurns,
-        nativeToolsPriorTurn,
+        params.nativeToolsPriorTurn,
         params.nativeConversationRounds,
       ),
     });
-
     const groupedRound = this.groupedRoundFor(
-      nativeToolsUsed,
+      params.nativeToolsUsed,
       params.nativeConversationEnabled,
       response,
       policy,
-      this.consumedCallIds(params.nativeConversationTurns, nativeToolsPriorTurn, params.nativeConversationRounds),
+      this.consumedCallIds(
+        params.nativeConversationTurns,
+        params.nativeToolsPriorTurn,
+        params.nativeConversationRounds,
+      ),
     );
+    this.assertToolCallBudget(params, parsed, policy);
+    if (response.content) {
+      void this.executor.guardrailRunner?.screen(response.content, context.trace_id, i);
+    }
 
-    const maxToolCalls = options.max_tool_calls ?? 100;
-    if (
-      toolCallCount + this.admittedCallCount(nativeToolsUsed, parsed.actions.length, policy.executionCap) > maxToolCalls
-    ) {
+    const actions = await this.attemptIterationActions(params, parsed, response, policy, groupedRound);
+    if (this.shouldFinishActionTurn(parsed.isComplete, actions.allActionsSucceeded)) {
+      const result = this.finishLoop(
+        response.content,
+        context,
+        params.startTime,
+        actions.toolCallCount,
+        params.writtenFiles,
+        totals,
+      );
+      return this.iterationResultOf(params, totals, actions, initialPrompt, initialSections, result);
+    }
+    return this.iterationResultOf(params, totals, actions, initialPrompt, initialSections, undefined);
+  }
+
+  /** The accumulated token and cost totals after one iteration. */
+  private iterationTotalsOf(
+    params: IIterationParams,
+    response: IGenerateResult,
+    costUsd: Opt<number, Reason.OptionalContext>,
+  ): {
+    promptTokens: number;
+    completionTokens: number;
+    costUsd: Opt<number, Reason.OptionalContext>;
+    cacheReadTokens: number;
+    cacheCreationTokens: number;
+    reasoningTokens: number;
+  } {
+    return {
+      promptTokens: params.totalPromptTokens + response.usage.promptTokens,
+      completionTokens: params.totalCompletionTokens + response.usage.completionTokens,
+      costUsd: this.accumulateKnownCost(params.totalCostUsd, costUsd),
+      cacheReadTokens: params.totalCacheReadTokens + (response.usage.cacheReadTokens ?? 0),
+      cacheCreationTokens: params.totalCacheCreationTokens + (response.usage.cacheCreationTokens ?? 0),
+      reasoningTokens: params.totalReasoningTokens + (response.usage.reasoningTokens ?? 0),
+    };
+  }
+
+  /** Rejects a round that would exceed the configured tool-call budget. */
+  private assertToolCallBudget(
+    params: IIterationParams,
+    parsed: ReturnType<ReActLoopStrategy["parseIterationResponse"]>,
+    policy: ReturnType<ReActLoopStrategy["roundPolicy"]>,
+  ): void {
+    const maxToolCalls = params.options.max_tool_calls ?? 100;
+    const admitted = params.toolCallCount +
+      this.admittedCallCount(params.nativeToolsUsed, parsed.actions.length, policy.executionCap);
+    if (admitted > maxToolCalls) {
       throw new AgentExecutionError(
         `Exceeded maximum tool calls (${maxToolCalls})`,
         AgentExecutionErrorType.EXECUTION_ERROR,
       );
     }
+  }
 
-    if (response.content) {
-      void this.executor.guardrailRunner?.screen(response.content, context.trace_id, i);
-    }
-
-    let newToolCallCount = toolCallCount;
-    let lastPriorTurn = nativeToolsPriorTurn;
+  /** Executes every action of one parsed iteration and accumulates its tool results. */
+  private async attemptIterationActions(
+    params: IIterationParams,
+    parsed: ReturnType<ReActLoopStrategy["parseIterationResponse"]>,
+    response: IGenerateResult,
+    policy: ReturnType<ReActLoopStrategy["roundPolicy"]>,
+    groupedRound: ReturnType<ReActLoopStrategy["groupedRoundFor"]>,
+  ): Promise<{
+    toolCallCount: number;
+    lastPriorTurn: IIterationResult["nativeToolsPriorTurn"];
+    turns: IIterationResult["nativeConversationTurns"];
+    rounds: IIterationResult["nativeConversationRounds"];
+    allActionsSucceeded: boolean;
+  }> {
+    let newToolCallCount = params.toolCallCount;
+    let lastPriorTurn = params.nativeToolsPriorTurn;
     const completedNativeConversationTurns = [...params.nativeConversationTurns];
     const roundOutcomes: IRoundOutcome[] = [];
     let allActionsSucceeded = true;
     for (let a = 0; a < parsed.actions.length; a++) {
-      const action = this.canonicalizeAction(parsed.actions[a], context.trace_id, response.provider, response.model);
+      const action = this.canonicalizeAction(
+        parsed.actions[a],
+        params.context.trace_id,
+        response.provider,
+        response.model,
+      );
       // A native response past the policy cap executes nothing. Each extra call replays as an error result.
-      const withinCap = this.withinNativeCap(nativeToolsUsed, a, policy.executionCap);
-      const execResult = await this.attemptAction(action, options, withinCap);
+      const withinCap = this.withinNativeCap(params.nativeToolsUsed, a, policy.executionCap);
+      const execResult = await this.attemptAction(action, params.options, withinCap);
       allActionsSucceeded &&= execResult.success === true;
-      this.recordWrittenFile(action, execResult, writtenFiles);
+      this.recordWrittenFile(action, execResult, params.writtenFiles);
 
       const toolResultContent = execResult.success
         ? JSON.stringify(execResult.data ?? {})
@@ -819,17 +860,17 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       newToolCallCount += Number(withinCap);
 
       const toolCallLine = `${REACT_CALLING_TOOL_PREFIX}${action.tool}(${JSON.stringify(action.params)})`;
-      history.push({ role: ReActRole.ACTION, content: toolCallLine });
+      params.history.push({ role: ReActRole.ACTION, content: toolCallLine });
 
       const resultEntry = `Tool ${action.tool} result: ${toolResultContent}`;
       const truncatedResult = resultEntry.length > REACT_TOOL_RESULT_HISTORY_MAX
         ? resultEntry.slice(0, REACT_TOOL_RESULT_HISTORY_MAX) + "..."
         : resultEntry;
-      history.push({ role: ReActRole.RESULT, content: truncatedResult });
+      params.history.push({ role: ReActRole.RESULT, content: truncatedResult });
 
-      await this.journalAction(context, action, toolResultContent, i);
+      await this.journalAction(params.context, action, toolResultContent, params.i);
 
-      if (nativeToolsUsed && parsed.nativeToolCalls?.[a]) {
+      if (params.nativeToolsUsed && parsed.nativeToolCalls?.[a]) {
         const turn = this.buildPriorTurn(parsed.nativeToolCalls[a], execResult as never);
         lastPriorTurn = {
           ...turn,
@@ -843,63 +884,52 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         );
       }
     }
-
     const completedNativeConversationRounds = this.nextNativeRounds(
       params.nativeConversationRounds,
       groupedRound,
       roundOutcomes,
       policy,
     );
-
-    if (this.shouldFinishActionTurn(parsed.isComplete, allActionsSucceeded)) {
-      const result = this.finishLoop(
-        response.content,
-        context,
-        startTime,
-        newToolCallCount,
-        writtenFiles,
-        {
-          promptTokens: newTotalPromptTokens,
-          completionTokens: newTotalCompletionTokens,
-          costUsd: newTotalCostUsd,
-          cacheReadTokens: newTotalCacheReadTokens,
-          cacheCreationTokens: newTotalCacheCreationTokens,
-          reasoningTokens: newTotalReasoningTokens,
-        },
-      );
-      return {
-        toolCallCount: newToolCallCount,
-        totalPromptTokens: newTotalPromptTokens,
-        totalCompletionTokens: newTotalCompletionTokens,
-        totalCostUsd: newTotalCostUsd,
-        totalCacheReadTokens: newTotalCacheReadTokens,
-        totalCacheCreationTokens: newTotalCacheCreationTokens,
-        totalReasoningTokens: newTotalReasoningTokens,
-        nativeToolsPriorTurn: lastPriorTurn,
-        nativeConversationInitialPrompt: initialPrompt,
-        nativeConversationInitialSections: params.nativeConversationInitialSections ?? initialSections,
-        nativeConversationTurns: completedNativeConversationTurns,
-        nativeConversationRounds: completedNativeConversationRounds,
-        done: true,
-        result,
-      };
-    }
-
     return {
       toolCallCount: newToolCallCount,
-      totalPromptTokens: newTotalPromptTokens,
-      totalCompletionTokens: newTotalCompletionTokens,
-      totalCostUsd: newTotalCostUsd,
-      totalCacheReadTokens: newTotalCacheReadTokens,
-      totalCacheCreationTokens: newTotalCacheCreationTokens,
-      totalReasoningTokens: newTotalReasoningTokens,
-      nativeToolsPriorTurn: lastPriorTurn,
+      lastPriorTurn,
+      turns: completedNativeConversationTurns,
+      rounds: completedNativeConversationRounds,
+      allActionsSucceeded,
+    };
+  }
+
+  /** Builds one iteration result from its accumulated totals and native conversation state. */
+  private iterationResultOf(
+    params: IIterationParams,
+    totals: ReturnType<ReActLoopStrategy["iterationTotalsOf"]>,
+    state: {
+      readonly toolCallCount: number;
+      readonly lastPriorTurn: IIterationResult["nativeToolsPriorTurn"];
+      readonly turns: IIterationResult["nativeConversationTurns"];
+      readonly rounds: IIterationResult["nativeConversationRounds"];
+      readonly allActionsSucceeded: boolean;
+    },
+    initialPrompt: IIterationResult["nativeConversationInitialPrompt"],
+    initialSections: IIterationResult["nativeConversationInitialSections"],
+    result: Opt<IIterationResult["result"], Reason.OptionalInput>,
+  ): IIterationResult {
+    const base: IIterationResult = {
+      toolCallCount: state.toolCallCount,
+      totalPromptTokens: totals.promptTokens,
+      totalCompletionTokens: totals.completionTokens,
+      totalCostUsd: totals.costUsd,
+      totalCacheReadTokens: totals.cacheReadTokens,
+      totalCacheCreationTokens: totals.cacheCreationTokens,
+      totalReasoningTokens: totals.reasoningTokens,
+      nativeToolsPriorTurn: state.lastPriorTurn,
       nativeConversationInitialPrompt: initialPrompt,
       nativeConversationInitialSections: params.nativeConversationInitialSections ?? initialSections,
-      nativeConversationTurns: completedNativeConversationTurns,
-      nativeConversationRounds: completedNativeConversationRounds,
-      done: false,
+      nativeConversationTurns: state.turns,
+      nativeConversationRounds: state.rounds,
+      done: result !== undefined,
     };
+    return result === undefined ? base : { ...base, result };
   }
 
   private accumulateKnownCost(

@@ -372,6 +372,35 @@ class LaneCallSites {
 /** Combines Blueprint (system prompt) with IParsedRequest (user prompt), executes via an
  *  LLM provider, and parses the structured XML response — with retry/recovery, output
  *  validation, and the Skills Architecture layered in. */
+/** The normalized adapter, provider and config of one constructor call. */
+function resolveRunnerInputs(
+  planAdapterOrProvider?: Opt<IPlanAdapter | IModelProvider, Reason.OptionalDependency>,
+  modelProviderOrConfig?: Opt<IModelProvider | IAgentRunnerConfig, Reason.OptionalDependency>,
+  config?: Opt<IAgentRunnerConfig, Reason.OptionalDependency>,
+): { planAdapter: IPlanAdapter; provider: IModelProvider; config: Opt<IAgentRunnerConfig, Reason.OptionalDependency> } {
+  const isOldStyle = planAdapterOrProvider != null && "generate" in planAdapterOrProvider;
+  const planAdapter = isOldStyle
+    ? createNoopPlanAdapter()
+    : (planAdapterOrProvider as IPlanAdapter | undefined) ?? createNoopPlanAdapter();
+  const resolvedConfig = isOldStyle ? (modelProviderOrConfig as IAgentRunnerConfig | undefined) : config;
+  const provider = isOldStyle
+    ? (planAdapterOrProvider as IModelProvider)
+    : (modelProviderOrConfig as IModelProvider | undefined) || resolvedConfig?.context?.provider;
+  if (!provider) throw new Error("IAgentRunner requires a model provider");
+  return { planAdapter, provider, config: resolvedConfig };
+}
+
+/** The retry policy the runner config selects, or the LLM default. */
+function retryPolicyOf(
+  config: Opt<IAgentRunnerConfig, Reason.OptionalDependency>,
+  providerErrorsAreFinal: { isPermanent: (error: Error) => boolean },
+) {
+  return config?.retryPolicyInstance ||
+    (config?.retryPolicy
+      ? createRetryPolicy(config.retryPolicy, providerErrorsAreFinal)
+      : createLLMRetryPolicy(providerErrorsAreFinal));
+}
+
 export class AgentRunner implements IAgentRunner {
   private logger?: IEventLogger;
   private retryPolicy: IRetryPolicy;
@@ -403,48 +432,38 @@ export class AgentRunner implements IAgentRunner {
     modelProviderOrConfig?: Opt<IModelProvider | IAgentRunnerConfig, Reason.OptionalDependency>,
     config?: Opt<IAgentRunnerConfig, Reason.OptionalDependency>,
   ) {
-    const isOldStyle = planAdapterOrProvider != null && "generate" in planAdapterOrProvider;
-    this.planAdapter = isOldStyle
-      ? createNoopPlanAdapter()
-      : (planAdapterOrProvider as IPlanAdapter | undefined) ?? createNoopPlanAdapter();
-    this.config = isOldStyle ? (modelProviderOrConfig as IAgentRunnerConfig | undefined) : config;
-    const ctx = this.config?.context;
-    const provider = isOldStyle
-      ? (planAdapterOrProvider as IModelProvider)
-      : (modelProviderOrConfig as IModelProvider | undefined) || ctx?.provider;
-    if (!provider) {
-      throw new Error("IAgentRunner requires a model provider");
-    }
-    this.modelProvider = provider;
-    this.logger = this.config?.logger;
-    this.disableRetry = this.config?.disableRetry ?? false;
-    this.effortResolver = this.config?.effortResolver ?? new EffortResolver();
-    this.skillsService = ctx?.skills || this.config?.skillsService;
-    this.disableSkills = this.config?.disableSkills ?? false;
+    const inputs = resolveRunnerInputs(planAdapterOrProvider, modelProviderOrConfig, config);
+    this.planAdapter = inputs.planAdapter;
+    this.config = inputs.config;
+    const ctx = inputs.config?.context;
+    this.modelProvider = inputs.provider;
+    this.logger = inputs.config?.logger;
+    this.disableRetry = inputs.config?.disableRetry ?? false;
+    this.effortResolver = inputs.config?.effortResolver ?? new EffortResolver();
+    this.skillsService = ctx?.skills || inputs.config?.skillsService;
+    this.disableSkills = inputs.config?.disableSkills ?? false;
     // The provider layer owns HTTP retries, so a classified provider error is final here.
     const providerErrorsAreFinal = { isPermanent: (error: Error) => error instanceof ModelProviderError };
-    this.retryPolicy = this.config?.retryPolicyInstance ||
-      (this.config?.retryPolicy
-        ? createRetryPolicy(this.config.retryPolicy, providerErrorsAreFinal)
-        : createLLMRetryPolicy(providerErrorsAreFinal));
-    this.outputValidator = this.config?.outputValidatorInstance || createOutputValidator({ autoRepair: true });
+    this.retryPolicy = retryPolicyOf(inputs.config, providerErrorsAreFinal);
+    this.outputValidator = inputs.config?.outputValidatorInstance || createOutputValidator({ autoRepair: true });
+    this.retryPolicy.setOnRetry?.((ctx: IRetryContext) => this.logRetryAttempt(ctx));
+  }
 
-    // Set up retry logging
-    this.retryPolicy.setOnRetry?.((ctx: IRetryContext) => {
-      this.logActivity(
-        ACTIVITY_ACTOR_AGENT,
-        "agent.retry_attempt",
-        null,
-        {
-          attempt: ctx.attempt,
-          delay_ms: ctx.delayMs,
-          temperature: ctx.temperature,
-          elapsed_ms: ctx.elapsedMs,
-          error_type: ctx.error.constructor.name,
-          error_message: ctx.error.message,
-        },
-      );
-    });
+  /** Logs one provider retry attempt. */
+  private logRetryAttempt(ctx: IRetryContext): void {
+    this.logActivity(
+      ACTIVITY_ACTOR_AGENT,
+      "agent.retry_attempt",
+      null,
+      {
+        attempt: ctx.attempt,
+        delay_ms: ctx.delayMs,
+        temperature: ctx.temperature,
+        elapsed_ms: ctx.elapsedMs,
+        error_type: ctx.error.constructor.name,
+        error_message: ctx.error.message,
+      },
+    );
   }
 
   private async emitMilestone(
@@ -476,16 +495,92 @@ export class AgentRunner implements IAgentRunner {
     const traceId = request.traceId;
     const requestId = request.requestId;
 
-    // Match skills based on request context
     const skillOperation = this.buildSkillOperation(request, agentRole);
     const { skillIds, skillsContext } = await this.matchAndApplySkills(blueprint, request, agentRole, skillOperation);
-
-    // Log agent execution start
     this.logExecutionStart(request, agentRole, traceId, requestId, skillIds);
 
-    // Construct the combined prompt (with skill context). Critical skills render into a
-    // separate, protected segment so the output contract and hard constraints survive
-    // context-budget pressure.
+    const prompt = await this.assembleRunPrompt(
+      blueprint,
+      request,
+      agentRole,
+      requestId,
+      traceId,
+      skillIds,
+      skillsContext,
+      skillOperation,
+    );
+    const { callSite, hints } = await this.resolveRunHints(
+      blueprint,
+      request,
+      agentRole,
+      skillsContext,
+      traceId,
+      requestId,
+      jsonSchema,
+    );
+    const { retryResult } = await this.executeRunAttempt(
+      request,
+      agentRole,
+      prompt.combinedPrompt,
+      startTime,
+      hints,
+      prompt.promptBudget,
+      prompt.skillUsage,
+      traceId,
+      requestId,
+      callSite,
+    );
+
+    const generateResult = retryResult.value;
+    await this.emitMilestone(
+      MILESTONE_LLM_CALL_COMPLETED,
+      traceId,
+      `LLM call completed for ${agentRole}`,
+    );
+    const rawResponse = generateResult?.content || "";
+    this.logActivityDebug(AGENT_EVENT_LLM_RESPONSE_RECEIVED, requestId || null, {
+      agent_role: agentRole,
+      response_length: rawResponse.length,
+      full_response: rawResponse,
+      stop_reason: generateResult?.stop_reason ?? null,
+      prompt_tokens: generateResult?.usage?.promptTokens ?? null,
+      completion_tokens: generateResult?.usage?.completionTokens ?? null,
+    }, traceId);
+    this.warnOnStopReason(generateResult, rawResponse, agentRole, requestId, traceId);
+    const result = this.parseResponse(rawResponse);
+    this.logExecutionCompletion({
+      result,
+      rawResponse,
+      retryResult,
+      requestId,
+      agentRole,
+      traceId,
+      duration: Date.now() - startTime,
+      skillsApplied: skillIds,
+    });
+    return {
+      ...result,
+      skillsApplied: skillIds.length > 0 ? skillIds : undefined,
+      resolvedSkills: prompt.resolvedSkills,
+    };
+  }
+
+  /** Renders the skill context and assembles the run prompt and its skill usage plan. */
+  private async assembleRunPrompt(
+    blueprint: IBlueprint,
+    request: IParsedRequest,
+    agentRole: string,
+    requestId: Opt<string, Reason.TraceAbsent>,
+    traceId: Opt<string, Reason.TraceAbsent>,
+    skillIds: string[],
+    skillsContext: Awaited<ReturnType<AgentRunner["matchAndApplySkills"]>>["skillsContext"],
+    skillOperation: ReturnType<AgentRunner["buildSkillOperation"]>,
+  ): Promise<{
+    combinedPrompt: string;
+    promptBudget: Awaited<ReturnType<AgentRunner["constructPrompt"]>>["budget"];
+    skillUsage: ReturnType<AgentRunner["buildSkillUsagePlan"]>;
+    resolvedSkills: Awaited<ReturnType<AgentRunner["persistSkillPins"]>>;
+  }> {
     const trimmedSkillRender = this.config?.context?.config.get().skills?.render_mode === SkillRenderMode.TRIMMED;
     const skillContextString = renderSkillsSection(skillsContext, trimmedSkillRender);
     const criticalSkillContext = renderCriticalSkillsSection(skillsContext);
@@ -495,13 +590,8 @@ export class AgentRunner implements IAgentRunner {
       skillContextString,
       criticalSkillContext,
     );
-
-    // One usage row per included skill is written before each provider dispatch. A failed write throws,
-    // so no model call follows.
     const skillUsage = this.buildSkillUsagePlan(skillsContext, combinedPrompt, trimmedSkillRender, skillOperation);
     const resolvedSkills = await this.persistSkillPins(skillsContext, skillUsage, trimmedSkillRender, skillOperation);
-
-    // Log prompt assembled event for observability
     this.logActivity(
       ACTIVITY_ACTOR_AGENT,
       DomainEventType.AgentPromptAssembled,
@@ -517,10 +607,6 @@ export class AgentRunner implements IAgentRunner {
       traceId,
       agentRole,
     );
-
-    // Debug-level dump of the actual assembled prompt text — lets a dry-run diagnosis
-    // (no LLM call needed) confirm the prompt is complete and not truncated, independent
-    // of whatever the model returns. Left in for future debugging, not just this one.
     this.logActivityDebug(AGENT_EVENT_PROMPT_DEBUG_DUMP, requestId || null, {
       agent_role: agentRole,
       prompt_length: combinedPrompt.length,
@@ -529,14 +615,21 @@ export class AgentRunner implements IAgentRunner {
       critical_skill_context_length: criticalSkillContext.length,
       full_prompt: combinedPrompt,
     }, traceId);
+    return { combinedPrompt, promptBudget, skillUsage, resolvedSkills };
+  }
 
-    // Execute via the model provider (with retry if enabled)
+  /** Resolves the call site and the generation hints of one run. */
+  private async resolveRunHints(
+    blueprint: IBlueprint,
+    request: IParsedRequest,
+    agentRole: string,
+    skillsContext: Awaited<ReturnType<AgentRunner["matchAndApplySkills"]>>["skillsContext"],
+    traceId: Opt<string, Reason.TraceAbsent>,
+    requestId: Opt<string, Reason.TraceAbsent>,
+    jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
+  ): Promise<{ callSite: ReturnType<AgentRunner["resolveCallSite"]>; hints: IGenerationHints }> {
     const callSite = this.resolveCallSite(request);
-    const skillFloors = skillsContext?.matched?.map((m) => ({
-      skillId: m.skillId,
-      effort: m.effort,
-      thinking: m.thinking,
-    })) ?? [];
+    const skillFloors = this.skillFloorsOf(skillsContext);
     const resolution = await this.resolveEffortAndThinking(blueprint, request, agentRole, skillFloors);
     const projection = projectResolvedCallOptions(resolution, {
       binding: { effort: request.bindingEffort, thinking: request.bindingThinking },
@@ -546,13 +639,34 @@ export class AgentRunner implements IAgentRunner {
     }, this.modelProvider.callCapabilities);
     this.journalEffortResolution(blueprint, request, agentRole, resolution, { traceId, requestId }, projection);
     await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${agentRole}`);
-    const hints: IGenerationHints = {
-      conversationId: traceId,
-      jsonSchema,
+    return {
       callSite,
-      thinking: projection.thinking,
-      effort: projection.effort,
+      hints: {
+        conversationId: traceId,
+        jsonSchema,
+        callSite,
+        thinking: projection.thinking,
+        effort: projection.effort,
+      },
     };
+  }
+
+  /** Runs the planning tools or the provider call, then records the attempt's side effects. */
+  private async executeRunAttempt(
+    request: IParsedRequest,
+    agentRole: string,
+    combinedPrompt: string,
+    startTime: number,
+    hints: IGenerationHints,
+    promptBudget: Awaited<ReturnType<AgentRunner["constructPrompt"]>>["budget"],
+    skillUsage: ISkillUsagePlan | null,
+    traceId: Opt<string, Reason.TraceAbsent>,
+    requestId: Opt<string, Reason.TraceAbsent>,
+    callSite: ReturnType<AgentRunner["resolveCallSite"]>,
+  ): Promise<{
+    retryResult: Awaited<ReturnType<AgentRunner["executeWithRetry"]>>;
+    toolsResult: Awaited<ReturnType<AgentRunner["runPlanningToolsIfGated"]>>;
+  }> {
     const toolsResult = await this.runPlanningToolsIfGated(
       request,
       agentRole,
@@ -563,47 +677,22 @@ export class AgentRunner implements IAgentRunner {
     );
     const retryResult = toolsResult ?? await this.executeWithRetry(combinedPrompt, startTime, hints, skillUsage);
     if (skillUsage?.auditError) throw skillUsage.auditError;
-
-    const duration = Date.now() - startTime;
-
-    // Handle retry failure
     if (!retryResult.success) {
-      this.handleExecutionFailure(retryResult, requestId, agentRole, traceId, duration);
+      this.handleExecutionFailure(retryResult, requestId, agentRole, traceId, Date.now() - startTime);
     }
     if (!toolsResult) this.markCallSiteConsumed(callSite);
+    return { retryResult, toolsResult };
+  }
 
-    // Parse the response to extract thought and content
-    const generateResult = retryResult.value;
-    await this.emitMilestone(MILESTONE_LLM_CALL_COMPLETED, traceId, `LLM call completed for ${agentRole}`);
-    const rawResponse = generateResult?.content || "";
-    this.logActivityDebug(AGENT_EVENT_LLM_RESPONSE_RECEIVED, requestId || null, {
-      agent_role: agentRole,
-      response_length: rawResponse.length,
-      full_response: rawResponse,
-      stop_reason: generateResult?.stop_reason ?? null,
-      prompt_tokens: generateResult?.usage?.promptTokens ?? null,
-      completion_tokens: generateResult?.usage?.completionTokens ?? null,
-    }, traceId);
-    this.warnOnStopReason(generateResult, rawResponse, agentRole, requestId, traceId);
-    const result = this.parseResponse(rawResponse);
-
-    // Log successful execution
-    this.logExecutionCompletion({
-      result,
-      rawResponse,
-      retryResult,
-      requestId,
-      agentRole,
-      traceId,
-      duration,
-      skillsApplied: skillIds,
-    });
-
-    return {
-      ...result,
-      skillsApplied: skillIds.length > 0 ? skillIds : undefined,
-      resolvedSkills,
-    };
+  /** The skill floors of the matched context, for effort resolution. */
+  private skillFloorsOf(
+    skillsContext: Awaited<ReturnType<AgentRunner["matchAndApplySkills"]>>["skillsContext"],
+  ): ReadonlyArray<{ skillId: string; effort?: EffortTier; thinking?: boolean }> {
+    return skillsContext?.matched?.map((match) => ({
+      skillId: match.skillId,
+      effort: match.effort,
+      thinking: match.thinking,
+    })) ?? [];
   }
 
   /** Resolves declaration-time effort and thinking through EffortResolver, using the selected model's provider
