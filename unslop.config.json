@@ -208,14 +208,15 @@
     "exaix/max-cyclomatic-complexity": {
       "level": "error",
       "options": {
-        "max": 15
+        "max": 15,
+        "variant": "classic"
       },
       "scope": "prod",
       "include": [
         "packages/*/src/**",
         "apps/*/src/**"
       ],
-      "limits": "A SwitchCase counts only with a test, and a LogicalExpression only for '||' and '&&'. Nested function bodies are excluded.",
+      "limits": "Classic keeps the legacy body-only count for the parent gate until the cutover step activates the extended variant.",
       "tags": [
         "complexity",
         "deslop"

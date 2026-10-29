@@ -402,9 +402,10 @@
         "deslop"
       ],
       "options": {
-        "max": 15
+        "max": 15,
+        "variant": "classic"
       },
-      "limits": "A SwitchCase counts only with a test, and a LogicalExpression only for '||' and '&&'. Nested function bodies are excluded."
+      "limits": "Classic keeps the legacy body-only count for the parent gate until the cutover step activates the extended variant."
     },
     "exaix/max-class-size": {
       "engine": "plugin",
