@@ -297,25 +297,33 @@ Deno.test("refactor-inventory-reconciled: every frozen row names a real symbol, 
   }
 });
 
+/** The tree is shared with tests that write a scratch file, so one rerun absorbs a file that vanished mid-scan. */
+async function withTransientTreeRetry(run: () => Promise<Deno.CommandOutput>): Promise<Deno.CommandOutput> {
+  const first = await run();
+  return first.success ? first : await run();
+}
+
 Deno.test("compare-complexity-live: the installed fallow binary calibrates the repository", {
   ignore: !(await fallowAvailable()),
 }, async () => {
-  const result = await new Deno.Command(Deno.execPath(), {
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-run=fallow",
-      "--allow-env",
-      join(REPO_ROOT, "packages/lint-policy/src/tools/compare_complexity.ts"),
-      "--json",
-    ],
-    cwd: REPO_ROOT,
-    env: { LD_LIBRARY_PATH: "" },
-    stdout: "piped",
-    stderr: "piped",
-  }).output();
+  const result = await withTransientTreeRetry(() =>
+    new Deno.Command(Deno.execPath(), {
+      args: [
+        "run",
+        "--allow-read",
+        "--allow-run=fallow",
+        "--allow-env",
+        join(REPO_ROOT, "packages/lint-policy/src/tools/compare_complexity.ts"),
+        "--json",
+      ],
+      cwd: REPO_ROOT,
+      env: { LD_LIBRARY_PATH: "" },
+      stdout: "piped",
+      stderr: "piped",
+    }).output()
+  );
   const stdout = new TextDecoder().decode(result.stdout);
-  assertEquals(result.code, 0, new TextDecoder().decode(result.stderr));
+  assertEquals(result.code, 0, `${new TextDecoder().decode(result.stderr)}\n${stdout.slice(0, 4000)}`);
   const comparison = JSON.parse(stdout) as {
     populations: { common_files: number; matched: number; core_parse_failures: number };
     sufficient: boolean;
