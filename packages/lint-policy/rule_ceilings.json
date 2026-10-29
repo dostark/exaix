@@ -59,7 +59,7 @@
     "packages/ai-clidelegate": 0,
     "packages/cli": 1,
     "packages/core": 11,
-    "packages/eval-history": 3,
+    "packages/eval-history": 2,
     "packages/execution": 22,
     "packages/flow": 20,
     "packages/lint-policy": 1,

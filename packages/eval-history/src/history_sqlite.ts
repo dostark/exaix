@@ -408,85 +408,96 @@ export class EvalSqliteStore implements IEvalOutcomeReader {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
-    const transaction = this.db.transaction(() => {
-      insertRun.run(
-        entry.run_id,
-        entry.timestamp,
-        entry.scenario_id,
-        entry.pack ?? "",
-        entry.tags ? JSON.stringify(entry.tags) : null,
-        entry.suite_score ?? 0,
-        entry.passed ? 1 : 0,
-        entry.mode,
-        entry.score_threshold ?? null,
-        entry.step_count ?? null,
-        entry.trials ?? 1,
-        entry.suite_score_mean ?? null,
-        entry.suite_score_stdev ?? null,
-        entry.pass_at_1 ?? null,
-        entry.pass_pow_k ?? null,
-        entry.pass_k ?? null,
-        entry.blueprint_id ?? null,
-        entry.blueprint_version ?? null,
-        entry.component_versions?.binary_version ?? null,
-        entry.component_versions?.schema_version ?? null,
-        entry.trial_scores ? JSON.stringify(entry.trial_scores) : null,
-        null,
-        entry.duration_ms ?? null,
-        entry.trace_id ?? null,
-        entry.provider ?? null,
-        entry.model ?? null,
-        entry.cell_id ?? null,
-        entry.total_duration_ms ?? null,
-        entry.total_llm_duration_ms ?? null,
-        entry.total_tokens_prompt ?? null,
-        entry.total_tokens_completion ?? null,
-        entry.total_tokens_cache_read ?? null,
-        entry.total_tokens_cache_creation ?? null,
-        entry.total_tracked_cost_usd ?? null,
-        entry.scoring_mode ?? EvalScoringMode.ADDITIVE,
-        entry.failure_classes ? JSON.stringify(entry.failure_classes) : null,
-        entry.benchmark ?? null,
-        entry.benchmark_version ?? null,
-        entry.memory_corpus_version ?? null,
-      );
+    const coreParams = (): (string | number | null)[] => [
+      entry.run_id,
+      entry.timestamp,
+      entry.scenario_id,
+      entry.pack ?? "",
+      entry.tags ? JSON.stringify(entry.tags) : null,
+      entry.suite_score ?? 0,
+      entry.passed ? 1 : 0,
+      entry.mode,
+      entry.score_threshold ?? null,
+      entry.step_count ?? null,
+    ];
 
-      if (steps) {
-        for (let i = 0; i < steps.length; i++) {
-          const step = steps[i];
-          insertStep.run(
-            entry.run_id,
-            i,
-            step.stepId,
-            step.stepType ?? null,
-            step.score,
-            step.executionStatus ?? null,
-            step.durationMs ?? null,
-            step.llmDurationMs ?? null,
-            step.tokens?.prompt ?? null,
-            step.tokens?.completion ?? null,
-            step.tokens?.cacheRead ?? null,
-            step.tokens?.cacheCreation ?? null,
-            step.trackedCostUsd ?? null,
-          );
-          if (step.criterionResults) {
-            for (const cr of step.criterionResults) {
-              insertCriterion.run(
-                entry.run_id,
-                i,
-                cr.criterion_id,
-                cr.kind,
-                cr.status === "passed" ? 1 : 0,
-                cr.score_weight ?? null,
-                null,
-                cr.score ?? null,
-                cr.status,
-                cr.judge ? JSON.stringify(cr.judge) : null,
-              );
-            }
-          }
-        }
-      }
+    const resultParams = (): (string | number | null)[] => [
+      entry.trials ?? 1,
+      entry.suite_score_mean ?? null,
+      entry.suite_score_stdev ?? null,
+      entry.pass_at_1 ?? null,
+      entry.pass_pow_k ?? null,
+      entry.pass_k ?? null,
+      entry.blueprint_id ?? null,
+      entry.blueprint_version ?? null,
+      entry.component_versions?.binary_version ?? null,
+      entry.component_versions?.schema_version ?? null,
+      entry.trial_scores ? JSON.stringify(entry.trial_scores) : null,
+      null,
+      entry.duration_ms ?? null,
+      entry.trace_id ?? null,
+      entry.provider ?? null,
+      entry.model ?? null,
+      entry.cell_id ?? null,
+    ];
+
+    const totalsParams = (): (string | number | null)[] => [
+      entry.total_duration_ms ?? null,
+      entry.total_llm_duration_ms ?? null,
+      entry.total_tokens_prompt ?? null,
+      entry.total_tokens_completion ?? null,
+      entry.total_tokens_cache_read ?? null,
+      entry.total_tokens_cache_creation ?? null,
+      entry.total_tracked_cost_usd ?? null,
+      entry.scoring_mode ?? EvalScoringMode.ADDITIVE,
+      entry.failure_classes ? JSON.stringify(entry.failure_classes) : null,
+      entry.benchmark ?? null,
+      entry.benchmark_version ?? null,
+      entry.memory_corpus_version ?? null,
+    ];
+
+    const stepParams = (
+      step: NonNullable<Parameters<EvalSqliteStore["writeRun"]>[1]>[number],
+      index: number,
+    ): (string | number | null)[] => [
+      entry.run_id,
+      index,
+      step.stepId,
+      step.stepType ?? null,
+      step.score,
+      step.executionStatus ?? null,
+      step.durationMs ?? null,
+      step.llmDurationMs ?? null,
+      step.tokens?.prompt ?? null,
+      step.tokens?.completion ?? null,
+      step.tokens?.cacheRead ?? null,
+      step.tokens?.cacheCreation ?? null,
+      step.trackedCostUsd ?? null,
+    ];
+
+    const criterionParams = (
+      cr: NonNullable<NonNullable<Parameters<EvalSqliteStore["writeRun"]>[1]>[number]["criterionResults"]>[number],
+      index: number,
+    ): (string | number | null)[] => [
+      entry.run_id,
+      index,
+      cr.criterion_id,
+      cr.kind,
+      cr.status === "passed" ? 1 : 0,
+      cr.score_weight ?? null,
+      null,
+      cr.score ?? null,
+      cr.status,
+      cr.judge ? JSON.stringify(cr.judge) : null,
+    ];
+
+    const transaction = this.db.transaction(() => {
+      insertRun.run(...coreParams(), ...resultParams(), ...totalsParams());
+      if (!steps) return;
+      steps.forEach((step, index) => {
+        insertStep.run(...stepParams(step, index));
+        step.criterionResults?.forEach((cr) => insertCriterion.run(...criterionParams(cr, index)));
+      });
     });
 
     transaction();
