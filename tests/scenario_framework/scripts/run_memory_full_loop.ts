@@ -242,6 +242,8 @@ if (import.meta.main) {
       initializeManifest: () => Promise.resolve(),
     });
     const skillsService = castAny<ISkillsService>({
+      currentConfigGeneration: () => "scenario-generation",
+      recordSubmission: () => Promise.resolve(),
       getSkill: (skillId: string) =>
         Promise.resolve(
           skillId === POLICY_SKILL_ID
