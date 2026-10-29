@@ -209,14 +209,47 @@
       "level": "error",
       "options": {
         "max": 15,
-        "variant": "classic"
+        "variant": "extended"
       },
       "scope": "prod",
       "include": [
         "packages/*/src/**",
         "apps/*/src/**"
       ],
-      "limits": "Classic keeps the legacy body-only count for the parent gate until the cutover step activates the extended variant.",
+      "limits": "Extended counts the modern constructs the engine now measures.",
+      "tags": [
+        "complexity",
+        "deslop"
+      ]
+    },
+    "exaix/max-cognitive-complexity": {
+      "level": "error",
+      "options": {
+        "max": 15,
+        "countNullish": true
+      },
+      "scope": "prod",
+      "include": [
+        "packages/*/src/**",
+        "apps/*/src/**"
+      ],
+      "limits": "Campbell cognitive complexity with the extended nullish option.",
+      "tags": [
+        "complexity",
+        "deslop"
+      ]
+    },
+    "exaix/max-function-lines": {
+      "level": "error",
+      "options": {
+        "max": 60
+      },
+      "scope": "prod",
+      "include": [
+        "packages/*/src/**",
+        "apps/*/src/**"
+      ],
+      "limits": "Function length in source lines, excluding blank and comment-only lines.",
       "tags": [
         "complexity",
         "deslop"

@@ -403,9 +403,44 @@
       ],
       "options": {
         "max": 15,
-        "variant": "classic"
+        "variant": "extended"
       },
       "limits": "Classic keeps the legacy body-only count for the parent gate until the cutover step activates the extended variant."
+    },
+    "exaix/max-cognitive-complexity": {
+      "engine": "plugin",
+      "severity": "error",
+      "scope": "prod",
+      "include": [
+        "packages/*/src/**",
+        "apps/*/src/**"
+      ],
+      "codeStyle": "unslop-ts/docs/style_guide.md#complexity-rules",
+      "tags": [
+        "complexity",
+        "deslop"
+      ],
+      "options": {
+        "max": 15,
+        "countNullish": true
+      }
+    },
+    "exaix/max-function-lines": {
+      "engine": "plugin",
+      "severity": "error",
+      "scope": "prod",
+      "include": [
+        "packages/*/src/**",
+        "apps/*/src/**"
+      ],
+      "codeStyle": "unslop-ts/docs/style_guide.md#complexity-rules",
+      "tags": [
+        "complexity",
+        "deslop"
+      ],
+      "options": {
+        "max": 60
+      }
     },
     "exaix/max-class-size": {
       "engine": "plugin",

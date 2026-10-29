@@ -12,6 +12,9 @@ import { evaluateCeilings } from "../../../unslop-ts/src/cli/rule_ceiling.ts";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
 const RATCHETED_RULES = [
+  "exaix/max-cyclomatic-complexity",
+  "exaix/max-cognitive-complexity",
+  "exaix/max-function-lines",
   "exaix/require-safety-comment",
   "exaix/no-runtime-typeof",
   "exaix/no-conditional-empty-object-spread",
@@ -165,4 +168,27 @@ Deno.test({
     assertEquals(result.unknownRules, []);
     assertEquals(result.unknownPackages, []);
   },
+});
+
+Deno.test("exaix-ceilings-match: the three complexity rows cover the measured buckets", async () => {
+  const ceilings = JSON.parse(
+    await Deno.readTextFile(join(REPO_ROOT, "packages/lint-policy/rule_ceilings.json")),
+  ) as Record<string, Record<string, number>>;
+  const known = await workspacePackages();
+  const rules = [
+    "exaix/max-cyclomatic-complexity",
+    "exaix/max-cognitive-complexity",
+    "exaix/max-function-lines",
+  ];
+  for (const rule of rules) {
+    const row = ceilings[rule];
+    assert(row !== undefined, rule);
+    for (const packageName of Object.keys(row)) assert(known.includes(packageName), `${rule}: ${packageName}`);
+  }
+  assertEquals(evaluateCeilings(ceilings, ceilings, RATCHETED_RULES, known).over, []);
+  const lower = structuredClone(ceilings);
+  lower["exaix/max-cyclomatic-complexity"]["packages/ai"] -= 1;
+  const reduced = evaluateCeilings(ceilings, lower, RATCHETED_RULES, known);
+  assertEquals(reduced.under.length > 0, true);
+  assertEquals(reduced.over, []);
 });
