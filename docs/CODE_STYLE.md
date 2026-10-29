@@ -50,6 +50,19 @@ Find a rule by topic:
 - **Scripts, comments, and lint:** [Utility Scripts](#utility-scripts),
   [Comment Discipline](#comment-discipline), [Lint Policy](#lint-policy)
 
+## Complexity Limits {#complexity-limits}
+
+Exaix gates every function at 15 cyclomatic complexity, 15 cognitive complexity and 60 function lines. The
+limits live in `unslop.config.json` and the compiled catalog under `packages/lint-policy`. The editor lint and the
+ordinary `deno task lint` report them, while `deno task check:complexity` runs three per-package ceiling
+invocations that fail on a count above the committed ceiling. A ceiling is a ratchet: a row moves down to a
+measured count and never up.
+
+The parent pinned the `classic` cyclomatic variant while the engine moved to `extended` (Phase 236, Step 1) and
+removed the pin at the measured cutover (Step 12). A consumer that pins `variant: "classic"` keeps the legacy
+counts. The construct tables, the formulas and the calibration record are in
+[the metrics methodology](../unslop-ts/docs/metrics_methodology.md).
+
 ## No Magic Values {#no-magic-values}
 
 The generic rule is in the [generic guide](../unslop-ts/docs/style_guide.md#no-magic-values): name every
