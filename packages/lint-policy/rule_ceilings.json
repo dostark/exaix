@@ -42,7 +42,7 @@
     "packages/memory": 6,
     "packages/model-registry": 2,
     "packages/portal": 2,
-    "packages/request": 5,
+    "packages/request": 4,
     "packages/routing": 2,
     "packages/schemas": 2,
     "packages/session": 4,

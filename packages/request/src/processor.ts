@@ -147,6 +147,45 @@ export interface IRequestProcessorConfig {
 
 // RequestProcessor Implementation
 
+/** The logger the processor config selects, or the no-op logger. */
+function resolveProcessorLogger(
+  processorConfig: IRequestProcessorConfig,
+  ctx: IApplicationContext,
+): IEventLogger {
+  return processorConfig.logger ??
+    wrapLogger(ctx?.display as IEventLogger | undefined) ??
+    createNoopEventLogger();
+}
+
+/** The request quality gate the config selects, or one built from the compiled config. */
+function buildQualityGate(
+  processorConfig: IRequestProcessorConfig,
+  config: Config,
+  defaultProvider: Opt<IModelProvider, Reason.OptionalDependency>,
+  outputValidator: IOutputValidator,
+  logger: IEventLogger,
+): IRequestQualityGateService {
+  return processorConfig.testQualityGate ??
+    buildRequestQualityGateFromConfig(config.quality_gate ?? {}, defaultProvider, outputValidator, logger);
+}
+
+/** The clarification gateway of one processor. */
+function buildClarificationGateway(
+  processorConfig: IRequestProcessorConfig,
+  config: Config,
+  statusManager: StatusManager,
+  qualityGate: Opt<IRequestQualityGateService, Reason.OptionalDependency>,
+): ClarificationGateway {
+  return new ClarificationGateway({
+    statusManager,
+    qualityGate,
+    sessionDelegateEnabled: config.session_delegate?.enabled,
+    sessionDelegateRefinementGate: config.session_delegate?.gates?.includes("refinement"),
+    onDelegateRefinement: processorConfig.onDelegateRefinement,
+    onClarificationCreated: processorConfig.onClarificationCreated,
+  });
+}
+
 export class RequestProcessor {
   /** Forwards the request frontmatter's model intent fields onto the plan, so native execution applies request overrides (see PlanWriter.requestIntent).
    *  Declared "auto" values are excluded. They never enter the concrete IModelIntent that drives provider selection and travel as requestEffortDeclaration. */
@@ -205,9 +244,7 @@ export class RequestProcessor {
     this.db = ctx.db;
 
     // Initialize services
-    this.logger = processorConfig.logger ??
-      wrapLogger(ctx?.display as IEventLogger | undefined) ??
-      createNoopEventLogger();
+    this.logger = resolveProcessorLogger(processorConfig, ctx);
     this.costTracker = processorConfig.costTracker ??
       new CostTracker(this.db, this.config, this.logger);
     const healthChecker = processorConfig.healthChecker ?? { checkProvider: () => Promise.resolve(true) };
@@ -257,13 +294,7 @@ export class RequestProcessor {
     this.sessionMemory = processorConfig.sessionMemory;
     this.testProvider = processorConfig.testProvider;
 
-    this.qualityGate = processorConfig.testQualityGate ??
-      buildRequestQualityGateFromConfig(
-        this.config.quality_gate ?? {},
-        defaultProvider,
-        outputValidator,
-        this.logger,
-      );
+    this.qualityGate = buildQualityGate(processorConfig, this.config, defaultProvider, outputValidator, this.logger);
 
     this.ioBreaker = new CircuitBreaker({
       failureThreshold: 3,
@@ -279,14 +310,12 @@ export class RequestProcessor {
       config: this.config,
       portalKnowledgeService: this.portalKnowledgeService,
     });
-    this.clarificationGateway = new ClarificationGateway({
-      statusManager: this.statusManager,
-      qualityGate: this.qualityGate,
-      sessionDelegateEnabled: this.config.session_delegate?.enabled,
-      sessionDelegateRefinementGate: this.config.session_delegate?.gates?.includes("refinement"),
-      onDelegateRefinement: processorConfig.onDelegateRefinement,
-      onClarificationCreated: processorConfig.onClarificationCreated,
-    });
+    this.clarificationGateway = buildClarificationGateway(
+      processorConfig,
+      this.config,
+      this.statusManager,
+      this.qualityGate,
+    );
     this.rejectedPlanHandler = new RejectedPlanHandler({ config: this.config, statusManager: this.statusManager });
   }
 
@@ -301,7 +330,7 @@ export class RequestProcessor {
       return null;
     }
 
-    const { frontmatter, body } = parsed;
+    const { frontmatter } = parsed;
     const traceId = frontmatter.trace_id;
     const requestId = basename(filePath, ".md");
     const traceLogger = this.logger.child({ traceId });
@@ -328,49 +357,18 @@ export class RequestProcessor {
       return null;
     }
 
-    // Quality gate assessment runs before analysis and agent execution; skip
-    // re-assessment when assessed_at is already set (request already passed the gate).
-    const alreadyAssessed = !!frontmatter.assessed_at;
-    const qgOutcome: { earlyReturn: true } | {
-      earlyReturn: false;
-      enrichedBody?: string;
-      specification?: IRequestSpecification;
-    } = alreadyAssessed
-      ? await this.clarificationGateway.loadSpecFromClarification(filePath)
-      : await this.clarificationGateway.runQualityGate(body, filePath, requestId, traceLogger, traceId);
-    if (qgOutcome.earlyReturn) {
-      return null;
-    }
-    const assessedBody = qgOutcome.enrichedBody ?? body;
-    const clarificationSpec = qgOutcome.specification;
+    const assessment = await this.assessRequest(parsed, filePath, requestId, traceLogger, traceId);
+    if (assessment === null) return null;
+    const { assessedBody, clarificationSpec } = assessment;
 
     const pipeline = this.processorConfig.testPipelineFactory?.() ?? this.createRequestProcessingPipeline();
 
     // Enhance request with session memory context before analysis
-    const memoryContext = this.sessionMemory
-      ? await this.sessionMemory.enhanceRequest(assessedBody).catch((err) => {
-        this.logger.warn(DomainEventType.RequestMemoryEnhanceFailed, "Session memory enhancement failed", {
-          error: String(err),
-        });
-        return undefined;
-      })
-      : undefined;
+    const memoryContext = await this.enhanceMemory(assessedBody);
 
     // Run analysis before pipeline so both agent and flow paths benefit
-    // Skip if analysis is disabled in config
-    const analysisEnabled = this.config.request_analysis?.enabled !== false;
     const persistAnalysis = this.config.request_analysis?.persist_analysis !== false;
-    const analysisMode = (this.config.request_analysis?.mode ?? DEFAULT_ANALYZER_MODE) as AnalysisMode;
-    const analysis = analysisEnabled
-      ? await this.analyzer.analyze(assessedBody, {
-        traceId,
-        agentRole: frontmatter.agent_role ?? frontmatter.flow,
-        priority: frontmatter.priority,
-        mode: analysisMode,
-        memories: memoryContext,
-      }).catch(() => undefined)
-      : undefined;
-
+    const analysis = await this.analyzeRequestOf(parsed, assessedBody, memoryContext, traceId);
     if (analysis && persistAnalysis) {
       await saveAnalysis(filePath, analysis).catch(() => {});
     }
@@ -468,6 +466,61 @@ export class RequestProcessor {
     const portalPath = (this.config.portals ?? []).find((p) => p.alias === portal)?.target_path;
     if (!portalPath) return undefined;
     return await this.portalKnowledgeService.getOrAnalyze(portal, portalPath).catch(() => undefined);
+  }
+
+  /** Runs or reloads the quality gate before analysis. Null means an early return. */
+  private async assessRequest(
+    parsed: IParsedRequestFile,
+    filePath: string,
+    requestId: string,
+    traceLogger: IEventLogger,
+    traceId: string,
+  ): Promise<
+    { assessedBody: string; clarificationSpec: Opt<IRequestSpecification, Reason.OptionalContext> } | null
+  > {
+    const { frontmatter, body } = parsed;
+    const alreadyAssessed = Boolean(frontmatter.assessed_at);
+    const outcome: { earlyReturn: true } | {
+      earlyReturn: false;
+      enrichedBody?: string;
+      specification?: IRequestSpecification;
+    } = alreadyAssessed
+      ? await this.clarificationGateway.loadSpecFromClarification(filePath)
+      : await this.clarificationGateway.runQualityGate(body, filePath, requestId, traceLogger, traceId);
+    if (outcome.earlyReturn) return null;
+    return { assessedBody: outcome.enrichedBody ?? body, clarificationSpec: outcome.specification };
+  }
+
+  /** Enhances the request with session memory, attributing a failure. */
+  private async enhanceMemory(
+    body: string,
+  ): Promise<Opt<Awaited<ReturnType<SessionMemoryService["enhanceRequest"]>>, Reason.OptionalContext>> {
+    if (!this.sessionMemory) return undefined;
+    return await this.sessionMemory.enhanceRequest(body).catch((err) => {
+      this.logger.warn(DomainEventType.RequestMemoryEnhanceFailed, "Session memory enhancement failed", {
+        error: String(err),
+      });
+      return undefined;
+    });
+  }
+
+  /** Runs the request analysis when the config enables it. */
+  private async analyzeRequestOf(
+    parsed: IParsedRequestFile,
+    assessedBody: string,
+    memoryContext: Opt<Awaited<ReturnType<SessionMemoryService["enhanceRequest"]>>, Reason.OptionalContext>,
+    traceId: string,
+  ): Promise<Opt<Awaited<ReturnType<RequestAnalyzer["analyze"]>>, Reason.OptionalContext>> {
+    const enabled = this.config.request_analysis?.enabled !== false;
+    if (!enabled) return undefined;
+    const analysisMode = (this.config.request_analysis?.mode ?? DEFAULT_ANALYZER_MODE) as AnalysisMode;
+    return await this.analyzer.analyze(assessedBody, {
+      traceId,
+      agentRole: parsed.frontmatter.agent_role ?? parsed.frontmatter.flow,
+      priority: parsed.frontmatter.priority,
+      mode: analysisMode,
+      memories: memoryContext,
+    }).catch(() => undefined);
   }
 
   private async getRequestKindOrFail(args: {
