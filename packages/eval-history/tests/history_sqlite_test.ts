@@ -6,7 +6,7 @@
  * @related-files [packages/eval-history/src/history_sqlite.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { EvalSqliteStore } from "@exaix/eval-history";
@@ -215,5 +215,44 @@ Deno.test("[ScenarioFrameworkHistorySqlite] cleanup removes runs beyond retentio
     assertEquals(remaining.length, 2);
     assertEquals(remaining[0].run_id, "run-4");
     assertEquals(remaining[1].run_id, "run-3");
+  });
+});
+
+Deno.test("history-transaction-rollback: a mid-write failure leaves no partial rows and keeps earlier runs", () => {
+  withStore((store) => {
+    store.initialize();
+    const committed = makeTestEntry();
+    store.writeRun(committed, [{
+      stepId: "kept",
+      score: 1,
+      criterionResults: [{ criterion_id: "kept-criterion", kind: "contains", status: "passed" }],
+    }]);
+    const countOf = (table: string, runId: string): number =>
+      store["db"].prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE run_id = ?`).all<{ n: number }>(runId)[0].n;
+
+    store["db"].exec(
+      "CREATE TRIGGER fail_mid_write BEFORE INSERT ON eval_run_steps WHEN NEW.step_id = 'boom' " +
+        "BEGIN SELECT RAISE(ABORT, 'forced mid-write failure'); END",
+    );
+    const failed = makeTestEntry();
+    assertThrows(
+      () =>
+        store.writeRun(failed, [
+          {
+            stepId: "first",
+            score: 1,
+            criterionResults: [{ criterion_id: "first-criterion", kind: "contains", status: "passed" }],
+          },
+          { stepId: "boom", score: 0 },
+        ]),
+      Error,
+      "forced mid-write failure",
+    );
+    for (const table of ["eval_runs", "eval_run_steps", "eval_criteria_results"]) {
+      assertEquals(countOf(table, failed.run_id), 0, table);
+    }
+    assertEquals(countOf("eval_runs", committed.run_id), 1);
+    assertEquals(countOf("eval_run_steps", committed.run_id), 1);
+    assertEquals(countOf("eval_criteria_results", committed.run_id), 1);
   });
 });
