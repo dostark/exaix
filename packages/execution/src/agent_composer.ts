@@ -688,10 +688,11 @@ export class AgentComposer {
     rawContext: IExecutionContext,
     rawOptions: IAgentExecutionOptionsInput,
   ): Promise<IChangesetResult> {
-    const { context, options, portal } = this.resolveStepTargets(rawContext, rawOptions);
+    const { context, options } = this.validatedStepInputs(rawContext, rawOptions);
     const startTime = Date.now();
 
     try {
+      const portal = this.resolveStepPortal(options);
       const _blueprint = await this.loadBlueprint(options.agent_role ?? "", context.trace_id);
       const pinnedSkills = await this.resolvePinnedSkillPrompt(context, options);
       const strategyName = this.resolveStrategyName(_blueprint, options);
@@ -747,19 +748,24 @@ export class AgentComposer {
     }
   }
 
-  /** Validates one step's inputs and resolves its target portal. */
-  private resolveStepTargets(
+  /** Validates one step's inputs before any journal or budget state exists. */
+  private validatedStepInputs(
     rawContext: IExecutionContext,
     rawOptions: IAgentExecutionOptionsInput,
-  ): { context: IExecutionContext; options: IAgentExecutionOptions; portal: IPortalConfig } {
+  ): { context: IExecutionContext; options: IAgentExecutionOptions } {
     const context = InputValidator.validateExecutionContext(rawContext);
     const options: IAgentExecutionOptions = InputValidator.validateAgentExecutionOptions(rawOptions);
+    return { context, options };
+  }
+
+  /** Resolves the target portal and checks the role, inside the step's failure and cleanup boundary. */
+  private resolveStepPortal(options: IAgentExecutionOptions): IPortalConfig {
     const portal = this.config.portals?.find((p) => p.alias === options.portal);
     if (!portal) throw new Error(`Portal not found: ${options.portal}`);
     if (!this.permissions.checkAgentAllowed(options.portal, options.agent_role ?? "").allowed) {
       throw new Error(`Agent role not allowed to access portal: ${options.agent_role} -> ${options.portal}`);
     }
-    return { context, options, portal };
+    return portal;
   }
 
   /** Reserves the strategy for this step and forwards the resolved call options. */

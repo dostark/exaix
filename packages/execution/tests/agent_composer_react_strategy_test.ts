@@ -10,7 +10,7 @@ import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertArrayIncludes, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { AgentComposer, StrategyRegistry } from "@exaix/execution";
+import { AgentComposer, ExecutionContextService, StrategyRegistry } from "@exaix/execution";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import type { IModelProvider, IProviderTurn } from "@exaix/ai/types.ts";
@@ -374,6 +374,72 @@ Deno.test("failed native ReAct request does not retry through a text path", asyn
   } finally {
     composer.dispose();
     await cleanup();
+  }
+});
+
+/** Counts how often the composer clears its step budget. */
+class CountingContext extends ExecutionContextService {
+  clears = 0;
+  override clearBudget(): void {
+    this.clears++;
+    super.clearBudget();
+  }
+}
+
+Deno.test("composer-denial-cleanup: a denied role and a missing portal log one failure and clear the budget once", async () => {
+  const cases = [
+    { portal: "TestPortal", allowed: ["other-role"], message: "Agent role not allowed to access portal" },
+    { portal: "MissingPortal", allowed: ["*"], message: "Portal not found: MissingPortal" },
+  ];
+  for (const entry of cases) {
+    const { config, db, cleanup } = await setup();
+    (config.portals as { agents_allowed: string[] }[])[0].agents_allowed = entry.allowed;
+    let calls = 0;
+    const provider: IModelProvider = {
+      id: PROVIDER_ID,
+      generate: () => {
+        calls++;
+        throw new Error("the provider must not run");
+      },
+    };
+    const logger = new EventLogger({ db });
+    const context = new CountingContext(config, logger, {});
+    const composer = new AgentComposer({
+      config,
+      db,
+      logger,
+      pathResolver: new PathResolver(config),
+      permissions: new PortalPermissionsService(config.portals),
+      provider,
+      executionContext: context,
+    });
+    const traceId = crypto.randomUUID();
+    try {
+      await assertRejects(
+        () =>
+          composer.executeStep(
+            { trace_id: traceId, request_id: "request-denied", request: "Read", plan: "Read", portal: entry.portal },
+            {
+              portal: entry.portal,
+              agent_role: "test-agent",
+              security_mode: SecurityMode.HYBRID,
+              timeout_ms: 30000,
+              max_tool_calls: 5,
+              audit_enabled: true,
+            },
+          ),
+        Error,
+        entry.message,
+      );
+      await db.waitForFlush();
+      assertEquals(context.clears, 1, entry.message);
+      assertEquals(calls, 0);
+      assertEquals((await db.queryActivity({ traceId, actionType: AGENT_EVENT_EXECUTION_FAILED })).length, 1);
+      assertEquals((await db.queryActivity({ traceId, actionType: AGENT_EVENT_EXECUTION_STARTED })).length, 0);
+    } finally {
+      composer.dispose();
+      await cleanup();
+    }
   }
 });
 
