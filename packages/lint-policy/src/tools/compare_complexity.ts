@@ -14,44 +14,13 @@
  */
 
 import { join } from "@std/path";
-import { collectFunctionRows, type IHealthContribution, type IMeasuredFunction } from "@dostark/unslop-ts/report";
-
-/** The fallow JSON schema this calibration accepts. */
-const FALLOW_SCHEMA_VERSION = 12;
-
-/** The fallow version this calibration accepts. */
-const FALLOW_VERSION = "3.36.0";
-
-/** The matching coverage each population needs before the exactness rate is meaningful. */
-const REQUIRED_COVERAGE = 0.99;
-
-/** The exact cyclomatic agreement the plan targets. */
-const REQUIRED_EXACT_AGREEMENT = 0.95;
-
-/** The measured defaults the calibration counts with. */
-const DEFAULT_SETTINGS = {
-  maxCrap: 30,
-  maxCyclomatic: 15,
-  maxCognitive: 15,
-  maxLines: 60,
-  variant: "extended" as const,
-  countNullish: true,
-};
-
-/** The fallow arguments the calibration fixes. */
-const FALLOW_ARGS: readonly string[] = [
-  "health",
-  "--report-only",
-  "--complexity",
-  "--max-cyclomatic",
-  "0",
-  "--max-cognitive",
-  "0",
-  "--max-crap",
-  "0",
-  "--complexity-breakdown",
-  "--format=json",
-];
+import {
+  collectFunctionRows,
+  type IHealthContribution,
+  type IHealthSettings,
+  type IMeasuredFunction,
+} from "@dostark/unslop-ts/report";
+import { z } from "zod";
 
 /** One contribution row of a fallow finding. */
 export interface IFallowContribution {
@@ -155,6 +124,43 @@ export interface IComparison {
   readonly sufficient: boolean;
   readonly differences: readonly IDifference[];
 }
+
+/** The fallow JSON schema this calibration accepts. */
+const FALLOW_SCHEMA_VERSION = 12;
+
+/** The fallow version this calibration accepts. */
+const FALLOW_VERSION = "3.36.0";
+
+/** The matching coverage each population needs before the exactness rate is meaningful. */
+const REQUIRED_COVERAGE = 0.99;
+
+/** The exact cyclomatic agreement the plan targets. */
+const REQUIRED_EXACT_AGREEMENT = 0.95;
+
+/** The measured defaults the calibration counts with. */
+const DEFAULT_SETTINGS: IHealthSettings = {
+  maxCrap: 30,
+  maxCyclomatic: 15,
+  maxCognitive: 15,
+  maxLines: 60,
+  variant: "extended",
+  countNullish: true,
+};
+
+/** The fallow arguments the calibration fixes. */
+const FALLOW_ARGS: readonly string[] = [
+  "health",
+  "--report-only",
+  "--complexity",
+  "--max-cyclomatic",
+  "0",
+  "--max-cognitive",
+  "0",
+  "--max-crap",
+  "0",
+  "--complexity-breakdown",
+  "--format=json",
+];
 
 /** A calibration failure that is not a metric disagreement. */
 export class CompareError extends Error {
@@ -360,69 +366,58 @@ async function runFallow(root: string): Promise<IFallowReport> {
   return parseFallowReport(new TextDecoder().decode(output.stdout));
 }
 
-/** Parses the JSON text into an object, or fails with a named error. */
-function parseJsonObject(text: string): Record<string, unknown> {
-  let value: unknown;
-  try {
-    value = JSON.parse(text);
-  } catch (error) {
-    throw new CompareError(`fallow output is not JSON: ${error instanceof Error ? error.message : String(error)}`);
-  }
-  if (value === null || typeof value !== "object") throw new CompareError("fallow output is not an object");
-  return value as Record<string, unknown>;
-}
+/** The contribution row schema of one fallow finding. */
+const FallowContributionSchema = z.object({
+  line: z.number(),
+  col: z.number(),
+  metric: z.string(),
+  kind: z.string(),
+  weight: z.number(),
+  nesting: z.number(),
+});
 
-/** Refuses a report whose kind, schema or tool version is not the pinned one. */
-function assertFallowHeader(report: Record<string, unknown>): void {
-  if (report.kind !== "health") throw new CompareError(`fallow output kind '${String(report.kind)}' is not health`);
-  if (report.schema_version !== FALLOW_SCHEMA_VERSION) {
-    throw new CompareError(`fallow schema ${String(report.schema_version)} is not ${FALLOW_SCHEMA_VERSION}`);
-  }
-  if (report.version !== FALLOW_VERSION) {
-    throw new CompareError(`fallow version '${String(report.version)}' is not ${FALLOW_VERSION}`);
-  }
-}
+/** The finding schema of the fallow report. */
+const FallowFindingSchema = z.object({
+  path: z.string(),
+  name: z.string(),
+  line: z.number(),
+  col: z.number(),
+  cyclomatic: z.number(),
+  cognitive: z.number(),
+  contributions: z.array(FallowContributionSchema).optional(),
+});
 
-/** Validates one finding and reads its measured fields. */
-function findingOf(entry: unknown): IFallowFinding {
-  if (entry === null || typeof entry !== "object") throw new CompareError("fallow finding is not an object");
-  const finding = entry as Record<string, unknown>;
-  if (typeof finding.path !== "string" || typeof finding.name !== "string") {
-    throw new CompareError("fallow finding is missing its path or name");
-  }
-  if (typeof finding.line !== "number" || typeof finding.col !== "number") {
-    throw new CompareError("fallow finding is missing its position");
-  }
-  const contributions = Array.isArray(finding.contributions)
-    ? finding.contributions as readonly IFallowContribution[]
-    : undefined;
-  return {
-    path: finding.path,
-    name: finding.name,
-    line: finding.line,
-    col: finding.col,
-    cyclomatic: Number(finding.cyclomatic),
-    cognitive: Number(finding.cognitive),
-    ...(contributions === undefined ? {} : { contributions }),
-  };
-}
+/** The fallow report schema, with every field the comparison reads. */
+const FallowReportSchema = z.object({
+  kind: z.literal("health"),
+  schema_version: z.number(),
+  version: z.string(),
+  findings: z.array(FallowFindingSchema),
+});
 
-/** Validates the nonempty findings list. */
-function findingsOf(value: unknown): readonly IFallowFinding[] {
-  if (!Array.isArray(value)) throw new CompareError("fallow output has no findings array");
-  if (value.length === 0) throw new CompareError("fallow reported an empty function population");
-  return value.map(findingOf);
-}
+type TFallowReport = z.infer<typeof FallowReportSchema>;
 
 /** Validates the fallow report shape, version and schema before any comparison. */
 export function parseFallowReport(text: string): IFallowReport {
-  const report = parseJsonObject(text);
-  assertFallowHeader(report);
+  let parsed: TFallowReport;
+  try {
+    parsed = FallowReportSchema.parse(JSON.parse(text));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new CompareError(`fallow output is invalid: ${message}`);
+  }
+  if (parsed.schema_version !== FALLOW_SCHEMA_VERSION) {
+    throw new CompareError(`fallow schema ${String(parsed.schema_version)} is not ${FALLOW_SCHEMA_VERSION}`);
+  }
+  if (parsed.version !== FALLOW_VERSION) {
+    throw new CompareError(`fallow version '${parsed.version}' is not ${FALLOW_VERSION}`);
+  }
+  if (parsed.findings.length === 0) throw new CompareError("fallow reported an empty function population");
   return {
     kind: "health",
     schema_version: FALLOW_SCHEMA_VERSION,
     version: FALLOW_VERSION,
-    findings: findingsOf(report.findings),
+    findings: parsed.findings,
   };
 }
 
