@@ -42,6 +42,30 @@ steps:
       - id: terminal-event
         kind: command-exit-code
         equals: 0
+  - id: assert-branch-chose-bug
+    type: journal-assert
+    action_type: flow.branch.decided
+    trace_scoped: true
+    payload_equals:
+      - path: chosen
+        value: bug
+    output_criteria:
+      - id: branch-chose-bug
+        kind: command-exit-code
+        equals: 0
+  - id: assert-untaken-branch-skipped
+    type: journal-assert
+    action_type: flow.step.skipped
+    trace_scoped: true
+    payload_equals:
+      - path: stepId
+        value: feature
+      - path: skipCode
+        value: branch_not_taken
+    output_criteria:
+      - id: feature-branch-skipped
+        kind: command-exit-code
+        equals: 0
   - id: stop-daemon
     type: exactl
     command: daemon

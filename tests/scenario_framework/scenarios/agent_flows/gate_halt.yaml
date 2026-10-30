@@ -42,6 +42,21 @@ steps:
       - id: terminal-event
         kind: command-exit-code
         equals: 0
+  - id: assert-gate-halted
+    type: journal-assert
+    action_type: flow.gate.evaluated
+    trace_scoped: true
+    payload_equals:
+      - path: action
+        value: halted
+      - path: passed
+        value: false
+      - path: score
+        value: 0.2
+    output_criteria:
+      - id: gate-halted
+        kind: command-exit-code
+        equals: 0
   - id: stop-daemon
     type: exactl
     command: daemon

@@ -217,3 +217,12 @@ Deno.test("[workspace_config] expandOverrideValues expands string values and kee
     "system.max": 3,
   });
 });
+
+Deno.test("override-array-types: numbers and booleans in an array keep their type through expansion", () => {
+  const expanded = expandOverrideValues(
+    { "a.limits": [1, 2], "a.flags": [true, false], "a.paths": ["$FRAMEWORK_HOME/x", "plain"] },
+    (text) => text.replaceAll("$FRAMEWORK_HOME", "/abs"),
+  );
+  assertEquals(expanded, { "a.limits": [1, 2], "a.flags": [true, false], "a.paths": ["/abs/x", "plain"] });
+  assertEquals(renderTomlValue(expanded["a.limits"]), "[1, 2]");
+});
