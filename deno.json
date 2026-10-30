@@ -59,6 +59,7 @@
     "setup": "deno run --allow-all scripts/setup_db.ts",
     "migrate": "deno run --allow-all scripts/migrate_db.ts",
     "bump": "deno run -A scripts/check_version.ts --force-patch",
+    "deno:bump": "deno run --allow-read --allow-write scripts/bump_deno_version.ts",
     "cli": "deno run --allow-read --allow-write --allow-net --allow-env --allow-ffi --allow-import --allow-run=git,deno,exoctl,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias apps/exactl/main.ts",
     "cli:unsafe": "deno run --allow-all apps/exactl/main.ts",
     "tui": "deno run --allow-read --allow-write --allow-net --allow-env --allow-ffi --allow-import --allow-run=git,deno,exoctl,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias apps/tui/main.ts",
@@ -389,5 +390,14 @@
     "strict": true,
     "checkJs": false
   },
-  "allowScripts": []
+  "allowScripts": {
+    "allow": [],
+    "deny": [
+      "npm:tree-sitter-go@0.25.0",
+      "npm:tree-sitter-java@0.23.5",
+      "npm:tree-sitter-javascript@0.25.0",
+      "npm:tree-sitter-python@0.25.0",
+      "npm:tree-sitter-rust@0.24.0"
+    ]
+  }
 }

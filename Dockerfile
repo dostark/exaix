@@ -13,7 +13,11 @@
 # ---------------------------------------------------------------------------
 # Stage 1 — builder: vendor the module graph and warm the SQLite FFI native lib
 # ---------------------------------------------------------------------------
-FROM denoland/deno:2.8.2 AS builder
+# The one Deno pin of every stage. Move it with `deno task deno:bump <x.y.z>`.
+# tests/scripts/deno_version_pin_test.ts rejects a stage that names a literal tag.
+ARG DENO_VERSION=2.9.8
+
+FROM denoland/deno:${DENO_VERSION} AS builder
 
 ENV DENO_DIR=/deno-dir
 WORKDIR /app
@@ -95,7 +99,7 @@ ENV PATH="/opt/cli/claude/.local/bin:/opt/cli/opencode/bin:/opt/cli/codex/bin:${
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm install -g node-gyp
 
-FROM denoland/deno:2.8.2 AS runtime
+FROM denoland/deno:${DENO_VERSION} AS runtime
 
 # git is required by GitService and the run_command allowlist; ca-certificates for TLS.
 # node/npm are intentionally omitted — add them only if your portals need JS tooling.
@@ -150,7 +154,7 @@ ENTRYPOINT ["deno", "run", \
 # needs node (for Claude Code) and the delegate CLIs.
 # Build:   docker build --target eval-jail -t exaix-eval-jail .
 # ---------------------------------------------------------------------------
-FROM denoland/deno:2.8.2 AS eval-jail
+FROM denoland/deno:${DENO_VERSION} AS eval-jail
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates curl nodejs npm build-essential python3 \

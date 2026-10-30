@@ -1325,10 +1325,10 @@ Because the runtime requires `--allow-ffi` (for `@db/sqlite`'s native library), 
 | **Dev container**   | `.devcontainer/devcontainer.json` | Development sandbox with VS Code integration, delegate CLIs, and the `builder` stage                                       |
 | **Compose sandbox** | `compose.sandbox.yaml`            | Hardened runtime profile: read-only rootfs, `cap_drop: ALL`, `no-new-privileges`, resource limits, isolated bridge network |
 
-**Dockerfile structure** — two stages:
+**Dockerfile structure** — two stages, with one Deno pin (`ARG DENO_VERSION`) that `deno task deno:bump <x.y.z>` moves and `tests/scripts/deno_version_pin_test.ts` enforces:
 
-- **`builder`** (`denoland/deno:2.8.2`): vendors the module graph via `deno cache`, warms the SQLite FFI native library so the runtime container can run with restricted egress (no GitHub access needed at startup), and installs Node.js + delegate CLI tools (`@anthropic-ai/claude-code`, `opencode`) for headless agent integration tests and dogfooding.
-- **`runtime`** (`denoland/deno:2.8.2`): minimal toolset (git, ca-certificates; no node/npm), dedicated non-root user (uid/gid 10001), scoped Deno permissions as defense-in-depth only, and the SQLite native lib pre-warmed from the builder stage.
+- **`builder`** (the Deno image pinned by `DENO_VERSION` in the Dockerfile): vendors the module graph via `deno cache`, warms the SQLite FFI native library so the runtime container can run with restricted egress (no GitHub access needed at startup), and installs Node.js + delegate CLI tools (`@anthropic-ai/claude-code`, `opencode`) for headless agent integration tests and dogfooding.
+- **`runtime`** (the same pinned Deno image): minimal toolset (git, ca-certificates; no node/npm), dedicated non-root user (uid/gid 10001), scoped Deno permissions as defense-in-depth only, and the SQLite native lib pre-warmed from the builder stage.
 
 **Compose sandbox hardening:**
 
