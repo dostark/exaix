@@ -53,10 +53,13 @@ Find a rule by topic:
 ## Complexity Limits {#complexity-limits}
 
 Exaix gates every function at 15 cyclomatic complexity, 15 cognitive complexity and 60 function lines. The
-limits live in `unslop.config.json` and the compiled catalog under `packages/lint-policy`. The editor lint and the
-ordinary `deno task lint` report them, while `deno task check:complexity` runs three per-package ceiling
-invocations that fail on a count above the committed ceiling. A ceiling is a ratchet: a row moves down to a
-measured count and never up.
+limits live in `unslop.config.json` and the compiled catalog under `packages/lint-policy`. The editor lint keeps
+reporting them as diagnostics. The ordinary `deno task lint` excludes the three rules with `--rules-exclude`, so a
+function above a limit does not fail it. The dedicated `deno task check:complexity` applies the limits: it runs three
+per-package ceiling invocations from the descriptor root, accepts a scan only when the lint plugin reports that it
+evaluated the rule, and fails on a count above the committed ceiling. A ceiling is a ratchet: a row moves down to a
+measured count and never up. The configured limits 15, 15 and 60 are separate from the refactoring tranche limits
+of 20 cyclomatic and 30 cognitive complexity, which only bound the functions that the tranches rewrote.
 
 The parent pinned the `classic` cyclomatic variant while the engine moved to `extended` (Phase 236, Step 1) and
 removed the pin at the measured cutover (Step 12). A consumer that pins `variant: "classic"` keeps the legacy
