@@ -21,7 +21,7 @@ import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, Step
 import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./evidence_collector.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { gitServiceFor } from "./git_helpers.ts";
-import { patchWorkspaceConfig } from "./workspace_config_overrides.ts";
+import { expandOverrideValues, patchWorkspaceConfig } from "./workspace_config_overrides.ts";
 import type { WorkspaceConfigValue } from "../schema/scenario_schema.ts";
 import { composeGated, computeStepScore, computeSuiteScore, type IStepScoreInput, ScoringMode } from "./scoring.ts";
 import { type IRunScenarioInModeResult, runScenarioInMode } from "./modes.ts";
@@ -372,7 +372,15 @@ export async function runSyntheticScenario(
   await seedWorkspaceCatalogs(options.workspaceRoot, REPO_ROOT);
   await seedPortalFixtures(options.workspaceRoot, REPO_ROOT);
   await seedWorkspaceConfig(options.workspaceRoot, options.frameworkHome);
-  await applyWorkspaceConfigOverrides(options.workspaceRoot, options.workspaceConfigOverrides);
+  await applyWorkspaceConfigOverrides(
+    options.workspaceRoot,
+    options.workspaceConfigOverrides &&
+      expandOverrideValues(
+        options.workspaceConfigOverrides,
+        (text) =>
+          expandInString(text, { FRAMEWORK_HOME: options.frameworkHome, WORKSPACE_ROOT: options.workspaceRoot }),
+      ),
+  );
   const portalBaselines = await capturePortalBaselines(options.workspaceRoot);
 
   // Baseline for artefact correlation: scenarios in a pack share one sandbox workspace, so

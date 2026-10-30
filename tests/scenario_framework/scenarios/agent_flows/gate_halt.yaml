@@ -7,6 +7,10 @@ request_fixture: fixtures/requests/agent_flows/halt_gate.md
 flow_fixture: fixtures/flows/gates/halt_gate.flow.yaml
 mode_support: ["auto"]
 portals: []
+workspace_config:
+  quality_gate.enabled: false
+  request_analysis.enabled: false
+  ai.mock.fixtures_dir: "$FRAMEWORK_HOME/fixtures/mock_recordings/phase205/gates"
 steps:
   - id: start-daemon
     type: exactl

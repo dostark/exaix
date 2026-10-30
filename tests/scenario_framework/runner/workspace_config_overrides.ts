@@ -59,6 +59,19 @@ function assignsKey(line: string, key: string): boolean {
   return trimmed.slice(0, equals).trim() === key;
 }
 
+/** Expands every string in the override values, so a scenario can name a path relative to the framework home. */
+export function expandOverrideValues(
+  overrides: { [key: string]: WorkspaceConfigValue },
+  expand: (text: string) => string,
+): { [key: string]: WorkspaceConfigValue } {
+  const expandValue = (value: WorkspaceConfigValue): WorkspaceConfigValue => {
+    if (typeof value === "string") return expand(value);
+    if (Array.isArray(value)) return value.map((item) => expand(String(item)) as typeof item);
+    return value;
+  };
+  return Object.fromEntries(Object.entries(overrides).map(([key, value]) => [key, expandValue(value)]));
+}
+
 /** Patches `overrides` into TOML `content`. An existing key is replaced in place, so its position and the file's comments survive.
  *  A missing key is appended to its table, and a missing table is appended at the end of the file. */
 export function patchWorkspaceConfig(

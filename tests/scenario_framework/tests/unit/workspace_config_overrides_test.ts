@@ -16,7 +16,12 @@ import {
   applyWorkspaceConfigOverrides,
   STEP_CONFIG_OVERRIDES_ENV,
 } from "../../runner/synthetic_runner.ts";
-import { patchWorkspaceConfig, renderTomlValue, splitConfigPath } from "../../runner/workspace_config_overrides.ts";
+import {
+  expandOverrideValues,
+  patchWorkspaceConfig,
+  renderTomlValue,
+  splitConfigPath,
+} from "../../runner/workspace_config_overrides.ts";
 import { readConfigFixture, withTempDir } from "@exaix/testing";
 
 const BASE = await Deno.readTextFile(
@@ -193,4 +198,22 @@ Deno.test("[workspace_config] a malformed step override fails loudly instead of 
     }
     assertEquals(threw, true, "a malformed override must not pass silently");
   }, { prefix: "ws-step-bad-" });
+});
+
+Deno.test("[workspace_config] expandOverrideValues expands string values and keeps other values", () => {
+  const expanded = expandOverrideValues(
+    {
+      "ai.mock.fixtures_dir": "$FRAMEWORK_HOME/fixtures",
+      "quality_gate.enabled": false,
+      "agents.list": ["$FRAMEWORK_HOME/a", "plain"],
+      "system.max": 3,
+    },
+    (text) => text.replaceAll("$FRAMEWORK_HOME", "/abs/framework"),
+  );
+  assertEquals(expanded, {
+    "ai.mock.fixtures_dir": "/abs/framework/fixtures",
+    "quality_gate.enabled": false,
+    "agents.list": ["/abs/framework/a", "plain"],
+    "system.max": 3,
+  });
 });
