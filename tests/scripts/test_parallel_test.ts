@@ -60,6 +60,16 @@ Deno.test("fix(test-runner): live memory maturation uses the serial network lane
   assertEquals(entry.network, true, "the live provider must retain real network access");
 });
 
+Deno.test("fix(test-runner): whole-repository LCOV health uses the serial host lane", () => {
+  const entry = SEQUENTIAL_TESTS.find((test) => test.file === "tests/scripts/health_lcov_task_test.ts");
+  assert(entry);
+  const parsed = SequentialTestSchema.parse(entry);
+  const expected = { ...parsed, host: true };
+  assertEquals(parsed, expected);
+  assertEquals(parsed.network, false, "memory pressure does not require network access");
+  assert(entry.reasons.includes(IsolationReason.pressure));
+});
+
 Deno.test("resolveReporter accepts equals-form reporter flag", () => {
   assertEquals(resolveReporter(["--reporter=dot"]), "dot");
 });
@@ -277,6 +287,7 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "packages/ai/tests/providers/mock_strict_env_test.ts",
   "tests/scenario_framework/tests/unit/strict_scoped_per_step_test.ts",
   "packages/lint-policy/tests/shared_tree_parity_test.ts",
+  "tests/scripts/health_lcov_task_test.ts",
   "packages/lint-policy/tests/unslop_cli_integration_test.ts",
   "packages/lint-policy/tests/lint_policy_move_equivalence_test.ts",
 ];
@@ -431,4 +442,19 @@ Deno.test("the container env is an explicit allowlist, never Deno.env.toObject()
 
 Deno.test("the worker container env tells the driver to use the Containered Batch reporter", () => {
   assertEquals(buildContainerEnv({ PATH: "/usr/bin" })[TEST_CONTAINER_REPORTER_ENV], "pretty");
+});
+
+Deno.test("fix(live-tests): operator-only extraction is ignored in CI even when credentials exist", async () => {
+  const moduleUrl = new URL("../../packages/memory/tests/extraction/llm_extractor_live_test.ts", import.meta.url).href;
+  // Capture registration in a child without executing the provider-backed test body.
+  const code = "Deno.test = (definition) => { console.log(definition.ignore); }; " +
+    `await import(${JSON.stringify(moduleUrl)});`;
+  const result = await new Deno.Command(Deno.execPath(), {
+    args: ["eval", code],
+    env: { CI: "true", EXA_TEST_BIND: "", DEEPSEEK_API_KEY: "registration-only-unused-key" },
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(result.code, 0, new TextDecoder().decode(result.stderr));
+  assertEquals(new TextDecoder().decode(result.stdout).trim(), "true");
 });

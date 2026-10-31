@@ -5,6 +5,7 @@
  * @architectural-layer Services
  * @related-files [packages/portal/knowledge/portal_knowledge_service.ts, packages/portal/knowledge/git_head_resolver.ts]
  */
+import type { Opt, Reason } from "@exaix/core/types";
 
 import type { IPortalKnowledge } from "@exaix/schemas";
 
@@ -22,7 +23,7 @@ export interface IKnowledgeValidityCheck {
   isValid: boolean;
   reason: KnowledgeValidityReason;
   currentSha?: string;
-  cachedSha?: string;
+  cachedSha?: Opt<string, Reason.OptionalContext>;
   filesDelta?: number;
   analysisMode: KnowledgeAnalysisMode;
 }
@@ -100,7 +101,7 @@ export class KnowledgeInvalidationStrategy implements IKnowledgeInvalidationStra
     cached: IPortalKnowledge,
     reason: KnowledgeValidityReason,
     stalenessHours: number,
-    cachedSha?: string,
+    cachedSha?: Opt<string, Reason.OptionalContext>,
   ): IKnowledgeValidityCheck {
     const cutoff = new Date(Date.now() - stalenessHours * 60 * 60 * 1000);
     const isFresh = new Date(cached.gatheredAt) >= cutoff;

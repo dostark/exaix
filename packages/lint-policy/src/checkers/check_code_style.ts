@@ -617,7 +617,7 @@ function reportConcreteCrossDomain(
   }
 }
 
-function removeNamesUsedInPropertyAccess(
+function removeNamesUsedAsTypesOrMembers(
   sourceFile: ts.SourceFile,
   imported: Map<string, { specifier: string; line: number }>,
 ): void {
@@ -625,6 +625,10 @@ function removeNamesUsedInPropertyAccess(
     if (ts.isPropertyAccessExpression(node) && ts.isIdentifier(node.expression)) {
       imported.delete(node.expression.text);
     }
+    if (
+      ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.InstanceOfKeyword &&
+      ts.isIdentifier(node.right)
+    ) imported.delete(node.right.text);
     ts.forEachChild(node, visit);
   };
   visit(sourceFile);
@@ -686,8 +690,8 @@ function checkLayerLeaks(sourceFile: ts.SourceFile, repoPath: string): void {
   reportConcreteCrossDomain(newNames, imported, sourceFile, repoPath);
   for (const name of newNames) imported.delete(name);
 
-  // Steps 3-4: drop names used in property access (X.Y) and calls (X(...)).
-  removeNamesUsedInPropertyAccess(sourceFile, imported);
+  // Drop runtime type checks, member access, and function calls.
+  removeNamesUsedAsTypesOrMembers(sourceFile, imported);
   removeNamesUsedInCalls(sourceFile, imported);
 
   // Step 5: remaining names are constant-like.

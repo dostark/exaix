@@ -23,7 +23,7 @@ import {
 import { z } from "zod";
 
 /** One contribution row of a fallow finding. */
-export interface IFallowContribution {
+interface IFallowContribution {
   readonly line: number;
   readonly col: number;
   readonly metric: string;
@@ -52,13 +52,13 @@ export interface IFallowReport {
 }
 
 /** One matched function pair. */
-export interface IMatchedPair {
+interface IMatchedPair {
   readonly fallow: IFallowFinding;
   readonly core: IMeasuredFunction;
 }
 
 /** One function row that only one tool reported. */
-export interface IUnmatchedRow {
+interface IUnmatchedRow {
   readonly path: string;
   readonly name: string;
   readonly line: number;
@@ -66,7 +66,7 @@ export interface IUnmatchedRow {
 }
 
 /** The outcome of matching both populations by normalized position. */
-export interface IMatchResult {
+interface IMatchResult {
   readonly matched: readonly IMatchedPair[];
   readonly fallowOnly: readonly IFallowFinding[];
   readonly coreOnly: readonly IMeasuredFunction[];
@@ -74,7 +74,7 @@ export interface IMatchResult {
 }
 
 /** The difference categories of one matched pair. */
-export interface IContributionDifference {
+interface IContributionDifference {
   readonly metric: string;
   readonly kind: string;
   readonly fallow: number;
@@ -82,7 +82,7 @@ export interface IContributionDifference {
 }
 
 /** One matched pair whose values or kinds differ. */
-export interface IDifference {
+interface IDifference {
   readonly path: string;
   readonly name: string;
   readonly line: number;
@@ -105,13 +105,13 @@ export interface IExclusion {
 }
 
 /** One exclusion with the functions it removed, so the accounting stays complete. */
-export interface IExclusionAccount extends IExclusion {
+interface IExclusionAccount extends IExclusion {
   readonly files: readonly string[];
   readonly functions: number;
 }
 
 /** The complete comparison result. */
-export interface IComparison {
+interface IComparison {
   readonly fallow_version: string;
   readonly schema_version: number;
   readonly populations: {
@@ -596,7 +596,7 @@ async function main(): Promise<void> {
       duplicateRunner: null,
       publicEntries: [],
     });
-    const comparison = compareComplexity(report, collection.rows, collection.errors.length);
+    const comparison = compareComplexity(report, collection.rows, collection.errors.length, CALIBRATION_EXCLUSIONS);
     console.log(asJson ? `${JSON.stringify(comparison, null, 2)}\n` : `${renderText(comparison)}\n`);
     if (!comparison.sufficient) Deno.exit(1);
   } catch (error) {

@@ -24,6 +24,7 @@ import type {
 } from "./types.ts";
 import {
   calculateCost,
+  createOpenAiPostRequest,
   disablesParallelToolUse,
   isOpenAiReasoningModel,
   mapToolChoiceOpenAI,
@@ -84,16 +85,11 @@ export function createOpenAIResponsesRequestInit(
 ): RequestInit {
   const hasTools = Boolean(options?.tools?.length);
   const reasoningModel = isOpenAiReasoningModel(model);
-  return {
-    method: "POST",
-    ...(options?.requestSignal ? { signal: options.requestSignal } : {}),
-    headers: {
-      "Content-Type": "application/json",
-      // An absent or empty key means the endpoint needs no credential, so send no header.
-      ...(apiKey ? { "Authorization": `Bearer ${apiKey}` } : {}),
-    },
-    body: responsesBodyOf(model, prompt, options, reasoningModel, hasTools),
-  };
+  return createOpenAiPostRequest(
+    apiKey,
+    responsesBodyOf(model, prompt, options, reasoningModel, hasTools),
+    options?.requestSignal,
+  );
 }
 
 /** The calls of a Responses reply, in output order. A call whose arguments are not valid JSON is dropped, as on

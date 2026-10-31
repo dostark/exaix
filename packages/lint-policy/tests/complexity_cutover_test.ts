@@ -312,7 +312,7 @@ Deno.test("health-task-run: the declared health task reaches the full report", a
   let result = await runDeno(["task", "health"], REPO_ROOT.pathname);
   if (result.code !== 0) result = await runDeno(["task", "health"], REPO_ROOT.pathname);
   assertEquals(result.code, 0, result.stderr.slice(-2000));
-  for (const marker of ["unslop health", "score:", "coverage:", "cycles:", "hotspots:"]) {
+  for (const marker of ["UNSLOP HEALTH", "Score ", "Coverage    none", "Graph", "SCORE SIGNALS", "HOTSPOTS"]) {
     assert(result.stdout.includes(marker), marker);
   }
 });

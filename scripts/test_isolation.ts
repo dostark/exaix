@@ -86,6 +86,8 @@ export interface IContainerTestEntry {
   exclusive?: boolean;
   /** true ⇒ run host-serial, never in a worker container. */
   network?: boolean;
+  /** true ⇒ host memory is required, so run serially outside bounded workers. */
+  host?: boolean;
   /** Internal retry counter: a wedged or exited worker requeues a file at most once. */
   attempts?: number;
 }
@@ -577,14 +579,16 @@ async function nextWithWatchdog(
   }
 }
 
-/** Run the non-network Batch-2 entries in `jobs` worker containers with a work-stealing queue.
+/** Run the worker-eligible Batch-2 entries in `jobs` containers with a work-stealing queue.
  *  It never blocks on an idle worker. It never runs two `serializedOutput` files at once.
  *  It requeues an in-flight file when a worker exits, and stops when the queue drains. */
 export async function runBatch2InContainers(
   entries: readonly IContainerTestEntry[],
   options: IRunBatch2Options,
 ): Promise<IContainerRunResult[]> {
-  const queue: IContainerTestEntry[] = entries.filter((entry) => !entry.network).map((entry) => ({ ...entry }));
+  const queue: IContainerTestEntry[] = entries.filter((entry) => !entry.network && !entry.host).map((entry) => ({
+    ...entry,
+  }));
   const results: IContainerRunResult[] = [];
   const startWorker = options.startWorker ?? startWorkerContainer;
   const liveWorkers = new Set<IWorkerContainer>();

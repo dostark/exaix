@@ -18,6 +18,8 @@ copilot_instructions: ../Blueprints/Agents/senior-coder.md
 > the [generic style guide](../unslop-ts/docs/style_guide.md). The Exaix additions to those rules are in the
 > [lint-policy guide](../packages/lint-policy/docs/style_guide.md). Read the generic guide first.
 
+<a id="related-docs"></a>
+
 ## Related Documents {#related-docs}
 
 | Document                                                         | Holds                                                               |
@@ -50,6 +52,8 @@ Find a rule by topic:
 - **Scripts, comments, and lint:** [Utility Scripts](#utility-scripts),
   [Comment Discipline](#comment-discipline), [Lint Policy](#lint-policy)
 
+<a id="complexity-limits"></a>
+
 ## Complexity Limits {#complexity-limits}
 
 Exaix gates every function at 15 cyclomatic complexity, 15 cognitive complexity and 60 function lines. The
@@ -61,10 +65,12 @@ evaluated the rule, and fails on a count above the committed ceiling. A ceiling 
 measured count and never up. The configured limits 15, 15 and 60 are separate from the refactoring tranche limits
 of 20 cyclomatic and 30 cognitive complexity, which only bound the functions that the tranches rewrote.
 
-The parent pinned the `classic` cyclomatic variant while the engine moved to `extended` (Phase 236, Step 1) and
-removed the pin at the measured cutover (Step 12). A consumer that pins `variant: "classic"` keeps the legacy
-counts. The construct tables, the formulas and the calibration record are in
+The parent removed its `classic` cyclomatic pin after measuring the cutover to the engine's `extended` default.
+A consumer that pins `variant: "classic"` keeps the legacy counts.
+The construct tables, the formulas and the calibration record are in
 [the metrics methodology](../unslop-ts/docs/metrics_methodology.md).
+
+<a id="no-magic-values"></a>
 
 ## No Magic Values {#no-magic-values}
 
@@ -128,6 +134,8 @@ only source of bounds.
   concept, for example `packages/core/src/types/enums.ts`. Compare with `RequestStatus.PENDING`, never with the
   literal string.
 
+<a id="event-type-strings"></a>
+
 ## Event Type Strings {#event-type-strings}
 
 Every event name that you pass to `IEventLogger.info()`, `.warn()`, `.error()`, `.fatal()`, or `.debug()`, or to
@@ -148,6 +156,8 @@ await this.logger.info(DomainEventType.ExecutionStarted, traceId, payload);
 `deno task check:event-strings` reports a string literal in these calls. It runs in the pre-commit hook and in
 `deno run -A scripts/ci.ts check`. The table of event types is in
 [`docs/Reference_Data.md`](./Reference_Data.md#event-taxonomy).
+
+<a id="add-event-type"></a>
 
 ### Adding a New Event Type {#add-event-type}
 
@@ -171,6 +181,8 @@ await this.logger.info(DomainEventType.ExecutionStarted, traceId, payload);
 1. Add a row with the member name, the string value, and the domain to the
    [event taxonomy](./Reference_Data.md#event-taxonomy).
 1. Run `deno task check:event-strings`. It must report no violation.
+
+<a id="import-statements"></a>
 
 ## Import Statements {#import-statements}
 
@@ -202,6 +214,8 @@ the package alias.
 
 The production-to-tests zone of `exaix/import-boundaries` enforces this rule in `deno task lint`.
 
+<a id="package-imports"></a>
+
 ## Package Imports {#package-imports}
 
 Import another package through its public alias, never through its file path.
@@ -225,6 +239,8 @@ Import another package through its public alias, never through its file path.
 | `package-boundary`          | A relative import into another package, or into the retired root `src/` folder |
 | `package-subpath-promotion` | A parent entry point that re-exports a canonical subpackage                    |
 | `exaix/import-boundaries`   | The retired-root zone: a package module that imports a retired root path       |
+
+<a id="package-test-boundaries"></a>
 
 ## Package Test Boundary Isolation {#package-test-boundaries}
 
@@ -256,6 +272,8 @@ import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing"; // ✅
 | `package-testing-import`              | A test outside a package that deep-imports its tests instead of `/testing`       |
 | `exaix/test-inline-multiline-fixture` | A multi-line structured fixture inline in a test (opt-in)                        |
 
+<a id="tui-boundaries"></a>
+
 ## Module Boundaries & TUI Isolation {#tui-boundaries}
 
 The terminal UI (`apps/tui/src/`) shows data and takes input. It reaches core behavior through service
@@ -282,6 +300,8 @@ No zone checks a direct import of `apps/exactl/src/`. The service factory
 `apps/tui/src/services/tui_service_factory.ts` still imports CLI command classes to build the adapters that the
 views use.
 
+<a id="cli-boundaries"></a>
+
 ## Module Boundaries & CLI Isolation {#cli-boundaries}
 
 The CLI command layer reaches the core only through the package aliases. The boundary covers
@@ -292,6 +312,8 @@ The CLI command layer reaches the core only through the package aliases. The bou
 - `apps/exactl/src/helpers/` belongs to the CLI. Modules outside `apps/exactl/src/` do not import it.
 
 Zones of `exaix/import-boundaries` in `packages/lint-policy/tests/fixtures/catalog_v1.json` enforce these rules.
+
+<a id="edition-tier-boundary"></a>
 
 ## Edition Tier Import Boundary {#edition-tier-boundary}
 
@@ -339,6 +361,8 @@ Edition-selection code, such as `edition ===` and `EXAIX_EDITION`, belongs only 
 | `edition-leak`                         | A lower-edition module that imports a higher edition |
 | `edition-conditional-outside-composer` | An edition conditional outside the composer          |
 
+<a id="edition-static-guarantee"></a>
+
 ### Why the static rule is the guarantee {#edition-static-guarantee}
 
 `edition-leak` guards the artifact that Exaix ships: the source-run deploy of `scripts/deploy_workspace.ts`. The
@@ -352,6 +376,8 @@ A Team-free binary would need a Solo import map that points `@exaix-team/*` at s
 exist yet. Use the source-run deploy for a Team-free Solo distribution. See
 `exaix-dev-docs/dev/Exaix_Edition_Architecture.md`.
 
+<a id="edition-graph-gate"></a>
+
 ### The graph gate {#edition-graph-gate}
 
 `edition-leak` reads source text, so a gap in its patterns could let a leak pass. `deno task check:edition-graph`
@@ -360,6 +386,8 @@ exist yet. Use the source-run deploy for a Team-free Solo distribution. See
 `editionTierOfPath` classification as the rule. Guarded dynamic edges and type-only edges are not leaks. On a
 clean tree both gates agree. The graph gate runs in the code-quality workflow, in `deno run -A scripts/ci.ts check`,
 and in the pre-commit hook after `check:style`.
+
+<a id="package-module-purity"></a>
 
 ## Package Module Purity {#package-module-purity}
 
@@ -415,6 +443,8 @@ and runtime wiring). It skips comment lines.
 | `[package-instantiates-event-logger]` | error    | `new EventLogger(`                                                       |
 | `[package-concrete-logger-type]`      | warn     | An import of the concrete `EventLogger` from `@exaix/core`               |
 | `[package-uses-config-reader]`        | warn     | An import of `ConfigService` from `@exaix/core`, or `new ConfigService(` |
+
+<a id="layer-aware-constant-imports"></a>
 
 ## Layer-Aware Constant Imports {#layer-aware-constant-imports}
 
@@ -473,6 +503,8 @@ Both skip the framework packages (`@exaix/core`, `@exaix/schemas`, `@exaix/share
 the bridge files that the catalog lists under `layout.layerLeakExempt`. Imports from the framework packages are
 therefore a review concern, not a checked one. See the [rule reference](../packages/lint-policy/docs/style_rules.md).
 
+<a id="di-and-interfaces"></a>
+
 ## Dependency Injection & Interfaces {#di-and-interfaces}
 
 The naming and placement of interfaces are in the
@@ -498,6 +530,8 @@ export class PlanExecutor {
 }
 ```
 
+<a id="env-vars"></a>
+
 ## Environment Variables {#env-vars}
 
 Settings belong in configuration. Add a `configurable()` key, as described in [No Magic Values](#no-magic-values),
@@ -510,6 +544,8 @@ instead of a new environment variable.
 - **Test variables** use the `EXA_TEST_*` prefix. Detect test and CI runs with `isTestMode()` and `isCIMode()`
   from `packages/core/src/config/env_schema.ts`. `isTestMode()` reads `EXA_TEST_MODE` and `EXA_TEST_CLI_MODE`.
   `isCIMode()` reads `EXA_CI_MODE` and then `CI`.
+
+<a id="optional-params"></a>
 
 ## Optional Parameter Usage {#optional-params}
 
@@ -572,6 +608,8 @@ Without `--fail` the first task is advice. Bare optional parameters that already
 only, and the staged task stops new ones. The opt-in plugin rule `exaix/require-optional-wrapper` finds bare
 optional parameters during linting.
 
+<a id="exaix-path-construction"></a>
+
 ## Workspace Path Construction {#exaix-path-construction}
 
 Build Exaix workspace paths with the helper functions of `@exaix/shared`. Do not join the default segments in
@@ -602,6 +640,8 @@ flow-catalog guard), or when the literal must stay a shell variable or a glob. M
 
 `deno task check:path-builders` enforces this section.
 
+<a id="tool-naming"></a>
+
 ## Tool Naming {#tool-naming}
 
 A canonical tool name is `<verb>_<object>` in snake_case. The first token is one of `read`, `write`, `list`,
@@ -622,6 +662,8 @@ tell that two differently named tools mean the same thing. Review each new unmat
 it distinct or add it to the shared-operation table. See
 [the tool catalog parity section](../ARCHITECTURE.md#tool-catalog-parity-toolregistry-vs-tool_manifest).
 
+<a id="native-tool-round-replay"></a>
+
 ## Native Tool-Round Replay {#native-tool-round-replay}
 
 A provider response that carries tool calls replays as one round. Code that builds or reads a round follows these
@@ -637,6 +679,8 @@ rules.
 
 Tests: `packages/execution/tests/planning_tool_loop_test.ts` and
 `packages/ai-google/tests/google_provider_tools_request_test.ts`.
+
+<a id="fs-watching"></a>
 
 ## Filesystem Watching {#fs-watching}
 
@@ -654,6 +698,8 @@ daemon.
     throws when it runs a second time, such as a state-machine `resume()`;
   - catch errors so that the failure of one event cannot leave the loop.
 
+<a id="skill-folders"></a>
+
 ## Skill Folders {#skill-folders}
 
 - A skill is a folder `<name>/SKILL.md` with an optional `exaix.yaml` sidecar and a `references/` folder. Read
@@ -666,10 +712,14 @@ daemon.
   reviewed revision, and a content update returns the skill to draft.
 - Never write skill bodies or host paths into events or CLI errors. Use typed reasons.
 
+<a id="module-structure"></a>
+
 ## Module Structure {#module-structure}
 
 Every module follows the order of the [generic guide](../unslop-ts/docs/style_guide.md#module-order): header
 comment, imports, exported types, then code.
+
+<a id="barrel-only-reexports"></a>
 
 ### Re-export placement {#barrel-only-reexports}
 
@@ -690,6 +740,8 @@ Test files and helpers are exempt, because compatibility shims under `tests/` in
 test support. When a symbol belongs to a lower layer, import it from that layer and re-export it from
 the package barrel instead of the module that happens to declare it.
 
+<a id="prefer-named-imports"></a>
+
 ### Named imports {#prefer-named-imports}
 
 Import a symbol by name when a module consumes it. A namespace import (`import * as ns from "…"`)
@@ -706,6 +758,8 @@ The engine rule `prefer-named-imports` ships in unslop-ts as an opt-in rule; a p
 whole-object, and member-free uses, so a facade that forwards the namespace stays valid. Keep such a
 facade intentional and mark it with `// unslop-ignore-next-line prefer-named-imports` above the
 import. Test files and helpers follow the same rule.
+
+<a id="unused-exports-parity"></a>
 
 ### Fallow-aligned audit {#unused-exports-parity}
 
@@ -737,6 +791,8 @@ reported surface is cleaned. `check:unused-exports:parity` is the relaxed local 
 prints the diff against fallow. `configurable(…)` registrations and `__test_*` hooks stay exempt, and an intentional value
 export carries `// unslop-ignore-next-line unused-export` above the declaration.
 
+<a id="unused-files-manifest"></a>
+
 ### Manifest-based unused files {#unused-files-manifest}
 
 `deno task check:unused-files` starts the unused-file walk at the entry points of every `deno.json` and
@@ -746,6 +802,8 @@ a `mod.ts` barrel, and a file in a `tests` folder are not entries by name, so a 
 that runs a file outside the manifests, `referenceGlobs` for scenario YAML and workflow files that name a script, and
 `walkSkipPatterns` for generated and fixture trees. `check:unused-files:fail` fails on any finding and runs in CI.
 Rename a test that `deno test` does not discover (`foo_test.ts`) or delete the file.
+
+<a id="module-headers"></a>
 
 ### Module headers {#module-headers}
 
@@ -772,6 +830,8 @@ repository instead. In a package module, an entry must also not name a retired r
 | `module-header-tag`              | A non-test file whose header lacks `@module`, `@path`, or `@description` in the first 15 lines |
 | `package-related-files-boundary` | A package header that names a retired root path in `@related-files`                            |
 | `exaix/require-module-header`    | A file that does not start with a header comment                                               |
+
+<a id="jsdoc-header-tags"></a>
 
 ### JSDoc header tag `@visible` {#jsdoc-header-tags}
 
@@ -815,6 +875,8 @@ export class ReviewRegistry {}
 `scripts/validate_architecture.ts` reads the `@ungrounded` tag the same way: a plain regular expression over the
 comment text. The skills `.copilot/skills/clean-codebase/SKILL.md`, `.copilot/skills/edition-development/SKILL.md`,
 and `.copilot/skills/review-code/SKILL.md` describe that tag.
+
+<a id="log-method-family"></a>
 
 ## Event Logging Decorators {#log-method-family}
 
@@ -867,6 +929,8 @@ decorators and the `action` option is a literal `DomainEventType.X`. This is the
 `.info()`, `.warn()`, or `.error()` call in the method body, or in a private helper of the same class whose action
 parameter is typed `TDomainEventType`, one level deep.
 
+<a id="utility-scripts"></a>
+
 ## Utility Scripting & Headers {#utility-scripts}
 
 - **Use Deno TypeScript** for repository maintenance, automation, and CI scripts. Avoid Bash and standalone
@@ -895,6 +959,8 @@ parameter is typed `TDomainEventType`, one level deep.
  */
 ```
 
+<a id="comment-discipline"></a>
+
 ## Comment Discipline {#comment-discipline}
 
 The rules are in the [generic guide](../unslop-ts/docs/style_guide.md#comment-discipline), with the Exaix
@@ -912,6 +978,8 @@ comments after the module header.
 `exaix/decorative-comment` and `exaix/ephemeral-filename` are errors. `exaix/long-comment` and
 `exaix/ephemeral-comment` are opt-in while existing findings remain. Select them with `EXAIX_LINT_RULES` to see
 the findings. The rules read TypeScript only, so they do not check a YAML, TOML, or JSONC comment.
+
+<a id="lint-policy"></a>
 
 ## Lint Policy {#lint-policy}
 

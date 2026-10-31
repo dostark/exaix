@@ -5,6 +5,8 @@
  * @architectural-layer AI
  * @related-files [packages/ai/src/provider_registry.ts]
  */
+import type { Opt, Reason } from "@exaix/core/types";
+
 import type { IModelOptions, IModelProvider, IResolvedProviderOptions } from "../types.ts";
 import type { IGenerateResult } from "./common.ts";
 import type { IProviderFactory } from "../factories/abstract_provider_factory.ts";
@@ -16,7 +18,7 @@ export class LazyProvider implements IModelProvider {
   constructor(
     private factory: IProviderFactory,
     private options: IResolvedProviderOptions,
-    id?: string,
+    id?: Opt<string, Reason.SensibleDefault>,
   ) {
     this.id = id ?? options.id ?? `${options.provider}-${options.model}`;
   }
@@ -34,7 +36,7 @@ export class LazyProvider implements IModelProvider {
   /**
    * Delegate generate call to the lazily created instance
    */
-  async generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
+  async generate(prompt: string, options?: Opt<IModelOptions, Reason.ExecutionConfig>): Promise<IGenerateResult> {
     const provider = await this.getInstance();
     return provider.generate(prompt, options);
   }

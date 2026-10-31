@@ -16,16 +16,23 @@ import type { IRequestEntry, IRequestMetadata, IRequestOptions, IRequestShowResu
 import type { Opt, Reason } from "@exaix/core/types";
 
 interface IRequestCommandService {
-  create(description: string, options?: IRequestOptions, source?: RequestSource): Promise<IRequestMetadata>;
-  list(status?: RequestStatusType, includeArchived?: boolean): Promise<IRequestEntry[]>;
+  create(
+    description: string,
+    options?: Opt<IRequestOptions, Reason.OptionalInput>,
+    source?: Opt<RequestSource, Reason.OptionalContext>,
+  ): Promise<IRequestMetadata>;
+  list(
+    status?: Opt<RequestStatusType, Reason.QueryFilter>,
+    includeArchived?: Opt<boolean, Reason.QueryFilter>,
+  ): Promise<IRequestEntry[]>;
   show(idOrFilename: string): Promise<IRequestShowResult>;
   getRequestContent(requestId: string): Promise<string>;
   updateRequestStatus?(requestId: string, status: RequestStatusType): Promise<boolean>;
   getAnalysis?(requestId: string): Promise<IRequestAnalysis | null>;
   analyze(
     requestId: string,
-    options?: { mode?: AnalysisMode; force?: boolean } | AnalysisMode,
-    force?: boolean,
+    options?: Opt<{ mode?: AnalysisMode; force?: boolean } | AnalysisMode, Reason.ExecutionConfig>,
+    force?: Opt<boolean, Reason.ExecutionConfig>,
   ): Promise<IRequestAnalysis>;
 }
 
@@ -34,8 +41,8 @@ export class RequestAdapter implements IRequestService {
 
   async create(
     description: string,
-    options?: IRequestOptions,
-    source?: RequestSource,
+    options?: Opt<IRequestOptions, Reason.OptionalInput>,
+    source?: Opt<RequestSource, Reason.OptionalContext>,
   ): Promise<IRequestMetadata> {
     return await this.service.create(description, options, source);
   }
@@ -48,15 +55,15 @@ export class RequestAdapter implements IRequestService {
   }
 
   async list(
-    status?: RequestStatusType,
-    includeArchived?: boolean,
+    status?: Opt<RequestStatusType, Reason.QueryFilter>,
+    includeArchived?: Opt<boolean, Reason.QueryFilter>,
   ): Promise<IRequestEntry[]> {
     return await this.service.list(status, includeArchived);
   }
 
   async listRequests(
     status?: Opt<RequestStatusType, Reason.QueryFilter>,
-    includeArchived?: boolean,
+    includeArchived?: Opt<boolean, Reason.QueryFilter>,
   ): Promise<IRequestEntry[]> {
     return await this.list(status, includeArchived);
   }
@@ -87,7 +94,7 @@ export class RequestAdapter implements IRequestService {
 
   async analyze(
     requestId: string,
-    options?: { mode?: AnalysisMode; force?: boolean },
+    options?: Opt<{ mode?: AnalysisMode; force?: boolean }, Reason.ExecutionConfig>,
   ): Promise<IRequestAnalysis> {
     return await this.service.analyze(requestId, options);
   }

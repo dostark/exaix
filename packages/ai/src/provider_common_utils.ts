@@ -618,15 +618,27 @@ export function createOpenAIChatCompletionsRequestInit(
   // exactly "none"; force it whenever tools are present so native tool-calling
   // functions on this model family, overriding any caller-preferred effort tier.
   const reasoningEffort = openAiReasoningEffortFor(reasoningModel, options);
+  return createOpenAiPostRequest(
+    apiKey,
+    openAiChatBodyOf(model, prompt, options, reasoningModel, reasoningEffort),
+    options?.requestSignal,
+  );
+}
+
+/** Builds the shared JSON POST transport for both OpenAI wire protocols. */
+export function createOpenAiPostRequest(
+  apiKey: Opt<string, Reason.OptionalInput>,
+  body: string,
+  signal: Opt<AbortSignal, Reason.CancellationOptional>,
+): RequestInit {
   return {
     method: "POST",
-    ...(options?.requestSignal ? { signal: options.requestSignal } : {}),
+    ...(signal ? { signal } : {}),
     headers: {
       "Content-Type": "application/json",
-      // An absent or empty key means the endpoint needs no credential, so send no header.
       ...(apiKey ? { "Authorization": `Bearer ${apiKey}` } : {}),
     },
-    body: openAiChatBodyOf(model, prompt, options, reasoningModel, reasoningEffort),
+    body,
   };
 }
 

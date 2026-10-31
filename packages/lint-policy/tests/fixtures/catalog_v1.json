@@ -45,6 +45,10 @@
     ],
     "layerLeakExempt": [
       {
+        "path": "packages/execution/src/execution_loop.ts",
+        "reason": "Builds the verification path resolver with each execution logger; a boot-time instance would lose the per-execution journal context."
+      },
+      {
         "path": "packages/execution/src/git_audit_service.ts",
         "reason": "Known bridge file exempt from layer-leak checks."
       },
@@ -74,6 +78,10 @@
     {
       "glob": "**/unslop-ts/**",
       "reason": "Engine repository, linted by its own CI."
+    },
+    {
+      "glob": "**/lint/unslop/unslop_engine.js",
+      "reason": "Generated engine bundle; the source is measured by the engine repository."
     },
     {
       "glob": "**/.git/**",
@@ -125,7 +133,9 @@
       ],
       "skipSegments": [
         "/scripts/",
-        "/tests/fixtures/"
+        "/tests/fixtures/",
+        "/unslop-ts/",
+        "/exaix-dev-docs/"
       ],
       "walkSkipSegments": [
         "/.copilot/",

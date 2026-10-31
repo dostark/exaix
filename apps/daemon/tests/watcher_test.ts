@@ -20,6 +20,7 @@ import { delay } from "@exaix/core/func";
 
 const EVENT_LOOP_RESPONSIVENESS_CHECKS = 20;
 const EVENT_LOOP_RESPONSIVE_THRESHOLD_MS = 25;
+const WATCHER_READY_TIMEOUT_MS = 5000;
 
 /** Tests for the file watcher's stable-read handling: debounced rapid rewrites,
  *  chunked large writes, and graceful handling of a file deleted mid-watch. */
@@ -529,14 +530,25 @@ Deno.test("FileWatcher: handles onFileReady callback errors gracefully", async (
 
 Deno.test("FileWatcher: logs activity with database", async () => {
   const { helper, cleanup } = await createWatcherTestContext("watcher-db-logging-");
+  const database = await initTestDbService();
   try {
     await helper.createWorkspaceStructure();
 
-    const { db } = await initTestDbService();
-    const watcher = helper.createWatcher(() => {}, { db });
+    const { db } = database;
+    const ready = Promise.withResolvers<void>();
+    const watcher = helper.createWatcher(() => ready.resolve(), { db });
 
     await helper.startWatcher(watcher);
     await helper.writeFile("logged.md", "content");
+    const timeout = setTimeout(
+      () => ready.reject(new Error("watcher did not process logged.md")),
+      WATCHER_READY_TIMEOUT_MS,
+    );
+    try {
+      await ready.promise;
+    } finally {
+      clearTimeout(timeout);
+    }
     await helper.stopWatcher(watcher);
     await db.waitForFlush();
 
@@ -549,11 +561,31 @@ Deno.test("FileWatcher: logs activity with database", async () => {
       watcherActivities.length >= 3,
       `Expected at least 3 watcher activities, got ${watcherActivities.length}`,
     );
-
-    await db.close();
   } finally {
+    await database.cleanup();
     await cleanup();
   }
+});
+
+Deno.test("fix(watcher-test): stopping waits for asynchronous shutdown", async () => {
+  const { helper, cleanup } = await createWatcherTestContext("watcher-stop-await-");
+  const shutdown = Promise.withResolvers<void>();
+  const watcher = helper.createWatcher(() => {});
+  watcher.stop = () => shutdown.promise;
+  let stopped = false;
+  const stopping = helper.stopWatcher(watcher).then(() => {
+    stopped = true;
+  });
+  try {
+    await Promise.resolve();
+    await Promise.resolve();
+    assertEquals(stopped, false, "shutdown must finish before the helper returns");
+  } finally {
+    shutdown.resolve();
+    await stopping;
+    await cleanup();
+  }
+  assertEquals(stopped, true);
 });
 
 Deno.test("FileWatcher: handles file read errors during processing", async () => {

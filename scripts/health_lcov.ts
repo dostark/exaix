@@ -14,7 +14,6 @@ import { fromFileUrl, join } from "@std/path";
 
 const ROOT = fromFileUrl(new URL("../", import.meta.url));
 const LCOV_PATH = join(ROOT, "coverage", "lcov.info");
-const SCRATCH_ROOT = join(ROOT, "..", "exaix-sandboxes");
 const LCOV_INCLUDE = "^file://.*/(src|packages)/";
 const LCOV_EXCLUDE = "test\\.(ts|js)$";
 
@@ -42,8 +41,7 @@ async function runHealthLcov(testPaths: readonly string[]): Promise<number> {
   } catch (error) {
     if (!(error instanceof Deno.errors.NotFound)) throw error;
   }
-  await Deno.mkdir(SCRATCH_ROOT, { recursive: true });
-  const raw = await Deno.makeTempDir({ dir: SCRATCH_ROOT, prefix: "health-lcov-" });
+  const raw = await Deno.makeTempDir({ prefix: "health-lcov-" });
   try {
     const tested = await run(["test", "--allow-all", "--reporter=dot", `--coverage=${raw}`, ...testPaths], {
       CI: "true",

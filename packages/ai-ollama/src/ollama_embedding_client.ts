@@ -6,6 +6,7 @@
  * @ungrounded
  * @related-files [packages/ai-ollama/src/ollama_embedding_client.ts]
  */
+import type { Opt, Reason } from "@exaix/core/types";
 
 import { DEFAULT_OLLAMA_BASE_URL, DEFAULT_OLLAMA_EMBED_CHUNK_SIZE, DEFAULT_OLLAMA_TIMEOUT_MS } from "./constants.ts";
 import { EmbeddingError } from "@exaix/ai/embeddings/embedding_errors.ts";
@@ -51,7 +52,7 @@ export class OllamaEmbeddingClient implements IEmbeddingProvider {
   private readonly chunkSize: number;
   private readonly timeoutMs: number;
 
-  constructor(config?: IOllamaEmbeddingConfig) {
+  constructor(config?: Opt<IOllamaEmbeddingConfig, Reason.FactoryPreset>) {
     const rawUrl = config?.baseUrl ?? DEFAULT_OLLAMA_BASE_URL;
     const parsed = new URL(rawUrl);
     const hostname = parsed.hostname.replace(/^\[|\]$/g, "");

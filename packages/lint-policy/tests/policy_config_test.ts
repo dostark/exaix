@@ -7,7 +7,8 @@
  * @related-files [packages/lint-policy/unslop.project.ts, packages/lint-policy/src/script_rules.ts]
  */
 
-import { assert, assertEquals, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
+import { fromFileUrl, join } from "@std/path";
 import {
   compileConfig,
   ConfigError,
@@ -42,6 +43,40 @@ const SCRIPT_IDS = [
   "concrete-cross-domain",
   "layer-constant-leak",
 ] as const;
+
+Deno.test("fix(optional-params): Exaix wrappers apply to product source without leaking into independent repositories", async () => {
+  const root = fromFileUrl(new URL("../../../", import.meta.url));
+  const scratch = await Deno.makeTempDir({ prefix: "optional_scope_" });
+  try {
+    for (const dir of ["packages", "unslop-ts", "exaix-dev-docs"]) {
+      await Deno.mkdir(join(scratch, dir));
+      await Deno.writeTextFile(
+        join(scratch, dir, "fixture.ts"),
+        "export function sample(value?: string) { return value; }\n",
+      );
+    }
+    const result = await new Deno.Command("deno", {
+      args: [
+        "run",
+        "-A",
+        `--config=${join(root, "deno.json")}`,
+        join(root, "unslop-ts/src/cli/whole_tree.ts"),
+        `--descriptor=${join(root, "packages/lint-policy/unslop.project.ts")}`,
+        "--rule=optional-params",
+      ],
+      cwd: scratch,
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    const output = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
+    assertEquals(result.code, 0, output);
+    assertStringIncludes(output, "packages/fixture.ts");
+    assert(!output.includes("unslop-ts/fixture.ts"), output);
+    assert(!output.includes("exaix-dev-docs/fixture.ts"), output);
+  } finally {
+    await Deno.remove(scratch, { recursive: true });
+  }
+});
 
 const HOST_TASKS: Readonly<Record<string, string>> = {
   "duplicate-type": "check:style",

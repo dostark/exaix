@@ -5,6 +5,8 @@
  * @architectural-layer Services
  * @related-files ["packages/request/src/processor.ts", "packages/core/src/status/request_status.ts"]
  */
+import type { Opt, Reason } from "@exaix/core/types";
+
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { RequestStatusType } from "@exaix/core/status";
@@ -19,8 +21,8 @@ export class StatusManager {
   async updateStatus(
     filePath: string,
     newStatus: RequestStatusType,
-    errorMessage?: string,
-    extraFields?: Record<string, string>,
+    errorMessage?: Opt<string, Reason.OptionalContext>,
+    extraFields?: Opt<Record<string, string>, Reason.OptionalInput>,
   ): Promise<void> {
     try {
       const originalContent = await Deno.readTextFile(filePath);

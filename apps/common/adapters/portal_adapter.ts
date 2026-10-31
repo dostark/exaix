@@ -6,6 +6,7 @@
  * @ungrounded
  * @related-files [apps/exactl/src/commands/portal_commands.ts, "packages/core/src/types/i_portal_service.ts"]
  */
+import type { Opt, Reason } from "@exaix/core/types";
 
 import type { PortalService } from "@exaix/portal";
 import type { IPortalService } from "@exaix/core/types";
@@ -19,7 +20,7 @@ export class PortalAdapter implements IPortalService {
   async add(
     targetPath: string,
     alias: string,
-    options?: { defaultBranch?: string; executionStrategy?: PortalExecutionStrategy },
+    options?: Opt<{ defaultBranch?: string; executionStrategy?: PortalExecutionStrategy }, Reason.ExecutionConfig>,
   ): Promise<void> {
     await this.service.add(targetPath, alias, options);
   }
@@ -40,11 +41,11 @@ export class PortalAdapter implements IPortalService {
     return await this.show(alias);
   }
 
-  async remove(alias: string, options?: { keepCard?: boolean }): Promise<void> {
+  async remove(alias: string, options?: Opt<{ keepCard?: boolean }, Reason.ExecutionConfig>): Promise<void> {
     await this.service.remove(alias, options);
   }
 
-  async removePortal(alias: string, options?: { keepCard?: boolean }): Promise<boolean> {
+  async removePortal(alias: string, options?: Opt<{ keepCard?: boolean }, Reason.ExecutionConfig>): Promise<boolean> {
     try {
       await this.remove(alias, options);
       return true;
@@ -53,7 +54,7 @@ export class PortalAdapter implements IPortalService {
     }
   }
 
-  async verify(alias?: string): Promise<IVerificationResult[]> {
+  async verify(alias?: Opt<string, Reason.QueryFilter>): Promise<IVerificationResult[]> {
     return await this.service.verify(alias);
   }
 
@@ -99,7 +100,7 @@ export class PortalAdapter implements IPortalService {
 
   async analyze(
     alias: string,
-    options?: { mode?: PortalAnalysisMode; force?: boolean },
+    options?: Opt<{ mode?: PortalAnalysisMode; force?: boolean }, Reason.ExecutionConfig>,
   ): Promise<string> {
     return await this.service.analyze(alias, options);
   }

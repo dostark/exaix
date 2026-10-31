@@ -68,7 +68,7 @@ export class WatcherTestHelper {
    */
   async stopWatcher(watcher: FileWatcher = this.watcher!): Promise<void> {
     if (!watcher) return;
-    watcher.stop();
+    await watcher.stop();
     await this.watcherPromise?.catch(() => {}); // Ignore abort error
   }
 

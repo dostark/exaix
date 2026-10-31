@@ -5,6 +5,7 @@
  * @architectural-layer Config
  * @related-files []
  */
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Safe environment getter that returns undefined when env access is not permitted
@@ -20,7 +21,7 @@ function safeEnvGet(key: string): string | undefined {
 /**
  * Helper to check if a value represents a truthy boolean
  */
-function isTruthyValue(value: string | undefined): boolean {
+function isTruthyValue(value: Opt<string, Reason.CoercionDefault>): boolean {
   if (!value) return false;
   const normalized = value.toLowerCase().trim();
   return normalized !== "0" && normalized !== "false" && normalized !== "no" && normalized !== "off";

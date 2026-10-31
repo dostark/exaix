@@ -199,10 +199,10 @@ Deno.test("ensureDevTestImage is a no-op when the docker binary is absent", asyn
   assertEquals(probed, false);
 });
 
-Deno.test("dev-test stage inherits builder and adds git without reinstalling the delegate CLIs", () => {
+Deno.test("dev-test stage inherits the shared toolchain without installing delegate CLIs", () => {
   const stage = devTestStage(DOCKERFILE);
-  assert(stage.startsWith("FROM builder AS dev-test"), stage);
-  assert(stage.includes("git"), "the dev-test stage installs git");
+  assert(stage.startsWith("FROM toolchain AS dev-test"), stage);
+  assert(dockerStage(DOCKERFILE, "toolchain").includes("git"), "the shared toolchain installs git");
   assert(!stage.includes("npm install -g"), "the dev-test stage must not reinstall the delegate CLIs");
 });
 
@@ -278,8 +278,43 @@ Deno.test("the builder stage persists its deno module cache in a BuildKit cache 
   assert(stage.includes("--mount=type=cache"), "builder mounts a persistent cache for deno");
 });
 
+Deno.test("fix(dev-test): source edits keep system packages and daemon warming out of the worker build path", () => {
+  const toolchain = dockerStage(DOCKERFILE, "toolchain");
+  const builder = dockerStage(DOCKERFILE, "builder");
+  const worker = devTestStage(DOCKERFILE);
+  assert(builder.startsWith("FROM toolchain AS builder"), "daemon builder inherits the shared toolchain");
+  assert(worker.startsWith("FROM toolchain AS dev-test"), "worker does not inherit source-dependent daemon layers");
+  assert(toolchain.includes("git") && toolchain.includes("procps"), "system packages precede source copies");
+  assertFalse(worker.includes("apt-get"), "source-dependent worker stage does not reinstall apt packages");
+  assert(worker.includes("COPY packages/ packages/"), "worker copies source to warm the offline test graph");
+  assert(worker.includes("--mount=type=cache,target=/cache/deno,sharing=locked"), "test graph uses a persistent cache");
+  assert(worker.includes("DENO_DIR=/cache/deno deno cache"), "test graph resolves through that cache");
+  assert(worker.includes("cp -a /cache/deno/. /deno-dir/"), "worker keeps the warmed graph for offline runs");
+});
+
+Deno.test("fix(dev-test): source edits do not rerun SQLite and esbuild downloads", () => {
+  const toolchain = dockerStage(DOCKERFILE, "toolchain");
+  const builder = dockerStage(DOCKERFILE, "builder");
+  const worker = devTestStage(DOCKERFILE);
+  assert(toolchain.includes("/tmp/warm_sqlite.ts"), "SQLite is warmed before source copies");
+  assert(toolchain.includes("/tmp/bundle_probe.ts"), "esbuild is warmed before source copies");
+  assertFalse(toolchain.includes("COPY packages/"), "the toolchain stays independent of source files");
+  assertFalse(builder.includes("/tmp/warm_sqlite.ts"), "the daemon builder reuses the SQLite warmup");
+  assertFalse(worker.includes("/tmp/warm_sqlite.ts"), "the worker reuses the SQLite warmup");
+  assertFalse(worker.includes("/tmp/bundle_probe.ts"), "the worker reuses the esbuild warmup");
+});
+
+Deno.test("fix(dev-test): offline workers inherit the pinned health duplication package", async () => {
+  const config = JSON.parse(await Deno.readTextFile(new URL("../../deno.json", import.meta.url))) as {
+    tasks: Record<string, string>;
+  };
+  const pinnedPackage = config.tasks.health.match(/npm:jscpd@[\d.]+/)?.[0];
+  assert(pinnedPackage, "the health task pins its duplication package");
+  assert(dockerStage(DOCKERFILE, "toolchain").includes(pinnedPackage), "warm the same package before source copies");
+});
+
 Deno.test("the dev-test stage installs procps so pkill is available to the driver", () => {
-  assert(devTestStage(DOCKERFILE).includes("procps"), "dev-test installs procps");
+  assert(dockerStage(DOCKERFILE, "toolchain").includes("procps"), "the shared toolchain installs procps");
 });
 
 Deno.test("the dev-test stage makes /deno-dir writable for an arbitrary uid", () => {
@@ -293,6 +328,67 @@ Deno.test("the dev-test stage copies scripts/ and caches the driver entrypoint, 
   const stage = devTestStage(DOCKERFILE);
   assert(stage.includes("COPY scripts/ scripts/"), "dev-test copies scripts/");
   assert(stage.includes("scripts/test_container_driver.ts"), "dev-test caches the driver entrypoint");
+});
+
+Deno.test({
+  name: "fix(dev-test): the mounted worker executes a policy test without network",
+  ignore: !(await dockerDaemonReachable()) || !(await new Deno.Command("docker", {
+    args: ["image", "inspect", DEFAULT_TEST_CONTAINER_IMAGE],
+    stdout: "null",
+    stderr: "null",
+  }).output()).success,
+  fn: async () => {
+    const lock = await new Deno.Command("docker", {
+      args: [
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--entrypoint",
+        "/bin/cat",
+        DEFAULT_TEST_CONTAINER_IMAGE,
+        "/app/deno.lock",
+      ],
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    assertEquals(lock.code, 0, new TextDecoder().decode(lock.stderr));
+    assertEquals(
+      new TextDecoder().decode(lock.stdout),
+      await Deno.readTextFile(new URL("../../deno.lock", import.meta.url)),
+      "image warm-up must preserve the checkout lockfile",
+    );
+    const timeoutMs = 30_000;
+    const file = "packages/lint-policy/tests/policy_config_test.ts";
+    const worker = startWorkerContainer({
+      repoRoot: fromFileUrl(new URL("../../", import.meta.url)),
+      image: DEFAULT_TEST_CONTAINER_IMAGE,
+      workerName: `exaix-cache-smoke-${crypto.randomUUID()}`,
+      network: "none",
+      env: { CI: "true" },
+      pidsLimit: DEFAULT_TEST_CONTAINER_PIDS_LIMIT,
+      memory: DEFAULT_TEST_CONTAINER_MEMORY,
+      cpus: DEFAULT_TEST_CONTAINER_CPUS,
+      watchdogMs: timeoutMs,
+    });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await worker.send(file);
+      const result = await Promise.race([
+        worker.next(),
+        new Promise<never>((_resolve, reject) => {
+          timer = setTimeout(() => reject(new Error("offline worker startup timed out")), timeoutMs);
+        }),
+      ]);
+      assert(result, "the offline driver must start and return a test result");
+      assertEquals(result.testFile, file);
+      assertEquals(result.exitCode, 0, result.failureDetail ?? "");
+      assert(result.passed > 0);
+    } finally {
+      clearTimeout(timer);
+      await worker.kill();
+    }
+  },
 });
 
 Deno.test("the build context un-excludes tests/ for the dev-test image", () => {
@@ -458,6 +554,13 @@ Deno.test("runBatch2InContainers skips network-flagged entries", async () => {
   const entries: IContainerTestEntry[] = [{ file: "a_test.ts" }, { file: "live_test.ts", network: true }];
   const results = await runBatch2InContainers(entries, options);
   assertEquals(results.map((r) => r.testFile), ["a_test.ts"]);
+});
+
+Deno.test("fix(test-isolation): host-memory tests stay out of bounded workers", async () => {
+  const options = baseRunOptions(() => makeFakeWorker("w", (file) => resultFor(file)));
+  const entries = [{ file: "a_test.ts" }, { file: "health_test.ts", host: true }];
+  const results = await runBatch2InContainers(entries, options);
+  assertEquals(results.map((result) => result.testFile), ["a_test.ts"]);
 });
 
 Deno.test("runBatch2InContainers requeues an in-flight file when a worker exits, then terminates", async () => {
@@ -642,12 +745,20 @@ Deno.test("shared-path entries are exclusive so a shared-path writer never overl
   );
   assertEquals(sharedPathPool.map((test) => test.file), [
     "tests/integration/agent/mcp_handshake_test.ts",
+    "tests/scripts/health_lcov_task_test.ts",
     "packages/lint-policy/tests/unslop_cli_integration_test.ts",
     "packages/lint-policy/tests/lint_policy_move_equivalence_test.ts",
   ]);
   for (const test of sharedPathPool) {
     assertEquals(test.exclusive, true, `${test.file} must be exclusive`);
   }
+});
+
+Deno.test("fix(test-isolation): health LCOV runs exclusively because it replaces shared coverage", () => {
+  const entry = SEQUENTIAL_TESTS.find((test) => test.file === "tests/scripts/health_lcov_task_test.ts");
+  assert(entry);
+  assertEquals(entry.exclusive, true);
+  assert(entry.reasons.includes("shared-path"));
 });
 
 Deno.test("a worker running several files under the per-file timeout is not killed by the inactivity watchdog", async () => {
@@ -780,11 +891,12 @@ Deno.test("isContainerModeEnabled is true only for an explicit EXA_TEST_CONTAINE
 
 // --- Batch-2 migration and parity ---
 
-Deno.test("runBatch2InContainers never drops a non-network Batch-2 file (no silent downgrade)", async () => {
+Deno.test("runBatch2InContainers never drops a worker-eligible Batch-2 file", async () => {
   const entries: IContainerTestEntry[] = SEQUENTIAL_TESTS.map((test) => ({
     file: test.file,
     serializedOutput: test.serializedOutput,
     network: test.network,
+    host: test.host,
   }));
   const dispatched: string[] = [];
   const options = baseRunOptions(() =>
@@ -794,7 +906,7 @@ Deno.test("runBatch2InContainers never drops a non-network Batch-2 file (no sile
     })
   );
   const results = await runBatch2InContainers(entries, options);
-  const expected = SEQUENTIAL_TESTS.filter((test) => !test.network).map((test) => test.file).sort();
+  const expected = SEQUENTIAL_TESTS.filter((test) => !test.network && !test.host).map((test) => test.file).sort();
   assertEquals(results.map((r) => r.testFile).sort(), expected);
   assertEquals(dispatched.sort(), expected);
 });

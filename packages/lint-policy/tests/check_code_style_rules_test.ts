@@ -137,6 +137,28 @@ Deno.test("layer-constant-leak: a constant imported from the shared foundation p
   assertEquals(findings.length, 0);
 });
 
+Deno.test("fix(style): imported error constructors used by instanceof are not constants", () => {
+  const source = "import { PathAccessError as Denied, PathTraversalError } from '@exaix/tool-runtime';\n" +
+    "export function classify(error: Error): boolean { return error instanceof Denied || error instanceof PathTraversalError; }\n";
+  const findings = checkSource(abs("packages/mcp/server/sample.ts"), source, catalog).filter((finding) =>
+    finding.rule === "layer-constant-leak"
+  );
+  assertEquals(findings, []);
+});
+
+Deno.test("fix(style): execution verification can build its logger-bound path resolver", () => {
+  const source = "import { PathResolver } from '@exaix/portal';\n" +
+    "export function create(config, logger) { return new PathResolver(config, { logger }); }\n";
+  const findings = checkSource(abs("packages/execution/src/execution_loop.ts"), source, catalog).filter((finding) =>
+    finding.rule === "concrete-cross-domain"
+  );
+  assertEquals(findings, []);
+  const ordinary = checkSource(abs("packages/flow/src/sample.ts"), source, catalog).filter((finding) =>
+    finding.rule === "concrete-cross-domain"
+  );
+  assertEquals(ordinary.length, 1);
+});
+
 // Whole-tree script rules have dedicated test files rather than a per-file case.
 const WHOLE_TREE_RULE_IDS = new Set(["duplicate-constant", "duplicate-type"]);
 

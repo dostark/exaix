@@ -6,6 +6,7 @@
  * @architectural-layer CLI
  * @related-files ["apps/tui/main.ts"]
  */
+import type { Opt, Reason } from "@exaix/core/types";
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { dirname, fromFileUrl, join } from "@std/path";
@@ -23,7 +24,7 @@ export class DashboardCommands extends BaseCommand {
 
   static create(
     context: ICommandContext,
-    deps?: { launchDashboard?: () => Promise<void> },
+    deps?: Opt<{ launchDashboard?: () => Promise<void> }, Reason.OptionalDependency>,
   ): DashboardCommands {
     const commands = new DashboardCommands(context);
     if (deps?.launchDashboard) {

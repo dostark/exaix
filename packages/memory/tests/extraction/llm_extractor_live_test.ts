@@ -145,7 +145,7 @@ function makeExecutionFixture(config: Config, store: ExecutionMemoryStore, trace
 
 Deno.test({
   name: `[live][phase-147] live LLM extraction quality vs heuristic baseline (${testProvider}:${testModel})`,
-  ignore: !llmKeyPresent(liveSpec),
+  ignore: Deno.env.get("CI") === "true" || !llmKeyPresent(liveSpec),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {

@@ -14,10 +14,19 @@ const SCRIPT = fromFileUrl(new URL("../../scripts/health_lcov.ts", import.meta.u
 const LCOV_PATH = join(ROOT, "coverage", "lcov.info");
 
 /** Runs the production LCOV workflow with one selected test path. */
-async function workflow(testPath: string): Promise<{ code: number; stdout: string; stderr: string }> {
+async function workflow(testPath: string, scratch: string): Promise<{ code: number; stdout: string; stderr: string }> {
   const result = await new Deno.Command("deno", {
-    args: ["run", "-A", SCRIPT, testPath],
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-env",
+      "--allow-run",
+      `--allow-write=${join(ROOT, "coverage")},${scratch}`,
+      SCRIPT,
+      testPath,
+    ],
     cwd: ROOT,
+    env: { TMPDIR: scratch },
     stdout: "piped",
     stderr: "piped",
   }).output();
@@ -38,12 +47,12 @@ Deno.test("fix(health-lcov): failed tests cannot leave a stale measured report",
     );
     await Deno.mkdir(join(ROOT, "coverage"), { recursive: true });
     await Deno.writeTextFile(LCOV_PATH, "stale coverage must be removed\n");
-    const failed = await workflow(failure);
+    const failed = await workflow(failure, scratch);
     assertEquals(failed.code, 1);
     assertStringIncludes(failed.stdout + failed.stderr, "intentional coverage failure");
     assertEquals(await Deno.stat(LCOV_PATH).then(() => true, () => false), false);
 
-    const passed = await workflow("packages/lint-policy/tests/policy_config_test.ts");
+    const passed = await workflow("packages/lint-policy/tests/policy_config_test.ts", scratch);
     assertEquals(passed.code, 0, passed.stderr.slice(-2000));
     assert(/coverage:?\s+lcov\s+[·(]\s*[1-9]\d* matched/i.test(passed.stdout), passed.stdout);
     assertStringIncludes(await Deno.readTextFile(LCOV_PATH), "SF:");

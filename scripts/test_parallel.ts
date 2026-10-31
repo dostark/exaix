@@ -121,6 +121,8 @@ export const SequentialTestSchema = z.object({
   /** true ⇒ the file runs alone, so a repo-shared writer never overlaps another file. */
   exclusive: z.boolean().default(false),
   network: z.boolean().default(false),
+  /** Whole-repository scans can exceed the bounded worker's memory. */
+  host: z.boolean().default(false),
 });
 
 type SequentialTest = z.input<typeof SequentialTestSchema>;
@@ -367,6 +369,13 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
   { file: "packages/ai/tests/providers/mock_strict_env_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "tests/scenario_framework/tests/unit/strict_scoped_per_step_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "packages/lint-policy/tests/shared_tree_parity_test.ts", reasons: [IsolationReason.pressure] },
+  // LCOV replaces the shared report and runs a whole-tree health scan.
+  {
+    file: "tests/scripts/health_lcov_task_test.ts",
+    reasons: [IsolationReason.sharedPath, IsolationReason.pressure],
+    exclusive: true,
+    host: true,
+  },
   // These rewrite unslop.config.json and run whole-tree tasks.
   // A neighbour can see a half-written config and fail.
   {
@@ -938,8 +947,8 @@ async function main(args: string[]): Promise<number> {
       const block = containerResultFailureBlock(result);
       if (block) allFailures.push(block);
     }
-    // Network-flagged files run host-serial so their counts still join the Containered Batch.
-    for (const entry of SEQUENTIAL_TESTS.filter((test) => test.network)) {
+    // Host-only files run serially and contribute to the same batch totals.
+    for (const entry of SEQUENTIAL_TESTS.filter((test) => test.network || test.host)) {
       const stats = await runAndCapture(
         [entry.file, ...forwardedArgs],
         `${CONTAINERED_BATCH_LABEL} – ${basename(entry.file)}`,

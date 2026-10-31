@@ -31,6 +31,10 @@
   ],
   "layerLeakExempt": [
     {
+      "path": "packages/execution/src/execution_loop.ts",
+      "reason": "Builds the verification path resolver with each execution logger; a boot-time instance would lose the per-execution journal context."
+    },
+    {
       "path": "packages/execution/src/git_audit_service.ts",
       "reason": "Known bridge file exempt from layer-leak checks."
     },

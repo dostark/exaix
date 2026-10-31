@@ -19,6 +19,10 @@
         "reason": "Engine repository, linted by its own CI."
       },
       {
+        "glob": "**/lint/unslop/unslop_engine.js",
+        "reason": "Generated engine bundle; the source is measured by the engine repository."
+      },
+      {
         "glob": "**/.git/**",
         "reason": "Version-control metadata."
       },
@@ -1781,7 +1785,9 @@
         ],
         "skipSegments": [
           "/scripts/",
-          "/tests/fixtures/"
+          "/tests/fixtures/",
+          "/unslop-ts/",
+          "/exaix-dev-docs/"
         ],
         "walkSkipSegments": [
           "/.copilot/",

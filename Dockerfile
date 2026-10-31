@@ -11,13 +11,13 @@
 # Run:     see compose.sandbox.yaml for the hardened runtime profile.
 
 # ---------------------------------------------------------------------------
-# Stage 1 — builder: vendor the module graph and warm the SQLite FFI native lib
+# Stage 1 — toolchain: install shared build tools and warm locked grammar packages
 # ---------------------------------------------------------------------------
 # The one Deno pin of every stage. Move it with `deno task deno:bump <x.y.z>`.
 # tests/scripts/deno_version_pin_test.ts rejects a stage that names a literal tag.
 ARG DENO_VERSION=2.9.8
 
-FROM denoland/deno:${DENO_VERSION} AS builder
+FROM denoland/deno:${DENO_VERSION} AS toolchain
 
 ENV DENO_DIR=/deno-dir
 WORKDIR /app
@@ -26,7 +26,7 @@ WORKDIR /app
 # artifacts at install time, and `deno bundle` needs the platform esbuild binary.
 # Installing it after the cache would make the cache step fail.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl nodejs npm build-essential python3 \
+  && apt-get install -y --no-install-recommends ca-certificates curl nodejs npm build-essential python3 git procps \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy the module-graph inputs first so dependency caching is its own layer.
@@ -34,16 +34,27 @@ COPY deno.json deno.lock ./
 COPY unslop.config.json layout.json ./
 
 # Warm the tree-sitter grammar tarballs before the source copy. They are only read as
-# WASM from the npm cache (the native install scripts are not allowed), and this layer
-# depends only on the lockfile, so a source change never refetches or rebuilds them.
+# WASM from the npm cache (the native install scripts are not allowed).
+# @db/sqlite fetches its native library on first open. `deno bundle` fetches the
+# platform esbuild binary. Warm these source-independent dependencies here too.
 RUN --mount=type=cache,target=/cache/deno,sharing=locked \
-    printf '{"nodeModulesDir":"none"}\n' > /tmp/grammar-cache.json \
-    && DENO_DIR=/cache/deno deno cache --config /tmp/grammar-cache.json \
+    cp deno.lock /tmp/toolchain-warm.lock \
+    && printf '{"nodeModulesDir":"none"}\n' > /tmp/grammar-cache.json \
+    && DENO_DIR=/cache/deno deno cache --no-lock --config /tmp/grammar-cache.json \
       npm:web-tree-sitter@0.26.12 npm:tree-sitter@0.25.0 npm:tree-sitter-python@0.25.0 \
       npm:tree-sitter-rust@0.24.0 npm:tree-sitter-go@0.25.0 npm:tree-sitter-java@0.23.5 \
-      npm:tree-sitter-javascript@0.25.0 \
+      npm:tree-sitter-javascript@0.25.0 npm:jscpd@5.4.2/package.json \
+    && printf 'import { Database } from "@db/sqlite";\nconst db = new Database(":memory:");\ndb.close();\n' > /tmp/warm_sqlite.ts \
+    && DENO_DIR=/cache/deno deno run --lock=/tmp/toolchain-warm.lock --config deno.json --allow-ffi --allow-read --allow-write --allow-env --allow-net /tmp/warm_sqlite.ts \
+    && printf 'export const probe = 1;\n' > /tmp/bundle_probe.ts \
+    && DENO_DIR=/cache/deno deno bundle --no-lock --config deno.json /tmp/bundle_probe.ts -o /tmp/bundle_probe.js \
     && cp -a /cache/deno/. /deno-dir/ \
-    && rm /tmp/grammar-cache.json
+    && rm -f /tmp/grammar-cache.json /tmp/toolchain-warm.lock /tmp/warm_sqlite.ts /tmp/bundle_probe.ts /tmp/bundle_probe.js
+
+# ---------------------------------------------------------------------------
+# Stage 2 — builder: vendor the daemon graph
+# ---------------------------------------------------------------------------
+FROM toolchain AS builder
 
 COPY packages/ packages/
 COPY apps/ apps/
@@ -55,17 +66,8 @@ COPY unslop-ts/ unslop-ts/
 # The module cache lives in a BuildKit cache mount, so a rebuild after a dependency
 # change reuses what was already downloaded. The copy bakes the modules into this layer.
 RUN --mount=type=cache,target=/cache/deno,sharing=locked \
-    DENO_DIR=/cache/deno deno cache --config deno.json apps/daemon/main.ts \
+    DENO_DIR=/cache/deno deno cache --frozen-lockfile --config deno.json apps/daemon/main.ts \
     && cp -a /cache/deno/. /deno-dir/
-
-# @db/sqlite loads a native library that @denosaurs/plug downloads at RUNTIME from
-# GitHub. Warm it here so the .so is baked into DENO_DIR and the runtime container
-# can run with restricted network egress (no GitHub access needed at start).
-RUN --mount=type=cache,target=/cache/deno,sharing=locked \
-    printf 'import { Database } from "@db/sqlite";\nconst db = new Database(":memory:");\ndb.close();\n' > /tmp/warm_sqlite.ts \
-    && DENO_DIR=/cache/deno deno run --config deno.json --allow-ffi --allow-read --allow-write --allow-env --allow-net /tmp/warm_sqlite.ts \
-    && cp -a /cache/deno/. /deno-dir/ \
-    && rm /tmp/warm_sqlite.ts
 
 # ---------------------------------------------------------------------------
 # Delegate CLIs: one stage per CLI, each installed into its own npm prefix at a pinned
@@ -88,7 +90,7 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
 
 # ---------------------------------------------------------------------------
 # Devcontainer: the builder toolchain plus the delegate CLIs from their own stages. The
-# test images build from `builder` and never copy these, so a CLI change cannot slow them.
+# test image builds from `toolchain` and never copies these, so a CLI change cannot slow it.
 # OpenRouter does not require a binary — it is configured via env vars only.
 # ---------------------------------------------------------------------------
 FROM builder AS devcontainer
@@ -175,18 +177,13 @@ WORKDIR /worktree
 
 # ---------------------------------------------------------------------------
 # Stage 4 — dev-test: the worker-container image for the Phase 207 Batch-2 pool.
-# It extends the warmed `builder` toolchain and adds git + procps and the test-graph
-# cache. The repo is bind-mounted read-write at run time; the copied tests/scripts
-# only warm DENO_DIR so the worker's `--network none` driver resolves offline.
+# It extends the source-independent toolchain and warms the test graph separately
+# from the daemon. The repo is bind-mounted read-write at run time; the copied
+# sources, tests, and scripts only warm DENO_DIR so the worker's `--network none`
+# driver resolves offline.
 # Build:   docker build --target dev-test -t exaix-dev-test:dev .
 # ---------------------------------------------------------------------------
-FROM builder AS dev-test
-
-# git is required by Batch-2 tests that run git; procps supplies pkill/ps for the
-# in-container driver's per-file reap. ca-certificates matches the builder stage.
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends git ca-certificates procps \
-  && rm -rf /var/lib/apt/lists/*
+FROM toolchain AS dev-test
 
 # The scenario runner and several daemon tests spawn `exactl` as a bare command from
 # PATH (the host has it from `deno install`). Install a shim that runs the bind-mounted
@@ -194,6 +191,10 @@ RUN apt-get update \
 RUN printf '#!/bin/sh\nexec deno run --allow-all --config /workspaces/exaix/deno.json /workspaces/exaix/apps/exactl/main.ts "$@"\n' > /usr/local/bin/exactl \
   && chmod 0755 /usr/local/bin/exactl
 
+COPY packages/ packages/
+COPY apps/ apps/
+COPY exaix-team/ exaix-team/
+COPY unslop-ts/ unslop-ts/
 COPY tests/ tests/
 COPY scripts/ scripts/
 COPY docs/CODE_STYLE.md docs/CODE_STYLE.md
@@ -202,18 +203,17 @@ COPY docs/CODE_STYLE.md docs/CODE_STYLE.md
 # worker resolves every module with `--network none`. Cache the entrypoint, not the
 # whole scripts/ tree: `deno task check` excludes scripts/, so a directory-wide cache
 # can fail on an unrelated script error. The computed `npm:tree-sitter-<lang>/…wasm`
-# specifiers are warmed by the builder's source-independent grammar layer.
+# specifiers are warmed by the toolchain's source-independent grammar layer.
 # Cache the engine entries and source, not `unslop-ts/`: its Bun/Node examples import
 # packages (for example `typescript-eslint`) that the parent import map does not define.
-RUN deno cache --config deno.json scripts/test_container_driver.ts tests/ packages/ apps/ exaix-team/ \
-  unslop-ts/deno.json unslop-ts/mod.ts unslop-ts/deno.ts unslop-ts/eslint.ts unslop-ts/src \
-  packages/core/tests/skills/skill_folder_performance_test.ts
-
-# `deno bundle` fetches the esbuild platform binary lazily. The portal policy installer runs
-# it in the network-isolated test container, so warm the exact dependency during the image build.
-RUN printf 'export const probe = 1;\n' > /tmp/bundle_probe.ts \
-  && deno bundle --config deno.json /tmp/bundle_probe.ts -o /tmp/bundle_probe.js \
-  && rm -f /tmp/bundle_probe.ts /tmp/bundle_probe.js
+# The source-independent toolchain already warmed SQLite and esbuild. Copy the
+# full test graph from the persistent cache for network-isolated workers.
+# Keep the same pinned versions as the bind-mounted checkout.
+RUN --mount=type=cache,target=/cache/deno,sharing=locked \
+    DENO_DIR=/cache/deno deno cache --frozen-lockfile --config deno.json scripts/test_container_driver.ts tests/ packages/ apps/ exaix-team/ \
+      unslop-ts/deno.json unslop-ts/mod.ts unslop-ts/deno.ts unslop-ts/eslint.ts unslop-ts/src \
+      packages/core/tests/skills/skill_folder_performance_test.ts \
+    && cp -a /cache/deno/. /deno-dir/
 
 # The worker runs as `--user <host-uid>:<host-gid>`; make the warmed cache writable by
 # any uid (the runtime stage pins a fixed uid; dev-test cannot).

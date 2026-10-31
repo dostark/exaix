@@ -6,6 +6,7 @@
  * @architectural-layer Services
  * @related-files [packages/core/src/types/tool_confirmation_interceptor.ts]
  */
+import type { Opt, Reason } from "@exaix/core/types";
 
 import { TextLineStream } from "@std/streams";
 import {
@@ -29,7 +30,7 @@ export class CliConfirmationInterceptor implements IToolConfirmationInterceptor 
   constructor(
     private readonly activityJournal: IActivityJournal,
     timeoutMs = DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S * 1000,
-    readerFn?: () => Promise<string | null>,
+    readerFn?: Opt<() => Promise<string | null>, Reason.OptionalDependency>,
   ) {
     this.timeoutMs = timeoutMs;
     this.readerFn = readerFn ?? defaultReaderFn;
