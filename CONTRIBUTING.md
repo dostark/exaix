@@ -134,6 +134,10 @@ host (or enable Docker-in-Docker first). Manual cutover verification is
 
 ### 2.4 Health report with measured coverage
 
+Coverage and LCOV measurement are manual-only. Local validation, commit/push hooks,
+and push/PR CI gates do not run them. The standard `scripts/ci.ts all` pipeline runs
+checks, tests, and builds. The coverage workflow supports manual dispatch only.
+
 `deno task health` reports CRAP with estimated coverage when no LCOV input is supplied.
 Run `deno task health:lcov <test-file-or-directory> [...]` to test the selected paths,
 generate a fresh `coverage/lcov.info`, and pass it to health. For example,
@@ -143,6 +147,9 @@ The task sets `CI=true`, so tests marked to skip in CI are skipped.
 The task removes any earlier LCOV file before testing and stops if tests or conversion fail.
 The report labels functions without matching LCOV samples as estimated. It marks coverage
 revision `unverified` because this workflow does not create a source-hash manifest.
+Run its integration test explicitly with
+`deno test --allow-all tests/scripts/health_lcov_task_test.ts -- --run-lcov-workflow`.
+The default test suite skips that test so it does not generate LCOV as a gate.
 
 ## 3. Migration Guide
 

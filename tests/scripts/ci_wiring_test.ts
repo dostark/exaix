@@ -1,22 +1,32 @@
 /**
  * @module CiWiringTest
  * @path tests/scripts/ci_wiring_test.ts
- * @description Asserts the unified CI pipeline (scripts/ci.ts) and the generated
- *   pre-commit hook (scripts/setup_hooks.ts) wire the two validity
- *   gates — check:skill-index and check:manifests — so an invalid skill folder
- *   or a manifest-less plan step fails CI.
+ * @description Checks shared CI and hook wiring, validity gates, and manual-only coverage policy.
  * @architectural-layer Test
- * @dependencies [@std/assert]
+ * @dependencies [@std/assert, @std/yaml, @exaix/core]
  * @related-files [scripts/ci.ts, scripts/setup_hooks.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";
+import { parse } from "@std/yaml";
+import type { JSONValue } from "@exaix/core/types";
 
 const CI_SOURCE = await Deno.readTextFile(new URL("../../scripts/ci.ts", import.meta.url));
 const HOOKS_SOURCE = await Deno.readTextFile(new URL("../../scripts/setup_hooks.ts", import.meta.url));
 const CODE_QUALITY_WORKFLOW = await Deno.readTextFile(
   new URL("../../.github/workflows/code-quality.yml", import.meta.url),
 );
+
+/** Runs the real CLI without executing its planned commands. */
+async function runCiDry(command: string, extraArgs: readonly string[] = []): Promise<string> {
+  const result = await new Deno.Command(Deno.execPath(), {
+    args: ["run", "-A", "scripts/ci.ts", command, "--dry-run", ...extraArgs],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(result.code, 0, new TextDecoder().decode(result.stderr));
+  return new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
+}
 
 Deno.test("[ci_wiring] scripts/ci.ts check action includes check:skill-index and no envelope gate", () => {
   assert(
@@ -117,7 +127,7 @@ Deno.test("[ci_wiring] checkCommand and allCommand's static-check phases share t
   };
   const checkTasks = extract(CI_SOURCE.slice(checkStart, checkEnd));
   const allTasks = extract(CI_SOURCE.slice(allStart, allEnd));
-  // allCommand's later Testing/Coverage/Build phases add more tasks (test:security, etc.) — fine.
+  // Later test and build phases add tasks beyond the static checks.
   // This only asserts its static-check gates are never a strict subset of checkCommand's.
   const onlyInCheck = [...checkTasks].filter((t) => !allTasks.has(t)).sort();
   assert(
@@ -154,10 +164,7 @@ Deno.test("[ci_wiring] the eval command names only packs that exist as scenario 
   assertEquals(packs.length, new Set(packs).size, "the eval pack list must not repeat a pack");
 });
 
-Deno.test("[ci_wiring] allCommand declares a --skip-tests flag to skip Testing and Coverage", () => {
-  // Testing chains the full suite, and Coverage re-runs it a second time with instrumentation
-  // on top of the real binary compile. Real CI never invokes `ci.ts all` directly, so this
-  // slow default is purely a local/manual-run cost.
+Deno.test("[ci_wiring] allCommand declares a --skip-tests flag to skip Testing", () => {
   const allStart = CI_SOURCE.indexOf("const allCommand");
   const allEnd = CI_SOURCE.indexOf("const fixCommand");
   const allBody = CI_SOURCE.slice(allStart, allEnd);
@@ -168,59 +175,109 @@ Deno.test("[ci_wiring] allCommand declares a --skip-tests flag to skip Testing a
   );
 });
 
-Deno.test("[ci_wiring] --skip-tests gates Phase 2 (Testing) and Phase 3 (Coverage), never Phase 1 or Phase 4", () => {
+Deno.test("[ci_wiring] --skip-tests gates Testing, never Static Checks or Build", () => {
   const allStart = CI_SOURCE.indexOf("const allCommand");
   const allEnd = CI_SOURCE.indexOf("const fixCommand");
   const allBody = CI_SOURCE.slice(allStart, allEnd);
 
   const phase1Idx = allBody.indexOf("Phase 1: Static Checks");
   const phase2Idx = allBody.indexOf("Phase 2: Testing");
-  const phase3Idx = allBody.indexOf("Phase 3: Coverage");
-  const phase4Idx = allBody.indexOf("Phase 4: Build");
+  const phase3Idx = allBody.indexOf("Phase 3: Build");
   assert(
-    phase1Idx >= 0 && phase2Idx > phase1Idx && phase3Idx > phase2Idx && phase4Idx > phase3Idx,
-    "expected all 4 phase banners present in allCommand, in order",
+    phase1Idx >= 0 && phase2Idx > phase1Idx && phase3Idx > phase2Idx,
+    "expected static checks, testing, and build in order",
   );
 
   // The guard must sit somewhere between the Static Checks banner finishing and the Build banner
   // starting (it legitimately precedes the Testing banner text itself, since the log line lives
   // inside the conditional's branches) but must NOT appear outside that range.
-  const skipGuardBetween1and4 = /skipTests/.test(allBody.slice(phase1Idx, phase4Idx));
+  const skipGuardBetween1and3 = /skipTests/.test(allBody.slice(phase1Idx, phase3Idx));
   const skipGuardBeforePhase1 = /skipTests/.test(allBody.slice(0, phase1Idx));
-  const skipGuardAfterPhase4Start = /skipTests/.test(allBody.slice(phase4Idx));
-  assert(skipGuardBetween1and4, "a skipTests check must gate Phase 2+3 (Testing/Coverage)");
+  const skipGuardAfterPhase3Start = /skipTests/.test(allBody.slice(phase3Idx));
+  assert(skipGuardBetween1and3, "a skipTests check must gate Testing");
   assert(!skipGuardBeforePhase1, "Phase 1 (Static Checks) must never be gated by --skip-tests");
-  assert(!skipGuardAfterPhase4Start, "Phase 4 (Build) must never be gated by --skip-tests");
+  assert(!skipGuardAfterPhase3Start, "Phase 3 (Build) must never be gated by --skip-tests");
 });
 
-Deno.test("[ci_wiring] real run: --skip-tests suppresses Testing/Coverage banners, default run keeps all 4 phases", async () => {
-  // --dry-run makes every phase (including Coverage/Build, which both check isDryRun) short-circuit
-  // near-instantly, so this exercises the REAL Cliffy flag-parsing/branching, not just source text,
-  // without paying for an actual full test run or binary compile.
-  const runDry = async (extraArgs: string[]) => {
-    const cmd = new Deno.Command(Deno.execPath(), {
-      args: ["run", "-A", "scripts/ci.ts", "all", "--dry-run", ...extraArgs],
-      stdout: "piped",
-      stderr: "piped",
-    });
-    const { stdout, stderr } = await cmd.output();
-    return new TextDecoder().decode(stdout) + new TextDecoder().decode(stderr);
-  };
-
-  const skipped = await runDry(["--skip-tests"]);
+Deno.test("fix(ci): standard all pipeline never runs coverage or LCOV", async () => {
+  const full = await runCiDry("all");
+  assert(!full.includes("Coverage Verification"), "coverage must require its explicit command");
+  const skipped = await runCiDry("all", ["--skip-tests"]);
   assert(skipped.includes("Phase 1: Static Checks"), "Phase 1 must still run with --skip-tests");
   assert(!skipped.includes("Phase 2: Testing"), "Phase 2 (Testing) must be suppressed by --skip-tests");
   assert(!skipped.includes("Phase 3: Coverage"), "Phase 3 (Coverage) must be suppressed by --skip-tests");
-  assert(skipped.includes("Phase 4: Build"), "Phase 4 (Build) must still run with --skip-tests");
+  assert(skipped.includes("Phase 3: Build"), "Build must still run with --skip-tests");
 
-  const full = await runDry([]);
   assert(full.includes("Phase 1: Static Checks"), "default run (no flag) must include Phase 1");
   assert(
     full.includes("Phase 2: Testing"),
     "default run (no flag) must still run Phase 2 — 'all' stays unconditional unless the flag is passed",
   );
-  assert(full.includes("Phase 3: Coverage"), "default run (no flag) must still run Phase 3");
-  assert(full.includes("Phase 4: Build"), "default run (no flag) must still run Phase 4");
+  assert(full.includes("Phase 3: Build"), "default run must build");
+  for (const output of [skipped, full]) {
+    assert(!output.includes("Coverage Verification"), "coverage must require its explicit command");
+    assert(!output.includes("--coverage="), "automatic pipelines must not instrument tests");
+    assert(!output.includes("health:lcov"), "automatic pipelines must not generate LCOV");
+  }
+});
+
+Deno.test("[ci_wiring] explicit coverage command remains available", async () => {
+  const output = await runCiDry("coverage");
+  assert(output.includes("Would run tests with coverage enabled"));
+});
+
+interface ICoverageWorkflow {
+  readonly on?: string | string[] | Record<string, JSONValue>;
+  readonly jobs?: Record<string, { readonly steps?: { readonly run?: string }[] }>;
+}
+
+Deno.test("[ci_wiring] coverage and LCOV commands are absent from hooks and automatic workflows", async () => {
+  const measurement =
+    /(?:measure_coverage|health_lcov)\.ts|--run-lcov-workflow\b|--coverage(?:=|\s)|deno\s+coverage\b|deno\s+task\s+(?:test:coverage|coverage(?::[\w-]+)?|health:lcov)\b|scripts\/ci\.ts\s+coverage\b/;
+  for (
+    const command of [
+      "deno task test:coverage",
+      "deno task health:lcov tests/",
+      "deno run -A scripts/health_lcov.ts tests/",
+      "deno test --coverage=coverage tests/",
+      "deno test tests/scripts/health_lcov_task_test.ts -- --run-lcov-workflow",
+    ]
+  ) assert(measurement.test(command), `the guard must detect ${command}`);
+  assert(!measurement.test("deno task check:event-coverage:staged:visible"));
+  assert(!measurement.test(HOOKS_SOURCE), "Git hooks must not run coverage or LCOV commands");
+  const workflows = new URL("../../.github/workflows/", import.meta.url);
+  for await (const entry of Deno.readDir(workflows)) {
+    if (!entry.isFile || !/\.ya?ml$/.test(entry.name)) continue;
+    const workflow = parse(await Deno.readTextFile(new URL(entry.name, workflows))) as ICoverageWorkflow;
+    const commands = Object.values(workflow.jobs ?? {}).flatMap((job) =>
+      (job.steps ?? []).map((step) => step.run ?? "")
+    );
+    if (!commands.some((command) => measurement.test(command))) continue;
+    const events = typeof workflow.on === "string"
+      ? [workflow.on]
+      : Array.isArray(workflow.on)
+      ? workflow.on
+      : Object.keys(workflow.on ?? {});
+    assertEquals(events, ["workflow_dispatch"], `${entry.name}: coverage must be manually dispatched`);
+  }
+});
+
+Deno.test("fix(ci): LCOV workflow test requires an explicit manual flag", async () => {
+  const moduleUrl = new URL("./health_lcov_task_test.ts", import.meta.url).href;
+  const code = "Deno.test = (definition) => { console.log(definition.ignore); }; " +
+    `await import(${JSON.stringify(moduleUrl)});`;
+  for (const ci of [false, true]) {
+    for (const manual of [false, true]) {
+      const result = await new Deno.Command(Deno.execPath(), {
+        args: ["eval", code, "--", ...(manual ? ["--run-lcov-workflow"] : [])],
+        env: { CI: ci ? "true" : "" },
+        stdout: "piped",
+        stderr: "piped",
+      }).output();
+      assertEquals(result.code, 0, new TextDecoder().decode(result.stderr));
+      assertEquals(new TextDecoder().decode(result.stdout).trim(), String(!manual));
+    }
+  }
 });
 
 Deno.test("[ci_wiring] code-quality's static gates match scripts/ci.ts's CI-applicable scope", () => {

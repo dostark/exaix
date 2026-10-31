@@ -29,6 +29,7 @@ links:
 2. **NEVER push to any remote** (origin, upstream, or any other) unless the user explicitly and directly requests it.
 3. Local commits on a non-`main` branch need no separate user command when the task or an invoked skill calls for them (for example one commit per step under `#next-steps`). Creating a PR still requires an explicit user command; merging and pushing are covered by rules 1 and 2.
 4. If a pre-push hook or CI gate prompts a push, **do not proceed** — tell the user you are blocked waiting for their instruction.
+5. Test-coverage and LCOV measurement are manual-only. Do not include them in default local validation, commit/push hooks, or push/PR CI gates. Run them only when the user explicitly requests coverage or LCOV. This rule overrides coverage checklists in task skills.
 
 ---
 
@@ -215,17 +216,17 @@ deno task test_all > /tmp/test_output.txt 2>&1
 rg "FAILED|failed|error" /tmp/test_output.txt   # or: grep -E "FAILED|failed|error" /tmp/test_output.txt
 ```
 
-Repository-wide CI reference (not the default local verification): `all` and `test` run
-the full suite; `all` additionally re-runs it with coverage instrumentation and compiles
-all binaries. Leave this expensive cycle to hosted CI unless an exception above applies.
+Repository-wide CI reference (not the default local verification): `all` runs static
+checks, the full test suite, and binary builds. `test` runs the full suite. Coverage and
+LCOV commands are explicit manual operations and are excluded from automatic gates.
 Use `--skip-tests` for a local check+build pass when compilation needs verification:
 
 ```bash
-deno run -A scripts/ci.ts all                # everything (check + test x2 + build)
-deno run -A scripts/ci.ts all --skip-tests    # check + build only — skips Testing and Coverage
+deno run -A scripts/ci.ts all                # check + test + build
+deno run -A scripts/ci.ts all --skip-tests    # check + build only
 deno run -A scripts/ci.ts check               # static analysis only (fast, ~10s)
 deno run -A scripts/ci.ts test                # test suite only
-deno run -A scripts/ci.ts coverage            # coverage verification only
+deno run -A scripts/ci.ts coverage            # manual coverage verification, only when requested
 ```
 
 ### CI Failure Response Protocol

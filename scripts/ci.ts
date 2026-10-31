@@ -3,8 +3,9 @@
  * @module CI
  * @path scripts/ci.ts
  * @description Shared pipeline orchestrator for local runs and some CI jobs. It runs static
- *   checks, tests, coverage, and builds. The authoritative CI definition is
- *   `.github/workflows/*.yml`; this script is a reusable entry point, not that list.
+ *   checks, tests, and builds. Coverage runs only through its explicit command.
+ *   The authoritative CI definition is `.github/workflows/*.yml`.
+ *   This script provides reusable commands.
  *
  * Usage:
  *   deno run -A scripts/ci.ts [command]
@@ -14,7 +15,7 @@
  *   test       Run standard unit and integration tests
  *   coverage   Run tests with coverage tracking and threshold enforcement
  *   build      Compile standalone binaries for multiple platforms
- *   all        Execute the entire pipeline (check -> test -> coverage -> build)
+ *   all        Execute the standard pipeline (check -> test -> build)
  *   scenarios  Run the full E2E scenario-framework validation
  */
 import { Command } from "@cliffy/command";
@@ -425,15 +426,11 @@ const coverageCommand = new Command()
   });
 
 const allCommand = new Command()
-  .description("Run full CI pipeline")
+  .description("Run static checks, tests, and builds")
   .option("--edition <edition:string>", "Edition to build: solo|team|enterprise", { default: EDITION_SOLO })
   .option(
     "--skip-tests",
-    "Skip Phase 2 (Testing) and Phase 3 (Coverage) — Coverage re-runs the full suite a " +
-      "second time with instrumentation, so together they can cost 2x the test suite plus a full " +
-      "compile; use this for a fast local check+build pass. Default stays unconditional ('all' means " +
-      "all) because real CI (.github/workflows/*.yml) never invokes this command directly — it calls " +
-      "check/test/build as separate steps — so nothing in CI depends on this default.",
+    "Skip Phase 2 (Testing) for a local check+build pass. Coverage requires the explicit coverage command.",
     { default: false },
   )
   .action(async (options) => {
@@ -455,7 +452,7 @@ const allCommand = new Command()
     }
 
     if (options.skipTests) {
-      console.log("\n⏭️  Skipping Phase 2 (Testing) and Phase 3 (Coverage) — --skip-tests was passed.");
+      console.log("\n⏭️  Skipping Phase 2 (Testing) — --skip-tests was passed.");
     } else {
       // 2. Tests (Parallel) — edition-scoped
       console.log(`\n--- Phase 2: Testing [edition: ${edition}] ---`);
@@ -472,14 +469,10 @@ const allCommand = new Command()
           { cmd: ["deno", "task", "test:security"], desc: "Security Regression Tests" },
         ])
       ) Deno.exit(1);
-
-      // 3. Coverage (Optional for now, but part of 'all')
-      console.log("\n--- Phase 3: Coverage ---");
-      await verifyCoverage(edition);
     }
 
-    // 4. Build
-    console.log("\n--- Phase 4: Build ---");
+    // 3. Build
+    console.log("\n--- Phase 3: Build ---");
     if (!await generateBuilds({ compile: true, edition })) Deno.exit(1);
 
     console.log(`\n🎉 CI Pipeline Completed Successfully in ${Date.now() - start}ms`);

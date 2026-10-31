@@ -1,26 +1,8 @@
 name: "Tests & Coverage"
 
-# Runs once daily rather than on every push/PR: the full suite + coverage
-# measurement is the slowest gate in the pipeline and doesn't need to block
-# every push. `deno task test_all`-equivalent functional correctness is
-# still enforced on every push to main by the "Test Suite" workflow
-# (merge-validation.yml); this workflow adds the periodic coverage-threshold
-# check on top, on a cadence cheap enough to run daily without slowing
-# anyone's feedback loop.
-#
-# Schedule picked to avoid GitHub Actions' documented peak-load windows
-# (the ~9-10am UTC slot and the Monday ~14:00 UTC global queue peak) and to
-# land on an off-the-hour minute, since GitHub drains its scheduled-workflow
-# queue on a best-effort basis and jobs set for round minutes (:00, :30)
-# queue behind everyone else's. 03:17 UTC sits in the quiet window after
-# US evening activity has dropped off and before EU/UK's workday begins.
-# GitHub does not publish exact load figures, so this is a documented
-# best-effort placement, not a guaranteed-lowest-load slot.
+# Manual test-coverage measurement. Standard validation runs without instrumentation.
 on:
   workflow_dispatch:
-  # Disabled: automatic daily run turned off. Uncomment to re-enable.
-  # schedule:
-  #   - cron: "17 3 * * *"
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
