@@ -135,6 +135,7 @@
     "check:aci-docs:strict": "deno run scripts/validate_aci_docs.ts --strict",
     "check:complexity": "deno run --allow-run --allow-read --allow-env unslop-ts/src/cli/rule_report.ts --rule=exaix/max-cyclomatic-complexity --roots=packages,apps --descriptor=packages/lint-policy/unslop.project.ts --ceilings=packages/lint-policy/rule_ceilings.json --fail && deno run --allow-run --allow-read --allow-env unslop-ts/src/cli/rule_report.ts --rule=exaix/max-cognitive-complexity --roots=packages,apps --descriptor=packages/lint-policy/unslop.project.ts --ceilings=packages/lint-policy/rule_ceilings.json --fail && deno run --allow-run --allow-read --allow-env unslop-ts/src/cli/rule_report.ts --rule=exaix/max-function-lines --roots=packages,apps --descriptor=packages/lint-policy/unslop.project.ts --ceilings=packages/lint-policy/rule_ceilings.json --fail",
     "health": "deno run --cached-only --allow-read --allow-env --allow-run=git,node --allow-write=/tmp unslop-ts/src/cli/unslop.ts health --descriptor=packages/lint-policy/unslop.project.ts --format=text",
+    "health:lcov": "deno run -A scripts/health_lcov.ts",
     "check:complexity:compare": "deno run --allow-read --allow-run=fallow --allow-env packages/lint-policy/src/tools/compare_complexity.ts",
     "fix:bool-asserts": "deno run -A scripts/fix_bool_asserts.ts",
     "fix:bool-asserts:check": "deno run -A scripts/fix_bool_asserts.ts --check",

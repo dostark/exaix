@@ -132,6 +132,18 @@ The devcontainer does not mount the Docker socket, so run the containerized batc
 host (or enable Docker-in-Docker first). Manual cutover verification is
 `deno task verify:container-cutover`.
 
+### 2.4 Health report with measured coverage
+
+`deno task health` reports CRAP with estimated coverage when no LCOV input is supplied.
+Run `deno task health:lcov <test-file-or-directory> [...]` to test the selected paths,
+generate a fresh `coverage/lcov.info`, and pass it to health. For example,
+`deno task health:lcov packages/lint-policy/tests/policy_config_test.ts` measures the
+source exercised by that file.
+The task sets `CI=true`, so tests marked to skip in CI are skipped.
+The task removes any earlier LCOV file before testing and stops if tests or conversion fail.
+The report labels functions without matching LCOV samples as estimated. It marks coverage
+revision `unverified` because this workflow does not create a source-hash manifest.
+
 ## 3. Migration Guide
 
 If you are updating legacy code, refer to `docs/CODE_STYLE.md#no-magic-values` (No Magic Numbers or Strings) for the authoritative rules on replacing hardcoded values with the new configuration system.
