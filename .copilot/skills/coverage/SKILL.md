@@ -11,24 +11,27 @@ scope: dev
 title: "Coverage Skill (#coverage)"
 description: Identify uncovered code paths, write targeted tests to meet thresholds, and verify with measure_coverage.ts
 short_summary: "Coverage improvement workflow: measure → identify gaps → write targeted tests → re-measure until thresholds pass."
-version: "1.0.1"
+version: "1.0.2"
 topics: ["testing", "coverage", "tdd", "ci", "quality"]
 qwen_skill: coverage
 ---
+
 ```text
 Key points
 
 - Start by measuring — never guess which paths are uncovered.
 - Write real behavioural tests, not trivial pass-throughs that game the numbers.
-- CI thresholds: Line ≥ 70%, Branch ≥ 60% (enforced by scripts/measure_coverage.ts).
+- Manual measurement thresholds: Line ≥ 70%, Branch ≥ 60% (scripts/measure_coverage.ts).
 - Target untested business logic, error paths, and edge cases — not boilerplate.
 - Tests meet the same quality bar as production tests (helpers, naming).
 - Scope > ~20 files: batches of 5–10. Measure a batch, record gaps, continue.
+- This workflow is manual-only under AGENTS.md. Invoke it only for an explicit user request
+  for coverage or LCOV, never as an automatic phase, commit/push or CI gate.
 
 Canonical prompt (short):
 "Improve coverage for <module or full suite>. Measure first, identify the
 lowest-covered paths with real business logic, write targeted tests, and
-re-measure until CI thresholds pass."
+re-measure until the requested thresholds pass."
 
 Examples
 - "#coverage — overall suite is below 70% line coverage"
@@ -46,10 +49,9 @@ Do / Don't
 - ❌ Suppress coverage via ignore comments without documented justification.
 - ❌ Skip CI gates (lint, type-check) when adding test files.
 
-Related: #fix-bug (untested bug found — fix first); #next-steps (coverage as a phase
-criterion); #commit.
+Related: #fix-bug (untested bug found — fix first); #next-steps; #commit.
 
-Workflow chain: #next-steps (phase complete) → **#coverage** → #commit
+Workflow chain: explicit user coverage request → **#coverage** → #commit
 ```
 
 ## See also
@@ -95,9 +97,11 @@ Per selected gap:
    - Timer-based TUI tests: `sanitizeOps: false, sanitizeResources: false`.
 1. Run the file; the test passes (coverage tests verify existing behaviour, not new
    requirements):
+
    ```bash
    deno test --allow-all <test-file>
    ```
+
 1. Test reveals a bug? Pause and use `#fix-bug` first.
 
 ### Phase 4 — Re-measure
@@ -145,7 +149,7 @@ No new UNGROUNDED files, no lint errors.
 
 ## Workflow Chain
 
-#next-steps (phase complete) → **#coverage** → #commit
+Explicit user coverage request → **#coverage** → #commit
 
 ## Related
 

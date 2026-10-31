@@ -11,7 +11,7 @@ scope: test
 title: "Test Development Skill (#test-development)"
 description: Write tests following Exaix conventions — helpers, placement, patterns, CI
 short_summary: "Write tests for Exaix using the right helpers, placement rules, and patterns."
-version: "1.4.0"
+version: "1.4.1"
 topics: ["testing", "tdd", "coverage", "test-helpers", "assertion-sensitivity"]
 qwen_skill: test-development
 ---
@@ -31,10 +31,10 @@ Key points
   (§Assertion sensitivity, anti-pattern 9).
 
 See also
-  Test directory → [tests/README.md](../../tests/README.md)
-  Helpers       → [packages/testing/README.md](../../packages/testing/README.md)
-  Integration   → [tests/integration/README.md](../../tests/integration/README.md)
-  Scenario/eval → [tests/scenario_framework/README.md](../../tests/scenario_framework/README.md)
+  Test directory → [tests/README.md](../../../tests/README.md)
+  Helpers       → [packages/testing/README.md](../../../packages/testing/README.md)
+  Integration   → [tests/integration/README.md](../../../tests/integration/README.md)
+  Scenario/eval → [tests/scenario_framework/README.md](../../../tests/scenario_framework/README.md)
   Style         → [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md)
 
 Unified helpers (prefer over bespoke setup):
@@ -68,7 +68,8 @@ Mandatory placement
   - Service tests: tests/services/<domain>/, not directly under tests/services/.
   - Search for an existing domain folder before creating a new one.
 
-Coverage-driven TDD: target ≥70% branch on new features. Run `deno task test:coverage`.
+Coverage measurement is manual-only (AGENTS.md). Only an explicit user request authorizes
+`deno task test:coverage`; the branch target for that requested work is ≥70% on new features.
 
 Assertion sensitivity — a test that cannot fail is worse than no test
 
@@ -329,7 +330,7 @@ Output format
   1. Target test files created/modified.
   1. Helpers used.
   1. Test command.
-  1. Coverage check result.
+  1. Coverage check result only when the user requested measurement.
 
 Examples
   #test-development Add unit tests for PlanWriter error handling

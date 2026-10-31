@@ -11,10 +11,11 @@ scope: dev
 title: "Upgrade-Version Skill (#upgrade-version)"
 description: Safely upgrade a dependency or runtime version — semver audit, compatibility check, regression validation, breaking-change docs
 short_summary: "Multi-step skill for planning and executing dependency or runtime upgrades with full regression coverage."
-version: "1.0.0"
+version: "1.0.1"
 topics: ["upgrade", "dependencies", "version", "maintenance", "regression"]
 qwen_skill: upgrade-version
 ---
+
 ```text
 Key points
 
@@ -44,7 +45,8 @@ Phase 1 — Audit
 Phase 2 — Regression net
   5. Per breaking call site, write (or verify) tests asserting current behavior. Run them —
      they must pass on the current version (GREEN baseline).
-  6. Coverage for affected modules < 70% line / 60% branch? Add targeted tests first (see #coverage).
+  6. Inspect affected paths for missing tests. Coverage measurement is manual-only under
+     AGENTS.md and requires an explicit user request (see #coverage).
 
 Phase 3 — Apply
   7. Update the version in deno.json (or import map / package.json as applicable).
@@ -60,7 +62,7 @@ Phase 4 — Validate
  14. deno task check:arch
  15. deno task check:magic   (if new literals introduced)
  16. deno task test_all      (full suite — blast radius unknown after the bump)
- 17. deno run -A scripts/ci.ts coverage  (thresholds still met)
+ 17. Only if the user requested measurement: `deno run -A scripts/ci.ts coverage`.
 
 Phase 5 — Document
  18. Public behavior changed? Update the relevant doc in docs/.
@@ -86,7 +88,7 @@ Do / Don't
 - ❌ Upgrade without a verified rollback path.
 - ❌ Use `as any` to suppress type errors from the bump.
 - ❌ Skip the full test suite — partial runs miss cross-module regressions.
-- ❌ Merge with failing tests or unchecked coverage drops.
+- ❌ Merge with failing tests or unresolved regressions.
 
 Related: #coverage; #fix-bug; #next-steps; #commit.
 
@@ -104,7 +106,7 @@ Workflow chain: #review-phase-plan (if part of a phase) → **#upgrade-version**
 1. Regression net: test files written/updated, GREEN baseline confirmed.
 1. Compile/lint results after the upgrade.
 1. Full test suite results: N/N passing.
-1. Coverage delta (before vs. after).
+1. Coverage delta (before vs. after), only if measurement was requested.
 1. Migration doc changes (if any).
 1. Commit payload.
 

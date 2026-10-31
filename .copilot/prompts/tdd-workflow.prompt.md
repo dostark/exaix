@@ -1,6 +1,6 @@
 ---
 name: tdd-workflow
-description: "Enforce test-driven development for any code change — write failing tests first, implement minimally, refactor, verify coverage"
+description: "Enforce test-driven development for any code change — write failing tests first, implement minimally, refactor, validate"
 ---
 
 # Routing prompt — canonical source

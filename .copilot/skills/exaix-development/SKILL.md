@@ -11,10 +11,11 @@ scope: dev
 title: "Exaix Development Skill (#exaix-development)"
 description: Develop Exaix source code following TDD-first, patterns, and conventions
 short_summary: "Develop Exaix source code — TDD-first, DI patterns, config philosophy, code conventions."
-version: "1.0.1"
+version: "1.0.2"
 topics: ["source", "development", "tdd", "patterns", "architecture"]
 qwen_skill: exaix-development
 ---
+
 ````text
 Key points
 
@@ -280,7 +281,7 @@ Prohibited anti-patterns
 
 Implementation verification checklist
 
-  [ ] Tests pass with >90% coverage
+  [ ] Focused tests pass. Coverage/LCOV are manual-only under AGENTS.md and need an explicit user request.
   [ ] No blocking operations in async contexts
   [ ] All external operations have timeout protection
   [ ] All file paths securely validated

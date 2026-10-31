@@ -11,7 +11,7 @@ scope: dev
 title: "Clean Codebase Skill (#clean-codebase)"
 description: Drive the entire codebase to a fully green CI state — type errors, lint, fmt, style, arch, magic, duplication — with zero violations
 short_summary: "Multi-phase skill to eliminate all type errors, lint warnings, style violations, and CI failures from the repository."
-version: "1.3.0"
+version: "1.3.1"
 topics: ["cleanup", "validation", "linting", "style", "qa", "ci", "architecture"]
 qwen_skill: clean-codebase
 ---
@@ -29,7 +29,9 @@ Key points
 - Edition awareness: `deno task` check/lint/fmt already include `exaix-team/` — no edition
   scoping needed for static checks. Edition-scoped tests: `deno task test:solo` / `test:team`.
   Edition-scoped build: `deno task ci:solo --skip-tests` / `ci:team --skip-tests` (checks +
-  build, no tests) instead of full `ci:solo`/`ci:team` (which re-runs the suite for coverage).
+  build, no tests) instead of full `ci:solo`/`ci:team` (which also runs the test suite).
+- Keep coverage/LCOV manual-only as AGENTS.md requires. Cleanup does not authorize
+  measurement; run it only on an explicit user request.
 - `deno run -A scripts/ci.ts check` is ONE verified command covering the static gates as a
   true superset of the pre-commit hook (kept in sync by `tests/scripts/ci_wiring_test.ts`).
   Use it for a fast pass/fail. It does NOT cover `check:duplication`, `check:god-objects`,
@@ -179,6 +181,8 @@ Phase 22 — Agent docs validation
 Phase 23 — Final full-suite validation
 
   Preflight the runner state before the first `test_all`:
+  See [local full-suite preflight](../../../tests/README.md#local-full-suite-preflight)
+  for the offline worker, frozen lockfile and host placement checks.
   - Docker client and buildx state, the scenario sandbox base, and any installed CLI state must be
     writable. A read-only `~/.docker` or `~/.deno` fails the image build or the installed CLI.
     Point `DOCKER_CONFIG`, `BUILDX_CONFIG`, `EXA_SANDBOX_BASE`, and `EXA_BIN_PATH` at writable paths.
@@ -197,7 +201,7 @@ Phase 23 — Final full-suite validation
     `import.meta.url` inside its compile temp dir and cannot find `apps/daemon/main.ts`.
   - Attribute a failed full run before calling it a regression: re-run each failed file with these
     variables. Scenario and build failures under a read-only cache all clear with writable paths.
-  - The Containered Batch looks for `dist/bin/exactl-solo-<target>`. Run `deno task build:solo`
+  - The Containered Batch looks for `dist/bin/exactl-solo-<target>`. Run `deno task build:solo --compile`
     before the suite, or every scenario case fails on a missing binary.
   - Dynamic `npm:` specifiers (the tree-sitter grammars) must be cached in a Docker layer keyed only
     on `deno.json`/`deno.lock`, before the source copy. Deny their native lifecycle scripts
@@ -225,8 +229,8 @@ Phase 23 — Final full-suite validation
         `self_hosted_split_bindings_test.ts`) and whether it is load-flaky. Attribute it by
         re-running at `HEAD~1` in a `git worktree add --detach <tmp> HEAD~1`. Shortcut:
         `deno task ci:solo --skip-tests` / `ci:team --skip-tests` (= `scripts/ci.ts all
-        --edition X --skip-tests`) runs (a) + build without Testing/Coverage. Drop
-        `--skip-tests` only when a full pipeline/coverage validation was requested.
+        --edition X --skip-tests`) runs (a) + build without Testing. Drop
+        `--skip-tests` only when full pipeline validation was requested.
  47. All checks zero before committing.
 
 Phase 24 — God objects (advisory)

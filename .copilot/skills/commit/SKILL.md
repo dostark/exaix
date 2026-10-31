@@ -10,10 +10,11 @@ scope: dev
 title: "Commit Skill (#commit)"
 description: Create a structured commit message for current changes following Exaix conventions
 short_summary: "Enforces structured, informative commit messages for agents and human developers."
-version: "1.0.2"
+version: "1.0.3"
 topics: ["git", "commit", "documentation", "best-practices", "structured-logging"]
 qwen_skill: commit
 ---
+
 ````text
 Key points
 
@@ -62,11 +63,12 @@ Required validation before commit
 - Include formatting, linting, type-checking, and tests required by the touched area.
 - Use focused tests for the touched area. When full-suite validation is required,
   run `deno task test_all` (`deno task test_all:team` for team scope).
-  This is faster than `scripts/ci.ts all`, which also runs the static gates, coverage, and a build.
+  This is faster than `scripts/ci.ts all`, which also runs the static gates and a build.
 - Keep local static validation separate: use `deno run -A scripts/ci.ts check`.
   Do not use `ci.ts test` or `ci.ts all` to run the local full suite. If a local
   check/build pass is required, use `deno run -A scripts/ci.ts all --skip-tests`
-  and run required tests separately. Preserve any explicitly required coverage gate.
+  and run required tests separately. Per AGENTS.md, coverage and LCOV are manual-only:
+  an explicit user request is required. Never add them to commit/push hooks or automatic CI.
 - For plan-step work, run any required full suite only after the step is fully
   implemented, during final step validation.
 - If the preceding #next-steps application already ran `deno task test_all`

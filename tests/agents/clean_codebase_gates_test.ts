@@ -30,3 +30,14 @@ Deno.test("Agent docs: clean-codebase separates active gates from baseline diagn
   );
   assert(md.includes("DENO_DIR"), "clean-codebase should name the writable compile cache variable");
 });
+
+Deno.test("Agent docs: full-suite preflight compiles the CLI and checks the offline worker", async () => {
+  const skill = await Deno.readTextFile(".copilot/skills/clean-codebase/SKILL.md");
+  const readme = await Deno.readTextFile("tests/README.md");
+
+  assert(skill.includes("deno task build:solo --compile"));
+  assert(skill.includes("tests/README.md#local-full-suite-preflight"));
+  for (const phrase of ["--network=none", "--frozen-lockfile", "--no-lock", "host: true"]) {
+    assert(readme.includes(phrase), `preflight must document ${phrase}`);
+  }
+});

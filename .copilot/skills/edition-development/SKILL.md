@@ -12,7 +12,7 @@ scope: dev
 title: "Edition Development Skill (#edition-development)"
 description: Guide for developing edition-specific features within Exaix's three-tier edition architecture — Option-C layout, seam wiring, composer contracts, build targets, and CI/release pipeline
 short_summary: "Develop edition-specific features (Solo/Team/Enterprise) following Exaix's composition architecture, Option-C layout, and seam-based extension model."
-version: "1.2.0"
+version: "1.2.1"
 topics: [
   "edition",
   "solo",
@@ -28,7 +28,8 @@ topics: [
 ]
 qwen_skill: edition-development
 ---
-# Edition Development Skill (#edition-development)
+
+## Edition Development Skill (#edition-development)
 
 Key points
 
@@ -208,7 +209,7 @@ export class VotingCapabilityModule implements ICapabilityModule {
 }
 ```
 
-### Why post-construction instead of constructor injection?
+### Post-construction registration
 
 - `GateStepHandler` takes `gateEvaluator` in `FlowRunner` options — available at construction.
 - Voting and other Team features need the registry AFTER construction; they register
@@ -234,15 +235,11 @@ deno task build:enterprise  # entry: exaix-enterprise/apps/enterprise/main.ts, p
 #   exaix-team/, exaix-enterprise/, scripts/, apps/common/
 deno task check:no-edition-conditionals
 
-# Full CI pipeline per edition — runs check + test + coverage (re-runs the suite a SECOND
-# time with instrumentation) + build; reserve for a final pre-PR validation, not routine
-# local iteration
-deno task ci:solo           # check + test + coverage + build (Solo)
-deno task ci:team           # check + test + coverage + build (Team)
+# Full CI pipeline per edition: check + test + build
+deno task ci:solo           # Solo
+deno task ci:team           # Team
 
-# Fast local default: same edition-scoped check + build, skips the slow Testing+Coverage
-# phases — use this while iterating unless the prompt explicitly asked to also
-# re-validate the full test suite/coverage
+# Local check + build when compilation needs verification
 deno task ci:solo --skip-tests
 deno task ci:team --skip-tests
 
@@ -250,6 +247,9 @@ deno task ci:team --skip-tests
 deno run -A scripts/leak_guard.ts --allowlist packages apps --check-headers
 deno run -A scripts/leak_guard.ts --check-gitmodules
 ```
+
+Coverage and LCOV are manual-only under AGENTS.md. An explicit user request is required
+for measurement; edition CI commands do not run it.
 
 ---
 
@@ -308,11 +308,11 @@ describe("Team composition — stub module with all hooks", () => {
 
 1. **Never put edition conditionals in core packages.** The `[edition-conditional-outside-composer]` rule in `packages/lint-policy/src/checkers/check_code_style.ts` enforces this. Allowed only in: `src/composer/`, `exaix-team/`, `exaix-enterprise/`, `scripts/`, `apps/common/`.
 
-2. **Never import from `exaix-team/` or `@exaix-team/*` in Solo source files.** The `[edition-leak]` rule in `packages/lint-policy/src/checkers/check_code_style.ts` enforces this across `packages/` and `apps/`. Test files (`/tests/`, `/testing/`) are exempt — integration tests legitimately import Team classes. When Solo source needs a Team type, extract the interface to `packages/core/types/`.
+1. **Never import from `exaix-team/` or `@exaix-team/*` in Solo source files.** The `[edition-leak]` rule in `packages/lint-policy/src/checkers/check_code_style.ts` enforces this across `packages/` and `apps/`. Test files (`/tests/`, `/testing/`) are exempt — integration tests legitimately import Team classes. When Solo source needs a Team type, extract the interface to `packages/core/types/`.
 
-3. **Leak-guard must pass before publishing.** The CI release pipeline blocks on it. Leaks detected: enterprise path imports in source, proprietary license headers, `.gitmodules` enterprise entry.
+1. **Leak-guard must pass before publishing.** The CI release pipeline blocks on it. Leaks detected: enterprise path imports in source, proprietary license headers, `.gitmodules` enterprise entry.
 
-4. **All new interfaces must have `@module` / `@path` / `@architectural-layer` headers** for `check:arch` grounding. Tag deferred seams with `@ungrounded` if they have no production consumer yet.
+1. **All new interfaces must have `@module` / `@path` / `@architectural-layer` headers** for `check:arch` grounding. Tag deferred seams with `@ungrounded` if they have no production consumer yet.
 
 ---
 
@@ -332,29 +332,29 @@ describe("Team composition — stub module with all hooks", () => {
 **Example 1: Add a Team-only flow-step handler.**
 
 1. Define the handler in `exaix-team/packages/team-flow/src/` implementing `IFlowStepHandler`
-2. Create a `TeamFlowModule` implementing `ICapabilityModule` with `registerFlowStepHandlers`
-3. The module receives an `ISeamRegistryPlaceholder` (cast to `IFlowStepHandlerRegistry` in the module)
-4. In `apps/daemon/main.ts`, within the `if (editionType === EDITION_TEAM)` block, construct the module, register it with the composer, and call `registerFlowStepHandlers` against the FlowRunner's registry
-5. Test: add a stub hook in `tests/integration/composition_smoke_test.ts`
-6. Build: `deno task build:team`
+1. Create a `TeamFlowModule` implementing `ICapabilityModule` with `registerFlowStepHandlers`
+1. The module receives an `ISeamRegistryPlaceholder` (cast to `IFlowStepHandlerRegistry` in the module)
+1. In `apps/daemon/main.ts`, within the `if (editionType === EDITION_TEAM)` block, construct the module, register it with the composer, and call `registerFlowStepHandlers` against the FlowRunner's registry
+1. Test: add a stub hook in `tests/integration/composition_smoke_test.ts`
+1. Build: `deno task build:team`
 
 **Example 2: Add an Enterprise-only entitlement check.**
 
 1. Define an `EnterpriseAuthorizer` implementing `IAuthorizer` in `exaix-enterprise/packages/<name>/`
-2. Create an `EnterpriseModule` implementing `ICapabilityModule` with `registerEntitlement`
-3. The hook receives the concrete `IAuthorizer` instance from the composer
-4. Test: verify `EnterpriseAuthorizer.authorize()` returns expected decisions
-5. Build: `deno task build:enterprise`
-6. Before publishing Solo/Team OSS, run `deno run -A scripts/leak_guard.ts --allowlist packages apps --check-headers`
+1. Create an `EnterpriseModule` implementing `ICapabilityModule` with `registerEntitlement`
+1. The hook receives the concrete `IAuthorizer` instance from the composer
+1. Test: verify `EnterpriseAuthorizer.authorize()` returns expected decisions
+1. Build: `deno task build:enterprise`
+1. Before publishing Solo/Team OSS, run `deno run -A scripts/leak_guard.ts --allowlist packages apps --check-headers`
 
 **Example 3: Add a new seam for capacity rate-limiting.**
 
 1. Define `ICapacityManager` and `ICapacityManagerRegistry` in `packages/core/src/capacity/`
-2. Add `registerCapacityManager?(registry: ISeamRegistryPlaceholder)` to `ICapabilityModule`
-3. Export from `packages/core/mod.ts`
-4. Create a stub hook test in `tests/integration/composition_smoke_test.ts`
-5. Implement the Solo default as a no-op or pass-through
-6. Wire the concrete registry in the future Team/Enterprise composer
+1. Add `registerCapacityManager?(registry: ISeamRegistryPlaceholder)` to `ICapabilityModule`
+1. Export from `packages/core/mod.ts`
+1. Create a stub hook test in `tests/integration/composition_smoke_test.ts`
+1. Implement the Solo default as a no-op or pass-through
+1. Wire the concrete registry in the future Team/Enterprise composer
 
 **Example 4: Phase 113 voting module — first concrete seam consumer (reference implementation).**
 
@@ -363,12 +363,12 @@ consumer** of `ICapabilityModule.registerFlowStepHandlers`. Follow this pattern 
 
 1. Create the capability module alongside the service (Solo package). The edition gating happens at
    the daemon level via `EXAIX_EDITION`, not in the module itself.
-2. The module's hook casts `ISeamRegistryPlaceholder` to `FlowStepHandlerRegistry` and registers
+1. The module's hook casts `ISeamRegistryPlaceholder` to `FlowStepHandlerRegistry` and registers
    the handler.
-3. In the daemon, construct the service, construct the module, register with `TeamComposer`,
+1. In the daemon, construct the service, construct the module, register with `TeamComposer`,
    then iterate modules and invoke hooks against the FlowRunner's registry.
-4. Handler-level tests prove the module registers correctly.
-5. Integration tests (`exaix-team/packages/voting/tests/voting_capability_module_test.ts`) prove the full path with `EXAIX_EDITION=team`.
+1. Handler-level tests prove the module registers correctly.
+1. Integration tests (`exaix-team/packages/voting/tests/voting_capability_module_test.ts`) prove the full path with `EXAIX_EDITION=team`.
 
 Key files to reference:
 

@@ -10,7 +10,7 @@ scope: dev
 title: "Post-Gap Analysis Skill (#review-phase-code)"
 description: Deep post-implementation review of a phase planning document — verifies what was built against the plan, delegates code quality review to #review-code, finds gaps, and writes remediation steps back into the document
 short_summary: "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document."
-version: "1.9.1"
+version: "1.9.2"
 topics: [
   "planning",
   "gap-analysis",
@@ -25,6 +25,7 @@ topics: [
 ]
 qwen_skill: review-phase-code
 ---
+
 ```text
 Key points
 
@@ -161,6 +162,13 @@ Every completed step: verify the implementation exists, the planned tests exist 
 and each criterion is met against real code. When a full-suite run listed failures, classify
 each one at the phase's base commit, not at HEAD without the latest step. Every incomplete step: check it wasn't
 implemented anyway with the plan un-updated (🔵 Conceptual).
+
+For automated checks, require positive execution evidence and reconcile the intended input population
+against the observed subjects, including exclusions and parse failures. Zero diagnostics alone can
+mean the check never ran. Verify a seeded violation fails through the real entry point.
+For generated or installed artifacts, compare the producer revision and configuration with the
+current inputs: checksums prove integrity, not freshness. Run the deployed consumer against a
+known violation rather than treating a valid manifest as proof of current behavior.
 
 ### Phase 2a — Semantic Value Verification
 

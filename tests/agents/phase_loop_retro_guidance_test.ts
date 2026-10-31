@@ -59,6 +59,15 @@ Deno.test("Agent docs: review-phase-code traces every enforcing layer and requir
   ]);
 });
 
+Deno.test("Agent docs: review-phase-code verifies execution, population and artifact freshness", async () => {
+  requireAll(await skill("review-phase-code"), "review-phase-code", [
+    "positive execution evidence",
+    "intended input population",
+    "producer revision and configuration",
+    "checksums prove integrity",
+  ]);
+});
+
 Deno.test("Agent docs: clean-codebase treats unclassified agent-prose output as advisory", async () => {
   requireAll(await skill("clean-codebase"), "clean-codebase", [
     "advisory by the Phase 195 decision",

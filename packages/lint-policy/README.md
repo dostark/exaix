@@ -47,7 +47,8 @@ A catalog `codeStyle` anchor replaces an engine rule's default guide link.
 
 ## Tasks
 
-- `deno task lint` — runs the plugin with every enabled rule.
+- `deno task lint` — runs the configured plugin rules except the three complexity rules. Those remain active in
+  editor/direct lint and run through `deno task check:complexity` with per-package finding ceilings.
 - `deno task check:style` and `deno task check:magic` — run the two checkers.
   `check:magic` keeps the configured `wholeTree.magicLiterals.checkNumbers` value unless `--no-numbers`
   or `--strings-only` is present. Either flag turns number checks off, and no flag turns them on.
@@ -122,6 +123,15 @@ daemon is out of scope.
 Recovery: a source checkout runs `deno task unslop-ts:policy --out <workspace>/lint`, then redeploys.
 A deployed workspace with a missing or corrupt policy must redeploy from a source checkout, because
 it cannot repair itself.
+
+Freshness is separate from integrity. A valid checksum can describe an old bundle. After an engine
+or portal-catalog change, rebuild the policy before testing or deploying it and compare the
+manifest's engine SHA with the intended revision. `scripts/test_parallel.ts` rebuilds the policy
+whenever its offline deployment test is selected, even when a manifest already exists. That test
+drives the real deployed lint runner against seeded cyclomatic, cognitive and function-size
+violations, then verifies a clean repair. See `apps/daemon/tests/deploy_lint_policy_offline_test.ts`.
+The installed daemon does not compare source revisions, so existing deployed workspaces need a
+redeploy to receive new rules. A refreshed source-checkout bundle does not update them.
 
 Capped review output: the terminal `execution.verification.lint_findings` snapshot keeps at most
 `verification.lint.findings_limit` findings (default `50`). The review prints the exact total plus

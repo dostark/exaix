@@ -237,7 +237,7 @@
       "scope": "dev",
       "title": "Coverage Skill (#coverage)",
       "short_summary": "Coverage improvement workflow: measure → identify gaps → write targeted tests → re-measure until thresholds pass.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "topics": [
         "testing",
         "coverage",
@@ -253,7 +253,7 @@
       "scope": "dev",
       "title": "Edition Development Skill (#edition-development)",
       "short_summary": "Develop edition-specific features (Solo/Team/Enterprise) following Exaix's composition architecture, Option-C layout, and seam-based extension model.",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "topics": [
         "edition",
         "solo",
@@ -359,7 +359,7 @@
       "scope": "dev",
       "title": "Exaix Development Skill (#exaix-development)",
       "short_summary": "Develop Exaix source code — TDD-first, DI patterns, config philosophy, code conventions.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "topics": [
         "source",
         "development",
@@ -389,7 +389,7 @@
       "scope": "dev",
       "title": "Upgrade-Version Skill (#upgrade-version)",
       "short_summary": "Multi-step skill for planning and executing dependency or runtime upgrades with full regression coverage.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "topics": [
         "upgrade",
         "dependencies",
@@ -405,7 +405,7 @@
       "scope": "dev",
       "title": "Clean Codebase Skill (#clean-codebase)",
       "short_summary": "Multi-phase skill to eliminate all type errors, lint warnings, style violations, and CI failures from the repository.",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "topics": [
         "cleanup",
         "validation",
@@ -439,7 +439,7 @@
       "scope": "dev",
       "title": "Commit Skill (#commit)",
       "short_summary": "Enforces structured, informative commit messages for agents and human developers.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "topics": [
         "git",
         "commit",
@@ -486,7 +486,7 @@
       "scope": "test",
       "title": "Test Development Skill (#test-development)",
       "short_summary": "Write tests for Exaix using the right helpers, placement rules, and patterns.",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "topics": [
         "testing",
         "tdd",
@@ -550,7 +550,7 @@
       "scope": "dev",
       "title": "Post-Gap Analysis Skill (#review-phase-code)",
       "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document.",
-      "version": "1.9.1",
+      "version": "1.9.2",
       "topics": [
         "planning",
         "gap-analysis",
@@ -589,7 +589,7 @@
       "scope": "dev",
       "title": "TDD Workflow Skill (#tdd-workflow)",
       "short_summary": "Autonomous skill for applying rigorous TDD red-green-refactor to any Exaix code change.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "topics": [
         "tdd",
         "testing",
@@ -638,7 +638,7 @@
       "scope": "dev",
       "title": "Next-Steps Skill (#next-steps)",
       "short_summary": "Prompt for iterating through exaix-dev-docs/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits.",
-      "version": "1.6.2",
+      "version": "1.6.3",
       "topics": [
         "tdd",
         "red-green-refactor",

@@ -9,19 +9,20 @@ tools:
   - run_command
 scope: dev
 title: "TDD Workflow Skill (#tdd-workflow)"
-description: Enforce test-driven development for any code change — write failing tests first, implement minimally, refactor, verify coverage
+description: Enforce test-driven development for any code change — write failing tests first, implement minimally, refactor, validate
 short_summary: "Autonomous skill for applying rigorous TDD red-green-refactor to any Exaix code change."
-version: "1.0.1"
+version: "1.0.2"
 topics: ["tdd", "testing", "red-green-refactor", "coverage", "helpers"]
 qwen_skill: tdd-workflow
 ---
+
 ```text
 Key points
 
 - Write the failing test BEFORE source code. RED must come first.
 - Use the Exaix helpers: initTestDbService(), createCliTestContext(), withEnv(), MockLLMProvider.
 - Use TestEnvironment.create() for full integration scaffolding.
-- Keep coverage after implementation.
+- Coverage and LCOV are manual-only under AGENTS.md: measure only on an explicit user request.
 - TDD is non-negotiable: no implementation without a prior failing test.
 - Existing source: add tests to the existing file — failing test first, then modify the source.
 - Scope > ~20 files: work in batches of 5–10. Read a batch, record findings, continue.
@@ -29,7 +30,7 @@ Key points
 
 Canonical prompt (short):
 "Apply TDD to [feature/bug/refactor] for [component]. Write failing test first,
-implement minimal code, refactor, verify coverage. Use Exaix test helpers."
+implement minimal code, refactor, run focused validation. Use Exaix test helpers."
 
 Workflow
 ────────
@@ -79,8 +80,9 @@ CI
  16. deno task check:magic   → reduce violations if new literals added
  17. deno task check:complexity — refactor if threshold exceeded (when relevant)
 
-Coverage
- 18. Run `deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts`:
+Coverage (only when explicitly requested by the user)
+ 18. Otherwise omit measurement from this cycle. When requested, run
+     `deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts`:
      - Line ≥ 70%
      - Branch ≥ 60%
      Dropped? Add targeted tests for uncovered branches (see #coverage).
@@ -107,7 +109,7 @@ Do / Don't
 
 Related
 - #next-steps — multi-step plan execution uses this TDD cycle per step
-- #coverage — dropped coverage: run the full improvement loop
+- #coverage — explicitly requested measurement and improvement
 - #fix-bug — bug found: regression tests first
 - #refactor — magic-value & duplication pass (check:magic)
 - #plan — create the feature plan first (precedes this skill)
@@ -129,7 +131,7 @@ Workflow chain:
 1. GREEN evidence: passing test summary (N/N tests passing).
 1. REFACTOR summary: constants extracted, interfaces applied, etc.
 1. CI gate results: lint, type-check, style, arch, fmt, magic.
-1. Coverage delta: before vs. after line/branch percentages.
+1. Coverage delta only if requested: before vs. after line/branch percentages.
 1. Commit payload (use #commit).
 
 ## Examples

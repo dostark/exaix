@@ -13,10 +13,11 @@ scope: dev
 title: "Next-Steps Skill (#next-steps)"
 description: Run plan-driven TDD step-by-step workflow with CI gates and per-step commits
 short_summary: "Prompt for iterating through exaix-dev-docs/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits."
-version: "1.6.2"
+version: "1.6.3"
 topics: ["tdd", "red-green-refactor", "planning", "steps", "ci", "commits", "reachability", "traceability"]
 qwen_skill: next-steps
 ---
+
 ```text
 Key points
 
@@ -68,7 +69,9 @@ Validation policy
        Run the required suite during final step validation (step 22), before marking
        the step complete or committing. Use focused tests during RED/GREEN and fixes.
        Use `deno task test_all` (`deno task test_all:team` for team scope). Prefer it over
-       `ci.ts test` / `ci.ts all`, which also run the static gates, coverage, and a build.
+       `ci.ts test` (sequential suite) / `ci.ts all` (static gates, sequential suite, build).
+       Coverage and LCOV remain manual-only under AGENTS.md, even if an older plan requires
+       them. Measurement needs an explicit user request, separate from phase validation.
    0d. After renaming or removing an exported symbol, or changing its signature, grep every
        importer, including `tests/` and `scripts/`, and run the repo-wide `deno task check`
        once before committing. File-scoped runs miss importers outside the step's test set.

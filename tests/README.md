@@ -13,8 +13,8 @@ deno task test
 # Local fast suite: Parallel + Containered Batch (worker containers)
 deno task test_all
 
-# Run tests with coverage
-deno task test --coverage
+# Manual measurement only, when explicitly requested
+deno task test:coverage
 
 # Run specific test file
 deno test --allow-all packages/execution/tests/agent_executor_test.ts
@@ -25,6 +25,32 @@ deno test --allow-all --filter "EventLogger"
 # Type check tests
 deno check tests/
 ```
+
+## Local full-suite preflight
+
+Use focused tests for routine changes. When a full local run is required, check its inputs first:
+
+- Compile the current CLI with `deno task build:solo --compile`. The build task without `--compile`
+  does not create the `dist/bin/exactl-solo-<target>` executable that the worker expects.
+- Keep `DENO_DIR`, Docker/buildx state and `EXA_SANDBOX_BASE` writable and outside the checkout.
+  Reuse a warmed cache: an empty cache can trigger a native SQLite download. Put daemon environment
+  setup in a wrapper script, then `exec` the runner. Its startup cleanup uses `pkill -f` and can also
+  match a launching shell whose command line contains the daemon script path. Do not overlap full-suite runs.
+- After changing the Dockerfile or lockfile, run one real worker with `--network=none` before the
+  full suite. Check its Deno version and lockfile against the checkout. Warm the graph with
+  `--frozen-lockfile`; dynamic grammar and bundle probes use `--no-lock` so they cannot change the
+  copied lockfile. Include SQLite, esbuild and jscpd in the offline check. A successful image build
+  alone does not prove offline execution. See `tests/scripts/ci_submodule_init_test.ts`.
+- The offline portal-policy test needs a bundle from the current engine and portal configuration.
+  The runner rebuilds it before that batch. An existing manifest alone does not prove freshness;
+  see [portal verification packaging](../packages/lint-policy/README.md#portal-verification-packaging).
+- A whole-repository scan that exceeds the bounded worker's memory can use `host: true` in
+  `SEQUENTIAL_TESTS`, with an isolation reason and measurements. Keep the worker memory limit.
+  Use `network: true` for egress needs. See `scripts/test_parallel.ts` and its owning tests.
+
+Coverage and LCOV measurement remain manual-only under `AGENTS.md`. A full-suite or cleanup request
+does not enable them. The LCOV workflow test needs the explicit `--run-lcov-workflow` flag and a
+user request for measurement.
 
 ---
 
@@ -131,19 +157,19 @@ Test migration from root `tests/` to package directories is **in progress** (~26
    - → Add to `packages/<name>/tests/`
    - Use `@exaix/testing` for shared helpers, `@exaix/<package>/testing` for package-specific helpers
 
-2. **Does it test a CLI command?**
+1. **Does it test a CLI command?**
    - → Add to `apps/exactl/tests/`
 
-3. **Does it test a concrete TUI view?**
+1. **Does it test a concrete TUI view?**
    - → Add to `apps/tui/tests/`
 
-4. **Does it exercise multiple packages with real wiring?**
+1. **Does it exercise multiple packages with real wiring?**
    - → Add to `tests/integration/`
 
-5. **Does it validate CI/build scripts?**
+1. **Does it validate CI/build scripts?**
    - → Add to `tests/scripts/`
 
-6. **Does it validate documentation integrity?**
+1. **Does it validate documentation integrity?**
    - → Add to `tests/docs/`
 
 ### Avoid hard-coded multiline fixture content
@@ -381,8 +407,8 @@ Tests run automatically on:
 ### Common Pitfalls
 
 1. **CI mode detection**: Use `isCIMode()` helper, not raw `CI` env var
-2. **Paid LLM tests**: Disabled in CI unless `EXA_TEST_ENABLE_PAID_LLM=1`
-3. **Binary dependencies**: Don't require compiled binaries in tests
+1. **Paid LLM tests**: Disabled in CI unless `EXA_TEST_ENABLE_PAID_LLM=1`
+1. **Binary dependencies**: Don't require compiled binaries in tests
 
 ### Running Locally Like CI
 
@@ -399,15 +425,15 @@ EXA_TEST_ENABLE_PAID_LLM=1 deno task test
 ## Contributing
 
 1. **Write tests first** (TDD)
-2. **Use existing helpers** — import from `@exaix/testing` rather than deep-importing root `tests/helpers/`
-3. **Name tests clearly** — describe behavior, not just "should work"
-4. **Clean up resources** — always call `cleanup()` in finally blocks
-5. **Run lint** — `deno task lint` before committing
+1. **Use existing helpers** — import from `@exaix/testing` rather than deep-importing root `tests/helpers/`
+1. **Name tests clearly** — describe behavior, not just "should work"
+1. **Clean up resources** — always call `cleanup()` in finally blocks
+1. **Run lint** — `deno task lint` before committing
 
 ### Adding New Test Files
 
 1. Create file in appropriate location (`packages/<name>/tests/`, `apps/<name>/tests/`, or `tests/<category>/`)
-2. Add module docblock at top:
+1. Add module docblock at top:
 
 ```typescript
 /**
@@ -417,8 +443,8 @@ EXA_TEST_ENABLE_PAID_LLM=1 deno task test
  */
 ```
 
-3. Run `deno fmt` and `deno lint`
-4. Verify with `deno task test`
+1. Run `deno fmt` and `deno lint`
+1. Verify with `deno task test`
 
 ---
 

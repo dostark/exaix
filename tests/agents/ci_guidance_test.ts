@@ -64,3 +64,25 @@ Deno.test("Agent docs: local completion validation is focused by default", async
   );
   assert(nextSteps.includes("Use focused, file-scoped test commands during implementation"));
 });
+
+for (
+  const name of [
+    "tdd-workflow",
+    "test-development",
+    "next-steps",
+    "commit",
+    "clean-codebase",
+    "upgrade-version",
+    "edition-development",
+    "exaix-development",
+    "coverage",
+  ]
+) {
+  Deno.test(`Agent docs: ${name} keeps coverage manual-only`, async () => {
+    const md = (await Deno.readTextFile(`.copilot/skills/${name}/SKILL.md`)).replace(/\s+/g, " ");
+    assert(md.includes("manual-only"), `${name} must state the manual-only measurement policy`);
+    assert(md.includes("AGENTS.md"), `${name} must reference the governing instructions`);
+    assert(/(?:explicit.{0,35}request|request.{0,35}explicit)/i.test(md), `${name} must require a user request`);
+    assert(!/re-runs the suite for coverage|check \+ test \+ coverage|static gates, coverage, and a build/.test(md));
+  });
+}
