@@ -40,10 +40,9 @@ import {
 import type { IContainerRunResult } from "../../scripts/test_container_driver.ts";
 import * as testOutputParse from "../../scripts/test_output_parse.ts";
 
-Deno.test("needsPortalLintAssets builds only when the mounted lint set is absent", () => {
-  assertEquals(needsPortalLintAssets([OFFLINE_LINT_POLICY_TEST_FILE], true), false);
-  assertEquals(needsPortalLintAssets([OFFLINE_LINT_POLICY_TEST_FILE], false), true);
-  assertEquals(needsPortalLintAssets(["apps/daemon/tests/deploy_workspace_test.ts"], false), false);
+Deno.test("fix(test-runner): offline policy checks rebuild even when a cached manifest exists", () => {
+  assertEquals(needsPortalLintAssets([OFFLINE_LINT_POLICY_TEST_FILE]), true);
+  assertEquals(needsPortalLintAssets(["apps/daemon/tests/deploy_workspace_test.ts"]), false);
   assertEquals(SEQUENTIAL_FILES.includes(OFFLINE_LINT_POLICY_TEST_FILE), true);
 });
 

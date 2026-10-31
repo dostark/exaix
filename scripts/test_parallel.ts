@@ -11,7 +11,6 @@
  */
 
 import { basename, fromFileUrl, join } from "@std/path";
-import { exists } from "@std/fs";
 import { z } from "zod";
 import {
   DOT_REPORTER_SYMBOLS_PATTERN,
@@ -396,9 +395,9 @@ export const SEQUENTIAL_FILES: string[] = SEQUENTIAL_TESTS.map((test) => test.fi
 /** The Batch-2 file that needs the packaged portal lint asset set on the mounted repo. */
 export const OFFLINE_LINT_POLICY_TEST_FILE = "apps/daemon/tests/deploy_lint_policy_offline_test.ts";
 
-/** True when the batch needs a host-side policy build because the mounted directory is absent. */
-export function needsPortalLintAssets(files: readonly string[], manifestExists: boolean): boolean {
-  return !manifestExists && files.includes(OFFLINE_LINT_POLICY_TEST_FILE);
+/** True when the batch needs a fresh policy from the current engine and portal configuration. */
+export function needsPortalLintAssets(files: readonly string[]): boolean {
+  return files.includes(OFFLINE_LINT_POLICY_TEST_FILE);
 }
 
 /** An explicit `--ignore` on the CLI overrides deno.json's config `exclude` for the walk, so fixtures excluded there (e.g. broken-on-purpose portal sources) must be re-listed here or they leak back into type-checking. */
@@ -852,8 +851,7 @@ const HEADER_NUMS = `${"PASS".padStart(NUM_W)}  ${"FAIL".padStart(NUM_W)}  ${"SK
 
 /** Builds the packaged lint assets on the host so the network-none worker stages a verified set. */
 async function preparePortalLintAssetsForOfflineTest(): Promise<void> {
-  const manifestExists = await exists(join(REPO_ROOT, "lint", "unslop", "manifest.json"));
-  if (!needsPortalLintAssets(SEQUENTIAL_FILES, manifestExists)) return;
+  if (!needsPortalLintAssets(SEQUENTIAL_FILES)) return;
   console.log("› Building the portal lint policy for the offline check test...");
   const status = await new Deno.Command("deno", {
     args: ["task", "unslop-ts:policy"],

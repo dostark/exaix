@@ -23,6 +23,32 @@ import { deployLintPolicies, installLintPolicyDir, verifyLintPolicyDir } from ".
 const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
 const SEED_CAST = "export const seed = 1 as unknown as string;\n";
 const CLEAN_LINE = "export const clean = 1;\n";
+const COMPLEXITY_BRANCH_COUNT = 16;
+const LONG_FUNCTION_STATEMENT_COUNT = 61;
+const COMPLEXITY_RULES = [
+  "unslop/max-cyclomatic-complexity",
+  "unslop/max-cognitive-complexity",
+  "unslop/max-function-lines",
+];
+const COMPLEXITY_SEED = [
+  "export function decisions(flags: boolean[]): number {",
+  "  let result = 0;",
+  ...Array.from({ length: COMPLEXITY_BRANCH_COUNT }, (_, index) => `  if (flags[${index}]) result++;`),
+  "  return result;",
+  "}",
+  "export function longUnit(value: number): number {",
+  ...Array.from({ length: LONG_FUNCTION_STATEMENT_COUNT }, () => "  value += 1;"),
+  "  return value;",
+  "}",
+].join("\n");
+const CLEAN_POLICY_SEED = [
+  "/**",
+  " * @module PortalPolicySeed",
+  " * @path seed.ts",
+  " * @description Provides a clean export for the deployed policy check.",
+  " */",
+  CLEAN_LINE,
+].join("\n");
 
 /** Commits every pending change and returns the commit id. */
 async function commitAll(ctx: IGitTestContext, message: string): Promise<string> {
@@ -72,10 +98,10 @@ Deno.test("[deploy-lint-policy-offline] deployed-policy-offline lints with no so
     await setupGitRepo(ctx.repoDir, { initialCommit: true });
     await Deno.writeTextFile(join(ctx.repoDir, "seed.ts"), CLEAN_LINE);
     await commitAll(ctx, "seed");
-    await Deno.writeTextFile(join(ctx.repoDir, "seed.ts"), `${CLEAN_LINE}${SEED_CAST}`);
+    await Deno.writeTextFile(join(ctx.repoDir, "seed.ts"), `${CLEAN_LINE}${SEED_CAST}${COMPLEXITY_SEED}\n`);
     const target = await commitAll(ctx, "change");
 
-    const outcome = await runner.run({
+    const checkContext = {
       requestId: "request-lint-offline",
       traceId: "trace-lint-offline",
       attempt: 1,
@@ -87,7 +113,8 @@ Deno.test("[deploy-lint-policy-offline] deployed-policy-offline lints with no so
       check: DenoLintCheckSchema.parse({ kind: DENO_LINT_CHECK_KIND }),
       timeoutMs: 120_000,
       outputMaxChars: 4_000,
-    });
+    };
+    const outcome = await runner.run(checkContext);
 
     assertEquals(outcome.kind, "failed");
     const findings = outcome.kind === "failed" ? outcome.findings : [];
@@ -95,6 +122,14 @@ Deno.test("[deploy-lint-policy-offline] deployed-policy-offline lints with no so
     assert(chainedCast !== undefined, `expected the chained-cast rule, got ${findings.map((f) => f.rule).join(", ")}`);
     assertEquals(chainedCast.file, "seed.ts");
     assertEquals(chainedCast.start_line, 2);
+    for (const rule of COMPLEXITY_RULES) {
+      assert(findings.some((finding) => finding.rule === rule), `expected ${rule} from the installed policy`);
+    }
+
+    await Deno.writeTextFile(join(ctx.repoDir, "seed.ts"), CLEAN_POLICY_SEED);
+    const cleanTarget = await commitAll(ctx, "repair");
+    const cleanOutcome = await runner.run({ ...checkContext, attempt: 2, targetSha: cleanTarget });
+    assertEquals(cleanOutcome.kind, "passed");
 
     // The adapter only read the deployed set: the assets still verify and the worktree is untouched.
     await verifyLintPolicyDir(join(deployedRoot, "lint", "unslop"));
