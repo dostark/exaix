@@ -4,7 +4,7 @@
  * @description Verifies reporter parsing for the custom parallel test runner.
  */
 
-import { assert, assertEquals, assertMatch, assertThrows } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals, assertMatch, assertThrows } from "@std/assert";
 import { TEST_CONTAINER_REPORTER_ENV } from "../../scripts/test_container_driver.ts";
 
 import {
@@ -54,7 +54,7 @@ Deno.test("resolveReporter defaults to pretty output", () => {
 
 Deno.test("fix(test-runner): live memory maturation uses the serial network lane", () => {
   const file = "apps/daemon/tests/memory_maturation_cutover_live_test.ts";
-  assert(SEQUENTIAL_FILES.includes(file), "live provider work must be excluded from the CPU-pressure batch");
+  assertArrayIncludes(SEQUENTIAL_FILES, [file], "live provider work must be excluded from the CPU-pressure batch");
   const entry = SEQUENTIAL_TESTS.find((test) => test.file === file);
   assert(entry, "the live test needs an isolation entry");
   assert(entry.reasons.includes(IsolationReason.pressure));

@@ -261,6 +261,8 @@ function parseLogLevels(input: string): LogLevel[] {
   return LOG_LEVELS.filter((level) => names.includes(level));
 }
 
+type TLogViewerDialogType = "search" | StructuredLogViewerAction.FILTER_LEVEL | "export";
+
 /**
  * View/controller for structured log monitoring with real-time streaming.
  */
@@ -269,7 +271,7 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
   private logService: ILogService;
   private unsubscribeRealTime?: () => void;
   private refreshInterval?: ReturnType<typeof setInterval>;
-  private pendingDialogType: "search" | StructuredLogViewerAction.FILTER_LEVEL | "export" | null = null;
+  private pendingDialogType: TLogViewerDialogType | null = null;
 
   constructor(
     logService: ILogService,

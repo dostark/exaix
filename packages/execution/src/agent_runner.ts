@@ -401,6 +401,15 @@ function retryPolicyOf(
       : createLLMRetryPolicy(providerErrorsAreFinal));
 }
 
+/** The token-usage hints that segment allocation reports to the budget allocator. */
+type TAllocationHintKey =
+  | "systemUsedTokens"
+  | "planUsedTokens"
+  | "portalKnowledgeUsedTokens"
+  | "memoryUsedTokens"
+  | "skillsUsedTokens"
+  | "loopHistoryUsedTokens";
+
 export class AgentRunner implements IAgentRunner {
   private logger?: IEventLogger;
   private retryPolicy: IRetryPolicy;
@@ -1717,15 +1726,7 @@ export class AgentRunner implements IAgentRunner {
     return `${selected.provider}:${selected.model}`;
   }
 
-  private buildAllocationHints(segments: IContextSegment[]): Record<
-    | "systemUsedTokens"
-    | "planUsedTokens"
-    | "portalKnowledgeUsedTokens"
-    | "memoryUsedTokens"
-    | "skillsUsedTokens"
-    | "loopHistoryUsedTokens",
-    number
-  > {
+  private buildAllocationHints(segments: IContextSegment[]): Record<TAllocationHintKey, number> {
     const hints = {
       systemUsedTokens: 0,
       planUsedTokens: 0,

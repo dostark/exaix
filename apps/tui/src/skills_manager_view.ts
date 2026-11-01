@@ -339,6 +339,8 @@ export class MinimalSkillsServiceMock extends StubSkillsService {
 
 // TUI Session Class
 
+type TSkillsDialogType = "search" | "filter-source" | "filter-status" | "delete";
+
 /**
  * Interactive TUI session for Skills Manager View
  */
@@ -347,7 +349,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
   private skillsViewExtensions: ISkillsViewExtensions;
   private skills: ISkillSummary[] = [];
   private pendingDeleteSkillId: string | null = null;
-  private pendingDialogType: "search" | "filter-source" | "filter-status" | "delete" | null = null;
+  private pendingDialogType: TSkillsDialogType | null = null;
 
   constructor(skillsView: SkillsManagerView, useColors = true) {
     super(useColors);

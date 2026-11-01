@@ -11,17 +11,12 @@
  * @related-files [scripts/deploy_workspace.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { type IDenoConfigShape, stripDevOnlyConfig, WORKSPACE_COPY_DIRS } from "../../scripts/deploy_workspace.ts";
 import { ALLOWED_UNDEPLOYED_DIRS, undeployedDirsNamedBy } from "./deployed_task_dirs.ts";
 
 Deno.test("[deploy_workspace] the copy-dir set includes packages, apps, migrations", () => {
-  for (const dir of ["packages", "apps", "migrations"]) {
-    assert(
-      WORKSPACE_COPY_DIRS.includes(dir),
-      `deploy must copy ${dir}/ (regression guard)`,
-    );
-  }
+  assertArrayIncludes(WORKSPACE_COPY_DIRS, ["packages", "apps", "migrations"], "deploy must copy these directories");
 });
 
 Deno.test("[deploy_workspace] a Solo deploy EXCLUDES exaix-team/ (no BSL Team source in a Solo deploy)", () => {

@@ -113,7 +113,10 @@ export interface IBindingSpec {
   thinking?: ThinkingDeclaration;
 }
 
-export type PinnableBindingField = Exclude<BindingField, "effort" | "thinking">;
+/** The binding fields that a step pin cannot fix. */
+export type TUnpinnableBindingField = "effort" | "thinking";
+
+export type PinnableBindingField = Exclude<BindingField, TUnpinnableBindingField>;
 
 export interface IStepPin {
   fields: PinnableBindingField[];

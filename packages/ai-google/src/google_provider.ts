@@ -79,8 +79,11 @@ function mapToolDefinitionGoogle(
   };
 }
 
+/** The function-calling modes Gemini accepts. */
+type GoogleFunctionCallingMode = "AUTO" | "ANY" | "NONE";
+
 /** Gemini's wire-format `toolConfig.functionCallingConfig`. */
-type GoogleToolConfig = { functionCallingConfig: { mode: "AUTO" | "ANY" | "NONE"; allowedFunctionNames?: string[] } };
+type GoogleToolConfig = { functionCallingConfig: { mode: GoogleFunctionCallingMode; allowedFunctionNames?: string[] } };
 
 const GOOGLE_ROLE_MODEL = "model";
 const GOOGLE_ROLE_USER = "user";

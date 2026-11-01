@@ -15,7 +15,9 @@ import type { Opt, Reason } from "@exaix/core/types";
 import type { IOpenRouterModelEntry } from "./openrouter_model_capabilities.ts";
 import { OPENROUTER_EFFORT_ORDER } from "./constants.ts";
 
-type ReasoningOptions = Pick<IModelOptions, "effort" | "thinking" | "thinking_budget">;
+type ReasoningOptionKey = "effort" | "thinking" | "thinking_budget";
+
+type ReasoningOptions = Pick<IModelOptions, ReasoningOptionKey>;
 
 /** True when the call carries a reasoning control, so the provider needs the model's capability entry. */
 export function hasReasoningOption(options: Opt<ReasoningOptions, Reason.OptionalInput>): boolean {

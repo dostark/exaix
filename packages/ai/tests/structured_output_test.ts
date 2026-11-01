@@ -296,8 +296,18 @@ Deno.test("[phase203.structured] self-hosted takes the json_object branch on a s
 });
 
 Deno.test("json_object instruction overrides prompt-level wrapper tags so the reply is bare JSON", () => {
-  assertStringIncludes(STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION, "<content>");
-  assertStringIncludes(STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION, "first character");
+  const plan = planStructuredOutput(
+    "deepseek",
+    schema({
+      type: "object",
+      properties: { title: { type: "string" } },
+      required: ["title"],
+      additionalProperties: false,
+    }),
+  );
+  assertStringIncludes(plan.promptInstruction ?? "", STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION);
+  assertStringIncludes(plan.promptInstruction ?? "", "<content>");
+  assertStringIncludes(plan.promptInstruction ?? "", "first character");
 });
 
 Deno.test("fix(structured-output): JSON mode supplies the original schema to the model", () => {

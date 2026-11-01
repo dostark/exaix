@@ -13,7 +13,7 @@
  * @related-files [scripts/ingest_terminal_bench.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { batchIngestTerminalBench, LICENSE_ALLOWLIST } from "../../scripts/ingest_terminal_bench.ts";
 
@@ -66,7 +66,7 @@ Deno.test("[ApplyOracleSolutionDockerless] a verbose-but-correct oracle solution
     });
     const elapsedMs = Date.now() - start;
 
-    assert(LICENSE_ALLOWLIST.includes("Apache-2.0"));
+    assertArrayIncludes<string>(LICENSE_ALLOWLIST, ["Apache-2.0"]);
     assertEquals(manifest.tasks.length, 1);
     assertEquals(
       manifest.tasks[0].class,

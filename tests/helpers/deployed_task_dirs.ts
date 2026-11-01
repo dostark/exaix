@@ -13,7 +13,7 @@ import { WORKSPACE_COPY_DIRS } from "../../scripts/deploy_workspace.ts";
 const OTHER_DEPLOYED_DIRS: readonly string[] = ["Memory", "Blueprints", "docs", "scripts"];
 
 /** Undeployed directories that kept tasks may name. */
-export const ALLOWED_UNDEPLOYED_DIRS: readonly string[] = ["coverage", "exaix-team", "tests"];
+export const ALLOWED_UNDEPLOYED_DIRS: readonly string[] = ["coverage", "exaix-enterprise", "exaix-team", "tests"];
 
 const DIR_TOKEN = /^[A-Za-z_.-]+\//;
 

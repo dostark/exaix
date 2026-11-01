@@ -23,7 +23,7 @@ Deno.test("OpenAIProvider sends correct payload and returns content for default 
   let capturedBody: any = null;
 
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = (input: string | URL | Request, init?: RequestInit) => {
     capturedUrl = input.toString();
     capturedBody = init?.body ? JSON.parse(init.body as string) : null;
 
@@ -38,7 +38,7 @@ Deno.test("OpenAIProvider sends correct payload and returns content for default 
     });
 
     return Promise.resolve(new Response(body, { status: 200, headers: { "Content-Type": "application/json" } }));
-  }) as () => Promise<Response>;
+  };
 
   try {
     const provider = new OpenAIProvider({ apiKey: "test-key", model, baseUrl: "https://api.test/v1/chat/completions" });

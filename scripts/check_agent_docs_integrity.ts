@@ -21,14 +21,16 @@
  */
 import { join, resolve } from "@std/path";
 
+type TIntegrityViolationKind =
+  | "dangling-readme-link"
+  | "dangling-docs-index-link"
+  | "dangling-manifest-path"
+  | "dangling-docs-symlink"
+  | "forbidden-folder"
+  | "docs-readme-symlink-list";
+
 interface IIntegrityViolation {
-  kind:
-    | "dangling-readme-link"
-    | "dangling-docs-index-link"
-    | "dangling-manifest-path"
-    | "dangling-docs-symlink"
-    | "forbidden-folder"
-    | "docs-readme-symlink-list";
+  kind: TIntegrityViolationKind;
   file: string;
   detail: string;
 }

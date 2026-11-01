@@ -505,12 +505,10 @@ parallelSafeTest("deployed-scripts-import-only-deployed-siblings", async () => {
   const siblingImport = /from "\.\/([^"/]+\.ts)"/g;
   for (const script of DEPLOYED_SCRIPT_FILES) {
     const source = await Deno.readTextFile(join(REPO_ROOT, "scripts", script));
-    for (const match of source.matchAll(siblingImport)) {
-      assert(
-        DEPLOYED_SCRIPT_FILES.includes(match[1]),
-        `${script} imports ${match[1]}, which the deploy does not copy`,
-      );
-    }
+    const undeployed = [...source.matchAll(siblingImport)]
+      .map((match) => match[1])
+      .filter((sibling) => !DEPLOYED_SCRIPT_FILES.includes(sibling));
+    assertEquals(undeployed, [], `${script} imports siblings that the deploy does not copy`);
   }
 });
 

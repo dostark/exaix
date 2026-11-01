@@ -11,8 +11,11 @@ import type { JSONValue } from "@exaix/core";
 import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { ChangesetResultSchema } from "@exaix/schemas/agent_composer.ts";
 
+/** The IExecutionContext fields that OutputParser reads. */
+export type TOutputParserContextField = "trace_id" | "request_id" | "plan";
+
 /** Fields from IExecutionContext used by OutputParser. */
-export type IOutputParserContext = Pick<IExecutionContext, "trace_id" | "request_id" | "plan">;
+export type IOutputParserContext = Pick<IExecutionContext, TOutputParserContextField>;
 
 /** All methods are pure functions with no side effects. */
 export class OutputParser {

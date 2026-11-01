@@ -387,7 +387,9 @@ interface IStepContext {
   gateFeedback?: string;
 }
 
-type IFormatStepSuccessContext = Pick<IStepContext, "flowRunId" | "step" | "request" | "startedAt">;
+type TFormatStepSuccessField = "flowRunId" | "step" | "request" | "startedAt";
+
+type IFormatStepSuccessContext = Pick<IStepContext, TFormatStepSuccessField>;
 
 interface IStepRecoveryMetadata {
   wasRetried?: boolean;

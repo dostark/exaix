@@ -23,7 +23,7 @@
 
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH, DEFAULT_FLOWS_PATH } from "@exaix/shared";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "@std/assert";
 import { join, resolve } from "@std/path";
 import { walk } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
@@ -121,8 +121,7 @@ Deno.test("[scenario-vars] every referenced variable is one the runner substitut
 Deno.test("[scenario-vars] the runner's table is read from the runner, not restated here", () => {
   // Guards the test itself: were the export renamed or emptied, the check above would pass
   // vacuously by declaring every variable unknown — or, if inverted, by knowing none.
-  assert(SCENARIO_SUBSTITUTED_VARIABLES.includes("WORKSPACE_ROOT"));
-  assert(SCENARIO_SUBSTITUTED_VARIABLES.includes("REQUEST_FIXTURE"));
+  assertArrayIncludes<string>(SCENARIO_SUBSTITUTED_VARIABLES, ["WORKSPACE_ROOT", "REQUEST_FIXTURE"]);
 });
 
 Deno.test("[scenario-vars] every declared flow_fixture resolves to a file that exists", async () => {
@@ -193,8 +192,9 @@ Deno.test("[scenario-vars] a scenario declaring flow_fixture gets $FLOW_FIXTURE 
   // and the two halves had never been connected.
   const declaring = (await readScenarioFiles()).filter((file) => file.doc?.flow_fixture);
   assert(declaring.length > 0, "expected at least one scenario to declare flow_fixture");
-  assert(
-    SCENARIO_SUBSTITUTED_VARIABLES.includes("FLOW_FIXTURE"),
+  assertArrayIncludes<string>(
+    SCENARIO_SUBSTITUTED_VARIABLES,
+    ["FLOW_FIXTURE"],
     "scenarios declare flow_fixture, so the runner must define $FLOW_FIXTURE",
   );
 });

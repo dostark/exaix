@@ -6,24 +6,27 @@
  * @related-files [packages/core/src/types/i_notification_service.ts]
  */
 
+/** The kinds of system notification. */
+export type TMemoryNotificationType =
+  | "memory_update_pending"
+  | "memory_update_pending_digest"
+  | "memory_approved"
+  | "memory_rejected"
+  | "amendment_pending"
+  | "amendment_approved"
+  | "amendment_rejected"
+  | "amendment_expired"
+  | "info"
+  | "success"
+  | "warning"
+  | "error";
+
 /**
  * Structure for system notifications.
  */
 export interface IMemoryNotification {
   id?: string;
-  type:
-    | "memory_update_pending"
-    | "memory_update_pending_digest"
-    | "memory_approved"
-    | "memory_rejected"
-    | "amendment_pending"
-    | "amendment_approved"
-    | "amendment_rejected"
-    | "amendment_expired"
-    | "info"
-    | "success"
-    | "warning"
-    | "error";
+  type: TMemoryNotificationType;
   message: string;
   proposal_id?: string;
   trace_id?: string;

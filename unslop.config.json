@@ -287,13 +287,11 @@
       ]
     },
     "exaix/no-constant-substring-assert": {
-      "level": "off",
+      "level": "error",
       "options": {
         "constantPattern": "^[A-Z][A-Z0-9_]*$"
       },
       "scope": "test",
-      "optIn": true,
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "tags": [
         "test-quality",
         "deslop"
@@ -428,9 +426,7 @@
       "level": "error"
     },
     "exaix/promise-response-return": {
-      "level": "off",
-      "optIn": true,
-      "reason": "Parked: The AST rule also reports a parameter, a variable, and a function type that the line scanner missed. Phase 230 burns them down and turns the rule on."
+      "level": "error"
     },
     "exaix/ts-suppression-pragmas": {
       "level": "error"
@@ -760,13 +756,11 @@
       ]
     },
     "exaix/magic-union-type": {
-      "level": "off",
+      "level": "error",
       "options": {
         "hint": "Define an enum in packages/core/src/types/enums.ts or use a shared named union type."
       },
-      "scope": "prod",
-      "optIn": true,
-      "reason": "Parked: The AST rule exempts only a union that is the whole alias body, so it finds inline unions that the line scanner skipped. Phase 230 burns them down and turns the rule on."
+      "scope": "prod"
     },
     "exaix/require-module-header": {
       "level": "error"

@@ -19,12 +19,12 @@ const MAX_ATTEMPTS = 3;
 const BACKOFF_MS = 1;
 
 async function withFetch<T>(
-  respond: (call: number) => Promise<Response>,
+  respond: (call: number) => Response,
   body: () => Promise<T>,
 ): Promise<{ calls: number; value: T }> {
   const original = globalThis.fetch;
   let calls = 0;
-  globalThis.fetch = (() => respond(++calls)) as typeof fetch;
+  globalThis.fetch = (() => Promise.resolve(respond(++calls))) as typeof fetch;
   try {
     const value = await body();
     return { calls, value };
@@ -84,7 +84,7 @@ Deno.test("each scheduled retry is journaled as provider.retry.scheduled with th
   const logger = createMockEventLogger();
   const traceId = crypto.randomUUID();
   const { calls, value } = await withFetch(
-    (call) => Promise.resolve(call === 1 ? new Response("{}", { status: 503 }) : new Response(OK_BODY)),
+    (call) => call === 1 ? new Response("{}", { status: 503 }) : new Response(OK_BODY),
     () =>
       performProviderCall(URL_UNDER_TEST, { method: "POST", body: "{}" }, {
         id: "p",
@@ -109,7 +109,7 @@ Deno.test("each scheduled retry is journaled as provider.retry.scheduled with th
 Deno.test("a call that succeeds first time journals no retry", async () => {
   const logger = createMockEventLogger();
   await withFetch(
-    () => Promise.resolve(new Response(OK_BODY)),
+    () => new Response(OK_BODY),
     () =>
       performProviderCall(URL_UNDER_TEST, { method: "POST", body: "{}" }, {
         id: "p",

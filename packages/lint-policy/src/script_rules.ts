@@ -32,12 +32,16 @@ const ALL = "all";
 const WARN = "warn";
 const SCRIPT_COMMAND: readonly string[] = [DENO, TASK, CHECK_STYLE];
 
+type TScriptRuleSeverity = "error" | "warn";
+
+type TScriptRuleScope = "prod" | "test" | "all";
+
 interface IScriptRow {
   readonly id: string;
   readonly description: string;
   readonly category: IRuleMeta["category"];
-  readonly severity: "error" | "warn";
-  readonly scope: "prod" | "test" | "all";
+  readonly severity: TScriptRuleSeverity;
+  readonly scope: TScriptRuleScope;
   readonly docs: string;
   readonly limits: string | null;
   readonly hasOptions: boolean;

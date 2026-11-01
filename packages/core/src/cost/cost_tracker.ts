@@ -51,8 +51,11 @@ import type {
 /** Percent → fraction divisor. */
 const PERCENT = 100;
 
+/** The cost record fields that a pending record replaces or leaves to the database. */
+type TPendingCostOmittedField = "id" | "costSource";
+
 /** A record pending batch insert into provider_costs, before an id is assigned. */
-type IPendingCostRecord = Omit<IProviderCostRecord, "id" | "costSource"> & {
+type IPendingCostRecord = Omit<IProviderCostRecord, TPendingCostOmittedField> & {
   requests: number;
   costSource: CostSource | null;
 };

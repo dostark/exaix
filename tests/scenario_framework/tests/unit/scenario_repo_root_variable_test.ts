@@ -8,7 +8,7 @@
  * @related-files [tests/scenario_framework/runner/synthetic_runner.ts, tests/scenario_framework/runner/scenario_templates.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { join, resolve } from "@std/path";
 import { walk } from "@std/fs";
 import { SCENARIO_SUBSTITUTED_VARIABLES } from "../../runner/synthetic_runner.ts";
@@ -32,8 +32,9 @@ async function walkUpReferences(): Promise<string[]> {
 }
 
 Deno.test("[scenario-vars] $REPO_ROOT is a runner-substituted variable", () => {
-  assert(
-    SCENARIO_SUBSTITUTED_VARIABLES.includes("REPO_ROOT"),
+  assertArrayIncludes<string>(
+    SCENARIO_SUBSTITUTED_VARIABLES,
+    ["REPO_ROOT"],
     "the runner must define $REPO_ROOT so a deployed scenario can reach repo assets",
   );
 });

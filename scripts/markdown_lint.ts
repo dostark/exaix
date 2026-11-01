@@ -179,7 +179,9 @@ function applyOutsideCodeSpans(line: string, fn: (segment: string) => string): s
   return result;
 }
 
-type Fence = { char: "`" | "~"; length: number };
+type TFenceChar = "`" | "~";
+
+type Fence = { char: TFenceChar; length: number };
 
 function decodeFragment(fragment: string): string {
   try {

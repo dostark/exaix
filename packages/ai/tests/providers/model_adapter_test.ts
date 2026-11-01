@@ -56,7 +56,7 @@ Deno.test("OllamaProvider sends correct JSON payload to /api/generate", async ()
 
   // Mock fetch to capture the request
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = (input: string | URL | Request, init?: RequestInit) => {
     capturedRequest = new Request(input, init);
     capturedBody = JSON.parse(init?.body as string);
 
@@ -70,7 +70,7 @@ Deno.test("OllamaProvider sends correct JSON payload to /api/generate", async ()
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
     );
-  }) as () => Promise<Response>;
+  };
 
   try {
     const provider = new OllamaProvider({ model: "llama3.2" });
@@ -109,10 +109,10 @@ Deno.test("OllamaProvider uses default baseUrl and model", async () => {
   let capturedUrl = "";
 
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = ((input: string | URL | Request) => {
+  globalThis.fetch = (input: string | URL | Request) => {
     capturedUrl = input.toString();
     return Promise.resolve(new Response(JSON.stringify({ response: "test" }), { status: 200 }));
-  }) as () => Promise<Response>;
+  };
 
   try {
     const provider = new OllamaProvider();

@@ -413,8 +413,11 @@ interface TestStats extends ITestCounts {
   exitCode: number;
 }
 
+/** The TestStats fields that row() renders. */
+type TTestRowField = "passed" | "failed" | "ignored" | "durationSec" | "exitCode";
+
 /** Subset passed to row() for rendering (everything except label). */
-type TestRowData = Pick<TestStats, "passed" | "failed" | "ignored" | "durationSec" | "exitCode">;
+type TestRowData = Pick<TestStats, TTestRowField>;
 
 /** Rule width for the failure blocks shown at the end of a run. */
 const FAILURE_RULE = "═".repeat(60);

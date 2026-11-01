@@ -22,7 +22,8 @@
     ],
     "scriptsRunRules": [
       "exaix/require-deno-shebang",
-      "exaix/no-forbidden-lint-ignore"
+      "exaix/no-forbidden-lint-ignore",
+      "exaix/no-constant-substring-assert"
     ]
   },
   "rules": [
@@ -406,7 +407,7 @@
         }
       ],
       "ported": true,
-      "parked": true,
+      "parked": false,
       "note": ""
     },
     {
@@ -499,7 +500,7 @@
         }
       ],
       "ported": true,
-      "parked": true,
+      "parked": false,
       "note": ""
     },
     {

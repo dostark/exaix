@@ -259,32 +259,6 @@
     "packages/session": 1,
     "tests": 8
   },
-  "exaix/no-constant-substring-assert": {
-    "apps/daemon": 1,
-    "apps/tui": 1,
-    "exaix-team": 1,
-    "packages/ai": 2,
-    "tests": 7
-  },
-  "exaix/magic-union-type": {
-    "apps/daemon": 1,
-    "apps/tui": 3,
-    "packages/ai-google": 1,
-    "packages/ai-openrouter": 1,
-    "packages/core": 3,
-    "packages/execution": 2,
-    "packages/flow": 2,
-    "packages/git": 1,
-    "packages/lint-policy": 2,
-    "packages/memory": 1,
-    "packages/schemas": 2,
-    "packages/session": 2,
-    "scripts": 8
-  },
-  "exaix/promise-response-return": {
-    "exaix-team": 3,
-    "packages/ai": 4
-  },
   "exaix/max-params": {
     "packages/core": 1,
     "packages/flow": 1,

@@ -328,6 +328,9 @@ export class MonitorView {
 
 // Minimal Mock for Tests
 
+/** The dialogs that the monitor session can have pending. */
+export type TMonitorDialogType = "search" | "filter-agent-role" | "filter-time" | "filter-trace" | "filter-action";
+
 /**
  * Interactive TUI session for Monitor View
  */
@@ -336,8 +339,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
   protected logViewExtensions: ILogViewExtensions;
   public autoRefreshTimer: number | null = null;
   // Track what dialog is pending
-  public pendingDialogType: "search" | "filter-agent-role" | "filter-time" | "filter-trace" | "filter-action" | null =
-    null;
+  public pendingDialogType: TMonitorDialogType | null = null;
 
   constructor(monitorView: MonitorView, useColors = true) {
     super(useColors);

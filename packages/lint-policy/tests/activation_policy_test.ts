@@ -48,6 +48,9 @@ const ACTIVE_PLUGIN_IDS = [
   "exaix/long-comment",
   "exaix/ephemeral-comment",
   "exaix/test-inline-multiline-fixture",
+  "exaix/no-constant-substring-assert",
+  "exaix/promise-response-return",
+  "exaix/magic-union-type",
 ];
 
 Deno.test("atomic-policy-transition: independent active plugin IDs include only delivered rules", () => {
@@ -73,7 +76,17 @@ const COMMENT_FIXTURE_RULES = [
   "exaix/ephemeral-comment",
   "exaix/test-inline-multiline-fixture",
 ];
+const CONTRACT_RULES = [
+  "exaix/no-constant-substring-assert",
+  "exaix/promise-response-return",
+  "exaix/magic-union-type",
+];
 const CLI_TIMEOUT_MS = 30_000;
+const EXPECTED_SCOPE: Readonly<Record<string, string>> = {
+  "exaix/test-inline-multiline-fixture": "test",
+  "exaix/no-constant-substring-assert": "test",
+  "exaix/magic-union-type": "prod",
+};
 const CANARY_PATHS = [
   "packages/core/src/canary.ts",
   "packages/core/tests/canary_test.ts",
@@ -142,7 +155,7 @@ export default createUnslopProject({ descriptor, config }).plugin;
       const shebang = support.startsWith("scripts/") ? "#!/usr/bin/env -S deno run -A\n" : "";
       await Deno.writeTextFile(
         join(dir, support),
-        `${shebang}/**\n * @module ActivationSupport\n * @path ${support}\n * @description Supplies the canary value.\n * Usage: deno run ${support}\n */\nexport interface IProbe { value: number; }\nexport const value = 1;\n`,
+        `${shebang}/**\n * @module ActivationSupport\n * @path ${support}\n * @description Supplies the canary value.\n * Usage: deno run ${support}\n */\nexport interface IProbe { value: number; }\nexport const value = 1;\nexport const SUBJECT = \"part of the subject\";\n`,
       );
     }
     const enterprise = "exaix-enterprise";
@@ -258,20 +271,17 @@ Deno.test("atomic-policy-transition: scripts select the active rule and its park
   const config = JSON.parse(await Deno.readTextFile(new URL("deno.json", REPO_ROOT)));
   const scripts = config.tasks.lint.split(" && ")[1];
   const selected = scripts.match(/^EXAIX_LINT_RULES=([^ ]+)/)[1].split(",");
-  const delivered = [RULE, ...IMPORT_INTERFACE_RULES, ...COMMENT_FIXTURE_RULES];
+  const delivered = [RULE, ...IMPORT_INTERFACE_RULES, ...COMMENT_FIXTURE_RULES, ...CONTRACT_RULES];
   assertArrayIncludes(selected, delivered);
   for (const id of selected) assertEquals(POLICY_CATALOG.rules[id].severity, "error", id);
   const ceilings = JSON.parse(await Deno.readTextFile(new URL("packages/lint-policy/rule_ceilings.json", REPO_ROOT)));
   for (const id of delivered) {
     assertEquals(ceilings[id], undefined, id);
-    assertEquals(POLICY_CATALOG.rules[id].scope, id === "exaix/test-inline-multiline-fixture" ? "test" : "all", id);
+    assertEquals(POLICY_CATALOG.rules[id].scope, EXPECTED_SCOPE[id] ?? "all", id);
     assertEquals(POLICY_CATALOG.rules[id].optIn, undefined, id);
     assertEquals(POLICY_CATALOG.rules[id].reason, undefined, id);
   }
   const parked = [
-    "exaix/no-constant-substring-assert",
-    "exaix/promise-response-return",
-    "exaix/magic-union-type",
     "exaix/no-object-parameters",
     "exaix/no-unsafe-dictionary",
     "exaix/no-typeof-escape",
@@ -389,12 +399,18 @@ function commentFixtureSource(path: string, rule: string, violation: boolean): s
 
 /** True when the rule's compiled scope covers the canary path. */
 function inScope(rule: string, path: string): boolean {
-  return POLICY_CATALOG.rules[rule].scope !== "test" || /_test\.ts$/.test(path);
+  const scope = POLICY_CATALOG.rules[rule].scope;
+  if (scope === "all") return true;
+  return /_test\.ts$/.test(path) === (scope === "test");
 }
 
-Deno.test("default-comment-fixture-gates: exact canaries fail and clean or out-of-scope controls pass in both passes", async () => {
+/** Runs each rule's violation and clean source through every canary path and both authored passes. */
+async function assertCanaryMatrix(
+  rules: readonly string[],
+  build: (path: string, rule: string, violation: boolean) => string,
+): Promise<void> {
   await withActivationProject(async (dir) => {
-    for (const rule of COMMENT_FIXTURE_RULES) {
+    for (const rule of rules) {
       for (const path of CANARY_PATHS) {
         const pass = path.startsWith("scripts/") ? "scripts" : "main";
         const evidence = (run: { runId: string; stderr: string }) =>
@@ -405,22 +421,27 @@ Deno.test("default-comment-fixture-gates: exact canaries fail and clean or out-o
             checkedFiles: [toFileUrl(join(dir, path)).href],
             cwd: dir,
           });
-        await Deno.writeTextFile(join(dir, path), commentFixtureSource(path, rule, true));
+        await Deno.writeTextFile(join(dir, path), build(path, rule, true));
         const seeded = await runPass(dir, pass);
-        if (inScope(rule, path)) {
+        const covered = inScope(rule, path);
+        if (covered) {
           assertEquals(seeded.code, 1, `${rule} ${path}: ${seeded.stderr}`);
           assertStringIncludes(seeded.stderr, `error[${rule}]:`);
+          evidence(seeded);
         } else {
           assertEquals(seeded.code, 0, `${rule} ${path}: ${seeded.stderr}`);
         }
-        evidence(seeded);
-        await Deno.writeTextFile(join(dir, path), commentFixtureSource(path, rule, false));
+        await Deno.writeTextFile(join(dir, path), build(path, rule, false));
         const clean = await runPass(dir, pass);
         assertEquals(clean.code, 0, `${rule} ${path}: ${clean.stderr}`);
-        evidence(clean);
+        if (covered) evidence(clean);
       }
     }
   });
+}
+
+Deno.test("default-comment-fixture-gates: exact canaries fail and clean or out-of-scope controls pass in both passes", async () => {
+  await assertCanaryMatrix(COMMENT_FIXTURE_RULES, commentFixtureSource);
 });
 
 Deno.test("default-comment-fixture-gates: module headers and fixture folders stay exempt", async () => {
@@ -445,6 +466,33 @@ Deno.test("default-comment-fixture-gates: module headers and fixture folders sta
       });
     }
   });
+});
+
+/** One substring, return or union rule's violation or clean counterpart below the authored module header. */
+function contractSource(path: string, rule: string, violation: boolean): string {
+  const header = sourceOf(path, false).split("import { value }")[0];
+  if (rule === "exaix/no-constant-substring-assert") {
+    const imports = 'import { assertStringIncludes } from "@std/assert";\nimport { SUBJECT } from "./support.ts";\n';
+    const local = violation ? "" : 'const message = "part of the subject";\n';
+    const subject = violation ? "SUBJECT" : "message";
+    return header + imports + local +
+      `export function check(): void {\n  assertStringIncludes(${subject}, "part");\n}\nexport const keep = SUBJECT;\n`;
+  }
+  if (rule === "exaix/promise-response-return") {
+    const returned = violation ? "Promise<Response>" : "ReturnType<typeof fetch>";
+    return header + `export function get(): ${returned} {\n  return fetch("x");\n}\n`;
+  }
+  const named = violation ? "" : 'type TMode = "fast" | "slow";\n';
+  const annotation = violation ? '"fast" | "slow"' : "TMode";
+  return header + named + `export function mode(value: ${annotation}): string {\n  return value;\n}\n`;
+}
+
+Deno.test("default-substring-subject-contract: an imported constant subject reports and a local subject does not", async () => {
+  await assertCanaryMatrix(["exaix/no-constant-substring-assert"], contractSource);
+});
+
+Deno.test("default-return-union-contracts: forbidden and named forms are told apart in scope and in both passes", async () => {
+  await assertCanaryMatrix(["exaix/promise-response-return", "exaix/magic-union-type"], contractSource);
 });
 
 /** The directories below `base` that hold a deno.json, as repository-relative paths. */

@@ -22,14 +22,16 @@ import { join } from "@std/path";
 
 /** One reported violation: a runtime-artifact path found either as a staged file itself, or
  *  embedded in a staged patch/diff file's content. */
+/** Whether the artifact IS the staged file, or was found embedded inside its diff content. */
+type TRuntimeArtifactKind = "staged-file" | "embedded-in-diff";
+
 interface IRuntimeArtifactViolation {
   /** The staged file that carries the violation. */
   stagedPath: string;
   /** The offending runtime-artifact path (may equal `stagedPath` itself, or be a path found
    *  inside `stagedPath`'s diff content). */
   artifactPath: string;
-  /** Whether the artifact IS the staged file, or was found embedded inside its diff content. */
-  kind: "staged-file" | "embedded-in-diff";
+  kind: TRuntimeArtifactKind;
 }
 
 const REPO_ROOT = join(import.meta.dirname!, "..");

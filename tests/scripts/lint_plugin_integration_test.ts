@@ -140,14 +140,13 @@ Deno.test("deno lint reports exaix/ts-suppression-pragmas on a described pragma"
   }, PRAGMA_SEED);
 });
 
-Deno.test("a parked type-pattern rule is silent by default and reports when EXAIX_LINT_RULES selects it", async () => {
+Deno.test("default-return-union-contracts: activated type-pattern rules report without an explicit selector", async () => {
   const seeds = [["exaix/promise-response-return", PARKED_RETURN_SEED], ["exaix/magic-union-type", PARKED_UNION_SEED]];
   for (const [rule, source] of seeds) {
     await withSeed(async (file) => {
-      const silent = await runDeno(["lint", file]);
-      assertFalse(silent.output.includes(rule), silent.output);
-      const selected = await runDeno(["lint", file], { EXAIX_LINT_RULES: rule });
-      assertStringIncludes(selected.output, rule);
+      const result = await runDeno(["lint", file], { EXAIX_LINT_RULES: "" });
+      assertEquals(result.code, 1, result.output);
+      assertStringIncludes(result.output, `error[${rule}]`);
     }, source);
   }
 });

@@ -399,6 +399,6 @@ Deno.test("MinimalDaemonServiceMock: works correctly", async () => {
 Deno.test("CLIDaemonService spawns an exactl entry point that exists", async () => {
   const info = await Deno.stat(EXACTL_CLI_SCRIPT_PATH);
   assert(info.isFile, EXACTL_CLI_SCRIPT_PATH);
-  assert(EXACTL_CLI_SCRIPT_PATH.endsWith("/apps/exactl/src/exactl.ts"), EXACTL_CLI_SCRIPT_PATH);
+  assertEquals(EXACTL_CLI_SCRIPT_PATH, new URL("../../exactl/src/exactl.ts", import.meta.url).pathname);
   assertEquals(new CLIDaemonService() instanceof CLIDaemonService, true);
 });

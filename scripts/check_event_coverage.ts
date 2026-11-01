@@ -59,13 +59,16 @@ interface IAuditBinding {
   isField: boolean;
 }
 
+/** Why a method or function needs an audit event. */
+export type TEventCoverageReason = "state-change" | "cross-component-call";
+
 /** A method or function with a state change or cross-component call and no call to its
  *  own audit-logger binding anywhere in its body. */
 export interface IEventCoverageFinding {
   file: string;
   scopeName: string;
   line: number;
-  reasons: Array<"state-change" | "cross-component-call">;
+  reasons: TEventCoverageReason[];
   detail: string[];
   /** true when the owning class carries @visible — promotes this finding from advisory to
    *  blocking under --fail-on-tagged. Always false for top-level function findings, since
@@ -582,7 +585,7 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
 
     const stateOps = findStateChangeOperations(member.body, excludeForStateChange);
     const crossCalls = findCrossComponentCalls(member.body, componentFields);
-    const reasons: Array<"state-change" | "cross-component-call"> = [];
+    const reasons: TEventCoverageReason[] = [];
     if (stateOps.length > 0) reasons.push("state-change");
     if (crossCalls.length > 0) reasons.push("cross-component-call");
     if (reasons.length === 0) continue;
@@ -648,7 +651,7 @@ export function analyzeSourceFile(
 
       const stateOps = findStateChangeOperations(stmt.body, new Set([auditParam]));
       const crossCalls = findCrossComponentCalls(stmt.body, []);
-      const reasons: Array<"state-change" | "cross-component-call"> = [];
+      const reasons: TEventCoverageReason[] = [];
       if (stateOps.length > 0) reasons.push("state-change");
       if (crossCalls.length > 0) reasons.push("cross-component-call");
       if (reasons.length === 0) continue;

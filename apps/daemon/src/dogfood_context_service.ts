@@ -85,8 +85,11 @@ export type IStartDogfoodContextServer = (
   port?: number,
 ) => Promise<IDogfoodContextServerHandle>;
 
+/** The IPortalKnowledgeService methods this service depends on. */
+type TDogfoodKnowledgeMethod = "queryContext" | "loadCachedKnowledge";
+
 /** The narrow slice of IPortalKnowledgeService this service depends on. */
-type IDogfoodPortalKnowledgeSource = Pick<IPortalKnowledgeService, "queryContext" | "loadCachedKnowledge">;
+type IDogfoodPortalKnowledgeSource = Pick<IPortalKnowledgeService, TDogfoodKnowledgeMethod>;
 
 interface IDogfoodContextServiceDeps {
   /** Trusted, daemon-resolved portal alias — never taken from `prepare`'s input. */

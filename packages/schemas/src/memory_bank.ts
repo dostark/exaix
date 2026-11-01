@@ -193,8 +193,11 @@ export const LearningSchema = z.object({
 
 export type ILearningReference = z.infer<typeof LearningReferenceSchema>;
 export type ILearning = z.infer<typeof LearningSchema>;
+/** The immutable identity fields of a learning. */
+export type TLearningIdentityField = "id" | "created_at";
+
 /** Mutable fields accepted by `updateLearning`/`learningPatch` — excludes the immutable identity fields. */
-export type ILearningPatch = Partial<Omit<ILearning, "id" | "created_at">>;
+export type ILearningPatch = Partial<Omit<ILearning, TLearningIdentityField>>;
 
 /**
  * Global pattern - a code pattern that applies across projects

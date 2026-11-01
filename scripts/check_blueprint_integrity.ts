@@ -27,9 +27,12 @@
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 
+/** The kinds of blueprint integrity violation. */
+type TBlueprintViolationKind = "dangling-agent-role" | "dangling-skill" | "orphan-agent-role" | "orphan-skill";
+
 /** A single integrity violation. */
 interface IIntegrityViolation {
-  kind: "dangling-agent-role" | "dangling-skill" | "orphan-agent-role" | "orphan-skill";
+  kind: TBlueprintViolationKind;
   detail: string;
 }
 

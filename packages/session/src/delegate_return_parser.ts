@@ -54,31 +54,37 @@ interface ICodexFileChange {
   kind?: string;
 }
 
+/** The event kinds in a `codex exec --json` stream. */
+type TCodexEventType =
+  | "thread.started"
+  | "turn.started"
+  | "turn.completed"
+  | "turn.failed"
+  | "item.started"
+  | "item.completed"
+  | "error";
+
+/** The item kinds that a Codex event can carry. */
+type TCodexItemType =
+  | "agent_message"
+  | "reasoning"
+  | "command_execution"
+  | "file_change"
+  | "mcp_tool_call"
+  | "web_search"
+  | "todo_list"
+  | "collab_tool_call"
+  | "error";
+
 /** Shape of a parsed `codex exec --json` JSONL event line (see upstream source
  *  codex-rs/exec/src/exec_events.rs). JSONL like opencode's stream, but with Codex's
  *  own event/field names. */
 interface ICodexEvent {
-  type:
-    | "thread.started"
-    | "turn.started"
-    | "turn.completed"
-    | "turn.failed"
-    | "item.started"
-    | "item.completed"
-    | "error";
+  type: TCodexEventType;
   thread_id?: string;
   item?: {
     id: string;
-    type:
-      | "agent_message"
-      | "reasoning"
-      | "command_execution"
-      | "file_change"
-      | "mcp_tool_call"
-      | "web_search"
-      | "todo_list"
-      | "collab_tool_call"
-      | "error";
+    type: TCodexItemType;
     text?: string;
     changes?: ICodexFileChange[];
     status?: string;

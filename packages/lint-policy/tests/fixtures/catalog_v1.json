@@ -489,10 +489,8 @@
     },
     "exaix/no-constant-substring-assert": {
       "engine": "plugin",
-      "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
+      "severity": "error",
       "scope": "test",
-      "optIn": true,
       "codeStyle": "unslop-ts/docs/style_guide.md#test-assertions",
       "tags": [
         "test-quality",
@@ -667,14 +665,12 @@
     },
     "exaix/promise-response-return": {
       "engine": "plugin",
-      "severity": "off",
+      "severity": "error",
       "scope": "all",
       "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety"
-      ],
-      "optIn": true,
-      "reason": "Parked: The AST rule also reports a parameter, a variable, and a function type that the line scanner missed. Phase 230 burns them down and turns the rule on."
+      ]
     },
     "exaix/ts-suppression-pragmas": {
       "engine": "plugin",
@@ -1033,7 +1029,7 @@
     },
     "exaix/magic-union-type": {
       "engine": "plugin",
-      "severity": "off",
+      "severity": "error",
       "scope": "prod",
       "codeStyle": "unslop-ts/docs/style_guide.md#no-magic-values",
       "tags": [
@@ -1041,9 +1037,7 @@
       ],
       "options": {
         "hint": "Define an enum in packages/core/src/types/enums.ts or use a shared named union type."
-      },
-      "optIn": true,
-      "reason": "Parked: The AST rule exempts only a union that is the whole alias body, so it finds inline unions that the line scanner skipped. Phase 230 burns them down and turns the rule on."
+      }
     },
     "exaix/require-module-header": {
       "engine": "plugin",
