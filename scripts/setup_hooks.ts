@@ -41,6 +41,15 @@ if [ "\${HOOK_BYPASS_MAIN:-}" != "1" ]; then
   fi
 fi
 
+# A docs gitlink modification does not change parent source.
+STAGED_CHANGES=\$(git diff --cached --raw --no-abbrev --no-renames --ignore-submodules=none) || exit 1
+DOCS_POINTER_CHANGE=\$(git diff --cached --raw --no-abbrev --no-renames --ignore-submodules=none -- exaix-dev-docs) || exit 1
+if [ "$STAGED_CHANGES" = "$DOCS_POINTER_CHANGE" ] &&
+  printf '%s\\n' "$STAGED_CHANGES" | grep -Eq '^:160000 160000 [0-9a-f]+ [0-9a-f]+ M[[:space:]]exaix-dev-docs$'; then
+  echo "✅ Docs submodule pointer only; no parent code gates apply. Commit-message validation still runs."
+  exit 0
+fi
+
 echo "
 🔍 Running Pre-commit Gates..."
 
@@ -547,6 +556,7 @@ export async function installHooks() {
   const gitResult = await new Deno.Command("git", {
     args: ["rev-parse", "--path-format=absolute", "--git-path", "hooks"],
     cwd: REPO_ROOT,
+    env: { LD_LIBRARY_PATH: "" },
   }).output();
   if (!gitResult.success) {
     throw new Error(`Cannot resolve Git hooks: ${new TextDecoder().decode(gitResult.stderr).trim()}`);

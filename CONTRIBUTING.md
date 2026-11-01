@@ -78,15 +78,15 @@ Before submitting a PR, drive the codebase to a fully green state:
 
    Canonical source: [`.copilot/skills/clean-codebase/SKILL.md`](.copilot/skills/clean-codebase/SKILL.md)
 
-   _Claude Code shorthand: `/clean-codebase`_
+   Claude Code shorthand: `/clean-codebase`.
 
-2. **Run the full test suite** to confirm nothing is broken:
+1. **Run the full test suite** to confirm nothing is broken:
 
    ```bash
    deno task test_all
    ```
 
-3. **Run the prose and comment STE gates** on the files you changed:
+1. **Run the prose and comment STE gates** on the files you changed:
 
    ```bash
    deno task check:agent-prose
@@ -186,6 +186,10 @@ are:
 | `pre-commit` (numbered gates) | Format, lint, style/boundaries, test placement, magic values, doc/manifest sync, markdown lint, complexity, architecture, docs validation, tool-result parity, event strings, skill/manifest/config checks, and more — see `.git/hooks/pre-commit` for the exact, current list; a fixed gate count here would drift every time a gate is added |
 | `pre-push`                    | Regenerate `.copilot/manifest.json` (amends the commit only if it substantively changed), auto-push the `exaix-dev-docs` and `exaix-team` submodules first if their pointers changed, full type-check (packages/ + apps/ + tests/), security regression tests                                                                                  |
 | `pre-merge-commit`            | Regenerate `.copilot/manifest.json` before merge commits                                                                                                                                                                                                                                                                                       |
+
+A commit whose only staged change is a modified `exaix-dev-docs` gitlink skips the parent pre-commit code gates.
+The main-branch guard and commit-message hook still run. Source-submodule updates, mixed changes, and added,
+deleted or replaced gitlink entries use the normal gates. Unstaged files do not affect this decision.
 
 `deno task lint` now also runs the `exaix` plugin from `@exaix/lint-policy`, configured by
 `packages/lint-policy/tests/fixtures/catalog_v1.json`; `EXAIX_LINT_RULES` selects a subset locally, and
@@ -469,7 +473,7 @@ For full guidance — batching rules, branch safety, and validator trap details 
 
 Canonical source: [`.copilot/skills/commit/SKILL.md`](.copilot/skills/commit/SKILL.md)
 
-_Claude Code shorthand: `/commit`_
+Claude Code shorthand: `/commit`.
 
 - [ ] All items in the [AGENTS.md Task Checklist](AGENTS.md#task-checklist) are satisfied.
 - [ ] New configuration options added to `exa.config.sample.toml`.

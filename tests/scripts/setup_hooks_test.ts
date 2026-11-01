@@ -4,7 +4,7 @@
  * @description Integration test to verify git hook installation logic.
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects, assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { fromFileUrl, join } from "@std/path";
 import { defaultSandboxRoot } from "../../scripts/prune_scenario_sandboxes.ts";
@@ -58,6 +58,31 @@ describe("scripts/setup_hooks.ts", () => {
         assertEquals((await Deno.stat(hookPath)).mode! & 0o111, 0o111);
       }
     }
+  });
+
+  it("fix(hooks): the authored install task can resolve Git hooks with scoped permissions", async () => {
+    const config = JSON.parse(await Deno.readTextFile("deno.json"));
+    const script = fromFileUrl(new URL("../../scripts/setup_hooks.ts", import.meta.url));
+    const env = Deno.env.toObject();
+    for (const key of ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR"]) delete env[key];
+    env.LD_LIBRARY_PATH = "/fixture/library";
+    const init = await new Deno.Command("git", { args: ["init"], cwd: tmpDir, env, clearEnv: true }).output();
+    assert(init.success, new TextDecoder().decode(init.stderr));
+    await Deno.writeTextFile(
+      join(tmpDir, "deno.json"),
+      JSON.stringify({
+        imports: { "@std/path": config.imports["@std/path"] },
+        tasks: { "hooks:install": config.tasks["hooks:install"].replace("scripts/setup_hooks.ts", script) },
+      }),
+    );
+    const installed = await new Deno.Command(Deno.execPath(), {
+      args: ["task", "hooks:install"],
+      cwd: tmpDir,
+      env,
+      clearEnv: true,
+    }).output();
+    assert(installed.success, new TextDecoder().decode(installed.stderr));
+    assert((await Deno.readTextFile(join(tmpDir, ".git", "hooks", "pre-commit"))).startsWith("#!/bin/sh\n"));
   });
 
   it("installs pre-commit, pre-push, and commit-msg hooks", async () => {
@@ -137,6 +162,179 @@ describe("scripts/setup_hooks.ts", () => {
         `pre-push hook's security test invocation must clear ${gitVar} to avoid leaking into the test's own git subprocesses (got: ${fullLine})`,
       );
     }
+  });
+});
+
+describe("staged docs gitlink commits", () => {
+  async function withHookFixture(
+    body: (dir: string, git: (args: string[]) => Promise<string>) => Promise<void>,
+  ): Promise<void> {
+    const dir = await Deno.makeTempDir({ prefix: "docs_gitlink_hook_" });
+    const env = Deno.env.toObject();
+    env.LD_LIBRARY_PATH = "";
+    for (const key of ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR"]) delete env[key];
+    const git = async (args: string[]): Promise<string> => {
+      const result = await new Deno.Command("git", { args, cwd: dir, env, clearEnv: true }).output();
+      assert(result.success, new TextDecoder().decode(result.stderr));
+      return new TextDecoder().decode(result.stdout).trim();
+    };
+    try {
+      await git(["-c", "init.defaultBranch=hook-fixture", "init"]);
+      await git(["config", "user.name", "Hook Test"]);
+      await git(["config", "user.email", "hook@exaix.local"]);
+      await git(["config", "commit.gpgsign", "false"]);
+      await git(["commit", "--allow-empty", "-m", "first"]);
+      const first = await new Deno.Command("git", {
+        args: ["rev-parse", "HEAD"],
+        cwd: dir,
+        env,
+        clearEnv: true,
+      }).output();
+      const firstSha = new TextDecoder().decode(first.stdout).trim();
+      await git(["commit", "--allow-empty", "-m", "second"]);
+      await git(["update-index", "--add", "--cacheinfo", `160000,${firstSha},exaix-dev-docs`]);
+      await git(["update-index", "--add", "--cacheinfo", `160000,${firstSha},unslop-ts`]);
+      await git(["update-index", "--add", "--cacheinfo", `160000,${firstSha},exaix-team`]);
+      await Deno.writeTextFile(join(dir, "tracked.ts"), "export const value = 0;\n");
+      await Deno.writeTextFile(
+        join(dir, ".gitmodules"),
+        '[submodule "engine"]\n\tpath = unslop-ts\n\turl = ./engine\n',
+      );
+      await git(["add", "tracked.ts", ".gitmodules"]);
+      await git(["commit", "-m", "baseline links"]);
+      const installed = await new Deno.Command(Deno.execPath(), {
+        args: ["run", "--allow-all", fromFileUrl(new URL("../../scripts/setup_hooks.ts", import.meta.url))],
+        cwd: dir,
+        env,
+        clearEnv: true,
+      }).output();
+      assert(installed.success, new TextDecoder().decode(installed.stderr));
+      await Deno.mkdir(join(dir, "bin"));
+      await Deno.writeTextFile(
+        join(dir, "bin", "deno"),
+        [
+          "#!/bin/sh",
+          'printf \'%s\\n\' "$*" >> "$EXAIX_HOOK_TEST_LOG"',
+          'if [ "$1" = "task" ] && [ "$2" = "$EXAIX_HOOK_FAIL_TASK" ]; then exit 1; fi',
+          "exit 0",
+          "",
+        ].join("\n"),
+      );
+      await Deno.chmod(join(dir, "bin", "deno"), 0o755);
+      env.PATH = `${join(dir, "bin")}:${env.PATH}`;
+      env.EXAIX_HOOK_TEST_LOG = join(dir, "calls.log");
+      env.EXAIX_HOOK_FAIL_TASK = "check:complexity";
+      await body(dir, git);
+    } finally {
+      await Deno.remove(dir, { recursive: true });
+    }
+  }
+
+  async function stagePointer(git: (args: string[]) => Promise<string>, path: string): Promise<void> {
+    const sha = await git(["rev-parse", "HEAD"]);
+    await git(["update-index", "--cacheinfo", `160000,${sha},${path}`]);
+  }
+
+  async function commitFixture(dir: string, failTask = "check:complexity"): Promise<boolean> {
+    const env = Deno.env.toObject();
+    env.LD_LIBRARY_PATH = "";
+    for (const key of ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR"]) delete env[key];
+    env.PATH = `${join(dir, "bin")}:${env.PATH}`;
+    env.EXAIX_HOOK_TEST_LOG = join(dir, "calls.log");
+    env.EXAIX_HOOK_FAIL_TASK = failTask;
+    delete env.HOOK_BYPASS_MAIN;
+    return (await new Deno.Command("git", {
+      args: ["commit", "-m", "fixture change"],
+      cwd: dir,
+      env,
+      clearEnv: true,
+    }).output()).success;
+  }
+
+  it("fix(hooks): a docs gitlink bump skips code gates and still validates the message", async () => {
+    await withHookFixture(async (dir, git) => {
+      await stagePointer(git, "exaix-dev-docs");
+      assertEquals(await commitFixture(dir), true);
+      const calls = await Deno.readTextFile(join(dir, "calls.log"));
+      assertStringIncludes(calls, "task check:commit-msg");
+      assertFalse(calls.includes("task check:complexity"), calls);
+      assertFalse(calls.includes("task lint"), calls);
+      assertFalse(calls.includes("task fmt:check"), calls);
+    });
+  });
+
+  it("fix(hooks): docs pointer commits still reject invalid commit messages", async () => {
+    await withHookFixture(async (dir, git) => {
+      await stagePointer(git, "exaix-dev-docs");
+      assertEquals(await commitFixture(dir, "check:commit-msg"), false);
+      const calls = await Deno.readTextFile(join(dir, "calls.log"));
+      assertStringIncludes(calls, "task check:commit-msg");
+      assertFalse(calls.includes("task check:complexity"), calls);
+    });
+  });
+
+  it("fix(hooks): a docs pointer commit cannot bypass the main branch guard", async () => {
+    await withHookFixture(async (dir, git) => {
+      await git(["branch", "-M", "main"]);
+      await stagePointer(git, "exaix-dev-docs");
+      assertEquals(await commitFixture(dir), false);
+      await assertRejects(() => Deno.stat(join(dir, "calls.log")), Deno.errors.NotFound);
+    });
+  });
+
+  it("fix(hooks): replacing the docs gitlink with a regular file keeps full checks", async () => {
+    await withHookFixture(async (dir, git) => {
+      await Deno.writeTextFile(join(dir, "exaix-dev-docs"), "regular file\n");
+      await git(["add", "exaix-dev-docs"]);
+      assertEquals(await commitFixture(dir), false);
+      assertStringIncludes(await Deno.readTextFile(join(dir, "calls.log")), "task check:complexity");
+    });
+  });
+
+  it("fix(hooks): deleting the docs gitlink keeps full checks", async () => {
+    await withHookFixture(async (dir, git) => {
+      await git(["rm", "--cached", "exaix-dev-docs"]);
+      assertEquals(await commitFixture(dir), false);
+      assertStringIncludes(await Deno.readTextFile(join(dir, "calls.log")), "task check:complexity");
+    });
+  });
+
+  for (const path of ["unslop-ts", "exaix-team"]) {
+    it(`fix(hooks): a ${path} gitlink bump still enforces code gates`, async () => {
+      await withHookFixture(async (dir, git) => {
+        await stagePointer(git, path);
+        assertEquals(await commitFixture(dir), false);
+        assertStringIncludes(await Deno.readTextFile(join(dir, "calls.log")), "task check:complexity");
+      });
+    });
+  }
+
+  it("fix(hooks): mixed docs and source changes still enforce code gates", async () => {
+    await withHookFixture(async (dir, git) => {
+      await stagePointer(git, "exaix-dev-docs");
+      await Deno.writeTextFile(join(dir, "code.ts"), "export const value = 1;\n");
+      await git(["add", "code.ts"]);
+      assertEquals(await commitFixture(dir), false);
+      assertStringIncludes(await Deno.readTextFile(join(dir, "calls.log")), "task check:complexity");
+    });
+  });
+
+  it("fix(hooks): unstaged source changes do not turn a docs pointer commit into a source commit", async () => {
+    await withHookFixture(async (dir, git) => {
+      await stagePointer(git, "exaix-dev-docs");
+      await Deno.writeTextFile(join(dir, "tracked.ts"), "export const value = 1;\n");
+      assertEquals(await commitFixture(dir), true);
+    });
+  });
+
+  it("fix(hooks): docs and source pointers remain checked even when Git hides submodules by default", async () => {
+    await withHookFixture(async (dir, git) => {
+      await stagePointer(git, "exaix-dev-docs");
+      await stagePointer(git, "unslop-ts");
+      await git(["config", "submodule.engine.ignore", "all"]);
+      assertEquals(await commitFixture(dir), false);
+      assertStringIncludes(await Deno.readTextFile(join(dir, "calls.log")), "task check:complexity");
+    });
   });
 });
 
