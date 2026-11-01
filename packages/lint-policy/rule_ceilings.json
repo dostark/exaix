@@ -189,15 +189,6 @@
     "scripts": 1,
     "tests": 11
   },
-  "exaix/no-typeof-escape": {
-    "apps/exactl": 1,
-    "exaix-team": 5,
-    "packages/ai": 17,
-    "packages/ai-openrouter": 20,
-    "packages/execution": 6,
-    "packages/tui": 1,
-    "tests": 18
-  },
   "exaix/no-boolean-assert": {
     "apps/daemon": 25,
     "apps/exactl": 69,

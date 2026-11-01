@@ -36,10 +36,10 @@ class HttpProvider extends BaseProvider {
 async function countFetches(status: number, run: () => Promise<unknown>): Promise<number> {
   const original = globalThis.fetch;
   let calls = 0;
-  globalThis.fetch = (() => {
+  globalThis.fetch = () => {
     calls++;
     return Promise.resolve(new Response("{}", { status }));
-  }) as typeof fetch;
+  };
   try {
     await assertRejects(run);
     return calls;

@@ -27,12 +27,12 @@ const TOOL = { name: "read_file", inputSchema: { type: "object" } };
 async function capturedBodyOf(options?: IModelOptions, routing?: IOpenRouterRouting): Promise<ICapturedBody> {
   const origFetch = globalThis.fetch;
   let captured: ICapturedBody = {};
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = (_input: string | URL | Request, init?: RequestInit) => {
     captured = JSON.parse((init?.body as string) ?? "{}");
     return Promise.resolve(
       new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] }), { status: 200 }),
     );
-  }) as typeof fetch;
+  };
   try {
     await new OpenRouterProvider({ apiKey: "sk-test", model: "qwen/qwen3.7-flash", routing }).generate("hi", options);
     return captured;

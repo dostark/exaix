@@ -176,7 +176,7 @@ Deno.test({
     const { db, tempDir, cleanup } = await initTestDbService();
     const origFetch = globalThis.fetch;
     let fetchCalls = 0;
-    globalThis.fetch = (() => {
+    globalThis.fetch = () => {
       fetchCalls++;
       return Promise.resolve(
         new Response(
@@ -190,7 +190,7 @@ Deno.test({
           { status: 404 },
         ),
       );
-    }) as typeof fetch;
+    };
     registerOpenRouter();
     try {
       await withEnv(
@@ -243,14 +243,14 @@ async function wireProviderBlock(
   const { db, tempDir, cleanup } = await initTestDbService();
   const origFetch = globalThis.fetch;
   let sent: { provider?: IWireProvider } = {};
-  globalThis.fetch = ((input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
+  globalThis.fetch = (input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     const catalog = answerModelsRequest(input);
     if (catalog) return Promise.resolve(catalog);
     sent = JSON.parse((init?.body as string) ?? "{}");
     return Promise.resolve(
       new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] }), { status: 200 }),
     );
-  }) as typeof fetch;
+  };
   registerOpenRouter();
   try {
     const config = ConfigSchema.parse({
@@ -324,7 +324,7 @@ async function analyzeThroughFactory(
   const { db, tempDir, cleanup } = await initTestDbService();
   const origFetch = globalThis.fetch;
   const sentFormats: string[] = [];
-  globalThis.fetch = ((input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
+  globalThis.fetch = (input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     const catalog = answerModelsRequest(input);
     if (catalog) return Promise.resolve(catalog);
     const sent = JSON.parse((init?.body as string) ?? "{}") as { response_format?: { type: string } };
@@ -332,7 +332,7 @@ async function analyzeThroughFactory(
     return Promise.resolve(
       new Response(JSON.stringify({ choices: [{ message: { content: reply } }] }), { status: 200 }),
     );
-  }) as typeof fetch;
+  };
   registerOpenRouter();
   try {
     let firstGoal = "";
@@ -409,7 +409,7 @@ function routeFetch(modelsResponse: () => Response, chatResponse: () => Response
     chatBodies: [],
     restore: () => (globalThis.fetch = origFetch),
   };
-  globalThis.fetch = ((input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
+  globalThis.fetch = (input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     if (String(input).endsWith("/models")) {
       routed.modelsCalls++;
       return Promise.resolve(modelsResponse());
@@ -417,7 +417,7 @@ function routeFetch(modelsResponse: () => Response, chatResponse: () => Response
     routed.chatCalls++;
     routed.chatBodies.push(JSON.parse((init?.body as string) ?? "{}"));
     return Promise.resolve(chatResponse());
-  }) as typeof fetch;
+  };
   return routed;
 }
 
@@ -549,7 +549,7 @@ async function journaledUsage(
 ): Promise<Array<Record<string, JSONValue>>> {
   const { db, tempDir, cleanup } = await initTestDbService();
   const origFetch = globalThis.fetch;
-  globalThis.fetch = ((input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
+  globalThis.fetch = (input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     const catalog = answerModelsRequest(input);
     if (catalog) return Promise.resolve(catalog);
     const body = JSON.parse(String(init?.body)) as { messages: JSONValue[] };
@@ -560,7 +560,7 @@ async function journaledUsage(
         { status: 200 },
       ),
     );
-  }) as typeof fetch;
+  };
   registerOpenRouter();
   try {
     await withEnv(

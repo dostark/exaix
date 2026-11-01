@@ -42,12 +42,12 @@ async function sentBody(
   const origFetch = globalThis.fetch;
   let body: ISentBody = {};
   let lookups = 0;
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = (_input: string | URL | Request, init?: RequestInit) => {
     body = JSON.parse((init?.body as string) ?? "{}");
     return Promise.resolve(
       new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 }),
     );
-  }) as typeof fetch;
+  };
   try {
     const provider = new OpenRouterProvider({
       apiKey: "sk-test",

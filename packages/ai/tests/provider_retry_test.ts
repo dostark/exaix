@@ -24,7 +24,7 @@ async function withFetch<T>(
 ): Promise<{ calls: number; value: T }> {
   const original = globalThis.fetch;
   let calls = 0;
-  globalThis.fetch = (() => Promise.resolve(respond(++calls))) as typeof fetch;
+  globalThis.fetch = () => Promise.resolve(respond(++calls));
   try {
     const value = await body();
     return { calls, value };
@@ -36,10 +36,10 @@ async function withFetch<T>(
 Deno.test("a fetch TypeError becomes ConnectionError and is retried", async () => {
   let calls = 0;
   const original = globalThis.fetch;
-  globalThis.fetch = (() => {
+  globalThis.fetch = () => {
     calls++;
     return Promise.reject(new TypeError("fetch failed"));
-  }) as typeof fetch;
+  };
   try {
     const error = await assertRejects(
       () =>
@@ -60,10 +60,10 @@ Deno.test("a fetch TypeError becomes ConnectionError and is retried", async () =
 Deno.test("a sustained 503 makes exactly maxAttempts calls", async () => {
   const original = globalThis.fetch;
   let calls = 0;
-  globalThis.fetch = (() => {
+  globalThis.fetch = () => {
     calls++;
     return Promise.resolve(new Response("{}", { status: 503 }));
-  }) as typeof fetch;
+  };
   try {
     await assertRejects(
       () =>

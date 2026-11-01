@@ -21,6 +21,9 @@ interface IRenderOptions {
 
 // ANSI Styles
 
+/** One escape sequence per markdown element, empty in no-color mode. */
+type TMarkdownStyleMap = Record<keyof typeof MarkdownStyles, string>;
+
 const MarkdownStyles = {
   h1: `${ANSI.bold}${ANSI.cyan}`, // Bold Cyan
   h2: `${ANSI.bold}${ANSI.blue}`, // Bold Blue
@@ -118,7 +121,7 @@ export function renderMarkdown(text: string, options: IRenderOptions): string {
 /**
  * Render inline markdown styles (bold, italic, code, links)
  */
-function renderInlineStyles(text: string, s: typeof MarkdownStyles): string {
+function renderInlineStyles(text: string, s: TMarkdownStyleMap): string {
   let result = text;
 
   // Inline code: `code`
@@ -141,12 +144,12 @@ function renderInlineStyles(text: string, s: typeof MarkdownStyles): string {
 /**
  * Create empty styles for no-color mode
  */
-function emptyStyles(): typeof MarkdownStyles {
-  const empty = {} as Record<keyof typeof MarkdownStyles, string>;
+function emptyStyles(): TMarkdownStyleMap {
+  const empty = {} as TMarkdownStyleMap;
   for (const key of Object.keys(MarkdownStyles) as (keyof typeof MarkdownStyles)[]) {
     empty[key] = "";
   }
-  return empty as typeof MarkdownStyles;
+  return empty;
 }
 
 /**

@@ -13,6 +13,7 @@ import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts
 import { DefaultModelRegistry } from "@exaix/model-registry";
 import { ModelRegistryService } from "@exaix-team/model-registry-live";
 import { TaskType } from "@exaix/core/types";
+import { ModelRegistryConfigSchema } from "@exaix/schemas";
 import { buildTeamResolutionStrategy } from "../../apps/daemon/src/bootstrap_team.ts";
 
 const HEALTHY = { checkProvider: (_p: string) => Promise.resolve(true) };
@@ -26,10 +27,11 @@ Deno.test("[step135.8] buildTeamResolutionStrategy threads config.model_registry
     await svc.applyBenchmarks([
       { provider: "anthropic", model: "m", benchmark: "gpqa", score: 0.8, provenance: "static", measuredAt: 1 },
     ]);
+    const registry = ModelRegistryConfigSchema.unwrap().parse(config.model_registry ?? {});
     config.model_registry = {
-      ...config.model_registry,
-      benchmark_map: { [TaskType.ANALYSIS]: ["gpqa"] },
-    } as typeof config.model_registry;
+      ...registry,
+      benchmark_map: { ...registry.benchmark_map, [TaskType.ANALYSIS]: ["gpqa"] },
+    };
 
     const strategy = buildTeamResolutionStrategy(svc, config, createMockEventLogger());
     const scores = await strategy!.scoreBest!([{ provider: "anthropic", model: "m" }], TaskType.ANALYSIS);
@@ -46,7 +48,10 @@ Deno.test("[step135.8][F8] buildTeamResolutionStrategy threads config.model_regi
     db.instance.exec(REGISTRY_TABLES_SQL);
     const floor = new DefaultModelRegistry(HEALTHY);
     const svc = new ModelRegistryService(db, createMockEventLogger(), config, floor, HEALTHY);
-    config.model_registry = { ...config.model_registry, usage_tiebreak: false } as typeof config.model_registry;
+    config.model_registry = {
+      ...ModelRegistryConfigSchema.unwrap().parse(config.model_registry ?? {}),
+      usage_tiebreak: false,
+    };
 
     const strategy = buildTeamResolutionStrategy(svc, config, createMockEventLogger());
     const ranked = await strategy!.rankUsage!([{ provider: "anthropic", model: "m" }]);
@@ -66,7 +71,10 @@ Deno.test("[step135.8][F8] usage_tiebreak=true opt-in observably ranks (real con
     db.instance.prepare(
       `INSERT INTO provider_costs (id, provider, model, requests, timestamp) VALUES (?, ?, ?, ?, ?)`,
     ).run("1", "anthropic", "m", 5, "2026-01-01T00:00:00.000Z");
-    config.model_registry = { ...config.model_registry, usage_tiebreak: true } as typeof config.model_registry;
+    config.model_registry = {
+      ...ModelRegistryConfigSchema.unwrap().parse(config.model_registry ?? {}),
+      usage_tiebreak: true,
+    };
 
     const strategy = buildTeamResolutionStrategy(svc, config, createMockEventLogger());
     const ranked = await strategy!.rankUsage!([{ provider: "anthropic", model: "m" }]);

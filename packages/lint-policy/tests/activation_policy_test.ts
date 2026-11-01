@@ -53,6 +53,7 @@ const ACTIVE_PLUGIN_IDS = [
   "exaix/magic-union-type",
   "exaix/no-object-parameters",
   "exaix/no-unsafe-dictionary",
+  "exaix/no-typeof-escape",
 ];
 
 Deno.test("atomic-policy-transition: independent active plugin IDs include only delivered rules", () => {
@@ -79,6 +80,7 @@ const COMMENT_FIXTURE_RULES = [
   "exaix/test-inline-multiline-fixture",
 ];
 const BOUNDARY_RULES = ["exaix/no-object-parameters", "exaix/no-unsafe-dictionary"];
+const TYPEOF_RULES = ["exaix/no-typeof-escape"];
 const CONTRACT_RULES = [
   "exaix/no-constant-substring-assert",
   "exaix/promise-response-return",
@@ -274,7 +276,14 @@ Deno.test("atomic-policy-transition: scripts select the active rule and its park
   const config = JSON.parse(await Deno.readTextFile(new URL("deno.json", REPO_ROOT)));
   const scripts = config.tasks.lint.split(" && ")[1];
   const selected = scripts.match(/^EXAIX_LINT_RULES=([^ ]+)/)[1].split(",");
-  const delivered = [RULE, ...IMPORT_INTERFACE_RULES, ...COMMENT_FIXTURE_RULES, ...CONTRACT_RULES, ...BOUNDARY_RULES];
+  const delivered = [
+    RULE,
+    ...IMPORT_INTERFACE_RULES,
+    ...COMMENT_FIXTURE_RULES,
+    ...CONTRACT_RULES,
+    ...BOUNDARY_RULES,
+    ...TYPEOF_RULES,
+  ];
   assertArrayIncludes(selected, delivered);
   for (const id of selected) assertEquals(POLICY_CATALOG.rules[id].severity, "error", id);
   const ceilings = JSON.parse(await Deno.readTextFile(new URL("packages/lint-policy/rule_ceilings.json", REPO_ROOT)));
@@ -285,7 +294,6 @@ Deno.test("atomic-policy-transition: scripts select the active rule and its park
     assertEquals(POLICY_CATALOG.rules[id].reason, undefined, id);
   }
   const parked = [
-    "exaix/no-typeof-escape",
     "exaix/no-explicit-unknown",
     "exaix/no-repeated-assert-call",
     "exaix/no-boolean-assert",
@@ -509,6 +517,19 @@ function boundarySource(path: string, rule: string, violation: boolean): string 
 
 Deno.test("default-object-dictionary-gates: weak object and dictionary forms report and named forms pass in both passes", async () => {
   await assertCanaryMatrix(BOUNDARY_RULES, boundarySource);
+});
+
+/** The typeof-escape rule's violation or clean counterpart below the authored module header. */
+function typeofSource(path: string, _rule: string, violation: boolean): string {
+  const header = sourceOf(path, false).split("import { value }")[0];
+  const form = violation
+    ? "export const clock = ((): number => 1) as typeof Date.now;"
+    : "export const clock: typeof Date.now = (): number => 1;";
+  return header + form + "\n";
+}
+
+Deno.test("default-typeof-gate: an as-typeof cast reports and a precise typed binding passes in both passes", async () => {
+  await assertCanaryMatrix(TYPEOF_RULES, typeofSource);
 });
 
 /** The directories below `base` that hold a deno.json, as repository-relative paths. */

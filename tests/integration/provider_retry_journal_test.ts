@@ -55,11 +55,11 @@ async function withOpenRouterFactory(
   const { db, tempDir, cleanup } = await initTestDbService();
   const origFetch = globalThis.fetch;
   let calls = 0;
-  globalThis.fetch = ((input: string | URL | Request) => {
+  globalThis.fetch = (input: string | URL | Request) => {
     if (String(input).endsWith("/models")) return Promise.resolve(new Response('{"data":[]}', { status: 200 }));
     calls++;
     return Promise.resolve(reply(calls));
-  }) as typeof fetch;
+  };
   ProviderRegistry.clear();
   setProviderRegistryBootstrap(() => {
     if (ProviderRegistry.getSupportedProviders().includes(PROVIDER_OPENROUTER)) return;

@@ -25,10 +25,10 @@ async function run<T>(
 ): Promise<T> {
   const origFetch = globalThis.fetch;
   let fetches = 0;
-  globalThis.fetch = (() => {
+  globalThis.fetch = () => {
     fetches++;
     return Promise.resolve(new Response(body, { status: 200 }));
-  }) as typeof fetch;
+  };
   try {
     return await fn(
       new OpenRouterProvider({ apiKey: "sk-test", model: "vendor/model", retryDelayMs: 1 }),

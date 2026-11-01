@@ -25,7 +25,8 @@
       "exaix/no-forbidden-lint-ignore",
       "exaix/no-constant-substring-assert",
       "exaix/no-object-parameters",
-      "exaix/no-unsafe-dictionary"
+      "exaix/no-unsafe-dictionary",
+      "exaix/no-typeof-escape"
     ]
   },
   "rules": [

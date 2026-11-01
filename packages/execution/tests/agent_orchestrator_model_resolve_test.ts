@@ -17,7 +17,7 @@ import { initTestDbService } from "@exaix/testing";
 import { AgentComposer } from "@exaix/execution";
 import type { IAgentComposerOptions } from "@exaix/execution";
 import type { ModelResolver } from "@exaix/ai";
-import type { IModelIntent, IResolvedModel } from "@exaix/schemas";
+import { type IModelIntent, type IResolvedModel, ModelRegistryConfigSchema } from "@exaix/schemas";
 import { TaskType } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core/types";
 import { EventLogger } from "@exaix/core/logger";
@@ -286,9 +286,9 @@ Deno.test("[step135.8] config task_type_map soft-matches the agent_role when no 
     const config = createTestConfig();
     config.system.root = testDir;
     config.model_registry = {
-      ...config.model_registry,
+      ...ModelRegistryConfigSchema.unwrap().parse(config.model_registry ?? {}),
       task_type_map: { "test-agent": TaskType.ANALYSIS },
-    } as typeof config.model_registry;
+    };
 
     const mockModel: IResolvedModel = { provider: "p", model: "m", attempt: 1 };
     const { resolver, captured } = createCapturingResolver(mockModel);

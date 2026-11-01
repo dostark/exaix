@@ -77,14 +77,14 @@ async function capturedBody(
 ): Promise<ICapturedBody> {
   const origFetch = globalThis.fetch;
   let captured: ICapturedBody = {};
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = (_input: string | URL | Request, init?: RequestInit) => {
     captured = JSON.parse((init?.body as string) ?? "{}");
     return Promise.resolve(
       new Response(JSON.stringify({ choices: [{ message: { content: "ok" }, finish_reason: "stop" }] }), {
         status: 200,
       }),
     );
-  }) as typeof fetch;
+  };
   try {
     const provider = new OpenRouterProvider({
       apiKey: "sk-test",

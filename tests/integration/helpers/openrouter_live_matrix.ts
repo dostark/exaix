@@ -97,7 +97,7 @@ export async function runLiveAnalysis(model: string): Promise<ILiveAnalysis> {
   const { db, tempDir, cleanup } = await initTestDbService();
   const calls: IWireObservation[] = [];
   const originalFetch: typeof globalThis.fetch = globalThis.fetch;
-  globalThis.fetch = (async (input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
+  globalThis.fetch = async (input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
     const response: Response = await originalFetch(input, init);
     if (String(input).endsWith("/chat/completions")) {
       const body: IChatRequest = JSON.parse(String(init?.body));
@@ -115,7 +115,7 @@ export async function runLiveAnalysis(model: string): Promise<ILiveAnalysis> {
       });
     }
     return response;
-  }) as typeof globalThis.fetch;
+  };
   ProviderRegistry.clear();
   setProviderRegistryBootstrap(() => {
     ProviderRegistry.registerWithMetadata(PROVIDER_OPENROUTER, new OpenRouterProviderFactory(), {

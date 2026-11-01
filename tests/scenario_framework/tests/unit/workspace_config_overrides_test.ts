@@ -158,6 +158,11 @@ Deno.test("[workspace_config] the scenario schema accepts and validates the over
   assertEquals(rejected.success, false);
 });
 
+/** The slice of the sandbox config these tests read back. */
+type TPortalKnowledgeFixture = {
+  portal_knowledge: { enable_symbol_level_dependency_graph: boolean; default_mode: string };
+};
+
 Deno.test("[workspace_config] a step's escaped overrides apply to the sandbox config", async () => {
   await withTempDir(async (dir) => {
     await Deno.writeTextFile(join(dir, "exa.config.toml"), BASE);
@@ -166,21 +171,19 @@ Deno.test("[workspace_config] a step's escaped overrides apply to the sandbox co
     await applyStepConfigOverrides(dir, [
       { env: { [STEP_CONFIG_OVERRIDES_ENV]: '{"portal_knowledge.enable_symbol_level_dependency_graph": true}' } },
     ]);
-    let parsed = parse(await Deno.readTextFile(join(dir, "exa.config.toml"))) as {
-      portal_knowledge: { enable_symbol_level_dependency_graph: boolean; default_mode: string };
-    };
+    let parsed = parse(await Deno.readTextFile(join(dir, "exa.config.toml"))) as TPortalKnowledgeFixture;
     assertEquals(parsed.portal_knowledge.enable_symbol_level_dependency_graph, true);
     assertEquals(parsed.portal_knowledge.default_mode, "standard");
 
     await applyStepConfigOverrides(dir, [
       { env: { [STEP_CONFIG_OVERRIDES_ENV]: '{"portal_knowledge.enable_symbol_level_dependency_graph": false}' } },
     ]);
-    parsed = parse(await Deno.readTextFile(join(dir, "exa.config.toml"))) as typeof parsed;
+    parsed = parse(await Deno.readTextFile(join(dir, "exa.config.toml"))) as TPortalKnowledgeFixture;
     assertEquals(parsed.portal_knowledge.enable_symbol_level_dependency_graph, false, "the flag must flip back off");
 
     // A step without the key leaves the config untouched.
     await applyStepConfigOverrides(dir, [{ env: {} }]);
-    parsed = parse(await Deno.readTextFile(join(dir, "exa.config.toml"))) as typeof parsed;
+    parsed = parse(await Deno.readTextFile(join(dir, "exa.config.toml"))) as TPortalKnowledgeFixture;
     assertEquals(parsed.portal_knowledge.enable_symbol_level_dependency_graph, false);
   }, { prefix: "ws-step-cfg-" });
 });

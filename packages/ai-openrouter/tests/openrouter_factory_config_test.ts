@@ -42,10 +42,10 @@ const OPENAI_RESPONSE = JSON.stringify({
 Deno.test("OpenRouterProviderFactory applies config site_name/site_url to ranking headers", async () => {
   let headers = new Headers();
   const origFetch = globalThis.fetch;
-  globalThis.fetch = ((_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
+  globalThis.fetch = (_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     headers = new Headers(init?.headers);
     return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
-  }) as typeof fetch;
+  };
 
   try {
     const config = makeConfig({

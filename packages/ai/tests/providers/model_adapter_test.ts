@@ -128,10 +128,10 @@ Deno.test("OllamaProvider accepts custom baseUrl", async () => {
   let capturedUrl = "";
 
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = ((input: string | URL | Request) => {
+  globalThis.fetch = (input: string | URL | Request) => {
     capturedUrl = input.toString();
     return Promise.resolve(new Response(JSON.stringify({ response: "test" }), { status: 200 }));
-  }) as typeof globalThis.fetch;
+  };
 
   try {
     const provider = new OllamaProvider({ baseUrl: "http://custom-host:8080" });
@@ -147,9 +147,9 @@ Deno.test("OllamaProvider accepts custom baseUrl", async () => {
 
 Deno.test("OllamaProvider throws ConnectionError on network failure", async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = (() => {
+  globalThis.fetch = () => {
     throw new TypeError("fetch failed");
-  }) as typeof globalThis.fetch;
+  };
 
   try {
     const provider = new OllamaProvider();
@@ -166,9 +166,9 @@ Deno.test("OllamaProvider throws ConnectionError on network failure", async () =
 
 Deno.test("OllamaProvider throws ConnectionError on HTTP error", async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = (() => {
+  globalThis.fetch = () => {
     return Promise.resolve(new Response("Service Unavailable", { status: 503, statusText: "Service Unavailable" }));
-  }) as typeof globalThis.fetch;
+  };
 
   try {
     const provider = new OllamaProvider();
@@ -185,7 +185,7 @@ Deno.test("OllamaProvider throws ConnectionError on HTTP error", async () => {
 
 Deno.test("OllamaProvider throws TimeoutError on timeout", async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = (_input: string | URL | Request, init?: RequestInit) => {
     // Simulate a slow response that will be aborted
     return new Promise((_, reject) => {
       const checkAbort = () => {
@@ -197,7 +197,7 @@ Deno.test("OllamaProvider throws TimeoutError on timeout", async () => {
       };
       checkAbort();
     });
-  }) as typeof globalThis.fetch;
+  };
 
   try {
     const provider = new OllamaProvider({ timeoutMs: 100 });
@@ -214,9 +214,9 @@ Deno.test("OllamaProvider throws TimeoutError on timeout", async () => {
 
 Deno.test("ConnectionError includes provider name", async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = (() => {
+  globalThis.fetch = () => {
     throw new TypeError("fetch failed");
-  }) as typeof globalThis.fetch;
+  };
 
   try {
     const provider = new OllamaProvider({ id: "test-ollama-provider" });
@@ -236,9 +236,9 @@ Deno.test("ConnectionError includes provider name", async () => {
 
 Deno.test("OllamaProvider throws ModelProviderError on invalid JSON response", async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = (() => {
+  globalThis.fetch = () => {
     return Promise.resolve(new Response("Invalid JSON", { status: 200 }));
-  }) as typeof globalThis.fetch;
+  };
 
   try {
     const provider = new OllamaProvider();
@@ -254,9 +254,9 @@ Deno.test("OllamaProvider throws ModelProviderError on invalid JSON response", a
 
 Deno.test("OllamaProvider throws ModelProviderError when response field is missing", async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = (() => {
+  globalThis.fetch = () => {
     return Promise.resolve(new Response(JSON.stringify({ done: true }), { status: 200 }));
-  }) as typeof globalThis.fetch;
+  };
 
   try {
     const provider = new OllamaProvider();
@@ -284,10 +284,10 @@ Deno.test("OllamaProvider handles empty prompt", async () => {
   let capturedBody: any = null;
 
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = (_input: string | URL | Request, init?: RequestInit) => {
     capturedBody = JSON.parse(init?.body as string);
     return Promise.resolve(new Response(JSON.stringify({ response: "ok" }), { status: 200 }));
-  }) as typeof globalThis.fetch;
+  };
 
   try {
     const provider = new OllamaProvider();
@@ -305,10 +305,10 @@ Deno.test("OllamaProvider handles very long prompts", async () => {
   let capturedBody: any = null;
 
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = (_input: string | URL | Request, init?: RequestInit) => {
     capturedBody = JSON.parse(init?.body as string);
     return Promise.resolve(new Response(JSON.stringify({ response: "ok" }), { status: 200 }));
-  }) as typeof globalThis.fetch;
+  };
 
   try {
     const provider = new OllamaProvider();

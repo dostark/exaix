@@ -43,10 +43,10 @@ async function capturedBody(
     });
   }
   let sent: ICapturedBody = { model: "", messages: [] };
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = (_input: string | URL | Request, init?: RequestInit) => {
     sent = JSON.parse(String(init?.body));
     return Promise.resolve(new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] })));
-  }) as typeof globalThis.fetch;
+  };
   try {
     await new OpenRouterProvider({ apiKey: "sk-test", model, cacheControl }).generate(PROMPT, options);
     return sent;

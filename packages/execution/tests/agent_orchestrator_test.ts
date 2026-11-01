@@ -18,6 +18,7 @@ import {
 } from "@std/assert";
 import {
   ExecutionStrategyName,
+  type JSONObject,
   MemoryOperation,
   PortalOperation,
   REACT_STATUS_COMPLETE,
@@ -69,14 +70,10 @@ interface IBudgetCompactedPayload {
   summarizationModel?: string;
 }
 
-/** Payload for budget consumption and truncation events. */
-interface IBudgetEventPayload {
-  section: string;
-  allocatedTokens: number;
-  actualTokens: number;
-  truncated?: boolean;
-  truncatedAtChar?: number;
-  tokenSource: string;
+/** True when a journal payload carries the compaction counts. */
+function isCompactedPayload(payload: JSONObject): payload is JSONObject & IBudgetCompactedPayload {
+  return typeof payload.tokensBefore === "number" && typeof payload.tokensAfter === "number" &&
+    typeof payload.compressedCount === "number" && typeof payload.preservedCount === "number";
 }
 
 // Test fixtures - initialized once
@@ -404,10 +401,10 @@ orchestratorTest("AgentComposer: compactLoopHistory with < 3 steps does nothing"
 orchestratorTest("AgentComposer: compactLoopHistory emits context.budget.compacted event", async () => {
   const { db, logger, pathResolver, permissions } = getServices();
   const loggedPayloads: Array<IBudgetCompactedPayload> = [];
-  logger.info = ((_name: string, _id: string, payload?: IBudgetCompactedPayload) => {
-    if (payload) loggedPayloads.push(payload);
+  logger.info = (_name, _id, payload) => {
+    if (payload && isCompactedPayload(payload)) loggedPayloads.push(payload);
     return Promise.resolve();
-  }) as typeof logger.info;
+  };
 
   const strategyRegistry = reactRegistry(() =>
     Promise.resolve(changesetResult("feat/event-test", ["src/event.ts"], "Event test step"))
@@ -1993,10 +1990,10 @@ Deno.test({
       });
 
       const loggedPayloads: Array<IBudgetCompactedPayload> = [];
-      logger.info = ((_name: string, _id: string, payload?: IBudgetCompactedPayload) => {
-        if (payload) loggedPayloads.push(payload);
+      logger.info = (_name, _id, payload) => {
+        if (payload && isCompactedPayload(payload)) loggedPayloads.push(payload);
         return Promise.resolve();
-      }) as typeof logger.info;
+      };
 
       const mockProvider: IModelProvider = {
         id: "mock",
@@ -2827,13 +2824,13 @@ orchestratorTest("AgentComposer: executeStep triggers compaction when loopHistor
 
 orchestratorTest("AgentComposer: applyTokenBudget emits CONTEXT_BUDGET_CONSUMED per section", async () => {
   const { db, logger, pathResolver, permissions } = getServices();
-  const logged: Array<{ name: string; payload: IBudgetEventPayload }> = [];
-  logger.info = ((name: string, _id: string, payload?: IBudgetEventPayload) => {
+  const logged: Array<{ name: string }> = [];
+  logger.info = (name) => {
     if (name.startsWith("context.budget.") || name.startsWith("context.section.")) {
-      logged.push({ name, payload: payload! });
+      logged.push({ name });
     }
     return Promise.resolve();
-  }) as typeof logger.info;
+  };
 
   const strategyRegistry = reactRegistry(
     async (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
@@ -2880,13 +2877,13 @@ orchestratorTest("AgentComposer: applyTokenBudget emits CONTEXT_BUDGET_CONSUMED 
 
 orchestratorTest("AgentComposer: applyTokenBudget emits CONTEXT_SECTION_TRUNCATED on overflow", async () => {
   const { db, logger, pathResolver, permissions } = getServices();
-  const logged: Array<{ name: string; payload: IBudgetEventPayload }> = [];
-  logger.info = ((name: string, _id: string, payload?: IBudgetEventPayload) => {
+  const logged: Array<{ name: string }> = [];
+  logger.info = (name) => {
     if (name.startsWith("context.budget.") || name.startsWith("context.section.")) {
-      logged.push({ name, payload: payload! });
+      logged.push({ name });
     }
     return Promise.resolve();
-  }) as typeof logger.info;
+  };
 
   const strategyRegistry = reactRegistry(
     async (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {

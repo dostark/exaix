@@ -91,10 +91,10 @@ for (const { name, build, expectedCalls } of PROVIDERS) {
   Deno.test(`[retry] a sustained 503 makes exactly ${expectedCalls} HTTP call(s) for ${name}`, async () => {
     const original = globalThis.fetch;
     let calls = 0;
-    globalThis.fetch = (() => {
+    globalThis.fetch = () => {
       calls++;
       return Promise.resolve(new Response("{}", { status: 503 }));
-    }) as typeof fetch;
+    };
     try {
       await assertRejects(() => build().generate("hi"));
       assertEquals(calls, expectedCalls);
@@ -107,7 +107,7 @@ for (const { name, build, expectedCalls } of PROVIDERS) {
 Deno.test("[retry] the compatible branch retries a 503 without a provider.retry.scheduled event", async () => {
   const original = globalThis.fetch;
   const logger = createMockEventLogger();
-  globalThis.fetch = (() => Promise.resolve(new Response("{}", { status: 503 }))) as typeof fetch;
+  globalThis.fetch = () => Promise.resolve(new Response("{}", { status: 503 }));
   try {
     const provider = new OpenAIProvider({
       apiKey: "test-key",

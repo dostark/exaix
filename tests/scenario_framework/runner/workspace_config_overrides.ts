@@ -67,7 +67,7 @@ export function expandOverrideValues(
   const expandValue = (value: WorkspaceConfigValue): WorkspaceConfigValue => {
     if (typeof value === "string") return expand(value);
     if (Array.isArray(value)) {
-      return value.map((item) => (typeof item === "string" ? expand(item) : item)) as typeof value;
+      return value.map((item) => (typeof item === "string" ? expand(item) : item));
     }
     return value;
   };

@@ -34,12 +34,12 @@ interface IFetchProbe {
 function stubFetch(respond: () => Response | Promise<Response>): { probe: IFetchProbe; restore: () => void } {
   const origFetch = globalThis.fetch;
   const probe: IFetchProbe = { calls: 0, urls: [], authorization: [] };
-  globalThis.fetch = (async (input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
+  globalThis.fetch = async (input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalContext>) => {
     probe.calls++;
     probe.urls.push(String(input));
     probe.authorization.push(new Headers(init?.headers).get("Authorization"));
     return await respond();
-  }) as typeof fetch;
+  };
   return { probe, restore: () => (globalThis.fetch = origFetch) };
 }
 

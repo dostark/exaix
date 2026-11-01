@@ -65,12 +65,12 @@ function isObject(value?: JSONValue): value is JSONObject {
 async function sentBody(options: IModelOptions, routing: IOpenRouterRouting): Promise<JSONObject> {
   const origFetch = globalThis.fetch;
   let sent: JSONObject = {};
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = (_input: string | URL | Request, init?: RequestInit) => {
     sent = JSON.parse(String(init?.body));
     return Promise.resolve(
       new Response(JSON.stringify({ choices: [{ message: { content: '{"answer":"ok"}' }, finish_reason: "stop" }] })),
     );
-  }) as typeof fetch;
+  };
   try {
     await new OpenRouterProvider({
       apiKey: "sk-test",

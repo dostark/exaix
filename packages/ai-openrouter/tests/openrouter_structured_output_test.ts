@@ -73,11 +73,11 @@ const routingRefusal = (): IReply => ({
 async function withReplies<T>(replies: IReply[], fn: (bodies: IWireBody[]) => Promise<T>): Promise<T> {
   const origFetch = globalThis.fetch;
   const bodies: IWireBody[] = [];
-  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = (_input: string | URL | Request, init?: RequestInit) => {
     bodies.push(JSON.parse((init?.body as string) ?? "{}"));
     const reply = replies[Math.min(bodies.length - 1, replies.length - 1)];
     return Promise.resolve(new Response(reply.body, { status: reply.status }));
-  }) as typeof fetch;
+  };
   try {
     return await fn(bodies);
   } finally {

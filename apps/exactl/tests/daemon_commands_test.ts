@@ -942,7 +942,7 @@ describe("DaemonCommands - migrate() compatibility check (Step 6)", {
     const ctx = createStubContext();
     // Override getSchemaVersion via getAll config
     const configWithSchema = { ...ctx.config, getSchemaVersion: () => schemaVersion };
-    ctx.config = configWithSchema as typeof ctx.config;
+    ctx.config = configWithSchema;
     return new DaemonCommands(ctx);
   }
 

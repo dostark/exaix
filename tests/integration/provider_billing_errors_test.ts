@@ -55,12 +55,12 @@ Deno.test("a 402 body maps to BillingError for Anthropic, Google, OpenAI, OpenRo
     await t.step(testCase.name, async () => {
       let fetchCalls = 0;
       const originalFetch = globalThis.fetch;
-      globalThis.fetch = (() => {
+      globalThis.fetch = () => {
         fetchCalls++;
         return Promise.resolve(
           new Response(JSON.stringify({ error: { type: "api_error", message: BILLING_SENTINEL } }), { status: 402 }),
         );
-      }) as typeof globalThis.fetch;
+      };
       try {
         const provider = testCase.build();
         const error = await assertRejects(() => provider.generate("fixture prompt"), BillingError);

@@ -388,14 +388,12 @@
       ]
     },
     "exaix/no-typeof-escape": {
-      "level": "off",
+      "level": "error",
       "options": {
         "allowedTypeofTargets": [
           "globalThis.fetch"
         ]
       },
-      "optIn": true,
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "limits": "Only an as typeof cast is reported; the built-in no-explicit-any reports any. The typeof target is compared as source text, and only test files may use an allowed target.",
       "tags": [
         "type-safety",

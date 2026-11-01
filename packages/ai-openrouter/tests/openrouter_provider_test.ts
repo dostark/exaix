@@ -34,11 +34,11 @@ Deno.test("OpenRouterProvider.generate posts to the gateway with auth + ranking 
   let capturedUrl = "";
   let headers = new Headers();
   const origFetch = globalThis.fetch;
-  globalThis.fetch = ((input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
+  globalThis.fetch = (input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
     capturedUrl = String(input);
     headers = new Headers(init?.headers);
     return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
-  }) as typeof fetch;
+  };
 
   try {
     const provider = new OpenRouterProvider({ apiKey: "sk-test", model: "anthropic/claude-3-opus" });
@@ -105,10 +105,10 @@ Deno.test("each capability that a model declares produces its request field with
   ): Promise<{ reasoning?: Record<string, string | boolean> }> => {
     let sent: { reasoning?: Record<string, string | boolean> } = {};
     const origFetch = globalThis.fetch;
-    globalThis.fetch = ((_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
+    globalThis.fetch = (_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
       sent = JSON.parse((init?.body as string) ?? "{}");
       return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
-    }) as typeof fetch;
+    };
     try {
       const provider = new OpenRouterProvider({
         apiKey: "sk-test",
@@ -127,7 +127,7 @@ Deno.test("each capability that a model declares produces its request field with
 
 Deno.test("OpenRouterProvider.generate maps a 401 to AuthenticationError", async () => {
   const origFetch = globalThis.fetch;
-  globalThis.fetch = (() => Promise.resolve(new Response("unauthorized", { status: 401 }))) as typeof fetch;
+  globalThis.fetch = () => Promise.resolve(new Response("unauthorized", { status: 401 }));
   try {
     const provider = new OpenRouterProvider({ apiKey: "sk-test", model: "openai/gpt-4" });
     await assertRejects(() => provider.generate("hi"), AuthenticationError);
@@ -139,10 +139,10 @@ Deno.test("OpenRouterProvider.generate maps a 401 to AuthenticationError", async
 Deno.test("[openrouter] routing block serialized into request body", async () => {
   let capturedBody = "";
   const origFetch = globalThis.fetch;
-  globalThis.fetch = ((_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
+  globalThis.fetch = (_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
     capturedBody = String(init?.body ?? "");
     return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
-  }) as typeof fetch;
+  };
 
   try {
     const provider = new OpenRouterProvider({
@@ -176,10 +176,10 @@ Deno.test("[openrouter] routing block serialized into request body", async () =>
 Deno.test("[openrouter] routing block serializes max_price into request body", async () => {
   let capturedBody = "";
   const origFetch = globalThis.fetch;
-  globalThis.fetch = ((_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
+  globalThis.fetch = (_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
     capturedBody = String(init?.body ?? "");
     return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
-  }) as typeof fetch;
+  };
 
   try {
     const provider = new OpenRouterProvider({
@@ -206,10 +206,10 @@ Deno.test("[openrouter] routing block serializes max_price into request body", a
 Deno.test("[openrouter] routing block omitted when not configured", async () => {
   let capturedBody = "";
   const origFetch = globalThis.fetch;
-  globalThis.fetch = ((_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
+  globalThis.fetch = (_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
     capturedBody = String(init?.body ?? "");
     return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
-  }) as typeof fetch;
+  };
 
   try {
     const provider = new OpenRouterProvider({
@@ -236,10 +236,10 @@ async function countFetchesForStatus(
 ): Promise<{ calls: number; error: Error }> {
   let calls = 0;
   const origFetch = globalThis.fetch;
-  globalThis.fetch = (() => {
+  globalThis.fetch = () => {
     calls++;
     return Promise.resolve(new Response(body, { status }));
-  }) as typeof fetch;
+  };
   try {
     const provider = new OpenRouterProvider({
       apiKey: "sk-test",
@@ -288,10 +288,10 @@ Deno.test("OpenRouterProvider retries a 503 even when the message names routing 
 Deno.test("OpenRouterProvider sends no metadata opt-in header, because no consumer reads openrouter_metadata", async () => {
   let headers = new Headers();
   const origFetch = globalThis.fetch;
-  globalThis.fetch = ((_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
+  globalThis.fetch = (_input: string | URL | Request, init?: Opt<RequestInit, Reason.OptionalInput>) => {
     headers = new Headers(init?.headers);
     return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
-  }) as typeof fetch;
+  };
   try {
     const provider = new OpenRouterProvider({ apiKey: "sk-test", model: "openai/gpt-4" });
     await provider.generate("hi");
@@ -323,10 +323,10 @@ async function generateWithCapabilities(
 ): Promise<{ chatFetches: number; lookups: number; error?: Error }> {
   let chatFetches = 0;
   const origFetch = globalThis.fetch;
-  globalThis.fetch = (() => {
+  globalThis.fetch = () => {
     chatFetches++;
     return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
-  }) as typeof fetch;
+  };
   const source = capabilitySource(entry);
   try {
     const provider = new OpenRouterProvider({ apiKey: "sk-test", model: "qwen/qwen3.7-flash", capabilities: source });
@@ -381,7 +381,7 @@ async function resultForUsage(
   responseModel?: Opt<string, Reason.OptionalInput>,
 ) {
   const origFetch = globalThis.fetch;
-  globalThis.fetch = (() =>
+  globalThis.fetch = () =>
     Promise.resolve(
       new Response(
         JSON.stringify({
@@ -391,7 +391,7 @@ async function resultForUsage(
         }),
         { status: 200 },
       ),
-    )) as typeof fetch;
+    );
   try {
     return await new OpenRouterProvider({ apiKey: "sk-test", model: "vendor/configured" }).generate("hi");
   } finally {

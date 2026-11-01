@@ -46,7 +46,7 @@ Deno.test("[deploy_workspace] stripDevOnlyConfig drops exaix-team/* workspace en
     "./packages/routing",
   ]);
   // Non-workspace fields are preserved.
-  assertEquals((stripped as typeof config).imports, config.imports);
+  assertEquals(stripped.imports, config.imports);
 });
 
 Deno.test("[deploy_workspace] stripDevOnlyConfig is a no-op when there is no workspace array", () => {

@@ -81,7 +81,7 @@ Deno.test("[integration] registry_bootstrap: codex-cli's real factory-resolved p
   let seenArgs: string[] = [];
   const originalRun = SafeSubprocess.run;
   try {
-    SafeSubprocess.run = ((command: string, args: string[]) => {
+    SafeSubprocess.run = (command: string, args: string[]) => {
       seenCommand = command;
       seenArgs = args;
       return Promise.resolve({
@@ -92,7 +92,7 @@ Deno.test("[integration] registry_bootstrap: codex-cli's real factory-resolved p
         }),
         stderr: "",
       });
-    }) as typeof SafeSubprocess.run;
+    };
 
     const result = await provider.generate("Analyze this request");
 
