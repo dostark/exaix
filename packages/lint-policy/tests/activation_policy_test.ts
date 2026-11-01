@@ -15,7 +15,7 @@ import {
   assertStringIncludes,
   assertThrows,
 } from "@std/assert";
-import { join, toFileUrl } from "@std/path";
+import { globToRegExp, join, toFileUrl } from "@std/path";
 import { assertRuleEvidence } from "../../../unslop-ts/src/cli/rule_report.ts";
 import { POLICY_CATALOG } from "../src/policy_config.ts";
 
@@ -454,17 +454,32 @@ Deno.test("default-comment-fixture-gates: module headers and fixture folders sta
   });
 });
 
-Deno.test("team-package-coverage: every Team package with its own deno.json is a root workspace member", async () => {
-  const config = JSON.parse(await Deno.readTextFile(new URL("deno.json", REPO_ROOT)));
-  const members = new Set<string>(config.workspace.map((entry: string) => entry.replace(/^\.\//, "")));
-  const outside: string[] = [];
-  for (const parent of ["exaix-team/packages", "exaix-team/apps"]) {
-    for await (const entry of Deno.readDir(new URL(parent, REPO_ROOT))) {
-      const root = `${parent}/${entry.name}`;
-      const configured = entry.isDirectory &&
-        await Deno.stat(new URL(`${root}/deno.json`, REPO_ROOT)).then(() => true, () => false);
-      if (configured && !members.has(root)) outside.push(root);
-    }
+/** The directories below `base` that hold a deno.json, as repository-relative paths. */
+async function configuredDirectories(base: string): Promise<string[]> {
+  const found: string[] = [];
+  for await (const entry of Deno.readDir(new URL(base, REPO_ROOT))) {
+    if (!entry.isDirectory || entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+    const directory = `${base}/${entry.name}`;
+    const configured = await Deno.stat(new URL(`${directory}/deno.json`, REPO_ROOT)).then(() => true, () => false);
+    if (configured) found.push(directory);
+    found.push(...await configuredDirectories(directory));
   }
+  return found;
+}
+
+Deno.test("team-package-coverage: every directory with a deno.json under exaix-team is a root workspace member", async () => {
+  const config = JSON.parse(await Deno.readTextFile(new URL("deno.json", REPO_ROOT)));
+  const members = config.workspace.map((entry: string) =>
+    globToRegExp(entry.replace(/^\.\//, ""), { extended: true, globstar: false })
+  );
+  const outside = (await configuredDirectories("exaix-team")).filter((directory) =>
+    !members.some((member: RegExp) => member.test(directory))
+  );
   assertEquals(outside, [], "Deno loads no lint plugin for a package outside the root workspace");
+});
+
+Deno.test("team-package-coverage: the workspace names the Team tree by pattern, so a new package joins without an edit", async () => {
+  const config = JSON.parse(await Deno.readTextFile(new URL("deno.json", REPO_ROOT)));
+  const teamEntries: string[] = config.workspace.filter((entry: string) => entry.includes("exaix-team"));
+  assertEquals(teamEntries, ["./exaix-team/packages/*", "./exaix-team/apps/*"]);
 });

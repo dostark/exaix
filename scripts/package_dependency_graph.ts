@@ -216,6 +216,20 @@ export async function runDenoInfo(entrypoint: string): Promise<IDenoInfoJson> {
   return JSON.parse(raw) as IDenoInfoJson;
 }
 
+const GLOB_MEMBER_SUFFIX = "/*";
+
+/** The directories that a trailing-star workspace member names. Deno skips the ones without a deno.json. */
+async function expandGlobMember(member: string): Promise<string[]> {
+  const parent = member.slice(0, -GLOB_MEMBER_SUFFIX.length);
+  const roots: string[] = [];
+  for await (const entry of Deno.readDir(join(ROOT, parent))) {
+    const configured = entry.isDirectory &&
+      await Deno.stat(join(ROOT, parent, entry.name, "deno.json")).then(() => true, () => false);
+    if (configured) roots.push(`${parent}/${entry.name}`);
+  }
+  return roots;
+}
+
 export async function discoverPackageRoots(): Promise<IPackageDiscovery> {
   const configPath = join(ROOT, "deno.json");
   const configText = await Deno.readTextFile(configPath);
@@ -225,7 +239,9 @@ export async function discoverPackageRoots(): Promise<IPackageDiscovery> {
   if (Array.isArray(config.workspace)) {
     for (const workspacePath of config.workspace) {
       if (typeof workspacePath !== "string" || workspacePath.trim() === "") continue;
-      roots.add(normalize(workspacePath.replace(/\/+$/, "")));
+      const member = normalize(workspacePath.replace(/\/+$/, ""));
+      const expanded = member.endsWith(GLOB_MEMBER_SUFFIX) ? await expandGlobMember(member) : [member];
+      for (const root of expanded) roots.add(root);
     }
   }
 

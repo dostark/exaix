@@ -233,6 +233,18 @@ Deno.test("package dependency graph reports @exaix/git runtime dependency only o
   assertEquals(gitEdges, [{ from: "@exaix/git", to: "@exaix/core" }]);
 });
 
+Deno.test("discoverPackageRoots expands workspace globs to the package directories that hold a deno.json", async () => {
+  const { roots } = await discoverPackageRoots();
+  assertEquals(roots.filter((root) => root.includes("*")), []);
+  for (const parent of ["exaix-team/packages", "exaix-team/apps"]) {
+    for await (const entry of Deno.readDir(parent)) {
+      const configured = entry.isDirectory &&
+        await Deno.stat(`${parent}/${entry.name}/deno.json`).then(() => true, () => false);
+      assertEquals(roots.includes(`${parent}/${entry.name}`), configured, `${parent}/${entry.name}`);
+    }
+  }
+});
+
 // buildBoundaryReport — unit tests with synthetic IDenoInfoJson fixtures
 
 Deno.test("buildBoundaryReport: file with only package deps is extractable", () => {
