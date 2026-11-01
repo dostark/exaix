@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module RequestActionsTest
  * @path apps/exactl/tests/request_actions_test.ts
@@ -8,6 +7,7 @@
  * correctly include trace_id, agent assignments, and token usage statistics.
  */
 
+import type { JSONValue } from "@exaix/core";
 import { assertEquals, assertExists } from "@std/assert";
 import { TEST_MODEL_ANTHROPIC, TEST_PROVIDER_ID_ANTHROPIC } from "@exaix/testing";
 import {
@@ -40,7 +40,7 @@ type TestPayload = {
   token_provider?: string;
   token_model?: string;
   token_cost_usd?: number;
-  [key: string]: any;
+  [key: string]: JSONValue;
 };
 
 class MockEventLogger extends EventLogger {

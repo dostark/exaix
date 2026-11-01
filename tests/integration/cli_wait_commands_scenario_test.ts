@@ -36,8 +36,8 @@ function makeWaitStateJson(overrides: object = {}): string {
 }
 
 /** Creates a temp workspace with one wait-state file, runs fn, and cleans up. */
-async function withWaitState(
-  overrides: object,
+async function withWaitState<TOverrides extends object>(
+  overrides: TOverrides,
   fn: (tempDir: string, waitDir: string) => Promise<void>,
 ): Promise<void> {
   const tempDir = await Deno.makeTempDir({ prefix: "wait-scenario-" });

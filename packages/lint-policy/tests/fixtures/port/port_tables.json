@@ -23,7 +23,9 @@
     "scriptsRunRules": [
       "exaix/require-deno-shebang",
       "exaix/no-forbidden-lint-ignore",
-      "exaix/no-constant-substring-assert"
+      "exaix/no-constant-substring-assert",
+      "exaix/no-object-parameters",
+      "exaix/no-unsafe-dictionary"
     ]
   },
   "rules": [

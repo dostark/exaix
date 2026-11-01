@@ -8,6 +8,7 @@
  * dispatched to FlowRunner, IAgentRunner, or default providers based on metadata.
  */
 
+import type { JSONValue } from "@exaix/core";
 import { assertEquals, assertRejects } from "@std/assert";
 import { RequestKind } from "@exaix/core";
 import { RoutingError } from "@exaix/request";
@@ -34,7 +35,7 @@ type RoutingContext = {
 };
 
 type TestRouterFrontmatter = Partial<IRequestFrontmatter> & {
-  [key: string]: any;
+  [key: string]: JSONValue;
 };
 
 // Test-specific helpers are provided by tests/services/helpers.ts

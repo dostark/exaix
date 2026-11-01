@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module CopilotAssertions
  * @path tests/helpers/copilot_assertions.ts
@@ -6,6 +5,7 @@
  * and magic value externalization within the test suite.
  */
 
+import type { JSONValue } from "@exaix/core";
 import { assert, assertExists } from "@std/assert";
 import { parse } from "@std/yaml";
 
@@ -15,7 +15,7 @@ interface Frontmatter {
   title: string;
   short_summary: string;
   version: string;
-  [key: string]: any;
+  [key: string]: JSONValue;
 }
 
 export async function assertFilesExist(files: string[]): Promise<void> {

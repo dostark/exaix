@@ -37,27 +37,9 @@ import type { IRoutingPolicyDecision } from "@exaix/schemas/routing_policy.ts";
 import type { IRoutingPolicyService } from "@exaix/routing";
 import { GitBranchName } from "@exaix/git";
 import type { JSONValue } from "@exaix/core";
+import type { IFlowResult } from "@exaix/flow";
 import type { Opt, Reason } from "@exaix/core/types";
 import { normalizeFrontmatterList } from "./common.ts";
-
-export interface IFlowResult {
-  flowRunId: string;
-  success: boolean;
-  stepResults: Map<string, unknown>;
-  output: string;
-  duration: number;
-  startedAt: Date;
-  completedAt: Date;
-  namespaceArtifactPath?: string;
-  tokenSummary?: {
-    input_tokens: number;
-    output_tokens: number;
-    total_tokens: number;
-    token_provider?: string;
-    token_model?: string;
-    token_cost_usd?: number;
-  };
-}
 
 interface IFlowRunnerRequest {
   userPrompt: string;

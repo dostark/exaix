@@ -7,6 +7,7 @@
  *   sandbox config, and that an invalid block fails scenario load.
  */
 
+import type { JSONObject } from "@exaix/core";
 import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
@@ -137,9 +138,9 @@ Deno.test("[scenario-schema] lint_policy defaults off and accepts an explicit fl
   const yaml = await Deno.readTextFile(
     new URL("../../scenarios/agent_flows/execution-verification-repair.yaml", import.meta.url),
   );
-  const parsed = ScenarioSchema.parse(parseYaml(yaml) as Record<string, unknown>);
+  const parsed = ScenarioSchema.parse(parseYaml(yaml) as JSONObject);
   assertEquals(parsed.lint_policy, false);
-  const enabled = ScenarioSchema.parse({ ...parseYaml(yaml) as Record<string, unknown>, lint_policy: true });
+  const enabled = ScenarioSchema.parse({ ...parseYaml(yaml) as JSONObject, lint_policy: true });
   assertEquals(enabled.lint_policy, true);
 });
 Deno.test("[scenario-schema] stageLintPolicy copies a verified directory and rejects a missing one", async () => {

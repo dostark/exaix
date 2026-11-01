@@ -162,8 +162,9 @@ The version 2 policy gives every rule a status. Check `unslop.config.json` or th
   `exaix/import-boundaries`, `exaix/import-inside-statement`, `exaix/import-placement`, `exaix/inline-type-import`,
   `exaix/long-comment`, `exaix/magic-union-type`, `exaix/max-cognitive-complexity`, `exaix/max-cyclomatic-complexity`,
   `exaix/max-function-lines`, `exaix/no-chained-type-assertions`, `exaix/no-constant-substring-assert`,
-  `exaix/no-forbidden-lint-ignore`, `exaix/no-interface-rename-on-import`,
-  `exaix/no-pass-through-type-alias`, `exaix/promise-response-alias`, `exaix/promise-response-return`,
+  `exaix/no-forbidden-lint-ignore`, `exaix/no-interface-rename-on-import`, `exaix/no-object-parameters`,
+  `exaix/no-pass-through-type-alias`, `exaix/no-unsafe-dictionary`, `exaix/promise-response-alias`,
+  `exaix/promise-response-return`,
   `exaix/re-export-imported`, `exaix/require-deno-shebang`,
   `exaix/require-module-header`, `exaix/require-script-usage`, `exaix/test-inline-multiline-fixture`,
   `exaix/ts-suppression-pragmas`, and `exaix/unslop-isolation`.
@@ -171,9 +172,9 @@ The version 2 policy gives every rule a status. Check `unslop.config.json` or th
   `exaix/max-class-size`,
   `exaix/max-params`, `exaix/no-boolean-assert`,
   `exaix/no-conditional-empty-object-spread`,
-  `exaix/no-explicit-unknown`, `exaix/no-object-parameters`,
+  `exaix/no-explicit-unknown`,
   `exaix/no-repeated-assert-call`, `exaix/no-runtime-typeof`, `exaix/no-typeof-escape`,
-  `exaix/no-unsafe-dictionary`, `exaix/prefer-named-imports`,
+  `exaix/prefer-named-imports`,
   `exaix/require-optional-wrapper`, and `exaix/require-safety-comment`.
 - **Script gates (`engine: script`, `severity: error`):** `duplicate-constant`, `duplicate-type`,
   `edition-conditional-outside-composer`, `edition-leak`, `module-header-tag`, `package-boundary`,

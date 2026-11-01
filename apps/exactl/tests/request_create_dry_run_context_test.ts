@@ -12,6 +12,7 @@
  * @related-files [apps/exactl/src/command_builders/request_actions.ts, packages/execution/src/agent_runner.ts, packages/execution/src/native_tool_turns.ts]
  */
 
+import { readFixtureTextSync } from "@exaix/testing";
 import * as pathBuilders from "@exaix/shared";
 import {
   DEFAULT_AGENTS_PATH,
@@ -34,8 +35,9 @@ import {
 import { RequestCommands } from "../src/commands/request_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 
-const MOCK_AGENT_BLUEPRINT = Deno.readTextFileSync(
-  new URL("./fixtures/request_create_dry_run_context/mock_agent_blueprint.txt", import.meta.url),
+const MOCK_AGENT_BLUEPRINT = readFixtureTextSync(
+  import.meta.url,
+  "cli/request_create_dry_run_context_test/mock_agent_blueprint.txt",
 );
 
 async function withDryRunContextFixture(

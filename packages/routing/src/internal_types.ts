@@ -5,13 +5,25 @@
  * @architectural-layer Services
  * @description Internal types for routing subpackage consumers (IBlueprintLoader, ILoadedBlueprint, IBucketRule).
  */
-import type { JSONValue } from "@exaix/core";
+/** The blueprint frontmatter fields that routing reads. */
+export interface IRoutingFrontmatter {
+  deprecated?: boolean;
+  routing_prefer_local?: boolean;
+  language?: string;
+  lang?: string;
+  task_type?: string;
+  taskType?: string;
+  portal_type?: string;
+  portalType?: string;
+  description?: string;
+  routing_hint?: string;
+}
 
 export interface ILoadedBlueprint {
   agentRole: string;
   version: string;
   capabilities: string[];
-  frontmatter: { deprecated?: boolean; [key: string]: JSONValue | object };
+  frontmatter: IRoutingFrontmatter;
 }
 
 export interface IBlueprintLoader {

@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module TokenMetricsProvidersIntegrationTest
  * @path tests/integration/provider_token_metrics_test.ts
@@ -6,6 +5,7 @@
  * OpenAI, Anthropic), ensuring correct capture of usage metrics and accurate cost mapping.
  */
 
+import type { JSONValue } from "@exaix/core";
 import { assert, assertExists } from "@std/assert";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { EventLogger } from "@exaix/core/logger";
@@ -96,7 +96,7 @@ interface ActivityRow {
   id: number;
   action_type: string;
   trace_id: string;
-  [key: string]: any;
+  [key: string]: JSONValue;
   payload: string;
   timestamp: string;
 }

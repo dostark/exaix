@@ -38,7 +38,7 @@ function loadedReturn(decision: SessionReturn["decision"], summary: string): Ses
 }
 
 /** Assert a serialized pipeline artifact carries no session/handoff/conversation state. */
-function assertNoSessionState(artifact: object, label: string): void {
+function assertNoSessionState<TArtifact extends object>(artifact: TArtifact, label: string): void {
   const serialized = JSON.stringify(artifact);
   assertFalse(serialized.includes(SECRET_RESUME_TOKEN), `${label}: resume_token value leaked`);
   assertFalse(serialized.includes(TRANSCRIPT_PATH), `${label}: transcript_ref value leaked`);

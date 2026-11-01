@@ -20,7 +20,7 @@ import {
   assertStringIncludes,
 } from "@std/assert";
 import { join } from "@std/path";
-import { BindingOverlaySchema } from "@exaix/schemas";
+import { BindingOverlaySchema, type IBindingSpec } from "@exaix/schemas";
 import { BindingIncompatibleError } from "@exaix/ai";
 import { type IScenario, ScenarioSchema } from "../../schema/scenario_schema.ts";
 import { type IScenarioStep, ScenarioStepSchema, ScenarioStepType } from "../../schema/step_schema.ts";
@@ -370,7 +370,7 @@ function pinnedScenario(): IScenario {
 }
 
 /** One operator overlay file, as an operator would hand it to the runner. */
-async function writeOperatorOverlay(root: string, bindings: Record<string, object>): Promise<string> {
+async function writeOperatorOverlay(root: string, bindings: Record<string, IBindingSpec>): Promise<string> {
   const path = join(root, "operator.json");
   await Deno.writeTextFile(path, JSON.stringify({ schema: 1, bindings }));
   return path;

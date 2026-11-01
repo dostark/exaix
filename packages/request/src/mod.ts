@@ -19,7 +19,7 @@ export {
   StatusManager,
 } from "./processing/mod.ts";
 
-export { type IFlowResult, type IFlowRunner, type IFlowValidator, RequestRouter, RoutingError } from "./router.ts";
+export { type IFlowRunner, type IFlowValidator, RequestRouter, RoutingError } from "./router.ts";
 
 export { RequestService } from "./service.ts";
 

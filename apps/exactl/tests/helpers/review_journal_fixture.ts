@@ -6,6 +6,7 @@
  * @related-files [apps/exactl/tests/review_lint_security_test.ts, apps/exactl/tests/review_lint_cli_test.ts]
  */
 
+import type { JSONObject } from "@exaix/core";
 import { fromFileUrl, join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
 import { ReviewCommands } from "../../src/commands/review_commands.ts";
@@ -15,7 +16,7 @@ import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 /** The persisted review, its journal writer and both read paths. */
 type IReviewJournalFixture = Awaited<ReturnType<typeof createCliTestContext>> & {
   trace: string;
-  log: (overrides?: Record<string, unknown>, status?: string) => Promise<void>;
+  log: (overrides?: JSONObject, status?: string) => Promise<void>;
   cli: () => Promise<string>;
   show: () => ReturnType<ReviewCommands["show"]>;
 };
@@ -34,7 +35,7 @@ export async function createReviewJournalFixture(): Promise<IReviewJournalFixtur
   await runGitCommand(ctx.tempDir, ["commit", "-m", "review fixture"]);
   const commit = await runGitCommand(ctx.tempDir, ["rev-parse", "HEAD"]);
   await runGitCommand(ctx.tempDir, ["checkout", TEST_DEFAULT_BRANCH]);
-  const log = async (overrides: Record<string, unknown> = {}, status = "failed"): Promise<void> => {
+  const log = async (overrides: JSONObject = {}, status = "failed"): Promise<void> => {
     await ctx.db.preparedRun("DELETE FROM activity WHERE trace_id = ?", [trace]);
     ctx.db.logActivity(
       "daemon",

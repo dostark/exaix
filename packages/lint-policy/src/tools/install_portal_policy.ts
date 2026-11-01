@@ -62,7 +62,7 @@ export async function installPortalPolicy(
 
 /** Runs the installer command line and returns its exit code. */
 async function main(argv: readonly string[]): Promise<number> {
-  let flags: Record<string, unknown>;
+  let flags: ReturnType<typeof parse>;
   try {
     flags = parse([...argv], {
       string: ["out"],

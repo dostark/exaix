@@ -8,6 +8,7 @@
  *   passed, failed, error, skipped and read-only cases.
  */
 
+import type { JSONObject } from "@exaix/core";
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertFalse } from "@std/assert";
@@ -391,8 +392,8 @@ Deno.test("[execution-verification] a real deno_lint failure is repaired by the 
     const completed = rows.filter((row) => row.action_type === "execution.verification.lint_check.completed");
     assertEquals(started.length, 2, "the runner ran before and after the repair");
     assertEquals(completed.length, 2);
-    const first = JSON.parse(completed[0].payload) as Record<string, unknown>;
-    const last = JSON.parse(completed.at(-1)!.payload) as Record<string, unknown>;
+    const first = JSON.parse(completed[0].payload) as JSONObject;
+    const last = JSON.parse(completed.at(-1)!.payload) as JSONObject;
     assertEquals(first.outcome, "failed");
     assertEquals(last.outcome, "passed");
     assertEquals(first.check_index, 0);
@@ -428,7 +429,7 @@ Deno.test("deno-lint-terminal-snapshot", async (test) => {
       const completed = JSON.parse(
         handle.db.getActivitiesByTrace(handle.traceId).find((row) => row.action_type === "execution.completed")!
           .payload,
-      ) as Record<string, unknown>;
+      ) as JSONObject;
       assertEquals(snapshots[0].verification_status, "failed");
       assertEquals(snapshots[0].run_id, completed.verification_run_id);
       assertEquals(snapshots[0].commit_sha, completed.commit_sha);
@@ -490,7 +491,7 @@ Deno.test("deno-lint-terminal-snapshot", async (test) => {
       const snapshots = lintSnapshots(handle.db, handle.traceId);
       assertEquals(snapshots.length, 1);
       assertEquals(snapshots[0].verification_status, "error");
-      const checks = snapshots[0].checks as Array<Record<string, unknown>>;
+      const checks = snapshots[0].checks as Array<JSONObject>;
       assertEquals(checks[0].outcome, "error");
       assertEquals(checks[0].error_class, "LintPolicyMissing");
       assertEquals(checks[0].total, null);
@@ -515,7 +516,7 @@ Deno.test("deno-lint-terminal-snapshot", async (test) => {
       const snapshots = lintSnapshots(handle.db, handle.traceId);
       assertEquals(snapshots.length, 1);
       assertEquals(snapshots[0].verification_status, "skipped");
-      const checks = snapshots[0].checks as Array<Record<string, unknown>>;
+      const checks = snapshots[0].checks as Array<JSONObject>;
       assertEquals(checks[0].outcome, "not_run");
       assertEquals(snapshots[0].total, null);
     } finally {
@@ -586,8 +587,8 @@ Deno.test("secret-file-name-not-journaled", async () => {
 function lintSnapshots(
   db: IScenarioHandle["db"],
   traceId: string,
-): Array<Record<string, unknown>> {
+): Array<JSONObject> {
   return db.getActivitiesByTrace(traceId)
     .filter((row) => row.action_type === "execution.verification.lint_findings")
-    .map((row) => JSON.parse(row.payload) as Record<string, unknown>);
+    .map((row) => JSON.parse(row.payload) as JSONObject);
 }

@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanExecutionMCPIntegrationTest
  * @path tests/integration/plan_execution_mcp_test.ts
@@ -589,7 +588,7 @@ Deno.test("Integration Test 15.7: Plan Parsing Errors", async () => {
       agent?: string;
       status?: string;
       created_at?: string;
-      [key: string]: any;
+      [key: string]: JSONValue;
     };
 
     if (!frontmatter1.trace_id) {

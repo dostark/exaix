@@ -5,6 +5,7 @@
  * ensuring correct authentication and generation patterns for technical tasks.
  */
 
+import { readFixtureTextSync } from "@exaix/testing";
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MemoryOperation } from "@exaix/core";
 import { join } from "@std/path";
@@ -12,8 +13,9 @@ import { join } from "@std/path";
 Deno.test("Plan Executor - Code Generation", async (t) => {
   await t.step("LLM Response Parsing", async (t) => {
     await t.step("should parse code blocks from LLM response", () => {
-      const llmResponse = Deno.readTextFileSync(
-        new URL("./fixtures/plan_executor_code_generation/llm_response_1.txt", import.meta.url),
+      const llmResponse = readFixtureTextSync(
+        import.meta.url,
+        "services/plan/plan_executor_code_generation_test/llm_response_1.txt",
       );
 
       // Parse the response
@@ -27,8 +29,9 @@ Deno.test("Plan Executor - Code Generation", async (t) => {
     });
 
     await t.step("should extract file paths and operations (create/modify/delete)", () => {
-      const llmResponse = Deno.readTextFileSync(
-        new URL("./fixtures/plan_executor_code_generation/llm_response_2.txt", import.meta.url),
+      const llmResponse = readFixtureTextSync(
+        import.meta.url,
+        "services/plan/plan_executor_code_generation_test/llm_response_2.txt",
       );
 
       const fileMatches = [...llmResponse.matchAll(/### (.*?) \((create|modify|delete)\)/g)];
@@ -209,8 +212,9 @@ Hello, World!
     });
 
     await t.step("should preserve indentation in code blocks", () => {
-      const markdown = Deno.readTextFileSync(
-        new URL("./fixtures/plan_executor_code_generation/markdown.txt", import.meta.url),
+      const markdown = readFixtureTextSync(
+        import.meta.url,
+        "services/plan/plan_executor_code_generation_test/markdown.txt",
       );
 
       const codeMatch = markdown.match(/```typescript\n([\s\S]*?)```/);
@@ -224,8 +228,9 @@ Hello, World!
 
   await t.step("Error Handling", async (t) => {
     await t.step("should handle malformed file headers", () => {
-      const llmResponse = Deno.readTextFileSync(
-        new URL("./fixtures/plan_executor_code_generation/llm_response_3.txt", import.meta.url),
+      const llmResponse = readFixtureTextSync(
+        import.meta.url,
+        "services/plan/plan_executor_code_generation_test/llm_response_3.txt",
       );
 
       // Match strict format: ### path (operation)
@@ -250,8 +255,9 @@ export const example = "test";
     });
 
     await t.step("should handle duplicate file paths", () => {
-      const llmResponse = Deno.readTextFileSync(
-        new URL("./fixtures/plan_executor_code_generation/llm_response_4.txt", import.meta.url),
+      const llmResponse = readFixtureTextSync(
+        import.meta.url,
+        "services/plan/plan_executor_code_generation_test/llm_response_4.txt",
       );
 
       const fileMatches = [...llmResponse.matchAll(/### (.*?) \((create|modify|delete)\)/g)];

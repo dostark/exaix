@@ -255,7 +255,7 @@ function stepOverlayPath(bindingsDir: string, stepId: string): string {
 }
 
 /** Write one overlay document and return the digest of the bytes written. */
-async function writeOverlay(path: string, document: object): Promise<string> {
+async function writeOverlay<TDocument extends object>(path: string, document: TDocument): Promise<string> {
   const text = `${JSON.stringify(document, null, 2)}\n`;
   await Deno.writeTextFile(path, text);
   return await hashText(text);

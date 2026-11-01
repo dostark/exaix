@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module TUIAllHelpers
  * @path apps/tui/tests/helpers.ts
@@ -8,6 +7,7 @@
  * session simulators, and assertion utilities for all terminal views.
  */
 
+import type { JSONValue } from "@exaix/core";
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_PLANS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import {
@@ -64,7 +64,7 @@ interface IPortalInfoOverrides {
   targetPath?: string;
   symlinkPath?: string;
   contextCardPath?: string;
-  [key: string]: any;
+  [key: string]: JSONValue;
 }
 
 interface ILogEntryPayload {
@@ -80,7 +80,7 @@ interface ILogEntryOverrides {
   target?: string;
   payload?: ILogEntryPayload | string;
   timestamp?: string;
-  [key: string]: string | number | boolean | null | undefined | ILogEntryPayload | unknown;
+  [key: string]: JSONValue | ILogEntryPayload;
 }
 
 interface IIndexedActivityRecord extends IActivityRecord {
@@ -733,12 +733,12 @@ interface ISkillSummaryOverrides {
   status?: SkillStatus;
   source?: MemoryBankSource;
   description?: string;
-  triggers?: { keywords?: string[]; taskTypes?: string[]; filePatterns?: string[]; [key: string]: any };
+  triggers?: { keywords?: string[]; taskTypes?: string[]; filePatterns?: string[]; [key: string]: JSONValue };
   instructions?: string;
   usage_count?: number;
   created_at?: string;
   scope?: MemoryScope;
-  [key: string]: any;
+  [key: string]: JSONValue;
 }
 
 export function sampleSkill(overrides: ISkillSummaryOverrides = {}): ISkillSummary {

@@ -7,6 +7,7 @@
  * @related-files [packages/lint-policy/unslop.project.ts, packages/lint-policy/src/script_rules.ts]
  */
 
+import type { JSONObject } from "@exaix/core";
 import { assert, assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import {
@@ -171,7 +172,7 @@ function originalIds(v1: typeof catalog): string[] {
     ["unusedExports", "unused-exports"],
     ["optionalParams", "optional-params"],
   ];
-  const wholeTree = v1.wholeTree as Record<string, unknown> | undefined;
+  const wholeTree = v1.wholeTree as JSONObject | undefined;
   for (const [section, id] of sections) {
     if (wholeTree?.[section] !== undefined) ids.push(id);
   }
@@ -182,8 +183,8 @@ Deno.test("the_compiled_exaix_model_preserves_the_version_1_projection", async (
   const ids = originalIds(catalog);
   // The version 1 fixture predates wholeTree.unusedFiles and wholeTree.duplicateCode, so compare only its sections.
   const actual = semanticCompiledProjection(POLICY_COMPILED, descriptor, ids);
-  delete (actual.wholeTree as Record<string, unknown>).unusedFiles;
-  delete (actual.wholeTree as Record<string, unknown>).duplicateCode;
+  delete (actual.wholeTree as JSONObject).unusedFiles;
+  delete (actual.wholeTree as JSONObject).duplicateCode;
   assertEquals(actual, semanticCatalogProjection(catalog as JsonValue, descriptor, ids));
   const layout = JSON.parse(await Deno.readTextFile(new URL("../../../layout.json", import.meta.url)));
   assertEquals(layout, (catalog as { layout?: unknown }).layout);

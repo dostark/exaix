@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanExecutorDetectionTest
  * @path packages/routing/tests/plan_executor_detection_test.ts
@@ -6,6 +5,7 @@
  * correctly identifies structured task blocks within larger agent responses.
  */
 
+import type { JSONValue } from "@exaix/core";
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MemoryStatus } from "@exaix/core/status";
 import { parse as parseYaml } from "@std/yaml";
@@ -151,7 +151,7 @@ describe("Plan Executor - Detection", () => {
         request_id?: string;
         agent_role?: string;
         status?: string;
-        [key: string]: any;
+        [key: string]: JSONValue;
       };
 
       // Assert
@@ -266,7 +266,7 @@ status: approved
         request_id?: string;
         agent_role?: string;
         status?: string;
-        [key: string]: any;
+        [key: string]: JSONValue;
       };
 
       // Assert

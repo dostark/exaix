@@ -30,7 +30,7 @@ const ALLOWED_REQUEST_FIXTURE_EXTENSIONS = [".md", ".txt"] as const;
 const EMBEDDED_REQUEST_CONTENT_KEYS = ["request_body", "request_text", "prompt_body", "prompt_text"] as const;
 
 interface IUnknownMap {
-  [key: string]: any;
+  [key: string]: JSONValue;
 }
 
 export async function loadRequestFixture(

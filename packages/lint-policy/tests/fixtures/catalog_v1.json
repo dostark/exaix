@@ -592,10 +592,8 @@
     },
     "exaix/no-unsafe-dictionary": {
       "engine": "plugin",
-      "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
+      "severity": "error",
       "scope": "all",
-      "optIn": true,
       "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",
@@ -643,10 +641,8 @@
     },
     "exaix/no-object-parameters": {
       "engine": "plugin",
-      "severity": "off",
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
+      "severity": "error",
       "scope": "all",
-      "optIn": true,
       "codeStyle": "unslop-ts/docs/style_guide.md#strict-type-safety",
       "tags": [
         "type-safety",

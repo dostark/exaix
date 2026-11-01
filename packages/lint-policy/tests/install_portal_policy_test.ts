@@ -7,6 +7,7 @@
  * @related-files [packages/lint-policy/src/tools/install_portal_policy.ts]
  */
 
+import type { JSONObject } from "@exaix/core";
 import { assert, assertEquals, assertMatch, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { installPortalPolicy, PORTAL_POLICY_CONFIG, PORTAL_POLICY_NAME } from "../src/tools/install_portal_policy.ts";
@@ -83,11 +84,11 @@ Deno.test("installed portal policy", async (test) => {
 
       const config = JSON.parse(await Deno.readTextFile(PORTAL_POLICY_CONFIG)) as {
         paths: { test: string[] };
-        rules: Record<string, { level: string; options?: Record<string, unknown> }>;
+        rules: Record<string, { level: string; options?: JSONObject }>;
       };
       const catalog = JSON.parse(await Deno.readTextFile(join(policyDir, "catalog.json"))) as {
         scopes: { test: string[] };
-        rules: Record<string, { severity: string; options?: Record<string, unknown> }>;
+        rules: Record<string, { severity: string; options?: JSONObject }>;
       };
       assertEquals(catalog.scopes.test, config.paths.test);
       assertEquals(

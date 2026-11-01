@@ -198,26 +198,6 @@
     "packages/tui": 1,
     "tests": 18
   },
-  "exaix/no-unsafe-dictionary": {
-    "apps/exactl": 10,
-    "apps/tui": 4,
-    "exaix-team": 1,
-    "packages/execution": 14,
-    "packages/lint-policy": 10,
-    "packages/request": 2,
-    "packages/routing": 4,
-    "packages/schemas": 3,
-    "tests": 12
-  },
-  "exaix/no-object-parameters": {
-    "exaix-team": 3,
-    "packages/core": 2,
-    "packages/execution": 3,
-    "packages/schemas": 1,
-    "packages/session": 1,
-    "packages/testing": 1,
-    "tests": 3
-  },
   "exaix/no-boolean-assert": {
     "apps/daemon": 25,
     "apps/exactl": 69,

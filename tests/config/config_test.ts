@@ -738,7 +738,7 @@ Deno.test("[regression] Sample config includes bootstrap entries", () => {
   const samplePath = "templates/exa.config.sample.toml";
   const sampleContent = Deno.readTextFileSync(samplePath);
   interface ConfigToml {
-    [section: string]: any;
+    [section: string]: JSONValue;
   }
   const parsed = parseToml(sampleContent) as ConfigToml;
 

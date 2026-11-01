@@ -372,7 +372,7 @@
       ]
     },
     "exaix/no-unsafe-dictionary": {
-      "level": "off",
+      "level": "error",
       "options": {
         "forbiddenValueTypes": [
           "unknown",
@@ -381,8 +381,6 @@
           "{}"
         ]
       },
-      "optIn": true,
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "limits": "Local aliases and union members are resolved. Wrapper types, intersections, interfaces, mapped-type signatures, and generic alias expansion are not followed. Map<K, V> is checked; a generic constraint is allowed.",
       "tags": [
         "type-safety",
@@ -413,9 +411,7 @@
       ]
     },
     "exaix/no-object-parameters": {
-      "level": "off",
-      "optIn": true,
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
+      "level": "error",
       "limits": "Only a direct object annotation is checked. A parameter with a default value, and a local alias of object, are not resolved.",
       "tags": [
         "type-safety",

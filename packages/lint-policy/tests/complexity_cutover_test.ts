@@ -7,6 +7,7 @@
  * @related-files [../../../unslop.config.json, ./fixtures/catalog_v1.json, ../src/policy_config.ts]
  */
 
+import type { JSONObject } from "@exaix/core";
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { type ICatalog, type JsonValue, parseCatalog } from "@dostark/unslop-ts";
@@ -95,7 +96,7 @@ async function runDeno(
 }
 
 /** The version 2 catalog with the three complexity rules. */
-function cutoverCatalog(): Record<string, unknown> {
+function cutoverCatalog(): JSONObject {
   return {
     version: 2,
     plugin: "demo",

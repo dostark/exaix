@@ -159,7 +159,7 @@ const JSON_PATH_ROOT = "$";
 interface IJournalEvent {
   event_type?: string;
   action_type?: string;
-  [key: string]: any;
+  [key: string]: JSONValue;
 }
 
 /** A parsed journal-event payload: an open key→value map (the payload shape is event-specific). */
@@ -203,7 +203,7 @@ type ICommandOutputContainsCriterion = Extract<ICriterion, { kind: CriterionKind
 type ICommandOutputNotContainsCriterion = Extract<ICriterion, { kind: CriterionKind.COMMAND_OUTPUT_NOT_CONTAINS }>;
 
 interface IKeyValueDocument {
-  [key: string]: any;
+  [key: string]: JSONValue;
 }
 
 export async function evaluateCriterion(

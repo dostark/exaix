@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanExecutorParsingTest
  * @path packages/routing/tests/plan_executor_parsing_test.ts
@@ -6,6 +5,7 @@
  * extraction of tool sequences and argument structures.
  */
 
+import type { JSONValue } from "@exaix/core";
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -21,7 +21,7 @@ interface Frontmatter {
   agent?: string;
   status?: string;
   created_at?: string;
-  [key: string]: any;
+  [key: string]: JSONValue;
 }
 
 Deno.test("Plan Executor - Parsing", async (t) => {

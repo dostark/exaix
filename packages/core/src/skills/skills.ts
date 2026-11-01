@@ -921,9 +921,9 @@ export class SkillsService implements ISkillsService {
     }
   }
 
-  private parseInput<T>(
-    schema: { safeParse(value: object): { success: true; data: T } | { success: false; error: { message: string } } },
-    value: object,
+  private parseInput<T, TInput extends object>(
+    schema: { safeParse(value: TInput): { success: true; data: T } | { success: false; error: { message: string } } },
+    value: TInput,
   ): T {
     const result = schema.safeParse(value);
     if (!result.success) throw new SkillMutationError(SkillMutationErrorCode.INVALID_INPUT, result.error.message);

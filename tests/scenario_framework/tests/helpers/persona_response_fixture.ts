@@ -23,7 +23,7 @@ export async function createPersonaResponseFixture(): Promise<
 > {
   const ctx = await initTestDbService();
   await ensureDir(join(ctx.tempDir, ctx.config.paths.memory));
-  const append = (action: string, payload: object, trace = RESPONSE_TRACE) => {
+  const append = <TPayload extends object>(action: string, payload: TPayload, trace = RESPONSE_TRACE) => {
     ctx.db.instance.prepare("INSERT INTO activity (id, trace_id, actor, action_type, payload) VALUES (?, ?, ?, ?, ?)")
       .run(crypto.randomUUID(), trace, "system", action, JSON.stringify(payload));
   };

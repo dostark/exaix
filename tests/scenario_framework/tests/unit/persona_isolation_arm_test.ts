@@ -6,6 +6,7 @@
  * @related-files [tests/scenario_framework/runner/persona_isolation_arm.ts]
  */
 
+import { readFixtureTextSync } from "@exaix/testing";
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assertEquals, assertStringIncludes } from "@std/assert";
@@ -17,7 +18,7 @@ import {
   materializePersonaVariants,
 } from "../../runner/persona_isolation_arm.ts";
 
-const BLUEPRINT = Deno.readTextFileSync(new URL("../fixtures/persona_isolation_arm/blueprint.txt", import.meta.url));
+const BLUEPRINT = readFixtureTextSync(import.meta.url, "scenario_framework/persona_isolation_arm_test/blueprint.txt");
 
 Deno.test("[PersonaIsolationArm] materializes shipped, generic, and empty bodies with byte-identical frontmatter", async () => {
   await withTempDir(async (root) => {

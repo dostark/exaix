@@ -20,7 +20,7 @@ import {
   SkillRootKind,
 } from "@exaix/core";
 
-function base(skills?: object) {
+function base<TSkills extends object>(skills?: TSkills) {
   return { system: { root: "/tmp" }, paths: { ...ExaPathDefaults }, ...(skills ? { skills } : {}) };
 }
 

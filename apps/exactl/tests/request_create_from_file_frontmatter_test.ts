@@ -15,6 +15,7 @@
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, packages/request/src/common.ts]
  */
 
+import { readFixtureTextSync } from "@exaix/testing";
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_FLOWS_PATH, DEFAULT_REQUESTS_PATH, DEFAULT_RUNTIME_PATH, DEFAULT_WORKSPACE_PATH } from "@exaix/shared";
 import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
@@ -75,9 +76,7 @@ describe("request --file honours the submitted file's own frontmatter", () => {
     return splitFrontmatter(await Deno.readTextFile(result.path));
   }
 
-  const PINNED = Deno.readTextFileSync(
-    new URL("./fixtures/request_create_from_file_frontmatter/pinned.txt", import.meta.url),
-  );
+  const PINNED = readFixtureTextSync(import.meta.url, "cli/request_create_from_file_frontmatter_test/pinned.txt");
 
   it("carries skills: through to the created request's frontmatter", async () => {
     const { frontmatter } = await submit(PINNED);

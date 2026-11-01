@@ -46,7 +46,7 @@ Deno.test("AgentComposer.executeStep emits agent.effort_resolved with path execu
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
         name: ExecutionStrategyName.REACT,
-        execute: (_bp: object, _ctx: object, _opts: object) =>
+        execute: () =>
           Promise.resolve({
             branch: "feat/effort",
             commit_sha: "0000000000000000000000000000000000000000",

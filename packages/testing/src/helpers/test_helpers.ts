@@ -291,6 +291,6 @@ export function createStubContext(overrides: Partial<ICliApplicationContext> = {
 }
 
 /** Bypass strict TypeScript casting in tests — avoids double `as` casts. */
-export function castAny<T>(val: object): T {
-  return val as T;
+export function castAny<T, TValue extends object = object>(val: TValue): T {
+  return val as TValue & T;
 }

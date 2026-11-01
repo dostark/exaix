@@ -7,6 +7,7 @@
  *   from the trace's execution.completed row, and warns when verification failed or errored.
  */
 
+import type { JSONObject } from "@exaix/core";
 import { assert, assertEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
@@ -122,7 +123,7 @@ function logLintSnapshot(
   requestId: string,
   runId: string,
   commitSha: string,
-  payload: Record<string, unknown>,
+  payload: JSONObject,
 ): void {
   db.logActivity(
     "daemon",

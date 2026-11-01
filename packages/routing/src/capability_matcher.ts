@@ -9,11 +9,6 @@
 import { ZRoutingCandidate } from "@exaix/schemas/routing_policy.ts";
 import type { ILoadedBlueprint } from "./internal_types.ts";
 import type { IRoutingMatchCriteria } from "@exaix/schemas/routing_policy.ts";
-import type { JSONValue } from "@exaix/core";
-
-type BlueprintFrontmatterMap = {
-  [key: string]: JSONValue;
-};
 
 interface ICapabilityMatcherOptions {
   allowDeprecated?: boolean;
@@ -78,7 +73,7 @@ export class CapabilityMatcher {
     description: string;
     routingHint: string;
   } {
-    const frontmatter = blueprint.frontmatter as BlueprintFrontmatterMap;
+    const frontmatter = blueprint.frontmatter;
     const languageField = typeof frontmatter.language === "string"
       ? frontmatter.language
       : typeof frontmatter.lang === "string"

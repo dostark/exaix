@@ -7,6 +7,7 @@
  *   repair-attempt hard cap, path confinement and forbidden-argument rejection.
  */
 
+import type { JSONObject } from "@exaix/core";
 import { assert, assertEquals } from "@std/assert";
 import {
   DEFAULT_VERIFICATION_CHECK_TIMEOUT_MS,
@@ -186,7 +187,7 @@ Deno.test("[verification-schema] scoped --allow-<name>=<values> and non-permissi
 });
 
 /** A complete lint findings snapshot for one configured unslop terminal run. */
-function validSnapshot(): Record<string, unknown> {
+function validSnapshot(): JSONObject {
   return {
     request_id: "request-1",
     run_id: "8f2a3d1c-2b4e-4f6a-9c1d-0e2f3a4b5c6d",
@@ -219,12 +220,12 @@ Deno.test("[verification-schema] the final snapshot schema accepts the authorita
 
 Deno.test("[verification-schema] the final snapshot schema rejects incomplete or malformed payloads", () => {
   const schema = ExecutionVerificationLintFindingsEventPayloadSchema;
-  const remove = (field: string): Record<string, unknown> => {
+  const remove = (field: string): JSONObject => {
     const copy = validSnapshot();
     delete copy[field];
     return copy;
   };
-  const malformed: Record<string, unknown>[] = [
+  const malformed: JSONObject[] = [
     remove("run_id"),
     { ...validSnapshot(), attempt: -1 },
     { ...validSnapshot(), total: -2 },

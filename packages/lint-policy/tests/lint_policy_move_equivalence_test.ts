@@ -8,6 +8,7 @@
  * @related-files [packages/lint-policy/mod.ts]
  */
 
+import type { JSONObject } from "@exaix/core";
 import { assert, assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, relative } from "@std/path";
@@ -64,7 +65,7 @@ async function exists(repoRelativePath: string): Promise<boolean> {
   }
 }
 
-async function readRepoJson(repoRelativePath: string): Promise<{ [key: string]: unknown }> {
+async function readRepoJson(repoRelativePath: string): Promise<JSONObject> {
   return JSON.parse(await Deno.readTextFile(join(REPO_ROOT, repoRelativePath)));
 }
 
@@ -657,7 +658,7 @@ async function runIsolatedMagicHost(run: IMagicHostRun): Promise<{ code: number;
       await Deno.copyFile(join(REPO_ROOT, file), target);
     }
     const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "unslop.config.json"))) as {
-      rules: Record<string, { options?: Record<string, unknown> }>;
+      rules: Record<string, { options?: JSONObject }>;
     };
     config.rules["magic-literals"].options = {
       ...config.rules["magic-literals"].options,

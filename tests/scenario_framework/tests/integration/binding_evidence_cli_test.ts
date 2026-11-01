@@ -10,6 +10,7 @@
 
 import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
+import type { IBindingSpec } from "@exaix/schemas";
 import { startToolChoiceRefusingFixture } from "./synthetic_test_helpers.ts";
 
 const EVIDENCE_DIR = "provider-live-evidence";
@@ -80,7 +81,7 @@ Deno.test({
       await assertOverlayDigests(evidence);
       // The operator's judge choice is retained in its digest-checked overlay file.
       const operator = evidence.overlays.find((overlay) => overlay.role === "operator")!;
-      const written = JSON.parse(await Deno.readTextFile(operator.path)) as { bindings: Record<string, object> };
+      const written = JSON.parse(await Deno.readTextFile(operator.path)) as { bindings: Record<string, IBindingSpec> };
       assertEquals(written.bindings.judge, { service: "mock", model: "mock/mock-model" });
       // Every agent-role judge step belongs to the live cell, so the mock run grades nothing.
       assertEquals(evidence.judges, []);

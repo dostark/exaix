@@ -7,6 +7,7 @@
  * @related-files [packages/lint-policy/unslop.project.ts]
  */
 
+import type { JSONObject } from "@exaix/core";
 import { assert, assertEquals, assertFalse, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { POLICY_COMPILED } from "../src/policy_config.ts";
@@ -201,7 +202,7 @@ Deno.test({
 
 Deno.test("configured_options_reach_four_whole_tree_sections", async () => {
   const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "unslop.config.json"))) as {
-    rules: Record<string, { options?: Record<string, unknown> }>;
+    rules: Record<string, { options?: JSONObject }>;
   };
   assert(config.rules["magic-literals"].options);
   assert(config.rules["optional-params"].options);

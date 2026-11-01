@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanExecutionParsingIntegrationTest
  * @path tests/integration/plan_execution_parsing_test.ts
@@ -6,6 +5,7 @@
  * correct extraction of tool sequences and step parameters before execution.
  */
 
+import type { JSONValue } from "@exaix/core";
 import { assertEquals, assertExists } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { join } from "@std/path";
@@ -19,7 +19,7 @@ interface Frontmatter {
   agent?: string;
   status?: string;
   created_at?: string;
-  [key: string]: any;
+  [key: string]: JSONValue;
 }
 
 Deno.test("Integration: Plan Execution Parsing", async (t) => {

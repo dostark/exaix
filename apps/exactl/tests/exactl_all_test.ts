@@ -8,6 +8,7 @@
  * between global command routing, test-mode context injection, and primary subcommands (plan, review, daemon).
  */
 
+import type { JSONValue } from "@exaix/core";
 import { ExaPathDefaults } from "@exaix/shared";
 import "./helpers/set_test_mode.ts";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
@@ -154,7 +155,7 @@ Deno.test("request list shows 'No requests found' when empty", async () => {
 Deno.test("request clarify parses --answer and --resolved-by and forwards them to requestCommands.clarify", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
-    ctx.requestCommands.clarify = (id: string, options?: { [key: string]: any }) => {
+    ctx.requestCommands.clarify = (id: string, options?: { [key: string]: JSONValue }) => {
       called = true;
       assertEquals(id, "req-clarify-cli");
       assertEquals(options?.answers, { r1q1: "Fix the search endpoint" });
@@ -343,7 +344,7 @@ Deno.test("blueprint validate invalid triggers exit", async () => {
 
 Deno.test("request --file outputs JSON when --json specified", async () => {
   await withTestMod(async (mod, ctx) => {
-    ctx.requestCommands.createFromFile = (_file: string, _opts?: { [key: string]: any }) =>
+    ctx.requestCommands.createFromFile = (_file: string, _opts?: { [key: string]: JSONValue }) =>
       Promise.resolve({
         filename: "/tmp/exa-test/request-1.md",
         trace_id: "trace-1234",
@@ -364,7 +365,7 @@ Deno.test("request --file outputs JSON when --json specified", async () => {
 
 Deno.test("request --file prints human output when no --json", async () => {
   await withTestMod(async (mod, ctx) => {
-    ctx.requestCommands.createFromFile = (_file: string, _opts?: { [key: string]: any }) =>
+    ctx.requestCommands.createFromFile = (_file: string, _opts?: { [key: string]: JSONValue }) =>
       Promise.resolve({
         filename: "/tmp/exa-test/request-2.md",
         trace_id: "trace-5678",

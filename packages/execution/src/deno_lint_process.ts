@@ -8,7 +8,7 @@
  * @related-files [packages/execution/src/deno_lint_check.ts]
  */
 
-import { SafeSubprocess } from "@exaix/core";
+import { type JSONObject, type JSONValue, SafeSubprocess } from "@exaix/core";
 
 /** Inputs of one lint batch. */
 export interface IDenoLintBatchOptions {
@@ -59,16 +59,21 @@ function denoLintArgs(configPath: string, files: readonly string[]): string[] {
   return ["lint", "--deny-import", "--config", configPath, "--rules-tags=", "--json", ...files];
 }
 
+/** True for a JSON object. An array, a scalar and null are not objects here. */
+function isJsonObject(value: JSONValue): value is JSONObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 /** Strict host JSON guard. Null means malformed JSON or a malformed shape. */
 function parseDenoLintHostOutput(stdout: string): IDenoLintHostOutput | null {
-  let document: unknown;
+  let document: JSONValue;
   try {
     document = JSON.parse(stdout);
   } catch {
     return null;
   }
-  if (typeof document !== "object" || document === null) return null;
-  const record = document as Record<string, unknown>;
+  if (!isJsonObject(document)) return null;
+  const record = document;
   if (!Array.isArray(record.diagnostics) || !Array.isArray(record.errors)) return null;
   const diagnostics: IDenoLintHostDiagnostic[] = [];
   for (const entry of record.diagnostics) {
@@ -79,25 +84,23 @@ function parseDenoLintHostOutput(stdout: string): IDenoLintHostOutput | null {
   const errors: string[] = [];
   for (const entry of record.errors) {
     if (typeof entry !== "string") {
-      if (typeof entry !== "object" || entry === null) return null;
-      const error = entry as Record<string, unknown>;
-      if (typeof error.file_path !== "string" || typeof error.message !== "string") return null;
+      if (!isJsonObject(entry)) return null;
+      if (typeof entry.file_path !== "string" || typeof entry.message !== "string") return null;
     }
     errors.push("source_invalid");
   }
   return { diagnostics, errors };
 }
 
-function isPosition(value: unknown, allowZeroColumn: boolean): value is { line: number; col: number } {
-  if (typeof value !== "object" || value === null) return false;
-  const record = value as Record<string, unknown>;
-  const { line, col } = record;
+function isPosition(value: JSONValue, allowZeroColumn: boolean): value is { line: number; col: number } {
+  if (!isJsonObject(value)) return false;
+  const { line, col } = value;
   return typeof line === "number" && Number.isInteger(line) && line >= 1 &&
     typeof col === "number" && Number.isInteger(col) && col >= (allowZeroColumn ? 0 : 1);
 }
 
 /** Reads the optional string fields of one diagnostic. */
-function diagnosticMeta(record: Record<string, unknown>): { code: string; message: string; hint: string } | null {
+function diagnosticMeta(record: JSONObject): { code: string; message: string; hint: string } | null {
   const { code, message, hint } = record;
   if (typeof code !== "string" || code.length === 0) return null;
   if (typeof message !== "string") return null;
@@ -106,12 +109,12 @@ function diagnosticMeta(record: Record<string, unknown>): { code: string; messag
 }
 
 /** Reads the half-open range of one diagnostic. */
-function diagnosticRange(record: Record<string, unknown>): {
+function diagnosticRange(record: JSONObject): {
   start: { line: number; column: number };
   end: { line: number; column: number };
 } | null {
-  if (typeof record.range !== "object" || record.range === null) return null;
-  const bounds = record.range as Record<string, unknown>;
+  if (!isJsonObject(record.range)) return null;
+  const bounds = record.range;
   if (!isPosition(bounds.start, true) || !isPosition(bounds.end, true)) return null;
   if (bounds.end.line < bounds.start.line) return null;
   if (bounds.end.line === bounds.start.line && bounds.end.col < bounds.start.col) return null;
@@ -121,9 +124,9 @@ function diagnosticRange(record: Record<string, unknown>): {
   };
 }
 
-function parseDiagnostic(entry: unknown): IDenoLintHostDiagnostic | null {
-  if (typeof entry !== "object" || entry === null) return null;
-  const record = entry as Record<string, unknown>;
+function parseDiagnostic(entry: JSONValue): IDenoLintHostDiagnostic | null {
+  if (!isJsonObject(entry)) return null;
+  const record = entry;
   if (typeof record.filename !== "string" || record.filename.length === 0) return null;
   const meta = diagnosticMeta(record);
   if (meta === null) return null;
