@@ -1,0 +1,22 @@
+# Phase Doc
+
+## Step 1
+
+Some text.
+
+```yaml
+# step-manifest
+step: 1
+title: First step
+agent_role: senior-coder
+```
+
+## Step 2
+
+More text.
+
+```yaml
+# step-manifest
+step: 2
+title: Second step
+```

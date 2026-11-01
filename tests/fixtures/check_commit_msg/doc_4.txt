@@ -1,0 +1,7 @@
+### Step 6: x
+
+**Success Criteria**:
+
+- ✅ First criterion wraps across
+  two lines → `packages/x/src/a.ts`
+- ✅ Second criterion → `packages/x/src/b.ts`

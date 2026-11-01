@@ -202,12 +202,28 @@ Deno.test("the scripts run reports exaix/require-script-usage on a script header
   );
 });
 
-Deno.test("a parked comment, parameter, or fixture rule is silent by default and reports when selected", async () => {
+Deno.test("default-comment-fixture-gates: activated rules report without an explicit selector", async () => {
   const seeds: [string, string, string][] = [
     ["exaix/long-comment", LONG_COMMENT_SEED, SEED_FILE],
     ["exaix/ephemeral-comment", EPHEMERAL_SEED, SEED_FILE],
-    ["exaix/max-params", MAX_PARAMS_SEED, SEED_FILE],
     ["exaix/test-inline-multiline-fixture", FIXTURE_SEED, PLAIN_TEST_SEED_FILE],
+  ];
+  for (const [rule, source, path] of seeds) {
+    await withSeed(
+      async (file) => {
+        const result = await runDeno(["lint", file], { EXAIX_LINT_RULES: "" });
+        assertEquals(result.code, 1, result.output);
+        assertStringIncludes(result.output, `error[${rule}]`);
+      },
+      source,
+      path,
+    );
+  }
+});
+
+Deno.test("a parked parameter rule is silent by default and reports when selected", async () => {
+  const seeds: [string, string, string][] = [
+    ["exaix/max-params", MAX_PARAMS_SEED, SEED_FILE],
   ];
   for (const [rule, source, path] of seeds) {
     await withSeed(

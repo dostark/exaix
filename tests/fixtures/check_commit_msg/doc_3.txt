@@ -1,0 +1,7 @@
+### Step 6: x
+
+**Success Criteria**:
+
+- ✅ Every provider/CLI that reports a reasoning/thinking-token breakdown (Anthropic, OpenAI,
+  Google, OpenRouter) surfaces it on `IGenerateResult.usage.reasoningTokens`, never silently
+  discarded → `packages/ai/src/provider_common_utils.ts`, `packages/session/src/delegate_return_parser.ts`

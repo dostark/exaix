@@ -1,0 +1,19 @@
+
+## File Changes
+
+### src/auth.ts (create)
+```typescript
+export function authenticate(token: string): boolean {
+  return token === "valid-token";
+}
+```
+
+### tests/auth_test.ts (create)
+```typescript
+import { authenticate } from "../../../src/auth.ts";
+import { assertEquals } from "@std/assert";
+
+Deno.test("authenticate - valid token", () => {
+  assertEquals(authenticate("valid-token"), true);
+});
+```

@@ -1,0 +1,10 @@
+### Step 6: x
+
+**Success Criteria**:
+
+- ✅ A criterion whose text wraps
+  right up to the next heading → `packages/x/src/a.ts`
+
+**Architecture Notes**:
+
+More prose here that must never be treated as part of the criterion above.

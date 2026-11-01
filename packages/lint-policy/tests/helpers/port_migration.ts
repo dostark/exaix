@@ -110,11 +110,7 @@ export const GIT_FILE_SOURCE: ITrackedFileSource = {
   },
 };
 
-/**
- * Reads the tracked text files, minus planning documents and the exempt prefixes.
- * A non-file entry, a binary extension, a planning document, and an exempt prefix are skipped on purpose.
- * Any other failure to read an included file, and an empty inventory, throw.
- */
+/** Reads tracked text files except planning documents and exempt prefixes. An unreadable file or empty inventory throws. */
 export async function trackedTextFiles(
   exemptPrefixes: readonly string[],
   source: ITrackedFileSource = GIT_FILE_SOURCE,

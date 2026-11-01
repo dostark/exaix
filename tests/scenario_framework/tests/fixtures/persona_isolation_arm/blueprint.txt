@@ -1,0 +1,11 @@
+---
+agent_role: "senior-coder"
+model_size: L
+capabilities: ["testing"]
+default_skills: ["tdd-methodology"]
+permitted_tools: ["read_file"]
+---
+
+# Senior Coder
+
+Write careful code.

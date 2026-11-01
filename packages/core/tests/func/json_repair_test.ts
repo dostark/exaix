@@ -46,17 +46,7 @@ Deno.test("[JSONRepair] plain JSON with no fence is unaffected", () => {
 Deno.test("[JSONRepair] well-formed multi-line, multi-key JSON is never corrupted by newlines_in_strings", () => {
   // Regression: newlines_in_strings' pattern previously matched across the structural
   // ",\n  " between two keys, treating it as a newline inside one string.
-  const input = `{
-  "status": "analyzing",
-  "findings": {
-    "issues": [],
-    "severity": "high"
-  },
-  "plan": {
-    "step_1": "description one",
-    "step_2": "description two"
-  }
-}`;
+  const input = Deno.readTextFileSync(new URL("../fixtures/json_repair/input_1.txt", import.meta.url));
   const { repaired } = repairJSON(input);
   assertEquals(JSON.parse(repaired), {
     status: "analyzing",
@@ -74,30 +64,7 @@ Deno.test("[JSONRepair] a genuine literal newline inside one string value is sti
 Deno.test("[JSONRepair] real Anthropic response shape: multi-paragraph prose with bash fences before the JSON fence", () => {
   // Regression: newlines_in_strings previously ran before the JSON object was isolated from
   // surrounding prose, matching ACROSS unrelated key/value pairs and corrupting the JSON.
-  const input = `I need to clarify the issue with my previous response. The error indicated
-markdown code blocks broke JSON validity.
-
-\`\`\`bash
-read_file src/utils.ts
-\`\`\`
-
-Once I receive the file contents, here is my response:
-
-\`\`\`json
-{
-  "status": "analyzing",
-  "findings": {
-    "issues": [],
-    "severity": "high"
-  },
-  "plan": {
-    "step_1": "description one",
-    "step_2": "description two"
-  }
-}
-\`\`\`
-
-Please let me know if you need anything else.`;
+  const input = Deno.readTextFileSync(new URL("../fixtures/json_repair/input_2.txt", import.meta.url));
 
   const { repaired } = repairJSON(input);
   assertEquals(JSON.parse(repaired), {

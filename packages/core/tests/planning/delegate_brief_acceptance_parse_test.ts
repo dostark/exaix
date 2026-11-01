@@ -8,14 +8,9 @@ import { assertEquals } from "@std/assert";
 import { buildDelegateBriefArgs, parseAcceptanceFromContent } from "@exaix/core/planning";
 
 Deno.test("parseAcceptanceFromContent: extracts bullets from ## Acceptance section", () => {
-  const content = `Fix the login bug.
-
-## Acceptance
-
-- Email/password login works
-- SSO login works
-- Error states handled
-`;
+  const content = Deno.readTextFileSync(
+    new URL("../fixtures/delegate_brief_acceptance_parse/content.txt", import.meta.url),
+  );
   const result = parseAcceptanceFromContent(content);
   assertEquals(result, ["Email/password login works", "SSO login works", "Error states handled"]);
 });

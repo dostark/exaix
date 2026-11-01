@@ -10,29 +10,9 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { parsePhaseStepManifests } from "../src/phase_step_manifest_parser.ts";
 
-const VALID_MANIFEST_PLAN = `# Phase Doc
-
-## Step 1
-
-Some text.
-
-\`\`\`yaml
-# step-manifest
-step: 1
-title: First step
-agent_role: senior-coder
-\`\`\`
-
-## Step 2
-
-More text.
-
-\`\`\`yaml
-# step-manifest
-step: 2
-title: Second step
-\`\`\`
-`;
+const VALID_MANIFEST_PLAN = Deno.readTextFileSync(
+  new URL("./fixtures/phase_step_manifest_parser/valid_manifest_plan.txt", import.meta.url),
+);
 
 Deno.test("[unit] preserves manifest order and content for a well-formed plan with zero diagnostics", () => {
   const result = parsePhaseStepManifests(VALID_MANIFEST_PLAN);

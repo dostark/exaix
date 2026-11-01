@@ -75,19 +75,9 @@ describe("request --file honours the submitted file's own frontmatter", () => {
     return splitFrontmatter(await Deno.readTextFile(result.path));
   }
 
-  const PINNED = `---
-trace_id: "fixture-trace"
-status: "pending"
-priority: "high"
-agent_role: "senior-coder"
-skills: [tdd-methodology, security-first]
-tags: [review, quality]
----
-
-# Skill Batch
-
-Evaluate the pinned skills.
-`;
+  const PINNED = Deno.readTextFileSync(
+    new URL("./fixtures/request_create_from_file_frontmatter/pinned.txt", import.meta.url),
+  );
 
   it("carries skills: through to the created request's frontmatter", async () => {
     const { frontmatter } = await submit(PINNED);

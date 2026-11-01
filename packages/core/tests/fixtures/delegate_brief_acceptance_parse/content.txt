@@ -1,0 +1,7 @@
+Fix the login bug.
+
+## Acceptance
+
+- Email/password login works
+- SSO login works
+- Error states handled

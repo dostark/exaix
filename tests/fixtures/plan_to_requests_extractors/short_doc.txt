@@ -1,0 +1,9 @@
+# D
+
+### Constraints
+
+- Tune `abcd` handling everywhere.
+
+### Design Decisions
+
+- Prefer `abcde` normalization.

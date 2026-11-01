@@ -1,0 +1,9 @@
+### Step 6: x
+
+**Planned Tests:**
+
+- ✅ `a test` → `packages/x/tests/a_test.ts`
+
+**Success Criteria:**
+
+- ✅ a criterion → `packages/x/src/a.ts`

@@ -16,6 +16,8 @@ const CEILINGS_PATH = "packages/lint-policy/rule_ceilings.json";
 const FIRST_CUTOVER_COMMIT = "3467f53ccf95b9664514294c45f26a1df6ba8fa5";
 /** The three complexity rules enter the ceiling table at this commit, so their ceilings start here. */
 const COMPLEXITY_CUTOVER_COMMIT = "84d370479037b8c56e4a14e94de57fc074cf5c75";
+/** The burn-down rules move to complete test-inclusive buckets at this commit. Later rises still fail. */
+const COMPLETE_BUCKET_COMMIT = "cd62d9f2b618a9d4c891c12c6b0d5a7b74ff890d";
 const ENGINE_SUBMODULE = "unslop-ts";
 const GITLINK_FIELDS = 3;
 
@@ -47,7 +49,10 @@ Deno.test("phase227_remediation_cutover", async () => {
     await gitOutput(REPO_ROOT, "show", `${COMPLEXITY_CUTOVER_COMMIT}:${CEILINGS_PATH}`),
   );
   const introduced = Object.fromEntries(Object.entries(complexity).filter(([rule]) => !(rule in first)));
-  const before: Ceilings = { ...introduced, ...first };
+  const migrated: Ceilings = JSON.parse(
+    await gitOutput(REPO_ROOT, "show", `${COMPLETE_BUCKET_COMMIT}:${CEILINGS_PATH}`),
+  );
+  const before: Ceilings = { ...introduced, ...first, ...migrated };
   const after: Ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, CEILINGS_PATH)));
   assertEquals(raisedCeilings(before, after), []);
   assert(Object.keys(after).length > 0, "the ceiling table is empty");

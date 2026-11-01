@@ -1,0 +1,11 @@
+{
+  "status": "analyzing",
+  "findings": {
+    "issues": [],
+    "severity": "high"
+  },
+  "plan": {
+    "step_1": "description one",
+    "step_2": "description two"
+  }
+}

@@ -72,21 +72,7 @@ Deno.test("[HeuristicAnalyzer] classifies medium multi-step request (default)", 
 });
 
 Deno.test("[HeuristicAnalyzer] classifies complex multi-requirement request", () => {
-  const text = `
-    Implement a full caching layer for the API:
-    - Add Redis client configuration
-    - Create CacheService with get/set/delete/invalidate methods
-    - Integrate into UserService, ProductService, and OrderService
-    - Add cache key namespacing per service
-    - Implement TTL support with configurable defaults
-    - Add circuit breaker on cache miss
-    - Update all related tests in tests/services/
-    - Add integration test for cache invalidation flow
-    - Document all public methods
-    - Ensure no breaking changes to existing API contracts
-    - Add Prometheus metrics for cache hit/miss ratio
-    - Export cache stats endpoint in diagnostics controller
-  `;
+  const text = Deno.readTextFileSync(new URL("./fixtures/heuristic_analyzer/text.txt", import.meta.url));
   const result = analyzeHeuristic(text);
   assertEquals(result.complexity, RequestAnalysisComplexity.COMPLEX);
 });

@@ -583,11 +583,7 @@ runtime = "./系統"
 
   await t.step("should compute consistent checksums", async () => {
     const tempDir = await Deno.makeTempDir({ prefix: "config-checksum-consistent-test-" });
-    const content = `[system]
-log_level = "info"
-
-[paths]
-runtime = "./Runtime"`;
+    const content = Deno.readTextFileSync(new URL("../fixtures/config/content.txt", import.meta.url));
 
     const configPath1 = `${tempDir}/test-checksum-1.toml`;
     const configPath2 = `${tempDir}/test-checksum-2.toml`;

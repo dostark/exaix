@@ -34,31 +34,28 @@ const RATCHETED_RULES = [
   "exaix/no-constant-substring-assert",
   "exaix/magic-union-type",
   "exaix/promise-response-return",
-  "exaix/long-comment",
-  "exaix/ephemeral-comment",
   "exaix/max-params",
-  "exaix/test-inline-multiline-fixture",
 ];
 const ROOT_BUCKETS = ["tests", "exaix-team", "scripts"];
 
 const PHASE_230_RULES = new Set([
-  "import-placement",
-  "re-export-imported",
-  "exported-interface-placement",
-  "no-interface-rename-on-import",
-  "long-comment",
-  "ephemeral-comment",
-  "test-inline-multiline-fixture",
-  "no-constant-substring-assert",
-  "promise-response-return",
-  "magic-union-type",
-  "no-object-parameters",
-  "no-unsafe-dictionary",
-  "no-typeof-escape",
-  "no-explicit-unknown",
-  "no-repeated-assert-call",
-  "no-boolean-assert",
-].map((key) => `exaix/${key}`));
+  "exaix/import-placement",
+  "exaix/re-export-imported",
+  "exaix/exported-interface-placement",
+  "exaix/no-interface-rename-on-import",
+  "exaix/long-comment",
+  "exaix/ephemeral-comment",
+  "exaix/test-inline-multiline-fixture",
+  "exaix/no-constant-substring-assert",
+  "exaix/promise-response-return",
+  "exaix/magic-union-type",
+  "exaix/no-object-parameters",
+  "exaix/no-unsafe-dictionary",
+  "exaix/no-typeof-escape",
+  "exaix/no-explicit-unknown",
+  "exaix/no-repeated-assert-call",
+  "exaix/no-boolean-assert",
+]);
 
 /** The workspace package names (`packages/*` and `apps/*`) and the root buckets for `tests/`, `exaix-team/`, and `scripts/`. */
 async function workspacePackages(): Promise<string[]> {
@@ -221,26 +218,26 @@ Deno.test("inventory-fails-closed: reports and observed populations must be comp
 });
 
 Deno.test("inventory-scopes-and-buckets: owned rules count tests and preserve other production ceilings", () => {
-  const diagnostic = (code: string, path: string) => ({ code: `exaix/${code}`, filename: `${REPO_ROOT}/${path}` });
+  const diagnostic = (code: string, path: string) => ({ code, filename: `${REPO_ROOT}/${path}` });
   const report: Pick<ILintReport, "diagnostics"> = {
     diagnostics: [
-      diagnostic("no-explicit-unknown", "tests/a_test.ts"),
-      diagnostic("no-explicit-unknown", "packages/execution/tests/b.ts"),
-      diagnostic("no-explicit-unknown", "packages/execution/src/c.ts"),
-      diagnostic("no-boolean-assert", "scripts/probe_test.ts"),
-      diagnostic("no-boolean-assert", "scripts/probe.ts"),
-      diagnostic("magic-union-type", "packages/execution/tests/d.ts"),
-      diagnostic("magic-union-type", "packages/execution/src/d.ts"),
-      diagnostic("max-function-lines", "packages/execution/tests/e.ts"),
-      diagnostic("max-function-lines", "packages/execution/src/e.ts"),
-      diagnostic("max-params", "packages/execution/tests/f.ts"),
-      diagnostic("max-params", "packages/execution/src/f.ts"),
-      diagnostic("no-explicit-unknown", "packages/execution/tests/fixtures/g.ts"),
-      diagnostic("no-interface-rename-on-import", "packages/core/src/parsing/markdown.ts"),
-      diagnostic("re-export-imported", "packages/execution/mod.ts"),
-      diagnostic("no-explicit-unknown", "scripts/check_code_style.ts"),
-      diagnostic("no-explicit-unknown", "scripts/__temp_probe.ts"),
-      diagnostic("no-explicit-unknown", "exaix-team/packages/ai/tests/g.ts"),
+      diagnostic("exaix/no-explicit-unknown", "tests/a_test.ts"),
+      diagnostic("exaix/no-explicit-unknown", "packages/execution/tests/b.ts"),
+      diagnostic("exaix/no-explicit-unknown", "packages/execution/src/c.ts"),
+      diagnostic("exaix/no-boolean-assert", "scripts/probe_test.ts"),
+      diagnostic("exaix/no-boolean-assert", "scripts/probe.ts"),
+      diagnostic("exaix/magic-union-type", "packages/execution/tests/d.ts"),
+      diagnostic("exaix/magic-union-type", "packages/execution/src/d.ts"),
+      diagnostic("exaix/max-function-lines", "packages/execution/tests/e.ts"),
+      diagnostic("exaix/max-function-lines", "packages/execution/src/e.ts"),
+      diagnostic("exaix/max-params", "packages/execution/tests/f.ts"),
+      diagnostic("exaix/max-params", "packages/execution/src/f.ts"),
+      diagnostic("exaix/no-explicit-unknown", "packages/execution/tests/fixtures/g.ts"),
+      diagnostic("exaix/no-interface-rename-on-import", "packages/core/src/parsing/markdown.ts"),
+      diagnostic("exaix/re-export-imported", "packages/execution/mod.ts"),
+      diagnostic("exaix/no-explicit-unknown", "scripts/check_code_style.ts"),
+      diagnostic("exaix/no-explicit-unknown", "scripts/__temp_probe.ts"),
+      diagnostic("exaix/no-explicit-unknown", "exaix-team/packages/ai/tests/g.ts"),
     ],
   };
   assertEquals(countsOf(report, REPO_ROOT, ["packages/execution", "packages/core", ...ROOT_BUCKETS]), {

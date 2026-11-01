@@ -20,16 +20,7 @@ Deno.test("Code Parser - parseCodeGeneration()", async (t) => {
   const portalRoot = "/home/user/projects/MyApp";
 
   await t.step("should parse single file creation", () => {
-    const llmResponse = `
-## File Changes
-
-### src/auth.ts (create)
-\`\`\`typescript
-export function authenticate(token: string): boolean {
-  return token === "valid-token";
-}
-\`\`\`
-`;
+    const llmResponse = Deno.readTextFileSync(new URL("../fixtures/code_parser/llm_response_1.txt", import.meta.url));
 
     const result = parseCodeGeneration(llmResponse, portalRoot);
 
@@ -45,19 +36,7 @@ export function authenticate(token: string): boolean {
   });
 
   await t.step("should parse multiple file changes", () => {
-    const llmResponse = `
-### src/auth.ts (create)
-\`\`\`typescript
-export function auth() {}
-\`\`\`
-
-### src/config.ts (modify)
-\`\`\`typescript
-export const config = { auth: true };
-\`\`\`
-
-### src/old.ts (delete)
-`;
+    const llmResponse = Deno.readTextFileSync(new URL("../fixtures/code_parser/llm_response_2.txt", import.meta.url));
 
     const result = parseCodeGeneration(llmResponse, portalRoot);
 
@@ -113,17 +92,7 @@ malicious content
   });
 
   await t.step("should detect duplicate file paths", () => {
-    const llmResponse = `
-### src/auth.ts (create)
-\`\`\`typescript
-export function auth1() {}
-\`\`\`
-
-### src/auth.ts (modify)
-\`\`\`typescript
-export function auth2() {}
-\`\`\`
-`;
+    const llmResponse = Deno.readTextFileSync(new URL("../fixtures/code_parser/llm_response_3.txt", import.meta.url));
 
     const result = parseCodeGeneration(llmResponse, portalRoot);
 
@@ -156,16 +125,7 @@ The existing implementation already handles this case.
   });
 
   await t.step("should preserve code indentation", () => {
-    const llmResponse = `
-### src/example.ts (create)
-\`\`\`typescript
-export class Example {
-  method() {
-    return "test";
-  }
-}
-\`\`\`
-`;
+    const llmResponse = Deno.readTextFileSync(new URL("../fixtures/code_parser/llm_response_4.txt", import.meta.url));
 
     const result = parseCodeGeneration(llmResponse, portalRoot);
 

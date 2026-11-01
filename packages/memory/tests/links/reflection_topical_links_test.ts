@@ -38,10 +38,7 @@ interface ISynthesisScenario {
   reflection: MemoryReflectionService;
 }
 
-/**
- * Runs `body` with two approved learnings, a provider that synthesises them, and an embedding service that
- * reports `similarity` between them.
- */
+/** Runs `body` with two approved learnings, a synthesising provider and an embedding service reporting `similarity`. */
 async function withSynthesisScenario(
   similarity: number,
   body: (scenario: ISynthesisScenario) => Promise<void>,

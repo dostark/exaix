@@ -842,9 +842,8 @@ orchestratorTest(
     const { db, logger, pathResolver, permissions } = getServices();
 
     // CliDelegateStrategy.resolvePortalPath prefers the worktree over portal.target_path.
-    // The security audit must resolve the SAME path.
-    // Otherwise it audits an unrelated directory with zero diff.
-    // That would silently pass, or flag a real write as unauthorized.
+    // The security audit must resolve the same path.
+    // Otherwise it audits an unrelated directory with zero diff and silently passes.
     const worktreePath = join(testDir, "worktree-checkout");
     const addWorktree = new Deno.Command(PortalOperation.GIT, {
       args: ["worktree", "add", "-b", "feat/worktree-step", worktreePath, "HEAD"],
@@ -969,8 +968,7 @@ orchestratorTest(
 orchestratorTest(
   "AgentComposer: a later read-only step does not flag a file an earlier step wrote (cross-step accumulation)",
   async () => {
-    // The first executeStep writes src/earlier.ts.
-    // The second step on the same orchestrator instance writes nothing, as a read-only verification.
+    // The first executeStep writes src/earlier.ts, and the second step writes nothing as a read-only check.
     // The first change is still uncommitted when the second audit runs.
     // So authorization must accumulate across calls.
     const earlierPath = "src/earlier.ts";

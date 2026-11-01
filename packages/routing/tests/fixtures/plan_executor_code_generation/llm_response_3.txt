@@ -1,0 +1,10 @@
+
+### src/auth.ts
+```typescript
+export function auth() {}
+```
+
+### (create)
+```typescript
+export function test() {}
+```

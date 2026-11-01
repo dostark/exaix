@@ -177,36 +177,9 @@ Deno.test("[plan-to-requests] >10-step plan keeps priorities within 0-10", async
 });
 
 Deno.test("[plan-to-requests] heading-scrape fallback produces RequestSchema-valid output", async () => {
-  const planContent = `# Plan
-
-## Step 1
-
-**Actions:**
-- Do something
-
-**Architecture Notes:**
-- Simple
-
-**Planned Tests:**
-- Test A
-
-**Success Criteria:**
-- [x] Done
-
-## Step 2
-
-**Actions:**
-- Do more
-
-**Architecture Notes:**
-- Complex
-
-**Planned Tests:**
-- Test B
-
-**Success Criteria:**
-- [x] Done
-`;
+  const planContent = Deno.readTextFileSync(
+    new URL("../fixtures/plan_to_requests/plan_content_1.txt", import.meta.url),
+  );
 
   const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-scrape-" });
   const planPath = join(tmpDir, "scrape-plan.md");
@@ -232,30 +205,9 @@ Deno.test("[plan-to-requests] heading-scrape fallback produces RequestSchema-val
 });
 
 Deno.test("[plan-to-requests] duplicate step numbers produce error", async () => {
-  const planContent = `# Duplicate Plan
-
-## Step 1
-
-\`\`\`yaml
-# step-manifest
-step: 1
-title: "First"
-\`\`\`
-
-**Actions:**
-- First
-
-## Step 1
-
-\`\`\`yaml
-# step-manifest
-step: 1
-title: "Duplicate (also step 1)"
-\`\`\`
-
-**Actions:**
-- Duplicate
-`;
+  const planContent = Deno.readTextFileSync(
+    new URL("../fixtures/plan_to_requests/plan_content_2.txt", import.meta.url),
+  );
 
   const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-dup-" });
   const planPath = join(tmpDir, "dup-plan.md");
@@ -298,24 +250,9 @@ Deno.test("[plan-to-requests] metadata line carries portal and target_branch fro
 });
 
 Deno.test("[plan-to-requests] heading-scrape fallback uses default portal and target_branch", async () => {
-  const planContent = `# Scrape Only
-
-## Step 1
-
-**Actions:**
-- Do something
-
-**Success Criteria:**
-- [x] Done
-
-## Step 2
-
-**Actions:**
-- Do more
-
-**Success Criteria:**
-- [x] Done
-`;
+  const planContent = Deno.readTextFileSync(
+    new URL("../fixtures/plan_to_requests/plan_content_3.txt", import.meta.url),
+  );
 
   const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-scrape-meta-" });
   const planPath = join(tmpDir, "scrape-meta-plan.md");

@@ -1102,7 +1102,7 @@
     },
     "exaix/long-comment": {
       "engine": "plugin",
-      "severity": "off",
+      "severity": "error",
       "scope": "all",
       "codeStyle": "unslop-ts/docs/style_guide.md#comment-discipline",
       "tags": [
@@ -1110,13 +1110,11 @@
       ],
       "options": {
         "maxLines": 3
-      },
-      "optIn": true,
-      "reason": "Parked: one comment in scripts/ is over the limit. Phase 230 shortens it and turns the rule on."
+      }
     },
     "exaix/ephemeral-comment": {
       "engine": "plugin",
-      "severity": "off",
+      "severity": "error",
       "scope": "all",
       "codeStyle": "unslop-ts/docs/style_guide.md#comment-discipline",
       "tags": [
@@ -1170,9 +1168,7 @@
             "hint": "a document-section reference (\u00a7)"
           }
         ]
-      },
-      "optIn": true,
-      "reason": "Parked: one test helper comment names a phase. Phase 230 rewrites it and turns the rule on."
+      }
     },
     "exaix/ephemeral-filename": {
       "engine": "plugin",
@@ -1359,7 +1355,7 @@
     },
     "exaix/test-inline-multiline-fixture": {
       "engine": "plugin",
-      "severity": "off",
+      "severity": "error",
       "scope": "test",
       "codeStyle": "unslop-ts/docs/style_guide.md#test-fixtures",
       "tags": [
@@ -1368,9 +1364,7 @@
       "options": {
         "minLines": 7,
         "fixturesDirectory": "tests/fixtures/"
-      },
-      "optIn": true,
-      "reason": "Parked: the AST rule reads templates that hold escaped backticks, which the line scanner ended early. Phase 230 burns them down and turns the rule on."
+      }
     },
     "concrete-cross-domain": {
       "engine": "script",

@@ -20,32 +20,35 @@ import { assertRuleEvidence } from "../../../unslop-ts/src/cli/rule_report.ts";
 import { POLICY_CATALOG } from "../src/policy_config.ts";
 
 const ACTIVE_PLUGIN_IDS = [
-  "ignore-needs-reason",
-  "max-cyclomatic-complexity",
-  "max-cognitive-complexity",
-  "max-function-lines",
-  "no-pass-through-type-alias",
-  "promise-response-alias",
-  "ts-suppression-pragmas",
-  "no-forbidden-lint-ignore",
-  "import-inside-statement",
-  "dynamic-import",
-  "inline-type-import",
-  "unslop-isolation",
-  "import-boundaries",
-  "require-module-header",
-  "exported-interface-naming",
-  "ephemeral-filename",
-  "decorative-comment",
-  "require-deno-shebang",
-  "require-script-usage",
-  "no-chained-type-assertions",
-  "barrel-only-reexports",
-  "import-placement",
-  "re-export-imported",
-  "exported-interface-placement",
-  "no-interface-rename-on-import",
-].map((key) => `exaix/${key}`);
+  "exaix/ignore-needs-reason",
+  "exaix/max-cyclomatic-complexity",
+  "exaix/max-cognitive-complexity",
+  "exaix/max-function-lines",
+  "exaix/no-pass-through-type-alias",
+  "exaix/promise-response-alias",
+  "exaix/ts-suppression-pragmas",
+  "exaix/no-forbidden-lint-ignore",
+  "exaix/import-inside-statement",
+  "exaix/dynamic-import",
+  "exaix/inline-type-import",
+  "exaix/unslop-isolation",
+  "exaix/import-boundaries",
+  "exaix/require-module-header",
+  "exaix/exported-interface-naming",
+  "exaix/ephemeral-filename",
+  "exaix/decorative-comment",
+  "exaix/require-deno-shebang",
+  "exaix/require-script-usage",
+  "exaix/no-chained-type-assertions",
+  "exaix/barrel-only-reexports",
+  "exaix/import-placement",
+  "exaix/re-export-imported",
+  "exaix/exported-interface-placement",
+  "exaix/no-interface-rename-on-import",
+  "exaix/long-comment",
+  "exaix/ephemeral-comment",
+  "exaix/test-inline-multiline-fixture",
+];
 
 Deno.test("atomic-policy-transition: independent active plugin IDs include only delivered rules", () => {
   const actual = Object.entries(POLICY_CATALOG.rules)
@@ -60,7 +63,16 @@ Deno.test("atomic-policy-transition: independent active plugin IDs include only 
 
 const REPO_ROOT = new URL("../../../", import.meta.url);
 const RULE = "exaix/import-placement";
-const IMPORT_INTERFACE_RULES = ["re-export-imported", "exported-interface-placement", "no-interface-rename-on-import"];
+const IMPORT_INTERFACE_RULES = [
+  "exaix/re-export-imported",
+  "exaix/exported-interface-placement",
+  "exaix/no-interface-rename-on-import",
+];
+const COMMENT_FIXTURE_RULES = [
+  "exaix/long-comment",
+  "exaix/ephemeral-comment",
+  "exaix/test-inline-multiline-fixture",
+];
 const CLI_TIMEOUT_MS = 30_000;
 
 /** Writes a clean or misplaced import with the authored module header. */
@@ -235,32 +247,28 @@ Deno.test("atomic-policy-transition: scripts select the active rule and its park
   const config = JSON.parse(await Deno.readTextFile(new URL("deno.json", REPO_ROOT)));
   const scripts = config.tasks.lint.split(" && ")[1];
   const selected = scripts.match(/^EXAIX_LINT_RULES=([^ ]+)/)[1].split(",");
-  const delivered = [RULE, ...IMPORT_INTERFACE_RULES.map((key) => `exaix/${key}`)];
+  const delivered = [RULE, ...IMPORT_INTERFACE_RULES, ...COMMENT_FIXTURE_RULES];
   assertArrayIncludes(selected, delivered);
   for (const id of selected) assertEquals(POLICY_CATALOG.rules[id].severity, "error", id);
   const ceilings = JSON.parse(await Deno.readTextFile(new URL("packages/lint-policy/rule_ceilings.json", REPO_ROOT)));
   for (const id of delivered) {
     assertEquals(ceilings[id], undefined, id);
-    assertEquals(POLICY_CATALOG.rules[id].scope, "all", id);
+    assertEquals(POLICY_CATALOG.rules[id].scope, id === "exaix/test-inline-multiline-fixture" ? "test" : "all", id);
     assertEquals(POLICY_CATALOG.rules[id].optIn, undefined, id);
     assertEquals(POLICY_CATALOG.rules[id].reason, undefined, id);
   }
   const parked = [
-    "long-comment",
-    "ephemeral-comment",
-    "test-inline-multiline-fixture",
-    "no-constant-substring-assert",
-    "promise-response-return",
-    "magic-union-type",
-    "no-object-parameters",
-    "no-unsafe-dictionary",
-    "no-typeof-escape",
-    "no-explicit-unknown",
-    "no-repeated-assert-call",
-    "no-boolean-assert",
+    "exaix/no-constant-substring-assert",
+    "exaix/promise-response-return",
+    "exaix/magic-union-type",
+    "exaix/no-object-parameters",
+    "exaix/no-unsafe-dictionary",
+    "exaix/no-typeof-escape",
+    "exaix/no-explicit-unknown",
+    "exaix/no-repeated-assert-call",
+    "exaix/no-boolean-assert",
   ];
-  for (const key of parked) {
-    const id = `exaix/${key}`;
+  for (const id of parked) {
     assertEquals(POLICY_CATALOG.rules[id].severity, "off", id);
     assert(POLICY_CATALOG.rules[id].optIn, id);
     assertExists(ceilings[id], id);
@@ -268,13 +276,13 @@ Deno.test("atomic-policy-transition: scripts select the active rule and its park
 });
 
 /** One rule's violation or clean counterpart, with imports kept first. */
-function importInterfaceSource(path: string, key: string, violation: boolean): string {
+function importInterfaceSource(path: string, rule: string, violation: boolean): string {
   const header = sourceOf(path, false).split("import { value }")[0];
-  if (key === "re-export-imported") {
+  if (rule === "exaix/re-export-imported") {
     const exported = violation ? "export { value };\n" : "export const ownValue = value;\n";
     return header + 'import { value } from "./support.ts";\n' + exported;
   }
-  if (key === "exported-interface-placement") {
+  if (rule === "exaix/exported-interface-placement") {
     const shape = "export interface ICanary { value: number; }\n";
     const value = "export const ownValue = 1;\n";
     return header + (violation ? value + shape : shape + value);
@@ -286,8 +294,7 @@ function importInterfaceSource(path: string, key: string, violation: boolean): s
 
 Deno.test("default-import-interface-gates: exact rule canaries and clean controls reach both authored passes", async () => {
   await withActivationProject(async (dir) => {
-    for (const key of IMPORT_INTERFACE_RULES) {
-      const rule = `exaix/${key}`;
+    for (const rule of IMPORT_INTERFACE_RULES) {
       for (
         const path of [
           "packages/core/src/canary.ts",
@@ -298,7 +305,7 @@ Deno.test("default-import-interface-gates: exact rule canaries and clean control
           "scripts/canary_test.ts",
         ]
       ) {
-        await Deno.writeTextFile(join(dir, path), importInterfaceSource(path, key, true));
+        await Deno.writeTextFile(join(dir, path), importInterfaceSource(path, rule, true));
         const pass = path.startsWith("scripts/") ? "scripts" : "main";
         const failed = await runPass(dir, pass);
         assertEquals(failed.code, 1, failed.stderr);
@@ -310,7 +317,7 @@ Deno.test("default-import-interface-gates: exact rule canaries and clean control
           checkedFiles: [toFileUrl(join(dir, path)).href],
           cwd: dir,
         });
-        await Deno.writeTextFile(join(dir, path), importInterfaceSource(path, key, false));
+        await Deno.writeTextFile(join(dir, path), importInterfaceSource(path, rule, false));
         const clean = await runPass(dir, pass);
         assertEquals(clean.code, 0, clean.stderr);
         assertRuleEvidence({
@@ -342,16 +349,102 @@ Deno.test("default-import-interface-gates: package entry points, helpers and the
     await Deno.mkdir(join(dir, "packages/core/src/parsing"), { recursive: true });
     await Deno.writeTextFile(
       join(dir, markdown),
-      importInterfaceSource(markdown, "no-interface-rename-on-import", true).replace(
+      importInterfaceSource(markdown, "exaix/no-interface-rename-on-import", true).replace(
         '"./support.ts"',
         '"../support.ts"',
       ),
     );
     const result = await runPass(dir, "main");
     assertEquals(result.code, 0, result.stderr);
-    for (const key of IMPORT_INTERFACE_RULES) {
+    for (const rule of IMPORT_INTERFACE_RULES) {
       assertRuleEvidence({
-        rule: `exaix/${key}`,
+        rule,
+        runId: result.runId,
+        stderr: result.stderr,
+        checkedFiles: [],
+        cwd: dir,
+      });
+    }
+  });
+});
+
+/** One comment or fixture rule's violation or clean counterpart below the authored module header. */
+function commentFixtureSource(path: string, rule: string, violation: boolean): string {
+  const header = sourceOf(path, false).split("import { value }")[0];
+  if (rule === "exaix/long-comment") {
+    const lines = violation ? ["one", "two", "three", "four"] : ["one", "two", "three"];
+    return header + "export const first = 1;\n" + lines.map((line) => `// ${line}\n`).join("") +
+      "export const second = 2;\n";
+  }
+  if (rule === "exaix/ephemeral-comment") {
+    const note = violation ? "we tried a loop first" : "The loop keeps the order stable";
+    return header + `export const first = 1;\n// ${note}\nexport const second = 2;\n`;
+  }
+  const rows = violation ? 7 : 6;
+  const body = Array.from({ length: rows }, (_, index) => `k${index}: ${index}`).join("\n");
+  return header + `export const yaml = \`\n${body}\n\`;\n`;
+}
+
+const COMMENT_FIXTURE_PATHS = [
+  "packages/core/src/canary.ts",
+  "packages/core/tests/canary_test.ts",
+  "tests/canary_test.ts",
+  "exaix-team/packages/ai/tests/canary_test.ts",
+  "scripts/canary.ts",
+  "scripts/canary_test.ts",
+];
+
+/** True when the rule's compiled scope covers the canary path. */
+function inScope(rule: string, path: string): boolean {
+  return POLICY_CATALOG.rules[rule].scope !== "test" || /_test\.ts$/.test(path);
+}
+
+Deno.test("default-comment-fixture-gates: exact canaries fail and clean or out-of-scope controls pass in both passes", async () => {
+  await withActivationProject(async (dir) => {
+    for (const rule of COMMENT_FIXTURE_RULES) {
+      for (const path of COMMENT_FIXTURE_PATHS) {
+        const pass = path.startsWith("scripts/") ? "scripts" : "main";
+        const evidence = (run: { runId: string; stderr: string }) =>
+          assertRuleEvidence({
+            rule,
+            runId: run.runId,
+            stderr: run.stderr,
+            checkedFiles: [toFileUrl(join(dir, path)).href],
+            cwd: dir,
+          });
+        await Deno.writeTextFile(join(dir, path), commentFixtureSource(path, rule, true));
+        const seeded = await runPass(dir, pass);
+        if (inScope(rule, path)) {
+          assertEquals(seeded.code, 1, `${rule} ${path}: ${seeded.stderr}`);
+          assertStringIncludes(seeded.stderr, `error[${rule}]:`);
+        } else {
+          assertEquals(seeded.code, 0, `${rule} ${path}: ${seeded.stderr}`);
+        }
+        evidence(seeded);
+        await Deno.writeTextFile(join(dir, path), commentFixtureSource(path, rule, false));
+        const clean = await runPass(dir, pass);
+        assertEquals(clean.code, 0, `${rule} ${path}: ${clean.stderr}`);
+        evidence(clean);
+      }
+    }
+  });
+});
+
+Deno.test("default-comment-fixture-gates: module headers and fixture folders stay exempt", async () => {
+  await withActivationProject(async (dir) => {
+    const header = sourceOf("packages/core/src/header.ts", false).split("import { value }")[0];
+    assert(header.split("\n").length > 3);
+    await Deno.writeTextFile(join(dir, "packages/core/src/header.ts"), header + "export const first = 1;\n");
+    const fixture = "packages/core/tests/fixtures/canary_test.ts";
+    await Deno.writeTextFile(
+      join(dir, fixture),
+      commentFixtureSource(fixture, "exaix/test-inline-multiline-fixture", true),
+    );
+    const result = await runPass(dir, "main");
+    assertEquals(result.code, 0, result.stderr);
+    for (const rule of COMMENT_FIXTURE_RULES) {
+      assertRuleEvidence({
+        rule,
         runId: result.runId,
         stderr: result.stderr,
         checkedFiles: [],

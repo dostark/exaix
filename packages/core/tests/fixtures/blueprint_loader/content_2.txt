@@ -1,0 +1,8 @@
+---
+agent_role: "effort-test"
+name: "Effort Test"
+thinking: true
+effort: "high"
+---
+
+System prompt content.

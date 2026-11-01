@@ -803,15 +803,13 @@
       ]
     },
     "exaix/long-comment": {
-      "level": "off",
+      "level": "error",
       "options": {
         "maxLines": 3
-      },
-      "optIn": true,
-      "reason": "Parked: one comment in scripts/ is over the limit. Phase 230 shortens it and turns the rule on."
+      }
     },
     "exaix/ephemeral-comment": {
-      "level": "off",
+      "level": "error",
       "options": {
         "phrases": [
           {
@@ -860,9 +858,7 @@
             "hint": "a document-section reference (§)"
           }
         ]
-      },
-      "optIn": true,
-      "reason": "Parked: one test helper comment names a phase. Phase 230 rewrites it and turns the rule on."
+      }
     },
     "exaix/ephemeral-filename": {
       "level": "error",
@@ -999,14 +995,12 @@
       ]
     },
     "exaix/test-inline-multiline-fixture": {
-      "level": "off",
+      "level": "error",
       "options": {
         "minLines": 7,
         "fixturesDirectory": "tests/fixtures/"
       },
-      "scope": "test",
-      "optIn": true,
-      "reason": "Parked: the AST rule reads templates that hold escaped backticks, which the line scanner ended early. Phase 230 burns them down and turns the rule on."
+      "scope": "test"
     },
     "concrete-cross-domain": {
       "level": "warn",

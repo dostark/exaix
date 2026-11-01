@@ -1,0 +1,9 @@
+
+## File Changes
+
+### src/auth.ts (create)
+```typescript
+export function authenticate(token: string): boolean {
+  return token === "valid-token";
+}
+```

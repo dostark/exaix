@@ -290,26 +290,5 @@
     "packages/flow": 1,
     "packages/storage-sqlite": 1,
     "packages/testing": 1
-  },
-  "exaix/test-inline-multiline-fixture": {
-    "apps/exactl": 2,
-    "packages/core": 10,
-    "packages/flow": 2,
-    "packages/request": 1,
-    "packages/routing": 5,
-    "tests": 14
-  },
-  "exaix/long-comment": {
-    "exaix-team": 1,
-    "packages/core": 2,
-    "packages/execution": 2,
-    "packages/lint-policy": 3,
-    "packages/memory": 1,
-    "packages/request": 1
-  },
-  "exaix/ephemeral-comment": {
-    "packages/lint-policy": 1,
-    "packages/schemas": 1,
-    "tests": 1
   }
 }

@@ -17,18 +17,7 @@ import {
   materializePersonaVariants,
 } from "../../runner/persona_isolation_arm.ts";
 
-const BLUEPRINT = `---
-agent_role: "senior-coder"
-model_size: L
-capabilities: ["testing"]
-default_skills: ["tdd-methodology"]
-permitted_tools: ["read_file"]
----
-
-# Senior Coder
-
-Write careful code.
-`;
+const BLUEPRINT = Deno.readTextFileSync(new URL("../fixtures/persona_isolation_arm/blueprint.txt", import.meta.url));
 
 Deno.test("[PersonaIsolationArm] materializes shipped, generic, and empty bodies with byte-identical frontmatter", async () => {
   await withTempDir(async (root) => {

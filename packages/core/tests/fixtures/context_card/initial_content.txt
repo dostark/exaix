@@ -1,0 +1,8 @@
+# Portal: MyApp
+- **Path**: `/old/path`
+- **Tech Stack**: OldStack
+
+## User Notes
+
+These are my custom notes.
+They should be preserved.

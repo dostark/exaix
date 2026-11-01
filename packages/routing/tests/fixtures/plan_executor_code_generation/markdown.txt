@@ -1,0 +1,9 @@
+
+### src/example.ts (create)
+```typescript
+export class Example {
+  method() {
+    return "test";
+  }
+}
+```

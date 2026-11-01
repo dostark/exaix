@@ -34,23 +34,9 @@ import {
 import { RequestCommands } from "../src/commands/request_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 
-const MOCK_AGENT_BLUEPRINT = `---
-agent_role: "mock-agent"
-name: "Mock Testing Agent"
-model: "mock:test-model"
-capabilities:
-  - testing
-created: "2025-12-09T13:47:00Z"
-created_by: "exaix-test-suite"
-version: "1.1.0"
-description: "Agent role blueprint for testing"
-default_skills: []
----
-
-# Mock Testing Agent
-
-Keep responses minimal and parseable for test assertions.
-`;
+const MOCK_AGENT_BLUEPRINT = Deno.readTextFileSync(
+  new URL("./fixtures/request_create_dry_run_context/mock_agent_blueprint.txt", import.meta.url),
+);
 
 async function withDryRunContextFixture(
   fn: (ctx: { context: IRequestActionContext; requestsDir: string; tempDir: string }) => Promise<void>,

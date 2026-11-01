@@ -12,26 +12,9 @@ import { join } from "@std/path";
 Deno.test("Plan Executor - Code Generation", async (t) => {
   await t.step("LLM Response Parsing", async (t) => {
     await t.step("should parse code blocks from LLM response", () => {
-      const llmResponse = `
-## File Changes
-
-### src/auth.ts (create)
-\`\`\`typescript
-export function authenticate(token: string): boolean {
-  return token === "valid-token";
-}
-\`\`\`
-
-### tests/auth_test.ts (create)
-\`\`\`typescript
-import { authenticate } from "../../../src/auth.ts";
-import { assertEquals } from "@std/assert";
-
-Deno.test("authenticate - valid token", () => {
-  assertEquals(authenticate("valid-token"), true);
-});
-\`\`\`
-`;
+      const llmResponse = Deno.readTextFileSync(
+        new URL("./fixtures/plan_executor_code_generation/llm_response_1.txt", import.meta.url),
+      );
 
       // Parse the response
       const fileMatches = [...llmResponse.matchAll(/### (.*?) \((\w+)\)\n```(\w+)\n([\s\S]*?)```/g)];
@@ -44,19 +27,9 @@ Deno.test("authenticate - valid token", () => {
     });
 
     await t.step("should extract file paths and operations (create/modify/delete)", () => {
-      const llmResponse = `
-### src/auth.ts (create)
-\`\`\`typescript
-export function auth() {}
-\`\`\`
-
-### src/config.ts (modify)
-\`\`\`typescript
-export const config = { auth: true };
-\`\`\`
-
-### src/old_file.ts (delete)
-`;
+      const llmResponse = Deno.readTextFileSync(
+        new URL("./fixtures/plan_executor_code_generation/llm_response_2.txt", import.meta.url),
+      );
 
       const fileMatches = [...llmResponse.matchAll(/### (.*?) \((create|modify|delete)\)/g)];
 
@@ -236,16 +209,9 @@ Hello, World!
     });
 
     await t.step("should preserve indentation in code blocks", () => {
-      const markdown = `
-### src/example.ts (create)
-\`\`\`typescript
-export class Example {
-  method() {
-    return "test";
-  }
-}
-\`\`\`
-`;
+      const markdown = Deno.readTextFileSync(
+        new URL("./fixtures/plan_executor_code_generation/markdown.txt", import.meta.url),
+      );
 
       const codeMatch = markdown.match(/```typescript\n([\s\S]*?)```/);
       assertExists(codeMatch);
@@ -258,17 +224,9 @@ export class Example {
 
   await t.step("Error Handling", async (t) => {
     await t.step("should handle malformed file headers", () => {
-      const llmResponse = `
-### src/auth.ts
-\`\`\`typescript
-export function auth() {}
-\`\`\`
-
-### (create)
-\`\`\`typescript
-export function test() {}
-\`\`\`
-`;
+      const llmResponse = Deno.readTextFileSync(
+        new URL("./fixtures/plan_executor_code_generation/llm_response_3.txt", import.meta.url),
+      );
 
       // Match strict format: ### path (operation)
       const validMatches = [...llmResponse.matchAll(/### ([^\s]+) \((create|modify|delete)\)/g)];
@@ -292,17 +250,9 @@ export const example = "test";
     });
 
     await t.step("should handle duplicate file paths", () => {
-      const llmResponse = `
-### src/auth.ts (create)
-\`\`\`typescript
-export function auth1() {}
-\`\`\`
-
-### src/auth.ts (modify)
-\`\`\`typescript
-export function auth2() {}
-\`\`\`
-`;
+      const llmResponse = Deno.readTextFileSync(
+        new URL("./fixtures/plan_executor_code_generation/llm_response_4.txt", import.meta.url),
+      );
 
       const fileMatches = [...llmResponse.matchAll(/### (.*?) \((create|modify|delete)\)/g)];
 

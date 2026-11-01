@@ -1,0 +1,23 @@
+# Duplicate Plan
+
+## Step 1
+
+```yaml
+# step-manifest
+step: 1
+title: "First"
+```
+
+**Actions:**
+- First
+
+## Step 1
+
+```yaml
+# step-manifest
+step: 1
+title: "Duplicate (also step 1)"
+```
+
+**Actions:**
+- Duplicate

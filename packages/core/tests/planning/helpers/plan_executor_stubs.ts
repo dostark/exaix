@@ -57,11 +57,7 @@ interface IResolverPlanRun {
   planFrontmatter?: Record<string, string>;
 }
 
-/**
- * Executes a one-step plan with a PlanExecutor that has a real ModelResolver.
- * The run uses a `senior-coder` blueprint and a local mock provider.
- * It returns the logger so a test can assert on its events.
- */
+/** Runs a one-step `senior-coder` plan with a real ModelResolver and mock provider. Returns the logger. */
 export async function runPlanWithResolver(
   run: IResolverPlanRun = {},
 ): Promise<{ logger: ReturnType<typeof createMockEventLogger>; config: Config }> {

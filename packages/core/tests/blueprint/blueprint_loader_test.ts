@@ -383,14 +383,7 @@ Deno.test("[IBlueprintLoader] toLegacyBlueprint carries default_skills through a
   const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
-    const content = `---
-agent_role: "skills-test"
-name: "Skills Test"
-default_skills: ["response-contract", "error-handling"]
----
-
-System prompt content.
-`;
+    const content = Deno.readTextFileSync(new URL("../fixtures/blueprint_loader/content_1.txt", import.meta.url));
     await Deno.writeTextFile(join(agentRolesDir, "skills-test.md"), content);
 
     const loader = new IBlueprintLoader({ blueprintsPath });
@@ -411,15 +404,7 @@ Deno.test("[IBlueprintLoader] toLegacyBlueprint carries thinking/effort through,
   const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
-    const content = `---
-agent_role: "effort-test"
-name: "Effort Test"
-thinking: true
-effort: "high"
----
-
-System prompt content.
-`;
+    const content = Deno.readTextFileSync(new URL("../fixtures/blueprint_loader/content_2.txt", import.meta.url));
     await Deno.writeTextFile(join(agentRolesDir, "effort-test.md"), content);
 
     const loader = new IBlueprintLoader({ blueprintsPath });

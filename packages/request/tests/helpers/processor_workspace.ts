@@ -37,10 +37,7 @@ interface IProcessorWorkspace {
   processor: RequestProcessor;
 }
 
-/**
- * Runs `body` with a temporary workspace that holds a default blueprint and one pending request.
- * The processor uses `provider`, and `agentRunner` when given, otherwise a real AgentRunner on `provider`.
- */
+/** Runs `body` in a temp workspace with one pending request. `agentRunner` defaults to a real runner on `provider`. */
 export async function withProcessorWorkspace(
   provider: IModelProvider,
   body: (workspace: IProcessorWorkspace) => Promise<void>,

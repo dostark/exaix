@@ -9,7 +9,7 @@
 
 import { dirname, fromFileUrl, join } from "@std/path";
 
-/** The parent commit before the first rule of Phase 227 moved. */
+/** The parent commit before the first rule moved to the engine. */
 const PHASE_BASE_COMMIT = "11df96584b404963ec0b28a26623c8c29b0a588c";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
@@ -52,10 +52,7 @@ async function gitShow(path: string): Promise<string> {
   return new TextDecoder().decode(result.stdout);
 }
 
-/**
- * Writes the base checkers into a temporary directory and passes their paths to `body`.
- * One edit differs from the base. The base pack list drops the Exaix pack, because the engine owns interface naming.
- */
+/** Writes the base checkers to a temp directory for `body`, minus the Exaix pack, as the engine owns interface naming. */
 export async function withPhaseBaseCheckers<T>(body: (hosts: IBaselineHosts) => Promise<T>): Promise<T> {
   const sandbox = await Deno.makeTempDir({ prefix: "phase_base_" });
   try {

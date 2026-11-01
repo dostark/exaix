@@ -48,15 +48,9 @@ Deno.test("ContextCardGenerator: updates card preserving notes", async () => {
     await Deno.mkdir(projectsDir, { recursive: true });
 
     // Create existing card with user notes
-    const initialContent = `# Portal: MyApp
-- **Path**: \`/old/path\`
-- **Tech Stack**: OldStack
-
-## User Notes
-
-These are my custom notes.
-They should be preserved.
-`;
+    const initialContent = Deno.readTextFileSync(
+      new URL("../fixtures/context_card/initial_content.txt", import.meta.url),
+    );
     await Deno.mkdir(join(projectsDir, "MyApp"), { recursive: true });
     await Deno.writeTextFile(join(projectsDir, "MyApp", "portal.md"), initialContent);
 

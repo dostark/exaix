@@ -1,0 +1,12 @@
+
+### src/auth.ts (create)
+```typescript
+export function auth() {}
+```
+
+### src/config.ts (modify)
+```typescript
+export const config = { auth: true };
+```
+
+### src/old.ts (delete)

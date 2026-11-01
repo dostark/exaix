@@ -62,7 +62,7 @@ export interface IVerificationResult {
   lint_findings?: IVerificationLintFinding[];
 }
 
-/** Every check name a verification run can report. The public union activates in Step 5. */
+/** Every check name a verification run can report. */
 export type VerificationCheckName = IDenoTaskCheck["task"] | typeof DENO_LINT_CHECK_KIND;
 
 /** The reported name of one configured check. */

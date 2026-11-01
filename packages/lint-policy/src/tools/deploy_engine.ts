@@ -87,15 +87,14 @@ interface IGitResult {
   readonly stderr: string;
 }
 
-/**
- * The arguments of the compatibility check. They limit read and write to the repository and the temp dir.
- * The flag `--allow-run=deno,git` still lets a test run any command. These flags stop accidents, not a hostile ref.
- */
+/** The arguments of the compatibility check, limiting read and write to the repository and the temp dir. */
 export function compatCommandArgs(rootDir: string, tempDir: string): string[] {
   return [
     "test",
     `--allow-read=${rootDir},${tempDir}`,
     `--allow-write=${tempDir}`,
+    // The run flag still lets a test run any command.
+    // These flags stop accidents, not a hostile ref.
     "--allow-run=deno,git",
     `--allow-env=${COMPAT_ENV.join(",")}`,
     ...COMPAT_TESTS,

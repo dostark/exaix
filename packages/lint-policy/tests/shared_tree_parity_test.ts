@@ -61,6 +61,24 @@ const ignoreGlobs = ((catalogJson as { ignore?: readonly { glob: string }[] }).i
   globToRegExp(entry.glob, { extended: true, globstar: true })
 );
 
+/** Team packages with their own deno.json outside the root workspace. Deno loads no lint plugin for them. */
+async function unlintedPackageRoots(): Promise<string[]> {
+  const workspace: string[] = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json"))).workspace;
+  const members = new Set(workspace.map((entry) => entry.replace(/^\.\//, "")));
+  const roots: string[] = [];
+  for (const parent of ["exaix-team/packages", "exaix-team/apps"]) {
+    for await (const entry of Deno.readDir(join(REPO_ROOT, parent))) {
+      const root = `${parent}/${entry.name}`;
+      const configured = entry.isDirectory &&
+        await Deno.stat(join(REPO_ROOT, root, "deno.json")).then(() => true, () => false);
+      if (configured && !members.has(root)) roots.push(`${root}/`);
+    }
+  }
+  return roots;
+}
+
+const UNLINTED_PACKAGE_ROOTS = await unlintedPackageRoots();
+
 function hasExtension(file: string, extensions: readonly string[]): boolean {
   return extensions.some((extension) => file.endsWith(extension));
 }
@@ -77,7 +95,8 @@ function scriptCovers(file: string): boolean {
 
 function pluginCovers(file: string): boolean {
   return hasExtension(file, PLUGIN_EXTENSIONS) && !isHidden(file) &&
-    PLUGIN_ROOTS.some((root) => file.startsWith(root)) && !ignoreGlobs.some((pattern) => pattern.test(file));
+    PLUGIN_ROOTS.some((root) => file.startsWith(root)) && !ignoreGlobs.some((pattern) => pattern.test(file)) &&
+    !UNLINTED_PACKAGE_ROOTS.some((root) => file.startsWith(root));
 }
 
 /** The surface of a file that only one side reads, named as the scope table names a dropped surface. */
@@ -193,7 +212,9 @@ async function collect(): Promise<ISharedTree> {
     current: current.findings,
     explainMissing: (finding) => {
       if (parkedScriptIds.has(finding.rule)) return "parked rule finding held by rule_ceilings.json";
-      if (!pluginCovers(finding.file)) return "scope loss: the plugin reads TypeScript under its lint roots only";
+      if (!pluginCovers(finding.file)) {
+        return "scope loss: the plugin reads TypeScript under its lint roots and workspace packages only";
+      }
       const text = texts.get(finding.file);
       if (text === null || text === undefined) return null;
       const lines = text.split("\n");

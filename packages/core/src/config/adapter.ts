@@ -381,11 +381,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
     return coerceDbValue(dbValue, registered?.opts) as T;
   }
 
-  /**
-   * Rejects a write to an unknown key, a locked key, or an invalid value before anything is persisted.
-   * The validation key is the exact key, the base key of a profile-scoped key, or a pattern key.
-   * A lock on the base key also covers profile-scoped and pattern-keyed writes.
-   */
+  /** Rejects an unknown, locked or invalid write before it persists. A base-key lock also covers scoped keys. */
   protected assertValidWrite(key: string, value: ConfigValue): void {
     const validationKey = this.resolveValidationKey(key);
     if (validationKey === undefined) {

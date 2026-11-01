@@ -1,0 +1,12 @@
+## Implementation Plan
+
+### Step 6: Terminal, last step in the doc
+
+**Success Criteria**:
+
+- ✅ done criterion → `packages/x/src/done.ts`
+
+## Success Metrics
+
+- [ ] Phase-level aspirational target unrelated to Step 6
+- [ ] Another phase-level target

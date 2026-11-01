@@ -1,0 +1,29 @@
+# Plan
+
+## Step 1
+
+**Actions:**
+- Do something
+
+**Architecture Notes:**
+- Simple
+
+**Planned Tests:**
+- Test A
+
+**Success Criteria:**
+- [x] Done
+
+## Step 2
+
+**Actions:**
+- Do more
+
+**Architecture Notes:**
+- Complex
+
+**Planned Tests:**
+- Test B
+
+**Success Criteria:**
+- [x] Done

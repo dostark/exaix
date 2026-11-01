@@ -64,16 +64,9 @@ Deno.test("[regression] a step with zero matching bullets omits both sub-block l
 });
 
 Deno.test("filter min-length boundary: a 4-char shared token does not match, a 5-char one does", () => {
-  const shortDoc = `# D
-
-### Constraints
-
-- Tune \`abcd\` handling everywhere.
-
-### Design Decisions
-
-- Prefer \`abcde\` normalization.
-`;
+  const shortDoc = Deno.readTextFileSync(
+    new URL("../fixtures/plan_to_requests_extractors/short_doc.txt", import.meta.url),
+  );
   const stepRefShort = "slice mentioning `abcd`";
   const stepRefLong = "slice mentioning `abcde`";
 

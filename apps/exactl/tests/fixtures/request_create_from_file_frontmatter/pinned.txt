@@ -1,0 +1,12 @@
+---
+trace_id: "fixture-trace"
+status: "pending"
+priority: "high"
+agent_role: "senior-coder"
+skills: [tdd-methodology, security-first]
+tags: [review, quality]
+---
+
+# Skill Batch
+
+Evaluate the pinned skills.

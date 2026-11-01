@@ -1,0 +1,7 @@
+---
+agent_role: "skills-test"
+name: "Skills Test"
+default_skills: ["response-contract", "error-handling"]
+---
+
+System prompt content.

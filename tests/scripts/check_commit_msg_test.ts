@@ -284,41 +284,7 @@ impact: ReqProc: added validation; EventLogger: added audit entry`;
 
 // Plan-step traceability (path: <doc>#<step>)
 
-const PLAN_DOC = `## Implementation Plan
-
-### Step 5: Something earlier
-
-**Planned Tests**:
-
-- ✅ \`earlier test\` → \`packages/x/tests/earlier_test.ts\`
-
-**Success Criteria**:
-
-- ✅ earlier criterion → \`packages/x/src/earlier.ts\`
-
-### Step 6: Solo curation CLI
-
-**Planned Tests**:
-
-- ✅ \`config model writes candidates\` → \`apps/exactl/tests/model_commands_test.ts\`
-- ✅ Integration: \`loop honoured\` → \`tests/integration/model_curation_cli_loop_test.ts\`
-
-**Success Criteria**:
-
-- ✅ Full curation loop → \`apps/exactl/src/commands/model_commands.ts\`
-- ✅ Registry wired → \`apps/exactl/src/init.ts\`, \`apps/exactl/src/exactl.ts\`
-
-\`\`\`yaml
-# step-manifest
-step: 6
-\`\`\`
-
-### Step 7: Terminal
-
-**Success Criteria**:
-
-- ✅ later criterion → \`tests/scenario/x_test.ts\`
-`;
+const PLAN_DOC = Deno.readTextFileSync(new URL("../fixtures/check_commit_msg/plan_doc.txt", import.meta.url));
 
 describe("parsePlanField", () => {
   it("extracts the doc path and step number from a plan: field", () => {
@@ -377,19 +343,9 @@ describe("parsePlanStep", () => {
   });
 
   it("does not bleed into a later '## ' phase-level section (e.g. Success Metrics) when the step is the doc's last '### Step'", () => {
-    const planDocLastStep = `## Implementation Plan
-
-### Step 6: Terminal, last step in the doc
-
-**Success Criteria**:
-
-- ✅ done criterion → \`packages/x/src/done.ts\`
-
-## Success Metrics
-
-- [ ] Phase-level aspirational target unrelated to Step 6
-- [ ] Another phase-level target
-`;
+    const planDocLastStep = Deno.readTextFileSync(
+      new URL("../fixtures/check_commit_msg/plan_doc_last_step.txt", import.meta.url),
+    );
     const parsed = parsePlanStep(planDocLastStep, 6);
     assertEquals(parsed.errors, []);
     assertEquals(parsed.criteriaPaths, ["packages/x/src/done.ts"]);
@@ -469,16 +425,7 @@ describe("parsePlanStep", () => {
   });
 
   it("accepts the repo's dominant heading convention — colon INSIDE the closing ** (e.g. `**Success Criteria:**`, `**Planned Tests:**`) — not just colon-after (regression: 104/113 files under exaix-dev-docs/planning/ use colon-inside, but the section-entry regex previously required an exact `**Success Criteria**` prefix and silently never entered the section for colon-inside docs)", () => {
-    const doc = `### Step 6: x
-
-**Planned Tests:**
-
-- ✅ \`a test\` → \`packages/x/tests/a_test.ts\`
-
-**Success Criteria:**
-
-- ✅ a criterion → \`packages/x/src/a.ts\`
-`;
+    const doc = Deno.readTextFileSync(new URL("../fixtures/check_commit_msg/doc_1.txt", import.meta.url));
     const parsed = parsePlanStep(doc, 6);
     assertEquals(parsed.errors, []);
     assertEquals(parsed.testPaths, ["packages/x/tests/a_test.ts"]);
@@ -498,16 +445,7 @@ describe("parsePlanStep", () => {
   });
 
   it("accepts a leading '- ' bullet before the bold heading (e.g. `- **Success Criteria**:`, `- **Planned Tests**:`) — a real, minority-but-live convention used by 13 files under exaix-dev-docs/planning/ including phase-112, 106, 107, 111, 113, and 170 (regression: the section-entry regex required the line to START with `**`, so it silently never entered the section — criteriaPaths/testPaths came back empty and the changed-file traceability cross-check became a no-op for every step in these docs)", () => {
-    const doc = `### Step 6: x
-
-- **Planned Tests**:
-
-- ✅ \`a test\` → \`packages/x/tests/a_test.ts\`
-
-- **Success Criteria**:
-
-- ✅ a criterion → \`packages/x/src/a.ts\`
-`;
+    const doc = Deno.readTextFileSync(new URL("../fixtures/check_commit_msg/doc_2.txt", import.meta.url));
     const parsed = parsePlanStep(doc, 6);
     assertEquals(parsed.errors, []);
     assertEquals(parsed.testPaths, ["packages/x/tests/a_test.ts"]);
@@ -539,14 +477,7 @@ describe("parsePlanStep", () => {
   });
 
   it("joins a Success Criteria bullet soft-wrapped across multiple lines before matching its → path", () => {
-    const doc = `### Step 6: x
-
-**Success Criteria**:
-
-- ✅ Every provider/CLI that reports a reasoning/thinking-token breakdown (Anthropic, OpenAI,
-  Google, OpenRouter) surfaces it on \`IGenerateResult.usage.reasoningTokens\`, never silently
-  discarded → \`packages/ai/src/provider_common_utils.ts\`, \`packages/session/src/delegate_return_parser.ts\`
-`;
+    const doc = Deno.readTextFileSync(new URL("../fixtures/check_commit_msg/doc_3.txt", import.meta.url));
     const parsed = parsePlanStep(doc, 6);
     assertEquals(parsed.errors, []);
     assertEquals(parsed.criteriaPaths.sort(), [
@@ -569,31 +500,14 @@ describe("parsePlanStep", () => {
   });
 
   it("does not swallow the next bullet's line into the previous wrapped bullet", () => {
-    const doc = `### Step 6: x
-
-**Success Criteria**:
-
-- ✅ First criterion wraps across
-  two lines → \`packages/x/src/a.ts\`
-- ✅ Second criterion → \`packages/x/src/b.ts\`
-`;
+    const doc = Deno.readTextFileSync(new URL("../fixtures/check_commit_msg/doc_4.txt", import.meta.url));
     const parsed = parsePlanStep(doc, 6);
     assertEquals(parsed.errors, []);
     assertEquals(parsed.criteriaPaths.sort(), ["packages/x/src/a.ts", "packages/x/src/b.ts"]);
   });
 
   it("stops a wrapped bullet's continuation at the next bold heading", () => {
-    const doc = `### Step 6: x
-
-**Success Criteria**:
-
-- ✅ A criterion whose text wraps
-  right up to the next heading → \`packages/x/src/a.ts\`
-
-**Architecture Notes**:
-
-More prose here that must never be treated as part of the criterion above.
-`;
+    const doc = Deno.readTextFileSync(new URL("../fixtures/check_commit_msg/doc_5.txt", import.meta.url));
     const parsed = parsePlanStep(doc, 6);
     assertEquals(parsed.errors, []);
     assertEquals(parsed.criteriaPaths, ["packages/x/src/a.ts"]);
@@ -629,21 +543,9 @@ More prose here that must never be treated as part of the criterion above.
 });
 
 // A plan whose step has a ✅ item AND a ⚠️ deferred item, plus a Reachability Ledger.
-const PLAN_DOC_DEFERRED = `## Implementation Plan
-
-### Step 6: With a deferral
-
-**Success Criteria**:
-
-- ✅ Done criterion → \`apps/exactl/src/commands/model_commands.ts\`
-- ⚠️ deferred Team live registry wiring → IModelRegistryProvider
-
-## Reachability Ledger (pending production consumers)
-
-| Symbol                   | Added in | Wiring step | Production call-site | Status |
-| ------------------------ | -------- | ----------- | -------------------- | ------ |
-| \`IModelRegistryProvider\` | Step 5   | 135 Step 1  | apps/daemon/main.ts  | ⏳     |
-`;
+const PLAN_DOC_DEFERRED = Deno.readTextFileSync(
+  new URL("../fixtures/check_commit_msg/plan_doc_deferred.txt", import.meta.url),
+);
 
 describe("parsePlanStep deferred items", () => {
   it("collects ⚠️ deferred tokens separately from ✅ done paths", () => {

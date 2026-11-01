@@ -85,15 +85,7 @@ It has multiple lines.`;
   });
 
   await t.step("should handle section with code blocks", () => {
-    const input = `# Title
-
-## Code Section
-
-\`\`\`typescript
-const code = "example";
-\`\`\`
-
-End of section.`;
+    const input = Deno.readTextFileSync(new URL("./fixtures/transforms/input.txt", import.meta.url));
 
     const result = extractSection(input, "Code Section");
     const expected = `\`\`\`typescript

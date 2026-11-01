@@ -1,0 +1,34 @@
+## Implementation Plan
+
+### Step 5: Something earlier
+
+**Planned Tests**:
+
+- ✅ `earlier test` → `packages/x/tests/earlier_test.ts`
+
+**Success Criteria**:
+
+- ✅ earlier criterion → `packages/x/src/earlier.ts`
+
+### Step 6: Solo curation CLI
+
+**Planned Tests**:
+
+- ✅ `config model writes candidates` → `apps/exactl/tests/model_commands_test.ts`
+- ✅ Integration: `loop honoured` → `tests/integration/model_curation_cli_loop_test.ts`
+
+**Success Criteria**:
+
+- ✅ Full curation loop → `apps/exactl/src/commands/model_commands.ts`
+- ✅ Registry wired → `apps/exactl/src/init.ts`, `apps/exactl/src/exactl.ts`
+
+```yaml
+# step-manifest
+step: 6
+```
+
+### Step 7: Terminal
+
+**Success Criteria**:
+
+- ✅ later criterion → `tests/scenario/x_test.ts`
