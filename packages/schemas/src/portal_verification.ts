@@ -23,24 +23,6 @@ import {
   VERIFICATION_PERMISSION_SHORT_FLAGS,
 } from "@exaix/core";
 
-/** Every check name a verification run can report. The public union activates in Step 5. */
-export type VerificationCheckName = IDenoTaskCheck["task"] | typeof DENO_LINT_CHECK_KIND;
-
-/** The reported name of one configured check. */
-export function checkName(check: IVerificationCheck): VerificationCheckName {
-  return check.kind === "deno_task" ? check.task : check.kind;
-}
-
-/** True when the check is a Deno task check, so its task, path and args are readable. */
-export function isDenoTaskCheck(check: IVerificationCheck): check is IDenoTaskCheck {
-  return check.kind === "deno_task";
-}
-
-/** The Deno task behind a check name, or null for a name without a Deno task. */
-export function denoTaskOf(name: VerificationCheckName): IDenoTaskCheck["task"] | null {
-  return name === DENO_LINT_CHECK_KIND ? null : name;
-}
-
 /** One failed check as it appears in `IVerificationResult` and the repair prompt. */
 export interface IVerificationCheckFailure {
   check: VerificationCheckName;
@@ -78,6 +60,24 @@ export interface IVerificationResult {
   lint_checks?: IVerificationCheckRunState[];
   /** Retained findings of the attempt, before safe projection. */
   lint_findings?: IVerificationLintFinding[];
+}
+
+/** Every check name a verification run can report. The public union activates in Step 5. */
+export type VerificationCheckName = IDenoTaskCheck["task"] | typeof DENO_LINT_CHECK_KIND;
+
+/** The reported name of one configured check. */
+export function checkName(check: IVerificationCheck): VerificationCheckName {
+  return check.kind === "deno_task" ? check.task : check.kind;
+}
+
+/** True when the check is a Deno task check, so its task, path and args are readable. */
+export function isDenoTaskCheck(check: IVerificationCheck): check is IDenoTaskCheck {
+  return check.kind === "deno_task";
+}
+
+/** The Deno task behind a check name, or null for a name without a Deno task. */
+export function denoTaskOf(name: VerificationCheckName): IDenoTaskCheck["task"] | null {
+  return name === DENO_LINT_CHECK_KIND ? null : name;
 }
 
 /** Parent path segment rejected anywhere in a check path. */

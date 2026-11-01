@@ -21,7 +21,7 @@ import {
   pathExists,
   setupWorktreePortalRepo,
   withSingleWorktreePortal,
-} from "./helpers/worktree_portal_test_utils.ts";
+} from "../helpers/portal_test_utils.ts";
 import { ToolName } from "@exaix/core";
 
 async function setupPortalWorktreeExecutionLoop(env: TestEnvironment) {

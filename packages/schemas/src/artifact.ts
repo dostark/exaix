@@ -12,6 +12,14 @@ import { ArtifactSubtype as ArtifactType } from "@exaix/core";
 import { REVIEW_STATUS_VALUES } from "@exaix/core/status";
 
 /**
+ * Artifact with content (file content loaded)
+ */
+export interface IArtifactWithContent extends IArtifact {
+  content: string; // Full markdown content with frontmatter
+  body: string; // Markdown content without frontmatter
+}
+
+/**
  * Artifact frontmatter schema (YAML)
  */
 const ArtifactFrontmatterSchema = z.object({
@@ -44,14 +52,6 @@ const ArtifactSchema = z.object({
 });
 
 export type IArtifact = z.infer<typeof ArtifactSchema>;
-
-/**
- * Artifact with content (file content loaded)
- */
-export interface IArtifactWithContent extends IArtifact {
-  content: string; // Full markdown content with frontmatter
-  body: string; // Markdown content without frontmatter
-}
 
 /**
  * Artifact list filters

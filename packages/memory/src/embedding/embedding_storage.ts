@@ -13,8 +13,6 @@ import type { IEmbeddingSearchResult } from "@exaix/core/types";
 import type { MemoryType } from "@exaix/core";
 import { LEGACY_EMBEDDING_KIND } from "./embeddable_entry.ts";
 
-const SUMMARY_LENGTH = 200;
-
 /** Embedding file structure (stored as JSON). */
 export interface IEmbeddingFile {
   id: string;
@@ -37,6 +35,8 @@ export interface IEmbeddingManifest {
   generated_at: string;
   index: IManifestEntry[];
 }
+
+const SUMMARY_LENGTH = 200;
 
 /** Creates the embeddings directory and an empty manifest when the manifest does not exist yet. */
 export async function ensureEmbeddingManifest(embeddingsDir: string, manifestPath: string): Promise<void> {

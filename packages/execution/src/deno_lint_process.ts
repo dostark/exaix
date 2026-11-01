@@ -10,6 +10,18 @@
 
 import { SafeSubprocess } from "@exaix/core";
 
+/** Inputs of one lint batch. */
+export interface IDenoLintBatchOptions {
+  readonly configPath: string;
+  readonly files: readonly string[];
+  readonly cwd: string;
+  readonly env: Record<string, string>;
+  readonly clearEnv: boolean;
+  readonly timeoutMs: number;
+  readonly jsonMaxBytes: number;
+  readonly stderrMaxBytes: number;
+}
+
 /** One host diagnostic with its raw file URL and half-open range. */
 interface IDenoLintHostDiagnostic {
   readonly filename: string;
@@ -41,18 +53,6 @@ export type IDenoLintBatchOutcome =
   | { readonly kind: "limit" }
   | { readonly kind: "spawn_failed" }
   | { readonly kind: "protocol_invalid" };
-
-/** Inputs of one lint batch. */
-export interface IDenoLintBatchOptions {
-  readonly configPath: string;
-  readonly files: readonly string[];
-  readonly cwd: string;
-  readonly env: Record<string, string>;
-  readonly clearEnv: boolean;
-  readonly timeoutMs: number;
-  readonly jsonMaxBytes: number;
-  readonly stderrMaxBytes: number;
-}
 
 /** The complete `deno lint` argv for one batch. */
 function denoLintArgs(configPath: string, files: readonly string[]): string[] {

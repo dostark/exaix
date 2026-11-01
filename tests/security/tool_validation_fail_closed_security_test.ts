@@ -8,11 +8,8 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import {
-  type IToolResultValidationFailure,
-  type IToolResultValidator,
-  validateToolResultEnvelope,
-} from "@exaix/schemas/tool_result_validator.ts";
+import { type IToolResultValidator, validateToolResultEnvelope } from "@exaix/schemas/tool_result_validator.ts";
+import type { IToolResultValidationFailure } from "@exaix/schemas/tool_result.ts";
 import { Severity, ToolSideEffectScope } from "@exaix/core";
 import { McpTransportType } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";

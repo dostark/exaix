@@ -266,31 +266,6 @@
     "packages/ai": 2,
     "tests": 7
   },
-  "exaix/re-export-imported": {
-    "packages/ai": 0,
-    "packages/cli": 0,
-    "packages/core": 21,
-    "packages/git": 0,
-    "packages/mcp": 6,
-    "packages/schemas": 2,
-    "packages/session": 1,
-    "scripts": 4,
-    "tests": 1
-  },
-  "exaix/exported-interface-placement": {
-    "apps/exactl": 2,
-    "exaix-team": 0,
-    "packages/ai-openai": 0,
-    "packages/core": 1,
-    "packages/execution": 7,
-    "packages/flow": 0,
-    "packages/git": 0,
-    "packages/lint-policy": 3,
-    "packages/memory": 3,
-    "packages/schemas": 5,
-    "scripts": 2,
-    "tests": 1
-  },
   "exaix/magic-union-type": {
     "apps/daemon": 1,
     "apps/tui": 3,
@@ -336,10 +311,5 @@
     "packages/lint-policy": 1,
     "packages/schemas": 1,
     "tests": 1
-  },
-  "exaix/no-interface-rename-on-import": {
-    "apps/tui": 3,
-    "packages/core": 1,
-    "tests": 3
   }
 }

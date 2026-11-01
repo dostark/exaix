@@ -13,6 +13,31 @@ import { checkSource } from "../../src/checkers/check_code_style.ts";
 import { EXAIX_PLUGIN_NAME } from "../../src/rule_pack/mod.ts";
 import { EXAIX_RULE_PACKS } from "../../src/rule_packs.ts";
 
+export interface IFilePartition {
+  readonly shared: readonly string[];
+  readonly scriptOnly: readonly string[];
+  readonly pluginOnly: readonly string[];
+}
+
+export interface ISourceUnit {
+  readonly file: string;
+  readonly text: string;
+}
+
+/** One finding of a rule at a repository-relative file and line. */
+export interface IRuleFinding {
+  readonly rule: string;
+  readonly file: string;
+  readonly line: number;
+}
+
+export interface IProductionParity {
+  readonly compared: number;
+  readonly accepted: readonly IAcceptedDifference[];
+  readonly unexplainedMissing: readonly IRuleFinding[];
+  readonly unexplainedExtra: readonly IRuleFinding[];
+}
+
 interface IFindingKey {
   readonly file: string;
   readonly line: number;
@@ -26,17 +51,6 @@ interface IParityReport {
 interface IFileCover {
   readonly script: (file: string) => boolean;
   readonly plugin: (file: string) => boolean;
-}
-
-export interface IFilePartition {
-  readonly shared: readonly string[];
-  readonly scriptOnly: readonly string[];
-  readonly pluginOnly: readonly string[];
-}
-
-export interface ISourceUnit {
-  readonly file: string;
-  readonly text: string;
 }
 
 const LINE_SPLIT = /\r?\n/;
@@ -93,24 +107,10 @@ export function pluginRuleFindings(key: string, catalog: ICatalog, unit: ISource
     }));
 }
 
-/** One finding of a rule at a repository-relative file and line. */
-export interface IRuleFinding {
-  readonly rule: string;
-  readonly file: string;
-  readonly line: number;
-}
-
 /** A finding that differs between the two sides, with its accepted reason, or null when none applies. */
 interface IAcceptedDifference {
   readonly finding: IRuleFinding;
   readonly reason: string;
-}
-
-export interface IProductionParity {
-  readonly compared: number;
-  readonly accepted: readonly IAcceptedDifference[];
-  readonly unexplainedMissing: readonly IRuleFinding[];
-  readonly unexplainedExtra: readonly IRuleFinding[];
 }
 
 interface IProductionParityInput {

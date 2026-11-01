@@ -505,16 +505,14 @@
       "level": "error"
     },
     "exaix/re-export-imported": {
-      "level": "off",
+      "level": "error",
       "exclude": [
         "**/mod.ts",
         "**/index.ts",
         "src/services/core/db.ts",
         "tests/helpers/**",
         "packages/*/tests/helpers/**"
-      ],
-      "optIn": true,
-      "reason": "Entrypoints and the compatibility shim legitimately re-export; the code keeps the isTestingCompatibilityShim call. Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on."
+      ]
     },
     "exaix/unslop-isolation": {
       "level": "error",
@@ -742,15 +740,13 @@
       ]
     },
     "exaix/no-interface-rename-on-import": {
-      "level": "off",
+      "level": "error",
       "options": {
         "prefix": "I"
       },
       "exclude": [
         "packages/core/src/parsing/markdown.ts"
       ],
-      "optIn": true,
-      "reason": "Parked: the AST rule reads specifiers on their own lines, which the line scanner skipped. Phase 230 burns them down and turns the rule on.",
       "tags": [
         "imports",
         "di"
@@ -788,9 +784,7 @@
       ]
     },
     "exaix/exported-interface-placement": {
-      "level": "off",
-      "optIn": true,
-      "reason": "Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on.",
+      "level": "error",
       "tags": [
         "di",
         "module-structure"

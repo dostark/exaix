@@ -37,12 +37,11 @@ import {
   buildContainerEnv,
   containerResultFailureBlock,
   killActiveChildGroups,
-  parseDotReporterCounts,
-  parseSummaryLine,
   SEQUENTIAL_TESTS,
   trackChild,
   untrackChild,
 } from "../../scripts/test_parallel.ts";
+import { parseDotReporterCounts, parseSummaryLine } from "../../scripts/test_output_parse.ts";
 import {
   type IContainerRunResult,
   TEST_CONTAINER_DONE_SENTINEL,
@@ -748,6 +747,7 @@ Deno.test("shared-path entries are exclusive so a shared-path writer never overl
     "tests/scripts/health_lcov_task_test.ts",
     "packages/lint-policy/tests/unslop_cli_integration_test.ts",
     "packages/lint-policy/tests/lint_policy_move_equivalence_test.ts",
+    "packages/lint-policy/tests/rule_ceilings_test.ts",
   ]);
   for (const test of sharedPathPool) {
     assertEquals(test.exclusive, true, `${test.file} must be exclusive`);

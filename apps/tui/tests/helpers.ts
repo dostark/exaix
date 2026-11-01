@@ -22,12 +22,7 @@ import { type ILogEntry, MonitorView } from "../src/monitor_view.ts";
 import { type IPlan, MinimalPlanServiceMock, PlanReviewerTuiSession } from "../src/plan_reviewer_view.ts";
 import { commonTestData, requestFactory } from "../../../tests/helpers/test_utils.ts";
 import { runtimeSkillFixture } from "@exaix/testing";
-import type {
-  IRequestEntry as IRequest,
-  IRequestMetadata as _IRequestMetadata,
-  IRequestOptions,
-  IRequestShowResult,
-} from "@exaix/core/request";
+import type { IRequestEntry, IRequestOptions, IRequestShowResult } from "@exaix/core/request";
 import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
 import type { IPortalDetails, IPortalInfo } from "@exaix/core/types";
 import type { ActivityRecord as _ActivityRecord, IDatabaseService, SqliteParam } from "@exaix/storage-sqlite";
@@ -97,20 +92,20 @@ let requestIdCounter = 1;
 
 // Use shared test data factories with deterministic IDs
 // unslop-ignore-next-line unused-export
-export const sampleRequest = (overrides: Partial<IRequest> = {}): IRequest => {
+export const sampleRequest = (overrides: Partial<IRequestEntry> = {}): IRequestEntry => {
   const deterministicOverrides = {
     trace_id: `req-${requestIdCounter++}`,
     ...overrides,
-  } as Partial<IRequest>;
-  return requestFactory.create(deterministicOverrides) as IRequest;
+  } as Partial<IRequestEntry>;
+  return requestFactory.create(deterministicOverrides) as IRequestEntry;
 };
 
-export const sampleRequests = (arr: Array<Partial<IRequest>>): IRequest[] => arr.map((a) => sampleRequest(a));
-export const sampleTestRequests = (): IRequest[] => commonTestData.requests.basic() as IRequest[];
-export const sampleBasicRequest = (): IRequest[] => commonTestData.requests.basic() as IRequest[];
-export const sampleTwoRequests = (): IRequest[] => commonTestData.requests.two() as IRequest[];
-export const sampleGroupedRequests = (): IRequest[] => commonTestData.requests.grouped() as IRequest[];
-export const sampleNewRequest = (): IRequest[] => [sampleRequest({ trace_id: "new-req", subject: "New Request" })];
+export const sampleRequests = (arr: Array<Partial<IRequestEntry>>): IRequestEntry[] => arr.map((a) => sampleRequest(a));
+export const sampleTestRequests = (): IRequestEntry[] => commonTestData.requests.basic() as IRequestEntry[];
+export const sampleBasicRequest = (): IRequestEntry[] => commonTestData.requests.basic() as IRequestEntry[];
+export const sampleTwoRequests = (): IRequestEntry[] => commonTestData.requests.two() as IRequestEntry[];
+export const sampleGroupedRequests = (): IRequestEntry[] => commonTestData.requests.grouped() as IRequestEntry[];
+export const sampleNewRequest = (): IRequestEntry[] => [sampleRequest({ trace_id: "new-req", subject: "New Request" })];
 
 // Legacy aliases for backward compatibility
 // Plan helpers using shared utilities
@@ -120,20 +115,22 @@ export const samplePendingPlans = (): IPlan[] => commonTestData.plans.pending();
 
 // Skill helpers using shared utilities
 // unslop-ignore-next-line unused-export
-export function createMockRequestService(initial: IRequest[] = []): IRequestService & { requests: IRequest[] } {
+export function createMockRequestService(
+  initial: IRequestEntry[] = [],
+): IRequestService & { requests: IRequestEntry[] } {
   class MockRequestService implements IRequestService {
-    requests: IRequest[];
-    constructor(requests: IRequest[] = []) {
+    requests: IRequestEntry[];
+    constructor(requests: IRequestEntry[] = []) {
       this.requests = requests;
     }
-    list(status?: RequestStatusType, _includeArchived?: boolean): Promise<IRequest[]> {
+    list(status?: RequestStatusType, _includeArchived?: boolean): Promise<IRequestEntry[]> {
       let result = this.requests;
       if (status) {
         result = result.filter((r) => r.status === status);
       }
       return Promise.resolve(result);
     }
-    listRequests(status?: RequestStatusType, includeArchived?: boolean): Promise<IRequest[]> {
+    listRequests(status?: RequestStatusType, includeArchived?: boolean): Promise<IRequestEntry[]> {
       return this.list(status, includeArchived);
     }
     show(idOrFilename: string): Promise<IRequestShowResult> {
@@ -149,7 +146,7 @@ export function createMockRequestService(initial: IRequest[] = []): IRequestServ
       return Promise.resolve(request ? `Content for ${id}` : "");
     }
     create(description: string, options?: IRequestOptions) {
-      const newRequest: IRequest = {
+      const newRequest: IRequestEntry = {
         trace_id: `test-${Date.now()}`,
         filename: `request-test.md`,
         subject: description,
@@ -187,8 +184,8 @@ export function createMockRequestService(initial: IRequest[] = []): IRequestServ
   return new MockRequestService(initial);
 }
 
-export function createViewWithRequests(arr: Array<Partial<IRequest>> = []): {
-  service: IRequestService & { requests: IRequest[] };
+export function createViewWithRequests(arr: Array<Partial<IRequestEntry>> = []): {
+  service: IRequestService & { requests: IRequestEntry[] };
   view: RequestManagerView;
 } {
   const service = createMockRequestService(sampleRequests(arr));
@@ -196,8 +193,8 @@ export function createViewWithRequests(arr: Array<Partial<IRequest>> = []): {
   return { service, view };
 }
 
-export function createTuiWithRequests(arr: Array<Partial<IRequest>> = []): {
-  service: IRequestService & { requests: IRequest[] };
+export function createTuiWithRequests(arr: Array<Partial<IRequestEntry>> = []): {
+  service: IRequestService & { requests: IRequestEntry[] };
   view: RequestManagerView;
   tui: ReturnType<RequestManagerView["createTuiSession"]>;
 } {
@@ -522,7 +519,7 @@ export function createMockDatabaseService(activityRecords: IActivityRecord[] = [
   return new MockDatabaseService(activityRecords);
 }
 
-function createMockRequestMetadata(overrides: Partial<IRequest> = {}): IRequest {
+function createMockRequestMetadata(overrides: Partial<IRequestEntry> = {}): IRequestEntry {
   return {
     trace_id: overrides.trace_id ?? "req-test",
     filename: overrides.filename ?? "request-test.md",
@@ -640,7 +637,7 @@ function createLegacyMockRequestService(): IRequestService {
 }
 
 export function createLegacyTuiSession(
-  requests: IRequest[] = [],
+  requests: IRequestEntry[] = [],
 ): InstanceType<typeof _LegacyRequestManagerTuiSession> {
   const mockService = createLegacyMockRequestService();
   return new _LegacyRequestManagerTuiSession(requests, mockService as IRequestService);
@@ -666,11 +663,11 @@ export function createLegacyTuiSessionWithTracking(): {
     },
     create: () => {
       createCalled = true;
-      return Promise.resolve(commonTestData.mockObjects.newRequest() as IRequest);
+      return Promise.resolve(commonTestData.mockObjects.newRequest() as IRequestEntry);
     },
     createRequest: () => {
       createCalled = true;
-      return Promise.resolve(commonTestData.mockObjects.newRequest() as IRequest);
+      return Promise.resolve(commonTestData.mockObjects.newRequest() as IRequestEntry);
     },
     updateRequestStatus: () => {
       deleteCalled = true;
@@ -695,11 +692,11 @@ export function createLegacyTuiSessionWithLongTraceId(): InstanceType<typeof _Le
     create: () =>
       Promise.resolve({
         trace_id: "12345678-abcd-efgh-ijkl-mnopqrstuvwx",
-      } as Partial<IRequest> as IRequest),
+      } as Partial<IRequestEntry> as IRequestEntry),
     createRequest: () =>
       Promise.resolve({
         trace_id: "12345678-abcd-efgh-ijkl-mnopqrstuvwx",
-      } as Partial<IRequest> as IRequest),
+      } as Partial<IRequestEntry> as IRequestEntry),
     updateRequestStatus: () => Promise.resolve(true),
     getAnalysis: () => Promise.resolve(null),
     analyze: () => Promise.reject(new Error("Not implemented in legacy mock")),

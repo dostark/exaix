@@ -32,13 +32,10 @@ const RATCHETED_RULES = [
   "exaix/no-boolean-assert",
   "exaix/no-repeated-assert-call",
   "exaix/no-constant-substring-assert",
-  "exaix/re-export-imported",
-  "exaix/exported-interface-placement",
   "exaix/magic-union-type",
   "exaix/promise-response-return",
   "exaix/long-comment",
   "exaix/ephemeral-comment",
-  "exaix/no-interface-rename-on-import",
   "exaix/max-params",
   "exaix/test-inline-multiline-fixture",
 ];

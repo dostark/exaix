@@ -131,28 +131,3 @@ export interface IApplicationContext {
    *  Solo (the CLI renders "-"). */
   benchmarkReader?: IBenchmarkReader;
 }
-
-// Re-export types for convenience
-export type {
-  IArchiveService,
-  IConfigService,
-  IContextCardGeneratorService,
-  ICostTracker,
-  IDisplayService,
-  IFlowValidatorService,
-  IGateEvaluator,
-  IGitService,
-  IMemoryBankService,
-  IMemoryEmbeddingService,
-  IMemoryExtractorService,
-  IMemoryService,
-  INotificationService,
-  IPlanAmendmentService,
-  IPlanService,
-  IPortalKnowledgeConfig,
-  IPortalKnowledgeService,
-  IPortalService,
-  IRequestService,
-  ISkillsService,
-  IToolRegistry,
-};

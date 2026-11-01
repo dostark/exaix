@@ -7,10 +7,11 @@
  * ensuring robust validation of request intent analysis output.
  */
 
-import { assertArrayIncludes, assertEquals, assertExists, assertFalse } from "@std/assert";
+import { assertArrayIncludes, assertEquals, assertExists, assertFalse, assertStrictEquals } from "@std/assert";
 import {
   AmbiguityImpact,
   AmbiguitySchema,
+  AnalysisMode as SchemaAnalysisMode,
   RequestAnalysisComplexity,
   RequestAnalysisSchema,
   RequestGoalSchema,
@@ -298,4 +299,8 @@ Deno.test("[RequestAnalysisSchema] validates all analyzer mode values", () => {
     });
     assertEquals(result.success, true, `mode=${mode} should be valid`);
   }
+});
+
+Deno.test("import-callers-preserved: schemas export the canonical AnalysisMode object", () => {
+  assertStrictEquals(SchemaAnalysisMode, AnalysisMode);
 });

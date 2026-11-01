@@ -19,8 +19,6 @@ import {
   ToolResultEnvelopeSchema,
 } from "./tool_result.ts";
 
-export type { IToolResultValidationFailure };
-
 interface IValidationIssue {
   path: string[];
   message: string;

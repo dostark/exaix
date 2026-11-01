@@ -10,23 +10,6 @@ import { z } from "zod";
 import { CritiqueIssueType, CritiqueQuality, CritiqueSeverity } from "@exaix/core";
 import { RequirementFulfillmentSchema } from "@exaix/core/types";
 
-export const CritiqueSchema = z.object({
-  quality: z.nativeEnum(CritiqueQuality),
-  confidence: z.number().min(0).max(100),
-  passed: z.boolean(),
-  issues: z.array(z.object({
-    type: z.nativeEnum(CritiqueIssueType),
-    severity: z.nativeEnum(CritiqueSeverity),
-    description: z.string(),
-    suggestion: z.string().optional(),
-  })).default([]),
-  reasoning: z.string(),
-  improvements: z.array(z.string()).optional(),
-  requirementsFulfillment: z.array(RequirementFulfillmentSchema).optional(),
-});
-
-export type ICritique = z.infer<typeof CritiqueSchema>;
-
 /** Each step records its outcome for potential summarization. */
 export interface ILoopHistoryEntry {
   type: "step";
@@ -46,3 +29,20 @@ export interface ICompactedEntry {
   tokens: number;
   timestamp: number;
 }
+
+export const CritiqueSchema = z.object({
+  quality: z.nativeEnum(CritiqueQuality),
+  confidence: z.number().min(0).max(100),
+  passed: z.boolean(),
+  issues: z.array(z.object({
+    type: z.nativeEnum(CritiqueIssueType),
+    severity: z.nativeEnum(CritiqueSeverity),
+    description: z.string(),
+    suggestion: z.string().optional(),
+  })).default([]),
+  reasoning: z.string(),
+  improvements: z.array(z.string()).optional(),
+  requirementsFulfillment: z.array(RequirementFulfillmentSchema).optional(),
+});
+
+export type ICritique = z.infer<typeof CritiqueSchema>;

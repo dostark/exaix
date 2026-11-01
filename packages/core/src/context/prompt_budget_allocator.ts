@@ -6,12 +6,8 @@
  * @related-files ["packages/core/src/prompt_budget_allocator.ts"]
  */
 
-import {
-  type IAllocationHints as ICoreAllocationHints,
-  PromptBudgetAllocator as CorePromptBudgetAllocator,
-} from "@exaix/core";
+import { PromptBudgetAllocator as CorePromptBudgetAllocator } from "@exaix/core";
 
-type IAllocationHints = ICoreAllocationHints;
 export type PromptBudgetAllocator = InstanceType<typeof CorePromptBudgetAllocator>;
 
 const PromptBudgetAllocator = CorePromptBudgetAllocator;

@@ -146,8 +146,6 @@ export type IRequestAnalysis = z.infer<typeof RequestAnalysisSchema>;
 /** The analysis fields that a model is asked to produce. The analyzer adds the metadata itself. */
 export const RequestAnalysisCoreSchema = RequestAnalysisSchema.omit({ metadata: true });
 
-export { AnalysisMode };
-
 /** Produces a JSON Schema object derived from RequestAnalysisSchema for use with CLI
  *  --json-schema flags (e.g. claude-code's --json-schema). */
 export function getRequestAnalysisJsonSchema(): Record<string, JSONValue> {

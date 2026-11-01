@@ -9,12 +9,12 @@
  */
 
 /** The root task that installs the portal lint policy. */
-export const LINT_POLICY_TASK = "unslop-ts:policy";
 
 /** The part of a selected scenario entry this preflight reads. */
 export interface ILintPolicySelection {
   readonly lint_policy: boolean;
 }
+export const LINT_POLICY_TASK = "unslop-ts:policy";
 
 /** True when at least one selected scenario stages the lint policy. */
 export function needsLintPolicy(entries: readonly ILintPolicySelection[]): boolean {

@@ -207,7 +207,6 @@ Deno.test("a parked comment, parameter, or fixture rule is silent by default and
     ["exaix/long-comment", LONG_COMMENT_SEED, SEED_FILE],
     ["exaix/ephemeral-comment", EPHEMERAL_SEED, SEED_FILE],
     ["exaix/max-params", MAX_PARAMS_SEED, SEED_FILE],
-    ["exaix/no-interface-rename-on-import", RENAME_SEED, SEED_FILE],
     ["exaix/test-inline-multiline-fixture", FIXTURE_SEED, PLAIN_TEST_SEED_FILE],
   ];
   for (const [rule, source, path] of seeds) {
@@ -291,13 +290,19 @@ Deno.test("a seeded package entrypoint re-export of a retired src path fails den
   }
 });
 
-Deno.test("a parked rule is silent by default and reports when EXAIX_LINT_RULES selects it", async () => {
-  await withSeed(async (file) => {
-    const silent = await runDeno(["lint", file]);
-    assertFalse(silent.output.includes("exaix/re-export-imported"), silent.output);
-    const selected = await runDeno(["lint", file], { EXAIX_LINT_RULES: "exaix/re-export-imported" });
-    assertStringIncludes(selected.output, "exaix/re-export-imported");
-  }, PARKED_REEXPORT_SEED);
+Deno.test("default-import-interface-gates: activated rules report without an explicit selector", async () => {
+  const seeds: [string, string][] = [
+    ["exaix/re-export-imported", PARKED_REEXPORT_SEED],
+    ["exaix/no-interface-rename-on-import", RENAME_SEED],
+    ["exaix/exported-interface-placement", "export const value = 1;\nexport interface ICanary { value: number; }\n"],
+  ];
+  for (const [rule, source] of seeds) {
+    await withSeed(async (file) => {
+      const result = await runDeno(["lint", file], { EXAIX_LINT_RULES: "" });
+      assertEquals(result.code, 1, result.output);
+      assertStringIncludes(result.output, `error[${rule}]`);
+    }, source);
+  }
 });
 
 Deno.test("EXAIX_LINT_RULES selects the rule and the entry prints a narrowing notice", async () => {

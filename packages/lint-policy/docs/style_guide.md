@@ -157,22 +157,23 @@ The version 2 policy gives every rule a status. Check `unslop.config.json` or th
 [style_rules.md](./style_rules.md) for the details of one rule.
 
 - **Plugin gates (`severity: error`):** `exaix/barrel-only-reexports`, `exaix/decorative-comment`, `exaix/dynamic-import`,
-  `exaix/ephemeral-filename`, `exaix/exported-interface-naming`, `exaix/ignore-needs-reason`,
+  `exaix/ephemeral-filename`, `exaix/exported-interface-naming`, `exaix/exported-interface-placement`,
+  `exaix/ignore-needs-reason`,
   `exaix/import-boundaries`, `exaix/import-inside-statement`, `exaix/import-placement`, `exaix/inline-type-import`,
   `exaix/max-cognitive-complexity`, `exaix/max-cyclomatic-complexity`, `exaix/max-function-lines`,
-  `exaix/no-chained-type-assertions`, `exaix/no-forbidden-lint-ignore`,
-  `exaix/no-pass-through-type-alias`, `exaix/promise-response-alias`, `exaix/require-deno-shebang`,
+  `exaix/no-chained-type-assertions`, `exaix/no-forbidden-lint-ignore`, `exaix/no-interface-rename-on-import`,
+  `exaix/no-pass-through-type-alias`, `exaix/promise-response-alias`, `exaix/re-export-imported`,
+  `exaix/require-deno-shebang`,
   `exaix/require-module-header`, `exaix/require-script-usage`, `exaix/ts-suppression-pragmas`, and
   `exaix/unslop-isolation`.
 - **Parked plugin rules (`severity: off`, opt-in):** `exaix/ephemeral-comment`,
-  `exaix/exported-interface-placement`, `exaix/long-comment`,
+  `exaix/long-comment`,
   `exaix/magic-union-type`, `exaix/max-class-size`,
   `exaix/max-params`, `exaix/no-boolean-assert`,
   `exaix/no-conditional-empty-object-spread`, `exaix/no-constant-substring-assert`,
-  `exaix/no-explicit-unknown`, `exaix/no-interface-rename-on-import`, `exaix/no-object-parameters`,
+  `exaix/no-explicit-unknown`, `exaix/no-object-parameters`,
   `exaix/no-repeated-assert-call`, `exaix/no-runtime-typeof`, `exaix/no-typeof-escape`,
   `exaix/no-unsafe-dictionary`, `exaix/prefer-named-imports`, `exaix/promise-response-return`,
-  `exaix/re-export-imported`,
   `exaix/require-optional-wrapper`, `exaix/require-safety-comment`, and
   `exaix/test-inline-multiline-fixture`.
 - **Script gates (`engine: script`, `severity: error`):** `duplicate-constant`, `duplicate-type`,

@@ -16,6 +16,16 @@ import {
   type VerificationStatus,
 } from "@exaix/schemas";
 
+/** One diagnostic with its full source position. */
+export interface ILintFinding {
+  readonly file: string;
+  readonly start_line: number;
+  readonly start_column: number;
+  readonly end_line: number;
+  readonly end_column: number;
+  readonly rule: string;
+}
+
 /** Inputs of the terminal snapshot. */
 interface ILintSnapshotInput {
   readonly requestId: string;
@@ -89,16 +99,6 @@ export function buildLintSnapshot(
     findings: capped,
     truncated: aggregateTotal !== null && aggregateTotal > capped.length,
   });
-}
-
-/** One diagnostic with its full source position. */
-export interface ILintFinding {
-  readonly file: string;
-  readonly start_line: number;
-  readonly start_column: number;
-  readonly end_line: number;
-  readonly end_column: number;
-  readonly rule: string;
 }
 
 /** Orders findings before any safe display projection. */

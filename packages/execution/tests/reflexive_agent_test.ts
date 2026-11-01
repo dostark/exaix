@@ -20,7 +20,8 @@ import {
 } from "@exaix/execution";
 import { createMockProvider } from "@exaix/testing";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
+import { RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
+import { AnalysisMode } from "@exaix/core/types";
 
 function makeXMLResponse(thought: string, content: string): string {
   return `<thought>${thought}</thought><content>${content}</content>`;

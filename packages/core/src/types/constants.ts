@@ -24,6 +24,13 @@ import {
 import { configurable } from "../config/registry.ts";
 import { PortalKnowledgeInclusion } from "./portal.ts";
 
+/** One operation that both the registry (`ToolName`) and the MCP export (`McpToolName`) expose. */
+export interface ISharedToolOperation {
+  canonical: string;
+  toolNameMember: keyof typeof ToolName;
+  mcpToolNameMember: keyof typeof McpToolName;
+}
+
 export const OPENAI_COMPATIBLE_LOCAL_PROFILE = "local-test";
 /** A service the operator hosts. Its catalog declares the endpoint and the model. */
 export const OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE = "self-hosted";
@@ -3959,13 +3966,6 @@ export const MCP_ONLY_TOOL_NAMES: readonly McpToolName[] = [
   McpToolName.GIT_LOG,
   McpToolName.GIT_WORKTREE,
 ];
-
-/** One operation that both the registry (`ToolName`) and the MCP export (`McpToolName`) expose. */
-export interface ISharedToolOperation {
-  canonical: string;
-  toolNameMember: keyof typeof ToolName;
-  mcpToolNameMember: keyof typeof McpToolName;
-}
 
 /** Source of truth for shared operations: each has one canonical name in both enums.
  *  The `check:tool-naming` gate checks that both members resolve to `canonical` and that every shared value has a row. */

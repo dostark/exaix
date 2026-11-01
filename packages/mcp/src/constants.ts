@@ -3,20 +3,10 @@
  * @path packages/mcp/src/constants.ts
  * @related-files []
  * @architectural-layer MCP
- * @description MCP defaults plus manifest-derived live tool classification exports.
+ * @description Manifest-derived live tool classification sets.
  */
 
-import {
-  DEFAULT_MCP_AGENT_ROLE_ID,
-  DEFAULT_MCP_ENABLED,
-  DEFAULT_MCP_HTTP_PORT,
-  DEFAULT_MCP_SERVER_NAME,
-  DEFAULT_MCP_TRANSPORT,
-  DEFAULT_MCP_VERSION,
-  type McpToolName,
-  ToolKind,
-  ToolSideEffectScope,
-} from "@exaix/core";
+import { type McpToolName, ToolKind, ToolSideEffectScope } from "@exaix/core";
 import { type IToolManifestEntry, TOOL_MANIFEST } from "./manifest.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -24,15 +14,6 @@ interface IMcpToolClassificationSets {
   readOnlyTools: ReadonlySet<McpToolName>;
   writeTools: ReadonlySet<McpToolName>;
 }
-
-export {
-  DEFAULT_MCP_AGENT_ROLE_ID,
-  DEFAULT_MCP_ENABLED,
-  DEFAULT_MCP_HTTP_PORT,
-  DEFAULT_MCP_SERVER_NAME,
-  DEFAULT_MCP_TRANSPORT,
-  DEFAULT_MCP_VERSION,
-};
 
 function isLiveMcpTool(entry: IToolManifestEntry): boolean {
   return entry.kind === ToolKind.MCP_HANDLER || entry.kind === ToolKind.MCP_DOMAIN;

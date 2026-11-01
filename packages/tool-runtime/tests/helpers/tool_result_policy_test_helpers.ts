@@ -9,7 +9,7 @@
 
 import { type JSONValue, Severity, ToolSideEffectScope } from "@exaix/core";
 import type { IToolResultRemediationPolicy } from "@exaix/schemas/tool_result.ts";
-import type { IToolResultValidationFailure } from "@exaix/schemas/tool_result_validator.ts";
+import type { IToolResultValidationFailure } from "@exaix/schemas/tool_result.ts";
 import { validateToolResultEnvelope } from "@exaix/schemas/tool_result_validator.ts";
 
 export const SYNTHETIC_FAILURE: IToolResultValidationFailure = {

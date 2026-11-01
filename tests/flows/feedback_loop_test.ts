@@ -11,7 +11,6 @@ import {
   createFeedbackLoop,
   FeedbackLoop,
   type FeedbackLoopConfig,
-  type IFeedbackLoopResult as _FeedbackLoopResult,
   type IImprovementAgent,
   runSelfCorrectingAgent,
   SimpleImprovementAgent,

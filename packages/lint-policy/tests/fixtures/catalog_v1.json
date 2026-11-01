@@ -779,7 +779,7 @@
     },
     "exaix/re-export-imported": {
       "engine": "plugin",
-      "severity": "off",
+      "severity": "error",
       "scope": "all",
       "codeStyle": "unslop-ts/docs/style_guide.md#no-re-exporting",
       "tags": [
@@ -791,9 +791,7 @@
         "src/services/core/db.ts",
         "tests/helpers/**",
         "packages/*/tests/helpers/**"
-      ],
-      "reason": "Entrypoints and the compatibility shim legitimately re-export; the code keeps the isTestingCompatibilityShim call. Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on.",
-      "optIn": true
+      ]
     },
     "exaix/import-boundaries": {
       "engine": "plugin",
@@ -1009,7 +1007,7 @@
     },
     "exaix/no-interface-rename-on-import": {
       "engine": "plugin",
-      "severity": "off",
+      "severity": "error",
       "scope": "all",
       "codeStyle": "unslop-ts/docs/style_guide.md#interface-conventions",
       "tags": [
@@ -1021,9 +1019,7 @@
       ],
       "options": {
         "prefix": "I"
-      },
-      "optIn": true,
-      "reason": "Parked: the AST rule reads specifiers on their own lines, which the line scanner skipped. Phase 230 burns them down and turns the rule on."
+      }
     },
     "exaix/import-placement": {
       "engine": "plugin",
@@ -1081,15 +1077,13 @@
     },
     "exaix/exported-interface-placement": {
       "engine": "plugin",
-      "severity": "off",
+      "severity": "error",
       "scope": "all",
       "codeStyle": "unslop-ts/docs/style_guide.md#interface-conventions",
       "tags": [
         "di",
         "module-structure"
-      ],
-      "optIn": true,
-      "reason": "Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on."
+      ]
     },
     "exaix/max-params": {
       "engine": "plugin",

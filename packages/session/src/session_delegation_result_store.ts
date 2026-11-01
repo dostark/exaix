@@ -26,8 +26,6 @@ export interface ISessionDelegationResultStore {
   markDelivered(traceId: string): Promise<boolean>;
 }
 
-export type { ISessionDelegationResultRecord };
-
 const RESULT_FILE = "session_delegate_result.json";
 
 export class SessionDelegationResultStore implements ISessionDelegationResultStore {

@@ -31,10 +31,8 @@ import {
   type ISessionDelegationRequest,
   SessionDelegationOutcomeSchema,
 } from "@exaix/session/session_delegation.ts";
-import type {
-  ISessionDelegationResultRecord,
-  ISessionDelegationResultStore,
-} from "@exaix/session/session_delegation_result_store.ts";
+import type { ISessionDelegationResultStore } from "@exaix/session/session_delegation_result_store.ts";
+import type { ISessionDelegationResultRecord } from "@exaix/session/session_delegation.ts";
 import { SessionDelegationCoordinator } from "../src/session_delegation_coordinator.ts";
 
 const FIXED_NOW = new Date("2026-09-12T00:00:00.000Z");

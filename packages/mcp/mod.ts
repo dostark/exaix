@@ -8,6 +8,14 @@
  * defaults, and the canonical tool manifest.
  */
 
+export {
+  DEFAULT_MCP_AGENT_ROLE_ID,
+  DEFAULT_MCP_ENABLED,
+  DEFAULT_MCP_HTTP_PORT,
+  DEFAULT_MCP_SERVER_NAME,
+  DEFAULT_MCP_TRANSPORT,
+  DEFAULT_MCP_VERSION,
+} from "@exaix/core";
 export * from "./src/constants.ts";
 export * from "./src/enums.ts";
 export * from "./src/tool_result_metadata.ts";

@@ -10,13 +10,6 @@
 
 import { join } from "@std/path";
 
-export const REPO_ROOT = Deno.cwd();
-const DENO_CONFIG_PATH = join(REPO_ROOT, "deno.json");
-
-interface JsonImportMap {
-  imports?: IImportMap;
-}
-
 export interface IImportMap {
   [key: string]: string;
 }
@@ -24,6 +17,13 @@ export interface IImportMap {
 export interface IImportSpecifier {
   importedName: string;
   text: string;
+}
+
+export const REPO_ROOT = Deno.cwd();
+const DENO_CONFIG_PATH = join(REPO_ROOT, "deno.json");
+
+interface JsonImportMap {
+  imports?: IImportMap;
 }
 
 export async function readImportMap(): Promise<IImportMap> {

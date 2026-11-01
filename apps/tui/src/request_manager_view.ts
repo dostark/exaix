@@ -34,12 +34,7 @@ import { RequestStatus } from "@exaix/core/status";
 import { RequestDialogType, RequestGroupingMode, TuiNodeType } from "@exaix/tui";
 import { ConfirmDialog, InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
 
-import type {
-  IRequestEntry as IRequest,
-  IRequestMetadata,
-  IRequestOptions,
-  IRequestShowResult,
-} from "@exaix/core/types";
+import type { IRequestEntry, IRequestMetadata, IRequestOptions, IRequestShowResult } from "@exaix/core/types";
 import type { IRequestService } from "@exaix/core/types";
 import {
   TUI_ELEMENT_ACTION_BUTTONS,
@@ -233,11 +228,11 @@ export const REQUEST_KEY_BINDINGS = new RequestKeyBindings().KEY_BINDINGS;
  * Minimal IRequestService mock for TUI session tests.
  */
 export class MinimalRequestServiceMock implements IRequestService {
-  constructor(private requests: IRequest[] = []) {}
+  constructor(private requests: IRequestEntry[] = []) {}
   listRequests(
     _status?: Opt<RequestStatusType, Reason.QueryFilter>,
     _includeArchived?: Opt<boolean, Reason.QueryFilter>,
-  ): Promise<IRequest[]> {
+  ): Promise<IRequestEntry[]> {
     return Promise.resolve(this.requests);
   }
   getRequestContent(_: string): Promise<string> {
@@ -252,8 +247,8 @@ export class MinimalRequestServiceMock implements IRequestService {
   ): Promise<IRequestAnalysis> {
     return Promise.resolve({} as IRequestAnalysis);
   }
-  createRequest(_: string, __?: Opt<IRequestOptions, Reason.OptionalInput>): Promise<IRequest> {
-    return Promise.resolve({} as IRequest);
+  createRequest(_: string, __?: Opt<IRequestOptions, Reason.OptionalInput>): Promise<IRequestEntry> {
+    return Promise.resolve({} as IRequestEntry);
   }
   updateRequestStatus(_requestId: string, _status: RequestStatusType): Promise<boolean> {
     return Promise.resolve(true);
@@ -278,12 +273,12 @@ export class MinimalRequestServiceMock implements IRequestService {
     } as IRequestMetadata);
   }
 
-  async list(status?: Opt<RequestStatusType, Reason.QueryFilter>): Promise<IRequest[]> {
+  async list(status?: Opt<RequestStatusType, Reason.QueryFilter>): Promise<IRequestEntry[]> {
     return await this.listRequests(status);
   }
 
   show(requestId: string): Promise<IRequestShowResult> {
-    const r = this.requests.find((x: IRequest) => x.trace_id === requestId || x.filename === requestId);
+    const r = this.requests.find((x: IRequestEntry) => x.trace_id === requestId || x.filename === requestId);
     if (!r) throw new Error("Request not found");
     return Promise.resolve({
       metadata: r,
@@ -298,7 +293,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
   protected state: IRequestViewState;
 
   // Request list cache
-  protected requests: IRequest[] = [];
+  protected requests: IRequestEntry[] = [];
 
   // Track pending dialog type for result handling
   private pendingDialogType: RequestDialogTypeUnion = null;
@@ -307,7 +302,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
   private pendingCancelRequestId: string | null = null;
 
   constructor(
-    requests: IRequest[],
+    requests: IRequestEntry[],
     protected readonly service: IRequestService,
     useColors = true,
   ) {
@@ -339,11 +334,11 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     return this.state;
   }
 
-  getRequests(): IRequest[] {
+  getRequests(): IRequestEntry[] {
     return this.requests;
   }
 
-  getSelectedRequest(): IRequest | null {
+  getSelectedRequest(): IRequestEntry | null {
     if (!this.state.selectedRequestId) return null;
     return this.requests.find((r) => r.trace_id === this.state.selectedRequestId) || null;
   }
@@ -393,12 +388,12 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     }
   }
 
-  private buildFlatTree(requests: IRequest[]): ITreeNode[] {
+  private buildFlatTree(requests: IRequestEntry[]): ITreeNode[] {
     return requests.map((r) => this.createRequestNode(r));
   }
 
-  private buildGroupedByStatus(requests: IRequest[]): ITreeNode[] {
-    const groups = new Map<RequestStatusType, IRequest[]>();
+  private buildGroupedByStatus(requests: IRequestEntry[]): ITreeNode[] {
+    const groups = new Map<RequestStatusType, IRequestEntry[]>();
     for (const req of requests) {
       const status = req.status;
       if (!groups.has(status)) groups.set(status, []);
@@ -417,9 +412,9 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     });
   }
 
-  private buildGroupedByPriority(requests: IRequest[]): ITreeNode[] {
+  private buildGroupedByPriority(requests: IRequestEntry[]): ITreeNode[] {
     const priorityOrder = [RequestPriority.CRITICAL, RequestPriority.HIGH, RequestPriority.NORMAL, RequestPriority.LOW];
-    const groups = new Map<string, IRequest[]>();
+    const groups = new Map<string, IRequestEntry[]>();
 
     for (const req of requests) {
       const priority = req.priority || RequestPriority.NORMAL;
@@ -442,8 +437,8 @@ export class RequestManagerTuiSession extends TuiSessionBase {
       });
   }
 
-  private buildGroupedByAgentRole(requests: IRequest[]): ITreeNode[] {
-    const groups = new Map<string, IRequest[]>();
+  private buildGroupedByAgentRole(requests: IRequestEntry[]): ITreeNode[] {
+    const groups = new Map<string, IRequestEntry[]>();
     for (const req of requests) {
       const agentRole = req.agent_role || "unassigned";
       if (!groups.has(agentRole)) groups.set(agentRole, []);
@@ -461,7 +456,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     });
   }
 
-  private createRequestNode(request: IRequest): ITreeNode {
+  private createRequestNode(request: IRequestEntry): ITreeNode {
     const statusIcon = STATUS_ICONS[request.status] || "❓";
     const priorityIcon = PRIORITY_ICONS[request.priority] || "⚪";
     const date = new Date(request.created).toLocaleString();
@@ -472,7 +467,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
 
   // Filtering
 
-  getFilteredRequests(): IRequest[] {
+  getFilteredRequests(): IRequestEntry[] {
     let filtered = this.requests;
 
     // Apply status filter
@@ -582,7 +577,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
   }
 
   private formatDetailContent(
-    request: Opt<IRequest, Reason.OptionalContext>,
+    request: Opt<IRequestEntry, Reason.OptionalContext>,
     content: string,
     analysis: IRequestAnalysis | null,
   ): string {
@@ -989,7 +984,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     }
   }
 
-  setRequests(requests: IRequest[]): void {
+  setRequests(requests: IRequestEntry[]): void {
     this.requests = requests;
     this.buildTree();
   }
@@ -1006,7 +1001,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
 export class LegacyRequestManagerTuiSession {
   private selectedIndex = 0;
   private statusMessage = "";
-  constructor(private readonly requests: IRequest[], private readonly service: IRequestService) {}
+  constructor(private readonly requests: IRequestEntry[], private readonly service: IRequestService) {}
 
   /** Get the currently selected request index. */
   getSelectedIndex(): number {
@@ -1098,7 +1093,7 @@ export class LegacyRequestManagerTuiSession {
   }
 
   /** Get the currently selected request. */
-  getSelectedRequest(): IRequest | null {
+  getSelectedRequest(): IRequestEntry | null {
     return this.requests[this.selectedIndex] || null;
   }
 }
@@ -1110,11 +1105,11 @@ export class RequestManagerView implements IRequestService {
   constructor(public readonly service: IRequestService) {}
 
   /** Create a new TUI session for the given requests. */
-  createTuiSession(requests: IRequest[]): RequestManagerTuiSession {
+  createTuiSession(requests: IRequestEntry[]): RequestManagerTuiSession {
     return new RequestManagerTuiSession(requests, this.service);
   }
 
-  listRequests(status?: Opt<RequestStatusType, Reason.QueryFilter>): Promise<IRequest[]> {
+  listRequests(status?: Opt<RequestStatusType, Reason.QueryFilter>): Promise<IRequestEntry[]> {
     return this.service.listRequests(status);
   }
 
@@ -1133,7 +1128,7 @@ export class RequestManagerView implements IRequestService {
     return this.service.analyze(requestId, options);
   }
 
-  createRequest(description: string, options?: Opt<IRequestOptions, Reason.OptionalInput>): Promise<IRequest> {
+  createRequest(description: string, options?: Opt<IRequestOptions, Reason.OptionalInput>): Promise<IRequestEntry> {
     return this.service.createRequest(description, options);
   }
 
@@ -1149,7 +1144,7 @@ export class RequestManagerView implements IRequestService {
     return this.service.create(description, options, source);
   }
 
-  list(status?: Opt<RequestStatusType, Reason.QueryFilter>): Promise<IRequest[]> {
+  list(status?: Opt<RequestStatusType, Reason.QueryFilter>): Promise<IRequestEntry[]> {
     return this.service.list(status);
   }
 
@@ -1158,7 +1153,7 @@ export class RequestManagerView implements IRequestService {
   }
 
   /** Render a list of requests for display. */
-  renderRequestList(requests: IRequest[]): string {
+  renderRequestList(requests: IRequestEntry[]): string {
     if (requests.length === 0) {
       return "No requests found.";
     }

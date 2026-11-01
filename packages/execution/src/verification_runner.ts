@@ -55,6 +55,11 @@ export interface IVerificationRunContext {
   lint?: IVerificationLintContext;
 }
 
+/** Runs a portal verification block against one execution worktree. */
+export interface IVerificationRunner {
+  run(config: IPortalVerification, context: IVerificationRunContext): Promise<IVerificationResult>;
+}
+
 /** The adapter contract the runner dispatches a deno_lint check to. */
 interface IDenoLintCheckExecutor {
   run(context: IDenoLintCheckContext): Promise<IDenoLintCheckOutcome>;
@@ -99,11 +104,6 @@ function fromDenoLintOutcome(outcome: IDenoLintCheckOutcome): TLintStepOutcome {
 interface IVerificationRunnerOptions {
   /** Required when a block contains a deno_lint check. */
   deno_lint?: IDenoLintCheckExecutor;
-}
-
-/** Runs a portal verification block against one execution worktree. */
-export interface IVerificationRunner {
-  run(config: IPortalVerification, context: IVerificationRunContext): Promise<IVerificationResult>;
 }
 
 /** True when the real path of `resolved` lies at or under the real worktree path. */

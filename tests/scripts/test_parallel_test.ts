@@ -15,16 +15,12 @@ import {
   containerResultToStats,
   createDotReporterState,
   DOT_REPORTER_LEGEND,
-  extractTapFailures,
   flushDotReporterState,
   formatRunHeader,
   IsolationReason,
   killActiveChildGroups,
   needsPortalLintAssets,
   OFFLINE_LINT_POLICY_TEST_FILE,
-  parseDotReporterCounts,
-  parseSummaryLine,
-  parseTapOutput,
   resolveContainerJobs,
   resolveReporter,
   resolveTestSerial,
@@ -37,6 +33,12 @@ import {
   TEST_CONTAINER_JOBS_FLAG,
   TEST_SERIAL_FLAG,
 } from "../../scripts/test_parallel.ts";
+import {
+  extractTapFailures,
+  parseDotReporterCounts,
+  parseSummaryLine,
+  parseTapOutput,
+} from "../../scripts/test_output_parse.ts";
 import type { IContainerRunResult } from "../../scripts/test_container_driver.ts";
 import * as testOutputParse from "../../scripts/test_output_parse.ts";
 

@@ -41,8 +41,6 @@ interface IDotReporterState {
   wrapWidth: number;
 }
 
-export { extractTapFailures, parseDotReporterCounts, parseSummaryLine, parseTapOutput };
-
 const REPO_ROOT = join(fromFileUrl(import.meta.url), "..", "..");
 const SUPPORTED_REPORTERS = ["pretty", "dot", "tap"] as const;
 export const DOT_REPORTER_LEGEND = "dot legend: .=passed ,=ignored !=failed";

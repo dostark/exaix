@@ -24,11 +24,7 @@ import { FlowSchema, type IFlow } from "@exaix/schemas/flow.ts";
 import { FlowRunner, type IAgentExecutor, type IFlowEventLogger, type IFlowStepRequest } from "@exaix/flow";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { GateEvaluator, MockJudgeInvoker } from "@exaix/flow";
-import type {
-  ICriteriaGeneratorService,
-  IGateConfig as _GateConfig,
-  IGateResult as _IGateResult,
-} from "@exaix/core/types";
+import type { ICriteriaGeneratorService } from "@exaix/core/types";
 import type { EvaluationCriterion, EvaluationResult } from "@exaix/core/evaluation";
 import { createReflexiveAgent } from "@exaix/execution";
 import type { ICritique } from "@exaix/execution";

@@ -16,6 +16,15 @@ import type { IDisplayService } from "@exaix/core/types";
 import { type JSONObject, toSafeJson } from "@exaix/core/types";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 
+export interface IPlanActionContext {
+  planCommands: PlanCommands;
+  display: IDisplayService;
+}
+
+export interface IPlanListOptions {
+  status?: PlanStatus;
+}
+
 /** Prints the added, updated, and removed steps of an amendment patch. */
 function displayAmendmentChanges(display: IDisplayService, patch: IPlanAmendmentPatch): void {
   if (patch.adds.length > 0) {
@@ -29,15 +38,6 @@ function displayAmendmentChanges(display: IDisplayService, patch: IPlanAmendment
   if (patch.removes.length > 0) {
     display.info("Removes", "", { steps: patch.removes.join(", ") });
   }
-}
-
-export interface IPlanActionContext {
-  planCommands: PlanCommands;
-  display: IDisplayService;
-}
-
-export interface IPlanListOptions {
-  status?: PlanStatus;
 }
 
 /**

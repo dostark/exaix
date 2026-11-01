@@ -42,6 +42,9 @@ const ACTIVE_PLUGIN_IDS = [
   "no-chained-type-assertions",
   "barrel-only-reexports",
   "import-placement",
+  "re-export-imported",
+  "exported-interface-placement",
+  "no-interface-rename-on-import",
 ].map((key) => `exaix/${key}`);
 
 Deno.test("atomic-policy-transition: independent active plugin IDs include only delivered rules", () => {
@@ -57,6 +60,7 @@ Deno.test("atomic-policy-transition: independent active plugin IDs include only 
 
 const REPO_ROOT = new URL("../../../", import.meta.url);
 const RULE = "exaix/import-placement";
+const IMPORT_INTERFACE_RULES = ["re-export-imported", "exported-interface-placement", "no-interface-rename-on-import"];
 const CLI_TIMEOUT_MS = 30_000;
 
 /** Writes a clean or misplaced import with the authored module header. */
@@ -115,7 +119,7 @@ export default createUnslopProject({ descriptor, config }).plugin;
       const shebang = support.startsWith("scripts/") ? "#!/usr/bin/env -S deno run -A\n" : "";
       await Deno.writeTextFile(
         join(dir, support),
-        `${shebang}/**\n * @module ActivationSupport\n * @path ${support}\n * @description Supplies the canary value.\n * Usage: deno run ${support}\n */\nexport const value = 1;\n`,
+        `${shebang}/**\n * @module ActivationSupport\n * @path ${support}\n * @description Supplies the canary value.\n * Usage: deno run ${support}\n */\nexport interface IProbe { value: number; }\nexport const value = 1;\n`,
       );
     }
     const fixture = "packages/core/tests/fixtures";
@@ -231,14 +235,17 @@ Deno.test("atomic-policy-transition: scripts select the active rule and its park
   const config = JSON.parse(await Deno.readTextFile(new URL("deno.json", REPO_ROOT)));
   const scripts = config.tasks.lint.split(" && ")[1];
   const selected = scripts.match(/^EXAIX_LINT_RULES=([^ ]+)/)[1].split(",");
-  assertArrayIncludes(selected, [RULE]);
+  const delivered = [RULE, ...IMPORT_INTERFACE_RULES.map((key) => `exaix/${key}`)];
+  assertArrayIncludes(selected, delivered);
   for (const id of selected) assertEquals(POLICY_CATALOG.rules[id].severity, "error", id);
   const ceilings = JSON.parse(await Deno.readTextFile(new URL("packages/lint-policy/rule_ceilings.json", REPO_ROOT)));
-  assertEquals(ceilings[RULE], undefined);
+  for (const id of delivered) {
+    assertEquals(ceilings[id], undefined, id);
+    assertEquals(POLICY_CATALOG.rules[id].scope, "all", id);
+    assertEquals(POLICY_CATALOG.rules[id].optIn, undefined, id);
+    assertEquals(POLICY_CATALOG.rules[id].reason, undefined, id);
+  }
   const parked = [
-    "re-export-imported",
-    "exported-interface-placement",
-    "no-interface-rename-on-import",
     "long-comment",
     "ephemeral-comment",
     "test-inline-multiline-fixture",
@@ -258,4 +265,98 @@ Deno.test("atomic-policy-transition: scripts select the active rule and its park
     assert(POLICY_CATALOG.rules[id].optIn, id);
     assertExists(ceilings[id], id);
   }
+});
+
+/** One rule's violation or clean counterpart, with imports kept first. */
+function importInterfaceSource(path: string, key: string, violation: boolean): string {
+  const header = sourceOf(path, false).split("import { value }")[0];
+  if (key === "re-export-imported") {
+    const exported = violation ? "export { value };\n" : "export const ownValue = value;\n";
+    return header + 'import { value } from "./support.ts";\n' + exported;
+  }
+  if (key === "exported-interface-placement") {
+    const shape = "export interface ICanary { value: number; }\n";
+    const value = "export const ownValue = 1;\n";
+    return header + (violation ? value + shape : shape + value);
+  }
+  const name = violation ? "IRenamedProbe" : "IProbe";
+  const imported = violation ? "IProbe as IRenamedProbe" : "IProbe";
+  return header + `import type { ${imported} } from "./support.ts";\nexport const ownValue: ${name} = { value: 1 };\n`;
+}
+
+Deno.test("default-import-interface-gates: exact rule canaries and clean controls reach both authored passes", async () => {
+  await withActivationProject(async (dir) => {
+    for (const key of IMPORT_INTERFACE_RULES) {
+      const rule = `exaix/${key}`;
+      for (
+        const path of [
+          "packages/core/src/canary.ts",
+          "packages/core/tests/canary_test.ts",
+          "tests/canary_test.ts",
+          "exaix-team/packages/ai/tests/canary_test.ts",
+          "scripts/canary.ts",
+          "scripts/canary_test.ts",
+        ]
+      ) {
+        await Deno.writeTextFile(join(dir, path), importInterfaceSource(path, key, true));
+        const pass = path.startsWith("scripts/") ? "scripts" : "main";
+        const failed = await runPass(dir, pass);
+        assertEquals(failed.code, 1, failed.stderr);
+        assertStringIncludes(failed.stderr, `error[${rule}]:`);
+        assertRuleEvidence({
+          rule,
+          runId: failed.runId,
+          stderr: failed.stderr,
+          checkedFiles: [toFileUrl(join(dir, path)).href],
+          cwd: dir,
+        });
+        await Deno.writeTextFile(join(dir, path), importInterfaceSource(path, key, false));
+        const clean = await runPass(dir, pass);
+        assertEquals(clean.code, 0, clean.stderr);
+        assertRuleEvidence({
+          rule,
+          runId: clean.runId,
+          stderr: clean.stderr,
+          checkedFiles: [toFileUrl(join(dir, path)).href],
+          cwd: dir,
+        });
+      }
+    }
+  });
+});
+
+Deno.test("default-import-interface-gates: package entry points, helpers and the markdown exception remain valid", async () => {
+  await withActivationProject(async (dir) => {
+    for (const name of ["mod.ts", "index.ts"]) {
+      const path = `packages/core/src/${name}`;
+      const header = sourceOf(path, false).split("import { value }")[0];
+      await Deno.writeTextFile(join(dir, path), header + 'export { value } from "./support.ts";\n');
+    }
+    const helper = "tests/helpers/allowed.ts";
+    await Deno.mkdir(join(dir, "tests/helpers"), { recursive: true });
+    await Deno.writeTextFile(
+      join(dir, helper),
+      sourceOf(helper, false).split("import { value }")[0] + 'export { value } from "../support.ts";\n',
+    );
+    const markdown = "packages/core/src/parsing/markdown.ts";
+    await Deno.mkdir(join(dir, "packages/core/src/parsing"), { recursive: true });
+    await Deno.writeTextFile(
+      join(dir, markdown),
+      importInterfaceSource(markdown, "no-interface-rename-on-import", true).replace(
+        '"./support.ts"',
+        '"../support.ts"',
+      ),
+    );
+    const result = await runPass(dir, "main");
+    assertEquals(result.code, 0, result.stderr);
+    for (const key of IMPORT_INTERFACE_RULES) {
+      assertRuleEvidence({
+        rule: `exaix/${key}`,
+        runId: result.runId,
+        stderr: result.stderr,
+        checkedFiles: [],
+        cwd: dir,
+      });
+    }
+  });
 });

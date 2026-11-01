@@ -25,7 +25,8 @@ import {
   runBatch2InContainers,
   TEST_CONTAINER_IMAGE_ENV,
 } from "./test_isolation.ts";
-import { buildContainerEnv, parseDotReporterCounts, parseSummaryLine, SEQUENTIAL_TESTS } from "./test_parallel.ts";
+import { buildContainerEnv, SEQUENTIAL_TESTS } from "./test_parallel.ts";
+import { parseDotReporterCounts, parseSummaryLine } from "./test_output_parse.ts";
 
 const REPO_ROOT = fromFileUrl(new URL("..", import.meta.url)).replace(/\/$/, "");
 const JOBS_FLAG = "--jobs";

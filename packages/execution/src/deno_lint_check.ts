@@ -17,6 +17,37 @@ import { DENO_LINT_DEADLINE_EXCEEDED, type IDenoLintBatchOutcome, runDenoLintBat
 import { type ILintFinding, uniqueLintBatch } from "./lint_snapshot.ts";
 import { buildVerificationCheckEnv, prepareVerificationOutput } from "./verification_output.ts";
 
+/** One lint check invocation, bound to an immutable target commit. */
+export interface IDenoLintCheckContext {
+  readonly requestId: string;
+  readonly traceId: string;
+  readonly attempt: number;
+  readonly runId: string;
+  readonly executionRoot: string;
+  readonly targetSha: string;
+  readonly git: IGitService;
+  readonly checkIndex: number;
+  readonly check: IDenoLintCheck;
+  readonly timeoutMs: number;
+  readonly outputMaxChars: number;
+}
+
+/** Inputs of the generic Deno lint check. They never infer a root from the process directory. */
+export interface IDenoLintCheckRunnerOptions {
+  readonly settings: ILintSettings;
+  readonly systemRoot: string;
+  readonly pathResolver: IDenoLintPathValidator;
+  /** Configured portal roots that cannot own trusted lint inputs. */
+  readonly portalRoots?: readonly string[];
+  readonly knownSecrets?: readonly string[];
+  /** Host batch override for tests that do not spawn. */
+  readonly runBatch?: IDenoLintBatchRunner;
+  /** File-ignore scanner override for tests that simulate a slow guard. */
+  readonly hasFileIgnore?: (path: string, beforeChunk: () => void) => Promise<boolean | null>;
+  /** Clock override for tests that advance the deadline. */
+  readonly now?: () => number;
+}
+
 const POLICY_CONFIG_FILENAME = "deno.json";
 const REPO_SEPARATOR = "/";
 /** The line-comment directive Deno applies to a whole file before any plugin rule runs. */
@@ -59,21 +90,6 @@ export type IDenoLintCheckOutcome =
   | IDenoLintCheckOutcomeFailed
   | IDenoLintCheckOutcomeError;
 
-/** One lint check invocation, bound to an immutable target commit. */
-export interface IDenoLintCheckContext {
-  readonly requestId: string;
-  readonly traceId: string;
-  readonly attempt: number;
-  readonly runId: string;
-  readonly executionRoot: string;
-  readonly targetSha: string;
-  readonly git: IGitService;
-  readonly checkIndex: number;
-  readonly check: IDenoLintCheck;
-  readonly timeoutMs: number;
-  readonly outputMaxChars: number;
-}
-
 /** The bounded host batch runner the check dispatches to. */
 type IDenoLintBatchRunner = (
   options: Parameters<typeof runDenoLintBatch>[0],
@@ -82,22 +98,6 @@ type IDenoLintBatchRunner = (
 /** The confinement check the runner needs from the path resolver. */
 interface IDenoLintPathValidator {
   validatePath(path: string, allowedRoots: string[]): Promise<string>;
-}
-
-/** Inputs of the generic Deno lint check. They never infer a root from the process directory. */
-export interface IDenoLintCheckRunnerOptions {
-  readonly settings: ILintSettings;
-  readonly systemRoot: string;
-  readonly pathResolver: IDenoLintPathValidator;
-  /** Configured portal roots that cannot own trusted lint inputs. */
-  readonly portalRoots?: readonly string[];
-  readonly knownSecrets?: readonly string[];
-  /** Host batch override for tests that do not spawn. */
-  readonly runBatch?: IDenoLintBatchRunner;
-  /** File-ignore scanner override for tests that simulate a slow guard. */
-  readonly hasFileIgnore?: (path: string, beforeChunk: () => void) => Promise<boolean | null>;
-  /** Clock override for tests that advance the deadline. */
-  readonly now?: () => number;
 }
 
 /** A categorical failure raised inside the check body. */

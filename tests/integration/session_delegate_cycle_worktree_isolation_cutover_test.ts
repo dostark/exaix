@@ -49,10 +49,8 @@ import { BuiltinSessionAdapter, SessionAdapterRegistry } from "@exaix/session/se
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
 import type { ISessionWaitStore } from "@exaix/session/wait/i_session_wait_store.ts";
 import { type ISessionDelegationOutcome, SessionDelegationOutcomeSchema } from "@exaix/session/session_delegation.ts";
-import type {
-  ISessionDelegationResultRecord,
-  ISessionDelegationResultStore,
-} from "@exaix/session/session_delegation_result_store.ts";
+import type { ISessionDelegationResultStore } from "@exaix/session/session_delegation_result_store.ts";
+import type { ISessionDelegationResultRecord } from "@exaix/session/session_delegation.ts";
 import { SessionDelegationCoordinator } from "../../apps/daemon/src/session_delegation_coordinator.ts";
 import { HeadlessSessionLauncher } from "../../apps/daemon/src/headless_session_launcher.ts";
 import {

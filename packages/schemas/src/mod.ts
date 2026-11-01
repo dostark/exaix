@@ -8,6 +8,8 @@
 
 import * as PortalPermissionsSchemas from "./portal_permissions.ts";
 
+export { AnalysisMode } from "@exaix/core/types";
+
 export * from "./aci_doc.ts";
 export * from "./agent_composer.ts";
 export * from "./ai_config.ts";

@@ -9,6 +9,14 @@
 
 import { fromFileUrl } from "@std/path";
 
+/** Where the inventory gets its tracked paths and file contents. */
+export interface ITrackedFileSource {
+  list(): Promise<readonly string[]>;
+  read(path: string): Promise<string>;
+  /** True for a tracked entry that holds no text: a directory link, or a link with a missing target. */
+  isNonFile(path: string): Promise<boolean>;
+}
+
 const EXCLUDE_PATTERN = /^(\s*)\/\/\s*style-exclude:([A-Z0-9_]+)\s*-\s*(.+)$/;
 const HISTORY_PREFIX = "exaix-dev-docs/planning/";
 const BINARY_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".ico", ".pdf", ".wasm", ".zip", ".DAT", ".pkl"];
@@ -73,14 +81,6 @@ export function findBareIdReferences(files: ReadonlyMap<string, string>, bareId:
     });
   }
   return references;
-}
-
-/** Where the inventory gets its tracked paths and file contents. */
-export interface ITrackedFileSource {
-  list(): Promise<readonly string[]>;
-  read(path: string): Promise<string>;
-  /** True for a tracked entry that holds no text: a directory link, or a link with a missing target. */
-  isNonFile(path: string): Promise<boolean>;
 }
 
 /** The tracked files of the repository and its submodules, from git. A failed listing throws. */
