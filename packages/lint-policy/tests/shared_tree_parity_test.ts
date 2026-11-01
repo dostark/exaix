@@ -27,7 +27,7 @@ import {
 const REPO_ROOT = fromFileUrl(new URL("../../..", import.meta.url));
 const SCRIPT_EXTENSIONS = [".ts", ".tsx", ".yaml", ".yml", ".toml", ".jsonc"];
 const PLUGIN_EXTENSIONS = [".ts", ".tsx"];
-const PLUGIN_ROOTS = ["tests/", "packages/", "exaix-team/", "apps/", "scripts/"];
+const PLUGIN_ROOTS = ["tests/", "packages/", "exaix-team/", "apps/", "exaix-enterprise/", "scripts/"];
 const PLUGIN_PREFIX = "exaix/";
 const BOUNDARY_RULE = "import-boundaries";
 const BOUNDARY_ZONE = /^Boundary '([^']+)':/;
@@ -119,7 +119,7 @@ async function pluginFindings(
   const keys = new Set(moved.map((rule) => rule.pluginKey));
   const selection = [...keys].map((key) => `${PLUGIN_PREFIX}${key}`).join(",");
   const result = await new Deno.Command(Deno.execPath(), {
-    args: ["lint", "--json", ...PLUGIN_ROOTS],
+    args: ["lint", "--config", "deno.json", "--json", ...PLUGIN_ROOTS],
     cwd: REPO_ROOT,
     env: { EXAIX_LINT_RULES: selection },
     stdout: "piped",

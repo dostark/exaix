@@ -74,6 +74,16 @@ const COMMENT_FIXTURE_RULES = [
   "exaix/test-inline-multiline-fixture",
 ];
 const CLI_TIMEOUT_MS = 30_000;
+const CANARY_PATHS = [
+  "packages/core/src/canary.ts",
+  "packages/core/tests/canary_test.ts",
+  "tests/canary_test.ts",
+  "exaix-team/packages/ai/tests/canary_test.ts",
+  "exaix-enterprise/packages/enterprise-placeholder/canary.ts",
+  "exaix-enterprise/packages/enterprise-placeholder/canary_test.ts",
+  "scripts/canary.ts",
+  "scripts/canary_test.ts",
+];
 
 /** Writes a clean or misplaced import with the authored module header. */
 function sourceOf(path: string, misplaced: boolean): string {
@@ -123,6 +133,7 @@ export default createUnslopProject({ descriptor, config }).plugin;
         "tests",
         "apps/daemon/src",
         "exaix-team/packages/ai/tests",
+        "exaix-enterprise/packages/enterprise-placeholder",
         "scripts",
       ]
     ) {
@@ -134,6 +145,15 @@ export default createUnslopProject({ descriptor, config }).plugin;
         `${shebang}/**\n * @module ActivationSupport\n * @path ${support}\n * @description Supplies the canary value.\n * Usage: deno run ${support}\n */\nexport interface IProbe { value: number; }\nexport const value = 1;\n`,
       );
     }
+    const enterprise = "exaix-enterprise";
+    await Deno.writeTextFile(
+      join(dir, enterprise, "deno.json"),
+      JSON.stringify({ workspace: ["./packages/enterprise-placeholder"] }),
+    );
+    await Deno.writeTextFile(
+      join(dir, enterprise, "packages/enterprise-placeholder/deno.json"),
+      JSON.stringify({ name: "@exaix-enterprise/enterprise-placeholder", version: "0.1.0", exports: "./support.ts" }),
+    );
     const fixture = "packages/core/tests/fixtures";
     await Deno.mkdir(join(dir, fixture), { recursive: true });
     await Deno.writeTextFile(join(dir, fixture, "support.ts"), "export const value = 1;\n");
@@ -164,16 +184,7 @@ async function runPass(
 
 Deno.test("default-import-placement: authored passes reject each applicable root and accept clean imports", async () => {
   await withActivationProject(async (dir) => {
-    for (
-      const path of [
-        "packages/core/src/canary.ts",
-        "packages/core/tests/canary_test.ts",
-        "tests/canary_test.ts",
-        "exaix-team/packages/ai/tests/canary_test.ts",
-        "scripts/canary.ts",
-        "scripts/canary_test.ts",
-      ]
-    ) {
+    for (const path of CANARY_PATHS) {
       await Deno.writeTextFile(join(dir, path), sourceOf(path, true));
       const pass = path.startsWith("scripts/") ? "scripts" : "main";
       const failed = await runPass(dir, pass);
@@ -295,16 +306,7 @@ function importInterfaceSource(path: string, rule: string, violation: boolean): 
 Deno.test("default-import-interface-gates: exact rule canaries and clean controls reach both authored passes", async () => {
   await withActivationProject(async (dir) => {
     for (const rule of IMPORT_INTERFACE_RULES) {
-      for (
-        const path of [
-          "packages/core/src/canary.ts",
-          "packages/core/tests/canary_test.ts",
-          "tests/canary_test.ts",
-          "exaix-team/packages/ai/tests/canary_test.ts",
-          "scripts/canary.ts",
-          "scripts/canary_test.ts",
-        ]
-      ) {
+      for (const path of CANARY_PATHS) {
         await Deno.writeTextFile(join(dir, path), importInterfaceSource(path, rule, true));
         const pass = path.startsWith("scripts/") ? "scripts" : "main";
         const failed = await runPass(dir, pass);
@@ -385,15 +387,6 @@ function commentFixtureSource(path: string, rule: string, violation: boolean): s
   return header + `export const yaml = \`\n${body}\n\`;\n`;
 }
 
-const COMMENT_FIXTURE_PATHS = [
-  "packages/core/src/canary.ts",
-  "packages/core/tests/canary_test.ts",
-  "tests/canary_test.ts",
-  "exaix-team/packages/ai/tests/canary_test.ts",
-  "scripts/canary.ts",
-  "scripts/canary_test.ts",
-];
-
 /** True when the rule's compiled scope covers the canary path. */
 function inScope(rule: string, path: string): boolean {
   return POLICY_CATALOG.rules[rule].scope !== "test" || /_test\.ts$/.test(path);
@@ -402,7 +395,7 @@ function inScope(rule: string, path: string): boolean {
 Deno.test("default-comment-fixture-gates: exact canaries fail and clean or out-of-scope controls pass in both passes", async () => {
   await withActivationProject(async (dir) => {
     for (const rule of COMMENT_FIXTURE_RULES) {
-      for (const path of COMMENT_FIXTURE_PATHS) {
+      for (const path of CANARY_PATHS) {
         const pass = path.startsWith("scripts/") ? "scripts" : "main";
         const evidence = (run: { runId: string; stderr: string }) =>
           assertRuleEvidence({

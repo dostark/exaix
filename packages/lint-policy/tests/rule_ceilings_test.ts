@@ -36,7 +36,7 @@ const RATCHETED_RULES = [
   "exaix/promise-response-return",
   "exaix/max-params",
 ];
-const ROOT_BUCKETS = ["tests", "exaix-team", "scripts"];
+const ROOT_BUCKETS = ["tests", "exaix-team", "exaix-enterprise", "scripts"];
 
 const PHASE_230_RULES = new Set([
   "exaix/import-placement",
@@ -57,7 +57,7 @@ const PHASE_230_RULES = new Set([
   "exaix/no-boolean-assert",
 ]);
 
-/** The workspace package names (`packages/*` and `apps/*`) and the root buckets for `tests/`, `exaix-team/`, and `scripts/`. */
+/** The workspace package names (`packages/*` and `apps/*`) and the root buckets for the other lint roots. */
 async function workspacePackages(): Promise<string[]> {
   const denoJson = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, "deno.json"))) as { workspace?: string[] };
   const workspace = (denoJson.workspace ?? [])
@@ -301,7 +301,19 @@ Deno.test({
   fn: async () => {
     const runId = crypto.randomUUID();
     const output = await new Deno.Command(Deno.execPath(), {
-      args: ["lint", "--rules-tags=", "--json", "tests/", "packages/", "exaix-team/", "apps/", "scripts/"],
+      args: [
+        "lint",
+        "--config",
+        "deno.json",
+        "--rules-tags=",
+        "--json",
+        "tests/",
+        "packages/",
+        "exaix-team/",
+        "apps/",
+        "exaix-enterprise/",
+        "scripts/",
+      ],
       cwd: REPO_ROOT,
       env: { EXAIX_LINT_RULES: RATCHETED_RULES.join(","), EXAIX_LINT_TRACE: runId },
       signal: AbortSignal.timeout(300_000),
