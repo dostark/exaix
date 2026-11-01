@@ -532,6 +532,32 @@ Deno.test("default-typeof-gate: an as-typeof cast reports and a precise typed bi
   await assertCanaryMatrix(TYPEOF_RULES, typeofSource);
 });
 
+/** A fetch stub cast to the one allowed typeof target. */
+const FETCH_STUB_SOURCE =
+  'export const stub = ((): ReturnType<typeof fetch> => fetch("x")) as typeof globalThis.fetch;\n';
+
+Deno.test("default-typeof-gate: the allowed fetch target passes in test files and is reported in production files", async () => {
+  const rule = "exaix/no-typeof-escape";
+  await withActivationProject(async (dir) => {
+    for (const path of CANARY_PATHS) {
+      const header = sourceOf(path, false).split("import { value }")[0];
+      await Deno.writeTextFile(join(dir, path), header + FETCH_STUB_SOURCE);
+      const result = await runPass(dir, path.startsWith("scripts/") ? "scripts" : "main");
+      const testFile = /_test\.ts$/.test(path);
+      assertEquals(result.code, testFile ? 0 : 1, `${path}: ${result.stderr}`);
+      if (!testFile) assertStringIncludes(result.stderr, `error[${rule}]:`);
+      assertRuleEvidence({
+        rule,
+        runId: result.runId,
+        stderr: result.stderr,
+        checkedFiles: [toFileUrl(join(dir, path)).href],
+        cwd: dir,
+      });
+      await Deno.remove(join(dir, path));
+    }
+  });
+});
+
 /** The directories below `base` that hold a deno.json, as repository-relative paths. */
 async function configuredDirectories(base: string): Promise<string[]> {
   const found: string[] = [];
