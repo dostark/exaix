@@ -158,14 +158,14 @@ The version 2 policy gives every rule a status. Check `unslop.config.json` or th
 
 - **Plugin gates (`severity: error`):** `exaix/barrel-only-reexports`, `exaix/decorative-comment`, `exaix/dynamic-import`,
   `exaix/ephemeral-filename`, `exaix/exported-interface-naming`, `exaix/ignore-needs-reason`,
-  `exaix/import-boundaries`, `exaix/import-inside-statement`, `exaix/inline-type-import`,
+  `exaix/import-boundaries`, `exaix/import-inside-statement`, `exaix/import-placement`, `exaix/inline-type-import`,
   `exaix/max-cognitive-complexity`, `exaix/max-cyclomatic-complexity`, `exaix/max-function-lines`,
   `exaix/no-chained-type-assertions`, `exaix/no-forbidden-lint-ignore`,
   `exaix/no-pass-through-type-alias`, `exaix/promise-response-alias`, `exaix/require-deno-shebang`,
   `exaix/require-module-header`, `exaix/require-script-usage`, `exaix/ts-suppression-pragmas`, and
   `exaix/unslop-isolation`.
 - **Parked plugin rules (`severity: off`, opt-in):** `exaix/ephemeral-comment`,
-  `exaix/exported-interface-placement`, `exaix/import-placement`, `exaix/long-comment`,
+  `exaix/exported-interface-placement`, `exaix/long-comment`,
   `exaix/magic-union-type`, `exaix/max-class-size`,
   `exaix/max-params`, `exaix/no-boolean-assert`,
   `exaix/no-conditional-empty-object-spread`, `exaix/no-constant-substring-assert`,

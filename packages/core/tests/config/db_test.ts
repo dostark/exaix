@@ -11,6 +11,8 @@ import { assertEquals, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
 import { configurable } from "../../src/config/registry.ts";
 import { ConfigValueType } from "../../src/types/enums.ts";
+import { ConfigRateLimitedError } from "../../src/config/errors.ts";
+import type { IEventLogger } from "../../src/logger/event_logger.ts";
 
 // Import source (will fail until db.ts exists)
 import {
@@ -361,9 +363,6 @@ Deno.test("[configuring] isPathBlocked respects agent-role scope", () => {
 });
 
 // rate limiting (countRecentCliWrites, hard limit, compact)
-
-import { ConfigRateLimitedError } from "../../src/config/errors.ts";
-import type { IEventLogger } from "../../src/logger/event_logger.ts";
 
 /** Insert `n` config_overrides rows (small counts; used to cross an injected test threshold). */
 function seedRows(db: Database, n: number, source = "cli"): void {

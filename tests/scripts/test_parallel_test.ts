@@ -289,6 +289,7 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "tests/scripts/health_lcov_task_test.ts",
   "packages/lint-policy/tests/unslop_cli_integration_test.ts",
   "packages/lint-policy/tests/lint_policy_move_equivalence_test.ts",
+  "packages/lint-policy/tests/rule_ceilings_test.ts",
 ];
 
 Deno.test("SEQUENTIAL_FILES matches the required isolation files and order", () => {
@@ -456,4 +457,10 @@ Deno.test("fix(live-tests): operator-only extraction is ignored in CI even when 
   }).output();
   assertEquals(result.code, 0, new TextDecoder().decode(result.stderr));
   assertEquals(new TextDecoder().decode(result.stdout).trim(), "true");
+});
+
+Deno.test("the whole-tree ceiling guard runs with exclusive shared-path isolation", () => {
+  const entry = SEQUENTIAL_TESTS.find((test) => test.file === "packages/lint-policy/tests/rule_ceilings_test.ts");
+  assert(entry?.exclusive);
+  assertEquals(entry?.reasons, [IsolationReason.sharedPath]);
 });

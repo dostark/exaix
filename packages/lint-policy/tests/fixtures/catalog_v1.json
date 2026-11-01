@@ -1027,15 +1027,13 @@
     },
     "exaix/import-placement": {
       "engine": "plugin",
-      "severity": "off",
+      "severity": "error",
       "scope": "all",
       "codeStyle": "unslop-ts/docs/style_guide.md#imports-at-the-top",
       "tags": [
         "imports",
         "module-structure"
-      ],
-      "optIn": true,
-      "reason": "Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on."
+      ]
     },
     "exaix/magic-union-type": {
       "engine": "plugin",

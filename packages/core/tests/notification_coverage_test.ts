@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { createStubDb } from "@exaix/testing";
+import { createNotificationTestProposal, createStubDb } from "@exaix/testing";
 import { NotificationService } from "@exaix/core/notification";
 import { MemoryScope } from "@exaix/core";
 import { type JSONValue, toSafeJson } from "@exaix/core/types";
@@ -103,8 +103,6 @@ function initNotificationTest() {
     cleanup,
   };
 }
-
-import { createNotificationTestProposal } from "@exaix/testing";
 
 // Note: Database corruption or file errors are handled by DatabaseService/SQLite driver themselves.
 // These tests are updated to ensure the service behaves reasonably when the table is empty.

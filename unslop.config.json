@@ -757,9 +757,7 @@
       ]
     },
     "exaix/import-placement": {
-      "level": "off",
-      "optIn": true,
-      "reason": "Parked: the AST rule finds violations that the former line scanner missed. Phase 230 burns them down and turns the rule on.",
+      "level": "error",
       "tags": [
         "imports",
         "module-structure"

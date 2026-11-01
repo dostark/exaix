@@ -387,6 +387,11 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
     reasons: [IsolationReason.sharedPath, IsolationReason.pressure],
     exclusive: true,
   },
+  {
+    file: "packages/lint-policy/tests/rule_ceilings_test.ts",
+    reasons: [IsolationReason.sharedPath],
+    exclusive: true,
+  },
 ];
 
 /** Derived so the Parallel Batch's `--ignore` list is unchanged. Content and order come from SEQUENTIAL_TESTS. */

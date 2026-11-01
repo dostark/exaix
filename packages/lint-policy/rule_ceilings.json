@@ -162,44 +162,110 @@
     "scripts": 1
   },
   "exaix/no-explicit-unknown": {
-    "apps/exactl": 5,
-    "apps/tui": 1,
-    "packages/ai": 1,
+    "apps/daemon": 1,
+    "apps/exactl": 9,
+    "apps/tui": 2,
+    "exaix-team": 3,
+    "packages/ai": 8,
     "packages/ai-anthropic": 1,
-    "packages/core": 3,
-    "packages/execution": 9,
-    "packages/flow": 12,
-    "packages/git": 1,
-    "packages/lint-policy": 5,
+    "packages/ai-clidelegate": 3,
+    "packages/ai-openrouter": 1,
+    "packages/cli": 2,
+    "packages/core": 12,
+    "packages/execution": 27,
+    "packages/flow": 13,
+    "packages/git": 3,
+    "packages/lint-policy": 16,
     "packages/mcp": 1,
     "packages/portal": 2,
     "packages/quality-gate": 2,
     "packages/request": 4,
     "packages/routing": 1,
-    "packages/schemas": 4,
+    "packages/schemas": 7,
+    "packages/session": 1,
     "packages/storage-sqlite": 1,
     "packages/triggers": 3,
-    "packages/tui": 2
+    "packages/tui": 3,
+    "scripts": 1,
+    "tests": 11
   },
   "exaix/no-typeof-escape": {
-    "exaix-team": 1,
-    "packages/tui": 1
+    "apps/exactl": 1,
+    "exaix-team": 5,
+    "packages/ai": 17,
+    "packages/ai-openrouter": 20,
+    "packages/execution": 6,
+    "packages/tui": 1,
+    "tests": 18
   },
   "exaix/no-unsafe-dictionary": {
-    "apps/exactl": 3,
-    "packages/execution": 7,
-    "packages/lint-policy": 1,
-    "packages/request": 1,
-    "packages/routing": 1
+    "apps/exactl": 10,
+    "apps/tui": 4,
+    "exaix-team": 1,
+    "packages/execution": 14,
+    "packages/lint-policy": 10,
+    "packages/request": 2,
+    "packages/routing": 4,
+    "packages/schemas": 3,
+    "tests": 12
   },
   "exaix/no-object-parameters": {
-    "exaix-team": 2,
+    "exaix-team": 3,
     "packages/core": 2,
-    "packages/testing": 1
+    "packages/execution": 3,
+    "packages/schemas": 1,
+    "packages/session": 1,
+    "packages/testing": 1,
+    "tests": 3
   },
-  "exaix/no-boolean-assert": {},
-  "exaix/no-repeated-assert-call": {},
-  "exaix/no-constant-substring-assert": {},
+  "exaix/no-boolean-assert": {
+    "apps/daemon": 25,
+    "apps/exactl": 69,
+    "apps/tui": 65,
+    "exaix-team": 94,
+    "packages/ai": 33,
+    "packages/ai-clidelegate": 1,
+    "packages/ai-openai": 1,
+    "packages/ai-openrouter": 6,
+    "packages/core": 87,
+    "packages/eval-history": 7,
+    "packages/execution": 79,
+    "packages/flow": 50,
+    "packages/git": 18,
+    "packages/lint-policy": 27,
+    "packages/mcp": 8,
+    "packages/memory": 12,
+    "packages/portal": 41,
+    "packages/quality-gate": 17,
+    "packages/request": 22,
+    "packages/routing": 26,
+    "packages/schemas": 7,
+    "packages/session": 22,
+    "packages/tool-runtime": 36,
+    "packages/tui": 43,
+    "tests": 662
+  },
+  "exaix/no-repeated-assert-call": {
+    "apps/daemon": 2,
+    "apps/exactl": 11,
+    "apps/tui": 1,
+    "exaix-team": 2,
+    "packages/ai": 1,
+    "packages/core": 5,
+    "packages/execution": 2,
+    "packages/flow": 1,
+    "packages/portal": 2,
+    "packages/request": 2,
+    "packages/session": 1,
+    "tests": 8
+  },
+  "exaix/no-constant-substring-assert": {
+    "apps/daemon": 1,
+    "apps/tui": 1,
+    "exaix-team": 1,
+    "packages/ai": 2,
+    "tests": 7
+  },
   "exaix/re-export-imported": {
     "packages/ai": 0,
     "packages/cli": 0,
@@ -208,21 +274,22 @@
     "packages/mcp": 6,
     "packages/schemas": 2,
     "packages/session": 1,
-    "scripts": 6
-  },
-  "exaix/import-placement": {
-    "packages/cli": 0,
-    "packages/git": 0
+    "scripts": 4,
+    "tests": 1
   },
   "exaix/exported-interface-placement": {
+    "apps/exactl": 2,
     "exaix-team": 0,
     "packages/ai-openai": 0,
     "packages/core": 1,
     "packages/execution": 7,
     "packages/flow": 0,
     "packages/git": 0,
-    "packages/lint-policy": 0,
-    "packages/schemas": 5
+    "packages/lint-policy": 3,
+    "packages/memory": 3,
+    "packages/schemas": 5,
+    "scripts": 2,
+    "tests": 1
   },
   "exaix/magic-union-type": {
     "apps/daemon": 1,
@@ -239,22 +306,40 @@
     "packages/session": 2,
     "scripts": 8
   },
-  "exaix/promise-response-return": {},
+  "exaix/promise-response-return": {
+    "exaix-team": 3,
+    "packages/ai": 4
+  },
   "exaix/max-params": {
     "packages/core": 1,
     "packages/flow": 1,
     "packages/storage-sqlite": 1,
     "packages/testing": 1
   },
-  "exaix/test-inline-multiline-fixture": {},
+  "exaix/test-inline-multiline-fixture": {
+    "apps/exactl": 2,
+    "packages/core": 10,
+    "packages/flow": 2,
+    "packages/request": 1,
+    "packages/routing": 5,
+    "tests": 14
+  },
   "exaix/long-comment": {
-    "packages/lint-policy": 1
+    "exaix-team": 1,
+    "packages/core": 2,
+    "packages/execution": 2,
+    "packages/lint-policy": 3,
+    "packages/memory": 1,
+    "packages/request": 1
   },
   "exaix/ephemeral-comment": {
-    "packages/schemas": 1
+    "packages/lint-policy": 1,
+    "packages/schemas": 1,
+    "tests": 1
   },
   "exaix/no-interface-rename-on-import": {
-    "apps/tui": 1,
-    "packages/core": 1
+    "apps/tui": 3,
+    "packages/core": 1,
+    "tests": 3
   }
 }
