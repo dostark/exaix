@@ -18,6 +18,13 @@ const FIRST_CUTOVER_COMMIT = "3467f53ccf95b9664514294c45f26a1df6ba8fa5";
 const COMPLEXITY_CUTOVER_COMMIT = "84d370479037b8c56e4a14e94de57fc074cf5c75";
 /** The burn-down rules move to complete test-inclusive buckets at this commit. Later rises still fail. */
 const COMPLETE_BUCKET_COMMIT = "cd62d9f2b618a9d4c891c12c6b0d5a7b74ff890d";
+/** The Team ceilings after four packages joined the lint workspace. Rises beyond them still fail. */
+const TEAM_COVERAGE_CEILINGS: Ceilings = {
+  "exaix/require-safety-comment": { "exaix-team": 71 },
+  "exaix/no-runtime-typeof": { "exaix-team": 19 },
+  "exaix/no-conditional-empty-object-spread": { "exaix-team": 6 },
+  "exaix/no-boolean-assert": { "exaix-team": 121 },
+};
 const ENGINE_SUBMODULE = "unslop-ts";
 const GITLINK_FIELDS = 3;
 
@@ -52,7 +59,8 @@ Deno.test("phase227_remediation_cutover", async () => {
   const migrated: Ceilings = JSON.parse(
     await gitOutput(REPO_ROOT, "show", `${COMPLETE_BUCKET_COMMIT}:${CEILINGS_PATH}`),
   );
-  const before: Ceilings = { ...introduced, ...first, ...migrated };
+  const before: Record<string, Readonly<Record<string, number>>> = { ...introduced, ...first, ...migrated };
+  for (const [rule, buckets] of Object.entries(TEAM_COVERAGE_CEILINGS)) before[rule] = { ...before[rule], ...buckets };
   const after: Ceilings = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, CEILINGS_PATH)));
   assertEquals(raisedCeilings(before, after), []);
   assert(Object.keys(after).length > 0, "the ceiling table is empty");

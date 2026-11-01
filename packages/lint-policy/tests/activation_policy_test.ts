@@ -453,3 +453,18 @@ Deno.test("default-comment-fixture-gates: module headers and fixture folders sta
     }
   });
 });
+
+Deno.test("team-package-coverage: every Team package with its own deno.json is a root workspace member", async () => {
+  const config = JSON.parse(await Deno.readTextFile(new URL("deno.json", REPO_ROOT)));
+  const members = new Set<string>(config.workspace.map((entry: string) => entry.replace(/^\.\//, "")));
+  const outside: string[] = [];
+  for (const parent of ["exaix-team/packages", "exaix-team/apps"]) {
+    for await (const entry of Deno.readDir(new URL(parent, REPO_ROOT))) {
+      const root = `${parent}/${entry.name}`;
+      const configured = entry.isDirectory &&
+        await Deno.stat(new URL(`${root}/deno.json`, REPO_ROOT)).then(() => true, () => false);
+      if (configured && !members.has(root)) outside.push(root);
+    }
+  }
+  assertEquals(outside, [], "Deno loads no lint plugin for a package outside the root workspace");
+});

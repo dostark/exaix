@@ -551,7 +551,7 @@
       {"id":"635263f66d17a9ca","lines":8,"first":"exaix-team/packages/portal-extractors/src/go_symbol_extractor.ts:64-71","second":"exaix-team/packages/portal-extractors/src/java_symbol_extractor.ts:65-72"},
       {"id":"37280685999bbafc","lines":12,"first":"exaix-team/packages/portal-extractors/src/go_symbol_extractor.ts:79-90","second":"exaix-team/packages/portal-extractors/src/java_symbol_extractor.ts:75-86"},
       {"id":"cc2e2d984a6cd381","lines":6,"first":"exaix-team/packages/portal-extractors/src/java_symbol_extractor.ts:87-92","second":"exaix-team/packages/portal-extractors/src/rust_symbol_extractor.ts:101-104"},
-      {"id":"e870821c63e469a5","lines":19,"first":"exaix-team/packages/portal-extractors/src/python_symbol_reference_extractor.ts:192-210","second":"exaix-team/packages/portal-extractors/src/ts_js_symbol_reference_extractor.ts:257-275"}
+      {"id":"e2b746177aa7e9dc","lines":18,"first":"exaix-team/packages/portal-extractors/src/python_symbol_reference_extractor.ts:184-201","second":"exaix-team/packages/portal-extractors/src/ts_js_symbol_reference_extractor.ts:243-260"}
     ],
     "team-tests": [
       {"id":"3c981f86cea006ca","lines":17,"first":"exaix-team/apps/mcp-server/tests/mcp_git_factory_test.ts:11-27","second":"exaix-team/apps/mcp-server/tests/server_context_test.ts:15-31"},

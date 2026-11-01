@@ -44,6 +44,10 @@
     "./exaix-team/packages/mcp-server",
     "./exaix-team/packages/model-registry-live",
     "./exaix-team/packages/otel-export",
+    "./exaix-team/packages/guardrail",
+    "./exaix-team/packages/hitl",
+    "./exaix-team/packages/portal-extractors",
+    "./exaix-team/packages/voting",
     "./exaix-team/apps/mcp-server"
   ],
   "lock": true,
