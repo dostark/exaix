@@ -19,6 +19,7 @@ import { TextLineStream } from "@std/streams";
 import type { Opt, Reason } from "@exaix/core/types";
 import { buildJailLaunch, dockerProbeSkipReason } from "../tests/scenario_framework/runner/matrix_expander.ts";
 import { trackChild, untrackChild } from "./test_parallel.ts";
+import { dockerImageId, type IReplacedImageSeams, removeReplacedImage } from "./docker_images.ts";
 import {
   type IContainerRunResult,
   isRepoRelativeTestFile,
@@ -30,7 +31,7 @@ import {
 type TestContainerNetwork = "none" | "bridge";
 
 /** Injectable seams for `ensureDevTestImage`. Every field defaults to the real docker call. */
-interface IEnsureDevTestImageOptions {
+interface IEnsureDevTestImageOptions extends IReplacedImageSeams {
   /** True when the `docker` binary is on PATH. Defaults to the shared `dockerProbeSkipReason`. */
   dockerOnPath?: Opt<() => boolean, Reason.SensibleDefault>;
   /** True when `image` is present in the local image store. Defaults to `docker image inspect`. */
@@ -41,19 +42,6 @@ interface IEnsureDevTestImageOptions {
   imageCreatedAt?: Opt<(image: string) => Promise<Date | undefined>, Reason.SensibleDefault>;
   /** Newest modification time among the image's build inputs. Defaults to the files in `DEV_TEST_BUILD_INPUTS`. */
   buildInputsModifiedAt?: Opt<() => Promise<Date>, Reason.SensibleDefault>;
-  /** The id behind an image name or id, or undefined when it cannot be read. Defaults to `docker image inspect`. */
-  imageId?: Opt<(image: string) => Promise<string | undefined>, Reason.SensibleDefault>;
-  /** How many tags still name the image id. Defaults to `docker image inspect`. */
-  imageTagCount?: Opt<(id: string) => Promise<number>, Reason.SensibleDefault>;
-  /** Removes an untagged image by id. Rejects when the image is in use. Defaults to `docker image rm`. */
-  removeImage?: Opt<(id: string) => Promise<void>, Reason.SensibleDefault>;
-}
-
-/** Injectable seams for `pruneStaleBuildCache`. Every field defaults to the real docker call. */
-interface IPruneBuildCacheOptions {
-  dockerOnPath?: Opt<() => boolean, Reason.SensibleDefault>;
-  /** Exit code of the prune of unused build cache older than the given age. */
-  prune?: Opt<(maxAge: string) => Promise<number>, Reason.SensibleDefault>;
 }
 
 /** One long-lived worker container: it runs the driver and pulls files one at a time. */
@@ -160,18 +148,10 @@ interface IContainerResourceBounds {
 const REPO_ROOT = join(fromFileUrl(import.meta.url), "..", "..");
 
 const DOCKER_BIN = "docker";
-const DOCKER_BUILDER_SUBCOMMAND = "builder";
-const DOCKER_PRUNE_SUBCOMMAND = "prune";
-const DOCKER_FORCE_FLAG = "-f";
-const DOCKER_FILTER_FLAG = "--filter";
-const DOCKER_TAG_COUNT_TEMPLATE = "{{len .RepoTags}}";
-/** Unused build cache older than this is trimmed after an image rebuild. */
-const BUILD_CACHE_MAX_AGE = "168h";
 const DOCKER_VOLUME_SUBCOMMAND = "volume";
 const DOCKER_VOLUME_LIST_SUBCOMMAND = "ls";
 const DOCKER_VOLUME_QUIET_FLAG = "-q";
 const DOCKER_VOLUME_NAME_FILTER = "--filter";
-const DOCKER_ID_TEMPLATE = "{{.Id}}";
 const DOCKER_RUN_SUBCOMMAND = "run";
 const DOCKER_RM_RUN_FLAG = "--rm";
 const DOCKER_MOUNT_FLAG = "--mount";
@@ -357,7 +337,7 @@ export async function ensureDevTestImage(
   if (!dockerOnPath()) return false;
 
   const imageExists = options.imageExists ?? defaultImageExists;
-  const imageId = options.imageId ?? defaultImageId;
+  const imageId = options.imageId ?? dockerImageId;
   let replacedId: string | undefined;
   if (await imageExists(image)) {
     const createdAt = await (options.imageCreatedAt ?? defaultImageCreatedAt)(image);
@@ -375,73 +355,6 @@ export async function ensureDevTestImage(
   }
   await removeReplacedImage(replacedId, image, options);
   return true;
-}
-
-/** Removes the image a rebuild replaced. It keeps an image that still carries a tag, and it never fails the run. */
-async function removeReplacedImage(
-  replacedId: Opt<string, Reason.OptionalInput>,
-  image: string,
-  options: IEnsureDevTestImageOptions,
-): Promise<void> {
-  if (replacedId === undefined) return;
-  const currentId = await (options.imageId ?? defaultImageId)(image);
-  if (currentId === undefined || currentId === replacedId) return;
-  if (await (options.imageTagCount ?? defaultImageTagCount)(replacedId) > 0) return;
-  try {
-    await (options.removeImage ?? defaultRemoveImage)(replacedId);
-    console.log(`› removed the replaced image ${replacedId}`);
-  } catch {
-    // A running container may still use the old image. A later rebuild retries only its own predecessor.
-  }
-}
-
-async function defaultImageTagCount(id: string): Promise<number> {
-  const out = await new Deno.Command(DOCKER_BIN, {
-    args: [DOCKER_IMAGE_SUBCOMMAND, DOCKER_INSPECT_SUBCOMMAND, DOCKER_FORMAT_FLAG, DOCKER_TAG_COUNT_TEMPLATE, id],
-    stdout: "piped",
-    stderr: "null",
-  }).output();
-  const count = Number.parseInt(new TextDecoder().decode(out.stdout).trim(), 10);
-  // An unreadable count counts as tagged, so the image is kept.
-  return out.success && Number.isInteger(count) ? count : 1;
-}
-
-async function defaultRemoveImage(id: string): Promise<void> {
-  const out = await new Deno.Command(DOCKER_BIN, {
-    args: [DOCKER_IMAGE_SUBCOMMAND, DOCKER_RM_SUBCOMMAND, id],
-    stdout: "null",
-    stderr: "null",
-  }).output();
-  if (!out.success) throw new Error(`docker image rm ${id} failed`);
-}
-
-async function defaultPruneBuildCache(maxAge: string): Promise<number> {
-  const out = await new Deno.Command(DOCKER_BIN, {
-    args: [
-      DOCKER_BUILDER_SUBCOMMAND,
-      DOCKER_PRUNE_SUBCOMMAND,
-      DOCKER_FORCE_FLAG,
-      DOCKER_FILTER_FLAG,
-      `until=${maxAge}`,
-    ],
-    stdout: "null",
-    stderr: "null",
-  }).output();
-  return out.code;
-}
-
-/** Trims unused build cache older than a week. The runner calls it after a rebuild, when the cache just grew.
- *  A failed prune is ignored, because a full cache only costs disk space. */
-export async function pruneStaleBuildCache(
-  options: Opt<IPruneBuildCacheOptions, Reason.SensibleDefault> = {},
-): Promise<void> {
-  const dockerOnPath = options.dockerOnPath ?? (() => dockerProbeSkipReason() === null);
-  if (!dockerOnPath()) return;
-  try {
-    await (options.prune ?? defaultPruneBuildCache)(BUILD_CACHE_MAX_AGE);
-  } catch {
-    // The prune is housekeeping only.
-  }
 }
 
 /** Name prefix shared by every worker cache volume. Pruning only ever touches names with this prefix. */
@@ -463,16 +376,6 @@ interface IEnsureDenoCacheVolumeOptions {
   listVolumes?: Opt<() => Promise<string[]>, Reason.SensibleDefault>;
   /** Removes one volume. Rejects when the volume is in use. */
   removeVolume?: Opt<(name: string) => Promise<void>, Reason.SensibleDefault>;
-}
-
-async function defaultImageId(image: string): Promise<string | undefined> {
-  const out = await new Deno.Command(DOCKER_BIN, {
-    args: [DOCKER_IMAGE_SUBCOMMAND, DOCKER_INSPECT_SUBCOMMAND, DOCKER_FORMAT_FLAG, DOCKER_ID_TEMPLATE, image],
-    stdout: "piped",
-    stderr: "null",
-  }).output();
-  const id = new TextDecoder().decode(out.stdout).trim();
-  return out.success && id.length > 0 ? id : undefined;
 }
 
 /** Runs a throwaway container so docker copies the image's warmed cache into a new empty volume. */
@@ -523,7 +426,7 @@ export async function ensureDenoCacheVolume(
   image: string,
   options: Opt<IEnsureDenoCacheVolumeOptions, Reason.SensibleDefault> = {},
 ): Promise<string> {
-  const imageId = await (options.imageId ?? defaultImageId)(image);
+  const imageId = await (options.imageId ?? dockerImageId)(image);
   if (imageId === undefined) throw new Error(`cannot read the image id of ${image}`);
   const volume = denoCacheVolumeName(imageId);
   const exitCode = await (options.seed ?? defaultSeedVolume)(volume, image);

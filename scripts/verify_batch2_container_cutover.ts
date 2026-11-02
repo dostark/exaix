@@ -22,11 +22,11 @@ import {
   DEFAULT_TEST_CONTAINER_WATCHDOG_MS,
   ensureDenoCacheVolume,
   ensureDevTestImage,
-  pruneStaleBuildCache,
   resolveContainerResourceBounds,
   runBatch2InContainers,
   TEST_CONTAINER_IMAGE_ENV,
 } from "./test_isolation.ts";
+import { pruneStaleBuildCache } from "./docker_images.ts";
 import { buildContainerEnv, SEQUENTIAL_TESTS } from "./test_parallel.ts";
 import { parseDotReporterCounts, parseSummaryLine } from "./test_output_parse.ts";
 

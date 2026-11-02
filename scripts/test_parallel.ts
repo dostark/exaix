@@ -28,12 +28,12 @@ import {
   ensureDenoCacheVolume,
   ensureDevTestImage,
   MIN_TEST_CONTAINER_JOBS,
-  pruneStaleBuildCache,
   resolveContainerResourceBounds,
   runBatch2InContainers,
   selectBatch2Strategy,
   TEST_CONTAINER_IMAGE_ENV,
 } from "./test_isolation.ts";
+import { pruneStaleBuildCache } from "./docker_images.ts";
 import { TEST_CONTAINER_REPORTER_ENV } from "./test_container_driver.ts";
 import type { IContainerRunResult } from "./test_container_driver.ts";
 

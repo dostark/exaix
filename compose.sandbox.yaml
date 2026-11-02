@@ -1,6 +1,7 @@
 # Hardened runtime profile for the Exaix agent daemon.
 #
-#   docker compose -f compose.sandbox.yaml up --build
+#   deno task sandbox:build   (builds the image and removes the one it replaced)
+#   docker compose -f compose.sandbox.yaml up
 #
 # This profile treats the container as the authoritative containment boundary for
 # agent execution. Even if an agent achieves in-process code execution, it is

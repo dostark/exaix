@@ -29,7 +29,6 @@ import {
   MIN_TEST_CONTAINER_JOBS,
   parseDockerTimestamp,
   parseWorkerResultLine,
-  pruneStaleBuildCache,
   resolveContainerResourceBounds,
   resolveDockerBuildEnv,
   runBatch2InContainers,
@@ -235,20 +234,6 @@ Deno.test("a failed removal of the replaced image never fails the run", async ()
   const docker = fakeRebuild({ before: "sha256:old", after: "sha256:new" });
   const busy = { ...docker.options, removeImage: () => Promise.reject(new Error("image is in use")) };
   assertEquals(await ensureDevTestImage("exaix-dev-test:test", busy), true);
-});
-
-Deno.test("pruneStaleBuildCache trims only old unused cache and tolerates failure", async () => {
-  const seen: string[] = [];
-  await pruneStaleBuildCache({
-    dockerOnPath: () => true,
-    prune: (maxAge: string) => {
-      seen.push(maxAge);
-      return Promise.resolve(0);
-    },
-  });
-  assertEquals(seen, ["168h"]);
-  await pruneStaleBuildCache({ dockerOnPath: () => true, prune: () => Promise.resolve(1) });
-  await pruneStaleBuildCache({ dockerOnPath: () => false, prune: () => Promise.reject(new Error("must not run")) });
 });
 
 Deno.test("ensureDevTestImage surfaces a build failure", async () => {

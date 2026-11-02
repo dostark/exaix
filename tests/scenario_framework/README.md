@@ -1152,7 +1152,7 @@ leakage is structurally impossible. The opencode permission config / claude tool
 defense-in-depth. Build the jail image with:
 
 ```bash
-deno task eval:jail:build   # docker build --target eval-jail -t exaix-eval-jail .
+deno task eval:jail:build   # builds exaix-eval-jail and removes the image it replaced
 ```
 
 The image name is overridable via `EXA_EVAL_JAIL_IMAGE`.
