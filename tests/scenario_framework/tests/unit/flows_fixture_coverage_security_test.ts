@@ -5,7 +5,7 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/tests/helpers/expected_call_manifest.ts]
  */
-import { assert, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import {
   type IExpectedCallManifest,
@@ -24,6 +24,27 @@ Deno.test("[flows_fixture_coverage] [security] shared call prefixes reject path 
     await Deno.writeTextFile(join(dir, "invalid.json"), JSON.stringify({ callPrefix: "../outside", calls: [] }));
     await assertRejects(() => loadManifest(root, "invalid"), Error, "Invalid call prefix");
   }, { prefix: "manifest-prefix-" });
+});
+
+Deno.test("[flows_fixture_coverage] [security] every request in a multi-request scenario needs its own recording", async () => {
+  const entry = (await loadManifestCases()).find(({ manifest }) => manifest.scenarioId === "gate-halt");
+  assert(entry);
+  const first = entry.recordings.find((recording) => recording.callSite?.scenarioId === "gate-halt");
+  assert(first?.callSite);
+  const second = { ...first, file: "second.json", callSite: { ...first.callSite, stepId: "second-submit" } };
+  const manifest = {
+    ...entry.manifest,
+    gateEvaluations: { gate: 2 },
+    calls: [...entry.manifest.calls, { ...entry.manifest.calls[0], requestStepId: "second-submit" }],
+  };
+  const flow = await loadFlowFile(entry.flowPath);
+  assertEquals(reconcileManifest(manifest, flow, [...entry.recordings, second]), []);
+  assert(reconcileManifest(manifest, flow, entry.recordings).some((error) => error.includes("missing recording")));
+  assert(
+    reconcileManifest(entry.manifest, flow, [...entry.recordings, second]).some((error) =>
+      error.includes("unexpected recording")
+    ),
+  );
 });
 
 Deno.test("[flows_fixture_coverage] [security] omissions and extra fixtures cannot certify themselves", async () => {

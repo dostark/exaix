@@ -1,0 +1,14 @@
+{
+  "scenarioId": "lint-error-compatibility",
+  "edition": "solo",
+  "flow": "lint-error-compatibility",
+  "fixtureDir": "fixtures/mock_recordings/phase230",
+  "requestStepId": "submit-retry-failure",
+  "selectedPath": ["draft"],
+  "expectedFailure": "request_failed",
+  "gateEvaluations": {},
+  "calls": [
+    { "lane": "draft", "callIndex": 0, "dialect": "agent", "failure": true },
+    { "lane": "draft", "callIndex": 0, "dialect": "agent", "requestStepId": "submit-malformed" }
+  ]
+}

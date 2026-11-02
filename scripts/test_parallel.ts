@@ -366,6 +366,11 @@ export const SEQUENTIAL_TESTS: readonly SequentialTest[] = [
   { file: "packages/ai/tests/providers/mock_strict_env_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "tests/scenario_framework/tests/unit/strict_scoped_per_step_test.ts", reasons: [IsolationReason.processEnv] },
   { file: "packages/lint-policy/tests/shared_tree_parity_test.ts", reasons: [IsolationReason.pressure] },
+  {
+    file: "tests/scripts/test_isolation_test.ts",
+    reasons: [IsolationReason.pressure],
+    host: true,
+  },
   // LCOV replaces the shared report and runs a whole-tree health scan.
   {
     file: "tests/scripts/health_lcov_task_test.ts",

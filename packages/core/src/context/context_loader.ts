@@ -386,9 +386,9 @@ export class ContextLoader {
   /**
    * Log file load error to IActivity Journal
    */
-  private logFileLoadError(
+  private logFileLoadError<TError>(
     filePath: string,
-    error: Error | string | unknown,
+    error: TError,
   ): void {
     if (!this.config.db || !this.config.traceId) {
       // If no database or trace ID, just log to stderr

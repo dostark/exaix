@@ -28,8 +28,8 @@ interface IRejectedPlanHandlerDeps {
 }
 
 export interface IRejectedPlanHandler {
-  handleError(
-    error: Error | string | unknown,
+  handleError<TError>(
+    error: TError,
     filePath: string,
     requestId: string,
     traceLogger: IEventLogger,
@@ -46,8 +46,8 @@ export class RejectedPlanHandler implements IRejectedPlanHandler {
     this.statusManager = deps.statusManager;
   }
 
-  async handleError(
-    error: Error | string | unknown,
+  async handleError<TError>(
+    error: TError,
     filePath: string,
     requestId: string,
     traceLogger: IEventLogger,

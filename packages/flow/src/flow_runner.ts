@@ -1569,13 +1569,13 @@ export class FlowRunner implements IFlowRunner {
   /**
    * Handle execution errors and create error result
    */
-  private async handleExecutionError(
+  private async handleExecutionError<TError>(
     flow: IFlow,
     request: IFlowOriginalRequest,
     flowRunId: string,
     stepResults: Map<string, IStepResult>,
     startedAt: Date,
-    error: Error | string | unknown,
+    error: TError,
   ): Promise<never> {
     const completedAt = new Date();
     const duration = Math.max(0, completedAt.getTime() - startedAt.getTime());
@@ -1835,9 +1835,9 @@ export class FlowRunner implements IFlowRunner {
   /**
    * Apply retry, fallback, or abort recovery policy after a step failure.
    */
-  private async handleStepFailureRecovery(
+  private async handleStepFailureRecovery<TError>(
     ctx: IStepContext,
-    initialError: Error | string | unknown,
+    initialError: TError,
   ): Promise<IStepResult> {
     const { flowRunId, step, request, startedAt } = ctx;
     if (initialError instanceof FlowGateHaltedError || initialError instanceof FlowControlError) {
@@ -1853,40 +1853,29 @@ export class FlowRunner implements IFlowRunner {
       return this.formatStepFailure(flowRunId, step, request, initialError, startedAt);
     }
 
-    let lastError: Error | string | unknown = initialError;
-
     if (step.onError.action === FlowStepOnErrorAction.RETRY) {
-      const retryResult = await this.retryStepAttempts(ctx, lastError);
-      if (retryResult.result) return retryResult.result;
-      lastError = retryResult.error;
-      if (
-        lastError instanceof ContextBudgetExceededError ||
-        (lastError instanceof Error && getProviderFailureReason(lastError) !== undefined)
-      ) {
-        return await this.handleTerminalConfigurationFailure(ctx, lastError);
-      }
+      return await this.retryStepAttempts(ctx, initialError);
     }
 
     if (step.onError.action === FlowStepOnErrorAction.FALLBACK) {
-      const fallback = await this.runFallbackStep(ctx, lastError);
-      if (fallback.result) return fallback.result;
-      lastError = fallback.error;
+      return await this.runFallbackStep(ctx, initialError);
     }
 
-    return await this.finishStepFailure(ctx, lastError);
+    return await this.finishStepFailure(ctx, initialError);
   }
 
-  private async runFallbackStep(
+  private async runFallbackStep<TError>(
     ctx: IStepContext,
-    originalError: Error | string | unknown,
-  ): Promise<{ result?: IStepResult; error: Error | string | unknown }> {
+    originalError: TError,
+  ): Promise<IStepResult> {
     const { flowRunId, step, flow, request, stepResults, startedAt } = ctx;
     const fallbackStepId = step.onError?.fallbackStep;
     const fallbackStep = fallbackStepId ? flow.steps.find((candidate) => candidate.id === fallbackStepId) : null;
     if (!fallbackStep) {
-      return {
-        error: new Error(`Fallback step not found for ${step.id}: ${fallbackStepId ?? DEFAULT_UNKNOWN_LABEL}`),
-      };
+      return await this.finishStepFailure(
+        ctx,
+        new Error(`Fallback step not found for ${step.id}: ${fallbackStepId ?? DEFAULT_UNKNOWN_LABEL}`),
+      );
     }
     await this.eventLogger.log(FLOW_EVENT_STEP_FALLBACK, {
       flowRunId,
@@ -1900,31 +1889,28 @@ export class FlowRunner implements IFlowRunner {
     });
     try {
       const fallbackResult = await this.executeStep(flowRunId, fallbackStep.id, flow, request, stepResults);
-      return {
-        result: this.mapFallbackResultToPrimaryResult(
-          flowRunId,
-          step,
-          fallbackStep,
-          request,
-          fallbackResult,
-          startedAt,
-        ),
-        error: originalError,
-      };
+      return this.mapFallbackResultToPrimaryResult(
+        flowRunId,
+        step,
+        fallbackStep,
+        request,
+        fallbackResult,
+        startedAt,
+      );
     } catch (fallbackError) {
       if (fallbackError instanceof FlowAbortError) throw fallbackError;
-      return { error: fallbackError };
+      return await this.finishStepFailure(ctx, fallbackError);
     }
   }
 
-  private async retryStepAttempts(
+  private async retryStepAttempts<TError>(
     ctx: IStepContext,
-    initialError: Error | string | unknown,
-  ): Promise<{ result?: IStepResult; error: Error | string | unknown }> {
+    initialError: TError,
+  ): Promise<IStepResult> {
     const { flowRunId, step, request } = ctx;
     const maxRetries = step.onError?.maxRetries ?? 1;
     const retryBackoffMs = step.onError?.backoffMs ?? DEFAULT_FLOW_STEP_BACKOFF_MS;
-    let lastError = initialError;
+    let readLastErrorMessage = () => initialError instanceof Error ? initialError.message : String(initialError);
     for (let retryAttempt = 1; retryAttempt <= maxRetries; retryAttempt++) {
       await this.retryBudgetService.enforceRetryCostBudget(flowRunId, request);
       await this.eventLogger.log(FLOW_EVENT_STEP_RETRY, {
@@ -1933,43 +1919,49 @@ export class FlowRunner implements IFlowRunner {
         agentRole: step.agent_role,
         attempt: retryAttempt,
         maxRetries,
-        error: lastError instanceof Error ? lastError.message : String(lastError),
+        error: readLastErrorMessage(),
         traceId: request.traceId,
         requestId: request.requestId,
       });
       await this.retryBudgetService.applyRetryBackoff(retryBackoffMs, retryAttempt);
       try {
         const retryOutcome = await this.runStepAttempt(ctx);
-        return {
-          result: this.formatStepSuccess(
-            ctx,
-            retryOutcome.result,
-            { wasRetried: true, retryCount: retryAttempt },
-            retryOutcome.namespaceWrites,
-          ),
-          error: lastError,
-        };
+        return this.formatStepSuccess(
+          ctx,
+          retryOutcome.result,
+          { wasRetried: true, retryCount: retryAttempt },
+          retryOutcome.namespaceWrites,
+        );
       } catch (retryError) {
-        lastError = retryError;
         if (
-          lastError instanceof ContextBudgetExceededError ||
-          (lastError instanceof Error && getProviderFailureReason(lastError) !== undefined)
-        ) break;
+          retryError instanceof ContextBudgetExceededError ||
+          (retryError instanceof Error && getProviderFailureReason(retryError) !== undefined) ||
+          !(retryAttempt + 1 <= maxRetries)
+        ) return await this.finishRetryFailure(ctx, retryError);
+        readLastErrorMessage = () => retryError instanceof Error ? retryError.message : String(retryError);
       }
     }
-    return { error: lastError };
+    return await this.finishRetryFailure(ctx, initialError);
   }
 
-  private async handleTerminalConfigurationFailure(
+  private async finishRetryFailure<TError>(ctx: IStepContext, error: TError): Promise<IStepResult> {
+    if (
+      error instanceof ContextBudgetExceededError ||
+      (error instanceof Error && getProviderFailureReason(error) !== undefined)
+    ) return await this.handleTerminalConfigurationFailure(ctx, error);
+    return await this.finishStepFailure(ctx, error);
+  }
+
+  private async handleTerminalConfigurationFailure<TError>(
     ctx: IStepContext,
-    error: Error | string | unknown,
+    error: TError,
   ): Promise<IStepResult> {
     return await this.finishStepFailure(ctx, error);
   }
 
-  private async finishStepFailure(
+  private async finishStepFailure<TError>(
     ctx: IStepContext,
-    error: Error | string | unknown,
+    error: TError,
   ): Promise<IStepResult> {
     const { flowRunId, step, flow, request, stepResults, startedAt } = ctx;
     const failureResult = this.formatStepFailure(flowRunId, step, request, error, startedAt);
@@ -2282,11 +2274,11 @@ export class FlowRunner implements IFlowRunner {
   /**
    * Format failed step result
    */
-  private formatStepFailure(
+  private formatStepFailure<TError>(
     flowRunId: string,
     step: IFlowStep,
     request: IFlowOriginalRequest,
-    error: Error | string | unknown,
+    error: TError,
     startedAt: Date,
   ): IStepResult {
     const completedAt = new Date();

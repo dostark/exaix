@@ -156,6 +156,16 @@ Deno.test("[flows_fixture_coverage] manifests reconcile with schema-valid flows,
   assert(editions.has("solo") && editions.has("team"), "manifests must cover Solo and Team cases");
   for (const { manifest, scenario, flowPath, recordings } of cases) {
     assertEquals(manifest.edition, scenario.edition ?? SOLO_EDITION, `${manifest.scenarioId} edition`);
+    const scenarioRequests = scenario.steps.filter((step) => step.env?.[RECORDING_LANES_ENV] === "1")
+      .map((step) => step.id).sort();
+    const manifestRequests = [
+      ...new Set([
+        manifest.requestStepId,
+        ...manifest.calls.map((call) => call.requestStepId ?? manifest.requestStepId),
+      ]),
+    ]
+      .sort();
+    assertEquals(manifestRequests, scenarioRequests, `${manifest.scenarioId} recording requests`);
     const errors = reconcileManifest(manifest, await loadFlowFile(flowPath), recordings);
     assertEquals(errors, [], `${manifest.scenarioId} manifest discrepancies`);
   }

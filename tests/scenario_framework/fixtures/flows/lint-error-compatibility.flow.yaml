@@ -1,0 +1,22 @@
+# @schema-version: 1.0.0
+id: lint-error-compatibility
+name: Error compatibility fixture
+description: Exercises malformed output and failed recovery.
+version: "1.0.0"
+steps:
+  - id: draft
+    name: Produce a plan
+    type: agent
+    agent_role: senior-coder
+    input:
+      source: request
+    onError:
+      action: retry
+      maxRetries: 1
+      backoffMs: 1
+output:
+  from: draft
+  format: json
+settings:
+  maxParallelism: 1
+  failFast: true

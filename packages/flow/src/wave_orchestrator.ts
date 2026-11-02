@@ -629,11 +629,11 @@ export class WaveOrchestrator {
     };
   }
 
-  private async handleWaveProcessingError(
+  private async handleWaveProcessingError<TError>(
     flowRunId: string,
     request: { traceId?: string; requestId?: string },
     stepId: string,
-    processingError: Error | string | unknown,
+    processingError: TError,
     stepResults: Map<string, IStepResult>,
     failFast: boolean,
   ): Promise<IWaveProcessingOutcome> {

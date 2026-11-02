@@ -10,9 +10,9 @@
  * @related-files [packages/request/src/rejected_plan_handler.ts, packages/request/src/processor.ts]
  */
 
-import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertFalse, assertRejects, assertStrictEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { RejectedPlanHandler, StatusManager } from "@exaix/request";
+import { type IRejectedPlanHandler, RejectedPlanHandler, StatusManager } from "@exaix/request";
 import { createMockConfig, createMockEventLogger, createMockLogger } from "@exaix/testing";
 import { PlanValidationError } from "@exaix/core/planning";
 import { RequestStatus } from "@exaix/core/status";
@@ -21,6 +21,18 @@ import type { IRequestFrontmatter } from "@exaix/core/request";
 import { RequestSource } from "@exaix/core";
 import { ProviderFactoryError } from "@exaix/ai/errors.ts";
 import { DomainEventType } from "@exaix/core/events";
+import type { IEventLogger } from "@exaix/core/logger";
+import type { Opt, Reason } from "@exaix/core/types";
+
+interface ILegacyRejectedPlanHandler {
+  handleError(
+    error: unknown,
+    filePath: string,
+    requestId: string,
+    traceLogger: IEventLogger,
+    frontmatter?: Opt<IRequestFrontmatter, Reason.OptionalInput>,
+  ): Promise<void>;
+}
 
 async function makeHandlerTestSetup() {
   const testDir = await Deno.makeTempDir({ prefix: "exa_rejected_plan_handler_test_" });
@@ -46,6 +58,64 @@ function makeFrontmatter(overrides: Partial<IRequestFrontmatter> = {}): IRequest
     ...overrides,
   };
 }
+
+Deno.test("generic error handler preserves the legacy contract and custom conversion", async () => {
+  const { testDir, filePath, handler } = await makeHandlerTestSetup();
+  try {
+    const legacy: ILegacyRejectedPlanHandler = handler;
+    const current: IRejectedPlanHandler = legacy;
+    const logger = createMockLogger();
+    const value = { toString: () => "custom failure" };
+    await current.handleError<typeof value>(value, filePath, "req-1", logger, makeFrontmatter());
+    const failures = logger.error.calls.filter((call) => call.args[0] === DomainEventType.RequestFailed);
+    assertEquals(failures.length, 1);
+    assertEquals(failures[0].args[2], { error: "custom failure" });
+    assertEquals(failures[0].args[3], "trace-1");
+  } finally {
+    await Deno.remove(testDir, { recursive: true });
+  }
+});
+
+Deno.test("error handler keeps primitive and object conversion behavior", async () => {
+  const { testDir, filePath, handler } = await makeHandlerTestSetup();
+  try {
+    const cyclic: { self?: object } = {};
+    cyclic.self = cyclic;
+    const values = ["failure", 42, false, null, undefined, 12n, Symbol("failure"), () => 1, ["failure"], cyclic];
+    for (const value of values) {
+      const logger = createMockLogger();
+      await handler.handleError(value, filePath, "req-1", logger, makeFrontmatter());
+      const failures = logger.error.calls.filter((call) => call.args[0] === DomainEventType.RequestFailed);
+      assertEquals(failures.length, 1);
+      assertEquals(failures[0].args[2], { error: String(value) });
+      assertEquals(failures[0].args[3], "trace-1");
+    }
+  } finally {
+    await Deno.remove(testDir, { recursive: true });
+  }
+});
+
+Deno.test("error handler propagates a throwing conversion before logging failure", async () => {
+  const { testDir, filePath, handler } = await makeHandlerTestSetup();
+  try {
+    const original = new Error("conversion failed");
+    let conversions = 0;
+    const value = {
+      toString: () => {
+        conversions++;
+        throw original;
+      },
+    };
+    const logger = createMockLogger();
+    const thrown = await assertRejects(() => handler.handleError(value, filePath, "req-1", logger, makeFrontmatter()));
+    assertStrictEquals(thrown, original);
+    assertEquals(conversions, 1);
+    assertEquals(logger.error.calls.length, 0);
+    assertStringIncludes(await Deno.readTextFile(filePath), `status: "${RequestStatus.PENDING}"`);
+  } finally {
+    await Deno.remove(testDir, { recursive: true });
+  }
+});
 
 Deno.test("typed provider factory failure retains the original trace and one request terminal reason", async () => {
   const { testDir, filePath, handler } = await makeHandlerTestSetup();

@@ -71,6 +71,13 @@ Deno.test("fix(test-runner): whole-repository LCOV health uses the serial host l
   assert(entry.reasons.includes(IsolationReason.pressure));
 });
 
+Deno.test("fix(test-runner): offline Docker worker smoke runs in the isolated host lane", () => {
+  const entry = SEQUENTIAL_TESTS.find((test) => test.file === "tests/scripts/test_isolation_test.ts");
+  assert(entry, "the Docker worker smoke test needs isolated execution");
+  assertEquals(entry.host, true);
+  assertArrayIncludes(entry.reasons, [IsolationReason.pressure]);
+});
+
 Deno.test("resolveReporter accepts equals-form reporter flag", () => {
   assertEquals(resolveReporter(["--reporter=dot"]), "dot");
 });
@@ -288,6 +295,7 @@ const EXPECTED_SEQUENTIAL_FILES = [
   "packages/ai/tests/providers/mock_strict_env_test.ts",
   "tests/scenario_framework/tests/unit/strict_scoped_per_step_test.ts",
   "packages/lint-policy/tests/shared_tree_parity_test.ts",
+  "tests/scripts/test_isolation_test.ts",
   "tests/scripts/health_lcov_task_test.ts",
   "packages/lint-policy/tests/unslop_cli_integration_test.ts",
   "packages/lint-policy/tests/lint_policy_move_equivalence_test.ts",

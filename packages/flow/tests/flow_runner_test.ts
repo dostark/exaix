@@ -23,7 +23,7 @@ import {
   type IFlowStepRequest,
 } from "@exaix/flow";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IFlow, IFlowInput, IFlowStepInput } from "@exaix/schemas/flow.ts";
+import { FlowSchema, type IFlow, type IFlowInput, type IFlowStepInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import { RetryPolicy } from "@exaix/core/request";
 import { PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
@@ -33,6 +33,7 @@ import type { ActivityRecord, SqliteParam } from "@exaix/storage-sqlite";
 import type { IJournalFilterOptions } from "@exaix/core/types";
 import { createMockConfig } from "@exaix/testing";
 import type { ModelBindingService } from "@exaix/ai";
+import { ProviderFactoryError } from "@exaix/ai/errors.ts";
 
 import { DEFAULT_FLOW_VERSION } from "@exaix/schemas/constants.ts";
 /** Local type matching the shape logged by FlowRunner for flow.token_summary events */
@@ -508,6 +509,102 @@ Deno.test("FlowRunner: retries a failed step until it succeeds", async () => {
   assertEquals(retryEvents[1].payload.maxRetries, 2);
 });
 
+Deno.test("FlowRunner: retry keeps error conversion at the event boundary", async () => {
+  const steps = [
+    makeStep(
+      "step1",
+      "Retrying Step",
+      "flaky-agent",
+      [],
+      { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      { onError: { action: FlowStepOnErrorAction.RETRY, maxRetries: 2, backoffMs: 1 } },
+    ),
+  ];
+  const calls: string[] = [];
+  const first = { toString: () => (calls.push("convert first"), "first failure") };
+  const second = { toString: () => (calls.push("convert second"), "second failure") };
+  let attempt = 0;
+  const agentExecutor: IAgentExecutor = {
+    run: async () => {
+      calls.push(`attempt ${++attempt}`);
+      if (attempt === 1) throw first;
+      if (attempt === 2) throw second;
+      return await Promise.resolve({ thought: "done", content: "done", raw: "done" });
+    },
+  };
+  const mockLogger = new MockEventLogger();
+  const runner = new FlowRunner({ agentExecutor, eventLogger: mockLogger });
+  const result = await runner.execute(makeFlow(steps) as IFlow, { userPrompt: "test request" });
+  assertEquals(result.success, true);
+  assertEquals(
+    mockLogger.events.filter((event) => event.event === FLOW_EVENT_STEP_RETRY).map((event) => event.payload.error),
+    ["first failure", "second failure"],
+  );
+  assertEquals(calls, [
+    "attempt 1",
+    "convert first",
+    "convert first",
+    "attempt 2",
+    "convert second",
+    "convert second",
+    "attempt 3",
+  ]);
+});
+
+Deno.test("FlowRunner: a terminal provider failure stops retries and preserves its reason", async () => {
+  const step = makeStep(
+    "step1",
+    "Retrying Step",
+    "flaky-agent",
+    [],
+    { source: FlowInputSource.REQUEST, transform: "passthrough" },
+    { onError: { action: FlowStepOnErrorAction.RETRY, maxRetries: 2, backoffMs: 1 } },
+  );
+  const agent = new SequencedMockAgentRunner({
+    "flaky-agent": [new Error("temporary"), new ProviderFactoryError("missing credential", "credential_missing")],
+  });
+  const logger = new MockEventLogger();
+  const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger });
+  await assertRejects(
+    () => runner.execute(makeFlow([step]) as IFlow, { userPrompt: "test", traceId: "trace-provider" }),
+    FlowExecutionError,
+  );
+  assertEquals(agent.calls, ["flaky-agent", "flaky-agent"]);
+  assertEquals(logger.events.filter((event) => event.event === FLOW_EVENT_STEP_RETRY).length, 1);
+  const failures = logger.events.filter((event) => event.event === "flow.step.failed");
+  assertEquals(failures.length, 1);
+  assertEquals(failures[0].payload.providerReasonCode, "credential_missing");
+  assertEquals(failures[0].payload.traceId, "trace-provider");
+});
+
+Deno.test("FlowRunner: zero recovery attempts finish with the original failure", async () => {
+  const step = makeStep(
+    "step1",
+    "Retrying Step",
+    "flaky-agent",
+    [],
+    { source: FlowInputSource.REQUEST, transform: "passthrough" },
+    { onError: { action: FlowStepOnErrorAction.RETRY, maxRetries: 1 } },
+  );
+  const flow = FlowSchema.parse(makeFlow([step]));
+  flow.steps[0].onError!.maxRetries = 0;
+  const logger = new MockEventLogger();
+  const agent = new MockAgentRunner();
+  const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger });
+  const result = await runner["retryStepAttempts"]({
+    flowRunId: "flow-zero",
+    step: flow.steps[0],
+    flow,
+    request: { userPrompt: "test", traceId: "trace-zero" },
+    stepResults: new Map(),
+    startedAt: new Date(),
+  }, new Error("initial failure"));
+  assertEquals(result.success, false);
+  assertEquals(result.error, "initial failure");
+  assertEquals(logger.events.filter((event) => event.event === FLOW_EVENT_STEP_RETRY).length, 0);
+  assertEquals(logger.events.filter((event) => event.event === "flow.step.failed")[0].payload.traceId, "trace-zero");
+});
+
 Deno.test("FlowRunner: retry backoff is skipped in test mode", async () => {
   const steps: IFlowStepInput[] = [
     makeStep(
@@ -654,6 +751,34 @@ Deno.test("FlowRunner: fallback step retries according to its own onError policy
   assertEquals(retryEvents[0].payload.error, "fallback failed 1");
   assertEquals(retryEvents[1].payload.stepId, "fallback");
   assertEquals(retryEvents[1].payload.error, "fallback failed 2");
+});
+
+Deno.test("FlowRunner: a failed fallback retains its failure and trace", async () => {
+  const steps = [
+    makeStep("primary", "Primary", "primary-agent", [], { source: FlowInputSource.REQUEST }, {
+      onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "fallback" },
+    }),
+    makeStep("fallback", "Fallback", "fallback-agent", ["primary"], { source: FlowInputSource.REQUEST }),
+  ];
+  const agent = new SequencedMockAgentRunner({
+    "primary-agent": [new Error("primary failed")],
+    "fallback-agent": [new Error("fallback failed")],
+  });
+  const logger = new MockEventLogger();
+  const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger });
+  await assertRejects(
+    () =>
+      runner.execute(makeFlow(steps, { output: { from: "primary", format: FlowOutputFormat.MARKDOWN } }) as IFlow, {
+        userPrompt: "test",
+        traceId: "trace-fallback",
+      }),
+    FlowExecutionError,
+    "fallback failed",
+  );
+  assertEquals(agent.calls, ["primary-agent", "fallback-agent"]);
+  const failures = logger.events.filter((event) => event.event === "flow.step.failed");
+  assertEquals(failures.some((event) => event.payload.error === "fallback failed"), true);
+  assertEquals(failures.every((event) => event.payload.traceId === "trace-fallback"), true);
 });
 
 Deno.test("FlowRunner: abort action throws FlowAbortError with originating step id", async () => {

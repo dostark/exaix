@@ -4,10 +4,10 @@
  * @description Module for gates_test.
  */
 
-import { assertStringIncludes } from "@std/assert";
+import { assertNotEquals, assertStringIncludes } from "@std/assert";
 
 // Verifies that the CI script correctly imposes security regression gates, documentation
-// drift gates, and coverage thresholds.
+// drift gates, and manual coverage selection.
 
 const CI_SCRIPT = "scripts/ci.ts";
 
@@ -36,13 +36,14 @@ Deno.test("Gate: Security Tests trigger on 'test'", async () => {
   assertStringIncludes(result.stdout, "(DRY RUN)");
 });
 
-// Gate: Coverage Check triggers on 'all'
 Deno.test({
-  name: "Gate: Coverage Check triggers on 'all'",
+  name: "Gate: coverage runs only through the explicit coverage command",
   fn: async () => {
     const result = await runCiCommand(["all"]);
-    // Since verifyCoverage also uses run() for its tasks, we expect Dry Run output
-    assertStringIncludes(result.stdout, "Coverage Verification");
+    assertNotEquals(result.stdout.includes("Coverage Verification"), true);
     assertStringIncludes(result.stdout, "(DRY RUN)");
+    const coverage = await runCiCommand(["coverage"]);
+    assertStringIncludes(coverage.stdout, "Coverage Verification");
+    assertStringIncludes(coverage.stdout, "(DRY RUN)");
   },
 });

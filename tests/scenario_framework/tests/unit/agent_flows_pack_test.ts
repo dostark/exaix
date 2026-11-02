@@ -98,6 +98,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
       "gate-retry-budget",
       "gate-retry-exhausted",
       "guardrail-block-violation",
+      "lint-error-compatibility",
       "memory-aware-analysis",
       "memory-full-loop",
       "model-registry-team-cutover",

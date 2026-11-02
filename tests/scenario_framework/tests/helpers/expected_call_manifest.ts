@@ -28,6 +28,8 @@ export interface IExpectedCall {
   lane: string;
   callIndex: number;
   dialect: ExpectedCallDialect;
+  /** Override the manifest request when a scenario submits more than one request. */
+  requestStepId?: string;
   /** A React turn that requests a tool rather than completing. */
   toolTurn?: boolean;
   /** Required on judge calls: the verdict relative to the gate threshold. */
@@ -129,8 +131,8 @@ function laneStep(lane: string): string {
   return lane.match(LANE_SUFFIX)?.groups?.step ?? lane;
 }
 
-function key(lane: string, callIndex: number): string {
-  return `${lane}#${callIndex}`;
+function key(requestStepId: string, lane: string, callIndex: number): string {
+  return `${requestStepId}/${lane}#${callIndex}`;
 }
 
 function judgeError(call: IExpectedCall, response: string, gate: IFlowStep): string | null {
@@ -198,11 +200,14 @@ export function reconcileManifest(
   if (flow.id !== manifest.flow) errors.push(`flow id ${flow.id} is not ${manifest.flow}`);
   const known = new Map(flow.steps.flatMap((step) => providerLanes(step).map((lane) => [lane, step] as const)));
   const byLane = new Map<string, number[]>();
+  const byRequestLane = new Map<string, number[]>();
   for (const call of manifest.calls) {
     if (!known.has(call.lane)) errors.push(`lane ${call.lane} belongs to no provider-calling flow step`);
     byLane.set(call.lane, [...(byLane.get(call.lane) ?? []), call.callIndex]);
+    const requestLane = `${call.requestStepId ?? manifest.requestStepId}/${call.lane}`;
+    byRequestLane.set(requestLane, [...(byRequestLane.get(requestLane) ?? []), call.callIndex]);
   }
-  for (const [lane, indexes] of byLane) {
+  for (const [lane, indexes] of byRequestLane) {
     if (indexes.some((index, position) => index !== position)) errors.push(`lane ${lane} indexes are not 0..n-1`);
   }
   for (const step of flow.steps) {
@@ -222,21 +227,22 @@ export function reconcileManifest(
       }
     }
   }
-  const scoped = recordings.filter((recording) =>
-    recording.callSite?.scenarioId === manifest.scenarioId && recording.callSite.stepId === manifest.requestStepId
-  );
+  const scoped = recordings.filter((recording) => recording.callSite?.scenarioId === manifest.scenarioId);
   const recorded = new Map<string, IKeyedRecording>();
   for (const recording of scoped) {
     const site = recording.callSite!;
-    const recordedKey = key(site.flowStepId ?? "", site.callIndex);
+    const recordedKey = key(site.stepId, site.flowStepId ?? "", site.callIndex);
     if (recorded.has(recordedKey)) errors.push(`duplicate keyed recording ${recordedKey}`);
     recorded.set(recordedKey, recording);
   }
-  const expected = new Set(manifest.calls.map((call) => key(call.lane, call.callIndex)));
+  const expected = new Set(
+    manifest.calls.map((call) => key(call.requestStepId ?? manifest.requestStepId, call.lane, call.callIndex)),
+  );
   for (const call of manifest.calls) {
-    const recording = recorded.get(key(call.lane, call.callIndex));
+    const callKey = key(call.requestStepId ?? manifest.requestStepId, call.lane, call.callIndex);
+    const recording = recorded.get(callKey);
     if (!recording) {
-      errors.push(`missing recording ${key(call.lane, call.callIndex)}`);
+      errors.push(`missing recording ${callKey}`);
       continue;
     }
     const dialect = recordingError(call, recording, flow);
