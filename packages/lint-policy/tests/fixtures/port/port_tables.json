@@ -27,7 +27,8 @@
       "exaix/no-object-parameters",
       "exaix/no-unsafe-dictionary",
       "exaix/no-typeof-escape",
-      "exaix/no-explicit-unknown"
+      "exaix/no-explicit-unknown",
+      "exaix/no-repeated-assert-call"
     ]
   },
   "rules": [

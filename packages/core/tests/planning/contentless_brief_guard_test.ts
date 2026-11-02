@@ -28,8 +28,10 @@ const stubDb = {
 };
 
 Deno.test("isContentlessBrief: detects empty objective", () => {
-  assertEquals(isContentlessBrief(""), true);
-  assertEquals(isContentlessBrief("   "), true);
+  const empty: boolean = isContentlessBrief("");
+  const blank: boolean = isContentlessBrief("   ");
+  assertEquals(empty, true);
+  assertEquals(blank, true);
   assertEquals(isContentlessBrief("\n\t"), true);
 });
 

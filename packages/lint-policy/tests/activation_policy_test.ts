@@ -55,6 +55,7 @@ const ACTIVE_PLUGIN_IDS = [
   "exaix/no-unsafe-dictionary",
   "exaix/no-typeof-escape",
   "exaix/no-explicit-unknown",
+  "exaix/no-repeated-assert-call",
 ];
 
 Deno.test("atomic-policy-transition: independent active plugin IDs include only delivered rules", () => {
@@ -83,6 +84,7 @@ const COMMENT_FIXTURE_RULES = [
 const BOUNDARY_RULES = ["exaix/no-object-parameters", "exaix/no-unsafe-dictionary"];
 const TYPEOF_RULES = ["exaix/no-typeof-escape"];
 const UNKNOWN_RULES = ["exaix/no-explicit-unknown"];
+const REPEATED_RULES = ["exaix/no-repeated-assert-call"];
 const CONTRACT_RULES = [
   "exaix/no-constant-substring-assert",
   "exaix/promise-response-return",
@@ -93,6 +95,7 @@ const EXPECTED_SCOPE: Readonly<Record<string, string>> = {
   "exaix/test-inline-multiline-fixture": "test",
   "exaix/no-constant-substring-assert": "test",
   "exaix/magic-union-type": "prod",
+  "exaix/no-repeated-assert-call": "test",
 };
 const CANARY_PATHS = [
   "packages/core/src/canary.ts",
@@ -286,6 +289,7 @@ Deno.test("atomic-policy-transition: scripts select the active rule and its park
     ...BOUNDARY_RULES,
     ...TYPEOF_RULES,
     ...UNKNOWN_RULES,
+    ...REPEATED_RULES,
   ];
   assertArrayIncludes(selected, delivered);
   for (const id of selected) assertEquals(POLICY_CATALOG.rules[id].severity, "error", id);
@@ -297,7 +301,6 @@ Deno.test("atomic-policy-transition: scripts select the active rule and its park
     assertEquals(POLICY_CATALOG.rules[id].reason, undefined, id);
   }
   const parked = [
-    "exaix/no-repeated-assert-call",
     "exaix/no-boolean-assert",
   ];
   for (const id of parked) {
@@ -573,6 +576,34 @@ function unknownSource(path: string, _rule: string, violation: boolean): string 
 
 Deno.test("default-unknown-gate: a stored unknown reports while catch, predicate and constraint forms pass in both passes", async () => {
   await assertCanaryMatrix(UNKNOWN_RULES, unknownSource);
+});
+
+/** The repeated-call rule's violation or clean counterpart: two calls of one stateful function in a block. */
+function repeatedSource(path: string, _rule: string, violation: boolean): string {
+  const header = sourceOf(path, false).split("import { value }")[0];
+  const imports = 'import { assertEquals } from "./support.ts";\n';
+  const body = violation
+    ? "  assertEquals(next(), 1);\n  assertEquals(next(), 2);\n"
+    : "  const first: number = next();\n  const second: number = next();\n  assertEquals(first, 1);\n  assertEquals(second, 2);\n";
+  return header + imports + "declare function next(): number;\nexport function check(): void {\n" + body + "}\n";
+}
+
+Deno.test("default-repeated-gate: adjacent calls of one stateful function report and named results pass in both passes", async () => {
+  await assertCanaryMatrix(REPEATED_RULES, repeatedSource);
+});
+
+Deno.test("repeated-stateful-calls: one named result per call keeps the call count and order of a stateful function", () => {
+  const order: number[] = [];
+  let counter = 0;
+  const next = (): number => {
+    counter++;
+    order.push(counter);
+    return counter;
+  };
+  const first: number = next();
+  const second: number = next();
+  assertEquals([first, second], [1, 2]);
+  assertEquals(order, [1, 2]);
 });
 
 /** The directories below `base` that hold a deno.json, as repository-relative paths. */

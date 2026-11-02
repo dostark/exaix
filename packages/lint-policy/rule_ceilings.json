@@ -188,20 +188,6 @@
     "packages/tui": 43,
     "tests": 662
   },
-  "exaix/no-repeated-assert-call": {
-    "apps/daemon": 2,
-    "apps/exactl": 11,
-    "apps/tui": 1,
-    "exaix-team": 2,
-    "packages/ai": 1,
-    "packages/core": 5,
-    "packages/execution": 2,
-    "packages/flow": 1,
-    "packages/portal": 2,
-    "packages/request": 2,
-    "packages/session": 1,
-    "tests": 8
-  },
   "exaix/max-params": {
     "packages/core": 1,
     "packages/flow": 1,

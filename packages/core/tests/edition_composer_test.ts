@@ -93,13 +93,17 @@ describe("SoloComposer", () => {
 
   it("getModelRegistryProvider called multiple times consistently returns the same value", () => {
     const composer = new SoloComposer();
-    assertEquals(composer.getModelRegistryProvider(), undefined);
-    assertEquals(composer.getModelRegistryProvider(), undefined);
+    const firstEmpty: IModelRegistryProvider | undefined = composer.getModelRegistryProvider();
+    const secondEmpty: IModelRegistryProvider | undefined = composer.getModelRegistryProvider();
+    assertEquals(firstEmpty, undefined);
+    assertEquals(secondEmpty, undefined);
     const stub = {} as IModelRegistry;
     const stubProvider: IModelRegistryProvider = { createModelRegistry: () => stub };
     composer.registerModelRegistryProvider(stubProvider);
-    assertEquals(composer.getModelRegistryProvider(), stubProvider);
-    assertEquals(composer.getModelRegistryProvider(), stubProvider);
+    const firstRegistered: IModelRegistryProvider | undefined = composer.getModelRegistryProvider();
+    const secondRegistered: IModelRegistryProvider | undefined = composer.getModelRegistryProvider();
+    assertEquals(firstRegistered, stubProvider);
+    assertEquals(secondRegistered, stubProvider);
   });
 });
 

@@ -123,11 +123,12 @@ Deno.test("Skill duplication: policy schema is current and every entry documents
 
 Deno.test("Skill duplication: discovery walks both corpora and returns repo-relative paths", () => {
   const files = discoverSkillFiles(REPO_ROOT);
+  const listing: string = files.join("\n");
   assertStringIncludes(
-    files.join("\n"),
+    listing,
     `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_SKILLS_MEMORY_PATH}/response-contract/SKILL.md`,
   );
-  assertStringIncludes(files.join("\n"), ".copilot/skills/commit/SKILL.md");
+  assertStringIncludes(listing, ".copilot/skills/commit/SKILL.md");
 });
 
 Deno.test("Skill duplication: programmatic check returns findings with file locations", () => {

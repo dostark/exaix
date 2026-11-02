@@ -126,8 +126,9 @@ Deno.test("[security] the runner refuses a symlinked, directory or oversized ope
           sandboxRoot: join(root, "sandbox"),
         })
       );
-      assertStringIncludes(String(error), "overlay_invalid");
-      assertStringIncludes(String(error), reason);
+      const failure: string = String(error);
+      assertStringIncludes(failure, "overlay_invalid");
+      assertStringIncludes(failure, reason);
       // The refusal happens before any overlay reaches the disk.
       assertEquals(await Array.fromAsync(Deno.readDir(outputDir)).catch(() => []), []);
     }

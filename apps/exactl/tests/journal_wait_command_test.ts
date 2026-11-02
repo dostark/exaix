@@ -178,8 +178,9 @@ Deno.test({
           })
         ),
       );
-      assertStringIncludes(result.errors.join("\n"), "Timeout");
-      assertStringIncludes(result.errors.join("\n"), "flow.completed, flow.failed");
+      const errorText: string = result.errors.join("\n");
+      assertStringIncludes(errorText, "Timeout");
+      assertStringIncludes(errorText, "flow.completed, flow.failed");
     } finally {
       await cleanup();
     }

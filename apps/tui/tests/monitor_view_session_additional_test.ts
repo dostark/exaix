@@ -78,8 +78,9 @@ Deno.test("MonitorTuiSession: showLogDetail populates detail panel", async () =>
   monitorSession.showLogDetail("1");
 
   assertEquals(monitorSession.isDetailVisible(), true);
-  assertStringIncludes(monitorSession.getDetailContent(), "Payload:");
-  assertStringIncludes(monitorSession.getDetailContent(), "world");
+  const detail: string = monitorSession.getDetailContent();
+  assertStringIncludes(detail, "Payload:");
+  assertStringIncludes(detail, "world");
 });
 
 Deno.test("MonitorTuiSession: status line reflects paused, bookmarks, and grouping", async () => {

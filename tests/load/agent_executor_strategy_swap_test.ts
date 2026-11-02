@@ -37,9 +37,11 @@ Deno.test("Strategy registry resolves ReAct and MCP as distinct stable strategie
   registry.register(mcp);
 
   assertEquals(registry.list(), [ExecutionStrategyName.REACT, ExecutionStrategyName.MCP]);
-  assertNotEquals(registry.resolve(ExecutionStrategyName.REACT), registry.resolve(ExecutionStrategyName.MCP));
-  assertEquals(registry.resolve(ExecutionStrategyName.REACT), react);
-  assertEquals(registry.resolve(ExecutionStrategyName.MCP), mcp);
+  const resolvedReact: IExecutionStrategy = registry.resolve(ExecutionStrategyName.REACT);
+  const resolvedMcp: IExecutionStrategy = registry.resolve(ExecutionStrategyName.MCP);
+  assertNotEquals(resolvedReact, resolvedMcp);
+  assertEquals(resolvedReact, react);
+  assertEquals(resolvedMcp, mcp);
   assertEquals(registry.resolve(ExecutionStrategyName.REACT), registry.resolve(ExecutionStrategyName.REACT));
 });
 

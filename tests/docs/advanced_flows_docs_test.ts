@@ -189,11 +189,13 @@ Deno.test("[docs] architecture invariant and flow package reject flow-gate appro
   ];
   for (const section of gateSections) for (const pattern of stale) assertFalse(pattern.test(section), `${pattern}`);
   assertStringIncludes(flat(invariant), "halt");
-  assertStringIncludes(flat(axes), "branch_not_taken");
-  assertStringIncludes(flat(axes), "capability_unavailable");
-  assertStringIncludes(flat(axes), "loop re-execution");
-  assertStringIncludes(flat(readme), "`gate_halted`");
-  assertStringIncludes(flat(readme), "`isCapabilityAvailable`");
+  const axesText: string = flat(axes);
+  assertStringIncludes(axesText, "branch_not_taken");
+  assertStringIncludes(axesText, "capability_unavailable");
+  assertStringIncludes(axesText, "loop re-execution");
+  const readmeText: string = flat(readme);
+  assertStringIncludes(readmeText, "`gate_halted`");
+  assertStringIncludes(readmeText, "`isCapabilityAvailable`");
 });
 
 Deno.test("[docs] session-delegation wait-state documentation is retained", async () => {

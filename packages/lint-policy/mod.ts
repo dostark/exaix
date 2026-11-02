@@ -9,5 +9,6 @@
  */
 
 export { EDITION_TIERS, editionTierOfPath } from "./src/checkers/check_code_style.ts";
+export { classifyRepoPath } from "./src/policy_config.ts";
 export { EXAIX_RULE_PACK } from "./src/rule_pack/mod.ts";
 export { installPortalPolicy, PORTAL_POLICY_CONFIG, PORTAL_POLICY_NAME } from "./src/tools/install_portal_policy.ts";

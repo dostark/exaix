@@ -65,14 +65,15 @@ Deno.test("[EvalCommands] history renders table with correct columns", async () 
 
     const { output } = await withCapturedOutput(() => cmds.history({ source: "jsonl" }));
 
-    assertStringIncludes(output.join(" "), "RUN ID");
-    assertStringIncludes(output.join(" "), "SCENARIO");
-    assertStringIncludes(output.join(" "), "OUTCOME");
-    assertStringIncludes(output.join(" "), "SCORE");
-    assertStringIncludes(output.join(" "), "PASSED");
-    assertStringIncludes(output.join(" "), "TIMESTAMP");
-    assertStringIncludes(output.join(" "), "test-scenario");
-    assertStringIncludes(output.join(" "), "failing-scenario");
+    const historyText: string = output.join(" ");
+    assertStringIncludes(historyText, "RUN ID");
+    assertStringIncludes(historyText, "SCENARIO");
+    assertStringIncludes(historyText, "OUTCOME");
+    assertStringIncludes(historyText, "SCORE");
+    assertStringIncludes(historyText, "PASSED");
+    assertStringIncludes(historyText, "TIMESTAMP");
+    assertStringIncludes(historyText, "test-scenario");
+    assertStringIncludes(historyText, "failing-scenario");
   } finally {
     Deno.chdir(ORIGINAL_CWD);
     await cleanup();

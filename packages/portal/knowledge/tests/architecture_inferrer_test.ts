@@ -140,9 +140,10 @@ Deno.test("[ArchitectureInferrer] passes key files and patterns in prompt", asyn
     configSummary: "deno.json found",
     dependencySummary: "std@0.203",
   });
-  assertStringIncludes(getCapturedPrompt(), "auth_service.ts");
-  assertStringIncludes(getCapturedPrompt(), "Service naming pattern");
-  assertStringIncludes(getCapturedPrompt(), "deno.json found");
+  const prompt: string = getCapturedPrompt();
+  assertStringIncludes(prompt, "auth_service.ts");
+  assertStringIncludes(prompt, "Service naming pattern");
+  assertStringIncludes(prompt, "deno.json found");
 });
 
 Deno.test("[ArchitectureInferrer] handles LLM failure gracefully", async () => {

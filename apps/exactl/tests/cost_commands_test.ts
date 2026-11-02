@@ -44,13 +44,15 @@ describe("CostCommands", () => {
     try {
       await command.show({ traceId: "unknown-trace" });
       // Color wrapping puts an ANSI code between the label and its value, so assert each side.
-      assertStringIncludes(output.join("\n"), "Total Cost:");
-      assertStringIncludes(output.join("\n"), "unknown (known subtotal $0.000000)");
-      assertStringIncludes(output.join("\n"), "Total Tokens:  34");
+      const traceText: string = output.join("\n");
+      assertStringIncludes(traceText, "Total Cost:");
+      assertStringIncludes(traceText, "unknown (known subtotal $0.000000)");
+      assertStringIncludes(traceText, "Total Tokens:  34");
       output.length = 0;
       await command.show({ groupBy: "model" });
-      assertStringIncludes(output.join("\n"), "unknown");
-      assertStringIncludes(output.join("\n"), "fixture");
+      const modelText: string = output.join("\n");
+      assertStringIncludes(modelText, "unknown");
+      assertStringIncludes(modelText, "fixture");
     } finally {
       console.log = original;
     }

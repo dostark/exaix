@@ -424,8 +424,10 @@ Deno.test("Review rejects missing rule decisions and cannot waive confirmed erro
 Deno.test("Shared rules count atoms lists paragraphs and resolved mixed sentences consistently", () => {
   const textA = "- Use `set b; echo ok` now.\n- Keep the trace ID.\n\nState the result.\nResolve the next action.";
   const textB = "- Use `set b; echo ok` now.\n- Keep the trace ID.\n\nState the result.\nResolve the next action.";
-  assertEquals(summarizeSteCount(normalizeSteProse(textA)), summarizeSteCount(normalizeSteProse(textB)));
-  assertNotEquals(summarizeSteCount(normalizeSteProse(textA)), "0/0/0");
+  const summaryA: string = summarizeSteCount(normalizeSteProse(textA));
+  const summaryB: string = summarizeSteCount(normalizeSteProse(textB));
+  assertEquals(summaryA, summaryB);
+  assertNotEquals(summaryA, "0/0/0");
 
   const simple = normalizeSteProse("- Use exactl config get now.\n- Keep the result.");
   assertEquals(simple.paragraphs.length, 1);

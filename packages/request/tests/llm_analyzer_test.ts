@@ -240,9 +240,10 @@ Deno.test("[LlmAnalyzer] prompt template references type, interpretations, and c
 
   await analyzer.analyze("Implement the new module.", {});
 
-  assertStringIncludes(capturedPrompt(), "type");
-  assertStringIncludes(capturedPrompt(), "interpretations");
-  assertStringIncludes(capturedPrompt(), "clarificationQuestion");
+  const prompt: string = capturedPrompt();
+  assertStringIncludes(prompt, "type");
+  assertStringIncludes(prompt, "interpretations");
+  assertStringIncludes(prompt, "clarificationQuestion");
 });
 
 Deno.test("[LlmAnalyzer] output includes analyzerVersion in metadata", async () => {

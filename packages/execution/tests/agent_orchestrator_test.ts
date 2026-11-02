@@ -550,8 +550,9 @@ orchestratorTest("AgentComposer: sandboxed mode builds subprocess with no file a
 
   const permissions_flags = executor.buildSubprocessPermissions(SecurityMode.SANDBOXED, portalDir);
 
-  assertStringIncludes(permissions_flags.join(" "), "--allow-read=NONE");
-  assertStringIncludes(permissions_flags.join(" "), "--allow-write=NONE");
+  const flagText: string = permissions_flags.join(" ");
+  assertStringIncludes(flagText, "--allow-read=NONE");
+  assertStringIncludes(flagText, "--allow-write=NONE");
 });
 
 orchestratorTest("AgentComposer: hybrid mode builds subprocess with read-only portal access", () => {
@@ -559,11 +560,12 @@ orchestratorTest("AgentComposer: hybrid mode builds subprocess with read-only po
 
   const permissions_flags = executor.buildSubprocessPermissions(SecurityMode.HYBRID, portalDir);
 
+  const flagText: string = permissions_flags.join(" ");
   assertStringIncludes(
-    permissions_flags.join(" "),
+    flagText,
     `--allow-read=${portalDir}`,
   );
-  assertStringIncludes(permissions_flags.join(" "), "--allow-write=NONE");
+  assertStringIncludes(flagText, "--allow-write=NONE");
 });
 
 orchestratorTest("AgentComposer: detects unauthorized changes in hybrid mode", async () => {

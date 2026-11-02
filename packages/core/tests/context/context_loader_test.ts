@@ -188,8 +188,9 @@ describe("Warning Block Generation", () => {
     // Should have warning about huge.txt being skipped
     assertEquals(result.warnings.length > 0, true);
     const warningText = result.warnings.join(" ");
-    assertStringIncludes(warningText.toLowerCase(), "huge.txt");
-    assertStringIncludes(warningText.toLowerCase(), "skipped");
+    const lowerWarnings: string = warningText.toLowerCase();
+    assertStringIncludes(lowerWarnings, "huge.txt");
+    assertStringIncludes(lowerWarnings, "skipped");
   });
 
   it("should not include warning block when all files fit", async () => {

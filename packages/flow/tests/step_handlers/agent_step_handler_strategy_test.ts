@@ -98,6 +98,7 @@ Deno.test("AgentStepHandler: a step declaring strategy fails fast when the execu
   const step = makeStep({ strategy: ExecutionStrategyName.REACT });
 
   const err = await assertRejects(() => handler.execute(makeCtx(step, "workspace")));
-  assertStringIncludes(String(err), "step-1");
-  assertStringIncludes(String(err), "react");
+  const failure: string = String(err);
+  assertStringIncludes(failure, "step-1");
+  assertStringIncludes(failure, "react");
 });

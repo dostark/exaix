@@ -646,8 +646,9 @@ Deno.test(
     // The history cell id is `${tool}-${config provider}`. The regression is equal ids,
     // not equal `provider:` text.
     const idOf = (cell: IMatrixCell) => `${cell.tool}-${configProvider(cell.config)}`;
-    assertEquals(prior.map(idOf), PRIOR_HAND_LISTED_CELLS.map(idOf));
-    assertEquals(prior.map(idOf), [
+    const priorIds: string[] = prior.map(idOf);
+    assertEquals(priorIds, PRIOR_HAND_LISTED_CELLS.map(idOf));
+    assertEquals(priorIds, [
       "claude-code-claude-cli",
       "codex-codex-cli",
       "opencode-opencode-cli",

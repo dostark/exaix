@@ -779,8 +779,9 @@ Deno.test("[validation] a service key variable must equal the one its adapter pr
     };
     const wrong = lockService(tempDir, db, bind, deepseekCatalog("OTHER_API_KEY"));
     const error = await wrong.service.snapshotForRun(flow, { traceId: crypto.randomUUID() }).catch((e) => e);
-    assertStringIncludes(String(error), "key_missing");
-    assertStringIncludes(String(error), "OTHER_API_KEY");
+    const failure: string = String(error);
+    assertStringIncludes(failure, "key_missing");
+    assertStringIncludes(failure, "OTHER_API_KEY");
 
     const right = lockService(tempDir, db, bind, deepseekCatalog("DEEPSEEK_API_KEY"));
     const snapshot = await right.service.snapshotForRun(flow, { traceId: crypto.randomUUID() });

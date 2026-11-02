@@ -122,8 +122,9 @@ Deno.test("[session_adapter] claude-code headless argv contains -p, objective an
   assertFalse(launch.args.includes("--brief"), "claude-code does not support --brief flag");
   assertFalse(launch.args.includes("--max-total-tokens"), "claude-code does not support --max-total-tokens");
   assertEquals(launch.args.includes("--output-format"), true, "must specify output format");
-  assertEquals(launch.args.includes("json"), true, "must request JSON output for stdout capture");
-  assertEquals(launch.args.includes("json"), true, "output format must be json");
+  const requestsJson: boolean = launch.args.includes("json");
+  assertEquals(requestsJson, true, "must request JSON output for stdout capture");
+  assertEquals(requestsJson, true, "output format must be json");
 });
 
 Deno.test("[session_adapter] opencode headless argv contains run, --format json, objective and no --dir", () => {

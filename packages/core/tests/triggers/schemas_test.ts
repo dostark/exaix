@@ -141,8 +141,10 @@ Deno.test("[IdempotencyKey] normalizes whitespace", () => {
 });
 
 Deno.test("[IdempotencyKey] rejects empty key", () => {
-  assertEquals(validateIdempotencyKey(""), false);
-  assertEquals(validateIdempotencyKey("  "), false);
+  const empty: boolean = validateIdempotencyKey("");
+  const blank: boolean = validateIdempotencyKey("  ");
+  assertEquals(empty, false);
+  assertEquals(blank, false);
 });
 
 Deno.test("[IdempotencyKey] rejects key exceeding max length", () => {

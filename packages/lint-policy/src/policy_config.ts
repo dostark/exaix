@@ -7,7 +7,14 @@
  * @related-files [packages/lint-policy/unslop.project.ts, packages/lint-policy/plugin.ts]
  */
 
-import { compileConfig, ConfigError, type ICompiledConfig, type JsonValue } from "@dostark/unslop-ts";
+import {
+  classifyPath,
+  compileConfig,
+  ConfigError,
+  type ICompiledConfig,
+  type JsonValue,
+  type PathClass,
+} from "@dostark/unslop-ts";
 import { descriptor } from "../unslop.project.ts";
 
 let config: JsonValue;
@@ -20,3 +27,8 @@ try {
 export const POLICY_CONFIG = config;
 export const POLICY_COMPILED: ICompiledConfig = compileConfig(config as JsonValue, descriptor);
 export const POLICY_CATALOG = POLICY_COMPILED.catalog;
+
+/** The class of a repository-relative path under the compiled policy: production, test or fixture. */
+export function classifyRepoPath(repoPath: string): PathClass {
+  return classifyPath(repoPath, POLICY_CATALOG.scopes);
+}

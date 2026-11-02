@@ -274,13 +274,11 @@
       ]
     },
     "exaix/no-repeated-assert-call": {
-      "level": "off",
+      "level": "error",
       "options": {
         "assertPrefix": "assert"
       },
       "scope": "test",
-      "optIn": true,
-      "reason": "Enforced by the rule-ceiling ratchet (packages/lint-policy/rule_ceilings.json).",
       "tags": [
         "test-quality",
         "deslop"

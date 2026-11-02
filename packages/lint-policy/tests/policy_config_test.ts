@@ -25,7 +25,7 @@ import {
 } from "@dostark/unslop-ts";
 import catalog from "./fixtures/catalog_v1.json" with { type: "json" };
 import { descriptor } from "../unslop.project.ts";
-import { POLICY_CATALOG, POLICY_COMPILED, POLICY_CONFIG } from "../src/policy_config.ts";
+import { classifyRepoPath, POLICY_CATALOG, POLICY_COMPILED, POLICY_CONFIG } from "../src/policy_config.ts";
 import { SCRIPT_RULES } from "../src/script_rules.ts";
 
 const SCRIPT_IDS = [
@@ -232,4 +232,12 @@ Deno.test("consumer_limits_survive_migration_and_edit", () => {
     editedRule.limits,
     "Compares top-level named constants with a static value; values from a call, identifier, or interpolation are out of scope.",
   );
+});
+
+Deno.test("classifyRepoPath classes production, test and fixture paths by the compiled scopes", () => {
+  assertEquals(classifyRepoPath("packages/core/src/service.ts"), "prod");
+  assertEquals(classifyRepoPath("packages/core/tests/service_test.ts"), "test");
+  assertEquals(classifyRepoPath("exaix-team/packages/mcp-server/tests/server_test.ts"), "test");
+  assertEquals(classifyRepoPath("scripts/fix_bool_asserts_test.ts"), "test");
+  assertEquals(classifyRepoPath("tests/scenario_framework/fixtures/flows/example_test.ts"), "fixture");
 });

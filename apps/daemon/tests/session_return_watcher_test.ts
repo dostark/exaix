@@ -114,8 +114,9 @@ Deno.test("[session_return_watcher] accepted return resumes the gate and journal
       token_stats: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
     });
     await rig.watcher.handleReturnPath(path);
-    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateReturned]);
-    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateReconciled]);
+    const actions: string[] = rig.sink.actions();
+    assertArrayIncludes(actions, [DomainEventType.SessionDelegateReturned]);
+    assertArrayIncludes(actions, [DomainEventType.SessionDelegateReconciled]);
     assertEquals((await rig.store.get(brief.trace_id))?.status, "resumed");
   } finally {
     await rig.cleanup();
@@ -335,8 +336,9 @@ Deno.test("[session_return_watcher] an over-budget accepted return also journals
       token_stats: { input_tokens: 120_000, output_tokens: 30_000, total_tokens: 150_000 },
     });
     await rig.watcher.handleReturnPath(path);
-    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateReconciled]);
-    assertArrayIncludes(rig.sink.actions(), [DomainEventType.SessionDelegateBudgetExceeded]);
+    const actions: string[] = rig.sink.actions();
+    assertArrayIncludes(actions, [DomainEventType.SessionDelegateReconciled]);
+    assertArrayIncludes(actions, [DomainEventType.SessionDelegateBudgetExceeded]);
     // Budget overage is non-blocking: the gate still resumes.
     assertEquals((await rig.store.get(brief.trace_id))?.status, "resumed");
   } finally {
