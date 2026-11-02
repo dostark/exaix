@@ -25,6 +25,7 @@ import {
   DEFAULT_TEST_CONTAINER_IMAGE,
   DEFAULT_TEST_CONTAINER_NETWORK,
   DEFAULT_TEST_CONTAINER_WATCHDOG_MS,
+  ensureDenoCacheVolume,
   ensureDevTestImage,
   MIN_TEST_CONTAINER_JOBS,
   resolveContainerResourceBounds,
@@ -939,6 +940,7 @@ async function main(args: string[]): Promise<number> {
     const image = Deno.env.get(TEST_CONTAINER_IMAGE_ENV) ?? DEFAULT_TEST_CONTAINER_IMAGE;
     const bounds = resolveContainerResourceBounds(Deno.env.toObject());
     await ensureDevTestImage(image);
+    const denoCacheVolume = await ensureDenoCacheVolume(image);
     await preparePortalLintAssetsForOfflineTest();
     const results = await runBatch2InContainers(SEQUENTIAL_TESTS, {
       repoRoot: REPO_ROOT,
@@ -950,6 +952,7 @@ async function main(args: string[]): Promise<number> {
       memory: bounds.memory,
       cpus: bounds.cpus,
       watchdogMs: DEFAULT_TEST_CONTAINER_WATCHDOG_MS,
+      denoCacheVolume,
     });
     for (const result of results) {
       seq.push(containerResultToStats(result));

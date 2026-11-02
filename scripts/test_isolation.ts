@@ -59,6 +59,8 @@ export interface IWorkerContainerLaunchOptions {
   cpus: string;
   /** Per-file inactivity watchdog. the per-file timeout is enforced inside the driver. */
   watchdogMs: number;
+  /** Named docker volume mounted over DENO_DIR. It keeps type-check results between files and runs. */
+  denoCacheVolume: string;
 }
 
 interface IWorkerContainerLaunch {
@@ -108,6 +110,8 @@ export interface IRunBatch2Options {
   memory: string;
   cpus: string;
   watchdogMs: number;
+  /** Named docker volume shared by every worker as DENO_DIR. See `ensureDenoCacheVolume`. */
+  denoCacheVolume: string;
   /** Injectable worker factory. defaults to the real `startWorkerContainer`. */
   startWorker?: Opt<StartWorkerContainer, Reason.OptionalInput>;
 }
@@ -143,6 +147,18 @@ interface IContainerResourceBounds {
 const REPO_ROOT = join(fromFileUrl(import.meta.url), "..", "..");
 
 const DOCKER_BIN = "docker";
+const DOCKER_VOLUME_SUBCOMMAND = "volume";
+const DOCKER_VOLUME_LIST_SUBCOMMAND = "ls";
+const DOCKER_VOLUME_QUIET_FLAG = "-q";
+const DOCKER_VOLUME_NAME_FILTER = "--filter";
+const DOCKER_ID_TEMPLATE = "{{.Id}}";
+const DOCKER_RUN_SUBCOMMAND = "run";
+const DOCKER_RM_RUN_FLAG = "--rm";
+const DOCKER_MOUNT_FLAG = "--mount";
+const DOCKER_ENTRYPOINT_FLAG = "--entrypoint";
+const DENO_DIR_IN_CONTAINER = "/deno-dir";
+const IMAGE_ID_PREFIX = "sha256:";
+const VOLUME_ID_LENGTH = 12;
 const DOCKER_IMAGE_SUBCOMMAND = "image";
 const DOCKER_INSPECT_SUBCOMMAND = "inspect";
 const DOCKER_BUILD_SUBCOMMAND = "build";
@@ -337,6 +353,102 @@ export async function ensureDevTestImage(
   }
 }
 
+/** Name prefix shared by every worker cache volume. Pruning only ever touches names with this prefix. */
+export const DENO_CACHE_VOLUME_PREFIX = "exaix-test-denodir-";
+
+/** The cache volume name for an image id. A rebuilt image has a new id, so it starts a fresh cache. */
+export function denoCacheVolumeName(imageId: string): string {
+  const bare = imageId.startsWith(IMAGE_ID_PREFIX) ? imageId.slice(IMAGE_ID_PREFIX.length) : imageId;
+  return `${DENO_CACHE_VOLUME_PREFIX}${bare.slice(0, VOLUME_ID_LENGTH)}`;
+}
+
+/** Injectable seams for `ensureDenoCacheVolume`. Every field defaults to the real docker call. */
+interface IEnsureDenoCacheVolumeOptions {
+  /** The image id, or undefined when it cannot be read. */
+  imageId?: Opt<(image: string) => Promise<string | undefined>, Reason.SensibleDefault>;
+  /** Exit code of the run that creates the volume and copies the image cache into it. */
+  seed?: Opt<(volume: string, image: string) => Promise<number>, Reason.SensibleDefault>;
+  /** Names of the existing cache volumes. */
+  listVolumes?: Opt<() => Promise<string[]>, Reason.SensibleDefault>;
+  /** Removes one volume. Rejects when the volume is in use. */
+  removeVolume?: Opt<(name: string) => Promise<void>, Reason.SensibleDefault>;
+}
+
+async function defaultImageId(image: string): Promise<string | undefined> {
+  const out = await new Deno.Command(DOCKER_BIN, {
+    args: [DOCKER_IMAGE_SUBCOMMAND, DOCKER_INSPECT_SUBCOMMAND, DOCKER_FORMAT_FLAG, DOCKER_ID_TEMPLATE, image],
+    stdout: "piped",
+    stderr: "null",
+  }).output();
+  const id = new TextDecoder().decode(out.stdout).trim();
+  return out.success && id.length > 0 ? id : undefined;
+}
+
+/** Runs a throwaway container so docker copies the image's warmed cache into a new empty volume. */
+async function defaultSeedVolume(volume: string, image: string): Promise<number> {
+  const out = await new Deno.Command(DOCKER_BIN, {
+    args: [
+      DOCKER_RUN_SUBCOMMAND,
+      DOCKER_RM_RUN_FLAG,
+      DOCKER_MOUNT_FLAG,
+      `type=volume,src=${volume},dst=${DENO_DIR_IN_CONTAINER}`,
+      DOCKER_ENTRYPOINT_FLAG,
+      "true",
+      image,
+    ],
+    stdout: "null",
+    stderr: "null",
+  }).output();
+  return out.code;
+}
+
+async function defaultListVolumes(): Promise<string[]> {
+  const out = await new Deno.Command(DOCKER_BIN, {
+    args: [
+      DOCKER_VOLUME_SUBCOMMAND,
+      DOCKER_VOLUME_LIST_SUBCOMMAND,
+      DOCKER_VOLUME_QUIET_FLAG,
+      DOCKER_VOLUME_NAME_FILTER,
+      `name=${DENO_CACHE_VOLUME_PREFIX}`,
+    ],
+    stdout: "piped",
+    stderr: "null",
+  }).output();
+  return new TextDecoder().decode(out.stdout).split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
+}
+
+async function defaultRemoveVolume(name: string): Promise<void> {
+  const out = await new Deno.Command(DOCKER_BIN, {
+    args: [DOCKER_VOLUME_SUBCOMMAND, DOCKER_RM_SUBCOMMAND, name],
+    stdout: "null",
+    stderr: "null",
+  }).output();
+  if (!out.success) throw new Error(`docker volume rm ${name} failed`);
+}
+
+/** Create the shared DENO_DIR volume for `image` and return its name, so type-check results persist across runs.
+ *  A serial seeding run fills it before the workers start. Volumes of older images are pruned when unused. */
+export async function ensureDenoCacheVolume(
+  image: string,
+  options: Opt<IEnsureDenoCacheVolumeOptions, Reason.SensibleDefault> = {},
+): Promise<string> {
+  const imageId = await (options.imageId ?? defaultImageId)(image);
+  if (imageId === undefined) throw new Error(`cannot read the image id of ${image}`);
+  const volume = denoCacheVolumeName(imageId);
+  const exitCode = await (options.seed ?? defaultSeedVolume)(volume, image);
+  if (exitCode !== 0) throw new Error(`cache volume seed run failed with exit code ${exitCode}`);
+  const removeVolume = options.removeVolume ?? defaultRemoveVolume;
+  for (const name of await (options.listVolumes ?? defaultListVolumes)()) {
+    if (!name.startsWith(DENO_CACHE_VOLUME_PREFIX) || name === volume) continue;
+    try {
+      await removeVolume(name);
+    } catch {
+      // Another run may still use an older image's volume. It is pruned by a later run.
+    }
+  }
+  return volume;
+}
+
 /** Default docker probe: true when the binary is on PATH and `docker info` succeeds. */
 export async function dockerDaemonReachable(): Promise<boolean> {
   if (dockerProbeSkipReason() !== null) return false;
@@ -452,8 +564,11 @@ export function buildWorkerContainerLaunch(options: IWorkerContainerLaunchOption
       mountSource: options.repoRoot,
       mountDest: WORKER_MOUNT_DEST,
       workdir: WORKER_MOUNT_DEST,
-      extraMounts: linkedWorktreeGitMounts(options.repoRoot),
-      extraEnv: { HOME: "/tmp/home", EXA_HOME: "/tmp/exa", DENO_DIR: "/deno-dir", ...env },
+      extraMounts: [
+        ...linkedWorktreeGitMounts(options.repoRoot),
+        `type=volume,src=${options.denoCacheVolume},dst=${DENO_DIR_IN_CONTAINER}`,
+      ],
+      extraEnv: { HOME: "/tmp/home", EXA_HOME: "/tmp/exa", DENO_DIR: DENO_DIR_IN_CONTAINER, ...env },
       network: options.network,
       pidsLimit: options.pidsLimit,
       memory: options.memory,
@@ -611,6 +726,7 @@ export async function runBatch2InContainers(
     memory: options.memory,
     cpus: options.cpus,
     watchdogMs: options.watchdogMs,
+    denoCacheVolume: options.denoCacheVolume,
   });
 
   const notifySlot = (): void => {

@@ -15,7 +15,10 @@ import {
   DEFAULT_TEST_CONTAINER_JOBS,
   DEFAULT_TEST_CONTAINER_MEMORY,
   DEFAULT_TEST_CONTAINER_PIDS_LIMIT,
+  DENO_CACHE_VOLUME_PREFIX,
+  denoCacheVolumeName,
   dockerDaemonReachable,
+  ensureDenoCacheVolume,
   ensureDevTestImage,
   type IContainerTestEntry,
   type IRunBatch2Options,
@@ -369,6 +372,7 @@ Deno.test({
       memory: DEFAULT_TEST_CONTAINER_MEMORY,
       cpus: DEFAULT_TEST_CONTAINER_CPUS,
       watchdogMs: timeoutMs,
+      denoCacheVolume: `${DENO_CACHE_VOLUME_PREFIX}test`,
     });
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
@@ -410,6 +414,7 @@ function baseRunOptions(startWorker: IRunBatch2Options["startWorker"]): IRunBatc
     memory: "2g",
     cpus: "2.0",
     watchdogMs: 60_000,
+    denoCacheVolume: `${DENO_CACHE_VOLUME_PREFIX}test`,
     startWorker,
   };
 }
@@ -454,6 +459,7 @@ Deno.test("buildWorkerContainerLaunch isolates HOME, EXA_HOME and DENO_DIR, defa
     memory: "2g",
     cpus: "2.0",
     watchdogMs: 60_000,
+    denoCacheVolume: `${DENO_CACHE_VOLUME_PREFIX}test`,
   });
   const joined = launch.args.join(" ");
   assertFalse(launch.args.includes("--init"), "the image entrypoint already runs tini as PID 1");
@@ -467,6 +473,93 @@ Deno.test("buildWorkerContainerLaunch isolates HOME, EXA_HOME and DENO_DIR, defa
   assert(joined.includes("--sysctl net.ipv6.conf.all.disable_ipv6=1"), "IPv6 disabled for deterministic loopback");
   assert(!joined.includes("DENO_JOBS"), "DENO_JOBS must never be forwarded");
   assert(joined.includes("scripts/test_container_driver.ts"), "runs the driver");
+});
+
+Deno.test("denoCacheVolumeName keys the volume by the image id so a rebuilt image starts a fresh cache", () => {
+  assertEquals(denoCacheVolumeName("sha256:0123456789abcdef0123"), `${DENO_CACHE_VOLUME_PREFIX}0123456789ab`);
+  assertEquals(denoCacheVolumeName("0123456789abcdef0123"), `${DENO_CACHE_VOLUME_PREFIX}0123456789ab`);
+  assert(denoCacheVolumeName("sha256:aaaaaaaaaaaaffff") !== denoCacheVolumeName("sha256:bbbbbbbbbbbbffff"));
+});
+
+Deno.test("buildWorkerContainerLaunch mounts the persistent cache volume over DENO_DIR", () => {
+  const launch = buildWorkerContainerLaunch({
+    repoRoot: "/repo",
+    image: "exaix-dev-test:dev",
+    workerName: "exaix-test-worker-0",
+    network: "none",
+    env: {},
+    pidsLimit: 512,
+    memory: "2g",
+    cpus: "2.0",
+    watchdogMs: 60_000,
+    denoCacheVolume: `${DENO_CACHE_VOLUME_PREFIX}abc`,
+  });
+  const joined = launch.args.join(" ");
+  assert(joined.includes(`--mount type=volume,src=${DENO_CACHE_VOLUME_PREFIX}abc,dst=/deno-dir`), "volume at DENO_DIR");
+  assert(joined.includes("DENO_DIR=/deno-dir"), "DENO_DIR still points at the mount");
+});
+
+/** Records every docker side effect `ensureDenoCacheVolume` performs. */
+function fakeVolumeDocker(existing: string[], seedExit = 0) {
+  const calls = { seeded: [] as string[], removed: [] as string[] };
+  return {
+    calls,
+    options: {
+      imageId: () => Promise.resolve("sha256:0123456789abcdef"),
+      seed: (volume: string) => {
+        calls.seeded.push(volume);
+        return Promise.resolve(seedExit);
+      },
+      listVolumes: () => Promise.resolve(existing),
+      removeVolume: (name: string) => {
+        calls.removed.push(name);
+        return name.endsWith("-busy") ? Promise.reject(new Error("volume in use")) : Promise.resolve();
+      },
+    },
+  };
+}
+
+Deno.test("ensureDenoCacheVolume seeds the volume for the current image and returns its name", async () => {
+  const docker = fakeVolumeDocker([]);
+  const volume = await ensureDenoCacheVolume("exaix-dev-test:dev", docker.options);
+  assertEquals(volume, `${DENO_CACHE_VOLUME_PREFIX}0123456789ab`);
+  assertEquals(docker.calls.seeded, [volume]);
+});
+
+Deno.test("ensureDenoCacheVolume prunes cache volumes of older images and never touches other volumes", async () => {
+  const current = `${DENO_CACHE_VOLUME_PREFIX}0123456789ab`;
+  const docker = fakeVolumeDocker([
+    current,
+    `${DENO_CACHE_VOLUME_PREFIX}ffffffffffff`,
+    `${DENO_CACHE_VOLUME_PREFIX}eeeeeeeeeeee-busy`,
+    "postgres-data",
+  ]);
+  await ensureDenoCacheVolume("exaix-dev-test:dev", docker.options);
+  assertEquals(docker.calls.removed, [
+    `${DENO_CACHE_VOLUME_PREFIX}ffffffffffff`,
+    `${DENO_CACHE_VOLUME_PREFIX}eeeeeeeeeeee-busy`,
+  ]);
+});
+
+Deno.test("ensureDenoCacheVolume fails loudly when the image id or the seeding run is unavailable", async () => {
+  const unreadable = { ...fakeVolumeDocker([]).options, imageId: () => Promise.resolve(undefined) };
+  await assertRejects(() => ensureDenoCacheVolume("exaix-dev-test:dev", unreadable), Error, "image id");
+  await assertRejects(
+    () => ensureDenoCacheVolume("exaix-dev-test:dev", fakeVolumeDocker([], 125).options),
+    Error,
+    "seed",
+  );
+});
+
+Deno.test("runBatch2InContainers gives every worker the same cache volume", async () => {
+  const seen: string[] = [];
+  const options = baseRunOptions((launch) => {
+    seen.push(launch.denoCacheVolume);
+    return makeFakeWorker(launch.workerName, (file) => resultFor(file));
+  });
+  await runBatch2InContainers([{ file: "a_test.ts" }], options);
+  assertEquals(seen.length, options.jobs);
+  assertEquals(new Set(seen), new Set([options.denoCacheVolume]));
 });
 
 /** Writes a linked-worktree layout: a `.git` file in the checkout that points into the common git directory. */
@@ -518,6 +611,7 @@ Deno.test("buildWorkerContainerLaunch adds the git mount for a linked worktree a
       memory: "2g",
       cpus: "2.0",
       watchdogMs: 60_000,
+      denoCacheVolume: `${DENO_CACHE_VOLUME_PREFIX}test`,
     };
     const linked = buildWorkerContainerLaunch({ ...base, repoRoot: checkout }).args.join(" ");
     assert(
@@ -921,6 +1015,7 @@ const DOCKER_READY = await dockerDaemonReachable();
 const INTEGRATION_IGNORE = !DOCKER_READY || !isContainerModeEnabled(Deno.env.toObject());
 const IT_IMAGE = Deno.env.get(TEST_CONTAINER_IMAGE_ENV) ?? DEFAULT_TEST_CONTAINER_IMAGE;
 const IT_REPO_ROOT = fromFileUrl(new URL("../../", import.meta.url)).replace(/\/$/, "");
+const IT_CACHE_VOLUME = `${DENO_CACHE_VOLUME_PREFIX}it`;
 let itWorkerSeq = 0;
 
 let imageReady: Promise<void> | undefined;
@@ -940,6 +1035,7 @@ function itWorkerOptions(): IWorkerContainerLaunchOptions {
     memory: DEFAULT_TEST_CONTAINER_MEMORY,
     cpus: DEFAULT_TEST_CONTAINER_CPUS,
     watchdogMs: 120_000,
+    denoCacheVolume: IT_CACHE_VOLUME,
   };
 }
 
@@ -954,6 +1050,7 @@ function itRunOptions(jobs: number): IRunBatch2Options {
     memory: DEFAULT_TEST_CONTAINER_MEMORY,
     cpus: DEFAULT_TEST_CONTAINER_CPUS,
     watchdogMs: 600_000,
+    denoCacheVolume: IT_CACHE_VOLUME,
   };
 }
 
@@ -1173,6 +1270,7 @@ Deno.test("buildWorkerContainerLaunch applies pids/memory/cpus bounds from the n
     env: {},
     ...overridden,
     watchdogMs: 60_000,
+    denoCacheVolume: `${DENO_CACHE_VOLUME_PREFIX}test`,
   });
   const joined = launch.args.join(" ");
   assert(joined.includes("--pids-limit 1024"), "--pids-limit override applied");

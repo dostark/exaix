@@ -20,6 +20,7 @@ import {
   DEFAULT_TEST_CONTAINER_JOBS,
   DEFAULT_TEST_CONTAINER_NETWORK,
   DEFAULT_TEST_CONTAINER_WATCHDOG_MS,
+  ensureDenoCacheVolume,
   ensureDevTestImage,
   resolveContainerResourceBounds,
   runBatch2InContainers,
@@ -99,6 +100,7 @@ async function runContainerBatch2(image: string, jobs: number): Promise<{
   slowest: { file: string; durationSec: number }[];
 }> {
   const bounds = resolveContainerResourceBounds(Deno.env.toObject());
+  const denoCacheVolume = await ensureDenoCacheVolume(image);
   const poolStartedAt = Date.now();
   const results = await runBatch2InContainers(SEQUENTIAL_TESTS, {
     repoRoot: REPO_ROOT,
@@ -110,6 +112,7 @@ async function runContainerBatch2(image: string, jobs: number): Promise<{
     memory: bounds.memory,
     cpus: bounds.cpus,
     watchdogMs: DEFAULT_TEST_CONTAINER_WATCHDOG_MS,
+    denoCacheVolume,
   });
   const poolSec = (Date.now() - poolStartedAt) / 1000;
 
