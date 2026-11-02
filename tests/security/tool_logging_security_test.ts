@@ -36,7 +36,7 @@ Deno.test("[security] tool parameters do not reach console, outputs, event bus o
     close: () => {},
   };
   const consoleStubs = CONSOLE_METHODS.map((method) =>
-    stub(console, method, (...args: unknown[]) => {
+    stub(console, method, (...args: Parameters<typeof console.log>) => {
       consoleLines.push(args.map(String).join(" "));
     })
   );

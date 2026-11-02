@@ -51,12 +51,12 @@ Deno.test("LogMethod (standard decorator): wraps method via (value, context)", a
   const context = { kind: "method", name: "doIt" } as Partial<
     ClassMethodDecoratorContext
   > as ClassMethodDecoratorContext;
-  const wrapped = LogMethod<unknown, [string], string>(logger, { action: DomainEventType.FlowStepExecuted })(
+  const wrapped = LogMethod<object, [string], string>(logger, { action: DomainEventType.FlowStepExecuted })(
     original,
     context,
   ) as (
     ...args: string[]
-  ) => Promise<unknown>;
+  ) => Promise<string>;
 
   const out = await wrapped.call({ constructor: { name: "C" } }, "x");
   assertEquals(out, "ok:x");
@@ -66,7 +66,7 @@ Deno.test("LogMethod (standard decorator): wraps method via (value, context)", a
 
 Deno.test("LogSyncMethod uses traceIdMapper output for every lifecycle row and generates a fallback", () => {
   const mappedCalls: LoggedCall[] = [];
-  const mapped = LogSyncMethod<unknown, [string, { traceId: string }], string>(
+  const mapped = LogSyncMethod<object, [string, { traceId: string }], string>(
     createStubLogger(mappedCalls),
     {
       action: DomainEventType.RequestAnalyzed,
@@ -82,7 +82,7 @@ Deno.test("LogSyncMethod uses traceIdMapper output for every lifecycle row and g
   assertEquals(mappedCalls.map((call) => call.traceId), [canonicalTraceId, canonicalTraceId]);
 
   const fallbackCalls: LoggedCall[] = [];
-  const fallback = LogSyncMethod<unknown, [string], string>(
+  const fallback = LogSyncMethod<object, [string], string>(
     createStubLogger(fallbackCalls),
     { action: DomainEventType.RequestAnalyzed },
   )(

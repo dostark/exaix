@@ -53,8 +53,7 @@ export async function loadClarification(
   }
 
   try {
-    const json = JSON.parse(raw) as unknown;
-    return ClarificationSessionSchema.parse(json);
+    return ClarificationSessionSchema.parse(JSON.parse(raw));
   } catch {
     return null;
   }

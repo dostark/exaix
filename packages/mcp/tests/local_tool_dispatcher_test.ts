@@ -52,7 +52,7 @@ const mockContext: IApplicationContext = createStubContext({
     close: () => Promise.resolve(),
     preparedGet: () => Promise.resolve(null),
     preparedAll: () => Promise.resolve([]),
-    preparedRun: () => Promise.resolve({}),
+    preparedRun: () => Promise.resolve(0),
   },
 });
 

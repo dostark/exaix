@@ -43,8 +43,7 @@ export async function loadScenarioFromYamlFile(
   }
 
   const rawYaml = await Deno.readTextFile(absoluteScenarioPath);
-  const parsedYaml = parseYaml(rawYaml) as unknown;
-  const scenario = ensureScenarioUsesFixtureOnly(parsedYaml as JSONValue);
+  const scenario = ensureScenarioUsesFixtureOnly(parseYaml(rawYaml) as JSONValue);
   const requestFixture = await loadRequestFixture({
     frameworkHome,
     requestFixturePath: scenario.request_fixture,

@@ -50,14 +50,12 @@ Deno.test("EffortResolver property: the literal string 'auto' never appears in a
               skillFloors: [],
             },
           );
-          const rawEffort = result.effort as unknown;
           assert(
-            rawEffort !== "auto",
+            String(result.effort) !== "auto",
             `effort leaked "auto" for ${effortDecl}/${thinkingDecl}/${complexity}/${providerType}`,
           );
-          const rawThinking = result.thinking as unknown;
           assert(
-            rawThinking !== "auto",
+            String(result.thinking) !== "auto",
             `thinking leaked "auto" for ${effortDecl}/${thinkingDecl}/${complexity}/${providerType}`,
           );
           assert(

@@ -10,6 +10,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { ModelBindingService, ProviderRegistry } from "@exaix/ai";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import { type Config, FlowSchema } from "@exaix/schemas";
 import { createMockConfig, createMockEventLogger, initTestDbService, withEnv } from "@exaix/testing";
 import { bootstrapProviderRegistry } from "../../../../apps/common/registry_bootstrap.ts";
@@ -89,7 +90,7 @@ Deno.test("[security] a per-service self-hosted key validates and constructs thr
         keyVersion: () => Promise.resolve(version),
       },
     });
-    const generateOnce = async (): Promise<unknown> => {
+    const generateOnce = async (): Promise<IModelProvider> => {
       const run = await service.snapshotForRun(flow, { traceId: crypto.randomUUID() });
       const target = await service.providerFor(run, composeRef);
       assert(target?.kind === "provider", "the self-hosted step must resolve to a provider");

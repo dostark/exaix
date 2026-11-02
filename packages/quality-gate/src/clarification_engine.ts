@@ -216,8 +216,7 @@ export class ClarificationEngine {
 
     // Attempt direct JSON parse as fallback
     try {
-      const json = JSON.parse(raw) as unknown;
-      return ClarificationLlmResponseSchema.parse(json);
+      return ClarificationLlmResponseSchema.parse(JSON.parse(raw));
     } catch {
       return { satisfied: false, questions: [] };
     }

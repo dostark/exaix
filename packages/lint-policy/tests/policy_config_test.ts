@@ -7,7 +7,7 @@
  * @related-files [packages/lint-policy/unslop.project.ts, packages/lint-policy/src/script_rules.ts]
  */
 
-import type { JSONObject } from "@exaix/core";
+import type { JSONObject, JSONValue } from "@exaix/core";
 import { assert, assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import {
@@ -100,7 +100,7 @@ Deno.test("every_script_rule_has_metadata", () => {
     tags?: string[];
     codeStyle?: string;
     limits?: string;
-    options?: unknown;
+    options?: JSONObject;
   }>;
   for (const id of SCRIPT_IDS) {
     const spec = SCRIPT_RULES[id];
@@ -187,7 +187,7 @@ Deno.test("the_compiled_exaix_model_preserves_the_version_1_projection", async (
   delete (actual.wholeTree as JSONObject).duplicateCode;
   assertEquals(actual, semanticCatalogProjection(catalog as JsonValue, descriptor, ids));
   const layout = JSON.parse(await Deno.readTextFile(new URL("../../../layout.json", import.meta.url)));
-  assertEquals(layout, (catalog as { layout?: unknown }).layout);
+  assertEquals(layout, (catalog as { layout?: JSONValue }).layout);
   const configured = (POLICY_CONFIG as { rules: Record<string, { limits?: string }> }).rules;
   for (const [id, rule] of Object.entries(configured)) {
     if (typeof rule === "object" && rule.limits !== undefined) {

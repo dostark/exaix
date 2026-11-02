@@ -147,7 +147,7 @@ function queryFailure(code: GitQueryFailureCode): IGitQueryFailure {
   return { ok: false, code };
 }
 
-function failureFromError(error: unknown): IGitQueryFailure {
+function failureFromError<TError>(error: TError): IGitQueryFailure {
   if (error instanceof GitOutputLimitError) return queryFailure(QUERY_FAILURE_CODE.outputLimit);
   if (error instanceof GitTimeoutError) return queryFailure(QUERY_FAILURE_CODE.deadlineExceeded);
   return queryFailure(QUERY_FAILURE_CODE.queryFailed);

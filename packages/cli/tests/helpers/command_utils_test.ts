@@ -101,7 +101,7 @@ Deno.test("CommandUtils.formatValidationErrors: handles values containing colons
 Deno.test("CommandUtils.printMetadata: prints title and key-value pairs", () => {
   const logs: string[] = [];
   const originalLog = console.log;
-  console.log = (...args: Array<unknown>) => logs.push(args.join(" "));
+  console.log = (...args: Parameters<typeof console.log>) => logs.push(args.join(" "));
 
   try {
     CommandUtils.printMetadata("Test Title", {
@@ -127,7 +127,7 @@ Deno.test("CommandUtils.printMetadata: prints title and key-value pairs", () => 
 Deno.test("CommandUtils.printMetadata: handles undefined values", () => {
   const logs: string[] = [];
   const originalLog = console.log;
-  console.log = (...args: Array<unknown>) => logs.push(args.join(" "));
+  console.log = (...args: Parameters<typeof console.log>) => logs.push(args.join(" "));
 
   try {
     CommandUtils.printMetadata("Info", {

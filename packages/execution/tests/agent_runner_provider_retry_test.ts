@@ -33,7 +33,7 @@ class HttpProvider extends BaseProvider {
   }
 }
 
-async function countFetches(status: number, run: () => Promise<unknown>): Promise<number> {
+async function countFetches<TResult>(status: number, run: () => Promise<TResult>): Promise<number> {
   const original = globalThis.fetch;
   let calls = 0;
   globalThis.fetch = () => {

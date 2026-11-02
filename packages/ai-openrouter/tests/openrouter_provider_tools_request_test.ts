@@ -248,7 +248,7 @@ Deno.test("OpenRouter measureInputTokens counts the replayed round exactly as th
       },
     };
     await provider.generate("Plan.", options);
-    const dispatched = scripted.sent[0].messages as unknown[];
+    const dispatched = scripted.sent[0].messages as JSONValue[];
     const measured = await provider.measureInputTokens("Plan.", options);
     assertEquals(measured.sections.loopHistory, JSON.stringify(dispatched.slice(1)).length);
   } finally {

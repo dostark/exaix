@@ -38,7 +38,10 @@ function parseArgs(argv: string[]): IOutcomeReportArgs {
 }
 
 /** Parses the process arguments, queries the verify-tests outcome runs, and prints `computeReport(rows)`. */
-export function runOutcomeReport(scriptName: string, computeReport: (rows: IOutcomeRunRow[]) => unknown): void {
+export function runOutcomeReport<TReport>(
+  scriptName: string,
+  computeReport: (rows: IOutcomeRunRow[]) => TReport,
+): void {
   const args = parseArgs(Deno.args);
   if (!args.db) {
     console.error(

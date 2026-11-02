@@ -8,7 +8,7 @@
  *   passed, failed, error, skipped and read-only cases.
  */
 
-import type { JSONObject } from "@exaix/core";
+import type { JSONObject, JSONValue } from "@exaix/core";
 import * as pathBuilders from "@exaix/shared";
 import { DEFAULT_AGENTS_PATH } from "@exaix/shared";
 import { assert, assertEquals, assertFalse } from "@std/assert";
@@ -38,6 +38,9 @@ const STUB_PROVIDER = {
       provider: "",
     }),
 };
+
+type TCodeChangesDelegate = NonNullable<ConstructorParameters<typeof ExecutionLoop>[0]["onCodeChangesDelegate"]>;
+type TDelegateStep = Parameters<TCodeChangesDelegate>[1];
 
 interface IScenarioHandle {
   rootDir: string;
@@ -101,8 +104,8 @@ async function makeVerificationLoop(options: {
   factory?: (logger: IEventLogger, knownSecrets: readonly string[]) => IVerificationRunner;
   lintPolicy?: boolean;
   lintSettings?: Partial<ILintSettings>;
-  llmProvider?: unknown;
-  onCodeChangesDelegate?: unknown;
+  llmProvider?: typeof STUB_PROVIDER;
+  onCodeChangesDelegate?: TCodeChangesDelegate;
   knownSecrets?: readonly string[];
 }): Promise<IScenarioHandle> {
   const rootDir = await Deno.makeTempDir({ prefix: options.prefix });
@@ -152,7 +155,7 @@ async function makeVerificationLoop(options: {
     ...(options.factory ? { verificationRunnerFactory: options.factory } : {}),
     ...(options.knownSecrets ? { knownSecrets: options.knownSecrets } : {}),
     ...(options.llmProvider ? { llmProvider: options.llmProvider as never } : {}),
-    ...(options.onCodeChangesDelegate ? { onCodeChangesDelegate: options.onCodeChangesDelegate as never } : {}),
+    ...(options.onCodeChangesDelegate ? { onCodeChangesDelegate: options.onCodeChangesDelegate } : {}),
     gitServiceFactory: {
       createGitService(repoPath: string, trace: string) {
         return new GitService({ config, traceId: trace, agentRole: "test-agent", repoPath });
@@ -377,7 +380,7 @@ Deno.test("[execution-verification] a real deno_lint failure is repaired by the 
     llmProvider: STUB_PROVIDER,
     onCodeChangesDelegate: async (
       _trace: string,
-      _step: unknown,
+      _step: TDelegateStep,
       worktreePath: string,
     ) => {
       await Deno.writeTextFile(join(worktreePath, "seed.ts"), "export const seed = 1;\n");
@@ -434,7 +437,7 @@ Deno.test("deno-lint-terminal-snapshot", async (test) => {
       assertEquals(snapshots[0].run_id, completed.verification_run_id);
       assertEquals(snapshots[0].commit_sha, completed.commit_sha);
       assert((snapshots[0].total as number) > 0);
-      assert((snapshots[0].findings as unknown[]).length > 0);
+      assert((snapshots[0].findings as JSONValue[]).length > 0);
     } finally {
       await handle.cleanupDb();
       await Deno.remove(handle.rootDir, { recursive: true });
@@ -454,7 +457,7 @@ Deno.test("deno-lint-terminal-snapshot", async (test) => {
       llmProvider: STUB_PROVIDER,
       onCodeChangesDelegate: async (
         _trace: string,
-        _step: unknown,
+        _step: TDelegateStep,
         worktreePath: string,
       ) => {
         await Deno.writeTextFile(join(worktreePath, "seed.ts"), "export const seed = 1;\n");
@@ -543,7 +546,7 @@ Deno.test("deno-lint-terminal-snapshot", async (test) => {
       const snapshots = lintSnapshots(handle.db, handle.traceId);
       assertEquals(snapshots.length, 1);
       assert((snapshots[0].total as number) > 1);
-      assertEquals((snapshots[0].findings as unknown[]).length, 1);
+      assertEquals((snapshots[0].findings as JSONValue[]).length, 1);
       assertEquals(snapshots[0].truncated, true);
     } finally {
       await handle.cleanupDb();
@@ -576,7 +579,7 @@ Deno.test("secret-file-name-not-journaled", async () => {
     const snapshots = lintSnapshots(handle.db, handle.traceId);
     assertEquals(snapshots.length, 1);
     assertEquals(JSON.stringify(snapshots[0]).includes("secret-token-abc"), false);
-    assert((snapshots[0].findings as unknown[]).length > 0);
+    assert((snapshots[0].findings as JSONValue[]).length > 0);
   } finally {
     await handle.cleanupDb();
     await Deno.remove(handle.rootDir, { recursive: true });

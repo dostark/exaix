@@ -83,8 +83,7 @@ export class RoutingPolicyLoader {
       }
 
       const raw = await Deno.readTextFile(this.policyPath);
-      const parsed = parseYaml(raw) as unknown;
-      const result = ZRoutingPolicy.safeParse(parsed);
+      const result = ZRoutingPolicy.safeParse(parseYaml(raw));
       if (!result.success) {
         if (this.cachedPolicy) {
           return {

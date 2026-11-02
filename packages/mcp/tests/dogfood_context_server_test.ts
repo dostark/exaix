@@ -264,7 +264,7 @@ Deno.test("[DogfoodContextServer] an oversized output is truncated to the byte b
     await client.connect(new URL(handle.url), { bearerToken: TOKEN });
     const result = await client.callTool(ToolName.QUERY_RELATIONSHIPS, { from: "services" });
     const text = (result.content[0] as { text: string }).text;
-    const parsed = JSON.parse(text) as unknown[];
+    const parsed: object[] = JSON.parse(text);
     assertEquals(new TextEncoder().encode(text).length <= 500, true);
     assertEquals(parsed.length < 500, true);
   } finally {

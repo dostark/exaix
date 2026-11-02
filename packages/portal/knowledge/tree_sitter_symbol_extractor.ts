@@ -26,6 +26,12 @@ import { resolveNpmPackageFile, resolveNpmWasmPath } from "./npm_wasm_loader.ts"
 
 // Base class
 
+/** The part of a syntax node that the node counter reads. A tree-sitter node satisfies it. */
+interface ISyntaxNodeLike {
+  childCount: number;
+  child(index: number): ISyntaxNodeLike | null;
+}
+
 /** Shared base for tree-sitter-based extractors; see abstract members below. */
 export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
   protected abstract readonly languageName: string;
@@ -209,19 +215,16 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
 
   /** Counts syntax nodes with an explicit stack. The count is an upper bound and stops once the ceiling is passed.
    *  A recursive walk would overflow the call stack on a deeply nested file, so the bound would become the crash. */
-  protected _countNodes(
-    node: { childCount: number; child: (i: number) => unknown },
-  ): number {
-    type NodeLike = { childCount: number; child: (i: number) => unknown };
+  protected _countNodes(node: ISyntaxNodeLike): number {
     let count = 0;
-    const stack: NodeLike[] = [node as NodeLike];
+    const stack: ISyntaxNodeLike[] = [node];
     while (stack.length > 0) {
       const current = stack.pop()!;
       count += 1;
       if (count > SYMBOL_EXTRACT_MAX_NODES) return count;
       for (let i = 0; i < current.childCount; i++) {
         const child = current.child(i);
-        if (child) stack.push(child as NodeLike);
+        if (child) stack.push(child);
       }
     }
     return count;

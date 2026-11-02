@@ -10,12 +10,13 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
+import type { IGitService } from "@exaix/core/types";
 import { createGitTestContext, setupGitRepo } from "@exaix/git/testing";
 import { readBlobAtCommit, readChangedLineRanges, readHeadSha } from "@exaix/git";
 
 const QUERY_BUDGET = 1_000_000;
 
-async function commitAll(git: { runGitCommand(args: string[]): Promise<unknown> }, message: string): Promise<string> {
+async function commitAll(git: Pick<IGitService, "runGitCommand">, message: string): Promise<string> {
   await git.runGitCommand(["add", "-A"]);
   await git.runGitCommand(["commit", "-m", message]);
   return await readHeadSha(git as never);

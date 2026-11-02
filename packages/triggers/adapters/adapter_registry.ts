@@ -38,13 +38,13 @@ export class UnsupportedTriggerSourceError extends Error {
 }
 
 export class AdapterRegistry {
-  private readonly adapters = new Map<TTriggerSource, ITriggerAdapter<unknown>>();
+  private readonly adapters = new Map<TTriggerSource, ITriggerAdapter>();
 
-  register<T>(adapter: ITriggerAdapter<T>): void {
-    this.adapters.set(adapter.source, adapter as ITriggerAdapter<unknown>);
+  register<TInput>(adapter: ITriggerAdapter<TInput>): void {
+    this.adapters.set(adapter.source, adapter);
   }
 
-  resolve(source: TTriggerSource): ITriggerAdapter<unknown> | undefined {
+  resolve(source: TTriggerSource): ITriggerAdapter | undefined {
     return this.adapters.get(source);
   }
 
@@ -53,6 +53,7 @@ export class AdapterRegistry {
     if (!adapter) {
       return Promise.reject(new UnsupportedTriggerSourceError(source));
     }
-    return adapter.parse(rawInput);
+    // The registry cannot know each adapter's input shape. The adapter validates it inside parse().
+    return adapter.parse(rawInput as never);
   }
 }

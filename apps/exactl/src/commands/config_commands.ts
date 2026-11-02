@@ -60,7 +60,7 @@ export class ConfigCommands extends BaseCommand {
     return profile ? `${CONFIG_PROFILE_KEY_PREFIX}${profile}.${path}` : path;
   }
 
-  async get(path: string, profile?: Opt<string, Reason.OptionalInput>): Promise<unknown> {
+  async get(path: string, profile?: Opt<string, Reason.OptionalInput>): Promise<ConfigValue> {
     const scoped = this.scopeKey(path, profile);
     const value = (await this.ensureAdapter()).get(scoped);
     if (value === undefined) {

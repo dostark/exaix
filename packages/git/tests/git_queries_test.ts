@@ -10,6 +10,7 @@ import { assert, assertEquals, assertFalse, assertMatch, assertStringIncludes } 
 import { stub } from "@std/testing/mock";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
+import type { IGitService } from "@exaix/core/types";
 import { createGitTestContext, setupGitRepo } from "@exaix/git/testing";
 import {
   decodeUtf8,
@@ -82,7 +83,7 @@ async function writeLines(path: string, lines: readonly string[]): Promise<void>
 
 /** Stages everything and commits, returning the new HEAD sha. */
 async function commitAll(
-  git: { runGitCommand(args: string[], options?: { throwOnError?: boolean }): Promise<unknown> },
+  git: Pick<IGitService, "runGitCommand">,
   message: string,
 ): Promise<string> {
   await git.runGitCommand(["add", "-A"]);

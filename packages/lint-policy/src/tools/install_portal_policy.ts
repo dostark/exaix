@@ -44,7 +44,7 @@ interface IInstallPortalPolicyOptions {
   readonly bundler?: IEngineBundler;
 }
 
-function messageOf(error: unknown): string {
+function messageOf<TError>(error: TError): string {
   return error instanceof Error ? error.message : String(error);
 }
 

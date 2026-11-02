@@ -25,7 +25,6 @@ const RATCHETED_RULES = [
   "exaix/require-safety-comment",
   "exaix/no-runtime-typeof",
   "exaix/no-conditional-empty-object-spread",
-  "exaix/no-explicit-unknown",
   "exaix/no-boolean-assert",
   "exaix/no-repeated-assert-call",
   "exaix/max-params",

@@ -51,7 +51,7 @@ function createStubDatabase(
     close: asyncNoop,
     preparedGet: () => Promise.resolve(null),
     preparedAll: () => Promise.resolve([]),
-    preparedRun: () => Promise.resolve(),
+    preparedRun: () => Promise.resolve(0),
     getActivitiesByTrace: () => [],
     getActivitiesByTraceSafe: () => Promise.resolve([]),
     getActivitiesByActionType: () => [],

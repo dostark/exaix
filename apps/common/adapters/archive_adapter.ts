@@ -24,9 +24,10 @@ export class ArchiveAdapter implements IArchiveService {
     return entry ?? null;
   }
 
-  async getTrace(traceId: string): Promise<unknown> {
+  async getTrace(traceId: string): Promise<IArchiveEntry | null> {
     // Note: ArchiveService doesn't have a getTrace method yet, it has getByTraceId for metadata.
     // getTrace might be for fetching content. For now we return metadata.
-    return await this.inner.getByTraceId(traceId);
+    const entry = await this.inner.getByTraceId(traceId);
+    return entry ?? null;
   }
 }

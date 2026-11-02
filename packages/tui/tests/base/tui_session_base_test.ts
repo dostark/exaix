@@ -49,7 +49,7 @@ class TestSession extends TuiSessionBase {
     return this.performWithLoading(fn);
   }
 
-  public testPerformAction(fn: () => Promise<unknown>): Promise<void> {
+  public testPerformAction<TResult>(fn: () => Promise<TResult>): Promise<void> {
     return this.performAction(fn);
   }
 }

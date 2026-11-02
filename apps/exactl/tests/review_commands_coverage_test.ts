@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ReviewCommands } from "../src/commands/review_commands.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
+import type { IGitService } from "@exaix/core/types";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
@@ -30,7 +31,7 @@ interface IReviewCommandsInternals {
     gitService: { runGitCommand(args: string[]): Promise<{ output: string }> },
     branch: string,
   ): Promise<string | null>;
-  createPortalGitService(rootPath: string, traceId: string): Promise<unknown>;
+  createPortalGitService(rootPath: string, traceId: string): Promise<Pick<IGitService, "runGitCommand">>;
   deleteBranchWithWorktreeHandling(gitService: any, branch: string, rootPath: string): Promise<void>;
   updateArtifactStatus(artifactId: string, status: string): Promise<void>;
   bestEffortLinkRequestRejection(requestId: string, rejectedPath: string): Promise<void>;

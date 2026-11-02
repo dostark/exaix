@@ -521,12 +521,12 @@ function startLogMessage(
 }
 
 /** The log line of a failed delegate run. */
-function runFailureLogMessage(durationMs: number, error: Error | unknown): string {
+function runFailureLogMessage<TError>(durationMs: number, error: TError): string {
   return `[CliDelegateModelProvider] generate threw after ${durationMs}ms: ${errorMessageOf(error)}`;
 }
 
 /** The provider error of a failed delegate run. */
-function runFailureErrorOf(error: Error | unknown, bin: string, id: string): ModelProviderError {
+function runFailureErrorOf<TError>(error: TError, bin: string, id: string): ModelProviderError {
   return new ModelProviderError(`CliDelegateModelProvider could not run '${bin}': ${errorMessageOf(error)}`, id);
 }
 
@@ -547,7 +547,7 @@ function exitFailureErrorOf(result: ICliDelegateProcessResult, bin: string, id: 
 }
 
 /** The text of one error value. */
-function errorMessageOf(error: Error | unknown): string {
+function errorMessageOf<TError>(error: TError): string {
   return error instanceof Error ? error.message : String(error);
 }
 

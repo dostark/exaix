@@ -25,6 +25,7 @@ function createMockRunner(
 
 function createMockValidator(overrides: Partial<IOutputValidator> = {}): IOutputValidator {
   const defaultResult = { success: false, repairAttempted: false, repairSucceeded: false, raw: "" };
+  const failedResult = <TValue>(): IValidationResult<TValue> => defaultResult as IValidationResult<TValue>;
 
   return {
     validate: <T>(
@@ -32,9 +33,9 @@ function createMockValidator(overrides: Partial<IOutputValidator> = {}): IOutput
       _schema: any,
     ): IValidationResult<T> => defaultResult as IValidationResult<T>,
     parseXMLTags: (raw: string) => ({ thought: "", content: raw, raw }),
-    validateWithSchema: (_content, _schemaName) => defaultResult as IValidationResult<unknown>,
-    parseAndValidate: (_raw, _schema) => defaultResult as IValidationResult<unknown>,
-    parseAndValidateWithSchema: (_raw, _schemaName) => defaultResult as IValidationResult<unknown>,
+    validateWithSchema: (_content, _schemaName) => failedResult(),
+    parseAndValidate: (_raw, _schema) => failedResult(),
+    parseAndValidateWithSchema: (_raw, _schemaName) => failedResult(),
     getMetrics: (): IValidationMetrics => ({
       totalAttempts: 0,
       successfulValidations: 0,

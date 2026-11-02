@@ -1061,7 +1061,7 @@ async function safeReadTextFile(workspaceRoot: string, relativePath: string): Pr
 async function loadJsonCriterionDocument(
   workspaceRoot: string,
   targetFile?: Opt<string, Reason.OptionalInput>,
-): Promise<unknown | null> {
+): Promise<JSONValue> {
   if (!targetFile) {
     return null;
   }

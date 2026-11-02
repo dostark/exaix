@@ -63,7 +63,7 @@ export function createStubDb(
     preparedGet: <T>(_query: string, _params: (string | number | boolean | null)[] = []) =>
       Promise.resolve(null as T | null),
     preparedAll: <T>(_query: string, _params: (string | number | boolean | null)[] = []) => Promise.resolve([] as T[]),
-    preparedRun: (_query: string, _params: (string | number | boolean | null)[] = []) => Promise.resolve({}),
+    preparedRun: (_query: string, _params: (string | number | boolean | null)[] = []) => Promise.resolve(0),
     getActivitiesByTrace: (_traceId: string) => [],
     // The "Safe" variants delegate to the possibly-overridden sync method so tests
     // that provide a spy for `getActivitiesByTrace` or `getActivitiesByActionType`

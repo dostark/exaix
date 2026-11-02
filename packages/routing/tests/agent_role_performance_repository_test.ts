@@ -15,7 +15,7 @@ const makeStubDb = (records: IActivityRecord[]): IDatabaseService => ({
   close: () => Promise.resolve(),
   preparedGet: () => Promise.resolve(null),
   preparedAll: () => Promise.resolve([]),
-  preparedRun: () => Promise.resolve(undefined),
+  preparedRun: () => Promise.resolve(0),
   getActivitiesByTrace: () => [],
   getActivitiesByTraceSafe: () => Promise.resolve([]),
   getActivitiesByActionType: () => [],

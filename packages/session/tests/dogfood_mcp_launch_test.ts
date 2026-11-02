@@ -255,7 +255,7 @@ Deno.test("[resolveHardenedLaunch+mcp] an unsupported binary version still fails
   }, { prefix: "dogfood-mcp-launch-" });
 });
 
-async function assertRejectsAsync(fn: () => Promise<unknown>): Promise<void> {
+async function assertRejectsAsync<TResult>(fn: () => Promise<TResult>): Promise<void> {
   try {
     await fn();
   } catch {

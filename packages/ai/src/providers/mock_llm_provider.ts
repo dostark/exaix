@@ -468,7 +468,7 @@ function assertExpectedInput(
   }
 }
 
-function recordedErrorValidationError(error: Opt<unknown, Reason.OptionalInput>): string | null {
+function recordedErrorValidationError<TError>(error: Opt<TError, Reason.OptionalInput>): string | null {
   if (error === undefined) return null;
   return typeof error === "string" && error.length > 0 ? null : "error must be a non-empty string when present";
 }

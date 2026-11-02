@@ -47,7 +47,7 @@ import type { IModelOptions, IProviderToolRound, IToolChoice, IToolDefinition } 
 import type { IProviderCallCapabilities } from "@exaix/ai";
 import { PROVIDER_EVENT_REQUEST_DEBUG_DUMP, PROVIDER_EVENT_THINKING_NOT_DISABLED } from "@exaix/core";
 import { type Opt, type Reason, toSafeJson } from "@exaix/core/types";
-import type { JSONValue } from "@exaix/core";
+import type { JSONObject, JSONValue } from "@exaix/core";
 
 /**
  * Options for AnthropicProvider.
@@ -211,9 +211,17 @@ function priorRoundMessages(
 /** Anthropic message role literal — "user" or "assistant". */
 type AnthropicMessageRole = "user" | "assistant";
 
+/** One outbound tool_result block. Its content stays read-only, as the replayed round holds it. */
+interface IAnthropicToolResultBlock {
+  type: string;
+  tool_use_id: string;
+  content: string | readonly JSONObject[];
+  is_error: boolean;
+}
+
 type AnthropicRequestMessage = {
   role: AnthropicMessageRole;
-  content: string | unknown[];
+  content: string | Array<JSONObject | IAnthropicToolResultBlock>;
 };
 
 /** One outbound assistant content block: a replayed thinking block or a tool_use block. */

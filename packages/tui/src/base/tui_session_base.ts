@@ -235,7 +235,7 @@ export class TuiSessionBase {
     this.viewState.needsRefresh = true;
   }
 
-  protected async performAction(actionFn: () => Promise<unknown>): Promise<void> {
+  protected async performAction<TResult>(actionFn: () => Promise<TResult>): Promise<void> {
     try {
       await actionFn();
       this.statusMessage = "";

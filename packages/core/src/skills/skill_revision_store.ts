@@ -88,7 +88,7 @@ export class SkillRevisionStore {
         "INSERT OR IGNORE INTO skill_revision_scopes (revision_id, project) VALUES (?, ?)",
         [loaded.revisionId, loaded.skill.project ?? GLOBAL_SCOPE],
       );
-      inserted = typeof result === "number" && result > 0;
+      inserted = result > 0;
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
       await this.registry.emit(

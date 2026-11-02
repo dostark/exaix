@@ -393,7 +393,7 @@ Deno.test("[PairedLift] a `bare-`-prefixed bare scenario id pairs with the same 
   }
 });
 
-function assertThrows(fn: () => unknown, pattern: RegExp, message: string): void {
+function assertThrows<TResult>(fn: () => TResult, pattern: RegExp, message: string): void {
   let threw: Error | undefined;
   try {
     fn();

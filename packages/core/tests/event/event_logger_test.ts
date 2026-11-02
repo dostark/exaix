@@ -45,7 +45,7 @@ async function withEventLoggerTest(
   const originalWarn = console.warn;
   const originalError = console.error;
 
-  const captureLogs = (...args: Array<unknown>) => logs.push(args.join(" "));
+  const captureLogs = (...args: Parameters<typeof console.log>) => logs.push(args.join(" "));
   console.log = captureLogs;
   console.warn = captureLogs;
   console.error = captureLogs;
@@ -583,8 +583,8 @@ Deno.test("EventLogger: consoleStream stderr sends console output to stderr, nev
   const stderr: string[] = [];
   const originalLog = console.log;
   const originalError = console.error;
-  console.log = (...args: Array<unknown>) => stdout.push(args.join(" "));
-  console.error = (...args: Array<unknown>) => stderr.push(args.join(" "));
+  console.log = (...args: Parameters<typeof console.log>) => stdout.push(args.join(" "));
+  console.error = (...args: Parameters<typeof console.log>) => stderr.push(args.join(" "));
   try {
     const logger = new EventLogger({ db, consoleStream: ConsoleStream.STDERR });
     await logger.info("mcp.tool.executed", "read_file");
@@ -605,8 +605,8 @@ Deno.test("EventLogger: default consoleStream keeps console.log on stdout", asyn
   const stderr: string[] = [];
   const originalLog = console.log;
   const originalError = console.error;
-  console.log = (...args: Array<unknown>) => stdout.push(args.join(" "));
-  console.error = (...args: Array<unknown>) => stderr.push(args.join(" "));
+  console.log = (...args: Parameters<typeof console.log>) => stdout.push(args.join(" "));
+  console.error = (...args: Parameters<typeof console.log>) => stderr.push(args.join(" "));
   try {
     const logger = new EventLogger({ db });
     await logger.info("some.event", "target");

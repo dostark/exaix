@@ -406,7 +406,7 @@ export class RequestProcessor {
       });
 
       return planPath;
-    } catch (error: Error | unknown) {
+    } catch (error: unknown) {
       // Read the current content of the file before handling the error
 
       await this.rejectedPlanHandler.handleError(error, filePath, requestId, traceLogger, frontmatter);

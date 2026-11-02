@@ -639,7 +639,7 @@ export class DatabaseService implements IDatabaseService {
     return await this.dbBreaker.execute(() => Promise.resolve(stmt.all(...params) as T[]));
   }
 
-  async preparedRun(query: string, params: SqliteParam[] = []): Promise<unknown> {
+  async preparedRun(query: string, params: SqliteParam[] = []): Promise<number> {
     const stmt = this.db.prepare(query);
     return await this.dbBreaker.execute(() => Promise.resolve(stmt.run(...params)));
   }

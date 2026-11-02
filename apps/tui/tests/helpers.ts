@@ -483,8 +483,8 @@ class MockDatabaseService implements IDatabaseService, IJournalService {
   preparedAll<T>(_query: string, _params?: SqliteParam[]) {
     return Promise.resolve([] as T[]);
   }
-  preparedRun(_query: string, _params?: SqliteParam[]) {
-    return Promise.resolve({});
+  preparedRun(_query: string, _params?: SqliteParam[]): Promise<number> {
+    return Promise.resolve(0);
   }
   getActivitiesByTrace(traceId: string): IActivityRecord[] {
     return this._activityRecords.filter((r) => r.trace_id === traceId);

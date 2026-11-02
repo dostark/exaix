@@ -7,7 +7,7 @@
  * @description Package-owned test-mode key routing for the TUI dashboard.
  */
 
-import type { Opt, Reason } from "@exaix/core/types";
+import type { IMemoryNotification, Opt, Reason } from "@exaix/core/types";
 import { SplitDirection } from "../types/enums.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import {
@@ -28,7 +28,7 @@ interface ITestModeDashboardState {
 }
 
 interface ITestModeNotificationServiceLike {
-  getNotifications(): Promise<readonly unknown[]>;
+  getNotifications(): Promise<readonly IMemoryNotification[]>;
   notify(message: string, type?: Opt<string, Reason.OptionalInput>): Promise<void>;
   clearNotification(id: string): Promise<void>;
 }

@@ -264,8 +264,8 @@ export class MockLogService implements IDatabaseService, IJournalService {
     return Promise.resolve([]);
   }
 
-  preparedRun(_query: string, _params?: Opt<SqliteParam[], Reason.TestStub>): Promise<unknown> {
-    return Promise.resolve({});
+  preparedRun(_query: string, _params?: Opt<SqliteParam[], Reason.TestStub>): Promise<number> {
+    return Promise.resolve(0);
   }
 
   verifyJournalIntegrity(): Promise<IJournalIntegrityResult> {

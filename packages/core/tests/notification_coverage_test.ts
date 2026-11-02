@@ -43,14 +43,14 @@ function initNotificationTest() {
           metadata: metadata ? toSafeJson(metadata) : undefined,
           dismissed_at: null,
         });
-        return Promise.resolve({});
+        return Promise.resolve(1);
       }
       if (q.includes("update notifications") && q.includes("where dismissed_at is null")) {
         const [dismissed_at] = params;
         for (const n of notifications) {
           if (n.dismissed_at == null) n.dismissed_at = String(dismissed_at);
         }
-        return Promise.resolve({});
+        return Promise.resolve(1);
       }
       if (q.includes("update notifications") && q.includes("dismissed_at")) {
         const [dismissed_at, proposal_id] = params;
@@ -59,9 +59,9 @@ function initNotificationTest() {
             n.dismissed_at = String(dismissed_at);
           }
         }
-        return Promise.resolve({});
+        return Promise.resolve(1);
       }
-      return Promise.resolve({});
+      return Promise.resolve(1);
     },
     preparedAll: function <T>(query: string, _params: (string | number | boolean | null)[] = []): Promise<T[]> {
       const q = (query || "").toLowerCase();

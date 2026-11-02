@@ -21,18 +21,6 @@ import type { IRequestFrontmatter } from "@exaix/core/request";
 import { RequestSource } from "@exaix/core";
 import { ProviderFactoryError } from "@exaix/ai/errors.ts";
 import { DomainEventType } from "@exaix/core/events";
-import type { IEventLogger } from "@exaix/core/logger";
-import type { Opt, Reason } from "@exaix/core/types";
-
-interface ILegacyRejectedPlanHandler {
-  handleError(
-    error: unknown,
-    filePath: string,
-    requestId: string,
-    traceLogger: IEventLogger,
-    frontmatter?: Opt<IRequestFrontmatter, Reason.OptionalInput>,
-  ): Promise<void>;
-}
 
 async function makeHandlerTestSetup() {
   const testDir = await Deno.makeTempDir({ prefix: "exa_rejected_plan_handler_test_" });
@@ -59,11 +47,10 @@ function makeFrontmatter(overrides: Partial<IRequestFrontmatter> = {}): IRequest
   };
 }
 
-Deno.test("generic error handler preserves the legacy contract and custom conversion", async () => {
+Deno.test("generic error handler satisfies the shared contract and keeps custom conversion", async () => {
   const { testDir, filePath, handler } = await makeHandlerTestSetup();
   try {
-    const legacy: ILegacyRejectedPlanHandler = handler;
-    const current: IRejectedPlanHandler = legacy;
+    const current: IRejectedPlanHandler = handler;
     const logger = createMockLogger();
     const value = { toString: () => "custom failure" };
     await current.handleError<typeof value>(value, filePath, "req-1", logger, makeFrontmatter());

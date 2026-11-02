@@ -85,7 +85,7 @@ Deno.test("HealthCheckService: checkHealth emits DomainEventType.HealthCheckAll,
 
   const originalLog = console.log;
   const printed: string[] = [];
-  const captureLog = (...args: Array<unknown>) => printed.push(args.map(String).join(" "));
+  const captureLog = (...args: Parameters<typeof console.log>) => printed.push(args.map(String).join(" "));
   console.log = captureLog;
   try {
     await service.checkHealth();

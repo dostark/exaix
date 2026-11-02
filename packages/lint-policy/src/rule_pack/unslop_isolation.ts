@@ -23,15 +23,23 @@ export const UnslopIsolationOptions = z.object({
   enginePattern: z.string().min(1),
 }).strict();
 
+/** The source literal of an import, export or import call. Only its value is read. */
+interface ISourceLiteral {
+  readonly value: string | number | bigint | boolean | null;
+}
+
+function isSourceLiteral(candidate: unknown): candidate is ISourceLiteral {
+  return typeof candidate === "object" && candidate !== null && "value" in candidate;
+}
+
 /** Reads the string specifier of an import or export source node, or null when it is not a literal. */
-function specifierOf(source: unknown): string | null {
-  if (source === null || typeof source !== "object" || !("value" in source)) return null;
-  return typeof source.value === "string" ? source.value : null;
+function specifierOf(source: ISourceLiteral | null): string | null {
+  return source !== null && typeof source.value === "string" ? source.value : null;
 }
 
 /** Reads the source node of an import, export or import call, or null when it has none. */
-function sourceOf(node: RuleNode): unknown {
-  return "source" in node ? node.source : null;
+function sourceOf(node: RuleNode): ISourceLiteral | null {
+  return "source" in node && isSourceLiteral(node.source) ? node.source : null;
 }
 
 /** Returns the visitor that keeps unslop modules and engine imports inside the owning packages. */
@@ -43,7 +51,7 @@ export function createUnslopIsolation(context: RuleContext, ctx: IPluginRuleCont
   const modulePattern = new RegExp(options.modulePattern, "i");
   const enginePattern = new RegExp(options.enginePattern);
   const basename = ctx.repoPath.slice(ctx.repoPath.lastIndexOf("/") + 1);
-  const check = (node: RuleNode, source: unknown): void => {
+  const check = (node: RuleNode, source: ISourceLiteral | null): void => {
     const specifier = specifierOf(source);
     if (specifier === null || !enginePattern.test(specifier)) return;
     context.report({

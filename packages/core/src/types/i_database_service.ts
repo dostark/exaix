@@ -66,9 +66,9 @@ export interface IDatabaseService {
   preparedAll<T>(query: string, params?: SqliteParam[]): Promise<T[]>;
 
   /**
-   * Execute a non-query statement (INSERT/UPDATE/DELETE).
+   * Execute a non-query statement (INSERT/UPDATE/DELETE). Resolves with the number of changed rows.
    */
-  preparedRun(query: string, params?: SqliteParam[]): Promise<unknown>;
+  preparedRun(query: string, params?: SqliteParam[]): Promise<number>;
 
   /**
    * Verify the Solo journal's activity hash chain. Reports, never throws, on tampering.

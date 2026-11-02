@@ -54,6 +54,7 @@ const ACTIVE_PLUGIN_IDS = [
   "exaix/no-object-parameters",
   "exaix/no-unsafe-dictionary",
   "exaix/no-typeof-escape",
+  "exaix/no-explicit-unknown",
 ];
 
 Deno.test("atomic-policy-transition: independent active plugin IDs include only delivered rules", () => {
@@ -81,6 +82,7 @@ const COMMENT_FIXTURE_RULES = [
 ];
 const BOUNDARY_RULES = ["exaix/no-object-parameters", "exaix/no-unsafe-dictionary"];
 const TYPEOF_RULES = ["exaix/no-typeof-escape"];
+const UNKNOWN_RULES = ["exaix/no-explicit-unknown"];
 const CONTRACT_RULES = [
   "exaix/no-constant-substring-assert",
   "exaix/promise-response-return",
@@ -283,6 +285,7 @@ Deno.test("atomic-policy-transition: scripts select the active rule and its park
     ...CONTRACT_RULES,
     ...BOUNDARY_RULES,
     ...TYPEOF_RULES,
+    ...UNKNOWN_RULES,
   ];
   assertArrayIncludes(selected, delivered);
   for (const id of selected) assertEquals(POLICY_CATALOG.rules[id].severity, "error", id);
@@ -294,7 +297,6 @@ Deno.test("atomic-policy-transition: scripts select the active rule and its park
     assertEquals(POLICY_CATALOG.rules[id].reason, undefined, id);
   }
   const parked = [
-    "exaix/no-explicit-unknown",
     "exaix/no-repeated-assert-call",
     "exaix/no-boolean-assert",
   ];
@@ -556,6 +558,21 @@ Deno.test("default-typeof-gate: the allowed fetch target passes in test files an
       await Deno.remove(join(dir, path));
     }
   });
+});
+
+/** The explicit-unknown rule's violation or clean counterpart below the authored module header. */
+function unknownSource(path: string, _rule: string, violation: boolean): string {
+  const header = sourceOf(path, false).split("import { value }")[0];
+  const form = violation ? "export const stored: unknown = 1;\n" : [
+    'export function isText(value: unknown): value is string {\n  return typeof value === "string";\n}\n',
+    "export function describe<TValue extends Record<string, unknown>>(value: TValue): TValue {\n  return value;\n}\n",
+    'export function recover(run: () => void): string {\n  try {\n    run();\n    return "";\n  } catch (error: unknown) {\n    return String(error);\n  }\n}\n',
+  ].join("");
+  return header + form;
+}
+
+Deno.test("default-unknown-gate: a stored unknown reports while catch, predicate and constraint forms pass in both passes", async () => {
+  await assertCanaryMatrix(UNKNOWN_RULES, unknownSource);
 });
 
 /** The directories below `base` that hold a deno.json, as repository-relative paths. */

@@ -53,7 +53,7 @@ async function fixture() {
 
 type Fixture = Awaited<ReturnType<typeof fixture>>;
 
-async function codeOf(promise: Promise<unknown>): Promise<string> {
+async function codeOf<TResult>(promise: Promise<TResult>): Promise<string> {
   const error = await assertRejects(() => promise, SkillMutationError);
   return error.code;
 }
@@ -92,7 +92,7 @@ Deno.test("[learned] status and managed fields cannot be injected through create
     await drafted(fx, "plain");
     assertEquals(
       await codeOf(
-        fx.service.updateSkill("plain", { status: SkillStatus.ACTIVE } as never, fx.ctx) as Promise<unknown>,
+        fx.service.updateSkill("plain", { status: SkillStatus.ACTIVE } as never, fx.ctx),
       ),
       SkillMutationErrorCode.INVALID_INPUT,
     );
@@ -158,12 +158,12 @@ Deno.test("[learned] a skill in a read-only root cannot be updated, approved or 
     const shipped = await fx.service.getSkill("shipped", fx.ctx);
     assert(shipped);
     assertEquals(
-      await codeOf(fx.service.updateSkill("shipped", { instructions: "x" }, fx.ctx) as Promise<unknown>),
+      await codeOf(fx.service.updateSkill("shipped", { instructions: "x" }, fx.ctx)),
       SkillMutationErrorCode.ROOT_UNAVAILABLE,
     );
     assertEquals(await codeOf(fx.service.deprecateSkill("shipped", fx.ctx)), SkillMutationErrorCode.ROOT_UNAVAILABLE);
     assertEquals(
-      await codeOf(fx.service.deleteSkill("shipped", fx.ctx) as Promise<unknown>),
+      await codeOf(fx.service.deleteSkill("shipped", fx.ctx)),
       SkillMutationErrorCode.ROOT_UNAVAILABLE,
     );
   } finally {

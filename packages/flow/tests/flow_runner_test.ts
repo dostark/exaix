@@ -1838,8 +1838,8 @@ class MockDatabaseService {
   preparedAll<T>(_query: string, _params?: SqliteParam[]): Promise<T[]> {
     return Promise.resolve([]);
   }
-  preparedRun(_query: string, _params?: SqliteParam[]): Promise<unknown> {
-    return Promise.resolve(null);
+  preparedRun(_query: string, _params?: SqliteParam[]): Promise<number> {
+    return Promise.resolve(0);
   }
   getActivitiesByTrace(_traceId: string): ActivityRecord[] {
     return [];

@@ -7,13 +7,13 @@
  * @related-files ["packages/request/src/processor.ts"]
  */
 
-import { z, type ZodType } from "zod";
+import { z } from "zod";
 
-export function describeSchema<T>(
-  schema: ZodType<T>,
+export function describeSchema(
+  schema: z.core.$ZodType,
 ): string {
   if (schema instanceof z.ZodObject) {
-    const shape = schema.shape as Record<string, ZodType<unknown>>;
+    const shape = schema.shape;
     const fields = Object.entries(shape)
       .map(([key, val]) => `  "${key}": ${describeSchema(val)}`)
       .join(",\n");
@@ -21,7 +21,7 @@ export function describeSchema<T>(
   }
 
   if (schema instanceof z.ZodArray) {
-    return `Array<${describeSchema(schema.element as ZodType<unknown>)}>`;
+    return `Array<${describeSchema(schema.element)}>`;
   }
 
   if (schema instanceof z.ZodString) {
@@ -43,12 +43,12 @@ export function describeSchema<T>(
   }
 
   if (schema instanceof z.ZodOptional) {
-    return `optional(${describeSchema(schema.unwrap() as ZodType<unknown>)})`;
+    return `optional(${describeSchema(schema.unwrap())})`;
   }
 
   if (schema instanceof z.ZodPipe) {
     // .transform()/.refine() compile to a pipe in v4 — describe the pre-transform input shape.
-    return describeSchema(schema.in as ZodType<unknown>);
+    return describeSchema(schema.in);
   }
 
   return "unknown";

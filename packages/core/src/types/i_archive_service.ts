@@ -34,5 +34,5 @@ export interface IArchiveService {
   /**
    * Get an archived trace file content (e.g. plan or request).
    */
-  getTrace(traceId: string): Promise<unknown>;
+  getTrace(traceId: string): Promise<IArchiveEntry | null>;
 }

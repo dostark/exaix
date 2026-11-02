@@ -451,7 +451,7 @@ Deno.test("ArchiveAdapter: getTrace delegates to getByTraceId", async () => {
     },
   });
   const adapter = new ArchiveAdapter(service);
-  await adapter.getTrace("trace-1");
+  assertEquals(await adapter.getTrace("trace-1"), null);
   assertEquals(capturedId, "trace-1");
 });
 

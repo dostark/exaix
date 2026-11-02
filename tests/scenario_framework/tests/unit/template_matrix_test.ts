@@ -10,6 +10,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
+import type { JSONObject } from "@exaix/core";
 import { type ISweTaskTemplateOptions, renderSweTaskTemplate } from "../../runner/scenario_templates.ts";
 
 Deno.test("[TemplateMatrix] emits CLI-delegate steps when cells have requires_bin", () => {
@@ -93,7 +94,7 @@ Deno.test("[TemplateMatrix] emits trajectory sequence from options", () => {
 interface IParsedScenarioYaml {
   schema_version: string;
   id: string;
-  steps: Array<unknown>;
+  steps: Array<JSONObject>;
 }
 
 function makeOpts(overrides: Partial<ISweTaskTemplateOptions>): ISweTaskTemplateOptions {
